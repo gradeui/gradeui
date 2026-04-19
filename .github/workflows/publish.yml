@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'packages/**'
-      - 'pnpm-workspace.yaml'
-      - 'package.json'
   workflow_dispatch: {}
 
 concurrency:
@@ -17,9 +13,11 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # Avoid infinite loops: changesets/action bumps versions and pushes a commit.
-    # That push would re-trigger this workflow — the `if` guards against it.
-    if: ${{ !contains(github.event.head_commit.message, 'chore: version packages') }}
+    # Avoid infinite loops: the changesets action bumps versions and pushes a
+    # commit. That push would re-trigger this workflow; the guard below skips
+    # the job when we see the version-bump commit message.
+    # (Quoted because YAML can trip on `!` right after `${{`.)
+    if: "${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, 'chore: version packages') }}"
     permissions:
       contents: write
       pull-requests: write
