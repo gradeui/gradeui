@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "lib/**/*",
+    "components/**/*",
+    "tailwind-preset.ts",
+    "types/**/*"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,41 @@
+{
+  "name": "@grade/core",
+  "version": "0.0.1",
+  "description": "Grade Design System — foundations (design tokens, theme engine primitives, utilities). Placeholder: nothing is extracted here yet. See README for the migration plan.",
+  "license": "MIT",
+  "author": "Grade",
+  "homepage": "https://gradeui.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gradeui/gradeui.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/gradeui/gradeui/issues"
+  },
+  "keywords": ["grade", "design-tokens", "oklch", "theming"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "echo \"(no lint configured for @grade/core yet)\"",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.6.3"
+  }
+}

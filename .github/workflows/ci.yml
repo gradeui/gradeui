@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm -r --filter "./packages/*" build
+
+      - name: Build docs
+        run: pnpm --filter @grade/docs build
+        env:
+          # docs build may read these at compile-time — supply empty defaults so
+          # the PR build doesn't fail for missing secrets.
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET || 'ci-dummy-secret-please-replace' }}
+          GITHUB_CLIENT_ID: ${{ secrets.GITHUB_CLIENT_ID || '' }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET || '' }}
