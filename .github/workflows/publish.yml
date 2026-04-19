@@ -33,7 +33,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
 
@@ -47,8 +47,9 @@ jobs:
         uses: changesets/action@v1
         with:
           # `pnpm release` (defined in root package.json) runs `pnpm build` then `changeset publish`.
+          # `version:` is left at the default (`changeset version`). We can't use
+          # `pnpm version` because that's a pnpm built-in, not the npm script.
           publish: pnpm release
-          version: pnpm version
           commit: 'chore: version packages'
           title: 'chore: version packages'
         env:
