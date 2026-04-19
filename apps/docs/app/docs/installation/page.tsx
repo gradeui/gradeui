@@ -20,13 +20,13 @@ export default function InstallationPage() {
         <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`# npm
-npm install @grade/ui
+npm install @gradeui/ui
 
 # yarn
-yarn add @grade/ui
+yarn add @gradeui/ui
 
 # pnpm
-pnpm add @grade/ui`}</code>
+pnpm add @gradeui/ui`}</code>
           </pre>
         </div>
       </div>
@@ -40,7 +40,7 @@ pnpm add @grade/ui`}</code>
         </p>
         <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
           <pre>
-            <code>{`import "@grade/ui/styles.css"`}</code>
+            <code>{`import "@gradeui/ui/styles.css"`}</code>
           </pre>
         </div>
       </div>
@@ -54,7 +54,7 @@ pnpm add @grade/ui`}</code>
         </p>
         <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
           <pre>
-            <code>{`import { Button, Card, Input, Badge } from "@grade/ui"
+            <code>{`import { Button, Card, Input, Badge } from "@gradeui/ui"
 
 export function MyComponent() {
   return (
@@ -132,7 +132,7 @@ export default config`}</code>
         </p>
         <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
           <pre>
-            <code>{`import type { ButtonProps, BadgeProps } from "@grade/ui"`}</code>
+            <code>{`import type { ButtonProps, BadgeProps } from "@gradeui/ui"`}</code>
           </pre>
         </div>
       </div>

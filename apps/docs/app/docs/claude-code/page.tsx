@@ -21,7 +21,7 @@ export default function ClaudeCodePage() {
           in your project root. By adding our template, Claude will automatically:
         </p>
         <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-          <li>Use components from <code className="bg-muted px-1.5 py-0.5 rounded text-sm">@grade/ui</code></li>
+          <li>Use components from <code className="bg-muted px-1.5 py-0.5 rounded text-sm">@gradeui/ui</code></li>
           <li>Follow Ramp design patterns and color tokens</li>
           <li>Avoid creating custom components when design system components exist</li>
           <li>Apply correct dark mode and accessibility practices</li>
@@ -37,7 +37,7 @@ export default function ClaudeCodePage() {
           <div>
             <h3 className="font-semibold text-lg mb-2">1. Install the package</h3>
             <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
-              <code>npm install @grade/ui</code>
+              <code>npm install @gradeui/ui</code>
             </div>
           </div>
 
@@ -47,7 +47,7 @@ export default function ClaudeCodePage() {
               Import the styles in your root layout or app entry point:
             </p>
             <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
-              <pre><code>{`import "@grade/ui/styles.css"`}</code></pre>
+              <pre><code>{`import "@gradeui/ui/styles.css"`}</code></pre>
             </div>
           </div>
 
@@ -123,7 +123,7 @@ export default function ClaudeCodePage() {
           </p>
           <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
             <pre><code>{`// In your root layout - ORDER MATTERS
-import "@grade/ui/styles.css"  // FIRST
+import "@gradeui/ui/styles.css"  // FIRST
 import "./globals.css"                     // SECOND`}</code></pre>
           </div>
         </div>
@@ -161,8 +161,8 @@ import "./globals.css"                     // SECOND`}</code></pre>
           <div>
             <h3 className="font-semibold">Unstyled components / CSS variables undefined</h3>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground mt-2">
-              <li>Verify <code className="bg-muted px-1.5 py-0.5 rounded text-sm">@grade/ui/styles.css</code> is imported FIRST</li>
-              <li>Check package version is 0.1.22+: <code className="bg-muted px-1.5 py-0.5 rounded text-sm">npm list @grade/ui</code></li>
+              <li>Verify <code className="bg-muted px-1.5 py-0.5 rounded text-sm">@gradeui/ui/styles.css</code> is imported FIRST</li>
+              <li>Check package version is 0.1.22+: <code className="bg-muted px-1.5 py-0.5 rounded text-sm">npm list @gradeui/ui</code></li>
             </ul>
           </div>
           <div>

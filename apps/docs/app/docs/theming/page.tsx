@@ -152,7 +152,7 @@ export default function ThemingPage() {
         </p>
         <div className="rounded-lg bg-muted border p-4 font-mono text-sm overflow-x-auto">
           <pre>
-            <code>{`import type { ThemeInput } from "@grade/ui";
+            <code>{`import type { ThemeInput } from "@gradeui/ui";
 
 export const myTheme: ThemeInput = {
   id: "my-theme",
@@ -208,7 +208,7 @@ export const myTheme: ThemeInput = {
         <div className="rounded-lg bg-muted border p-4 font-mono text-sm overflow-x-auto">
           <pre>
             <code>{`"use client";
-import { useRampTheme } from "@grade/ui";
+import { useRampTheme } from "@gradeui/ui";
 
 export function ThemeToolbar() {
   const {
@@ -334,8 +334,8 @@ export function ThemeToolbar() {
 import {
   RampThemeProvider,
   RAMP_PRE_HYDRATION_SCRIPT,
-} from "@grade/ui";
-import "@grade/ui/styles.css";  // MUST be imported first
+} from "@gradeui/ui";
+import "@gradeui/ui/styles.css";  // MUST be imported first
 
 export default function RootLayout({ children }) {
   return (

@@ -1,5 +1,5 @@
 {
-  "name": "@grade/docs",
+  "name": "@gradeui/docs",
   "version": "0.0.0",
   "private": true,
   "description": "Grade Design System documentation site (gradeui.com)",
@@ -11,7 +11,7 @@
     "changelog": "node scripts/generate-changelog.js"
   },
   "dependencies": {
-    "@grade/ui": "workspace:*",
+    "@gradeui/ui": "workspace:*",
     "@codesandbox/sandpack-react": "^2.20.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-avatar": "^1.1.11",

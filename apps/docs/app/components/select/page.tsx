@@ -67,7 +67,7 @@ export default function SelectPage() {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@grade/ui"`}</code>
+} from "@gradeui/ui"`}</code>
           </pre>
         </div>
       </div>

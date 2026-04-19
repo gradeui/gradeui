@@ -75,7 +75,7 @@ export default function DropdownMenuPage() {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@grade/ui"`}</code>
+} from "@gradeui/ui"`}</code>
           </pre>
         </div>
       </div>

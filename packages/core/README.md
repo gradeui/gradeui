@@ -1,8 +1,8 @@
-# @grade/core
+# @gradeui/core
 
 Foundations for the Grade Design System — design tokens, theme engine primitives, OKLCH utilities, and the `cn` helper.
 
-> **Status:** placeholder. Nothing is exported yet. The eventual content currently lives inside `@grade/ui` under `lib/themes/` and `lib/utils.ts`, and will be migrated here once the first consumer (beyond `@grade/ui` itself) needs to pull tokens without a React dependency.
+> **Status:** placeholder. Nothing is exported yet. The eventual content currently lives inside `@gradeui/ui` under `lib/themes/` and `lib/utils.ts`, and will be migrated here once the first consumer (beyond `@gradeui/ui` itself) needs to pull tokens without a React dependency.
 
 ## Planned surface
 

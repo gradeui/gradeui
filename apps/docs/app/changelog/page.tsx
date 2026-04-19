@@ -4,7 +4,7 @@ import { ChangelogContent } from "./changelog-content";
 
 export const metadata = {
   title: "Changelog | Grade Design System",
-  description: "All notable changes to @grade/ui",
+  description: "All notable changes to @gradeui/ui",
 };
 
 export default function ChangelogPage() {

@@ -1,6 +1,6 @@
 # gradeui
 
-The Grade design system. A pnpm workspaces monorepo that ships the `@grade/*` packages to npm and hosts the documentation site at [gradeui.com](https://gradeui.com).
+The Grade design system. A pnpm workspaces monorepo that ships the `@gradeui/*` packages to npm and hosts the documentation site at [gradeui.com](https://gradeui.com).
 
 ## Layout
 
@@ -8,11 +8,11 @@ The Grade design system. A pnpm workspaces monorepo that ships the `@grade/*` pa
 gradeui/
 ├── apps/
 │   ├── docs/            # Next.js docs site (deployed to gradeui.com)
-│   └── consume-app/     # Integration test app — installs @grade/ui to validate the public API
+│   └── consume-app/     # Integration test app — installs @gradeui/ui to validate the public API
 └── packages/
-    ├── core/            # @grade/core — design tokens, theme generator, primitives
-    ├── ui/              # @grade/ui  — React components (shadcn-based)
-    └── pro/             # @grade/pro — premium / commercial components (placeholder)
+    ├── core/            # @gradeui/core — design tokens, theme generator, primitives
+    ├── ui/              # @gradeui/ui  — React components (shadcn-based)
+    └── pro/             # @gradeui/pro — premium / commercial components (placeholder)
 ```
 
 ## Getting started

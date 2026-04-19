@@ -33,7 +33,7 @@ export function MarketingFooter() {
               <li><Link href="/changelog" className="hover:text-foreground">Changelog</Link></li>
               <li><Link href="/roadmap" className="hover:text-foreground">Roadmap</Link></li>
               <li>
-                <a href="https://www.npmjs.com/package/@grade/ui" className="hover:text-foreground">
+                <a href="https://www.npmjs.com/package/@gradeui/ui" className="hover:text-foreground">
                   npm package
                 </a>
               </li>
@@ -67,7 +67,7 @@ export function MarketingFooter() {
               GitHub
             </a>
             <a
-              href="https://www.npmjs.com/package/@grade/ui"
+              href="https://www.npmjs.com/package/@gradeui/ui"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
               npm

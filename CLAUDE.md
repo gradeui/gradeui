@@ -1,6 +1,6 @@
 # gradeui — Grade Design System monorepo
 
-pnpm workspaces monorepo. Publishes the `@grade/*` scoped packages to npm and hosts the docs site at [gradeui.com](https://gradeui.com).
+pnpm workspaces monorepo. Publishes the `@gradeui/*` scoped packages to npm and hosts the docs site at [gradeui.com](https://gradeui.com).
 
 This `CLAUDE.md` is the orientation document for any Claude session working in this repo. Read it before reaching for a subagent.
 
@@ -9,12 +9,12 @@ This `CLAUDE.md` is the orientation document for any Claude session working in t
 ```
 gradeui/
 ├── apps/
-│   ├── docs/            # @grade/docs  — Next.js 16 docs site (private, deployed to gradeui.com)
-│   └── consume-app/     # @grade/consume-app — Next.js 15 smoke-test app (private, not published)
+│   ├── docs/            # @gradeui/docs  — Next.js 16 docs site (private, deployed to gradeui.com)
+│   └── consume-app/     # @gradeui/consume-app — Next.js 15 smoke-test app (private, not published)
 ├── packages/
-│   ├── core/            # @grade/core  — tokens, theme generator (public, placeholder)
-│   ├── ui/              # @grade/ui    — free React components (public)
-│   └── pro/             # @grade/pro   — premium / commercial components (restricted)
+│   ├── core/            # @gradeui/core  — tokens, theme generator (public, placeholder)
+│   ├── ui/              # @gradeui/ui    — free React components (public)
+│   └── pro/             # @gradeui/pro   — premium / commercial components (restricted)
 ├── .changeset/          # versioning + release notes
 ├── .github/workflows/   # ci.yml (PR validation) + publish.yml (changesets action)
 └── pnpm-workspace.yaml
@@ -29,27 +29,27 @@ The tiering is enforced by two independent controls:
 1. **npm publishing** — the `publishConfig.access` field on each package's `package.json` decides whether it publishes `public` (anyone can `npm install`) or `restricted` (only team members + per-user grants). The `.github/workflows/publish.yml` hook runs changesets, which reads those fields per package.
 2. **Docs site rendering** — `apps/docs` uses NextAuth (GitHub provider) to gate routes. Public content is statically rendered; pro/client content sits behind auth. This is how `gradeui.com` stays the one place everyone logs into.
 
-### 1. Public / free — `@grade/core`, `@grade/ui`
+### 1. Public / free — `@gradeui/core`, `@gradeui/ui`
 - `publishConfig.access: "public"`
 - MIT licensed — see root `LICENSE`
 - Rendered on `gradeui.com/docs/**` without auth
 
-### 2. Pro / paid — `@grade/pro`
+### 2. Pro / paid — `@gradeui/pro`
 - `publishConfig.access: "restricted"` — requires the npm Teams plan
 - Commercial license — see `packages/pro/LICENSE.md`
 - Rendered on `gradeui.com/pro/**` behind an auth check (user must be logged in AND have an active pro entitlement — entitlement check to be layered on top of NextAuth)
 
 ### 3. Per-client private — `packages/clients/<name>/` (when needed)
-- Same scope `@grade/*` (e.g. `@grade/acme-forms`) with `publishConfig.access: "restricted"`, or a client-owned scope like `@acme/*`
+- Same scope `@gradeui/*` (e.g. `@gradeui/acme-forms`) with `publishConfig.access: "restricted"`, or a client-owned scope like `@acme/*`
 - Client packages go in `packages/clients/<name>/` — create that directory + add `packages/clients/*` to `pnpm-workspace.yaml` when the first one lands. Keep the structure identical to `packages/pro` (own tsup/tsconfig/LICENSE).
 - Rendered (if at all) on `gradeui.com/clients/<name>/**` behind auth scoped to that client's team
-- A separate LICENSE per client package — never MIT, never the same license as `@grade/pro`
+- A separate LICENSE per client package — never MIT, never the same license as `@gradeui/pro`
 
 ### Repo visibility
 
-Because `@grade/pro` (and eventually client) **source** lives here, **this GitHub repo must stay private**. The npm packages can still be published with different access levels (public `@grade/ui`, restricted `@grade/pro`) — npm package visibility is independent of source repo visibility.
+Because `@gradeui/pro` (and eventually client) **source** lives here, **this GitHub repo must stay private**. The npm packages can still be published with different access levels (public `@gradeui/ui`, restricted `@gradeui/pro`) — npm package visibility is independent of source repo visibility.
 
-If at some point you want the `@grade/ui` source to be openly browsable on GitHub, that's the trigger to extract — not before.
+If at some point you want the `@gradeui/ui` source to be openly browsable on GitHub, that's the trigger to extract — not before.
 
 ### When to break out into separate repos
 
@@ -58,7 +58,7 @@ Defaults favor staying in the monorepo. Break out only when one of these becomes
 - Client-specific commits are landing often enough that they're polluting the main repo's history
 - You want to hand one client's repo to their internal team without giving them access to others
 
-The template for an extracted client repo is `apps/consume-app/` — a Next.js app consuming `@grade/ui` from npm via a real version dep, not `workspace:*`.
+The template for an extracted client repo is `apps/consume-app/` — a Next.js app consuming `@gradeui/ui` from npm via a real version dep, not `workspace:*`.
 
 ### Rule of thumb when deciding where code belongs
 
@@ -83,10 +83,10 @@ For **per-client auth**, plan to extend the auth callback to attach a `clients: 
 Work in `packages/ui/` (or `packages/pro/` for premium). The public barrel is `packages/ui/lib/index.ts`. Components live under `packages/ui/components/ui/`. See `packages/ui/README.md` for detail.
 
 ### Docs-site work
-Work in `apps/docs/`. The docs site currently keeps its own copy of components under `components/ui/` — this is deliberate, to decouple the docs site's import graph from the published package during the transition. If you edit a component for a customer-facing change, edit it in **both** `packages/ui/components/ui/` and `apps/docs/components/ui/` until the docs site is migrated to import from `@grade/ui`.
+Work in `apps/docs/`. The docs site currently keeps its own copy of components under `components/ui/` — this is deliberate, to decouple the docs site's import graph from the published package during the transition. If you edit a component for a customer-facing change, edit it in **both** `packages/ui/components/ui/` and `apps/docs/components/ui/` until the docs site is migrated to import from `@gradeui/ui`.
 
 ### Smoke-testing a published build
-Work in `apps/consume-app/`. It consumes `@grade/ui` via `workspace:*` so local changes in `packages/ui/` show up immediately. This is also the template for per-client consume repos (swap `workspace:*` → a real npm version).
+Work in `apps/consume-app/`. It consumes `@gradeui/ui` via `workspace:*` so local changes in `packages/ui/` show up immediately. This is also the template for per-client consume repos (swap `workspace:*` → a real npm version).
 
 ### Deferred renames — do not "fix" these opportunistically
 - `RampThemeProvider` / `useRampTheme` / `RAMP_PRE_HYDRATION_SCRIPT`
@@ -105,11 +105,11 @@ pnpm changeset          # record a change (creates a .changeset/*.md)
 
 On push to `main`, `.github/workflows/publish.yml` runs the changesets action. It opens a "Version Packages" PR when changesets are pending; merging that PR bumps versions and publishes to npm using `NPM_TOKEN`.
 
-`@grade/docs` and `@grade/consume-app` are in the `ignore` list in `.changeset/config.json` — they're private and never publish.
+`@gradeui/docs` and `@gradeui/consume-app` are in the `ignore` list in `.changeset/config.json` — they're private and never publish.
 
 ## Common pitfalls
 
-- **Don't publish `@grade/pro` with `access: public`.** The `publishConfig` in `packages/pro/package.json` is already set to `restricted`; keep it that way.
+- **Don't publish `@gradeui/pro` with `access: public`.** The `publishConfig` in `packages/pro/package.json` is already set to `restricted`; keep it that way.
 - **Don't add docs-only dependencies to `packages/ui/`.** If something is only used by the docs site (feed, octokit, mapbox-gl, next-intl, etc.), it belongs in `apps/docs/package.json`.
 - **Don't break the public API in `packages/ui/lib/index.ts` without a changeset.** The consume-app and every client repo depend on that barrel.
 - **Don't commit into `apps/docs/` without considering whether the change should also propagate to `packages/ui/`.** See the "Docs-site work" note above — the two are currently duplicated on purpose, but customer-facing changes need to land in both.

@@ -54,7 +54,7 @@ export default function TooltipPage() {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@grade/ui"`}</code>
+} from "@gradeui/ui"`}</code>
           </pre>
         </div>
       </div>

@@ -1,5 +1,5 @@
 {
-  "name": "@grade/core",
+  "name": "@gradeui/core",
   "version": "0.0.1",
   "description": "Grade Design System — foundations (design tokens, theme engine primitives, utilities). Placeholder: nothing is extracted here yet. See README for the migration plan.",
   "license": "MIT",
@@ -31,7 +31,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "lint": "echo \"(no lint configured for @grade/core yet)\"",
+    "lint": "echo \"(no lint configured for @gradeui/core yet)\"",
     "clean": "rm -rf dist"
   },
   "devDependencies": {

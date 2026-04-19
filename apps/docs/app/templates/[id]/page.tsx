@@ -144,7 +144,7 @@ export default function TemplatePage({ params }: TemplatePageProps) {
             <div>
               <h3 className="font-medium mb-2">Installation</h3>
               <div className="rounded-lg bg-muted p-4 font-mono text-sm">
-                <code>npm install @grade/ui</code>
+                <code>npm install @gradeui/ui</code>
               </div>
             </div>
 

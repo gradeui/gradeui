@@ -44,7 +44,7 @@ export default function CardPage() {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@grade/ui"`}</code>
+} from "@gradeui/ui"`}</code>
           </pre>
         </div>
       </div>

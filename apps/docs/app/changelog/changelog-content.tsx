@@ -99,7 +99,7 @@ export function ChangelogContent({ changelog }: ChangelogContentProps) {
             Changelog
           </h1>
           <p className="text-lg text-muted-foreground mt-2">
-            All notable changes to <code className="text-sm font-mono bg-muted px-1.5 py-0.5 rounded">@grade/ui</code>
+            All notable changes to <code className="text-sm font-mono bg-muted px-1.5 py-0.5 rounded">@gradeui/ui</code>
           </p>
         </div>
         <Link

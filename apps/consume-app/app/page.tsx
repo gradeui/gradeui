@@ -6,13 +6,13 @@ import {
   CardHeader,
   CardTitle,
   Badge,
-} from "@grade/ui";
+} from "@gradeui/ui";
 
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background p-8 text-foreground">
       <div className="flex flex-col items-center gap-2">
-        <Badge>@grade/ui</Badge>
+        <Badge>@gradeui/ui</Badge>
         <h1 className="text-h1">Grade UI — consume app</h1>
         <p className="text-muted">
           Installed from the workspace to validate the public API.
@@ -23,7 +23,7 @@ export default function Home() {
         <CardHeader>
           <CardTitle>Hello, Grade</CardTitle>
           <CardDescription>
-            If you can see this card styled correctly, the @grade/ui workspace
+            If you can see this card styled correctly, the @gradeui/ui workspace
             package is wired up and the Tailwind preset is applied.
           </CardDescription>
         </CardHeader>

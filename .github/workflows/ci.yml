@@ -31,7 +31,7 @@ jobs:
         run: pnpm -r --filter "./packages/*" build
 
       - name: Build docs
-        run: pnpm --filter @grade/docs build
+        run: pnpm --filter @gradeui/docs build
         env:
           # docs build may read these at compile-time — supply empty defaults so
           # the PR build doesn't fail for missing secrets.

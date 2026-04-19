@@ -63,7 +63,7 @@ export default function TablePage() {
   TableHead,
   TableHeader,
   TableRow,
-} from "@grade/ui"`}</code>
+} from "@gradeui/ui"`}</code>
           </pre>
         </div>
       </div>

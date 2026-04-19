@@ -1,4 +1,4 @@
-# @grade/docs — Grade Design System documentation site
+# @gradeui/docs — Grade Design System documentation site
 
 Design system, components, and brand guidelines.
 
@@ -15,12 +15,12 @@ Design system, components, and brand guidelines.
 ## Quick Start
 
 ```bash
-npm install @grade/ui
+npm install @gradeui/ui
 ```
 
 ```tsx
-import { Button, Card, Input } from "@grade/ui"
-import "@grade/ui/styles.css"
+import { Button, Card, Input } from "@gradeui/ui"
+import "@gradeui/ui/styles.css"
 
 function App() {
   return (
@@ -59,7 +59,7 @@ curl -o CLAUDE.md https://raw.githubusercontent.com/gradeui/gradeui/main/CLAUDE.
 ### 2. Install the package
 
 ```bash
-npm install @grade/ui
+npm install @gradeui/ui
 ```
 
 ### 3. Start building

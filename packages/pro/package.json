@@ -1,5 +1,5 @@
 {
-  "name": "@grade/pro",
+  "name": "@gradeui/pro",
   "version": "0.0.1",
   "description": "Grade Design System Pro — premium / commercial components. Placeholder.",
   "license": "SEE LICENSE IN LICENSE.md",
@@ -31,16 +31,16 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "lint": "echo \"(no lint configured for @grade/pro yet)\"",
+    "lint": "echo \"(no lint configured for @gradeui/pro yet)\"",
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
-    "@grade/ui": "workspace:*",
+    "@gradeui/ui": "workspace:*",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
-    "@grade/ui": "workspace:*",
+    "@gradeui/ui": "workspace:*",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tsup": "^8.5.1",

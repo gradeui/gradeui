@@ -61,7 +61,7 @@ export default function DialogPage() {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@grade/ui"`}</code>
+} from "@gradeui/ui"`}</code>
           </pre>
         </div>
       </div>

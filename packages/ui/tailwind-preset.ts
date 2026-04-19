@@ -5,10 +5,10 @@ import type { Config } from "tailwindcss";
  *
  * Consumers should spread this into their own tailwind config:
  *
- *   import gradePreset from "@grade/ui/tailwind-preset";
+ *   import gradePreset from "@gradeui/ui/tailwind-preset";
  *   export default {
  *     presets: [gradePreset],
- *     content: ["./app/**\/*.{ts,tsx}", "./node_modules/@grade/ui/dist/**\/*"],
+ *     content: ["./app/**\/*.{ts,tsx}", "./node_modules/@gradeui/ui/dist/**\/*"],
  *   };
  *
  * Most colors are wired to CSS variables so runtime theme switching via

@@ -58,7 +58,7 @@ export default function AccordionPage() {
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from "@grade/ui"`}</code>
+} from "@gradeui/ui"`}</code>
           </pre>
         </div>
       </div>
@@ -119,7 +119,7 @@ export default function AccordionPage() {
   <AccordionItem value="q2">
     <AccordionTrigger>How do I get started?</AccordionTrigger>
     <AccordionContent>
-      Install the npm package with "npm install @grade/ui". Import the styles
+      Install the npm package with "npm install @gradeui/ui". Import the styles
       in your root layout and wrap your app with RampThemeProvider.
     </AccordionContent>
   </AccordionItem>
@@ -145,7 +145,7 @@ export default function AccordionPage() {
             <AccordionItem value="q2">
               <AccordionTrigger>How do I get started?</AccordionTrigger>
               <AccordionContent>
-                Install the npm package with &quot;npm install @grade/ui&quot;.
+                Install the npm package with &quot;npm install @gradeui/ui&quot;.
                 Import the styles in your root layout and wrap your app with
                 RampThemeProvider.
               </AccordionContent>

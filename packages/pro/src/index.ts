@@ -1,5 +1,5 @@
 /**
- * @grade/pro — placeholder entry point for Grade's premium/commercial components.
+ * @gradeui/pro — placeholder entry point for Grade's premium/commercial components.
  *
  * Nothing is exported yet. See README.md for the roadmap.
  */

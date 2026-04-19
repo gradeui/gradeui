@@ -791,7 +791,7 @@ export default function NotificationsCenter() {
     {
       type: "info",
       title: "System update available",
-      message: "A new version of @grade/ui is available for install.",
+      message: "A new version of @gradeui/ui is available for install.",
       time: "1 day ago",
       unread: false
     },

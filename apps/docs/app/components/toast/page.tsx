@@ -56,7 +56,7 @@ export default function ToastPage() {
         <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`// Add Toaster to your layout
-import { Toaster } from "@grade/ui"
+import { Toaster } from "@gradeui/ui"
 
 // In your layout.tsx
 <Toaster />

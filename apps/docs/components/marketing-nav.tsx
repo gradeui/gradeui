@@ -105,8 +105,8 @@ export function MarketingNav() {
           {/* CTA — single button to the npm package page. */}
           <div className="hidden md:flex items-center gap-2">
             <Button asChild>
-              <a href="https://www.npmjs.com/package/@grade/ui" target="_blank" rel="noopener noreferrer">
-                Install @grade/ui
+              <a href="https://www.npmjs.com/package/@gradeui/ui" target="_blank" rel="noopener noreferrer">
+                Install @gradeui/ui
               </a>
             </Button>
           </div>
@@ -150,8 +150,8 @@ export function MarketingNav() {
 
                 <div className="pt-4 border-t">
                   <Button className="w-full" asChild>
-                    <a href="https://www.npmjs.com/package/@grade/ui" target="_blank" rel="noopener noreferrer">
-                      Install @grade/ui
+                    <a href="https://www.npmjs.com/package/@gradeui/ui" target="_blank" rel="noopener noreferrer">
+                      Install @gradeui/ui
                     </a>
                   </Button>
                 </div>

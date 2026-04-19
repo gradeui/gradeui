@@ -7,7 +7,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  external: ["react", "react-dom", "@grade/ui"],
+  external: ["react", "react-dom", "@gradeui/ui"],
   treeshake: true,
   minify: true,
 });

@@ -287,7 +287,7 @@ Tailwind config wraps these with \`oklch(var(--x) / <alpha-value>)\` so Tailwind
 
 ## Components the theme styles
 
-Import from \`@grade/ui\` — all components read theme vars and re-skin automatically:
+Import from \`@gradeui/ui\` — all components read theme vars and re-skin automatically:
 
 \`\`\`tsx
 import {
@@ -296,8 +296,8 @@ import {
   HoverCard, Popover, Dialog, Sheet, Tooltip, Progress, DropdownMenu,
   Command, Tabs, SimpleTabs, Accordion, Collapsible, ScrollArea, Table,
   Avatar, AIChat, Logo, SectionBlock, CardBlock, MediaBlock, FAQBlock,
-} from "@grade/ui";
-import "@grade/ui/styles.css";
+} from "@gradeui/ui";
+import "@gradeui/ui/styles.css";
 \`\`\`
 
 Every component accepts a \`className\` for layout tweaks. Variants are passed via a \`variant\` prop: \`<Button variant="outline">\`, \`<Alert variant="success">\`, \`<Badge variant="destructive-soft">\`.
@@ -323,7 +323,7 @@ ${feelNotes(theme)}
 To recreate this theme in code:
 
 \`\`\`ts
-import { generateTheme, applyThemeToRoot, type ThemeInput } from "@grade/ui";
+import { generateTheme, applyThemeToRoot, type ThemeInput } from "@gradeui/ui";
 
 const input: ThemeInput = ${stringifyInput(theme).replace(/\n/g, "\n")};
 

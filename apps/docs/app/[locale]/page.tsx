@@ -126,13 +126,13 @@ export default function Home() {
               <div className="bg-background rounded-lg border p-6 font-mono text-sm">
                 <div className="text-muted-foreground mb-4"># Install the package</div>
                 <pre className="text-foreground overflow-x-auto mb-6">
-{`npm install @grade/ui`}
+{`npm install @gradeui/ui`}
                 </pre>
 
                 <div className="text-muted-foreground mb-4"># Import and use components</div>
                 <pre className="text-foreground overflow-x-auto">
-{`import { Button, Card, Input } from "@grade/ui"
-import "@grade/ui/styles.css"
+{`import { Button, Card, Input } from "@gradeui/ui"
+import "@gradeui/ui/styles.css"
 
 export default function App() {
   return (

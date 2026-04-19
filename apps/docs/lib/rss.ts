@@ -43,7 +43,7 @@ export function generateRSSFeed(): string {
 
   const feed = new Feed({
     title: "Grade Design System Changelog",
-    description: "Latest updates to @grade/ui - the official Grade Design System",
+    description: "Latest updates to @gradeui/ui - the official Grade Design System",
     id: `${SITE_URL}/changelog`,
     link: `${SITE_URL}/changelog`,
     language: "en",
@@ -79,7 +79,7 @@ export function generateAtomFeed(): string {
 
   const feed = new Feed({
     title: "Grade Design System Changelog",
-    description: "Latest updates to @grade/ui - the official Grade Design System",
+    description: "Latest updates to @gradeui/ui - the official Grade Design System",
     id: `${SITE_URL}/changelog`,
     link: `${SITE_URL}/changelog`,
     language: "en",
