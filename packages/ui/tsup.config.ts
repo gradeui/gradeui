@@ -6,11 +6,7 @@ export default defineConfig({
     "tailwind-preset": "tailwind-preset.ts",
   },
   format: ["cjs", "esm"],
-  dts: {
-    compilerOptions: {
-      incremental: false,
-    },
-  },
+  dts: true,
   splitting: false,
   sourcemap: true,
   clean: true,

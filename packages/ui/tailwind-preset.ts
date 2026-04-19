@@ -246,7 +246,6 @@ const preset: Partial<Config> = {
       },
     },
   },
-  // @ts-expect-error — tailwindcss-animate has no types, pulled in at runtime.
   plugins: [require("tailwindcss-animate")],
 };
 
