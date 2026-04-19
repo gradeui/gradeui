@@ -13,11 +13,10 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # Avoid infinite loops: the changesets action bumps versions and pushes a
-    # commit. That push would re-trigger this workflow; the guard below skips
-    # the job when we see the version-bump commit message.
-    # (Quoted because YAML can trip on `!` right after `${{`.)
-    if: "${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, 'chore: version packages') }}"
+    # No `if:` guard needed. The changesets action uses a PR-based flow: version
+    # bumps land on `changeset-release/main`, not directly on main. When that PR
+    # is merged, we WANT the resulting merge commit to run this job — that's
+    # the run that actually publishes to npm.
     permissions:
       contents: write
       pull-requests: write
