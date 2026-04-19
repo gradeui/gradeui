@@ -7,5 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@gradeui/docs", "@gradeui/consume-app"]
+  "ignore": ["@gradeui/docs", "@gradeui/consume-app", "@gradeui/pro"]
 }
