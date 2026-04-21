@@ -51,6 +51,10 @@ export const VideoPlayer = React.forwardRef<
   ) => {
     const videoRef = React.useRef<HTMLVideoElement | null>(null);
     const reduced = usePrefersReducedMotion();
+    // Poster is rendered as a lazy-loaded <img> overlay rather than using the
+    // native `poster` attribute, which fetches eagerly even when the video is
+    // offscreen. We hide it once the video starts playing.
+    const [posterVisible, setPosterVisible] = React.useState<boolean>(!!poster);
 
     React.useImperativeHandle(ref, () => videoRef.current as HTMLVideoElement);
 
@@ -61,6 +65,10 @@ export const VideoPlayer = React.forwardRef<
     React.useEffect(() => {
       if (videoRef.current) videoRef.current.playbackRate = playbackRate;
     }, [playbackRate]);
+
+    React.useEffect(() => {
+      setPosterVisible(!!poster);
+    }, [poster]);
 
     const handleVisibilityChange = React.useCallback(
       (visible: boolean) => {
@@ -89,12 +97,13 @@ export const VideoPlayer = React.forwardRef<
         <video
           ref={videoRef}
           src={src}
-          poster={poster}
           controls={controls}
           autoPlay={effectiveAutoPlay}
           loop={loop}
           muted={effectiveMuted}
           playsInline
+          preload={effectiveAutoPlay ? "auto" : "metadata"}
+          onPlaying={() => setPosterVisible(false)}
           className={cn(
             "w-full h-full",
             objectFit === "cover" && "object-cover",
@@ -104,6 +113,25 @@ export const VideoPlayer = React.forwardRef<
         >
           Your browser does not support the video tag.
         </video>
+        {poster && posterVisible && (
+          // Always lazy-loaded — the native `poster` attribute fetches
+          // eagerly, which undoes the rest of our offscreen-pause work.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={poster}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            data-gds-part="video-poster"
+            className={cn(
+              "absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-200",
+              objectFit === "cover" && "object-cover",
+              objectFit === "contain" && "object-contain",
+              objectFit === "fill" && "object-fill",
+            )}
+          />
+        )}
       </MediaSurface>
     );
   },

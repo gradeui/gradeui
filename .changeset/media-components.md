@@ -9,6 +9,9 @@ behaviour.
 
 - `VideoPlayer` — native `<video>` wrapped in the shared surface; controls
   on by default, or chromeless viewer mode for hero/background loops.
+  Posters render as a `loading="lazy"` `<img>` overlay rather than using
+  the native `poster` attribute, so offscreen players don't fetch the
+  still eagerly.
 - `RivePlayer` — `@rive-app/react-canvas` runtime (optional dep, lazy
   imported) with state-machine inputs and fit modes.
 - `ThreeScene` — WebGL primitive with a shader preset registry + post-FX

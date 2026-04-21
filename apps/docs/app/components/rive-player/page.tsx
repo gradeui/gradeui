@@ -16,7 +16,7 @@ const riveProps = [
   { name: "poster", type: "string", default: "-", description: "Image shown while the runtime loads." },
 ];
 
-const DEMO_RIV = "https://cdn.rive.app/animations/vehicles.riv";
+const DEMO_RIV = "/animation.riv";
 
 export default function RivePlayerPage() {
   return (
@@ -32,7 +32,7 @@ export default function RivePlayerPage() {
       <div className="space-y-4">
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">Installation</h2>
         <div className="rounded-lg bg-muted border p-4 font-mono text-sm overflow-x-auto">
-          <pre><code>{`import { RivePlayer } from "@ramp-ds/ui"`}</code></pre>
+          <pre><code>{`import { RivePlayer } from "@gradeui/ui"`}</code></pre>
         </div>
         <p className="text-sm text-muted-foreground">
           The Rive runtime (<code>@rive-app/react-canvas</code>) is an{" "}

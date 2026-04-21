@@ -16,7 +16,8 @@ const videoPlayerProps = [
   { name: "playbackRate", type: "number", default: "1", description: "Playback speed." },
 ];
 
-const DEMO_SRC = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+const DEMO_SRC = "/sample.mp4";
+const DEMO_POSTER = "/movie-poster.jpg";
 
 export default function VideoPlayerPage() {
   return (
@@ -32,14 +33,14 @@ export default function VideoPlayerPage() {
       <div className="space-y-4">
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">Installation</h2>
         <div className="rounded-lg bg-muted border p-4 font-mono text-sm overflow-x-auto">
-          <pre><code>{`import { VideoPlayer } from "@ramp-ds/ui"`}</code></pre>
+          <pre><code>{`import { VideoPlayer } from "@gradeui/ui"`}</code></pre>
         </div>
       </div>
 
       <div className="space-y-4">
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">Player mode</h2>
-        <ComponentPreview code={`<VideoPlayer src="/sample.mp4" controls />`}>
-          <VideoPlayer src={DEMO_SRC} controls aspect="video" radius="lg" />
+        <ComponentPreview code={`<VideoPlayer src="/sample.mp4" poster="/movie-poster.jpg" controls />`}>
+          <VideoPlayer src={DEMO_SRC} poster={DEMO_POSTER} controls aspect="video" radius="lg" />
         </ComponentPreview>
       </div>
 

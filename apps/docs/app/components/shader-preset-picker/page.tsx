@@ -32,7 +32,7 @@ export default function ShaderPresetPickerPage() {
       <div className="space-y-4">
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">Installation</h2>
         <div className="rounded-lg bg-muted border p-4 font-mono text-sm overflow-x-auto">
-          <pre><code>{`import { ShaderPresetPicker } from "@ramp-ds/ui"`}</code></pre>
+          <pre><code>{`import { ShaderPresetPicker } from "@gradeui/ui"`}</code></pre>
         </div>
       </div>
 
