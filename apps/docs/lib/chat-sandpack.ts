@@ -466,8 +466,25 @@ button, input, optgroup, select, textarea {
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
+/* Kill the native user-agent outline on form controls. Our components
+   declare focus-visible outline-none plus focus-visible ring-1 ring-ring
+   so keyboard focus already draws the themed ring — but mouse-click
+   focus fires :focus (not :focus-visible), which means neither rule
+   applies and browsers fall back to their default blue ring. That read
+   as a bug ("input focus color is wrong") because it ignored the theme.
+   This reset keeps the native ring OFF while still letting
+   :focus-visible draw our box-shadow ring for keyboard users. Same
+   effect as Tailwind v4 preflight, which zeroes outlines globally. */
+button:focus, input:focus, select:focus, textarea:focus,
+[role="button"]:focus, [role="checkbox"]:focus, [role="switch"]:focus,
+[role="radio"]:focus, [role="tab"]:focus, [role="menuitem"]:focus {
+  outline: none;
+}
 .focus-visible\\:ring-1:focus-visible {
   box-shadow: 0 0 0 1px oklch(var(--ring));
+}
+.focus-visible\\:ring-2:focus-visible {
+  box-shadow: 0 0 0 2px oklch(var(--ring));
 }
 .focus\\:ring-2:focus {
   box-shadow: 0 0 0 2px oklch(var(--ring));
@@ -599,12 +616,17 @@ import { cn } from "../../lib/utils"
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
+// Kept in 1:1 class parity with packages/ui/components/ui/input.tsx so the
+// Sandpack preview and the published component render the same chrome.
+// The focus outline reset in the sandpack fallback CSS is what actually
+// makes the themed ring win over the browser's native blue outline on
+// mouse click — this class list is just the Tailwind intent.
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => (
     <input
       type={type}
       className={cn(
-        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
         className
       )}
       ref={ref}
@@ -851,44 +873,63 @@ export { Progress }`,
 import { Check } from "lucide-react"
 import { cn } from "../../lib/utils"
 
+// Dual-mode (controlled + uncontrolled) checkbox. The real library uses
+// Radix Checkbox which handles this automatically; here we re-implement
+// the dual-mode logic manually because Radix isn't bundled into the
+// Sandpack deps (it ships as @gradeui/ui's transitive deps when you
+// install for real). Without this dual-mode path a model-emitted bare
+// <Checkbox /> would render but never toggle on click — the previous
+// version forwarded checked={undefined} and no internal state ever
+// flipped, so the visual stayed unchecked no matter how many times you
+// clicked. This caused the "checkbox doesn't work" bug in /studio.
 export interface CheckboxProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "onChange"> {
   onCheckedChange?: (checked: boolean) => void
+  onChange?: React.ChangeEventHandler<HTMLInputElement>
+  defaultChecked?: boolean
 }
 
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, onCheckedChange, onChange, checked, ...props }, ref) => (
-    <label className="inline-flex items-center">
-      <input
-        ref={ref}
-        type="checkbox"
-        className="peer sr-only"
-        checked={checked}
-        onChange={(e) => {
-          onCheckedChange?.(e.target.checked)
-          onChange?.(e)
-        }}
-        {...props}
-      />
-      <span
-        className={cn(
-          // Fixed 3px radius so the checkbox always reads as a rounded
-          // square — mirrors the real component. Using rounded-sm here
-          // (which derives from --radius) would turn the 4x4 box circular
-          // under pill/round themes and it'd look like a radio button.
-          // Kept hand-authored literal so it tracks the real component,
-          // not the active theme radius.
-          "h-4 w-4 shrink-0 rounded-[3px] border border-primary shadow-sm flex items-center justify-center",
-          "peer-focus-visible:ring-1 peer-focus-visible:ring-ring",
-          "peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
-          checked ? "bg-primary text-primary-foreground" : "bg-background",
-          className
-        )}
-      >
-        {checked ? <Check className="h-3 w-3" /> : null}
-      </span>
-    </label>
-  )
+  ({ className, onCheckedChange, onChange, checked, defaultChecked, ...props }, ref) => {
+    const isControlled = checked !== undefined
+    const [internal, setInternal] = React.useState<boolean>(
+      Boolean(defaultChecked)
+    )
+    const current = isControlled ? Boolean(checked) : internal
+    return (
+      <label className="inline-flex items-center">
+        <input
+          ref={ref}
+          type="checkbox"
+          className="peer sr-only"
+          {...(isControlled ? { checked: current } : { defaultChecked: Boolean(defaultChecked) })}
+          onChange={(e) => {
+            if (!isControlled) setInternal(e.target.checked)
+            onCheckedChange?.(e.target.checked)
+            onChange?.(e)
+          }}
+          {...props}
+        />
+        <span
+          className={cn(
+            // Fixed 3px radius so the checkbox always reads as a rounded
+            // square — mirrors the real component. Using rounded-sm here
+            // (which derives from --radius) would turn the 4x4 box circular
+            // under pill/round themes and it'd look like a radio button.
+            // Kept hand-authored literal so it tracks the real component,
+            // not the active theme radius.
+            "h-4 w-4 shrink-0 rounded-[3px] border border-primary shadow-sm flex items-center justify-center cursor-pointer",
+            "peer-focus-visible:ring-1 peer-focus-visible:ring-ring",
+            "peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+            current ? "bg-primary text-primary-foreground" : "bg-background",
+            className
+          )}
+        >
+          {current ? <Check className="h-3 w-3" /> : null}
+        </span>
+      </label>
+    )
+  }
 )
 Checkbox.displayName = "Checkbox"
 

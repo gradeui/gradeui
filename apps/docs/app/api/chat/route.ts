@@ -154,13 +154,19 @@ export async function POST(req: Request) {
     // will ship no refs at all; a follow-up "add a dialog" only brings in
     // Dialog's ref. Compare with the old behaviour that unconditionally
     // glued all ~2k tokens of refs onto every request.
-    let refsBlock = "";
-    if (includeComponentRefs) {
-      const relevant = relevantComponentNames(textFromMessages(messages));
-      if (relevant.length > 0) {
-        refsBlock = renderComponentRefsBlock({ onlyFor: relevant });
-      }
-    }
+    //
+    // `relevant` is the canonical set of component names whose .md frontmatter
+    // contributed to the system prompt for THIS request — we stamp it onto
+    // the response metadata below so the chat UI can show "3 refs loaded:
+    // Button, Dialog, Input" alongside each assistant turn. That makes the
+    // token-vs-quality trade-off visible without needing server logs.
+    const relevant = includeComponentRefs
+      ? relevantComponentNames(textFromMessages(messages))
+      : [];
+    const refsBlock =
+      relevant.length > 0
+        ? renderComponentRefsBlock({ onlyFor: relevant })
+        : "";
     const finalSystem = refsBlock
       ? systemPrompt
         ? `${systemPrompt}\n\n${refsBlock}`
@@ -173,11 +179,14 @@ export async function POST(req: Request) {
       messages: modelMessages,
     });
 
-    // Surface per-call token usage to the client via UIMessage metadata.
-    // The `finish` part of the UI message stream carries `totalUsage` — we
-    // copy it into the message's metadata so `message.metadata.usage` is
-    // readable from `useChat` on the browser side. See the TokenBadge
-    // reader in studio-chat.tsx for consumption.
+    // Surface per-call token usage + loaded refs to the client via UIMessage
+    // metadata. The `finish` part of the UI message stream carries
+    // `totalUsage` — we copy it into the message's metadata so
+    // `message.metadata.usage` is readable from `useChat` on the browser
+    // side. `refs` carries the component .md filenames (sans extension) that
+    // were glued onto the system prompt for this turn, so the chat UI can
+    // render a transparency chip next to the token badge.
+    // See the TokenBadge + RefsChip readers in studio-chat.tsx for consumption.
     return result.toUIMessageStreamResponse({
       messageMetadata: ({ part }) => {
         if (part.type === "finish") {
@@ -187,6 +196,11 @@ export async function POST(req: Request) {
               outputTokens: part.totalUsage?.outputTokens,
               totalTokens: part.totalUsage?.totalTokens,
             },
+            // Empty array when `includeComponentRefs` is off or when no
+            // refs matched — the client shows a "no refs" state in that
+            // case, which is what makes the toggle's effect legible.
+            refs: relevant,
+            refsIncluded: includeComponentRefs,
           };
         }
         return undefined;

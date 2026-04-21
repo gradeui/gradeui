@@ -30,6 +30,7 @@ import {
   Pencil,
   FilePlus2,
   Gauge,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatSettings } from "@/components/ai-elements/provider-picker";
@@ -131,6 +132,38 @@ function usageFromMetadata(meta: unknown): MessageUsage | null {
     return null;
   }
   return usage;
+}
+
+/**
+ * Shape of the server-stamped "which component .md files were read" payload.
+ *
+ *   - `refs`: the canonical component names whose frontmatter was glued onto
+ *     the system prompt for this turn — surfaced so the chat UI can show
+ *     exactly what reference material the model saw.
+ *   - `refsIncluded`: whether the includeComponentRefs toggle was ON for
+ *     this request. Distinguishes "toggle off → zero refs by design" from
+ *     "toggle on but no component names detected in the conversation" — the
+ *     UI renders a different chip for each so the user can tell whether
+ *     their toggle is actually doing what they think.
+ */
+interface RefsInfo {
+  refs: string[];
+  refsIncluded: boolean;
+}
+
+function refsFromMetadata(meta: unknown): RefsInfo | null {
+  if (!meta || typeof meta !== "object") return null;
+  const refsRaw = (meta as { refs?: unknown }).refs;
+  const includedRaw = (meta as { refsIncluded?: unknown }).refsIncluded;
+  // The metadata hasn't landed yet (mid-stream `start` part) — skip.
+  if (refsRaw === undefined && includedRaw === undefined) return null;
+  const refs = Array.isArray(refsRaw)
+    ? refsRaw.filter((r): r is string => typeof r === "string")
+    : [];
+  // Default to "true" if the server forgot to stamp the flag — older route
+  // responses won't carry it, and assuming ON matches the route's default.
+  const refsIncluded = includedRaw === false ? false : true;
+  return { refs, refsIncluded };
 }
 
 /** Return the code of the last ```jsx / ```tsx block in `text`.
@@ -374,12 +407,14 @@ export function StudioChat({
           {messages.map((msg) => {
             const raw = textFromParts(msg.parts as any);
             const usage = usageFromMetadata(msg.metadata);
+            const refsInfo = refsFromMetadata(msg.metadata);
             return (
               <MessageRow
                 key={msg.id}
                 role={msg.role as "user" | "assistant"}
                 text={raw}
                 usage={usage}
+                refsInfo={refsInfo}
               />
             );
           })}
@@ -523,10 +558,12 @@ function MessageRow({
   role,
   text,
   usage,
+  refsInfo,
 }: {
   role: "user" | "assistant";
   text: string;
   usage: MessageUsage | null;
+  refsInfo: RefsInfo | null;
 }) {
   const prose = role === "assistant" ? stripCodeBlocks(text) : text;
   const hasCode = role === "assistant" && /```(?:jsx|tsx)/.test(text);
@@ -586,7 +623,12 @@ function MessageRow({
                 Rendered in preview →
               </div>
             )}
-            {usage && <TokenBadge usage={usage} />}
+            {(usage || refsInfo) && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                {usage && <TokenBadge usage={usage} />}
+                {refsInfo && <RefsChip info={refsInfo} />}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -656,6 +698,76 @@ function TokenBadge({ usage }: { usage: MessageUsage }) {
         </span>
       )}
       {total != null && inp == null && out == null && <span>{total} tokens</span>}
+    </div>
+  );
+}
+
+/**
+ * Compact "which component .md files did we read" readout — a sibling of
+ * TokenBadge. Shows alongside the token count so the user can answer two
+ * questions at a glance: "how much did this cost?" and "what reference
+ * material did the model see?".
+ *
+ * Three rendered states, matching server meaning:
+ *   - toggle OFF         → muted "refs off" chip. Confirms the toggle is
+ *                          doing what the user expects (no token spend on
+ *                          refs) even when the answer is nominally good.
+ *   - toggle ON, 0 hits  → "0 refs" chip. Most common on first-turn prompts
+ *                          like "make me a login form" where no component
+ *                          name has been mentioned yet; useful signal that
+ *                          the next iteration might see refs once the
+ *                          assistant's code introduces component names.
+ *   - toggle ON, N hits  → "N refs: Button, Dialog, …" with a tooltip
+ *                          listing every file that was pulled in verbatim.
+ *
+ * Intentionally monochrome (muted-foreground) so it doesn't compete with
+ * the message content — this is a developer transparency affordance, not a
+ * status badge.
+ */
+function RefsChip({ info }: { info: RefsInfo }) {
+  const { refs, refsIncluded } = info;
+  const fmt = new Intl.NumberFormat();
+  if (!refsIncluded) {
+    return (
+      <div
+        className="flex items-center gap-1 pt-0.5 text-[10px] text-muted-foreground opacity-70"
+        title="Component reference toggle is OFF — no .md files were appended to the system prompt for this turn."
+      >
+        <BookOpen className="h-2.5 w-2.5" />
+        <span>refs off</span>
+      </div>
+    );
+  }
+  if (refs.length === 0) {
+    return (
+      <div
+        className="flex items-center gap-1 pt-0.5 text-[10px] text-muted-foreground"
+        title="No component .md files matched this turn — the conversation didn't mention any component names yet."
+      >
+        <BookOpen className="h-2.5 w-2.5" />
+        <span>0 refs</span>
+      </div>
+    );
+  }
+  // Render every loaded ref inline. The list can get long on rich prompts
+  // but transparency beats tidiness here — the whole point of the chip is
+  // to show exactly which .md files paid tokens. `flex-wrap` on the outer
+  // container handles overflow by line-breaking rather than clipping.
+  return (
+    <div
+      className="flex flex-wrap items-center gap-x-1 gap-y-0 pt-0.5 text-[10px] text-muted-foreground leading-relaxed"
+      title={`Loaded ${fmt.format(refs.length)} component .md ${
+        refs.length === 1 ? "file" : "files"
+      } for this turn:\n  ${refs.join(", ")}`}
+    >
+      <BookOpen className="h-2.5 w-2.5 shrink-0" />
+      <span>
+        {fmt.format(refs.length)} {refs.length === 1 ? "ref" : "refs"}
+      </span>
+      <span aria-hidden className="opacity-60">
+        :
+      </span>
+      <span className="opacity-80 break-words">{refs.join(", ")}</span>
     </div>
   );
 }
