@@ -130,4 +130,5 @@ On push to `main`, `.github/workflows/publish.yml` runs the changesets action. I
 ## See also
 
 - `packages/ui/CLAUDE.md` — deep component/theming/subagent detail (inherited from the predecessor; still the authoritative reference for the component layer)
+- `apps/docs/STUDIO.md` — orientation for `/studio` (allow-list location, selection protocol, publish-lag gotcha)
 - `SETUP.md` — one-time setup checklist for a fresh clone (GitHub org, npm org + token, Vercel)

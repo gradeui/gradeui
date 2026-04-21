@@ -31,11 +31,13 @@ import {
   FilePlus2,
   Gauge,
   BookOpen,
+  MousePointerClick,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatSettings } from "@/components/ai-elements/provider-picker";
 import { STUDIO_TEMPLATES, type StudioTemplate } from "@/lib/studio-templates";
 import { humanizeChatError } from "@/lib/chat-error";
+import type { StudioSelection } from "@/lib/chat-sandpack";
 
 /**
  * Intent the user picks before sending a studio prompt:
@@ -94,6 +96,12 @@ interface StudioChatProps {
   /** The JSX currently rendered in the middle preview. Used by the
    *  "iterate" intent so the model can modify it in place. */
   currentCode: string | null;
+  /** Element the user picked in the preview via the Select tool. When set,
+   *  we render a chip above the prompt input and forward the captured
+   *  outerHTML through to the model so it knows what to modify. */
+  selection?: StudioSelection | null;
+  /** Fires when the chip's × is clicked — parent drops its selection state. */
+  onClearSelection?: () => void;
   className?: string;
 }
 
@@ -206,6 +214,8 @@ export function StudioChat({
   onStreamingChange,
   onLatestCode,
   currentCode,
+  selection = null,
+  onClearSelection,
   className,
 }: StudioChatProps) {
   const [input, setInput] = useState("");
@@ -231,8 +241,14 @@ export function StudioChat({
   //     risk "Maximum update depth exceeded")
   //   - picker changes live (the next send picks up the latest provider/model
   //     from the ref, no matter how stale `useChat`'s cached transport is).
+  // Selection is mutable per-send: stash it in a ref and snapshot it into the
+  // outgoing body at request time. Keeping it out of the transport closure
+  // (same reason as settings above — the transport captures once at mount)
+  // means flipping selections doesn't re-seat the `Chat` instance.
   const settingsRef = useRef({ settings, systemPrompt });
   settingsRef.current = { settings, systemPrompt };
+  const selectionRef = useRef<StudioSelection | null>(selection);
+  selectionRef.current = selection;
 
   const transportRef = useRef<DefaultChatTransport<UIMessage>>(undefined);
   if (!transportRef.current) {
@@ -255,6 +271,10 @@ export function StudioChat({
             // saving tokens at the cost of the model occasionally guessing
             // prop names.
             includeComponentRefs: s.includeComponentRefs,
+            // The element the user pointed at in the preview (if any). The
+            // server stitches this into a system-prompt stanza so the model
+            // knows what to modify. Null when nothing is selected.
+            selection: selectionRef.current,
           },
         };
       },
@@ -377,13 +397,25 @@ export function StudioChat({
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
 
+    // If the user selected an element in the preview, stamp a short marker
+    // into the VISIBLE user text so the chat transcript is self-explanatory
+    // ("<button> 'Sign in' ← Request: …"). The actual outerHTML travels out-
+    // of-band in the request body (see selectionRef in the transport), where
+    // the server glues it onto the system prompt. We deliberately DON'T inline
+    // the outerHTML into the user turn — it would pollute the conversation
+    // history and get replayed on every subsequent call, hurting cache hits.
+    const sel = selectionRef.current;
+    const selPrefix = sel
+      ? `Selection: <${sel.tag}>${sel.text ? ` "${sel.text}"` : ""}\n\n`
+      : "";
+
     // "new" wipes the conversation so the model isn't nudged by the previous
     // design. We also kill the preview immediately so the middle column
     // doesn't linger on a stale component while the new one streams.
     if (intent === "new") {
       setMessages([]);
       onLatestCode(null);
-      sendMessage({ text: trimmed });
+      sendMessage({ text: selPrefix + trimmed });
     } else {
       // "iterate" — inline the current code so the model has explicit context
       // about what it's modifying. Fall back to a plain message if there's
@@ -396,11 +428,16 @@ export function StudioChat({
             currentCode.trim(),
             "```",
             "",
-            "Request: " + trimmed,
+            selPrefix + "Request: " + trimmed,
           ].join("\n")
-        : trimmed;
+        : selPrefix + trimmed;
       sendMessage({ text });
     }
+
+    // Chip is single-shot: once we've sent, forget the selection so the next
+    // turn isn't accidentally pinned to the same element. The parent's state
+    // is authoritative; we ask it to clear.
+    onClearSelection?.();
 
     setInput("");
     scrollToBottom();
@@ -486,6 +523,15 @@ export function StudioChat({
           onChange={setIntent}
           hasCurrent={Boolean(currentCode)}
         />
+        {/* Selection chip — sits above the textarea when the user has picked
+            an element in the preview via the Select tool. The chip's × clears
+            the selection without affecting the current input. */}
+        {selection && (
+          <SelectionChip
+            selection={selection}
+            onClear={() => onClearSelection?.()}
+          />
+        )}
         {/* When the user is starting a new design mid-session, surface the
             templates again. We skip this on first load — the full-height
             EmptyState above already shows them. */}
@@ -989,6 +1035,57 @@ function TemplateChips({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Little pill that shows the element the user picked in the preview's select
+ * mode — e.g. `◎ <button> "Sign in" ×`. Sits above the textarea so it's
+ * visually attached to the prompt it will modify, and clears on send (see
+ * handleSend). The × is a secondary action — pressing it drops the selection
+ * without affecting whatever the user is typing.
+ *
+ * Label strategy:
+ *   - Prefer the element's trimmed innerText (`"Sign in"`) — most meaningful.
+ *   - Fall back to the tag (`<button>`) when the element has no text (icon
+ *     buttons, inputs, empty divs).
+ *   - Never show the raw outerHTML here — that's the model's concern, not the
+ *     user's. It rides through in the request body only.
+ */
+function SelectionChip({
+  selection,
+  onClear,
+}: {
+  selection: StudioSelection;
+  onClear: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10",
+        "px-2 py-0.5 text-[11px] text-primary-foreground w-fit max-w-full",
+        "text-foreground"
+      )}
+      title={`Selected <${selection.tag}> in preview — next message will target it`}
+    >
+      <MousePointerClick className="h-3 w-3 shrink-0 text-primary" />
+      <span className="font-mono text-[10px] opacity-70 shrink-0">
+        &lt;{selection.tag}&gt;
+      </span>
+      {selection.text && (
+        <span className="truncate min-w-0 opacity-90" title={selection.text}>
+          &ldquo;{selection.text}&rdquo;
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label="Clear selection"
+        className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors shrink-0"
+      >
+        <X className="h-3 w-3" />
+      </button>
     </div>
   );
 }

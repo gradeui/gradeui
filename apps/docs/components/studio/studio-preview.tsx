@@ -14,7 +14,7 @@
  */
 
 import * as React from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   SandpackProvider,
   SandpackLayout,
@@ -28,6 +28,7 @@ import {
   ExternalLink,
   Eye,
   Loader2,
+  MousePointerClick,
   Package,
   RotateCcw,
   Sparkles,
@@ -39,6 +40,7 @@ import {
   PLAYGROUND_DEPENDENCIES,
   PLAYGROUND_EXTERNAL_RESOURCES,
   prepareAppSource,
+  type StudioSelection,
 } from "@/lib/chat-sandpack";
 import { openInCodeSandboxNpm } from "@/lib/chat-export-npm";
 import type { GeneratedTheme } from "@/lib/themes";
@@ -80,6 +82,13 @@ interface StudioPreviewProps {
   /** True while the chat is generating a response. Drives the header
    *  spinner and the full-column placeholder when there's no code yet. */
   isStreaming?: boolean;
+  /** Current in-iframe element selection. Rendered here purely to gate the
+   *  "clear-selection" postMessage — the chat column owns the chip UI. Null
+   *  means "no selection; hide overlay". */
+  selection?: StudioSelection | null;
+  /** Fires when the user clicks an element in select mode. Parent should
+   *  stash this into design state so the chat column can show a chip. */
+  onSelect?: (selection: StudioSelection) => void;
   className?: string;
 }
 
@@ -90,6 +99,8 @@ export function StudioPreview({
   view,
   onViewChange,
   isStreaming = false,
+  selection = null,
+  onSelect,
   className,
 }: StudioPreviewProps) {
   // While streaming, render whatever we've parsed so far — even mid-fence
@@ -133,6 +144,88 @@ export function StudioPreview({
       }),
     [preparedSource, theme, mode]
   );
+
+  // ─── Element-selection bus ─────────────────────────────────────────
+  //
+  // The Sandpack iframe bundles a side-effect module (/selection-agent.ts,
+  // see PLAYGROUND_SELECTION_AGENT_TSX in chat-sandpack.ts) imported by
+  // /index.tsx. We talk to that agent via window.postMessage so the user
+  // can click an element in the preview and ship it back as a chat chip.
+  //
+  // Why a ref + querySelector instead of useSandpack():
+  //   - useSandpack() only works BELOW <SandpackProvider>. This component
+  //     owns the provider, so hooks here land above it — out of scope.
+  //   - Sandpack's provider doesn't expose the iframe ref in a stable
+  //     place across versions; grabbing the iframe via the container
+  //     once it's mounted is boring-and-reliable in a way hooks aren't.
+  //
+  // The iframe reloads on provider remount (we key SandpackErrorBoundary
+  // by source), so we also listen for the agent's `grade:agent-ready`
+  // ping and re-send the current select-mode / clear state whenever a
+  // fresh iframe reports in.
+  const previewContainerRef = useRef<HTMLDivElement | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+
+  const postToIframe = React.useCallback(
+    (payload: Record<string, unknown>) => {
+      const container = previewContainerRef.current;
+      if (!container) return;
+      const iframe = container.querySelector("iframe");
+      const win = iframe?.contentWindow;
+      if (!win) return;
+      try {
+        win.postMessage(payload, "*");
+      } catch {
+        // Cross-origin post can reject once the iframe origin locks down;
+        // swallow so a flaky frame doesn't blow up the studio.
+      }
+    },
+    []
+  );
+
+  // Push the current select-mode + selection state whenever either flips.
+  // Re-runs after the iframe reload as well, because the effect reattaches
+  // on provider remount and `postToIframe` resolves a fresh iframe each
+  // call.
+  useEffect(() => {
+    postToIframe({ type: "grade:select-mode", enabled: selectMode });
+  }, [selectMode, postToIframe]);
+
+  useEffect(() => {
+    if (!selection) {
+      postToIframe({ type: "grade:clear-selection" });
+    }
+  }, [selection, postToIframe]);
+
+  // Inbound bus: listen for `grade:selected` (user clicked an element) and
+  // `grade:agent-ready` (iframe booted — replay current state so a fresh
+  // reload inherits whatever we last wanted). Scoped to `window` because
+  // messages from the Sandpack iframe surface on the top-level window.
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      const type = (data as { type?: string }).type;
+      if (type === "grade:selected") {
+        const sel = (data as { selection?: StudioSelection }).selection;
+        if (sel && typeof sel === "object") {
+          onSelect?.(sel);
+          // Auto-exit select mode after a single capture so the user
+          // goes straight back to interacting with the preview. If they
+          // want to pick another element, they flip the toggle again.
+          setSelectMode(false);
+        }
+      } else if (type === "grade:agent-ready") {
+        // Fresh iframe booted — rehydrate it with our latest intent.
+        postToIframe({ type: "grade:select-mode", enabled: selectMode });
+        if (!selection) {
+          postToIframe({ type: "grade:clear-selection" });
+        }
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [onSelect, postToIframe, selectMode, selection]);
 
   // "Open as npm sandbox" — sibling export path that ships a CodeSandbox
   // project with @gradeui/ui pulled from npm (no inlined component blobs).
@@ -205,6 +298,28 @@ export function StudioPreview({
           <div className="mx-1 h-3 w-px bg-border" aria-hidden />
           <button
             type="button"
+            onClick={() => setSelectMode((v) => !v)}
+            disabled={!appSource || !canRender}
+            title={
+              selectMode
+                ? "Click an element in the preview to attach it to your next prompt"
+                : "Enable element select — click a component to comment on it"
+            }
+            aria-pressed={selectMode}
+            className={cn(
+              "flex items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors",
+              selectMode
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
+              "disabled:opacity-50 disabled:pointer-events-none"
+            )}
+          >
+            <MousePointerClick className="h-3 w-3" />
+            {selectMode ? "Pick…" : "Select"}
+          </button>
+          <div className="mx-1 h-3 w-px bg-border" aria-hidden />
+          <button
+            type="button"
             onClick={handleOpenNpm}
             disabled={!appSource || exportingNpm}
             title="Open in CodeSandbox using @gradeui/ui from npm"
@@ -225,7 +340,10 @@ export function StudioPreview({
         </div>
       </div>
 
-      <div className="relative flex-1 min-h-0">
+      <div
+        ref={previewContainerRef}
+        className="relative flex-1 min-h-0"
+      >
         {/*
           Sandpack is ALWAYS mounted — even before the first chat turn — so
           the bundle, npm installs, and CSS pipeline are already warm when

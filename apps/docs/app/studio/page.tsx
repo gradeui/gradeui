@@ -48,7 +48,10 @@ import {
   type ThemeInput,
 } from "@/lib/themes";
 import { cloneInput } from "@/lib/studio-state";
-import { ALLOWED_COMPONENTS } from "@/lib/chat-sandpack";
+import {
+  ALLOWED_COMPONENTS,
+  type StudioSelection,
+} from "@/lib/chat-sandpack";
 import {
   createDesign,
   initialDesigns,
@@ -145,6 +148,18 @@ export default function StudioPage() {
     Record<string, boolean>
   >({});
 
+  // Per-design preview selection — the element the user picked via the
+  // "Select" tool in the preview header. Lives up here (rather than inside
+  // StudioPreview or StudioChat) because BOTH columns need it:
+  //   - StudioPreview drives the in-iframe overlay state from it.
+  //   - StudioChat renders the selection chip + snapshots it into the
+  //     outgoing request body.
+  // Clearing happens on chip-×, on preview-toggle-off, and implicitly after
+  // send (StudioChat calls onClearSelection in handleSend).
+  const [selectionByDesign, setSelectionByDesign] = useState<
+    Record<string, StudioSelection | null>
+  >({});
+
   const [view, setView] = useState<"preview" | "code">("preview");
 
   const handleLatestCode = useCallback(
@@ -183,6 +198,20 @@ export default function StudioPage() {
     [activeId]
   );
 
+  const handleSelect = useCallback(
+    (selection: StudioSelection) => {
+      setSelectionByDesign((m) => ({ ...m, [activeId]: selection }));
+    },
+    [activeId]
+  );
+
+  const handleClearSelection = useCallback(() => {
+    setSelectionByDesign((m) => {
+      if (m[activeId] == null) return m; // already clear — no new ref needed
+      return { ...m, [activeId]: null };
+    });
+  }, [activeId]);
+
   const handleAddDesign = useCallback(() => {
     setDesigns((ds) => {
       const next = createDesign(ds.length);
@@ -215,6 +244,11 @@ export default function StudioPage() {
       setStreamingByDesign((s) => {
         if (!(id in s)) return s;
         const { [id]: _drop, ...rest } = s;
+        return rest;
+      });
+      setSelectionByDesign((m) => {
+        if (!(id in m)) return m;
+        const { [id]: _drop, ...rest } = m;
         return rest;
       });
     },
@@ -288,6 +322,8 @@ export default function StudioPage() {
               onStreamingChange={handleStreamingChange}
               onLatestCode={handleLatestCode}
               currentCode={activeDesign.appSource}
+              selection={selectionByDesign[activeId] ?? null}
+              onClearSelection={handleClearSelection}
             />
             <StudioThemedPreview
               previewKey={`preview-${activeId}`}
@@ -295,6 +331,8 @@ export default function StudioPage() {
               view={view}
               onViewChange={setView}
               isStreaming={Boolean(streamingByDesign[activeId])}
+              selection={selectionByDesign[activeId] ?? null}
+              onSelect={handleSelect}
             />
             <ThemeBuilderPanel />
           </div>
@@ -320,12 +358,16 @@ function StudioThemedPreview({
   view,
   onViewChange,
   isStreaming,
+  selection,
+  onSelect,
 }: {
   previewKey: string;
   appSource: string | null;
   view: "preview" | "code";
   onViewChange: (v: "preview" | "code") => void;
   isStreaming: boolean;
+  selection: StudioSelection | null;
+  onSelect: (selection: StudioSelection) => void;
 }) {
   const theme: GeneratedTheme = useGeneratedTheme();
   const [mode] = useThemeBuilderMode();
@@ -338,6 +380,8 @@ function StudioThemedPreview({
       view={view}
       onViewChange={onViewChange}
       isStreaming={isStreaming}
+      selection={selection}
+      onSelect={onSelect}
     />
   );
 }

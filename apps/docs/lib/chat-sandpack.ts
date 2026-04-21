@@ -13,6 +13,30 @@
 import { themeToCSSVars, type GeneratedTheme } from "@/lib/themes";
 
 // ─────────────────────────────────────────────────────────────────────
+// Selection agent wire types
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Shape the in-iframe selection agent ships back to the parent on click.
+ * Kept co-located with the agent string below so it's obvious when the wire
+ * format changes on one side but not the other.
+ *
+ *   - tag        lowercased tag name — e.g. "button"; used for the chip label
+ *   - text       trimmed + truncated innerText (≤120 chars); fallback chip label
+ *   - outerHTML  truncated outerHTML (≤500 chars) — embedded verbatim into the
+ *                system prompt so the model knows which DOM node the user is
+ *                pointing at
+ *   - rect       viewport-relative bounding rect (rounded ints); only used for
+ *                diagnostics / potential future overlay in parent
+ */
+export interface StudioSelection {
+  tag: string;
+  text: string;
+  outerHTML: string;
+  rect: { x: number; y: number; width: number; height: number };
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Snippet preparation
 // ─────────────────────────────────────────────────────────────────────
 
@@ -423,6 +447,233 @@ ${darkVars}
   </body>
 </html>`;
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// Selection agent — the small piece of logic that lives INSIDE the
+// Sandpack iframe and powers "click an element → chip in chat" flow in
+// /studio.
+//
+// HISTORY: this used to be a bare `<script>` tag injected into
+// /public/index.html. Moved into the JS bundle graph as a side-effect
+// module imported from /index.tsx because Sandpack's CRA runtime
+// (react-scripts 4) did not reliably preserve inline body scripts in
+// the remote iframe — the HTML round-trip worked for head-level
+// <script src=...> tags (Tailwind CDN loaded fine) but inline
+// IIFEs at the end of body were silently dropped, so the agent never
+// ran, the parent-to-iframe messages landed against a missing
+// listener, and the select pill did nothing. Bundling it guarantees
+// the code actually executes in the iframe.
+//
+// Protocol (window.postMessage, both directions):
+//
+//   parent → iframe
+//     { type: "grade:select-mode", enabled: boolean }
+//       Enter / leave selection mode. In select mode the agent paints a
+//       hover outline, swallows the next click, and ships the captured
+//       element's shape back up.
+//
+//     { type: "grade:clear-selection" }
+//       Drop any current outline without changing enabled state. Fires
+//       when the chat input's chip is X'd off.
+//
+//   iframe → parent
+//     { type: "grade:agent-ready" }
+//       One-shot ping at boot so the parent knows it's safe to start
+//       sending messages (otherwise the first toggle might land before
+//       the listener attaches).
+//
+//     { type: "grade:selected", selection: { tag, text, outerHTML, rect } }
+//       User clicked in select mode. `text` is a trimmed, truncated
+//       innerText (for the chat chip label). `outerHTML` is truncated
+//       to ~500 chars (the system prompt includes this verbatim so the
+//       model knows what the user is pointing at). `rect` is in viewport
+//       coords (not page coords — only used by the parent for debugging).
+//
+// The agent ignores clicks on <body>, <html>, and #root so the user
+// can't "select the whole frame". It also ignores its own overlay.
+// ─────────────────────────────────────────────────────────────────────
+
+const PLAYGROUND_SELECTION_AGENT_TSX = `// Runs once per iframe boot as a side-effect import from /index.tsx.
+// No React, no JSX — pure DOM + postMessage so the agent is up the
+// moment the bundle loads, independent of the React root's state.
+
+type SelectionPayload = {
+  tag: string;
+  text: string;
+  outerHTML: string;
+  rect: { x: number; y: number; width: number; height: number };
+};
+
+(function installSelectionAgent() {
+  // Guard against double-install (e.g. if HMR somehow re-runs this
+  // module). The agent holds document-level listeners; we don't want to
+  // double up on them.
+  const w = window as unknown as { __gradeSelectionAgentInstalled?: boolean };
+  if (w.__gradeSelectionAgentInstalled) return;
+  w.__gradeSelectionAgentInstalled = true;
+
+  let enabled = false;
+  let overlay: HTMLDivElement | null = null;
+  let lastHovered: Element | null = null;
+
+  function ensureOverlay(): HTMLDivElement {
+    if (overlay) return overlay;
+    overlay = document.createElement("div");
+    overlay.setAttribute("data-grade-selection-overlay", "");
+    overlay.style.cssText = [
+      "position:fixed",
+      "pointer-events:none",
+      "z-index:2147483647",
+      "border:2px solid oklch(var(--primary, 0.55 0.22 260))",
+      "background:oklch(var(--primary, 0.55 0.22 260) / 0.12)",
+      "border-radius:6px",
+      "box-shadow:0 0 0 1px oklch(var(--background, 1 0 0) / 0.5) inset",
+      "transition:left 80ms ease-out, top 80ms ease-out, width 80ms ease-out, height 80ms ease-out",
+      "display:none",
+    ].join(";");
+    // Body may not exist yet on early boot — defer append until ready.
+    if (document.body) {
+      document.body.appendChild(overlay);
+    } else {
+      document.addEventListener("DOMContentLoaded", () => {
+        if (overlay && !overlay.isConnected) document.body.appendChild(overlay);
+      });
+    }
+    return overlay;
+  }
+
+  function isIgnored(el: Element | null): boolean {
+    if (!el || el.nodeType !== 1) return true;
+    if (el === document.body || el === document.documentElement) return true;
+    if ((el as HTMLElement).id === "root") return true;
+    if (el.hasAttribute && el.hasAttribute("data-grade-selection-overlay"))
+      return true;
+    return false;
+  }
+
+  function positionOverlay(el: Element) {
+    const ov = ensureOverlay();
+    const rect = el.getBoundingClientRect();
+    ov.style.left = rect.left + "px";
+    ov.style.top = rect.top + "px";
+    ov.style.width = rect.width + "px";
+    ov.style.height = rect.height + "px";
+    ov.style.display = "block";
+  }
+
+  function hideOverlay() {
+    if (overlay) overlay.style.display = "none";
+  }
+
+  function serialize(el: Element): SelectionPayload {
+    const rect = el.getBoundingClientRect();
+    const rawText = (
+      (el as HTMLElement).innerText ||
+      el.textContent ||
+      ""
+    )
+      .replace(/\\s+/g, " ")
+      .trim();
+    const text = rawText.length > 120 ? rawText.slice(0, 120) + "…" : rawText;
+    let outer = el.outerHTML || "";
+    if (outer.length > 500) outer = outer.slice(0, 500) + "…";
+    return {
+      tag: el.tagName ? el.tagName.toLowerCase() : "",
+      text,
+      outerHTML: outer,
+      rect: {
+        x: Math.round(rect.left),
+        y: Math.round(rect.top),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      },
+    };
+  }
+
+  function onMouseOver(e: MouseEvent) {
+    if (!enabled) return;
+    const target = e.target as Element | null;
+    if (isIgnored(target)) return;
+    lastHovered = target;
+    positionOverlay(target!);
+  }
+
+  function onMouseOut(e: MouseEvent) {
+    if (!enabled) return;
+    if (e.target === lastHovered) hideOverlay();
+  }
+
+  function onClick(e: MouseEvent) {
+    if (!enabled) return;
+    const target = e.target as Element | null;
+    if (isIgnored(target)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    positionOverlay(target!);
+    try {
+      window.parent.postMessage(
+        { type: "grade:selected", selection: serialize(target!) },
+        "*"
+      );
+    } catch {
+      /* parent may be gone / cross-origin refusing — swallow */
+    }
+  }
+
+  function enable() {
+    if (enabled) return;
+    enabled = true;
+    document.documentElement.style.cursor = "crosshair";
+    document.addEventListener("mouseover", onMouseOver, true);
+    document.addEventListener("mouseout", onMouseOut, true);
+    document.addEventListener("click", onClick, true);
+  }
+
+  function disable() {
+    if (!enabled) return;
+    enabled = false;
+    document.documentElement.style.cursor = "";
+    document.removeEventListener("mouseover", onMouseOver, true);
+    document.removeEventListener("mouseout", onMouseOut, true);
+    document.removeEventListener("click", onClick, true);
+    hideOverlay();
+    lastHovered = null;
+  }
+
+  function clear() {
+    hideOverlay();
+    lastHovered = null;
+  }
+
+  window.addEventListener("message", (e: MessageEvent) => {
+    const data = e && (e.data as { type?: string; enabled?: boolean } | null);
+    if (!data || typeof data !== "object") return;
+    if (data.type === "grade:select-mode") {
+      if (data.enabled) enable();
+      else disable();
+    } else if (data.type === "grade:clear-selection") {
+      clear();
+    }
+  });
+
+  // Ping parent once now and again on DOM ready. The parent may have
+  // mounted its listener already (first ping wins), or we may have
+  // loaded before it did (DOMContentLoaded ping catches that case).
+  function ready() {
+    try {
+      window.parent.postMessage({ type: "grade:agent-ready" }, "*");
+    } catch {
+      /* ignore */
+    }
+  }
+  ready();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", ready);
+  }
+})();
+
+export {};
+`;
 
 export function buildPlaygroundStylesCss(lightVars: string, darkVars: string): string {
   return `:root {
@@ -1400,9 +1651,9 @@ export const ALLOWED_COMPONENTS = [
   "SelectContent",
   "SelectValue",
   "SelectItem",
+  // Date + Popover (shipped in @gradeui/ui@0.3.0)
   "DatePicker",
   "DateRangePicker",
-  // Date primitives — only needed when composing your own DatePicker trigger
   "Calendar",
   "Popover",
   "PopoverTrigger",
@@ -1510,6 +1761,12 @@ const PLAYGROUND_INDEX_TSX = [
   'import ReactDOM from "react-dom/client";',
   'import "@gradeui/ui/styles.css";',
   'import "./styles.css";',
+  // Side-effect import: installs the element-selection agent (hover
+  // outline, click capture, postMessage bus). Imported BEFORE the React
+  // root so the `grade:agent-ready` ping goes out the door as early as
+  // possible — the parent uses it to replay select-mode state across
+  // iframe remounts.
+  'import "./selection-agent";',
   'import ThemeOptionsApplier from "./theme-options";',
   'import App from "./App";',
   "",
@@ -1620,6 +1877,11 @@ export function buildSandpackFiles({
     // option values live in /theme-options.tsx instead — a component
     // module react-refresh can hot-patch in place when the panel changes.
     "/index.tsx": PLAYGROUND_INDEX_TSX,
+    // Element-selection agent — bundled side-effect module imported from
+    // /index.tsx. Lives in the JS graph (not /public/index.html) so it
+    // reliably runs inside Sandpack's cross-origin iframe; see the big
+    // comment above PLAYGROUND_SELECTION_AGENT_TSX for why.
+    "/selection-agent.ts": PLAYGROUND_SELECTION_AGENT_TSX,
     "/theme-options.tsx": buildPlaygroundThemeOptionsTsx(mode, components),
     "/styles.css": buildPlaygroundStylesCss(lightVars, darkVars),
     ...(extraFiles ?? {}),

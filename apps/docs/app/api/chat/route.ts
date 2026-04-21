@@ -54,6 +54,39 @@ function textFromMessages(messages: UIMessage[]): string {
   return chunks.join("\n");
 }
 
+/**
+ * Build the "TARGETED EDIT" system-prompt stanza for a user-picked element.
+ *
+ * Why a dedicated block and not just concatenation into the user turn:
+ *   - The user's visible message already shows a short marker (e.g.
+ *     `Selection: <button> "Sign in"`) — we don't need to repeat that
+ *     machinery in-thread.
+ *   - Putting the outerHTML in the SYSTEM slot means it doesn't get
+ *     replayed on every follow-up turn — each request only sees the
+ *     selection that matters *for this send*. Cleaner history, smaller
+ *     downstream prompts.
+ *   - The stanza speaks in imperatives the model will actually obey
+ *     ("locate the element below in the current JSX"). Burying the same
+ *     info in a user message produces fuzzier results in practice.
+ */
+function renderSelectionBlock(sel: RequestSelection | null | undefined): string {
+  if (!sel || typeof sel !== "object") return "";
+  const tag = (sel.tag || "").toString().slice(0, 30);
+  const text = (sel.text || "").toString().slice(0, 120);
+  const outer = (sel.outerHTML || "").toString().slice(0, 500);
+  if (!tag && !outer) return "";
+  return [
+    "TARGETED EDIT — the user is pointing at a specific element in the current preview.",
+    `Element tag: <${tag}>`,
+    text ? `Element text: "${text}"` : null,
+    outer ? `Element outerHTML (truncated):\n\`\`\`html\n${outer}\n\`\`\`` : null,
+    "",
+    "Interpret the user's request AS AN EDIT TO THIS ELEMENT specifically. Locate it inside the current JSX (by tag, text content, classes, and surrounding context) and modify it in place. Do not rewrite unrelated parts of the component. Still follow the OUTPUT RULES — regenerate the full component inside a single ```jsx fence; the targeted change is WHAT to modify, not HOW to format the response.",
+  ]
+    .filter((l): l is string => l !== null)
+    .join("\n");
+}
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -88,6 +121,23 @@ const OPENAI_COMPAT_CONFIG: Record<
   },
 };
 
+/**
+ * Element the studio user pointed at in the preview via the Select tool.
+ * The iframe agent ships this shape back to the parent on click, the parent
+ * forwards it through the chat transport body, and we glue a targeted-edit
+ * stanza onto the system prompt so the model knows what to modify.
+ *
+ * Wire-compatible with {@link StudioSelection} in `lib/chat-sandpack.ts` —
+ * duplicated here to keep the route importable from the server edge runtime
+ * without pulling in the browser-only playground helpers.
+ */
+interface RequestSelection {
+  tag: string;
+  text: string;
+  outerHTML: string;
+  rect: { x: number; y: number; width: number; height: number };
+}
+
 interface ChatRequestBody {
   messages: UIMessage[];
   provider: ProviderId;
@@ -99,6 +149,10 @@ interface ChatRequestBody {
    *  sees every component's variants/props at once. Callers that don't want
    *  the DS context (e.g. non-design surfaces) can pass `false`. */
   includeComponentRefs?: boolean;
+  /** Element the user pointed at in the Sandpack preview. Null / absent when
+   *  the user didn't use the Select tool for this turn — the model is then
+   *  expected to interpret the prompt against the whole component, as before. */
+  selection?: RequestSelection | null;
 }
 
 function resolveApiKey(provider: ProviderId, override?: string): string | undefined {
@@ -192,6 +246,7 @@ export async function POST(req: Request) {
     apiKey: overrideKey,
     systemPrompt,
     includeComponentRefs = true,
+    selection,
   } = body;
 
   if (!messages || !Array.isArray(messages)) {
@@ -261,11 +316,20 @@ export async function POST(req: Request) {
       relevant.length > 0
         ? renderComponentRefsBlock({ onlyFor: relevant })
         : "";
-    const finalSystem = refsBlock
-      ? systemPrompt
-        ? `${systemPrompt}\n\n${refsBlock}`
-        : refsBlock
-      : systemPrompt;
+
+    // Targeted-edit stanza — appended to the system prompt when the user
+    // used the Select tool in the preview. We paste the picked element's
+    // outerHTML verbatim so the model has something concrete to locate in
+    // the current JSX and modify, rather than having to guess which div
+    // the user meant. The "regenerate the FULL component" rule from the
+    // base system prompt still stands (this is v1 — full regen, not a
+    // diff); the stanza just narrows the model's attention.
+    const selectionBlock = renderSelectionBlock(selection);
+
+    const parts = [systemPrompt, refsBlock, selectionBlock].filter(
+      (s): s is string => Boolean(s && s.trim())
+    );
+    const finalSystem = parts.length > 0 ? parts.join("\n\n") : undefined;
 
     const result = streamText({
       model: buildModel(provider, model, apiKey),
