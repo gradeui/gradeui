@@ -16,7 +16,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { motion, AnimatePresence } from "framer-motion";
@@ -94,20 +94,42 @@ export function DesignChat({
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Rebuild the transport whenever settings change so the latest provider /
-  // model / apiKey flow through on the next sendMessage call. Using a ref
-  // would keep a stale closure, so we keep it in a const inside the render.
-  const transport = new DefaultChatTransport({
-    api: "/api/chat",
-    body: {
-      provider: settings.provider,
-      model: settings.model,
-      apiKey: settings.apiKey || undefined,
-      systemPrompt,
-      // Honour the same toggle on /chat that /studio exposes.
-      includeComponentRefs: settings.includeComponentRefs,
-    },
-  });
+  // CRITICAL: `useChat` builds its internal `Chat` instance (and captures the
+  // transport) ONCE on mount via `useRef(... new Chat(options))`. That ref
+  // never re-initialises, so any new transport we construct on subsequent
+  // renders gets discarded — the picker would change visually but the
+  // backend would keep hitting the original provider/model.
+  //
+  // Fix: use `prepareSendMessagesRequest` on the transport. It runs at
+  // REQUEST time (inside `transport.sendMessages`), not at render time — so
+  // we can stash the live settings + systemPrompt in a ref and the hook
+  // reads them on each send. Picker changes propagate cleanly; the transport
+  // (and `useChat`'s cached `Chat`) never need to change.
+  const settingsRef = useRef({ settings, systemPrompt });
+  settingsRef.current = { settings, systemPrompt };
+
+  const transportRef = useRef<DefaultChatTransport<UIMessage>>(undefined);
+  if (!transportRef.current) {
+    transportRef.current = new DefaultChatTransport<UIMessage>({
+      api: "/api/chat",
+      prepareSendMessagesRequest: ({ id, messages, trigger, messageId }) => {
+        const { settings: s, systemPrompt: sp } = settingsRef.current;
+        return {
+          body: {
+            id,
+            messages,
+            trigger,
+            messageId,
+            provider: s.provider,
+            model: s.model,
+            apiKey: s.apiKey || undefined,
+            systemPrompt: sp,
+            includeComponentRefs: s.includeComponentRefs,
+          },
+        };
+      },
+    });
+  }
 
   // `DefaultChatTransport` from `ai@6` has the right runtime shape but a
   // slightly different `UIMessageChunk` type than the one `@ai-sdk/react@2`
@@ -116,7 +138,15 @@ export function DesignChat({
   // — structural only; the wire format matches.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { messages, sendMessage, status, stop, error, setMessages } = useChat({
-    transport: transport as any,
+    // Throttle the messages callback. Fast providers (Groq, Cerebras) emit
+    // tokens quickly enough that every chunk triggers a deep render cascade
+    // inside the SDK (`replaceMessage` → new array + `structuredClone` →
+    // `useSyncExternalStore` → our effects → parent setState), tripping
+    // React's nested-update guard ("Maximum update depth exceeded"). Gemini
+    // was slow enough per-chunk that it never hit the limit. 50ms is ~20
+    // updates/sec — still feels live, no pile-up. See @ai-sdk/react line 61.
+    experimental_throttle: 50,
+    transport: transportRef.current as any,
   });
 
   const isStreaming = status === "streaming" || status === "submitted";
@@ -131,6 +161,8 @@ export function DesignChat({
   const handleSend = () => {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
+    // Transport's `prepareSendMessagesRequest` reads fresh settings from
+    // `settingsRef` at request time — no per-call body needed here.
     sendMessage({ text: trimmed });
     setInput("");
     scrollToBottom();
@@ -178,6 +210,8 @@ export function DesignChat({
           {error && (
             <ChatErrorBanner
               error={error}
+              provider={settings.provider}
+              model={settings.model}
               onDismiss={() => setMessages(messages)}
             />
           )}
@@ -386,12 +420,16 @@ function EmptyState({
  */
 function ChatErrorBanner({
   error,
+  provider,
+  model,
   onDismiss,
 }: {
   error: Error;
+  provider?: string;
+  model?: string;
   onDismiss: () => void;
 }) {
-  const human = humanizeChatError(error);
+  const human = humanizeChatError(error, { provider, model });
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }}
@@ -422,6 +460,11 @@ function ChatErrorBanner({
         {human.hint && (
           <p className="mt-1.5 text-xs text-muted-foreground/90 break-words [overflow-wrap:anywhere]">
             {human.hint}
+          </p>
+        )}
+        {(human.provider || human.model) && (
+          <p className="mt-2 text-[11px] font-mono text-muted-foreground/70">
+            {[human.provider, human.model].filter(Boolean).join(" · ")}
           </p>
         )}
       </div>

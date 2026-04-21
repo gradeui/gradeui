@@ -215,19 +215,52 @@ export function StudioChat({
   const [intent, setIntent] = useState<StudioIntent>("new");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const transport = new DefaultChatTransport({
-    api: "/api/chat",
-    body: {
-      provider: settings.provider,
-      model: settings.model,
-      apiKey: settings.apiKey || undefined,
-      systemPrompt,
-      // Mirror the user's toggle through to the server. When false, the
-      // chat route skips the component-reference block entirely — saving
-      // tokens at the cost of the model occasionally guessing prop names.
-      includeComponentRefs: settings.includeComponentRefs,
-    },
-  });
+  // CRITICAL: `useChat` builds its internal `Chat` (and captures the transport)
+  // ONCE at mount via `useRef`. Any transport we construct on subsequent
+  // renders gets discarded — so a literal `body: {...}` on the transport
+  // would pin provider/model to whatever was in the picker at mount, and
+  // subsequent picker changes wouldn't propagate.
+  //
+  // Fix: use `prepareSendMessagesRequest`, which the AI SDK invokes at
+  // REQUEST time (inside `transport.sendMessages`) — not at render time.
+  // We stash the live settings in a ref, and the hook reads `settingsRef.current`
+  // on each send. That keeps:
+  //   - the transport stable (one `Chat` instance per mount → no re-captures)
+  //   - the render chain pristine (no per-call body, no cascading deps on
+  //     `settings` / `systemPrompt` that would otherwise churn effects and
+  //     risk "Maximum update depth exceeded")
+  //   - picker changes live (the next send picks up the latest provider/model
+  //     from the ref, no matter how stale `useChat`'s cached transport is).
+  const settingsRef = useRef({ settings, systemPrompt });
+  settingsRef.current = { settings, systemPrompt };
+
+  const transportRef = useRef<DefaultChatTransport<UIMessage>>(undefined);
+  if (!transportRef.current) {
+    transportRef.current = new DefaultChatTransport<UIMessage>({
+      api: "/api/chat",
+      prepareSendMessagesRequest: ({ id, messages, trigger, messageId }) => {
+        const { settings: s, systemPrompt: sp } = settingsRef.current;
+        return {
+          body: {
+            id,
+            messages,
+            trigger,
+            messageId,
+            provider: s.provider,
+            model: s.model,
+            apiKey: s.apiKey || undefined,
+            systemPrompt: sp,
+            // Mirror the user's toggle through to the server. When false, the
+            // chat route skips the component-reference block entirely —
+            // saving tokens at the cost of the model occasionally guessing
+            // prop names.
+            includeComponentRefs: s.includeComponentRefs,
+          },
+        };
+      },
+    });
+  }
+  const transport = transportRef.current;
 
   // Freeze the seed messages at mount. If the parent's cache updates while
   // this chat is live (the common case — we ARE the producer of those
@@ -245,6 +278,19 @@ export function StudioChat({
   // (useChat otherwise recreates an empty `Chat` on mount even with the same id).
   const { messages, sendMessage, status, stop, error, setMessages } = useChat({
     id: chatId,
+    // Throttle the messages callback. Without this, fast providers (Groq,
+    // Cerebras) emit tokens quickly enough that every chunk triggers a
+    // render cascade: `ReactChatState.replaceMessage` makes a fresh array
+    // AND `structuredClone`s every message on every token, then fires the
+    // `useSyncExternalStore` subscriber, which re-runs our `onMessagesChange`
+    // / `onLatestCode` effects, which setState on the parent. React's
+    // nested-update guard trips at ~50 deep and we get "Maximum update
+    // depth exceeded". Gemini was slow enough per-chunk that the cascade
+    // completed before the next token arrived, so it never tripped.
+    // 50ms gives us ~20 UI updates/sec — still feels live, but the depth
+    // guard never sees a pile-up. See @ai-sdk/react dist index.mjs line 61:
+    // `throttleWaitMs ? throttle(onChange, throttleWaitMs) : onChange`.
+    experimental_throttle: 50,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     messages: seedRef.current as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -426,6 +472,8 @@ export function StudioChat({
           {error && (
             <ErrorBanner
               error={error}
+              provider={settings.provider}
+              model={settings.model}
               onDismiss={() => setMessages(messages)}
             />
           )}
@@ -781,12 +829,16 @@ function RefsChip({ info }: { info: RefsInfo }) {
  */
 function ErrorBanner({
   error,
+  provider,
+  model,
   onDismiss,
 }: {
   error: Error;
+  provider?: string;
+  model?: string;
   onDismiss: () => void;
 }) {
-  const human = humanizeChatError(error);
+  const human = humanizeChatError(error, { provider, model });
   return (
     <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-2.5 text-xs text-destructive min-w-0">
       <X className="h-3.5 w-3.5 mt-0.5 shrink-0" />
@@ -798,6 +850,11 @@ function ErrorBanner({
         {human.hint && (
           <p className="text-[11px] opacity-70 leading-snug break-words [overflow-wrap:anywhere]">
             {human.hint}
+          </p>
+        )}
+        {(human.provider || human.model) && (
+          <p className="pt-0.5 text-[10px] font-mono opacity-60 leading-snug">
+            {[human.provider, human.model].filter(Boolean).join(" · ")}
           </p>
         )}
       </div>

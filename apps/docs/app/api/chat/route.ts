@@ -4,7 +4,7 @@
  * Expected body:
  *   {
  *     messages: UIMessage[],              // AI SDK v6 useChat messages
- *     provider: "google" | "anthropic" | "openai",
+ *     provider: "google" | "anthropic" | "openai" | "groq" | "openrouter" | "cerebras",
  *     model: string,                      // model id, e.g. "gemini-2.5-flash"
  *     apiKey?: string,                    // BYOK override from the browser
  *     systemPrompt?: string               // injected from the client
@@ -20,6 +20,11 @@
  *     honoured. The createX() factories accept a config object.
  *   - `convertToModelMessages` strips UI-only metadata from parts before the
  *     SDK sends them upstream.
+ *   - Groq, OpenRouter, and Cerebras all expose OpenAI-compatible chat-
+ *     completion endpoints, so we reuse `createOpenAI` with a `baseURL`
+ *     override rather than pulling in three extra SDK packages. As long as
+ *     those endpoints keep their `/chat/completions` contract, we get
+ *     streaming + tool-calling for free.
  */
 
 import { streamText, convertToModelMessages, type UIMessage } from "ai";
@@ -52,7 +57,36 @@ function textFromMessages(messages: UIMessage[]): string {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-type ProviderId = "google" | "anthropic" | "openai";
+type ProviderId =
+  | "google"
+  | "anthropic"
+  | "openai"
+  | "groq"
+  | "openrouter"
+  | "cerebras";
+
+/**
+ * Env var + base URL lookup for the OpenAI-compatible providers. Keeps the
+ * switch statements below trivial and ensures the picker's `keyName` stays in
+ * sync with what the server actually reads.
+ */
+const OPENAI_COMPAT_CONFIG: Record<
+  "groq" | "openrouter" | "cerebras",
+  { envVar: string; baseURL: string }
+> = {
+  groq: {
+    envVar: "GROQ_API_KEY",
+    baseURL: "https://api.groq.com/openai/v1",
+  },
+  openrouter: {
+    envVar: "OPENROUTER_API_KEY",
+    baseURL: "https://openrouter.ai/api/v1",
+  },
+  cerebras: {
+    envVar: "CEREBRAS_API_KEY",
+    baseURL: "https://api.cerebras.ai/v1",
+  },
+};
 
 interface ChatRequestBody {
   messages: UIMessage[];
@@ -80,6 +114,25 @@ function resolveApiKey(provider: ProviderId, override?: string): string | undefi
       return process.env.ANTHROPIC_API_KEY;
     case "openai":
       return process.env.OPENAI_API_KEY;
+    case "groq":
+    case "openrouter":
+    case "cerebras":
+      return process.env[OPENAI_COMPAT_CONFIG[provider].envVar];
+  }
+}
+
+function envVarFor(provider: ProviderId): string {
+  switch (provider) {
+    case "google":
+      return "GOOGLE_GENERATIVE_AI_API_KEY";
+    case "anthropic":
+      return "ANTHROPIC_API_KEY";
+    case "openai":
+      return "OPENAI_API_KEY";
+    case "groq":
+    case "openrouter":
+    case "cerebras":
+      return OPENAI_COMPAT_CONFIG[provider].envVar;
   }
 }
 
@@ -96,6 +149,30 @@ function buildModel(provider: ProviderId, modelId: string, apiKey: string) {
     case "openai": {
       const openai = createOpenAI({ apiKey });
       return openai(modelId);
+    }
+    case "groq":
+    case "openrouter":
+    case "cerebras": {
+      const { baseURL } = OPENAI_COMPAT_CONFIG[provider];
+      // These three providers expose an OpenAI-compatible `/chat/completions`
+      // endpoint, so we reuse @ai-sdk/openai with a baseURL override. `name`
+      // is cosmetic — surfaces in stream error metadata so logs say "groq"
+      // instead of "openai".
+      //
+      // CRITICAL: call `.chat(modelId)` rather than `compat(modelId)`.
+      // In @ai-sdk/openai@2 the default `compat(id)` is `languageModel(id)`,
+      // which routes through OpenAI's newer `/v1/responses` endpoint. The
+      // compat providers mirror the shape of that URL (Groq exposes
+      // `api.groq.com/openai/v1/responses`) but their input validator only
+      // accepts the old chat/completions content format, so we get
+      // "Input contains unsupported content types or unsupported content
+      // fields" the moment the SDK serializes anything Responses-shaped.
+      // `.chat(id)` targets `/v1/chat/completions` — the contract all three
+      // of these providers actually implement end-to-end.
+      // See @ai-sdk/openai dist/index.d.ts: `chat(): LanguageModelV2` at
+      // line 369, `languageModel(): LanguageModelV2` at line 365.
+      const compat = createOpenAI({ apiKey, baseURL, name: provider });
+      return compat.chat(modelId);
     }
   }
 }
@@ -131,20 +208,37 @@ export async function POST(req: Request) {
   if (!apiKey) {
     return Response.json(
       {
-        error: `No API key for ${provider}. Paste one into the provider picker or set the ${
-          provider === "google"
-            ? "GOOGLE_GENERATIVE_AI_API_KEY"
-            : provider === "anthropic"
-              ? "ANTHROPIC_API_KEY"
-              : "OPENAI_API_KEY"
-        } env var.`,
+        error: `No API key for ${provider}. Paste one into the provider picker or set the ${envVarFor(
+          provider
+        )} env var.`,
       },
       { status: 400 }
     );
   }
 
   try {
-    const modelMessages = await convertToModelMessages(messages);
+    // Strip non-text UI parts from the history before conversion.
+    //
+    // Reasoning models (e.g. Groq's `openai/gpt-oss-120b`) emit `reasoning`
+    // parts alongside `text` during the assistant turn. Those parts get
+    // cached in the UIMessage history and replayed on every follow-up.
+    // `convertToModelMessages` passes them through to the model message,
+    // and Groq's OpenAI-compatible endpoint then rejects the request with
+    // "Input contains unsupported content types or unsupported content
+    // fields" — it only accepts plain text (and image) content on input,
+    // even though it happily emits reasoning on output.
+    //
+    // We're a text-only chat surface, so keeping only `text` parts is safe
+    // across every provider and silently drops anything exotic a future
+    // reasoning/tool-call model might introduce. If we ever add file
+    // uploads, extend the allow-list with `"file"` / `"image"`.
+    const sanitized = messages.map((m) => ({
+      ...m,
+      parts: (m.parts ?? []).filter(
+        (p: { type?: string }) => p?.type === "text"
+      ),
+    })) as UIMessage[];
+    const modelMessages = await convertToModelMessages(sanitized);
 
     // Build the component-reference block LAZILY from the current
     // conversation. We pull every message's text (the user's ask PLUS any
