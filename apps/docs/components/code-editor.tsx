@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Code, Eye, Columns, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PLAYGROUND_DEPENDENCIES, PLAYGROUND_EXTERNAL_RESOURCES } from "@/lib/chat-sandpack";
 
 type ViewMode = "preview" | "code" | "split" | "visual";
 
@@ -334,15 +335,10 @@ export function CodeEditor({
             template="react-ts"
             theme="dark"
             options={{
-              externalResources: ["https://cdn.tailwindcss.com"],
+              externalResources: [...PLAYGROUND_EXTERNAL_RESOURCES],
             }}
             customSetup={{
-              dependencies: {
-                "class-variance-authority": "^0.7.0",
-                "clsx": "^2.0.0",
-                "tailwind-merge": "^2.0.0",
-                "lucide-react": "^0.300.0",
-              },
+              dependencies: { ...PLAYGROUND_DEPENDENCIES },
               entry: "/index.tsx",
             }}
             files={{

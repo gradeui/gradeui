@@ -1,12 +1,12 @@
 "use client";
 
-import { useRampTheme } from "@/components/ramp-theme-provider";
+import { useGradeTheme } from "@/components/grade-theme-provider";
 import type { Ramp } from "@/lib/themes";
 import { useOklchHexes, formatOklch } from "@/lib/themes/oklch-to-hex";
 
 /**
  * Color tokens page — fully theme-aware. Pulls ramps + semantic tokens
- * from the active theme via useRampTheme(). Swap themes in the nav and
+ * from the active theme via useGradeTheme(). Swap themes in the nav and
  * every swatch + table row re-renders with the new palette.
  */
 
@@ -159,14 +159,14 @@ function SemanticRows({ rows, tokens }: { rows: SemanticRow[]; tokens: Record<st
 }
 
 export default function ColorsPage() {
-  const { theme } = useRampTheme();
+  const { theme } = useGradeTheme();
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="scroll-m-20 text-4xl font-bold tracking-tight">Colors</h1>
         <p className="text-lg text-muted-foreground mt-2">
-          Every color in Ramp DS comes from the active theme&apos;s three-hue
+          Every color in Grade DS comes from the active theme&apos;s three-hue
           OKLCH generator. Switch themes in the top nav to see these update
           live.
         </p>

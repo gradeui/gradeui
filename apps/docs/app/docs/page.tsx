@@ -16,7 +16,7 @@ export default function DocsPage() {
         </h2>
         <p className="leading-7">
           The Grade Design System is a collection of reusable components, design tokens,
-          and guidelines for building consistent, accessible interfaces across all Ramp
+          and guidelines for building consistent, accessible interfaces across all Grade
           products.
         </p>
       </div>

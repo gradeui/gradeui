@@ -163,3 +163,50 @@ export const FIXED_SEMANTIC: Record<"light" | "dark", {
 /** Absolute-white/black OKLCH triplets, used for card/popover surfaces. */
 export const PURE_WHITE: OKLCHTriplet = "1 0 0";
 export const PURE_BLACK: OKLCHTriplet = "0 0 0";
+
+/**
+ * Derive the `*-soft` / `*-deep` pair for a status colour — the paler tinted
+ * surface and the deeper on-surface text we use for Alert, Badge, and any
+ * future status banners.
+ *
+ * The hue is preserved so the derivative colours still feel like "that
+ * status colour". Chroma is trimmed on the soft variant (a very pale
+ * background with full chroma reads as neon) and lightness is retargeted:
+ *
+ *   - Light mode: soft ≈ 0.96 L / 0.25× chroma (a whisper of tint), deep
+ *     ≈ 0.38 L / full chroma (matches the 700-step of an implicit ramp).
+ *   - Dark mode:  soft ≈ 0.22 L / 0.45× chroma (sits just above the dark
+ *     background without becoming gray), deep ≈ 0.82 L / 0.9× chroma
+ *     (bright but not eye-watering on the tinted surface).
+ *
+ * Returns a pair of OKLCH triplets in the same "L C H" string form as the
+ * rest of the theme tokens.
+ */
+export function deriveAlertPair(
+  base: OKLCHTriplet,
+  mode: "light" | "dark"
+): { soft: OKLCHTriplet; deep: OKLCHTriplet } {
+  const [, c, h] = base.split(/\s+/).map((v) => v.trim());
+  const chroma = Number(c);
+  const hue = h;
+
+  if (mode === "light") {
+    const softL = 0.965;
+    const softC = Math.min(chroma * 0.22, 0.045);
+    const deepL = 0.38;
+    const deepC = chroma;
+    return {
+      soft: `${softL.toFixed(3)} ${softC.toFixed(3)} ${hue}`,
+      deep: `${deepL.toFixed(3)} ${deepC.toFixed(3)} ${hue}`,
+    };
+  }
+
+  const softL = 0.22;
+  const softC = Math.min(chroma * 0.45, 0.075);
+  const deepL = 0.82;
+  const deepC = chroma * 0.9;
+  return {
+    soft: `${softL.toFixed(3)} ${softC.toFixed(3)} ${hue}`,
+    deep: `${deepL.toFixed(3)} ${deepC.toFixed(3)} ${hue}`,
+  };
+}

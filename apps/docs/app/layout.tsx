@@ -19,9 +19,9 @@ import {
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import {
-  RampThemeProvider,
-  RAMP_PRE_HYDRATION_SCRIPT,
-} from "@/components/ramp-theme-provider";
+  GradeThemeProvider,
+  GRADE_PRE_HYDRATION_SCRIPT,
+} from "@/components/grade-theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { LenisProvider } from "@/components/lenis-provider";
 import { AuthProvider } from "@/components/auth-provider";
@@ -160,19 +160,19 @@ export default function RootLayout({
           next-themes.
         */}
         <script
-          dangerouslySetInnerHTML={{ __html: RAMP_PRE_HYDRATION_SCRIPT }}
+          dangerouslySetInnerHTML={{ __html: GRADE_PRE_HYDRATION_SCRIPT }}
         />
       </head>
       <body
         className={cn("min-h-screen bg-background font-sans antialiased")}
       >
         <AuthProvider>
-          <RampThemeProvider>
+          <GradeThemeProvider>
             <LenisProvider>
               {children}
             </LenisProvider>
             <Toaster />
-          </RampThemeProvider>
+          </GradeThemeProvider>
         </AuthProvider>
       </body>
     </html>

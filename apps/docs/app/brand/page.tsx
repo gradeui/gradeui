@@ -149,7 +149,7 @@ export default function BrandPage() {
               Brand Guidelines
             </h1>
             <p className="text-lg text-muted-foreground mt-2">
-              Visual identity, colors, typography, and voice guidelines for Ramp.
+              Visual identity, colors, typography, and voice guidelines for Grade.
             </p>
           </div>
 
@@ -206,7 +206,7 @@ export default function BrandPage() {
             <div className="rounded-lg border p-6 bg-muted/50">
               <h3 className="font-semibold mb-2">Usage Guidelines</h3>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• The logo consists of the circle symbol and the &quot;Ramp&quot; wordmark</li>
+                <li>• The logo consists of the circle symbol and the &quot;Grade&quot; wordmark</li>
                 <li>• Use dark text on light backgrounds, light text on dark backgrounds</li>
                 <li>• Maintain clear space around the logo equal to the height of the symbol</li>
                 <li>• Do not modify the logo colors or proportions</li>

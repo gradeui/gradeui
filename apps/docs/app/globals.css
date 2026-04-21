@@ -260,7 +260,7 @@
      Values are bare "L C H" triplets, wrapped at call-time with
      oklch(var(--x) / <alpha-value>) via tailwind.config.ts.
      These defaults mirror the Calm built-in theme (warm neutrals,
-     terracotta primary, serif typography). The RampThemeProvider
+     terracotta primary, serif typography). The GradeThemeProvider
      overrides them at runtime for theme switching.
      ---------------------------------------- */
   --background: 0.985 0.00225 40;          /* neutral 50 */
@@ -293,6 +293,21 @@
   --warning: 0.720 0.180 60;
   --info: 0.580 0.200 240;
   --highlight: 0.860 0.180 95;
+
+  /* Alert surface pairs — paler tinted surface + readable deep text for each
+     status colour. Pre-hydration fallbacks; the JS theme pipeline overwrites
+     these via lib/themes/oklch.ts#deriveAlertPair. Kept here so the Alert
+     component has the right tokens before the theme provider mounts. */
+  --destructive-soft: 0.965 0.045 27;
+  --destructive-deep: 0.380 0.220 27;
+  --success-soft: 0.965 0.040 145;
+  --success-deep: 0.380 0.180 145;
+  --warning-soft: 0.965 0.040 60;
+  --warning-deep: 0.380 0.180 60;
+  --info-soft: 0.965 0.044 240;
+  --info-deep: 0.380 0.200 240;
+  --highlight-soft: 0.965 0.040 95;
+  --highlight-deep: 0.380 0.180 95;
 }
 
 .dark {
@@ -323,12 +338,25 @@
   --warning: 0.800 0.180 60;
   --info: 0.700 0.200 240;
   --highlight: 0.880 0.180 95;
+
+  /* Alert surface pairs — dark-mode variant: tint sits just above the dark
+     background without going gray; deep text stays bright and readable. */
+  --destructive-soft: 0.220 0.075 27;
+  --destructive-deep: 0.820 0.198 27;
+  --success-soft: 0.220 0.075 145;
+  --success-deep: 0.820 0.162 145;
+  --warning-soft: 0.220 0.075 60;
+  --warning-deep: 0.820 0.162 60;
+  --info-soft: 0.220 0.075 240;
+  --info-deep: 0.820 0.180 240;
+  --highlight-soft: 0.220 0.075 95;
+  --highlight-deep: 0.820 0.162 95;
 }
 
 /* ============================================
    ENERGY THEME — scoped overrides.
    Engaged when data-ramp-theme="energy" is set on :root (either by the
-   pre-hydration inline script or RampThemeProvider). Mirrors the Energy
+   pre-hydration inline script or GradeThemeProvider). Mirrors the Energy
    built-in (hues all at 175, teal primary, Geist sans).
    ============================================ */
 :root[data-ramp-theme="energy"] {
@@ -413,7 +441,7 @@
 
 /* ============================================
    THEME-DRIVEN COMPONENT SHAPES
-   Keyed off data attributes that RampThemeProvider sets on <html>.
+   Keyed off data attributes that GradeThemeProvider sets on <html>.
    Each rule is an additive opt-in — themes that don't set a style get
    the component's default look.
    ============================================ */

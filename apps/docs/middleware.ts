@@ -12,7 +12,7 @@ export const config = {
     // - Next.js internals (/_next/*)
     // - Static files (*.*)
     // - Non-localized sections
-    "/((?!api|_next|_vercel|.*\\..*|docs|components|templates|blocks|brand|changelog|roadmap|play).*)",
+    "/((?!api|_next|_vercel|.*\\..*|docs|components|templates|blocks|brand|changelog|roadmap|play|chat|studio).*)",
     // Always run for root
     "/",
   ],

@@ -3,18 +3,18 @@
 import * as React from "react";
 import { Sun, SunDim, Moon, MoonStar } from "lucide-react";
 
-import { useMaybeRampTheme } from "@/components/ramp-theme-provider";
+import { useMaybeGradeTheme } from "@/components/grade-theme-provider";
 import { cn } from "@/lib/utils";
 import type { ModeName } from "@/lib/themes";
 
 /**
  * 4-way mode switcher. Segmented control: super-light / light / dark / super-dark.
  *
- * Renders nothing without a RampThemeProvider. Default layout is a compact
+ * Renders nothing without a GradeThemeProvider. Default layout is a compact
  * 4-icon row suitable for a header; the `variant="labeled"` form adds
  * text labels for settings pages.
  */
-export interface RampModeSwitcherProps {
+export interface GradeModeSwitcherProps {
   className?: string;
   variant?: "icons" | "labeled";
 }
@@ -31,8 +31,8 @@ const MODES: Array<{
   { mode: "superDark", label: "Super dark", icon: MoonStar, tooltip: "Super dark — OLED, high contrast" },
 ];
 
-export function RampModeSwitcher({ className, variant = "icons" }: RampModeSwitcherProps) {
-  const ctx = useMaybeRampTheme();
+export function GradeModeSwitcher({ className, variant = "icons" }: GradeModeSwitcherProps) {
+  const ctx = useMaybeGradeTheme();
   if (!ctx) return null;
   const { mode, setMode } = ctx;
 

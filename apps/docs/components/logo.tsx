@@ -63,7 +63,7 @@ export function Logo({
     );
   }
 
-  // Full logo - "Ramp" wordmark
+  // Full logo - "Grade" wordmark
   return (
     <span
       className={cn(
@@ -75,7 +75,7 @@ export function Logo({
         lineHeight: `${sizeConfig.height}px`,
       }}
     >
-      Ramp
+      Grade
     </span>
   );
 }

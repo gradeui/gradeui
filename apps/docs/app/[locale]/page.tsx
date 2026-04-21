@@ -46,7 +46,7 @@ export default function Home() {
 
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl max-w-4xl text-balance">
               The future is now.{" "}
-              <span className="text-primary">Build it</span> with Ramp.
+              <span className="text-primary">Build it</span> with Grade.
             </h1>
 
             <p className="max-w-[42rem] text-lg text-muted-foreground sm:text-xl text-pretty">

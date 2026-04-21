@@ -4,7 +4,7 @@ import type { ThemeInput } from "./types";
  * Built-in ThemeInputs. Every theme — built-in or user-built — is a
  * ThemeInput. Built-ins are just curated ones we ship as starting points.
  *
- * "Calm" is the canonical Ramp DS look: warm neutrals, terracotta primary,
+ * "Calm" is the canonical Grade DS look: warm neutrals, terracotta primary,
  * serif display + body, roomier spacing, rounded corners, pill buttons,
  * subtle shadows. "Energy" is a bolder alternate — teal primary, Geist
  * sans, tighter feel.
@@ -14,7 +14,7 @@ import type { ThemeInput } from "./types";
  */
 
 /**
- * Calm — the canonical Ramp DS theme.
+ * Calm — the canonical Grade DS theme.
  *
  * Warm neutral tint (~40° amber), terracotta primary (~20°), amber accent.
  * Serif display and body (Fraunces with its full variable weight range),

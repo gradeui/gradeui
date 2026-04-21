@@ -22,7 +22,7 @@ export default function ClaudeCodePage() {
         </p>
         <ul className="list-disc list-inside space-y-2 text-muted-foreground">
           <li>Use components from <code className="bg-muted px-1.5 py-0.5 rounded text-sm">@gradeui/ui</code></li>
-          <li>Follow Ramp design patterns and color tokens</li>
+          <li>Follow Grade design patterns and color tokens</li>
           <li>Avoid creating custom components when design system components exist</li>
           <li>Apply correct dark mode and accessibility practices</li>
         </ul>

@@ -9,7 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useMaybeRampTheme } from "@/components/ramp-theme-provider";
+import { useMaybeGradeTheme } from "@/components/grade-theme-provider";
 import { cn } from "@/lib/utils";
 import { builtInThemes, downloadThemeMarkdown } from "@/lib/themes";
 
@@ -17,11 +17,11 @@ import { builtInThemes, downloadThemeMarkdown } from "@/lib/themes";
  * Theme switcher — iterates every registered theme (built-in + user) and
  * lets you pick one. User themes get a delete button on hover.
  *
- * Renders nothing when no <RampThemeProvider> is mounted, so it's safe to
+ * Renders nothing when no <GradeThemeProvider> is mounted, so it's safe to
  * drop into any layout.
  */
-export function RampThemeSwitcher({ className }: { className?: string }) {
-  const ctx = useMaybeRampTheme();
+export function GradeThemeSwitcher({ className }: { className?: string }) {
+  const ctx = useMaybeGradeTheme();
   if (!ctx) return null;
 
   const { theme, themes, setThemeId, deleteTheme } = ctx;

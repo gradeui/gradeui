@@ -46,7 +46,7 @@ export default {
 
 ## Theme engine
 
-`@gradeui/ui` ships an OKLCH-based theme generator. Wrap your app in `GradeThemeProvider` (currently still named `RampThemeProvider` pending rename — see upstream TODO) to get runtime theme switching.
+`@gradeui/ui` ships an OKLCH-based theme generator. Wrap your app in `GradeThemeProvider` (currently still named `GradeThemeProvider` pending rename — see upstream TODO) to get runtime theme switching.
 
 ## License
 

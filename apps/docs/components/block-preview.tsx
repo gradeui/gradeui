@@ -57,9 +57,9 @@ export function BlockPreview({ blockId, className }: BlockPreviewProps) {
             className="w-full max-w-3xl mx-auto"
           >
             <AccordionItem value="1">
-              <AccordionTrigger>What is Ramp?</AccordionTrigger>
+              <AccordionTrigger>What is Grade?</AccordionTrigger>
               <AccordionContent>
-                Ramp is a comprehensive energy management platform that helps you
+                Grade is a comprehensive energy management platform that helps you
                 monitor, optimize, and control your energy systems from a single
                 dashboard.
               </AccordionContent>

@@ -48,12 +48,12 @@ export function generateRSSFeed(): string {
     link: `${SITE_URL}/changelog`,
     language: "en",
     favicon: `${SITE_URL}/favicon.ico`,
-    copyright: `Copyright ${new Date().getFullYear()} Ramp`,
+    copyright: `Copyright ${new Date().getFullYear()} Grade`,
     feedLinks: {
       rss2: `${SITE_URL}/changelog.xml`,
     },
     author: {
-      name: "Ramp",
+      name: "Grade",
       link: "https://gradeui.com",
     },
   });
@@ -84,12 +84,12 @@ export function generateAtomFeed(): string {
     link: `${SITE_URL}/changelog`,
     language: "en",
     favicon: `${SITE_URL}/favicon.ico`,
-    copyright: `Copyright ${new Date().getFullYear()} Ramp`,
+    copyright: `Copyright ${new Date().getFullYear()} Grade`,
     feedLinks: {
       atom: `${SITE_URL}/changelog.atom`,
     },
     author: {
-      name: "Ramp",
+      name: "Grade",
       link: "https://gradeui.com",
     },
   });

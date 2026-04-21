@@ -25,7 +25,7 @@ import {
  * model continue to work.
  *
  * First-paint behaviour is driven by the inline pre-hydration script in
- * app/layout.tsx (see RAMP_PRE_HYDRATION_SCRIPT below), which reads
+ * app/layout.tsx (see GRADE_PRE_HYDRATION_SCRIPT below), which reads
  * localStorage + prefers-color-scheme before React hydrates.
  */
 
@@ -50,7 +50,7 @@ const DARK_MODES: ReadonlySet<ModeName> = new Set(["dark", "superDark"]);
  * NOTE: this string is embedded directly into the <head> via
  * dangerouslySetInnerHTML. Keep it self-contained and dependency-free.
  */
-export const RAMP_PRE_HYDRATION_SCRIPT = `
+export const GRADE_PRE_HYDRATION_SCRIPT = `
 (function() {
   try {
     var mode = localStorage.getItem('${STORAGE_MODE_KEY}');
@@ -68,7 +68,7 @@ export const RAMP_PRE_HYDRATION_SCRIPT = `
 })();
 `;
 
-type RampThemeContextValue = {
+type GradeThemeContextValue = {
   /** The currently active theme object. */
   theme: GeneratedTheme;
   /** The active theme's id. */
@@ -92,19 +92,19 @@ type RampThemeContextValue = {
   refresh: () => void;
 };
 
-const RampThemeContext = React.createContext<RampThemeContextValue | null>(null);
+const GradeThemeContext = React.createContext<GradeThemeContextValue | null>(null);
 
-export interface RampThemeProviderProps {
+export interface GradeThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: string;
   defaultMode?: ModeName;
 }
 
-export function RampThemeProvider({
+export function GradeThemeProvider({
   children,
   defaultTheme = defaultThemeId,
   defaultMode = "light",
-}: RampThemeProviderProps) {
+}: GradeThemeProviderProps) {
   // SSR-safe defaults; the real values come from localStorage on mount.
   const [themeId, setThemeIdState] = React.useState<string>(defaultTheme);
   const [mode, setModeState] = React.useState<ModeName>(defaultMode);
@@ -189,7 +189,7 @@ export function RampThemeProvider({
     setRevision((r) => r + 1);
   }, []);
 
-  const value = React.useMemo<RampThemeContextValue>(() => {
+  const value = React.useMemo<GradeThemeContextValue>(() => {
     const theme = getTheme(themeId) ?? getTheme(defaultThemeId)!;
     return {
       theme,
@@ -206,24 +206,24 @@ export function RampThemeProvider({
   }, [themeId, mode, revision, setThemeId, setMode, saveAndActivate, deleteTheme, refresh]);
 
   return (
-    <RampThemeContext.Provider value={value}>
+    <GradeThemeContext.Provider value={value}>
       {children}
-    </RampThemeContext.Provider>
+    </GradeThemeContext.Provider>
   );
 }
 
-/** Read the active theme + mode. Must be used inside <RampThemeProvider>. */
-export function useRampTheme(): RampThemeContextValue {
-  const ctx = React.useContext(RampThemeContext);
+/** Read the active theme + mode. Must be used inside <GradeThemeProvider>. */
+export function useGradeTheme(): GradeThemeContextValue {
+  const ctx = React.useContext(GradeThemeContext);
   if (!ctx) {
     throw new Error(
-      "useRampTheme must be used inside <RampThemeProvider>. Wrap your app (typically in app/layout.tsx)."
+      "useGradeTheme must be used inside <GradeThemeProvider>. Wrap your app (typically in app/layout.tsx)."
     );
   }
   return ctx;
 }
 
 /** Safe variant — returns null outside a provider instead of throwing. */
-export function useMaybeRampTheme(): RampThemeContextValue | null {
-  return React.useContext(RampThemeContext);
+export function useMaybeGradeTheme(): GradeThemeContextValue | null {
+  return React.useContext(GradeThemeContext);
 }

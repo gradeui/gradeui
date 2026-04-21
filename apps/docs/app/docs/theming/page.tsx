@@ -1,12 +1,12 @@
 "use client";
 
-import { useMaybeRampTheme } from "@/components/ramp-theme-provider";
-import { RampModeSwitcher } from "@/components/ramp-mode-switcher";
+import { useMaybeGradeTheme } from "@/components/grade-theme-provider";
+import { GradeModeSwitcher } from "@/components/grade-mode-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Palette } from "lucide-react";
 
 export default function ThemingPage() {
-  const ramp = useMaybeRampTheme();
+  const ramp = useMaybeGradeTheme();
 
   return (
     <div className="space-y-10">
@@ -15,7 +15,7 @@ export default function ThemingPage() {
           Theming
         </h1>
         <p className="text-lg text-muted-foreground mt-2">
-          Every theme in Ramp DS — built-in or user-built — flows through a
+          Every theme in Grade DS — built-in or user-built — flows through a
           single generator that turns three hues plus a handful of presets
           into a complete OKLCH-based design language.
         </p>
@@ -33,7 +33,7 @@ export default function ThemingPage() {
           typography, spacing, radius, and effects presets. The generator
           composes three 11-stop <strong>OKLCH</strong> ramps, derives
           semantic tokens, and resolves everything else into concrete CSS
-          values. <code className="bg-muted px-1 py-0.5 rounded text-sm">RampThemeProvider</code>{" "}
+          values. <code className="bg-muted px-1 py-0.5 rounded text-sm">GradeThemeProvider</code>{" "}
           applies that output to <code className="bg-muted px-1 py-0.5 rounded text-sm">:root</code>{" "}
           at runtime — every component re-skins without a single line of
           component code changing.
@@ -51,7 +51,7 @@ export default function ThemingPage() {
           Light and dark
         </h2>
         <p className="leading-7">
-          Ramp DS ships its own mode system — no{" "}
+          Grade DS ships its own mode system — no{" "}
           <code className="bg-muted px-1 py-0.5 rounded text-sm">next-themes</code>{" "}
           dependency. The user-facing choice is a binary light / dark toggle.
           Internally, the generator produces four brightness tiers —
@@ -73,7 +73,7 @@ export default function ThemingPage() {
             <div className="text-xs text-muted-foreground mb-1">
               Full 4-way (used internally; exposed in the builder)
             </div>
-            <RampModeSwitcher />
+            <GradeModeSwitcher />
           </div>
         </div>
         <p className="leading-7 text-sm text-muted-foreground">
@@ -190,17 +190,17 @@ export const myTheme: ThemeInput = {
         </div>
         <p className="leading-7">
           Activate it via the{" "}
-          <code className="bg-muted px-1 py-0.5 rounded text-sm">useRampTheme()</code>{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">useGradeTheme()</code>{" "}
           hook — it persists to{" "}
           <code className="bg-muted px-1 py-0.5 rounded text-sm">localStorage</code>{" "}
           and appears in the theme switcher automatically.
         </p>
       </section>
 
-      {/* useRampTheme hook */}
+      {/* useGradeTheme hook */}
       <section className="space-y-4">
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
-          The useRampTheme hook
+          The useGradeTheme hook
         </h2>
         <p className="leading-7">
           Read and mutate the active theme + mode from any client component.
@@ -208,7 +208,7 @@ export const myTheme: ThemeInput = {
         <div className="rounded-lg bg-muted border p-4 font-mono text-sm overflow-x-auto">
           <pre>
             <code>{`"use client";
-import { useRampTheme } from "@gradeui/ui";
+import { useGradeTheme } from "@gradeui/ui";
 
 export function ThemeToolbar() {
   const {
@@ -221,7 +221,7 @@ export function ThemeToolbar() {
     themes,         // GeneratedTheme[] — all built-ins + user themes
     saveAndActivate,// (ThemeInput) => void — save + activate in one step
     deleteTheme,    // (id) => void — no-op on built-ins
-  } = useRampTheme();
+  } = useGradeTheme();
 
   return (
     <div>
@@ -332,8 +332,8 @@ export function ThemeToolbar() {
           <pre>
             <code>{`// app/layout.tsx
 import {
-  RampThemeProvider,
-  RAMP_PRE_HYDRATION_SCRIPT,
+  GradeThemeProvider,
+  GRADE_PRE_HYDRATION_SCRIPT,
 } from "@gradeui/ui";
 import "@gradeui/ui/styles.css";  // MUST be imported first
 
@@ -343,13 +343,13 @@ export default function RootLayout({ children }) {
       <head>
         {/* No-FOUC inline script — reads localStorage + system preference */}
         <script
-          dangerouslySetInnerHTML={{ __html: RAMP_PRE_HYDRATION_SCRIPT }}
+          dangerouslySetInnerHTML={{ __html: GRADE_PRE_HYDRATION_SCRIPT }}
         />
       </head>
       <body>
-        <RampThemeProvider>
+        <GradeThemeProvider>
           {children}
-        </RampThemeProvider>
+        </GradeThemeProvider>
       </body>
     </html>
   );

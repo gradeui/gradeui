@@ -711,7 +711,7 @@ export default function AIAssistant() {
   const messages = [
     { role: "assistant", content: "Hello! I'm your DS assistant. How can I help you explore the design system today?" },
     { role: "user", content: "Show me the Card component examples" },
-    { role: "assistant", content: "Sure — here are a few Card examples with different header, content, and footer layouts. Cards respect the active theme so they re-skin when you switch from Ramp to Paper." },
+    { role: "assistant", content: "Sure — here are a few Card examples with different header, content, and footer layouts. Cards respect the active theme so they re-skin when you switch from Grade to Paper." },
     { role: "user", content: "How do I define a custom theme?" },
     { role: "assistant", content: "A theme is a ThemeInput object — three hues plus a handful of typography, spacing, and radius presets. The generator turns those into a full OKLCH-based palette. You can save custom themes to localStorage from the theme builder." },
   ]
@@ -984,7 +984,7 @@ export default function ProductLanding() {
             {
               icon: <Quote className="h-5 w-5 text-primary" />,
               title: "Incredible ROI",
-              description: "\\"We cut design-to-ship time by 40% in the first quarter. Ramp DS paid for itself immediately.\\"",
+              description: "\\"We cut design-to-ship time by 40% in the first quarter. Grade DS paid for itself immediately.\\"",
               footer: (
                 <div className="space-y-1">
                   <p className="font-semibold text-sm">Michael Chen</p>
@@ -1308,7 +1308,7 @@ export default function PricingPage() {
         alignment="center"
         fullBleed
         title="Start shipping faster today"
-        subtitle="Join teams shipping with Ramp DS"
+        subtitle="Join teams shipping with Grade DS"
         cta1={{ text: "Start Free Trial", variant: "secondary", href: "#" }}
         cta2={{ text: "Contact Sales", variant: "outline", href: "#" }}
       />

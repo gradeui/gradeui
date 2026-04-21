@@ -162,15 +162,15 @@ export { LenisProvider } from "../components/lenis-provider";
 
 // Theme system — runtime skinning (OKLCH generator-based)
 export {
-  RampThemeProvider,
-  useRampTheme,
-  useMaybeRampTheme,
-  RAMP_PRE_HYDRATION_SCRIPT,
+  GradeThemeProvider,
+  useGradeTheme,
+  useMaybeGradeTheme,
+  GRADE_PRE_HYDRATION_SCRIPT,
   ALL_MODES,
-  type RampThemeProviderProps,
-} from "../components/ramp-theme-provider";
-export { RampThemeSwitcher } from "../components/ramp-theme-switcher";
-export { RampModeSwitcher } from "../components/ramp-mode-switcher";
+  type GradeThemeProviderProps,
+} from "../components/grade-theme-provider";
+export { GradeThemeSwitcher } from "../components/grade-theme-switcher";
+export { GradeModeSwitcher } from "../components/grade-mode-switcher";
 export { ThemeToggle } from "../components/theme-toggle";
 export {
   // Generator + core

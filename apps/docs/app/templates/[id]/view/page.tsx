@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import {
   SandpackProvider,
   SandpackLayout,
@@ -10,13 +9,16 @@ import {
   SandpackPreview,
   useSandpack,
 } from "@codesandbox/sandpack-react";
-import { Button } from "@/components/ui/button";
 import { getTemplateById } from "@/lib/templates-list";
 import { getTemplateCode } from "@/lib/template-code";
-import { standardComponentFiles } from "@/components/code-editor";
 import { ArrowLeft, Save, FolderOpen, Trash2, X } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useGradeTheme } from "@/components/grade-theme-provider";
+import {
+  buildSandpackFiles,
+  PLAYGROUND_DEPENDENCIES,
+  PLAYGROUND_EXTERNAL_RESOURCES,
+} from "@/lib/chat-sandpack";
 
 interface TemplateViewPageProps {
   params: Promise<{
@@ -124,6 +126,32 @@ export default function TemplateViewPage({ params }: TemplateViewPageProps) {
   const [sandpackKey, setSandpackKey] = useState(0);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   const [activeEdit, setActiveEdit] = useState<SavedTemplate | null>(null);
+
+  // Drive the preview with the site-wide Grade theme — templates preview in
+  // whichever theme the user picked in the nav, exactly like /play and
+  // /studio. Previously this route had a hand-rolled styles.css with
+  // HSL-formatted tokens wrapped in oklch(), which produced invalid colours
+  // and rendered as unstyled black-on-white.
+  const { theme: activeTheme, isDark } = useGradeTheme();
+  const mode = isDark ? "dark" : "light";
+
+  const sandpackFiles = useMemo(
+    () =>
+      buildSandpackFiles({
+        appSource: currentCode,
+        appSourceIsPrepared: true,
+        theme: activeTheme,
+        mode,
+      }),
+    [activeTheme, mode, currentCode]
+  );
+
+  // Rebuild the iframe when the user flips mode — Sandpack doesn't
+  // hot-replace public/index.html, and that's where the html.dark class
+  // comes from.
+  useEffect(() => {
+    setSandpackKey((k) => k + 1);
+  }, [mode]);
 
   // Load saved edits from localStorage on mount
   useEffect(() => {
@@ -305,114 +333,13 @@ export default function TemplateViewPage({ params }: TemplateViewPageProps) {
             template="react-ts"
             theme="dark"
             options={{
-              externalResources: ["https://cdn.tailwindcss.com"],
+              externalResources: [...PLAYGROUND_EXTERNAL_RESOURCES],
             }}
             customSetup={{
-              dependencies: {
-                "class-variance-authority": "^0.7.0",
-                "clsx": "^2.0.0",
-                "tailwind-merge": "^2.0.0",
-                "lucide-react": "^0.300.0",
-              },
+              dependencies: { ...PLAYGROUND_DEPENDENCIES },
               entry: "/index.tsx",
             }}
-            files={{
-              "/App.tsx": currentCode,
-              "/public/index.html": [
-                '<!DOCTYPE html>',
-                '<html lang="en">',
-                '  <head>',
-                '    <meta charset="UTF-8">',
-                '    <meta name="viewport" content="width=device-width, initial-scale=1.0">',
-                '    <title>Template Preview</title>',
-                '    <script src="https://cdn.tailwindcss.com"></script>',
-                '    <script>',
-                '      tailwind.config = {',
-                '        theme: {',
-                '          extend: {',
-                '            colors: {',
-                '              border: "oklch(var(--border))",',
-                '              input: "oklch(var(--input))",',
-                '              ring: "oklch(var(--ring))",',
-                '              background: "oklch(var(--background))",',
-                '              foreground: "oklch(var(--foreground))",',
-                '              primary: { DEFAULT: "oklch(var(--primary))", foreground: "oklch(var(--primary-foreground))" },',
-                '              secondary: { DEFAULT: "oklch(var(--secondary))", foreground: "oklch(var(--secondary-foreground))" },',
-                '              destructive: { DEFAULT: "oklch(var(--destructive))", foreground: "oklch(var(--destructive-foreground))" },',
-                '              muted: { DEFAULT: "oklch(var(--muted))", foreground: "oklch(var(--muted-foreground))" },',
-                '              accent: { DEFAULT: "oklch(var(--accent))", foreground: "oklch(var(--accent-foreground))" },',
-                '              card: { DEFAULT: "oklch(var(--card))", foreground: "oklch(var(--card-foreground))" },',
-                '            },',
-                '            borderRadius: {',
-                '              lg: "var(--radius)",',
-                '              md: "calc(var(--radius) - 2px)",',
-                '              sm: "calc(var(--radius) - 4px)",',
-                '            },',
-                '          },',
-                '        },',
-                '      }',
-                '    </script>',
-                '  </head>',
-                '  <body>',
-                '    <div id="root"></div>',
-                '  </body>',
-                '</html>',
-              ].join('\n'),
-              "/index.tsx": [
-                'import React from "react";',
-                'import ReactDOM from "react-dom/client";',
-                'import App from "./App";',
-                'import "./styles.css";',
-                "",
-                'ReactDOM.createRoot(document.getElementById("root")!).render(<App />);',
-              ].join('\n'),
-              "/styles.css": [
-                ':root {',
-                '  --background: 0 0% 100%;',
-                '  --foreground: 240 10% 3.9%;',
-                '  --card: 0 0% 100%;',
-                '  --card-foreground: 240 10% 3.9%;',
-                '  --primary: 175 84% 32%;',
-                '  --primary-foreground: 0 0% 100%;',
-                '  --secondary: 240 4.8% 95.9%;',
-                '  --secondary-foreground: 240 5.9% 10%;',
-                '  --muted: 240 4.8% 95.9%;',
-                '  --muted-foreground: 240 3.8% 46.1%;',
-                '  --accent: 175 40% 94%;',
-                '  --accent-foreground: 240 5.9% 10%;',
-                '  --destructive: 0 84.2% 60.2%;',
-                '  --destructive-foreground: 0 0% 98%;',
-                '  --border: 240 5.9% 90%;',
-                '  --input: 240 5.9% 90%;',
-                '  --ring: 175 84% 32%;',
-                '  --radius: 0.5rem;',
-                '}',
-                '*, *::before, *::after { box-sizing: border-box; border-color: oklch(var(--border)); }',
-                'body { background-color: oklch(var(--background)); color: oklch(var(--foreground)); font-family: system-ui, -apple-system, sans-serif; margin: 0; }',
-                '.bg-primary { background-color: oklch(var(--primary)); }',
-                '.text-primary { color: oklch(var(--primary)); }',
-                '.text-primary-foreground { color: oklch(var(--primary-foreground)); }',
-                '.bg-secondary { background-color: oklch(var(--secondary)); }',
-                '.text-secondary-foreground { color: oklch(var(--secondary-foreground)); }',
-                '.bg-destructive { background-color: oklch(var(--destructive)); }',
-                '.text-destructive { color: oklch(var(--destructive)); }',
-                '.text-destructive-foreground { color: oklch(var(--destructive-foreground)); }',
-                '.bg-muted { background-color: oklch(var(--muted)); }',
-                '.text-muted-foreground { color: oklch(var(--muted-foreground)); }',
-                '.bg-accent { background-color: oklch(var(--accent)); }',
-                '.text-accent-foreground { color: oklch(var(--accent-foreground)); }',
-                '.bg-card { background-color: oklch(var(--card)); }',
-                '.text-card-foreground { color: oklch(var(--card-foreground)); }',
-                '.bg-background { background-color: oklch(var(--background)); }',
-                '.text-foreground { color: oklch(var(--foreground)); }',
-                '.border-input { border-color: oklch(var(--input)); }',
-                '.ring-ring { --tw-ring-color: oklch(var(--ring)); }',
-                '.rounded-lg { border-radius: var(--radius); }',
-                '.rounded-md { border-radius: calc(var(--radius) - 2px); }',
-                '.rounded-sm { border-radius: calc(var(--radius) - 4px); }',
-              ].join('\n'),
-              ...standardComponentFiles,
-            }}
+            files={sandpackFiles}
           >
             <EditorTitleBar
               templateName={template.name}

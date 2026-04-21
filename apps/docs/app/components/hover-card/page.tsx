@@ -78,7 +78,7 @@ export default function HoverCardPage() {
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold">John Doe</h4>
                   <p className="text-sm text-muted-foreground">
-                    Product Designer at Ramp
+                    Product Designer at Grade
                   </p>
                   <div className="flex gap-4 pt-2 text-xs text-muted-foreground">
                     <span>12 projects</span>

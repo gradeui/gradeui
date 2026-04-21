@@ -42,7 +42,7 @@ export default function FormsPatternPage() {
       <div>
         <h1 className="scroll-m-20 text-4xl font-bold tracking-tight">Form Patterns</h1>
         <p className="text-lg text-muted-foreground mt-2">
-          Best practices and patterns for building forms with the Ramp design system.
+          Best practices and patterns for building forms with the Grade design system.
         </p>
       </div>
 

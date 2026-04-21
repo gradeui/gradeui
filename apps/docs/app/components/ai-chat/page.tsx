@@ -10,13 +10,13 @@ const sampleMessages: ChatMessage[] = [
   {
     id: "1",
     role: "user",
-    content: "What's the primary color in the Ramp theme?",
+    content: "What's the primary color in the Grade theme?",
     timestamp: new Date(Date.now() - 60000),
   },
   {
     id: "2",
     role: "assistant",
-    content: "The Ramp theme uses **teal** as the primary color:\n\n- Light mode: `hsl(175 84% 32%)` — deep teal\n- Dark mode: `hsl(175 80% 45%)` — brighter teal\n\nYou can reference it in components with the `--primary` CSS variable or Tailwind's `text-primary` / `bg-primary` utilities. It's also used for focus rings, links, and the `default` button variant.",
+    content: "The Grade theme uses **teal** as the primary color:\n\n- Light mode: `hsl(175 84% 32%)` — deep teal\n- Dark mode: `hsl(175 80% 45%)` — brighter teal\n\nYou can reference it in components with the `--primary` CSS variable or Tailwind's `text-primary` / `bg-primary` utilities. It's also used for focus rings, links, and the `default` button variant.",
     timestamp: new Date(Date.now() - 55000),
   },
   {
@@ -28,7 +28,7 @@ const sampleMessages: ChatMessage[] = [
   {
     id: "4",
     role: "assistant",
-    content: "Two options:\n\n1. **Set it per-theme** — Add `buttonShape: \"pill\"` to your theme's `components` object. The `Paper` preset already does this.\n2. **Override on one button** — Pass `className=\"rounded-full\"` to `<Button>`.\n\nThe theme-level approach is preferred because it keeps the shape consistent across every `<Button>` without touching call sites. The `RampThemeProvider` sets `data-button-shape` on the root, and `globals.css` reads it to override the `rds-button` class's radius.",
+    content: "Two options:\n\n1. **Set it per-theme** — Add `buttonShape: \"pill\"` to your theme's `components` object. The `Paper` preset already does this.\n2. **Override on one button** — Pass `className=\"rounded-full\"` to `<Button>`.\n\nThe theme-level approach is preferred because it keeps the shape consistent across every `<Button>` without touching call sites. The `GradeThemeProvider` sets `data-button-shape` on the root, and `globals.css` reads it to override the `rds-button` class's radius.",
     timestamp: new Date(Date.now() - 25000),
   },
 ];

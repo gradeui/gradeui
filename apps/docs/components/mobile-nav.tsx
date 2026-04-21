@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, Github, Moon, Sun } from "lucide-react";
-import { useRampTheme } from "@/components/ramp-theme-provider";
+import { useGradeTheme } from "@/components/grade-theme-provider";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -31,7 +31,7 @@ const navItems = [
 export function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const { isDark, setMode } = useRampTheme();
+  const { isDark, setMode } = useGradeTheme();
 
   const toggleTheme = () => {
     setMode(isDark ? "light" : "dark");

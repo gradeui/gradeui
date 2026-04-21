@@ -144,7 +144,7 @@ ${input.description ? `- **Description**: ${input.description}\n` : ""}- **Hues*
 
 ## How themes work
 
-Every theme in Ramp DS is produced by a pure function:
+Every theme in Grade DS is produced by a pure function:
 
 \`\`\`ts
 generateTheme(input: ThemeInput) => GeneratedTheme

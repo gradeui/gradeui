@@ -47,6 +47,20 @@ function colorVars(c: GeneratedColorsMode): Record<string, string> {
     "--warning": c.warning,
     "--info": c.info,
     "--highlight": c.highlight,
+
+    // Alert surface pairs — paler tinted surface + deeper on-surface text
+    // for each status colour. Consumed by Alert, Badge (soft variants), and
+    // anywhere a banner needs a status tint without going full-saturation.
+    "--destructive-soft": c.destructiveSoft,
+    "--destructive-deep": c.destructiveDeep,
+    "--success-soft": c.successSoft,
+    "--success-deep": c.successDeep,
+    "--warning-soft": c.warningSoft,
+    "--warning-deep": c.warningDeep,
+    "--info-soft": c.infoSoft,
+    "--info-deep": c.infoDeep,
+    "--highlight-soft": c.highlightSoft,
+    "--highlight-deep": c.highlightDeep,
   };
 }
 

@@ -24,7 +24,7 @@ export const blocksList: Block[] = [
       padding: "xl",
       alignment: "center",
       titleSize: "xl",
-      title: "Welcome to Ramp",
+      title: "Welcome to Grade",
       subtitle:
         "Modern design system — pick three hues, get an entire OKLCH-based design language",
       cta1: { text: "Get Started", variant: "default", href: "/signup" },
@@ -34,7 +34,7 @@ export const blocksList: Block[] = [
   padding="xl"
   alignment="center"
   titleSize="xl"
-  title="Welcome to Ramp"
+  title="Welcome to Grade"
   subtitle="Modern design system — pick three hues, get an entire OKLCH-based design language"
   cta1={{ text: "Get Started", variant: "default", href: "/signup" }}
   cta2={{ text: "Learn More", variant: "outline", href: "/docs" }}
@@ -90,7 +90,7 @@ export const blocksList: Block[] = [
       alignment: "center",
       titleSize: "xl",
       title: "Ship Your Product Faster",
-      subtitle: "Join teams shipping with Ramp DS",
+      subtitle: "Join teams shipping with Grade DS",
       cta1: { text: "Start Free Trial", variant: "default" },
     },
     codeExample: `<SectionBlock
@@ -99,7 +99,7 @@ export const blocksList: Block[] = [
   alignment="center"
   titleSize="xl"
   title="Ship Your Product Faster"
-  subtitle="Join teams shipping with Ramp DS"
+  subtitle="Join teams shipping with Grade DS"
   cta1={{ text: "Start Free Trial", variant: "default" }}
 />`,
   },
@@ -117,7 +117,7 @@ export const blocksList: Block[] = [
       alignment: "center",
       titleSize: "lg",
       title: "Frequently Asked Questions",
-      subtitle: "Everything you need to know about Ramp",
+      subtitle: "Everything you need to know about Grade",
     },
     contentExample: "accordion",
     codeExample: `<SectionBlock
@@ -125,13 +125,13 @@ export const blocksList: Block[] = [
   alignment="center"
   titleSize="lg"
   title="Frequently Asked Questions"
-  subtitle="Everything you need to know about Ramp"
+  subtitle="Everything you need to know about Grade"
 >
   <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto">
     <AccordionItem value="1">
-      <AccordionTrigger>What is Ramp?</AccordionTrigger>
+      <AccordionTrigger>What is Grade?</AccordionTrigger>
       <AccordionContent>
-        Ramp is a comprehensive design system that helps you monitor,
+        Grade is a comprehensive design system that helps you monitor,
         build beautiful, accessible interfaces from a single dashboard.
       </AccordionContent>
     </AccordionItem>
@@ -166,7 +166,7 @@ export const blocksList: Block[] = [
       alignment: "center",
       titleSize: "lg",
       title: "Ready to get started?",
-      subtitle: "Join teams building with Ramp DS",
+      subtitle: "Join teams building with Grade DS",
       cta1: { text: "Start Free Trial", variant: "secondary" },
       cta2: { text: "Contact Sales", variant: "outline" },
     },
@@ -176,7 +176,7 @@ export const blocksList: Block[] = [
   alignment="center"
   titleSize="lg"
   title="Ready to get started?"
-  subtitle="Join teams building with Ramp DS"
+  subtitle="Join teams building with Grade DS"
   cta1={{ text: "Start Free Trial", variant: "secondary" }}
   cta2={{ text: "Contact Sales", variant: "outline" }}
 />`,
@@ -193,7 +193,7 @@ export const blocksList: Block[] = [
       alignment: "center",
       titleSize: "md",
       title: "Have questions?",
-      subtitle: "Our team is here to help you get the most out of Ramp",
+      subtitle: "Our team is here to help you get the most out of Grade",
       cta1: { text: "Contact Support", variant: "default" },
     },
     codeExample: `<SectionBlock
@@ -202,7 +202,7 @@ export const blocksList: Block[] = [
   alignment="center"
   titleSize="md"
   title="Have questions?"
-  subtitle="Our team is here to help you get the most out of Ramp"
+  subtitle="Our team is here to help you get the most out of Grade"
   cta1={{ text: "Contact Support", variant: "default" }}
 />`,
   },
@@ -218,17 +218,17 @@ export const blocksList: Block[] = [
       padding: "lg",
       alignment: "left",
       titleSize: "lg",
-      title: "Why Choose Ramp?",
+      title: "Why Choose Grade?",
       subtitle:
-        "Discover the features that make Ramp the leading generator-first design system",
+        "Discover the features that make Grade the leading generator-first design system",
     },
     contentExample: "grid",
     codeExample: `<SectionBlock
   padding="lg"
   alignment="left"
   titleSize="lg"
-  title="Why Choose Ramp?"
-  subtitle="Discover the features that make Ramp the leading generator-first design system"
+  title="Why Choose Grade?"
+  subtitle="Discover the features that make Grade the leading generator-first design system"
 >
   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8">
     {/* Add your custom content here */}

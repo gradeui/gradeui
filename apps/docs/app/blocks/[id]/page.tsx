@@ -61,9 +61,9 @@ export default async function BlockDetailPage({ params }: BlockDetailPageProps) 
             className="w-full max-w-3xl mx-auto"
           >
             <AccordionItem value="1">
-              <AccordionTrigger>What is Ramp?</AccordionTrigger>
+              <AccordionTrigger>What is Grade?</AccordionTrigger>
               <AccordionContent>
-                Ramp is a comprehensive design system that helps you
+                Grade is a comprehensive design system that helps you
                 build beautiful, accessible interfaces from a single
                 dashboard.
               </AccordionContent>

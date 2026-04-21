@@ -3,25 +3,28 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
-  // Each variant now uses the theme's semantic tokens instead of hard-coded
-  // rds-* classes. The pattern is: tinted background at low alpha, full
-  // color for border + text + icon. Works for any theme without touching
-  // this file — change the theme, the alerts follow.
+  // Each variant uses the theme's semantic tokens instead of hard-coded
+  // rds-* classes. Status variants reference dedicated `*-soft` (surface)
+  // and `*-deep` (text + icon) tokens — those are generated from the status
+  // colour by the theme pipeline, so tweaking the brand feel only requires
+  // changing the mapping in one place (lib/themes/oklch.ts).
   "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4",
   {
     variants: {
       variant: {
         default: "bg-background text-foreground [&>svg]:text-foreground",
         destructive:
-          "border-destructive/50 bg-destructive/10 text-destructive [&>svg]:text-destructive",
+          "border-destructive/30 bg-destructive-soft text-destructive-deep [&>svg]:text-destructive-deep",
         success:
-          "border-success/40 bg-success/10 text-success [&>svg]:text-success",
+          "border-success/30 bg-success-soft text-success-deep [&>svg]:text-success-deep",
         warning:
-          "border-warning/40 bg-warning/10 text-warning [&>svg]:text-warning",
+          "border-warning/30 bg-warning-soft text-warning-deep [&>svg]:text-warning-deep",
         info:
-          "border-info/40 bg-info/10 text-info [&>svg]:text-info",
+          "border-info/30 bg-info-soft text-info-deep [&>svg]:text-info-deep",
         highlight:
-          "border-highlight/40 bg-highlight/10 text-foreground [&>svg]:text-highlight",
+          // Highlight is yellow — direct yellow text is unreadable, so text
+          // stays on `--foreground`; the icon picks up the deepened shade.
+          "border-highlight/30 bg-highlight-soft text-foreground [&>svg]:text-highlight-deep",
       },
     },
     defaultVariants: {

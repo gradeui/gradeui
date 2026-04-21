@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRampTheme } from "@/components/ramp-theme-provider";
+import { useGradeTheme } from "@/components/grade-theme-provider";
 import { SectionBlock } from "@/components/ui/section-block";
 import { getBlockTheme, getBlockThemeOptions, applyBlockTheme, type BlockThemeId } from "@/lib/block-themes";
 import type { SectionBlockProps } from "@/components/ui/section-block";
@@ -79,7 +79,7 @@ interface BlockConfig {
 }
 
 export default function BlockBuilderPage() {
-  const { isDark, setMode } = useRampTheme();
+  const { isDark, setMode } = useGradeTheme();
   const [blockTheme, setBlockTheme] = useState<BlockThemeId>("default");
   const [displayFont, setDisplayFont] = useState<string>("var(--font-sans)");
   const [headingFont, setHeadingFont] = useState<string>("var(--font-sans)");
@@ -102,7 +102,7 @@ export default function BlockBuilderPage() {
       mediaScrollBy: 1,
       cardItemsPerPage: 1,
       cardScrollBy: 1,
-      title: "Welcome to Ramp",
+      title: "Welcome to Grade",
       subtitle: "Modern design system",
       showTitle: true,
       showSubtitle: true,
@@ -264,8 +264,8 @@ export default function BlockBuilderPage() {
             type="single"
             items={[
               {
-                question: "What is Ramp?",
-                answer: "Ramp is a comprehensive design system that helps you build beautiful, accessible interfaces faster.",
+                question: "What is Grade?",
+                answer: "Grade is a comprehensive design system that helps you build beautiful, accessible interfaces faster.",
               },
               {
                 question: "How does pricing work?",

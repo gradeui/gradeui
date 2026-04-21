@@ -2,15 +2,15 @@
 
 import { Button } from "@/components/ui/button";
 import { Sun, Moon } from "lucide-react";
-import { useRampTheme } from "@/components/ramp-theme-provider";
+import { useGradeTheme } from "@/components/grade-theme-provider";
 
 /**
  * Binary light/dark toggle — flips between `light` and `dark` modes.
  * For the full 4-way picker (including super-light / super-dark), use
- * <RampModeSwitcher /> instead.
+ * <GradeModeSwitcher /> instead.
  */
 export function ThemeToggle() {
-  const { isDark, setMode } = useRampTheme();
+  const { isDark, setMode } = useGradeTheme();
   return (
     <Button
       variant="ghost"

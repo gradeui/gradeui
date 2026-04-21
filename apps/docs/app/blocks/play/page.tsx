@@ -43,7 +43,7 @@ export default function BlocksPlaygroundPage() {
   const [contentType, setContentType] = useState<ContentType>("none");
 
   // Content state
-  const [title, setTitle] = useState("Welcome to Ramp");
+  const [title, setTitle] = useState("Welcome to Grade");
   const [subtitle, setSubtitle] = useState(
     "Modern design system — pick three hues, get an entire OKLCH-based design language"
   );
@@ -80,9 +80,9 @@ export default function BlocksPlaygroundPage() {
         return (
           <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto">
             <AccordionItem value="1">
-              <AccordionTrigger>What is Ramp?</AccordionTrigger>
+              <AccordionTrigger>What is Grade?</AccordionTrigger>
               <AccordionContent>
-                Ramp is a comprehensive design system that helps you
+                Grade is a comprehensive design system that helps you
                 build beautiful, accessible interfaces faster.
               </AccordionContent>
             </AccordionItem>

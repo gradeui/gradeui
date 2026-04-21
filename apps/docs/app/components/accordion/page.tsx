@@ -109,9 +109,9 @@ export default function AccordionPage() {
         <ComponentPreview
           code={`<Accordion type="single" collapsible>
   <AccordionItem value="q1">
-    <AccordionTrigger>What is Ramp DS?</AccordionTrigger>
+    <AccordionTrigger>What is Grade DS?</AccordionTrigger>
     <AccordionContent>
-      Ramp DS is a design system built around a generator-first theme
+      Grade DS is a design system built around a generator-first theme
       engine — pick three hues and every component re-skins around them.
       Ships as an npm package with full TypeScript typings.
     </AccordionContent>
@@ -120,13 +120,13 @@ export default function AccordionPage() {
     <AccordionTrigger>How do I get started?</AccordionTrigger>
     <AccordionContent>
       Install the npm package with "npm install @gradeui/ui". Import the styles
-      in your root layout and wrap your app with RampThemeProvider.
+      in your root layout and wrap your app with GradeThemeProvider.
     </AccordionContent>
   </AccordionItem>
   <AccordionItem value="q3">
     <AccordionTrigger>What data do you collect?</AccordionTrigger>
     <AccordionContent>
-      Ramp DS runs entirely client-side. The library makes no network requests,
+      Grade DS runs entirely client-side. The library makes no network requests,
       collects no telemetry, and has no tracking. Your users' data stays
       between your app and your backend.
     </AccordionContent>
@@ -135,9 +135,9 @@ export default function AccordionPage() {
         >
           <Accordion type="single" collapsible className="w-full max-w-lg">
             <AccordionItem value="q1">
-              <AccordionTrigger>What is Ramp DS?</AccordionTrigger>
+              <AccordionTrigger>What is Grade DS?</AccordionTrigger>
               <AccordionContent>
-                Ramp DS is a design system built around a generator-first theme
+                Grade DS is a design system built around a generator-first theme
                 engine — pick three hues and every component re-skins around them.
                 Ships as an npm package with full TypeScript typings.
               </AccordionContent>
@@ -147,13 +147,13 @@ export default function AccordionPage() {
               <AccordionContent>
                 Install the npm package with &quot;npm install @gradeui/ui&quot;.
                 Import the styles in your root layout and wrap your app with
-                RampThemeProvider.
+                GradeThemeProvider.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="q3">
               <AccordionTrigger>What data do you collect?</AccordionTrigger>
               <AccordionContent>
-                Ramp DS runs entirely client-side. The library makes no network requests,
+                Grade DS runs entirely client-side. The library makes no network requests,
                 collects no telemetry, and has no tracking. Your users' data stays
                 between your app and your backend.
               </AccordionContent>

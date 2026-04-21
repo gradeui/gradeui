@@ -89,11 +89,11 @@ Work in `apps/docs/`. The docs site currently keeps its own copy of components u
 Work in `apps/consume-app/`. It consumes `@gradeui/ui` via `workspace:*` so local changes in `packages/ui/` show up immediately. This is also the template for per-client consume repos (swap `workspace:*` → a real npm version).
 
 ### Deferred renames — do not "fix" these opportunistically
-- `RampThemeProvider` / `useRampTheme` / `RAMP_PRE_HYDRATION_SCRIPT`
 - `--rds-*` CSS custom properties
-- `data-ramp-theme` attribute
+- `data-ramp-theme` HTML attribute
+- localStorage keys: `ramp-mode`, `ramp-theme`, `rds-playgrounds`, `rds-template-saves`, `rds-chat-settings`
 
-These are runtime API + token names carried over from the `ramp-ds` predecessor. Renaming them is a coordinated breaking change — do it in a dedicated PR, not as a drive-by. If you find a case where the old name is genuinely confusing, flag it in a changeset rather than renaming in flight.
+These are runtime tokens / persisted keys carried over from the `ramp-ds` predecessor. Renaming them is a coordinated breaking change (every component that reads `oklch(var(--rds-*))` would need to update, and localStorage rename without migration wipes user data). Do it in a dedicated PR with a migration path, not as a drive-by. The React API — `GradeThemeProvider` / `useGradeTheme` / `GRADE_PRE_HYDRATION_SCRIPT` — was renamed in the Ramp→Grade rebrand pass.
 
 ## Versioning & publishing
 
@@ -129,5 +129,5 @@ On push to `main`, `.github/workflows/publish.yml` runs the changesets action. I
 
 ## See also
 
-- `packages/ui/CLAUDE.md` — deep component/theming/subagent detail (inherited from the ramp-ds predecessor; still the authoritative reference for the component layer)
+- `packages/ui/CLAUDE.md` — deep component/theming/subagent detail (inherited from the predecessor; still the authoritative reference for the component layer)
 - `SETUP.md` — one-time setup checklist for a fresh clone (GitHub org, npm org + token, Vercel)

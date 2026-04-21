@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
 import { SearchCommand, SearchTrigger } from "@/components/search-command";
 import { MobileNav } from "@/components/mobile-nav";
-import { RampThemeSwitcher } from "@/components/ramp-theme-switcher";
+import { GradeThemeSwitcher } from "@/components/grade-theme-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function SiteHeader() {
@@ -33,6 +33,8 @@ export function SiteHeader() {
     { href: "/templates", label: "Templates" },
     { href: "/blocks", label: "Blocks" },
     { href: "/play", label: "Playground" },
+    { href: "/chat", label: "AI Chat" },
+    { href: "/studio", label: "Studio" },
     { href: "/brand", label: "Brand" },
   ];
 
@@ -68,7 +70,7 @@ export function SiteHeader() {
             <SearchTrigger onClick={() => setSearchOpen(true)} />
 
             <div className="hidden md:flex items-center gap-2">
-              <RampThemeSwitcher />
+              <GradeThemeSwitcher />
               <ThemeToggle />
             </div>
             <MobileNav />

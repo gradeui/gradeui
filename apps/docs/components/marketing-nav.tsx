@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/src/i18n/routing";
 import { Menu } from "lucide-react";
-import { useRampTheme } from "@/components/ramp-theme-provider";
+import { useGradeTheme } from "@/components/grade-theme-provider";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
@@ -19,7 +19,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 
 export function MarketingNav() {
   const t = useTranslations("common.nav");
-  const { isDark, setMode } = useRampTheme();
+  const { isDark, setMode } = useGradeTheme();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -43,6 +43,8 @@ export function MarketingNav() {
     { name: "Docs", href: "/docs", external: false },
     { name: "Templates", href: "/templates", external: false },
     { name: "Playground", href: "/play", external: false },
+    { name: "AI Chat", href: "/chat", external: false },
+    { name: "Studio", href: "/studio", external: false },
     { name: "Brand", href: "/brand", external: false },
     { name: "Community", href: "/community", external: false },
   ];
@@ -66,7 +68,7 @@ export function MarketingNav() {
           <Logo variant="full" size="sm" />
         </Link>
 
-        {/* Desktop Navigation — flattened. Ramp DS is not a multi-product site
+        {/* Desktop Navigation — flattened. Grade DS is not a multi-product site
             any more, so the old Products/UseCases dropdowns are gone. */}
         <div className="hidden lg:flex items-center gap-1">
           {dsLinks.map((item) => (

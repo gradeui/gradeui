@@ -1,9 +1,9 @@
 /**
- * RampTheme — a single object capturing every skinnable dimension of the
+ * GradeTheme — a single object capturing every skinnable dimension of the
  * design system. A theme is a complete "skin": colors, typography, radius,
  * spacing feel, effects, and optional experimental (shader/WebGL) hooks.
  *
- * Themes are applied at runtime by the RampThemeProvider, which writes the
+ * Themes are applied at runtime by the GradeThemeProvider, which writes the
  * resolved values to CSS custom properties on :root. Components already read
  * from those variables (via the shadcn semantic layer + RDS tokens), so no
  * component code has to change per theme.
@@ -36,7 +36,7 @@ export interface ThemeColorsMode {
   input: HSL;
   ring: HSL;
 
-  // Ramp semantic extras
+  // Grade semantic extras
   success: HSL;
   warning: HSL;
   info: HSL;
@@ -141,7 +141,7 @@ export interface ThemeExperimental {
   };
 }
 
-export interface RampTheme {
+export interface GradeTheme {
   id: string;
   name: string;
   description: string;
@@ -163,7 +163,7 @@ export interface RampTheme {
 /** Convenience: a theme registry entry. */
 export interface ThemeRegistryEntry {
   id: string;
-  theme: RampTheme;
+  theme: GradeTheme;
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
@@ -174,8 +174,8 @@ export interface ThemeRegistryEntry {
    now defined primarily by a compact ThemeInput (hues + a handful of
    config knobs) and generated into a full GeneratedTheme via generator.ts.
 
-   The existing RampTheme / ThemeColorsMode types above still work for the
-   legacy Ramp + Paper themes. Phase 2 replaces them with GeneratedTheme.
+   The existing GradeTheme / ThemeColorsMode types above still work for the
+   legacy Grade + Paper themes. Phase 2 replaces them with GeneratedTheme.
    ───────────────────────────────────────────────────────────────────────── */
 
 import type { ModeName, OKLCHTriplet, Ramp } from "./oklch";
@@ -397,11 +397,26 @@ export interface GeneratedColorsMode {
   input: OKLCHTriplet;
   ring: OKLCHTriplet;
 
-  // Ramp extras
+  // Grade extras
   success: OKLCHTriplet;
   warning: OKLCHTriplet;
   info: OKLCHTriplet;
   highlight: OKLCHTriplet;
+
+  // Alert / badge surface pairs — derived from the status colours. `*-soft`
+  // is the pale tinted surface for alerts, badges, and banners; `*-deep` is
+  // the readable text/icon colour that pairs with it. Generated per-mode so
+  // a dark mode tint is still dark, but the text stays bright.
+  destructiveSoft: OKLCHTriplet;
+  destructiveDeep: OKLCHTriplet;
+  successSoft: OKLCHTriplet;
+  successDeep: OKLCHTriplet;
+  warningSoft: OKLCHTriplet;
+  warningDeep: OKLCHTriplet;
+  infoSoft: OKLCHTriplet;
+  infoDeep: OKLCHTriplet;
+  highlightSoft: OKLCHTriplet;
+  highlightDeep: OKLCHTriplet;
 }
 
 /** Concrete resolved CSS values for the typography dimension. */

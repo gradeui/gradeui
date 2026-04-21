@@ -12,6 +12,7 @@
  */
 
 import {
+  deriveAlertPair,
   FIXED_SEMANTIC,
   hueToRamp,
   neutralRamp,
@@ -245,6 +246,32 @@ function deriveColorsForMode(
     warning: fixed.warning,
     info: fixed.info,
     highlight: fixed.highlight,
+
+    // `-soft` / `-deep` derivatives are computed per mode from the base
+    // status triplet. The "alert mode" only distinguishes light vs. dark;
+    // superLight and superDark collapse onto the same pair as their
+    // neighbour because the tinted alert surface doesn't need more than two
+    // contrast-calibrated variants.
+    ...(() => {
+      const alertMode: "light" | "dark" = isLightBg ? "light" : "dark";
+      const d = deriveAlertPair(fixed.destructive, alertMode);
+      const s = deriveAlertPair(fixed.success, alertMode);
+      const w = deriveAlertPair(fixed.warning, alertMode);
+      const i = deriveAlertPair(fixed.info, alertMode);
+      const hi = deriveAlertPair(fixed.highlight, alertMode);
+      return {
+        destructiveSoft: d.soft,
+        destructiveDeep: d.deep,
+        successSoft: s.soft,
+        successDeep: s.deep,
+        warningSoft: w.soft,
+        warningDeep: w.deep,
+        infoSoft: i.soft,
+        infoDeep: i.deep,
+        highlightSoft: hi.soft,
+        highlightDeep: hi.deep,
+      };
+    })(),
   };
 }
 
