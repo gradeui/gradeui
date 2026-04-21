@@ -87,7 +87,11 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
         ref={innerRef}
         data-gds-part="media-surface"
         className={cn(
-          "rds-media-surface relative overflow-hidden bg-muted",
+          // `w-full` is the default so the surface fills its parent — without
+          // it, a flex parent (e.g. items-center justify-center) collapses the
+          // surface to the intrinsic width of its children, which for Rive /
+          // WebGL canvases is 0. Override via `className="w-96"` etc.
+          "rds-media-surface relative w-full overflow-hidden bg-muted",
           aspectClass[aspect],
           border && "border border-border",
           className,

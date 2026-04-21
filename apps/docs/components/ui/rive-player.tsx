@@ -148,7 +148,7 @@ function RiveInner({
   controls,
   poster,
 }: InnerProps) {
-  const { useRive, Layout, Fit, Alignment } = Mod;
+  const { useRive, Layout, Fit, Alignment, EventType } = Mod;
 
   const fitMap: Record<string, unknown> = {
     contain: Fit.Contain,
@@ -172,10 +172,19 @@ function RiveInner({
 
   const [playing, setPlaying] = React.useState(autoPlay);
 
+  // The Rive instance has no `loop` setter — animations carry their loop mode
+  // in the .riv file itself. To force-loop from a prop we listen for Stop and
+  // replay. No-op if the file already loops (Stop never fires).
   React.useEffect(() => {
-    if (!rive) return;
-    if (loop) rive.loop = true;
-  }, [rive, loop]);
+    if (!rive || !loop) return;
+    const handler = () => {
+      rive.play();
+    };
+    rive.on(EventType.Stop, handler);
+    return () => {
+      rive.off(EventType.Stop, handler);
+    };
+  }, [rive, loop, EventType]);
 
   // pause-when-offscreen
   React.useEffect(() => {

@@ -17,6 +17,10 @@ const riveProps = [
 ];
 
 const DEMO_RIV = "/animation.riv";
+// vehicles.riv ships its animation inside a state machine called "bumpy" —
+// specifying it explicitly makes autoplay work regardless of the Rive file's
+// default-animation metadata.
+const DEMO_SM = "bumpy";
 
 export default function RivePlayerPage() {
   return (
@@ -45,15 +49,15 @@ export default function RivePlayerPage() {
 
       <div className="space-y-4">
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">Viewer mode (default)</h2>
-        <ComponentPreview code={`<RivePlayer src="/animation.riv" aspect="square" />`}>
-          <RivePlayer src={DEMO_RIV} aspect="square" radius="lg" />
+        <ComponentPreview code={`<RivePlayer src="/animation.riv" stateMachines="bumpy" aspect="square" />`}>
+          <RivePlayer src={DEMO_RIV} stateMachines={DEMO_SM} aspect="square" radius="lg" />
         </ComponentPreview>
       </div>
 
       <div className="space-y-4">
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">Player mode</h2>
-        <ComponentPreview code={`<RivePlayer src="/animation.riv" controls />`}>
-          <RivePlayer src={DEMO_RIV} controls aspect="square" radius="lg" />
+        <ComponentPreview code={`<RivePlayer src="/animation.riv" stateMachines="bumpy" controls />`}>
+          <RivePlayer src={DEMO_RIV} stateMachines={DEMO_SM} controls aspect="square" radius="lg" />
         </ComponentPreview>
       </div>
 

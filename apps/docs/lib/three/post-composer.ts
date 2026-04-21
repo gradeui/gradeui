@@ -59,6 +59,8 @@ export const createPostComposer: PostComposerFactory = ({
 
   const chromatic = new ChromaticAberrationEffect({
     offset: new THREE.Vector2(0, 0),
+    radialModulation: false,
+    modulationOffset: 0.15,
   });
 
   const glitch = new GlitchEffect({
@@ -80,9 +82,7 @@ export const createPostComposer: PostComposerFactory = ({
     const e = p.effects;
 
     bloom.intensity = e.bloom?.intensity ?? 0;
-    // @ts-expect-error — luminanceMaterial exists at runtime
     if (bloom.luminanceMaterial && e.bloom?.luminanceThreshold !== undefined) {
-      // @ts-expect-error — luminanceMaterial exists at runtime
       bloom.luminanceMaterial.threshold = e.bloom.luminanceThreshold;
     }
 
