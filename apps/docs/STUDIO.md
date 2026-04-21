@@ -105,6 +105,16 @@ Iframe → parent:
 
 The captured selection flows **out-of-band** in the `/api/chat` request body (not inlined in the user message), which keeps it from polluting the history on follow-up turns. Server-side it's rendered into the system prompt as a "TARGETED EDIT" stanza — see `renderSelectionBlock()` in `app/api/chat/route.ts`. Selection state is per-design (`selectionByDesign` in `app/studio/page.tsx`) and cleared automatically after the message is sent.
 
+## Future work / known limits
+
+Things deliberately out of scope for v1 of highlight-and-comment, captured here so they don't get lost:
+
+- **One element at a time.** The agent ignores multi-select (shift-click, drag-rect). If users start asking for "change these three buttons at once", model them as a `Selection[]` rather than a single slot.
+- **Shallow context.** Only the clicked element's `outerHTML` is shipped. No parent, no siblings, no ancestor chain. If model edits start missing the surrounding layout intent, extend `PLAYGROUND_SELECTION_AGENT_TSX` + `renderSelectionBlock()` together.
+- **Hard 500-char truncation.** Fine for buttons/chips; tight for cards or forms. Either raise the cap or swap for token-aware truncation before the block hits the system prompt.
+- **Selection auto-clears after send.** There's no "pin" mode — pick again if you want to iterate on the same element over multiple turns. A chip-level padlock + an early-return on `onClearSelection` in `studio-chat.tsx` `handleSend` would cover it.
+- **No visual confirmation in the chat stream.** The chip disappears on send and the assistant's reply doesn't quote the targeted element back. Fine for now; worth revisiting if users start losing track of what they aimed at.
+
 ## Dev workflow notes
 
 - **You do not need to restart dev after editing `chat-sandpack.ts` or `app/api/chat/route.ts`.** Next's HMR re-reads the route module per request.
