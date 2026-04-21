@@ -43,6 +43,25 @@ import {
 import { openInCodeSandboxNpm } from "@/lib/chat-export-npm";
 import type { GeneratedTheme } from "@/lib/themes";
 
+/**
+ * Minimal App module used to prewarm Sandpack when we don't yet have real
+ * JSX from the chat. Renders nothing visible — the EmptyPreview overlay
+ * sits on top of the iframe anyway. What we care about is that this
+ * stands up the bundle / npm installs / CSS pipeline eagerly, so the
+ * first real assistant turn lands as an HMR update (fast) rather than a
+ * cold Sandpack boot (slow).
+ *
+ * Keep this a valid standalone module — default export, no imports — or
+ * Sandpack will surface a bundler error when the user first visits
+ * /studio, before they've even typed anything.
+ */
+const PLAYGROUND_PLACEHOLDER_APP = [
+  "export default function App() {",
+  "  return null;",
+  "}",
+  "",
+].join("\n");
+
 interface StudioPreviewProps {
   /** The raw JSX block extracted from the latest assistant message — may be
    *  a bare expression, a named function, or a full module. We normalize it
@@ -78,21 +97,32 @@ export function StudioPreview({
   // error on incomplete JSX and recover the moment the fence closes. When
   // idle, keep the old guard (only render when the code looks syntactically
   // balanced) to avoid flashing an error screen on malformed responses.
+  //
+  // `canRender` still gates whether we *show* the iframe vs an overlay, but
+  // Sandpack is now always mounted behind the overlay (see the render path
+  // below) so the bundle is already warm when the first JSX arrives.
   const canRender = Boolean(appSource) && (isStreaming || looksComplete(appSource || ""));
 
   // Normalize the snippet so Sandpack always finds a default export. Without
   // this, bare-JSX or missing-export snippets surface as
   //   "Element type is invalid … got: undefined".
+  //
+  // Fall back to a no-op placeholder App when we don't yet have real code.
+  // This keeps the Sandpack iframe booted and bundled from the moment the
+  // /studio route loads — so the *first* chat turn finishes as an HMR swap
+  // (fast) rather than triggering a cold bundle boot (slow, jarring). The
+  // user sees the EmptyPreview overlay, but behind it the iframe is already
+  // up, npm packages installed, CSS applied.
   const preparedSource = useMemo(
-    () => (appSource ? prepareAppSource(appSource) : ""),
+    () =>
+      appSource ? prepareAppSource(appSource) : PLAYGROUND_PLACEHOLDER_APP,
     [appSource]
   );
 
-  // The complete Sandpack files object — entry, styles, index.html,
-  // inlined components. Recomputed on every theme/mode tweak, but
-  // Sandpack's file-level diffing only remounts when /public/index.html
-  // actually changes (which happens when mode flips, since it controls
-  // the html class and data attributes).
+  // The complete Sandpack files object — entry, styles, index.html, App.
+  // Recomputed on every theme/mode tweak; /index.tsx writes mode +
+  // component options onto <html> at runtime so those changes HMR live
+  // without needing an iframe reload. See buildPlaygroundEntryTsx.
   const sandpackFiles = useMemo(
     () =>
       buildSandpackFiles({
@@ -195,62 +225,88 @@ export function StudioPreview({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0">
-        {canRender ? (
-          // Keyed by the source so the boundary resets the moment new code
-          // arrives — otherwise a prior crash stays latched even after the
-          // model produces valid JSX on the next turn.
-          //
-          // `--sp-layout-height: 100%` overrides Sandpack's built-in 300px
-          // floor on SandpackLayout so the preview iframe stretches to fill
-          // the column instead of pinning at a stubby default height.
-          <SandpackErrorBoundary resetKey={preparedSource}>
-            <SandpackProvider
-              template="react-ts"
-              theme={mode === "dark" ? "dark" : "light"}
-              options={{
-                externalResources: [...PLAYGROUND_EXTERNAL_RESOURCES],
+      <div className="relative flex-1 min-h-0">
+        {/*
+          Sandpack is ALWAYS mounted — even before the first chat turn — so
+          the bundle, npm installs, and CSS pipeline are already warm when
+          real JSX finally arrives. The first real render then lands as an
+          HMR swap (sub-second) instead of a cold boot (multi-second, with
+          a jarring spinner → flash → content cascade).
+
+          When we don't have real code yet, preparedSource is the no-op
+          placeholder defined above; the iframe renders nothing visible,
+          and the overlays below cover whatever is (or isn't) showing.
+
+          Keyed by the source so the error boundary resets the moment new
+          code arrives — otherwise a prior crash stays latched even after
+          the model produces valid JSX on the next turn.
+
+          `--sp-layout-height: 100%` overrides Sandpack's built-in 300px
+          floor on SandpackLayout so the preview iframe stretches to fill
+          the column instead of pinning at a stubby default height.
+        */}
+        <SandpackErrorBoundary resetKey={preparedSource}>
+          <SandpackProvider
+            template="react-ts"
+            theme={mode === "dark" ? "dark" : "light"}
+            options={{
+              externalResources: [...PLAYGROUND_EXTERNAL_RESOURCES],
+            }}
+            customSetup={{
+              dependencies: { ...PLAYGROUND_DEPENDENCIES },
+              entry: "/index.tsx",
+            }}
+            files={sandpackFiles}
+            style={
+              {
+                height: "100%",
+                "--sp-layout-height": "100%",
+              } as React.CSSProperties
+            }
+          >
+            <SandpackLayout
+              style={{
+                height: "100%",
+                display: view === "code" && canRender ? "flex" : "none",
+                border: 0,
               }}
-              customSetup={{
-                dependencies: { ...PLAYGROUND_DEPENDENCIES },
-                entry: "/index.tsx",
-              }}
-              files={sandpackFiles}
-              style={
-                {
-                  height: "100%",
-                  "--sp-layout-height": "100%",
-                } as React.CSSProperties
-              }
             >
-              <SandpackLayout
-                style={{
-                  height: "100%",
-                  display: view === "code" ? "flex" : "none",
-                  border: 0,
-                }}
-              >
-                <SandpackCodeEditor showLineNumbers style={{ height: "100%" }} />
-              </SandpackLayout>
-              <SandpackLayout
-                style={{
-                  height: "100%",
-                  display: view === "preview" ? "flex" : "none",
-                  border: 0,
-                }}
-              >
-                <SandpackPreview
-                  showOpenInCodeSandbox
-                  showRefreshButton
-                  style={{ height: "100%", flex: 1 }}
-                />
-              </SandpackLayout>
-            </SandpackProvider>
-          </SandpackErrorBoundary>
-        ) : isStreaming ? (
-          <GeneratingPreview />
-        ) : (
-          <EmptyPreview />
+              <SandpackCodeEditor showLineNumbers style={{ height: "100%" }} />
+            </SandpackLayout>
+            <SandpackLayout
+              style={{
+                height: "100%",
+                // Keep the preview layout mounted at all times (even when
+                // !canRender) so Sandpack bundles/installs/boots eagerly.
+                // Hide visually — not with `display: none`, which some
+                // Sandpack versions treat as "unmount" and defer work —
+                // by stretching it under the overlay and letting the
+                // overlay take the stage.
+                display: view === "preview" ? "flex" : "none",
+                border: 0,
+              }}
+            >
+              <SandpackPreview
+                showOpenInCodeSandbox
+                showRefreshButton
+                style={{ height: "100%", flex: 1 }}
+              />
+            </SandpackLayout>
+          </SandpackProvider>
+        </SandpackErrorBoundary>
+
+        {/*
+          Overlays. Positioned absolutely so they sit ON TOP of the warm
+          iframe rather than replacing it — that way Sandpack keeps bundling
+          in the background while the user looks at EmptyPreview /
+          GeneratingPreview, and the transition to the real design is
+          instant. `bg-background` hides the empty iframe behind them so the
+          user doesn't see the placeholder render flash through.
+        */}
+        {!canRender && (
+          <div className="absolute inset-0 bg-background z-10">
+            {isStreaming ? <GeneratingPreview /> : <EmptyPreview />}
+          </div>
         )}
       </div>
     </div>

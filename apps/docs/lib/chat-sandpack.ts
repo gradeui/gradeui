@@ -285,6 +285,18 @@ export function buildPlaygroundIndexHtml(
   mode: "light" | "dark",
   components: { buttonShape: string; inputStyle: string; cardStyle: string }
 ): string {
+  // NOTE on mode class + data-* attrs: we used to stamp them directly on
+  // the <html> tag here (e.g. `class="dark" data-button-shape="rounded"`).
+  // That worked for the first paint but broke live updates — Sandpack
+  // serves /public/index.html ONCE at iframe boot and never reloads it,
+  // so slider flips in the theme builder didn't visibly change anything
+  // in the preview (even though the CodeSandbox *export* was correct,
+  // because that spins up a fresh iframe with the new HTML).
+  //
+  // Both mode and component options are now applied at runtime from
+  // /index.tsx, which lives inside Sandpack's JS bundle graph and does
+  // hot-reload. We still emit the attrs here as INITIAL values so the
+  // first paint doesn't flash the wrong shape before the bundle loads.
   const htmlClass = mode === "dark" ? ' class="dark"' : "";
   const dataAttrs = ` data-button-shape="${components.buttonShape}" data-input-style="${components.inputStyle}" data-card-style="${components.cardStyle}"`;
   return `<!DOCTYPE html>
@@ -1453,15 +1465,86 @@ export const ALLOWED_EXTERNAL_IMPORTS = [
  * user's theme — silently making every preview look identical regardless
  * of slider position.
  */
-const PLAYGROUND_ENTRY_TSX = [
+/**
+ * Two-file pattern for the Sandpack entry:
+ *
+ *   - /index.tsx          — STATIC. Mounts the React root. Never changes
+ *                           across theme tweaks, so Sandpack never needs
+ *                           to re-execute `createRoot().render()` (which
+ *                           would force an iframe reload, because entry
+ *                           modules with side-effect top-levels can't be
+ *                           hot-patched safely).
+ *
+ *   - /theme-options.tsx  — VARIES. Exports a wrapper component that
+ *                           writes the current mode + component options
+ *                           onto <html> via a layout effect. When the
+ *                           builder panel changes, this is the only file
+ *                           whose content updates, and because it exports
+ *                           a React component, react-refresh can patch
+ *                           it in place — no full reload, the wrapper
+ *                           just re-renders with the new closure values
+ *                           and the effect rewrites the attrs.
+ *
+ * Earlier iteration: we wrote the attrs at the top of /index.tsx. That
+ * reached the iframe fine, but changing any component option forced
+ * Sandpack to reload the whole preview (because index.tsx is the entry
+ * and its top-level side effects can't be HMR'd). Splitting the varying
+ * part into a component-exporting module is what makes the update land
+ * without a reload.
+ *
+ * Applied in useLayoutEffect with no deps so it runs synchronously
+ * before paint on every render — keeps <html> in lockstep with the
+ * panel even if something else in the tree re-renders for unrelated
+ * reasons.
+ */
+const PLAYGROUND_INDEX_TSX = [
   'import React from "react";',
   'import ReactDOM from "react-dom/client";',
   'import "@gradeui/ui/styles.css";',
   'import "./styles.css";',
+  'import ThemeOptionsApplier from "./theme-options";',
   'import App from "./App";',
   "",
-  'ReactDOM.createRoot(document.getElementById("root")!).render(<App />);',
+  'ReactDOM.createRoot(document.getElementById("root")!).render(',
+  "  <ThemeOptionsApplier>",
+  "    <App />",
+  "  </ThemeOptionsApplier>",
+  ");",
 ].join("\n");
+
+function buildPlaygroundThemeOptionsTsx(
+  mode: "light" | "dark",
+  components: { buttonShape: string; inputStyle: string; cardStyle: string }
+): string {
+  return [
+    'import * as React from "react";',
+    "",
+    "// These constants are rewritten by the parent app on every slider tick.",
+    "// Because this file exports a React component, Sandpack's react-refresh",
+    "// integration can hot-patch the module without tearing down the root —",
+    "// the wrapper re-renders, the layout effect re-runs, the new attrs land.",
+    `const MODE: "light" | "dark" = ${JSON.stringify(mode)};`,
+    `const BUTTON_SHAPE = ${JSON.stringify(components.buttonShape)};`,
+    `const INPUT_STYLE = ${JSON.stringify(components.inputStyle)};`,
+    `const CARD_STYLE = ${JSON.stringify(components.cardStyle)};`,
+    "",
+    "export default function ThemeOptionsApplier({",
+    "  children,",
+    "}: {",
+    "  children: React.ReactNode;",
+    "}) {",
+    "  React.useLayoutEffect(() => {",
+    "    const root = document.documentElement;",
+    '    root.classList.toggle("dark", MODE === "dark");',
+    "    root.dataset.buttonShape = BUTTON_SHAPE;",
+    "    root.dataset.inputStyle = INPUT_STYLE;",
+    "    root.dataset.cardStyle = CARD_STYLE;",
+    "  });",
+    "  return <>{children}</>;",
+    "}",
+    "",
+  ].join("\n");
+}
 
 export interface BuildSandpackFilesArgs {
   /** Raw JSX the user/model produced. Run through prepareAppSource. Pass
@@ -1524,7 +1607,12 @@ export function buildSandpackFiles({
   return {
     "/App.tsx": prepared,
     "/public/index.html": buildPlaygroundIndexHtml(lightVars, darkVars, mode, components),
-    "/index.tsx": PLAYGROUND_ENTRY_TSX,
+    // Entry module is static across theme tweaks (see PLAYGROUND_INDEX_TSX)
+    // so Sandpack never has to reload the iframe. The mode + component
+    // option values live in /theme-options.tsx instead — a component
+    // module react-refresh can hot-patch in place when the panel changes.
+    "/index.tsx": PLAYGROUND_INDEX_TSX,
+    "/theme-options.tsx": buildPlaygroundThemeOptionsTsx(mode, components),
     "/styles.css": buildPlaygroundStylesCss(lightVars, darkVars),
     ...(extraFiles ?? {}),
   };
