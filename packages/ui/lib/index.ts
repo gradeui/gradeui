@@ -12,6 +12,8 @@ export { Badge, badgeVariants } from "../components/ui/badge";
 
 export { Button, buttonVariants } from "../components/ui/button";
 
+export { Calendar, CalendarDayButton } from "../components/ui/calendar";
+
 export {
   Card,
   CardContent,
@@ -22,6 +24,13 @@ export {
 } from "../components/ui/card";
 
 export { Checkbox } from "../components/ui/checkbox";
+
+export {
+  DatePicker,
+  DateRangePicker,
+  type DatePickerProps,
+  type DateRangePickerProps,
+} from "../components/ui/date-picker";
 
 export {
   Dialog,
@@ -57,6 +66,13 @@ export {
 export { Input } from "../components/ui/input";
 
 export { Label } from "../components/ui/label";
+
+export {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from "../components/ui/popover";
 
 export { Progress } from "../components/ui/progress";
 

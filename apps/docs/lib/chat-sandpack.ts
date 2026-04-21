@@ -1400,6 +1400,14 @@ export const ALLOWED_COMPONENTS = [
   "SelectContent",
   "SelectValue",
   "SelectItem",
+  "DatePicker",
+  "DateRangePicker",
+  // Date primitives — only needed when composing your own DatePicker trigger
+  "Calendar",
+  "Popover",
+  "PopoverTrigger",
+  "PopoverContent",
+  "PopoverAnchor",
   // Layout & data display
   "Separator",
   "Avatar",
