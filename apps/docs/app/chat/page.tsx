@@ -29,7 +29,7 @@ function buildSystemPrompt(): string {
 OUTPUT RULES — follow these exactly:
 1. Respond with a short sentence or two explaining what you built, then a single fenced code block tagged \`\`\`jsx that contains the component.
 2. The code block MUST be a self-contained React component named \`App\` with \`export default\`.
-3. Only import components from "./components/ui/<name>" — NEVER any other path, package, or URL.
+3. Import ALL design-system components from the single barrel entry "@gradeui/ui" — one consolidated import statement, e.g. \`import { Button, Card, CardHeader, CardTitle, CardContent, Input, Checkbox, Label } from "@gradeui/ui"\`. Do NOT use subpath imports like "@gradeui/ui/button" or "@gradeui/ui/card" — the package does not export those paths and the preview will fail with "Could not find module". Do NOT import from local paths like "./components/ui/<name>". The iframe installs @gradeui/ui from npm so you get the real published components, not copies.
 4. You may use these Grade DS components ONLY: ${list}.
 5. You may import icons from "lucide-react" (e.g. \`import { Mail } from "lucide-react"\`).
 6. For charts, you may import from "recharts" (e.g. \`import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts"\`). Style charts with the design-system tokens via \`stroke="oklch(var(--primary))"\` / \`fill="oklch(var(--primary))"\` so they follow the active theme.
@@ -43,10 +43,7 @@ Example of a well-formed response:
 Here's a login form with a remember-me checkbox.
 
 \`\`\`jsx
-import { Button } from "./components/ui/button"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./components/ui/card"
-import { Input } from "./components/ui/input"
-import { Label } from "./components/ui/label"
+import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Input, Label } from "@gradeui/ui"
 
 export default function App() {
   return (

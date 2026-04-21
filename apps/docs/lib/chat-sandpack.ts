@@ -56,6 +56,67 @@ export function repairMultilineStrings(code: string): string {
 }
 
 /**
+ * Collapse every `import { ... } from "./components/ui/<name>"` into a
+ * single `import { ... } from "@gradeui/ui"`. The Sandpack iframe no
+ * longer mounts hand-rolled copies of those components — it installs the
+ * real `@gradeui/ui` from npm — so any legacy snippet that still uses
+ * the old local path must be rewritten before the bundler sees it.
+ *
+ * This runs inside `prepareAppSource`, which means every consumer
+ * (studio, chat, play, templates, embedded code editor examples) gets
+ * the rewrite for free. Keeps the Sandpack swap decoupled from every
+ * page that hand-authored example code against the old rule.
+ *
+ * Multi-line imports are handled — JSX source frequently wraps:
+ *   import {
+ *     Card, CardHeader, CardTitle,
+ *   } from "./components/ui/card"
+ * and the regex would miss it without the `s` flag (dotAll).
+ *
+ * We DON'T touch `lucide-react`, `recharts`, `@gradeui/ui`, or any other
+ * bare specifier. Only the local `./components/ui/<slug>` pattern is
+ * rewritten — anything else the model produced is already correct.
+ */
+export function rewriteLocalComponentImports(code: string): string {
+  // `[^}]+?` already matches newlines inside the braces (character
+  // classes match any char except the negated one, newlines included),
+  // so we don't need the `s` (dotAll) flag — which would only be needed
+  // to make `.` span newlines. Sticking with character classes keeps us
+  // compatible with tsconfig targets below ES2018.
+  //
+  // Three shapes need healing:
+  //   1. `./components/ui/<name>` — legacy local path (pre-npm-swap).
+  //   2. `../components/ui/<name>` — same, one level up.
+  //   3. `@gradeui/ui/<subpath>` — LLM literal-translates the new rule
+  //      and emits `@gradeui/ui/button`, but package.json only exports
+  //      the barrel at `"."`. Subpath imports fail with "Could not find
+  //      module in path: '@gradeui/ui/button'". Fold them into the
+  //      single barrel import alongside the legacy local matches.
+  //
+  // All three collapse into one consolidated `import { ... } from
+  // "@gradeui/ui"` at the top of the file. Plain `from "@gradeui/ui"`
+  // (no subpath) is NOT matched — it's already correct.
+  const rx =
+    /import\s*\{\s*([^}]+?)\s*\}\s*from\s*["'](?:\.\.?\/components\/ui\/[a-z-]+|@gradeui\/ui\/[a-z-]+)["'];?/g;
+  const specifiers = new Set<string>();
+  let matched = false;
+  const stripped = code.replace(rx, (_m, group: string) => {
+    matched = true;
+    for (const raw of group.split(",")) {
+      const name = raw.trim();
+      if (name) specifiers.add(name);
+    }
+    // Replace each matched import with an empty string — stripped.trimStart
+    // below cleans up the leading whitespace before we prepend the merged
+    // import.
+    return "";
+  });
+  if (!matched) return code;
+  const merged = `import { ${Array.from(specifiers).join(", ")} } from "@gradeui/ui";\n`;
+  return merged + stripped.trimStart();
+}
+
+/**
  * Make sure the snippet exports a default React component so Sandpack's
  *   import App from "./App"
  * resolves to something callable. The model emits any of these shapes:
@@ -66,8 +127,10 @@ export function repairMultilineStrings(code: string): string {
  *   4. Anything else — append `export default App` as a last-ditch guess.
  *
  * Also applies `repairMultilineStrings` to defuse the classic LLM bug of
- * wrapping long className attributes across lines. Without this step,
- * bare-JSX snippets make Sandpack throw:
+ * wrapping long className attributes across lines, and
+ * `rewriteLocalComponentImports` so legacy `./components/ui/<name>`
+ * paths resolve to the real `@gradeui/ui` npm package. Without those
+ * passes the iframe throws:
  *   "Element type is invalid … got: undefined. You likely forgot to export
  *    your component from the file it's defined in …"
  * or the worse
@@ -76,7 +139,8 @@ export function repairMultilineStrings(code: string): string {
  * 'message' of SyntaxError" when it tries to prettify the error.
  */
 export function prepareAppSource(code: string): string {
-  const repaired = repairMultilineStrings(code);
+  const rewritten = rewriteLocalComponentImports(code);
+  const repaired = repairMultilineStrings(rewritten);
   const trimmed = repaired.trim();
   if (!trimmed) return `export default function App() { return null }`;
 
@@ -171,11 +235,25 @@ export const PLAYGROUND_EXTERNAL_RESOURCES: readonly string[] = [
  * should pass this instead of hand-writing the map — otherwise a future
  * dependency bump has to chase five sites.
  *
- * `recharts` is included because the LLM is allowed to emit chart code
- * (ALLOWED_EXTERNAL_IMPORTS). `react` + `react-dom` are provided by the
- * Sandpack template so they don't go here.
+ * `@gradeui/ui` is the ACTUAL published design system. Pulling it in
+ * from npm (rather than shipping hand-simplified copies of Button/Input/
+ * Checkbox etc.) is the only way to guarantee 1:1 parity with what a
+ * consumer sees — if the Sandpack preview renders something different
+ * from the real package, we're lying to the user about how their theme
+ * will look.
+ *
+ * The other entries are kept so user JSX that imports them directly
+ * (e.g. `import { Mail } from "lucide-react"`, `import { cn } from
+ * "tailwind-merge"`) still resolves. `recharts` is pinned for chart
+ * generation. `react` + `react-dom` are provided by the Sandpack
+ * template so they don't go here.
+ *
+ * `latest` for @gradeui/ui picks up the most recent published version
+ * automatically — CI-driven publishes flow straight through. Pin to an
+ * exact version when debugging a breaking change.
  */
 export const PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> = {
+  "@gradeui/ui": "latest",
   "class-variance-authority": "^0.7.0",
   clsx: "^2.0.0",
   "tailwind-merge": "^2.0.0",
@@ -515,16 +593,21 @@ button:focus, input:focus, select:focus, textarea:focus,
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Component source files (inlined so the Sandpack iframe can resolve imports)
-// Supports: Button, Card, Input, Label, Alert, Badge, Dialog, Textarea,
-//           Separator, Progress, Checkbox, Switch, Avatar, Skeleton, Tabs,
-//           Select, Table.
+// Component source files (legacy — hand-simplified copies of the real
+// components, kept around only for the STANDALONE HTML download path.
 //
-// These are deliberately hand-simplified versions of the real Grade
-// components — Radix/portal-based primitives (Tooltip, Popover, Sheet,
-// DropdownMenu, Command, Calendar) are omitted because they'd need their
-// dependencies bundled into every Sandpack iframe, which is slow and flaky.
-// If the model needs one of those, it has to live in a future iteration.
+// The in-page Sandpack preview and Studio no longer use these; they now
+// install `@gradeui/ui` from npm (see PLAYGROUND_DEPENDENCIES) so the
+// iframe gets byte-for-byte the same Button/Input/Checkbox every npm
+// consumer does. That gives us real 1:1 parity — the whole point of the
+// design system.
+//
+// The only remaining consumer is lib/chat-export.ts, which produces a
+// single-file .html downloadable: no bundler, no npm install, just
+// Babel Standalone + an importmap of data: URLs. That path CAN'T reach
+// npm, so it falls back to these inlined sources. When a user exports
+// a design as HTML, they get these copies — acceptable trade-off for
+// an offline download, not acceptable for the live theme preview.
 // ─────────────────────────────────────────────────────────────────────
 
 export const componentFiles: Record<string, string> = {
@@ -1351,12 +1434,31 @@ export const ALLOWED_EXTERNAL_IMPORTS = [
 // view mode; everything else is centralised here.
 // ─────────────────────────────────────────────────────────────────────
 
-/** The minimal entry + styles that every Sandpack iframe needs. */
+/**
+ * The minimal entry + styles every Sandpack iframe needs.
+ *
+ * CRITICAL — import order is the whole ballgame for live theming:
+ *   1. `@gradeui/ui/styles.css` ships the library's compiled Tailwind
+ *      output + :root defaults. Loaded FIRST so every utility class the
+ *      real component emits (bg-primary, rounded-md, focus-visible ring
+ *      stack, data-[state=checked]:*, peer-disabled:*, etc.) is already
+ *      resolved before theme vars come in.
+ *   2. `./styles.css` contains the active theme's CSS variable values —
+ *      --primary, --foreground, --font-sans, plus the data-*-shape
+ *      overrides. Loaded SECOND so its `:root { --primary: ... }`
+ *      declaration wins over the library's default triplet via same-
+ *      specificity cascade (last rule wins).
+ *
+ * Flip the order and the library's built-in defaults would override the
+ * user's theme — silently making every preview look identical regardless
+ * of slider position.
+ */
 const PLAYGROUND_ENTRY_TSX = [
   'import React from "react";',
   'import ReactDOM from "react-dom/client";',
-  'import App from "./App";',
+  'import "@gradeui/ui/styles.css";',
   'import "./styles.css";',
+  'import App from "./App";',
   "",
   'ReactDOM.createRoot(document.getElementById("root")!).render(<App />);',
 ].join("\n");
@@ -1398,14 +1500,32 @@ export function buildSandpackFiles({
     inputStyle: theme.components.inputStyle ?? "outlined",
     cardStyle: theme.components.cardStyle ?? "flat",
   };
-  const prepared = appSourceIsPrepared ? appSource : prepareAppSource(appSource);
+  // Always rewrite legacy `./components/ui/<name>` imports even when the
+  // caller claims the source is pre-prepared — templates/view passes
+  // `appSourceIsPrepared: true` (so the bare-JSX + default-export passes
+  // are skipped for cleanliness), but their authored template code still
+  // has the old local paths that need to resolve to @gradeui/ui now.
+  // The rewrite is idempotent, so re-running it after prepareAppSource
+  // already ran is a no-op.
+  const normalized = appSourceIsPrepared ? appSource : prepareAppSource(appSource);
+  const prepared = rewriteLocalComponentImports(normalized);
 
+  // NOTE: no `...componentFiles` spread. The Sandpack iframe now
+  // installs `@gradeui/ui` from npm (see PLAYGROUND_DEPENDENCIES) and
+  // user JSX imports directly from "@gradeui/ui". Shipping hand-rolled
+  // copies of Button/Input/Checkbox alongside that would double-define
+  // the modules and invite drift — exactly the drift that motivated the
+  // switch ("we dont want closer parity — we want ACTUAL parity").
+  //
+  // The `componentFiles` export is still used by lib/chat-export.ts's
+  // standalone-HTML download path (browser Babel + data: URL importmap),
+  // which can't hit npm directly. Keep it exported; just don't mount it
+  // in the Sandpack file map here.
   return {
     "/App.tsx": prepared,
     "/public/index.html": buildPlaygroundIndexHtml(lightVars, darkVars, mode, components),
     "/index.tsx": PLAYGROUND_ENTRY_TSX,
     "/styles.css": buildPlaygroundStylesCss(lightVars, darkVars),
-    ...componentFiles,
     ...(extraFiles ?? {}),
   };
 }

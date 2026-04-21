@@ -35,10 +35,12 @@ import type { GeneratedTheme } from "./themes";
 const GRADEUI_VERSION = "latest";
 
 /**
- * Rewrite local component imports (from the Studio preview's inlined layout)
- * to flat imports from @gradeui/ui. The model is instructed to emit imports
- * like `from "./components/ui/button"`; if that ever changes, update the
- * regex here too.
+ * Rewrite local component imports to flat imports from @gradeui/ui. The
+ * Studio system prompt now instructs the model to emit `from "@gradeui/ui"`
+ * directly — in that case this is a no-op. The function is kept as a
+ * defensive pass for legacy snippets (saved Studio designs from before the
+ * switch, hand-authored templates, etc.) that still use the old
+ * `./components/ui/<name>` form.
  *
  * Also collapses multi-specifier imports — `{ Button, Card }` from two
  * different local paths become a single `{ Button, Card }` from
