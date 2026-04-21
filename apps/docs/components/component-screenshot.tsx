@@ -349,6 +349,70 @@ export function ComponentScreenshot({ name }: { name: string }) {
         <Input placeholder="Type a message..." className="h-8 text-xs" />
       </div>
     ),
+    "Video Player": (
+      <div className="w-[240px] aspect-video rounded-lg border bg-gradient-to-br from-slate-800 to-slate-950 relative overflow-hidden flex items-center justify-center">
+        <div className="h-10 w-10 rounded-full bg-white/90 flex items-center justify-center">
+          <div className="w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-slate-900 ml-1" />
+        </div>
+        <div className="absolute bottom-2 left-2 right-2 h-1 bg-white/20 rounded-full overflow-hidden">
+          <div className="h-full w-1/3 bg-white/80" />
+        </div>
+      </div>
+    ),
+    "Rive Player": (
+      <div className="w-[240px] aspect-square max-h-[160px] rounded-lg border bg-gradient-to-br from-violet-500/10 via-fuchsia-500/10 to-rose-500/10 relative overflow-hidden flex items-center justify-center">
+        <div className="text-xs font-semibold tracking-widest text-muted-foreground">RIVE</div>
+        <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-emerald-500" />
+      </div>
+    ),
+    "Three Scene": (
+      <div className="w-[240px] aspect-video rounded-lg border relative overflow-hidden bg-[radial-gradient(ellipse_at_center,_#1e1b4b_0%,_#020617_70%)]">
+        <div className="absolute inset-0">
+          {[...Array(24)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute h-px bg-white/60"
+              style={{
+                top: `${(i * 37) % 100}%`,
+                left: `${(i * 53) % 100}%`,
+                width: `${10 + (i % 5) * 4}px`,
+                opacity: 0.4 + ((i % 4) * 0.15),
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    ),
+    "Shader Preset Preview": (
+      <div className="w-[240px] rounded-lg border overflow-hidden">
+        <div className="aspect-video bg-[radial-gradient(ellipse_at_center,_#1e1b4b_0%,_#020617_70%)] relative">
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute h-px bg-white/70"
+              style={{
+                top: `${(i * 29) % 100}%`,
+                left: `${(i * 47) % 100}%`,
+                width: `${8 + (i % 4) * 4}px`,
+              }}
+            />
+          ))}
+        </div>
+        <div className="p-2 text-xs font-medium">space</div>
+      </div>
+    ),
+    "Shader Preset Picker": (
+      <div className="w-[240px] grid grid-cols-2 gap-1.5">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className={`aspect-video rounded-md border bg-[radial-gradient(ellipse_at_center,_#1e1b4b_0%,_#020617_70%)] ${
+              i === 0 ? "ring-2 ring-primary" : ""
+            }`}
+          />
+        ))}
+      </div>
+    ),
   };
 
   return (

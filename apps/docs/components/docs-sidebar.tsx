@@ -112,6 +112,16 @@ const componentsNav: NavSection[] = [
     ],
   },
   {
+    title: "Media",
+    items: [
+      { title: "Video Player", href: "/components/video-player" },
+      { title: "Rive Player", href: "/components/rive-player" },
+      { title: "Three Scene", href: "/components/three-scene" },
+      { title: "Shader Preset Preview", href: "/components/shader-preset-preview" },
+      { title: "Shader Preset Picker", href: "/components/shader-preset-picker" },
+    ],
+  },
+  {
     title: "Blocks",
     items: [
       { title: "AI Chat", href: "/components/ai-chat" },

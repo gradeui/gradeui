@@ -37,6 +37,12 @@ export const componentsList = [
   { name: "Collapsible", href: "/components/collapsible", category: "Navigation" },
   { name: "Sheet", href: "/components/sheet", category: "Navigation" },
   { name: "Scroll Area", href: "/components/scroll-area", category: "Navigation" },
+  // Media
+  { name: "Video Player", href: "/components/video-player", category: "Media" },
+  { name: "Rive Player", href: "/components/rive-player", category: "Media" },
+  { name: "Three Scene", href: "/components/three-scene", category: "Media" },
+  { name: "Shader Preset Preview", href: "/components/shader-preset-preview", category: "Media" },
+  { name: "Shader Preset Picker", href: "/components/shader-preset-picker", category: "Media" },
   // Blocks
   { name: "AI Chat", href: "/components/ai-chat", category: "Blocks" },
 ];

@@ -10,7 +10,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  external: ["react", "react-dom", "tailwindcss"],
+  external: ["react", "react-dom", "tailwindcss", "@rive-app/react-canvas"],
   treeshake: true,
   minify: true,
 });

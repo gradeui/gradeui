@@ -170,6 +170,50 @@ export {
   TooltipTrigger,
 } from "../components/ui/tooltip";
 
+// Media components
+export {
+  MediaSurface,
+  usePrefersReducedMotion,
+  type MediaSurfaceProps,
+  type MediaAspect,
+  type MediaRadius,
+  type BaseMediaProps,
+} from "../components/ui/media-surface";
+
+export { VideoPlayer, type VideoPlayerProps } from "../components/ui/video-player";
+
+export { RivePlayer, type RivePlayerProps } from "../components/ui/rive-player";
+
+export { ThreeScene, type ThreeSceneProps } from "../components/ui/three-scene";
+
+export {
+  ShaderPresetPreview,
+  type ShaderPresetPreviewProps,
+} from "../components/ui/shader-preset-preview";
+
+export {
+  ShaderPresetPicker,
+  type ShaderPresetPickerProps,
+} from "../components/ui/shader-preset-picker";
+
+// Media preset registry + types
+export {
+  shaderPresets,
+  shaderPresetById,
+  sceneRegistry,
+} from "./three/shader-presets";
+
+export { postPresets, defaultPostPreset } from "./three/post-presets";
+
+export type {
+  ShaderPreset,
+  PostPreset,
+  SceneContext,
+  SceneHandle,
+  SceneFactory,
+  Palette,
+} from "./three/types";
+
 // Utility functions
 export { cn } from "./utils";
 

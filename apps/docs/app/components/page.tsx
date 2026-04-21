@@ -39,6 +39,11 @@ const componentDescriptions: Record<string, string> = {
   Sheet: "A panel that slides out from the side of the screen.",
   "Scroll Area": "Augments native scroll functionality for custom styling.",
   "AI Chat": "Conversational AI interface for exploring the design system.",
+  "Video Player": "HTML5 video wrapped in the shared media surface — player or chromeless viewer.",
+  "Rive Player": "Rive runtime wrapped in the shared media surface. Optional dependency, lazy-loaded.",
+  "Three Scene": "WebGL primitive for shader backgrounds, generative visuals, and custom three.js scenes.",
+  "Shader Preset Preview": "Hover-to-live thumbnail card for a shader preset.",
+  "Shader Preset Picker": "Runtime gallery of shader presets — click to select.",
 };
 
 export default function ComponentsPage() {

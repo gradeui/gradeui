@@ -24,6 +24,7 @@ import {
   Map,
   Activity,
   MessageSquare,
+  Film,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +47,7 @@ const categoryIcons: Record<string, React.ElementType> = {
   "Data Display": FileText,
   Feedback: Activity,
   Navigation: Settings,
+  Media: Film,
   Blocks: Zap,
 };
 
