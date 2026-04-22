@@ -6,9 +6,11 @@
  * the model generates the component from scratch. If/when we add hand-written
  * JSX starters, this module is the natural place to hang them off.
  *
- * Keep the list short. A picker is only useful if the user can eye-scan it;
- * eight is already near the ceiling for a sidebar-width column. If we need
- * more, group them by category and show a collapsible drawer instead.
+ * Keep the list short. A picker is only useful if the user can eye-scan it.
+ * We've split the set into two groups: app-layout starters (AppShell-based,
+ * for testing scaffold shapes) and component-focused starters (single-screen
+ * component compositions). If we push past ~12 total, break the picker into
+ * a collapsible drawer grouped by category.
  */
 import type { LucideIcon } from "lucide-react";
 import {
@@ -21,6 +23,9 @@ import {
   Table2,
   FileText,
   Waves,
+  LayoutPanelLeft,
+  LayoutPanelTop,
+  PanelsTopLeft,
 } from "lucide-react";
 
 export interface StudioTemplate {
@@ -41,6 +46,36 @@ export interface StudioTemplate {
 }
 
 export const STUDIO_TEMPLATES: StudioTemplate[] = [
+  // --- App layouts (AppShell-based) ---
+  // These exercise the AppShell/AppShellNav/AppShellMain trio so the
+  // generated design has a recognisable, editable scaffold at the root
+  // instead of freestyle grids. Hand-roll nav content from Button/Stack —
+  // SideMenu/TopMenu aren't Studio-allowlisted yet.
+  {
+    id: "app-side-nav",
+    label: "App (side nav)",
+    description: "Dashboard shell with a vertical nav column.",
+    icon: LayoutPanelLeft,
+    prompt:
+      "A dashboard-style app shell using <AppShell nav=\"side\"> as the root. Inside: <AppShellNav placement=\"side\"> contains a narrow vertical nav (~220px wide) with a product name at the top, a Stack of five nav entries (Home, Projects, Team, Billing, Settings) rendered as Ghost Buttons with left alignment, and a Separator above a sign-out Button at the bottom. <AppShellMain> holds a Stack (gap=\"lg\", padded with p-6) containing a Row with a page title and a primary 'New project' Button, then a four-up grid of stat Cards (Users, Revenue, Conversion, Churn — each with a small trend number), and a recent-activity list below. Keep it a single screen.",
+  },
+  {
+    id: "app-top-nav",
+    label: "App (top nav)",
+    description: "Marketing / settings shell with a top bar.",
+    icon: LayoutPanelTop,
+    prompt:
+      "A page using <AppShell nav=\"top\"> as the root. <AppShellNav placement=\"top\"> contains a Row (justify=\"between\", align=\"center\", padded px-6 py-3) with a product name on the left and a Row of three Ghost Buttons (Docs, Pricing, Changelog) plus a primary 'Sign in' Button on the right. <AppShellMain maxWidth=\"container\"> holds a Stack (gap=\"xl\", py-10): a hero Row with a headline and one-line subhead on the left and an illustrative Card on the right, then a three-column feature grid (three Cards, each with a title, one-sentence blurb, and an arrow Button). Constrain to a single screen of content.",
+  },
+  {
+    id: "app-docs",
+    label: "App (docs)",
+    description: "Docs site shell — side nav + long-form main.",
+    icon: PanelsTopLeft,
+    prompt:
+      "A documentation site layout using <AppShell nav=\"side\">. <AppShellNav placement=\"side\"> holds a Stack (gap=\"xs\", p-4, w-64) with a product name at the top and three grouped sections: 'Getting Started' (Introduction, Installation, Quick Start), 'Guides' (Theming, Layouts, Forms), 'Reference' (Components, Tokens) — each section has a small uppercase heading and the items rendered as Ghost Buttons with left alignment. <AppShellMain maxWidth=\"container\"> contains a Stack (gap=\"lg\", py-10): a breadcrumb Row, an h1 page title with a one-line description, a longer body paragraph, a code-style Card showing a usage snippet, and a 'Next / Previous' Row of outline Buttons at the bottom.",
+  },
+  // --- Component-focused starters ---
   {
     id: "dashboard",
     label: "Dashboard",

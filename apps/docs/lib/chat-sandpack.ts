@@ -1732,6 +1732,12 @@ export const ALLOWED_COMPONENTS = [
   // vertical/horizontal rhythm stays consistent across designs.
   "Stack",
   "Row",
+  // App scaffold — the top-level page shell. nav=side|top|none picks the
+  // structure; AppShellMain's maxWidth caps content width. Reach for this
+  // instead of hand-rolling grid grid-cols-[auto_1fr] on every app layout.
+  "AppShell",
+  "AppShellNav",
+  "AppShellMain",
   // Core primitives
   "Button",
   "Card",
