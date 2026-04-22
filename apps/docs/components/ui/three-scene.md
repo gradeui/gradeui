@@ -6,7 +6,7 @@ props:
   - fragmentShader?: string — user-authored GLSL body; takes precedence over preset
   - onShaderError?: (error: ShaderCompileError) => void — fires on compile failure; scene falls back to `preset="space"`
   - postPreset?: string (default from preset, or "vhs") — "none" | "vhs" | "cinematic" | "synthwave" | "crt"
-  - palette?: Partial<{ primary; secondary; accent; background }> — unset slots fall back to defaults
+  - palette?: Partial<{ primary; secondary; accent; background }> — any CSS-legal colour string per slot. Re-tints automatically when the theme changes. Unset slots fall back to defaults.
   - createScene?: (ctx) => SceneHandle — custom full scene factory; takes precedence over preset AND fragmentShader
   - controls?: boolean (default false) — play/pause overlay
   - autoPlay?: boolean (default true) — respects reduced-motion
@@ -33,6 +33,25 @@ notes: |
   Valid `postPreset` ids (complete list): "none" | "vhs" | "cinematic" | "synthwave" | "crt".
 
   Re-skin any preset with `palette={{ primary, secondary, accent, background }}` to shift its mood. Preset + palette + postPreset is usually enough to hit ocean / lava / neon / forest vibes.
+
+  ### Palette values — what counts as a valid colour
+
+  Each slot accepts ANY CSS-legal colour expression. Values are normalised via a browser probe before being handed to three.js, so all of these work:
+
+    - CSS custom properties — `"var(--primary)"`, `"var(--foreground)"`. RECOMMENDED for DS consumers — the shader re-tints automatically on theme change.
+    - Hex — `"#ff5fb9"`, `"#f5b"`.
+    - `rgb()` / `rgba()` — `"rgb(255 95 185)"`, `"rgb(255, 95, 185)"`.
+    - `hsl()` / `hsla()` — `"hsl(330 100% 69%)"`.
+    - `oklch()` / `lab()` / `lch()` / `oklab()` — `"oklch(0.74 0.18 350)"`. Full CSS Color 4.
+    - Named colours — `"tomato"`, `"dodgerblue"`, `"black"`.
+
+  INVALID — these DO NOT work and will silently fall back to the default palette slot:
+
+    - Raw triplets without a function wrapper — `"0.4 0.1 0.9"` is NOT a colour; wrap it as `"oklch(0.4 0.1 0.9)"`.
+    - three.js hex numbers — `0xff5fb9` (number). Use the string `"#ff5fb9"`.
+    - Colour arrays — `[0.4, 0.1, 0.9]`. Not accepted.
+
+  Theme reactivity: when the host document's root class or `data-theme` attribute changes, the scene re-reads the palette and pushes new uniforms into the running shader WITHOUT tearing down the WebGL context. Dark/light swaps are essentially free.
 
   ## Path 2 — `fragmentShader` (custom GLSL)
 
@@ -95,6 +114,33 @@ notes: |
     secondary: "#1a7eff",
     accent: "#ffffff",
     background: "#000512",
+  }}
+/>
+```
+
+```jsx
+// Path 1 — palette from the active theme via CSS variables.
+// Recolors automatically when the theme switches.
+<ThreeScene
+  preset="plasma"
+  palette={{
+    primary: "var(--primary)",
+    secondary: "var(--secondary)",
+    accent: "var(--accent)",
+    background: "var(--background)",
+  }}
+/>
+```
+
+```jsx
+// Path 1 — CSS Color 4 (oklch) works too.
+<ThreeScene
+  preset="voronoi"
+  palette={{
+    primary: "oklch(0.74 0.18 350)",
+    secondary: "oklch(0.62 0.22 260)",
+    accent: "oklch(0.92 0.11 95)",
+    background: "oklch(0.1 0.04 280)",
   }}
 />
 ```

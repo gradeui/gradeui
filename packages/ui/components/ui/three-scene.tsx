@@ -45,6 +45,51 @@ const DEFAULT_PALETTE: Palette = {
   background: "#0a0a14",
 };
 
+/**
+ * Resolve any CSS-legal colour expression to a THREE-parseable string.
+ *
+ * Browsers normalise `var(--primary)`, `oklch()`, `lab()`, `hsl()`, hex, rgb()
+ * and named colours down to `rgb(R, G, B)` via `getComputedStyle`. THREE's
+ * `Color.setStyle()` only accepts rgb/hsl/hex/named, so we run everything
+ * through a detached probe first. Invalid inputs (e.g. raw "0.4 0.1 0.9"
+ * triplets) are rejected by `style.color =` and fall back instead of
+ * silently resolving to black.
+ */
+function resolveCssColor(
+  input: string,
+  host: HTMLElement,
+  fallback: string,
+): string {
+  if (typeof document === "undefined") return fallback;
+  const probe = document.createElement("span");
+  // If the browser rejects the assignment, style.color stays empty.
+  probe.style.color = "";
+  probe.style.color = input;
+  if (probe.style.color === "") return fallback;
+  probe.style.display = "none";
+  host.appendChild(probe);
+  const resolved = getComputedStyle(probe).color;
+  host.removeChild(probe);
+  return resolved || fallback;
+}
+
+function resolvePalette(palette: Palette, host: HTMLElement): Palette {
+  return {
+    primary: resolveCssColor(palette.primary, host, DEFAULT_PALETTE.primary),
+    secondary: resolveCssColor(
+      palette.secondary,
+      host,
+      DEFAULT_PALETTE.secondary,
+    ),
+    accent: resolveCssColor(palette.accent, host, DEFAULT_PALETTE.accent),
+    background: resolveCssColor(
+      palette.background,
+      host,
+      DEFAULT_PALETTE.background,
+    ),
+  };
+}
+
 export interface ThreeSceneProps
   extends Omit<BaseMediaProps, "src" | "poster"> {
   /** Preset id from the shader preset registry. */
@@ -141,6 +186,11 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       const width = host.clientWidth || 1;
       const height = host.clientHeight || 1;
 
+      // Resolve palette CSS expressions (var(), oklch(), lab(), hex, rgb(),
+      // named colours) into THREE-parseable rgb() strings via a DOM probe.
+      // Done AFTER host is in the document so custom properties resolve.
+      const livePalette = resolvePalette(palette, host);
+
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: false,
@@ -149,7 +199,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       const dpr = maxDpr ?? Math.min(window.devicePixelRatio || 1, 2);
       renderer.setPixelRatio(dpr);
       renderer.setSize(width, height);
-      renderer.setClearColor(new THREE.Color(palette.background), 1);
+      renderer.setClearColor(new THREE.Color(livePalette.background), 1);
       renderer.domElement.dataset.gdsPart = "shader-canvas";
       renderer.domElement.style.width = "100%";
       renderer.domElement.style.height = "100%";
@@ -161,7 +211,12 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       // "space" preset so the surface is never left blank.
       let handle: SceneHandle;
       try {
-        handle = resolvedFactory({ renderer, width, height, palette });
+        handle = resolvedFactory({
+          renderer,
+          width,
+          height,
+          palette: livePalette,
+        });
       } catch (err) {
         if (err instanceof ShaderCompileError) {
           onShaderError?.(err);
@@ -169,7 +224,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
             renderer,
             width,
             height,
-            palette,
+            palette: livePalette,
           });
         } else {
           // Unknown failure — tear down and re-throw so the app sees it.
@@ -228,6 +283,27 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       );
       io.observe(host);
 
+      // Theme-change observer — when a consumer flips the root class / data-theme
+      // attr (GradeThemeProvider, dark-mode toggle, custom theme swap), re-resolve
+      // any CSS-var-driven palette entries and push them into the live scene
+      // without remounting WebGL.
+      const themeObserver = new MutationObserver(() => {
+        if (!hostRef.current) return;
+        const next = resolvePalette(palette, hostRef.current);
+        renderer.setClearColor(new THREE.Color(next.background), 1);
+        handle.setPalette?.(next);
+      });
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: [
+          "class",
+          "style",
+          "data-theme",
+          "data-gds-theme",
+          "data-grade-mode",
+        ],
+      });
+
       // Pointer tracking — only wired up if the scene exposes `setMouse`
       // (currently just fragment-shader scenes). Normalised to [0,1] with
       // y flipped so the coordinates match GLSL's origin-at-bottom-left.
@@ -264,6 +340,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
         cancelAnimationFrame(rafId);
         ro.disconnect();
         io.disconnect();
+        themeObserver.disconnect();
         if (onPointerMove) host.removeEventListener("pointermove", onPointerMove);
         post.dispose();
         handle.dispose?.();
