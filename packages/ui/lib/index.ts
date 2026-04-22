@@ -8,6 +8,18 @@ export {
 
 export { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
 
+export {
+  AppShell,
+  AppShellNav,
+  AppShellMain,
+  shellVariants,
+  navVariants as appShellNavVariants,
+  mainVariants as appShellMainVariants,
+  type AppShellProps,
+  type AppShellNavProps,
+  type AppShellMainProps,
+} from "../components/ui/app-shell";
+
 export { Badge, badgeVariants } from "../components/ui/badge";
 
 export { Button, buttonVariants } from "../components/ui/button";

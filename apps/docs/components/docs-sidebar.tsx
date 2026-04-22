@@ -43,6 +43,14 @@ const docsNav: NavSection[] = [
 
 const componentsNav: NavSection[] = [
   {
+    title: "Layout",
+    items: [
+      { title: "App Shell", href: "/components/app-shell" },
+      { title: "Stack", href: "/components/stack" },
+      { title: "Row", href: "/components/row" },
+    ],
+  },
+  {
     title: "Forms",
     items: [
       { title: "Button", href: "/components/button" },

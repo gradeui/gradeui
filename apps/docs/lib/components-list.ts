@@ -1,4 +1,8 @@
 export const componentsList = [
+  // Layout
+  { name: "App Shell", href: "/components/app-shell", category: "Layout" },
+  { name: "Stack", href: "/components/stack", category: "Layout" },
+  { name: "Row", href: "/components/row", category: "Layout" },
   // Forms
   { name: "Button", href: "/components/button", category: "Forms" },
   { name: "Input", href: "/components/input", category: "Forms" },
