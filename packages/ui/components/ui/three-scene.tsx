@@ -45,24 +45,39 @@ const DEFAULT_PALETTE: Palette = {
   background: "#0a0a14",
 };
 
+// Shadcn / gradeui store their design tokens as bare channel triplets so the
+// same custom property can be composed into `oklch()`, `hsl()`, or relative
+// colour expressions at the use-site. But that means `var(--primary)` on its
+// own expands to something like `"0.610 0.128 20"` which is NOT a valid CSS
+// <color>, so the browser silently falls back to the inherited colour —
+// usually black. We detect that pattern here and re-wrap before handing the
+// value to the DOM probe.
+const OKLCH_TRIPLET =
+  /^[\d.]+\s+[\d.]+\s+[\d.]+(?:\s*\/\s*[\d.%]+)?$/; // "0.61 0.13 20" — no % signs
+const HSL_TRIPLET =
+  /^[\d.]+\s+[\d.]+%\s+[\d.]+%(?:\s*\/\s*[\d.%]+)?$/; // "20 90% 48%" — shadcn HSL
+const VAR_REF = /^\s*var\(\s*(--[^,)\s]+)(?:\s*,[^)]*)?\s*\)\s*$/;
+
 /**
  * Resolve any CSS-legal colour expression to a THREE-parseable string.
  *
- * Two-step resolution:
+ * Three-step resolution:
  *
- *   1. DOM probe — assign the input to a detached span's inline color and
- *      read `getComputedStyle(probe).color`. This resolves CSS custom
- *      properties (`var(--primary)`) and validates syntax. Invalid inputs
- *      (e.g. the raw triplet `"0.4 0.1 0.9"`) are rejected by the style
- *      assignment and fall back immediately.
+ *   1. Design-token unwrap — if the input is a `var(--token)` reference,
+ *      read the raw custom-property value off the host. If that value is a
+ *      bare channel triplet (shadcn/gradeui convention), re-wrap it as
+ *      `oklch(...)` / `hsl(...)` so the DOM probe gets a valid colour.
  *
- *   2. Canvas rasterisation — the computed form may be `oklch(...)`,
- *      `oklab(...)` or `color(srgb ...)` when tokens are authored in
- *      CSS Color 4 (gradeui's generator emits `oklch()` directly).
- *      `THREE.Color.setStyle()` only parses `rgb()`/`hsl()`/hex/named,
- *      so we paint the computed colour into a 1×1 canvas and read the
- *      rasterised sRGB bytes. Canvas is guaranteed to gamut-convert any
- *      CSS color, so the round-trip always yields THREE-parseable `rgb()`.
+ *   2. DOM probe — assign to a detached span's inline colour and read
+ *      `getComputedStyle(probe).color`. Resolves remaining var() and
+ *      validates syntax.
+ *
+ *   3. Canvas rasterisation — the computed form may be `oklch(...)`,
+ *      `oklab(...)` or `color(srgb ...)`. `THREE.Color.setStyle()` only
+ *      parses `rgb()`/`hsl()`/hex/named, so we paint the computed colour
+ *      into a 1×1 canvas and read the rasterised sRGB bytes. Canvas is
+ *      guaranteed to gamut-convert any CSS colour, so the round-trip
+ *      always yields a THREE-parseable `rgb()`.
  */
 function resolveCssColor(
   input: string,
@@ -71,10 +86,24 @@ function resolveCssColor(
 ): string {
   if (typeof document === "undefined") return fallback;
 
-  // Step 1: resolve var() and validate via DOM probe.
+  // Step 1: detect bare-triplet design tokens and re-wrap.
+  let effectiveInput = input;
+  const varRef = VAR_REF.exec(input);
+  if (varRef) {
+    const raw = getComputedStyle(host).getPropertyValue(varRef[1]).trim();
+    if (raw) {
+      if (OKLCH_TRIPLET.test(raw)) {
+        effectiveInput = `oklch(${raw})`;
+      } else if (HSL_TRIPLET.test(raw)) {
+        effectiveInput = `hsl(${raw})`;
+      }
+    }
+  }
+
+  // Step 2: resolve remaining var() and validate via DOM probe.
   const probe = document.createElement("span");
   probe.style.color = "";
-  probe.style.color = input;
+  probe.style.color = effectiveInput;
   if (probe.style.color === "") return fallback;
   probe.style.display = "none";
   host.appendChild(probe);
@@ -85,7 +114,7 @@ function resolveCssColor(
   // Fast path: already in rgb()/rgba() form — skip canvas round-trip.
   if (computed.startsWith("rgb")) return computed;
 
-  // Step 2: gamut-convert oklch()/oklab()/color(...) via canvas rasterisation.
+  // Step 3: gamut-convert oklch()/oklab()/color(...) via canvas rasterisation.
   try {
     const canvas = document.createElement("canvas");
     canvas.width = 1;

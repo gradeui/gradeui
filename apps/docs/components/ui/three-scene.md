@@ -38,7 +38,7 @@ notes: |
 
   Each slot accepts ANY CSS-legal colour expression. Values are normalised via a browser probe before being handed to three.js, so all of these work:
 
-    - CSS custom properties — `"var(--primary)"`, `"var(--foreground)"`. RECOMMENDED for DS consumers — the shader re-tints automatically on theme change.
+    - CSS custom properties — `"var(--primary)"`, `"var(--foreground)"`. RECOMMENDED for DS consumers — the shader re-tints automatically on theme change. Works with shadcn / gradeui bare-triplet tokens (`--primary: 0.610 0.128 20`): when the palette value is a `var(--token)` reference and the token itself resolves to a bare triplet, the resolver auto-wraps it as `oklch(...)` (three bare floats) or `hsl(...)` (two `%` signs) before threading it to three.
     - Hex — `"#ff5fb9"`, `"#f5b"`.
     - `rgb()` / `rgba()` — `"rgb(255 95 185)"`, `"rgb(255, 95, 185)"`.
     - `hsl()` / `hsla()` — `"hsl(330 100% 69%)"`.
@@ -47,11 +47,21 @@ notes: |
 
   INVALID — these DO NOT work and will silently fall back to the default palette slot:
 
-    - Raw triplets without a function wrapper — `"0.4 0.1 0.9"` is NOT a colour; wrap it as `"oklch(0.4 0.1 0.9)"`.
+    - Literal bare triplets passed as a palette string — `"0.4 0.1 0.9"` is NOT a colour; wrap it as `"oklch(0.4 0.1 0.9)"`. (The var()-based auto-wrap above only kicks in when the palette value is `var(--token)` and the token itself is a triplet — it can't rescue a raw triplet passed directly.)
     - three.js hex numbers — `0xff5fb9` (number). Use the string `"#ff5fb9"`.
     - Colour arrays — `[0.4, 0.1, 0.9]`. Not accepted.
 
   Theme reactivity: when the host document's root class or `data-theme` attribute changes, the scene re-reads the palette and pushes new uniforms into the running shader WITHOUT tearing down the WebGL context. Dark/light swaps are essentially free.
+
+  ### gradeui token semantics — pick the RIGHT tokens
+
+  When wiring `var(--…)` into the palette, remember that gradeui tokens serve different roles:
+
+    - `--primary` — brand hue 1. USE for `palette.primary` (or `palette.accent`).
+    - `--accent` — brand hue 2. USE for `palette.secondary` — gradeui's `--secondary` is a NEUTRAL surface (identical to `--muted`) and will render as a flat near-white wash in the shader.
+    - `--foreground` — inverted neutral (dark in light mode, light in dark mode). USE for `palette.background` — the raw `--background` token is the page background (near-white in light mode) and will wash the shader out.
+
+  Idiomatic theme-reactive palette for gradeui consumers: `{ primary: "var(--primary)", secondary: "var(--accent)", accent: "var(--primary)", background: "var(--foreground)" }`. Do NOT blindly map `palette.secondary → var(--secondary)` or `palette.background → var(--background)`.
 
   ## Path 2 — `fragmentShader` (custom GLSL)
 
@@ -121,13 +131,20 @@ notes: |
 ```jsx
 // Path 1 — palette from the active theme via CSS variables.
 // Recolors automatically when the theme switches.
+//
+// NOTE on gradeui token semantics: `--secondary` is a NEUTRAL surface token
+// (same value as `--muted`), and `--background` is the page background — both
+// are near-white in light mode and would wash the shader out. For a punchy,
+// theme-reactive palette, map the shader's slots to gradeui's two BRAND hues
+// (`--primary`, `--accent`) and use `--foreground` for the dark clear colour
+// so it inverts with the theme.
 <ThreeScene
   preset="plasma"
   palette={{
     primary: "var(--primary)",
-    secondary: "var(--secondary)",
-    accent: "var(--accent)",
-    background: "var(--background)",
+    secondary: "var(--accent)",     // gradeui's brand hue 2; `--secondary` is neutral
+    accent: "var(--primary)",
+    background: "var(--foreground)", // inverts with theme → always high-contrast
   }}
 />
 ```
