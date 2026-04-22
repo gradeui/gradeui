@@ -1,6 +1,6 @@
 {
   "name": "@gradeui/ui",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "description": "Grade Design System — React components, theme engine, and design tokens",
   "license": "MIT",
   "author": "Grade",
