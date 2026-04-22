@@ -48,12 +48,21 @@ const DEFAULT_PALETTE: Palette = {
 /**
  * Resolve any CSS-legal colour expression to a THREE-parseable string.
  *
- * Browsers normalise `var(--primary)`, `oklch()`, `lab()`, `hsl()`, hex, rgb()
- * and named colours down to `rgb(R, G, B)` via `getComputedStyle`. THREE's
- * `Color.setStyle()` only accepts rgb/hsl/hex/named, so we run everything
- * through a detached probe first. Invalid inputs (e.g. raw "0.4 0.1 0.9"
- * triplets) are rejected by `style.color =` and fall back instead of
- * silently resolving to black.
+ * Two-step resolution:
+ *
+ *   1. DOM probe — assign the input to a detached span's inline color and
+ *      read `getComputedStyle(probe).color`. This resolves CSS custom
+ *      properties (`var(--primary)`) and validates syntax. Invalid inputs
+ *      (e.g. the raw triplet `"0.4 0.1 0.9"`) are rejected by the style
+ *      assignment and fall back immediately.
+ *
+ *   2. Canvas rasterisation — the computed form may be `oklch(...)`,
+ *      `oklab(...)` or `color(srgb ...)` when tokens are authored in
+ *      CSS Color 4 (gradeui's generator emits `oklch()` directly).
+ *      `THREE.Color.setStyle()` only parses `rgb()`/`hsl()`/hex/named,
+ *      so we paint the computed colour into a 1×1 canvas and read the
+ *      rasterised sRGB bytes. Canvas is guaranteed to gamut-convert any
+ *      CSS color, so the round-trip always yields THREE-parseable `rgb()`.
  */
 function resolveCssColor(
   input: string,
@@ -61,16 +70,38 @@ function resolveCssColor(
   fallback: string,
 ): string {
   if (typeof document === "undefined") return fallback;
+
+  // Step 1: resolve var() and validate via DOM probe.
   const probe = document.createElement("span");
-  // If the browser rejects the assignment, style.color stays empty.
   probe.style.color = "";
   probe.style.color = input;
   if (probe.style.color === "") return fallback;
   probe.style.display = "none";
   host.appendChild(probe);
-  const resolved = getComputedStyle(probe).color;
+  const computed = getComputedStyle(probe).color;
   host.removeChild(probe);
-  return resolved || fallback;
+  if (!computed) return fallback;
+
+  // Fast path: already in rgb()/rgba() form — skip canvas round-trip.
+  if (computed.startsWith("rgb")) return computed;
+
+  // Step 2: gamut-convert oklch()/oklab()/color(...) via canvas rasterisation.
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return computed;
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = computed;
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return `rgb(${r}, ${g}, ${b})`;
+  } catch {
+    // Bail gracefully — return whatever the DOM probe gave us and let
+    // THREE.Color fall back to its own default on an unparseable input.
+    return computed;
+  }
 }
 
 function resolvePalette(palette: Palette, host: HTMLElement): Palette {
