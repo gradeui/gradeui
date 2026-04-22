@@ -1,6 +1,6 @@
 ---
 name: Avatar
-import: ./components/ui/avatar
+import: "@gradeui/ui"
 subcomponents: [AvatarImage, AvatarFallback]
 props:
   - Avatar: className? — set size via utilities (default h-10 w-10)

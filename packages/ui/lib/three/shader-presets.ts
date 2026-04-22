@@ -13,10 +13,16 @@
 
 import type { ShaderPreset, SceneFactory } from "./types";
 import { spaceScene } from "./scenes/space";
+import { plasmaScene } from "./scenes/plasma";
+import { voronoiScene } from "./scenes/voronoi";
+import { synthwaveScene } from "./scenes/synthwave";
 
 export const sceneRegistry: Record<string, SceneFactory> = {
   space: spaceScene,
-  // Phase 2 additions: synthwave, voronoi, icosa, oscilloscope, retro-sunset, sdf, plasma
+  plasma: plasmaScene,
+  voronoi: voronoiScene,
+  synthwave: synthwaveScene,
+  // Further candidates: icosa, oscilloscope, retro-sunset, sdf
 };
 
 export const shaderPresets: ShaderPreset[] = [
@@ -29,7 +35,33 @@ export const shaderPresets: ShaderPreset[] = [
     scene: "space",
     defaultPostPreset: "vhs",
   },
-  // Phase 2 additions will append here
+  {
+    id: "plasma",
+    label: "Plasma",
+    description:
+      "Soft rolling colour clouds — overlapping sines warping a palette ramp. Classic demoscene vibe. Pairs well with Synthwave or Cinematic.",
+    tags: ["abstract", "soft", "ambient", "hero", "background", "gradient"],
+    scene: "plasma",
+    defaultPostPreset: "synthwave",
+  },
+  {
+    id: "voronoi",
+    label: "Voronoi",
+    description:
+      "Jittered cellular grid — orbiting seed points form animated cells with glowing edges. Great for data / organic / network moods. Pairs well with CRT or VHS.",
+    tags: ["abstract", "cells", "organic", "network", "hero", "background"],
+    scene: "voronoi",
+    defaultPostPreset: "crt",
+  },
+  {
+    id: "synthwave",
+    label: "Synthwave Grid",
+    description:
+      "Retro-future perspective grid receding to a banded sun disc on the horizon. Pairs beautifully with the Synthwave post preset (its namesake).",
+    tags: ["retro", "synthwave", "80s", "hero", "background", "grid", "sun"],
+    scene: "synthwave",
+    defaultPostPreset: "synthwave",
+  },
 ];
 
 export const shaderPresetById = Object.fromEntries(

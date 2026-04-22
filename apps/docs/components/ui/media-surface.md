@@ -1,6 +1,6 @@
 ---
 name: MediaSurface
-import: ./components/ui/media-surface
+import: "@gradeui/ui"
 props:
   - aspect?: "video" | "square" | "portrait" | "wide" | "auto" (default "video")
   - radius?: "none" | "sm" | "md" | "lg" | "xl" (default "lg") — driven by `--rds-media-radius` CSS var
@@ -8,6 +8,7 @@ props:
   - children: React.ReactNode
 when_to_use: Low-level shell primitive that wraps a media canvas (video, Rive runtime, WebGL canvas) in an aspect-ratio surface with shared border-radius and pause-on-offscreen behaviour. Prefer VideoPlayer / RivePlayer / ThreeScene, which wrap this. Reach for MediaSurface directly only if you're building a bespoke media component and want consistent chrome.
 composes_with: [VideoPlayer, RivePlayer, ThreeScene — all use this internally]
+aliases: [media, canvas wrapper, media shell]
 ---
 
 ```jsx

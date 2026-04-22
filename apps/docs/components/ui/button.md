@@ -1,6 +1,6 @@
 ---
 name: Button
-import: ./components/ui/button
+import: "@gradeui/ui"
 variants: [default, destructive, outline, secondary, ghost, link]
 sizes: [default, sm, lg, icon]
 props:

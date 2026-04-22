@@ -283,6 +283,13 @@ export const PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> = {
   "tailwind-merge": "^2.0.0",
   "lucide-react": "^0.300.0",
   recharts: "^2.12.0",
+  // `@rive-app/react-canvas` is an OPTIONAL peer of @gradeui/ui — the library
+  // lazy-imports it so consumers who don't use Rive skip the ~900KB runtime.
+  // In Sandpack we install it up-front so <RivePlayer /> actually renders
+  // rather than falling through to the "Rive runtime not installed" message.
+  // `three` and `postprocessing` are NOT listed here because they're regular
+  // (non-optional) deps of @gradeui/ui and npm pulls them in transitively.
+  "@rive-app/react-canvas": "^4.21.4",
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -1676,6 +1683,23 @@ export const ALLOWED_COMPONENTS = [
   "TableRow",
   "TableCell",
   "TableCaption",
+  // Media (shipped in @gradeui/ui@0.4.0)
+  //   - VideoPlayer / RivePlayer / ThreeScene are the high-level wrappers
+  //     the model should reach for. MediaSurface is the low-level shell;
+  //     exposing it too means a user who says "build a bespoke media thing"
+  //     has a way to do it without the model inventing imports.
+  //   - RivePlayer needs `@rive-app/react-canvas` in PLAYGROUND_DEPENDENCIES
+  //     below — the lib lists it as an optionalDependency so we have to pull
+  //     it in explicitly for the Sandpack iframe.
+  //   - Shader preset primitives are included so a prompt like "show a
+  //     gallery of shader backgrounds" picks the registry-driven UI instead
+  //     of fabricating one.
+  "VideoPlayer",
+  "RivePlayer",
+  "ThreeScene",
+  "MediaSurface",
+  "ShaderPresetPreview",
+  "ShaderPresetPicker",
 ] as const;
 
 /**

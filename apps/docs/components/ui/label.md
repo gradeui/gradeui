@@ -1,6 +1,6 @@
 ---
 name: Label
-import: ./components/ui/label
+import: "@gradeui/ui"
 props:
   - htmlFor?: string — binds to the input's id
   - All native label HTML attrs

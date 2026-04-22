@@ -32,6 +32,10 @@ import type {
 import { createPostComposer } from "@/lib/three/post-composer";
 import { sceneRegistry, shaderPresetById } from "@/lib/three/shader-presets";
 import { postPresets, defaultPostPreset } from "@/lib/three/post-presets";
+import {
+  buildFragmentShaderScene,
+  ShaderCompileError,
+} from "@/lib/three/custom-fragment";
 
 /** Theme-friendly default palette. Consumers override per-tile if they want. */
 const DEFAULT_PALETTE: Palette = {
@@ -45,13 +49,26 @@ export interface ThreeSceneProps
   extends Omit<BaseMediaProps, "src" | "poster"> {
   /** Preset id from the shader preset registry. */
   preset?: string;
+  /**
+   * User-authored GLSL fragment shader body. Runs on a fullscreen quad with
+   * a standardised uniform contract (uTime, uResolution, uMouse, uPrimary,
+   * uSecondary, uAccent, uBackground + varying vUv). Header is auto-injected
+   * — DO NOT redeclare the uniforms. Write `void main()` only.
+   *
+   * Precedence: `createScene` > `fragmentShader` > `preset`. On compile
+   * failure the component falls back to `preset="space"` and fires
+   * `onShaderError`.
+   */
+  fragmentShader?: string;
+  /** Called when a supplied `fragmentShader` fails to compile. */
+  onShaderError?: (error: ShaderCompileError) => void;
   /** Post-FX preset id. Defaults to the preset's `defaultPostPreset` or "vhs". */
   postPreset?: string;
   /** Palette overrides. Unset slots fall back to `DEFAULT_PALETTE`. */
   palette?: Partial<Palette>;
   /**
-   * Custom scene factory. Takes precedence over `preset`.
-   * Use for bespoke three.js scenes that don't fit a preset.
+   * Custom scene factory. Takes precedence over `preset` and `fragmentShader`.
+   * Use for bespoke three.js scenes that don't fit a preset or fullscreen quad.
    */
   createScene?: SceneFactory;
   /** Static poster to show while the GL context warms up. */
@@ -64,6 +81,8 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
   (
     {
       preset,
+      fragmentShader,
+      onShaderError,
       postPreset,
       palette: paletteProp,
       createScene: createSceneProp,
@@ -92,12 +111,18 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       [paletteProp],
     );
 
-    // Resolve scene factory: explicit createScene wins, otherwise look up preset.
+    // Resolve scene factory.
+    //   1. Explicit createScene wins (power-user escape hatch).
+    //   2. fragmentShader — user wrote GLSL; build a fullscreen-quad scene.
+    //      We wrap in an outer arrow so compile errors throw inside the effect
+    //      and can be caught + surfaced, rather than bubbling out of useMemo.
+    //   3. Preset id from the registry.
     const resolvedFactory: SceneFactory | null = React.useMemo(() => {
       if (createSceneProp) return createSceneProp;
+      if (fragmentShader) return buildFragmentShaderScene(fragmentShader);
       if (preset && sceneRegistry[preset]) return sceneRegistry[preset];
       return null;
-    }, [createSceneProp, preset]);
+    }, [createSceneProp, fragmentShader, preset]);
 
     // Resolve post preset id
     const resolvedPostPresetId = React.useMemo(() => {
@@ -131,12 +156,30 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       renderer.domElement.style.display = "block";
       host.appendChild(renderer.domElement);
 
-      const handle: SceneHandle = resolvedFactory({
-        renderer,
-        width,
-        height,
-        palette,
-      });
+      // Instantiate the scene. A user-supplied fragment shader can fail to
+      // compile here — we catch, fire onShaderError, and fall back to the
+      // "space" preset so the surface is never left blank.
+      let handle: SceneHandle;
+      try {
+        handle = resolvedFactory({ renderer, width, height, palette });
+      } catch (err) {
+        if (err instanceof ShaderCompileError) {
+          onShaderError?.(err);
+          handle = sceneRegistry.space({
+            renderer,
+            width,
+            height,
+            palette,
+          });
+        } else {
+          // Unknown failure — tear down and re-throw so the app sees it.
+          renderer.dispose();
+          if (renderer.domElement.parentElement === host) {
+            host.removeChild(renderer.domElement);
+          }
+          throw err;
+        }
+      }
 
       const postPresetObj =
         postPresets[resolvedPostPresetId] ?? postPresets[defaultPostPreset];
@@ -185,6 +228,22 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       );
       io.observe(host);
 
+      // Pointer tracking — only wired up if the scene exposes `setMouse`
+      // (currently just fragment-shader scenes). Normalised to [0,1] with
+      // y flipped so the coordinates match GLSL's origin-at-bottom-left.
+      const sceneWithMouse = handle as SceneHandle & {
+        setMouse?: (x: number, y: number) => void;
+      };
+      const onPointerMove = sceneWithMouse.setMouse
+        ? (ev: PointerEvent) => {
+            const rect = host.getBoundingClientRect();
+            const x = (ev.clientX - rect.left) / rect.width;
+            const y = 1 - (ev.clientY - rect.top) / rect.height;
+            sceneWithMouse.setMouse!(x, y);
+          }
+        : null;
+      if (onPointerMove) host.addEventListener("pointermove", onPointerMove);
+
       // Expose a live handle for the controls overlay + palette updates
       liveRef.current = {
         toggle: () => {
@@ -205,6 +264,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
         cancelAnimationFrame(rafId);
         ro.disconnect();
         io.disconnect();
+        if (onPointerMove) host.removeEventListener("pointermove", onPointerMove);
         post.dispose();
         handle.dispose?.();
         renderer.dispose();
@@ -223,6 +283,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       reduced,
       pauseOffscreen,
       maxDpr,
+      onShaderError,
     ]);
 
     const liveRef = React.useRef<{

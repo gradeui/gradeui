@@ -1,6 +1,6 @@
 ---
 name: VideoPlayer
-import: ./components/ui/video-player
+import: "@gradeui/ui"
 props:
   - src: string — video URL
   - controls?: boolean (default true) — show native controls; false for chromeless hero/background video
@@ -15,7 +15,8 @@ props:
   - playbackRate?: number (default 1)
 when_to_use: HTML5 video wrapped in the shared media surface. Controls-on for a standard player, controls-off (+ autoplay/muted/loop) for hero / background video. Prefer Rive for anything interactive, Three Scene for shader backgrounds.
 composes_with: [MediaSurface (internal), Card (wrap for thumbnail grids)]
-notes: Poster images are always lazy-loaded. We don't use the native `<video poster>` attribute because browsers fetch it eagerly even when the surface is off-screen, which wastes the offscreen-pause savings. Instead we render `<img loading="lazy" decoding="async">` layered over the video, then fade it out on `onPlaying`.
+aliases: [video, mp4, movie, webm, clip]
+notes: Poster images are always lazy-loaded. We don't use the native `<video poster>` attribute because browsers fetch it eagerly even when the surface is off-screen, which wastes the offscreen-pause savings. Instead we render `<img loading="lazy" decoding="async">` layered over the video, then fade it out on `onPlaying`. When no `src` is given nothing renders — always pass a URL.
 ---
 
 ```jsx

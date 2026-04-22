@@ -93,6 +93,9 @@ export function buildNpmSandboxFiles(params: {
       clsx: "^2.0.0",
       "tailwind-merge": "^2.0.0",
       "lucide-react": "^0.300.0",
+      // Optional peer of @gradeui/ui — mirrors PLAYGROUND_DEPENDENCIES so
+      // exported code that uses <RivePlayer /> keeps working in CodeSandbox.
+      "@rive-app/react-canvas": "^4.21.4",
     },
     scripts: {
       start: "react-scripts start",

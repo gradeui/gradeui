@@ -24,7 +24,9 @@ import { join } from "path";
 export interface ComponentRef {
   /** Display name, e.g. "Button". Matches the exported component name. */
   name: string;
-  /** Import path the model should use, e.g. "./components/ui/button". */
+  /** Package the component ships from — almost always `@gradeui/ui`. The
+   *  formatter renders this as a full `import { … } from "<pkg>"` line so
+   *  the model doesn't guess at named-vs-default or invent relative paths. */
   import?: string;
   /** Variant names — strings from the component's CVA `variant` slot. */
   variants?: string[];
@@ -38,6 +40,27 @@ export interface ComponentRef {
   composes_with?: string[];
   /** Sub-exports the model can import alongside the root (e.g. CardHeader). */
   subcomponents?: string[];
+  /**
+   * Informal terms that should pull this ref into the prompt even when the
+   * user doesn't say the canonical name. Word-boundary matched, case-insensitive.
+   *
+   * Example: `aliases: [rive, riv, animation]` on RivePlayer means the prompt
+   * "make a rive animation" resolves to RivePlayer even though neither
+   * "rive" nor "animation" matches "RivePlayer" via word-boundary equality.
+   * Not rendered in the prompt block — matching-only.
+   */
+  aliases?: string[];
+  /**
+   * Free-form prose appended to the rendered ref block. Use for non-obvious
+   * gotchas the model needs to see — valid preset ids, required props, public
+   * demo URLs, "do NOT invent X" warnings. Supports YAML `|` block scalars
+   * for multi-paragraph text.
+   *
+   * Notes are the highest-leverage field for anti-hallucination: you are
+   * talking directly to the model at the moment it reasons about this
+   * component. Spend tokens here liberally.
+   */
+  notes?: string;
 }
 
 /**
@@ -47,6 +70,9 @@ export interface ComponentRef {
  *   key:
  *     - item
  *     - item
+ *   key: |
+ *     multi-line
+ *     literal text (indentation stripped to common prefix)
  *
  * Ignores everything past the second `---`. Returns an empty record if the
  * file has no frontmatter fence.
@@ -60,24 +86,69 @@ function parseFrontmatter(raw: string): Record<string, string | string[]> {
 
   const out: Record<string, string | string[]> = {};
   let currentKey: string | null = null;
-  let collecting: string[] | null = null;
+  let collectingList: string[] | null = null;
+  let collectingBlock: string[] | null = null;
+  let blockIndent = 0;
+
+  const closeCollectors = () => {
+    if (collectingList && currentKey) {
+      out[currentKey] = collectingList;
+    } else if (collectingBlock && currentKey) {
+      // Strip the common leading indent (determined on first non-empty line)
+      // and trim a single trailing newline.
+      let text = collectingBlock.join("\n");
+      if (text.endsWith("\n")) text = text.slice(0, -1);
+      out[currentKey] = text;
+    }
+    collectingList = null;
+    collectingBlock = null;
+    currentKey = null;
+  };
 
   for (const line of lines) {
+    // Block literal collection — any line with at least `blockIndent` spaces
+    // (or a blank line) is part of the block. Dedent closes it. The first
+    // non-empty body line sets the indent — standard YAML block-scalar
+    // behaviour (the "indentation indicator" defaults to the first line).
+    if (collectingBlock !== null) {
+      if (line.trim() === "") {
+        collectingBlock.push("");
+        continue;
+      }
+      const leading = line.match(/^ */)![0].length;
+      if (blockIndent === -1) {
+        blockIndent = leading;
+      }
+      if (leading >= blockIndent) {
+        collectingBlock.push(line.slice(blockIndent));
+        continue;
+      }
+      // Dedent — block ends, fall through to re-parse this line as a new key.
+      closeCollectors();
+    }
+
     // Continuation of a block list under a previously opened key.
-    if (collecting && /^\s*-\s+/.test(line)) {
-      collecting.push(line.replace(/^\s*-\s+/, "").trim());
+    if (collectingList && /^\s*-\s+/.test(line)) {
+      collectingList.push(line.replace(/^\s*-\s+/, "").trim());
       continue;
     }
     // Any non-list line closes the previous block list (if any).
-    if (collecting && currentKey) {
-      out[currentKey] = collecting;
-      collecting = null;
-      currentKey = null;
+    if (collectingList && currentKey) {
+      closeCollectors();
     }
 
     const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/);
     if (!m) continue;
     const [, key, rest] = m;
+
+    // Block literal: `key: |` — collect subsequent indented lines as a string.
+    // `blockIndent = -1` signals "detect from first non-empty body line".
+    if (rest.trim() === "|") {
+      currentKey = key;
+      collectingBlock = [];
+      blockIndent = -1;
+      continue;
+    }
 
     // Inline flow array: key: [a, b, c]
     if (rest.startsWith("[") && rest.endsWith("]")) {
@@ -91,7 +162,7 @@ function parseFrontmatter(raw: string): Record<string, string | string[]> {
     // Empty value → a block list follows on subsequent lines.
     if (rest.trim() === "") {
       currentKey = key;
-      collecting = [];
+      collectingList = [];
       continue;
     }
 
@@ -99,8 +170,8 @@ function parseFrontmatter(raw: string): Record<string, string | string[]> {
     out[key] = rest.trim().replace(/^['"]|['"]$/g, "");
   }
 
-  // Final key was a block list with no trailing non-list line.
-  if (collecting && currentKey) out[currentKey] = collecting;
+  // Close any collectors that ran to the end of the frontmatter.
+  closeCollectors();
 
   return out;
 }
@@ -131,6 +202,8 @@ function toRef(
     when_to_use: asString(fm.when_to_use),
     composes_with: asArray(fm.composes_with),
     subcomponents: asArray(fm.subcomponents),
+    aliases: asArray(fm.aliases),
+    notes: asString(fm.notes),
   };
 }
 
@@ -185,18 +258,25 @@ function getRefs(): ComponentRef[] {
  * when the corresponding frontmatter key is empty so we don't pay tokens
  * for stubs. Example output:
  *
- *   Button — import from "./components/ui/button"
+ *   Button — import { Button } from "@gradeui/ui"
  *     Variants: default, destructive, outline, secondary, ghost, link
  *     Sizes: default, sm, lg, icon
  *     Props: variant?, size?, asChild?
  *     Sub-exports: (none)
  *     Composes with: Dialog, DropdownMenu
  *     When: Any clickable action.
+ *
+ * The header is a ready-to-copy `import { … } from "<pkg>"` line — written
+ * that way because consumers (including other LLMs reading this prompt)
+ * have been observed pasting the path verbatim and producing broken
+ * default imports / relative paths. Giving them the full statement
+ * removes that failure mode.
  */
 function formatRef(ref: ComponentRef): string {
   const lines: string[] = [];
+  const names = [ref.name, ...(ref.subcomponents ?? [])].join(", ");
   const header = ref.import
-    ? `${ref.name} — import from "${ref.import}"`
+    ? `${ref.name} — import { ${names} } from "${ref.import}"`
     : ref.name;
   lines.push(header);
   if (ref.subcomponents && ref.subcomponents.length) {
@@ -215,6 +295,15 @@ function formatRef(ref: ComponentRef): string {
     lines.push(`  Composes with: ${ref.composes_with.join(", ")}`);
   }
   if (ref.when_to_use) lines.push(`  When: ${ref.when_to_use}`);
+  // Notes are emitted last because they're the richest content and we want
+  // the model to see the terse header first. Each line is indented to stay
+  // visually grouped under the component header.
+  if (ref.notes) {
+    lines.push("  Notes:");
+    for (const noteLine of ref.notes.split("\n")) {
+      lines.push(`    ${noteLine}`);
+    }
+  }
   return lines.join("\n");
 }
 
@@ -275,14 +364,18 @@ export function relevantComponentNames(text: string): string[] {
   const refs = getRefs();
   if (!text || !refs.length) return [];
 
-  // Build alias table: each canonical name maps to itself + any sub-exports.
-  // Longest aliases first so the regex prefers `CardHeader` over `Card` when
-  // both would match (avoids over-including Card for a subcomponent mention).
+  // Build alias table: each canonical name maps to itself + any sub-exports
+  // + any informal aliases declared in the frontmatter. Longest aliases first
+  // so the regex prefers `CardHeader` over `Card` when both would match
+  // (avoids over-including Card for a subcomponent mention).
   const aliases: { canonical: string; alias: string }[] = [];
   for (const ref of refs) {
     aliases.push({ canonical: ref.name, alias: ref.name });
     for (const sub of ref.subcomponents ?? []) {
       aliases.push({ canonical: ref.name, alias: sub });
+    }
+    for (const informal of ref.aliases ?? []) {
+      aliases.push({ canonical: ref.name, alias: informal });
     }
   }
   aliases.sort((a, b) => b.alias.length - a.alias.length);
@@ -294,7 +387,14 @@ export function relevantComponentNames(text: string): string[] {
     // we'd miss cases like "create a settings panel with switches" even
     // though `Switch` is obviously what's asked for. `(?:es|s)?` catches
     // both "cards" and "switches"; the `i` flag handles casing.
-    const re = new RegExp(`\\b${alias}(?:es|s)?\\b`, "i");
+    //
+    // Escaped because informal aliases may contain characters that look
+    // like regex metachars (e.g. "three.js" → the `.` would otherwise match
+    // any char, so "threeXjs" would false-positive). Canonical names and
+    // sub-export names are identifier-shaped so this is only defensive for
+    // the frontmatter-declared aliases, but cheap enough to apply everywhere.
+    const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(`\\b${escaped}(?:es|s)?\\b`, "i");
     if (re.test(text)) hits.add(canonical);
   }
   return Array.from(hits);

@@ -1,6 +1,6 @@
 ---
 name: Tabs
-import: ./components/ui/tabs
+import: "@gradeui/ui"
 subcomponents: [TabsList, TabsTrigger, TabsContent]
 props:
   - Tabs: defaultValue?, value?, onValueChange?, orientation?

@@ -1,6 +1,6 @@
 ---
 name: ShaderPresetPicker
-import: ./components/ui/shader-preset-picker
+import: "@gradeui/ui"
 props:
   - value?: string — currently selected preset id (controlled)
   - onChange?: (id: string) => void — called when the user clicks a preset card
@@ -11,7 +11,8 @@ props:
   - columns?: 2 | 3 | 4 (default 3) — grid columns at md+ breakpoint
 when_to_use: Runtime gallery of shader presets — click to select. Use with ThreeScene as a controlled input so the user can pick a background shader. For a single preview card, use ShaderPresetPreview directly.
 composes_with: [ShaderPresetPreview (internal), ThreeScene (the typical downstream consumer)]
-notes: Powered by the same preset registry that drives `<ThreeScene preset="…" />` — adding a preset to the registry makes it appear here automatically.
+aliases: [shader picker, preset picker, shader gallery, preset gallery]
+notes: Powered by the same preset registry that drives `<ThreeScene preset="…" />` — adding a preset to the registry makes it appear here automatically. At time of writing only "space" is registered, so the picker renders a single card until more presets ship.
 ---
 
 ```jsx

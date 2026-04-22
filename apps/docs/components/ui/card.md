@@ -1,6 +1,6 @@
 ---
 name: Card
-import: ./components/ui/card
+import: "@gradeui/ui"
 subcomponents: [CardHeader, CardTitle, CardDescription, CardContent, CardFooter]
 props:
   - Each subcomponent accepts native div HTML attrs (className, etc.)

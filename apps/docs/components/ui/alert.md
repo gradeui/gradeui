@@ -1,6 +1,6 @@
 ---
 name: Alert
-import: ./components/ui/alert
+import: "@gradeui/ui"
 subcomponents: [AlertTitle, AlertDescription]
 variants: [default, destructive, success, warning, info, highlight]
 props:

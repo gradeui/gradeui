@@ -1,6 +1,6 @@
 ---
 name: RivePlayer
-import: ./components/ui/rive-player
+import: "@gradeui/ui"
 props:
   - src: string — URL or path to the .riv file
   - stateMachines?: string | string[] — state machine(s) to run
@@ -16,11 +16,17 @@ props:
   - poster?: string — image shown while the runtime loads
 when_to_use: Rive runtime wrapped in the shared media surface. Reach for Rive when you need interactive state-machine animations driven by scroll/hover/input. For non-interactive looping video, use VideoPlayer; for shader-driven backgrounds, use ThreeScene.
 composes_with: [MediaSurface (internal), Card, any container]
-notes: The Rive runtime (`@rive-app/react-canvas`) is an optional dependency of `@gradeui/ui` — lazy-imported at mount. Consumers who don't use Rive can install with `--no-optional` and the dep is skipped; RivePlayer renders a friendly error if the runtime is missing.
+aliases: [rive, riv, animation, animated, lottie]
+notes: The Rive runtime (`@rive-app/react-canvas`) is an optional dependency of `@gradeui/ui` — lazy-imported at mount. Consumers who don't use Rive can install with `--no-optional` and the dep is skipped; RivePlayer renders a friendly error if the runtime is missing. When no `src` is given RivePlayer renders an empty surface — ALWAYS pass `src`. If you don't have a specific file, use the public Rive CDN sample "https://cdn.rive.app/animations/vehicles.riv" with `stateMachines="bumpy"` — a known-working demo.
 ---
 
 ```jsx
-<RivePlayer src="/mascot.riv" aspect="square" />
+// Known-working public sample — use this when you don't have a specific .riv
+<RivePlayer
+  src="https://cdn.rive.app/animations/vehicles.riv"
+  stateMachines="bumpy"
+  aspect="square"
+/>
 
 // Player mode with state-machine inputs
 <RivePlayer

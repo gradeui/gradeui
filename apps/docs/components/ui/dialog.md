@@ -1,6 +1,6 @@
 ---
 name: Dialog
-import: ./components/ui/dialog
+import: "@gradeui/ui"
 subcomponents: [DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose]
 props:
   - Dialog: open?, onOpenChange? — Radix controlled/uncontrolled pattern
@@ -9,6 +9,7 @@ props:
   - DialogFooter: used for action rows
 when_to_use: Modal interruptions — confirmations, focused forms, detail views. For non-blocking messaging use Alert or Sonner. Always include DialogTitle (a11y requirement).
 composes_with: [Button (as DialogTrigger asChild, and inside DialogFooter), Input/Textarea/Select inside DialogContent]
+aliases: [modal, popup, overlay]
 ---
 
 ```jsx

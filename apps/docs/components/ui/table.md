@@ -1,6 +1,6 @@
 ---
 name: Table
-import: ./components/ui/table
+import: "@gradeui/ui"
 subcomponents: [TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell, TableCaption]
 props:
   - Each subcomponent accepts native table HTML attrs

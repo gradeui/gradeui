@@ -1,6 +1,6 @@
 ---
 name: Progress
-import: ./components/ui/progress
+import: "@gradeui/ui"
 props:
   - value?: number (0–100) — percent complete
   - max?: number (default 100)

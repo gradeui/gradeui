@@ -1,6 +1,6 @@
 ---
 name: Select
-import: ./components/ui/select
+import: "@gradeui/ui"
 subcomponents: [SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel, SelectSeparator]
 props:
   - Select: value?, onValueChange?, defaultValue?, disabled? — Radix root
@@ -10,6 +10,7 @@ props:
   - SelectItem: value: string — required; content is the label
 when_to_use: Single-choice from 3+ known options. Fewer than 3 → RadioGroup. Huge list with search → use a Combobox (not in DS yet). Multi-select → not supported by this primitive.
 composes_with: [Label (above SelectTrigger), Form, Card]
+aliases: [dropdown, combobox, picker]
 ---
 
 ```jsx

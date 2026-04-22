@@ -1,11 +1,12 @@
 ---
 name: Input
-import: ./components/ui/input
+import: "@gradeui/ui"
 props:
   - type?: string (text | email | password | number | search | url | tel | date)
   - All native input HTML attrs (value, onChange, placeholder, disabled, required)
 when_to_use: Any single-line text entry. Always pair with a Label for accessibility.
 composes_with: [Label, Form, Card (in CardContent), Button (form submit)]
+aliases: [text field, textbox, textfield, form field, text input]
 ---
 
 ```jsx

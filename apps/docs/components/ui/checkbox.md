@@ -1,6 +1,6 @@
 ---
 name: Checkbox
-import: ./components/ui/checkbox
+import: "@gradeui/ui"
 props:
   - checked?: boolean | "indeterminate"
   - onCheckedChange?: (checked: boolean) => void

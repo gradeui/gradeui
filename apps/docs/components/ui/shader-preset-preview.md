@@ -1,6 +1,6 @@
 ---
 name: ShaderPresetPreview
-import: ./components/ui/shader-preset-preview
+import: "@gradeui/ui"
 props:
   - preset: string — shader preset id from the registry
   - live?: "never" | "hover" | "always" (default "hover") — when to run the live WebGL render
@@ -11,7 +11,8 @@ props:
   - onClick?: () => void
 when_to_use: Thumbnail-sized preview card for a shader preset. Defaults to a cheap static placeholder until hovered, at which point the live WebGL render kicks in. Use directly when you want a single preset card; use ShaderPresetPicker for a filterable grid.
 composes_with: [ThreeScene (internal), ShaderPresetPicker (wraps this)]
-notes: Prefer `live="hover"` in galleries — Safari caps concurrent WebGL contexts at ~8. `live="always"` is fine for one or two cards; past that you'll run out of contexts.
+aliases: [shader preview, preset preview, shader card]
+notes: Prefer `live="hover"` in galleries — Safari caps concurrent WebGL contexts at ~8. `live="always"` is fine for one or two cards; past that you'll run out of contexts. VALID `preset` ids come from the shader registry — at time of writing the only shipped preset is "space". Unknown ids render a placeholder card with the raw id as a label (no error). Do NOT pass invented ids like "neon-grid" — it will render as the literal string "neon-grid".
 ---
 
 ```jsx

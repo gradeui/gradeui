@@ -205,6 +205,14 @@ export {
 
 export { postPresets, defaultPostPreset } from "./three/post-presets";
 
+// Custom fragment shader support — uniform contract + error class for
+// consumers who want to catch compile errors off `<ThreeScene fragmentShader>`.
+export {
+  FRAGMENT_HEADER,
+  ShaderCompileError,
+  buildFragmentShaderScene,
+} from "./three/custom-fragment";
+
 export type {
   ShaderPreset,
   PostPreset,
