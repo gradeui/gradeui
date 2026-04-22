@@ -1750,9 +1750,14 @@ export const ALLOWED_COMPONENTS = [
   //           <Grid cols="4">. The model hand-rolls the same pattern
   //           otherwise, often with invented classes like `gap-md` that
   //           silently do nothing.
+  //   Flex  — the unopinionated escape hatch. CSS-aligned — direction,
+  //           gap, align, justify, wrap exposed directly. Reach for Flex
+  //           when Stack / Row / Grid don't fit (reverse direction,
+  //           baseline alignment, CSS defaults).
   "Stack",
   "Row",
   "Grid",
+  "Flex",
   // App scaffold — the top-level page shell. nav=side|top|none picks the
   // structure; AppShellMain's maxWidth caps content width. Reach for this
   // instead of hand-rolling grid grid-cols-[auto_1fr] on every app layout.

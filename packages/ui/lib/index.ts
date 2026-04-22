@@ -94,6 +94,8 @@ export { Row, rowVariants, type RowProps } from "../components/ui/row";
 
 export { Grid, gridVariants, type GridProps } from "../components/ui/grid";
 
+export { Flex, flexVariants, type FlexProps } from "../components/ui/flex";
+
 export { ScrollArea, ScrollBar } from "../components/ui/scroll-area";
 
 export {
