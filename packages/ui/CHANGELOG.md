@@ -1,5 +1,12 @@
 # @gradeui/ui
 
+## 0.8.0
+
+### Minor Changes
+
+- bd9400b: Add `Flex` — the unopinionated flexbox primitive, the CSS-aligned escape hatch under Stack / Row / Grid. Exposes `direction` (`"row" | "col" | "row-reverse" | "col-reverse"`), `gap`, `align` (including `baseline`, which Stack/Row don't expose), `justify`, and `wrap` (`"nowrap" | "wrap" | "wrap-reverse"`) directly. Defaults match CSS — no baked-in rhythm — so consumers pay for exactly the props they set. Reach for Flex when Stack / Row / Grid don't fit (reverse direction, baseline alignment, or when you want raw CSS defaults instead of Row's `items-center gap-md` starting point).
+- ac0d760: Add `Grid` — the 2D layout primitive, completing the Stack/Row/Grid trio. `cols` prop (`"1" | "2" | "3" | "4" | "5" | "6" | "12"`) bakes in a sensible responsive ladder so `<Grid cols="4">` expands to the canonical `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` stat-card pattern. `gap` and `align` scales match Stack and Row so props transfer cleanly when switching layout types.
+
 ## 0.7.0
 
 ### Minor Changes
