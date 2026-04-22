@@ -76,10 +76,16 @@ OUTPUT RULES — follow these exactly:
 4. You may use these Grade DS components ONLY: ${list}.
 5. You may import icons from "lucide-react" (e.g. \`import { Mail } from "lucide-react"\`).
 6. For charts, you may import from "recharts" (e.g. \`import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts"\`). Style charts with the design-system tokens via \`stroke="oklch(var(--primary))"\` / \`fill="oklch(var(--primary))"\` so they follow the active theme.
-7. Use Tailwind utility classes for layout and the design system's semantic tokens: bg-background, bg-card, bg-muted, bg-primary, text-foreground, text-muted-foreground, text-primary-foreground, border-border, border-input, etc. Do NOT use raw color classes like bg-blue-500.
+7. Use Tailwind utility classes for styling and the design system's semantic tokens: bg-background, bg-card, bg-muted, bg-primary, text-foreground, text-muted-foreground, text-primary-foreground, border-border, border-input, etc. Do NOT use raw color classes like bg-blue-500.
 8. Keep the preview small — target a single screen. Don't build entire pages.
 9. Do not include explanations inside the code block — comments are fine but no chattiness.
-10. When the user asks for iterations ("make it bigger", "red instead of green"), regenerate the FULL component so the preview updates in one go.`;
+10. When the user asks for iterations ("make it bigger", "red instead of green"), regenerate the FULL component so the preview updates in one go.
+
+LAYOUT PRIMITIVES — prefer these over hand-rolled flex/grid utility classes where they fit. Using the primitives keeps structure editable via the settings panel and keeps vertical/horizontal rhythm consistent. Raw Tailwind is still fine for one-offs and anything the primitives don't express — this is a suggestion, not a ban.
+  - <Stack gap="…"> instead of \`flex flex-col gap-…\` or \`space-y-…\` (vertical cluster — form fields, content columns).
+  - <Row gap="…" justify="…"> instead of \`flex items-center gap-…\` (horizontal cluster — button bars, inline fields; inside CardFooter this is usually <Row justify="end" gap="sm">).
+  - <Grid cols="…" gap="…"> instead of \`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-…\` (2D tile grids, stat cards). The \`cols\` prop bakes in the responsive ladder so you pick the desktop column count.
+  - <Flex direction="…" gap="…"> when you need reverse direction, baseline alignment, or CSS defaults rather than Row's \`items-center gap-md\` starting point.`;
 }
 
 export default function StudioPage() {

@@ -48,6 +48,23 @@ const ALLOWED_COMPONENT_SET = new Set<string>(
 );
 
 /**
+ * Layout primitives that get their ref-block pinned to the system prompt
+ * regardless of whether the user's message mentions them. Retrieval's
+ * text-match heuristic fires on component names and aliases, but most
+ * user prompts ("a card with two buttons at the bottom") don't say "row"
+ * or "stack" — so the model never sees their props and falls back to
+ * hand-rolled `flex gap-2 justify-end`. Pinning them costs ~4 small .md
+ * files worth of tokens and reliably steers the model toward the
+ * settings-panel-editable path.
+ *
+ * Kept small on purpose — this isn't a "star components" list, it's
+ * specifically the layout primitives that suffer most from the retrieval
+ * gap. If a non-layout component needs similar treatment, consider
+ * fixing its aliases first.
+ */
+const PINNED_COMPONENTS = ["Stack", "Row", "Grid", "Flex"];
+
+/**
  * Pull text out of a UIMessage's parts array. Mirrors the small helper in
  * studio-chat.tsx — we scan every message (user AND assistant) because the
  * assistant's prior turns contain the existing component source, whose
@@ -347,8 +364,19 @@ export async function POST(req: Request) {
     // Button, Dialog, Input" alongside each assistant turn. That makes the
     // token-vs-quality trade-off visible without needing server logs.
     const relevant = includeComponentRefs
-      ? relevantComponentNames(textFromMessages(messages)).filter((n) =>
-          ALLOWED_COMPONENT_SET.has(n.toLowerCase())
+      ? Array.from(
+          new Set([
+            // Pin layout primitives up front. Order matters for the refs
+            // block — the model reads top-down, so the structural choices
+            // (Stack/Row/Grid/Flex) arrive before any component-specific
+            // ref the retriever pulled in.
+            ...PINNED_COMPONENTS.filter((n) =>
+              ALLOWED_COMPONENT_SET.has(n.toLowerCase())
+            ),
+            ...relevantComponentNames(textFromMessages(messages)).filter((n) =>
+              ALLOWED_COMPONENT_SET.has(n.toLowerCase())
+            ),
+          ])
         )
       : [];
     const refsBlock =
