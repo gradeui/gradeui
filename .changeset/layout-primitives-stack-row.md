@@ -1,6 +1,5 @@
 ---
 "@gradeui/ui": minor
-"@gradeui/docs": patch
 ---
 
 Add `Stack` and `Row` — the first wave of layout primitives.

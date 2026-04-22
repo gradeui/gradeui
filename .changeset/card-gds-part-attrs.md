@@ -1,6 +1,5 @@
 ---
 "@gradeui/ui": patch
-"@gradeui/docs": patch
 ---
 
 Stamp `data-gds-part` on every Card subcomponent so LLMs, design tools, and CSS can target the stable internal parts the same way they already target the media/shader primitives.
