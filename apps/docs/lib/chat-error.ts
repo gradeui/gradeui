@@ -160,6 +160,25 @@ export function humanizeChatError(
     });
   }
 
+  // OpenRouter free-tier endpoint starvation. The model ID is valid and
+  // the route page exists, but no free provider is currently serving it —
+  // free endpoints come and go as providers hit rate limits or yank the
+  // free tier. Surfaces as "No endpoints found for <model>". Distinct
+  // from "model not found": the model is fine, the PROVIDERS behind it
+  // are temporarily absent. Nothing the user can do about rate limits,
+  // so steer them at picking a different model.
+  if (
+    lower.includes("no endpoints found") ||
+    lower.includes("no allowed providers") ||
+    lower.includes("no endpoints available")
+  ) {
+    return stamp({
+      title: "No free providers available",
+      description: `${context?.model ?? "This model"}'s free tier has no active endpoints on ${providerName ?? "OpenRouter"} right now.`,
+      hint: "Pick a different free model, or bring your own paid provider key.",
+    });
+  }
+
   // Model not found — happens if the user selects a model their key
   // doesn't have, or the provider renamed a model.
   if (

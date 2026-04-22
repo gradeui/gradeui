@@ -404,3 +404,340 @@ export function relevantComponentNames(text: string): string[] {
 export function listComponentRefs(): ReadonlyArray<ComponentRef> {
   return getRefs();
 }
+
+// ─── Structured prop manifest ─────────────────────────────────────────────
+//
+// Everything below is the machine-readable counterpart to the human-readable
+// text block above. The Studio settings panel (Stage 3) reads these
+// manifests to decide which control to render per prop. Source of truth is
+// still the sidecar `.md` frontmatter — we just re-shape its props strings
+// into discriminated-union objects the UI can pattern-match on.
+//
+// Design choices:
+//   - Kind "unknown" is a first-class citizen. Functions, complex object
+//     types (`Partial<Palette>`, `SceneHandle`), React nodes, and anything
+//     else the parser can't decode land here. The settings panel just hides
+//     these — the user can still reach them via the chat.
+//   - Enum values keep their original type (string | number) so the UI can
+//     decide whether to quote them when regenerating source.
+//   - `defaultValue` is kept as the *raw text* from the descriptor, not
+//     coerced. "min(devicePixelRatio, 2)" and `1` both make it through
+//     intact; the consumer decides how to render it.
+
+export type PropKind =
+  | "string"
+  | "number"
+  | "boolean"
+  | "enum"
+  | "unknown";
+
+export interface PropManifest {
+  /** Prop name (no trailing `?`). */
+  name: string;
+  /** Declared optional via `name?:` — used by the settings panel to decide
+   *  whether a "clear" control makes sense. */
+  optional: boolean;
+  /** Discriminator for the render strategy in the settings panel. */
+  kind: PropKind;
+  /** Present when `kind === "enum"`. Values preserve their declared type —
+   *  quoted strings stay strings, bare numerics become numbers. */
+  enum?: ReadonlyArray<string | number>;
+  /** Raw default-value text lifted from `(default X)` in the descriptor.
+   *  Not coerced — `"video"` and `1` both survive as strings. */
+  defaultValue?: string;
+  /** Free-form prose from the trailing ` — description` portion of the
+   *  descriptor. Rendered as helper text in the settings panel. */
+  description?: string;
+  /** The original descriptor line, verbatim. Useful when the parser falls
+   *  back to `kind: "unknown"` — the UI can still surface the raw hint. */
+  raw: string;
+}
+
+export interface ComponentManifest {
+  /** Canonical component name, e.g. "ThreeScene". */
+  name: string;
+  /** kebab-case identifier matching `data-gds-part`, e.g. "three-scene". */
+  part: string;
+  /** Import path, almost always `@gradeui/ui`. */
+  import?: string;
+  /** CVA variant slot — modelled as a synthetic enum prop when present. */
+  variants?: string[];
+  /** CVA size slot — modelled as a synthetic enum prop when present. */
+  sizes?: string[];
+  /** Parsed props. Only props the parser could make sense of are emitted
+   *  as typed kinds; everything else falls through to `kind: "unknown"` with
+   *  `raw` intact. */
+  props: PropManifest[];
+  /** From the frontmatter `when_to_use` — shown as the panel subtitle. */
+  when_to_use?: string;
+}
+
+/**
+ * Convert a PascalCase component name into the kebab-case value we expect to
+ * see on `data-gds-part`. Mirrors the inverse converter in the in-iframe
+ * selection agent (kebabToPascal), so a `part` captured from the DOM round-
+ * trips cleanly through the manifest lookup.
+ */
+function pascalToKebab(name: string): string {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase();
+}
+
+/**
+ * Parse one prop descriptor line out of the frontmatter into a structured
+ * PropManifest. The descriptor grammar is informal — authors have written
+ * things like:
+ *
+ *   variant? (default | destructive | outline | secondary | ghost | link)
+ *   asChild?: boolean — renders as the child element (use to wrap <a>/<Link>)
+ *   src: string — video URL
+ *   aspect?: "video" | "square" | "portrait" | "wide" | "auto" (default "video")
+ *   columns?: 2 | 3 | 4 (default 3)
+ *   controls?: boolean (default false)
+ *   playbackRate?: number (default 1)
+ *   maxDpr?: number (default min(devicePixelRatio, 2))
+ *   onChange?: (id: string) => void — called when …
+ *   palette?: Partial<Palette> — shared palette applied …
+ *   All native button HTML attrs (onClick, type, etc.)
+ *
+ * Anything the parser can't identify returns `{ kind: "unknown", raw }` so
+ * the caller always sees a complete record — the settings panel filters
+ * unknowns out, but the structure stays uniform for downstream tooling.
+ */
+function parsePropSignature(line: string): PropManifest | null {
+  const raw = line.trim();
+  if (!raw) return null;
+
+  // "All native button HTML attrs (…)" — a pure catch-all sentence, not a
+  // parseable prop descriptor. Skip entirely so it doesn't pollute the panel
+  // with a nonsensical "unknown" row.
+  if (/^all\s/i.test(raw)) return null;
+
+  // Split description off at the first em-dash (—) or " - " separator.
+  // Plain hyphens inside types (`(id: string) => void`) must NOT split — the
+  // rule is: em-dash always splits; hyphen only splits when it's flanked by
+  // spaces AND follows a type-like token. The em-dash case covers 95% of
+  // authored lines; the hyphen fallback is defensive.
+  let head = raw;
+  let description: string | undefined;
+  const emIdx = raw.indexOf(" — ");
+  const hyphenIdx = raw.indexOf(" - ");
+  const splitIdx =
+    emIdx !== -1 ? emIdx : hyphenIdx !== -1 ? hyphenIdx : -1;
+  if (splitIdx !== -1) {
+    head = raw.slice(0, splitIdx).trim();
+    description = raw.slice(splitIdx + 3).trim();
+  }
+
+  // Pull `(default X)` out of the head, preserving raw text. We accept
+  // nested parens in X (e.g. `(default min(devicePixelRatio, 2))`) by
+  // scanning paren depth rather than a greedy regex.
+  let defaultValue: string | undefined;
+  const defIdx = head.toLowerCase().lastIndexOf("(default");
+  if (defIdx !== -1) {
+    let depth = 0;
+    let end = -1;
+    for (let i = defIdx; i < head.length; i++) {
+      const ch = head[i];
+      if (ch === "(") depth++;
+      else if (ch === ")") {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    if (end !== -1) {
+      const inner = head.slice(defIdx + "(default".length, end).trim();
+      defaultValue = inner;
+      head = (head.slice(0, defIdx) + head.slice(end + 1)).trim();
+    }
+  }
+
+  // Name + optional marker. Accept `name?`, `name?:`, or `name:`.
+  //
+  // The parser handles two top-level shapes for `head` after stripping
+  // `(default …)`:
+  //   1. "name? (a | b | c)"       — enum in unquoted parens
+  //   2. "name?: <type expression>" — colon-typed prop
+  //
+  // Name pattern matches a JS identifier (plus `-` to be safe for camelCase
+  // attrs that accidentally got hyphens in a sidecar).
+  const nameMatch = head.match(/^([A-Za-z_$][A-Za-z0-9_$-]*)(\?)?(\s*:\s*|\s+|$)(.*)$/);
+  if (!nameMatch) {
+    // Last-ditch: extract just the name, mark as unknown. Better than
+    // dropping the row silently.
+    const bare = head.match(/^([A-Za-z_$][A-Za-z0-9_$-]*)(\?)?/);
+    if (!bare) return null;
+    return {
+      name: bare[1],
+      optional: Boolean(bare[2]),
+      kind: "unknown",
+      defaultValue,
+      description,
+      raw,
+    };
+  }
+
+  const [, name, questionMark, , rest] = nameMatch;
+  const optional = Boolean(questionMark);
+  const tail = rest.trim();
+
+  // Shape 1 — parens enum: `(a | b | c)` (bare identifiers, unquoted).
+  if (tail.startsWith("(") && tail.endsWith(")")) {
+    const inner = tail.slice(1, -1).trim();
+    const parts = inner.split("|").map((s) => s.trim()).filter(Boolean);
+    if (parts.length) {
+      return {
+        name,
+        optional,
+        kind: "enum",
+        enum: parts,
+        defaultValue,
+        description,
+        raw,
+      };
+    }
+  }
+
+  // Shape 2 — typed form. Strip the tail to just the type expression.
+  const typeExpr = tail.replace(/^:\s*/, "").trim();
+
+  if (!typeExpr) {
+    return { name, optional, kind: "unknown", defaultValue, description, raw };
+  }
+
+  // Pipe-union enum: quoted strings, bare numbers, or a mix of identifiers.
+  if (typeExpr.includes("|") && !/[=>{}()<]/.test(typeExpr)) {
+    const parts = typeExpr.split("|").map((s) => s.trim()).filter(Boolean);
+    const values: Array<string | number> = [];
+    let allNumeric = true;
+    let allStringLike = true;
+    for (const p of parts) {
+      const stripped = p.replace(/^['"]|['"]$/g, "");
+      if (stripped !== p) {
+        values.push(stripped);
+        allNumeric = false;
+      } else if (/^-?\d+(\.\d+)?$/.test(p)) {
+        values.push(Number(p));
+        allStringLike = false;
+      } else if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(p)) {
+        values.push(p);
+        allNumeric = false;
+      } else {
+        // Gave up — bail to unknown rather than emit a garbage enum.
+        return { name, optional, kind: "unknown", defaultValue, description, raw };
+      }
+    }
+    if (values.length) {
+      return {
+        name,
+        optional,
+        kind: "enum",
+        enum: values,
+        defaultValue,
+        description,
+        raw,
+      };
+    }
+  }
+
+  if (/^boolean$/i.test(typeExpr)) {
+    return { name, optional, kind: "boolean", defaultValue, description, raw };
+  }
+  if (/^number$/i.test(typeExpr)) {
+    return { name, optional, kind: "number", defaultValue, description, raw };
+  }
+  if (/^string$/i.test(typeExpr)) {
+    return { name, optional, kind: "string", defaultValue, description, raw };
+  }
+
+  // Anything else (function types, generics, ReactNode, Partial<X>, custom
+  // object types) → "unknown". Settings panel hides these.
+  return { name, optional, kind: "unknown", defaultValue, description, raw };
+}
+
+/**
+ * Build the manifest for a single ComponentRef by parsing every descriptor
+ * string. Variants and sizes are synthesised as enum props (`"variant"` /
+ * `"size"`) so the settings panel has one uniform shape to render from.
+ */
+function buildManifestFromRef(ref: ComponentRef): ComponentManifest {
+  const props: PropManifest[] = [];
+
+  if (ref.variants && ref.variants.length) {
+    props.push({
+      name: "variant",
+      optional: true,
+      kind: "enum",
+      enum: ref.variants,
+      raw: `variant? (${ref.variants.join(" | ")})`,
+    });
+  }
+  if (ref.sizes && ref.sizes.length) {
+    props.push({
+      name: "size",
+      optional: true,
+      kind: "enum",
+      enum: ref.sizes,
+      raw: `size? (${ref.sizes.join(" | ")})`,
+    });
+  }
+
+  for (const line of ref.props ?? []) {
+    const parsed = parsePropSignature(line);
+    if (!parsed) continue;
+    // Skip duplicates already synthesised from variants/sizes (Button's
+    // frontmatter lists both `variants: [...]` AND `props: - variant? (…)`
+    // — keep the CVA-derived list canonical).
+    if (
+      (parsed.name === "variant" && ref.variants?.length) ||
+      (parsed.name === "size" && ref.sizes?.length)
+    ) {
+      continue;
+    }
+    props.push(parsed);
+  }
+
+  return {
+    name: ref.name,
+    part: pascalToKebab(ref.name),
+    import: ref.import,
+    variants: ref.variants,
+    sizes: ref.sizes,
+    props,
+    when_to_use: ref.when_to_use,
+  };
+}
+
+/**
+ * Build the component manifest JSON payload for the Studio settings panel.
+ *
+ * `onlyFor` — optional case-insensitive filter against component names or
+ * their `data-gds-part` (kebab-case) values. The panel passes the selected
+ * part so we only ship one manifest per request (tiny payload, no client-
+ * side filtering needed).
+ *
+ * Returns a flat array. Ordering matches sidecar read order (alphabetical
+ * by filename) to keep diffs stable.
+ */
+export function buildComponentManifest(options?: {
+  onlyFor?: readonly string[];
+}): ComponentManifest[] {
+  const refs = getRefs();
+  if (!refs.length) return [];
+  const filter = options?.onlyFor?.length
+    ? new Set(options.onlyFor.map((s) => s.toLowerCase()))
+    : null;
+  const picked = filter
+    ? refs.filter((r) => {
+        const name = r.name.toLowerCase();
+        const part = pascalToKebab(r.name).toLowerCase();
+        return filter.has(name) || filter.has(part);
+      })
+    : refs;
+  return picked.map(buildManifestFromRef);
+}

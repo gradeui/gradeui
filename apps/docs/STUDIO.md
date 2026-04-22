@@ -99,11 +99,71 @@ Parent → iframe:
 Iframe → parent:
 
 - `{ type: "grade:agent-ready" }` — fresh iframe boot; parent replays current state so a reload inherits the last select-mode + selection values.
-- `{ type: "grade:selected", selection: { tag, text, outerHTML, rect } }` — user clicked something in select mode.
+- `{ type: "grade:selected", selection: { tag, text, outerHTML, rect, part?, componentName? } }` — user clicked something in select mode.
+
+#### Component-aware selection (v1.1)
+
+Any DS component that renders a `data-gds-part="<kebab-name>"` attribute on its root (see `packages/ui/` — `three-scene`, `media-surface`, `video-player`, `shader-preset-picker`, `shader-preset-preview` already do) becomes an **identifiable unit** for selection. When the user hovers/clicks anywhere inside such a component, the agent walks up the DOM via `el.closest('[data-gds-part]')` and uses _that_ ancestor as the selection target:
+
+- `part` — the raw attribute value (kebab-case, e.g. `"three-scene"`).
+- `componentName` — the kebab-case name converted to PascalCase (e.g. `"ThreeScene"`). Matches the JSX tag the model is likely to see in the current app source.
+- `rect`, `outerHTML`, `text`, `tag` are all sourced from the component boundary too — so the hover outline snaps to the component edge rather than whichever leaf div the mouse is over.
+
+Parent-side consequences:
+
+- `StudioSelection` in `lib/chat-sandpack.ts` carries the two extra optional fields.
+- The selection chip in `studio-chat.tsx` prefers `<ComponentName>` over `<tag>` when available (bolder treatment in `text-primary`).
+- `studio-preview.tsx` header shows an "Editing `<ComponentName>`" badge while a component is selected.
+- `renderSelectionBlock()` in `app/api/chat/route.ts` leads the stanza with `TARGETED EDIT — the user is pointing at a <ComponentName> component …` and instructs the model to locate the matching `<ComponentName ... />` JSX node to edit.
+
+If the user clicks an element that isn't inside any `data-gds-part` subtree, the fields are omitted and the protocol falls back to v1 behaviour (tag + text + outerHTML at the clicked element).
+
+**Convention for new components:** if a component is a worth-editing-as-a-unit building block (big visual surfaces, composites with props that shape behaviour — not primitive `<Button>`/`<Badge>` leaves), add `data-gds-part="<kebab-name>"` to its root element. The Studio selection agent picks it up automatically.
 
 ### Data flow
 
 The captured selection flows **out-of-band** in the `/api/chat` request body (not inlined in the user message), which keeps it from polluting the history on follow-up turns. Server-side it's rendered into the system prompt as a "TARGETED EDIT" stanza — see `renderSelectionBlock()` in `app/api/chat/route.ts`. Selection state is per-design (`selectionByDesign` in `app/studio/page.tsx`) and cleared automatically after the message is sent.
+
+## Settings panel — direct prop mutation (v1.2)
+
+Selections with a `componentName` (i.e. picked a DS component with `data-gds-part`) also open a **settings panel** below the selection chip in the chat column. The panel reads the component's prop manifest and renders one control per prop (Select for enum, Switch for boolean, Input for string/number). Changing a control rewrites the current `App.tsx` JSX directly — no LLM round-trip. Sandpack HMRs to the patched source.
+
+### Pieces
+
+| File | Role |
+|---|---|
+| `apps/docs/app/api/component-manifest/route.ts` | GET endpoint. `?part=<kebab>` or `?name=<Pascal>` → `{ manifest: ComponentManifest[] }`. 30s client cache. |
+| `apps/docs/lib/component-refs.ts` | Hosts `buildComponentManifest()` + `parsePropSignature()`. Parses the `props:` strings in each sidecar's frontmatter into structured `{ name, kind: "enum"\|"boolean"\|"string"\|"number"\|"unknown", enum?, optional, defaultValue?, description? }`. |
+| `apps/docs/lib/studio-source-mutator.ts` | Pure `updateComponentProp(source, componentName, propName, value)` + `readComponentProp(...)`. Regex-based JSX tag locator + attribute splicer. Returns the original source on ambiguity. |
+| `apps/docs/components/studio/settings-panel.tsx` | The panel itself. Fetches the manifest, renders controls, calls the mutator on change. |
+
+### Known limits
+
+- **One instance per file.** The mutator always targets the FIRST `<ComponentName>` opening tag it finds. A design using two `<Button>`s will only ever have one of them under the panel's control. Positional targeting (via the `rect` / `outerHTML` already carried in the selection payload) is the natural next step — not implemented.
+- **Kind "unknown" props are hidden.** Function-typed props, React nodes, and generic object types (`Partial<Palette>`, `(ctx) => SceneHandle`) get `kind: "unknown"` from the parser and the panel filters them out. The chat is the escape hatch for those.
+- **No AST.** Regex-based splicing copes fine with single-line and simple multi-line JSX, but complex conditional JSX inside the target component will trip it up. Swap in jscodeshift the day this becomes a problem.
+- **Expression values round-trip lossy.** `controls={isOpen}` reads as "on" in the panel; toggling it off rewrites to `{false}` and loses the original `isOpen` binding. The panel treats expression-valued props as display-only when possible.
+
+### Adding settings-panel support for a new component
+
+1. Add `data-gds-part="<kebab-name>"` to the component's root element.
+2. Make sure the component's sidecar (`apps/docs/components/ui/<name>.md`) declares its props in the frontmatter using one of the recognised shapes — the parser comments in `parsePropSignature()` in `lib/component-refs.ts` list them. Quoted-string unions, numeric unions, `boolean`, `number`, `string`, and `parens enum` all work out of the box. Function types and object types land as `kind: "unknown"` (hidden).
+
+### Docked vs. inline variant (v1.3)
+
+The panel now accepts a `variant: "inline" | "docked"` prop. `inline` is the original spot in the chat column — compact, collapsible. `docked` fills the right column and is always expanded.
+
+`app/studio/page.tsx` owns the choice via `panelDockedByDesign: Record<designId, boolean>`. A `Dock →` affordance in the inline header flips the flag for the active design; an `Undock` button in the docked header flips it back. When docked, the inline copy is suppressed so the user isn't looking at two copies, and the right column renders the settings panel **instead of** `<ThemeBuilderPanel />`. The state is per-design on purpose — one design tab might be hero-focused and want the big panel; another might be mid-theming and want the builder back.
+
+No new server state — docked is a pure UI flag on the parent. The mutator and manifest fetch paths are identical in both variants.
+
+## Theme-aware media components — the `data-gds-theme` signature (v1.4)
+
+CSS hot-reloads alone don't fire `MutationObserver`s. That's a problem for any in-iframe component that reads `var(--primary)` off the host and resolves it to a colour imperatively (THREE.Color values, canvas contexts, etc.) — the computed colour only re-resolves when something triggers the observer.
+
+The fix: `buildPlaygroundThemeOptionsTsx` now computes a short dbj2 hash of the serialized light+dark var strings and writes it to `document.documentElement.dataset.gdsTheme` inside the wrapper's `useLayoutEffect`. Any var value change (hue, chroma, radius, any slider at all) changes the file text of `/theme-options.tsx` → react-refresh re-executes → effect runs → attribute changes → MutationObservers fire.
+
+`<ThreeScene>` already watches that attribute (see `themeObserver.observe(document.documentElement, { attributeFilter: [..., "data-gds-theme", ...] })` in `packages/ui/components/ui/three-scene.tsx`). New theme-sensitive media primitives should piggyback on the same attribute instead of inventing their own signal.
 
 ## Future work / known limits
 

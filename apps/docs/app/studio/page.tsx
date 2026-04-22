@@ -34,6 +34,7 @@ import {
 } from "@/components/ai-elements/provider-picker";
 import { StudioChat } from "@/components/studio/studio-chat";
 import { StudioPreview } from "@/components/studio/studio-preview";
+import { StudioSettingsPanel } from "@/components/studio/settings-panel";
 import {
   ThemeBuilderProvider,
   ThemeBuilderPanel,
@@ -160,6 +161,29 @@ export default function StudioPage() {
     Record<string, StudioSelection | null>
   >({});
 
+  // Per-design "has the user chosen to dock the settings panel in the right
+  // column?" flag. Kept per-design (rather than global) so switching tabs
+  // restores whichever layout the user had for that design — some designs
+  // are all about tweaking a single hero component (panel wants to be big
+  // and docked), others are mostly theme-editing (panel wants to stay
+  // inline under the selection chip and leave the right column for the
+  // theme builder).
+  const [panelDockedByDesign, setPanelDockedByDesign] = useState<
+    Record<string, boolean>
+  >({});
+  const panelDocked = Boolean(panelDockedByDesign[activeId]);
+
+  const handleRequestPanelDock = useCallback(() => {
+    setPanelDockedByDesign((m) => ({ ...m, [activeId]: true }));
+  }, [activeId]);
+
+  const handleRequestPanelUndock = useCallback(() => {
+    setPanelDockedByDesign((m) => {
+      if (!m[activeId]) return m;
+      return { ...m, [activeId]: false };
+    });
+  }, [activeId]);
+
   const [view, setView] = useState<"preview" | "code">("preview");
 
   const handleLatestCode = useCallback(
@@ -170,6 +194,23 @@ export default function StudioPage() {
       // if the code is unchanged.
       setDesigns((ds) =>
         ds.map((d) => (d.id === activeId ? { ...d, appSource: code } : d))
+      );
+    },
+    [activeId]
+  );
+
+  // Source mutation that came from the settings panel (not the LLM). Same
+  // write-through path as handleLatestCode — they both target the active
+  // design's `appSource` slot — but intentionally kept as a separate
+  // callback so it's obvious in a stack trace which surface produced the
+  // change, and so we can later add provenance / undo scoped to
+  // panel-originated edits.
+  const handleSourceMutation = useCallback(
+    (nextSource: string) => {
+      setDesigns((ds) =>
+        ds.map((d) =>
+          d.id === activeId ? { ...d, appSource: nextSource } : d
+        )
       );
     },
     [activeId]
@@ -251,6 +292,11 @@ export default function StudioPage() {
         const { [id]: _drop, ...rest } = m;
         return rest;
       });
+      setPanelDockedByDesign((m) => {
+        if (!(id in m)) return m;
+        const { [id]: _drop, ...rest } = m;
+        return rest;
+      });
     },
     [activeId]
   );
@@ -324,6 +370,9 @@ export default function StudioPage() {
               currentCode={activeDesign.appSource}
               selection={selectionByDesign[activeId] ?? null}
               onClearSelection={handleClearSelection}
+              onSourceMutation={handleSourceMutation}
+              settingsPanelDocked={panelDocked}
+              onRequestSettingsDock={handleRequestPanelDock}
             />
             <StudioThemedPreview
               previewKey={`preview-${activeId}`}
@@ -334,7 +383,22 @@ export default function StudioPage() {
               selection={selectionByDesign[activeId] ?? null}
               onSelect={handleSelect}
             />
-            <ThemeBuilderPanel />
+            {/* Right column: normally the theme builder. When the user
+                docks the settings panel AND has a DS component selected,
+                show the settings panel here instead — it gets the full
+                column height, all props render without scrolling, and the
+                user can undock to swap the theme builder back in. */}
+            {panelDocked && selectionByDesign[activeId]?.componentName ? (
+              <StudioSettingsPanel
+                variant="docked"
+                selection={selectionByDesign[activeId] ?? null}
+                appSource={activeDesign.appSource}
+                onSourceChange={handleSourceMutation}
+                onRequestUndock={handleRequestPanelUndock}
+              />
+            ) : (
+              <ThemeBuilderPanel />
+            )}
           </div>
         </main>
       </div>

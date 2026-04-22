@@ -2,10 +2,10 @@
 name: ThreeScene
 import: "@gradeui/ui"
 props:
-  - preset?: string — shader preset id from the registry
+  - preset?: "space" | "plasma" | "voronoi" | "synthwave" — shader preset id from the registry
   - fragmentShader?: string — user-authored GLSL body; takes precedence over preset
   - onShaderError?: (error: ShaderCompileError) => void — fires on compile failure; scene falls back to `preset="space"`
-  - postPreset?: string (default from preset, or "vhs") — "none" | "vhs" | "cinematic" | "synthwave" | "crt"
+  - postPreset?: "none" | "vhs" | "cinematic" | "synthwave" | "crt" (default "vhs") — post-processing pass
   - palette?: Partial<{ primary; secondary; accent; background }> — any CSS-legal colour string per slot. Re-tints automatically when the theme changes. Unset slots fall back to defaults.
   - createScene?: (ctx) => SceneHandle — custom full scene factory; takes precedence over preset AND fragmentShader
   - controls?: boolean (default false) — play/pause overlay
@@ -38,7 +38,7 @@ notes: |
 
   Each slot accepts ANY CSS-legal colour expression. Values are normalised via a browser probe before being handed to three.js, so all of these work:
 
-    - CSS custom properties — `"var(--primary)"`, `"var(--foreground)"`. RECOMMENDED for DS consumers — the shader re-tints automatically on theme change. Works with shadcn / gradeui bare-triplet tokens (`--primary: 0.610 0.128 20`): when the palette value is a `var(--token)` reference and the token itself resolves to a bare triplet, the resolver auto-wraps it as `oklch(...)` (three bare floats) or `hsl(...)` (two `%` signs) before threading it to three.
+    - CSS custom properties wrapped in a colour function — `"oklch(var(--primary))"`, `"oklch(var(--foreground))"`. **This is the recommended pattern for gradeui consumers.** gradeui tokens (like shadcn) are bare channel triplets (`--primary: 0.610 0.128 20`), so `var(--primary)` alone is NOT a valid CSS colour and will render black. ALWAYS wrap as `oklch(var(--token))`. The shader re-tints automatically on theme change.
     - Hex — `"#ff5fb9"`, `"#f5b"`.
     - `rgb()` / `rgba()` — `"rgb(255 95 185)"`, `"rgb(255, 95, 185)"`.
     - `hsl()` / `hsla()` — `"hsl(330 100% 69%)"`.
@@ -53,15 +53,26 @@ notes: |
 
   Theme reactivity: when the host document's root class or `data-theme` attribute changes, the scene re-reads the palette and pushes new uniforms into the running shader WITHOUT tearing down the WebGL context. Dark/light swaps are essentially free.
 
-  ### gradeui token semantics — pick the RIGHT tokens
+  ### gradeui token semantics — pick the RIGHT tokens, and ALWAYS wrap in `oklch()`
 
-  When wiring `var(--…)` into the palette, remember that gradeui tokens serve different roles:
+  gradeui tokens are bare OKLCH channel triplets (`--primary: 0.610 0.128 20`, no `oklch()` wrapper) — same convention as shadcn. That means **every `var(--token)` passed to the palette MUST be wrapped in `oklch(...)` at the call site**: `"oklch(var(--primary))"`, not `"var(--primary)"`. Unwrapped values resolve to invalid CSS and render black.
 
-    - `--primary` — brand hue 1. USE for `palette.primary` (or `palette.accent`).
+  Token role cheat-sheet when picking which slot maps to what:
+
+    - `--primary` — brand hue 1. USE for `palette.primary` (and often `palette.accent` too).
     - `--accent` — brand hue 2. USE for `palette.secondary` — gradeui's `--secondary` is a NEUTRAL surface (identical to `--muted`) and will render as a flat near-white wash in the shader.
     - `--foreground` — inverted neutral (dark in light mode, light in dark mode). USE for `palette.background` — the raw `--background` token is the page background (near-white in light mode) and will wash the shader out.
 
-  Idiomatic theme-reactive palette for gradeui consumers: `{ primary: "var(--primary)", secondary: "var(--accent)", accent: "var(--primary)", background: "var(--foreground)" }`. Do NOT blindly map `palette.secondary → var(--secondary)` or `palette.background → var(--background)`.
+  Idiomatic theme-reactive palette for gradeui consumers (copy verbatim):
+
+    ```jsx
+    palette={{
+      primary: "oklch(var(--primary))",
+      secondary: "oklch(var(--accent))",   // NOT var(--secondary) — that's a neutral
+      accent: "oklch(var(--primary))",
+      background: "oklch(var(--foreground))", // NOT var(--background) — that's the page bg
+    }}
+    ```
 
   ## Path 2 — `fragmentShader` (custom GLSL)
 
@@ -132,19 +143,21 @@ notes: |
 // Path 1 — palette from the active theme via CSS variables.
 // Recolors automatically when the theme switches.
 //
-// NOTE on gradeui token semantics: `--secondary` is a NEUTRAL surface token
-// (same value as `--muted`), and `--background` is the page background — both
-// are near-white in light mode and would wash the shader out. For a punchy,
-// theme-reactive palette, map the shader's slots to gradeui's two BRAND hues
-// (`--primary`, `--accent`) and use `--foreground` for the dark clear colour
-// so it inverts with the theme.
+// gradeui tokens are bare OKLCH triplets (shadcn-style), so EVERY var() MUST
+// be wrapped in oklch(...) at the call site — unwrapped `var(--primary)` is
+// invalid CSS and will render black.
+//
+// Slot mapping: `--secondary` is a neutral surface in gradeui (not a brand hue)
+// and `--background` is the page bg (near-white in light mode). Map secondary
+// to `--accent` and background to `--foreground` for a punchy, theme-reactive
+// palette that inverts cleanly on dark-mode toggle.
 <ThreeScene
   preset="plasma"
   palette={{
-    primary: "var(--primary)",
-    secondary: "var(--accent)",     // gradeui's brand hue 2; `--secondary` is neutral
-    accent: "var(--primary)",
-    background: "var(--foreground)", // inverts with theme → always high-contrast
+    primary: "oklch(var(--primary))",
+    secondary: "oklch(var(--accent))",
+    accent: "oklch(var(--primary))",
+    background: "oklch(var(--foreground))",
   }}
 />
 ```

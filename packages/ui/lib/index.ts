@@ -78,6 +78,8 @@ export { Progress } from "../components/ui/progress";
 
 export { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 
+export { Row, rowVariants, type RowProps } from "../components/ui/row";
+
 export { ScrollArea, ScrollBar } from "../components/ui/scroll-area";
 
 export {
@@ -111,6 +113,8 @@ export {
 export { Skeleton } from "../components/ui/skeleton";
 
 export { Slider } from "../components/ui/slider";
+
+export { Stack, stackVariants, type StackProps } from "../components/ui/stack";
 
 export { Switch } from "../components/ui/switch";
 

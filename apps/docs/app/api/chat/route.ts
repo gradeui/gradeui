@@ -35,6 +35,17 @@ import {
   renderComponentRefsBlock,
   relevantComponentNames,
 } from "@/lib/component-refs";
+import { ALLOWED_COMPONENTS } from "@/lib/chat-sandpack";
+
+// Fast-path membership check to filter ref matches down to the Studio-exposed
+// allowlist. We build this once at module load because the allowlist is
+// static. Example: rive-player.md has aliases like "animation"/"lottie", so a
+// prompt mentioning "animation" would otherwise pull in RivePlayer's ref — but
+// RivePlayer is deliberately NOT in ALLOWED_COMPONENTS right now, so we don't
+// want to hint at a component the model can't actually emit.
+const ALLOWED_COMPONENT_SET = new Set<string>(
+  ALLOWED_COMPONENTS.map((n) => n.toLowerCase())
+);
 
 /**
  * Pull text out of a UIMessage's parts array. Mirrors the small helper in
@@ -74,14 +85,33 @@ function renderSelectionBlock(sel: RequestSelection | null | undefined): string 
   const tag = (sel.tag || "").toString().slice(0, 30);
   const text = (sel.text || "").toString().slice(0, 120);
   const outer = (sel.outerHTML || "").toString().slice(0, 500);
-  if (!tag && !outer) return "";
+  const componentName = (sel.componentName || "").toString().slice(0, 60);
+  const part = (sel.part || "").toString().slice(0, 60);
+  if (!tag && !outer && !componentName) return "";
+
+  // When the selection resolved to a DS component boundary, lead with the
+  // component identifier — that's the most actionable hint we can give the
+  // model ("edit <ThreeScene>") and it maps 1:1 to a JSX node in the
+  // generated source. The raw tag/outerHTML still rides along as extra
+  // context but the model has been seen to ignore the component name when
+  // it's buried below 500 chars of inner HTML, so we hoist it to the top.
+  const header = componentName
+    ? `TARGETED EDIT — the user is pointing at a <${componentName}> component in the current preview.`
+    : "TARGETED EDIT — the user is pointing at a specific element in the current preview.";
+
+  const instruction = componentName
+    ? `Interpret the user's request AS AN EDIT TO THE <${componentName}> INSTANCE above. Find the matching <${componentName} ... /> JSX node in the current code and modify its props (or children) in place. Do not rewrite unrelated components in the composition. Still follow the OUTPUT RULES — regenerate the full component inside a single \`\`\`jsx fence; the targeted change is WHAT to modify, not HOW to format the response.`
+    : "Interpret the user's request AS AN EDIT TO THIS ELEMENT specifically. Locate it inside the current JSX (by tag, text content, classes, and surrounding context) and modify it in place. Do not rewrite unrelated parts of the component. Still follow the OUTPUT RULES — regenerate the full component inside a single ```jsx fence; the targeted change is WHAT to modify, not HOW to format the response.";
+
   return [
-    "TARGETED EDIT — the user is pointing at a specific element in the current preview.",
+    header,
+    componentName ? `Component: <${componentName}>` : null,
+    part ? `data-gds-part: "${part}"` : null,
     `Element tag: <${tag}>`,
     text ? `Element text: "${text}"` : null,
     outer ? `Element outerHTML (truncated):\n\`\`\`html\n${outer}\n\`\`\`` : null,
     "",
-    "Interpret the user's request AS AN EDIT TO THIS ELEMENT specifically. Locate it inside the current JSX (by tag, text content, classes, and surrounding context) and modify it in place. Do not rewrite unrelated parts of the component. Still follow the OUTPUT RULES — regenerate the full component inside a single ```jsx fence; the targeted change is WHAT to modify, not HOW to format the response.",
+    instruction,
   ]
     .filter((l): l is string => l !== null)
     .join("\n");
@@ -136,6 +166,13 @@ interface RequestSelection {
   text: string;
   outerHTML: string;
   rect: { x: number; y: number; width: number; height: number };
+  /** data-gds-part value of the nearest DS component ancestor, when the
+   *  click landed inside one. Takes priority over `tag` for the model — it
+   *  tells the agent the user meant "edit the ThreeScene", not "edit the
+   *  inner <canvas>". Absent when the clicked element isn't inside a DS part. */
+  part?: string;
+  /** PascalCase component identifier derived from `part`. */
+  componentName?: string;
 }
 
 interface ChatRequestBody {
@@ -310,7 +347,9 @@ export async function POST(req: Request) {
     // Button, Dialog, Input" alongside each assistant turn. That makes the
     // token-vs-quality trade-off visible without needing server logs.
     const relevant = includeComponentRefs
-      ? relevantComponentNames(textFromMessages(messages))
+      ? relevantComponentNames(textFromMessages(messages)).filter((n) =>
+          ALLOWED_COMPONENT_SET.has(n.toLowerCase())
+        )
       : [];
     const refsBlock =
       relevant.length > 0

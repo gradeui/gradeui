@@ -25,6 +25,7 @@ import { motion } from "framer-motion";
 import {
   AlertTriangle,
   Code2,
+  Crosshair,
   ExternalLink,
   Eye,
   Loader2,
@@ -261,6 +262,20 @@ export function StudioPreview({
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 border border-border rounded px-1.5 py-0.5">
             {theme.name}
           </span>
+          {selection?.componentName && (
+            <span
+              className="flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-medium text-primary"
+              title={
+                selection.part
+                  ? `Editing <${selection.componentName}> (data-gds-part="${selection.part}")`
+                  : `Editing <${selection.componentName}>`
+              }
+            >
+              <Crosshair className="h-3 w-3" aria-hidden />
+              Editing
+              <span className="opacity-90">&lt;{selection.componentName}&gt;</span>
+            </span>
+          )}
           {isStreaming && (
             <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-primary">
               <Loader2 className="h-3 w-3 animate-spin" />

@@ -20,6 +20,7 @@ import {
   Inbox,
   Table2,
   FileText,
+  Waves,
 } from "lucide-react";
 
 export interface StudioTemplate {
@@ -95,6 +96,19 @@ export const STUDIO_TEMPLATES: StudioTemplate[] = [
     icon: Table2,
     prompt:
       "A compact data table for a customer list: a header row with title, search input, and primary 'Add customer' button, then a five-column table (Name, Email, Plan, Status, Joined) with six example rows. Status should use Badge variants.",
+  },
+  {
+    id: "shader",
+    label: "Shader hero",
+    description: "Animated WebGL backdrop with a CTA over it.",
+    icon: Waves,
+    // ThreeScene is a GL primitive in @gradeui/ui. The `palette` prop reads
+    // the theme's primary / secondary / accent via CSS vars, so the shader
+    // follows whatever hue the builder panel is set to. We seed with the
+    // "space" preset + "vhs" post-FX as the most instantly-recognisable
+    // pairing — easy to swap out once the user is in the preview.
+    prompt:
+      "A hero with an animated WebGL backdrop behind a centred headline and CTA. Use <ThreeScene preset=\"space\" postPreset=\"vhs\" aspect=\"landscape\" radius=\"lg\" /> as the background, driven by the current theme palette (pass palette={{ primary: 'var(--primary)', secondary: 'var(--secondary)', accent: 'var(--accent)', background: 'var(--background)' }}). Overlay: a bold 2–3 word headline, a one-line supporting sentence, and a primary CTA Button. Keep the composition to a single screen.",
   },
   {
     id: "blank",

@@ -21,19 +21,33 @@ import { themeToCSSVars, type GeneratedTheme } from "@/lib/themes";
  * Kept co-located with the agent string below so it's obvious when the wire
  * format changes on one side but not the other.
  *
- *   - tag        lowercased tag name — e.g. "button"; used for the chip label
- *   - text       trimmed + truncated innerText (≤120 chars); fallback chip label
- *   - outerHTML  truncated outerHTML (≤500 chars) — embedded verbatim into the
- *                system prompt so the model knows which DOM node the user is
- *                pointing at
- *   - rect       viewport-relative bounding rect (rounded ints); only used for
- *                diagnostics / potential future overlay in parent
+ *   - tag            lowercased tag name — e.g. "button"; used for the chip label
+ *   - text           trimmed + truncated innerText (≤120 chars); fallback chip label
+ *   - outerHTML      truncated outerHTML (≤500 chars) — embedded verbatim into the
+ *                    system prompt so the model knows which DOM node the user is
+ *                    pointing at
+ *   - rect           viewport-relative bounding rect (rounded ints); only used for
+ *                    diagnostics / potential future overlay in parent
+ *   - part           value of the nearest ancestor's `data-gds-part` attribute.
+ *                    DS components emit `data-gds-part="<kebab-component-name>"`
+ *                    on their root element, so walking up from the click target
+ *                    via `closest('[data-gds-part]')` tells us which DS component
+ *                    the user actually meant — not just the raw DOM node they
+ *                    happened to click on (which is almost always an inner child
+ *                    element, not the component boundary).
+ *   - componentName  the part value re-cased as PascalCase — e.g. "three-scene"
+ *                    → "ThreeScene". Provided alongside `part` so the chip and
+ *                    system prompt can show the exported component identifier
+ *                    without re-deriving it on every consumer. Absent when
+ *                    `part` is absent.
  */
 export interface StudioSelection {
   tag: string;
   text: string;
   outerHTML: string;
   rect: { x: number; y: number; width: number; height: number };
+  part?: string;
+  componentName?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -283,13 +297,13 @@ export const PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> = {
   "tailwind-merge": "^2.0.0",
   "lucide-react": "^0.300.0",
   recharts: "^2.12.0",
-  // `@rive-app/react-canvas` is an OPTIONAL peer of @gradeui/ui — the library
-  // lazy-imports it so consumers who don't use Rive skip the ~900KB runtime.
-  // In Sandpack we install it up-front so <RivePlayer /> actually renders
-  // rather than falling through to the "Rive runtime not installed" message.
   // `three` and `postprocessing` are NOT listed here because they're regular
   // (non-optional) deps of @gradeui/ui and npm pulls them in transitively.
-  "@rive-app/react-canvas": "^4.21.4",
+  //
+  // RivePlayer is intentionally NOT surfaced in Studio — its @rive-app/react-canvas
+  // runtime adds ~900KB to every sandbox boot and we're not pushing Rive as a
+  // studio-first primitive. Consumers installing @gradeui/ui directly can still
+  // use it by adding the optional dep themselves.
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -509,7 +523,61 @@ type SelectionPayload = {
   text: string;
   outerHTML: string;
   rect: { x: number; y: number; width: number; height: number };
+  // Design-system identification. When the click target is inside a gradeui
+  // component (every DS component emits data-gds-part="<kebab-name>" on its
+  // root), we walk up to that boundary and report the PART + its PascalCase
+  // identifier. The chat chip + system prompt prefer these over the raw tag
+  // name so the agent knows it's editing <ThreeScene>, not the inner <canvas>.
+  part?: string;
+  componentName?: string;
 };
+
+// "three-scene" → "ThreeScene". Small enough to inline; runs once per click.
+function kebabToPascal(kebab: string): string {
+  return kebab
+    .split(/-+/)
+    .filter(Boolean)
+    .map((seg) => seg.charAt(0).toUpperCase() + seg.slice(1))
+    .join("");
+}
+
+// Parts that live INSIDE another DS component rather than being their own
+// JSX component. Clicking them should resolve to the enclosing component,
+// not to a phantom name like "ShaderCanvas" that doesn't exist in source.
+//
+// Example: <ThreeScene> renders a <canvas> with data-gds-part="shader-canvas"
+// inside a host div with data-gds-part="three-scene". Without this list,
+// clicking the canvas pinned the settings panel to <ShaderCanvas>, which the
+// source mutator can never find.
+//
+// Long-term fix is a library-side data-gds-component attribute on real JSX
+// component roots; until then this list stays in sync with what's stamped
+// inside @gradeui/ui media components.
+const SUB_PART_NAMES = new Set<string>([
+  "shader-canvas",
+  "scene-poster",
+  "scene-controls",
+  "video-poster",
+  "preset-poster",
+  "preset-label",
+  "picker-selected-badge",
+]);
+
+// Walk up from an element to the nearest "real component" data-gds-part,
+// skipping sub-parts. Returns null if the element isn't inside any DS
+// component.
+function findComponentOwner(el: Element | null): Element | null {
+  if (!el || !el.closest) return null;
+  let node: Element | null = el.closest("[data-gds-part]") as Element | null;
+  while (node) {
+    const part = node.getAttribute("data-gds-part") || "";
+    if (!SUB_PART_NAMES.has(part)) return node;
+    const parent = node.parentElement;
+    if (!parent) return null;
+    node = parent.closest("[data-gds-part]") as Element | null;
+  }
+  return null;
+}
 
 (function installSelectionAgent() {
   // Guard against double-install (e.g. if HMR somehow re-runs this
@@ -573,19 +641,38 @@ type SelectionPayload = {
   }
 
   function serialize(el: Element): SelectionPayload {
-    const rect = el.getBoundingClientRect();
+    // Walk up to the nearest DS component boundary. If the click landed
+    // inside a <ThreeScene>, <Card>, etc., we want to report the COMPONENT
+    // the user conceptually pointed at — not the leaf <div> / <canvas> they
+    // happened to hit. Non-DS elements (bare <button>, plain <div>, etc.)
+    // have no ancestor with data-gds-part, so \`part\` stays undefined and
+    // the chip/prompt fall back to tag-name behaviour. findComponentOwner
+    // also skips internal sub-parts (e.g. the canvas stamped with
+    // data-gds-part="shader-canvas" inside <ThreeScene>) so the settings
+    // panel pins to the real, source-addressable component.
+    const partOwner = findComponentOwner(el);
+    // Use the part owner's bounding rect + outerHTML when we have one, so
+    // overlay positioning and the model's TARGETED EDIT stanza both agree
+    // with what the chip is showing.
+    const target = partOwner ?? el;
+    const part = partOwner
+      ? partOwner.getAttribute("data-gds-part") || undefined
+      : undefined;
+    const componentName = part ? kebabToPascal(part) : undefined;
+
+    const rect = target.getBoundingClientRect();
     const rawText = (
-      (el as HTMLElement).innerText ||
-      el.textContent ||
+      (target as HTMLElement).innerText ||
+      target.textContent ||
       ""
     )
       .replace(/\\s+/g, " ")
       .trim();
     const text = rawText.length > 120 ? rawText.slice(0, 120) + "…" : rawText;
-    let outer = el.outerHTML || "";
+    let outer = target.outerHTML || "";
     if (outer.length > 500) outer = outer.slice(0, 500) + "…";
     return {
-      tag: el.tagName ? el.tagName.toLowerCase() : "",
+      tag: target.tagName ? target.tagName.toLowerCase() : "",
       text,
       outerHTML: outer,
       rect: {
@@ -594,15 +681,29 @@ type SelectionPayload = {
         width: Math.round(rect.width),
         height: Math.round(rect.height),
       },
+      part,
+      componentName,
     };
+  }
+
+  function resolveSelectionTarget(el: Element | null): Element | null {
+    if (!el) return null;
+    // Prefer the nearest DS component boundary so the overlay + eventual
+    // click target both land on what the user conceptually means. Skips
+    // internal sub-parts so e.g. the canvas inside <ThreeScene> hands back
+    // the ThreeScene host, not the canvas itself.
+    const partOwner = findComponentOwner(el);
+    return partOwner ?? el;
   }
 
   function onMouseOver(e: MouseEvent) {
     if (!enabled) return;
-    const target = e.target as Element | null;
-    if (isIgnored(target)) return;
+    const raw = e.target as Element | null;
+    if (isIgnored(raw)) return;
+    const target = resolveSelectionTarget(raw);
+    if (!target || isIgnored(target)) return;
     lastHovered = target;
-    positionOverlay(target!);
+    positionOverlay(target);
   }
 
   function onMouseOut(e: MouseEvent) {
@@ -612,14 +713,16 @@ type SelectionPayload = {
 
   function onClick(e: MouseEvent) {
     if (!enabled) return;
-    const target = e.target as Element | null;
-    if (isIgnored(target)) return;
+    const raw = e.target as Element | null;
+    if (isIgnored(raw)) return;
+    const target = resolveSelectionTarget(raw);
+    if (!target || isIgnored(target)) return;
     e.preventDefault();
     e.stopPropagation();
-    positionOverlay(target!);
+    positionOverlay(target);
     try {
       window.parent.postMessage(
-        { type: "grade:selected", selection: serialize(target!) },
+        { type: "grade:selected", selection: serialize(target) },
         "*"
       );
     } catch {
@@ -1624,6 +1727,11 @@ export function cn(...inputs: ClassValue[]) {
  * files it needs. Keep in sync with componentFiles above.
  */
 export const ALLOWED_COMPONENTS = [
+  // Layout primitives — reach for these over hand-rolled flex/grid so
+  // the resulting structure is editable via the settings panel and the
+  // vertical/horizontal rhythm stays consistent across designs.
+  "Stack",
+  "Row",
   // Core primitives
   "Button",
   "Card",
@@ -1684,18 +1792,18 @@ export const ALLOWED_COMPONENTS = [
   "TableCell",
   "TableCaption",
   // Media (shipped in @gradeui/ui@0.4.0)
-  //   - VideoPlayer / RivePlayer / ThreeScene are the high-level wrappers
-  //     the model should reach for. MediaSurface is the low-level shell;
-  //     exposing it too means a user who says "build a bespoke media thing"
-  //     has a way to do it without the model inventing imports.
-  //   - RivePlayer needs `@rive-app/react-canvas` in PLAYGROUND_DEPENDENCIES
-  //     below — the lib lists it as an optionalDependency so we have to pull
-  //     it in explicitly for the Sandpack iframe.
+  //   - VideoPlayer / ThreeScene are the high-level wrappers the model
+  //     should reach for. MediaSurface is the low-level shell; exposing
+  //     it too means a user who says "build a bespoke media thing" has a
+  //     way to do it without the model inventing imports.
+  //   - RivePlayer is intentionally NOT exposed to Studio right now — the
+  //     @rive-app/react-canvas runtime is ~900KB and we aren't pushing Rive
+  //     as a studio-first primitive. Consumers installing @gradeui/ui
+  //     directly can still use it by adding the optional dep themselves.
   //   - Shader preset primitives are included so a prompt like "show a
   //     gallery of shader backgrounds" picks the registry-driven UI instead
   //     of fabricating one.
   "VideoPlayer",
-  "RivePlayer",
   "ThreeScene",
   "MediaSurface",
   "ShaderPresetPreview",
@@ -1801,9 +1909,25 @@ const PLAYGROUND_INDEX_TSX = [
   ");",
 ].join("\n");
 
+/**
+ * Tiny, deterministic string hash. Used to derive a short signature from
+ * the serialized theme vars so the in-iframe ThemeOptionsApplier can
+ * stamp it onto `document.documentElement` and — via a MutationObserver —
+ * let CSS-var-aware components (ThreeScene, anything else reading
+ * `var(--primary)` off the host) know the theme changed. dbj2; not
+ * cryptographic, just collision-resistant enough for tick-to-tick diffs.
+ */
+function themeVarsSignature(lightVars: string, darkVars: string): string {
+  const s = lightVars + "\n" + darkVars;
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = (h * 33) ^ s.charCodeAt(i);
+  return (h >>> 0).toString(36);
+}
+
 function buildPlaygroundThemeOptionsTsx(
   mode: "light" | "dark",
-  components: { buttonShape: string; inputStyle: string; cardStyle: string }
+  components: { buttonShape: string; inputStyle: string; cardStyle: string },
+  themeSignature: string
 ): string {
   return [
     'import * as React from "react";',
@@ -1816,6 +1940,14 @@ function buildPlaygroundThemeOptionsTsx(
     `const BUTTON_SHAPE = ${JSON.stringify(components.buttonShape)};`,
     `const INPUT_STYLE = ${JSON.stringify(components.inputStyle)};`,
     `const CARD_STYLE = ${JSON.stringify(components.cardStyle)};`,
+    "// THEME_SIGNATURE changes whenever ANY CSS-var value changes (hue,",
+    "// chroma, radius, etc. — not just the component-shape attrs above).",
+    "// Writing it to root.dataset on every render is what lets in-iframe",
+    "// palette consumers (notably ThreeScene) notice var-only theme edits",
+    "// via their MutationObserver — CSS hot-reloads don't mutate any attr",
+    "// by themselves, so without this ThreeScene's shader stays frozen on",
+    "// the old primary until a dark/light toggle fires the observer.",
+    `const THEME_SIGNATURE = ${JSON.stringify(themeSignature)};`,
     "",
     "export default function ThemeOptionsApplier({",
     "  children,",
@@ -1828,6 +1960,7 @@ function buildPlaygroundThemeOptionsTsx(
     "    root.dataset.buttonShape = BUTTON_SHAPE;",
     "    root.dataset.inputStyle = INPUT_STYLE;",
     "    root.dataset.cardStyle = CARD_STYLE;",
+    "    root.dataset.gdsTheme = THEME_SIGNATURE;",
     "  });",
     "  return <>{children}</>;",
     "}",
@@ -1867,6 +2000,7 @@ export function buildSandpackFiles({
 }: BuildSandpackFilesArgs): Record<string, string> {
   const lightVars = formatThemeVars(theme, "light");
   const darkVars = formatThemeVars(theme, "dark");
+  const themeSignature = themeVarsSignature(lightVars, darkVars);
   const components = {
     buttonShape: theme.components.buttonShape ?? "default",
     inputStyle: theme.components.inputStyle ?? "outlined",
@@ -1906,7 +2040,7 @@ export function buildSandpackFiles({
     // reliably runs inside Sandpack's cross-origin iframe; see the big
     // comment above PLAYGROUND_SELECTION_AGENT_TSX for why.
     "/selection-agent.ts": PLAYGROUND_SELECTION_AGENT_TSX,
-    "/theme-options.tsx": buildPlaygroundThemeOptionsTsx(mode, components),
+    "/theme-options.tsx": buildPlaygroundThemeOptionsTsx(mode, components, themeSignature),
     "/styles.css": buildPlaygroundStylesCss(lightVars, darkVars),
     ...(extraFiles ?? {}),
   };

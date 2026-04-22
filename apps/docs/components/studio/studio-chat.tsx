@@ -38,6 +38,8 @@ import type { ChatSettings } from "@/components/ai-elements/provider-picker";
 import { STUDIO_TEMPLATES, type StudioTemplate } from "@/lib/studio-templates";
 import { humanizeChatError } from "@/lib/chat-error";
 import type { StudioSelection } from "@/lib/chat-sandpack";
+import { StudioSettingsPanel } from "@/components/studio/settings-panel";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 /**
  * Intent the user picks before sending a studio prompt:
@@ -54,9 +56,12 @@ export type StudioIntent = "iterate" | "new";
  * Hard ceiling on the prompt length. Keeps the outgoing request snug against
  * most provider input-token budgets and stops accidental paste-bombs (an
  * entire file gets pasted in, etc.) from burning tokens. Kept as a named
- * constant so the counter + the <textarea maxLength> agree.
+ * constant so the counter + the <textarea maxLength> agree. 1000 chars is
+ * ~200 words — comfortable room to describe a multi-section layout ("hero
+ * with shader background, pricing table below, testimonials, footer")
+ * without hitting the wall mid-thought.
  */
-const INPUT_CHAR_LIMIT = 500;
+const INPUT_CHAR_LIMIT = 1000;
 
 /** Auto-grow height ceiling for the prompt textarea. Above this, the
  *  textarea starts scrolling internally so the chat column can't be
@@ -102,6 +107,19 @@ interface StudioChatProps {
   selection?: StudioSelection | null;
   /** Fires when the chip's × is clicked — parent drops its selection state. */
   onClearSelection?: () => void;
+  /** Fires when the settings panel rewrites the current App source
+   *  directly (no chat round-trip). Parent should push the new source
+   *  into its per-design appSource map so the preview HMRs to it. When
+   *  omitted, the settings panel still renders but controls become no-ops. */
+  onSourceMutation?: (nextSource: string) => void;
+  /** When true, the parent is rendering the settings panel in a different
+   *  location (typically docked in the right column). We skip the inline
+   *  copy so the user isn't looking at two of the same panel. Defaults
+   *  to false — panel renders inline under the selection chip. */
+  settingsPanelDocked?: boolean;
+  /** Fires when the inline panel's "Dock →" affordance is clicked. Parent
+   *  should flip `settingsPanelDocked` to true. */
+  onRequestSettingsDock?: () => void;
   className?: string;
 }
 
@@ -216,6 +234,9 @@ export function StudioChat({
   currentCode,
   selection = null,
   onClearSelection,
+  onSourceMutation,
+  settingsPanelDocked = false,
+  onRequestSettingsDock,
   className,
 }: StudioChatProps) {
   const [input, setInput] = useState("");
@@ -377,7 +398,16 @@ export function StudioChat({
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
       const el = scrollRef.current;
-      if (el) el.scrollTop = el.scrollHeight;
+      if (!el) return;
+      // Radix ScrollArea renders an inner viewport element; the actual
+      // scroll happens there, not on the Root. Fall back to the root's
+      // scrollTop in case we're rendering without ScrollArea for any
+      // reason (keeps this robust if the component tree ever changes).
+      const viewport = el.querySelector<HTMLElement>(
+        "[data-radix-scroll-area-viewport]"
+      );
+      const scroller = viewport ?? el;
+      scroller.scrollTop = scroller.scrollHeight;
     });
   }, []);
 
@@ -478,7 +508,20 @@ export function StudioChat({
         <SessionTokenTotal messages={messages as UIMessage[]} />
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto" data-lenis-prevent>
+      {/* Messages list. Wrapped in the DS <ScrollArea> so the scrollbar
+          tracks design-system tokens (matches the rest of the app) instead
+          of falling back to the OS's native scrollbar — which on macOS
+          overlay-scrollbars mode is invisible until the user wheels, and
+          made the chat feel like a dead surface on first load. Radix
+          renders an internal viewport element that actually scrolls;
+          scrollToBottom() queries it via [data-radix-scroll-area-viewport].
+          data-lenis-prevent stops the global Lenis smooth-scroll from
+          hijacking wheel events inside this subtree. */}
+      <ScrollArea
+        ref={scrollRef}
+        className="flex-1 min-h-0"
+        data-lenis-prevent
+      >
         <div className="p-3 md:p-4 space-y-4">
           {messages.length === 0 && !isStreaming && (
             <EmptyState
@@ -515,7 +558,7 @@ export function StudioChat({
             />
           )}
         </div>
-      </div>
+      </ScrollArea>
 
       <div className="border-t border-border p-2.5 bg-card shrink-0 space-y-2">
         <IntentToggle
@@ -530,6 +573,22 @@ export function StudioChat({
           <SelectionChip
             selection={selection}
             onClear={() => onClearSelection?.()}
+          />
+        )}
+        {/* Settings panel — surfaces structured controls for the currently-
+            selected DS component, so the user can toggle a variant or flip a
+            boolean without round-tripping through the chat. Only renders when
+            the selection carries a componentName (i.e. we snapped to a
+            `data-gds-part`). Source mutations bubble up through
+            onSourceMutation so the preview HMRs to the patched App. Skipped
+            when the parent is rendering the panel elsewhere (docked in the
+            right column) so the user isn't looking at two copies. */}
+        {selection?.componentName && !settingsPanelDocked && (
+          <StudioSettingsPanel
+            selection={selection}
+            appSource={currentCode}
+            onSourceChange={(next) => onSourceMutation?.(next)}
+            onRequestDock={onRequestSettingsDock}
           />
         )}
         {/* When the user is starting a new design mid-session, surface the
@@ -1041,17 +1100,22 @@ function TemplateChips({
 
 /**
  * Little pill that shows the element the user picked in the preview's select
- * mode — e.g. `◎ <button> "Sign in" ×`. Sits above the textarea so it's
- * visually attached to the prompt it will modify, and clears on send (see
- * handleSend). The × is a secondary action — pressing it drops the selection
- * without affecting whatever the user is typing.
+ * mode.
  *
- * Label strategy:
- *   - Prefer the element's trimmed innerText (`"Sign in"`) — most meaningful.
- *   - Fall back to the tag (`<button>`) when the element has no text (icon
- *     buttons, inputs, empty divs).
- *   - Never show the raw outerHTML here — that's the model's concern, not the
- *     user's. It rides through in the request body only.
+ * Label strategy — two tiers, depending on whether the click landed inside a
+ * DS component boundary:
+ *
+ *   1. **DS component hit** (`selection.componentName` is set) — show the
+ *      component identifier in a bolder treatment: `◎ <ThreeScene> ×`. This
+ *      is the common case once the DS is in full swing; the user nearly
+ *      always means "edit THIS component", not "edit this internal div".
+ *   2. **Bare DOM element** (no component name) — fall back to the tag
+ *      plus trimmed innerText: `◎ <button> "Sign in" ×`. Preserves the
+ *      pre-part behaviour for components that don't yet emit
+ *      `data-gds-part`, and for any ad-hoc JSX the model produced.
+ *
+ * Never shows the raw outerHTML here — that's the model's concern, not the
+ * user's. It rides through in the request body only.
  */
 function SelectionChip({
   selection,
@@ -1060,6 +1124,14 @@ function SelectionChip({
   selection: StudioSelection;
   onClear: () => void;
 }) {
+  const hasComponent = Boolean(selection.componentName);
+  const label = hasComponent
+    ? `<${selection.componentName}>`
+    : `<${selection.tag}>`;
+  const title = hasComponent
+    ? `Selected <${selection.componentName}> in preview — next message will target this component`
+    : `Selected <${selection.tag}> in preview — next message will target it`;
+
   return (
     <div
       className={cn(
@@ -1067,13 +1139,20 @@ function SelectionChip({
         "px-2 py-0.5 text-[11px] text-primary-foreground w-fit max-w-full",
         "text-foreground"
       )}
-      title={`Selected <${selection.tag}> in preview — next message will target it`}
+      title={title}
     >
       <MousePointerClick className="h-3 w-3 shrink-0 text-primary" />
-      <span className="font-mono text-[10px] opacity-70 shrink-0">
-        &lt;{selection.tag}&gt;
+      <span
+        className={cn(
+          "font-mono shrink-0",
+          hasComponent
+            ? "text-[11px] font-medium text-primary"
+            : "text-[10px] opacity-70"
+        )}
+      >
+        &lt;{hasComponent ? selection.componentName : selection.tag}&gt;
       </span>
-      {selection.text && (
+      {!hasComponent && selection.text && (
         <span className="truncate min-w-0 opacity-90" title={selection.text}>
           &ldquo;{selection.text}&rdquo;
         </span>
@@ -1081,7 +1160,7 @@ function SelectionChip({
       <button
         type="button"
         onClick={onClear}
-        aria-label="Clear selection"
+        aria-label={`Clear selection: ${label}`}
         className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors shrink-0"
       >
         <X className="h-3 w-3" />
