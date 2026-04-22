@@ -1,5 +1,11 @@
 # @gradeui/ui
 
+## 0.7.0
+
+### Minor Changes
+
+- 8a9d01e: Add `AppShell`, `AppShellNav`, and `AppShellMain` — a top-level page scaffold primitive. `nav` variant picks the layout structure (`"none" | "top" | "side"`), `AppShellMain`'s `maxWidth` caps content width (`"full" | "container"`), and `AppShellNav` is sticky by default. Just structure — no collapse state, no context, SSR-safe.
+
 ## 0.6.0
 
 ### Minor Changes
