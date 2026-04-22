@@ -92,6 +92,8 @@ export { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 
 export { Row, rowVariants, type RowProps } from "../components/ui/row";
 
+export { Grid, gridVariants, type GridProps } from "../components/ui/grid";
+
 export { ScrollArea, ScrollBar } from "../components/ui/scroll-area";
 
 export {

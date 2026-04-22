@@ -1743,8 +1743,16 @@ export const ALLOWED_COMPONENTS = [
   // Layout primitives — reach for these over hand-rolled flex/grid so
   // the resulting structure is editable via the settings panel and the
   // vertical/horizontal rhythm stays consistent across designs.
+  //   Stack — vertical 1D
+  //   Row   — horizontal 1D
+  //   Grid  — 2D responsive; `cols` prop bakes in the responsive ladder
+  //           so "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4" becomes
+  //           <Grid cols="4">. The model hand-rolls the same pattern
+  //           otherwise, often with invented classes like `gap-md` that
+  //           silently do nothing.
   "Stack",
   "Row",
+  "Grid",
   // App scaffold — the top-level page shell. nav=side|top|none picks the
   // structure; AppShellMain's maxWidth caps content width. Reach for this
   // instead of hand-rolling grid grid-cols-[auto_1fr] on every app layout.

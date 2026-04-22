@@ -48,6 +48,7 @@ const componentsNav: NavSection[] = [
       { title: "App Shell", href: "/components/app-shell" },
       { title: "Stack", href: "/components/stack" },
       { title: "Row", href: "/components/row" },
+      { title: "Grid", href: "/components/grid" },
     ],
   },
   {
