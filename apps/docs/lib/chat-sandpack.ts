@@ -286,17 +286,25 @@ export const PLAYGROUND_EXTERNAL_RESOURCES: readonly string[] = [
  * generation. `react` + `react-dom` are provided by the Sandpack
  * template so they don't go here.
  *
- * We PIN @gradeui/ui to a concrete caret range rather than `latest` on
- * purpose. Sandpack's bundler (CodeSandbox CSB-services) caches dist-tag
- * resolutions aggressively — once a browser session has resolved
- * `latest → 0.6.0` it keeps using that tarball even after we publish 0.7.0,
- * which shows up as "Element type is invalid" when the model emits a
- * component added in the newer version. Pinning the range forces a fresh
- * resolve on every version bump. Bump this when a new minor/major lands
- * and the newly exported components need to be reachable in Studio.
+ * We PIN @gradeui/ui to an EXACT version rather than `latest` or a caret
+ * range. Two reasons:
+ *
+ *   1. Cache: Sandpack's bundler (CodeSandbox CSB-services) caches
+ *      dist-tag resolutions aggressively — once a browser session has
+ *      resolved `latest → 0.6.0` it keeps using that tarball even after
+ *      we publish 0.7.0, which shows up as "Element type is invalid"
+ *      when the model emits a component added in the newer version.
+ *   2. Resolver bugs: CSB's resolver has intermittently returned null
+ *      from the manifest fetcher when given a caret range against a very
+ *      recently published version, surfacing as "Cannot read properties
+ *      of null (reading 'match')". An exact version sidesteps the
+ *      semver-range path entirely.
+ *
+ * Bump this when a new minor/major lands and the newly exported
+ * components need to be reachable in Studio.
  */
 export const PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> = {
-  "@gradeui/ui": "^0.7.0",
+  "@gradeui/ui": "0.7.0",
   "class-variance-authority": "^0.7.0",
   clsx: "^2.0.0",
   "tailwind-merge": "^2.0.0",
