@@ -130,6 +130,11 @@ export const ALLOWED_COMPONENTS = [
 export const ALLOWED_EXTERNAL_IMPORTS = [
   "lucide-react",
   "recharts",
+  // canvas-confetti — small declarative confetti library. Reach for it
+  // when a scaffold wants to celebrate something (checkout success, form
+  // win, puzzle solved). Tiny runtime, imperative API, nothing to clean
+  // up: `import confetti from "canvas-confetti"; confetti({...})`.
+  "canvas-confetti",
 ] as const;
 
 /**

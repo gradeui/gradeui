@@ -398,6 +398,11 @@ export const PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> = {
   "tailwind-merge": "^2.0.0",
   "lucide-react": "^0.300.0",
   recharts: "^2.12.0",
+  // `canvas-confetti` — one of those dependencies where a grown-up mentions
+  // "whimsy" and everyone nods. Tiny runtime (~12KB), declarative API
+  // (`confetti()`), nothing to clean up. Reach for it when a scaffold wants
+  // to celebrate something — checkout success, form submission, a won game.
+  "canvas-confetti": "^1.9.3",
   // `three` and `postprocessing` are NOT listed here because they're regular
   // (non-optional) deps of @gradeui/ui and npm pulls them in transitively.
   //
