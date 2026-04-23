@@ -380,6 +380,21 @@ export function StudioChat({
   // we relax that and accept a partial fence too, so a response stopped
   // mid-fence (user hit Stop, network blip) doesn't strand the preview
   // empty.
+  //
+  // IMPORTANT: we do NOT write `null` upward when the message list has no
+  // assistant turn. Historically we did, as a "clear preview on empty chat"
+  // convenience — but the chat isn't the only producer of `appSource` any
+  // more. The StarterPicker (#45/#46) seeds a reference-layout scaffold or
+  // pasted JSX directly into a fresh design's `appSource`, and that design's
+  // chat history is empty by construction. Firing `onLatestCode(null)` on
+  // mount for those designs wiped the scaffold the instant the preview was
+  // supposed to render it (task #47: "editing code on a scaffold-loaded
+  // screen gets reset" — same root cause, because /settings-panel edits
+  // push the mutated source through `onSourceMutation` but an empty-chat
+  // remount used to flatten it back to null). The `onLatestCode(null)` call
+  // in handleSend's "new" intent branch still runs — that's the one
+  // legitimate path where the chat decides the preview should clear, and
+  // it's user-triggered rather than effect-driven.
   useEffect(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
@@ -392,7 +407,6 @@ export function StudioChat({
       if (code || !isStreaming) onLatestCode(code);
       return;
     }
-    if (!isStreaming) onLatestCode(null);
   }, [messages, onLatestCode, isStreaming]);
 
   const scrollToBottom = useCallback(() => {
