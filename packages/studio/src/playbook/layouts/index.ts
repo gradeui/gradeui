@@ -171,6 +171,25 @@ export const REFERENCE_LAYOUTS: readonly ReferenceLayout[] = [
     ],
     scaffold: requireScaffold("tv-streaming"),
   },
+  {
+    // canvas-confetti kitchen-sink demo. Four preset recipes, each
+    // demonstrating a different shape-building technique:
+    //   - `shapeFromPath` for the star / heart / bolt SVG paths
+    //   - `shapeFromText` for the emoji variants
+    //   - colours read from the active theme's CSS vars at fire time
+    //   - recipes that demonstrate angle, origin, and sustained calls.
+    // Doubles as the reference for how to wire canvas-confetti into any
+    // Grade-themed success moment.
+    id: "confetti-celebration",
+    label: "Confetti celebration",
+    description: "Four confetti recipes with custom SVG shapes and theme-aware colours.",
+    tags: [
+      "confetti", "celebrate", "celebration", "success", "win",
+      "party", "hooray", "sparkle", "canvas-confetti",
+      "checkout", "complete", "done", "launch",
+    ],
+    scaffold: requireScaffold("confetti-celebration"),
+  },
 ];
 
 /**
