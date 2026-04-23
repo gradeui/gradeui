@@ -1,5 +1,13 @@
 # @gradeui/ui
 
+## 0.8.1
+
+### Patch Changes
+
+- 8b11cd2: Expose `./package.json` as a subpath export so consumers (notably the
+  docs app's Studio header) can import the raw manifest to read
+  `version` at build time without a deep `node_modules` path.
+
 ## 0.8.0
 
 ### Minor Changes
