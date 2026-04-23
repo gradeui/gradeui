@@ -20,6 +20,19 @@ export {
   type AppShellMainProps,
 } from "../components/ui/app-shell";
 
+// Avatar — the Radix-backed rounded image + fallback initials combo. The
+// component file has shipped since v0.3-ish but never made it into this
+// barrel, so any `import { Avatar } from "@gradeui/ui"` resolved to
+// undefined and crashed Sandpack with "Element type is invalid". Four of
+// the five reference-layout scaffolds (saas-user-editor, music-app,
+// tv-streaming, data-table-filters) use Avatar — they all stayed broken
+// in Studio until this line landed.
+export {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../components/ui/avatar";
+
 export { Badge, badgeVariants } from "../components/ui/badge";
 
 export { Button, buttonVariants } from "../components/ui/button";
