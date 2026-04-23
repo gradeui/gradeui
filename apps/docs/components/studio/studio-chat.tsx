@@ -28,7 +28,6 @@ import {
   X,
   Code2,
   Pencil,
-  FilePlus2,
   Gauge,
   BookOpen,
   MousePointerClick,
@@ -42,15 +41,21 @@ import { StudioSettingsPanel } from "@/components/studio/settings-panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 /**
- * Intent the user picks before sending a studio prompt:
+ * The chat always iterates on whatever is currently in the tab it's attached
+ * to. "Start a new design" used to be a dedicated intent here — a toggle that
+ * wiped history and sent a fresh prompt — but once Studio grew the multi-
+ * screen canvas that decision became a no-op: a new design means a new tab
+ * (blank, reference-layout-seeded, or paste-seeded via the StarterPicker),
+ * not a new conversation inside the same tab. The toggle was just asking
+ * "do you want to erase the thing you can see?" — which is better expressed
+ * by closing the tab and opening a new one.
  *
- *   - "iterate": modify the component currently in the preview. The current
- *     code gets inlined into the outgoing message so the model has a clear
- *     starting point. Chat history accumulates.
- *   - "new":     start a fresh design. We wipe the chat history first so the
- *     model isn't influenced by the previous component.
+ * So the mode is now inferred from `currentCode`:
+ *   - Non-null (scaffold seed OR prior assistant turn): inline the code as
+ *     context and frame the prompt as a modification.
+ *   - Null (truly blank tab): ship the user's prompt as-is — the model treats
+ *     it as the component brief.
  */
-export type StudioIntent = "iterate" | "new";
 
 /**
  * Hard ceiling on the prompt length. Keeps the outgoing request snug against
@@ -241,9 +246,6 @@ export function StudioChat({
 }: StudioChatProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Default to "iterate" once there's something on screen — otherwise "new"
-  // is the only sensible start. The user can always flip manually.
-  const [intent, setIntent] = useState<StudioIntent>("new");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // CRITICAL: `useChat` builds its internal `Chat` (and captures the transport)
@@ -347,22 +349,6 @@ export function StudioChat({
     onStreamingChange?.(isStreaming);
   }, [isStreaming, onStreamingChange]);
 
-  // Once a design first lands on screen, nudge the default intent to
-  // "iterate" — that's almost always what the user wants next (tweak the
-  // current thing, not throw it away). Guarded by a ref so the flip only
-  // happens ONCE per chat lifetime; otherwise the effect fights the user
-  // whenever they manually click "New design" (intent → "new" →effect
-  // re-runs → snaps straight back to "iterate"). After the first auto-flip
-  // the toggle is purely user-driven.
-  const autoFlippedRef = useRef(false);
-  useEffect(() => {
-    if (autoFlippedRef.current) return;
-    if (currentCode && intent === "new" && messages.length > 0) {
-      setIntent("iterate");
-      autoFlippedRef.current = true;
-    }
-  }, [currentCode, intent, messages.length]);
-
   // Report the full message list up to the parent on every change. The
   // parent caches these keyed by designId so that switching tabs — which
   // remounts this component — can restore the right conversation from the
@@ -453,30 +439,23 @@ export function StudioChat({
       ? `Selection: <${sel.tag}>${sel.text ? ` "${sel.text}"` : ""}\n\n`
       : "";
 
-    // "new" wipes the conversation so the model isn't nudged by the previous
-    // design. We also kill the preview immediately so the middle column
-    // doesn't linger on a stale component while the new one streams.
-    if (intent === "new") {
-      setMessages([]);
-      onLatestCode(null);
-      sendMessage({ text: selPrefix + trimmed });
-    } else {
-      // "iterate" — inline the current code so the model has explicit context
-      // about what it's modifying. Fall back to a plain message if there's
-      // nothing on screen yet (defensive; the UI picks "new" by default then).
-      const text = currentCode
-        ? [
-            "Here is the current component. Modify it based on the request below.",
-            "",
-            "```jsx",
-            currentCode.trim(),
-            "```",
-            "",
-            selPrefix + "Request: " + trimmed,
-          ].join("\n")
-        : selPrefix + trimmed;
-      sendMessage({ text });
-    }
+    // Inline the current code as modification context whenever the tab has
+    // something on screen — scaffold-seeded, paste-seeded, or the product of
+    // a prior assistant turn, they're all things-to-iterate-on from the
+    // model's perspective. Blank tabs send the prompt as-is so the model
+    // treats it as the component brief.
+    const text = currentCode
+      ? [
+          "Here is the current component. Modify it based on the request below.",
+          "",
+          "```jsx",
+          currentCode.trim(),
+          "```",
+          "",
+          selPrefix + "Request: " + trimmed,
+        ].join("\n")
+      : selPrefix + trimmed;
+    sendMessage({ text });
 
     // Chip is single-shot: once we've sent, forget the selection so the next
     // turn isn't accidentally pinned to the same element. The parent's state
@@ -496,10 +475,12 @@ export function StudioChat({
 
   // Picking a template seeds the input and moves focus into the textarea so
   // the user can tweak the wording before sending (or just hit enter).
+  // Templates only surface on truly blank tabs (see the EmptyState gate in
+  // the render tree below), so there's no "clear the scaffold first" dance —
+  // the absence of `currentCode` is the contract that makes a template
+  // prompt the right starting shape.
   const handlePickTemplate = useCallback((template: StudioTemplate) => {
     setInput(template.prompt);
-    // Flip to "new" — templates are starting points, not iteration hints.
-    setIntent("new");
     requestAnimationFrame(() => {
       textareaRef.current?.focus();
       const len = template.prompt.length;
@@ -550,7 +531,13 @@ export function StudioChat({
         data-lenis-prevent
       >
         <div className="p-3 md:p-4 space-y-4">
-          {messages.length === 0 && !isStreaming && (
+          {/* Templates only render on a truly empty tab — no chat history
+              AND no seeded source. A scaffold-seeded tab (or a paste tab)
+              has something on screen already, so template suggestions
+              would iterate on top of it instead of seeding it, which is
+              never what the user meant. They can still start over by
+              opening a new tab from the StarterPicker. */}
+          {messages.length === 0 && !isStreaming && !currentCode && (
             <EmptyState
               templates={templates}
               onPick={handlePickTemplate}
@@ -588,11 +575,6 @@ export function StudioChat({
       </ScrollArea>
 
       <div className="border-t border-border p-2.5 bg-card shrink-0 space-y-2">
-        <IntentToggle
-          intent={intent}
-          onChange={setIntent}
-          hasCurrent={Boolean(currentCode)}
-        />
         {/* Selection chip — sits above the textarea when the user has picked
             an element in the preview via the Select tool. The chip's × clears
             the selection without affecting the current input. */}
@@ -618,12 +600,6 @@ export function StudioChat({
             onRequestDock={onRequestSettingsDock}
           />
         )}
-        {/* When the user is starting a new design mid-session, surface the
-            templates again. We skip this on first load — the full-height
-            EmptyState above already shows them. */}
-        {intent === "new" && messages.length > 0 && (
-          <TemplateChips templates={templates} onPick={handlePickTemplate} />
-        )}
         <div className="flex items-end gap-2">
           <textarea
             ref={textareaRef}
@@ -641,7 +617,7 @@ export function StudioChat({
             }}
             onKeyDown={handleKeyDown}
             placeholder={
-              intent === "iterate" && currentCode
+              currentCode
                 ? "Describe a change — e.g. 'make the button pill-shaped'"
                 : "Describe a UI…"
             }
@@ -1084,48 +1060,6 @@ function EmptyState({
 }
 
 /**
- * A compact horizontal chip row surfacing the same templates during a session
- * — used when the user flips back to "New design" after already building
- * something. Horizontally scrollable so it never pushes the textarea out.
- */
-function TemplateChips({
-  templates,
-  onPick,
-}: {
-  templates: StudioTemplate[];
-  onPick: (template: StudioTemplate) => void;
-}) {
-  return (
-    <div className="-mx-0.5 overflow-x-auto" data-lenis-prevent>
-      <div className="flex items-center gap-1 px-0.5 pb-0.5">
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0 pr-1">
-          Start from
-        </span>
-        {templates.map((t) => {
-          const Icon = t.icon;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => onPick(t)}
-              title={t.description}
-              className={cn(
-                "flex items-center gap-1 rounded-full border border-border bg-background",
-                "px-2 py-0.5 text-[11px] text-foreground shrink-0",
-                "hover:border-primary/40 hover:bg-muted transition-colors"
-              )}
-            >
-              <Icon className="h-3 w-3 text-muted-foreground" />
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/**
  * Little pill that shows the element the user picked in the preview's select
  * mode.
  *
@@ -1196,61 +1130,4 @@ function SelectionChip({
   );
 }
 
-/**
- * Segmented control letting the user choose whether the next prompt iterates
- * on what's currently on screen or starts a brand-new design. Disabled
- * options show a helpful hint — iterate is unavailable until there's
- * something to iterate against.
- */
-function IntentToggle({
-  intent,
-  onChange,
-  hasCurrent,
-}: {
-  intent: StudioIntent;
-  onChange: (i: StudioIntent) => void;
-  hasCurrent: boolean;
-}) {
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Design intent"
-      className="inline-flex items-center rounded-md border border-border bg-background p-0.5 text-[11px]"
-    >
-      <button
-        type="button"
-        role="radio"
-        aria-checked={intent === "iterate"}
-        onClick={() => hasCurrent && onChange("iterate")}
-        disabled={!hasCurrent}
-        title={hasCurrent ? "Modify the current design" : "Generate a design first"}
-        className={cn(
-          "flex items-center gap-1 px-2 py-1 rounded transition-colors",
-          intent === "iterate"
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:text-foreground",
-          !hasCurrent && "opacity-40 cursor-not-allowed hover:text-muted-foreground"
-        )}
-      >
-        <Pencil className="h-3 w-3" />
-        Update current
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={intent === "new"}
-        onClick={() => onChange("new")}
-        className={cn(
-          "flex items-center gap-1 px-2 py-1 rounded transition-colors",
-          intent === "new"
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        <FilePlus2 className="h-3 w-3" />
-        New design
-      </button>
-    </div>
-  );
-}
 
