@@ -34,8 +34,9 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   renderComponentRefsBlock,
   relevantComponentNames,
-} from "@/lib/component-refs";
-import { ALLOWED_COMPONENTS } from "@/lib/chat-sandpack";
+  ALLOWED_COMPONENTS,
+  PINNED_COMPONENTS,
+} from "@gradeui/studio/playbook";
 
 // Fast-path membership check to filter ref matches down to the Studio-exposed
 // allowlist. We build this once at module load because the allowlist is
@@ -46,23 +47,6 @@ import { ALLOWED_COMPONENTS } from "@/lib/chat-sandpack";
 const ALLOWED_COMPONENT_SET = new Set<string>(
   ALLOWED_COMPONENTS.map((n) => n.toLowerCase())
 );
-
-/**
- * Layout primitives that get their ref-block pinned to the system prompt
- * regardless of whether the user's message mentions them. Retrieval's
- * text-match heuristic fires on component names and aliases, but most
- * user prompts ("a card with two buttons at the bottom") don't say "row"
- * or "stack" — so the model never sees their props and falls back to
- * hand-rolled `flex gap-2 justify-end`. Pinning them costs ~4 small .md
- * files worth of tokens and reliably steers the model toward the
- * settings-panel-editable path.
- *
- * Kept small on purpose — this isn't a "star components" list, it's
- * specifically the layout primitives that suffer most from the retrieval
- * gap. If a non-layout component needs similar treatment, consider
- * fixing its aliases first.
- */
-const PINNED_COMPONENTS = ["Stack", "Row", "Grid", "Flex"];
 
 /**
  * Pull text out of a UIMessage's parts array. Mirrors the small helper in

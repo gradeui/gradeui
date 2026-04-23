@@ -20,6 +20,7 @@ import {
   SandpackLayout,
   SandpackPreview,
   SandpackCodeEditor,
+  useSandpack,
 } from "@codesandbox/sandpack-react";
 import { motion } from "framer-motion";
 import {
@@ -419,11 +420,7 @@ export function StudioPreview({
                 border: 0,
               }}
             >
-              <SandpackPreview
-                showOpenInCodeSandbox
-                showRefreshButton
-                style={{ height: "100%", flex: 1 }}
-              />
+              <SandpackPreviewWithFriendlyErrors />
             </SandpackLayout>
           </SandpackProvider>
         </SandpackErrorBoundary>
@@ -441,6 +438,296 @@ export function StudioPreview({
             {isStreaming ? <GeneratingPreview /> : <EmptyPreview />}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Wraps <SandpackPreview> with a friendlier runtime-error overlay.
+ *
+ * Sandpack ships its own red error screen inside the iframe for runtime
+ * failures (undefined identifiers, missing modules, thrown errors, etc.).
+ * It's accurate but raw — "Google is not defined" with a stack trace is
+ * not what a designer wants to see mid-flow. We suppress the default
+ * overlay and render our own, translated via `translateRuntimeError` so
+ * the common culprits (Lucide brand-icon hallucinations, subpath imports
+ * the barrel doesn't have, frozen babel/syntax issues) get an explanation
+ * the user can act on and a one-click Retry.
+ *
+ * Must live INSIDE <SandpackProvider> — `useSandpack()` reads from the
+ * provider context, which is why this is a separate component rather than
+ * inlined up at the provider level.
+ */
+function SandpackPreviewWithFriendlyErrors() {
+  const { sandpack } = useSandpack();
+  const error = sandpack.error ?? null;
+
+  return (
+    <div className="relative flex-1 flex min-h-0 h-full">
+      <SandpackPreview
+        showOpenInCodeSandbox
+        showRefreshButton
+        showSandpackErrorOverlay={false}
+        style={{ height: "100%", flex: 1 }}
+      />
+      {error && (
+        <FriendlyRuntimeError
+          error={error}
+          onRetry={() => {
+            // Clear the error state and reboot the bundler — usually the
+            // underlying cause is fixed by a fresh chat turn, but for the
+            // cases where the *same* broken code comes back (user asked
+            // to see it render), give them an explicit reset too.
+            sandpack.runSandpack();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Lucide brand / company names the model loves to hallucinate. Lucide's icon
+ * set is tradename-free on purpose, so these imports always explode at render
+ * time with "Element type is invalid" / "X is not defined". We catch them
+ * here so the user sees "Lucide doesn't ship the Google logo" instead of a
+ * generic reference error.
+ */
+const LUCIDE_BRAND_NAMES = new Set<string>([
+  "Google",
+  "Apple",
+  "GitHub",
+  "Github",
+  "Facebook",
+  "Twitter",
+  "X",
+  "Meta",
+  "Discord",
+  "LinkedIn",
+  "Linkedin",
+  "Instagram",
+  "TikTok",
+  "Tiktok",
+  "YouTube",
+  "Youtube",
+  "Slack",
+  "Figma",
+  "Notion",
+  "Spotify",
+  "Microsoft",
+  "Amazon",
+]);
+
+interface TranslatedError {
+  title: string;
+  body: React.ReactNode;
+  /** Optional "technical details" string — rendered in a collapsible so it's
+   *  there for the rare case a designer wants to copy-paste into chat, but
+   *  not in the user's face by default. */
+  raw?: string;
+}
+
+/**
+ * Map Sandpack's raw error text into something designer-legible.
+ *
+ * The ordering matters — more specific matches first, then fallthroughs.
+ * Returning `raw` on the default path is a safety net: if we don't recognize
+ * the shape, at least don't hide the message entirely.
+ */
+function translateRuntimeError(message: string): TranslatedError {
+  const text = message || "";
+
+  // "Could not find module '@gradeui/ui/button'" / "Cannot find module"
+  const modMatch = text.match(/(?:Could not find|Cannot find) module ['"]([^'"]+)['"]/);
+  if (modMatch) {
+    const mod = modMatch[1];
+    // Subpath import from the barrel-only package.
+    if (/^@gradeui\/ui\//.test(mod)) {
+      return {
+        title: `“${mod}” isn’t a valid import path`,
+        body: (
+          <>
+            <code className="font-mono">@gradeui/ui</code> only exports the
+            single top-level barrel. Ask the chat to import everything from{" "}
+            <code className="font-mono">&quot;@gradeui/ui&quot;</code> in one
+            statement — e.g.{" "}
+            <code className="font-mono">
+              import &#123; Button, Card &#125; from &quot;@gradeui/ui&quot;
+            </code>
+            .
+          </>
+        ),
+        raw: text,
+      };
+    }
+    return {
+      title: `Missing package: “${mod}”`,
+      body: (
+        <>
+          The preview sandbox can&rsquo;t find{" "}
+          <code className="font-mono">{mod}</code>. It&rsquo;s probably not in
+          the preview&rsquo;s dependency list. Ask the chat to stick to{" "}
+          <code className="font-mono">@gradeui/ui</code>,{" "}
+          <code className="font-mono">lucide-react</code>, and{" "}
+          <code className="font-mono">recharts</code>.
+        </>
+      ),
+      raw: text,
+    };
+  }
+
+  // "X is not defined" (ReferenceError) — classic for missing import.
+  const refMatch = text.match(/(?:ReferenceError:\s*)?(\w+) is not defined/);
+  if (refMatch) {
+    const name = refMatch[1];
+    if (LUCIDE_BRAND_NAMES.has(name)) {
+      return {
+        title: `lucide-react doesn’t ship a “${name}” icon`,
+        body: (
+          <>
+            Lucide is trademark-free, so brand logos like{" "}
+            <code className="font-mono">{name}</code> aren&rsquo;t in the set.
+            Ask the chat to use a neutral icon (<code>LogIn</code>,{" "}
+            <code>Mail</code>, <code>KeyRound</code>) and put the brand in the
+            text label, or drop the icon entirely.
+          </>
+        ),
+        raw: text,
+      };
+    }
+    return {
+      title: `“${name}” isn’t defined in the preview`,
+      body: (
+        <>
+          The generated code uses <code className="font-mono">{name}</code> but
+          never imports or declares it. Ask the chat to fix the imports — if
+          it&rsquo;s meant to be a Grade DS component, make sure it&rsquo;s
+          pulled in from <code className="font-mono">&quot;@gradeui/ui&quot;</code>.
+        </>
+      ),
+      raw: text,
+    };
+  }
+
+  // "Element type is invalid" — almost always an undefined import.
+  if (/Element type is invalid/.test(text)) {
+    return {
+      title: "A component rendered as `undefined`",
+      body: (
+        <>
+          Usually caused by importing a name the package doesn&rsquo;t export —
+          common culprits are brand icons from{" "}
+          <code className="font-mono">lucide-react</code> (<code>Google</code>,{" "}
+          <code>Apple</code>, <code>GitHub</code>, etc.) or a typo in a{" "}
+          <code className="font-mono">@gradeui/ui</code> component name. Ask the
+          chat to double-check the <code>import</code> statements.
+        </>
+      ),
+      raw: text,
+    };
+  }
+
+  // Babel / parser failures.
+  if (/SyntaxError|Unexpected token|Unterminated/.test(text)) {
+    return {
+      title: "The JSX has a syntax error",
+      body: (
+        <>
+          Often a <code>className</code> attribute split across lines or an
+          unterminated string. Asking the chat to &ldquo;regenerate&rdquo; or
+          &ldquo;fix the syntax&rdquo; usually clears it on the next turn.
+        </>
+      ),
+      raw: text,
+    };
+  }
+
+  // TypeError — often "Cannot read properties of undefined (reading 'foo')".
+  if (/TypeError:/.test(text)) {
+    return {
+      title: "Something rendered with missing data",
+      body: (
+        <>
+          The component read a property off{" "}
+          <code className="font-mono">undefined</code>. Ask the chat to add
+          default values or guard the render (e.g. &ldquo;show an empty state
+          when the list is empty&rdquo;).
+        </>
+      ),
+      raw: text,
+    };
+  }
+
+  return {
+    title: "Preview ran into an error",
+    body: (
+      <>
+        Something inside the generated component threw at runtime. Asking the
+        chat to &ldquo;fix the preview error&rdquo; and sharing this message
+        usually gets a working version on the next turn.
+      </>
+    ),
+    raw: text,
+  };
+}
+
+function FriendlyRuntimeError({
+  error,
+  onRetry,
+}: {
+  error: { message: string; title?: string };
+  onRetry: () => void;
+}) {
+  const translated = useMemo(
+    () => translateRuntimeError(error.message ?? ""),
+    [error.message]
+  );
+  const [showRaw, setShowRaw] = useState(false);
+
+  return (
+    <div className="absolute inset-0 z-20 overflow-auto bg-background/95 backdrop-blur-sm p-6">
+      <div className="max-w-lg mx-auto rounded-lg border border-destructive/30 bg-destructive-soft text-destructive-deep p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" aria-hidden />
+          <div className="flex-1 min-w-0 space-y-3">
+            <div>
+              <div className="text-sm font-semibold leading-tight">
+                {translated.title}
+              </div>
+              <div className="text-[11px] uppercase tracking-wide opacity-60 mt-0.5">
+                Preview error
+              </div>
+            </div>
+            <div className="text-sm leading-relaxed opacity-95">
+              {translated.body}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={onRetry}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Retry preview
+              </button>
+              {translated.raw && (
+                <button
+                  type="button"
+                  onClick={() => setShowRaw((v) => !v)}
+                  className="inline-flex items-center gap-1 rounded-md border border-transparent px-2 py-1 text-xs font-medium opacity-70 hover:opacity-100 hover:border-border transition-colors"
+                >
+                  {showRaw ? "Hide" : "Show"} technical details
+                </button>
+              )}
+            </div>
+            {showRaw && translated.raw && (
+              <pre className="text-[11px] whitespace-pre-wrap break-words font-mono opacity-80 bg-background/60 border border-border rounded px-2 py-1.5 max-h-48 overflow-auto">
+                {translated.raw}
+              </pre>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

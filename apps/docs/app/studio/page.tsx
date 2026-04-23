@@ -25,15 +25,16 @@
  * goes quiet until the next edit.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UIMessage } from "ai";
-import { SiteHeader } from "@/components/site-header";
 import {
   ProviderPicker,
   useChatSettings,
 } from "@/components/ai-elements/provider-picker";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { GradeThemeSwitcher } from "@/components/grade-theme-switcher";
 import { StudioChat } from "@/components/studio/studio-chat";
-import { StudioPreview } from "@/components/studio/studio-preview";
+import { StudioCanvas } from "@/components/studio/studio-canvas";
 import { StudioSettingsPanel } from "@/components/studio/settings-panel";
 import {
   ThemeBuilderProvider,
@@ -41,7 +42,6 @@ import {
   useGeneratedTheme,
   useThemeBuilderMode,
 } from "@/components/theme-builder";
-import { DesignTabs } from "@/components/studio/design-tabs";
 import { useGradeTheme } from "@/components/grade-theme-provider";
 import {
   calmInput,
@@ -50,43 +50,19 @@ import {
 } from "@/lib/themes";
 import { cloneInput } from "@/lib/studio-state";
 import {
-  ALLOWED_COMPONENTS,
   type StudioSelection,
 } from "@/lib/chat-sandpack";
+import { buildSystemPrompt } from "@gradeui/studio/playbook";
 import {
   createDesign,
   initialDesigns,
   type Design,
 } from "@/lib/studio-designs";
+import { GRADEUI_VERSION, STUDIO_VERSION } from "@/lib/versions";
 
-/**
- * The same system prompt we use on /chat — keeps the model producing code
- * shaped for our Sandpack harness. Duplicated verbatim because the rules are
- * about the Sandpack harness, not the page, and exporting this as a shared
- * module would be premature given how likely each surface is to diverge.
- */
-function buildSystemPrompt(): string {
-  const list = ALLOWED_COMPONENTS.join(", ");
-  return `You are an assistant that designs UIs using the Grade Design System.
-
-OUTPUT RULES — follow these exactly:
-1. Respond with a short sentence or two explaining what you built, then a single fenced code block tagged \`\`\`jsx that contains the component.
-2. The code block MUST be a self-contained React component named \`App\` with \`export default\`.
-3. Import ALL design-system components from the single barrel entry "@gradeui/ui" — one consolidated import statement, e.g. \`import { Button, Card, CardHeader, CardTitle, CardContent, Input, Checkbox, Label } from "@gradeui/ui"\`. Do NOT use subpath imports like "@gradeui/ui/button" or "@gradeui/ui/card" — the package does not export those paths and the preview will fail with "Could not find module". Do NOT import from local paths like "./components/ui/<name>". The iframe installs @gradeui/ui from npm so you get the real published components, not copies.
-4. You may use these Grade DS components ONLY: ${list}.
-5. You may import icons from "lucide-react" (e.g. \`import { Mail } from "lucide-react"\`).
-6. For charts, you may import from "recharts" (e.g. \`import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts"\`). Style charts with the design-system tokens via \`stroke="oklch(var(--primary))"\` / \`fill="oklch(var(--primary))"\` so they follow the active theme.
-7. Use Tailwind utility classes for styling and the design system's semantic tokens: bg-background, bg-card, bg-muted, bg-primary, text-foreground, text-muted-foreground, text-primary-foreground, border-border, border-input, etc. Do NOT use raw color classes like bg-blue-500.
-8. Keep the preview small — target a single screen. Don't build entire pages.
-9. Do not include explanations inside the code block — comments are fine but no chattiness.
-10. When the user asks for iterations ("make it bigger", "red instead of green"), regenerate the FULL component so the preview updates in one go.
-
-LAYOUT PRIMITIVES — prefer these over hand-rolled flex/grid utility classes where they fit. Using the primitives keeps structure editable via the settings panel and keeps vertical/horizontal rhythm consistent. Raw Tailwind is still fine for one-offs and anything the primitives don't express — this is a suggestion, not a ban.
-  - <Stack gap="…"> instead of \`flex flex-col gap-…\` or \`space-y-…\` (vertical cluster — form fields, content columns).
-  - <Row gap="…" justify="…"> instead of \`flex items-center gap-…\` (horizontal cluster — button bars, inline fields; inside CardFooter this is usually <Row justify="end" gap="sm">).
-  - <Grid cols="…" gap="…"> instead of \`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-…\` (2D tile grids, stat cards). The \`cols\` prop bakes in the responsive ladder so you pick the desktop column count.
-  - <Flex direction="…" gap="…"> when you need reverse direction, baseline alignment, or CSS defaults rather than Row's \`items-center gap-md\` starting point.`;
-}
+// The system prompt now lives in `@gradeui/studio/playbook` — same text
+// previously duplicated here and in `app/chat/page.tsx`. See `buildSystemPrompt`
+// above in the import list.
 
 export default function StudioPage() {
   const [settings, updateSettings] = useChatSettings();
@@ -135,7 +111,27 @@ export default function StudioPage() {
   // refreshing the page resets to one blank slot.
   const [designs, setDesigns] = useState<Design[]>(() => initialDesigns());
   const [activeId, setActiveId] = useState<string>(() => designs[0].id);
+  // Silent fallback to the first design if activeId goes stale. The
+  // useEffect below logs this in dev so we can spot it instead of it
+  // hiding a desync between the canvas, the chat, and the tab strip.
   const activeDesign = designs.find((d) => d.id === activeId) ?? designs[0];
+
+  // Dev-only drift warning. If activeId ever points to a design that no
+  // longer exists in the list, the fallback above renders designs[0]'s
+  // data under a stale id — which is exactly the symptom that shows up
+  // as "header says Screen 1, chat says empty, tile grid looks fine".
+  // Logging loudly gives us a signal in the console the moment it
+  // happens, so we don't have to guess. Production gets no-op.
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    if (!designs.some((d) => d.id === activeId)) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[studio] activeId points to a missing design — falling back to designs[0].",
+        { activeId, designIds: designs.map((d) => d.id) }
+      );
+    }
+  }, [activeId, designs]);
 
   // Per-design chat history. `useChat` from @ai-sdk/react@2 doesn't persist
   // messages by id across remounts — it builds a fresh `Chat` every time.
@@ -259,28 +255,85 @@ export default function StudioPage() {
     });
   }, [activeId]);
 
+  // Canvas scope cap — the "All" zoom mounts one Sandpack per design in
+  // parallel, so we cap the count rather than let the user degrade their
+  // own session. Empirically 8 is the point where boot latency of a
+  // cold "All" flip starts to feel laggy on a mid-range laptop.
+  const MAX_DESIGNS = 8;
+  const atCap = designs.length >= MAX_DESIGNS;
+
+  // Add a blank design and focus it. Previously this called setActiveId
+  // from INSIDE a setDesigns updater — which React's strict-mode runs
+  // twice, and because createDesign uses Date.now() + Math.random()
+  // each pass mints a different id. The activeId + the id in state
+  // *usually* coincide because React batches the last-wins setter, but
+  // setState-inside-an-updater is a documented anti-pattern and it's
+  // the exact shape of bug that produces "added a screen, nothing's
+  // focused" drift. Now we compute the new design once, queue both
+  // setters at the top level, and React batches them into one render.
   const handleAddDesign = useCallback(() => {
-    setDesigns((ds) => {
-      const next = createDesign(ds.length);
-      setActiveId(next.id);
-      return [...ds, next];
-    });
-  }, []);
+    if (designs.length >= MAX_DESIGNS) return;
+    const next = createDesign(designs.length);
+    setDesigns((ds) => (ds.length >= MAX_DESIGNS ? ds : [...ds, next]));
+    setActiveId(next.id);
+  }, [designs.length]);
+
+  // Clone an existing design's JSX into a fresh slot. Copies the
+  // appSource but NOT the chat history — for a wizard/flow-step
+  // workflow you almost always want the new page to start from a fresh
+  // conversation (the chat targets "this screen" so cross-pollinating
+  // history is more confusing than helpful). Insertion order: the
+  // duplicate lands immediately after its source so the flow reads left
+  // to right in the canvas grid.
+  //
+  // Same refactor as handleAddDesign — setActiveId lives outside the
+  // setDesigns updater now. The source lookup + fresh id minting
+  // happen against the current render's `designs`; that's fine because
+  // the user is clicking an affordance they can see, so the array is
+  // already up to date by the time this fires.
+  const handleDuplicateDesign = useCallback(
+    (id: string) => {
+      if (designs.length >= MAX_DESIGNS) return;
+      const source = designs.find((d) => d.id === id);
+      if (!source) return;
+      const fresh = createDesign(designs.length, `${source.name} copy`);
+      const duplicate: Design = { ...fresh, appSource: source.appSource };
+      const srcIdx = designs.findIndex((d) => d.id === id);
+      setDesigns((ds) => {
+        if (ds.length >= MAX_DESIGNS) return ds;
+        const out = [...ds];
+        // Recompute the insertion index against the *freshest* array
+        // inside the updater — guards against a concurrent add having
+        // shifted positions between render and commit.
+        const liveIdx = ds.findIndex((d) => d.id === id);
+        out.splice(liveIdx >= 0 ? liveIdx + 1 : srcIdx + 1, 0, duplicate);
+        return out;
+      });
+      setActiveId(duplicate.id);
+    },
+    [designs]
+  );
 
   const handleCloseDesign = useCallback(
     (id: string) => {
-      setDesigns((ds) => {
-        if (ds.length <= 1) return ds; // Guardrail — never close the last one.
-        const idx = ds.findIndex((d) => d.id === id);
-        const next = ds.filter((d) => d.id !== id);
-        // If we just closed the active tab, fall onto the neighbour to the
-        // left (or first) so the user isn't looking at a ghost tab.
-        if (id === activeId) {
-          const fallback = next[Math.max(0, idx - 1)];
-          if (fallback) setActiveId(fallback.id);
-        }
-        return next;
-      });
+      if (designs.length <= 1) return; // Guardrail — never close the last one.
+      // Precompute the fallback activeId against the CURRENT designs so
+      // we don't call setActiveId from inside the setDesigns updater
+      // (strict-mode runs updaters twice; side-effects inside them are
+      // a React anti-pattern that bit us once already).
+      const idx = designs.findIndex((d) => d.id === id);
+      const remaining = designs.filter((d) => d.id !== id);
+      const nextActiveId =
+        id === activeId
+          ? remaining[Math.max(0, idx - 1)]?.id ?? remaining[0]?.id
+          : activeId;
+
+      setDesigns((ds) =>
+        ds.length <= 1 ? ds : ds.filter((d) => d.id !== id)
+      );
+      if (nextActiveId && nextActiveId !== activeId) {
+        setActiveId(nextActiveId);
+      }
       // Release the cached conversation for the closed design. If we ever
       // add "reopen tab" this is the line to revisit.
       setMessagesByDesign((cache) => {
@@ -304,7 +357,7 @@ export default function StudioPage() {
         return rest;
       });
     },
-    [activeId]
+    [activeId, designs]
   );
 
   const handleRenameDesign = useCallback((id: string, name: string) => {
@@ -319,29 +372,46 @@ export default function StudioPage() {
       onSave={handleThemeSave}
     >
       <div className="flex flex-col h-screen bg-background overflow-hidden">
-        <SiteHeader />
-
         <div className="border-b bg-muted/30 shrink-0">
-          <div className="max-w-[1800px] mx-auto px-4 md:px-6 py-2.5 flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-base font-semibold leading-tight">Studio</h1>
-              <p className="text-[11px] text-muted-foreground">
-                Chat a design into life, then restyle it live.
+          {/* Full-bleed — no max-width wrapper. Studio is a tool, not a
+              marketing page, so the chrome stretches edge-to-edge. */}
+          <div className="px-4 md:px-6 py-2.5 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-base font-semibold leading-tight">
+                Grade Studio
+              </h1>
+              {/* Versions — deliberately technical copy. This is a
+                  pre-release tool and we want bug reports to carry the
+                  exact revision. @gradeui/studio is still 0.0.0 while
+                  the package is being carved out; it'll start bumping
+                  once the Studio shell stabilises. */}
+              <p className="text-[11px] text-muted-foreground font-mono leading-tight">
+                <span>@gradeui/ui v{GRADEUI_VERSION}</span>
+                <span className="mx-1.5 opacity-50">·</span>
+                <span>@gradeui/studio v{STUDIO_VERSION}</span>
               </p>
             </div>
-            <ProviderPicker settings={settings} onChange={updateSettings} />
+            {/* Right-hand chrome cluster. Order mirrors how often a
+                designer reaches for each: model picker > theme > mode.
+                Mode/theme both flip the CHROME (site-wide theme), not
+                the preview iframe — the preview's mode + draft theme
+                are owned by the builder panel on the right of the page. */}
+            <div className="flex items-center gap-1">
+              <ProviderPicker settings={settings} onChange={updateSettings} />
+              <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+              <GradeThemeSwitcher />
+              <ThemeToggle />
+            </div>
           </div>
         </div>
 
-        <DesignTabs
-          designs={designs}
-          activeId={activeId}
-          onActivate={setActiveId}
-          onAdd={handleAddDesign}
-          onClose={handleCloseDesign}
-          onRename={handleRenameDesign}
-          className="shrink-0"
-        />
+        {/* Design tabs used to live here as a separate strip above the
+            three-column main area. They were an artifact of the pre-
+            Fit/All world where there was only one preview at a time, so
+            the page owned screen navigation. Now the canvas owns it —
+            tabs render inside StudioCanvas in Fit mode, and the tile
+            grid takes over in All mode. The page just forwards the
+            design-management callbacks down. */}
 
         <main className="flex-1 min-h-0 p-3 md:p-4">
           <div
@@ -380,14 +450,24 @@ export default function StudioPage() {
               settingsPanelDocked={panelDocked}
               onRequestSettingsDock={handleRequestPanelDock}
             />
-            <StudioThemedPreview
-              previewKey={`preview-${activeId}`}
-              appSource={activeDesign.appSource}
+            {/* Canvas replaces the single-iframe StudioPreview. It owns
+                its own header (zoom toggle + preview/code + select +
+                npm) and renders either the focused design full-size or
+                a grid of tiles, per the canvas zoom mode. */}
+            <StudioThemedCanvas
+              designs={designs}
+              focusedId={activeId}
+              onFocus={setActiveId}
               view={view}
               onViewChange={setView}
               isStreaming={Boolean(streamingByDesign[activeId])}
               selection={selectionByDesign[activeId] ?? null}
               onSelect={handleSelect}
+              onAddDesign={handleAddDesign}
+              onCloseDesign={handleCloseDesign}
+              onRenameDesign={handleRenameDesign}
+              onDuplicateDesign={handleDuplicateDesign}
+              canAddMore={!atCap}
             />
             {/* Right column: normally the theme builder. When the user
                 docks the settings panel AND has a DS component selected,
@@ -414,37 +494,50 @@ export default function StudioPage() {
 
 /**
  * Small helper that reads the current builder theme + mode off the
- * ThemeBuilderProvider and forwards them into StudioPreview. Existing as
- * a child of the provider is the whole point — hooks only work inside it.
+ * ThemeBuilderProvider and forwards them into StudioCanvas. Existing
+ * as a child of the provider is the whole point — hooks only work
+ * inside it.
  *
- * Wraps StudioPreview as-is rather than refactoring its props to use the
- * hooks directly; StudioPreview is also used elsewhere (e.g. could be
- * embedded in a static card later) so keeping it a pure prop-driven
- * component preserves that flexibility.
+ * Unlike its StudioThemedPreview predecessor we do NOT key on activeId
+ * here: the canvas spans every design and only shifts its focus when
+ * activeId changes, so remounting would thrash every mounted iframe.
  */
-function StudioThemedPreview({
-  previewKey,
-  appSource,
+function StudioThemedCanvas({
+  designs,
+  focusedId,
+  onFocus,
   view,
   onViewChange,
   isStreaming,
   selection,
   onSelect,
+  onAddDesign,
+  onCloseDesign,
+  onRenameDesign,
+  onDuplicateDesign,
+  canAddMore,
 }: {
-  previewKey: string;
-  appSource: string | null;
+  designs: Design[];
+  focusedId: string;
+  onFocus: (id: string) => void;
   view: "preview" | "code";
   onViewChange: (v: "preview" | "code") => void;
   isStreaming: boolean;
   selection: StudioSelection | null;
   onSelect: (selection: StudioSelection) => void;
+  onAddDesign: () => void;
+  onCloseDesign: (id: string) => void;
+  onRenameDesign: (id: string, name: string) => void;
+  onDuplicateDesign?: (id: string) => void;
+  canAddMore: boolean;
 }) {
   const theme: GeneratedTheme = useGeneratedTheme();
   const [mode] = useThemeBuilderMode();
   return (
-    <StudioPreview
-      key={previewKey}
-      appSource={appSource}
+    <StudioCanvas
+      designs={designs}
+      focusedId={focusedId}
+      onFocus={onFocus}
       theme={theme}
       mode={mode}
       view={view}
@@ -452,6 +545,11 @@ function StudioThemedPreview({
       isStreaming={isStreaming}
       selection={selection}
       onSelect={onSelect}
+      onAddDesign={onAddDesign}
+      onCloseDesign={onCloseDesign}
+      onRenameDesign={onRenameDesign}
+      onDuplicateDesign={onDuplicateDesign}
+      canAddMore={canAddMore}
     />
   );
 }

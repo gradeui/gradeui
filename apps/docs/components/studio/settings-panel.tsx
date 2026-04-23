@@ -60,27 +60,14 @@ import {
   type PropValue,
 } from "@/lib/studio-source-mutator";
 
-// Mirrors the shape returned by /api/component-manifest. Duplicated here
-// (rather than imported from lib/component-refs) because that module imports
-// `fs` at top-level — a client component importing it would blow up the
-// build. The contract is narrow enough that manual sync is cheap; if it
-// ever grows we can extract a shared type to a server-safe file.
-interface ManifestProp {
-  name: string;
-  optional: boolean;
-  kind: "string" | "number" | "boolean" | "enum" | "unknown";
-  enum?: ReadonlyArray<string | number>;
-  defaultValue?: string;
-  description?: string;
-  raw: string;
-}
-interface Manifest {
-  name: string;
-  part: string;
-  import?: string;
-  props: ManifestProp[];
-  when_to_use?: string;
-}
+// Shape returned by /api/component-manifest — sourced from
+// `@gradeui/studio/playbook` which is now fs-free at runtime (sidecars are
+// inlined into a TS string map at build time) so a client component can
+// safely pull types from it without tripping the `fs` import.
+import type {
+  PropManifest as ManifestProp,
+  ComponentManifest as Manifest,
+} from "@gradeui/studio/playbook";
 
 interface StudioSettingsPanelProps {
   /** Current preview selection — must have `componentName` + `part` for the

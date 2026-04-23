@@ -11,6 +11,7 @@
  */
 
 import { themeToCSSVars, type GeneratedTheme } from "@/lib/themes";
+import { ALLOWED_COMPONENTS } from "@gradeui/studio/playbook";
 
 // ─────────────────────────────────────────────────────────────────────
 // Selection agent wire types
@@ -155,6 +156,90 @@ export function rewriteLocalComponentImports(code: string): string {
 }
 
 /**
+ * Auto-inject missing `@gradeui/ui` imports. The model sometimes emits
+ * a JSX tag like `<Flex>` or `<Separator>` without including it in the
+ * import list — either because it started with a subset and added more
+ * tags during generation, or simply lost track. Sandpack then throws
+ * "Flex is not defined" at parse time and the whole preview goes red.
+ *
+ * We scan the source for capitalized JSX tags, cross-reference against
+ * `ALLOWED_COMPONENTS` (our canonical list of what @gradeui/ui exposes
+ * for Studio), and add any missing names to a consolidated
+ * `import { ... } from "@gradeui/ui"` line. We do NOT touch tags that
+ * are already imported from anywhere — including non-Grade sources
+ * like `lucide-react` — to avoid introducing duplicate identifiers.
+ *
+ * Kept as a separate pass (rather than folded into
+ * `rewriteLocalComponentImports`) because the two have different
+ * preconditions: the rewriter fires on a literal local path we want
+ * to normalize, this one fires on a missing import we want to
+ * fabricate. Composing them at the `prepareAppSource` level keeps
+ * each function small enough to reason about in isolation.
+ */
+export function autoImportGradeComponents(code: string): string {
+  // Collect every capitalized JSX tag reference. Matches opening tags
+  // only (`<Foo …>`, `<Foo/>`) — closing tags don't add new identifiers
+  // so we can skip them for free.
+  const usedTags = new Set<string>();
+  const tagRx = /<([A-Z][A-Za-z0-9_]*)/g;
+  let tm: RegExpExecArray | null;
+  while ((tm = tagRx.exec(code)) !== null) {
+    usedTags.add(tm[1]);
+  }
+  if (usedTags.size === 0) return code;
+
+  // What's already imported — from ANY module. Import guards against
+  // a `Button` from lucide-react colliding with the Grade `Button`.
+  const resolved = new Set<string>();
+  const anyImportRx = /import\s*\{\s*([^}]+?)\s*\}\s*from\s*["'][^"']+["'];?/g;
+  let im: RegExpExecArray | null;
+  while ((im = anyImportRx.exec(code)) !== null) {
+    for (const raw of im[1].split(",")) {
+      // Handle `X as Y` — Y is the binding in scope, strip the alias.
+      const name = raw.trim().replace(/\s+as\s+.+$/, "").trim();
+      if (name) resolved.add(name);
+    }
+  }
+
+  // The set we want to add. Already-resolved names are skipped so we
+  // never duplicate an identifier. Only allowlisted Grade components
+  // get auto-injected — anything else was either a local component or
+  // a typo, and neither is safe for us to invent an import for.
+  // Linear scan over ALLOWED_COMPONENTS. The array is ~50 entries and
+  // prepareAppSource only runs on message-seal, so a Set cache isn't
+  // worth the hoisting dance of declaring it after the array 1600 lines
+  // down the file.
+  const missing: string[] = [];
+  for (const tag of usedTags) {
+    if ((ALLOWED_COMPONENTS as readonly string[]).includes(tag) && !resolved.has(tag)) {
+      missing.push(tag);
+    }
+  }
+  if (missing.length === 0) return code;
+  missing.sort();
+
+  // Merge into an existing `@gradeui/ui` import if one's present, else
+  // prepend a new one at the top of the file. `rewriteLocalComponentImports`
+  // has already collapsed any legacy paths into a single barrel import
+  // by the time we run, so there's at most one import to touch.
+  const gradeImportRx =
+    /import\s*\{\s*([^}]+?)\s*\}\s*from\s*["']@gradeui\/ui["'];?/;
+  const gradeMatch = code.match(gradeImportRx);
+  if (gradeMatch) {
+    const existing = new Set(
+      gradeMatch[1].split(",").map((raw) => raw.trim()).filter(Boolean)
+    );
+    for (const name of missing) existing.add(name);
+    const merged = Array.from(existing).sort();
+    return code.replace(
+      gradeImportRx,
+      `import { ${merged.join(", ")} } from "@gradeui/ui";`
+    );
+  }
+  return `import { ${missing.join(", ")} } from "@gradeui/ui";\n${code}`;
+}
+
+/**
  * Make sure the snippet exports a default React component so Sandpack's
  *   import App from "./App"
  * resolves to something callable. The model emits any of these shapes:
@@ -165,20 +250,23 @@ export function rewriteLocalComponentImports(code: string): string {
  *   4. Anything else — append `export default App` as a last-ditch guess.
  *
  * Also applies `repairMultilineStrings` to defuse the classic LLM bug of
- * wrapping long className attributes across lines, and
+ * wrapping long className attributes across lines,
  * `rewriteLocalComponentImports` so legacy `./components/ui/<name>`
- * paths resolve to the real `@gradeui/ui` npm package. Without those
- * passes the iframe throws:
+ * paths resolve to the real `@gradeui/ui` npm package, and
+ * `autoImportGradeComponents` so a `<Flex>` the model forgot to import
+ * doesn't blow up the preview. Without those passes the iframe throws:
  *   "Element type is invalid … got: undefined. You likely forgot to export
  *    your component from the file it's defined in …"
- * or the worse
+ * or
  *   "Unterminated string constant"
- * which Sandpack in turn rethrows as "Cannot assign to read only property
- * 'message' of SyntaxError" when it tries to prettify the error.
+ * or
+ *   "Flex is not defined"
+ * all of which Sandpack prints as a red "Something went wrong" panel.
  */
 export function prepareAppSource(code: string): string {
   const rewritten = rewriteLocalComponentImports(code);
-  const repaired = repairMultilineStrings(rewritten);
+  const autoImported = autoImportGradeComponents(rewritten);
+  const repaired = repairMultilineStrings(autoImported);
   const trimmed = repaired.trim();
   if (!trimmed) return `export default function App() { return null }`;
 
@@ -1735,123 +1823,16 @@ export function cn(...inputs: ClassValue[]) {
 };
 
 /**
- * The components the model is allowed to emit in `jsx` code blocks.
- * Used in the system prompt to constrain output so Sandpack has the source
- * files it needs. Keep in sync with componentFiles above.
+ * Re-export the allowlist tables from @gradeui/studio/playbook so existing
+ * callers (`import { ALLOWED_COMPONENTS } from "@/lib/chat-sandpack"`) keep
+ * working. Single source of truth lives in the playbook package now —
+ * keep in sync with `componentFiles` above (the Sandpack virtual filesystem
+ * still needs the source for every allowed component).
  */
-export const ALLOWED_COMPONENTS = [
-  // Layout primitives — reach for these over hand-rolled flex/grid so
-  // the resulting structure is editable via the settings panel and the
-  // vertical/horizontal rhythm stays consistent across designs.
-  //   Stack — vertical 1D
-  //   Row   — horizontal 1D
-  //   Grid  — 2D responsive; `cols` prop bakes in the responsive ladder
-  //           so "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4" becomes
-  //           <Grid cols="4">. The model hand-rolls the same pattern
-  //           otherwise, often with invented classes like `gap-md` that
-  //           silently do nothing.
-  //   Flex  — the unopinionated escape hatch. CSS-aligned — direction,
-  //           gap, align, justify, wrap exposed directly. Reach for Flex
-  //           when Stack / Row / Grid don't fit (reverse direction,
-  //           baseline alignment, CSS defaults).
-  "Stack",
-  "Row",
-  "Grid",
-  "Flex",
-  // App scaffold — the top-level page shell. nav=side|top|none picks the
-  // structure; AppShellMain's maxWidth caps content width. Reach for this
-  // instead of hand-rolling grid grid-cols-[auto_1fr] on every app layout.
-  "AppShell",
-  "AppShellNav",
-  "AppShellMain",
-  // Core primitives
-  "Button",
-  "Card",
-  "CardHeader",
-  "CardTitle",
-  "CardDescription",
-  "CardContent",
-  "CardFooter",
-  "Input",
-  "Label",
-  "Textarea",
-  // Feedback
-  "Alert",
-  "AlertTitle",
-  "AlertDescription",
-  "Badge",
-  "Progress",
-  "Skeleton",
-  // Overlays
-  "Dialog",
-  "DialogTrigger",
-  "DialogContent",
-  "DialogHeader",
-  "DialogTitle",
-  "DialogDescription",
-  "DialogFooter",
-  // Form controls
-  "Checkbox",
-  "Switch",
-  "Select",
-  "SelectTrigger",
-  "SelectContent",
-  "SelectValue",
-  "SelectItem",
-  // Date + Popover (shipped in @gradeui/ui@0.3.0)
-  "DatePicker",
-  "DateRangePicker",
-  "Calendar",
-  "Popover",
-  "PopoverTrigger",
-  "PopoverContent",
-  "PopoverAnchor",
-  // Layout & data display
-  "Separator",
-  "Avatar",
-  "AvatarImage",
-  "AvatarFallback",
-  "Tabs",
-  "TabsList",
-  "TabsTrigger",
-  "TabsContent",
-  "Table",
-  "TableHeader",
-  "TableBody",
-  "TableFooter",
-  "TableHead",
-  "TableRow",
-  "TableCell",
-  "TableCaption",
-  // Media (shipped in @gradeui/ui@0.4.0)
-  //   - VideoPlayer / ThreeScene are the high-level wrappers the model
-  //     should reach for. MediaSurface is the low-level shell; exposing
-  //     it too means a user who says "build a bespoke media thing" has a
-  //     way to do it without the model inventing imports.
-  //   - RivePlayer is intentionally NOT exposed to Studio right now — the
-  //     @rive-app/react-canvas runtime is ~900KB and we aren't pushing Rive
-  //     as a studio-first primitive. Consumers installing @gradeui/ui
-  //     directly can still use it by adding the optional dep themselves.
-  //   - Shader preset primitives are included so a prompt like "show a
-  //     gallery of shader backgrounds" picks the registry-driven UI instead
-  //     of fabricating one.
-  "VideoPlayer",
-  "ThreeScene",
-  "MediaSurface",
-  "ShaderPresetPreview",
-  "ShaderPresetPicker",
-] as const;
-
-/**
- * Additional bare module specifiers the model is allowed to import from.
- * These must be declared in the Sandpack `customSetup.dependencies` block so
- * the iframe can actually resolve them. Keep in sync with studio-preview.tsx
- * + design-chat.tsx's Sandpack setup.
- */
-export const ALLOWED_EXTERNAL_IMPORTS = [
-  "lucide-react",
-  "recharts",
-] as const;
+export {
+  ALLOWED_COMPONENTS,
+  ALLOWED_EXTERNAL_IMPORTS,
+} from "@gradeui/studio/playbook";
 
 // ─────────────────────────────────────────────────────────────────────
 // buildSandpackFiles — the single source of truth for what goes into

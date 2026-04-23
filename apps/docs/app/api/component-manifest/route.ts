@@ -19,14 +19,15 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
-import { buildComponentManifest } from "@/lib/component-refs";
+import { buildComponentManifest } from "@gradeui/studio/playbook";
 
-// Force Node runtime — component-refs.ts pulls `fs` at module scope.
+// The playbook package inlines sidecars as a TS string map — no fs access
+// needed at runtime, so this route runs fine on the edge if we ever want.
+// Keeping it `nodejs` for now to match the rest of the API surface.
 export const runtime = "nodejs";
 
-// The underlying manifest re-reads sidecars on every call in dev; in prod
-// they're cached at module scope. Either way, per-request work is trivial —
-// no need to layer a response cache on top.
+// The manifest is cached at module scope inside the playbook package, so
+// per-request work is trivial — no need to layer a response cache on top.
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {

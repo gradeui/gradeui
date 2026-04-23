@@ -78,6 +78,9 @@ importers:
       '@codesandbox/sandpack-react':
         specifier: ^2.20.0
         version: 2.20.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@gradeui/studio':
+        specifier: workspace:*
+        version: link:../../packages/studio
       '@gradeui/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -296,6 +299,12 @@ importers:
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(@swc/core@1.15.30)(jiti@1.21.7)(postcss@8.5.10)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  packages/studio:
+    devDependencies:
       typescript:
         specifier: ^5.6.3
         version: 5.9.3
@@ -6690,14 +6699,12 @@ snapshots:
     dependencies:
       react: 19.2.5
 
-  '@rive-app/canvas@2.37.2':
-    optional: true
+  '@rive-app/canvas@2.37.2': {}
 
   '@rive-app/react-canvas@4.28.1(react@19.2.5)':
     dependencies:
       '@rive-app/canvas': 2.37.2
       react: 19.2.5
-    optional: true
 
   '@rollup/rollup-android-arm-eabi@4.60.2':
     optional: true

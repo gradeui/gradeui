@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@gradeui/ui": "workspace:*",
+    "@gradeui/studio": "workspace:*",
     "@rive-app/react-canvas": "^4.21.4",
     "@ai-sdk/anthropic": "^2.0.0",
     "@ai-sdk/google": "^2.0.0",

@@ -33,7 +33,6 @@ export function SiteHeader() {
     { href: "/templates", label: "Templates" },
     { href: "/blocks", label: "Blocks" },
     { href: "/play", label: "Playground" },
-    { href: "/chat", label: "AI Chat" },
     { href: "/studio", label: "Studio" },
     { href: "/brand", label: "Brand" },
   ];

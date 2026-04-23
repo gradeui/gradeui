@@ -43,7 +43,6 @@ export function MarketingNav() {
     { name: "Docs", href: "/docs", external: false },
     { name: "Templates", href: "/templates", external: false },
     { name: "Playground", href: "/play", external: false },
-    { name: "AI Chat", href: "/chat", external: false },
     { name: "Studio", href: "/studio", external: false },
     { name: "Brand", href: "/brand", external: false },
     { name: "Community", href: "/community", external: false },
