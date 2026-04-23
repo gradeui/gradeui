@@ -39,6 +39,12 @@ const docsNav: NavSection[] = [
       { title: "Forms", href: "/docs/patterns/forms" },
     ],
   },
+  {
+    title: "Studio",
+    items: [
+      { title: "How it works", href: "/docs/studio/how-it-works" },
+    ],
+  },
 ];
 
 const componentsNav: NavSection[] = [
