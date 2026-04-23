@@ -1,28 +1,80 @@
 # layouts/
 
-Reserved for task **#24 — reference layouts as prompt scaffolds**.
+Reference layouts — hand-authored JSX scaffolds the model can be seeded
+with for common app shapes. Unlike the prose-only entries in
+`../templates/`, these ship a full `<App>` implementation that the
+model then _edits_ rather than generating from scratch.
 
-The idea: curated, hand-authored JSX starters (not just prose prompts like
-`templates/`) that the model can be seeded with for common app shapes —
-dashboard, docs site, marketing page, settings, etc. The model then edits
-the scaffold rather than generating from scratch, which should give more
-reliable structure on the hard layouts (AppShell + nav + main grid).
+## Shape
 
-Currently empty — the templates/ prose-only approach is good enough until
-we have a specific layout that keeps coming out badly. When that happens,
-add the JSX scaffold here as a sibling to its prose template entry.
-
-Shape expected (TBD, finalised when we author the first one):
-
-```ts
-export interface ReferenceLayout {
-  id: string;               // joins to a StudioTemplate by id
-  label: string;
-  description: string;
-  /** Initial JSX dropped into the Sandpack editor. */
-  scaffold: string;
-}
+```
+layouts/
+├── index.ts                     # ReferenceLayout registry + metadata
+├── scaffolds/                   # one .jsx file per reference layout
+│   ├── ecommerce-listing.jsx
+│   ├── saas-user-editor.jsx
+│   ├── data-table-filters.jsx
+│   ├── music-app.jsx
+│   └── tv-streaming.jsx
+└── scaffolds.generated.ts       # inlined SCAFFOLDS map — do not edit
 ```
 
-Anything that lands here must stay zero-runtime-dep — JSX as a string,
-not as a React component. The host app hydrates it into the editor.
+Scaffolds live as real `.jsx` files so the editor gives them proper
+syntax highlighting and the author never has to escape backticks or
+`${}` sigils. A build-time generator (`scripts/generate-scaffolds.mjs`)
+reads the `.jsx` files and emits `scaffolds.generated.ts` containing a
+`SCAFFOLDS: Record<id, source>` object — the generated file is what
+`index.ts` imports. This preserves the playbook's zero-runtime-dep
+guarantee (no `fs`, no React) while letting the source-of-truth live as
+proper JSX.
+
+## Adding a new layout
+
+1. Drop a `kebab-case-id.jsx` file in `scaffolds/`. Use **only** components
+   from `components/allowlist.ts`, reach for layout primitives over raw
+   utility classes, and lean on semantic tokens (`bg-background`,
+   `text-muted-foreground`, …). Keep it under ~120 lines — the goal is
+   a runway, not a finished app.
+2. Regenerate the inlined map:
+
+   ```sh
+   pnpm -F @gradeui/studio generate:scaffolds
+   ```
+
+3. Append a `ReferenceLayout` entry to `REFERENCE_LAYOUTS` in
+   `index.ts`. The `id` field must match the `.jsx` filename (sans
+   extension) so `requireScaffold(id)` resolves. Add `tags` — the soft
+   match tokens retrieval (#25) will search for.
+
+The `prebuild` script in `package.json` runs the generator in CI, so
+the committed `scaffolds.generated.ts` always matches the `.jsx`
+sources on `main`.
+
+## Authoring rules (why these exist)
+
+Scaffolds double as training data — the model reads them and mimics
+the pattern on the next request. Sloppy scaffolds teach sloppy output.
+
+- **Allowlist only.** A scaffold that imports a non-allowlisted
+  component crashes in the Sandpack harness. If you genuinely want a
+  component that doesn't exist yet (DataTable, Scroller, Rating),
+  hand-roll a stand-in and flag it in `MISSING_COMPONENTS` at the foot
+  of `index.ts` so we know to prioritise shipping it.
+- **Layout primitives over utilities.** Stack, Row, Grid, Flex,
+  AppShell — these are the patterns we want the model to mimic. Raw
+  `flex`, `grid`, `space-y-*` utility soup teaches the model to
+  bypass the primitives.
+- **Semantic tokens only.** Raw colour utilities (`bg-blue-500`)
+  strand the layout outside the theme. Use the semantic scale.
+- **Tinted gradients for imagery.** Sandpack has no asset pipeline —
+  use `bg-gradient-to-br from-primary/30 via-muted to-accent/20` (or
+  similar) as a placeholder. The user swaps in real `<img>` tags.
+
+## Retrieval (#25)
+
+`tags` are lower-cased soft-match tokens. When #25 lands, the user's
+prompt is lower-cased and scanned for any tag; the best-scoring
+scaffold (most tag hits, ties broken by brevity) gets pinned under a
+dedicated `REFERENCE LAYOUT` block in the system prompt. Exact
+substring matching is plenty at five scaffolds — past ~15 we'll swap
+in a stemmed index.

@@ -19,7 +19,9 @@
   ],
   "scripts": {
     "generate:sidecars": "node scripts/generate-sidecars.mjs",
-    "prebuild": "pnpm run generate:sidecars",
+    "generate:scaffolds": "node scripts/generate-scaffolds.mjs",
+    "generate": "pnpm run generate:sidecars && pnpm run generate:scaffolds",
+    "prebuild": "pnpm run generate",
     "lint": "echo \"(no lint configured for @gradeui/studio yet)\"",
     "typecheck": "tsc --noEmit"
   },
