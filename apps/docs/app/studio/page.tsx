@@ -271,12 +271,24 @@ export default function StudioPage() {
   // the exact shape of bug that produces "added a screen, nothing's
   // focused" drift. Now we compute the new design once, queue both
   // setters at the top level, and React batches them into one render.
-  const handleAddDesign = useCallback(() => {
-    if (designs.length >= MAX_DESIGNS) return;
-    const next = createDesign(designs.length);
-    setDesigns((ds) => (ds.length >= MAX_DESIGNS ? ds : [...ds, next]));
-    setActiveId(next.id);
-  }, [designs.length]);
+  //
+  // Optional `seed` lets the StarterPicker (#45/#46) spawn a screen
+  // pre-filled with a reference-layout scaffold or pasted JSX. Keeping
+  // the "blank screen" shape as the default — `handleAddDesign()` with
+  // no args still works — so the DesignTabs "+ New" button stays
+  // one-click frictionless.
+  const handleAddDesign = useCallback(
+    (seed?: { source: string; name?: string }) => {
+      if (designs.length >= MAX_DESIGNS) return;
+      const fresh = createDesign(designs.length, seed?.name);
+      const next: Design = seed?.source
+        ? { ...fresh, appSource: seed.source }
+        : fresh;
+      setDesigns((ds) => (ds.length >= MAX_DESIGNS ? ds : [...ds, next]));
+      setActiveId(next.id);
+    },
+    [designs.length]
+  );
 
   // Clone an existing design's JSX into a fresh slot. Copies the
   // appSource but NOT the chat history — for a wizard/flow-step
@@ -525,7 +537,7 @@ function StudioThemedCanvas({
   isStreaming: boolean;
   selection: StudioSelection | null;
   onSelect: (selection: StudioSelection) => void;
-  onAddDesign: () => void;
+  onAddDesign: (seed?: { source: string; name?: string }) => void;
   onCloseDesign: (id: string) => void;
   onRenameDesign: (id: string, name: string) => void;
   onDuplicateDesign?: (id: string) => void;

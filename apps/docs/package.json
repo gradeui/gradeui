@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "changelog": "node scripts/generate-changelog.js"
+    "changelog": "node scripts/generate-changelog.js",
+    "capture:layout-thumbs": "node scripts/capture-layout-thumbnails.mjs"
   },
   "dependencies": {
     "@gradeui/ui": "workspace:*",

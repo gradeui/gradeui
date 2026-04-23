@@ -72,6 +72,7 @@ import { openInCodeSandboxNpm } from "@/lib/chat-export-npm";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { Design } from "@/lib/studio-designs";
 import { DesignTabs } from "@/components/studio/design-tabs";
+import { StarterPicker } from "@/components/studio/starter-picker";
 
 /**
  * Minimal App module used to prewarm Sandpack when we don't yet have real
@@ -148,8 +149,11 @@ interface StudioCanvasProps {
   // "+ New" and "Duplicate focused" sit in the canvas toolbar (tiles
   // take over navigation, and × lives back in Fit mode's tab strip
   // only — no need to double up).
-  /** Add a blank design. Parent enforces MAX_DESIGNS. */
-  onAddDesign: () => void;
+  /** Add a design. Parent enforces MAX_DESIGNS. No args → blank screen
+   *  (the existing DesignTabs "+" path). Passing a `seed` pre-fills
+   *  the new design's appSource — used by the StarterPicker when the
+   *  user picks a reference layout or pastes JSX. */
+  onAddDesign: (seed?: { source: string; name?: string }) => void;
   /** Close a specific design. Parent may ignore the call if it would
    *  remove the last remaining screen. */
   onCloseDesign: (id: string) => void;
@@ -212,6 +216,14 @@ export function StudioCanvas({
   // full 1280 virtual width regardless.
   const [viewportWidth, setViewportWidth] =
     useState<ViewportWidth>("responsive");
+
+  // StarterPicker open/close. Both Fit and All mode surface a
+  // "Starters" button that opens this — the picker is the single
+  // doorway for "new screen that isn't blank" (layout + paste-code,
+  // for now). Blank-screen creation still goes through the
+  // DesignTabs "+ New" pill, unmediated, so the one-click blank path
+  // is preserved.
+  const [starterPickerOpen, setStarterPickerOpen] = useState(false);
 
   // Resolve the focused design object up front. Defensive fallback to
   // the first design in case focusedId goes stale during an add/close
@@ -377,8 +389,29 @@ export function StudioCanvas({
             // viewport width, preview/code, select, npm. Rendered
             // here rather than disabled-in-All so All mode's header
             // reads as a different tool, not a degraded version of
-            // the same one.
+            // the same one. "Starters" is the odd one out — it creates
+            // a NEW screen — but we still surface it here so the same
+            // affordance is reachable without a mode flip.
             <>
+              <div className="mx-1 h-3 w-px bg-border" aria-hidden />
+              <button
+                type="button"
+                onClick={() => setStarterPickerOpen(true)}
+                disabled={!canAddMore}
+                className={cn(
+                  "flex items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors",
+                  "text-muted-foreground hover:text-foreground",
+                  "disabled:opacity-40 disabled:pointer-events-none"
+                )}
+                title={
+                  canAddMore
+                    ? "Start a new screen from a reference layout or pasted JSX"
+                    : "Design cap reached"
+                }
+              >
+                <Sparkles className="h-3 w-3" />
+                Starters
+              </button>
               <div className="mx-1 h-3 w-px bg-border" aria-hidden />
               <div
                 className="flex items-center rounded border border-border bg-background/60 p-0.5"
@@ -502,14 +535,16 @@ export function StudioCanvas({
             // Tiles ARE the navigation in this view, so the tab strip
             // doesn't render below. "+ New" and "Duplicate focused"
             // move here from the tab strip so screen creation doesn't
-            // force a mode flip. Everything else (viewport/preview/
-            // select/npm) is focused-screen-only and would mislead if
-            // it showed up without a single focused screen on stage.
+            // force a mode flip. "Starters" opens the reference-layout
+            // + paste-code picker (#45/#46). Everything else
+            // (viewport/preview/select/npm) is focused-screen-only and
+            // would mislead if it showed up without a single focused
+            // screen on stage.
             <>
               <div className="mx-1 h-3 w-px bg-border" aria-hidden />
               <button
                 type="button"
-                onClick={onAddDesign}
+                onClick={() => onAddDesign()}
                 disabled={!canAddMore}
                 className={cn(
                   "flex items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors",
@@ -522,6 +557,24 @@ export function StudioCanvas({
               >
                 <Plus className="h-3 w-3" />
                 New screen
+              </button>
+              <button
+                type="button"
+                onClick={() => setStarterPickerOpen(true)}
+                disabled={!canAddMore}
+                className={cn(
+                  "flex items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors",
+                  "text-muted-foreground hover:text-foreground",
+                  "disabled:opacity-40 disabled:pointer-events-none"
+                )}
+                title={
+                  canAddMore
+                    ? "Start from a reference layout or pasted JSX"
+                    : "Design cap reached"
+                }
+              >
+                <Sparkles className="h-3 w-3" />
+                Starters
               </button>
               {onDuplicateDesign && (
                 <button
@@ -557,8 +610,11 @@ export function StudioCanvas({
         <DesignTabs
           designs={designs}
           activeId={focusedId}
+          // DesignTabs.onAdd is a () => void — wrap `onAddDesign` so the
+          // optional seed arg stays undefined, preserving the "click +
+          // → blank screen" contract. Starters has its own affordance.
+          onAdd={() => onAddDesign()}
           onActivate={onFocus}
-          onAdd={onAddDesign}
           onClose={onCloseDesign}
           onRename={onRenameDesign}
           onDuplicate={onDuplicateDesign}
@@ -603,6 +659,17 @@ export function StudioCanvas({
           hidden={isFit}
         />
       )}
+
+      {/* StarterPicker dialog. Portalled via Radix so stacking context
+          isn't an issue even though the canvas is clipped. Payload from
+          onPick feeds straight into `onAddDesign` with the seed shape —
+          the page's `handleAddDesign` copies `seed.source` into the new
+          design's appSource and uses `seed.name` as the tab label. */}
+      <StarterPicker
+        open={starterPickerOpen}
+        onOpenChange={setStarterPickerOpen}
+        onPick={({ source, name }) => onAddDesign({ source, name })}
+      />
     </div>
   );
 }
