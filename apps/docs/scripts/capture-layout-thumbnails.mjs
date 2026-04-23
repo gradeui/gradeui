@@ -43,18 +43,54 @@
  *     casing will miss the picker's `img src`.
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-
-// Pull the registry straight from the playbook. We resolve through the
-// package's `./playbook` export so we can't accidentally drift from
-// what the app itself consumes.
-const { REFERENCE_LAYOUTS } = await import("@gradeui/studio/playbook");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Thumbnails live under public/ so Next serves them at /layout-thumbs/...
 const THUMB_DIR = resolve(__dirname, "..", "public", "layout-thumbs");
+
+// Discover layout ids by scanning the scaffolds directory directly
+// rather than importing `@gradeui/studio/playbook`. That package's
+// `exports` field points at `.ts` sources, and Node can't load those
+// without a loader — tsx/ts-node would be a runtime dep for a job that
+// only needs filenames.
+//
+// The contract is simple: each reference layout lives as
+// `packages/studio/src/playbook/layouts/scaffolds/<id>.jsx`, and the
+// .jsx filename IS the registered id (that's how `requireScaffold(id)`
+// and the build-time generator hook up). So a directory read is the
+// authoritative list of ids.
+const SCAFFOLDS_DIR = resolve(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "packages",
+  "studio",
+  "src",
+  "playbook",
+  "layouts",
+  "scaffolds"
+);
+
+async function loadLayoutIds() {
+  let entries;
+  try {
+    entries = await readdir(SCAFFOLDS_DIR);
+  } catch (err) {
+    console.error(
+      `✗ Could not read scaffolds directory at ${SCAFFOLDS_DIR}: ` +
+        (err instanceof Error ? err.message : String(err))
+    );
+    process.exit(1);
+  }
+  return entries
+    .filter((f) => f.endsWith(".jsx"))
+    .map((f) => f.replace(/\.jsx$/, ""))
+    .sort();
+}
 
 const BASE_URL = process.env.THUMB_BASE_URL ?? "http://localhost:3000";
 const ONLY_ID = process.env.THUMB_LAYOUT_ID ?? null;
@@ -88,20 +124,26 @@ try {
   process.exit(1);
 }
 
-const layouts = ONLY_ID
-  ? REFERENCE_LAYOUTS.filter((l) => l.id === ONLY_ID)
-  : REFERENCE_LAYOUTS;
+const allIds = await loadLayoutIds();
+const layoutIds = ONLY_ID ? allIds.filter((id) => id === ONLY_ID) : allIds;
 
-if (layouts.length === 0) {
-  console.error(
-    `✗ No layout matches THUMB_LAYOUT_ID=${ONLY_ID}. ` +
-      `Known ids: ${REFERENCE_LAYOUTS.map((l) => l.id).join(", ")}`
-  );
+if (layoutIds.length === 0) {
+  if (ONLY_ID) {
+    console.error(
+      `✗ No layout matches THUMB_LAYOUT_ID=${ONLY_ID}. ` +
+        `Known ids: ${allIds.join(", ")}`
+    );
+  } else {
+    console.error(
+      `✗ No .jsx scaffolds found in ${SCAFFOLDS_DIR}. ` +
+        `Did the scaffolds directory move?`
+    );
+  }
   process.exit(1);
 }
 
 console.log(
-  `Capturing ${layouts.length} thumbnail${layouts.length === 1 ? "" : "s"} ` +
+  `Capturing ${layoutIds.length} thumbnail${layoutIds.length === 1 ? "" : "s"} ` +
     `from ${BASE_URL} → ${THUMB_DIR}`
 );
 
@@ -115,17 +157,17 @@ try {
     deviceScaleFactor: 2, // Retina-crisp thumbnails; ~2x PNG size but negligible.
   });
 
-  for (const layout of layouts) {
-    const url = `${BASE_URL}/layout-preview/${layout.id}?snap=1`;
-    const outPath = resolve(THUMB_DIR, `${layout.id}.png`);
-    console.log(`  • ${layout.id} …`);
+  for (const layoutId of layoutIds) {
+    const url = `${BASE_URL}/layout-preview/${layoutId}?snap=1`;
+    const outPath = resolve(THUMB_DIR, `${layoutId}.png`);
+    console.log(`  • ${layoutId} …`);
     const page = await context.newPage();
     try {
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
       // Step 1: outer page mounted (ReadinessBeacon flipped data-ready).
       await page.waitForSelector(
-        `[data-layout-id="${layout.id}"][data-ready="1"]`,
+        `[data-layout-id="${layoutId}"][data-ready="1"]`,
         { timeout: 15_000 }
       );
 
@@ -170,7 +212,7 @@ try {
       // browser to see what broke. Don't bail the whole run — the other
       // layouts may still be healthy.
       console.error(
-        `    ✗ ${layout.id} failed: ${err instanceof Error ? err.message : err}`
+        `    ✗ ${layoutId} failed: ${err instanceof Error ? err.message : err}`
       );
       console.error(`      URL: ${url}`);
     } finally {
