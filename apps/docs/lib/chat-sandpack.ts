@@ -392,7 +392,7 @@ export const PLAYGROUND_EXTERNAL_RESOURCES: readonly string[] = [
  * components need to be reachable in Studio.
  */
 export const PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> = {
-  "@gradeui/ui": "0.8.0",
+  "@gradeui/ui": "0.8.2",
   "class-variance-authority": "^0.7.0",
   clsx: "^2.0.0",
   "tailwind-merge": "^2.0.0",

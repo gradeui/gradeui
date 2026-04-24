@@ -188,6 +188,24 @@ export default function StudioPage() {
 
   const [view, setView] = useState<"preview" | "code">("preview");
 
+  // Dev toggles in the header chrome. Scaffolding for the upcoming
+  // renderer split + tier gating — surfaced now so the controls exist
+  // before the features they drive.
+  //
+  // rendererMode: currently forwarded to StudioCanvas but only acted on
+  // once the fast renderer lands (step 5 of the renderer rollout). Until
+  // then both values render Sandpack — the toggle is visible but
+  // effectively a no-op. Default stays "sandpack" to preserve today's
+  // behavior; it flips to "fast" the day FocusedFastMount ships.
+  //
+  // userTier: placeholder for visibility-gated UI. No consumer yet —
+  // when pro/enterprise-only chrome lands (e.g. exporting to a per-
+  // client starter, hiding the npm path for free), read this state.
+  const [rendererMode, setRendererMode] =
+    useState<"sandpack" | "fast">("fast");
+  const [userTier, setUserTier] =
+    useState<"free" | "pro" | "enterprise">("free");
+
   const handleLatestCode = useCallback(
     (code: string | null) => {
       // Scope the update to whichever design produced the code. The chat
@@ -413,6 +431,65 @@ export default function StudioPage() {
               <div className="mx-1 h-5 w-px bg-border" aria-hidden />
               <GradeThemeSwitcher />
               <ThemeToggle />
+              <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+              {/* Dev toggles — visually demoted (mono, muted, 10px)
+                  so it reads as developer-only scaffolding. Renderer
+                  and User Tier are both state-holding controls without
+                  full consumers yet:
+                    - Renderer: both values currently mount Sandpack
+                      inside StudioCanvas. The fast renderer lands in
+                      step 5 and the default flips to "fast" then.
+                    - User Tier: no consumer yet. Reserved for the day
+                      pro/enterprise-only chrome appears (e.g. the
+                      per-client export path). */}
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground select-none">
+                <span className="uppercase tracking-wider opacity-70">
+                  Dev
+                </span>
+                <div className="flex rounded-md border border-border overflow-hidden bg-background">
+                  {(["fast", "sandpack"] as const).map((m, i) => (
+                    <button
+                      key={m}
+                      type="button"
+                      aria-pressed={rendererMode === m}
+                      onClick={() => setRendererMode(m)}
+                      title={
+                        m === "fast"
+                          ? "Fast renderer (same-document, no bundler) — coming soon; currently falls back to Sandpack"
+                          : "Sandpack renderer (iframe + bundler) — current default"
+                      }
+                      className={`px-2 py-0.5 capitalize transition-colors ${
+                        i > 0 ? "border-l border-border" : ""
+                      } ${
+                        rendererMode === m
+                          ? "bg-muted text-foreground"
+                          : "hover:bg-muted/50"
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex rounded-md border border-border overflow-hidden bg-background">
+                  {(["free", "pro", "enterprise"] as const).map((t, i) => (
+                    <button
+                      key={t}
+                      type="button"
+                      aria-pressed={userTier === t}
+                      onClick={() => setUserTier(t)}
+                      className={`px-2 py-0.5 capitalize transition-colors ${
+                        i > 0 ? "border-l border-border" : ""
+                      } ${
+                        userTier === t
+                          ? "bg-muted text-foreground"
+                          : "hover:bg-muted/50"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -480,6 +557,7 @@ export default function StudioPage() {
               onRenameDesign={handleRenameDesign}
               onDuplicateDesign={handleDuplicateDesign}
               canAddMore={!atCap}
+              rendererMode={rendererMode}
             />
             {/* Right column: normally the theme builder. When the user
                 docks the settings panel AND has a DS component selected,
@@ -528,6 +606,7 @@ function StudioThemedCanvas({
   onRenameDesign,
   onDuplicateDesign,
   canAddMore,
+  rendererMode,
 }: {
   designs: Design[];
   focusedId: string;
@@ -542,6 +621,7 @@ function StudioThemedCanvas({
   onRenameDesign: (id: string, name: string) => void;
   onDuplicateDesign?: (id: string) => void;
   canAddMore: boolean;
+  rendererMode: "sandpack" | "fast";
 }) {
   const theme: GeneratedTheme = useGeneratedTheme();
   const [mode] = useThemeBuilderMode();
@@ -562,6 +642,7 @@ function StudioThemedCanvas({
       onRenameDesign={onRenameDesign}
       onDuplicateDesign={onDuplicateDesign}
       canAddMore={canAddMore}
+      rendererMode={rendererMode}
     />
   );
 }

@@ -33,15 +33,8 @@
 
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  SandpackProvider,
-  SandpackLayout,
-  SandpackPreview,
-  SandpackCodeEditor,
-} from "@codesandbox/sandpack-react";
 import { motion } from "framer-motion";
 import {
-  AlertTriangle,
   Code2,
   Copy,
   Crosshair,
@@ -54,7 +47,6 @@ import {
   MousePointerClick,
   Package,
   Plus,
-  RotateCcw,
   Smartphone,
   Sparkles,
   Tablet,
@@ -63,8 +55,6 @@ import { cn } from "@/lib/utils";
 import {
   buildSandpackFiles,
   looksComplete,
-  PLAYGROUND_DEPENDENCIES,
-  PLAYGROUND_EXTERNAL_RESOURCES,
   prepareAppSource,
   type StudioSelection,
 } from "@/lib/chat-sandpack";
@@ -73,6 +63,15 @@ import type { GeneratedTheme } from "@/lib/themes";
 import type { Design } from "@/lib/studio-designs";
 import { DesignTabs } from "@/components/studio/design-tabs";
 import { StarterPicker } from "@/components/studio/starter-picker";
+import {
+  FocusedSandpackMount,
+  TileSandpackMount,
+  type ViewportWidth,
+} from "@/components/studio/sandpack-frame";
+import {
+  FocusedFastMount,
+  TileFastMount,
+} from "@/components/studio/fast-frame";
 
 /**
  * Minimal App module used to prewarm Sandpack when we don't yet have real
@@ -98,25 +97,6 @@ const PLAYGROUND_PLACEHOLDER_APP = [
 const TILE_VIRTUAL_WIDTH = 1280;
 const TILE_VIRTUAL_HEIGHT = 800;
 
-/**
- * Viewport widths for the focused-frame picker. "responsive" means "let
- * the preview fill the column" — the equivalent of having no width
- * constraint. The pixel presets mirror common device-frame widths that
- * the model is already trained on through Tailwind's `sm/md/lg`
- * breakpoints, so picking "Mobile" actually exercises the sm: branch
- * of the generated markup rather than just cropping the desktop layout.
- *
- * Kept as a module constant so adding a bespoke width later (say a
- * custom iPad Pro 1024 vs 1194) is a one-line change and every
- * consumer picks it up.
- */
-type ViewportWidth = "mobile" | "tablet" | "desktop" | "responsive";
-const VIEWPORT_WIDTHS: Record<Exclude<ViewportWidth, "responsive">, number> = {
-  mobile: 390,
-  tablet: 768,
-  desktop: 1024,
-};
-
 interface StudioCanvasProps {
   /** All designs the user has open. The canvas renders all of them in
    *  "all" mode and just the focused one in "fit" mode. */
@@ -141,6 +121,14 @@ interface StudioCanvasProps {
    *  and clear any dangling highlight. */
   selection?: StudioSelection | null;
   onSelect?: (selection: StudioSelection) => void;
+  /** Which renderer mounts inside the preview frames. "sandpack" is the
+   *  legacy/stable path (npm install, iframe, full bundler). "fast" is
+   *  an in-document same-origin renderer (no iframe, no npm, imports
+   *  @gradeui/ui straight from the workspace). Until the fast renderer
+   *  ships this prop is accepted but acted on only via a TODO inside
+   *  FocusedFrame/ScreenTile — both still mount Sandpack regardless.
+   *  Default "sandpack" so the current behavior is the unchanged path. */
+  rendererMode?: "sandpack" | "fast";
   // ─── Design-management (previously on the page-level tab strip) ──
   //
   // The canvas owns the multi-screen surface, so the operations that
@@ -184,6 +172,7 @@ export function StudioCanvas({
   onRenameDesign,
   onDuplicateDesign,
   canAddMore = true,
+  rendererMode = "sandpack",
   className,
 }: StudioCanvasProps) {
   // Zoom lives on the canvas itself, not the page — flipping between
@@ -640,6 +629,7 @@ export function StudioCanvas({
         onSelectModeChange={setSelectMode}
         viewportWidth={viewportWidth}
         hidden={!isFit}
+        rendererMode={rendererMode}
       />
       {hasEnteredAll && (
         <TileGrid
@@ -657,6 +647,7 @@ export function StudioCanvas({
           theme={theme}
           mode={mode}
           hidden={isFit}
+          rendererMode={rendererMode}
         />
       )}
 
@@ -741,6 +732,11 @@ interface FocusedFrameProps {
    *  focused Sandpack alive while the All-view grid is on screen,
    *  so flipping back to Fit doesn't re-boot the bundler. */
   hidden?: boolean;
+  /** Forwarded from StudioCanvas. Currently accepted-and-ignored —
+   *  until the fast renderer lands in step 5 of the renderer rollout
+   *  the mount below always uses FocusedSandpackMount. See TODO(#5)
+   *  inside this component for the swap point. */
+  rendererMode?: "sandpack" | "fast";
 }
 
 /**
@@ -761,6 +757,7 @@ function FocusedFrame({
   onSelectModeChange,
   viewportWidth,
   hidden = false,
+  rendererMode = "sandpack",
 }: FocusedFrameProps) {
   const canRender =
     Boolean(appSource) && (isStreaming || looksComplete(appSource || ""));
@@ -857,155 +854,25 @@ function FocusedFrame({
         hidden && "hidden"
       )}
     >
-      <SandpackErrorBoundary resetKey={preparedSource}>
-        <SandpackProvider
-          template="react-ts"
-          theme={mode === "dark" ? "dark" : "light"}
-          options={{
-            externalResources: [...PLAYGROUND_EXTERNAL_RESOURCES],
-            // Scope the code editor to App.tsx. All the other files in
-            // the bundle (index.tsx, selection-agent.ts, theme-options.tsx,
-            // styles.css, /public/index.html) are scaffold we generate —
-            // the user only cares whether the MODEL is emitting the JSX
-            // they expected. Hiding them also trims the tab-strip clutter.
-            visibleFiles: ["/App.tsx"],
-            activeFile: "/App.tsx",
-          }}
-          customSetup={{
-            dependencies: { ...PLAYGROUND_DEPENDENCIES },
-            entry: "/index.tsx",
-          }}
-          files={sandpackFiles}
-          style={
-            {
-              height: "100%",
-              "--sp-layout-height": "100%",
-            } as React.CSSProperties
-          }
-        >
-          <SandpackLayout
-            style={{
-              height: "100%",
-              display: view === "code" && canRender ? "flex" : "none",
-              border: 0,
-            }}
-          >
-            {/* showTabs={false} belt-and-braces with visibleFiles above:
-                with a single visible file there's nothing to tab between,
-                so the strip is pure chrome. */}
-            <SandpackCodeEditor
-              showLineNumbers
-              showTabs={false}
-              style={{ height: "100%" }}
-            />
-          </SandpackLayout>
-          {/* Viewport-width wrapper. The SandpackProvider's root is a
-              block-level div, so `flex: 1` on this wrapper wouldn't
-              pick up any height — we have to take it explicitly via
-              `height: 100%`. "responsive" falls back to width: 100%
-              with no max-width so the iframe fills the column as
-              before (behavioral parity with pre-picker). Non-responsive
-              presets center a width-constrained SandpackLayout on an
-              artboard backdrop so the preview reads like a device
-              sitting on a design surface — dot grid for spatial cues
-              (so you can see exactly where the iframe starts), and an
-              outline on the iframe itself so it separates from the
-              artboard regardless of whether the rendered UI has its
-              own background.
-
-              Pattern: radial-gradient dots at a fixed pitch, tinted
-              via the `--border` token so the grid tracks the active
-              theme (dark mode gets a dark grid on a slightly-lighter
-              artboard, light mode gets the inverse). 16px pitch is
-              dense enough to feel like a design tool without moiréing
-              against the scaled content inside the iframe. */}
-          <div
-            style={{
-              display: view === "preview" ? "flex" : "none",
-              height: "100%",
-              width: "100%",
-              justifyContent: "center",
-              alignItems: "stretch",
-              // IMPORTANT: `background` (shorthand) resets
-              // `background-image` as part of its longhand
-              // cascade, and React doesn't reliably preserve
-              // style-object property order when serializing
-              // to an inline style attribute. `backgroundColor`
-              // longhand alongside `backgroundImage` sidesteps
-              // that entirely.
-              //
-              // Color picked via `--muted-foreground` rather
-              // than `--foreground` — the former is the mid-
-              // tone the theme already uses for subtle text on
-              // `--muted`, so it sits in the same perceptual
-              // lightness band across light + dark modes.
-              // `--foreground` at any visible alpha was
-              // near-black in light mode (way too heavy) and
-              // invisible in dark mode (white at low alpha
-              // against dark grey just disappears). Mid-tone
-              // at ~45% alpha reads in both.
-              backgroundColor:
-                viewportWidth === "responsive"
-                  ? undefined
-                  : "var(--muted)",
-              backgroundImage:
-                viewportWidth === "responsive"
-                  ? undefined
-                  : "radial-gradient(circle, currentColor 1px, transparent 1px)",
-              backgroundSize:
-                viewportWidth === "responsive" ? undefined : "16px 16px",
-              color:
-                viewportWidth === "responsive"
-                  ? undefined
-                  : "color-mix(in oklab, var(--muted-foreground) 45%, transparent)",
-              padding: viewportWidth === "responsive" ? 0 : "1rem",
-            }}
-          >
-            <SandpackLayout
-              style={{
-                height: "100%",
-                width: "100%",
-                display: "flex",
-                // Visible outline only when the iframe is floating on
-                // the dot-grid artboard. In responsive mode the frame
-                // already butts right against the column chrome, so a
-                // second border there would just be noise.
-                border:
-                  viewportWidth === "responsive"
-                    ? 0
-                    : "1px solid var(--border)",
-                borderRadius:
-                  viewportWidth === "responsive" ? 0 : "0.5rem",
-                // overflow:hidden so the child SandpackPreview's
-                // rounded corners line up with our radius. Without it
-                // the iframe bleeds past the outline at the corners.
-                overflow:
-                  viewportWidth === "responsive" ? undefined : "hidden",
-                // A soft drop shadow reinforces the "artboard" read —
-                // cheap depth cue, same pattern Figma/Framer use.
-                boxShadow:
-                  viewportWidth === "responsive"
-                    ? undefined
-                    : "0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06)",
-                background: "var(--background)",
-                // Pin the preview to the selected pixel width, clamped
-                // to the column so a narrow canvas doesn't introduce
-                // horizontal scroll.
-                maxWidth:
-                  viewportWidth === "responsive"
-                    ? undefined
-                    : VIEWPORT_WIDTHS[viewportWidth],
-              }}
-            >
-              <SandpackPreview
-                showOpenInCodeSandbox
-                showRefreshButton
-                style={{ height: "100%", flex: 1 }}
-              />
-            </SandpackLayout>
-          </div>
-        </SandpackProvider>
-      </SandpackErrorBoundary>
+      {rendererMode === "fast" ? (
+        <FocusedFastMount
+          appSource={appSource}
+          theme={theme}
+          mode={mode}
+          view={view}
+          canRender={canRender}
+          viewportWidth={viewportWidth}
+        />
+      ) : (
+        <FocusedSandpackMount
+          sandpackFiles={sandpackFiles}
+          preparedSource={preparedSource}
+          mode={mode}
+          view={view}
+          canRender={canRender}
+          viewportWidth={viewportWidth}
+        />
+      )}
 
       {!canRender && (
         <div className="absolute inset-0 bg-background z-10">
@@ -1028,6 +895,9 @@ interface TileGridProps {
   /** Stay mounted but render invisible. Tiles remain alive so flipping
    *  back to All view is instant — no Sandpack reboot. */
   hidden?: boolean;
+  /** Forwarded to each ScreenTile so tiles pick the same renderer as
+   *  the focused frame. Defaults to "sandpack" for backwards compat. */
+  rendererMode?: "sandpack" | "fast";
 }
 
 /**
@@ -1044,13 +914,25 @@ function TileGrid({
   theme,
   mode,
   hidden = false,
+  rendererMode = "sandpack",
 }: TileGridProps) {
   return (
     <div
+      // Lenis wraps the Studio site and by default intercepts wheel
+      // events on any scrollable container. The All-mode tile grid
+      // is a native-scroll surface — navigating between tiles needs
+      // trackpad wheel to move the viewport, not Lenis's duration/easing
+      // curve. `data-lenis-prevent` tells Lenis to skip wheel events
+      // that target this subtree. The individual tile previews already
+      // have the same attribute on their FastPreviewWrapper, so scroll
+      // inside a tile and scroll in the gaps between tiles both work
+      // natively.
+      data-lenis-prevent
       className={cn(
         "flex-1 min-h-0 overflow-auto p-4 bg-muted/20",
         hidden && "hidden"
       )}
+      style={{ overscrollBehavior: "contain" }}
     >
       <div
         className={cn(
@@ -1071,6 +953,7 @@ function TileGrid({
             onExpand={() => onExpand(d.id)}
             theme={theme}
             mode={mode}
+            rendererMode={rendererMode}
           />
         ))}
       </div>
@@ -1085,6 +968,10 @@ interface ScreenTileProps {
   onExpand: () => void;
   theme: GeneratedTheme;
   mode: "light" | "dark";
+  /** Which renderer mounts inside this tile. Matches FocusedFrame so a
+   *  user flipping Dev → Fast in the header gets consistent results
+   *  across Fit + All views. */
+  rendererMode?: "sandpack" | "fast";
 }
 
 /**
@@ -1100,6 +987,7 @@ function ScreenTile({
   onExpand,
   theme,
   mode,
+  rendererMode = "sandpack",
 }: ScreenTileProps) {
   const appSource = design.appSource;
   const canRender = Boolean(appSource) && looksComplete(appSource || "");
@@ -1224,43 +1112,19 @@ function ScreenTile({
             transform: `scale(${scale})`,
           }}
         >
-          <SandpackErrorBoundary resetKey={preparedSource}>
-            <SandpackProvider
-              template="react-ts"
-              theme={mode === "dark" ? "dark" : "light"}
-              options={{
-                externalResources: [...PLAYGROUND_EXTERNAL_RESOURCES],
-                // Same rationale as FocusedFrame — even though tiles
-                // don't surface a code editor, the bundler's "which
-                // file am I primarily working on" heuristic is a
-                // touch faster when we point it at App.tsx directly.
-                visibleFiles: ["/App.tsx"],
-                activeFile: "/App.tsx",
-              }}
-              customSetup={{
-                dependencies: { ...PLAYGROUND_DEPENDENCIES },
-                entry: "/index.tsx",
-              }}
-              files={sandpackFiles}
-              style={
-                {
-                  height: "100%",
-                  width: "100%",
-                  "--sp-layout-height": "100%",
-                } as React.CSSProperties
-              }
-            >
-              <SandpackLayout
-                style={{ height: "100%", width: "100%", border: 0 }}
-              >
-                <SandpackPreview
-                  showOpenInCodeSandbox={false}
-                  showRefreshButton={false}
-                  style={{ height: "100%", width: "100%", flex: 1 }}
-                />
-              </SandpackLayout>
-            </SandpackProvider>
-          </SandpackErrorBoundary>
+          {rendererMode === "fast" ? (
+            <TileFastMount
+              appSource={appSource}
+              theme={theme}
+              mode={mode}
+            />
+          ) : (
+            <TileSandpackMount
+              sandpackFiles={sandpackFiles}
+              preparedSource={preparedSource}
+              mode={mode}
+            />
+          )}
         </div>
 
         {/* Transparent interaction shield. The scaled iframe wrapper
@@ -1295,91 +1159,13 @@ function ScreenTile({
   );
 }
 
-// ─── Shared overlays + error boundary (mirrored from StudioPreview) ───
+// ─── Shared overlays ──────────────────────────────────────────────────
 //
-// Kept inline rather than exported from studio-preview.tsx — cheaper to
-// duplicate three small components than to export + import them and
-// tangle the module graph. If StudioPreview is eventually deleted, the
-// copies here become the canonical versions.
-
-interface SandpackErrorBoundaryProps {
-  resetKey: string;
-  children: React.ReactNode;
-}
-interface SandpackErrorBoundaryState {
-  error: Error | null;
-}
-class SandpackErrorBoundary extends React.Component<
-  SandpackErrorBoundaryProps,
-  SandpackErrorBoundaryState
-> {
-  state: SandpackErrorBoundaryState = { error: null };
-
-  static getDerivedStateFromError(error: Error): SandpackErrorBoundaryState {
-    return { error };
-  }
-
-  componentDidUpdate(prev: SandpackErrorBoundaryProps) {
-    if (prev.resetKey !== this.props.resetKey && this.state.error) {
-      this.setState({ error: null });
-    }
-  }
-
-  handleRetry = () => this.setState({ error: null });
-
-  render() {
-    if (this.state.error) {
-      return (
-        <SandpackFailure error={this.state.error} onRetry={this.handleRetry} />
-      );
-    }
-    return this.props.children;
-  }
-}
-
-function SandpackFailure({
-  error,
-  onRetry,
-}: {
-  error: Error;
-  onRetry: () => void;
-}) {
-  const cleaned = error.message
-    .replace(/^\/?App\.tsx:\s*/, "")
-    .replace(
-      /^\s*Cannot assign to read only property 'message' of object '[^']+':\s*/,
-      ""
-    );
-  return (
-    <div className="h-full overflow-auto p-6 text-sm">
-      <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive-soft p-4 text-destructive-deep">
-        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-        <div className="flex-1 min-w-0 space-y-2">
-          <div className="font-medium leading-tight">
-            Preview couldn&rsquo;t compile the latest snippet
-          </div>
-          <pre className="text-xs whitespace-pre-wrap break-words font-mono opacity-90 bg-background/40 border border-border rounded px-2 py-1.5">
-            {cleaned}
-          </pre>
-          <p className="text-xs opacity-80">
-            Usually this means the model emitted malformed JSX (common cause:
-            a <code className="font-mono">className</code> attribute wrapped
-            across lines). Asking the chat to &ldquo;fix the syntax&rdquo; or
-            regenerate should clear it.
-          </p>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Retry
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// Renderer-agnostic — EmptyPreview and GeneratingPreview paint above
+// whichever frame (Sandpack or fast) is mounted beneath them. The
+// Sandpack-specific error boundary and its failure view have moved to
+// ./sandpack-frame so they travel with the code that can actually throw
+// a bundler error.
 
 function EmptyPreview() {
   return (
