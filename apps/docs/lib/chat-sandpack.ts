@@ -1188,7 +1188,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     <input
       type={type}
       className={cn(
-        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        // Use explicit pl-3 + pr-3 instead of the px-3 shorthand so
+        // consumer overrides like \`pl-7\` (search input with a leading
+        // icon) win via twMerge. twMerge doesn't dedupe px-* vs pl-*
+        // (separate conflict groups), so a leftover px-3 would override
+        // pl-7 via CSS source order. Kept in 1:1 parity with
+        // packages/ui/components/ui/input.tsx.
+        "flex h-9 w-full rounded-md border border-input bg-transparent pl-3 pr-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
         className
       )}
       ref={ref}
