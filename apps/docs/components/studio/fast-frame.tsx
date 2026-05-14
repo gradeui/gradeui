@@ -45,6 +45,7 @@ import {
   prepareAppSource,
   type StudioSelection,
 } from "@/lib/chat-sandpack";
+import { CodeView } from "@/components/studio/code-view";
 import { themeToCSSVars } from "@/lib/themes/apply";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { ViewportWidth } from "@/components/studio/sandpack-frame";
@@ -226,16 +227,11 @@ export function FocusedFastMount({
   );
 
   if (view === "code") {
-    return (
-      <div className="h-full overflow-auto bg-muted/20 p-4">
-        {/* Fast mode doesn't ship a code editor — just a read-only view
-            of the prepared source. For editing, flip to Sandpack where
-            SandpackCodeEditor is wired up. */}
-        <pre className="text-xs font-mono whitespace-pre leading-relaxed">
-          {preparedForCodeView}
-        </pre>
-      </div>
-    );
+    // CodeView ships prism-react-renderer highlighting + the
+    // data-lenis-prevent attribute that lets trackpad scroll work
+    // inside this panel. Fast mode is still read-only; for editing,
+    // flip to Sandpack where SandpackCodeEditor is wired up.
+    return <CodeView code={preparedForCodeView} language="tsx" />;
   }
 
   // Preview view — scope by viewport-width artboard to match Sandpack's
