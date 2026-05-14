@@ -21,6 +21,7 @@
  * preview uses.
  */
 
+import { compressToBase64 } from "lz-string";
 import {
   PLAYGROUND_FONTS_URL,
   PLAYGROUND_FONT_VARS,
@@ -278,50 +279,67 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 }
 
 /**
- * POST the files payload to CodeSandbox's define API and open the resulting
- * sandbox in a new tab. Opens the tab up-front (synchronously with the
- * click) so popup blockers don't swallow it, then redirects it once the API
- * returns the sandbox_id.
+ * Submit the files payload to CodeSandbox's define endpoint via a real
+ * `<form>` POST with `target="_blank"`. We *had* a fetch-based version that
+ * pre-opened a popup and redirected it once the API returned the sandbox_id,
+ * but that path silently fails from `localhost:3000` (and any other origin
+ * Chrome treats as cross-site) — Chrome's CORS preflight on the
+ * `Content-Type: application/json` POST is rejected and the fetch surfaces
+ * as `TypeError: Failed to fetch`, after which the blank popup just sits
+ * there with `about:blank`.
  *
- * Throws on network/API failure — caller should catch and surface.
+ * The form submission path doesn't preflight — it's a same-shape request
+ * as if the user clicked a link. CodeSandbox in turn returns a 302 to the
+ * fresh sandbox URL, so the target="_blank" tab navigates straight to the
+ * editor.
+ *
+ * Payload encoding follows CodeSandbox's own `getParameters` helper exactly:
+ * lz-string `compressToBase64` of the JSON, then URL-safe (`+` → `-`,
+ * `/` → `_`, strip trailing `=`). CodeSandbox specifically rejects raw
+ * DEFLATE / `CompressionStream` payloads with
+ * "Unable to process params for /define".
+ *
+ * Throws on missing browser environment — caller should catch and surface.
  */
-export async function openInCodeSandboxNpm(params: {
+export function openInCodeSandboxNpm(params: {
   appSource: string;
   theme: GeneratedTheme;
   mode: "light" | "dark";
-}): Promise<string> {
-  const files = buildNpmSandboxFiles(params);
-
-  // Open a blank tab first — browsers only treat window.open as user-initiated
-  // if it's called directly in the click handler, not after an await.
-  const win = typeof window !== "undefined" ? window.open("", "_blank") : null;
-
-  try {
-    const res = await fetch(
-      "https://codesandbox.io/api/v1/sandboxes/define?json=1",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ files }),
-      }
-    );
-    if (!res.ok) {
-      throw new Error(`CodeSandbox API ${res.status}`);
-    }
-    const { sandbox_id } = (await res.json()) as { sandbox_id: string };
-    const url = `https://codesandbox.io/s/${sandbox_id}`;
-    if (win) {
-      win.location.href = url;
-    } else if (typeof window !== "undefined") {
-      window.open(url, "_blank");
-    }
-    return url;
-  } catch (err) {
-    // Close the blank tab so the user isn't stuck with a stray window.
-    if (win) win.close();
-    throw err;
+}): void {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    throw new Error("openInCodeSandboxNpm requires a browser environment");
   }
+  const files = buildNpmSandboxFiles(params);
+  const parameters = encodeParameters({ files });
+
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "https://codesandbox.io/api/v1/sandboxes/define";
+  form.target = "_blank";
+  form.style.display = "none";
+
+  const parametersInput = document.createElement("input");
+  parametersInput.type = "hidden";
+  parametersInput.name = "parameters";
+  parametersInput.value = parameters;
+  form.appendChild(parametersInput);
+
+  // `query.file` hints CodeSandbox at which file to open by default — saves
+  // the user a click to find the snippet they actually authored.
+  const queryInput = document.createElement("input");
+  queryInput.type = "hidden";
+  queryInput.name = "query";
+  queryInput.value = "file=/src/App.tsx";
+  form.appendChild(queryInput);
+
+  document.body.appendChild(form);
+  form.submit();
+  document.body.removeChild(form);
+}
+
+function encodeParameters(payload: unknown): string {
+  return compressToBase64(JSON.stringify(payload))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
