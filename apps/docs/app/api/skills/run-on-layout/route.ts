@@ -117,7 +117,7 @@ async function buildA11yReviewerInput(
   const widest = ctx.manifest ? widestSnapshot(ctx.manifest) : null;
   return {
     markup: ctx.scaffold,
-    outputImage: widest ? await snapshotToDataUrl(widest.file) : undefined,
+    outputImage: widest?.file ? await snapshotToDataUrl(widest.file) : undefined,
     threshold: ctx.threshold ?? 85,
     waivers: undefined,
   };
@@ -130,7 +130,7 @@ async function buildQaReviewerInput(
   const widest = ctx.manifest ? widestSnapshot(ctx.manifest) : null;
   return {
     markup: ctx.scaffold,
-    outputImage: widest ? await snapshotToDataUrl(widest.file) : undefined,
+    outputImage: widest?.file ? await snapshotToDataUrl(widest.file) : undefined,
     pageBrief: `Reference layout: ${layoutId}`,
     threshold: ctx.threshold ?? 90,
   };
