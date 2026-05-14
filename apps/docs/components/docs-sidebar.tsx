@@ -138,6 +138,12 @@ const componentsNav: NavSection[] = [
     ],
   },
   {
+    title: "Map",
+    items: [
+      { title: "Map", href: "/components/map" },
+    ],
+  },
+  {
     title: "Blocks",
     items: [
       { title: "AI Chat", href: "/components/ai-chat" },

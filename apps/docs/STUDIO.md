@@ -23,9 +23,9 @@ apps/docs/
 
 ### The allow-list
 
-`apps/docs/lib/chat-sandpack.ts` — the `ALLOWED_COMPONENTS` array (around line 1573) is the single source of truth for what the model is told it may import from `@gradeui/ui`. Names in this array get embedded in the system prompt; anything not listed the model has been told to avoid.
+The canonical source moved into the **playbook package** — see "Playbook — the model's knowledge layer" below for the full picture. Short answer: `packages/studio/src/playbook/components/allowlist.ts` exports `ALLOWED_COMPONENTS`. `apps/docs/lib/chat-sandpack.ts` re-exports it for back-compat (`import { ALLOWED_COMPONENTS } from "@/lib/chat-sandpack"` still works).
 
-A few feet below that (around line 1608) is the **GATED OFF** block — names that exist in the library's barrel but haven't shipped to npm yet. They sit there commented-out as a reminder to flip them back on after the next publish.
+`chat-sandpack.ts` is still where the **Sandpack virtual filesystem** lives (`componentFiles`, `pageFiles`, `utilityFiles`). The allow-list and the virtual filesystem must stay in sync — adding a name to `ALLOWED_COMPONENTS` without a matching shim crashes the iframe with "Element type is invalid".
 
 ### The Sandpack shims
 
@@ -41,21 +41,110 @@ Historical note: this was originally an inline `<script>` baked into `/public/in
 
 `buildStudioSystemPrompt()` in `chat-sandpack.ts`. Takes the caller-supplied theme / reference context / selection block and stitches them into the base instructions. When the model starts hallucinating imports or ignoring rules, this is where you tighten the screws.
 
-## The publish-lag gotcha (important)
+## Playbook — the model's knowledge layer
 
-**Symptom:** You add a new component to `packages/ui/lib/index.ts`, restart dev, type a Studio prompt that uses it, and Sandpack crashes with:
+`@gradeui/studio` (in `packages/studio/`) owns everything the model is *told* about the design system — the allow-list, the per-component usage notes, and the seedable reference apps. Three primitives, one folder:
+
+```
+packages/studio/src/playbook/
+├── components/
+│   ├── allowlist.ts                # ALLOWED_COMPONENTS, ALLOWED_EXTERNAL_IMPORTS, PINNED_COMPONENTS
+│   └── sidecars.generated.ts       # AUTO-GENERATED — do NOT edit by hand
+├── sidecars/
+│   ├── card.md                     # one .md per allowlisted component
+│   ├── button.md
+│   ├── map.md
+│   └── …                            # frontmatter + canonical example + anti-patterns
+└── layouts/
+    ├── index.ts                    # REFERENCE_LAYOUTS registry + MISSING_COMPONENTS
+    ├── scaffolds.generated.ts      # AUTO-GENERATED — do NOT edit by hand
+    └── scaffolds/
+        ├── ecommerce-listing.jsx
+        ├── airbnb-listings.jsx
+        └── …                        # one .jsx per reference layout
+```
+
+The two `*.generated.ts` files are inlined-string maps so the playbook has zero filesystem deps at runtime (it can be imported by both server and Sandpack-in-iframe code paths). Always edit the source `.md` / `.jsx` and re-run the generator — never edit the generated file.
+
+| You want to… | Edit | Then run |
+|---|---|---|
+| add a component to the model's allow-list | `playbook/components/allowlist.ts` (the `ALLOWED_COMPONENTS` array) — also add the shim in `chat-sandpack.ts` `componentFiles` | nothing; pure TS |
+| document how to use a component | `playbook/sidecars/<kebab-name>.md` | `pnpm -F @gradeui/studio generate:sidecars` |
+| seed a full reference app | `playbook/layouts/scaffolds/<kebab-id>.jsx` + entry in `playbook/layouts/index.ts` `REFERENCE_LAYOUTS` | `pnpm -F @gradeui/studio generate:scaffolds` |
+
+### Component sidecars — `playbook/sidecars/*.md`
+
+One markdown file per allowlisted component. YAML frontmatter (name, import, subcomponents, props, when_to_use, composes_with, optional aliases / variants / sizes / notes) followed by a short prose body with one canonical JSX example and (optionally) a block of anti-patterns. The retrieval layer scans the user's prompt against frontmatter `name` + `aliases` and pins the matching sidecar(s) under a "REFERENCE COMPONENTS" block in the system prompt.
+
+**Authoring rules:**
+
+- Keep them tight. ~200 words is the median. The full file goes into the prompt verbatim, every byte costs tokens.
+- Lead with frontmatter, not prose. `when_to_use` is the single most-read field.
+- One JSX example. Pick the canonical shape, not the kitchen sink.
+- Anti-patterns are gold. "DO NOT pass `{lat, lng}` objects" steers the model harder than "Coords are tuples".
+
+### Reference layouts — `playbook/layouts/scaffolds/*.jsx` + registry
+
+Full `<App>` JSX scaffolds the model can be **seeded with** for common app shapes — ecommerce listing, SaaS user editor, data table with filters, music app, TV streaming, confetti celebration, airbnb-style stays. Unlike sidecars (which document a single component), reference layouts are runnable apps. The retrieval pass tag-matches the user's prompt and pins the best layout under a "REFERENCE LAYOUT" block, so the model edits a working scaffold rather than synthesising one from scratch — far less surface area for errors.
+
+**Authoring a new layout:**
+
+1. Drop a `kebab-case-id.jsx` file in `playbook/layouts/scaffolds/`. Single `App` component, `export default App`. The harness drops it into `/App.tsx` verbatim.
+2. Run `pnpm -F @gradeui/studio generate:scaffolds`.
+3. Append an entry to `REFERENCE_LAYOUTS` in `playbook/layouts/index.ts` — `id` must match the filename, `tags` are lowercased soft-match tokens (think "words the user would say when asking for this").
+
+**Authoring rules** (same constraints the existing scaffolds follow):
+
+- Use ONLY components from `ALLOWED_COMPONENTS`. Anything else fails the Sandpack harness.
+- Reach for layout primitives (`Stack`, `Row`, `Grid`, `Flex`, `AppShell`) over raw utility classes — these scaffolds double as training data the model mimics.
+- Semantic tokens only: `bg-background`, `bg-muted`, `bg-card`, `text-foreground`, `border-border`. No `bg-blue-500` — strands the layout outside the theme.
+- No real images. The Sandpack sandbox has no asset pipeline; use tinted gradients on `MediaSurface` or `Card` (`bg-gradient-to-br from-primary/30 via-muted to-accent/20`) and let consumers swap to `<img>` later.
+- Keep scaffolds under ~120 lines. The goal is a runway, not a finished app.
+
+**Parked layouts.** When a layout idea blocks on a primitive that doesn't exist yet, park it in the comment block at the bottom of `playbook/layouts/index.ts` ("Reference layouts we WANT to ship but that depend on a missing component") instead of writing a half-broken scaffold. Pair the entry with the missing primitive in `MISSING_COMPONENTS` directly above. Once the primitive ships, the parked entry becomes a cheap follow-up — author the `.jsx`, lift the entry into `REFERENCE_LAYOUTS`, delete the parked comment. `airbnb-listings` was the worked example of this pattern (parked while Map was missing → shipped alongside `<Map>`).
+
+**Retrieval ordering.** `tags` are exact-substring lowercase matches against the user prompt. When the registry grows past ~15 entries we'll switch to a stemmed index; until then, give every layout 8–15 tags covering synonyms and adjacent domains (`airbnb-listings` tags include `listings`, `real estate`, `fleet`, `logistics` because the same shape applies). Best-scoring scaffold wins; ties broken by brevity.
+
+## Fast Frame — the current renderer (and what it fixes)
+
+Studio's preview no longer uses a Sandpack iframe with a remote npm install. It uses **Fast Frame** — `apps/docs/app/fast-sandbox/page.tsx` — a normal Next route loaded in an iframe by `apps/docs/components/studio/fast-frame.tsx`. The Fast Frame page statically imports the entire `@gradeui/ui` namespace at build time:
+
+```ts
+// apps/docs/app/fast-sandbox/page.tsx
+import * as GradeuiUi from "@gradeui/ui";
+import * as LucideReact from "lucide-react";
+import * as Recharts from "recharts";
+// …everything the preview can reach for, all eager imports
+```
+
+The model-emitted JSX is compiled in the iframe with sucrase, then any `import` paths the snippet uses (`@gradeui/ui`, `@gradeui/ui/...`, `lucide-react`, `react`, etc.) are resolved against those pre-loaded namespace modules. No npm fetch, no Sandpack, no per-compile network round-trip. First page load is one Next chunk; subsequent compiles are instant.
+
+**The big practical difference from the old Sandpack flow:** Fast Frame's `@gradeui/ui` import resolves through the **workspace symlink** (`apps/docs/node_modules/@gradeui/ui` → `packages/ui/`) — not from npm. So adding a component to the barrel and using it in Studio no longer requires a publish. But:
+
+## The dist-rebuild gotcha (current — replaced the old publish-lag)
+
+**Symptom:** You add a new component to `packages/ui/lib/index.ts`, add it to `ALLOWED_COMPONENTS`, restart dev, prompt Studio to use it, and Fast Frame crashes with:
 
 > Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined.
 
-**Why it happens:** The Sandpack iframe is configured to install `@gradeui/ui@latest` from the npm registry — not from the workspace sibling. Adding an export to the barrel in this repo does **not** make that export available inside Studio until a changeset is cut, the publish workflow runs, and the new version is on npm. Until then, the model sees the name in `ALLOWED_COMPONENTS`, cheerfully emits `import { Thing } from "@gradeui/ui"`, the iframe's `node_modules` copy of the package has no `Thing` export, it resolves to `undefined`, and React blows up.
+**Why it happens:** Next's module resolver follows `packages/ui/package.json` → `exports["."].import` → `./dist/index.mjs`. Even though `@gradeui/ui` is a workspace dep, Next reads the **built dist**, not source. If you added an export to `lib/index.ts` and didn't rebuild, the dist is stale and the new export resolves to `undefined`. Fast Frame's namespace import is missing the name, the snippet's `import { NewThing } from "@gradeui/ui"` resolves to undefined, React errors.
 
 **What to do about it:**
 
-1. **Simple fix (default):** keep `ALLOWED_COMPONENTS` additions in a **separate PR** that lands _after_ the publish. Merge the component itself + changeset first, wait for the release PR to publish, then open the follow-up PR that advertises the new names to the model.
-2. **If you already merged it and now Studio is broken:** comment the offending names out of `ALLOWED_COMPONENTS` (see the `// GATED OFF` block for the pattern), ship a hotfix, flip them back on after the next publish.
-3. **If this becomes a recurring pain:** introduce a `PUBLISHED_SINCE` gate — a flag in `chat-sandpack.ts` that the release commit flips, with `ALLOWED_COMPONENTS` filtering by it. Worth building the day this catches you a second time.
+1. **Default workflow when adding a new component:** run `pnpm -F @gradeui/ui dev` in a second terminal alongside your usual `pnpm dev`. That spins up tsup in `--watch` mode, which keeps `dist/index.mjs` fresh on every save. With both terminals running, the workspace flow feels like editing source directly.
+2. **One-shot fix when dev is already broken:** `pnpm -F @gradeui/ui build` (rebuilds once), then refresh Studio. No need to restart Next dev — its workspace HMR picks up the new dist.
+3. **`@gradeui/ui` peer-dep changes** (e.g. adding `maplibre-gl` as an optional peer) require an `pnpm install` at the repo root before the rebuild lands — pnpm has to refresh the workspace's peer-dep graph.
 
-Rule of thumb: **whenever you touch the barrel, the Studio allow-list is one release behind you.** Treat them as coupled — changeset, release, _then_ allow-list bump.
+**Rule of thumb:** **whenever you touch `packages/ui` source, the dist is one build behind you.** Run `pnpm -F @gradeui/ui dev` in watch mode for any session that involves editing components.
+
+## The publish-lag gotcha (still applies to two routes)
+
+Two routes have NOT migrated off Sandpack and still consume `@gradeui/ui@latest` from npm:
+
+- `apps/docs/app/layout-preview/[id]/page.tsx` — the chromeless route Playwright hits for thumbnail capture (`scripts/capture-layout-thumbnails.mjs`). Won't render a layout that uses an unpublished component.
+- Anything else still wrapped in `SandpackProvider` (grep for it before assuming).
+
+For those routes, the original gotcha holds: a barrel addition isn't visible until a changeset is cut, the release workflow runs, and the new version is live on npm. The mitigations are the same as before — gate the names in `ALLOWED_COMPONENTS` until publish, or pair the barrel addition with a release. Note though: this only matters for Sandpack-backed surfaces. For day-to-day Studio dev (Fast Frame), no publish needed.
 
 ## Per-design state model
 
@@ -185,3 +274,6 @@ Things deliberately out of scope for v1 of highlight-and-comment, captured here 
 
 - `gradeui/CLAUDE.md` — monorepo orientation (tiering model, publish pipeline, repo-wide pitfalls)
 - `packages/ui/CLAUDE.md` — component-layer reference (the model's prompt inherits a lot of its rules from this file's conventions)
+- `packages/studio/src/playbook/layouts/index.ts` — the authoritative `REFERENCE_LAYOUTS` registry + `MISSING_COMPONENTS` parking lot. The header comment in that file is the long-form authoring rulebook; this STUDIO.md gives you the orientation, that file gives you the line-by-line constraints.
+- `packages/studio/src/playbook/components/allowlist.ts` — `ALLOWED_COMPONENTS`, `ALLOWED_EXTERNAL_IMPORTS`, `PINNED_COMPONENTS`.
+- `packages/ui/MAP.md` — worked example of a pre-implementation design doc; same pattern works for any non-trivial new primitive.

@@ -8,7 +8,7 @@ import { User, Settings, LogOut, HelpCircle, CreditCard, Globe, Moon, Sun } from
 const topMenuProps = [
   {
     name: "breadcrumbs",
-    type: "BreadcrumbItem[]",
+    type: "TopMenuBreadcrumbItem[]",
     default: "[]",
     description: "Breadcrumb navigation items",
   },
@@ -285,7 +285,7 @@ export default function TopMenuPage() {
         </h2>
         <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
           <pre>
-            <code>{`interface BreadcrumbItem {
+            <code>{`interface TopMenuBreadcrumbItem {
   label: string
   href?: string
 }`}</code>

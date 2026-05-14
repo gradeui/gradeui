@@ -11,15 +11,72 @@
  */
 
 import { generateTheme } from "./generator";
-import { BUILT_IN_INPUTS, calmInput } from "./inputs";
+import { BUILT_IN_INPUTS, studioInput } from "./inputs";
 import type { GeneratedTheme, ThemeInput } from "./types";
+
+/**
+ * Studio's "black buttons on cream" look needs the primary token to
+ * land at the dark end of the neutral ramp — the generator's default
+ * pulls primary from step 500 (L≈0.61), which is mid-grey when the
+ * primary ramp is monochromatic. This post-process retargets the
+ * primary token to neutral 900 in the light modes and to neutral 100
+ * in the dark modes, plus matching foreground / ring tokens. Applied
+ * only to the studio theme; other themes pass through untouched.
+ *
+ * Lives in the registry rather than the generator because it's a
+ * theme-specific override, not a generator-level concern — promoting
+ * it into the generator would be the right move once we have a
+ * second theme that wants this shape, ideally via a declarative
+ * `tokenOverrides` field on `ThemeInput`.
+ */
+function applyStudioOverrides(theme: GeneratedTheme): GeneratedTheme {
+  const n = theme.ramps.neutral;
+  return {
+    ...theme,
+    colors: {
+      ...theme.colors,
+      light: {
+        ...theme.colors.light,
+        // Near-black on cream. n[900] is a very dark warm-grey
+        // (L≈0.245 with subtle chroma) — reads as black against the
+        // cream background while keeping a hint of warmth so it
+        // doesn't fight the surface tint.
+        primary: n[900],
+        primaryForeground: n[50],
+        // Focus ring slightly less aggressive than primary so it's
+        // visible without looking like a duplicate button outline.
+        ring: n[700],
+      },
+      superLight: {
+        ...theme.colors.superLight,
+        primary: n[900],
+        primaryForeground: n[50],
+        ring: n[700],
+      },
+      dark: {
+        ...theme.colors.dark,
+        // In dark mode, flip — light buttons on dark surface so the
+        // "primary stands out from the background" intent survives.
+        primary: n[100],
+        primaryForeground: n[950],
+        ring: n[300],
+      },
+      superDark: {
+        ...theme.colors.superDark,
+        primary: n[100],
+        primaryForeground: n[950],
+        ring: n[300],
+      },
+    },
+  };
+}
 
 // Public re-exports
 export * from "./types";
 export { generateTheme } from "./generator";
-export { themeToCSSVars, applyThemeToRoot } from "./apply";
+export { themeToCSSVars, applyThemeToRoot, applyThemeToElement } from "./apply";
 export type { ModeName } from "./oklch";
-export { BUILT_IN_INPUTS, calmInput, energyInput } from "./inputs";
+export { BUILT_IN_INPUTS, studioInput, calmInput, energyInput } from "./inputs";
 export { generateThemeMarkdown, downloadThemeMarkdown } from "./export-md";
 export { oklchToHex, useOklchHexes, formatOklch } from "./oklch-to-hex";
 
@@ -27,12 +84,24 @@ export { oklchToHex, useOklchHexes, formatOklch } from "./oklch-to-hex";
  * Generated built-in themes, keyed by id. These are pure — generated once
  * at module load and shared across the app. Adding a new built-in means
  * updating inputs.ts; this map follows automatically.
+ *
+ * The Studio theme gets a post-process pass (`applyStudioOverrides`) so
+ * its primary token lands at the dark end of the neutral ramp — see
+ * the helper's doc above for the rationale.
  */
 export const builtInThemes: Record<string, GeneratedTheme> = Object.fromEntries(
-  BUILT_IN_INPUTS.map((input) => [input.id, generateTheme(input)])
+  BUILT_IN_INPUTS.map((input) => {
+    const generated = generateTheme(input);
+    const finalized =
+      input.id === "studio" ? applyStudioOverrides(generated) : generated;
+    return [input.id, finalized];
+  }),
 );
 
-export const defaultThemeId = calmInput.id;
+// Studio is the app's chrome theme — see `inputs.ts` for the rationale.
+// `defaultThemeId` is what `GradeThemeProvider` lands on when there's
+// nothing in localStorage (i.e. fresh visitor / cleared storage).
+export const defaultThemeId = studioInput.id;
 
 /**
  * Look up a theme by id — built-in or user-built. User themes are read

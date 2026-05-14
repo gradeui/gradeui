@@ -5,6 +5,7 @@ export const componentsList = [
   { name: "Row", href: "/components/row", category: "Layout" },
   { name: "Grid", href: "/components/grid", category: "Layout" },
   { name: "Flex", href: "/components/flex", category: "Layout" },
+  { name: "Resizable", href: "/components/resizable", category: "Layout" },
   // Forms
   { name: "Button", href: "/components/button", category: "Forms" },
   { name: "Input", href: "/components/input", category: "Forms" },
@@ -49,6 +50,8 @@ export const componentsList = [
   { name: "Three Scene", href: "/components/three-scene", category: "Media" },
   { name: "Shader Preset Preview", href: "/components/shader-preset-preview", category: "Media" },
   { name: "Shader Preset Picker", href: "/components/shader-preset-picker", category: "Media" },
+  // Map
+  { name: "Map", href: "/components/map", category: "Map" },
   // Blocks
   { name: "AI Chat", href: "/components/ai-chat", category: "Blocks" },
 ];

@@ -1,0 +1,27 @@
+{
+  "layoutId": "airbnb-listings",
+  "capturedAt": "2026-04-28T13:36:57.703Z",
+  "base": "http://localhost:3000",
+  "snapshots": [
+    {
+      "viewportWidth": 375,
+      "file": "airbnb-listings/375.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 768,
+      "file": "airbnb-listings/768.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 1024,
+      "file": "airbnb-listings/1024.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 1440,
+      "file": "airbnb-listings/1440.png",
+      "consoleErrors": []
+    }
+  ]
+}

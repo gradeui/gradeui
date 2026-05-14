@@ -10,14 +10,23 @@ export { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
 
 export {
   AppShell,
+  AppShellHeader,
   AppShellNav,
+  AppShellAside,
   AppShellMain,
+  AppShellFooter,
   shellVariants,
+  headerVariants as appShellHeaderVariants,
   navVariants as appShellNavVariants,
+  asideVariants as appShellAsideVariants,
   mainVariants as appShellMainVariants,
+  footerVariants as appShellFooterVariants,
   type AppShellProps,
+  type AppShellHeaderProps,
   type AppShellNavProps,
+  type AppShellAsideProps,
   type AppShellMainProps,
+  type AppShellFooterProps,
 } from "../components/ui/app-shell";
 
 // Avatar — the Radix-backed rounded image + fallback initials combo. The
@@ -103,6 +112,12 @@ export { Progress } from "../components/ui/progress";
 
 export { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 
+export {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "../components/ui/resizable";
+
 export { Row, rowVariants, type RowProps } from "../components/ui/row";
 
 export { Grid, gridVariants, type GridProps } from "../components/ui/grid";
@@ -158,9 +173,22 @@ export {
   TableRow,
 } from "../components/ui/table";
 
+export {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "../components/ui/breadcrumb";
+
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 
 export { Textarea } from "../components/ui/textarea";
+
+export { Toggle, toggleVariants } from "../components/ui/toggle";
+export { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
 
 // Navigation components
 export {
@@ -175,7 +203,11 @@ export {
   TopMenuUser,
   TopMenuUserItem,
   TopMenuUserSection,
-  type BreadcrumbItem,
+  // TopMenu's inherited breadcrumb-data shape — namespaced so it
+  // doesn't clash with the `BreadcrumbItem` component from the new
+  // composable Breadcrumb primitive (which is the canonical one
+  // going forward).
+  type TopMenuBreadcrumbItem,
   type TopMenuProps,
   type TopMenuUserProps,
   type TopMenuUserItemProps,
@@ -202,6 +234,23 @@ export {
   TooltipProvider,
   TooltipTrigger,
 } from "../components/ui/tooltip";
+
+// Map — provider-agnostic map primitive (MapLibre / Mapbox / Google).
+// All three SDKs are optional peer deps; the component lazy-loads the
+// adapter for the chosen `provider`. See packages/ui/MAP.md for the design
+// doc and packages/studio/src/playbook/components/map.md for model-facing
+// usage notes.
+export {
+  Map,
+  MapMarker,
+  type Coords,
+  type MapAppearance,
+  type MapError,
+  type MapErrorCode,
+  type MapHandle,
+  type MapMarkerProps,
+  type MapProps,
+} from "../components/ui/map";
 
 // Media components
 export {

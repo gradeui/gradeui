@@ -142,7 +142,7 @@ export {
   TopMenuUser,
   TopMenuUserItem,
   TopMenuUserSection,
-  type BreadcrumbItem,
+  type TopMenuBreadcrumbItem,
   type TopMenuProps,
   type TopMenuUserProps,
   type TopMenuUserItemProps,
@@ -199,6 +199,7 @@ export {
   getTheme,
   listThemes,
   // Built-in inputs (for round-trip editing in the theme builder)
+  studioInput,
   calmInput,
   energyInput,
   BUILT_IN_INPUTS,

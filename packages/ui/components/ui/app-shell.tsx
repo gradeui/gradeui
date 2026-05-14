@@ -5,40 +5,65 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /**
- * AppShell — top-level page scaffold for an app-like layout.
+ * AppShell — top-level page scaffold for an app-like or marketing layout.
  *
- * The Studio was missing a named "app layout" primitive — without one,
- * agent-generated pages either freestyle grids or reinvent the nav-plus-
- * content structure every time. AppShell gives them one component with a
- * small, bounded set of layout variants so vibe-coded prototypes land in a
- * recognisable shape: a nav region (top, side, or none) plus a main region
- * that optionally constrains its content width.
+ * Provides five slots arranged via CSS-grid template areas:
+ *
+ *   ┌─────────── Header (full bleed) ───────────┐
+ *   │ Nav │   Aside   │      Main               │
+ *   └─────────── Footer (full bleed) ───────────┘
+ *
+ * Header and Footer always span the full width and sit at the very top /
+ * very bottom of the shell — useful for marketing pages, brand bars, site
+ * chrome. `nav` chooses how the body row is split:
+ *
+ * - `none`        — Main only (a marketing page or a single-column app)
+ * - `top`         — Main below an in-app top-nav row (TopMenu)
+ * - `side`        — Nav rail + Main (classic app layout)
+ * - `three-pane`  — Nav rail + fixed Aside + flex Main (Slack/Mail/Notion
+ *                   shape; aside width via --rds-app-shell-aside, default 320px)
+ *
+ * Each slot is assigned a fixed `grid-area` (header/nav/aside/main/footer),
+ * so the **JSX child order doesn't matter** — drop slots in any order and
+ * the grid sorts them.
  *
  * It is deliberately *just* structure: no collapse state, no context, no
- * runtime JS. Nav content is whatever the caller drops in — a SideMenu,
- * a TopMenu, or a hand-rolled `<nav>`. Keeping it dumb means it renders
- * fine on the server and can be styled by consumers without fighting a
- * behaviour model.
+ * runtime JS. Nav content is whatever the caller drops in — a SideMenu, a
+ * TopMenu, a hand-rolled `<nav>`. For drag-to-resize columns inside the
+ * body, compose this with `Resizable` instead of using a static grid.
  *
  * Variants:
- * - `nav`       — "none" | "top" | "side". Chooses the grid structure.
- * - `maxWidth`  — "full" | "container". Caps the main region width for
- *                 marketing-style pages without the caller having to wrap
- *                 their content in a max-w-* div.
- * - `sticky`    — boolean. Sticks top nav to the viewport top / side nav
- *                 to the viewport when the page scrolls. Sensible default
- *                 for app chrome.
+ * - `nav`       — "none" | "top" | "side" | "three-pane"
+ * - `maxWidth`  — Main slot only: "full" | "container" caps reading width
+ *                 for marketing-style content.
+ * - `sticky`    — Nav slot, Header slot. Pin to the viewport on scroll.
  */
-const shellVariants = cva("rds-app-shell min-h-screen w-full bg-background text-foreground", {
+const shellVariants = cva(
+  "rds-app-shell min-h-screen w-full bg-background text-foreground grid",
+  {
+    variants: {
+      nav: {
+        none: "",
+        top: "",
+        side: "",
+        "three-pane": "",
+      },
+    },
+    defaultVariants: {
+      nav: "none",
+    },
+  }
+);
+
+const headerVariants = cva("rds-app-shell-header", {
   variants: {
-    nav: {
-      none: "block",
-      top: "grid grid-rows-[auto_1fr]",
-      side: "grid grid-cols-[auto_1fr]",
+    sticky: {
+      true: "sticky top-0 z-30",
+      false: "",
     },
   },
   defaultVariants: {
-    nav: "none",
+    sticky: false,
   },
 });
 
@@ -72,6 +97,18 @@ const navVariants = cva("rds-app-shell-nav", {
   },
 });
 
+const asideVariants = cva("rds-app-shell-aside min-w-0 border-r bg-background", {
+  variants: {
+    sticky: {
+      true: "sticky top-0 h-screen self-start",
+      false: "",
+    },
+  },
+  defaultVariants: {
+    sticky: false,
+  },
+});
+
 const mainVariants = cva("rds-app-shell-main min-w-0", {
   variants: {
     maxWidth: {
@@ -83,6 +120,8 @@ const mainVariants = cva("rds-app-shell-main min-w-0", {
     maxWidth: "full",
   },
 });
+
+const footerVariants = cva("rds-app-shell-footer border-t bg-background");
 
 // ---------- AppShell root ----------
 
@@ -110,6 +149,29 @@ const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
 );
 AppShell.displayName = "AppShell";
 
+// ---------- Header slot ----------
+
+export interface AppShellHeaderProps
+  extends React.HTMLAttributes<HTMLElement>,
+    VariantProps<typeof headerVariants> {
+  asChild?: boolean;
+}
+
+const AppShellHeader = React.forwardRef<HTMLElement, AppShellHeaderProps>(
+  ({ className, sticky, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "header";
+    return (
+      <Comp
+        ref={ref as React.Ref<HTMLElement>}
+        data-gds-part="app-shell-header"
+        className={cn(headerVariants({ sticky, className }))}
+        {...props}
+      />
+    );
+  }
+);
+AppShellHeader.displayName = "AppShellHeader";
+
 // ---------- Nav slot ----------
 
 export interface AppShellNavProps
@@ -134,6 +196,29 @@ const AppShellNav = React.forwardRef<HTMLElement, AppShellNavProps>(
 );
 AppShellNav.displayName = "AppShellNav";
 
+// ---------- Aside slot (middle column for nav="three-pane") ----------
+
+export interface AppShellAsideProps
+  extends React.HTMLAttributes<HTMLElement>,
+    VariantProps<typeof asideVariants> {
+  asChild?: boolean;
+}
+
+const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
+  ({ className, sticky, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "aside";
+    return (
+      <Comp
+        ref={ref as React.Ref<HTMLElement>}
+        data-gds-part="app-shell-aside"
+        className={cn(asideVariants({ sticky, className }))}
+        {...props}
+      />
+    );
+  }
+);
+AppShellAside.displayName = "AppShellAside";
+
 // ---------- Main slot ----------
 
 export interface AppShellMainProps
@@ -157,11 +242,40 @@ const AppShellMain = React.forwardRef<HTMLElement, AppShellMainProps>(
 );
 AppShellMain.displayName = "AppShellMain";
 
+// ---------- Footer slot ----------
+
+export interface AppShellFooterProps
+  extends React.HTMLAttributes<HTMLElement>,
+    VariantProps<typeof footerVariants> {
+  asChild?: boolean;
+}
+
+const AppShellFooter = React.forwardRef<HTMLElement, AppShellFooterProps>(
+  ({ className, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "footer";
+    return (
+      <Comp
+        ref={ref as React.Ref<HTMLElement>}
+        data-gds-part="app-shell-footer"
+        className={cn(footerVariants({ className }))}
+        {...props}
+      />
+    );
+  }
+);
+AppShellFooter.displayName = "AppShellFooter";
+
 export {
   AppShell,
+  AppShellHeader,
   AppShellNav,
+  AppShellAside,
   AppShellMain,
+  AppShellFooter,
   shellVariants,
+  headerVariants,
   navVariants,
+  asideVariants,
   mainVariants,
+  footerVariants,
 };

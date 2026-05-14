@@ -1,28 +1,46 @@
 "use client";
 
 /**
- * /studio — three-column design + theming workbench.
+ * /studio — three-column design workbench.
  *
  * Layout:
  *   ┌──────────────┬────────────────────────┬────────────────┐
  *   │              │                        │                │
- *   │  Chat        │  Live preview (theme   │  Theme builder │
- *   │  (left)      │  applied inline)       │  (right)       │
- *   │              │                        │                │
+ *   │  Chat        │  Live preview (screen  │  Tabbed panel  │
+ *   │  (left)      │  theme applied)        │  (Layout/Theme │
+ *   │              │                        │  /Notes)       │
  *   └──────────────┴────────────────────────┴────────────────┘
  *
- * Theme state is owned by a ThemeBuilderProvider wrapping the whole page
- * — the composable primitive set from components/theme-builder. We run
- * in `bindTo="draft"` so edits only affect the middle-column Sandpack
- * preview, not the docs site itself. The preview pulls the current
- * generated theme + mode from the provider's hooks, so slider drags
- * flow straight into the iframe.
+ * Two themes are in play, deliberately decoupled:
  *
- * Saving (via the builder footer) is handled by `handleThemeSave` below
- * — it mints a `user:…` id + "· Studio" name suffix and pushes through
- * saveAndActivate, which persists + switches the whole site over. The
- * provider's history rebases to the saved version so the Save button
- * goes quiet until the next edit.
+ *   - **Chrome theme** — owned by GradeThemeProvider higher up the
+ *     tree. Drives the docs site's CSS variables on `:root`. Switched
+ *     via the chrome popover (GradeThemeSwitcher) + the chrome's
+ *     ThemeToggle.
+ *   - **Screen theme** — owned by a page-level ThemeBuilderProvider
+ *     (`bindTo="draft"`). Drives the preview iframes only — no
+ *     `:root` mutation. The Theme tab in the right column is the
+ *     editor for this; the canvas reads `useGeneratedTheme()` and
+ *     `useThemeBuilderMode()` to pipe theme + mode into the iframe.
+ *
+ * The screen theme seeds once from whatever chrome theme is active
+ * when Studio mounts. After that, the two diverge — chrome changes
+ * don't reseed the screens, and screen edits don't touch the chrome.
+ *
+ * The right column is a tabbed shell (`StudioRightTabs`):
+ *
+ *   - Layout (default) — stage-aware: reference-layout starter picker
+ *     when the design is empty, page-structure placeholder when not,
+ *     the StudioSettingsPanel when a DS component is selected in the
+ *     preview.
+ *   - Theme — picker (registered themes) + the full builder controls
+ *     (mode, hue sliders, typography, shape, components). All wired
+ *     to the page-level ThemeBuilderProvider.
+ *   - Notes — per-design free-form text, owned by `notesByDesign`
+ *     here and threaded down.
+ *
+ * Dev-only toggles (renderer, user tier) live behind a gear-icon
+ * popover in the chrome (`StudioSettingsPopover`).
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -35,16 +53,16 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { GradeThemeSwitcher } from "@/components/grade-theme-switcher";
 import { StudioChat } from "@/components/studio/studio-chat";
 import { StudioCanvas } from "@/components/studio/studio-canvas";
-import { StudioSettingsPanel } from "@/components/studio/settings-panel";
+import { StudioRightTabs } from "@/components/studio/studio-right-tabs";
+import { StudioSettingsPopover } from "@/components/studio/studio-settings-popover";
+import { useGradeTheme } from "@/components/grade-theme-provider";
 import {
   ThemeBuilderProvider,
-  ThemeBuilderPanel,
   useGeneratedTheme,
   useThemeBuilderMode,
 } from "@/components/theme-builder";
-import { useGradeTheme } from "@/components/grade-theme-provider";
 import {
-  calmInput,
+  studioInput,
   type GeneratedTheme,
   type ThemeInput,
 } from "@/lib/themes";
@@ -66,43 +84,27 @@ import { GRADEUI_VERSION, STUDIO_VERSION } from "@/lib/versions";
 
 export default function StudioPage() {
   const [settings, updateSettings] = useChatSettings();
-  const { theme: siteTheme, saveAndActivate } = useGradeTheme();
+  const { theme: siteTheme, isDark: chromeIsDark } = useGradeTheme();
   const systemPrompt = useMemo(() => buildSystemPrompt(), []);
 
-  // The working ThemeInput — what the builder panel edits. Seeded from the
-  // site's active theme so the user's baseline is whatever they already had.
-  // We clone defensively since ThemeInput is structured and `input` on
-  // built-in themes is a shared singleton. Memo key is `siteTheme.id` so
-  // the baseline only re-seeds when the site theme identity changes — not
-  // on every saveAndActivate revision bump (which would otherwise stomp
-  // the user's in-progress edits).
-  const baseline = useMemo<ThemeInput>(
-    () => cloneInput(siteTheme.input ?? calmInput),
+  // The screen-level draft theme — seeded once from whatever chrome
+  // theme is active when Studio mounts. After that, the Theme tab in
+  // the right column owns it independently (see ThemePickerSection +
+  // ThemeBuilderControls). bindTo="draft" so slider edits don't
+  // mutate `:root` — the canvas reads useGeneratedTheme() and applies
+  // the result inside the preview iframe only. Switching the chrome
+  // theme via GradeThemeSwitcher does NOT reseed the draft, by
+  // design — chrome and screens are deliberately decoupled here.
+  //
+  // Defensive `?? studioInput`: while `siteTheme.input` is typed as
+  // required, the first render before GradeThemeProvider hydrates
+  // could in principle return a value without it. Studio is the
+  // chrome default so it's also the safest screen-baseline fallback.
+  const screenThemeBaseline = useMemo<ThemeInput>(
+    () => cloneInput(siteTheme.input ?? studioInput),
+    // Intentional single-shot seed — see comment block above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [siteTheme.id]
-  );
-
-  // handleThemeSave fires when the builder's save button is pressed. We
-  // stamp a user: id + "· Studio" suffix (if the input isn't already
-  // tagged that way) and persist via saveAndActivate — which both saves
-  // the ThemeInput to localStorage AND switches the site-wide active
-  // theme. Returning the mutated input lets the provider rebase history
-  // to the saved version, so the isDirty dot + reset target follow along.
-  const handleThemeSave = useCallback(
-    (input: ThemeInput): ThemeInput => {
-      const saved: ThemeInput = {
-        ...input,
-        id: input.id.startsWith("user:")
-          ? input.id
-          : `user:${Date.now().toString(36)}`,
-        name: input.name.endsWith("· Studio")
-          ? input.name
-          : `${input.name} · Studio`,
-      };
-      saveAndActivate(saved);
-      return saved;
-    },
-    [saveAndActivate]
+    [],
   );
 
   // Multiple in-memory design slots. Switching between them changes which
@@ -132,6 +134,38 @@ export default function StudioPage() {
       );
     }
   }, [activeId, designs]);
+
+  // Live-broadcast each design's source AND name to localStorage
+  // under a stable key so any open "Open preview" tab can re-render
+  // via the `storage` event and set its own document.title. JSON
+  // shape is { source, name } so the preview can show the screen
+  // name in the browser tab too.
+  //
+  // Cleanup happens in handleCloseDesign so closed designs don't
+  // leave orphan entries.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    for (const d of designs) {
+      const key = `grade:screen:${d.id}`;
+      try {
+        if (d.appSource) {
+          const next = JSON.stringify({ source: d.appSource, name: d.name });
+          // Only write when the serialized payload actually changed.
+          // `storage` events don't fire in the writer's own tab but
+          // they DO fire in every other same-origin tab, so a noisy
+          // write would re-render every open preview unnecessarily.
+          if (window.localStorage.getItem(key) !== next) {
+            window.localStorage.setItem(key, next);
+          }
+        } else {
+          window.localStorage.removeItem(key);
+        }
+      } catch {
+        // storage disabled / quota — silent fallback; the snapshot
+        // already in the preview tab stays valid.
+      }
+    }
+  }, [designs]);
 
   // Per-design chat history. `useChat` from @ai-sdk/react@2 doesn't persist
   // messages by id across remounts — it builds a fresh `Chat` every time.
@@ -163,28 +197,97 @@ export default function StudioPage() {
     Record<string, StudioSelection | null>
   >({});
 
-  // Per-design "has the user chosen to dock the settings panel in the right
-  // column?" flag. Kept per-design (rather than global) so switching tabs
-  // restores whichever layout the user had for that design — some designs
-  // are all about tweaking a single hero component (panel wants to be big
-  // and docked), others are mostly theme-editing (panel wants to stay
-  // inline under the selection chip and leave the right column for the
-  // theme builder).
-  const [panelDockedByDesign, setPanelDockedByDesign] = useState<
-    Record<string, boolean>
-  >({});
-  const panelDocked = Boolean(panelDockedByDesign[activeId]);
+  // Per-design free-form notes — the "Notes" tab in the right column
+  // is bound to `notesByDesign[activeId]`. Plain string per design;
+  // not persisted across page reloads yet (same model as the other
+  // per-design state maps). Cleaned up alongside the others in
+  // handleCloseDesign so closed designs don't leak.
+  const [notesByDesign, setNotesByDesign] = useState<Record<string, string>>(
+    {},
+  );
 
-  const handleRequestPanelDock = useCallback(() => {
-    setPanelDockedByDesign((m) => ({ ...m, [activeId]: true }));
-  }, [activeId]);
+  const handleNotesChange = useCallback(
+    (next: string) => {
+      setNotesByDesign((m) => ({ ...m, [activeId]: next }));
+    },
+    [activeId],
+  );
 
-  const handleRequestPanelUndock = useCallback(() => {
-    setPanelDockedByDesign((m) => {
-      if (!m[activeId]) return m;
-      return { ...m, [activeId]: false };
-    });
-  }, [activeId]);
+  // Session resume — persist the working session (designs, active
+  // tab, per-design chat history and notes) so a page refresh
+  // doesn't wipe the user's work. Mirrors what a "logged-in
+  // product" feels like, minus the server.
+  //
+  // Two effects:
+  //   1. On mount, hydrate from localStorage. Runs once.
+  //   2. On every change, write the snapshot back to localStorage.
+  //
+  // Ephemeral state (streamingByDesign, selectionByDesign) is NOT
+  // persisted — those should start fresh on every load.
+  //
+  // Lives below all the relevant `useState` declarations so the
+  // setters are in scope when this effect's dep array evaluates.
+  // Once a real persistence layer lands this becomes the fallback
+  // for offline / signed-out states.
+  const STUDIO_SESSION_KEY = "grade:studio:session";
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(STUDIO_SESSION_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        designs?: Design[];
+        activeId?: string;
+        messagesByDesign?: Record<string, UIMessage[]>;
+        notesByDesign?: Record<string, string>;
+      };
+      if (
+        parsed &&
+        Array.isArray(parsed.designs) &&
+        parsed.designs.length > 0
+      ) {
+        setDesigns(parsed.designs);
+        if (
+          parsed.activeId &&
+          parsed.designs.some((d) => d.id === parsed.activeId)
+        ) {
+          setActiveId(parsed.activeId);
+        }
+        if (
+          parsed.messagesByDesign &&
+          typeof parsed.messagesByDesign === "object"
+        ) {
+          setMessagesByDesign(parsed.messagesByDesign);
+        }
+        if (
+          parsed.notesByDesign &&
+          typeof parsed.notesByDesign === "object"
+        ) {
+          setNotesByDesign(parsed.notesByDesign);
+        }
+      }
+    } catch {
+      // Corrupt / unparseable session blob — keep the default seed.
+    }
+    // Intentional empty deps — hydrate exactly once on first mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        STUDIO_SESSION_KEY,
+        JSON.stringify({
+          designs,
+          activeId,
+          messagesByDesign,
+          notesByDesign,
+        }),
+      );
+    } catch {
+      /* storage disabled / quota — accept the loss silently */
+    }
+  }, [designs, activeId, messagesByDesign, notesByDesign]);
 
   const [view, setView] = useState<"preview" | "code">("preview");
 
@@ -213,7 +316,17 @@ export default function StudioPage() {
       // post-switch hydration — we write through either way; it's idempotent
       // if the code is unchanged.
       setDesigns((ds) =>
-        ds.map((d) => (d.id === activeId ? { ...d, appSource: code } : d))
+        ds.map((d) => {
+          if (d.id !== activeId) return d;
+          // Prose-only replies (no JSX fence) come through as null /
+          // empty. Don't let those wipe an existing preview — the
+          // user just asked a clarifying question or got a "no code
+          // changes needed" explanation; the previous render should
+          // stay on screen.
+          const isEmpty = code == null || code.trim() === "";
+          if (isEmpty && d.appSource) return d;
+          return { ...d, appSource: code };
+        })
       );
     },
     [activeId]
@@ -381,11 +494,22 @@ export default function StudioPage() {
         const { [id]: _drop, ...rest } = m;
         return rest;
       });
-      setPanelDockedByDesign((m) => {
+      setNotesByDesign((m) => {
         if (!(id in m)) return m;
         const { [id]: _drop, ...rest } = m;
         return rest;
       });
+      // Clear the live-preview localStorage key for this design so
+      // orphan entries don't pile up across sessions. Any open
+      // preview tab pointed at this design will fire a `storage`
+      // event with `newValue: null` and clear itself.
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.removeItem(`grade:screen:${id}`);
+        } catch {
+          /* storage disabled — nothing to clean */
+        }
+      }
     },
     [activeId, designs]
   );
@@ -396,10 +520,9 @@ export default function StudioPage() {
 
   return (
     <ThemeBuilderProvider
-      initial={baseline}
+      initial={screenThemeBaseline}
       bindTo="draft"
-      defaultMode="light"
-      onSave={handleThemeSave}
+      defaultMode={chromeIsDark ? "dark" : "light"}
     >
       <div className="flex flex-col h-screen bg-background overflow-hidden">
         <div className="border-b bg-muted/30 shrink-0">
@@ -432,64 +555,18 @@ export default function StudioPage() {
               <GradeThemeSwitcher />
               <ThemeToggle />
               <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-              {/* Dev toggles — visually demoted (mono, muted, 10px)
-                  so it reads as developer-only scaffolding. Renderer
-                  and User Tier are both state-holding controls without
-                  full consumers yet:
-                    - Renderer: both values currently mount Sandpack
-                      inside StudioCanvas. The fast renderer lands in
-                      step 5 and the default flips to "fast" then.
-                    - User Tier: no consumer yet. Reserved for the day
-                      pro/enterprise-only chrome appears (e.g. the
-                      per-client export path). */}
-              <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground select-none">
-                <span className="uppercase tracking-wider opacity-70">
-                  Dev
-                </span>
-                <div className="flex rounded-md border border-border overflow-hidden bg-background">
-                  {(["fast", "sandpack"] as const).map((m, i) => (
-                    <button
-                      key={m}
-                      type="button"
-                      aria-pressed={rendererMode === m}
-                      onClick={() => setRendererMode(m)}
-                      title={
-                        m === "fast"
-                          ? "Fast renderer (same-document, no bundler) — coming soon; currently falls back to Sandpack"
-                          : "Sandpack renderer (iframe + bundler) — current default"
-                      }
-                      className={`px-2 py-0.5 capitalize transition-colors ${
-                        i > 0 ? "border-l border-border" : ""
-                      } ${
-                        rendererMode === m
-                          ? "bg-muted text-foreground"
-                          : "hover:bg-muted/50"
-                      }`}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex rounded-md border border-border overflow-hidden bg-background">
-                  {(["free", "pro", "enterprise"] as const).map((t, i) => (
-                    <button
-                      key={t}
-                      type="button"
-                      aria-pressed={userTier === t}
-                      onClick={() => setUserTier(t)}
-                      className={`px-2 py-0.5 capitalize transition-colors ${
-                        i > 0 ? "border-l border-border" : ""
-                      } ${
-                        userTier === t
-                          ? "bg-muted text-foreground"
-                          : "hover:bg-muted/50"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Dev-only toggles (renderer + user tier) live behind
+                  the gear icon now — they were crowding the chrome row
+                  and they're session-local, so the popover is the
+                  right home. See `StudioSettingsPopover` for the
+                  shape; both pieces of state still live on this page
+                  so other parts of the tree can read them. */}
+              <StudioSettingsPopover
+                rendererMode={rendererMode}
+                onRendererModeChange={setRendererMode}
+                userTier={userTier}
+                onUserTierChange={setUserTier}
+              />
             </div>
           </div>
         </div>
@@ -536,8 +613,10 @@ export default function StudioPage() {
               selection={selectionByDesign[activeId] ?? null}
               onClearSelection={handleClearSelection}
               onSourceMutation={handleSourceMutation}
-              settingsPanelDocked={panelDocked}
-              onRequestSettingsDock={handleRequestPanelDock}
+              // Settings panel always lives on the right (inside the
+              // Layout tab) under the new tabbed shell. Force `docked`
+              // so the chat column never duplicates it.
+              settingsPanelDocked
             />
             {/* Canvas replaces the single-iframe StudioPreview. It owns
                 its own header (zoom toggle + preview/code + select +
@@ -559,22 +638,17 @@ export default function StudioPage() {
               canAddMore={!atCap}
               rendererMode={rendererMode}
             />
-            {/* Right column: normally the theme builder. When the user
-                docks the settings panel AND has a DS component selected,
-                show the settings panel here instead — it gets the full
-                column height, all props render without scrolling, and the
-                user can undock to swap the theme builder back in. */}
-            {panelDocked && selectionByDesign[activeId]?.componentName ? (
-              <StudioSettingsPanel
-                variant="docked"
-                selection={selectionByDesign[activeId] ?? null}
-                appSource={activeDesign.appSource}
-                onSourceChange={handleSourceMutation}
-                onRequestUndock={handleRequestPanelUndock}
-              />
-            ) : (
-              <ThemeBuilderPanel />
-            )}
+            {/* Right column: tabbed shell. Layout (stage-aware) by
+                default, Theme (existing builder, scoped to its own
+                provider), Notes (per-design free-form text). */}
+            <StudioRightTabs
+              appSource={activeDesign.appSource}
+              selection={selectionByDesign[activeId] ?? null}
+              onSourceChange={handleSourceMutation}
+              notes={notesByDesign[activeId] ?? ""}
+              onNotesChange={handleNotesChange}
+              designName={activeDesign.name}
+            />
           </div>
         </main>
       </div>
@@ -583,10 +657,12 @@ export default function StudioPage() {
 }
 
 /**
- * Small helper that reads the current builder theme + mode off the
- * ThemeBuilderProvider and forwards them into StudioCanvas. Existing
- * as a child of the provider is the whole point — hooks only work
- * inside it.
+ * Small helper that reads the SCREEN draft theme + mode off the
+ * ThemeBuilderProvider and forwards them into StudioCanvas. The draft
+ * is independent of the chrome theme — the Theme tab in the right
+ * column drives this exclusively, so the canvas re-skins on slider
+ * drag, mode flip, and theme-picker rebase but the docs chrome stays
+ * untouched.
  *
  * Unlike its StudioThemedPreview predecessor we do NOT key on activeId
  * here: the canvas spans every design and only shifts its focus when

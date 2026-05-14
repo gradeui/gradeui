@@ -440,6 +440,47 @@
 }
 
 /* ============================================
+   APP SHELL GRID
+   Five slots — Header, Nav, Aside, Main, Footer — placed via CSS-grid
+   template areas keyed off [data-nav] on the shell root. Slot order in
+   JSX doesn't matter; each slot has a fixed grid-area class assignment.
+   ============================================ */
+
+.rds-app-shell-header { grid-area: header; }
+.rds-app-shell-nav    { grid-area: nav; }
+.rds-app-shell-aside  { grid-area: aside; }
+.rds-app-shell-main   { grid-area: main; }
+.rds-app-shell-footer { grid-area: footer; }
+
+.rds-app-shell[data-nav="none"] {
+  grid-template-areas: "header" "main" "footer";
+  grid-template-rows: auto 1fr auto;
+}
+
+.rds-app-shell[data-nav="top"] {
+  grid-template-areas: "header" "nav" "main" "footer";
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.rds-app-shell[data-nav="side"] {
+  grid-template-areas:
+    "header header"
+    "nav    main"
+    "footer footer";
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: auto 1fr;
+}
+
+.rds-app-shell[data-nav="three-pane"] {
+  grid-template-areas:
+    "header header header"
+    "nav    aside  main"
+    "footer footer footer";
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: auto var(--rds-app-shell-aside, 320px) 1fr;
+}
+
+/* ============================================
    THEME-DRIVEN COMPONENT SHAPES
    Keyed off data attributes that GradeThemeProvider sets on <html>.
    Each rule is an additive opt-in — themes that don't set a style get

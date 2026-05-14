@@ -152,28 +152,54 @@ function flattenRamp(
 }
 
 /**
- * Apply a theme to the document root. Writes every CSS variable produced by
- * themeToCSSVars and sets a set of data attributes that component-shape
- * CSS rules key off of.
+ * Apply a theme to an arbitrary element. Writes every CSS variable
+ * produced by `themeToCSSVars` to the element's inline style and sets
+ * the `data-*` attributes that component-shape CSS rules key off.
  *
  * Safe to call repeatedly — each call fully resets the vars the theme
- * controls. Vars the theme doesn't touch (e.g. --rds-green-500 in
+ * controls. Vars the theme doesn't touch (e.g. `--rds-green-500` in
  * globals.css) are left alone.
+ *
+ * Targets:
+ *   - `document.documentElement` (default; used by `applyThemeToRoot`)
+ *   - any `<div>` you want to host a scoped subtree theme
+ *   - an iframe's own document element via
+ *     `iframeRef.contentDocument?.documentElement` — this is the path
+ *     for the "theme-per-iframe" use case
+ *
+ * Note: when scoping to a non-root element, you'll also want to apply
+ * the `.dark` class on that element (the way the provider does at the
+ * document root) so Tailwind's `dark:` variants resolve correctly
+ * inside that subtree. The companion `ThemeBuilderScope` component
+ * does this for you.
  */
-export function applyThemeToRoot(theme: GeneratedTheme, mode: ModeName): void {
-  if (typeof document === "undefined") return;
-  const root = document.documentElement;
+export function applyThemeToElement(
+  theme: GeneratedTheme,
+  mode: ModeName,
+  target: HTMLElement,
+): void {
   const vars = themeToCSSVars(theme, mode);
   for (const [key, value] of Object.entries(vars)) {
-    root.style.setProperty(key, value);
+    target.style.setProperty(key, value);
   }
 
   // Metadata attributes — components key styles off these.
-  // Fall back to sensible defaults if a field is missing (shouldn't happen
-  // for generator output, but keeps this safe if called with a partial).
-  root.setAttribute("data-ramp-theme", theme.id);
-  root.setAttribute("data-mode", mode);
-  root.setAttribute("data-button-shape", theme.components.buttonShape ?? "default");
-  root.setAttribute("data-input-style", theme.components.inputStyle ?? "outlined");
-  root.setAttribute("data-card-style", theme.components.cardStyle ?? "flat");
+  // Fall back to sensible defaults if a field is missing (shouldn't
+  // happen for generator output, but keeps this safe if called with a
+  // partial).
+  target.setAttribute("data-ramp-theme", theme.id);
+  target.setAttribute("data-mode", mode);
+  target.setAttribute("data-button-shape", theme.components.buttonShape ?? "default");
+  target.setAttribute("data-input-style", theme.components.inputStyle ?? "outlined");
+  target.setAttribute("data-card-style", theme.components.cardStyle ?? "flat");
+}
+
+/**
+ * Apply a theme to `document.documentElement`. Thin wrapper around
+ * `applyThemeToElement` kept as the canonical "theme the whole site"
+ * entry-point. SSR-safe (no-ops when `document` is undefined).
+ */
+export function applyThemeToRoot(theme: GeneratedTheme, mode: ModeName): void {
+  if (typeof document === "undefined") return;
+  applyThemeToElement(theme, mode, document.documentElement);
 }

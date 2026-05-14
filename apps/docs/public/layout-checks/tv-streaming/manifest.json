@@ -1,0 +1,27 @@
+{
+  "layoutId": "tv-streaming",
+  "capturedAt": "2026-05-05T15:41:36.335Z",
+  "base": "http://localhost:3000",
+  "snapshots": [
+    {
+      "viewportWidth": 375,
+      "file": "tv-streaming/375.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 768,
+      "file": "tv-streaming/768.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 1024,
+      "file": "tv-streaming/1024.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 1440,
+      "file": "tv-streaming/1440.png",
+      "consoleErrors": []
+    }
+  ]
+}

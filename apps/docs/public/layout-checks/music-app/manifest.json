@@ -1,0 +1,27 @@
+{
+  "layoutId": "music-app",
+  "capturedAt": "2026-05-05T15:42:59.802Z",
+  "base": "http://localhost:3000",
+  "snapshots": [
+    {
+      "viewportWidth": 375,
+      "file": "music-app/375.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 768,
+      "file": "music-app/768.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 1024,
+      "file": "music-app/1024.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 1440,
+      "file": "music-app/1440.png",
+      "consoleErrors": []
+    }
+  ]
+}

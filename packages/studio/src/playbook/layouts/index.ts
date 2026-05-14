@@ -48,6 +48,43 @@
  *      Easy for the user to swap for real `<img>` tags later.
  *   5. Keep scaffolds under ~120 lines. The goal is a runway, not a
  *      finished app — the model fills in the rest.
+ *   6. **No arbitrary Tailwind values** — `md:grid-cols-[minmax(0,440px)_1fr]`,
+ *      `h-[600px]`, `w-[440px]`, etc. They will silently NOT WORK. Tailwind
+ *      JIT-generates arbitrary classes only when it scans the file using
+ *      them, but `@gradeui/ui`'s Tailwind config (which produces the CSS
+ *      Fast Frame loads) doesn't scan this directory. Result: the class
+ *      is missing from the compiled CSS, the rule has no effect, and the
+ *      layout silently falls back to the default (e.g. single-column
+ *      grid). Use only built-in classes — `md:flex-row`, `md:w-1/3`,
+ *      `md:col-span-2`. Verified the hard way during the airbnb-listings
+ *      ship. (Eventual proper fix: extend packages/ui's tailwind.config.ts
+ *      content scan to include this directory.)
+ *   7. **No magic numbers anywhere** — neither in arbitrary Tailwind
+ *      classes nor in inline `style={{ height: 600 }}` escapes. Magic
+ *      pixel constants pin a layout to one viewport assumption and
+ *      strand it on every other (a fixed-height map looks fine at
+ *      900px tall but leaves a dead band below at 1200px). Use flex
+ *      with `flex-1` + `min-h-0` / `min-w-0` and let parent height
+ *      constraints (`h-screen` / `h-full`) cascade. Pattern for a
+ *      "fill the remaining space" pane:
+ *
+ *        <div className="h-full flex flex-col md:flex-row">
+ *          <Stack className="flex-1 md:flex-initial md:w-1/3 ..." />
+ *          <div className="flex-1 min-h-0 min-w-0">
+ *            <ChildThatFills className="h-full w-full" />
+ *          </div>
+ *        </div>
+ *
+ *   8. **Separate preview chrome from feature content.** Scaffolds wrap
+ *      themselves in `<AppShell>` so Fast Frame can render them as a
+ *      standalone tree, but a real host app already has its own
+ *      AppShell + nav. The inner "feature" block (the two-pane list +
+ *      map, the data table, the form, etc.) should be designed so it
+ *      fills its parent via `h-full` and makes no assumption about
+ *      what wraps it. That way the same content lifts cleanly into a
+ *      host app's `<AppShellMain>` slot without rework. Rule of thumb:
+ *      `h-screen` only on the outer AppShell; everywhere inside, use
+ *      `h-full` and let the constraint cascade.
  *
  * Adding a new layout:
  *   1. Drop a `kebab-case-id.jsx` file in `layouts/scaffolds/`.
@@ -190,6 +227,24 @@ export const REFERENCE_LAYOUTS: readonly ReferenceLayout[] = [
     ],
     scaffold: requireScaffold("confetti-celebration"),
   },
+  {
+    // The canonical "two-way bound list ↔ map" pattern. Top filter bar
+    // (search, dates via DateRangePicker, guests + type Selects), then a
+    // two-pane main: scrollable Card listings on the left, full-bleed
+    // <Map> on the right. Hover synchronises both directions through the
+    // controlled `hoveredId` / `onHoveredIdChange` pair on Map — no refs,
+    // no imperative flyTo. Demonstrates the Map component end-to-end.
+    id: "airbnb-listings",
+    label: "Stays — listings + map",
+    description: "Two-pane stays app: scrollable listing cards on the left, hover-synced full-bleed map on the right.",
+    tags: [
+      "airbnb", "stays", "rental", "rentals", "listings", "listing",
+      "real estate", "realestate", "real-estate", "property", "properties",
+      "map", "maps", "geo", "location", "lodging", "hotel", "vacation",
+      "fleet", "logistics", "delivery",
+    ],
+    scaffold: requireScaffold("airbnb-listings"),
+  },
 ];
 
 /**
@@ -266,7 +321,9 @@ export const REFERENCE_LAYOUTS: readonly ReferenceLayout[] = [
  *   sprout.
  */
 export const MISSING_COMPONENTS = [
-  "Map", // HIGH PRIORITY — unlocks airbnb-style + any location-first demo
+  // Map shipped in @gradeui/ui@0.9.0 — sidecar at sidecars/map.md, design
+  // doc at packages/ui/MAP.md. The `airbnb-listings` reference layout below
+  // is now unblocked and ships in a follow-up changeset.
   "DataViz", // d3-backed — choropleth, treemap, sankey; 3D map stretch goal
   "DataTable",
   "Scroller",
@@ -283,13 +340,7 @@ export const MISSING_COMPONENTS = [
  * component. Parked here so the moment a primitive lands the scaffold
  * is cheap to add.
  *
- * airbnb-listings
- *   Shape: AppShell nav="top". Two-pane main — left pane is a
- *   scrollable list of Card listings (MediaSurface + title, price,
- *   rating), right pane is a full-bleed <Map>. Hovering a card calls
- *   `map.flyTo(card.id)` via the Map ref; hovering a marker highlights
- *   the matching card. Filter chips along the top (price, guests,
- *   type, dates via DateRangePicker). This is the canonical "two-way
- *   bound list ↔ map" pattern — the reason Map has to expose
- *   programmatic control, not just a static render.
+ * (Empty — `airbnb-listings` shipped in @gradeui/studio@<next> alongside
+ * the Map component. Add new entries here whenever a layout idea blocks
+ * on a MISSING_COMPONENTS entry above.)
  */

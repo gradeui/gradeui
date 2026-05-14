@@ -294,6 +294,18 @@
   --info: 0.580 0.200 240;
   --highlight: 0.860 0.180 95;
 
+  /* Media placeholder pair — used by MediaSurface when it has no children
+     (image-not-yet-loaded slots, scaffolds without real photos, layouts
+     waiting on the image-generation pipeline). Defined here as a token
+     pair so themes can override per-brand and consumers can roll their
+     own placeholder UI with `background: var(--rds-media-placeholder-bg)`.
+     Defaults to the secondary surface so it reads visibly distinct from
+     `bg-card` and `bg-background` while staying neutral (not brand-loud).
+     Resolves dynamically against the active mode because var(--secondary)
+     itself is mode-scoped — no `.dark` duplicate needed. */
+  --rds-media-placeholder-bg: oklch(var(--secondary));
+  --rds-media-placeholder-fg: oklch(var(--secondary-foreground) / 0.4);
+
   /* Alert surface pairs — paler tinted surface + readable deep text for each
      status colour. Pre-hydration fallbacks; the JS theme pipeline overwrites
      these via lib/themes/oklch.ts#deriveAlertPair. Kept here so the Alert
@@ -437,6 +449,54 @@
   a:not([class]) {
     @apply text-primary underline-offset-4 hover:underline;
   }
+}
+
+/* ============================================
+   APP SHELL GRID
+   Five slots — Header, Nav, Aside, Main, Footer — placed via CSS-grid
+   template areas keyed off [data-nav] on the shell root. Slot order in
+   JSX doesn't matter; each slot has a fixed grid-area class assignment.
+   ============================================ */
+
+.rds-app-shell-header { grid-area: header; }
+.rds-app-shell-nav    { grid-area: nav; }
+.rds-app-shell-aside  { grid-area: aside; }
+.rds-app-shell-main   { grid-area: main; }
+.rds-app-shell-footer { grid-area: footer; }
+
+/* nav="none" — Header / Main / Footer stacked vertically. */
+.rds-app-shell[data-nav="none"] {
+  grid-template-areas: "header" "main" "footer";
+  grid-template-rows: auto 1fr auto;
+}
+
+/* nav="top" — Header (site chrome), then in-app top nav, then Main. */
+.rds-app-shell[data-nav="top"] {
+  grid-template-areas: "header" "nav" "main" "footer";
+  grid-template-rows: auto auto 1fr auto;
+}
+
+/* nav="side" — Header full width, Nav rail + Main below, Footer full width. */
+.rds-app-shell[data-nav="side"] {
+  grid-template-areas:
+    "header header"
+    "nav    main"
+    "footer footer";
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: auto 1fr;
+}
+
+/* nav="three-pane" — Header full width, Nav rail + fixed Aside + flex Main,
+   Footer full width. Aside width is set by --rds-app-shell-aside (default
+   320px) so callers can override per-screen via inline style or a parent
+   class without forking the component. */
+.rds-app-shell[data-nav="three-pane"] {
+  grid-template-areas:
+    "header header header"
+    "nav    aside  main"
+    "footer footer footer";
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: auto var(--rds-app-shell-aside, 320px) 1fr;
 }
 
 /* ============================================

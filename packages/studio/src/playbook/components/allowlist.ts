@@ -117,6 +117,18 @@ export const ALLOWED_COMPONENTS = [
   "MediaSurface",
   "ShaderPresetPreview",
   "ShaderPresetPicker",
+  // Map (shipped in @gradeui/ui@0.9.0)
+  //   - Provider-agnostic: provider="maplibre" (default, free) | "mapbox"
+  //     | "google". The model should default to omitting the prop (uses
+  //     MapLibre + Grade demo MapTiler key — works on gradeui.com /
+  //     localhost zero-config).
+  //   - Coords are ALWAYS [lng, lat] tuples in the public API.
+  //   - Controlled `hoveredId` / `onHoveredIdChange` is the canonical
+  //     list↔map sync path; the model should reach for that pair
+  //     instead of useRef + .flyTo on every hover.
+  //   - Sidecar at sidecars/map.md documents the API + anti-patterns.
+  "Map",
+  "MapMarker",
 ] as const;
 
 /**

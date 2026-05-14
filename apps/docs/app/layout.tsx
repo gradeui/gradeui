@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import {
   JetBrains_Mono,
   Inter,
@@ -23,6 +24,7 @@ import {
   GRADE_PRE_HYDRATION_SCRIPT,
 } from "@/components/grade-theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { LenisProvider } from "@/components/lenis-provider";
 import { AuthProvider } from "@/components/auth-provider";
 
@@ -139,11 +141,25 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Middleware stamps `x-pathname` onto the request headers so we can
+  // identify sandbox routes here (the root layout otherwise has no
+  // access to the current path — layouts are pre-rendered per-segment
+  // and Next doesn't expose pathname to server components directly).
+  //
+  // Sandbox routes (/fast-sandbox) are loaded in an iframe by the Fast
+  // renderer. They don't need AuthProvider / LenisProvider / Toaster —
+  // specifically, AuthProvider surfaces the app's Auth.js config error
+  // right inside the iframe, which is both distracting and unrelated
+  // to what the preview is trying to show. Render a bare tree for them.
+  const h = await headers();
+  const pathname = h.get("x-pathname") ?? "";
+  const isSandbox = pathname.startsWith("/fast-sandbox");
+
   return (
     // Font-loader classes go on <html> (not <body>) so their --font-*
     // custom properties live at :root level, where globals.css rules like
@@ -166,14 +182,29 @@ export default function RootLayout({
       <body
         className={cn("min-h-screen bg-background font-sans antialiased")}
       >
-        <AuthProvider>
-          <GradeThemeProvider>
-            <LenisProvider>
-              {children}
-            </LenisProvider>
-            <Toaster />
-          </GradeThemeProvider>
-        </AuthProvider>
+        {isSandbox ? (
+          // Sandbox tree: bare. The sandbox page imports its own
+          // TooltipProvider (wrapping compiled previews) and manages
+          // theme state via postMessage from the parent — no app-level
+          // providers needed.
+          children
+        ) : (
+          <AuthProvider>
+            <GradeThemeProvider>
+              {/* TooltipProvider wraps the whole app so any tabs /
+                  buttons / toggles that pass a `tooltip` prop (or use
+                  Tooltip directly) work without each consumer
+                  needing to mount their own provider. 200ms delay
+                  feels snappy without being noisy on cursor passes. */}
+              <TooltipProvider delayDuration={200}>
+                <LenisProvider>
+                  {children}
+                </LenisProvider>
+              </TooltipProvider>
+              <Toaster />
+            </GradeThemeProvider>
+          </AuthProvider>
+        )}
       </body>
     </html>
   );

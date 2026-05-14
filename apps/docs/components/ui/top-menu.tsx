@@ -5,14 +5,14 @@ import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // Types
-export interface BreadcrumbItem {
+export interface TopMenuBreadcrumbItem {
   label: string
   href?: string
 }
 
 export interface TopMenuProps {
   /** Breadcrumb navigation items */
-  breadcrumbs?: BreadcrumbItem[]
+  breadcrumbs?: TopMenuBreadcrumbItem[]
   /** Show mobile menu button */
   showMobileMenu?: boolean
   /** Mobile menu button click handler */

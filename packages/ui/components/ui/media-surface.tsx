@@ -11,11 +11,18 @@
  *   - reduced-motion query
  *
  * Design-system note: all visual dimensions are backed by CSS vars so
- * consumers can retheme via `--rds-media-radius`, `--rds-media-border`, etc.
+ * consumers can retheme via `--rds-media-radius`, `--rds-media-border`,
+ * `--rds-media-placeholder-bg`, `--rds-media-placeholder-fg`. The
+ * placeholder pair drives the empty-state treatment — it's the
+ * canonical "image not yet loaded" surface across Grade until the
+ * image-generation pipeline replaces empty slots with real pictures.
+ * Custom placeholder UI elsewhere in the product should consume the
+ * same vars so we stay visually coherent.
  * (These will rename to `--gds-*` when the broader codebase rename lands.)
  */
 
 import * as React from "react";
+import { ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type MediaAspect = "video" | "square" | "portrait" | "wide" | "auto";
@@ -47,6 +54,16 @@ export interface MediaSurfaceProps
   onVisibilityChange?: (visible: boolean) => void;
   /** Fallback shown before `onReady` is signalled by the child. */
   fallback?: React.ReactNode;
+  /**
+   * Controls the empty-state placeholder shown when no `children` and no
+   * `loading` state are provided. Default `"icon"` renders a subtle
+   * image-icon centered on the muted surface so the slot reads as
+   * "media goes here" rather than blank. Use `"none"` for cases where
+   * the consumer wants a truly empty surface (e.g. a custom decorative
+   * overlay that needs the surface clean), or pass a node to fully
+   * override.
+   */
+  emptyState?: "icon" | "none" | React.ReactNode;
   children?: React.ReactNode;
 }
 
@@ -60,6 +77,7 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
       loading = false,
       onVisibilityChange,
       fallback,
+      emptyState = "icon",
       style,
       children,
       ...props
@@ -109,6 +127,36 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
             aria-hidden
           >
             {fallback}
+          </div>
+        )}
+        {/* Empty-state placeholder — only shown when there's no media
+            content to render and no loading skeleton is active. Without
+            this the surface defaults to a flat `bg-muted` that blends
+            into nearby `bg-card` surfaces (e.g. when MediaSurface sits
+            inside a Card list-item) and reads as transparent.
+
+            Surface and icon colours come from a token pair —
+            `--rds-media-placeholder-bg` and `--rds-media-placeholder-fg`
+            (declared in `packages/ui/styles/globals.css`). This is the
+            canonical "image not yet loaded" treatment across Grade —
+            consumers rolling their own placeholder UI should use the
+            same vars so we stay coherent until the image-generation
+            pipeline replaces every empty slot with a real picture. */}
+        {!children && !loading && emptyState !== "none" && (
+          <div
+            data-gds-part="media-surface-placeholder"
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{
+              background: "var(--rds-media-placeholder-bg)",
+              color: "var(--rds-media-placeholder-fg)",
+            }}
+            aria-hidden
+          >
+            {emptyState === "icon" ? (
+              <ImageIcon className="h-1/3 w-1/3 max-h-10 max-w-10" />
+            ) : (
+              emptyState
+            )}
           </div>
         )}
       </div>

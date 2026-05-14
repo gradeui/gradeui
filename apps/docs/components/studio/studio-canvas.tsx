@@ -44,13 +44,25 @@ import {
   Loader2,
   Maximize2,
   Monitor,
+  MoreHorizontal,
   MousePointerClick,
   Package,
   Plus,
+  Share2,
   Smartphone,
   Sparkles,
   Tablet,
+  X,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@gradeui/ui";
 import { cn } from "@/lib/utils";
 import {
   buildSandpackFiles,
@@ -61,7 +73,7 @@ import {
 import { openInCodeSandboxNpm } from "@/lib/chat-export-npm";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { Design } from "@/lib/studio-designs";
-import { DesignTabs } from "@/components/studio/design-tabs";
+import { DesignBreadcrumb } from "@/components/studio/design-breadcrumb";
 import { StarterPicker } from "@/components/studio/starter-picker";
 import {
   FocusedSandpackMount,
@@ -191,6 +203,15 @@ export function StudioCanvas({
   // pays the cold-boot cost, but only once per session.
   const [hasEnteredAll, setHasEnteredAll] = useState(false);
 
+  // Flip the "first visit to grid" flag whenever the user is in
+  // grid-state. With the Fit/All toggle removed, the only entries
+  // to grid-state are the breadcrumb's "All screens" link and the
+  // initial mount — both flow through setZoom, so a useEffect on
+  // `zoom` is the simplest single source of truth.
+  useEffect(() => {
+    if (zoom === "all" && !hasEnteredAll) setHasEnteredAll(true);
+  }, [zoom, hasEnteredAll]);
+
   // Select-mode lives on the canvas (not FocusedFrame) so that the
   // toggle button can be rendered in the header, above its sibling
   // controls, while still driving state that the frame's postMessage
@@ -258,44 +279,31 @@ export function StudioCanvas({
         className
       )}
     >
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30 shrink-0">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Eye className="h-3 w-3" />
-          {/* Swap the generic "Live preview" for the focused screen's
-              name so the header reinforces which design the chat +
-              settings are targeting. Falls back to "Live preview" if
-              there's somehow no focused design (shouldn't happen in
-              practice given designs has a minimum of 1). */}
-          <span className="font-medium text-foreground">
-            {focused?.name ?? "Live preview"}
-          </span>
-          {/* Dev-only design-id badge. Surfaces the internal key that
-              `StudioChat` and `messagesByDesign` are keyed on, so
-              state drift is visible in the UI instead of hiding behind
-              a silent fallback. Truncated to the last 6 chars to keep
-              the header compact — ids are Date.now()-based so the tail
-              is plenty to distinguish siblings. */}
-          {focused && process.env.NODE_ENV !== "production" && (
-            <span
-              className="text-[9px] font-mono uppercase tracking-wide text-muted-foreground/70 border border-border/60 rounded px-1 py-0.5"
-              title={`Design id: ${focused.id}`}
-            >
-              id:{focused.id.slice(-6)}
-            </span>
-          )}
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 border border-border rounded px-1.5 py-0.5">
-            {theme.name}
-          </span>
-          {/* In "all" mode surface which design the chat + settings are
-              currently targeting — without this chip it's easy to lose
-              track once the grid grows beyond three tiles. */}
-          {!isFit && focused && (
-            <span
-              className="flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
-              title={`Chat + settings target "${focused.name}"`}
-            >
-              <Maximize2 className="h-3 w-3" aria-hidden />
-              {focused.name}
+      <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border shrink-0">
+        {/* Top row — single row hosting:
+              - screen-state: breadcrumb (All screens / Screen 1)
+                with inline rename, plus live status chips
+              - grid-state: "All screens (N)" label, status chips
+            Plus a right-aligned cluster (per-screen actions in
+            screen-state, add-a-screen actions in grid-state).
+            No bg-muted strip any more — the canvas is surface-less
+            at the top so the breadcrumb reads as part of the
+            content, not as separate chrome. */}
+        <div className="flex items-center gap-2 min-w-0 text-xs text-muted-foreground">
+          {isFit && focused ? (
+            <DesignBreadcrumb
+              focused={focused}
+              onBack={() => setZoom("all")}
+              onRename={onRenameDesign}
+            />
+          ) : (
+            <span className="px-1 text-xs font-medium text-foreground">
+              All screens
+              {designs.length > 1 && (
+                <span className="ml-1 text-muted-foreground">
+                  ({designs.length})
+                </span>
+              )}
             </span>
           )}
           {isFit && selection?.componentName && (
@@ -322,161 +330,81 @@ export function StudioCanvas({
           )}
         </div>
         <div className="flex items-center gap-1">
-          {/* Zoom toggle stays visible in BOTH modes — it's the one
-              control that's equally valid either way. Everything else
-              in the right-hand cluster is mode-specific (and below we
-              render only the subset that applies to the current mode
-              rather than greying half the row out in All view). */}
-          <div
-            className="flex items-center rounded border border-border bg-background/60 p-0.5"
-            role="group"
-            aria-label="Canvas zoom"
-          >
-            <button
-              type="button"
-              onClick={() => setZoom("fit")}
-              className={cn(
-                "flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px] transition-colors",
-                isFit
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              aria-pressed={isFit}
-              title="Fit focused screen to canvas"
-            >
-              <Maximize2 className="h-3 w-3" />
-              Fit
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setZoom("all");
-                setHasEnteredAll(true);
-              }}
-              className={cn(
-                "flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px] transition-colors",
-                !isFit
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              aria-pressed={!isFit}
-              title="Show all screens side-by-side"
-            >
-              <LayoutGrid className="h-3 w-3" />
-              All
-              {designs.length > 1 && (
-                <span className="text-[9px] opacity-70">
-                  ({designs.length})
-                </span>
-              )}
-            </button>
-          </div>
+          {/* No more Fit/All toggle — navigation between the two
+              states goes through the breadcrumb ("All screens" link
+              returns to grid-state) and the grid itself (clicking a
+              tile enters screen-state). One way to switch, no two
+              redundant affordances. */}
 
           {isFit ? (
-            // ─── Fit-mode cluster ─────────────────────────────────
-            // Everything that operates on the *focused* screen:
-            // viewport width, preview/code, select, npm. Rendered
-            // here rather than disabled-in-All so All mode's header
-            // reads as a different tool, not a degraded version of
-            // the same one. "Starters" is the odd one out — it creates
-            // a NEW screen — but we still surface it here so the same
-            // affordance is reachable without a mode flip.
-            <>
-              <div className="mx-1 h-3 w-px bg-border" aria-hidden />
-              <button
-                type="button"
-                onClick={() => setStarterPickerOpen(true)}
-                disabled={!canAddMore}
-                className={cn(
-                  "flex items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors",
-                  "text-muted-foreground hover:text-foreground",
-                  "disabled:opacity-40 disabled:pointer-events-none"
-                )}
-                title={
-                  canAddMore
-                    ? "Start a new screen from a reference layout or pasted JSX"
-                    : "Design cap reached"
-                }
-              >
-                <Sparkles className="h-3 w-3" />
-                Starters
-              </button>
-              <div className="mx-1 h-3 w-px bg-border" aria-hidden />
-              <div
-                className="flex items-center rounded border border-border bg-background/60 p-0.5"
-                role="group"
-                aria-label="Viewport width"
-              >
-                <ViewportButton
-                  icon={<Smartphone className="h-3 w-3" />}
-                  label="Mobile"
-                  width={390}
-                  active={viewportWidth === "mobile"}
-                  onClick={() => setViewportWidth("mobile")}
-                />
-                <ViewportButton
-                  icon={<Tablet className="h-3 w-3" />}
-                  label="Tablet"
-                  width={768}
-                  active={viewportWidth === "tablet"}
-                  onClick={() => setViewportWidth("tablet")}
-                />
-                <ViewportButton
-                  icon={<Monitor className="h-3 w-3" />}
-                  label="Desktop"
-                  width={1024}
-                  active={viewportWidth === "desktop"}
-                  onClick={() => setViewportWidth("desktop")}
-                />
-                <ViewportButton
-                  icon={null}
-                  label="Responsive"
-                  active={viewportWidth === "responsive"}
-                  onClick={() => setViewportWidth("responsive")}
-                />
-              </div>
-              <div className="mx-1 h-3 w-px bg-border" aria-hidden />
-              {/* Preview/Code — same segmented-control styling as the
-                  viewport picker above. Two buttons is still worth a
-                  group because a bordered enclosure reads as "these
-                  belong to the same axis" more clearly than two loose
-                  pills. Likely to grow a Source/Diff entry later, at
-                  which point the group carries its weight. */}
-              <div
-                className="flex items-center rounded border border-border bg-background/60 p-0.5"
-                role="group"
+            // ─── Screen-state cluster ─────────────────────────────
+            // Per-screen actions, left-to-right:
+            //   - Preview/Code (icon-only with tooltips)
+            //   - Viewport width (Mobile/Tablet/Desktop/Responsive)
+            //   - Select (element pick)
+            //   - Overflow menu (Duplicate, Open in CodeSandbox, Share)
+            // All operate on the focused screen — they belong on the
+            // same row as the breadcrumb that names that screen.
+            <div className="flex items-center gap-2">
+              <ToggleGroup
+                type="single"
+                value={view}
+                onValueChange={(v: string) => {
+                  if (v === "preview" || v === "code") onViewChange(v);
+                }}
                 aria-label="Preview mode"
               >
-                <button
-                  type="button"
-                  onClick={() => onViewChange("preview")}
-                  aria-pressed={view === "preview"}
-                  className={cn(
-                    "flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px] transition-colors",
-                    view === "preview"
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
+                <ToggleGroupItem
+                  value="preview"
+                  aria-label="Preview"
+                  title="Preview"
                 >
-                  <Eye className="h-3 w-3" />
-                  Preview
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onViewChange("code")}
-                  aria-pressed={view === "code"}
-                  className={cn(
-                    "flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px] transition-colors",
-                    view === "code"
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
+                  <Eye />
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="code"
+                  aria-label="Code"
+                  title="Code"
                 >
-                  <Code2 className="h-3 w-3" />
-                  Code
-                </button>
-              </div>
-              <div className="mx-1 h-3 w-px bg-border" aria-hidden />
+                  <Code2 />
+                </ToggleGroupItem>
+              </ToggleGroup>
+              <ToggleGroup
+                type="single"
+                value={viewportWidth}
+                onValueChange={(v: string) => {
+                  if (
+                    v === "mobile" ||
+                    v === "tablet" ||
+                    v === "desktop" ||
+                    v === "responsive"
+                  )
+                    setViewportWidth(v);
+                }}
+                aria-label="Viewport width"
+              >
+                <ToggleGroupItem value="mobile" title="Mobile — 390px">
+                  <Smartphone />
+                  Mobile
+                </ToggleGroupItem>
+                <ToggleGroupItem value="tablet" title="Tablet — 768px">
+                  <Tablet />
+                  Tablet
+                </ToggleGroupItem>
+                <ToggleGroupItem value="desktop" title="Desktop — 1024px">
+                  <Monitor />
+                  Desktop
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="responsive"
+                  title="Responsive — fills the column"
+                >
+                  Responsive
+                </ToggleGroupItem>
+              </ToggleGroup>
+
+              {/* Select — element pick. Custom-rolled toggle until
+                  Toggle picks up tooltip support. */}
               <button
                 type="button"
                 onClick={() => setSelectMode((v) => !v)}
@@ -488,49 +416,111 @@ export function StudioCanvas({
                     : "Enable element select — click a component to comment on it"
                 }
                 className={cn(
-                  "flex items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors",
+                  "h-7 inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors",
+                  "[&_svg]:size-3.5 [&_svg]:shrink-0",
                   selectMode
                     ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted",
                   "disabled:opacity-40 disabled:pointer-events-none"
                 )}
               >
-                <MousePointerClick className="h-3 w-3" />
+                <MousePointerClick />
                 {selectMode ? "Pick…" : "Select"}
               </button>
-              <div className="mx-1 h-3 w-px bg-border" aria-hidden />
-              <button
-                type="button"
-                onClick={handleOpenNpm}
-                disabled={!focusedAppSource || exportingNpm}
-                title="Open focused screen in CodeSandbox using @gradeui/ui from npm"
-                className={cn(
-                  "flex items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors",
-                  "text-muted-foreground hover:text-foreground",
-                  "disabled:opacity-40 disabled:pointer-events-none"
-                )}
-              >
-                {exportingNpm ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Package className="h-3 w-3" />
-                )}
-                npm
-                <ExternalLink className="h-2.5 w-2.5" />
-              </button>
-            </>
+
+              {/* Overflow — Duplicate (works), Open in CodeSandbox
+                  (mostly works), Share (placeholder). */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    title="More actions"
+                    aria-label="More actions"
+                    className={cn(
+                      "h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors",
+                      "[&_svg]:size-3.5 [&_svg]:shrink-0",
+                      "text-muted-foreground hover:text-foreground hover:bg-muted",
+                    )}
+                  >
+                    <MoreHorizontal />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {onDuplicateDesign && (
+                    <DropdownMenuItem
+                      onClick={() => onDuplicateDesign(focusedId)}
+                      disabled={!canAddMore}
+                    >
+                      <Copy />
+                      Duplicate screen
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => {
+                      // Open preview — stable per-design localStorage
+                      // key. The page-level effect in studio/page.tsx
+                      // keeps this key in sync afterwards (so the
+                      // standalone tab live-updates via `storage`
+                      // events), but we EAGERLY write the latest
+                      // payload here too so the new tab reads fresh
+                      // JSON on first paint. Without this write, an
+                      // old raw-string entry from a previous session
+                      // could win the race and the preview tab would
+                      // mount with no title until the user makes an
+                      // edit in Studio.
+                      if (!focusedAppSource || !focused) return;
+                      const key = `grade:screen:${focusedId}`;
+                      try {
+                        window.localStorage.setItem(
+                          key,
+                          JSON.stringify({
+                            source: focusedAppSource,
+                            name: focused.name,
+                          }),
+                        );
+                      } catch {
+                        // storage disabled / quota — bail rather
+                        // than open a guaranteed-blank tab.
+                        return;
+                      }
+                      window.open(
+                        `/fast-sandbox#screen=${encodeURIComponent(key)}`,
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                    }}
+                    disabled={!focusedAppSource}
+                  >
+                    <ExternalLink />
+                    Open preview in new tab
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleOpenNpm}
+                    disabled={!focusedAppSource || exportingNpm}
+                  >
+                    {exportingNpm ? <Loader2 className="animate-spin" /> : <Package />}
+                    Open in CodeSandbox
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <Share2 />
+                    Share link
+                    <span className="ml-auto text-[10px] text-muted-foreground/70">
+                      Soon
+                    </span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           ) : (
-            // ─── All-mode cluster ─────────────────────────────────
-            // Tiles ARE the navigation in this view, so the tab strip
-            // doesn't render below. "+ New" and "Duplicate focused"
-            // move here from the tab strip so screen creation doesn't
-            // force a mode flip. "Starters" opens the reference-layout
-            // + paste-code picker (#45/#46). Everything else
-            // (viewport/preview/select/npm) is focused-screen-only and
-            // would mislead if it showed up without a single focused
-            // screen on stage.
+            // ─── Grid-state cluster ───────────────────────────────
+            // Tiles ARE the navigation in this view, so the only
+            // chrome we need here is "add a screen" actions:
+            // + New, Starters, and Duplicate-focused. Per-screen
+            // affordances (viewport, preview/code, select, npm)
+            // would mislead if they showed up without a single
+            // focused screen on stage.
             <>
-              <div className="mx-1 h-3 w-px bg-border" aria-hidden />
               <button
                 type="button"
                 onClick={() => onAddDesign()}
@@ -590,28 +580,6 @@ export function StudioCanvas({
         </div>
       </div>
 
-      {/* Tab strip — Fit-mode only. Canvas owns it now (was page-level
-          chrome before the Fit/All split existed). In All mode the tile
-          grid IS the tab strip — clicking a tile focuses it — so a
-          second row of tabs would be redundant and just steal vertical
-          room from the previews. */}
-      {isFit && (
-        <DesignTabs
-          designs={designs}
-          activeId={focusedId}
-          // DesignTabs.onAdd is a () => void — wrap `onAddDesign` so the
-          // optional seed arg stays undefined, preserving the "click +
-          // → blank screen" contract. Starters has its own affordance.
-          onAdd={() => onAddDesign()}
-          onActivate={onFocus}
-          onClose={onCloseDesign}
-          onRename={onRenameDesign}
-          onDuplicate={onDuplicateDesign}
-          canAddMore={canAddMore}
-          className="shrink-0"
-        />
-      )}
-
       {/* Body. Both FocusedFrame and TileGrid stay mounted once they've
           been visited — we toggle visibility via `hidden` rather than
           unmount/remount so Sandpack iframes don't reboot on every
@@ -644,6 +612,7 @@ export function StudioCanvas({
             onFocus(id);
             setZoom("fit");
           }}
+          onClose={onCloseDesign}
           theme={theme}
           mode={mode}
           hidden={isFit}
@@ -662,50 +631,6 @@ export function StudioCanvas({
         onPick={({ source, name }) => onAddDesign({ source, name })}
       />
     </div>
-  );
-}
-
-// ─── Viewport width picker button ────────────────────────────────────
-
-interface ViewportButtonProps {
-  icon: React.ReactNode;
-  label: string;
-  /** Pixel width shown in the tooltip. Omit for "Responsive". */
-  width?: number;
-  active: boolean;
-  onClick: () => void;
-}
-
-/**
- * Single button in the viewport picker row. Abstracted so the four
- * presets share alignment and sizing without four copies of the same
- * classNames. The whole picker only renders in Fit mode, so there's no
- * "disabled" state to handle here anymore — previously it dimmed the
- * row in All view, but we just hide the row now.
- */
-function ViewportButton({
-  icon,
-  label,
-  width,
-  active,
-  onClick,
-}: ViewportButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      title={width ? `${label} — ${width}px` : label}
-      className={cn(
-        "flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px] transition-colors",
-        active
-          ? "bg-muted text-foreground"
-          : "text-muted-foreground hover:text-foreground"
-      )}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }
 
@@ -862,6 +787,9 @@ function FocusedFrame({
           view={view}
           canRender={canRender}
           viewportWidth={viewportWidth}
+          selectMode={selectMode}
+          onSelect={onSelect}
+          onSelectModeChange={onSelectModeChange}
         />
       ) : (
         <FocusedSandpackMount
@@ -890,6 +818,10 @@ interface TileGridProps {
   focusedId: string;
   onFocus: (id: string) => void;
   onExpand: (id: string) => void;
+  /** Delete a design. The tile renders a close (×) button when more
+   *  than one design is open (the grid is the only nav path now —
+   *  removing a screen always happens here). */
+  onClose: (id: string) => void;
   theme: GeneratedTheme;
   mode: "light" | "dark";
   /** Stay mounted but render invisible. Tiles remain alive so flipping
@@ -911,11 +843,13 @@ function TileGrid({
   focusedId,
   onFocus,
   onExpand,
+  onClose,
   theme,
   mode,
   hidden = false,
   rendererMode = "sandpack",
 }: TileGridProps) {
+  const canClose = designs.length > 1;
   return (
     <div
       // Lenis wraps the Studio site and by default intercepts wheel
@@ -951,6 +885,7 @@ function TileGrid({
             focused={d.id === focusedId}
             onFocus={() => onFocus(d.id)}
             onExpand={() => onExpand(d.id)}
+            onClose={canClose ? () => onClose(d.id) : undefined}
             theme={theme}
             mode={mode}
             rendererMode={rendererMode}
@@ -966,6 +901,10 @@ interface ScreenTileProps {
   focused: boolean;
   onFocus: () => void;
   onExpand: () => void;
+  /** Close (delete) this screen. Omit to hide the × — the grid sets
+   *  this only when more than one screen is open, so the user can't
+   *  delete their way to an empty canvas. */
+  onClose?: () => void;
   theme: GeneratedTheme;
   mode: "light" | "dark";
   /** Which renderer mounts inside this tile. Matches FocusedFrame so a
@@ -985,6 +924,7 @@ function ScreenTile({
   focused,
   onFocus,
   onExpand,
+  onClose,
   theme,
   mode,
   rendererMode = "sandpack",
@@ -1063,27 +1003,49 @@ function ScreenTile({
             </span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onExpand();
-          }}
-          onKeyDown={(e) => {
-            // Prevent the outer key handler from also firing on Space /
-            // Enter — the expand button should only expand, not also
-            // focus-then-expand which would double-dispatch.
-            if (e.key === "Enter" || e.key === " ") e.stopPropagation();
-          }}
-          className={cn(
-            "shrink-0 flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] transition-colors",
-            "text-muted-foreground hover:bg-muted hover:text-foreground"
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onExpand();
+            }}
+            onKeyDown={(e) => {
+              // Prevent the outer key handler from also firing on Space /
+              // Enter — the expand button should only expand, not also
+              // focus-then-expand which would double-dispatch.
+              if (e.key === "Enter" || e.key === " ") e.stopPropagation();
+            }}
+            className={cn(
+              "flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] transition-colors",
+              "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+            title="Expand — focus this screen and switch to Fit zoom"
+            aria-label={`Expand ${design.name} to Fit zoom`}
+          >
+            <Maximize2 className="h-3 w-3" />
+          </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") e.stopPropagation();
+              }}
+              className={cn(
+                "flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] transition-colors",
+                "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              )}
+              title={`Delete ${design.name}`}
+              aria-label={`Delete ${design.name}`}
+            >
+              <X className="h-3 w-3" />
+            </button>
           )}
-          title="Expand — focus this screen and switch to Fit zoom"
-          aria-label={`Expand ${design.name} to Fit zoom`}
-        >
-          <Maximize2 className="h-3 w-3" />
-        </button>
+        </div>
       </div>
 
       {/* The tile body. We set an explicit aspect ratio rather than

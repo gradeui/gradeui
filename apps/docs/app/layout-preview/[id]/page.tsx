@@ -1,42 +1,41 @@
 "use client";
 
 /**
- * /layout-preview/[id] — a minimal, chromeless Sandpack that renders a
- * single reference layout from `@gradeui/studio/playbook`. Exists purely
- * as a target for the Playwright thumbnail script
- * (`scripts/capture-layout-thumbnails.mjs`): the script visits this URL
- * for each layout, waits for the preview to boot, and screenshots the
- * viewport into `public/layout-thumbs/<id>.png`.
+ * /layout-preview/[id] — a minimal, chromeless preview that renders a
+ * single reference layout from `@gradeui/studio/playbook`. Used by:
+ *
+ *   - The Playwright thumbnail script (`scripts/capture-layout-thumbnails.mjs`)
+ *     — visits this URL per layout, waits for ready, screenshots into
+ *     `public/layout-thumbs/<id>.png`.
+ *   - The Playwright responsive checker (`scripts/check-layouts.mjs`)
+ *     — visits at multiple viewport widths, captures console errors,
+ *     writes a manifest the responsive-reviewer skill consumes.
+ *
+ * Renderer: Fast Frame (`<TileFastMount>`), not Sandpack.
+ *
+ *   Sandpack iframes install `@gradeui/ui@latest` from npm — so a layout
+ *   that uses an unpublished component (e.g. Map, freshly added) silently
+ *   fails: the import resolves to undefined and React errors with
+ *   "Element type is invalid". Fast Frame instead loads workspace source
+ *   via the host app's bundle, so the same layout works the moment the
+ *   workspace `dist` is built. See `apps/docs/STUDIO.md` "Fast Frame"
+ *   and "dist-rebuild gotcha" sections for the full picture.
  *
  * Design goals:
- *   - Fixed viewport size matches the thumbnail aspect the picker shows
- *     (1280×800, i.e. 16:10) so the capture never crops unexpectedly.
- *   - No header, no scrollbars, no interactive chrome — we want a pure
- *     preview surface.
- *   - Theme is the site's active theme. That means thumbnails match the
- *     current palette; if the user swaps brand tokens, regenerating is
- *     a one-liner (`pnpm -F @gradeui/docs capture:layout-thumbs`).
- *   - A query param `?snap=1` (or env `E2E=1`) hides even the loading
- *     spinner so the capture frame is stable. Keep the page usable
- *     without the flag for manual debugging.
+ *   - No header, no scrollbars, no interactive chrome — pure preview surface.
+ *   - Theme is the site's active theme; thumbnails match the live palette.
+ *   - `?snap=1` (or env `E2E=1`) hides the loading spinner so headless
+ *     captures get a stable frame. Keep the page usable without the flag
+ *     for manual debugging.
  *
  * This route is deliberately excluded from the marketing site navigation
  * — it's tooling. Do not link it from user-visible surfaces.
  */
 
 import { use, useEffect, useMemo, useState } from "react";
-import {
-  SandpackProvider,
-  SandpackPreview,
-  SandpackLayout,
-} from "@codesandbox/sandpack-react";
 import { REFERENCE_LAYOUTS } from "@gradeui/studio/playbook";
-import {
-  buildSandpackFiles,
-  PLAYGROUND_DEPENDENCIES,
-  PLAYGROUND_EXTERNAL_RESOURCES,
-  prepareAppSource,
-} from "@/lib/chat-sandpack";
+
+import { TileFastMount } from "@/components/studio/fast-frame";
 import { useGradeTheme } from "@/components/grade-theme-provider";
 
 export default function LayoutPreviewPage({
@@ -47,26 +46,20 @@ export default function LayoutPreviewPage({
   searchParams: Promise<{ snap?: string }>;
 }) {
   const { id } = use(params);
-  const { snap } = use(searchParams);
-  const snapMode = snap === "1" || process.env.NEXT_PUBLIC_E2E === "1";
+  // searchParams is consumed but not currently read — kept on the
+  // signature for future `?snap=1` hooks (loading-spinner suppression
+  // etc.). Read with `use(searchParams)` when needed.
+  void searchParams;
 
-  const { theme } = useGradeTheme();
+  const { theme, isDark } = useGradeTheme();
+  const mode = isDark ? "dark" : "light";
+
   const layout = useMemo(
     () => REFERENCE_LAYOUTS.find((l) => l.id === id),
     [id]
   );
 
-  const files = useMemo(() => {
-    if (!layout) return null;
-    return buildSandpackFiles({
-      appSource: prepareAppSource(layout.scaffold),
-      theme,
-      mode: "light",
-      appSourceIsPrepared: true,
-    });
-  }, [layout, theme]);
-
-  if (!layout || !files) {
+  if (!layout) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background text-sm text-muted-foreground">
         Unknown layout id: <code className="ml-2 font-mono">{id}</code>
@@ -75,54 +68,27 @@ export default function LayoutPreviewPage({
   }
 
   return (
-    // Chromeless wrapper. The Sandpack preview fills 100vw × 100vh so
-    // Playwright can just screenshot the page without touching the DOM.
+    // Chromeless wrapper — Fast Frame fills 100vw × 100vh so Playwright
+    // can screenshot the page without touching any DOM beyond this root.
     <div
       data-layout-id={id}
       className="h-screen w-screen overflow-hidden bg-background"
     >
-      <SandpackProvider
-        template="react-ts"
-        files={files}
-        customSetup={{
-          dependencies: PLAYGROUND_DEPENDENCIES,
-        }}
-        options={{
-          externalResources: [...PLAYGROUND_EXTERNAL_RESOURCES],
-          recompileMode: "immediate",
-          // Bump the bundler timeout — a cold boot plus the `@gradeui/ui`
-          // install pulls from npm, which is fine for interactive use
-          // but tight for headless capture. 60s is enough headroom even
-          // on slow CI runners.
-          bundlerTimeOut: 60_000,
-        }}
-      >
-        <SandpackLayout className="!rounded-none !border-none !h-screen">
-          <SandpackPreview
-            showNavigator={false}
-            showOpenInCodeSandbox={false}
-            showRefreshButton={false}
-            showSandpackErrorOverlay={!snapMode}
-            showOpenNewtab={false}
-            className="!h-screen !w-screen"
-          />
-        </SandpackLayout>
-        {/* Signal readiness to the Playwright driver. The bundler doesn't
-            expose a clean "client rendered" hook from here, so we lean on
-            the same polling the capture script uses — waiting for the
-            iframe to have non-zero height and then a short settle period.
-            See scripts/capture-layout-thumbnails.mjs. */}
-        <ReadinessBeacon id={id} />
-      </SandpackProvider>
+      <TileFastMount appSource={layout.scaffold} theme={theme} mode={mode} />
+      <ReadinessBeacon id={id} />
     </div>
   );
 }
 
 /**
- * Invisible DOM marker the Playwright script uses as its "OK, Sandpack
- * mounted" sentinel. Separate from the iframe-readiness wait — that's
- * what the script polls for content — but a nice cheap hook for
- * "the outer page rendered".
+ * Invisible DOM marker the Playwright drivers wait on. Flips
+ * `data-ready="0"` → `"1"` once the outer React tree has mounted —
+ * i.e. the iframe is in the document. Note this does NOT mean the
+ * iframe's content has rendered yet. Capture scripts settle for a
+ * short window after the marker fires to let the in-iframe sucrase
+ * compile + first paint complete. See:
+ *   - scripts/capture-layout-thumbnails.mjs
+ *   - scripts/check-layouts.mjs
  */
 function ReadinessBeacon({ id }: { id: string }) {
   const [mounted, setMounted] = useState(false);

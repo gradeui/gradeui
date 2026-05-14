@@ -7,6 +7,18 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./content/**/*.{js,ts,jsx,tsx,mdx}",
+    // Scan the workspace @gradeui/ui package so its component classes
+    // (e.g. ToggleGroup's `data-[state=on]:bg-background`) get
+    // compiled into the docs Tailwind output. Without this, any
+    // component imported from @gradeui/ui that has no docs-local
+    // mirror under ./components/ui/ ships with its variant classes
+    // missing from the CSS — they appear in the className string
+    // but generate no styles. Belt-and-braces: scan source for
+    // dev-mode hot reloads, scan dist so the production build
+    // matches what runs in the iframe.
+    "../../packages/ui/components/**/*.{ts,tsx}",
+    "../../packages/ui/lib/**/*.{ts,tsx}",
+    "../../packages/ui/dist/index.{js,mjs}",
   ],
   theme: {
     extend: {

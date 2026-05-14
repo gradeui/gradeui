@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@gradeui/ui";
+import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Design } from "@/lib/studio-designs";
 
@@ -42,6 +43,17 @@ interface DesignTabsProps {
    *  request. Optional so callers that don't want duplication can omit
    *  it — the icon will be hidden in that case. */
   onDuplicate?: (id: string) => void;
+  /** Open the reference-layout / paste-code picker. When provided, a
+   *  "Starters" affordance renders alongside "+ New" + "Duplicate"
+   *  (they're all "add a screen" actions, so they belong together).
+   *  Omit to hide the button entirely — the chrome stays clean when
+   *  the host doesn't want the starter picker reachable from here. */
+  onStartFromLayout?: () => void;
+  /** Optional content rendered at the far-right of the strip
+   *  (pushed via ml-auto). Used by the canvas to dock the viewport
+   *  picker alongside the screen tabs, keeping mobile/tablet/desktop
+   *  toggles close to the canvas they affect. */
+  rightSlot?: React.ReactNode;
   /** False when the parent has hit its design cap. Disables the "New"
    *  and "Duplicate" affordances and surfaces a tooltip explaining
    *  why. */
@@ -57,6 +69,8 @@ export function DesignTabs({
   onClose,
   onRename,
   onDuplicate,
+  onStartFromLayout,
+  rightSlot,
   canAddMore = true,
   className,
 }: DesignTabsProps) {
@@ -133,6 +147,36 @@ export function DesignTabs({
           <Copy className="h-3 w-3" />
           Duplicate
         </button>
+      )}
+      {onStartFromLayout && (
+        <button
+          type="button"
+          onClick={onStartFromLayout}
+          disabled={!canAddMore}
+          className={cn(
+            "shrink-0 flex items-center gap-1 px-2 py-1 rounded text-[11px]",
+            "text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
+            "disabled:opacity-40 disabled:pointer-events-none"
+          )}
+          aria-label="Start from a reference layout"
+          title={
+            canAddMore
+              ? "Start a new screen from a reference layout or pasted JSX"
+              : "Design cap reached"
+          }
+        >
+          <Sparkles className="h-3 w-3" />
+          Starters
+        </button>
+      )}
+      {rightSlot && (
+        // ml-auto pushes the slot to the far right of the flex row.
+        // The wrapping div lets the slot host whatever it wants
+        // (a ToggleGroup for viewport width, a button cluster,
+        // anything) without leaking flex assumptions into the slot.
+        <div className="ml-auto flex items-center shrink-0">
+          {rightSlot}
+        </div>
       )}
 
       {/* Delete-confirm modal. Reused across every tab because only

@@ -1,0 +1,27 @@
+{
+  "layoutId": "confetti-celebration",
+  "capturedAt": "2026-05-05T15:39:58.195Z",
+  "base": "http://localhost:3000",
+  "snapshots": [
+    {
+      "viewportWidth": 375,
+      "file": "confetti-celebration/375.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 768,
+      "file": "confetti-celebration/768.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 1024,
+      "file": "confetti-celebration/1024.png",
+      "consoleErrors": []
+    },
+    {
+      "viewportWidth": 1440,
+      "file": "confetti-celebration/1440.png",
+      "consoleErrors": []
+    }
+  ]
+}

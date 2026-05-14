@@ -44,6 +44,7 @@ const componentDescriptions: Record<string, string> = {
   "Three Scene": "WebGL primitive for shader backgrounds, generative visuals, and custom three.js scenes.",
   "Shader Preset Preview": "Hover-to-live thumbnail card for a shader preset.",
   "Shader Preset Picker": "Runtime gallery of shader presets — click to select.",
+  Map: "Provider-agnostic map primitive (MapLibre / Mapbox / Google). DOM markers inherit Grade tokens.",
 };
 
 export default function ComponentsPage() {
