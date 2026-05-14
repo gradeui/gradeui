@@ -80,7 +80,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "components/ui/*.md"
   ],
   "sideEffects": [
     "**/*.css"

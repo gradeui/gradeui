@@ -165,4 +165,4 @@ export const ALLOWED_EXTERNAL_IMPORTS = [
  * gap. If a non-layout component needs similar treatment, consider
  * fixing its aliases first.
  */
-export const PINNED_COMPONENTS = ["Stack", "Row", "Grid", "Flex"] as const;
+export const PINNED_COMPONENTS = ["AppShell", "Stack", "Row", "Grid", "Flex"] as const;

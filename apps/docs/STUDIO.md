@@ -46,15 +46,17 @@ Historical note: this was originally an inline `<script>` baked into `/public/in
 `@gradeui/studio` (in `packages/studio/`) owns everything the model is *told* about the design system — the allow-list, the per-component usage notes, and the seedable reference apps. Three primitives, one folder:
 
 ```
+packages/ui/components/ui/
+├── button.tsx                      # the component
+├── button.md                       # ◀ sidecar (next to its source)
+├── card.tsx
+├── card.md
+└── …
+
 packages/studio/src/playbook/
 ├── components/
 │   ├── allowlist.ts                # ALLOWED_COMPONENTS, ALLOWED_EXTERNAL_IMPORTS, PINNED_COMPONENTS
 │   └── sidecars.generated.ts       # AUTO-GENERATED — do NOT edit by hand
-├── sidecars/
-│   ├── card.md                     # one .md per allowlisted component
-│   ├── button.md
-│   ├── map.md
-│   └── …                            # frontmatter + canonical example + anti-patterns
 └── layouts/
     ├── index.ts                    # REFERENCE_LAYOUTS registry + MISSING_COMPONENTS
     ├── scaffolds.generated.ts      # AUTO-GENERATED — do NOT edit by hand
@@ -64,15 +66,15 @@ packages/studio/src/playbook/
         └── …                        # one .jsx per reference layout
 ```
 
-The two `*.generated.ts` files are inlined-string maps so the playbook has zero filesystem deps at runtime (it can be imported by both server and Sandpack-in-iframe code paths). Always edit the source `.md` / `.jsx` and re-run the generator — never edit the generated file.
+Sidecars live in **`packages/ui/components/ui/<name>.md`** so the single-source-of-truth promise holds: the component and its doc change in the same commit, the same PR, the same review. `packages/studio/scripts/generate-sidecars.mjs` reads them all and emits `playbook/components/sidecars.generated.ts` — an inlined-string map so the playbook has zero filesystem deps at runtime (it can be imported by both server and Sandpack-in-iframe code paths). Always edit the source `.md` / `.jsx` and re-run the generator — never edit the generated file.
 
 | You want to… | Edit | Then run |
 |---|---|---|
 | add a component to the model's allow-list | `playbook/components/allowlist.ts` (the `ALLOWED_COMPONENTS` array) — also add the shim in `chat-sandpack.ts` `componentFiles` | nothing; pure TS |
-| document how to use a component | `playbook/sidecars/<kebab-name>.md` | `pnpm -F @gradeui/studio generate:sidecars` |
+| document how to use a component | `packages/ui/components/ui/<kebab-name>.md` (next to the `.tsx`) | `pnpm -F @gradeui/studio generate:sidecars` |
 | seed a full reference app | `playbook/layouts/scaffolds/<kebab-id>.jsx` + entry in `playbook/layouts/index.ts` `REFERENCE_LAYOUTS` | `pnpm -F @gradeui/studio generate:scaffolds` |
 
-### Component sidecars — `playbook/sidecars/*.md`
+### Component sidecars — `packages/ui/components/ui/*.md`
 
 One markdown file per allowlisted component. YAML frontmatter (name, import, subcomponents, props, when_to_use, composes_with, optional aliases / variants / sizes / notes) followed by a short prose body with one canonical JSX example and (optionally) a block of anti-patterns. The retrieval layer scans the user's prompt against frontmatter `name` + `aliases` and pins the matching sidecar(s) under a "REFERENCE COMPONENTS" block in the system prompt.
 
@@ -236,7 +238,7 @@ Selections with a `componentName` (i.e. picked a DS component with `data-gds-par
 ### Adding settings-panel support for a new component
 
 1. Add `data-gds-part="<kebab-name>"` to the component's root element.
-2. Make sure the component's sidecar (`packages/studio/src/playbook/sidecars/<name>.md`) declares its props in the frontmatter using one of the recognised shapes — the parser comments in `parsePropSignature()` in `lib/component-refs.ts` list them. Quoted-string unions, numeric unions, `boolean`, `number`, `string`, and `parens enum` all work out of the box. Function types and object types land as `kind: "unknown"` (hidden).
+2. Make sure the component's sidecar (`packages/ui/components/ui/<name>.md`, next to the `.tsx`) declares its props in the frontmatter using one of the recognised shapes — the parser comments in `parsePropSignature()` in `lib/component-refs.ts` list them. Quoted-string unions, numeric unions, `boolean`, `number`, `string`, and `parens enum` all work out of the box. Function types and object types land as `kind: "unknown"` (hidden).
 
 ### Docked vs. inline variant (v1.3)
 

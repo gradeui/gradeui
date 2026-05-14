@@ -10,7 +10,6 @@ This package is **private** and consumed via pnpm `workspace:*`. It is not publi
 src/
 ├── index.ts              # top-level barrel — everything re-exports here
 ├── playbook/             # ◀ MODEL-FACING CONTENT (populated now)
-│   ├── sidecars/         # per-component markdown briefs (the model reads these)
 │   ├── components/       # frontmatter parser, retrieval, render, manifest, allowlist
 │   ├── prompts/          # system prompt + pinned components
 │   ├── templates/        # starter prompts for the launchpad
@@ -18,6 +17,8 @@ src/
 ├── ui/                   # (future) React chrome — canvas, chat, settings-panel
 └── runtime/              # (future) Sandpack harness — file tree, virtual component source
 ```
+
+The per-component markdown briefs (sidecars) live in **`packages/ui/components/ui/<name>.md`** — next to their `.tsx` source so the single-source-of-truth promise actually holds. `scripts/generate-sidecars.mjs` reads them and emits `playbook/components/sidecars.generated.ts` (committed) so the playbook stays filesystem-free at runtime.
 
 The folder split mirrors the three distinct concerns inside Studio:
 

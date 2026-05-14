@@ -2,14 +2,21 @@
 /**
  * generate-sidecars.mjs
  *
- * Reads every `src/playbook/sidecars/*.md` and emits
+ * Reads every `packages/ui/components/ui/*.md` (sidecars live next to
+ * their .tsx source) and emits
  * `src/playbook/components/sidecars.generated.ts` containing the raw
  * markdown as a `Record<string, string>`.
  *
- * Why: the playbook has a zero-runtime-dep guarantee — no `fs`, no Node
- * specifics. The frontmatter parser and retrieval logic run against
- * in-memory strings so the package is portable to any environment
- * (edge runtime, MCP server, browser — anywhere).
+ * Sidecars live in @gradeui/ui because (a) the single-source-of-truth
+ * promise — sidecar and component change in the same commit — only
+ * holds if they're co-located, and (b) shipping the .md files inside
+ * the published @gradeui/ui tarball lets external consumers feed them
+ * into their own AI tooling without reaching into @gradeui/studio.
+ *
+ * Why generated: the playbook has a zero-runtime-dep guarantee — no
+ * `fs`, no Node specifics. The frontmatter parser and retrieval logic
+ * run against in-memory strings so the package is portable to any
+ * environment (edge runtime, MCP server, browser — anywhere).
  *
  * Run this any time you edit or add a `.md` sidecar:
  *
@@ -25,7 +32,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SIDECARS_DIR = join(__dirname, "..", "src", "playbook", "sidecars");
+const SIDECARS_DIR = join(__dirname, "..", "..", "ui", "components", "ui");
 const OUT_FILE = join(__dirname, "..", "src", "playbook", "components", "sidecars.generated.ts");
 
 const files = readdirSync(SIDECARS_DIR)
@@ -46,7 +53,7 @@ const entries = files.map((file) => {
 
 const header = `/* eslint-disable */
 // THIS FILE IS GENERATED — do not edit by hand.
-// Source: packages/studio/src/playbook/sidecars/*.md
+// Source: packages/ui/components/ui/*.md
 // Regenerate: pnpm -F @gradeui/studio generate:sidecars
 //
 // Sidecars are inlined as strings so the playbook has zero runtime deps
