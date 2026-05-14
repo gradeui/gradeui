@@ -19,6 +19,17 @@ const config: Config = {
     "../../packages/ui/components/**/*.{ts,tsx}",
     "../../packages/ui/lib/**/*.{ts,tsx}",
     "../../packages/ui/dist/index.{js,mjs}",
+    // Scan the @gradeui/studio playbook scaffolds so the Tailwind
+    // utilities they use (pl-7, h-3.5, w-3.5, etc. — the search-icon
+    // overlay pattern, the chart spacing classes, the data-table-
+    // filters layout chrome) actually generate CSS rules. Without
+    // this, the iframe loads packages/ui/dist/styles.css which only
+    // contains classes used in packages/ui itself, and scaffold
+    // utilities render with their classes present in className but
+    // zero rules attached — most visibly: `pl-7` collapsing to 0px
+    // padding-left so the search icon overlaps the placeholder.
+    "../../packages/studio/src/playbook/layouts/scaffolds/*.{jsx,tsx}",
+    "../../packages/studio/src/playbook/templates/*.{ts,tsx}",
   ],
   theme: {
     extend: {
