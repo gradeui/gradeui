@@ -20,7 +20,7 @@
     "components"
   ],
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
