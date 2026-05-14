@@ -1,6 +1,6 @@
 {
   "name": "@gradeui/studio",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Grade Design System Studio — the chat+preview workbench for designing UIs against @gradeui/ui. Houses the playbook (model-facing knowledge), and will eventually house the UI chrome and Sandpack runtime.",
   "private": true,
   "license": "UNLICENSED",

@@ -1,5 +1,155 @@
 # @gradeui/ui
 
+## 0.9.0
+
+### Minor Changes
+
+- 6a61a68: **AppShell**: add `Header`, `Aside`, `Footer` slots and a new `nav="three-pane"` variant.
+
+  The shell is now a CSS-grid template-areas layout keyed off `data-nav` on the
+  root, so slot order in JSX no longer matters — each slot has a fixed
+  `grid-area`. This unlocks marketing-page layouts (`<AppShellHeader>` + main
+
+  - `<AppShellFooter>`) and the Slack/Mail/Notion 3-column shape (nav rail +
+    fixed Aside + flex Main).
+
+  The middle column width in `nav="three-pane"` is set by the
+  `--rds-app-shell-aside` CSS variable (default 320px) — override per-screen
+  without forking the component.
+
+  The existing `nav="none" | "top" | "side"` variants keep their previous
+  visual behaviour; only the implementation moved to template areas.
+
+  New exports: `AppShellHeader`, `AppShellAside`, `AppShellFooter` plus their
+  prop types.
+
+  **Resizable** (new): port of shadcn's `resizable`, built on
+  `react-resizable-panels`. Use when you want user-adjustable column widths
+  inside any layout — e.g. a 3-column app where the user can drag the divider
+  between list and detail. Static layouts should keep using
+  `<AppShell nav="three-pane">`.
+
+  New exports: `ResizablePanelGroup`, `ResizablePanel`, `ResizableHandle`.
+  New runtime dep: `react-resizable-panels@^2.1.7`.
+
+- 6a61a68: Add `<Map>` and `<MapMarker>` — a provider-agnostic map primitive.
+
+  The component lazy-loads one of three adapters per the `provider` prop:
+
+  - `maplibre` (default) — uses `maplibre-gl` + MapTiler tiles. The free
+    zero-key public demo on `gradeui.com` works via a referrer-locked
+    Grade-owned MapTiler key (lives in
+    `components/ui/map/demo-config.ts`); consumers on other domains must
+    pass their own key via the `tilerKey` prop.
+  - `mapbox` — requires `accessToken`. Same engine and style spec as
+    MapLibre, swap with one line.
+  - `google` — requires `apiKey`. Uses `AdvancedMarkerElement` for DOM
+    markers so children inherit `--rds-*` tokens like every other DS part.
+
+  All three SDKs are **optional peer deps** — `maplibre-gl`, `mapbox-gl`,
+  and `@googlemaps/js-api-loader` are declared in `peerDependenciesMeta`
+  as optional. Consumers install only what they use. Using a provider
+  without its SDK installed surfaces `onError({ code: "sdk-missing" })`
+  with a developer-facing message containing the install command.
+
+  API highlights (full spec in `packages/ui/MAP.md`, model-facing notes
+  in `packages/studio/src/playbook/components/map.md`):
+
+  - `<Map provider center zoom appearance="auto" hoveredId onHoveredIdChange>`
+  - `<MapMarker id at anchor>` — children are arbitrary DOM, inherit tokens
+  - `appearance="auto"` follows `<GradeThemeProvider>` mode (light/dark)
+  - Imperative ref: `flyTo(id|coords)`, `panTo`, `fitBounds`, `getCenter`,
+    `getZoom`, `getBounds`, plus `instance` (the provider-native escape
+    hatch — cast and use the SDK directly for 3D, custom layers, drawing,
+    heatmaps, etc.)
+
+  Sub-path exports `@gradeui/ui/map/maplibre`, `/map/mapbox`, `/map/google`
+  let consumers preload a single adapter (skipping the default async
+  boundary) for SSG or eager-load scenarios.
+
+  Coordinates are always `[lng, lat]` tuples in the public API. Each
+  adapter normalizes internally — Google's `{ lat, lng }` object form is
+  handled in `adapters/google.ts`.
+
+  Unblocks the `airbnb-listings` reference layout, parked under
+  `MISSING_COMPONENTS` in `packages/studio/src/playbook/layouts/index.ts`.
+  That scaffold ships in a follow-up changeset alongside the
+  `MISSING_COMPONENTS` cleanup.
+
+- 47b97b0: Foundation pass on Tabs, ToggleGroup, Button + new Breadcrumb primitive.
+
+  **Tabs**
+
+  - T-shirt sizes (`sm` / `md` / `lg`) via CVA, default `md`. A small
+    size context cascades from `TabsList` to every `TabsTrigger` so
+    consumers set the size once on the list.
+  - Explicit per-size heights on the trigger so vertical and horizontal
+    whitespace stay symmetric — fixes the "padding feels off" v1
+    papercut.
+  - New `tooltip` prop on `TabsTrigger`. Pass it on an icon-only trigger
+    and the component wraps the trigger in the design-system `Tooltip`
+    - auto-applies `aria-label` (if not set) so screen readers still
+      have an accessible name. Requires a `TooltipProvider` somewhere
+      above the tabs.
+  - `[&_svg]:size-*` baked into each size variant, so icon children
+    sit at the right scale without per-call className overrides.
+
+  **ToggleGroup**
+
+  - Self-contained CVA (`toggleGroupVariants` /
+    `toggleGroupItemVariants`) instead of composing `toggleVariants`
+    from `Toggle`. The two components have different intents
+    (standalone on/off vs in-group picker) and shouldn't share styling.
+  - Visual parity with `TabsList`/`TabsTrigger` — same pill chrome,
+    same active-state lift, same t-shirt scale. A segmented control
+    reads identically whether you reached for Tabs or ToggleGroup.
+  - Size cascades from group to items via context (matches the Tabs
+    pattern).
+
+  **Button**
+
+  - Size scale aligned to Tabs heights exactly: `sm` = h-7, `md` = h-8,
+    `lg` = h-10. Type and icon sizes follow the same scale.
+  - `default` is preserved as an alias for `md` so existing call sites
+    keep working through the rename.
+  - A button placed next to a `TabsList` of the same size now lines up
+    edge-to-edge without per-call overrides.
+
+  **New `Breadcrumb` primitive**
+
+  - Composable, surface-less navigation primitive (Breadcrumb /
+    BreadcrumbList / BreadcrumbItem / BreadcrumbLink / BreadcrumbPage /
+    BreadcrumbSeparator / BreadcrumbEllipsis).
+  - Density matches `TabsTrigger`. Theme-token colours throughout.
+  - `BreadcrumbLink` renders an `<a>` when `href` is set, a `<button>`
+    for in-app click handlers, or a `<span>` when `asChild` is used —
+    same visual either way.
+
+  **Removed: `TopMenu`**
+
+  - `TopMenu` and its subcomponents (`TopMenuUser`, `TopMenuUserItem`,
+    `TopMenuUserSection`) are dropped from the package. Inherited from
+    an earlier iteration and too specific to one app-shell shape to
+    pull its weight as a design-system primitive. The new `Breadcrumb`
+    covers the navigation-crumbs case generically; compose any other
+    header chrome at the consumer level.
+
+  **Theme system**
+
+  - `applyThemeToRoot` is now a thin wrapper over the new
+    `applyThemeToElement(theme, mode, target)` so themes can be scoped
+    to any `HTMLElement` (a div, an iframe's document element). Same
+    semantics as before for the existing usage.
+
+  **Studio theme**
+
+  - New `studioInput` ships as the default chrome theme — off-white
+    parchment surface, near-black text and buttons via a small
+    per-theme tokenOverrides pass that re-routes the primary token to
+    the dark end of the neutral ramp.
+  - `defaultThemeId` now points at `studio`. Existing user themes
+    (calm, energy) remain available in the switcher.
+
 ## 0.8.2
 
 ### Patch Changes
