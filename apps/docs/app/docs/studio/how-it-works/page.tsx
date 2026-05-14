@@ -166,9 +166,10 @@ export default function StudioHowItWorksPage() {
         </h2>
         <p className="leading-7">
           Each component has a sidecar at{" "}
-          <Tok>apps/docs/components/ui/&lt;name&gt;.md</Tok>. The file is
-          standard Markdown with a YAML frontmatter block followed by one
-          or more fenced JSX examples. Both halves matter: the frontmatter
+          <Tok>packages/studio/src/playbook/sidecars/&lt;name&gt;.md</Tok>.
+          The file is standard Markdown with a YAML frontmatter block
+          followed by one or more fenced JSX examples. Both halves matter:
+          the frontmatter
           is machine-readable (props, aliases, when-to-use), and the
           examples are lifted verbatim into the system prompt so the model
           sees idiomatic usage alongside the schema.
@@ -366,8 +367,8 @@ const refsBlock = renderComponentRefsBlock({ onlyFor: relevant });`}</CodeBlock>
           </li>
           <li>
             <strong>The sidecar</strong> —{" "}
-            <Tok>apps/docs/components/ui/&lt;name&gt;.md</Tok> with the
-            frontmatter fields above and at least one{" "}
+            <Tok>packages/studio/src/playbook/sidecars/&lt;name&gt;.md</Tok>{" "}
+            with the frontmatter fields above and at least one{" "}
             <Tok>```jsx</Tok> example. Pick aliases that match how a user
             would describe the component out loud — this is what makes
             retrieval fire.

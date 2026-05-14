@@ -236,7 +236,7 @@ Selections with a `componentName` (i.e. picked a DS component with `data-gds-par
 ### Adding settings-panel support for a new component
 
 1. Add `data-gds-part="<kebab-name>"` to the component's root element.
-2. Make sure the component's sidecar (`apps/docs/components/ui/<name>.md`) declares its props in the frontmatter using one of the recognised shapes — the parser comments in `parsePropSignature()` in `lib/component-refs.ts` list them. Quoted-string unions, numeric unions, `boolean`, `number`, `string`, and `parens enum` all work out of the box. Function types and object types land as `kind: "unknown"` (hidden).
+2. Make sure the component's sidecar (`packages/studio/src/playbook/sidecars/<name>.md`) declares its props in the frontmatter using one of the recognised shapes — the parser comments in `parsePropSignature()` in `lib/component-refs.ts` list them. Quoted-string unions, numeric unions, `boolean`, `number`, `string`, and `parens enum` all work out of the box. Function types and object types land as `kind: "unknown"` (hidden).
 
 ### Docked vs. inline variant (v1.3)
 
