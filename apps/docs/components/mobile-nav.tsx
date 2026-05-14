@@ -20,10 +20,7 @@ import { FeedbackButton } from "@/components/feedback-button";
 const navItems = [
   { href: "/docs", label: "Docs" },
   { href: "/components", label: "Components" },
-  { href: "/templates", label: "Templates" },
-  { href: "/blocks", label: "Blocks" },
-  { href: "/play", label: "Playground" },
-  { href: "/brand", label: "Brand" },
+  { href: "/studio", label: "Studio" },
   { href: "/changelog", label: "Changelog" },
   { href: "/roadmap", label: "Roadmap" },
 ];
