@@ -29,6 +29,19 @@ import type { GeneratedTheme, ThemeInput } from "./types";
  * second theme that wants this shape, ideally via a declarative
  * `tokenOverrides` field on `ThemeInput`.
  */
+/**
+ * Public counterpart of the registry's auto-applied overrides. Call this
+ * on any `GeneratedTheme` to get the same chrome the in-page Studio
+ * applies — used by the CodeSandbox export so the sandbox preview reads
+ * with the same near-black-on-cream palette as Studio.
+ *
+ * Until `tokenOverrides` lives in `@gradeui/ui` itself, callers outside
+ * the registry need this entrypoint to get parity.
+ */
+export function applyBuiltInThemeOverrides(theme: GeneratedTheme): GeneratedTheme {
+  return theme.id === "studio" ? applyStudioOverrides(theme) : theme;
+}
+
 function applyStudioOverrides(theme: GeneratedTheme): GeneratedTheme {
   const n = theme.ramps.neutral;
   return {

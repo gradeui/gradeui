@@ -28,6 +28,7 @@ import {
   formatThemeVars,
   prepareAppSource,
 } from "./chat-sandpack";
+import { applyBuiltInThemeOverrides } from "./themes";
 import type { GeneratedTheme } from "./themes";
 
 /** Current published version of @gradeui/ui. Bump when we pin to a newer
@@ -76,8 +77,19 @@ export function buildNpmSandboxFiles(params: {
   const prepared = prepareAppSource(appSource);
   const rewritten = rewriteImportsToGradeui(prepared);
 
-  const lightVars = formatThemeVars(theme, "light");
-  const darkVars = formatThemeVars(theme, "dark");
+  // Apply the same per-theme tokenOverrides Studio uses in-page. The
+  // registry-loaded built-in themes already have these baked in, but a
+  // freshly-edited theme from the builder is raw — and the studio
+  // theme's near-black primary in particular only exists via the
+  // override. Without this, the sandbox renders with the theme's
+  // unedited mid-grey primary instead of the cream/black chrome the
+  // user sees in Studio. Once `tokenOverrides` moves into
+  // @gradeui/ui's theme generator (and ships in the package), this
+  // call becomes a no-op and can be deleted.
+  const themed = applyBuiltInThemeOverrides(theme);
+
+  const lightVars = formatThemeVars(themed, "light");
+  const darkVars = formatThemeVars(themed, "dark");
 
   // CRA-style project — minimum surface area, works out of the box on
   // CodeSandbox's default `react-ts` sandbox runtime.
