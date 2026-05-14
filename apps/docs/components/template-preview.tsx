@@ -9,7 +9,6 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Avatar } from "@/components/ui/avatar";
 import { SideMenu } from "@/components/ui/side-menu";
-import { TopMenu } from "@/components/ui/top-menu";
 import { SimpleTabs, SimpleTabsPanel } from "@/components/ui/simple-tabs";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";

@@ -198,20 +198,6 @@ export {
   type SideMenuProps,
 } from "../components/ui/side-menu";
 
-export {
-  TopMenu,
-  TopMenuUser,
-  TopMenuUserItem,
-  TopMenuUserSection,
-  // TopMenu's inherited breadcrumb-data shape — namespaced so it
-  // doesn't clash with the `BreadcrumbItem` component from the new
-  // composable Breadcrumb primitive (which is the canonical one
-  // going forward).
-  type TopMenuBreadcrumbItem,
-  type TopMenuProps,
-  type TopMenuUserProps,
-  type TopMenuUserItemProps,
-} from "../components/ui/top-menu";
 
 export {
   SimpleTabs,

@@ -137,16 +137,6 @@ export {
   type SideMenuProps,
 } from "../components/ui/side-menu";
 
-export {
-  TopMenu,
-  TopMenuUser,
-  TopMenuUserItem,
-  TopMenuUserSection,
-  type TopMenuBreadcrumbItem,
-  type TopMenuProps,
-  type TopMenuUserProps,
-  type TopMenuUserItemProps,
-} from "../components/ui/top-menu";
 
 export {
   SimpleTabs,

@@ -47,13 +47,13 @@ Foundation pass on Tabs, ToggleGroup, Button + new Breadcrumb primitive.
   for in-app click handlers, or a `<span>` when `asChild` is used —
   same visual either way.
 
-**BREAKING — `TopMenu` type rename**
-- The legacy `BreadcrumbItem` interface exported from `TopMenu` is
-  renamed to `TopMenuBreadcrumbItem` so it doesn't collide with the
-  new `Breadcrumb` primitive's component exports.
-- Consumers importing `BreadcrumbItem` as a type from `@gradeui/ui`
-  for the `TopMenu` `breadcrumbs` prop need to update to
-  `TopMenuBreadcrumbItem`. The `TopMenu` runtime API is unchanged.
+**Removed: `TopMenu`**
+- `TopMenu` and its subcomponents (`TopMenuUser`, `TopMenuUserItem`,
+  `TopMenuUserSection`) are dropped from the package. Inherited from
+  an earlier iteration and too specific to one app-shell shape to
+  pull its weight as a design-system primitive. The new `Breadcrumb`
+  covers the navigation-crumbs case generically; compose any other
+  header chrome at the consumer level.
 
 **Theme system**
 - `applyThemeToRoot` is now a thin wrapper over the new
