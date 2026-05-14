@@ -78,8 +78,8 @@ function isFreeTierOnly(): boolean {
   return v === "1" || v === "true";
 }
 
-function resolveProvider(
-  skill: ComposeSkill<unknown, unknown>,
+function resolveProvider<I, O>(
+  skill: ComposeSkill<I, O>,
   override?: ProviderId,
 ): ProviderId {
   const freeOnly = isFreeTierOnly();
@@ -121,8 +121,8 @@ function resolveProvider(
   );
 }
 
-function resolveModel(
-  skill: ComposeSkill<unknown, unknown>,
+function resolveModel<I, O>(
+  skill: ComposeSkill<I, O>,
   provider: ProviderId,
 ): LanguageModel {
   const isVision = skill.frontmatter.vision === true;

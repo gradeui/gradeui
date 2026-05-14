@@ -11,7 +11,15 @@
  * same `runSkill()` runtime.
  */
 
-import type { ZodSchema } from "zod";
+import type { ZodType, ZodTypeDef } from "zod";
+
+/**
+ * Zod schema where the parsed Output is `T` but the Input can be wider —
+ * `SkillZodSchema<T>` constrains Input = Output, which breaks any schema that uses
+ * `.default()` (input becomes `T | undefined` even though output is `T`).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SkillZodSchema<T> = ZodType<T, ZodTypeDef, any>;
 
 /** Provider hint — the runner resolves this to a concrete model from env config. */
 export type ProviderId = "anthropic" | "google" | "openai";
@@ -65,16 +73,16 @@ export interface ComposeSkill<I = unknown, O = unknown> {
   /** System prompt — the body of the SKILL.md, with frontmatter stripped. */
   systemPrompt: string;
   /** Zod schema validating input. */
-  inputSchema: ZodSchema<I>;
+  inputSchema: SkillZodSchema<I>;
   /** Zod schema describing structured output. */
-  outputSchema: ZodSchema<O>;
+  outputSchema: SkillZodSchema<O>;
   /** Optional input formatter — defaults to JSON.stringify of the input. */
   formatInput?: FormatInput<I>;
 }
 
 /** Module shape that a skill's `schema.ts` must export. */
 export interface SkillSchemaModule<I = unknown, O = unknown> {
-  inputSchema: ZodSchema<I>;
-  outputSchema: ZodSchema<O>;
+  inputSchema: SkillZodSchema<I>;
+  outputSchema: SkillZodSchema<O>;
   formatInput?: FormatInput<I>;
 }
