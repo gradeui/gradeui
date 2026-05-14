@@ -235,9 +235,15 @@ ${darkVars}
   </body>
 </html>`;
 
+  // Pull in @gradeui/ui's shipped stylesheet — it carries the CSS that
+  // *can't* live in Tailwind utility classes, in particular the AppShell
+  // grid-template-areas keyed off `[data-nav]`. Without this the sandbox
+  // renders AppShell as a single column (nav stacks on top of main), so
+  // the main panel falls below the viewport fold and looks "empty".
   const indexTsx = `import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import "@gradeui/ui/styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
