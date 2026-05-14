@@ -2,6 +2,7 @@
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline } from "lucide-react";
 
 export default function ToggleGroupPage() {
@@ -137,6 +138,8 @@ export default function ToggleGroupPage() {
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="toggle-group" />
 
       <ComponentNav currentHref="/components/toggle-group" />
     </div>

@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -162,6 +163,8 @@ export default function CheckboxPage() {
           <li>Supports indeterminate state</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="checkbox" />
 
       <ComponentNav currentHref="/components/checkbox" />
     </div>

@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -162,6 +163,8 @@ export default function SwitchPage() {
           <li>Visible focus indicator</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="switch" />
 
       <ComponentNav currentHref="/components/switch" />
     </div>

@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -161,6 +162,8 @@ export default function LabelPage() {
           <li>Always use htmlFor to associate with form controls</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="label" />
 
       <ComponentNav currentHref="/components/label" />
     </div>

@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import {
   DropdownMenu,
@@ -315,6 +316,8 @@ const [showPanel, setShowPanel] = useState(false);
           <li>Typeahead support for quick navigation</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="dropdown-menu" />
 
       <ComponentNav currentHref="/components/dropdown-menu" />
     </div>

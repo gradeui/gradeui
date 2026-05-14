@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import {
   Accordion,
@@ -258,6 +259,8 @@ export default function AccordionPage() {
           <li>Proper focus management</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="accordion" />
 
       <ComponentNav currentHref="/components/accordion" />
     </div>

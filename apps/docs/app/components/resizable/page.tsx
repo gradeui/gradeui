@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -452,6 +453,8 @@ export default function ResizablePage() {
           </li>
         </ul>
       </div>
+
+      <SidecarBlock slug="resizable" />
 
       <ComponentNav currentHref="/components/resizable" />
     </div>

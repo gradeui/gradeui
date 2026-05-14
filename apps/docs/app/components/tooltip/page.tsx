@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import {
   Tooltip,
@@ -322,6 +323,8 @@ export default function TooltipPage() {
           <li>Screen readers announce tooltip content</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="tooltip" />
 
       <ComponentNav currentHref="/components/tooltip" />
     </div>

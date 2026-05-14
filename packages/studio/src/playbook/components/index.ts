@@ -27,3 +27,12 @@ export {
   ALLOWED_EXTERNAL_IMPORTS,
   PINNED_COMPONENTS,
 } from "./allowlist";
+
+/**
+ * Raw inlined sidecar markdown, keyed by filename ("button.md", "row.md",
+ * "<name>.md"). Exposed so the docs site (and any other consumer) can
+ * surface the same source-of-truth markdown that Studio feeds the model.
+ * Generated from packages/ui/components/ui/*.md by
+ * scripts/generate-sidecars.mjs.
+ */
+export { SIDECARS } from "./sidecars.generated";

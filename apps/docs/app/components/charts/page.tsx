@@ -25,6 +25,7 @@ import {
   XAxis,
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { ComponentNav } from "@/components/component-nav";
 
 const sampleData = [
@@ -242,6 +243,7 @@ export function MyChart() {
         </ul>
       </div>
 
+      <SidecarBlock slug="chart" />
       <ComponentNav currentHref="/components/charts" />
     </div>
   );

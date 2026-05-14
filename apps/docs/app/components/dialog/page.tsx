@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import {
   Dialog,
@@ -289,6 +290,8 @@ export default function DialogPage() {
           <li>Announces content to screen readers</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="dialog" />
 
       <ComponentNav currentHref="/components/dialog" />
     </div>

@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { Grid } from "@/components/ui/grid";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ComponentPreview } from "@/components/component-preview";
@@ -271,6 +272,8 @@ export default function GridPage() {
           </li>
         </ul>
       </div>
+
+      <SidecarBlock slug="grid" />
 
       <ComponentNav currentHref="/components/grid" />
     </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { Palette, Sparkles, Component, BookOpen } from "lucide-react";
 
 // Sample conversation — a designer exploring the DS
@@ -217,6 +218,8 @@ const handleSendMessage = async (message: string) => {
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="ai-chat" />
 
       <ComponentNav currentHref="/components/ai-chat" />
     </div>

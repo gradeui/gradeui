@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { Separator } from "@/components/ui/separator";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
@@ -234,6 +235,8 @@ export default function SeparatorPage() {
           <li>Decorative separators are hidden from screen readers</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="separator" />
 
       <ComponentNav currentHref="/components/separator" />
     </div>

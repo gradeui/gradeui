@@ -8,6 +8,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { CalendarDays } from "lucide-react";
 
 export default function HoverCardPage() {
@@ -171,6 +172,8 @@ export default function HoverCardPage() {
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="hover-card" />
 
       <ComponentNav currentHref="/components/hover-card" />
     </div>

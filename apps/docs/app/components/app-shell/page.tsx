@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import {
   AppShell,
   AppShellHeader,
@@ -740,6 +741,8 @@ export default function AppShellPage() {
           </li>
         </ul>
       </div>
+
+      <SidecarBlock slug="app-shell" />
 
       <ComponentNav currentHref="/components/app-shell" />
     </div>

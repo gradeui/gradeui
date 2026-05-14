@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 export default function AvatarPage() {
   return (
@@ -137,6 +138,8 @@ export default function AvatarPage() {
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="avatar" />
 
       <ComponentNav currentHref="/components/avatar" />
     </div>

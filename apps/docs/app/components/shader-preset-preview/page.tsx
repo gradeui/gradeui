@@ -1,4 +1,5 @@
 import { ShaderPresetPreview } from "@/components/ui/shader-preset-preview";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
 
@@ -61,6 +62,7 @@ export default function ShaderPresetPreviewPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">Props</h2>
         <PropsTable props={previewProps} />
       </div>
+      <SidecarBlock slug="shader-preset-preview" />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { ChevronsUpDown } from "lucide-react";
 
 export default function CollapsiblePage() {
@@ -115,6 +116,8 @@ const [isOpen, setIsOpen] = React.useState(false)
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="collapsible" />
 
       <ComponentNav currentHref="/components/collapsible" />
     </div>

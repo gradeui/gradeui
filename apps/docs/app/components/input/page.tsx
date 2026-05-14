@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentPreview } from "@/components/component-preview";
@@ -129,6 +130,8 @@ export default function InputPage() {
           <li>Focus ring visible for keyboard users</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="input" />
 
       <ComponentNav currentHref="/components/input" />
     </div>

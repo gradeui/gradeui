@@ -115,6 +115,7 @@ const componentsNav: NavSection[] = [
   {
     title: "Navigation",
     items: [
+      { title: "Breadcrumb", href: "/components/breadcrumb" },
       { title: "Side Menu", href: "/components/side-menu" },
       { title: "Tabs", href: "/components/tabs" },
       { title: "Simple Tabs", href: "/components/simple-tabs" },

@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
 import {
@@ -300,6 +301,8 @@ import { SimpleTabsRoot, SimpleTabsList, SimpleTabsTrigger, SimpleTabsContent } 
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="simple-tabs" />
 
       <ComponentNav currentHref="/components/simple-tabs" />
     </div>

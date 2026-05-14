@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 export default function PopoverPage() {
   return (
@@ -130,6 +131,8 @@ export default function PopoverPage() {
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="popover" />
 
       <ComponentNav currentHref="/components/popover" />
     </div>

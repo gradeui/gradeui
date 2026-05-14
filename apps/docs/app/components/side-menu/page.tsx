@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
 import { SideMenu } from "@/components/ui/side-menu";
@@ -259,6 +260,8 @@ interface SideMenuSection {
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="side-menu" />
 
       <ComponentNav currentHref="/components/side-menu" />
     </div>

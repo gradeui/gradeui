@@ -1,4 +1,5 @@
 import { ThreeScene } from "@/components/ui/three-scene";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
 
@@ -104,6 +105,7 @@ export default function ThreeScenePage() {
           to browse what&apos;s live.
         </p>
       </div>
+      <SidecarBlock slug="three-scene" />
     </div>
   );
 }

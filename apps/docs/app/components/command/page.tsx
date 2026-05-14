@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import * as React from "react";
 import { Calculator, Calendar, CreditCard, Settings, Smile, User } from "lucide-react";
 
@@ -181,6 +182,8 @@ React.useEffect(() => {
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="command" />
 
       <ComponentNav currentHref="/components/command" />
     </div>

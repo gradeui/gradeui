@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { Flex } from "@/components/ui/flex";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
@@ -221,6 +222,8 @@ export default function FlexPage() {
           </li>
         </ul>
       </div>
+
+      <SidecarBlock slug="flex" />
 
       <ComponentNav currentHref="/components/flex" />
     </div>

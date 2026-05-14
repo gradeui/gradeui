@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -331,6 +332,8 @@ import { toast } from "sonner"`}</code>
           <li>Respects prefers-reduced-motion for animations</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="toast" />
 
       <ComponentNav currentHref="/components/toast" />
     </div>

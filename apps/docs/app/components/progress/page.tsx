@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import { useState, useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
@@ -221,6 +222,8 @@ useEffect(() => {
           <li>Pair with visible text labels for context</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="progress" />
 
       <ComponentNav currentHref="/components/progress" />
     </div>

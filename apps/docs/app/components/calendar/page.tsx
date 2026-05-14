@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import type { DateRange } from "react-day-picker";
 
 export default function CalendarPage() {
@@ -114,6 +115,8 @@ const [date, setDate] = React.useState<Date | undefined>(new Date())
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="calendar" />
 
       <ComponentNav currentHref="/components/calendar" />
     </div>

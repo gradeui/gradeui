@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import {
   BarChart3,
   Code2,
@@ -811,6 +812,8 @@ export default function TabsPage() {
           <li>For icon-only triggers, always pair with an <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">aria-label</code> so the choice has an accessible name</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="tabs" />
 
       <ComponentNav currentHref="/components/tabs" />
     </div>

@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import {
   Sheet,
@@ -316,6 +317,8 @@ export default function SheetPage() {
           <li>Announces content to screen readers</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="sheet" />
 
       <ComponentNav currentHref="/components/sheet" />
     </div>

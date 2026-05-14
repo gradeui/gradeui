@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { Row } from "@/components/ui/row";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -345,6 +346,8 @@ export default function RowPage() {
           </li>
         </ul>
       </div>
+
+      <SidecarBlock slug="row" />
 
       <ComponentNav currentHref="/components/row" />
     </div>

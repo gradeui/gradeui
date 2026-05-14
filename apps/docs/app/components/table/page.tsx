@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import {
   Table,
   TableBody,
@@ -315,6 +316,8 @@ export default function TablePage() {
           <li>Scrollable container for responsive design</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="table" />
 
       <ComponentNav currentHref="/components/table" />
     </div>

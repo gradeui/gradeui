@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { Stack } from "@/components/ui/stack";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -276,6 +277,8 @@ export default function StackPage() {
           </li>
         </ul>
       </div>
+
+      <SidecarBlock slug="stack" />
 
       <ComponentNav currentHref="/components/stack" />
     </div>

@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { Button } from "@/components/ui/button";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
@@ -182,6 +183,8 @@ export default function ButtonPage() {
           <li>Focus ring visible for keyboard users</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="button" />
 
       <ComponentNav currentHref="/components/button" />
     </div>

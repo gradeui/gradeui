@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { ComponentPreview } from "@/components/component-preview";
 import { Map, MapMarker } from "@/components/ui/map";
 import { PropsTable } from "@/components/props-table";
@@ -432,6 +433,8 @@ mapbox.addLayer({ id: "3d-buildings", type: "fill-extrusion", ... });`}</code>
           <li>If you build a list ↔ map sync, ensure the list items are keyboard-focusable and dispatch hover state on focus too, not only on mouseenter.</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="map" />
 
       <ComponentNav currentHref="/components/map" />
     </div>

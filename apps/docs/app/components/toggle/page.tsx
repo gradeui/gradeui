@@ -2,6 +2,7 @@
 
 import { Toggle } from "@/components/ui/toggle";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { Bold, Italic, Underline } from "lucide-react";
 
 export default function TogglePage() {
@@ -121,6 +122,8 @@ import { Bold } from "lucide-react"
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="toggle" />
 
       <ComponentNav currentHref="/components/toggle" />
     </div>

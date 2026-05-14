@@ -1,4 +1,5 @@
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import {
   Card,
   CardContent,
@@ -234,6 +235,8 @@ export default function CardPage() {
           <li>Interactive elements within cards should be focusable</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="card" />
 
       <ComponentNav currentHref="/components/card" />
     </div>

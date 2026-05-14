@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import {
   Select,
@@ -202,6 +203,8 @@ export default function SelectPage() {
           <li>Type-ahead search functionality</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="select" />
 
       <ComponentNav currentHref="/components/select" />
     </div>

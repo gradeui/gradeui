@@ -1,5 +1,6 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ComponentPreview } from "@/components/component-preview";
@@ -201,6 +202,8 @@ export default function AlertPage() {
           <li>Text content provides context for all users</li>
         </ul>
       </div>
+
+      <SidecarBlock slug="alert" />
 
       <ComponentNav currentHref="/components/alert" />
     </div>

@@ -1,4 +1,5 @@
 import { RivePlayer } from "@/components/ui/rive-player";
+import { SidecarBlock } from "@/components/sidecar-block";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
 
@@ -65,6 +66,7 @@ export default function RivePlayerPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">Props</h2>
         <PropsTable props={riveProps} />
       </div>
+      <SidecarBlock slug="rive-player" />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { ComponentNav } from "@/components/component-nav";
+import { SidecarBlock } from "@/components/sidecar-block";
 import type { DateRange } from "react-day-picker";
 
 export default function DatePickerPage() {
@@ -181,6 +182,8 @@ import { Calendar as CalendarIcon } from "lucide-react"
           </pre>
         </div>
       </div>
+
+      <SidecarBlock slug="date-picker" />
 
       <ComponentNav currentHref="/components/date-picker" />
     </div>
