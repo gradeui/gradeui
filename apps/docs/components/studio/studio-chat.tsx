@@ -496,22 +496,9 @@ export function StudioChat({
       )}
     >
       <div className="px-3 py-2 border-b border-border bg-muted/30 shrink-0 flex items-center justify-between gap-2">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+        <h2 className="text-xs font-medium tracking-wide text-muted-foreground flex items-center gap-1.5">
           <Sparkles className="h-3 w-3" />
-          Design chat
-          {/* Dev-only chatId badge. Mirrors the one in the canvas
-              header — when they match, chat + preview are targeting
-              the same design; when they drift, we've got a bug. The
-              last 6 chars are enough to correlate visually without
-              bloating the header. */}
-          {process.env.NODE_ENV !== "production" && (
-            <span
-              className="text-[9px] font-mono normal-case tracking-wide text-muted-foreground/70 border border-border/60 rounded px-1 py-0.5"
-              title={`chatId: ${chatId}`}
-            >
-              id:{chatId.slice(-6)}
-            </span>
-          )}
+          Ask Grade AI
         </h2>
         <SessionTokenTotal messages={messages as UIMessage[]} />
       </div>
