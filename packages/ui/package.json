@@ -58,6 +58,11 @@
     },
     "./package.json": "./package.json",
     "./styles.css": "./dist/styles.css",
+    "./contracts": {
+      "types": "./dist/contracts.d.ts",
+      "import": "./dist/contracts.mjs",
+      "require": "./dist/contracts.js"
+    },
     "./tailwind-preset": {
       "types": "./dist/tailwind-preset.d.ts",
       "import": "./dist/tailwind-preset.mjs",

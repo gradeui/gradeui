@@ -3,12 +3,13 @@
 import { ComponentProps } from "@/components/component-props";
 import { ComponentNav } from "@/components/component-nav";
 import { ComponentPreview } from "@/components/component-preview";
-import { COMPONENT_CONTRACTS } from "@gradeui/ui";
+// Server-safe subpath — same reason as apps/docs/app/api/chat/route.ts.
+// Even though this page is a client component, importing from the
+// main "@gradeui/ui" entry would load every component's React code
+// just to grab the contracts registry. The sub-entry has only Zod
+// + the contract files — no React imports.
+import { COMPONENT_CONTRACTS } from "@gradeui/ui/contracts";
 
-// Pull contracts off the registry rather than individual exports —
-// the barrel only re-exports MediaSurfaceContract by name today, and
-// adding one per component would bloat the public surface. The
-// registry is the single discoverable entry point.
 const CalloutContract = COMPONENT_CONTRACTS.Callout;
 const CarouselContract = COMPONENT_CONTRACTS.Carousel;
 const ButtonContract = COMPONENT_CONTRACTS.Button;

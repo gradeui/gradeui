@@ -31,7 +31,13 @@ import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { COMPONENT_CONTRACTS } from "@gradeui/ui";
+// Server-safe subpath. Importing `COMPONENT_CONTRACTS` from the main
+// "@gradeui/ui" entry pulls in the whole bundled component code,
+// which crashes Next's RSC boundary with "useEffect cannot be used
+// in a Server Component." `@gradeui/ui/contracts` is the dedicated
+// data-only entrypoint (Zod + per-component contract files, zero
+// React).
+import { COMPONENT_CONTRACTS } from "@gradeui/ui/contracts";
 import {
   validateJsx,
   formatViolations,
