@@ -86,17 +86,17 @@ export default function App() {
 
 // Example 4: In a modal/dialog
 export function ModalExample() {
-  const code = `import { Alert, AlertTitle, AlertDescription } from "./components/ui/alert"
+  const code = `import { Callout, CalloutTitle, CalloutDescription } from "./components/ui/callout"
 import { Info } from "lucide-react"
 
 export default function App() {
   return (
     <div className="p-8">
-      <Alert>
+      <Callout>
         <Info className="h-4 w-4" />
-        <AlertTitle>Info</AlertTitle>
-        <AlertDescription>This is an informational alert.</AlertDescription>
-      </Alert>
+        <CalloutTitle>Info</CalloutTitle>
+        <CalloutDescription>This is an informational alert.</CalloutDescription>
+      </Callout>
     </div>
   )
 }`;

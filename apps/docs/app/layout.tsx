@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import Script from "next/script";
 import {
   JetBrains_Mono,
   Inter,
@@ -168,20 +169,36 @@ export default async function RootLayout({
     // leave --font-fraunces one level too low in the cascade and CSS would
     // treat my --font-display declaration as computed-value-time invalid.
     <html lang="en" className={cn(...FONT_VARS)} suppressHydrationWarning>
-      <head>
+      <body
+        className={cn("min-h-screen bg-background font-sans antialiased")}
+      >
         {/*
           Pre-hydration script. Runs before React mounts and sets the
           .dark class + data-mode attribute from localStorage or system
           preference — avoids the dark-mode FOUC without depending on
           next-themes.
+
+          Why this lives in <body> (not <head>): React 19 stopped
+          executing inline <script> tags rendered through the React tree,
+          so the historical pattern (`<script dangerouslySetInnerHTML
+          ={...}/>` inside <head>) now logs "Encountered a script tag
+          while rendering React component. Scripts inside React
+          components are never executed". next/script with
+          `beforeInteractive` is the App Router replacement, but Next
+          documents it as a `<body>`-only API — placing the same Script
+          inside <head> trips the same React 19 warning, because React
+          still owns the head subtree. Putting it in <body> hands the
+          script to Next's hoister, which inlines it into the document
+          stream before hydration. The body-vs-head position doesn't
+          affect run order for `beforeInteractive` — both fire before
+          React boots.
         */}
-        <script
-          dangerouslySetInnerHTML={{ __html: GRADE_PRE_HYDRATION_SCRIPT }}
-        />
-      </head>
-      <body
-        className={cn("min-h-screen bg-background font-sans antialiased")}
-      >
+        <Script
+          id="grade-pre-hydration"
+          strategy="beforeInteractive"
+        >
+          {GRADE_PRE_HYDRATION_SCRIPT}
+        </Script>
         {isSandbox ? (
           // Sandbox tree: bare. The sandbox page imports its own
           // TooltipProvider (wrapping compiled previews) and manages

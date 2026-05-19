@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Callout, CalloutDescription, CalloutTitle } from "@/components/ui/callout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, AlertTriangle, FileText, Image, Code, BarChart } from "lucide-react";
 
@@ -17,15 +17,15 @@ export default function SubagentsPage() {
         </p>
       </div>
 
-      {/* Overview Alert */}
-      <Alert>
+      {/* Overview Callout */}
+      <Callout>
         <CheckCircle className="h-4 w-4" />
-        <AlertTitle>Automated Design System Health</AlertTitle>
-        <AlertDescription>
+        <CalloutTitle>Automated Design System Health</CalloutTitle>
+        <CalloutDescription>
           These subagents maintain perfect sync between Figma designs, React code, and documentation.
           Run them locally or in CI/CD to catch drift early.
-        </AlertDescription>
-      </Alert>
+        </CalloutDescription>
+      </Callout>
 
       {/* What are Subagents */}
       <div className="space-y-4">

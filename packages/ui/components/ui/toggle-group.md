@@ -14,7 +14,7 @@ props:
   - ToggleGroupItem: value: string — what the group reports when this item is pressed
 when_to_use: A small set of mutually-exclusive (`type="single"`) or independent (`type="multiple"`) binary options that live side-by-side as a segmented control — viewport size picker (Mobile/Tablet/Desktop), text alignment, view density. Reads identically to a TabsList of the same size; reach for ToggleGroup when each option emits a value (like a form input) rather than swapping panels. Use Tabs for panel switching, Toggle for a single on/off.
 composes_with: [Card (header controls), Row, AppShellHeader chrome, settings panels]
-aliases: [toggle group, segmented control, segmented buttons, button group, pill group, view selector]
+aliases: [toggle group, segmented control, segmented buttons, button group, pill group, view selector, segmented picker, segmentedcontrolios, segmented buttons group, rn segmented control]
 ---
 
 ```jsx

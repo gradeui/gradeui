@@ -7,6 +7,7 @@ props:
   - No variants — Card is a flexible container surface
 when_to_use: Grouped content with a distinct surface — settings panels, dashboard tiles, list-of-cards layouts. Pair CardHeader (title + description) with CardContent and optional CardFooter (actions).
 composes_with: [Button (in CardFooter), Badge, Separator, Avatar, any form controls]
+aliases: [card, group box, groupbox, panel, tile, surface]
 ---
 
 Canonical structure — do NOT skip CardHeader if the card has a title:

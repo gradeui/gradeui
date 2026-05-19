@@ -4,7 +4,10 @@ import { useState } from "react";
 import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
 import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
-import { Palette, Sparkles, Component, BookOpen } from "lucide-react";
+// Icons no longer used in the chat surface — AI Chat went icon-light
+// in May 2026. Imports retained as comments so future refactors can
+// see what used to be here.
+// import { Palette, Sparkles, Component, BookOpen } from "lucide-react";
 
 // Sample conversation — a designer exploring the DS
 const sampleMessages: ChatMessage[] = [
@@ -109,10 +112,10 @@ export default function AIChatPage() {
           messages={[]}
           onSendMessage={() => {}}
           suggestedPrompts={[
-            { icon: <Palette className="w-4 h-4" />, text: "Show me the color tokens" },
-            { icon: <Component className="w-4 h-4" />, text: "List all form components" },
-            { icon: <Sparkles className="w-4 h-4" />, text: "Create a new theme preset" },
-            { icon: <BookOpen className="w-4 h-4" />, text: "How do I install the package?" },
+            { text: "Show me the color tokens" },
+            { text: "List all form components" },
+            { text: "Create a new theme preset" },
+            { text: "How do I install the package?" },
           ]}
           className="min-h-[350px]"
         />
@@ -128,7 +131,7 @@ export default function AIChatPage() {
           <li>Animated message bubbles with spring physics</li>
           <li>Auto-scrolling with scroll-up detection</li>
           <li>Thinking indicator with animated dots</li>
-          <li>Customizable suggested prompts with icons</li>
+          <li>Customizable suggested prompts (text-only chips in the icon-light refresh)</li>
           <li>Auto-resizing textarea (up to 200px)</li>
           <li>Keyboard shortcuts (Enter to send, Shift+Enter for newline)</li>
           <li>Loading state with cancel button</li>
@@ -182,8 +185,8 @@ const handleSendMessage = async (message: string) => {
   isLoading={isLoading}
   placeholder="Ask about components, tokens, or themes..."
   suggestedPrompts={[
-    { icon: <Palette />, text: "Color tokens" },
-    { icon: <Component />, text: "Form components" },
+    { text: "Color tokens" },
+    { text: "Form components" },
   ]}
 />`}</code>
           </pre>

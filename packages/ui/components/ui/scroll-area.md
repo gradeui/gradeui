@@ -10,7 +10,7 @@ props:
   - ScrollBar: orientation? "vertical" | "horizontal" (default vertical)
 when_to_use: Bounded content that needs custom scroll chrome — sidebars with long item lists, chat transcripts, table panels inside a dashboard, anywhere the OS scrollbar would feel out of place against the design tokens. The wrapping element has to have a height constraint (`h-`, `max-h-`, or grid row sizing) or nothing scrolls — scroll-area can't infer a bound on its own. For body-level scrolling, leave the document to the browser.
 composes_with: [Card (long card body), AppShellNav (long sidebar), Sheet (long modal body), Table (sticky-header scrolling list)]
-aliases: [scroll area, scroll container, custom scrollbar, sidebar scroll, panel scroll]
+aliases: [scroll area, scroll container, custom scrollbar, sidebar scroll, panel scroll, scroll view, scrollview, react native scrollview]
 ---
 
 ```jsx

@@ -10,7 +10,7 @@ props:
   - CollapsibleContent: children: React.ReactNode — the content that animates in/out
 when_to_use: A single show/hide reveal — "Show advanced settings" rows, expandable inline help, "More details" sections inside cards. For multiple rows of expandable content where one-at-a-time matters, reach for Accordion. For a separate panel that floats above content, use Popover.
 composes_with: [Button (as the trigger, asChild), Card (expandable settings group), Row (header + chevron)]
-aliases: [collapsible, expand, show more, disclosure, advanced settings]
+aliases: [collapsible, expand, show more, disclosure, advanced settings, disclosure group, expandable section, expandable view, show hide]
 ---
 
 ```jsx

@@ -8,7 +8,7 @@ props:
   - HoverCardContent: side?, align?, sideOffset?, alignOffset?, className?
 when_to_use: Rich preview content surfaced on hover — user profile mini-cards on @-mentions, link previews, definition popups. Pointer-only by design (no touch-friendly trigger); pair with a click target for touch devices, or fall back to Popover. NEVER use HoverCard for critical info — if the user can't reach it via keyboard or touch, it might as well not exist for accessibility.
 composes_with: [Avatar (user preview), Card (richer content), Link (the trigger)]
-aliases: [hover card, hover preview, mention preview, profile peek, link preview]
+aliases: [hover card, hover preview, mention preview, profile peek, link preview, rich tooltip, link preview card, profile hover, peek card]
 ---
 
 ```jsx

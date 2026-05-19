@@ -11,7 +11,7 @@ props:
   - SheetClose: asChild? — usually wraps a Button labelled Cancel or Done
 when_to_use: A panel that slides in from a screen edge — mobile nav drawers, side panels for editing a single record without leaving the list, filter trays on small viewports. For a centered focus modal use Dialog. For a transient announcement use Toast (Sonner). For inline reveals use Collapsible.
 composes_with: [Form controls (an inline edit sheet), Button (trigger + close), AppShellNav (mobile-only swap)]
-aliases: [sheet, drawer, side panel, slide-in, nav drawer, mobile drawer, slide-over]
+aliases: [sheet, drawer, side panel, slide-in, nav drawer, mobile drawer, slide-over, action sheet, modal sheet, bottom sheet, side sheet, react native modal sheet, bottom-sheet, ios action sheet]
 ---
 
 ```jsx

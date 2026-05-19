@@ -237,7 +237,7 @@ export default function ResizablePage() {
         <ComponentPreview
           code={`<ResizablePanelGroup direction="horizontal" id="workspace">
   <ResizablePanel defaultSize={20} minSize={15} id="nav">
-    <SideMenu />
+    <Sidebar />
   </ResizablePanel>
   <ResizableHandle withHandle />
   <ResizablePanel defaultSize={30} minSize={20} id="list">

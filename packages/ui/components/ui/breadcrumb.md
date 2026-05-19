@@ -12,7 +12,7 @@ props:
   - BreadcrumbEllipsis: className? — collapsed middle crumbs marker, use between BreadcrumbItems
 when_to_use: Reach for Breadcrumb whenever a screen sits inside a hierarchy and you want the path back to the top to be visible. Common spots: above page titles in admin/CMS screens, top of Settings detail pages, after a router redirect when the URL implies depth. Use the current page as a <BreadcrumbPage> (non-clickable) and prior levels as <BreadcrumbLink>. For a horizontal "top nav" of peer destinations use Side Menu or Tabs instead — Breadcrumb is strictly for hierarchical path.
 composes_with: [AppShellMain, Card (in CardHeader), Dialog]
-aliases: [breadcrumb, breadcrumbs, crumbs, path, page hierarchy]
+aliases: [breadcrumb, breadcrumbs, crumbs, path, page hierarchy, path bar, navigation trail, finder path]
 ---
 
 ```jsx

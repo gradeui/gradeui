@@ -1,3 +1,18 @@
+// Component contracts (machine-readable component descriptors). The
+// Studio settings panel reads these to filter plumbing props, pick the
+// right control kind, and render action buttons. See packages/ui/lib/contracts.ts
+// for the registry and packages/contracts for the type vocabulary.
+export {
+  COMPONENT_CONTRACTS,
+  getComponentContract,
+  listContractedComponents,
+} from "./contracts";
+
+// Re-export the MediaSurface contract directly too — convenient for
+// consumers that want the typed contract object without going through
+// the lookup. Future contracts get the same treatment.
+export { MediaSurfaceContract } from "../components/ui/media-surface.contract";
+
 // UI Components
 export {
   Accordion,
@@ -6,7 +21,16 @@ export {
   AccordionTrigger,
 } from "../components/ui/accordion";
 
-export { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
+// Callout (renamed from Alert in May 2026). The `Alert` name is
+// reserved — left vacant deliberately so a future genuinely-
+// interruptive primitive can claim it without re-renaming. For
+// modal-style "alert" semantics today, use `<Dialog>`.
+export {
+  Callout,
+  CalloutTitle,
+  CalloutDescription,
+  calloutVariants,
+} from "../components/ui/callout";
 
 export {
   AppShell,
@@ -47,6 +71,29 @@ export { Badge, badgeVariants } from "../components/ui/badge";
 export { Button, buttonVariants } from "../components/ui/button";
 
 export { Calendar, CalendarDayButton } from "../components/ui/calendar";
+
+// Carousel — embla-backed slideshow with custom autoplay (per-slide
+// duration overrides), Dots/Arrows subcomponents, and a VideoSlide
+// variant that does muted-autoplay + poster swap on activation. See
+// components/ui/carousel.md for the sidecar and the anti-patterns
+// list (notably "Carousel" vs "Slider" disambiguation).
+export {
+  Carousel,
+  CarouselSlide,
+  CarouselVideoSlide,
+  CarouselDots,
+  CarouselArrows,
+  CarouselPrev,
+  CarouselNext,
+  useCarouselApi,
+  type CarouselProps,
+  type CarouselSlideProps,
+  type CarouselVideoSlideProps,
+  type CarouselDotsProps,
+  type CarouselArrowsProps,
+  type CarouselNavButtonProps,
+  type AutoplayConfig as CarouselAutoplayConfig,
+} from "../components/ui/carousel";
 
 export {
   Card,
@@ -109,6 +156,16 @@ export {
 } from "../components/ui/popover";
 
 export { Progress } from "../components/ui/progress";
+
+// MultiSelect — multi-pick combobox (Popover + Command + Badge).
+// Data-driven via `options`; controlled or uncontrolled. See the
+// sidecar for anti-patterns (notably: don't use for unbounded /
+// async lists — reach for Command directly).
+export {
+  MultiSelect,
+  type MultiSelectOption,
+  type MultiSelectProps,
+} from "../components/ui/multi-select";
 
 export { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 
@@ -191,28 +248,29 @@ export { Toggle, toggleVariants } from "../components/ui/toggle";
 export { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
 
 // Navigation components
+// Sidebar — renamed from SideMenu (May 2026). Compound API:
+// Sidebar / SidebarHeader / SidebarContent / SidebarFooter / SidebarSection / SidebarItem.
+// See packages/ui/components/ui/sidebar.md for the API + anti-patterns.
 export {
-  SideMenu,
-  type SideMenuItem,
-  type SideMenuSection,
-  type SideMenuProps,
-} from "../components/ui/side-menu";
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarSection,
+  SidebarItem,
+  type SidebarProps,
+  type SidebarHeaderProps,
+  type SidebarContentProps,
+  type SidebarFooterProps,
+  type SidebarSectionProps,
+  type SidebarItemProps,
+} from "../components/ui/sidebar";
 
 
-export {
-  SimpleTabs,
-  SimpleTabsPanel,
-  SimpleTabsRoot,
-  SimpleTabsList,
-  SimpleTabsTrigger,
-  SimpleTabsContent,
-  type SimpleTab,
-  type SimpleTabsProps,
-  type SimpleTabsPanelProps,
-  type SimpleTabsRootProps,
-  type SimpleTabsListProps,
-  type SimpleTabsTriggerProps,
-} from "../components/ui/simple-tabs";
+// SimpleTabs retired (May 2026) — merged into Tabs as `variant="underlined"`.
+// See packages/ui/components/ui/tabs.tsx for the variant prop and tabs.md
+// for usage. Reach for `<Tabs><TabsList variant="underlined">…</TabsList></Tabs>`
+// when you want the underlined-tab look that SimpleTabs provided.
 
 export {
   Tooltip,

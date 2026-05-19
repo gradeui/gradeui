@@ -1,0 +1,30 @@
+{
+  "name": "@gradeui/contracts",
+  "version": "0.0.0",
+  "description": "Grade Design System — machine-readable component contracts. Each @gradeui/ui component co-locates a Zod-based contract describing its props, design taxonomy, and panel control hints. The Studio settings panel, the playbook (model-facing prompt), and runtime prop validation all read from these contracts so the design surface, the prompt surface, and the type surface can't drift.",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Grade",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "lint": "echo \"(no lint configured for @gradeui/contracts yet)\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5.6.3"
+  }
+}

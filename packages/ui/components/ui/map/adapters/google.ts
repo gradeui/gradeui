@@ -60,7 +60,7 @@ export const createGoogleAdapter: AdapterFactory = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let LoaderCtor: any;
   try {
-    const mod = await import(/* webpackIgnore: true */ "@googlemaps/js-api-loader");
+    const mod = await import("@googlemaps/js-api-loader");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     LoaderCtor = (mod as any).Loader ?? (mod as any).default?.Loader;
   } catch (err) {

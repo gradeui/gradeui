@@ -110,7 +110,7 @@ export function DesignBreadcrumb({
                 setDraft(focused.name);
                 setEditing(true);
               }}
-              title="Click to rename"
+              title={breadcrumbTooltip(focused)}
               className="cursor-text hover:bg-muted/60 rounded-md px-1.5 py-0.5"
             >
               {focused.name}
@@ -120,4 +120,48 @@ export function DesignBreadcrumb({
       </BreadcrumbList>
     </Breadcrumb>
   );
+}
+
+/**
+ * Tooltip body for the breadcrumb's design label. Shows "Click to
+ * rename" plus the last-edited stamp when available. The stamp is
+ * rendered as a relative phrase ("3m ago", "yesterday") for the most
+ * common cases and falls back to a locale date for older entries.
+ * Tooltips are plain strings (no JSX), so this is a single
+ * newline-joined string.
+ */
+function breadcrumbTooltip(d: Design): string {
+  const lines = ["Click to rename"];
+  if (d.updatedAt) lines.push(`Last edited ${relativeTime(d.updatedAt)}`);
+  if (d.createdAt && d.updatedAt && d.createdAt !== d.updatedAt) {
+    lines.push(`Created ${relativeTime(d.createdAt)}`);
+  } else if (d.createdAt) {
+    lines.push(`Created ${relativeTime(d.createdAt)}`);
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Cheap relative-time formatter — "Just now" / "Nm ago" / "Nh ago" /
+ * "Nd ago", falling back to a locale date string past a week. No
+ * `Intl.RelativeTimeFormat` because that needs a locale (and would
+ * trip the SSR-locale memory note); a plain string is fine for a
+ * tooltip.
+ */
+function relativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 0) return "just now";
+  const sec = Math.floor(diff / 1000);
+  if (sec < 30) return "just now";
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const days = Math.floor(hr / 24);
+  if (days < 7) return `${days}d ago`;
+  // Past a week — drop to ISO date (locale-independent, no hydration
+  // surprises).
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }

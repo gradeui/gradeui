@@ -336,7 +336,7 @@ export default function AppShellPage() {
         <ComponentPreview
           code={`<AppShell nav="side">
   <AppShellNav placement="side">
-    <SideMenu items={navItems} />
+    <Sidebar>...</Sidebar>
   </AppShellNav>
   <AppShellMain>
     <Stack gap="md" className="p-6">…</Stack>
@@ -498,7 +498,7 @@ export default function AppShellPage() {
     <OrgSwitcher /> <UserMenu />
   </AppShellHeader>
   <AppShellNav placement="side">
-    <SideMenu />
+    <Sidebar />
   </AppShellNav>
   <AppShellMain>…</AppShellMain>
   <AppShellFooter>
@@ -640,19 +640,15 @@ export default function AppShellPage() {
   </AppShellHeader>
 
   <AppShellNav placement="side">
-    <SideMenu
-      header={<Logo />}
-      sections={[
-        {
-          id: "main",
-          title: "Main",
-          items: [
-            { id: "home", label: "Home", href: "/", icon: <Home /> },
-            { id: "projects", label: "Projects", href: "/projects" },
-          ],
-        },
-      ]}
-    />
+    <Sidebar>
+      <SidebarHeader><Logo /></SidebarHeader>
+      <SidebarContent>
+        <SidebarSection title="Main">
+          <SidebarItem href="/" icon={<Home />}>Home</SidebarItem>
+          <SidebarItem href="/projects">Projects</SidebarItem>
+        </SidebarSection>
+      </SidebarContent>
+    </Sidebar>
   </AppShellNav>
 
   <AppShellMain>
@@ -734,7 +730,7 @@ export default function AppShellPage() {
           </li>
           <li>
             Pair Nav with{" "}
-            <a href="/components/side-menu" className="underline">SideMenu</a> or{" "}
+            <a href="/components/sidebar" className="underline">Sidebar</a> or{" "}
             <a href="/components/top-menu" className="underline">TopMenu</a>,
             and Main with{" "}
             <a href="/components/stack" className="underline">Stack</a>.

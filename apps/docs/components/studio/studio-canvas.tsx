@@ -33,7 +33,7 @@
 
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Code2,
   Copy,
@@ -48,13 +48,18 @@ import {
   MousePointerClick,
   Package,
   Plus,
+  Redo2,
   Share2,
   Smartphone,
   Sparkles,
   Tablet,
+  Undo2,
   X,
 } from "lucide-react";
 import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -71,6 +76,12 @@ import {
   type StudioSelection,
 } from "@/lib/chat-sandpack";
 import { openInCodeSandboxNpm } from "@/lib/chat-export-npm";
+import {
+  backfillMediaSurfaceSrcProp,
+  setInlineMediaSurfaceSrc,
+  updateDataArrayEntry,
+} from "@/lib/data-array-mutator";
+import { useRotatingPhrase } from "@/lib/studio-loading-phrases";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { Design } from "@/lib/studio-designs";
 import { DesignBreadcrumb } from "@/components/studio/design-breadcrumb";
@@ -133,6 +144,10 @@ interface StudioCanvasProps {
    *  and clear any dangling highlight. */
   selection?: StudioSelection | null;
   onSelect?: (selection: StudioSelection) => void;
+  /** Fires when the iframe agent clears the persistent selection ring
+   *  (currently: user pressed Escape inside the iframe). Wired to the
+   *  same per-design selection state setter as the chat's chip ×. */
+  onClearSelection?: () => void;
   /** Which renderer mounts inside the preview frames. "sandpack" is the
    *  legacy/stable path (npm install, iframe, full bundler). "fast" is
    *  an in-document same-origin renderer (no iframe, no npm, imports
@@ -165,6 +180,26 @@ interface StudioCanvasProps {
   /** False when the design cap is reached. Disables New + Duplicate
    *  both in the tab strip and in the All-mode toolbar. */
   canAddMore?: boolean;
+  /** Mutation channel for the focused design's appSource — fed by the
+   *  "Fill images" button (and, in future, any other in-canvas tool
+   *  that patches JSX without a chat round-trip). Same shape as the
+   *  callback the settings panel uses; parent wires both to its
+   *  per-design appSource state. The optional `label` tags the undo
+   *  snapshot ("Fill images", "Refresh image"). */
+  onSourceMutation?: (next: string, label?: string) => void;
+  // ─── Undo / redo (per-design) ────────────────────────────────────
+  // The canvas owns the toolbar that surfaces undo + redo; the actual
+  // history lives in the page via `useUndoHistory(activeId)`. Buttons
+  // are disabled when there's nothing to restore in the relevant
+  // direction; tooltips include the human label of the snapshot
+  // ("Undo Fill images" / "Redo Chat edit") so the user can tell what
+  // they're about to revert without diffing screens.
+  canUndo?: boolean;
+  canRedo?: boolean;
+  undoLabel?: string | null;
+  redoLabel?: string | null;
+  onUndo?: () => void;
+  onRedo?: () => void;
   className?: string;
 }
 
@@ -179,11 +214,19 @@ export function StudioCanvas({
   isStreaming = false,
   selection = null,
   onSelect,
+  onClearSelection,
   onAddDesign,
   onCloseDesign,
   onRenameDesign,
   onDuplicateDesign,
   canAddMore = true,
+  onSourceMutation,
+  canUndo = false,
+  canRedo = false,
+  undoLabel = null,
+  redoLabel = null,
+  onUndo,
+  onRedo,
   rendererMode = "sandpack",
   className,
 }: StudioCanvasProps) {
@@ -227,6 +270,603 @@ export function StudioCanvas({
   const [viewportWidth, setViewportWidth] =
     useState<ViewportWidth>("responsive");
 
+  // Fidelity — wireframe (placeholders only, fast / abstract) vs full
+  // (placeholders filled with real or generated imagery). Persisted to
+  // localStorage so a user who designs in wireframe mode doesn't get
+  // their preference reset by every reload. The state lives here at the
+  // canvas level (rather than per-design) because fidelity is a *view*
+  // setting — the JSX is identical in both modes; only how MediaSurface
+  // renders changes. Forwarded down to FocusedFrame which posts it into
+  // the Sandpack iframe via the existing message bus.
+  type Fidelity = "wireframe" | "full";
+  const [fidelity, setFidelity] = useState<Fidelity>(() => {
+    if (typeof window === "undefined") return "wireframe";
+    const stored = window.localStorage.getItem("studio:fidelity");
+    return stored === "full" ? "full" : "wireframe";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("studio:fidelity", fidelity);
+  }, [fidelity]);
+
+  // Fill-images flow — POSTs the focused design's appSource to the
+  // /api/media/resolve route, which walks for MediaSurfaces with static
+  // `source` props and patches each with a `src=` URL resolved from the
+  // free-tier providers (MusicBrainz → Pollinations → Picsum). On success
+  // we (a) push the patched JSX through onSourceMutation so Sandpack
+  // HMRs to it, and (b) auto-flip fidelity to "full" so the user
+  // actually sees the result instead of staring at the same placeholders
+  // they had before. Errors are surfaced via the `fillError` state which
+  // the button reads to show a small inline message.
+  const [filling, setFilling] = useState(false);
+  const [fillError, setFillError] = useState<string | null>(null);
+  const [fillReport, setFillReport] = useState<{
+    filled: number;
+    skipped: number;
+  } | null>(null);
+  // Auto-dismiss the success report after ~5s so the header doesn't
+  // accumulate stale "filled 6 of 7" pills across multiple clicks.
+  useEffect(() => {
+    if (!fillReport) return;
+    const id = window.setTimeout(() => setFillReport(null), 5000);
+    return () => window.clearTimeout(id);
+  }, [fillReport]);
+
+  // Resolved media URLs, scoped **per design** so two starter-template
+  // instances don't share state. Same reasoning as the overrides
+  // below — each iframe IS its own design, and a Fill on Music App #1
+  // shouldn't silently fill Music App #2's identical-titled cards.
+  // Duplicating a design copies the URLs (and overrides) explicitly,
+  // so the user gets the right "yes, carry this state with the
+  // duplicate" semantic without the spooky cross-design action of a
+  // flat global map.
+  //
+  // Persisted to localStorage so a page reload doesn't drop everything
+  // and force the user to re-click Fill (which on the playlist hints
+  // means triggering Pollinations cold-starts all over again).
+  const MEDIA_URLS_STORAGE_KEY = "studio:media-urls-by-design";
+  type UrlsByDesign = Record<string, Record<string, string>>;
+  const [mediaUrlsByDesign, setMediaUrlsByDesign] = useState<UrlsByDesign>(
+    () => {
+      if (typeof window === "undefined") return {};
+      try {
+        const raw = window.localStorage.getItem(MEDIA_URLS_STORAGE_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          return parsed as UrlsByDesign;
+        }
+        return {};
+      } catch {
+        return {};
+      }
+    },
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        MEDIA_URLS_STORAGE_KEY,
+        JSON.stringify(mediaUrlsByDesign),
+      );
+    } catch {
+      /* see overrides persistence — same trade-off */
+    }
+  }, [mediaUrlsByDesign]);
+
+  // Slice for the focused design — flat shape FastIframeHost receives.
+  const focusedUrls = useMemo(
+    () => mediaUrlsByDesign[focusedId] ?? {},
+    [mediaUrlsByDesign, focusedId],
+  );
+
+  // Per-instance prop overrides for selected MediaSurfaces.
+  //
+  // Shape is **nested by designId**: `Record<designId, Record<sourceKey, override>>`.
+  // Why nested rather than flat:
+  //   Two starter-template instantiations (e.g. two music apps the
+  //   user spun up to compare designs) have IDENTICAL scaffold data,
+  //   which means identical sourceKeys for their cards (album:One
+  //   Direction|Midnight Memories|...). A flat global map keyed only
+  //   by sourceKey would have those two instances share state — edit
+  //   Discovery in Music App #1 and Music App #2's Discovery silently
+  //   changes too. Per-design scoping decouples them. Inside a single
+  //   design, sourceKey stays unique (scaffolds are curated to have
+  //   no within-design duplicates), so no further keying is needed —
+  //   for now. When same-content-different-instance becomes a thing
+  //   inside ONE design, the deeper fix is per-instance synthetic IDs
+  //   via React's useId() (see project_studio_per_instance_overrides
+  //   memory for the longer plan).
+  //
+  // mediaUrls is **intentionally NOT** scoped this way — CDN URLs are
+  // content-addressed and benefit from sharing across designs (fill
+  // Discovery once, every design that references it picks it up). The
+  // user-customisation case is what needs scoping; the cache-share
+  // case is fine flat.
+  const MEDIA_OVERRIDES_STORAGE_KEY = "studio:media-overrides-by-design";
+  type MediaOverride = Partial<{
+    hint: string;
+    aspect: string;
+    radius: string;
+    border: boolean;
+    loading: boolean;
+    alt: string;
+    src: string;
+    emptyState: "auto" | "icon" | "none";
+  }>;
+  type OverridesByDesign = Record<string, Record<string, MediaOverride>>;
+  const [mediaOverridesByDesign, setMediaOverridesByDesign] = useState<
+    OverridesByDesign
+  >(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem(MEDIA_OVERRIDES_STORAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as OverridesByDesign;
+      }
+      return {};
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        MEDIA_OVERRIDES_STORAGE_KEY,
+        JSON.stringify(mediaOverridesByDesign),
+      );
+    } catch {
+      /* see mediaUrls persistence — same trade-off */
+    }
+  }, [mediaOverridesByDesign]);
+
+  // Cleanup: when the user closes a design, the page-level state
+  // (messages, selection, notes) drops the entry in `handleCloseDesign`.
+  // The canvas-level per-design state (URL map, override map) lives
+  // here, so the page can't reach in to clean it. Watch the `designs`
+  // list — any designId that's in our state but no longer in the
+  // designs array is orphaned and gets pruned. Same effect, same
+  // localStorage key, just driven by the designs array as the source
+  // of truth instead of a callback. Cleanup writes through to
+  // localStorage on the next render (the persistence effects above
+  // re-fire whenever the maps change).
+  useEffect(() => {
+    const liveIds = new Set(designs.map((d) => d.id));
+    setMediaUrlsByDesign((prev) => {
+      let changed = false;
+      const next: typeof prev = {};
+      for (const [k, v] of Object.entries(prev)) {
+        if (liveIds.has(k)) {
+          next[k] = v;
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    setMediaOverridesByDesign((prev) => {
+      let changed = false;
+      const next: typeof prev = {};
+      for (const [k, v] of Object.entries(prev)) {
+        if (liveIds.has(k)) {
+          next[k] = v;
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [designs]);
+
+  // Slice for the focused design — the flat shape FastIframeHost
+  // expects. Computed via useMemo so identity is stable when the
+  // focused design's slice hasn't changed; the iframe-broadcast
+  // useEffect avoids posting redundantly.
+  const focusedOverrides = useMemo(
+    () => mediaOverridesByDesign[focusedId] ?? {},
+    [mediaOverridesByDesign, focusedId],
+  );
+
+  // Mirror frequently-changing values into refs so the long-lived
+  // `grade:component-action` listener (installed once on mount with
+  // empty deps) reads the LATEST appSource / focused id / mutation
+  // callback. Without this the listener would close over stale values
+  // every time it fires after the first render.
+  //
+  // Refs are initialised with placeholder values (null / focusedId /
+  // onSourceMutation) so we don't touch `focusedAppSource` here — it's
+  // computed later in the function from `focused?.appSource`, and
+  // accessing it before its declaration trips a temporal-dead-zone
+  // error. The effects below mirror the live values onto the refs
+  // every render.
+  const focusedAppSourceRef = useRef<string | null>(null);
+  const focusedIdRef = useRef(focusedId);
+  const onSourceMutationRef = useRef(onSourceMutation);
+  useEffect(() => {
+    focusedIdRef.current = focusedId;
+  }, [focusedId]);
+  useEffect(() => {
+    onSourceMutationRef.current = onSourceMutation;
+  }, [onSourceMutation]);
+  // focusedAppSource is mirrored separately, AFTER its declaration
+  // below — see the matching effect near `const focusedAppSource = …`.
+
+  // ─── Per-slot action handler ─────────────────────────────────────
+  //
+  // The settings panel renders contract-declared `actions` as buttons
+  // that dispatch `grade:component-action` events on the window. Here
+  // we listen for those events and route by `detail.kind`. The two
+  // recognised kinds today are MediaSurface's:
+  //
+  //   resolve-media-source — POST the single source to
+  //                          /api/media/resolve-batch and merge the
+  //                          returned URL into mediaUrls. Same shape as
+  //                          the global Fill flow, just N=1.
+  //   refresh-media-source — delete the existing entry first (so the
+  //                          browser's <img onError> shows the
+  //                          placeholder during the reload), then
+  //                          resolve fresh.
+  //
+  // Both flip fidelity to "full" on success so the user sees the
+  // result instead of staring at the same placeholder.
+  useEffect(() => {
+    async function handler(e: Event) {
+      const evt = e as CustomEvent<{
+        kind: string;
+        source?: unknown;
+        sourceJson?: string;
+        componentName?: string;
+      }>;
+      const detail = evt.detail;
+      if (!detail || typeof detail.kind !== "string") return;
+
+      // The source descriptor — parsed by the panel from
+      // selection.mediaSourceJson before the dispatch. If parsing
+      // failed (malformed JSON on the element) the panel ships
+      // sourceJson instead; we attempt one more parse here.
+      let source = detail.source as
+        | { kind: string; [key: string]: unknown }
+        | undefined;
+      if (!source && detail.sourceJson) {
+        try {
+          source = JSON.parse(detail.sourceJson);
+        } catch {
+          /* unrecoverable — bail */
+          return;
+        }
+      }
+      if (!source || typeof source !== "object" || !("kind" in source)) return;
+
+      if (detail.kind === "set-media-override") {
+        // Per-instance prop override. The panel ships
+        // `{ propName, value }` in the event detail; we merge it
+        // into the map under this slot's sourceKey. The canvas's
+        // useEffect propagates the new map to every iframe, where
+        // the agent stamps it on `window.__gradeMediaOverrides` and
+        // MediaSurface picks it up via `useResolvedOverride`.
+        const extra = (evt.detail as unknown as {
+          propName?: string;
+          value?: unknown;
+        });
+        const propName = extra?.propName;
+        const value = extra?.value;
+        if (typeof propName !== "string") return;
+        const key = clientSideSourceKey(source);
+        // Write into the focused design's override slot. The selection
+        // event is always on the focused frame, so focusedId is the
+        // correct scope. The nested update preserves other designs'
+        // overrides untouched.
+        const designId = focusedId;
+        setMediaOverridesByDesign((prev) => {
+          const designOverrides = prev[designId] ?? {};
+          const cur = designOverrides[key] ?? {};
+          if (value === null || value === undefined) {
+            const nextSlot = { ...cur };
+            delete (nextSlot as Record<string, unknown>)[propName];
+            const nextDesign = { ...designOverrides };
+            if (Object.keys(nextSlot).length === 0) {
+              delete nextDesign[key];
+            } else {
+              nextDesign[key] = nextSlot;
+            }
+            // Drop the design entry entirely if no overrides remain
+            // for it — keeps the persisted map from accumulating
+            // empty design slots.
+            if (Object.keys(nextDesign).length === 0) {
+              const next = { ...prev };
+              delete next[designId];
+              return next;
+            }
+            return { ...prev, [designId]: nextDesign };
+          }
+          return {
+            ...prev,
+            [designId]: {
+              ...designOverrides,
+              [key]: { ...cur, [propName]: value },
+            },
+          };
+        });
+        return;
+      }
+
+      if (
+        detail.kind === "resolve-media-source" ||
+        detail.kind === "refresh-media-source"
+      ) {
+        // Pull the selection's instanceId + alt off the event detail.
+        // The panel's ActionButton ships the full selection object so
+        // we can pair the resolved URL back to the matching data-array
+        // entry (instanceId) AND forward the designer's intent string
+        // (mediaAlt) to the resolver as a prompt-style description.
+        // No instanceId → standalone MediaSurface, can't write into a
+        // data array; we still resolve the URL via the inline JSX path.
+        const sel = (evt.detail as unknown as {
+          selection?: { instanceId?: string; mediaAlt?: string };
+        }).selection;
+        const instanceId = sel?.instanceId;
+        const description = sel?.mediaAlt;
+        // Enrich the source with the description before sending. The
+        // descriptor schemas are open (discriminated union on `kind`)
+        // and providers ignore unknown fields, so adding `description`
+        // here is non-breaking. Prompt-aware providers (Gemini, etc.)
+        // read it; Picsum/MusicBrainz don't care.
+        const enrichedSource = description
+          ? { ...source, description }
+          : source;
+        const key = clientSideSourceKey(source);
+
+        if (detail.kind === "refresh-media-source") {
+          // Clear the existing src on the data entry (so MediaSurface
+          // drops back to its placeholder while the refetch is in
+          // flight) plus the legacy URL-map entry, which still drives
+          // any non-data-driven MediaSurfaces.
+          if (instanceId && focusedAppSourceRef.current && onSourceMutationRef.current) {
+            const cleared = updateDataArrayEntry(
+              focusedAppSourceRef.current,
+              instanceId,
+              "src",
+              undefined,
+            );
+            if (cleared.ok && cleared.jsx && cleared.jsx !== focusedAppSourceRef.current) {
+              onSourceMutationRef.current(cleared.jsx, "Refresh image");
+            }
+          }
+          setMediaUrlsByDesign((prev) => {
+            const designUrls = prev[focusedIdRef.current] ?? {};
+            if (!(key in designUrls)) return prev;
+            const nextDesign = { ...designUrls };
+            delete nextDesign[key];
+            return { ...prev, [focusedIdRef.current]: nextDesign };
+          });
+        }
+
+        setFilling(true);
+        setFillError(null);
+        try {
+          const res = await fetch("/api/media/resolve-batch", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ sources: [enrichedSource] }),
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => "");
+            throw new Error(
+              `${res.status} ${res.statusText}${txt ? ` — ${txt.slice(0, 200)}` : ""}`,
+            );
+          }
+          const data = (await res.json()) as {
+            urls: Record<string, string>;
+            filled: number;
+            skipped: number;
+          };
+          const url = data.urls[key];
+          let wroteToJsx = false;
+          if (
+            url &&
+            instanceId &&
+            focusedAppSourceRef.current &&
+            onSourceMutationRef.current
+          ) {
+            const result = updateDataArrayEntry(
+              focusedAppSourceRef.current,
+              instanceId,
+              "src",
+              url,
+            );
+            if (result.ok && result.jsx && result.jsx !== focusedAppSourceRef.current) {
+              onSourceMutationRef.current(
+                result.jsx,
+                detail.kind === "refresh-media-source" ? "Refresh image" : "Fill image",
+              );
+              wroteToJsx = true;
+            }
+          }
+          // Legacy URL map: still merge for standalone MediaSurfaces
+          // without instanceId. Once every MediaSurface lives inside a
+          // data array, this side-channel can be dropped.
+          if (!wroteToJsx && data.filled > 0) {
+            setMediaUrlsByDesign((prev) => ({
+              ...prev,
+              [focusedIdRef.current]: {
+                ...(prev[focusedIdRef.current] ?? {}),
+                ...data.urls,
+              },
+            }));
+          }
+          if (data.filled > 0 || wroteToJsx) {
+            setFidelity("full");
+            setFillReport({
+              filled: wroteToJsx ? 1 : data.filled,
+              skipped: wroteToJsx ? 0 : data.skipped,
+            });
+          } else {
+            setFillReport({ filled: 0, skipped: data.skipped });
+          }
+        } catch (err) {
+          setFillError(err instanceof Error ? err.message : String(err));
+        } finally {
+          setFilling(false);
+        }
+      }
+    }
+
+    window.addEventListener("grade:component-action", handler);
+    return () => window.removeEventListener("grade:component-action", handler);
+  }, []);
+
+  /**
+   * Wait for the next `grade:fast-compiled` message from any iframe.
+   *
+   * The sandbox emits this after it has committed its React render
+   * (via `flushSync`), so on resolution the new DOM — including any
+   * `data-gds-instance-id` attributes added by Studio's self-heal pass
+   * — is guaranteed to be in place. Used by the Fill flow between
+   * "push healed JSX" and "collect MediaSurface items from the DOM".
+   *
+   * Resolves on the FIRST matching message regardless of `requestId`
+   * — Fill is a single-flight operation (the button is disabled while
+   * in-flight) so cross-talk between requests doesn't happen today.
+   * If we ever pipeline Fills we'd start matching by requestId here
+   * and threading it through `onSourceMutation`.
+   *
+   * Falls back to resolving after `timeoutMs` so a wedged iframe
+   * doesn't deadlock the Fill button. Caller accepts partial results
+   * in that case.
+   */
+  const waitForFastCompiled = useCallback(
+    (timeoutMs = 5000): Promise<void> => {
+      return new Promise((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          window.clearTimeout(timer);
+          window.removeEventListener("message", handler);
+          resolve();
+        };
+        const handler = (e: MessageEvent) => {
+          const data = e.data;
+          if (!data || typeof data !== "object") return;
+          if ((data as { type?: string }).type !== "grade:fast-compiled") return;
+          finish();
+        };
+        const timer = window.setTimeout(finish, timeoutMs);
+        window.addEventListener("message", handler);
+      });
+    },
+    [],
+  );
+
+  /**
+   * Find the focused Sandpack iframe and post a message to it. The
+   * iframe lives a few levels down inside FocusedFrame; we tag its
+   * container with `data-grade-focused-frame=""` so we can find it
+   * without threading a ref up. Returns `false` if the iframe isn't
+   * ready or the contentWindow rejects the post.
+   */
+  const postToFocusedIframe = useCallback(
+    (payload: Record<string, unknown>): boolean => {
+      const container = document.querySelector<HTMLElement>(
+        "[data-grade-focused-frame]"
+      );
+      if (!container) return false;
+      const iframe = container.querySelector("iframe");
+      const win = iframe?.contentWindow;
+      if (!win) return false;
+      try {
+        win.postMessage(payload, "*");
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    []
+  );
+
+  /**
+   * Request → response wrapper around postMessage. Sends
+   * `grade:collect-media-sources` to the iframe and resolves with the
+   * `{ instanceId, source }` items the agent walks out of the live DOM.
+   *
+   * The pairing of source ↔ instanceId is what lets the Fill flow write
+   * resolved URLs BACK into the JSX (each data-array entry gets a `src`
+   * field). The JSX is the source of truth — no parallel URL map needed,
+   * undo snapshots are self-contained, exporting to CodeSandbox just
+   * works.
+   *
+   * A correlation id pairs the response back to this specific call so
+   * concurrent fills don't cross-contaminate (the user can't trigger
+   * that today — the button is disabled while filling — but the
+   * protocol stays correct in case we wire other fillers later).
+   */
+  const collectMediaSources = useCallback(
+    async (): Promise<{ instanceId?: string; source: { kind: string; [k: string]: unknown } }[]> => {
+      return new Promise((resolve, reject) => {
+        const requestId = `fill-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const timer = window.setTimeout(() => {
+          window.removeEventListener("message", handler);
+          reject(new Error("Timed out waiting for iframe to respond"));
+        }, 8000);
+        function handler(e: MessageEvent) {
+          const data = e.data;
+          if (!data || typeof data !== "object") return;
+          if ((data as { type?: string }).type !== "grade:media-sources") return;
+          if ((data as { requestId?: string }).requestId !== requestId) return;
+          window.clearTimeout(timer);
+          window.removeEventListener("message", handler);
+          // The sandbox sends both `items` (new shape, source + instanceId
+          // pairs) and `sources` (legacy, flat list). Prefer items; fall
+          // back to sources only if the sandbox bundle is stale.
+          const items = (data as { items?: { instanceId?: string; source: unknown }[] })
+            .items;
+          if (Array.isArray(items)) {
+            const safe = items.filter(
+              (it): it is { instanceId?: string; source: { kind: string; [k: string]: unknown } } =>
+                !!it &&
+                typeof it === "object" &&
+                !!it.source &&
+                typeof it.source === "object" &&
+                "kind" in (it.source as object),
+            );
+            resolve(safe);
+            return;
+          }
+          const sources = (data as { sources?: unknown[] }).sources ?? [];
+          resolve(
+            sources
+              .filter(
+                (s): s is { kind: string; [k: string]: unknown } =>
+                  !!s && typeof s === "object" && "kind" in (s as object),
+              )
+              .map((source) => ({ source })),
+          );
+        }
+        window.addEventListener("message", handler);
+        const ok = postToFocusedIframe({
+          type: "grade:collect-media-sources",
+          requestId,
+        });
+        if (!ok) {
+          window.clearTimeout(timer);
+          window.removeEventListener("message", handler);
+          reject(new Error("Focused preview iframe not ready"));
+        }
+      });
+    },
+    [postToFocusedIframe],
+  );
+
+  const postUrlsToFocusedIframe = useCallback(
+    (urls: Record<string, string>) => {
+      postToFocusedIframe({ type: "grade:set-media-urls", urls });
+    },
+    [postToFocusedIframe]
+  );
+
   // StarterPicker open/close. Both Fit and All mode surface a
   // "Starters" button that opens this — the picker is the single
   // doorway for "new screen that isn't blank" (layout + paste-code,
@@ -241,6 +881,13 @@ export function StudioCanvas({
   // design shouldn't crash the canvas.
   const focused = designs.find((d) => d.id === focusedId) ?? designs[0];
   const focusedAppSource = focused?.appSource ?? null;
+
+  // Mirror focusedAppSource onto the ref declared near the top of the
+  // component — the long-lived `grade:component-action` listener reads
+  // from the ref so its closure stays current across renders.
+  useEffect(() => {
+    focusedAppSourceRef.current = focusedAppSource;
+  }, [focusedAppSource]);
 
   // In "all" mode the select/code/npm affordances don't apply — they're
   // operations on one specific frame. Derive this once so the header
@@ -339,6 +986,7 @@ export function StudioCanvas({
           {isFit ? (
             // ─── Screen-state cluster ─────────────────────────────
             // Per-screen actions, left-to-right:
+            //   - Undo / Redo (per-design history)
             //   - Preview/Code (icon-only with tooltips)
             //   - Viewport width (Mobile/Tablet/Desktop/Responsive)
             //   - Select (element pick)
@@ -346,6 +994,54 @@ export function StudioCanvas({
             // All operate on the focused screen — they belong on the
             // same row as the breadcrumb that names that screen.
             <div className="flex items-center gap-2">
+              {/* Undo / Redo — per-design history. Tooltip exposes the
+                  label of the snapshot we'd restore so the user can
+                  tell whether the next ⌘Z reverts a Fill or a panel
+                  edit. Disabled state surfaces the "nothing to undo"
+                  case cleanly without us hiding the affordance.
+                  Keyboard ⌘Z / ⌘⇧Z (and ⌘Y for redo) is wired in
+                  studio/page.tsx so the shortcut works anywhere on
+                  the canvas, not just when the button has focus. */}
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={onUndo}
+                  disabled={!canUndo || !onUndo}
+                  title={
+                    canUndo
+                      ? `Undo${undoLabel ? ` ${undoLabel}` : ""} (⌘Z)`
+                      : "Nothing to undo"
+                  }
+                  aria-label="Undo"
+                  className={cn(
+                    "h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors",
+                    "[&_svg]:size-3.5 [&_svg]:shrink-0",
+                    "text-muted-foreground hover:text-foreground hover:bg-muted",
+                    "disabled:opacity-40 disabled:pointer-events-none",
+                  )}
+                >
+                  <Undo2 />
+                </button>
+                <button
+                  type="button"
+                  onClick={onRedo}
+                  disabled={!canRedo || !onRedo}
+                  title={
+                    canRedo
+                      ? `Redo${redoLabel ? ` ${redoLabel}` : ""} (⌘⇧Z)`
+                      : "Nothing to redo"
+                  }
+                  aria-label="Redo"
+                  className={cn(
+                    "h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors",
+                    "[&_svg]:size-3.5 [&_svg]:shrink-0",
+                    "text-muted-foreground hover:text-foreground hover:bg-muted",
+                    "disabled:opacity-40 disabled:pointer-events-none",
+                  )}
+                >
+                  <Redo2 />
+                </button>
+              </div>
               <ToggleGroup
                 type="single"
                 value={view}
@@ -402,6 +1098,232 @@ export function StudioCanvas({
                   Responsive
                 </ToggleGroupItem>
               </ToggleGroup>
+              {/* Fidelity toggle — wireframe shows MediaSurface placeholders
+                  only; full mode reveals the underlying images / video /
+                  canvas content. The toggle is a single attribute on the
+                  iframe root (data-fidelity); the CSS does the rest. */}
+              <ToggleGroup
+                type="single"
+                value={fidelity}
+                onValueChange={(v: string) => {
+                  if (v === "wireframe" || v === "full") setFidelity(v);
+                }}
+                aria-label="Fidelity"
+              >
+                <ToggleGroupItem
+                  value="wireframe"
+                  title="Wireframe — show MediaSurface placeholders, hide imagery"
+                >
+                  <LayoutGrid />
+                  Wireframe
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="full"
+                  title="Full — show generated / sourced imagery in MediaSurfaces"
+                >
+                  <Sparkles />
+                  Full
+                </ToggleGroupItem>
+              </ToggleGroup>
+              {/* Fill images — walks the focused design's JSX for
+                  MediaSurfaces with a `source` prop, resolves each to a
+                  URL (MusicBrainz for album, Pollinations / Picsum for
+                  the rest), patches `src=` in place via the route, and
+                  auto-flips fidelity to "full" so the result is visible.
+                  Disabled while a fill is in flight or when no focused
+                  design exists. Errors and counts surface inline as a
+                  small pill next to the button. */}
+              <button
+                type="button"
+                disabled={!focusedAppSource || filling}
+                onClick={async () => {
+                  if (!focusedAppSource || filling) return;
+                  setFilling(true);
+                  setFillError(null);
+                  setFillReport(null);
+                  try {
+                    // Four steps; bail on the first that fails.
+                    //  1. Ask the iframe agent to collect runtime
+                    //     `{ instanceId, source }` items from the rendered
+                    //     DOM. Static JSX-parsing would miss anything
+                    //     inside a .map() (the common case for
+                    //     chat-generated screens) — by walking the DOM we
+                    //     see the post-evaluation values, and the
+                    //     instanceId stamp pairs each source back to its
+                    //     data-array entry.
+                    //  2. POST those descriptors to /api/media/resolve-batch
+                    //     to get a sourceKey → URL map.
+                    //  3. Patch the focused design's JSX: for each item
+                    //     with an instanceId, write `src: "<url>"` into
+                    //     the matching data-array entry. The JSX becomes
+                    //     self-contained — the URLs live alongside the
+                    //     content, undo snapshots them, exporting carries
+                    //     them.
+                    //  4. Push the patched JSX through onSourceMutation.
+                    //     Fast Frame HMRs to it; MediaSurface re-renders
+                    //     and the new `src` paints (no global URL map
+                    //     write needed any more).
+                    // ── Self-heal pass FIRST ──
+                    // Adds instanceIds and id-fields to any MediaSurface /
+                    // data-array that's missing them (older scaffolds and
+                    // AI-prompted screens). Has to happen BEFORE the DOM
+                    // collection — otherwise the iframe's <MediaSurface>
+                    // elements have no `data-gds-instance-id` attribute
+                    // and every collected item comes back with
+                    // `instanceId: undefined`, which Fill can't target.
+                    //
+                    // If the JSX changed, push the healed version to the
+                    // iframe and wait for the re-render so the next
+                    // collectMediaSources call sees the new instanceIds.
+                    let patched = backfillMediaSurfaceSrcProp(focusedAppSource);
+                    if (patched !== focusedAppSource && onSourceMutation) {
+                      onSourceMutation(patched, "Self-heal for Fill");
+                      // Wait for the iframe to actually finish rendering
+                      // the healed JSX before we collect — no arbitrary
+                      // timeout. The sandbox uses `flushSync` to commit
+                      // its React render synchronously, then posts
+                      // `grade:fast-compiled` back. Until that arrives,
+                      // the `data-gds-instance-id` attributes that the
+                      // self-heal pass minted aren't stamped on the DOM
+                      // yet, and a premature collection returns items
+                      // with `instanceId: undefined`. The 5s safety
+                      // timeout is a watchdog for unusual cases (sandbox
+                      // crashed, iframe blocked) — we proceed anyway and
+                      // accept partial results rather than hang Fill
+                      // forever.
+                      await waitForFastCompiled(5000);
+                    }
+
+                    const items = await collectMediaSources();
+                    if (items.length === 0) {
+                      setFillReport({ filled: 0, skipped: 0 });
+                      return;
+                    }
+                    const res = await fetch("/api/media/resolve-batch", {
+                      method: "POST",
+                      headers: { "content-type": "application/json" },
+                      body: JSON.stringify({
+                        sources: items.map((it) => it.source),
+                      }),
+                    });
+                    if (!res.ok) {
+                      const txt = await res.text().catch(() => "");
+                      throw new Error(
+                        `${res.status} ${res.statusText}${txt ? ` — ${txt.slice(0, 200)}` : ""}`,
+                      );
+                    }
+                    const data = (await res.json()) as {
+                      urls: Record<string, string>;
+                      filled: number;
+                      skipped: number;
+                    };
+
+                    // Two write paths, picked per-item:
+                    //   - Data-array entry (`updateDataArrayEntry`) when
+                    //     instanceId is `{x.id}` and matches an array
+                    //     entry. The normal scaffold case.
+                    //   - Inline JSX attribute (`setInlineMediaSurfaceSrc`)
+                    //     when instanceId is a string literal (synthesised
+                    //     by the backfill for standalone MediaSurfaces).
+                    //
+                    // Try data-array first; fall back to inline if no
+                    // matching entry exists. updateDataArrayEntry returns
+                    // `{ ok: false, reason: "no-match" }` for the standalone
+                    // case, so the cascade is clean.
+                    let writtenCount = 0;
+                    const skippedNoInstance: number = items.filter(
+                      (it) => !it.instanceId,
+                    ).length;
+                    for (const it of items) {
+                      if (!it.instanceId) continue;
+                      const key = clientSideSourceKey(it.source);
+                      const url = data.urls[key];
+                      if (!url) continue;
+                      const arrayWrite = updateDataArrayEntry(
+                        patched,
+                        it.instanceId,
+                        "src",
+                        url,
+                      );
+                      if (arrayWrite.ok && arrayWrite.jsx) {
+                        patched = arrayWrite.jsx;
+                        writtenCount += 1;
+                        continue;
+                      }
+                      // Fall through to inline write — standalone
+                      // MediaSurface where instanceId is "ms-XXX".
+                      const inlineWrite = setInlineMediaSurfaceSrc(
+                        patched,
+                        it.instanceId,
+                        url,
+                      );
+                      if (inlineWrite.ok && inlineWrite.jsx) {
+                        patched = inlineWrite.jsx;
+                        writtenCount += 1;
+                      }
+                    }
+                    if (writtenCount > 0 && onSourceMutation) {
+                      onSourceMutation(
+                        patched,
+                        writtenCount === 1
+                          ? "Fill image"
+                          : `Fill ${writtenCount} images`,
+                      );
+                    }
+                    if (data.filled > 0 || writtenCount > 0) {
+                      // Flip to Full so the user actually sees the
+                      // imagery the providers just resolved. Wireframe
+                      // would render the same placeholders we had
+                      // before — defeating the point of clicking.
+                      setFidelity("full");
+                    }
+                    setFillReport({
+                      filled: writtenCount,
+                      skipped: data.skipped + skippedNoInstance,
+                    });
+                  } catch (err) {
+                    setFillError(
+                      err instanceof Error ? err.message : String(err),
+                    );
+                  } finally {
+                    setFilling(false);
+                  }
+                }}
+                className={cn(
+                  "flex items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors",
+                  "text-muted-foreground hover:text-foreground",
+                  "disabled:opacity-40 disabled:pointer-events-none",
+                )}
+                title={
+                  fillError
+                    ? `Last fill failed: ${fillError}`
+                    : "Fill MediaSurface slots with real imagery (free providers — MusicBrainz, Pollinations, Picsum)"
+                }
+              >
+                {filling ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3 w-3" />
+                )}
+                {filling ? "Filling…" : "Fill images"}
+              </button>
+              {fillReport && !filling && (
+                <span
+                  className="text-[10px] text-muted-foreground tabular-nums"
+                  title={`Filled ${fillReport.filled} slot${fillReport.filled === 1 ? "" : "s"}; skipped ${fillReport.skipped} (dynamic or no result)`}
+                >
+                  {fillReport.filled} filled
+                  {fillReport.skipped > 0 && ` · ${fillReport.skipped} skipped`}
+                </span>
+              )}
+              {fillError && !filling && (
+                <span
+                  className="text-[10px] text-destructive tabular-nums truncate max-w-[12rem]"
+                  title={fillError}
+                >
+                  Fill failed
+                </span>
+              )}
 
               {/* Select — element pick. Custom-rolled toggle until
                   Toggle picks up tooltip support. */}
@@ -593,9 +1515,13 @@ export function StudioCanvas({
         isStreaming={isStreaming}
         selection={selection}
         onSelect={onSelect}
+        onClearSelection={onClearSelection}
         selectMode={selectMode}
         onSelectModeChange={setSelectMode}
         viewportWidth={viewportWidth}
+        fidelity={fidelity}
+        mediaUrls={focusedUrls}
+        mediaOverrides={focusedOverrides}
         hidden={!isFit}
         rendererMode={rendererMode}
       />
@@ -615,6 +1541,9 @@ export function StudioCanvas({
           onClose={onCloseDesign}
           theme={theme}
           mode={mode}
+          fidelity={fidelity}
+          mediaUrlsByDesign={mediaUrlsByDesign}
+          mediaOverridesByDesign={mediaOverridesByDesign}
           hidden={isFit}
           rendererMode={rendererMode}
         />
@@ -644,6 +1573,7 @@ interface FocusedFrameProps {
   isStreaming: boolean;
   selection: StudioSelection | null;
   onSelect?: (selection: StudioSelection) => void;
+  onClearSelection?: () => void;
   /** Controlled select-mode. Lifted up so the toggle button can live
    *  in the canvas header. */
   selectMode: boolean;
@@ -653,6 +1583,19 @@ interface FocusedFrameProps {
    *  Applied only to the Preview view; the Code view always uses the
    *  full column because narrowing a text editor is user-hostile. */
   viewportWidth: ViewportWidth;
+  /** Fidelity — `"wireframe"` shows MediaSurface placeholders only;
+   *  `"full"` shows the underlying images/video/canvas. The toggle is
+   *  delivered to the iframe via postMessage and lands as a single
+   *  attribute on the iframe root (data-fidelity), where CSS in the
+   *  playground stylesheet drives the visible/hidden state. */
+  fidelity: "wireframe" | "full";
+  /** Resolved media URL map (sourceKey → url). Forwarded down to the
+   *  iframe host so MediaSurface inside the focused preview reads
+   *  resolved URLs alongside the All-view tiles. */
+  mediaUrls: Record<string, string>;
+  /** Per-instance MediaSurface prop overrides (sourceKey → partial
+   *  props). Same flow as mediaUrls. */
+  mediaOverrides: Record<string, Record<string, unknown>>;
   /** Stay mounted but render invisible. Lets the canvas keep the
    *  focused Sandpack alive while the All-view grid is on screen,
    *  so flipping back to Fit doesn't re-boot the bundler. */
@@ -678,9 +1621,13 @@ function FocusedFrame({
   isStreaming,
   selection,
   onSelect,
+  onClearSelection,
   selectMode,
   onSelectModeChange,
   viewportWidth,
+  fidelity,
+  mediaUrls,
+  mediaOverrides,
   hidden = false,
   rendererMode = "sandpack",
 }: FocusedFrameProps) {
@@ -705,18 +1652,53 @@ function FocusedFrame({
 
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Select mode should clear whenever a fresh snippet arrives — the
-  // picked element may no longer exist. Cheapest signal we have is
-  // `appSource` changing identity. Skip the initial mount so we don't
-  // stomp a pre-set select-mode (e.g., user flipped fit → all → fit
-  // with select mode on and no new source).
+  // appSource changes now leave select mode + the persistent selection
+  // ring alone. Earlier this effect cleared select mode on every JSX
+  // mutation under the theory that the picked element might be gone —
+  // but with the persistent-ring redesign that ALSO killed selection
+  // on every settings-panel edit (which mutates appSource even though
+  // the element absolutely still exists). Net result: clicking a prop
+  // dropdown in the right panel dropped both the ring and the chip,
+  // which felt awful.
+  //
+  // Trade-off: if a chat regenerates JSX that no longer contains the
+  // selected element, the ring lingers at stale coordinates. The
+  // agent's `getBoundingClientRect()` on a detached element returns
+  // a 0x0 box so the ring visually collapses, and Escape always
+  // clears explicitly. A future iteration can re-locate the element
+  // by componentName+part after appSource mutations to reposition
+  // the ring smartly.
   const appSourceRef = useRef(appSource);
   useEffect(() => {
-    if (appSourceRef.current !== appSource) {
-      appSourceRef.current = appSource;
-      onSelectModeChange(false);
+    appSourceRef.current = appSource;
+  }, [appSource]);
+
+  // ─── Bundling overlay ──────────────────────────────────────────────
+  //
+  // The user-perceived gap is "model finished talking → screen actually
+  // repaints" — Sandpack chewing through a fresh App.tsx after every
+  // stream completion (and on settings-panel mutations). Mask it with a
+  // dialog so the wait reads as intentional. Trigger is the **stream-end
+  // edge** of `isStreaming`: reliable, fires once per response. Hold for
+  // a 1.2s min so quick bundles don't flash, with a 5s safety ceiling.
+  // Sandpack's `status === "running"` would be a cleaner close signal,
+  // but it doesn't surface reliably for HMR-style incremental updates,
+  // so we rely on the timer as the source of truth.
+  const [bundling, setBundling] = useState(false);
+  const prevIsStreamingRef = useRef(isStreaming);
+  useEffect(() => {
+    const prev = prevIsStreamingRef.current;
+    prevIsStreamingRef.current = isStreaming;
+    if (prev && !isStreaming && appSource) {
+      setBundling(true);
+      const minId = window.setTimeout(() => setBundling(false), 1200);
+      const safetyId = window.setTimeout(() => setBundling(false), 5000);
+      return () => {
+        window.clearTimeout(minId);
+        window.clearTimeout(safetyId);
+      };
     }
-  }, [appSource, onSelectModeChange]);
+  }, [isStreaming, appSource]);
 
   const postToIframe = useCallback(
     (payload: Record<string, unknown>) => {
@@ -745,6 +1727,14 @@ function FocusedFrame({
     }
   }, [selection, postToIframe]);
 
+  // Push fidelity into the iframe whenever it changes. The agent in the
+  // iframe writes it to `<html data-fidelity>`; the playground stylesheet
+  // selectors take care of hiding the media-surface-content layer when
+  // wireframe. No re-bundle, no React state inside the iframe.
+  useEffect(() => {
+    postToIframe({ type: "grade:set-fidelity", value: fidelity });
+  }, [fidelity, postToIframe]);
+
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       const data = event.data;
@@ -754,12 +1744,27 @@ function FocusedFrame({
         const sel = (data as { selection?: StudioSelection }).selection;
         if (sel && typeof sel === "object") {
           onSelect?.(sel);
-          // Auto-exit select mode after capture — matches StudioPreview.
-          onSelectModeChange(false);
+          // No auto-exit any more — the persistent selection ring (added
+          // in the same redesign that introduced grade:selection-cleared)
+          // requires select mode to stay on so the user can see what
+          // they've picked, switch to another element with one more
+          // click, or hit Escape to clear. Toggling the Select pill off
+          // is the explicit exit gesture.
         }
+      } else if (type === "grade:selection-cleared") {
+        // Iframe-side Escape — drop the parent's chip too. Same code
+        // path FastIframeHost uses; duplicated here because the
+        // Sandpack-era listener in FocusedFrame is a separate `message`
+        // subscriber (it catches from any iframe, not just the focused
+        // one — both renderers' messages flow through this handler).
+        onClearSelection?.();
       } else if (type === "grade:agent-ready") {
-        // Fresh iframe — replay our current intent.
+        // Fresh iframe — replay our current intent. Fidelity has to be
+        // re-sent here too: a Sandpack reboot drops the previous
+        // data-fidelity attribute on <html>, and without this the iframe
+        // would default to "full" until the next user-driven toggle.
         postToIframe({ type: "grade:select-mode", enabled: selectMode });
+        postToIframe({ type: "grade:set-fidelity", value: fidelity });
         if (!selection) {
           postToIframe({ type: "grade:clear-selection" });
         }
@@ -767,11 +1772,12 @@ function FocusedFrame({
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [onSelect, onSelectModeChange, postToIframe, selectMode, selection]);
+  }, [onSelect, onSelectModeChange, postToIframe, selectMode, selection, fidelity]);
 
   return (
     <div
       ref={previewContainerRef}
+      data-grade-focused-frame=""
       className={cn(
         "relative flex-1 min-h-0",
         // `display: none` rather than unmount: keeps the Sandpack
@@ -789,7 +1795,11 @@ function FocusedFrame({
           viewportWidth={viewportWidth}
           selectMode={selectMode}
           onSelect={onSelect}
+          onClearSelection={onClearSelection}
           onSelectModeChange={onSelectModeChange}
+          fidelity={fidelity}
+          mediaUrls={mediaUrls}
+          mediaOverrides={mediaOverrides}
         />
       ) : (
         <FocusedSandpackMount
@@ -807,8 +1817,97 @@ function FocusedFrame({
           {isStreaming ? <GeneratingPreview /> : <EmptyPreview />}
         </div>
       )}
+
+      <PreviewLoadingDialog open={bundling && Boolean(appSource)} />
     </div>
   );
+}
+
+/**
+ * Modal loading dialog shown while Sandpack is rebundling a freshly-arrived
+ * App.tsx (post-stream-end). Composes the DS <Dialog> primitive so the
+ * scrim, portal, focus trap, and entry/exit animation are inherited from
+ * the same component the rest of the product uses — no bespoke overlay.
+ *
+ *   - `[&>button]:hidden` on DialogContent suppresses the auto-rendered X.
+ *     Loading isn't user-cancellable (closing the dialog wouldn't stop the
+ *     bundler) so the affordance would mislead.
+ *   - Escape / pointer-outside / interact-outside handlers all `preventDefault`
+ *     so the dialog can't be dismissed by accident.
+ *   - `useRotatingPhrase()` shares the phrase pool with the chat's thinking
+ *     indicator so the two surfaces read as one continuous loading state.
+ *   - sr-only DialogTitle keeps Radix's a11y warning quiet without adding
+ *     visible chrome to the surface.
+ */
+function PreviewLoadingDialog({ open }: { open: boolean }) {
+  const phrase = useRotatingPhrase();
+  return (
+    <Dialog open={open}>
+      <DialogContent
+        className="max-w-sm [&>button]:hidden"
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        aria-describedby={undefined}
+      >
+        <DialogTitle className="sr-only">Updating preview</DialogTitle>
+        <div className="flex flex-col items-center justify-center gap-4 py-2">
+          <Loader2 className="h-7 w-7 text-primary animate-spin" />
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={phrase}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
+              className="text-sm text-muted-foreground"
+            >
+              {phrase}…
+            </motion.p>
+          </AnimatePresence>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Compute the same `sourceKey` the server uses for MediaSurface URL
+ * map entries. Algorithm MUST match `sourceKey()` in
+ * @gradeui/media/sources/router.ts — duplicated here because
+ * @gradeui/media is server-only (sharp + Vercel Blob deps). If you
+ * change one, change both. There's a parallel copy in
+ * packages/ui/components/ui/media-surface.tsx (`sourceKeyFor`) for
+ * the in-iframe lookup; same rule applies.
+ */
+function clientSideSourceKey(source: { kind: string; [key: string]: unknown }): string {
+  const s = source as Record<string, unknown>;
+  switch (source.kind) {
+    case "album":
+      return `album:${s.artist}|${s.title}|${s.year ?? ""}`;
+    case "tv-show":
+      return `tv-show:${s.title}|${s.year ?? ""}`;
+    case "movie":
+      return `movie:${s.title}|${s.year ?? ""}`;
+    case "game":
+      return `game:${s.title}`;
+    case "book":
+      return `book:${s.isbn ?? ""}|${s.title ?? ""}|${s.author ?? ""}`;
+    case "poster":
+      return `poster:${s.title}|${s.year ?? ""}`;
+    case "portrait":
+      return `portrait:${s.name ?? ""}|${s.role ?? ""}`;
+    case "landscape":
+      return `landscape:${s.location ?? ""}|${s.mood ?? ""}`;
+    case "product":
+      return `product:${s.brand ?? ""}|${s.name ?? ""}`;
+    case "food":
+      return `food:${s.dish ?? ""}|${s.cuisine ?? ""}`;
+    case "generic":
+      return `generic:${s.prompt}`;
+    default:
+      return `${source.kind}:`;
+  }
 }
 
 // ─── Tile grid (all mode) ──────────────────────────────────────────────
@@ -824,6 +1923,16 @@ interface TileGridProps {
   onClose: (id: string) => void;
   theme: GeneratedTheme;
   mode: "light" | "dark";
+  /** Wireframe / full toggle, forwarded to each tile's iframe so the
+   *  All-view tiles render identically to the focused frame. */
+  fidelity: "wireframe" | "full";
+  /** Per-design URL maps. Each tile slices to ITS own design's slot
+   *  so Music App #1's URLs don't leak into Music App #2's tile.
+   *  Slicing happens at the ScreenTile level (it has access to
+   *  design.id); the grid just passes the nested map through. */
+  mediaUrlsByDesign: Record<string, Record<string, string>>;
+  /** Per-design override maps. Same scoping as mediaUrlsByDesign. */
+  mediaOverridesByDesign: Record<string, Record<string, Record<string, unknown>>>;
   /** Stay mounted but render invisible. Tiles remain alive so flipping
    *  back to All view is instant — no Sandpack reboot. */
   hidden?: boolean;
@@ -846,6 +1955,9 @@ function TileGrid({
   onClose,
   theme,
   mode,
+  fidelity,
+  mediaUrlsByDesign,
+  mediaOverridesByDesign,
   hidden = false,
   rendererMode = "sandpack",
 }: TileGridProps) {
@@ -888,6 +2000,14 @@ function TileGrid({
             onClose={canClose ? () => onClose(d.id) : undefined}
             theme={theme}
             mode={mode}
+            fidelity={fidelity}
+            // Slice each tile to its OWN design's URL + override map.
+            // Without this, every tile would either share the focused
+            // design's slice (cross-design state leakage) or get the
+            // raw nested map (wrong shape, MediaSurface wouldn't find
+            // its URL by sourceKey).
+            mediaUrls={mediaUrlsByDesign[d.id] ?? {}}
+            mediaOverrides={mediaOverridesByDesign[d.id] ?? {}}
             rendererMode={rendererMode}
           />
         ))}
@@ -907,6 +2027,9 @@ interface ScreenTileProps {
   onClose?: () => void;
   theme: GeneratedTheme;
   mode: "light" | "dark";
+  fidelity: "wireframe" | "full";
+  mediaUrls: Record<string, string>;
+  mediaOverrides: Record<string, Record<string, unknown>>;
   /** Which renderer mounts inside this tile. Matches FocusedFrame so a
    *  user flipping Dev → Fast in the header gets consistent results
    *  across Fit + All views. */
@@ -927,6 +2050,9 @@ function ScreenTile({
   onClose,
   theme,
   mode,
+  fidelity,
+  mediaUrls,
+  mediaOverrides,
   rendererMode = "sandpack",
 }: ScreenTileProps) {
   const appSource = design.appSource;
@@ -1079,6 +2205,9 @@ function ScreenTile({
               appSource={appSource}
               theme={theme}
               mode={mode}
+              fidelity={fidelity}
+              mediaUrls={mediaUrls}
+              mediaOverrides={mediaOverrides}
             />
           ) : (
             <TileSandpackMount

@@ -4,6 +4,7 @@ import {
   Button, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter,
   Input, Label, Textarea, Switch, Separator, Badge, Avatar, AvatarFallback,
   Select, SelectTrigger, SelectContent, SelectValue, SelectItem,
+  Sidebar, SidebarHeader, SidebarContent, SidebarSection, SidebarItem,
 } from "@gradeui/ui";
 import { Users, Settings, CreditCard, Building2, Search, Check } from "lucide-react";
 
@@ -17,24 +18,22 @@ export default function App() {
   ];
   return (
     <AppShell nav="side" className="min-h-screen bg-background">
-      <AppShellNav placement="side" className="w-56 border-r bg-muted/30">
-        <Stack gap="md" className="p-4">
-          <span className="text-base font-semibold px-2">Admin</span>
-          <Stack gap="xs">
-            <Button variant="secondary" size="sm" className="justify-start gap-2">
-              <Users className="h-4 w-4" /> Users
-            </Button>
-            <Button variant="ghost" size="sm" className="justify-start gap-2">
-              <Building2 className="h-4 w-4" /> Teams
-            </Button>
-            <Button variant="ghost" size="sm" className="justify-start gap-2">
-              <CreditCard className="h-4 w-4" /> Billing
-            </Button>
-            <Button variant="ghost" size="sm" className="justify-start gap-2">
-              <Settings className="h-4 w-4" /> Settings
-            </Button>
-          </Stack>
-        </Stack>
+      <AppShellNav placement="side">
+        {/* Sidebar is the canonical compound nav primitive — slot directly
+            into AppShellNav. Each row is a SidebarItem with icon + `active`. */}
+        <Sidebar collapsible={false}>
+          <SidebarHeader>
+            <span className="text-base font-semibold">Admin</span>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarSection collapsible={false}>
+              <SidebarItem asButton icon={<Users />} active>Users</SidebarItem>
+              <SidebarItem asButton icon={<Building2 />}>Teams</SidebarItem>
+              <SidebarItem asButton icon={<CreditCard />}>Billing</SidebarItem>
+              <SidebarItem asButton icon={<Settings />}>Settings</SidebarItem>
+            </SidebarSection>
+          </SidebarContent>
+        </Sidebar>
       </AppShellNav>
       <AppShellMain className="p-6">
         <Stack gap="lg">

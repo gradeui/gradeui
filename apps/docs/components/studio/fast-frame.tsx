@@ -65,10 +65,35 @@ interface FastIframeHostProps {
   mode: "light" | "dark";
   selectMode?: boolean;
   onSelect?: (selection: StudioSelection) => void;
-  /** Called after the agent reports a selection so the parent can flip
-   *  the Select-mode pill off — matches the Sandpack agent's auto-exit
-   *  behaviour. */
+  /** Called when the iframe agent clears the persistent selection ring
+   *  (Escape inside the iframe). Canvas wires this to drop the
+   *  right-panel selection chip in sync. */
+  onClearSelection?: () => void;
+  /** No longer fires on click (auto-exit was removed in the persistent-
+   *  selection redesign). Kept on the prop interface for forward
+   *  compatibility — future affordances may want to opt back into
+   *  programmatic mode flips. */
   onSelectModeChange?: (next: boolean) => void;
+  /** Wireframe / full toggle, posted to the iframe via
+   *  `grade:set-fidelity`. Defaults to "wireframe" so a fresh iframe
+   *  doesn't flash content before the parent's first push. */
+  fidelity?: "wireframe" | "full";
+  /** Source-key → URL map for the "Fill images" flow. Posted into the
+   *  iframe via `grade:set-media-urls` whenever it changes (or when the
+   *  iframe finishes booting), where the sandbox agent stashes it on
+   *  `window.__gradeMediaUrls` for MediaSurface to read. Lifted to the
+   *  canvas level so every tile iframe in All view inherits the same
+   *  map — the focused iframe and the All-mode tiles each have their
+   *  own JS context, so without this they'd each need their own Fill
+   *  click. */
+  mediaUrls?: Record<string, string>;
+  /** Per-instance MediaSurface prop overrides, keyed by sourceKey.
+   *  Same protocol as `mediaUrls` — Studio's panel writes here when
+   *  the user edits a prop on a selected slot; this prop drives the
+   *  iframe-side `grade:set-media-overrides` push. Each MediaSurface
+   *  inside the iframe applies its slot's overrides on top of the
+   *  JSX prop values at render time. */
+  mediaOverrides?: Record<string, Record<string, unknown>>;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -79,7 +104,11 @@ function FastIframeHost({
   mode,
   selectMode = false,
   onSelect,
+  onClearSelection,
   onSelectModeChange,
+  fidelity,
+  mediaUrls,
+  mediaOverrides,
   className,
   style,
 }: FastIframeHostProps) {
@@ -90,11 +119,13 @@ function FastIframeHost({
   // array stays empty — new onSelect identities on every parent render
   // shouldn't tear down and reattach the listener.
   const onSelectRef = useRef(onSelect);
+  const onClearSelectionRef = useRef(onClearSelection);
   const onSelectModeChangeRef = useRef(onSelectModeChange);
   useEffect(() => {
     onSelectRef.current = onSelect;
+    onClearSelectionRef.current = onClearSelection;
     onSelectModeChangeRef.current = onSelectModeChange;
-  }, [onSelect, onSelectModeChange]);
+  }, [onSelect, onClearSelection, onSelectModeChange]);
 
   // Listen for sandbox → parent messages. Guard on source so multiple
   // Fast iframes (one focused + N tiles in All mode) don't cross-talk.
@@ -112,11 +143,22 @@ function FastIframeHost({
         case "grade:selected": {
           const sel = data.selection as StudioSelection | undefined;
           if (sel) onSelectRef.current?.(sel);
-          // Auto-exit — parity with Sandpack agent's "flip off after
-          // capture" behaviour so the user keeps their flow.
-          onSelectModeChangeRef.current?.(false);
+          // **Don't** auto-exit select mode any more. The previous
+          // "flip off after capture" behaviour killed the agent +
+          // overlay the instant you clicked something — leaving the
+          // right-panel chip orphaned and the user with no in-iframe
+          // confirmation of what they'd picked. Now select mode stays
+          // on across multiple clicks: click another element to switch
+          // the selection, hit Escape to clear, or toggle the Select
+          // pill off to exit the mode entirely.
           break;
         }
+        case "grade:selection-cleared":
+          // User pressed Escape inside the iframe. The agent already
+          // hid its own ring; bubble the clear up so the canvas can
+          // drop the right-panel chip in sync.
+          onClearSelectionRef.current?.();
+          break;
         // grade:fast-error messages currently just log — the sandbox
         // already rendered its own failure panel inside the iframe, so
         // there's nothing more for the parent to paint.
@@ -166,6 +208,42 @@ function FastIframeHost({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, selectMode]);
 
+  // Fidelity (wireframe / full). Re-posted on every iframe boot so a
+  // fresh tile inherits the canvas's current toggle without the user
+  // having to re-flip it.
+  useEffect(() => {
+    if (!ready || !fidelity) return;
+    postToSandbox({ type: "grade:set-fidelity", value: fidelity });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, fidelity]);
+
+  // Media URL map — every time the canvas's resolved-URL state changes
+  // (or this iframe finishes booting), push the current map in. The
+  // sandbox agent merges it into `window.__gradeMediaUrls` and fires
+  // `grade:media-urls-updated` so MediaSurface re-renders with the
+  // resolved src. This is what makes the All-view tiles inherit Fill
+  // results from a focused-frame click — each tile is its own iframe,
+  // so each one has to be told.
+  useEffect(() => {
+    if (!ready || !mediaUrls) return;
+    if (Object.keys(mediaUrls).length === 0) return;
+    postToSandbox({ type: "grade:set-media-urls", urls: mediaUrls });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, mediaUrls]);
+
+  // Per-instance MediaSurface prop overrides — push on every change
+  // (including empty). Empty case matters: when the user clears an
+  // override the iframe needs the new state to drop the entry, not
+  // keep stale values.
+  useEffect(() => {
+    if (!ready) return;
+    postToSandbox({
+      type: "grade:set-media-overrides",
+      overrides: mediaOverrides ?? {},
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, mediaOverrides]);
+
   return (
     <iframe
       ref={iframeRef}
@@ -194,7 +272,11 @@ interface FocusedFastMountProps {
   viewportWidth: ViewportWidth;
   selectMode?: boolean;
   onSelect?: (selection: StudioSelection) => void;
+  onClearSelection?: () => void;
   onSelectModeChange?: (next: boolean) => void;
+  fidelity?: "wireframe" | "full";
+  mediaUrls?: Record<string, string>;
+  mediaOverrides?: Record<string, Record<string, unknown>>;
 }
 
 // Pixel widths for the viewport artboard. Duplicated from sandpack-frame
@@ -217,7 +299,11 @@ export function FocusedFastMount({
   viewportWidth,
   selectMode = false,
   onSelect,
+  onClearSelection,
   onSelectModeChange,
+  fidelity,
+  mediaUrls,
+  mediaOverrides,
 }: FocusedFastMountProps) {
   // Memoize the prepared source for the Code view so we don't re-run
   // prepareAppSource on every render purely to display the text.
@@ -284,7 +370,11 @@ export function FocusedFastMount({
             mode={mode}
             selectMode={selectMode}
             onSelect={onSelect}
+            onClearSelection={onClearSelection}
             onSelectModeChange={onSelectModeChange}
+            fidelity={fidelity}
+            mediaUrls={mediaUrls}
+            mediaOverrides={mediaOverrides}
           />
         ) : null}
       </div>
@@ -298,6 +388,9 @@ interface TileFastMountProps {
   appSource: string | null;
   theme: GeneratedTheme;
   mode: "light" | "dark";
+  fidelity?: "wireframe" | "full";
+  mediaUrls?: Record<string, string>;
+  mediaOverrides?: Record<string, Record<string, unknown>>;
 }
 
 /**
@@ -305,11 +398,19 @@ interface TileFastMountProps {
  * pointer-events-none scaled div so the iframe renders at virtual
  * viewport size and CSS-scales down into the tile. Select mode is
  * not forwarded — tiles are read-only previews in All mode.
+ *
+ * `fidelity` + `mediaUrls` ARE forwarded so the All-view tiles look
+ * identical to the focused frame — a Fill click on the focused frame
+ * (which lifts mediaUrls into canvas state) flows down to every tile,
+ * and the wireframe toggle applies to all tiles at once.
  */
 export function TileFastMount({
   appSource,
   theme,
   mode,
+  fidelity,
+  mediaUrls,
+  mediaOverrides,
 }: TileFastMountProps) {
   if (!appSource) return null;
   return (
@@ -317,6 +418,9 @@ export function TileFastMount({
       appSource={appSource}
       theme={theme}
       mode={mode}
+      fidelity={fidelity}
+      mediaUrls={mediaUrls}
+      mediaOverrides={mediaOverrides}
     />
   );
 }

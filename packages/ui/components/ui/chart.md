@@ -12,7 +12,7 @@ props:
   - ChartLegend / ChartLegendContent: pair the same way for the legend
 when_to_use: Reporting dashboards, single-purpose analytics cards (revenue, conversions, active users), or anywhere you'd otherwise hand-roll a Recharts setup. Bring the actual chart type from `recharts` — ChartContainer doesn't pick the chart shape for you, it themes whatever you nest. For sparkline-style decorative trends consider just rendering a small SVG line directly; ChartContainer is overkill for non-interactive ornament.
 composes_with: [Card (chart-in-a-card pattern), Tabs (multi-metric switcher), Recharts components (Bar, Line, Area, Pie, Radar from "recharts")]
-aliases: [chart, charts, graph, bar chart, line chart, area chart, recharts, analytics chart]
+aliases: [chart, charts, graph, bar chart, line chart, area chart, recharts, analytics chart, swift chart, swiftui chart, victory chart, victory native]
 ---
 
 ```jsx

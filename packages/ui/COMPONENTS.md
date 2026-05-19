@@ -35,7 +35,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | Component | File | Key props | Figma | Notes |
 |---|---|---|---|---|
 | Card + CardHeader/Title/Description/Content/Footer | `card.tsx` | none — bg-card text-card-foreground | ✅ | |
-| Alert | `alert.tsx` | `variant` (default/destructive/success/warning/info/highlight) | ✅ | 6 variants, soft-bg + deep-text |
+| Callout | `callout.tsx` | `variant` (default/destructive/success/warning/info) | ✅ | Renamed from Alert (May 2026); `highlight` variant dropped. ARIA role conditional: `status` (polite) for info/success/default, `alert` (assertive) for warning/destructive. Soft-bg + deep-text. |
 | Badge | `badge.tsx` | 17 variants — solid/soft/outline × status colours | ✅ | |
 | Skeleton | `skeleton.tsx` | none — animate-pulse rounded-md bg-muted | ✅ | 4 shape variants in Figma |
 | Progress | `progress.tsx` | none — track bg-secondary, fill bg-primary | ✅ | 4 fill values in Figma |
@@ -53,6 +53,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | HoverCard | `hover-card.tsx` | none — w-64 shadow-md | ✅ | |
 | DropdownMenu (+ Item/CheckboxItem/RadioItem/Separator/Label) | `dropdown-menu.tsx` | none formally | ✅ | |
 | Select (+ Trigger/Content/Item/Value) | `select.tsx` | none formally | ✅ | placeholder/filled/open in Figma |
+| MultiSelect | `multi-select.tsx` | `options`, `value`/`defaultValue`, `onValueChange`, `placeholder`, `maxCount` (badges before "+N more"), `searchable`, `badgeDismissible`, `modalPopover` | ⏳ | Composes Popover + Command + Badge. Data-driven via `options`; selected items render as removable Badges in the trigger with maxCount overflow. Select-all / Clear / Close actions in dropdown footer. For unbounded/async lists use `Command` directly. |
 | Command (+ Input/Item/Group) | `command.tsx` | none — bg-popover | ✅ | |
 
 ## Navigation
@@ -60,9 +61,8 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | Component | File | Key props | Figma | Notes |
 |---|---|---|---|---|
 | TopMenu | `top-menu.tsx` | breadcrumbs, leftContent, rightContent, sticky | ✅ | |
-| SideMenu (+ Section/Item) | `side-menu.tsx` | sections, items, collapsed, header, footer | ✅ | expanded + collapsed states |
-| Tabs (+ List/Trigger/Content) | `tabs.tsx` | shadcn pill style | ⚠️ | My Figma "Tabs" actually mirrors `simple-tabs` — see below |
-| SimpleTabs | `simple-tabs.tsx` | text-primary on active + h-0.5 indicator | ✅ | What's in Figma as "Tabs" |
+| Sidebar (+ Header/Content/Footer/Section/Item) | `sidebar.tsx` | `collapsed`/`defaultCollapsed`/`onCollapsedChange`, `collapsible` · Header / Content / Footer slots · Section: `title`/`icon`/`collapsible`/`defaultExpanded` · Item: `icon`/`badge`/`active`/`asChild`/`asButton`/`disabled`/`collapsedLabel` · `href` on Item | ✅ | Renamed from SideMenu (May 2026) and rebuilt as a compound API so consumers can slot custom chrome (search, drag handles, custom brand) alongside nav. Sized via `--rds-sidebar-*` CSS vars. Auto-wraps collapsed items in Tooltips. |
+| Tabs (+ List/Trigger/Content) | `tabs.tsx` | `variant` (pill/underlined), `size` (sm/md/lg) | ✅ | Pill = shadcn chip style (default). Underlined = minimal text + bottom-border (formerly SimpleTabs, merged May 2026). |
 
 ## Content & data
 
@@ -85,6 +85,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | MediaBlock | `media-block.tsx` | `layout` (single/carousel/grid/bento/sideBySide) | ✅ | single/grid/sideBySide/bento built |
 | MediaSurface | `media-surface.tsx` | `aspect` (square/video/portrait/wide) | ✅ | gradient placeholder fill |
 | FaqBlock | `faq-block.tsx` | composed Accordion section | ⏳ | |
+| Carousel (+ Slide / VideoSlide / Dots / Arrows / Prev / Next) | `carousel.tsx` | `loop`, `align`, `slidesPerView`, `autoplay`, `draggable`, `onSlideChange` · per-slide `duration` · VideoSlide `src`/`poster`/`alt`/`loop`/`controls`/`fit` | ⏳ | Embla-backed. Custom autoplay loop (no plugin) so per-slide duration + advance-on-video-ended fall out cleanly. Token-driven via `--rds-carousel-*` vars. Disambiguates from `<Slider>` (range input) at the sidecar level. |
 
 ## Media & runtime surfaces
 
@@ -127,8 +128,8 @@ Empty starter frames — full 1440×900 — based on AppShell's `nav` variants. 
 |---|---|---|
 | skeleton-blank | none | bare AppShellMain slot |
 | skeleton-top-nav | top | TopMenu + Main |
-| skeleton-side-nav | side | SideMenu + Main |
-| skeleton-top+side | top+side | SideMenu + TopMenu + Main |
+| skeleton-side-nav | side | Sidebar + Main |
+| skeleton-top+side | top+side | Sidebar + TopMenu + Main |
 
 ## Figma-side conventions (recorded so they don't drift)
 

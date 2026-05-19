@@ -11,7 +11,7 @@ props:
   - children: React.ReactNode
 when_to_use: 2D layouts where Stack (vertical) and Row (horizontal) don't fit — stat-card grids, feature tiles, pricing columns, photo grids. Reach for Grid over hand-rolled `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4` so the column count is a prop the settings panel can mutate and the responsive ladder stays consistent across designs.
 composes_with: [Card, Stack (inside each cell), Row, Button, any content component]
-aliases: [grid, tiles, cards grid, stat grid, columns, feature grid]
+aliases: [grid, tiles, cards grid, stat grid, columns, feature grid, grid view, lazy v grid, lazyvgrid, lazy h grid, lazyhgrid, tile grid, masonry]
 notes: |
   `cols` values and their responsive ladders:
     "1"  → grid-cols-1 (single column at all breakpoints)

@@ -35,7 +35,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from "./components/ui/input"
 import { Label } from "./components/ui/label"
 import { Badge } from "./components/ui/badge"
-import { Alert, AlertTitle, AlertDescription } from "./components/ui/alert"
+import { Callout, CalloutTitle, CalloutDescription } from "./components/ui/callout"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./components/ui/dialog"
 import { CheckCircle2, AlertTriangle, Info } from "lucide-react"
 
@@ -119,21 +119,21 @@ export default function App() {
       <section>
         <h2 className="text-lg font-semibold mb-4">Alerts</h2>
         <div className="space-y-3">
-          <Alert>
+          <Callout>
             <Info className="h-4 w-4" />
-            <AlertTitle>Information</AlertTitle>
-            <AlertDescription>This is a default informational alert.</AlertDescription>
-          </Alert>
-          <Alert variant="success">
+            <CalloutTitle>Information</CalloutTitle>
+            <CalloutDescription>This is a default informational alert.</CalloutDescription>
+          </Callout>
+          <Callout variant="success">
             <CheckCircle2 className="h-4 w-4" />
-            <AlertTitle>Success</AlertTitle>
-            <AlertDescription>Your changes have been saved.</AlertDescription>
-          </Alert>
-          <Alert variant="warning">
+            <CalloutTitle>Success</CalloutTitle>
+            <CalloutDescription>Your changes have been saved.</CalloutDescription>
+          </Callout>
+          <Callout variant="warning">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Warning</AlertTitle>
-            <AlertDescription>Your session will expire soon.</AlertDescription>
-          </Alert>
+            <CalloutTitle>Warning</CalloutTitle>
+            <CalloutDescription>Your session will expire soon.</CalloutDescription>
+          </Callout>
         </div>
       </section>
 
@@ -243,59 +243,51 @@ export default function App() {
   },
   alert: {
     name: "Alert",
-    code: `import { Alert, AlertTitle, AlertDescription } from "./components/ui/alert"
-import { AlertCircle, CheckCircle2, Info, AlertTriangle, Lightbulb, Sparkles } from "lucide-react"
+    code: `import { Callout, CalloutTitle, CalloutDescription } from "./components/ui/callout"
+import { AlertCircle, CheckCircle2, Info, AlertTriangle, Lightbulb } from "lucide-react"
 
 export default function App() {
   return (
     <div className="p-8 space-y-4 max-w-lg">
-      <Alert>
+      <Callout>
         <Info className="h-4 w-4" />
-        <AlertTitle>Default</AlertTitle>
-        <AlertDescription>
+        <CalloutTitle>Default</CalloutTitle>
+        <CalloutDescription>
           Neutral alert surface for general-purpose messages.
-        </AlertDescription>
-      </Alert>
+        </CalloutDescription>
+      </Callout>
 
-      <Alert variant="info">
+      <Callout variant="info">
         <Lightbulb className="h-4 w-4" />
-        <AlertTitle>Heads up</AlertTitle>
-        <AlertDescription>
+        <CalloutTitle>Heads up</CalloutTitle>
+        <CalloutDescription>
           Informational tint — derived from the theme's info token.
-        </AlertDescription>
-      </Alert>
+        </CalloutDescription>
+      </Callout>
 
-      <Alert variant="success">
+      <Callout variant="success">
         <CheckCircle2 className="h-4 w-4" />
-        <AlertTitle>Success</AlertTitle>
-        <AlertDescription>
+        <CalloutTitle>Success</CalloutTitle>
+        <CalloutDescription>
           Your changes have been saved successfully.
-        </AlertDescription>
-      </Alert>
+        </CalloutDescription>
+      </Callout>
 
-      <Alert variant="warning">
+      <Callout variant="warning">
         <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Warning</AlertTitle>
-        <AlertDescription>
+        <CalloutTitle>Warning</CalloutTitle>
+        <CalloutDescription>
           Your session will expire in 5 minutes.
-        </AlertDescription>
-      </Alert>
+        </CalloutDescription>
+      </Callout>
 
-      <Alert variant="destructive">
+      <Callout variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
+        <CalloutTitle>Error</CalloutTitle>
+        <CalloutDescription>
           Something went wrong. Please try again.
-        </AlertDescription>
-      </Alert>
-
-      <Alert variant="highlight">
-        <Sparkles className="h-4 w-4" />
-        <AlertTitle>Highlight</AlertTitle>
-        <AlertDescription>
-          Draws attention without the weight of a warning.
-        </AlertDescription>
-      </Alert>
+        </CalloutDescription>
+      </Callout>
     </div>
   )
 }`,

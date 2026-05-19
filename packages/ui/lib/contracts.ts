@@ -1,0 +1,126 @@
+/**
+ * Component contract registry — auto-managed by
+ * scripts/generate-contracts.mjs. Hand-authored contracts (MediaSurface,
+ * etc.) are also wired in here; the generator preserves them on each
+ * run.
+ */
+
+import type { ComponentContract } from "@gradeui/contracts";
+import { AccordionContract } from "../components/ui/accordion.contract";
+import { AiChatContract } from "../components/ui/ai-chat.contract";
+import { AppShellContract } from "../components/ui/app-shell.contract";
+import { AvatarContract } from "../components/ui/avatar.contract";
+import { BadgeContract } from "../components/ui/badge.contract";
+import { BreadcrumbContract } from "../components/ui/breadcrumb.contract";
+import { ButtonContract } from "../components/ui/button.contract";
+import { CalendarContract } from "../components/ui/calendar.contract";
+import { CalloutContract } from "../components/ui/callout.contract";
+import { CardContract } from "../components/ui/card.contract";
+import { CarouselContract } from "../components/ui/carousel.contract";
+import { ChartContract } from "../components/ui/chart.contract";
+import { CheckboxContract } from "../components/ui/checkbox.contract";
+import { CollapsibleContract } from "../components/ui/collapsible.contract";
+import { CommandContract } from "../components/ui/command.contract";
+import { DatePickerContract } from "../components/ui/date-picker.contract";
+import { DialogContract } from "../components/ui/dialog.contract";
+import { DropdownMenuContract } from "../components/ui/dropdown-menu.contract";
+import { FlexContract } from "../components/ui/flex.contract";
+import { GridContract } from "../components/ui/grid.contract";
+import { HoverCardContract } from "../components/ui/hover-card.contract";
+import { InputContract } from "../components/ui/input.contract";
+import { LabelContract } from "../components/ui/label.contract";
+import { MapContract } from "../components/ui/map.contract";
+import { MediaSurfaceContract } from "../components/ui/media-surface.contract";
+import { MultiSelectContract } from "../components/ui/multi-select.contract";
+import { PopoverContract } from "../components/ui/popover.contract";
+import { ProgressContract } from "../components/ui/progress.contract";
+import { RadioGroupContract } from "../components/ui/radio-group.contract";
+import { ResizableContract } from "../components/ui/resizable.contract";
+import { RivePlayerContract } from "../components/ui/rive-player.contract";
+import { RowContract } from "../components/ui/row.contract";
+import { ScrollAreaContract } from "../components/ui/scroll-area.contract";
+import { SelectContract } from "../components/ui/select.contract";
+import { SeparatorContract } from "../components/ui/separator.contract";
+import { ShaderPresetPickerContract } from "../components/ui/shader-preset-picker.contract";
+import { ShaderPresetPreviewContract } from "../components/ui/shader-preset-preview.contract";
+import { SheetContract } from "../components/ui/sheet.contract";
+import { SidebarContract } from "../components/ui/sidebar.contract";
+import { SkeletonContract } from "../components/ui/skeleton.contract";
+import { SliderContract } from "../components/ui/slider.contract";
+import { StackContract } from "../components/ui/stack.contract";
+import { SwitchContract } from "../components/ui/switch.contract";
+import { TableContract } from "../components/ui/table.contract";
+import { TabsContract } from "../components/ui/tabs.contract";
+import { TextareaContract } from "../components/ui/textarea.contract";
+import { ThreeSceneContract } from "../components/ui/three-scene.contract";
+import { ToastContract } from "../components/ui/toast.contract";
+import { ToggleContract } from "../components/ui/toggle.contract";
+import { ToggleGroupContract } from "../components/ui/toggle-group.contract";
+import { TooltipContract } from "../components/ui/tooltip.contract";
+import { VideoPlayerContract } from "../components/ui/video-player.contract";
+
+export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = {
+  Accordion: AccordionContract,
+  AiChat: AiChatContract,
+  AppShell: AppShellContract,
+  Avatar: AvatarContract,
+  Badge: BadgeContract,
+  Breadcrumb: BreadcrumbContract,
+  Button: ButtonContract,
+  Calendar: CalendarContract,
+  Callout: CalloutContract,
+  Card: CardContract,
+  Carousel: CarouselContract,
+  Chart: ChartContract,
+  Checkbox: CheckboxContract,
+  Collapsible: CollapsibleContract,
+  Command: CommandContract,
+  DatePicker: DatePickerContract,
+  Dialog: DialogContract,
+  DropdownMenu: DropdownMenuContract,
+  Flex: FlexContract,
+  Grid: GridContract,
+  HoverCard: HoverCardContract,
+  Input: InputContract,
+  Label: LabelContract,
+  Map: MapContract,
+  MediaSurface: MediaSurfaceContract,
+  MultiSelect: MultiSelectContract,
+  Popover: PopoverContract,
+  Progress: ProgressContract,
+  RadioGroup: RadioGroupContract,
+  Resizable: ResizableContract,
+  RivePlayer: RivePlayerContract,
+  Row: RowContract,
+  ScrollArea: ScrollAreaContract,
+  Select: SelectContract,
+  Separator: SeparatorContract,
+  ShaderPresetPicker: ShaderPresetPickerContract,
+  ShaderPresetPreview: ShaderPresetPreviewContract,
+  Sheet: SheetContract,
+  Sidebar: SidebarContract,
+  Skeleton: SkeletonContract,
+  Slider: SliderContract,
+  Stack: StackContract,
+  Switch: SwitchContract,
+  Table: TableContract,
+  Tabs: TabsContract,
+  Textarea: TextareaContract,
+  ThreeScene: ThreeSceneContract,
+  Toast: ToastContract,
+  Toggle: ToggleContract,
+  ToggleGroup: ToggleGroupContract,
+  Tooltip: TooltipContract,
+  VideoPlayer: VideoPlayerContract,
+};
+
+export function getComponentContract(
+  componentName: string | null | undefined,
+): ComponentContract | null {
+  if (!componentName) return null;
+  return COMPONENT_CONTRACTS[componentName] ?? null;
+}
+
+export function listContractedComponents(): string[] {
+  return Object.keys(COMPONENT_CONTRACTS);
+}

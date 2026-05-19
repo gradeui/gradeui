@@ -189,13 +189,40 @@ function loadAll(): ComponentRef[] {
       const raw = SIDECARS[file];
       const fm = parseFrontmatter(raw);
       const fallback = file.replace(/\.md$/, "");
-      refs.push(toRef(fm, fallback));
+      const ref = toRef(fm, fallback);
+      ref.body = extractBody(raw);
+      refs.push(ref);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn(`[studio/playbook] skipping sidecar ${file}:`, err);
     }
   }
   return refs;
+}
+
+/**
+ * Pull everything after the second `---` fence — the prose body of a sidecar.
+ * Holds the canonical JSX example and the `### Anti-patterns` block — both
+ * critical for the model and useless to anti-hallucination unless we pin
+ * them into the prompt (which `formatRef` does).
+ *
+ * Returns "" when:
+ *   - the file has no frontmatter (whole file is body)
+ *   - the file is frontmatter-only (no body)
+ *   - the file is empty / malformed
+ *
+ * Note this is content-agnostic: it doesn't try to parse JSX or markdown.
+ * We trust the sidecar author to keep the body tight (~200 words guideline
+ * in STUDIO.md) and pass the whole thing through. Cheaper than building a
+ * section extractor and not noticeably worse than one.
+ */
+function extractBody(raw: string): string {
+  if (!raw.startsWith("---")) return raw.trim();
+  const end = raw.indexOf("\n---", 3);
+  if (end === -1) return "";
+  // Skip the `\n---` (4 chars) plus the trailing newline if present.
+  const afterFence = end + 4;
+  return raw.slice(afterFence).replace(/^\r?\n/, "").trim();
 }
 
 // Cache once at module scope. Unlike the old fs-based loader, there's no
@@ -261,6 +288,26 @@ function formatRef(ref: ComponentRef): string {
       lines.push(`    ${noteLine}`);
     }
   }
+  // Prose body — canonical JSX example + ### Anti-patterns. Pinned for
+  // the model so it actually sees the composition we authored, instead
+  // of guessing it from prop names + shadcn training data. The body is
+  // emitted verbatim (its own ``` fences survive) under a clearly
+  // labelled section so the model knows it's a worked example, not
+  // further instructions to follow literally.
+  //
+  // Cost: ~150–300 extra tokens per pinned sidecar. Retrieval is
+  // selective (the refs block only includes components that won
+  // alias-match), so the cost only bites when the sidecar is genuinely
+  // relevant — which is exactly when the example is worth its tokens.
+  //
+  // No indentation: ``` fences need column 0 to render as code blocks
+  // in tools that re-display the prompt, and the model's parser is
+  // happier with un-indented fenced blocks too.
+  if (ref.body) {
+    lines.push("");
+    lines.push(`  Example & anti-patterns for <${ref.name}> ↓`);
+    lines.push(ref.body);
+  }
   return lines.join("\n");
 }
 
@@ -295,7 +342,8 @@ export function renderComponentRefsBlock(options?: {
 
   const body = picked.map(formatRef).join("\n\n");
   return [
-    "COMPONENT REFERENCE — API shapes for the components in play:",
+    "COMPONENT REFERENCE — API shapes + canonical examples + anti-patterns for the components in play.",
+    "Read the example block under each component before emitting JSX for that component — it shows the composition (compound subcomponent ordering, required wrappers, prop spelling) that this DS actually expects. Anti-patterns lines marked `DO NOT` are hard rules.",
     "",
     body,
     "",
@@ -347,13 +395,21 @@ export function relevantComponentNames(text: string): string[] {
     // though `Switch` is obviously what's asked for. `(?:es|s)?` catches
     // both "cards" and "switches"; the `i` flag handles casing.
     //
+    // `(?<!\.)` rejects matches preceded by a dot — that's the JS method-
+    // call shape (`array.map(...)`, `arr.filter(...)`, `obj.toggle(...)`),
+    // which would otherwise pollute the refs with the Map / Filter / Toggle
+    // components on any list-rendering JSX. False positive we hit live:
+    // music-app scaffold renders playlists with `[...].map(p => ...)` and
+    // the refs always shipped `Map` even though no Map was anywhere near
+    // the conversation.
+    //
     // Escaped because informal aliases may contain characters that look
     // like regex metachars (e.g. "three.js" → the `.` would otherwise match
     // any char, so "threeXjs" would false-positive). Canonical names and
     // sub-export names are identifier-shaped so this is only defensive for
     // the frontmatter-declared aliases, but cheap enough to apply everywhere.
     const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const re = new RegExp(`\\b${escaped}(?:es|s)?\\b`, "i");
+    const re = new RegExp(`(?<!\\.)\\b${escaped}(?:es|s)?\\b`, "i");
     if (re.test(text)) hits.add(canonical);
   }
   return Array.from(hits);

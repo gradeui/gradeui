@@ -302,9 +302,51 @@
      Defaults to the secondary surface so it reads visibly distinct from
      `bg-card` and `bg-background` while staying neutral (not brand-loud).
      Resolves dynamically against the active mode because var(--secondary)
-     itself is mode-scoped — no `.dark` duplicate needed. */
-  --rds-media-placeholder-bg: oklch(var(--secondary));
-  --rds-media-placeholder-fg: oklch(var(--secondary-foreground) / 0.4);
+     itself is mode-scoped — no `.dark` duplicate needed.
+
+     Both bg and fg are SOLID (no alpha) — earlier `secondary-foreground / 0.4`
+     produced a "half-cooked" look where the icon and caption faded into the
+     surface. Solid muted-foreground reads as "intentional placeholder
+     colour", not "loading half-way". */
+  --rds-media-placeholder-bg: oklch(var(--muted));
+  --rds-media-placeholder-fg: oklch(var(--muted-foreground));
+
+  /* Sidebar knobs — the width pair drives the collapsed/expanded animation
+     on `<Sidebar>` (compound nav primitive). Header height + section
+     padding + per-section gap are exposed so consumers can retune density
+     without prop drilling. */
+  --rds-sidebar-width: 16rem;
+  --rds-sidebar-collapsed-width: 4rem;
+  --rds-sidebar-header-height: 3.25rem;
+  --rds-sidebar-content-py: 0.5rem;
+  --rds-sidebar-section-px: 0.5rem;
+  --rds-sidebar-section-gap: 0.125rem;
+
+  /* Carousel knobs — every visual dimension of <Carousel> is driven from
+     this stanza so consumers can re-skin the slideshow (dot shape, arrow
+     chrome, transition feel) without prop-drilling. The component reads
+     these as `var(--rds-carousel-* , <fallback>)` so missing values are
+     safe. */
+  --rds-carousel-gap: 0;
+  --rds-carousel-radius: var(--rds-media-radius, 0.5rem);
+  --rds-carousel-fade-ms: 200ms;
+  --rds-carousel-slide-basis: 100%;
+  /* Dots */
+  --rds-carousel-dot-size: 0.5rem;
+  --rds-carousel-dot-active-width: 1.25rem;
+  --rds-carousel-dot-color: oklch(var(--muted-foreground) / 0.4);
+  --rds-carousel-dot-active-color: oklch(var(--primary));
+  --rds-carousel-dots-gap: 0.75rem;        /* between viewport and below-dots */
+  --rds-carousel-dots-spacing: 0.5rem;     /* between adjacent dots */
+  --rds-carousel-dots-inset: 0.75rem;      /* overlay position from bottom */
+  /* Arrows */
+  --rds-carousel-arrow-size: 2.25rem;
+  --rds-carousel-arrow-inset: 0.75rem;
+  --rds-carousel-arrow-bg: oklch(var(--background) / 0.85);
+  --rds-carousel-arrow-hover-bg: oklch(var(--background));
+  --rds-carousel-arrow-fg: oklch(var(--foreground));
+  --rds-carousel-arrow-backdrop: blur(6px);
+  --rds-carousel-arrow-shadow: 0 2px 8px oklch(0 0 0 / 0.12);
 
   /* Alert surface pairs — paler tinted surface + readable deep text for each
      status colour. Pre-hydration fallbacks; the JS theme pipeline overwrites

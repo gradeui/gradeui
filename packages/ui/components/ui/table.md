@@ -7,6 +7,7 @@ props:
   - No variants — styling follows the active theme tokens
 when_to_use: Structured tabular data — rows × columns with alignment requirements. NOT a layout grid — for that use div+Tailwind grid utilities. Keep to <100 rows; larger datasets need virtualisation (not in DS).
 composes_with: [Card (wrap the table), Badge (inside TableCell for status), Checkbox (row selection), Button (row actions)]
+aliases: [table, table view, data table, datatable, grid view, data grid, rows and columns]
 ---
 
 ```jsx

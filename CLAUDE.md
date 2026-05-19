@@ -4,7 +4,7 @@ pnpm workspaces monorepo. Publishes the `@gradeui/*` scoped packages to npm and 
 
 This `CLAUDE.md` is the orientation document for any Claude session working in this repo. Read it before reaching for a subagent.
 
-**If the task involves the `/studio` chat-driven playground**, read `apps/docs/STUDIO.md` first — it documents the selection protocol, Sandpack injection model, system-prompt stitching, and known limits. Don't try to infer Studio's internals from the component code alone.
+**If the task involves the `/studio` chat-driven playground**, read `apps/docs/STUDIO.md` first — it documents the **two-renderer model** (Fast Frame is the live preview; Sandpack is kept as a parity check), the **two-agent split** (any new `grade:*` postMessage protocol needs handlers added in BOTH `apps/docs/app/fast-sandbox/page.tsx` AND `apps/docs/lib/chat-sandpack.ts` if it should work across both renderers), the selection protocol, system-prompt stitching, and known limits. Don't try to infer Studio's internals from the component code alone.
 
 ## Layout
 

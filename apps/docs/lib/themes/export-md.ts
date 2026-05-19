@@ -292,15 +292,15 @@ Import from \`@gradeui/ui\` — all components read theme vars and re-skin autom
 \`\`\`tsx
 import {
   Button, Input, Textarea, Label, Select, Checkbox, RadioGroup, Switch,
-  Slider, Toggle, Calendar, Card, Badge, Alert, Skeleton, Separator,
+  Slider, Toggle, Calendar, Card, Badge, Callout, Skeleton, Separator,
   HoverCard, Popover, Dialog, Sheet, Tooltip, Progress, DropdownMenu,
-  Command, Tabs, SimpleTabs, Accordion, Collapsible, ScrollArea, Table,
+  Command, Tabs, Accordion, Collapsible, ScrollArea, Table,
   Avatar, AIChat, Logo, SectionBlock, CardBlock, MediaBlock, FAQBlock,
 } from "@gradeui/ui";
 import "@gradeui/ui/styles.css";
 \`\`\`
 
-Every component accepts a \`className\` for layout tweaks. Variants are passed via a \`variant\` prop: \`<Button variant="outline">\`, \`<Alert variant="success">\`, \`<Badge variant="destructive-soft">\`.
+Every component accepts a \`className\` for layout tweaks. Variants are passed via a \`variant\` prop: \`<Button variant="outline">\`, \`<Callout variant="success">\`, \`<Badge variant="destructive-soft">\`.
 
 ## Feel and voice
 

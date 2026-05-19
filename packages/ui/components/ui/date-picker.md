@@ -17,7 +17,7 @@ props:
 when_to_use: Any date or date-range entry. Use DatePicker for a single date (DOB, due date, booking). Use DateRangePicker for a span (report period, stay dates, filter window). Prefer these over <Input type="date"> — consistent theming, keyboard nav, a11y, and no browser-native UI drift.
 composes_with: [Label, Form, Card (in CardContent), Button (form submit)]
 subcomponents: [DateRangePicker]
-aliases: [datepicker, calendar input, date field, date range]
+aliases: [datepicker, calendar input, date field, date range, datepickerios, react native date picker, calendar input field, date field control]
 ---
 
 ```jsx

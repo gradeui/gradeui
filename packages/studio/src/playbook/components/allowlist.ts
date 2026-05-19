@@ -53,9 +53,12 @@ export const ALLOWED_COMPONENTS = [
   "Label",
   "Textarea",
   // Feedback
-  "Alert",
-  "AlertTitle",
-  "AlertDescription",
+  // Callout — renamed from Alert (May 2026). The Alert name is reserved
+  // for a future blocking/interruptive primitive; current modal-alert
+  // semantics live in <Dialog>. Don't re-add "Alert" here.
+  "Callout",
+  "CalloutTitle",
+  "CalloutDescription",
   "Badge",
   "Progress",
   "Skeleton",
@@ -75,6 +78,12 @@ export const ALLOWED_COMPONENTS = [
   "SelectContent",
   "SelectValue",
   "SelectItem",
+  // MultiSelect — multi-pick combobox, data-driven via `options`. The
+  // model should reach for this whenever the user asks for "tag picker",
+  // "multi select", "chips input", "filter by N things", or similar.
+  // Don't suggest it for unbounded/async lists — Command is the right
+  // fit there.
+  "MultiSelect",
   // Date + Popover (shipped in @gradeui/ui@0.3.0)
   "DatePicker",
   "DateRangePicker",
@@ -88,6 +97,11 @@ export const ALLOWED_COMPONENTS = [
   "Avatar",
   "AvatarImage",
   "AvatarFallback",
+  // Tabs — has `variant: "pill" | "underlined"` on TabsList. The
+  // underlined treatment replaced the retired SimpleTabs component
+  // (May 2026); the model should pick `variant="underlined"` for
+  // marketing / docs-style tab strips and the default pill for app
+  // chrome.
   "Tabs",
   "TabsList",
   "TabsTrigger",
@@ -117,6 +131,18 @@ export const ALLOWED_COMPONENTS = [
   "MediaSurface",
   "ShaderPresetPreview",
   "ShaderPresetPicker",
+  // Sidebar (renamed from SideMenu, May 2026). Compound API — the model
+  // should compose <Sidebar><SidebarHeader/><SidebarContent>...
+  // <SidebarSection title="..."><SidebarItem icon={...}>Label</SidebarItem>
+  // </SidebarSection></SidebarContent><SidebarFooter/></Sidebar>. Drop the
+  // old `sections={[…]}` data-driven shape — that was SideMenu's API, now
+  // retired.
+  "Sidebar",
+  "SidebarHeader",
+  "SidebarContent",
+  "SidebarFooter",
+  "SidebarSection",
+  "SidebarItem",
   // Map (shipped in @gradeui/ui@0.9.0)
   //   - Provider-agnostic: provider="maplibre" (default, free) | "mapbox"
   //     | "google". The model should default to omitting the prop (uses
@@ -129,6 +155,27 @@ export const ALLOWED_COMPONENTS = [
   //   - Sidecar at sidecars/map.md documents the API + anti-patterns.
   "Map",
   "MapMarker",
+  // Carousel (shipped in @gradeui/ui@0.11.0)
+  //   - Embla-backed slideshow with a compound API: Carousel + .Slide,
+  //     .VideoSlide, .Dots, .Arrows. All sizing/colour driven by
+  //     `--rds-carousel-*` CSS vars; data-gds-part on every addressable
+  //     piece for Studio selection.
+  //   - VideoSlide is the canonical "video that plays when its slide is
+  //     active" — muted + loop + no controls by default (autoplay-friendly).
+  //   - Per-slide autoplay duration via `<Carousel.Slide duration={ms}>` —
+  //     e.g. a still hero held for 15s while video slides cycle naturally.
+  //   - DISAMBIGUATION: "slider" colloquially means a slideshow, but
+  //     `<Slider>` in this allow-list is the range input. The retrieval
+  //     layer maps "slider" → Carousel's sidecar so the model picks the
+  //     right primitive; if a user really wants a draggable thumb on a
+  //     track, the prompt usually says "range".
+  "Carousel",
+  "CarouselSlide",
+  "CarouselVideoSlide",
+  "CarouselDots",
+  "CarouselArrows",
+  "CarouselPrev",
+  "CarouselNext",
 ] as const;
 
 /**

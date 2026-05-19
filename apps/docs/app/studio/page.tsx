@@ -76,6 +76,7 @@ import {
   initialDesigns,
   type Design,
 } from "@/lib/studio-designs";
+import { useUndoHistory, pruneHistoryStorage } from "@/lib/use-undo-history";
 import { GRADEUI_VERSION, STUDIO_VERSION } from "@/lib/versions";
 
 // The system prompt now lives in `@gradeui/studio/playbook` — same text
@@ -113,6 +114,20 @@ export default function StudioPage() {
   // refreshing the page resets to one blank slot.
   const [designs, setDesigns] = useState<Design[]>(() => initialDesigns());
   const [activeId, setActiveId] = useState<string>(() => designs[0].id);
+
+  // Per-design undo / redo for `appSource` (JSX). The hook is
+  // self-persisting via localStorage keyed by `designId`, and reseeds
+  // automatically when the user switches designs. We push to the
+  // history every time appSource changes (chat output, panel edit,
+  // fill, etc.) with a label describing the action — the label shows
+  // in the undo button's tooltip and the future timeline view.
+  //
+  // Why appSource-only for v1: it's where 90% of meaningful state
+  // lives. Per-design URL maps + overrides are a follow-on snapshot
+  // dimension; including them is the natural next step once this
+  // path is verified. For today, undoing the JSX is the right
+  // primary surface.
+  const undoHistory = useUndoHistory<string | null>(activeId);
   // Silent fallback to the first design if activeId goes stale. The
   // useEffect below logs this in dev so we can spot it instead of it
   // hiding a desync between the canvas, the chat, and the tab strip.
@@ -325,29 +340,111 @@ export default function StudioPage() {
           // stay on screen.
           const isEmpty = code == null || code.trim() === "";
           if (isEmpty && d.appSource) return d;
-          return { ...d, appSource: code };
+          // Push the OLD value to history before committing the new
+          // one — undo restores to the previous state. We only push
+          // when the value actually changed (no-op chats from the
+          // model don't litter the undo stack).
+          if (d.appSource !== code) {
+            undoHistory.push(d.appSource ?? null, "Chat edit");
+          }
+          return { ...d, appSource: code, updatedAt: Date.now() };
         })
       );
     },
     [activeId]
   );
 
-  // Source mutation that came from the settings panel (not the LLM). Same
-  // write-through path as handleLatestCode — they both target the active
-  // design's `appSource` slot — but intentionally kept as a separate
-  // callback so it's obvious in a stack trace which surface produced the
-  // change, and so we can later add provenance / undo scoped to
-  // panel-originated edits.
+  // Source mutation that came from the settings panel, the Fill button,
+  // or any other in-canvas tool (not the LLM). Pushes the previous
+  // appSource to the undo history before writing the new one — every
+  // non-chat edit becomes its own undo step. Same write-through path as
+  // handleLatestCode otherwise.
+  //
+  // The optional `label` parameter lets callers attach a human-readable
+  // tag ("Fill images", "Change hint to poster") to the snapshot so the
+  // undo button's tooltip can show "Undo Fill images" rather than a
+  // generic "Undo". Callers that don't care can omit it — the hook
+  // defaults to "Edit".
   const handleSourceMutation = useCallback(
-    (nextSource: string) => {
+    (nextSource: string, label?: string) => {
       setDesigns((ds) =>
-        ds.map((d) =>
-          d.id === activeId ? { ...d, appSource: nextSource } : d
-        )
+        ds.map((d) => {
+          if (d.id !== activeId) return d;
+          if (d.appSource === nextSource) return d;
+          undoHistory.push(d.appSource ?? null, label ?? "Edit");
+          return { ...d, appSource: nextSource, updatedAt: Date.now() };
+        })
       );
     },
-    [activeId]
+    [activeId, undoHistory]
   );
+
+  // Undo / redo — restore the previous (or next) snapshot from the
+  // per-design history into the active design's appSource. The hook
+  // returns the snapshot value synchronously, so we wire it straight to
+  // setDesigns. We DO NOT push the current state to history before
+  // restoring — the redo direction is what makes the current state
+  // recoverable (the hook keeps the redo-future intact until the next
+  // push() displaces it).
+  const handleUndo = useCallback(() => {
+    const previous = undoHistory.undo();
+    if (previous === null) return;
+    setDesigns((ds) =>
+      ds.map((d) =>
+        d.id === activeId
+          ? { ...d, appSource: previous ?? undefined, updatedAt: Date.now() }
+          : d,
+      ),
+    );
+  }, [activeId, undoHistory]);
+
+  const handleRedo = useCallback(() => {
+    const next = undoHistory.redo();
+    if (next === null) return;
+    setDesigns((ds) =>
+      ds.map((d) =>
+        d.id === activeId
+          ? { ...d, appSource: next ?? undefined, updatedAt: Date.now() }
+          : d,
+      ),
+    );
+  }, [activeId, undoHistory]);
+
+  // Global keyboard shortcuts — Cmd/Ctrl-Z to undo, Cmd/Ctrl-Shift-Z
+  // (and Cmd/Ctrl-Y on non-mac) to redo. Lives at the page level so the
+  // shortcuts work from anywhere in /studio — even when focus is in
+  // the chat input or the settings panel. We skip when the target is a
+  // contentEditable / form element with its own undo stack (input,
+  // textarea) to avoid hijacking the browser's native text-undo.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      // Native form fields have their own per-field undo. Honour that
+      // for plain text inputs; for the canvas-level undo, the user can
+      // click the buttons or focus a non-input first.
+      const tag = target?.tagName;
+      const editable = !!(
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        target?.isContentEditable
+      );
+      const cmd = e.metaKey || e.ctrlKey;
+      if (!cmd) return;
+      const key = e.key.toLowerCase();
+      // Redo: cmd+shift+z OR cmd+y. Both are common bindings; supporting
+      // both means muscle memory from either platform works.
+      const isRedo =
+        (key === "z" && e.shiftKey) || (key === "y" && !e.shiftKey);
+      const isUndo = key === "z" && !e.shiftKey;
+      if (!isUndo && !isRedo) return;
+      if (editable) return; // let the field handle its own undo
+      e.preventDefault();
+      if (isUndo) handleUndo();
+      else handleRedo();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleUndo, handleRedo]);
 
   const handleMessagesChange = useCallback(
     (next: UIMessage[]) => {
@@ -510,12 +607,22 @@ export default function StudioPage() {
           /* storage disabled — nothing to clean */
         }
       }
+      // Drop the per-design undo history too. `pruneHistoryStorage`
+      // takes the SET of designs that should remain — we pass every
+      // remaining id (minus the closing one). The hook persistence
+      // effect won't re-write the closed design's key after this
+      // because the consumer state-slot is gone.
+      pruneHistoryStorage(new Set(remaining.map((d) => d.id)));
     },
     [activeId, designs]
   );
 
   const handleRenameDesign = useCallback((id: string, name: string) => {
-    setDesigns((ds) => ds.map((d) => (d.id === id ? { ...d, name } : d)));
+    setDesigns((ds) =>
+      ds.map((d) =>
+        d.id === id ? { ...d, name, updatedAt: Date.now() } : d,
+      ),
+    );
   }, []);
 
   return (
@@ -631,12 +738,20 @@ export default function StudioPage() {
               isStreaming={Boolean(streamingByDesign[activeId])}
               selection={selectionByDesign[activeId] ?? null}
               onSelect={handleSelect}
+              onClearSelection={handleClearSelection}
               onAddDesign={handleAddDesign}
               onCloseDesign={handleCloseDesign}
               onRenameDesign={handleRenameDesign}
               onDuplicateDesign={handleDuplicateDesign}
               canAddMore={!atCap}
+              onSourceMutation={handleSourceMutation}
               rendererMode={rendererMode}
+              canUndo={undoHistory.canUndo}
+              canRedo={undoHistory.canRedo}
+              undoLabel={undoHistory.undoLabel}
+              redoLabel={undoHistory.redoLabel}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
             />
             {/* Right column: tabbed shell. Layout (stage-aware) by
                 default, Theme (existing builder, scoped to its own
@@ -677,12 +792,20 @@ function StudioThemedCanvas({
   isStreaming,
   selection,
   onSelect,
+  onClearSelection,
   onAddDesign,
   onCloseDesign,
   onRenameDesign,
   onDuplicateDesign,
   canAddMore,
+  onSourceMutation,
   rendererMode,
+  canUndo,
+  canRedo,
+  undoLabel,
+  redoLabel,
+  onUndo,
+  onRedo,
 }: {
   designs: Design[];
   focusedId: string;
@@ -692,12 +815,20 @@ function StudioThemedCanvas({
   isStreaming: boolean;
   selection: StudioSelection | null;
   onSelect: (selection: StudioSelection) => void;
+  onClearSelection: () => void;
   onAddDesign: (seed?: { source: string; name?: string }) => void;
   onCloseDesign: (id: string) => void;
   onRenameDesign: (id: string, name: string) => void;
   onDuplicateDesign?: (id: string) => void;
   canAddMore: boolean;
+  onSourceMutation: (next: string) => void;
   rendererMode: "sandpack" | "fast";
+  canUndo: boolean;
+  canRedo: boolean;
+  undoLabel: string | null;
+  redoLabel: string | null;
+  onUndo: () => void;
+  onRedo: () => void;
 }) {
   const theme: GeneratedTheme = useGeneratedTheme();
   const [mode] = useThemeBuilderMode();
@@ -713,12 +844,20 @@ function StudioThemedCanvas({
       isStreaming={isStreaming}
       selection={selection}
       onSelect={onSelect}
+      onClearSelection={onClearSelection}
       onAddDesign={onAddDesign}
       onCloseDesign={onCloseDesign}
       onRenameDesign={onRenameDesign}
       onDuplicateDesign={onDuplicateDesign}
       canAddMore={canAddMore}
+      onSourceMutation={onSourceMutation}
       rendererMode={rendererMode}
+      canUndo={canUndo}
+      canRedo={canRedo}
+      undoLabel={undoLabel}
+      redoLabel={redoLabel}
+      onUndo={onUndo}
+      onRedo={onRedo}
     />
   );
 }

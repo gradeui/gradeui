@@ -110,20 +110,26 @@ export default function App() {
                     of being stretched to match the content column's
                     height. Fixed `w-N h-N` pair forces the square. */}
                 <Row gap="sm" align="start" className="p-2">
-                  <div className="relative shrink-0">
-                    <MediaSurface aspect="square" radius="sm" className="w-20 h-20 lg:w-24 lg:h-24" />
-                    {/* Offer badge overlays the image's top-left when the
-                        listing has a tag — sibling, not child, so it
-                        doesn't suppress MediaSurface's empty-state icon. */}
-                    {l.tag && (
-                      <Badge
-                        variant="default"
-                        className="absolute top-1 left-1 text-xs px-1.5 py-0 shadow-sm pointer-events-none"
-                      >
-                        {l.tag}
-                      </Badge>
-                    )}
-                  </div>
+                  <MediaSurface
+                    instanceId={l.id}
+                    hint={l.hint ?? "landscape"}
+                    alt={l.alt ?? `${l.title} listing photo`}
+                    source={l.source ?? { kind: "landscape", location: `${l.title}, San Francisco`, mood: "interior" }}
+                    src={l.src ?? undefined}
+                    aspect={l.aspect ?? "square"}
+                    radius={l.radius ?? "sm"}
+                    className="w-20 h-20 lg:w-24 lg:h-24 shrink-0"
+                    overlay={
+                      l.tag ? (
+                        <Badge
+                          variant="default"
+                          className="absolute top-1 left-1 text-xs px-1.5 py-0 shadow-sm pointer-events-none"
+                        >
+                          {l.tag}
+                        </Badge>
+                      ) : null
+                    }
+                  />
                   <Stack gap="none" className="flex-1 min-w-0 py-1">
                     <Row justify="between" align="start" gap="sm">
                       <CardTitle className="text-sm font-semibold truncate">{l.title}</CardTitle>

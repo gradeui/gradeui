@@ -43,7 +43,7 @@ export const createMapboxAdapter: AdapterFactory = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mapboxgl: any;
   try {
-    mapboxgl = await import(/* webpackIgnore: true */ "mapbox-gl");
+    mapboxgl = await import("mapbox-gl");
     if (mapboxgl.default) mapboxgl = mapboxgl.default;
   } catch (err) {
     callbacks.onError({

@@ -52,6 +52,38 @@ import {
 } from "@gradeui/ui";
 import { cn } from "@/lib/utils";
 
+/**
+ * Rewrite every `id: "..."` (or `'...'`) literal in a scaffold's JSX
+ * to a fresh ID so two starter instantiations don't share entry keys.
+ *
+ * The pattern we target: `{ id: "alb-mm", title: "Midnight Memories",
+ * ... }` inside a data array. Each occurrence gets replaced with a
+ * fresh short ID. Other `id` usages (HTML `id=` attributes, CSS
+ * selectors) aren't matched because they don't have the `id: "..."`
+ * shape inside an object literal — JSX uses `id="..."` (no colon).
+ *
+ * IDs are short and human-readable (8 chars from a low-collision
+ * alphabet, prefixed `gid-`). Not cryptographic — just unique enough
+ * within a design. Cross-design collisions would require both
+ * designs to roll the exact same suffix; ~36^8 = ~3 trillion, fine.
+ */
+function freshenScaffoldIds(source: string): string {
+  return source.replace(
+    /(\bid:\s*)(["'])([^"']+)(["'])/g,
+    (_match, prefix: string, openQ: string, _oldId: string, closeQ: string) =>
+      `${prefix}${openQ}${makeId()}${closeQ}`,
+  );
+}
+
+function makeId(): string {
+  const ALPHA = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "gid-";
+  for (let i = 0; i < 8; i++) {
+    out += ALPHA[Math.floor(Math.random() * ALPHA.length)];
+  }
+  return out;
+}
+
 interface StarterPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -79,7 +111,16 @@ export function StarterPicker({
 
   const handlePickLayout = (layout: ReferenceLayout) => {
     onPick({
-      source: layout.scaffold,
+      // Rewrite every `id: "..."` literal in the scaffold to a fresh
+      // UUID so two starter instantiations don't share keys. Without
+      // this, opening Music App twice would yield identical entry IDs
+      // ("alb-mm", "alb-cu", ...) which means the data-array mutator
+      // can't tell the two designs' cards apart at edit time — and
+      // any cross-design state keyed by entry id would collide.
+      // Pasted JSX (below) goes through the same transform: model-
+      // generated screens that already use the `{ id, ... }` pattern
+      // get fresh IDs too.
+      source: freshenScaffoldIds(layout.scaffold),
       name: layout.label,
       origin: "layout",
       layoutId: layout.id,
@@ -91,7 +132,7 @@ export function StarterPicker({
     const trimmed = source.trim();
     if (!trimmed) return;
     onPick({
-      source: trimmed,
+      source: freshenScaffoldIds(trimmed),
       origin: "paste",
     });
     onOpenChange(false);

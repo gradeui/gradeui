@@ -2,10 +2,17 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Square, Sparkles, User, Zap } from "lucide-react";
+import { Send, Square } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
+
+// Icon-light by design (May 2026 refresh): no user-avatar circles, no
+// sparkle decoration on the header / empty state / thinking indicator.
+// Message rows differentiate user vs assistant via alignment + bubble
+// colour only. Suggested prompts are plain text chips. This is the
+// "cleaner" pass — the chat should read as conversation, not a
+// branded product surface.
 
 export interface ChatMessage {
   id: string;
@@ -19,13 +26,20 @@ interface AIChatProps {
   onSendMessage?: (message: string) => void;
   isLoading?: boolean;
   placeholder?: string;
+  /**
+   * Suggested-prompt chips shown in the empty state. The `icon` field
+   * is preserved for backward-compat but renders nothing in the
+   * icon-light refresh — the cleaner look uses text-only chips.
+   * Consumers passing icons today will see no visual change at the
+   * chip level beyond losing the leading glyph.
+   */
   suggestedPrompts?: Array<{ icon?: React.ReactNode; text: string }>;
   className?: string;
 }
 
 const DEFAULT_SUGGESTED_PROMPTS = [
-  { icon: <Sparkles className="w-4 h-4" />, text: "Ask me anything" },
-  { icon: <Zap className="w-4 h-4" />, text: "Quick summary" },
+  { text: "Ask me anything" },
+  { text: "Quick summary" },
 ];
 
 export function AIChat({
@@ -89,20 +103,18 @@ export function AIChat({
 
   return (
     <div className={cn("flex flex-col bg-white dark:bg-[#141414] rounded-lg border border-rds-gray-200 dark:border-[#252525] overflow-hidden", className)}>
-      {/* Header */}
+      {/* Header — text-only in the icon-light refresh. The branded
+          sparkle-in-gradient-box was dropping context onto every
+          conversation; "AI Assistant" alone reads as a label, not a
+          product mark. */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-between px-4 py-3 border-b border-rds-gray-200 dark:border-[#252525]"
       >
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="text-sm font-medium text-rds-gray-900 dark:text-white">
-            AI Assistant
-          </span>
-        </div>
+        <span className="text-sm font-medium text-rds-gray-900 dark:text-white">
+          AI Assistant
+        </span>
       </motion.div>
 
       {/* Messages Area */}
@@ -120,7 +132,9 @@ export function AIChat({
         </AnimatePresence>
 
         <div className="p-4 space-y-4">
-          {/* Empty state */}
+          {/* Empty state — text-led, no decorative sparkle. The chip
+              prompts are plain text (icon field is ignored in the
+              icon-light refresh). */}
           <AnimatePresence>
             {messages.length === 0 && !isLoading && (
               <motion.div
@@ -128,17 +142,8 @@ export function AIChat({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className="flex flex-col items-center justify-center py-8 text-center"
+                className="flex flex-col items-center justify-center py-10 text-center"
               >
-                <motion.div
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center mb-4 shadow-lg shadow-primary/20"
-                >
-                  <Sparkles className="w-8 h-8 text-primary-foreground" />
-                </motion.div>
-
                 <h3 className="text-lg font-semibold text-rds-gray-900 dark:text-white mb-2">
                   How can I help?
                 </h3>
@@ -158,7 +163,7 @@ export function AIChat({
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setQuery(prompt.text)}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-xl",
+                        "px-3 py-2 rounded-xl",
                         "bg-rds-gray-100 dark:bg-[#1a1a1a]",
                         "text-sm text-rds-gray-700 dark:text-rds-gray-300",
                         "hover:bg-rds-gray-200 dark:hover:bg-[#252525]",
@@ -166,7 +171,6 @@ export function AIChat({
                         "transition-colors duration-200"
                       )}
                     >
-                      {prompt.icon}
                       {prompt.text}
                     </motion.button>
                   ))}
@@ -175,29 +179,16 @@ export function AIChat({
             )}
           </AnimatePresence>
 
-          {/* Chat messages */}
+          {/* Chat messages — no avatar circles. Differentiation is
+              alignment + bubble colour: user bubbles sit right with
+              primary fill, assistant bubbles sit left with muted fill. */}
           {messages.map((message) => (
             <motion.div
               key={message.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={cn("flex gap-3", message.role === "user" && "flex-row-reverse")}
+              className={cn("flex", message.role === "user" && "justify-end")}
             >
-              <div
-                className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                  message.role === "user"
-                    ? "bg-primary"
-                    : "bg-rds-gray-100 dark:bg-[#252525]"
-                )}
-              >
-                {message.role === "user" ? (
-                  <User className="w-4 h-4 text-primary-foreground" />
-                ) : (
-                  <Sparkles className="w-4 h-4 text-primary" />
-                )}
-              </div>
-
               <div
                 className={cn(
                   "max-w-[80%] rounded-2xl px-4 py-3 border",
@@ -219,18 +210,16 @@ export function AIChat({
             </motion.div>
           ))}
 
-          {/* AI Thinking Indicator */}
+          {/* AI Thinking Indicator — no avatar; left-aligned bubble
+              matching the assistant message treatment. */}
           <AnimatePresence>
             {isLoading && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="flex gap-3"
+                className="flex"
               >
-                <div className="w-8 h-8 rounded-full bg-rds-gray-100 dark:bg-[#252525] flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                </div>
                 <div className="bg-rds-gray-100 dark:bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-3 border border-rds-gray-200 dark:border-[#252525]">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-rds-gray-500 italic">Thinking</span>

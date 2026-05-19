@@ -13,7 +13,7 @@ props:
   - AccordionContent: children: React.ReactNode — the body that animates in
 when_to_use: Long-form content that would overwhelm if shown all at once — FAQs, settings groups, "what's included" sections, nested help. For tab-style peer views with one always visible, reach for Tabs. For a single show/hide reveal use Collapsible.
 composes_with: [Card (as a faq inside a card body), Section primitives]
-aliases: [accordion, faq, expand, collapse list, disclosure list]
+aliases: [accordion, faq, expand, collapse list, disclosure list, disclosure group, outline group, expandable list, sectionlist]
 ---
 
 ```jsx

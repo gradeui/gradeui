@@ -11,6 +11,7 @@
  */
 
 import { themeToCSSVars, type GeneratedTheme } from "@/lib/themes";
+import { injectMediaSourceAttrs } from "@/lib/media-fill";
 import { ALLOWED_COMPONENTS } from "@gradeui/studio/playbook";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -49,6 +50,16 @@ export interface StudioSelection {
   rect: { x: number; y: number; width: number; height: number };
   part?: string;
   componentName?: string;
+  /** Raw JSON of the picked element's `data-media-source` attribute (only
+   *  set when the resolved selection is a `<MediaSurface>` with a `source`
+   *  prop). The right panel reads this to surface a "Regenerate this slot"
+   *  affordance — saves a round-trip back to the iframe DOM to recover the
+   *  descriptor. */
+  mediaSourceJson?: string;
+  /** Per-instance ID stamped by the component (`data-gds-instance-id`).
+   *  Used by the settings panel to find the matching data-array entry
+   *  in the JSX and mutate per-item rather than per-template. */
+  instanceId?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -270,25 +281,33 @@ export function prepareAppSource(code: string): string {
   const trimmed = repaired.trim();
   if (!trimmed) return `export default function App() { return null }`;
 
-  // Already a proper module — leave alone.
-  if (/export\s+default\s+/.test(trimmed)) return trimmed;
+  // Already a proper module — leave alone…ish. Still run the media-
+  // source-attr injection so the iframe's `@gradeui/ui@<npm>` MediaSurface
+  // (which doesn't yet emit `data-media-source` natively) gets the
+  // attribute via its `...props` spread. See `injectMediaSourceAttrs`
+  // for the why; the transform is idempotent and a no-op on screens
+  // with no MediaSurfaces.
+  if (/export\s+default\s+/.test(trimmed)) {
+    return injectMediaSourceAttrs(trimmed);
+  }
 
   // Bare JSX expression — wrap it in a component.
   if (trimmed.startsWith("<")) {
-    return `export default function App() {\n  return (\n${trimmed
+    const wrapped = `export default function App() {\n  return (\n${trimmed
       .split("\n")
       .map((l) => "    " + l)
       .join("\n")}\n  )\n}`;
+    return injectMediaSourceAttrs(wrapped);
   }
 
   // Named function — append default export.
   const fnMatch = trimmed.match(/function\s+([A-Z][A-Za-z0-9_]*)/);
   if (fnMatch) {
-    return `${trimmed}\n\nexport default ${fnMatch[1]}`;
+    return injectMediaSourceAttrs(`${trimmed}\n\nexport default ${fnMatch[1]}`);
   }
 
   // Fallback: wrap whatever we got.
-  return `${trimmed}\n\nexport default App`;
+  return injectMediaSourceAttrs(`${trimmed}\n\nexport default App`);
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -392,7 +411,7 @@ export const PLAYGROUND_EXTERNAL_RESOURCES: readonly string[] = [
  * components need to be reachable in Studio.
  */
 export const PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> = {
-  "@gradeui/ui": "0.8.2",
+  "@gradeui/ui": "0.10.0",
   "class-variance-authority": "^0.7.0",
   clsx: "^2.0.0",
   "tailwind-merge": "^2.0.0",
@@ -862,13 +881,73 @@ function findComponentOwner(el: Element | null): Element | null {
   }
 
   window.addEventListener("message", (e: MessageEvent) => {
-    const data = e && (e.data as { type?: string; enabled?: boolean } | null);
+    const data = e && (e.data as {
+      type?: string;
+      enabled?: boolean;
+      value?: string;
+      requestId?: string;
+      urls?: Record<string, string>;
+    } | null);
     if (!data || typeof data !== "object") return;
     if (data.type === "grade:select-mode") {
       if (data.enabled) enable();
       else disable();
     } else if (data.type === "grade:clear-selection") {
       clear();
+    } else if (data.type === "grade:set-fidelity") {
+      // Wireframe / full toggle. The CSS lives in playground-styles
+      // (look for [data-fidelity="wireframe"] rules) and reads this
+      // attribute off the root; flipping it is enough to hide the
+      // media-surface content layer and reveal the placeholders
+      // beneath. No re-bundle, no re-mount.
+      const v = data.value === "wireframe" ? "wireframe" : "full";
+      document.documentElement.dataset.fidelity = v;
+    } else if (data.type === "grade:collect-media-sources") {
+      // Walk every rendered MediaSurface, harvest the
+      // \`data-media-source\` JSON the component stamps on its root
+      // (see packages/ui/components/ui/media-surface.tsx). The walker
+      // operates on the DOM AFTER React has evaluated the JSX, so a
+      // source like \`{ kind: "album", artist: a.artist, title: a.title }\`
+      // inside a .map() comes back with the concrete artist/title that
+      // each row resolved to — exactly what the static JSX walker can't
+      // do.
+      const requestId = typeof data.requestId === "string" ? data.requestId : "";
+      const nodes = document.querySelectorAll("[data-media-source]");
+      const sources: unknown[] = [];
+      nodes.forEach((node) => {
+        const json = node.getAttribute("data-media-source");
+        if (!json) return;
+        try {
+          const parsed = JSON.parse(json);
+          if (parsed && typeof parsed === "object" && "kind" in parsed) {
+            sources.push(parsed);
+          }
+        } catch {
+          // Malformed data-media-source on a single element shouldn't
+          // tank the whole batch — skip it and keep going.
+        }
+      });
+      try {
+        window.parent.postMessage(
+          { type: "grade:media-sources", requestId, sources },
+          "*"
+        );
+      } catch {
+        /* parent gone — drop */
+      }
+    } else if (data.type === "grade:set-media-urls") {
+      // Studio just resolved a batch of sources. Stash the URL map on
+      // the global and tell every MediaSurface to re-read it. Components
+      // listen for \`grade:media-urls-updated\` and call setState so the
+      // <img> layer paints with the new src.
+      const urls = data.urls && typeof data.urls === "object" ? data.urls : {};
+      const w = window as unknown as { __gradeMediaUrls?: Record<string, string> };
+      w.__gradeMediaUrls = { ...(w.__gradeMediaUrls ?? {}), ...urls };
+      try {
+        window.dispatchEvent(new Event("grade:media-urls-updated"));
+      } catch {
+        /* old browsers — no-op */
+      }
     }
   });
 
@@ -1068,7 +1147,8 @@ button:focus, input:focus, select:focus, textarea:focus,
    .peer:disabled ~ .peer-disabled\\:* for these. */
 .peer:disabled ~ .peer-disabled\\:cursor-not-allowed { cursor: not-allowed; }
 .peer:disabled ~ .peer-disabled\\:opacity-50 { opacity: 0.5; }
-.peer:disabled ~ .peer-disabled\\:opacity-70 { opacity: 0.7; }`;
+.peer:disabled ~ .peer-disabled\\:opacity-70 { opacity: 0.7; }
+`;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -1222,15 +1302,17 @@ Label.displayName = "Label"
 
 export { Label }`,
 
-  "/components/ui/alert.tsx": `import * as React from "react"
+  "/components/ui/callout.tsx": `import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
 
-// Kept in sync with the real Alert in apps/docs/components/ui/alert.tsx.
-// Status variants reference dedicated --*-soft / --*-deep tokens generated
-// by the theme pipeline (see lib/themes/oklch.ts#deriveAlertPair) so the
-// surface is a whisper of tint + text is a deep on-surface shade.
-const alertVariants = cva(
+// Kept in sync with the real Callout in packages/ui/components/ui/callout.tsx.
+// Renamed from Alert (May 2026) — the old name implied modal/interruptive
+// behaviour the component doesn't have. \`Alert\` is reserved for a future
+// blocking primitive; current modal-alert semantics live in <Dialog>.
+// The \`highlight\` variant was dropped in the same change — it overlapped
+// \`warning\` semantically without a distinct intent.
+const calloutVariants = cva(
   "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4",
   {
     variants: {
@@ -1240,37 +1322,47 @@ const alertVariants = cva(
         success: "border-success/30 bg-success-soft text-success-deep [&>svg]:text-success-deep",
         warning: "border-warning/30 bg-warning-soft text-warning-deep [&>svg]:text-warning-deep",
         info: "border-info/30 bg-info-soft text-info-deep [&>svg]:text-info-deep",
-        // Highlight (yellow) stays on --foreground for the label — deep
-        // yellow text is unreadable — but the icon picks up the deep shade.
-        highlight: "border-highlight/30 bg-highlight-soft text-foreground [&>svg]:text-highlight-deep",
       },
     },
     defaultVariants: { variant: "default" },
   }
 )
 
-const Alert = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>>(
-  ({ className, variant, ...props }, ref) => (
-    <div ref={ref} role="alert" className={cn(alertVariants({ variant }), className)} {...props} />
+// role="alert" (assertive) for warning/destructive; role="status" (polite)
+// for ambient variants so screen readers don't interrupt for confirmations.
+const ROLE_BY_VARIANT = {
+  destructive: "alert", warning: "alert",
+  info: "status", success: "status", default: "status",
+}
+
+const Callout = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof calloutVariants>>(
+  ({ className, variant, role, ...props }, ref) => (
+    <div
+      ref={ref}
+      role={role ?? ROLE_BY_VARIANT[(variant ?? "default")]}
+      data-gds-part="callout"
+      className={cn(calloutVariants({ variant }), className)}
+      {...props}
+    />
   )
 )
-Alert.displayName = "Alert"
+Callout.displayName = "Callout"
 
-const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
+const CalloutTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h5 ref={ref} className={cn("mb-1 font-medium leading-none tracking-tight", className)} {...props} />
+    <h5 ref={ref} data-gds-part="callout-title" className={cn("mb-1 font-medium leading-none tracking-tight", className)} {...props} />
   )
 )
-AlertTitle.displayName = "AlertTitle"
+CalloutTitle.displayName = "CalloutTitle"
 
-const AlertDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+const CalloutDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("text-sm [&_p]:leading-relaxed", className)} {...props} />
+    <div ref={ref} data-gds-part="callout-description" className={cn("text-sm [&_p]:leading-relaxed", className)} {...props} />
   )
 )
-AlertDescription.displayName = "AlertDescription"
+CalloutDescription.displayName = "CalloutDescription"
 
-export { Alert, AlertTitle, AlertDescription }`,
+export { Callout, CalloutTitle, CalloutDescription }`,
 
   "/components/ui/badge.tsx": `import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Callout, CalloutTitle, CalloutDescription } from "@/components/ui/callout";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -248,11 +248,11 @@ export function ComponentScreenshot({ name }: { name: string }) {
       </Button>
     ),
     Alert: (
-      <Alert className="w-[240px]">
+      <Callout className="w-[240px]">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle className="text-sm">Alert Title</AlertTitle>
-        <AlertDescription className="text-xs">Alert description here</AlertDescription>
-      </Alert>
+        <CalloutTitle className="text-sm">Alert Title</CalloutTitle>
+        <CalloutDescription className="text-xs">Alert description here</CalloutDescription>
+      </Callout>
     ),
     Dialog: (
       <Button size="sm">Open Dialog</Button>

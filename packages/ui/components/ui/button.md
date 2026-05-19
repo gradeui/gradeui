@@ -11,6 +11,7 @@ props:
   - All native button HTML attrs (onClick, type, etc.)
 when_to_use: Any clickable action. Use size="icon" for square icon-only buttons, variant="link" for inline links that should look like Button. A Button placed next to a TabsList of the same size lines up edge-to-edge without per-call overrides.
 composes_with: [Dialog, DropdownMenu, Tooltip, Card (in CardFooter), Row, Form controls]
+aliases: [button, push button, plain button, bordered button, destructive button, capsule button, link button, action button, cta]
 ---
 
 ```jsx

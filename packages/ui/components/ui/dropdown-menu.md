@@ -12,7 +12,7 @@ props:
   - DropdownMenuShortcut: children — right-aligned kbd hint
 when_to_use: A small action menu attached to a trigger — overflow "…" buttons on cards, user-avatar menus in headers, "Insert" menus in editors. For a full searchable list, use Command. For ONE primary action plus a secondary, use a Button next to a smaller ghost Button instead of a dropdown.
 composes_with: [Button (as trigger asChild), Avatar (user menu), Card (overflow on a tile), Tooltip (on the trigger)]
-aliases: [dropdown, dropdown menu, overflow menu, kebab menu, more menu, action menu, context-style menu]
+aliases: [dropdown, dropdown menu, overflow menu, kebab menu, more menu, action menu, context-style menu, menu, pull-down menu, pulldown menu, context menu, popup menu, actions menu]
 ---
 
 ```jsx

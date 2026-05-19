@@ -19,13 +19,20 @@ import {
  * may also opt out per-call with their own `size` prop if a row needs
  * a one-off override.
  *
+ * **Variant** (May 2026 — added during the SimpleTabs collapse):
+ *   - `pill` (default) — shadcn-style chips on a `bg-muted` pill.
+ *   - `underlined` — minimal underlined-tab look (text-primary on
+ *     active + bottom border indicator). What used to live in
+ *     SimpleTabs. Reach for this on marketing pages, docs nav,
+ *     and any "browser-tab-like" treatment.
+ *
  * Icons: pass an `<svg>` (lucide etc.) as a sibling of the label inside
  * `TabsTrigger`. The variant rules apply `[&_svg]:size-*` to auto-size
  * any child icon to the right scale, plus `gap-*` between icon and
  * label. No icon prop needed.
  *
  *   <Tabs defaultValue="preview">
- *     <TabsList size="md">
+ *     <TabsList size="md" variant="underlined">
  *       <TabsTrigger value="preview"><Eye /> Preview</TabsTrigger>
  *       <TabsTrigger value="code"><Code2 /> Code</TabsTrigger>
  *     </TabsList>
@@ -35,8 +42,16 @@ import {
  */
 
 export type TabsSize = "sm" | "md" | "lg"
+export type TabsVariant = "pill" | "underlined"
 
-const TabsSizeContext = React.createContext<TabsSize>("md")
+interface TabsContextValue {
+  size: TabsSize
+  variant: TabsVariant
+}
+const TabsStyleContext = React.createContext<TabsContextValue>({
+  size: "md",
+  variant: "pill",
+})
 
 const Tabs = TabsPrimitive.Root
 
@@ -55,31 +70,66 @@ const Tabs = TabsPrimitive.Root
 //       (14px) + size-4 icon (16px) ~ 16px content; vertical air
 //       = (32-16)/2 = 8px. Horizontal px-2.5 = 10px. Within 2px.
 
-const tabsListVariants = cva(
-  "inline-flex items-center justify-center rounded-lg bg-muted text-muted-foreground",
-  {
-    variants: {
-      size: {
-        sm: "h-7 p-0.5",
-        md: "h-8 p-0.5",
-        lg: "h-10 p-1",
-      },
+const tabsListVariants = cva("inline-flex items-center text-muted-foreground", {
+  variants: {
+    variant: {
+      pill: "justify-center rounded-lg bg-muted",
+      // Underlined: row of text/icon triggers sitting on a single
+      // bottom rule. The list owns the baseline border; the active
+      // trigger paints over it via `border-primary` + `-mb-px`.
+      underlined: "justify-start border-b border-border",
     },
-    defaultVariants: { size: "md" },
-  }
-)
+    size: {
+      sm: "",
+      md: "",
+      lg: "",
+    },
+  },
+  compoundVariants: [
+    // Pill: list owns the chip height + breathing-room padding.
+    { variant: "pill", size: "sm", className: "h-7 p-0.5" },
+    { variant: "pill", size: "md", className: "h-8 p-0.5" },
+    { variant: "pill", size: "lg", className: "h-10 p-1" },
+    // Underlined: list is content-sized; size only changes the gap
+    // between triggers (their own padding handles vertical rhythm).
+    { variant: "underlined", size: "sm", className: "gap-3" },
+    { variant: "underlined", size: "md", className: "gap-4" },
+    { variant: "underlined", size: "lg", className: "gap-6" },
+  ],
+  defaultVariants: { variant: "pill", size: "md" },
+})
 
 const tabsTriggerVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground",
+  "inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
+      variant: {
+        pill: "rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground",
+        // Underlined: transparent surface, primary text + thicker
+        // bottom border on active. `-mb-px` pulls the trigger down
+        // one pixel so its border sits ON TOP of the list's border,
+        // not below it (no double-line on active).
+        underlined:
+          "rounded-none bg-transparent border-b-2 border-transparent -mb-px hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary",
+      },
       size: {
-        sm: "h-6 px-1.5 text-[11px] gap-1 [&_svg]:size-3",
-        md: "h-7 px-2 text-xs gap-1.5 [&_svg]:size-3.5",
-        lg: "h-8 px-2.5 text-sm gap-2 [&_svg]:size-4",
+        sm: "text-[11px] gap-1 [&_svg]:size-3",
+        md: "text-xs gap-1.5 [&_svg]:size-3.5",
+        lg: "text-sm gap-2 [&_svg]:size-4",
       },
     },
-    defaultVariants: { size: "md" },
+    compoundVariants: [
+      // Pill triggers fit inside the sized list — fixed heights.
+      { variant: "pill", size: "sm", className: "h-6 px-1.5" },
+      { variant: "pill", size: "md", className: "h-7 px-2" },
+      { variant: "pill", size: "lg", className: "h-8 px-2.5" },
+      // Underlined triggers own their own vertical space — taller
+      // padding-block so the underline has room to sit below.
+      { variant: "underlined", size: "sm", className: "pb-1.5 pt-1 px-1" },
+      { variant: "underlined", size: "md", className: "pb-2 pt-1.5 px-1.5" },
+      { variant: "underlined", size: "lg", className: "pb-2.5 pt-2 px-2" },
+    ],
+    defaultVariants: { variant: "pill", size: "md" },
   }
 )
 
@@ -92,19 +142,19 @@ export interface TabsListProps
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   TabsListProps
->(({ className, size = "md", children, ...props }, ref) => (
-  // Provide the size to every nested TabsTrigger so consumers only
-  // set it once on the list. Individual triggers can still override
-  // by passing their own `size` prop.
-  <TabsSizeContext.Provider value={size ?? "md"}>
+>(({ className, size = "md", variant = "pill", children, ...props }, ref) => (
+  // Provide the size + variant to every nested TabsTrigger so consumers
+  // only set them once on the list. Individual triggers can still
+  // override by passing their own `size` / `variant` props.
+  <TabsStyleContext.Provider value={{ size: size ?? "md", variant: variant ?? "pill" }}>
     <TabsPrimitive.List
       ref={ref}
-      className={cn(tabsListVariants({ size }), className)}
+      className={cn(tabsListVariants({ size, variant }), className)}
       {...props}
     >
       {children}
     </TabsPrimitive.List>
-  </TabsSizeContext.Provider>
+  </TabsStyleContext.Provider>
 ))
 TabsList.displayName = TabsPrimitive.List.displayName
 
@@ -129,9 +179,10 @@ export interface TabsTriggerProps
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
   TabsTriggerProps
->(({ className, size, tooltip, ...props }, ref) => {
-  const inheritedSize = React.useContext(TabsSizeContext)
-  const resolvedSize = size ?? inheritedSize
+>(({ className, size, variant, tooltip, ...props }, ref) => {
+  const inherited = React.useContext(TabsStyleContext)
+  const resolvedSize = size ?? inherited.size
+  const resolvedVariant = variant ?? inherited.variant
 
   // Auto-apply aria-label from tooltip when it's a plain string and
   // the consumer didn't already set one. Icon-only triggers need an
@@ -143,7 +194,10 @@ const TabsTrigger = React.forwardRef<
   const trigger = (
     <TabsPrimitive.Trigger
       ref={ref}
-      className={cn(tabsTriggerVariants({ size: resolvedSize }), className)}
+      className={cn(
+        tabsTriggerVariants({ size: resolvedSize, variant: resolvedVariant }),
+        className,
+      )}
       aria-label={ariaLabel}
       {...props}
     />

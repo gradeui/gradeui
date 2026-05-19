@@ -6,12 +6,23 @@ export const componentsList = [
   { name: "Grid", href: "/components/grid", category: "Layout" },
   { name: "Flex", href: "/components/flex", category: "Layout" },
   { name: "Resizable", href: "/components/resizable", category: "Layout" },
+  // Navigation — hoisted above Forms so the IA reads structure → nav →
+  // controls. Sidebar lives here (compound API; renamed from SideMenu).
+  { name: "Sidebar", href: "/components/sidebar", category: "Navigation" },
+  { name: "Command", href: "/components/command", category: "Navigation" },
+  { name: "Dropdown Menu", href: "/components/dropdown-menu", category: "Navigation" },
+  { name: "Tabs", href: "/components/tabs", category: "Navigation" },
+  { name: "Accordion", href: "/components/accordion", category: "Navigation" },
+  { name: "Collapsible", href: "/components/collapsible", category: "Navigation" },
+  { name: "Sheet", href: "/components/sheet", category: "Navigation" },
+  { name: "Scroll Area", href: "/components/scroll-area", category: "Navigation" },
   // Forms
   { name: "Button", href: "/components/button", category: "Forms" },
   { name: "Input", href: "/components/input", category: "Forms" },
   { name: "Textarea", href: "/components/textarea", category: "Forms" },
   { name: "Label", href: "/components/label", category: "Forms" },
   { name: "Select", href: "/components/select", category: "Forms" },
+  { name: "Multi Select", href: "/components/multi-select", category: "Forms" },
   { name: "Checkbox", href: "/components/checkbox", category: "Forms" },
   { name: "Radio Group", href: "/components/radio-group", category: "Forms" },
   { name: "Switch", href: "/components/switch", category: "Forms" },
@@ -30,21 +41,14 @@ export const componentsList = [
   { name: "Separator", href: "/components/separator", category: "Data Display" },
   { name: "Hover Card", href: "/components/hover-card", category: "Data Display" },
   // Feedback
-  { name: "Alert", href: "/components/alert", category: "Feedback" },
+  { name: "Callout", href: "/components/callout", category: "Feedback" },
   { name: "Dialog", href: "/components/dialog", category: "Feedback" },
   { name: "Popover", href: "/components/popover", category: "Feedback" },
   { name: "Toast", href: "/components/toast", category: "Feedback" },
   { name: "Tooltip", href: "/components/tooltip", category: "Feedback" },
   { name: "Progress", href: "/components/progress", category: "Feedback" },
-  // Navigation & Layout
-  { name: "Command", href: "/components/command", category: "Navigation" },
-  { name: "Dropdown Menu", href: "/components/dropdown-menu", category: "Navigation" },
-  { name: "Tabs", href: "/components/tabs", category: "Navigation" },
-  { name: "Accordion", href: "/components/accordion", category: "Navigation" },
-  { name: "Collapsible", href: "/components/collapsible", category: "Navigation" },
-  { name: "Sheet", href: "/components/sheet", category: "Navigation" },
-  { name: "Scroll Area", href: "/components/scroll-area", category: "Navigation" },
   // Media
+  { name: "Carousel", href: "/components/carousel", category: "Media" },
   { name: "Video Player", href: "/components/video-player", category: "Media" },
   { name: "Rive Player", href: "/components/rive-player", category: "Media" },
   { name: "Three Scene", href: "/components/three-scene", category: "Media" },
@@ -52,8 +56,12 @@ export const componentsList = [
   { name: "Shader Preset Picker", href: "/components/shader-preset-picker", category: "Media" },
   // Map
   { name: "Map", href: "/components/map", category: "Map" },
-  // Blocks
-  { name: "AI Chat", href: "/components/ai-chat", category: "Blocks" },
+  // Studio — Grade-specific surfaces that compose the DS into higher-
+  // order tools (chat, contract-derived props rendering). Renamed from
+  // "Blocks" in May 2026; the category now reads as "what Grade Studio
+  // is built from" rather than the older catch-all label.
+  { name: "AI Chat", href: "/components/ai-chat", category: "Studio" },
+  { name: "Component Props", href: "/components/component-props", category: "Studio" },
 ];
 
 export function getComponentNav(currentHref: string) {

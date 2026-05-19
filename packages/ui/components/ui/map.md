@@ -2,7 +2,7 @@
 name: Map
 import: "@gradeui/ui"
 subcomponents: [MapMarker]
-aliases: [map, maps, mapbox, maplibre, google maps, geo, location, latlng, coordinates, marker, pin, airbnb, listings, fleet, real estate, logistics]
+aliases: [map, maps, mapbox, maplibre, google maps, geo, location, latlng, coordinates, marker, pin, airbnb, listings, fleet, real estate, logistics, map view, mapkit, mapview, react native maps, rn maps]
 props:
   - provider — "maplibre" (default, free, no key) | "mapbox" (needs accessToken) | "google" (needs apiKey). Switching is one prop change.
   - center — `[lng, lat]` tuple. ALWAYS lng first. Required.

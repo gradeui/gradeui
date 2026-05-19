@@ -13,7 +13,7 @@ props:
   - children: React.ReactNode
 when_to_use: The unopinionated flexbox primitive — reach for Flex when Stack, Row, or Grid don't quite fit. Specifically when you need reverse direction (`row-reverse` / `col-reverse`), CSS defaults instead of Row's baked-in `items-center gap-md`, or baseline alignment. Otherwise prefer Stack / Row / Grid — they're easier to read and tuned for the 95% case. Flex is the escape hatch, not the default.
 composes_with: [any content component]
-aliases: [flex, flexbox, flex container, hstack, vstack, horizontal, vertical]
+aliases: [flex, flexbox, flex container, hstack, vstack, horizontal, vertical, generic container, layout view]
 ---
 
 ```jsx

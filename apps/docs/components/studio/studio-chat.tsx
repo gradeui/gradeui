@@ -23,11 +23,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
   Sparkles,
-  User,
   Square,
   X,
   Code2,
-  Pencil,
   Gauge,
   BookOpen,
   MousePointerClick,
@@ -37,6 +35,7 @@ import type { ChatSettings } from "@/components/ai-elements/provider-picker";
 import { STUDIO_TEMPLATES, type StudioTemplate } from "@/lib/studio-templates";
 import { humanizeChatError } from "@/lib/chat-error";
 import type { StudioSelection } from "@/lib/chat-sandpack";
+import { useRotatingPhrase } from "@/lib/studio-loading-phrases";
 import { StudioSettingsPanel } from "@/components/studio/settings-panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -115,8 +114,9 @@ interface StudioChatProps {
   /** Fires when the settings panel rewrites the current App source
    *  directly (no chat round-trip). Parent should push the new source
    *  into its per-design appSource map so the preview HMRs to it. When
-   *  omitted, the settings panel still renders but controls become no-ops. */
-  onSourceMutation?: (nextSource: string) => void;
+   *  omitted, the settings panel still renders but controls become no-ops.
+   *  The optional `label` tags the undo snapshot. */
+  onSourceMutation?: (nextSource: string, label?: string) => void;
   /** When true, the parent is rendering the settings panel in a different
    *  location (typically docked in the right column). We skip the inline
    *  copy so the user isn't looking at two of the same panel. Defaults
@@ -710,47 +710,25 @@ function MessageRow({
 }) {
   const prose = role === "assistant" ? stripCodeBlocks(text) : text;
   const hasCode = role === "assistant" && /```(?:jsx|tsx)/.test(text);
-  const isIterate = role === "user" && text.startsWith("Here is the current component");
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn("flex gap-2", role === "user" && "flex-row-reverse")}
+      className={cn("flex", role === "user" && "flex-row-reverse")}
     >
       <div
         className={cn(
-          "w-6 h-6 rounded-full flex items-center justify-center shrink-0",
-          role === "user" ? "bg-primary" : "bg-muted"
-        )}
-      >
-        {role === "user" ? (
-          <User className="h-3 w-3 text-primary-foreground" />
-        ) : (
-          <Sparkles className="h-3 w-3 text-primary" />
-        )}
-      </div>
-
-      <div
-        className={cn(
-          "min-w-0 flex-1 rounded-xl border px-3 py-2",
+          "min-w-0 rounded-xl border px-3 py-2",
           role === "user"
             ? "bg-primary text-primary-foreground border-primary rounded-tr-sm max-w-[85%] ml-auto"
-            : "bg-card border-border rounded-tl-sm"
+            : "flex-1 bg-card border-border rounded-tl-sm"
         )}
       >
         {role === "user" ? (
-          <div className="space-y-1">
-            {isIterate && (
-              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide opacity-75">
-                <Pencil className="h-2.5 w-2.5" />
-                Iteration
-              </div>
-            )}
-            <p className="text-xs whitespace-pre-wrap">
-              {displayUserText(text)}
-            </p>
-          </div>
+          <p className="text-xs whitespace-pre-wrap">
+            {displayUserText(text)}
+          </p>
         ) : (
           <div className="space-y-1.5">
             {prose ? (
@@ -965,27 +943,36 @@ function ErrorBanner({
 }
 
 function ThinkingIndicator() {
+  // Pulls from the shared phrase pool so the chat and the preview's bundling
+  // dialog feel like one continuous loading state rather than two unrelated
+  // spinners. Each surface owns its own rotation cadence (independent state)
+  // — that's fine, they're rarely visible at the same time anyway.
+  const phrase = useRotatingPhrase();
   return (
-    <div className="flex gap-2">
-      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-        <Sparkles className="h-3 w-3 text-primary" />
-      </div>
-      <div className="rounded-xl rounded-tl-sm border border-border bg-card px-3 py-2">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] italic text-muted-foreground">
-            Thinking
-          </span>
-          <div className="flex gap-0.5">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
-                transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
-                className="w-1 h-1 rounded-full bg-primary"
-              />
-            ))}
-          </div>
+    <div className="rounded-xl rounded-tl-sm border border-border bg-card px-3 py-2 w-fit">
+      <div className="flex items-center gap-1.5">
+        <div className="flex gap-0.5">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+              className="w-1 h-1 rounded-full bg-primary"
+            />
+          ))}
         </div>
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={phrase}
+            initial={{ opacity: 0, y: 3 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -3 }}
+            transition={{ duration: 0.18 }}
+            className="text-[11px] text-muted-foreground"
+          >
+            {phrase}…
+          </motion.span>
+        </AnimatePresence>
       </div>
     </div>
   );

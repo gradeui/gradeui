@@ -9,6 +9,7 @@ props:
   - id?: string — bind a Label's htmlFor to this
 when_to_use: Binary on/off tied to a list (select multiple, agree to terms). Single on/off that controls a setting is better with Switch.
 composes_with: [Label (via htmlFor), Card, Form rows, Table (for row selection)]
+aliases: [checkbox, tickbox, tick box, check, multi-select item]
 ---
 
 ```jsx

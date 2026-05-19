@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Callout, CalloutDescription } from "@/components/ui/callout";
 import { ComponentPreview } from "@/components/component-preview";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -323,38 +323,38 @@ export default function FormsPatternPage() {
           Form Feedback
         </h2>
         <p className="text-muted-foreground">
-          Provide clear feedback after form submission using Alert components.
+          Provide clear feedback after form submission using Callout components.
         </p>
         <ComponentPreview
           code={`{/* Success state */}
-<Alert variant="success">
+<Callout variant="success">
   <CheckCircle2 className="h-4 w-4" />
-  <AlertDescription>
+  <CalloutDescription>
     Your settings have been saved successfully.
-  </AlertDescription>
-</Alert>
+  </CalloutDescription>
+</Callout>
 
 {/* Error state */}
-<Alert variant="destructive">
+<Callout variant="destructive">
   <AlertCircle className="h-4 w-4" />
-  <AlertDescription>
+  <CalloutDescription>
     There was an error saving your settings. Please try again.
-  </AlertDescription>
-</Alert>`}
+  </CalloutDescription>
+</Callout>`}
         >
           <div className="space-y-4 max-w-md w-full">
-            <Alert variant="success">
+            <Callout variant="success">
               <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>
+              <CalloutDescription>
                 Your settings have been saved successfully.
-              </AlertDescription>
-            </Alert>
-            <Alert variant="destructive">
+              </CalloutDescription>
+            </Callout>
+            <Callout variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
+              <CalloutDescription>
                 There was an error saving your settings. Please try again.
-              </AlertDescription>
-            </Alert>
+              </CalloutDescription>
+            </Callout>
           </div>
         </ComponentPreview>
       </div>

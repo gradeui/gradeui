@@ -6,7 +6,10 @@ export {
   AccordionTrigger,
 } from "../components/ui/accordion";
 
-export { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
+// Callout — renamed from Alert (May 2026). The `Alert` name is reserved
+// for a future genuinely-interruptive primitive; modal-style "alert"
+// semantics today live in <Dialog>.
+export { Callout, CalloutDescription, CalloutTitle } from "../components/ui/callout";
 
 export { Badge, badgeVariants } from "../components/ui/badge";
 
@@ -130,28 +133,27 @@ export { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 export { Textarea } from "../components/ui/textarea";
 
 // Navigation components
+// Sidebar — renamed from SideMenu (May 2026). Compound API:
+// Sidebar / SidebarHeader / SidebarContent / SidebarFooter /
+// SidebarSection / SidebarItem.
 export {
-  SideMenu,
-  type SideMenuItem,
-  type SideMenuSection,
-  type SideMenuProps,
-} from "../components/ui/side-menu";
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarSection,
+  SidebarItem,
+  type SidebarProps,
+  type SidebarHeaderProps,
+  type SidebarContentProps,
+  type SidebarFooterProps,
+  type SidebarSectionProps,
+  type SidebarItemProps,
+} from "../components/ui/sidebar";
 
 
-export {
-  SimpleTabs,
-  SimpleTabsPanel,
-  SimpleTabsRoot,
-  SimpleTabsList,
-  SimpleTabsTrigger,
-  SimpleTabsContent,
-  type SimpleTab,
-  type SimpleTabsProps,
-  type SimpleTabsPanelProps,
-  type SimpleTabsRootProps,
-  type SimpleTabsListProps,
-  type SimpleTabsTriggerProps,
-} from "../components/ui/simple-tabs";
+// SimpleTabs retired (May 2026) — merged into Tabs as `variant="underlined"`.
+// `<Tabs><TabsList variant="underlined">…</TabsList></Tabs>` is the replacement.
 
 export {
   Tooltip,

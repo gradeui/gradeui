@@ -31,6 +31,12 @@ import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { COMPONENT_CONTRACTS } from "@gradeui/ui";
+import {
+  validateJsx,
+  formatViolations,
+  extractFencedJsxBlock,
+} from "@/lib/qa/validate-jsx";
 import {
   renderComponentRefsBlock,
   relevantComponentNames,
@@ -386,6 +392,26 @@ export async function POST(req: Request) {
       model: buildModel(provider, model, apiKey),
       system: finalSystem,
       messages: modelMessages,
+      // QA pass — once the model finishes streaming, parse the emitted
+      // JSX block out of the response and validate every <Component>
+      // against the live contract registry. We log violations server-
+      // side rather than failing the response — the user still gets
+      // the preview (possibly broken), and the engineer reading server
+      // logs sees exactly which props the model hallucinated. Surfacing
+      // these back to the chat UI is a follow-up; the logging gives us
+      // the data to know whether the validator is worth wiring further.
+      onFinish: ({ text }) => {
+        const jsx = extractFencedJsxBlock(text);
+        if (!jsx) return;
+        const validation = validateJsx(jsx, {
+          contracts: COMPONENT_CONTRACTS,
+        });
+        // Always log — clean runs confirm the validator is alive; dirty
+        // runs surface the actual drift. The summary line is enough to
+        // grep for in production logs ("JSX validator: 2 issue(s)").
+        // eslint-disable-next-line no-console
+        console.log("[chat/qa]", formatViolations(validation));
+      },
     });
 
     // Surface per-call token usage + loaded refs to the client via UIMessage

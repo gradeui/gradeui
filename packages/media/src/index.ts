@@ -44,6 +44,27 @@ export type {
 export { getStorage, setStorage } from "./storage";
 export { cacheKey, cacheFilename, formatFromFilename, MIME_BY_FORMAT } from "./cache";
 
+// Sourced-imagery surface — keyless providers (MusicBrainz, Pollinations
+// URL, Picsum) and the per-hint router. Used by Studio's "Fill images"
+// flow, kept separate from the generative `generateImage()` path so
+// consumers can pull it in without pulling sharp + Vercel Blob along.
+export {
+  resolveMediaSource,
+  resolveMediaSources,
+  buildDefaultRouter,
+  sourceKey,
+  createMusicBrainzProvider,
+  createPollinationsUrlProvider,
+  createPicsumProvider,
+  type SourceKind,
+  type SourceDescriptor,
+  type SourceResolution,
+  type SourceProvider,
+  type SourceRouter,
+  type ResolveOptions,
+  type ResolutionEntry,
+} from "./sources";
+
 let cachedProvider: MediaProvider | null = null;
 
 /**

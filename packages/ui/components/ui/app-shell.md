@@ -10,7 +10,7 @@ props:
   - children: React.ReactNode
 when_to_use: The top-level page scaffold for app-like layouts — any screen that needs a nav region plus a content region. Reach for AppShell instead of hand-rolled `grid grid-cols-[auto_1fr]` so the layout shape (top vs side nav, constrained vs full-width main) is a prop the settings panel can mutate. Drop a Stack of nav items into AppShellNav for the nav region; drop a Stack into AppShellMain for the page's vertical rhythm.
 composes_with: [Stack, Row, Card, Button, Separator, any page content]
-aliases: [app shell, page shell, layout, app layout, dashboard shell, scaffold]
+aliases: [app shell, page shell, layout, app layout, dashboard shell, scaffold, navigation split view, navigationsplitview, split view layout, safe area view, safeareaview]
 notes: |
   Three parts:
     AppShell        — <div> by default; sets the grid (nav=none|top|side)
@@ -25,7 +25,7 @@ notes: |
 // Side nav + full-width main — the classic dashboard shape.
 <AppShell nav="side">
   <AppShellNav placement="side">
-    {/* nav items — Stack of Buttons, a SideMenu, etc. */}
+    {/* nav items — Stack of Buttons, a Sidebar, etc. */}
   </AppShellNav>
   <AppShellMain>
     <Stack gap="lg" className="p-6">

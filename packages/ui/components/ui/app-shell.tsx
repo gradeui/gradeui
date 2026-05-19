@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
  * the grid sorts them.
  *
  * It is deliberately *just* structure: no collapse state, no context, no
- * runtime JS. Nav content is whatever the caller drops in — a SideMenu, a
+ * runtime JS. Nav content is whatever the caller drops in — a Sidebar, a
  * TopMenu, a hand-rolled `<nav>`. For drag-to-resize columns inside the
  * body, compose this with `Resizable` instead of using a static grid.
  *

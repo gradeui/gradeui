@@ -42,6 +42,7 @@
 import * as React from "react";
 import { useEffect, useRef } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { flushSync } from "react-dom";
 import * as ReactJsxRuntime from "react/jsx-runtime";
 import * as ReactJsxDevRuntime from "react/jsx-dev-runtime";
 import { transform as sucraseTransform } from "sucrase";
@@ -76,6 +77,7 @@ import { cn } from "@/lib/utils";
 // completes. Installing on `document` (this iframe's document) + body.
 import {
   installStudioSelectionAgent,
+  type SelectionAgentHandle,
   type SelectionPayload,
 } from "@/lib/studio-selection-agent";
 
@@ -214,29 +216,47 @@ function FailurePanel({ error }: { error: Error }) {
 export default function FastSandboxPage() {
   const rootElRef = useRef<HTMLDivElement | null>(null);
   const reactRootRef = useRef<Root | null>(null);
-  const agentTeardownRef = useRef<(() => void) | null>(null);
+  const agentTeardownRef = useRef<SelectionAgentHandle | null>(null);
 
   useEffect(() => {
     if (!rootElRef.current) return;
     reactRootRef.current = createRoot(rootElRef.current);
 
-    function renderCompiled(source: string) {
+    function renderCompiled(source: string, requestId?: string) {
       const { Component, error } = compile(source);
       if (error) {
-        reactRootRef.current?.render(<FailurePanel error={error} />);
+        // flushSync forces React to commit the render synchronously so
+        // the next line runs only after the DOM is updated.
+        flushSync(() => {
+          reactRootRef.current?.render(<FailurePanel error={error} />);
+        });
         // Also bubble up so the parent can mirror the failure state in
         // its own error surfaces if it wants to (e.g. header badge).
         window.parent.postMessage(
-          { type: "grade:fast-error", message: error.message },
+          { type: "grade:fast-error", message: error.message, requestId },
           "*"
         );
         return;
       }
       if (!Component) return;
-      reactRootRef.current?.render(
-        <PreviewWrap>
-          <Component />
-        </PreviewWrap>
+      // flushSync guarantees the DOM is fully updated before we send
+      // the `grade:fast-compiled` signal back. Studio's Fill flow
+      // listens for this signal to know that newly-stamped
+      // data-gds-instance-id attributes (added by the self-heal pass)
+      // are present in the DOM before it starts collecting items.
+      // Without flushSync, React would commit asynchronously and the
+      // parent would race the DOM update — the old arbitrary-timeout
+      // approach was a fix for that race.
+      flushSync(() => {
+        reactRootRef.current?.render(
+          <PreviewWrap>
+            <Component />
+          </PreviewWrap>
+        );
+      });
+      window.parent.postMessage(
+        { type: "grade:fast-compiled", requestId },
+        "*"
       );
     }
 
@@ -262,7 +282,9 @@ export default function FastSandboxPage() {
       switch (data.type) {
         case "grade:fast-compile": {
           const source = data.source;
-          if (typeof source === "string") renderCompiled(source);
+          const requestId =
+            typeof data.requestId === "string" ? data.requestId : undefined;
+          if (typeof source === "string") renderCompiled(source, requestId);
           break;
         }
         case "grade:fast-theme": {
@@ -283,17 +305,132 @@ export default function FastSandboxPage() {
                   "*"
                 );
               },
+              reportCleared: () => {
+                // User hit Escape inside the iframe. Tell the parent
+                // so the right-panel chip drops in lock-step with the
+                // ring vanishing.
+                window.parent.postMessage(
+                  { type: "grade:selection-cleared" },
+                  "*"
+                );
+              },
             });
           } else if (!enabled && agentTeardownRef.current) {
-            agentTeardownRef.current();
+            agentTeardownRef.current.teardown();
             agentTeardownRef.current = null;
           }
           break;
         }
         case "grade:clear-selection": {
-          // Agent hides its own overlay on the next mouseleave; the
-          // parent's chip clear is the authoritative state. Nothing
-          // extra to do here unless we want to force-hide the overlay.
+          // External clear from the parent (chip × button) — wipe the
+          // persistent overlay if the agent is still installed. The
+          // hover overlay handles its own mouseout, so nothing else
+          // needs doing.
+          agentTeardownRef.current?.clear();
+          break;
+        }
+        case "grade:set-fidelity": {
+          // Wireframe / full toggle. Same protocol as the Sandpack agent
+          // (see PLAYGROUND_SELECTION_AGENT_TSX in chat-sandpack.ts) —
+          // we stamp `data-fidelity` on the root and let CSS in the
+          // sandbox stylesheet hide the media-surface content layer
+          // for wireframe mode. No re-render needed.
+          const v = data.value === "wireframe" ? "wireframe" : "full";
+          document.documentElement.dataset.fidelity = v;
+          break;
+        }
+        case "grade:collect-media-sources": {
+          // Walk the live DOM for every MediaSurface and pair each
+          // source descriptor with its instanceId. The pairing is
+          // what lets the Fill flow write the resolved URL BACK into
+          // the right data-array entry — the JSX itself becomes the
+          // store, no parallel URL map needed. Elements without an
+          // instanceId are still reported (so standalone MediaSurfaces
+          // without data-array backing still get a fill chance), but
+          // they're not target-able for data-mutation.
+          const requestId =
+            typeof data.requestId === "string" ? data.requestId : "";
+          const nodes = document.querySelectorAll("[data-media-source]");
+          const items: { instanceId?: string; source: unknown }[] = [];
+          nodes.forEach((node) => {
+            const json = node.getAttribute("data-media-source");
+            if (!json) return;
+            try {
+              const parsed = JSON.parse(json);
+              if (parsed && typeof parsed === "object" && "kind" in parsed) {
+                const instanceId =
+                  node.getAttribute("data-gds-instance-id") || undefined;
+                items.push({ instanceId, source: parsed });
+              }
+            } catch {
+              /* malformed JSON on one element shouldn't tank the batch */
+            }
+          });
+          try {
+            // Keep the old-shape `sources` field for backwards
+            // compatibility with anything reading from a tile iframe
+            // mid-roll; the new `items` array is what the canvas
+            // consumes after this pivot.
+            window.parent.postMessage(
+              {
+                type: "grade:media-sources",
+                requestId,
+                sources: items.map((i) => i.source),
+                items,
+              },
+              "*"
+            );
+          } catch {
+            /* parent gone — drop */
+          }
+          break;
+        }
+        case "grade:set-media-urls": {
+          // Studio resolved the batch and is handing us back a
+          // `sourceKey → url` map. Stash on a global and tell every
+          // MediaSurface to re-read it via the `grade:media-urls-updated`
+          // event (subscribed inside MediaSurface itself).
+          const urls =
+            data.urls && typeof data.urls === "object"
+              ? (data.urls as Record<string, string>)
+              : {};
+          const w = window as unknown as {
+            __gradeMediaUrls?: Record<string, string>;
+          };
+          w.__gradeMediaUrls = { ...(w.__gradeMediaUrls ?? {}), ...urls };
+          try {
+            window.dispatchEvent(new Event("grade:media-urls-updated"));
+          } catch {
+            /* no-op for old browsers */
+          }
+          break;
+        }
+        case "grade:set-media-overrides": {
+          // Same protocol as set-media-urls but for per-instance prop
+          // overrides. Canvas keeps `sourceKey → Partial<MediaSurfaceProps>`
+          // state and posts it whenever the user edits a prop on a
+          // selected MediaSurface in the settings panel. The agent
+          // merges into the global; MediaSurface's `useResolvedOverride`
+          // hook re-reads on the event and the rendered slot picks up
+          // the new prop values without touching JSX.
+          const overrides =
+            data.overrides && typeof data.overrides === "object"
+              ? (data.overrides as Record<string, Record<string, unknown>>)
+              : {};
+          const w = window as unknown as {
+            __gradeMediaOverrides?: Record<string, Record<string, unknown>>;
+          };
+          // Replace semantics — the canvas always ships the FULL current
+          // override state, so the global mirrors it exactly. Merge
+          // semantics (..prev, ..new) would leak old entries that the
+          // canvas has dropped (e.g. the user clicked "Reset" on a
+          // specific override). Replace is the right shape here.
+          w.__gradeMediaOverrides = overrides;
+          try {
+            window.dispatchEvent(new Event("grade:media-overrides-updated"));
+          } catch {
+            /* no-op for old browsers */
+          }
           break;
         }
       }
@@ -379,7 +516,7 @@ export default function FastSandboxPage() {
     return () => {
       window.removeEventListener("message", handleMessage);
       if (onStorage) window.removeEventListener("storage", onStorage);
-      agentTeardownRef.current?.();
+      agentTeardownRef.current?.teardown();
       agentTeardownRef.current = null;
       reactRootRef.current?.unmount();
       reactRootRef.current = null;
@@ -387,11 +524,22 @@ export default function FastSandboxPage() {
   }, []);
 
   return (
-    <div
-      ref={rootElRef}
-      id="root"
-      className="min-h-screen bg-background text-foreground"
-    />
+    <>
+      {/* Fidelity is a no-op on the render path now. With JSX-as-truth
+          MediaSurfaces render imagery whenever `src` is present in the
+          data array and fall back to the tiered placeholder otherwise
+          — the previous "wireframe hides filled imagery" rule fought
+          that model (the user filled the card, then a view toggle
+          pretended they hadn't). `data-fidelity` is still stamped on
+          <html> in case a future variant — e.g. desaturate filled
+          imagery in wireframe mode — wants to discriminate, but no
+          rule reads it today. */}
+      <div
+        ref={rootElRef}
+        id="root"
+        className="min-h-screen bg-background text-foreground"
+      />
+    </>
   );
 }
 

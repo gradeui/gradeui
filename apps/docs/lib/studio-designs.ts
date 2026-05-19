@@ -25,6 +25,19 @@ export interface Design {
   name: string;
   /** The last sealed JSX block from the assistant for this design. */
   appSource: string | null;
+  /** When this design was first created, in epoch ms. Set once at
+   *  creation. Used in the tab tooltip + the future "designs list"
+   *  view to surface "Created 3 days ago". Optional in the schema
+   *  for backwards compatibility with persisted designs from before
+   *  the field was added — they'll get the timestamp filled in the
+   *  next time they're mutated. */
+  createdAt?: number;
+  /** Most recent mutation timestamp, in epoch ms. Bumped on every
+   *  appSource change, prop edit, chat completion, fill / regenerate
+   *  action — anything that produces a new state. Drives "Last
+   *  edited Nm ago" affordances; the undo timeline (task #42) will
+   *  use the same field per-snapshot. */
+  updatedAt?: number;
 }
 
 /**
@@ -50,10 +63,13 @@ function nextId(): string {
  *  Client-only — `nextId()` is not SSR-safe. See `initialDesigns()` for the
  *  SSR-safe seed. */
 export function createDesign(index: number, name?: string): Design {
+  const now = Date.now();
   return {
     id: nextId(),
     name: name ?? `Screen ${index + 1}`,
     appSource: null,
+    createdAt: now,
+    updatedAt: now,
   };
 }
 

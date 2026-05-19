@@ -51,6 +51,21 @@ export interface ComponentRef {
    * component. Spend tokens here liberally.
    */
   notes?: string;
+  /**
+   * Full prose body of the sidecar `.md` file — everything after the closing
+   * `---` of the frontmatter. Holds canonical JSX examples + ### Anti-patterns
+   * sections.
+   *
+   * Pinned into the system prompt by `formatRef` whenever the sidecar wins
+   * retrieval. This is the difference between "the model gets the prop list
+   * and guesses the API from training-data familiarity" and "the model gets
+   * shown the canonical composition verbatim". Without this, the chatty
+   * `### Anti-patterns` text the sidecar author wrote never reaches the model
+   * — only the docs page renders it.
+   *
+   * Empty string when the .md has only frontmatter and no body.
+   */
+  body?: string;
 }
 
 // ─── Structured prop manifest ─────────────────────────────────────────────

@@ -42,7 +42,7 @@ export const createMaplibreAdapter: AdapterFactory = async (
   let maplibregl: any;
   try {
     // @ts-expect-error optional peer dep — only required when provider="maplibre" is used at runtime
-    maplibregl = await import(/* webpackIgnore: true */ "maplibre-gl");
+    maplibregl = await import("maplibre-gl");
     // ESM/CJS interop
     if (maplibregl.default) maplibregl = maplibregl.default;
   } catch (err) {

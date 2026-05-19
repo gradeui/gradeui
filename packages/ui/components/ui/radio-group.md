@@ -14,7 +14,7 @@ props:
   - RadioGroupItem: disabled?: boolean
 when_to_use: A small set of mutually-exclusive options where the user needs to SEE all of them at once — pricing tiers (3-4 options), shipping speed, payment method radio cards. For 5+ options use Select. For a segmented control as part of a toolbar use ToggleGroup. For yes/no use Switch.
 composes_with: [Label (paired with each item via htmlFor), Stack (vertical list), Card (radio card pattern)]
-aliases: [radio group, radio buttons, single-choice, pricing options, payment method]
+aliases: [radio group, radio buttons, single-choice, pricing options, payment method, radio buttons, radio control, single-select]
 ---
 
 ```jsx

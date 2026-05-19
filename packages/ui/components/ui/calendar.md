@@ -15,7 +15,7 @@ props:
   - className?: string
 when_to_use: An inline date grid — date-of-birth pickers in profile forms, scheduling screens with a month view, range selection in reporting filters. For a compact trigger-and-popover input, use DatePicker / DateRangePicker (which wrap Calendar internally). For one-off relative dates ("yesterday", "last week") use a Select instead.
 composes_with: [Popover (DatePicker composes them), Card (inline scheduling card), Dialog (full-screen mobile date pick)]
-aliases: [calendar, date grid, month view, scheduler grid]
+aliases: [calendar, date grid, month view, scheduler grid, calendar view, multidate picker, react native calendars]
 ---
 
 ```jsx

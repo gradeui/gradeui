@@ -13,7 +13,7 @@ props:
   - ResizableHandle: withHandle?: boolean — show a visible drag affordance (default just a hit-zone)
 when_to_use: A multi-pane layout where the user wants to drag the divider — Slack/Mail-style list+detail, IDE editor+terminal, side-by-side compare view. Static layouts shouldn't use this — reach for AppShell with nav="three-pane" (fixed widths) or Grid (responsive ladder). Built on react-resizable-panels under the hood.
 composes_with: [AppShellMain (host the splitter inside main), ScrollArea (each panel's content), Card]
-aliases: [resizable, splitter, split pane, drag divider, adjustable panels, resizer]
+aliases: [resizable, splitter, split pane, drag divider, adjustable panels, resizer, split view, draggable divider, split pane resizer, ns split view]
 ---
 
 ```jsx

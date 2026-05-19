@@ -6,6 +6,7 @@ props:
   - All native label HTML attrs
 when_to_use: Every Input / Textarea / Checkbox / Switch / RadioGroup. Always use htmlFor so clicking the label focuses the control.
 composes_with: [Input, Textarea, Checkbox, Switch, RadioGroup, Select]
+aliases: [label, form label, field label, caption]
 ---
 
 ```jsx

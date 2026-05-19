@@ -9,7 +9,7 @@ props:
   - PopoverAnchor: asChild?: boolean — pin the popover to a different element than the trigger
 when_to_use: A floating panel anchored to a trigger that contains interactive content — date pickers, color pickers, filter pickers, "more info" panels, inline forms. Differs from Tooltip (hover-only, no focusable content) and Dialog (modal, blocks the page). DatePicker, DateRangePicker, and the Combobox pattern all compose Popover internally.
 composes_with: [Button (as trigger), Calendar (date picker), Command (combobox), Form controls (inline edit popover)]
-aliases: [popover, dropdown panel, floating panel, inline editor, attached panel, filter pop]
+aliases: [popover, dropdown panel, floating panel, inline editor, attached panel, filter pop, popover view, popoverpresentation, attached popover]
 ---
 
 ```jsx

@@ -6,9 +6,9 @@ props:
   - variant? (see list above)
   - rounded? (default | full) — "full" gives a pill shape
   - All native div HTML attrs
-when_to_use: Compact status chips, counts, tags, pills. For higher-signal inline status → use Alert. For solid CTAs → Button. Soft/outline variants are quieter; solid variants are loud.
+when_to_use: Compact status chips, counts, tags, pills. For higher-signal inline status → use Callout. For solid CTAs → Button. Soft/outline variants are quieter; solid variants are loud.
 composes_with: [Card, Table (inside a cell), Avatar (next to it), anywhere inline]
-aliases: [chip, tag, pill, label chip]
+aliases: [chip, tag, pill, label chip, badge, tag view, status pill, token, count badge]
 ---
 
 ```jsx

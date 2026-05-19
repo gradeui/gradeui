@@ -15,7 +15,7 @@ props:
   - name?: string — form name when posting natively
 when_to_use: A continuous-ish numeric pick — volume, opacity, font size, price-range filters. Use a single-thumb slider for one value, two-thumb for a range. For a small set of discrete options (1-5 stars, sm/md/lg) prefer ToggleGroup. For free-text numeric entry use an Input type="number".
 composes_with: [Label (mandatory above), Row (label + current value display), Card (settings rows)]
-aliases: [slider, range slider, range input, volume, opacity slider, scrub, drag value]
+aliases: [slider, range slider, range input, volume, opacity slider, scrub, drag value, slider control, value slider, react native slider]
 ---
 
 ```jsx

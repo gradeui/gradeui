@@ -16,7 +16,7 @@ props:
   - CommandDialog: open, onOpenChange — when you want the command palette mounted in a modal (cmd+k pattern)
 when_to_use: A searchable list of actions or destinations — global ⌘K palettes, "jump to" inputs, account switchers with filter. Wrap in CommandDialog when it should pop over the entire app on a hotkey. For straight forms with filter, prefer a Select with a search input. For free-text autocomplete tied to a single value, prefer Combobox built on Popover + Command.
 composes_with: [Dialog (CommandDialog wraps it), Popover (inline combobox), Tooltip]
-aliases: [command palette, command menu, cmd k, quick switcher, action menu]
+aliases: [command palette, command menu, cmd k, quick switcher, action menu, spotlight, spotlight search, quick open, fuzzy finder]
 ---
 
 ```jsx

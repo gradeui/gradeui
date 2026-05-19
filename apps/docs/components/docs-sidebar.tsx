@@ -58,6 +58,24 @@ const componentsNav: NavSection[] = [
       { title: "Flex", href: "/components/flex" },
     ],
   },
+  // Navigation — hoisted above Forms so structural primitives (Layout,
+  // Nav) come before controls. Sidebar replaced SideMenu (May 2026)
+  // and ships as a compound API: Sidebar / SidebarHeader /
+  // SidebarContent / SidebarFooter / SidebarSection / SidebarItem.
+  {
+    title: "Navigation",
+    items: [
+      { title: "Breadcrumb", href: "/components/breadcrumb" },
+      { title: "Sidebar", href: "/components/sidebar" },
+      { title: "Tabs", href: "/components/tabs" },
+      { title: "Command", href: "/components/command" },
+      { title: "Dropdown Menu", href: "/components/dropdown-menu" },
+      { title: "Accordion", href: "/components/accordion" },
+      { title: "Collapsible", href: "/components/collapsible" },
+      { title: "Sheet", href: "/components/sheet" },
+      { title: "Scroll Area", href: "/components/scroll-area" },
+    ],
+  },
   {
     title: "Forms",
     items: [
@@ -66,6 +84,7 @@ const componentsNav: NavSection[] = [
       { title: "Textarea", href: "/components/textarea" },
       { title: "Label", href: "/components/label" },
       { title: "Select", href: "/components/select" },
+      { title: "Multi Select", href: "/components/multi-select" },
       { title: "Checkbox", href: "/components/checkbox" },
       { title: "Radio Group", href: "/components/radio-group" },
       { title: "Switch", href: "/components/switch" },
@@ -104,7 +123,7 @@ const componentsNav: NavSection[] = [
   {
     title: "Feedback",
     items: [
-      { title: "Alert", href: "/components/alert" },
+      { title: "Callout", href: "/components/callout" },
       { title: "Dialog", href: "/components/dialog" },
       { title: "Popover", href: "/components/popover" },
       { title: "Toast", href: "/components/toast" },
@@ -113,23 +132,9 @@ const componentsNav: NavSection[] = [
     ],
   },
   {
-    title: "Navigation",
-    items: [
-      { title: "Breadcrumb", href: "/components/breadcrumb" },
-      { title: "Side Menu", href: "/components/side-menu" },
-      { title: "Tabs", href: "/components/tabs" },
-      { title: "Simple Tabs", href: "/components/simple-tabs" },
-      { title: "Command", href: "/components/command" },
-      { title: "Dropdown Menu", href: "/components/dropdown-menu" },
-      { title: "Accordion", href: "/components/accordion" },
-      { title: "Collapsible", href: "/components/collapsible" },
-      { title: "Sheet", href: "/components/sheet" },
-      { title: "Scroll Area", href: "/components/scroll-area" },
-    ],
-  },
-  {
     title: "Media",
     items: [
+      { title: "Carousel", href: "/components/carousel" },
       { title: "Video Player", href: "/components/video-player" },
       { title: "Rive Player", href: "/components/rive-player" },
       { title: "Three Scene", href: "/components/three-scene" },
@@ -144,9 +149,12 @@ const componentsNav: NavSection[] = [
     ],
   },
   {
-    title: "Blocks",
+    // Studio — Grade-specific surfaces (chat, contract-derived props
+    // rendering). Renamed from "Blocks" in May 2026.
+    title: "Studio",
     items: [
       { title: "AI Chat", href: "/components/ai-chat" },
+      { title: "Component Props", href: "/components/component-props" },
     ],
   },
 ];

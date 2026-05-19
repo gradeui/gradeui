@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
  *
  *   <ResizablePanelGroup direction="horizontal" id="inbox-shell">
  *     <ResizablePanel defaultSize={20} minSize={15} id="nav">
- *       <SideMenu />
+ *       <Sidebar />
  *     </ResizablePanel>
  *     <ResizableHandle withHandle />
  *     <ResizablePanel defaultSize={30} minSize={20} id="list">

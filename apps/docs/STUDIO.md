@@ -144,9 +144,35 @@ The model-emitted JSX is compiled in the iframe with sucrase, then any `import` 
 Two routes have NOT migrated off Sandpack and still consume `@gradeui/ui@latest` from npm:
 
 - `apps/docs/app/layout-preview/[id]/page.tsx` — the chromeless route Playwright hits for thumbnail capture (`scripts/capture-layout-thumbnails.mjs`). Won't render a layout that uses an unpublished component.
+- `apps/docs/components/studio/sandpack-frame.tsx` — `FocusedSandpackMount` + `TileSandpackMount`. Kept around as a **parity check**: when something looks suspicious in Fast Frame, you can flip the renderer over and confirm whether the bug reproduces against a real `npm install @gradeui/ui` in a real bundler. Not the default path, not deleted on purpose.
 - Anything else still wrapped in `SandpackProvider` (grep for it before assuming).
 
 For those routes, the original gotcha holds: a barrel addition isn't visible until a changeset is cut, the release workflow runs, and the new version is live on npm. The mitigations are the same as before — gate the names in `ALLOWED_COMPONENTS` until publish, or pair the barrel addition with a release. Note though: this only matters for Sandpack-backed surfaces. For day-to-day Studio dev (Fast Frame), no publish needed.
+
+## The two-agent split (gotcha for postMessage protocols)
+
+Studio's preview iframe runs **one of two** in-iframe agents depending on the active renderer. Both speak `grade:*` postMessage protocols to the canvas, but the handler implementations live in **two completely separate files** and they do NOT share code:
+
+| Renderer | Handler location | Where the agent code is shipped |
+|---|---|---|
+| Fast Frame (default) | `apps/docs/app/fast-sandbox/page.tsx` → the inline `handleMessage` switch | Runs as a regular Next route inside the iframe — handler is plain TS in the page component |
+| Sandpack (parity / thumbnail capture) | `apps/docs/lib/chat-sandpack.ts` → `PLAYGROUND_SELECTION_AGENT_TSX` template string | Source is a string constant in the parent; Sandpack ships it as `/selection-agent.ts` into the iframe |
+
+**The trap:** Adding a new `grade:*` message type? You must add the handler **in both files** if you want the protocol to work across renderers. Doing only one and switching renderers will silently fail with timeouts or no-op behaviour, because the iframe just sees an unknown `data.type` and skips it.
+
+Protocols currently handled in **both** places (keep them in sync):
+- `grade:select-mode` / `grade:clear-selection` / `grade:selected`
+- `grade:set-fidelity` (wireframe / full toggle)
+- `grade:collect-media-sources` / `grade:media-sources` (Fill-images flow request/response)
+- `grade:set-media-urls` (Fill-images URL-map push back into the iframe)
+
+Protocols Fast Frame uniquely owns (don't mirror to Sandpack):
+- `grade:fast-ready` (iframe-bundle-loaded ping)
+- `grade:fast-compile` (sucrase compile + render trigger)
+- `grade:fast-theme` (CSS-var update)
+- `grade:fast-error` (sandbox surfaced a compile/runtime error)
+
+Rule of thumb: if you find yourself editing the Sandpack agent template string, also open `fast-sandbox/page.tsx` and apply the same change. The default user experience runs through Fast Frame — Sandpack edits alone are invisible until someone explicitly flips the renderer over for a parity check.
 
 ## Per-design state model
 

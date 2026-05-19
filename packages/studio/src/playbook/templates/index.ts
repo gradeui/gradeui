@@ -38,14 +38,17 @@ export const STUDIO_TEMPLATES: readonly StudioTemplate[] = [
   // --- App layouts (AppShell-based) ---
   // These exercise the AppShell/AppShellNav/AppShellMain trio so the
   // generated design has a recognisable, editable scaffold at the root
-  // instead of freestyle grids. Hand-roll nav content from Button/Stack —
-  // SideMenu/TopMenu aren't Studio-allowlisted yet.
+  // instead of freestyle grids. Side-nav prompts MUST reach for the
+  // Sidebar compound (landed May 2026) inside AppShellNav — not a raw
+  // Stack of Buttons — so the resulting design is editable through the
+  // settings panel and stays consistent across screens. TopMenu isn't
+  // Studio-allowlisted yet.
   {
     id: "app-side-nav",
     label: "App (side nav)",
     description: "Dashboard shell with a vertical nav column.",
     prompt:
-      "A dashboard-style app shell using <AppShell nav=\"side\"> as the root. Inside: <AppShellNav placement=\"side\"> contains a narrow vertical nav (~220px wide) with a product name at the top, a Stack of five nav entries (Home, Projects, Team, Billing, Settings) rendered as Ghost Buttons with left alignment, and a Separator above a sign-out Button at the bottom. <AppShellMain> holds a Stack (gap=\"lg\", padded with p-6) containing a Row with a page title and a primary 'New project' Button, then a four-up grid of stat Cards (Users, Revenue, Conversion, Churn — each with a small trend number), and a recent-activity list below. Keep it a single screen.",
+      "A dashboard-style app shell using <AppShell nav=\"side\"> as the root. Inside <AppShellNav placement=\"side\">, use a Sidebar (compound): <SidebarHeader> shows the product name; <SidebarContent> holds a single <SidebarSection> with five <SidebarItem> rows (Home, Projects, Team, Billing, Settings), each with a leading lucide icon and `active` on the first one; <SidebarFooter> contains a <SidebarItem asButton icon={<LogOut />}>Sign out</SidebarItem>. <AppShellMain> holds a Stack (gap=\"lg\", padded with p-6) containing a Row with a page title and a primary 'New project' Button, then a four-up grid of stat Cards (Users, Revenue, Conversion, Churn — each with a small trend number), and a recent-activity list below. Keep it a single screen.",
   },
   {
     id: "app-top-nav",
@@ -59,7 +62,7 @@ export const STUDIO_TEMPLATES: readonly StudioTemplate[] = [
     label: "App (docs)",
     description: "Docs site shell — side nav + long-form main.",
     prompt:
-      "A documentation site layout using <AppShell nav=\"side\">. <AppShellNav placement=\"side\"> holds a Stack (gap=\"xs\", p-4, w-64) with a product name at the top and three grouped sections: 'Getting Started' (Introduction, Installation, Quick Start), 'Guides' (Theming, Layouts, Forms), 'Reference' (Components, Tokens) — each section has a small uppercase heading and the items rendered as Ghost Buttons with left alignment. <AppShellMain maxWidth=\"container\"> contains a Stack (gap=\"lg\", py-10): a breadcrumb Row, an h1 page title with a one-line description, a longer body paragraph, a code-style Card showing a usage snippet, and a 'Next / Previous' Row of outline Buttons at the bottom.",
+      "A documentation site layout using <AppShell nav=\"side\">. Inside <AppShellNav placement=\"side\">, use a Sidebar (compound): <SidebarHeader> with the product name; <SidebarContent> with three <SidebarSection> groups — 'Getting Started' (Introduction, Installation, Quick Start), 'Guides' (Theming, Layouts, Forms), 'Reference' (Components, Tokens) — each rendered as a labelled section containing <SidebarItem asButton>...</SidebarItem> rows. <AppShellMain maxWidth=\"container\"> contains a Stack (gap=\"lg\", py-10): a breadcrumb Row, an h1 page title with a one-line description, a longer body paragraph, a code-style Card showing a usage snippet, and a 'Next / Previous' Row of outline Buttons at the bottom.",
   },
   // --- Component-focused starters ---
   {

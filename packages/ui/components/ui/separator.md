@@ -7,7 +7,7 @@ props:
   - className?: string
 when_to_use: Light divider between sibling blocks in a Card, list, or header. For section-level partition use extra spacing instead.
 composes_with: [Card (between CardHeader/Content/Footer), navigation menus, any vertical stacks]
-aliases: [divider, rule, hr]
+aliases: [divider, rule, hr, line, horizontal rule]
 ---
 
 ```jsx

@@ -41,7 +41,7 @@ export const createMaplibreAdapter: AdapterFactory = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let maplibregl: any;
   try {
-    maplibregl = await import(/* webpackIgnore: true */ "maplibre-gl");
+    maplibregl = await import("maplibre-gl");
     // ESM/CJS interop
     if (maplibregl.default) maplibregl = maplibregl.default;
   } catch (err) {

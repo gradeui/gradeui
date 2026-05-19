@@ -35,16 +35,25 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SIDECARS_DIR = join(__dirname, "..", "..", "ui", "components", "ui");
 const OUT_FILE = join(__dirname, "..", "src", "playbook", "components", "sidecars.generated.ts");
 
-const files = readdirSync(SIDECARS_DIR)
+const allMd = readdirSync(SIDECARS_DIR)
   .filter((f) => f.endsWith(".md"))
   .sort();
 
+// Skip empty / whitespace-only sidecars. Happens during a component
+// rename when the old .md gets truncated to zero bytes as a stand-in
+// for `rm` (sandbox FS perms sometimes block unlink). The zombie
+// would otherwise show up as `"old-name.md": ""` in the bundle.
+const fileEntries = allMd
+  .map((file) => ({ file, raw: readFileSync(join(SIDECARS_DIR, file), "utf-8") }))
+  .filter(({ raw }) => raw.trim().length > 0);
+const files = fileEntries.map((e) => e.file);
+const skipped = allMd.filter((f) => !files.includes(f));
+
 if (files.length === 0) {
-  throw new Error(`[generate-sidecars] no .md files found in ${SIDECARS_DIR}`);
+  throw new Error(`[generate-sidecars] no non-empty .md files found in ${SIDECARS_DIR}`);
 }
 
-const entries = files.map((file) => {
-  const raw = readFileSync(join(SIDECARS_DIR, file), "utf-8");
+const entries = fileEntries.map(({ file, raw }) => {
   // Use JSON.stringify for a bulletproof escape of backticks, backslashes,
   // template-literal sigils, and stray trailing newlines. Emitting as a
   // plain string constant keeps the generated file trivially tree-shakable.
@@ -65,4 +74,5 @@ const body = `export const SIDECARS: Readonly<Record<string, string>> = Object.f
 
 writeFileSync(OUT_FILE, header + body, "utf-8");
 
-console.log(`[generate-sidecars] wrote ${files.length} sidecars → ${OUT_FILE}`);
+const skippedNote = skipped.length ? `; skipped ${skipped.length} empty (${skipped.join(", ")})` : "";
+console.log(`[generate-sidecars] wrote ${files.length} sidecars${skippedNote} → ${OUT_FILE}`);
