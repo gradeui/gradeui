@@ -50,6 +50,16 @@ const KIND_DIMENSIONS: Record<SourceKind, { width: number; height: number }> = {
   product: { width: 1024, height: 1024 },     // square
   food: { width: 1024, height: 1024 },        // square
   landscape: { width: 1536, height: 1024 },   // wide-ish
+  // Editorial cover-art kinds — all default to 3:4 portrait, the
+  // canonical box / poster aspect for tv-shows, films, games, books.
+  // The router prefers a real provider (TMDb for tv-show / movie,
+  // OpenLibrary for book, etc.) when available and only falls through
+  // to Pollinations as a last resort, so these dimensions are the
+  // generative fallback shape.
+  "tv-show": { width: 768, height: 1024 },
+  movie: { width: 768, height: 1024 },
+  game: { width: 768, height: 1024 },
+  book: { width: 768, height: 1024 },
   "3d": { width: 1024, height: 1024 },
   generic: { width: 1280, height: 720 },      // 16:9 video-shape default
   // The remaining three aren't auto-fillable; the router short-circuits
