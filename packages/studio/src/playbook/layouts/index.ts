@@ -245,6 +245,58 @@ export const REFERENCE_LAYOUTS: readonly ReferenceLayout[] = [
     ],
     scaffold: requireScaffold("airbnb-listings"),
   },
+  {
+    // 3-column kanban board (To Do / In Progress / Done). Each column
+    // is its own <Sortable> instance so within-column reorder works
+    // immediately. Cross-column drag isn't wired here (v1 limitation —
+    // see Sortable.Group on the roadmap); the model can hand-roll
+    // @dnd-kit/core for cross-container if needed. Linear-flavoured
+    // chrome: status badges, priority pills, assignee avatars.
+    id: "kanban-board",
+    label: "Kanban board",
+    description: "Three-column kanban (To Do / In Progress / Done) with within-column sortable issues.",
+    tags: [
+      "kanban", "board", "kanban board", "sprint", "sprint board",
+      "issues", "tickets", "tasks", "todo", "trello", "asana", "jira",
+      "linear board", "project board", "drag", "drag and drop",
+      "sortable", "reorder",
+    ],
+    scaffold: requireScaffold("kanban-board"),
+  },
+  {
+    // Linear-flavoured issue tracker: AppShell with Sidebar nav
+    // (Inbox / My issues / Mentions + Workspace + Projects), a sortable
+    // issue list on the left, and a detail pane on the right with a
+    // TipTap-backed comment composer (StarterKit + Placeholder).
+    // Pinned by tags like "linear", "issues", "tracker".
+    id: "linear-clone",
+    label: "Linear clone — issue tracker",
+    description: "Sidebar + sortable issue list + detail pane with a TipTap comment composer.",
+    tags: [
+      "linear", "linear clone", "issue tracker", "issues", "tickets",
+      "tracker", "comments", "tiptap", "rich text", "mentions",
+      "project management", "pm", "shortcut", "github issues",
+      "sprint planning", "backlog",
+    ],
+    scaffold: requireScaffold("linear-clone"),
+  },
+  {
+    // Notion-flavoured doc workspace: AppShell with Sidebar workspace
+    // header + nested page tree + favourites; main has a Notion-style
+    // breadcrumb, big emoji + title block, and a TipTap editor as the
+    // page body (StarterKit gives markdown shortcuts; Placeholder for
+    // the "/" hint). Slash-menu / block-type picker is a follow-up.
+    id: "notion-clone",
+    label: "Notion clone — doc workspace",
+    description: "Workspace sidebar with nested page tree + TipTap editor as the page body.",
+    tags: [
+      "notion", "notion clone", "docs", "documents", "wiki",
+      "knowledge base", "kb", "page tree", "nested pages",
+      "rich text", "tiptap", "editor", "writing", "obsidian",
+      "evernote", "logseq", "workspace",
+    ],
+    scaffold: requireScaffold("notion-clone"),
+  },
 ];
 
 /**

@@ -27,7 +27,6 @@
  */
 
 import * as React from "react";
-import { ArrowLeft } from "lucide-react";
 
 import type { StudioSelection } from "@/lib/chat-sandpack";
 import { cn } from "@/lib/utils";
@@ -38,6 +37,7 @@ import {
 
 import { LayoutStartersPanel } from "./layout-starters-panel";
 import { StudioSettingsPanel } from "./settings-panel";
+import { StageBInspector } from "./stage-b-inspector";
 
 export interface StudioRightPanelProps {
   /** Active design's JSX source. Drives the Stage A/B fork. */
@@ -116,67 +116,18 @@ export function StudioRightPanel({
 
     case "B":
     default:
+      // Stage B is "design has content, nothing selected". Replaced
+      // the original placeholder (May 2026) with a live inspector:
+      // shows Grade components + external libraries actually in use
+      // on the current screen. Page-level structure controls
+      // (AppShell on/off, container width, density) are deferred to
+      // a future iteration — STUDIO-LAYOUT-PANEL.md.
       return (
-        <StageBPlaceholder
-          className={className}
+        <StageBInspector
+          appSource={appSource}
           onSwapStarter={() => setForceStarters(true)}
+          className={className}
         />
       );
   }
-}
-
-/**
- * Temporary Stage B surface — page-level structure (AppShell, container
- * width, sidebar position, padding density) lands as part of the Stage B
- * work-item. For now this card explains the slot and offers a "Swap
- * starter…" button that re-opens Stage A.
- */
-function StageBPlaceholder({
-  className,
-  onSwapStarter,
-}: {
-  className?: string;
-  onSwapStarter: () => void;
-}) {
-  return (
-    <div
-      className={cn(
-        // Bare wrapper — chrome is owned by the parent TabsContent
-        // in StudioRightTabs. No duplicate "Layout" header here —
-        // the tab trigger already names the section.
-        "flex flex-col h-full",
-        className,
-      )}
-    >
-      {/* Swap-starter action sits inline at the top of the body
-          rather than in a dedicated header strip — keeps the chrome
-          minimal. */}
-      <div className="px-3 pt-3 pb-1 shrink-0 flex justify-end">
-        <button
-          type="button"
-          onClick={onSwapStarter}
-          className={cn(
-            "inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5",
-            "text-[10px] font-medium text-muted-foreground",
-            "hover:bg-muted hover:text-foreground transition-colors",
-          )}
-          title="Show the reference-layout starter picker"
-        >
-          <ArrowLeft className="h-3 w-3" aria-hidden />
-          Swap starter
-        </button>
-      </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 text-xs text-muted-foreground">
-        <p>
-          Page-level structure controls live here — AppShell on/off,
-          container width, sidebar position, padding density.
-        </p>
-        <p className="text-muted-foreground/70">
-          For now, edit structure via the chat or by clicking parts of the
-          preview. Themes have moved to the palette icon in the header
-          above.
-        </p>
-      </div>
-    </div>
-  );
 }

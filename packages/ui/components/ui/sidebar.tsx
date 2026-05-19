@@ -68,6 +68,15 @@ interface SidebarContextValue {
 
 const SidebarContext = React.createContext<SidebarContextValue | null>(null);
 
+// Tree-depth context — incremented by SidebarTreeItem's children
+// wrapper. Read by SidebarItem + SidebarTreeItem to add left padding
+// per nesting level. Notion-style page trees use this; flat sidebars
+// stay at depth 0 and pay nothing.
+const SidebarTreeDepthContext = React.createContext<number>(0);
+function useTreeDepth(): number {
+  return React.useContext(SidebarTreeDepthContext);
+}
+
 function useSidebar(componentName: string): SidebarContextValue {
   const ctx = React.useContext(SidebarContext);
   if (!ctx) {
@@ -99,6 +108,7 @@ interface SidebarRootComponent
   Footer: typeof SidebarFooter;
   Section: typeof SidebarSection;
   Item: typeof SidebarItem;
+  TreeItem: typeof SidebarTreeItem;
 }
 
 const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
@@ -398,6 +408,14 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
     ref,
   ) => {
     const { collapsed } = useSidebar("SidebarItem");
+    // Nesting depth from any enclosing SidebarTreeItem(s). Flat
+    // sidebars are depth 0 and pay no extra padding; tree leaves
+    // get 0.75rem of left inset per level so the chevron column
+    // stays aligned.
+    const depth = useTreeDepth();
+    const depthStyle = !collapsed && depth > 0
+      ? { paddingLeft: `calc(0.5rem + ${depth} * 0.75rem)` }
+      : undefined;
 
     const sharedClass = cn(
       "group flex items-center gap-2.5 rounded-md text-sm font-medium transition-colors",
@@ -438,6 +456,7 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
           data-active={active || undefined}
           aria-current={active ? "page" : undefined}
           className={sharedClass}
+          style={depthStyle}
         >
           {children as React.ReactElement}
         </Slot>
@@ -467,6 +486,7 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
           aria-current={active ? "page" : undefined}
           disabled={disabled}
           className={cn(sharedClass, "w-full text-left")}
+          style={depthStyle}
           {...buttonRest}
         >
           {body}
@@ -481,6 +501,7 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
           aria-current={active ? "page" : undefined}
           aria-disabled={disabled || undefined}
           className={sharedClass}
+          style={depthStyle}
           {...rest}
         >
           {body}
@@ -512,6 +533,149 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
 );
 SidebarItem.displayName = "SidebarItem";
 
+// ─── TreeItem (nested branches) ───────────────────────────────────────
+//
+// Notion-style nested page trees. A SidebarTreeItem is a collapsible
+// row that hosts more SidebarItem / SidebarTreeItem children, auto-
+// indented one level per nesting depth. Reads + writes the
+// SidebarTreeDepthContext so consumers don't have to thread depth
+// through their own props.
+//
+// Why not fold this into SidebarItem with an `expandable` flag: the
+// row shape diverges — TreeItem grows a chevron column on the LEFT
+// edge (where Item has the icon), and the "label" prop reads more
+// naturally as its own prop than as ambiguous children. Keeping them
+// as separate components also lets the model pick deliberately based
+// on intent ("is this a leaf or a branch?").
+
+export interface SidebarTreeItemProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children" | "title"> {
+  /** Row label. Required — without it the row has nothing to show. */
+  label: React.ReactNode;
+  /** Leading icon (folder, file, custom emoji). Shown to the right
+   *  of the chevron column. */
+  icon?: React.ReactNode;
+  /** Trailing badge — count, status. Hidden when sidebar is collapsed. */
+  badge?: React.ReactNode;
+  /** Marks the branch as the current route. Adds aria-current="page"
+   *  on the row. */
+  active?: boolean;
+  /** Initial expanded state. Defaults `true` so the user can see what's
+   *  inside without having to click. */
+  defaultExpanded?: boolean;
+  /** Controlled expanded state — wire `onExpandedChange` to manage from
+   *  outside (useful when you want to persist tree state). */
+  expanded?: boolean;
+  onExpandedChange?: (next: boolean) => void;
+  /** Disabled state. */
+  disabled?: boolean;
+  /** Nested children — SidebarItem or more SidebarTreeItem. */
+  children?: React.ReactNode;
+}
+
+const SidebarTreeItem = React.forwardRef<HTMLButtonElement, SidebarTreeItemProps>(
+  function SidebarTreeItem(
+    {
+      label,
+      icon,
+      badge,
+      active = false,
+      defaultExpanded = true,
+      expanded: controlledExpanded,
+      onExpandedChange,
+      disabled,
+      className,
+      style,
+      children,
+      ...rest
+    },
+    ref,
+  ) {
+    const { collapsed } = useSidebar("SidebarTreeItem");
+    const depth = useTreeDepth();
+    const isControlled = controlledExpanded !== undefined;
+    const [internalExpanded, setInternalExpanded] = React.useState(defaultExpanded);
+    const expanded = isControlled ? controlledExpanded! : internalExpanded;
+
+    const toggle = () => {
+      const next = !expanded;
+      if (!isControlled) setInternalExpanded(next);
+      onExpandedChange?.(next);
+    };
+
+    // Collapsed sidebar — render children flat as if this branch
+    // didn't have a header, same convention as SidebarSection. The
+    // tree shape isn't readable in a 4rem-wide rail anyway.
+    if (collapsed) {
+      return (
+        <SidebarTreeDepthContext.Provider value={depth}>
+          {children}
+        </SidebarTreeDepthContext.Provider>
+      );
+    }
+
+    const depthInset = depth * 0.75;
+
+    return (
+      <div data-gds-part="sidebar-tree-item">
+        <button
+          ref={ref}
+          type="button"
+          onClick={toggle}
+          aria-expanded={expanded}
+          aria-current={active ? "page" : undefined}
+          data-active={active || undefined}
+          disabled={disabled}
+          className={cn(
+            "group flex w-full items-center gap-1.5 rounded-md py-1 text-sm font-medium transition-colors",
+            active
+              ? "bg-primary/10 text-primary"
+              : "text-foreground/80 hover:bg-muted hover:text-foreground",
+            disabled && "opacity-50 pointer-events-none",
+            className,
+          )}
+          style={{
+            paddingLeft: `calc(0.25rem + ${depthInset}rem)`,
+            paddingRight: "0.5rem",
+            ...style,
+          }}
+          {...rest}
+        >
+          <span
+            className="inline-flex h-4 w-4 items-center justify-center text-muted-foreground shrink-0"
+            aria-hidden
+          >
+            {expanded ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
+            )}
+          </span>
+          {icon && (
+            <span className="shrink-0 [&>svg]:h-4 [&>svg]:w-4" aria-hidden>
+              {icon}
+            </span>
+          )}
+          <span className="flex-1 truncate text-left">{label}</span>
+          {badge !== undefined && badge !== null && (
+            <span className="ml-auto inline-flex items-center justify-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {badge}
+            </span>
+          )}
+        </button>
+        {expanded && children && (
+          <SidebarTreeDepthContext.Provider value={depth + 1}>
+            <div className="space-y-[var(--rds-sidebar-section-gap,0.125rem)]">
+              {children}
+            </div>
+          </SidebarTreeDepthContext.Provider>
+        )}
+      </div>
+    );
+  },
+);
+SidebarTreeItem.displayName = "SidebarTreeItem";
+
 // ─── Compose + export ─────────────────────────────────────────────────
 
 Sidebar.Header = SidebarHeader;
@@ -519,6 +683,7 @@ Sidebar.Content = SidebarContent;
 Sidebar.Footer = SidebarFooter;
 Sidebar.Section = SidebarSection;
 Sidebar.Item = SidebarItem;
+Sidebar.TreeItem = SidebarTreeItem;
 
 export {
   Sidebar,
@@ -527,4 +692,5 @@ export {
   SidebarFooter,
   SidebarSection,
   SidebarItem,
+  SidebarTreeItem,
 };

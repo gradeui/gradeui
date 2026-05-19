@@ -47,6 +47,7 @@ import { SheetContract } from "../components/ui/sheet.contract";
 import { SidebarContract } from "../components/ui/sidebar.contract";
 import { SkeletonContract } from "../components/ui/skeleton.contract";
 import { SliderContract } from "../components/ui/slider.contract";
+import { SortableContract } from "../components/ui/sortable.contract";
 import { StackContract } from "../components/ui/stack.contract";
 import { SwitchContract } from "../components/ui/switch.contract";
 import { TableContract } from "../components/ui/table.contract";
@@ -101,6 +102,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Sidebar: SidebarContract,
   Skeleton: SkeletonContract,
   Slider: SliderContract,
+  Sortable: SortableContract,
   Stack: StackContract,
   Switch: SwitchContract,
   Table: TableContract,

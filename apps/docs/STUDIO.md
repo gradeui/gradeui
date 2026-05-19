@@ -139,6 +139,49 @@ The model-emitted JSX is compiled in the iframe with sucrase, then any `import` 
 
 **Rule of thumb:** **whenever you touch `packages/ui` source, the dist is one build behind you.** Run `pnpm -F @gradeui/ui dev` in watch mode for any session that involves editing components.
 
+## Library resolution — the two-tier model (May 2026)
+
+Fast Frame resolves `import`s the snippet emits against a curated set of pre-loaded namespaces. Anything outside that set falls through to a runtime CDN. Two tiers, picked per-import per-render.
+
+### Tier 1 — pre-stamped, instant
+
+Listed in `apps/docs/app/fast-sandbox/page.tsx` at the top of the file (`import * as X from "y"`) and again in the `resolveImport(path)` switch. The current curated set:
+
+- React essentials: `react`, `react/jsx-runtime`, `react/jsx-dev-runtime`
+- DS itself: `@gradeui/ui`, `@gradeui/ui/...` (subpath-aware)
+- Icons + viz: `lucide-react`, `recharts`
+- Styling utilities: `clsx`, `class-variance-authority`, `tailwind-merge`
+- Animations + celebrations: `motion`, `motion/react`, `canvas-confetti`
+- Rich text: `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-mention`, `@tiptap/extension-placeholder`
+- Drag + drop: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+- Long-tail clones: `react-virtuoso` (virtualised lists), `react-hotkeys-hook` (global shortcuts), `@tanstack/react-table` (headless data tables), `@radix-ui/react-context-menu` (right-click), `@radix-ui/react-toolbar` (TipTap toolbar)
+- Plus the `@/lib/utils` aliases for `cn`
+
+**Why pre-stamp:** instant resolution (no network round-trip per compile), real TypeScript types in the docs site, deterministic bundles, predictable cold-start. Every dep adds to the iframe's initial chunk — adding a library is a real bundle cost, so the set stays curated.
+
+**When to add a library to Tier 1:** if the model needs it on a substantial fraction of generations (Linear / Notion / Kanban clones, data-heavy dashboards), or if the CDN fallback transforms it badly (Node-API-dependent packages, packages with CSS imports the CDN doesn't bundle).
+
+To add one: install the dep in `apps/docs/package.json`, add the eager `import * as X from "y"` to `fast-sandbox/page.tsx`, add the `if (path === "y") return X;` branch to `resolveImport`, add the specifier to `KNOWN_TIER_1` (so the Tier-2 pre-resolver knows to skip it), add it to `ALLOWED_EXTERNAL_IMPORTS` in `packages/studio/src/playbook/components/allowlist.ts` (so the system prompt tells the model it's available), and optionally author a `6x` rule in `playbook/prompts/system.ts` if there's non-obvious usage guidance.
+
+### Tier 2 — esm.sh runtime fallback
+
+For specifiers the resolver doesn't know, Fast Frame falls through to `https://esm.sh/{specifier}`. esm.sh transforms npm packages into browser-native ESM on the fly. Pre-resolution happens in `preResolveUnknownImports(source)`, called from `renderCompiled` before `compile()` runs:
+
+1. Scan the source with a regex for `import ... from "..."` + `import("...")` + `require("...")` specifiers.
+2. For each that isn't in `KNOWN_TIER_1` and isn't already in `CDN_CACHE`, kick off `import("https://esm.sh/{specifier}")` in parallel.
+3. Await all CDN imports. Failures land in `CDN_CACHE` marked with `__cdn_error__`.
+4. Then sucrase compiles + `require()` runs synchronously, looking up the cache.
+
+**Cost:** ~200–800ms cold per library on first use per session, then instant for the rest of the session. Subsequent compiles in the same iframe re-use the cache.
+
+**Failure mode:** the package's CDN transform fails. The user sees `Fast sandbox: esm.sh failed to load "weird-pkg": ...` in the error panel. They either pick a different library or you pre-stamp it in a follow-up.
+
+**When NOT to rely on Tier 2:** anything security-sensitive (you're running arbitrary code from a CDN in the user's browser); anything where the user will be offline; anything needing precise version pinning across deployments. For those, pre-stamp instead.
+
+### Sandpack — the parity-check Tier (still in the codebase)
+
+`apps/docs/components/studio/sandpack-frame.tsx` mounts the Sandpack-backed renderer. It npm-installs whatever the snippet imports inside the browser via a real bundler. Slower (multi-second cold start) but maximally permissive. Kept around so you can flip the renderer over when Fast Frame + Tier 2 fail and you need to confirm whether it's a Fast Frame quirk or a real package incompatibility.
+
 ## The publish-lag gotcha (still applies to two routes)
 
 Two routes have NOT migrated off Sandpack and still consume `@gradeui/ui@latest` from npm:

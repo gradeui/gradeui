@@ -87,6 +87,12 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | FaqBlock | `faq-block.tsx` | composed Accordion section | ⏳ | |
 | Carousel (+ Slide / VideoSlide / Dots / Arrows / Prev / Next) | `carousel.tsx` | `loop`, `align`, `slidesPerView`, `autoplay`, `draggable`, `onSlideChange` · per-slide `duration` · VideoSlide `src`/`poster`/`alt`/`loop`/`controls`/`fit` | ⏳ | Embla-backed. Custom autoplay loop (no plugin) so per-slide duration + advance-on-video-ended fall out cleanly. Token-driven via `--rds-carousel-*` vars. Disambiguates from `<Slider>` (range input) at the sidecar level. |
 
+## Interactions
+
+| Component | File | Key props | Figma | Notes |
+|---|---|---|---|---|
+| Sortable (+ Item / Handle) | `sortable.tsx` | `values` (id[]), `onReorder`, `strategy` (vertical/horizontal/grid), `disabled` · Item: `value`, `asChild`, `disabled` · Handle: `asChild` | ⏳ | Built on `@dnd-kit/sortable`. Composes with any layout primitive (Stack/Row/Grid). v1 covers single-list reorder + horizontal strip + 2D grid; cross-container kanban deferred to `Sortable.Group`. Optional Handle scopes drag activation. |
+
 ## Media & runtime surfaces
 
 | Component | File | Key props | Figma | Notes |

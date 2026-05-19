@@ -70,6 +70,41 @@ export const ALLOWED_COMPONENTS = [
   "DialogTitle",
   "DialogDescription",
   "DialogFooter",
+  // DropdownMenu — Radix-backed menu primitive. Reach for it whenever
+  // the prompt says "menu", "dropdown", "actions menu", "filter menu",
+  // "more menu", "user menu", "context menu" (right-click), or "split
+  // button". DropdownMenuCheckboxItem + DropdownMenuRadioItem handle
+  // multi-/single-select filters; DropdownMenuSub for nested menus.
+  // Don't reach for it for navigation chrome (use Sidebar/Tabs) or
+  // for typeahead search (use Command).
+  "DropdownMenu",
+  "DropdownMenuTrigger",
+  "DropdownMenuContent",
+  "DropdownMenuItem",
+  "DropdownMenuCheckboxItem",
+  "DropdownMenuRadioGroup",
+  "DropdownMenuRadioItem",
+  "DropdownMenuLabel",
+  "DropdownMenuSeparator",
+  "DropdownMenuShortcut",
+  "DropdownMenuSub",
+  "DropdownMenuSubTrigger",
+  "DropdownMenuSubContent",
+  "DropdownMenuGroup",
+  // Breadcrumb — DS-styled path-trail navigation. Compound API:
+  // <Breadcrumb><BreadcrumbList><BreadcrumbItem>…<BreadcrumbLink/>
+  // or <BreadcrumbPage/></BreadcrumbItem><BreadcrumbSeparator/>…
+  // </BreadcrumbList></Breadcrumb>. Final crumb (current page) MUST
+  // be <BreadcrumbPage> — it's the non-clickable terminal. Use
+  // <BreadcrumbEllipsis> in the middle when collapsing a deep path.
+  // Don't hand-roll path > path > path with ChevronRight icons.
+  "Breadcrumb",
+  "BreadcrumbList",
+  "BreadcrumbItem",
+  "BreadcrumbLink",
+  "BreadcrumbPage",
+  "BreadcrumbSeparator",
+  "BreadcrumbEllipsis",
   // Form controls
   "Checkbox",
   "Switch",
@@ -143,6 +178,12 @@ export const ALLOWED_COMPONENTS = [
   "SidebarFooter",
   "SidebarSection",
   "SidebarItem",
+  // SidebarTreeItem — Notion-style nested page trees. Branch row
+  // with chevron expand/collapse + auto-indent for nested children
+  // (SidebarItem or more SidebarTreeItem). Use when the sidebar
+  // models a hierarchical tree (workspace > project > pages); flat
+  // sidebars stay with SidebarItem only.
+  "SidebarTreeItem",
   // Map (shipped in @gradeui/ui@0.9.0)
   //   - Provider-agnostic: provider="maplibre" (default, free) | "mapbox"
   //     | "google". The model should default to omitting the prop (uses
@@ -176,6 +217,21 @@ export const ALLOWED_COMPONENTS = [
   "CarouselArrows",
   "CarouselPrev",
   "CarouselNext",
+  // Sortable (shipped May 2026). Drag-to-reorder built on @dnd-kit.
+  // Model should reach for this on "make this list reorderable",
+  // "drag to sort", "kanban", "sortable shelf". Wraps a layout
+  // primitive — Stack/Row/Grid stay pure. SortableHandle is
+  // optional; use it when only a grip should activate drag.
+  "Sortable",
+  "SortableItem",
+  "SortableHandle",
+  // Sortable.Group — cross-container drag (May 2026 follow-up). Wrap
+  // multiple <Sortable> instances inside <Sortable.Group> and items
+  // can drag BETWEEN columns. Use for kanban / multi-column-list
+  // layouts. Each child Sortable needs an `id` prop so the Group can
+  // route drag-end events. Standalone Sortable (no Group) still works
+  // for single-column reorder.
+  "SortableGroup",
 ] as const;
 
 /**
@@ -194,6 +250,53 @@ export const ALLOWED_EXTERNAL_IMPORTS = [
   // win, puzzle solved). Tiny runtime, imperative API, nothing to clean
   // up: `import confetti from "canvas-confetti"; confetti({...})`.
   "canvas-confetti",
+  // motion (the new name for framer-motion, same v12 API). Already
+  // a dep of @gradeui/ui. Reach for it for spring physics, layout
+  // animations, gesture-driven motion, view transitions. The
+  // common entrypoint is `import { motion } from "motion/react"`
+  // — `motion.div` / `motion.button` accept all standard React
+  // props plus `initial` / `animate` / `exit` / `transition` /
+  // `whileHover` / `whileTap` / `layout`. For drag-and-drop reorder
+  // specifically reach for <Sortable> first; motion is for
+  // appearance / state-change animation, not pointer drag.
+  "motion",
+  "motion/react",
+  // @dnd-kit/core — escape hatch under <Sortable>. The wrapper
+  // covers single-list reorder + grid + horizontal strip; if you
+  // need cross-container drag (kanban columns), custom collision
+  // detection, or drag overlays with arbitrary chrome, reach for
+  // the raw library. Most generations should NOT need this — the
+  // <Sortable> compound is the path of least resistance.
+  "@dnd-kit/core",
+  "@dnd-kit/sortable",
+  "@dnd-kit/utilities",
+  // TipTap — the rich-text editor stack for comments, doc bodies,
+  // slash menus, @mentions. The Linear/Notion-flavoured editing
+  // primitive. Default starter-kit covers bold/italic/headings/lists/
+  // links; @tiptap/extension-mention adds @-typeahead;
+  // @tiptap/extension-placeholder adds the "Write something…" hint.
+  "@tiptap/react",
+  "@tiptap/starter-kit",
+  "@tiptap/extension-mention",
+  "@tiptap/extension-placeholder",
+  // Long-tail-clone enablers (May 2026). Each is small, high-value,
+  // and pre-stamped in Fast Frame so they resolve instantly.
+  // - react-virtuoso: virtualised long lists (Slack messages,
+  //   Discord channels, 1000-row tables that don't lag).
+  // - react-hotkeys-hook: global keyboard shortcuts (Linear j/k,
+  //   cmd-k, gmail-style chords).
+  // - @tanstack/react-table: headless data table — sorting,
+  //   filtering, pagination, column defs. Pair with the DS Table
+  //   component for chrome.
+  // - @radix-ui/react-context-menu: right-click menus (Discord
+  //   message actions, Notion block actions, file managers).
+  // - @radix-ui/react-toolbar: roving-focus toolbar — perfect
+  //   pairing for a TipTap rich-text toolbar.
+  "react-virtuoso",
+  "react-hotkeys-hook",
+  "@tanstack/react-table",
+  "@radix-ui/react-context-menu",
+  "@radix-ui/react-toolbar",
 ] as const;
 
 /**

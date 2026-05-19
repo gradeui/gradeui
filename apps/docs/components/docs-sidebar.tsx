@@ -143,6 +143,13 @@ const componentsNav: NavSection[] = [
     ],
   },
   {
+    // Interactions — drag/drop + motion. New category landed May 2026.
+    title: "Interactions",
+    items: [
+      { title: "Sortable", href: "/components/sortable" },
+    ],
+  },
+  {
     title: "Map",
     items: [
       { title: "Map", href: "/components/map" },

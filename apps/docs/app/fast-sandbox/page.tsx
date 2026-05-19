@@ -59,6 +59,28 @@ import * as CanvasConfetti from "canvas-confetti";
 import * as Clsx from "clsx";
 import * as ClassVarianceAuthority from "class-variance-authority";
 import * as TailwindMerge from "tailwind-merge";
+// TipTap — rich-text editor used by linear-clone + notion-clone
+// scaffolds. Eager-imported so the preview iframe resolves
+// `@tiptap/react` etc. without an npm round-trip per turn.
+import * as TiptapReact from "@tiptap/react";
+import * as TiptapStarterKit from "@tiptap/starter-kit";
+import * as TiptapExtensionMention from "@tiptap/extension-mention";
+import * as TiptapExtensionPlaceholder from "@tiptap/extension-placeholder";
+// dnd-kit — backs <Sortable> and is also available raw for cross-
+// container kanban that Sortable v1 doesn't model.
+import * as DndKitCore from "@dnd-kit/core";
+import * as DndKitSortable from "@dnd-kit/sortable";
+import * as DndKitUtilities from "@dnd-kit/utilities";
+// motion (the new framer-motion) — animation primitives.
+import * as MotionReact from "motion/react";
+// Tier-1 pre-stamps for long-tail clones (Slack messages, Discord
+// channels, Linear keyboard-first, real DataTables, right-click menus,
+// TipTap toolbar). Each is small (~2–15kb gzip) and high-value.
+import * as ReactVirtuoso from "react-virtuoso";
+import * as ReactHotkeysHook from "react-hotkeys-hook";
+import * as TanstackReactTable from "@tanstack/react-table";
+import * as RadixContextMenu from "@radix-ui/react-context-menu";
+import * as RadixToolbar from "@radix-ui/react-toolbar";
 
 // Design-system stylesheet. Next's CSS loader bundles this into the
 // sandbox page's chunk, so the iframe document gets Tailwind utilities
@@ -109,6 +131,24 @@ function resolveImport(path: string): unknown {
   if (path === "clsx") return Clsx;
   if (path === "class-variance-authority") return ClassVarianceAuthority;
   if (path === "tailwind-merge") return TailwindMerge;
+  // TipTap — comment composers, doc bodies, slash menus.
+  if (path === "@tiptap/react") return TiptapReact;
+  if (path === "@tiptap/starter-kit") return TiptapStarterKit;
+  if (path === "@tiptap/extension-mention") return TiptapExtensionMention;
+  if (path === "@tiptap/extension-placeholder") return TiptapExtensionPlaceholder;
+  // dnd-kit — Sortable's backing library, also raw-importable for the
+  // kanban cross-container case.
+  if (path === "@dnd-kit/core") return DndKitCore;
+  if (path === "@dnd-kit/sortable") return DndKitSortable;
+  if (path === "@dnd-kit/utilities") return DndKitUtilities;
+  // motion — spring physics, layout animations, gesture-driven motion.
+  if (path === "motion" || path === "motion/react") return MotionReact;
+  // Tier-1 pre-stamps for the long-tail clones.
+  if (path === "react-virtuoso") return ReactVirtuoso;
+  if (path === "react-hotkeys-hook") return ReactHotkeysHook;
+  if (path === "@tanstack/react-table") return TanstackReactTable;
+  if (path === "@radix-ui/react-context-menu") return RadixContextMenu;
+  if (path === "@radix-ui/react-toolbar") return RadixToolbar;
 
   // cn — the host app's canonical utility path, plus the common
   // relative variants older prompts sometimes emit.
@@ -124,9 +164,115 @@ function resolveImport(path: string): unknown {
   // in chat-sandpack.ts doesn't catch — route to the barrel.
   if (/^\.\.?\/components\/ui\//.test(path)) return GradeuiUi;
 
+  // Tier-2 — esm.sh runtime fallback. Pre-resolve in compile() populates
+  // CDN_CACHE before the synchronous render path reaches here, so the
+  // map lookup is what makes this work. If we get to this branch with
+  // an empty cache entry, pre-resolve was missed (a deeply-dynamic
+  // import the regex didn't catch) — fall back to a helpful error.
+  if (CDN_CACHE.has(path)) {
+    const entry = CDN_CACHE.get(path);
+    if (entry && typeof entry === "object" && "__cdn_error__" in entry) {
+      throw new Error(
+        `Fast sandbox: esm.sh failed to load "${path}": ${(entry as { __cdn_error__: string }).__cdn_error__}`
+      );
+    }
+    return entry;
+  }
+
   throw new Error(
-    `Fast sandbox: unknown module "${path}". Add it to the resolver ` +
-      `in apps/docs/app/fast-sandbox/page.tsx + the corresponding import.`
+    `Fast sandbox: unknown module "${path}". The Tier-2 pre-resolve ` +
+      `missed it (deeply-dynamic import?) — either pre-stamp it in ` +
+      `apps/docs/app/fast-sandbox/page.tsx or rewrite the source to use ` +
+      `a top-level import.`
+  );
+}
+
+// ─── Tier-2: esm.sh runtime-CDN fallback ──────────────────────────────
+//
+// Pre-stamping covers the high-value libraries instantly. For long-tail
+// imports — anything the model reaches for that we haven't curated — we
+// pull from esm.sh at compile time. The cache survives across compiles
+// in the same iframe session, so subsequent uses of the same library
+// are instant.
+//
+// The synchronous resolver requires the namespace to already exist when
+// `require()` is called. Pre-resolve scans the source for ES-module
+// import specifiers + bare require() calls, populates the cache, and
+// THEN sucrase compiles + render runs.
+//
+// Failures land in the cache too, marked with `__cdn_error__`, so the
+// next render-path require() shows the user a useful message instead of
+// silently retrying esm.sh on every compile.
+
+const CDN_CACHE = new Map<string, unknown>();
+
+const KNOWN_TIER_1 = new Set<string>([
+  "react",
+  "react/jsx-runtime",
+  "react/jsx-dev-runtime",
+  "lucide-react",
+  "recharts",
+  "canvas-confetti",
+  "clsx",
+  "class-variance-authority",
+  "tailwind-merge",
+  "@tiptap/react",
+  "@tiptap/starter-kit",
+  "@tiptap/extension-mention",
+  "@tiptap/extension-placeholder",
+  "@dnd-kit/core",
+  "@dnd-kit/sortable",
+  "@dnd-kit/utilities",
+  "motion",
+  "motion/react",
+  "react-virtuoso",
+  "react-hotkeys-hook",
+  "@tanstack/react-table",
+  "@radix-ui/react-context-menu",
+  "@radix-ui/react-toolbar",
+  "@/lib/utils",
+  "./lib/utils",
+  "../lib/utils",
+]);
+
+function isKnownSpecifier(spec: string): boolean {
+  if (KNOWN_TIER_1.has(spec)) return true;
+  if (spec === "@gradeui/ui" || spec.startsWith("@gradeui/ui/")) return true;
+  if (/^\.\.?\/components\/ui\//.test(spec)) return true;
+  return false;
+}
+
+const IMPORT_SPEC_RE =
+  /(?:import\s+(?:\*\s+as\s+\w+|\{[^}]*\}|\w+(?:\s*,\s*\{[^}]*\})?)?\s+from\s+|import\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
+
+async function preResolveUnknownImports(source: string): Promise<void> {
+  const found = new Set<string>();
+  IMPORT_SPEC_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = IMPORT_SPEC_RE.exec(source)) !== null) {
+    const spec = match[1];
+    if (isKnownSpecifier(spec)) continue;
+    if (CDN_CACHE.has(spec)) continue;
+    found.add(spec);
+  }
+  if (found.size === 0) return;
+
+  await Promise.all(
+    Array.from(found).map(async (spec) => {
+      try {
+        // Strip leading `@gradeui/`-style scopes through to esm.sh's
+        // version-pinning is the consumer's problem; we ship the bare
+        // specifier and let esm.sh resolve "latest" by default. For
+        // version pinning, callers would use `"some-pkg@1.2.3"` as the
+        // specifier — esm.sh respects that syntax.
+        const mod = await import(/* webpackIgnore: true */ `https://esm.sh/${spec}`);
+        CDN_CACHE.set(spec, mod);
+      } catch (err) {
+        CDN_CACHE.set(spec, {
+          __cdn_error__: err instanceof Error ? err.message : String(err),
+        });
+      }
+    })
   );
 }
 
@@ -222,7 +368,12 @@ export default function FastSandboxPage() {
     if (!rootElRef.current) return;
     reactRootRef.current = createRoot(rootElRef.current);
 
-    function renderCompiled(source: string, requestId?: string) {
+    async function renderCompiled(source: string, requestId?: string) {
+      // Tier-2 fallback: pre-resolve any unknown import specifiers via
+      // esm.sh BEFORE sucrase + require() run. Failures don't throw —
+      // they land in CDN_CACHE marked with __cdn_error__ so the synchronous
+      // resolveImport path can surface a clean error to the user.
+      await preResolveUnknownImports(source);
       const { Component, error } = compile(source);
       if (error) {
         // flushSync forces React to commit the render synchronously so

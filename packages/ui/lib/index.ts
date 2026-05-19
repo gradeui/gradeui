@@ -215,6 +215,23 @@ export { Skeleton } from "../components/ui/skeleton";
 
 export { Slider } from "../components/ui/slider";
 
+// Sortable — drag-to-reorder primitive built on @dnd-kit/sortable.
+// Compound API: Sortable + Sortable.Item + Sortable.Handle. Composes
+// with any layout primitive — Stack for vertical lists, Row for
+// horizontal strips, Grid for 2D card walls. See sidecar for
+// anti-patterns (notably: don't add a `sortable` prop to layout
+// primitives; wrap them in Sortable instead).
+export {
+  Sortable,
+  SortableItem,
+  SortableHandle,
+  SortableGroup,
+  type SortableProps,
+  type SortableItemProps,
+  type SortableHandleProps,
+  type SortableGroupProps,
+} from "../components/ui/sortable";
+
 export { Stack, stackVariants, type StackProps } from "../components/ui/stack";
 
 export { Switch } from "../components/ui/switch";
@@ -258,12 +275,14 @@ export {
   SidebarFooter,
   SidebarSection,
   SidebarItem,
+  SidebarTreeItem,
   type SidebarProps,
   type SidebarHeaderProps,
   type SidebarContentProps,
   type SidebarFooterProps,
   type SidebarSectionProps,
   type SidebarItemProps,
+  type SidebarTreeItemProps,
 } from "../components/ui/sidebar";
 
 
