@@ -39,6 +39,8 @@
  * `null` means "remove the prop entirely" (used when the user resets a
  * control to its default).
  */
+import { injectSourceIds } from "./chat-sandpack";
+
 export type PropValue = string | number | boolean | null;
 
 /**
@@ -142,6 +144,110 @@ export function findComponentOpenTag(
     i++;
   }
 
+  return null;
+}
+
+/**
+ * Find the JSX opening tag whose attrs contain `data-gds-source-id="<id>"`.
+ * Used to target a specific JSX node from a preview-click — the id is
+ * injected at `prepareAppSource` time, so every PascalCase component
+ * gets one and every DOM rendering of a single source node shares it.
+ *
+ * Returns the same shape as `findComponentOpenTag`. The component name
+ * isn't passed in — the function recovers it from the `<Name` token
+ * preceding the matched attribute. Returns `null` if no tag carries
+ * that id (e.g. the source was regenerated between selection and
+ * mutation; the chip's single-shot lifecycle prevents this in
+ * practice but the null is the safe failure).
+ */
+export function findComponentOpenTagBySourceId(
+  source: string,
+  sourceId: string
+): {
+  start: number;
+  end: number;
+  attrs: string;
+  selfClosing: boolean;
+  componentName: string;
+} | null {
+  // Forward-scan every PascalCase opening tag in source order, and
+  // for each one walk the attrs with the same brace/string-aware
+  // scanner the rest of the mutator uses. When a tag's attrs match
+  // the target `data-gds-source-id="<id>"`, we're done.
+  //
+  // A regex-only search (find the attr literal then walk backward to
+  // the enclosing `<Name`) is tempting but fragile — backward walks
+  // can't easily track string state, so a `>` inside another attr's
+  // string value would false-bail. This forward scan reuses the
+  // exact logic that already works elsewhere.
+  const escId = escapeRegex(sourceId);
+  const targetAttr = new RegExp(
+    `data-gds-source-id\\s*=\\s*(?:"${escId}"|'${escId}')`
+  );
+  // Match every JSX/HTML opening tag — `injectSourceIds` puts
+  // source-ids on both PascalCase DS components AND lowercase HTML
+  // tags (so raw <div className="…">s can be edited via the
+  // inspector's Spacing controls), and this lookup has to walk the
+  // same surface to find them.
+  const tagPattern = /<([A-Za-z][A-Za-z0-9_]*)(?=[\s/>])/g;
+  const len = source.length;
+  let match: RegExpExecArray | null;
+
+  while ((match = tagPattern.exec(source)) !== null) {
+    const componentName = match[1];
+    const tagStart = match.index;
+    const attrsStart = tagStart + 1 + componentName.length;
+
+    let j = attrsStart;
+    let depth = 0;
+    let inString: '"' | "'" | "`" | null = null;
+    let escaped = false;
+    while (j < len) {
+      const ch = source[j];
+      if (escaped) {
+        escaped = false;
+        j++;
+        continue;
+      }
+      if (inString) {
+        if (ch === "\\") escaped = true;
+        else if (ch === inString) inString = null;
+        j++;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === "`") {
+        inString = ch;
+        j++;
+        continue;
+      }
+      if (ch === "{") {
+        depth++;
+        j++;
+        continue;
+      }
+      if (ch === "}") {
+        depth = Math.max(0, depth - 1);
+        j++;
+        continue;
+      }
+      if (depth === 0 && ch === ">") {
+        const selfClosing = source[j - 1] === "/";
+        const attrsEnd = selfClosing ? j - 1 : j;
+        const attrs = source.slice(attrsStart, attrsEnd);
+        if (targetAttr.test(attrs)) {
+          return {
+            start: tagStart,
+            end: j + 1,
+            attrs,
+            selfClosing,
+            componentName,
+          };
+        }
+        break; // This tag's attrs don't match — move to the next match.
+      }
+      j++;
+    }
+  }
   return null;
 }
 
@@ -341,10 +447,37 @@ export function updateComponentProp(
   source: string,
   componentName: string,
   propName: string,
-  value: PropValue
+  value: PropValue,
+  /**
+   * Stable identifier for the JSX node to mutate, captured at click
+   * time from the rendered DOM (`data-gds-source-id`, injected at
+   * `prepareAppSource` time). Pass it through and the mutator
+   * targets the exact JSX opening tag the user clicked — robust
+   * across `.map()` loops, where many DOM elements share one
+   * source node and the previous index-based approach hit random
+   * other components.
+   *
+   * When omitted (or no tag matches), falls back to the first
+   * `<ComponentName>` in source order — the legacy v1 behavior.
+   */
+  sourceId?: string
 ): string {
-  const tag = findComponentOpenTag(source, componentName);
+  // Ensure the source carries `data-gds-source-id` attrs before we
+  // search. `injectSourceIds` is idempotent + deterministic: a
+  // counter walks PascalCase opening tags in source order, so the
+  // IDs we compute here match the IDs `prepareAppSource` already put
+  // into the rendered DOM. Without this, `appSource` (as stored in
+  // page state) is the raw assistant output with NO ids, and the
+  // sourceId lookup would always fail → fallback to first-match →
+  // every click would mutate the first instance. (Mirror the same
+  // pattern in `readComponentProp`.)
+  const ensured = sourceId ? injectSourceIds(source) : source;
+  const tag = sourceId
+    ? findComponentOpenTagBySourceId(ensured, sourceId) ??
+      findComponentOpenTag(ensured, componentName)
+    : findComponentOpenTag(ensured, componentName);
   if (!tag) return source;
+  source = ensured;
 
   // Walk attrs looking for an existing entry.
   let pos = 0;
@@ -435,9 +568,22 @@ export type ReadPropResult =
 export function readComponentProp(
   source: string,
   componentName: string,
-  propName: string
+  propName: string,
+  /**
+   * Stable identifier for the JSX node to read from — same semantics
+   * as `updateComponentProp`'s `sourceId`. Pass `selection.sourceId`
+   * so the current-value badge reflects the clicked instance.
+   */
+  sourceId?: string
 ): ReadPropResult {
-  const tag = findComponentOpenTag(source, componentName);
+  // Same injection trick as `updateComponentProp` — ensure the
+  // source has IDs before searching, so the deterministic counter
+  // here matches the one `prepareAppSource` used to label the DOM.
+  const ensured = sourceId ? injectSourceIds(source) : source;
+  const tag = sourceId
+    ? findComponentOpenTagBySourceId(ensured, sourceId) ??
+      findComponentOpenTag(ensured, componentName)
+    : findComponentOpenTag(ensured, componentName);
   if (!tag) return undefined;
 
   let pos = 0;
@@ -469,4 +615,128 @@ export function readComponentProp(
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// ─── Element children (text content) ────────────────────────────────
+//
+// Read + write the children of a JSX element identified by source-id.
+// The use cases this v1 targets:
+//
+//   - Heading text editing (`<h1>Welcome</h1>` → "Welcome")
+//   - Button labels (`<Button>Save</Button>` → "Save")
+//   - Label / paragraph / span / div with a text-only child
+//
+// We intentionally limit "editable text" to children that are a SINGLE
+// plain string — no nested elements, no JSX expressions, no fragments.
+// Anything more structured (a Button containing an icon + a string,
+// or text mixed with `{user.name}`) is left alone — replacing all
+// children would destroy structure the user didn't intend to drop. A
+// richer editor would parse + rebuild the children list; for v1 the
+// chat is still the escape hatch for those cases.
+
+/**
+ * Find the children span of a JSX element identified by source-id.
+ * Returns `null` when the element is self-closing or can't be
+ * matched. Otherwise returns `{ start, end, value }` where value
+ * is the verbatim text between `>` and `</Name>` — including any
+ * surrounding whitespace.
+ */
+export function findElementChildren(
+  source: string,
+  sourceId: string
+): { start: number; end: number; value: string } | null {
+  // Make sure source has ids; the by-sourceId lookup needs them.
+  const ensured = injectSourceIds(source);
+  const tag = findComponentOpenTagBySourceId(ensured, sourceId);
+  if (!tag || tag.selfClosing) return null;
+
+  // Walk forward from `tag.end` looking for the matching closing
+  // tag `</Name>`. We track depth on same-name opening tags so a
+  // nested `<Name>` doesn't close us prematurely — rare in
+  // practice for the text-bearing elements we target, but cheap
+  // to handle correctly.
+  const name = tag.componentName;
+  const openRe = new RegExp(`<${escapeRegex(name)}(?=[\\s/>])`, "g");
+  const closeRe = new RegExp(`</${escapeRegex(name)}\\s*>`, "g");
+  openRe.lastIndex = tag.end;
+  closeRe.lastIndex = tag.end;
+  let depth = 1;
+  while (depth > 0) {
+    const openMatch = openRe.exec(ensured);
+    const closeMatch = closeRe.exec(ensured);
+    if (!closeMatch) return null;
+    if (openMatch && openMatch.index < closeMatch.index) {
+      depth++;
+      closeRe.lastIndex = openMatch.index + 1;
+    } else {
+      depth--;
+      if (depth === 0) {
+        // Map positions back from `ensured` to original `source` is
+        // unnecessary because `injectSourceIds` only INSERTS chars;
+        // the positions on the right side of any insertion in
+        // `ensured` are ≥ original. For the simple "no JSX expr
+        // inside" cases this function targets, the children span
+        // in `ensured` happens to be identical to the original
+        // (no PascalCase tags inside means no insertions). For
+        // safety, callers should treat the returned positions as
+        // relative to the source they passed in only when no ids
+        // were injected by this call — i.e. when the caller has
+        // already ensured ids upstream. The inspector flow always
+        // round-trips through the id-rich source, so this is fine
+        // in practice.
+        return {
+          start: tag.end,
+          end: closeMatch.index,
+          value: ensured.slice(tag.end, closeMatch.index),
+        };
+      }
+      openRe.lastIndex = closeMatch.index + closeMatch[0].length;
+    }
+  }
+  return null;
+}
+
+/**
+ * Replace the children of a text-bearing element with `newText`.
+ * Returns the source unchanged when the element can't be found,
+ * is self-closing, or its current children contain anything other
+ * than plain text — i.e. nested tags, JSX expressions, or
+ * fragments. Caller decides what to do with the no-op (most likely
+ * just don't render the Text field for that element).
+ */
+export function updateElementText(
+  source: string,
+  sourceId: string,
+  newText: string
+): string {
+  const ensured = injectSourceIds(source);
+  const children = findElementChildren(ensured, sourceId);
+  if (!children) return source;
+  // Reject any children span that has structure we'd lose. `<` is
+  // the obvious one (nested tags); `{` covers JSX expressions like
+  // `{user.name}`. Whitespace is fine.
+  if (/[<{}]/.test(children.value)) return source;
+  return (
+    ensured.slice(0, children.start) +
+    newText +
+    ensured.slice(children.end)
+  );
+}
+
+/**
+ * Returns true when the element identified by `sourceId` has
+ * children that are plain text only — i.e. `updateElementText`
+ * would actually replace them rather than no-op. The inspector
+ * uses this to decide whether to render the Text input row.
+ */
+export function isElementTextEditable(
+  source: string,
+  sourceId: string
+): boolean {
+  const ensured = injectSourceIds(source);
+  const children = findElementChildren(ensured, sourceId);
+  if (!children) return false;
+  // Empty string counts — the user can add text to an empty
+  // element. Reject only when there's structure inside.
+  return !/[<{}]/.test(children.value);
 }

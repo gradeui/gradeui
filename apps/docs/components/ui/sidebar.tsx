@@ -265,6 +265,15 @@ export interface SidebarSectionProps
   title?: React.ReactNode;
   /** Optional icon next to the title. */
   icon?: React.ReactNode;
+  /** Action(s) rendered on the right edge of the section header — the
+   *  canonical "+ add to this group" or "..." menu slot. Common in Notion
+   *  (+ next to Pages), Linear (+ next to Favorites), Slack (+ next to
+   *  Channels). Rendered as a sibling of the chevron when `collapsible`,
+   *  otherwise pinned to the right edge of the static header.
+   *  Pointer events on the trailing content are isolated from the
+   *  collapse toggle, so a Button inside `trailing` won't also flip the
+   *  expanded state. */
+  trailing?: React.ReactNode;
   /** Allow the section to toggle open/closed via clicking the title.
    *  Default true when `title` is set; ignored otherwise (no header to click). */
   collapsible?: boolean;
@@ -277,6 +286,7 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
     {
       title,
       icon,
+      trailing,
       collapsible = true,
       defaultExpanded = true,
       className,
@@ -320,23 +330,40 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
       >
         {title &&
           (canCollapse ? (
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              aria-expanded={expanded}
+            // Collapsible header — outer Row stays clickable for the
+            // toggle, trailing content is wrapped in a span that swallows
+            // its own clicks so a Button inside trailing doesn't also
+            // toggle the section.
+            <div
               className={cn(
-                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium uppercase tracking-wide",
+                "group/header flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium uppercase tracking-wide",
                 "text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors",
               )}
             >
-              {icon}
-              <span className="flex-1 text-left normal-case">{title}</span>
-              {expanded ? (
-                <ChevronDown className="h-3 w-3" strokeWidth={1.5} />
-              ) : (
-                <ChevronRight className="h-3 w-3" strokeWidth={1.5} />
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                aria-expanded={expanded}
+                className="flex flex-1 items-center gap-2 text-left min-w-0"
+              >
+                {icon}
+                <span className="flex-1 text-left normal-case truncate">{title}</span>
+                {expanded ? (
+                  <ChevronDown className="h-3 w-3 shrink-0" strokeWidth={1.5} />
+                ) : (
+                  <ChevronRight className="h-3 w-3 shrink-0" strokeWidth={1.5} />
+                )}
+              </button>
+              {trailing && (
+                <span
+                  className="flex items-center shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  {trailing}
+                </span>
               )}
-            </button>
+            </div>
           ) : (
             <div
               className={cn(
@@ -345,7 +372,8 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
               )}
             >
               {icon}
-              <span>{title}</span>
+              <span className="flex-1 truncate">{title}</span>
+              {trailing && <span className="shrink-0">{trailing}</span>}
             </div>
           ))}
         {expanded && (

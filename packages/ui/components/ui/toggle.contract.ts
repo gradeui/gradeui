@@ -15,13 +15,13 @@ export const ToggleContract = contract({
   composesWith: ["Tooltip (wrap an icon-only Toggle)","Row","TabsList (sibling)"],
   props: {
   "variant": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
+      schema: z.enum(["default", "outline"]).optional(),
+      design: "knob",
       description: "outline adds a border, default is borderless and ghost-like",
   },
   "size": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
+      schema: z.enum(["default", "sm", "lg"]).optional(),
+      design: "knob",
   },
   "pressed": {
       schema: z.boolean().optional(),

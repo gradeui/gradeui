@@ -9,35 +9,125 @@ import { contract } from "@gradeui/contracts";
 
 export const AiChatContract = contract({
   name: "AiChat",
-  description: "A pre-built chat block — paste it in to get a working LLM chat surface without composing the message list, autoscroll, suggested prompts, and submit input yourself. Reach for it as the \"AI panel\" in an admin/support tool, or to demo an LLM-driven feature inside a marketing page. For Studio-grade chat with file refs and streaming structured output, you'll outgrow this and want a custom composition built on Textarea + Card + ScrollArea.",
+  description: "A flexible chat block — header + scrollable message list + composer. Out of the box it looks like a polished \"AI panel\"; under it, every region is a slot so hosts can compose richer chat surfaces (e.g. Studio's left column with selection chip + settings panel above the composer, an error banner inline, per-message usage / refs / actions). Per-turn token usage, refs, and actions are optional and gated by `showUsage` / `showRefs` / `showActions` — leave them off for product-facing chats, turn them on for developer-facing ones where transparency matters. Composes with [[AIChatComposer]] (rendered internally; can be slotted in with custom props via `composerSlot`).",
   import: "@gradeui/ui",
-  aliases: ["ai chat","chat panel","chat block","llm chat","assistant panel","copilot chat"],
-  composesWith: ["Card (host in a sidebar panel)","Sheet (mobile drawer)","Stack (place above other content)"],
+  aliases: ["ai chat","chat panel","chat block","llm chat","assistant panel","copilot chat","ai assistant"],
+  composesWith: ["Card (host in a sidebar panel)","Sheet (mobile drawer)","Stack (place above other content)","AIChatComposer (internal composer; slot to override)"],
   props: {
   "messages": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "`{ id, role: \"user\" | \"assistant\", content, timestamp }`; defaults to empty",
+      description: "`{ id, role: \"user\" | \"assistant\", content, timestamp, thinking?, steps?, usage?, refs?, actions?, duration? }`; defaults to empty",
   },
   "onSendMessage": {
       schema: z.unknown().optional(),
       design: "event",
-      description: "fires when the user submits a query",
+      description: "fires when the user submits via the default composer; ignored if `composerSlot` is set",
   },
   "isLoading": {
       schema: z.boolean().optional(),
       design: "knob",
-      description: "shows a typing indicator on the last assistant turn",
+      description: "shows a typing indicator at the bottom of the message list",
   },
   "placeholder": {
       schema: z.string().optional(),
       design: "content",
-      description: "input placeholder text",
+      description: "composer placeholder text (ignored if `composerSlot` is set)",
+  },
+  "title": {
+      schema: z.string().optional(),
+      design: "plumbing",
+      description: "header title; defaults to \"AI Assistant\"",
+  },
+  "titleIcon": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "optional icon rendered before the title (e.g. `<Sparkles />`)",
+  },
+  "headerTokens": {
+      schema: z.number().optional(),
+      design: "knob",
+      description: "optional session-level token total shown on the right of the header; rendered as \"N tokens\" with a small gauge icon when set",
+  },
+  "headerEnd": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "optional arbitrary content appended after `headerTokens` on the right of the header",
+  },
+  "showUsage": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "show the per-turn `usage` strip below the assistant bubble; default false",
+  },
+  "showRefs": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "show the per-turn `refs` strip below the assistant bubble; default false",
+  },
+  "showActions": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "render per-turn `actions` chips when a message has them; default true",
+  },
+  "showDuration": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "render the per-turn wall-clock duration (\"2.3s\") below the assistant bubble when a message carries `duration`; default false",
+  },
+  "showThinking": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "render the per-turn reasoning (\"Thoughts\") disclosure above the assistant prose when a message carries `thinking`; collapsed by default, click to expand; default false",
+  },
+  "showSteps": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "render the per-turn step timeline above the assistant prose when a message carries `steps`; collapsed view shows the current running step (or \"N steps completed\"), click to expand the vertical timeline with status glyphs; default false",
+  },
+  "thinkingPhrase": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "override the \"Thinking\" label in the loading indicator",
   },
   "suggestedPrompts": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "empty-state quick prompts",
+      description: "empty-state quick prompts (ignored if `emptyStateSlot` is set)",
+  },
+  "emptyStateSlot": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "replaces the default empty state entirely",
+  },
+  "errorSlot": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "rendered after the messages list (typically an error banner)",
+  },
+  "composerAboveSlot": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "rendered between the messages and the composer (selection chip, settings panel)",
+  },
+  "composerBelowSlot": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "rendered below the composer (disclaimer, char counter)",
+  },
+  "composerSlot": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "full override of the composer; when provided, `onSendMessage` + `placeholder` are unused",
+  },
+  "bare": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "strip the outer card chrome (background, border, rounded corners) so the chat takes the surface of its container; default false (keeps the canned card look)",
+  },
+  "assistantBubble": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "whether assistant messages render with a bubble (background + border + padding + rounded corners); default true. Set false for a Claude.ai-style chromeless transcript where assistant text sits on the surface and only user turns wear a bubble.",
   },
   "className": {
       schema: z.string().optional(),

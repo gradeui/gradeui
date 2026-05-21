@@ -15,8 +15,8 @@ export const ButtonContract = contract({
   composesWith: ["Dialog","DropdownMenu","Tooltip","Card (in CardFooter)","Row","Form controls"],
   props: {
   "variant": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
+      schema: z.enum(["default", "destructive", "outline", "secondary", "ghost", "link"]).optional(),
+      design: "knob",
   },
   "size": {
       schema: z.enum(["sm", "md", "lg", "icon"]).optional(),

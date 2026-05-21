@@ -67,6 +67,7 @@ const componentsNav: NavSection[] = [
     items: [
       { title: "Breadcrumb", href: "/components/breadcrumb" },
       { title: "Sidebar", href: "/components/sidebar" },
+      { title: "Toolbar", href: "/components/toolbar" },
       { title: "Tabs", href: "/components/tabs" },
       { title: "Command", href: "/components/command" },
       { title: "Dropdown Menu", href: "/components/dropdown-menu" },

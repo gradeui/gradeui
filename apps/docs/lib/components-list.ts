@@ -9,6 +9,7 @@ export const componentsList = [
   // Navigation — hoisted above Forms so the IA reads structure → nav →
   // controls. Sidebar lives here (compound API; renamed from SideMenu).
   { name: "Sidebar", href: "/components/sidebar", category: "Navigation" },
+  { name: "Toolbar", href: "/components/toolbar", category: "Navigation" },
   { name: "Command", href: "/components/command", category: "Navigation" },
   { name: "Dropdown Menu", href: "/components/dropdown-menu", category: "Navigation" },
   { name: "Tabs", href: "/components/tabs", category: "Navigation" },

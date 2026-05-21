@@ -5,6 +5,7 @@ import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
 
 /**
  * ToggleGroup — segmented control / mutually-exclusive picker.
@@ -85,22 +86,86 @@ ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName
 
 export type ToggleGroupItemProps =
   React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> &
-    VariantProps<typeof toggleGroupItemVariants>
+    VariantProps<typeof toggleGroupItemVariants> & {
+      /** Tooltip content. When set, the item is wrapped in a Tooltip
+       *  so icon-only items keep an accessible label without bloating
+       *  the chrome with text. Pass a string for the common case;
+       *  pass a node for richer content (key hint, badge, etc.).
+       *
+       *  Assumes a `TooltipProvider` exists somewhere upstream — in
+       *  apps/docs the root layout already mounts one, which is the
+       *  pattern most consumers should follow. If no provider is
+       *  present, the tooltip is silently ignored at runtime (Radix
+       *  no-ops) — pass `tooltip={undefined}` to be sure of plain
+       *  behavior. */
+      tooltip?: React.ReactNode
+      /** Which side of the item the tooltip renders on. Defaults to
+       *  "top" — matches the Tabs primitive's convention. */
+      tooltipSide?: React.ComponentPropsWithoutRef<typeof TooltipContent>["side"]
+      /** Tooltip delay override. The provider's `delayDuration` is
+       *  the default; pass a per-item value if a specific control
+       *  needs a snappier or quieter feel. */
+      tooltipDelay?: number
+    }
 
 const ToggleGroupItem = React.forwardRef<
   React.ElementRef<typeof ToggleGroupPrimitive.Item>,
   ToggleGroupItemProps
->(({ className, size, ...props }, ref) => {
-  const inherited = React.useContext(ToggleGroupSizeContext)
-  const resolved = size ?? inherited
-  return (
-    <ToggleGroupPrimitive.Item
-      ref={ref}
-      className={cn(toggleGroupItemVariants({ size: resolved }), className)}
-      {...props}
-    />
-  )
-})
+>(
+  (
+    {
+      className,
+      size,
+      tooltip,
+      tooltipSide = "top",
+      tooltipDelay,
+      "aria-label": ariaLabel,
+      ...props
+    },
+    ref
+  ) => {
+    const inherited = React.useContext(ToggleGroupSizeContext)
+    const resolved = size ?? inherited
+    // When tooltip is a plain string and the consumer didn't supply
+    // an aria-label, mirror the tooltip text onto aria-label so the
+    // item still has an accessible name for screen readers (icon-only
+    // buttons would otherwise be unannounced). If the consumer passed
+    // their own aria-label, respect it.
+    const resolvedAriaLabel =
+      ariaLabel ?? (typeof tooltip === "string" ? tooltip : undefined)
+    const item = (
+      <ToggleGroupPrimitive.Item
+        ref={ref}
+        className={cn(toggleGroupItemVariants({ size: resolved }), className)}
+        aria-label={resolvedAriaLabel}
+        {...props}
+      />
+    )
+    if (tooltip == null) return item
+    // Why the span wrapper:
+    // `TooltipTrigger asChild` uses Radix's Slot to merge its own
+    // `data-state="closed" | "delayed-open" | "instant-open"` into
+    // the child. If that child is the toggle button directly, those
+    // values land in `{...buttonProps}` and — because Toggle's
+    // Primitive.button spreads props AFTER its own explicit
+    // `data-state={pressed ? "on" : "off"}` — they clobber the
+    // active-state attribute the variant CSS hooks (`data-[state=on]:…`).
+    // Wrapping the item in a non-focusable span keeps the trigger's
+    // data-state on the span and the toggle's data-state on the
+    // button, so selected-state styling stays intact. The span is
+    // inline-flex so it doesn't disturb the parent's flex layout;
+    // pointer / focus events bubble through to the inner button
+    // (Radix Tooltip listens for both).
+    return (
+      <Tooltip delayDuration={tooltipDelay}>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">{item}</span>
+        </TooltipTrigger>
+        <TooltipContent side={tooltipSide}>{tooltip}</TooltipContent>
+      </Tooltip>
+    )
+  }
+)
 ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName
 
 export { ToggleGroup, ToggleGroupItem, toggleGroupVariants, toggleGroupItemVariants }

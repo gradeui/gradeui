@@ -480,6 +480,121 @@ export default function FastSandboxPage() {
           agentTeardownRef.current?.clear();
           break;
         }
+        case "grade:select-by-source-id": {
+          // Parent (Selection inspector breadcrumb) asked us to re-
+          // select a specific ancestor. The agent does the heavy
+          // lifting — find element, run the same heuristics a mouse
+          // click would, repaint the overlay, emit a fresh selection
+          // back to the parent. We just forward the id.
+          const id = typeof data.id === "string" ? data.id : "";
+          if (id && agentTeardownRef.current) {
+            agentTeardownRef.current.selectBySourceId(id);
+          }
+          break;
+        }
+        case "grade:get-children": {
+          // Canvas path bar asked for the children of a given
+          // sourceId (or the layout-shell root when id is null).
+          // Walk the live DOM directly rather than routing through
+          // the selection agent — the agent only installs when
+          // select-mode is ON, but the path bar needs to work
+          // regardless. Logic mirrors `collectImmediateChildren`
+          // in studio-selection-agent.ts.
+          const requestId =
+            typeof data.requestId === "string" ? data.requestId : "";
+          const id = typeof data.id === "string" ? data.id : null;
+          // Depth = how many levels of nested children each returned
+          // item carries. Default 1 = flat. 2 = each peer also has
+          // its own `children`. Path bar uses 2 by default so users
+          // get a preview of each peer's subtree.
+          const depthArg = typeof data.depth === "number" ? data.depth : 1;
+          const depth = Math.max(1, Math.min(5, depthArg));
+          const kebabToPascal = (kebab: string) =>
+            kebab
+              .split(/-+/)
+              .filter(Boolean)
+              .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+              .join("");
+          type Item = {
+            sourceId: string;
+            tag: string;
+            componentName?: string;
+            instanceId?: string;
+            name?: string;
+            summary?: string;
+            hasChildren: boolean;
+            children?: Item[];
+          };
+          const collect = (root: Element, remaining: number): Item[] => {
+            const out: Item[] = [];
+            const seen = new Set<string>();
+            const walk = (node: Element) => {
+              for (let i = 0; i < node.children.length; i++) {
+                const kid = node.children[i];
+                const kidId = kid.getAttribute("data-gds-source-id") || "";
+                if (kidId) {
+                  if (seen.has(kidId)) continue;
+                  seen.add(kidId);
+                  const part = kid.getAttribute("data-gds-part") || "";
+                  const nameAttr =
+                    kid.getAttribute("data-gds-name") || "";
+                  const summaryAttr =
+                    kid.getAttribute("data-gds-summary") || "";
+                  const instanceId =
+                    kid.getAttribute("data-gds-instance-id") || undefined;
+                  let fallback: string | undefined;
+                  const text =
+                    (kid as HTMLElement).innerText || kid.textContent || "";
+                  const norm = text.replace(/\s+/g, " ").trim();
+                  if (norm) {
+                    fallback = norm.length > 40 ? norm.slice(0, 40) + "…" : norm;
+                  }
+                  const hasChildren = !!kid.querySelector(
+                    "[data-gds-source-id]"
+                  );
+                  const item: Item = {
+                    sourceId: kidId,
+                    tag: kid.tagName.toLowerCase(),
+                    componentName: part ? kebabToPascal(part) : undefined,
+                    instanceId,
+                    name: nameAttr || undefined,
+                    summary: summaryAttr || fallback,
+                    hasChildren,
+                  };
+                  if (remaining > 1 && hasChildren) {
+                    item.children = collect(kid, remaining - 1);
+                  }
+                  out.push(item);
+                } else {
+                  walk(kid);
+                }
+              }
+            };
+            walk(root);
+            return out;
+          };
+          let scope: Element | null = null;
+          if (id) {
+            scope = document.querySelector(
+              `[data-gds-source-id="${CSS.escape(id)}"]`
+            );
+          } else {
+            scope =
+              document.querySelector('[data-gds-part="app-shell-main"]') ||
+              document.querySelector('[data-gds-part^="app-shell"]') ||
+              document.body;
+          }
+          const items = scope ? collect(scope) : [];
+          try {
+            window.parent.postMessage(
+              { type: "grade:children", requestId, items },
+              "*"
+            );
+          } catch {
+            /* parent gone — caller will time out */
+          }
+          break;
+        }
         case "grade:set-fidelity": {
           // Wireframe / full toggle. Same protocol as the Sandpack agent
           // (see PLAYGROUND_SELECTION_AGENT_TSX in chat-sandpack.ts) —

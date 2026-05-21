@@ -8,6 +8,20 @@
 
 :root {
   /* ----------------------------------------
+     Studio chrome accent — theme-independent
+     Tool affordances (preview selection ring,
+     hover ring, "Overrides theme" badge, future
+     editing chrome) read off this token instead
+     of --primary so switching the active design
+     theme doesn't drag the tool UI with it.
+     OKLCH triplet so existing call sites can
+     wrap with `oklch(var(--studio-accent))` and
+     opt-in to an alpha channel via slash.
+     ---------------------------------------- */
+  --studio-accent: 0.62 0.18 264;          /* indigo/blue — distinct from any built-in theme primary */
+  --studio-accent-foreground: 0.985 0.0048 85;
+
+  /* ----------------------------------------
      Brand Colors - Neon Green (Primary)
      The signature RDS green
      ---------------------------------------- */

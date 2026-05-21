@@ -1,39 +1,209 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Square } from "lucide-react";
+import {
+  AlertCircle,
+  BookOpen,
+  Brain,
+  Check,
+  ChevronDown,
+  Circle,
+  Clock,
+  Gauge,
+  Loader2,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
+import { AIChatComposer, type ChatAttachment } from "./ai-chat-composer";
 
 // Icon-light by design (May 2026 refresh): no user-avatar circles, no
 // sparkle decoration on the header / empty state / thinking indicator.
 // Message rows differentiate user vs assistant via alignment + bubble
-// colour only. Suggested prompts are plain text chips. This is the
-// "cleaner" pass — the chat should read as conversation, not a
-// branded product surface.
+// colour only.
+//
+// AIChat is a flexible chat surface — header + scrollable message
+// list + composer. The composer is a separate primitive (see
+// <AIChatComposer>). Hosts wanting more than the canned shape (e.g.
+// Studio's left-column chat) pass slot props: `emptyStateSlot`,
+// `errorSlot`, `composerAboveSlot`, `composerBelowSlot`, and
+// `composerSlot`. All optional — the default `<AIChat>` looks
+// exactly as it did before these slots existed.
+
+// ---------------------------------------------------------------------
+// Public types
+
+export type { ChatAttachment } from "./ai-chat-composer";
+
+/** Per-turn token usage. Any field may be undefined on providers that
+ *  don't report it; the renderer hides missing values cleanly. */
+export interface ChatMessageUsage {
+  input?: number;
+  output?: number;
+  total?: number;
+}
+
+/** Per-message action (e.g. "Rendered in preview →", "Copy"). Rendered
+ *  as a chip-style button inside the assistant bubble. */
+export interface ChatMessageAction {
+  id: string;
+  label: string;
+  icon?: React.ReactNode;
+  onClick?: () => void;
+}
+
+/** One stage of a multi-step pipeline (e.g. "Reading refs",
+ *  "Generating component"). Drives the live step timeline rendered
+ *  above the assistant prose. Statuses are advisory: the renderer
+ *  shows pending as muted, running as a spinner, done with a check,
+ *  error with an alert glyph. `detail` (optional) is a short hint
+ *  shown next to the label in the expanded view. */
+export type ChatMessageStepStatus = "pending" | "running" | "done" | "error";
+
+export interface ChatMessageStep {
+  id: string;
+  label: string;
+  status: ChatMessageStepStatus;
+  detail?: string;
+}
 
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  /** Optional model-emitted reasoning ("thinking") content. Rendered
+   *  in a collapsed disclosure above the assistant prose when
+   *  `showThinking` is true on the parent <AIChat>. Markdown is
+   *  not parsed — thinking renders as plain text. */
+  thinking?: string;
+  /** Optional pipeline-step timeline. Rendered above the assistant
+   *  prose when `showSteps` is true on the parent <AIChat>.
+   *  Collapsed view shows the current running step (or final summary);
+   *  expanded view shows the full list with status glyphs. */
+  steps?: ChatMessageStep[];
+  /** Optional token usage for this turn. Rendered when `showUsage`
+   *  is true on the parent <AIChat>. */
+  usage?: ChatMessageUsage;
+  /** Optional list of references (e.g. component .md files read into
+   *  context). Rendered when `showRefs` is true on the parent
+   *  <AIChat>. Empty array renders as "0 refs"; undefined renders
+   *  nothing. */
+  refs?: string[];
+  /** Optional per-turn actions (e.g. "Rendered in preview →").
+   *  Rendered when `showActions` is true (the default) and the
+   *  message has at least one action. */
+  actions?: ChatMessageAction[];
+  /** Optional wall-clock duration for the turn in milliseconds (host
+   *  measures it — start at request, stop at stream-end). Rendered
+   *  when `showDuration` is true on the parent <AIChat>. */
+  duration?: number;
 }
 
 interface AIChatProps {
   messages?: ChatMessage[];
-  onSendMessage?: (message: string) => void;
+  /**
+   * Fires when the user submits via the default composer. Ignored if
+   * `composerSlot` is set (hosts then own the composer wiring).
+   */
+  onSendMessage?: (message: string, attachments?: ChatAttachment[]) => void;
   isLoading?: boolean;
   placeholder?: string;
+  /** Header title (default "AI Assistant"). */
+  title?: string;
+  /** Optional icon rendered before the title (e.g. <Sparkles/>). */
+  titleIcon?: React.ReactNode;
+  /** Optional session-level token total shown on the right of the
+   *  header. Renders as "N tokens" with a small gauge icon. Hidden
+   *  when undefined. */
+  headerTokens?: number;
+  /** Optional arbitrary content rendered after the header tokens,
+   *  on the right of the header. */
+  headerEnd?: React.ReactNode;
   /**
-   * Suggested-prompt chips shown in the empty state. The `icon` field
-   * is preserved for backward-compat but renders nothing in the
-   * icon-light refresh — the cleaner look uses text-only chips.
-   * Consumers passing icons today will see no visual change at the
-   * chip level beyond losing the leading glyph.
+   * Show the per-turn token usage strip below the assistant bubble
+   * when a message carries `usage`. Default false to preserve the
+   * canned chat look; turn on for developer-facing chats.
+   */
+  showUsage?: boolean;
+  /**
+   * Show the per-turn refs strip below the assistant bubble when a
+   * message carries `refs`. Default false.
+   */
+  showRefs?: boolean;
+  /**
+   * Show per-turn actions (chips like "Rendered in preview →") when
+   * a message carries `actions`. Default true.
+   */
+  showActions?: boolean;
+  /**
+   * Show the per-turn wall-clock duration ("2.3s") below the
+   * assistant bubble when a message carries `duration`. Default
+   * false.
+   */
+  showDuration?: boolean;
+  /**
+   * Show the per-turn reasoning ("thinking") disclosure above the
+   * assistant prose when a message carries `thinking`. Default
+   * false. The disclosure is collapsed by default — the user
+   * expands it to read the full reasoning content.
+   */
+  showThinking?: boolean;
+  /**
+   * Show the per-turn step timeline above the assistant prose when
+   * a message carries `steps`. Default false. Collapsed view shows
+   * the current running step (or a "N steps completed" summary);
+   * expanded view shows the full vertical timeline with status
+   * glyphs.
+   */
+  showSteps?: boolean;
+  /** Override the "Thinking" label in the loading indicator. */
+  thinkingPhrase?: string;
+  /**
+   * Suggested-prompt chips shown in the default empty state. Ignored
+   * when `emptyStateSlot` is set.
    */
   suggestedPrompts?: Array<{ icon?: React.ReactNode; text: string }>;
+  /**
+   * Replace the default empty state entirely. Rendered inside the
+   * scrollable message area when `messages` is empty AND `isLoading`
+   * is false.
+   */
+  emptyStateSlot?: React.ReactNode;
+  /** Optional content rendered after the messages list (typically an
+   *  error banner). */
+  errorSlot?: React.ReactNode;
+  /** Optional content rendered between the messages and the composer
+   *  (e.g. selection chip, settings panel). */
+  composerAboveSlot?: React.ReactNode;
+  /** Optional content rendered below the composer (e.g. a disclaimer
+   *  + char counter). */
+  composerBelowSlot?: React.ReactNode;
+  /**
+   * Full override of the composer. When provided, `onSendMessage`
+   * and `placeholder` are unused — the host's composer is responsible
+   * for its own state and submit handler.
+   */
+  composerSlot?: React.ReactNode;
+  /**
+   * Strip the outer chrome (background, border, rounded corners) so
+   * the chat takes the surface of its container. Used by hosts that
+   * embed the chat as a column of a larger layout (e.g. Studio's
+   * left column). The internal section dividers — the header
+   * `border-b` and the composer `border-t` — remain so the regions
+   * still read as distinct.
+   */
+  bare?: boolean;
+  /**
+   * Whether assistant messages render with a bubble (background +
+   * border + padding + rounded corners). Default `true`. Set to
+   * `false` for a Claude.ai-style transcript where assistant text
+   * sits on the surface with no chrome, and only user turns get
+   * the bubble treatment. The metadata strip (usage / refs /
+   * actions) still renders below the assistant text either way.
+   */
+  assistantBubble?: boolean;
   className?: string;
 }
 
@@ -42,19 +212,277 @@ const DEFAULT_SUGGESTED_PROMPTS = [
   { text: "Quick summary" },
 ];
 
+const formatThousands = (n: number) => new Intl.NumberFormat().format(n);
+
+// ---------------------------------------------------------------------
+// Per-message metadata renderers
+
+function MessageActions({ actions }: { actions: ChatMessageAction[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {actions.map((a) => (
+        <button
+          key={a.id}
+          type="button"
+          onClick={a.onClick}
+          disabled={!a.onClick}
+          className={cn(
+            "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px]",
+            "bg-rds-gray-100 dark:bg-[#1a1a1a] text-rds-gray-700 dark:text-rds-gray-300",
+            "border border-rds-gray-200 dark:border-[#252525]",
+            a.onClick && "hover:bg-rds-gray-200 dark:hover:bg-[#252525] transition-colors",
+            !a.onClick && "cursor-default"
+          )}
+        >
+          {a.icon}
+          {a.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Format milliseconds as a compact duration string: "240ms" for
+ * sub-second turns, "3.2s" otherwise. Sub-minute we stay in
+ * seconds — chat turns longer than a minute are unusual and the
+ * exact value matters more than tidy formatting at that point.
+ */
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function DurationRow({ duration }: { duration: number }) {
+  return (
+    <div
+      className="flex items-center gap-1 text-[11px] text-rds-gray-500 dark:text-rds-gray-400"
+      title={`Turn took ${formatDuration(duration)}`}
+    >
+      <Clock className="w-3 h-3" />
+      <span>{formatDuration(duration)}</span>
+    </div>
+  );
+}
+
+function UsageRow({ usage }: { usage: ChatMessageUsage }) {
+  const inp = typeof usage.input === "number" ? formatThousands(usage.input) : null;
+  const out = typeof usage.output === "number" ? formatThousands(usage.output) : null;
+  const total = typeof usage.total === "number" ? formatThousands(usage.total) : null;
+  return (
+    <div
+      className="flex items-center flex-wrap gap-1 text-[11px] text-rds-gray-500 dark:text-rds-gray-400"
+      title={`Input: ${inp ?? "?"} · Output: ${out ?? "?"} · Total: ${total ?? "?"}`}
+    >
+      <Gauge className="w-3 h-3" />
+      {inp != null && <span>{inp} in</span>}
+      {inp != null && out != null && <span aria-hidden>·</span>}
+      {out != null && <span>{out} out</span>}
+      {total != null && (inp != null || out != null) && (
+        <span aria-hidden className="opacity-60">({total} total)</span>
+      )}
+      {total != null && inp == null && out == null && <span>{total} tokens</span>}
+    </div>
+  );
+}
+
+/**
+ * Inline step glyph driven by status. Sized to match `text-[11px]`
+ * adjacent labels so the row reads as one strip.
+ */
+function StepIcon({ status }: { status: ChatMessageStepStatus }) {
+  switch (status) {
+    case "done":
+      return <Check className="w-3 h-3 text-primary shrink-0" />;
+    case "running":
+      return (
+        <Loader2 className="w-3 h-3 text-primary animate-spin shrink-0" />
+      );
+    case "error":
+      return <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />;
+    case "pending":
+    default:
+      return (
+        <Circle className="w-3 h-3 text-rds-gray-400 dark:text-rds-gray-600 shrink-0" />
+      );
+  }
+}
+
+/**
+ * Collapsible "Thoughts" panel — shown above the assistant prose
+ * when a message carries `thinking`. Collapsed by default; the
+ * label stays a single line so a busy chat doesn't get pushed
+ * around by long reasoning trails. Thinking content renders as
+ * plain text (not markdown) — the model emits stream-of-thought,
+ * not structured prose.
+ */
+function ThinkingDisclosure({ thinking }: { thinking: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="rounded-md border border-rds-gray-200 dark:border-[#252525] bg-rds-gray-50 dark:bg-[#141414] overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-[11px] text-rds-gray-700 dark:text-rds-gray-300 hover:bg-rds-gray-100 dark:hover:bg-[#1a1a1a] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+      >
+        <Brain className="w-3.5 h-3.5 text-rds-gray-500 dark:text-rds-gray-400 shrink-0" />
+        <span className="flex-1 text-left font-medium">Thoughts</span>
+        <ChevronDown
+          className={cn(
+            "w-3.5 h-3.5 text-rds-gray-500 dark:text-rds-gray-400 transition-transform shrink-0",
+            expanded && "rotate-180"
+          )}
+        />
+      </button>
+      {expanded && (
+        <div className="px-3 py-2 border-t border-rds-gray-200 dark:border-[#252525] text-[11px] text-rds-gray-600 dark:text-rds-gray-400 whitespace-pre-wrap leading-relaxed">
+          {thinking}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Collapsible step timeline — shown above the assistant prose when
+ * a message carries `steps`. Collapsed view shows the most relevant
+ * step at a glance (running first; otherwise error; otherwise the
+ * "all done" summary; otherwise next pending). Expanded view lists
+ * every step with its status glyph + optional detail.
+ */
+function StepsDisclosure({ steps }: { steps: ChatMessageStep[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const running = steps.find((s) => s.status === "running");
+  const error = steps.find((s) => s.status === "error");
+  const allDone = steps.length > 0 && steps.every((s) => s.status === "done");
+
+  let summaryStatus: ChatMessageStepStatus;
+  let summaryLabel: string;
+  if (error) {
+    summaryStatus = "error";
+    summaryLabel = error.label;
+  } else if (running) {
+    summaryStatus = "running";
+    summaryLabel = running.label;
+  } else if (allDone) {
+    summaryStatus = "done";
+    summaryLabel = `${steps.length} ${steps.length === 1 ? "step" : "steps"} completed`;
+  } else {
+    const next = steps.find((s) => s.status === "pending") ?? steps[0];
+    summaryStatus = next.status;
+    summaryLabel = next.label;
+  }
+
+  return (
+    <div className="rounded-md border border-rds-gray-200 dark:border-[#252525] bg-rds-gray-50 dark:bg-[#141414] overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-[11px] text-rds-gray-700 dark:text-rds-gray-300 hover:bg-rds-gray-100 dark:hover:bg-[#1a1a1a] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+      >
+        <StepIcon status={summaryStatus} />
+        <span className="flex-1 text-left truncate">{summaryLabel}</span>
+        <ChevronDown
+          className={cn(
+            "w-3.5 h-3.5 text-rds-gray-500 dark:text-rds-gray-400 transition-transform shrink-0",
+            expanded && "rotate-180"
+          )}
+        />
+      </button>
+      {expanded && (
+        <ol className="px-3 py-2 border-t border-rds-gray-200 dark:border-[#252525] space-y-1.5 text-[11px]">
+          {steps.map((s) => (
+            <li
+              key={s.id}
+              className="flex items-start gap-2 text-rds-gray-700 dark:text-rds-gray-300"
+            >
+              <span className="mt-0.5">
+                <StepIcon status={s.status} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div
+                  className={cn(
+                    "leading-snug",
+                    s.status === "done" &&
+                      "text-rds-gray-500 dark:text-rds-gray-500"
+                  )}
+                >
+                  {s.label}
+                </div>
+                {s.detail && (
+                  <div className="text-[10px] text-rds-gray-500 dark:text-rds-gray-500 leading-snug mt-0.5">
+                    {s.detail}
+                  </div>
+                )}
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+function RefsRow({ refs }: { refs: string[] }) {
+  const fmt = new Intl.NumberFormat();
+  if (refs.length === 0) {
+    return (
+      <div className="flex items-center gap-1 text-[11px] text-rds-gray-500 dark:text-rds-gray-400">
+        <BookOpen className="w-3 h-3" />
+        <span>0 refs</span>
+      </div>
+    );
+  }
+  return (
+    <div
+      className="flex flex-wrap items-baseline gap-x-1 gap-y-0 text-[11px] text-rds-gray-500 dark:text-rds-gray-400 leading-relaxed"
+      title={`${fmt.format(refs.length)} ${refs.length === 1 ? "ref" : "refs"}:\n  ${refs.join(", ")}`}
+    >
+      <BookOpen className="w-3 h-3 shrink-0 self-center" />
+      <span className="font-medium">
+        {fmt.format(refs.length)} {refs.length === 1 ? "ref" : "refs"}
+      </span>
+      <span aria-hidden className="opacity-60">:</span>
+      <span className="opacity-90 break-words">{refs.join(", ")}</span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+// AIChat
+
 export function AIChat({
   messages = [],
   onSendMessage,
   isLoading = false,
   placeholder = "Ask a question...",
+  title = "AI Assistant",
+  titleIcon,
+  headerTokens,
+  headerEnd,
+  showUsage = false,
+  showRefs = false,
+  showActions = true,
+  showThinking = false,
+  showSteps = false,
+  showDuration = false,
+  thinkingPhrase = "Thinking",
   suggestedPrompts = DEFAULT_SUGGESTED_PROMPTS,
+  emptyStateSlot,
+  errorSlot,
+  composerAboveSlot,
+  composerBelowSlot,
+  composerSlot,
+  bare = false,
+  assistantBubble = true,
   className,
 }: AIChatProps) {
   const [query, setQuery] = useState("");
   const [isScrolledUp, setIsScrolledUp] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevMessagesLengthRef = useRef(messages.length);
 
   // Track scroll position
@@ -73,48 +501,45 @@ export function AIChat({
 
   // Auto-scroll to bottom only when new messages are added (not on mount)
   useEffect(() => {
-    // Only scroll if messages were actually added (not on initial render)
     if (messages.length > prevMessagesLengthRef.current && !isScrolledUp) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
     prevMessagesLengthRef.current = messages.length;
   }, [messages, isScrolledUp]);
 
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
-    }
-  }, [query]);
-
-  const handleSend = () => {
-    if (!query.trim() || isLoading) return;
-    onSendMessage?.(query.trim());
-    setQuery("");
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
   return (
-    <div className={cn("flex flex-col bg-white dark:bg-[#141414] rounded-lg border border-rds-gray-200 dark:border-[#252525] overflow-hidden", className)}>
-      {/* Header — text-only in the icon-light refresh. The branded
-          sparkle-in-gradient-box was dropping context onto every
-          conversation; "AI Assistant" alone reads as a label, not a
-          product mark. */}
+    <div
+      className={cn(
+        "flex flex-col overflow-hidden",
+        !bare &&
+          "bg-white dark:bg-[#141414] rounded-lg border border-rds-gray-200 dark:border-[#252525]",
+        className
+      )}
+    >
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between px-4 py-3 border-b border-rds-gray-200 dark:border-[#252525]"
+        className="flex items-center justify-between gap-2 px-4 py-3 border-b border-rds-gray-200 dark:border-[#252525]"
       >
-        <span className="text-sm font-medium text-rds-gray-900 dark:text-white">
-          AI Assistant
+        <span className="text-sm font-medium text-rds-gray-900 dark:text-white flex items-center gap-1.5 min-w-0">
+          {titleIcon}
+          <span className="truncate">{title}</span>
         </span>
+        {(headerTokens !== undefined || headerEnd) && (
+          <div className="flex items-center gap-2 shrink-0">
+            {headerTokens !== undefined && (
+              <span
+                className="flex items-center gap-1 text-[11px] text-rds-gray-500 dark:text-rds-gray-400"
+                title={`Session total: ${formatThousands(headerTokens)} tokens`}
+              >
+                <Gauge className="w-3 h-3" />
+                {formatThousands(headerTokens)} tokens
+              </span>
+            )}
+            {headerEnd}
+          </div>
+        )}
       </motion.div>
 
       {/* Messages Area */}
@@ -132,86 +557,139 @@ export function AIChat({
         </AnimatePresence>
 
         <div className="p-4 space-y-4">
-          {/* Empty state — text-led, no decorative sparkle. The chip
-              prompts are plain text (icon field is ignored in the
-              icon-light refresh). */}
-          <AnimatePresence>
-            {messages.length === 0 && !isLoading && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="flex flex-col items-center justify-center py-10 text-center"
-              >
-                <h3 className="text-lg font-semibold text-rds-gray-900 dark:text-white mb-2">
-                  How can I help?
-                </h3>
-                <p className="text-sm text-rds-gray-500 dark:text-rds-gray-400 max-w-xs mb-6">
-                  Ask a question or pick a prompt to get started.
-                </p>
+          {/* Empty state — host override OR built-in suggested prompts */}
+          {messages.length === 0 && !isLoading && (
+            emptyStateSlot ? (
+              <>{emptyStateSlot}</>
+            ) : (
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex flex-col items-center justify-center py-10 text-center"
+                >
+                  <h3 className="text-lg font-semibold text-rds-gray-900 dark:text-white mb-2">
+                    How can I help?
+                  </h3>
+                  <p className="text-sm text-rds-gray-500 dark:text-rds-gray-400 max-w-xs mb-6">
+                    Ask a question or pick a prompt to get started.
+                  </p>
 
-                {/* Suggested prompts */}
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {suggestedPrompts.map((prompt, i) => (
-                    <motion.button
-                      key={i}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 + i * 0.05 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setQuery(prompt.text)}
-                      className={cn(
-                        "px-3 py-2 rounded-xl",
-                        "bg-rds-gray-100 dark:bg-[#1a1a1a]",
-                        "text-sm text-rds-gray-700 dark:text-rds-gray-300",
-                        "hover:bg-rds-gray-200 dark:hover:bg-[#252525]",
-                        "border border-rds-gray-200 dark:border-[#252525]",
-                        "transition-colors duration-200"
+                  {/* Suggested prompts */}
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {suggestedPrompts.map((prompt, i) => (
+                      <motion.button
+                        key={i}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 + i * 0.05 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setQuery(prompt.text)}
+                        className={cn(
+                          "px-3 py-2 rounded-xl",
+                          "bg-rds-gray-100 dark:bg-[#1a1a1a]",
+                          "text-sm text-rds-gray-700 dark:text-rds-gray-300",
+                          "hover:bg-rds-gray-200 dark:hover:bg-[#252525]",
+                          "border border-rds-gray-200 dark:border-[#252525]",
+                          "transition-colors duration-200"
+                        )}
+                      >
+                        {prompt.text}
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            )
+          )}
+
+          {/* Chat messages */}
+          {messages.map((message) => {
+            const hasActions =
+              showActions && message.actions && message.actions.length > 0;
+            const hasUsage = showUsage && !!message.usage;
+            const hasRefs = showRefs && message.refs !== undefined;
+            const hasDuration =
+              showDuration && typeof message.duration === "number";
+            const hasThinking =
+              showThinking && !!message.thinking && message.thinking.length > 0;
+            const hasSteps =
+              showSteps && !!message.steps && message.steps.length > 0;
+            const hasMeta =
+              message.role === "assistant" &&
+              (hasActions || hasUsage || hasRefs || hasDuration);
+
+            return (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn("flex", message.role === "user" && "justify-end")}
+              >
+                <div
+                  className={cn(
+                    // User turns always wear the bubble: bg, border,
+                    // padding, rounded — right-aligned, narrow.
+                    message.role === "user" &&
+                      "rounded-2xl rounded-tr-sm px-4 py-3 border max-w-[80%] bg-primary text-primary-foreground border-primary",
+                    // Assistant turns fill the row width. The bubble
+                    // (bg + border + padding + rounded corners) is
+                    // opt-out via `assistantBubble={false}` so hosts
+                    // can pick a Claude.ai-style chromeless transcript
+                    // where assistant text sits on the surface.
+                    message.role === "assistant" && "w-full",
+                    message.role === "assistant" &&
+                      assistantBubble &&
+                      "rounded-2xl rounded-tl-sm px-4 py-3 border bg-rds-gray-100 dark:bg-[#1a1a1a] border-rds-gray-200 dark:border-[#252525]"
+                  )}
+                >
+                  {message.role === "assistant" ? (
+                    <div className="space-y-2">
+                      {/* Steps come first — they're the live "what's
+                          happening now" timeline. Thinking sits below
+                          because it's reflective, not procedural. Both
+                          render above the prose so the answer arrives
+                          beneath the process. */}
+                      {hasSteps && (
+                        <StepsDisclosure steps={message.steps!} />
                       )}
-                    >
-                      {prompt.text}
-                    </motion.button>
-                  ))}
+                      {hasThinking && (
+                        <ThinkingDisclosure thinking={message.thinking!} />
+                      )}
+                      {message.content && (
+                        // `text-sm` to match the user bubble; tight
+                        // paragraph margins so prose-sm's defaults
+                        // don't make multi-paragraph assistant turns
+                        // feel taller than user turns.
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-sm [&_p]:my-1.5 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      )}
+                      {hasMeta && (
+                        <div className="space-y-1.5 pt-2 border-t border-rds-gray-200/60 dark:border-[#252525]/80">
+                          {hasActions && <MessageActions actions={message.actions!} />}
+                          {hasDuration && (
+                            <DurationRow duration={message.duration!} />
+                          )}
+                          {hasUsage && <UsageRow usage={message.usage!} />}
+                          {hasRefs && <RefsRow refs={message.refs!} />}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  )}
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
+            );
+          })}
 
-          {/* Chat messages — no avatar circles. Differentiation is
-              alignment + bubble colour: user bubbles sit right with
-              primary fill, assistant bubbles sit left with muted fill. */}
-          {messages.map((message) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={cn("flex", message.role === "user" && "justify-end")}
-            >
-              <div
-                className={cn(
-                  "max-w-[80%] rounded-2xl px-4 py-3 border",
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground border-primary rounded-tr-sm"
-                    : "bg-rds-gray-100 dark:bg-[#1a1a1a] border-rds-gray-200 dark:border-[#252525] rounded-tl-sm"
-                )}
-              >
-                {message.role === "assistant" ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {message.content}
-                    </ReactMarkdown>
-                  </div>
-                ) : (
-                  <p className="text-sm">{message.content}</p>
-                )}
-              </div>
-            </motion.div>
-          ))}
-
-          {/* AI Thinking Indicator — no avatar; left-aligned bubble
-              matching the assistant message treatment. */}
+          {/* AI Thinking Indicator */}
           <AnimatePresence>
             {isLoading && (
               <motion.div
@@ -222,7 +700,7 @@ export function AIChat({
               >
                 <div className="bg-rds-gray-100 dark:bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-3 border border-rds-gray-200 dark:border-[#252525]">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-rds-gray-500 italic">Thinking</span>
+                    <span className="text-xs text-rds-gray-500">{thinkingPhrase}</span>
                     <div className="flex gap-1">
                       {[0, 1, 2].map((i) => (
                         <motion.div
@@ -246,56 +724,29 @@ export function AIChat({
             )}
           </AnimatePresence>
 
+          {/* Error slot — host renders its own banner here. */}
+          {errorSlot}
+
           <div ref={chatEndRef} />
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-rds-gray-200 dark:border-[#252525] p-3 sm:p-4">
-        <div className="flex items-start gap-2">
-          <div className="flex-1 min-w-0">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              disabled={isLoading}
-              className={cn(
-                "w-full rounded-xl px-3 sm:px-4 h-[46px]",
-                "bg-rds-gray-50 dark:bg-[#1a1a1a]",
-                "border border-rds-gray-200 dark:border-[#252525]",
-                "text-sm text-rds-gray-900 dark:text-white",
-                "placeholder:text-rds-gray-400",
-                "focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
-              )}
-            />
-          </div>
-
-          <button
-            onClick={isLoading ? undefined : handleSend}
-            disabled={!query.trim() && !isLoading}
-            className={cn(
-              "h-[46px] w-[46px] rounded-xl flex items-center justify-center transition-colors flex-shrink-0",
-              isLoading
-                ? "bg-red-500 hover:bg-red-600 text-white"
-                : query.trim()
-                  ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                  : "bg-rds-gray-100 dark:bg-[#252525] text-rds-gray-400 cursor-not-allowed"
-            )}
-          >
-            {isLoading ? (
-              <Square className="w-4 h-4" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </button>
-        </div>
-
-        <p className="text-xs text-rds-gray-400 mt-2 text-center hidden sm:block">
-          Press Enter to send, Shift+Enter for new line
-        </p>
+      {/* Composer area — above slot → composer → below slot */}
+      <div className="border-t border-rds-gray-200 dark:border-[#252525] p-3 sm:p-4 space-y-2">
+        {composerAboveSlot}
+        {composerSlot ?? (
+          <AIChatComposer
+            value={query}
+            onChange={setQuery}
+            onSend={(text, attachments) => {
+              onSendMessage?.(text, attachments);
+              setQuery("");
+            }}
+            isLoading={isLoading}
+            placeholder={placeholder}
+          />
+        )}
+        {composerBelowSlot}
       </div>
     </div>
   );

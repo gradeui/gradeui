@@ -14,30 +14,23 @@
  *   - Narrower bubbles / tighter typography for a sidebar feel.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Send,
-  Sparkles,
-  Square,
-  X,
-  Code2,
-  Gauge,
-  BookOpen,
-  MousePointerClick,
-} from "lucide-react";
+import { Sparkles, X, MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatSettings } from "@/components/ai-elements/provider-picker";
 import { STUDIO_TEMPLATES, type StudioTemplate } from "@/lib/studio-templates";
 import { humanizeChatError } from "@/lib/chat-error";
 import type { StudioSelection } from "@/lib/chat-sandpack";
 import { useRotatingPhrase } from "@/lib/studio-loading-phrases";
-import { StudioSettingsPanel } from "@/components/studio/settings-panel";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { SelectionInspector } from "@/components/studio/selection-inspector";
+import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
+import {
+  AIChatComposer,
+  type ChatAttachment,
+} from "@/components/ui/ai-chat-composer";
 
 /**
  * The chat always iterates on whatever is currently in the tab it's attached
@@ -67,11 +60,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
  */
 const INPUT_CHAR_LIMIT = 1000;
 
-/** Auto-grow height ceiling for the prompt textarea. Above this, the
- *  textarea starts scrolling internally so the chat column can't be
- *  pushed off-screen by a long prompt. Chosen empirically: ~8 rows of
- *  text-sm. */
-const INPUT_MAX_HEIGHT_PX = 160;
+// (The auto-grow height ceiling now lives inside <AIChatComposer> —
+//  see `max-h-[200px]` in the composer's textarea classes. The local
+//  `INPUT_MAX_HEIGHT_PX` constant was removed when the composer was
+//  extracted; 160px → 200px is a tiny upward bump and was accepted as
+//  the price of sharing the primitive.)
 
 interface StudioChatProps {
   /** Stable chat id. Passed through to `useChat({ id })` so the AI SDK keeps
@@ -125,6 +118,26 @@ interface StudioChatProps {
   /** Fires when the inline panel's "Dock →" affordance is clicked. Parent
    *  should flip `settingsPanelDocked` to true. */
   onRequestSettingsDock?: () => void;
+  // -----------------------------------------------------------------
+  // AI Chat visual toggles — forwarded straight to <AIChat>. Studio's
+  // settings sheet owns the state and threads it down. All optional;
+  // sensible defaults preserve the current Studio look when a parent
+  // chooses not to pass them.
+  showUsage?: boolean;
+  showRefs?: boolean;
+  showActions?: boolean;
+  showThinking?: boolean;
+  showSteps?: boolean;
+  showDuration?: boolean;
+  assistantBubble?: boolean;
+  /** When true (default), the currently-streaming assistant message
+   *  is suppressed from the chat until the stream completes — the
+   *  full response then appears in one go, in sync with the preview.
+   *  When false, response text streams in token-by-token (the legacy
+   *  behavior). The Settings Sheet exposes the inverse as a "Stream
+   *  response text" Switch, defaulted off so the snappy hold behavior
+   *  is the out-of-the-box experience. */
+  holdResponseUntilReady?: boolean;
   className?: string;
 }
 
@@ -223,6 +236,28 @@ function latestJsxBlock(
 
 /** Strip fenced code blocks from prose so the chat column only shows the
  *  narrative — the code lives in the preview column, not in the bubble. */
+/**
+ * Read a File as a data URL (base64-encoded). Used to convert
+ * paperclip/paste image attachments into a shape the AI SDK can
+ * forward to the model — `convertToModelMessages` accepts file
+ * parts with either remote URLs or data URLs, and we don't yet
+ * have a media bucket so data URLs it is. Rejects on read error
+ * so the caller can fall back to text-only.
+ */
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") resolve(result);
+      else reject(new Error("FileReader returned non-string result"));
+    };
+    reader.onerror = () =>
+      reject(reader.error ?? new Error("FileReader error"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function stripCodeBlocks(text: string): string {
   return text.replace(/```[\s\S]*?(?:```|$)/g, "").trim();
 }
@@ -242,11 +277,44 @@ export function StudioChat({
   onSourceMutation,
   settingsPanelDocked = false,
   onRequestSettingsDock,
+  // Defaults match what Studio used to hard-code before the settings
+  // sheet existed: usage + refs on, actions on, bubble on.
+  showUsage = true,
+  showRefs = true,
+  showActions = true,
+  // Default off — the chat route doesn't yet emit reasoning or
+  // step events (Layer 2 of the thinking/steps work). Flip these
+  // on from the Settings Sheet to see the UI surface; once Layer 2
+  // lands the data will start to appear automatically.
+  showThinking = false,
+  showSteps = false,
+  // Default ON for Studio so users see "how long did that take" by
+  // default. Toggleable from the Sheet for users who'd rather not.
+  showDuration = true,
+  assistantBubble = true,
+  holdResponseUntilReady = true,
   className,
 }: StudioChatProps) {
   const [input, setInput] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  // Forwarded to <AIChatComposer> so we can focus + position the
+  // caret when a template seeds the prompt. The composer owns the
+  // underlying <textarea>.
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  // <AIChat> auto-scrolls on new messages (when the user is at the
+  // bottom). The bespoke ScrollArea + scrollToBottom that lived here
+  // before went away with the AIChat migration; if the user has
+  // scrolled up to read history, sends no longer fling them back
+  // down — that's by design.
+  const phrase = useRotatingPhrase();
+
+  // Per-turn wall-clock durations, keyed by assistant message id.
+  // State is declared here, but the rising/falling-edge effect that
+  // populates it lives further down — it needs `isStreaming` and
+  // `messages` from useChat, which are constructed below.
+  const [durationsByMessageId, setDurationsByMessageId] = useState<
+    Record<string, number>
+  >({});
+  const turnStartRef = useRef<number | null>(null);
 
   // CRITICAL: `useChat` builds its internal `Chat` (and captures the transport)
   // ONCE at mount via `useRef`. Any transport we construct on subsequent
@@ -349,6 +417,40 @@ export function StudioChat({
     onStreamingChange?.(isStreaming);
   }, [isStreaming, onStreamingChange]);
 
+  // Per-turn duration capture. Rising edge of `isStreaming` records
+  // the start timestamp; falling edge stamps the elapsed time onto
+  // whichever assistant message is newest. The chatMessages mapping
+  // threads `durationsByMessageId[id]` into ChatMessage.duration, and
+  // <AIChat> renders it as a "2.3s" pill when `showDuration` is on.
+  // Must live below the useChat call — depends on `isStreaming` and
+  // `messages` from there.
+  const wasStreamingRef = useRef(isStreaming);
+  useEffect(() => {
+    const wasStreaming = wasStreamingRef.current;
+    wasStreamingRef.current = isStreaming;
+    if (!wasStreaming && isStreaming) {
+      turnStartRef.current = Date.now();
+      return;
+    }
+    if (wasStreaming && !isStreaming && turnStartRef.current !== null) {
+      const elapsed = Date.now() - turnStartRef.current;
+      turnStartRef.current = null;
+      let lastAssistantId: string | null = null;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === "assistant") {
+          lastAssistantId = messages[i].id;
+          break;
+        }
+      }
+      if (lastAssistantId) {
+        setDurationsByMessageId((prev) => ({
+          ...prev,
+          [lastAssistantId!]: elapsed,
+        }));
+      }
+    }
+  }, [isStreaming, messages]);
+
   // Report the full message list up to the parent on every change. The
   // parent caches these keyed by designId so that switching tabs — which
   // remounts this component — can restore the right conversation from the
@@ -395,37 +497,25 @@ export function StudioChat({
     }
   }, [messages, onLatestCode, isStreaming]);
 
-  const scrollToBottom = useCallback(() => {
-    requestAnimationFrame(() => {
-      const el = scrollRef.current;
-      if (!el) return;
-      // Radix ScrollArea renders an inner viewport element; the actual
-      // scroll happens there, not on the Root. Fall back to the root's
-      // scrollTop in case we're rendering without ScrollArea for any
-      // reason (keeps this robust if the component tree ever changes).
-      const viewport = el.querySelector<HTMLElement>(
-        "[data-radix-scroll-area-viewport]"
-      );
-      const scroller = viewport ?? el;
-      scroller.scrollTop = scroller.scrollHeight;
-    });
-  }, []);
+  // The composer owns its own auto-grow + Enter-to-send. Studio used
+  // to manage both inline; both moved when we extracted AIChatComposer.
 
-  // Auto-grow the prompt textarea up to INPUT_MAX_HEIGHT_PX, then let it
-  // scroll internally. Reset to "auto" first so the measurement reflects
-  // the current content rather than the previously-set explicit height
-  // (otherwise the textarea would only ever grow, never shrink on delete).
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    const next = Math.min(el.scrollHeight, INPUT_MAX_HEIGHT_PX);
-    el.style.height = next + "px";
-  }, [input]);
-
-  const handleSend = () => {
-    const trimmed = input.trim();
-    if (!trimmed || isStreaming) return;
+  /**
+   * Build the outgoing user text and ship it via `useChat`'s
+   * `sendMessage`. Receives the raw composer payload — the composer
+   * already trimmed the text and validated that there's something to
+   * send, so we don't re-check here.
+   *
+   * Attachments are accepted by the composer (paperclip / clipboard
+   * paste) but DROPPED here for now: `/api/chat` strips non-text
+   * parts and the default model isn't necessarily vision-capable.
+   * Wiring images end-to-end is its own task — see the TODO below.
+   */
+  const handleSend = async (
+    text: string,
+    attachments?: ChatAttachment[]
+  ) => {
+    if (isStreaming) return;
 
     // If the user selected an element in the preview, stamp a short marker
     // into the VISIBLE user text so the chat transcript is self-explanatory
@@ -444,7 +534,7 @@ export function StudioChat({
     // a prior assistant turn, they're all things-to-iterate-on from the
     // model's perspective. Blank tabs send the prompt as-is so the model
     // treats it as the component brief.
-    const text = currentCode
+    const outgoing = currentCode
       ? [
           "Here is the current component. Modify it based on the request below.",
           "",
@@ -452,10 +542,42 @@ export function StudioChat({
           currentCode.trim(),
           "```",
           "",
-          selPrefix + "Request: " + trimmed,
+          selPrefix + "Request: " + text,
         ].join("\n")
-      : selPrefix + trimmed;
-    sendMessage({ text });
+      : selPrefix + text;
+
+    if (attachments && attachments.length > 0) {
+      // Convert each File to a data URL so the AI SDK can forward it
+      // through `convertToModelMessages` to the active vision-capable
+      // provider (Gemini, Claude vision, GPT-4o, etc). Data URLs are
+      // simpler than blob storage for the v1 path — the trade is that
+      // every turn re-uploads the image; we'll switch to remote URLs
+      // once a media bucket lands.
+      try {
+        const fileParts = await Promise.all(
+          attachments.map(async (a) => ({
+            type: "file" as const,
+            mediaType: a.file.type,
+            url: await fileToDataUrl(a.file),
+          }))
+        );
+        sendMessage({
+          parts: [{ type: "text" as const, text: outgoing }, ...fileParts],
+        });
+      } catch (err) {
+        // If a single attachment fails to read, fall back to a
+        // text-only send rather than stranding the user mid-turn.
+        // Surface the failure in the console — the user will notice
+        // the image didn't make it from the chip strip not clearing.
+        console.error(
+          "[StudioChat] Failed to read attached images; sending text-only.",
+          err
+        );
+        sendMessage({ text: outgoing });
+      }
+    } else {
+      sendMessage({ text: outgoing });
+    }
 
     // Chip is single-shot: once we've sent, forget the selection so the next
     // turn isn't accidentally pinned to the same element. The parent's state
@@ -463,14 +585,6 @@ export function StudioChat({
     onClearSelection?.();
 
     setInput("");
-    scrollToBottom();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
   };
 
   // Picking a template seeds the input and moves focus into the textarea so
@@ -482,172 +596,201 @@ export function StudioChat({
   const handlePickTemplate = useCallback((template: StudioTemplate) => {
     setInput(template.prompt);
     requestAnimationFrame(() => {
-      textareaRef.current?.focus();
+      composerRef.current?.focus();
       const len = template.prompt.length;
-      textareaRef.current?.setSelectionRange(len, len);
+      composerRef.current?.setSelectionRange(len, len);
     });
   }, []);
 
-  return (
-    <div
-      className={cn(
-        "flex flex-col h-full bg-background border border-border rounded-lg overflow-hidden",
-        className
-      )}
-    >
-      <div className="px-3 py-2 border-b border-border bg-muted/30 shrink-0 flex items-center justify-between gap-2">
-        <h2 className="text-xs font-medium tracking-wide text-muted-foreground flex items-center gap-1.5">
-          <Sparkles className="h-3 w-3" />
-          Ask Grade AI
-        </h2>
-        <SessionTokenTotal messages={messages as UIMessage[]} />
-      </div>
+  // Map the AI SDK's UIMessage[] into the DS's ChatMessage[] shape.
+  // - User prose has the "Here is the current component …" preamble
+  //   peeled back via `displayUserText` so the transcript reads clean.
+  // - Assistant prose has code fences stripped (the code is rendered
+  //   in the preview column, not the chat bubble).
+  // - `usage` and `refs` come from server-stamped metadata.
+  // - When an assistant turn produced a jsx/tsx block we surface a
+  //   "Rendered in preview →" action chip. It's a passive indicator
+  //   today (no onClick), but the slot is in place for future wiring.
+  const chatMessages = useMemo<ChatMessage[]>(() => {
+    // Find the index of the newest assistant message — needed so we
+    // can identify the one that's currently streaming (last assistant
+    // + isStreaming === in-progress) and, when
+    // `holdResponseUntilReady` is on, suppress it from the chat
+    // until the stream completes.
+    let lastAssistantIdx = -1;
+    for (let i = (messages as UIMessage[]).length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") {
+        lastAssistantIdx = i;
+        break;
+      }
+    }
 
-      {/* Messages list. Wrapped in the DS <ScrollArea> so the scrollbar
-          tracks design-system tokens (matches the rest of the app) instead
-          of falling back to the OS's native scrollbar — which on macOS
-          overlay-scrollbars mode is invisible until the user wheels, and
-          made the chat feel like a dead surface on first load. Radix
-          renders an internal viewport element that actually scrolls;
-          scrollToBottom() queries it via [data-radix-scroll-area-viewport].
-          data-lenis-prevent stops the global Lenis smooth-scroll from
-          hijacking wheel events inside this subtree. */}
-      <ScrollArea
-        ref={scrollRef}
-        className="flex-1 min-h-0"
-        data-lenis-prevent
-      >
-        <div className="p-3 md:p-4 space-y-4">
-          {/* Templates only render on a truly empty tab — no chat history
-              AND no seeded source. A scaffold-seeded tab (or a paste tab)
-              has something on screen already, so template suggestions
-              would iterate on top of it instead of seeding it, which is
-              never what the user meant. They can still start over by
-              opening a new tab from the StarterPicker. */}
-          {messages.length === 0 && !isStreaming && !currentCode && (
-            <EmptyState
-              templates={templates}
-              onPick={handlePickTemplate}
-            />
-          )}
+    const mapped: (ChatMessage | null)[] = (messages as UIMessage[]).map(
+      (m, idx) => {
+      const raw = textFromParts(m.parts as { type: string; text?: string }[]);
+      const isAssistant = m.role === "assistant";
+      const isInProgress =
+        isAssistant && idx === lastAssistantIdx && isStreaming;
+      // Hold the in-progress assistant turn until the stream
+      // completes — the chat then snaps to the final response in
+      // sync with the preview update, instead of streaming raw
+      // tokens past the user. Loading dots below the list +
+      // topbar live-elapsed counter keep "something's happening"
+      // legible during the wait.
+      if (isInProgress && holdResponseUntilReady) return null;
+      const content = isAssistant ? stripCodeBlocks(raw) : displayUserText(raw);
+      const usage = isAssistant ? usageFromMetadata(m.metadata) : null;
+      const refsInfo = isAssistant ? refsFromMetadata(m.metadata) : null;
+      // (The "Rendered in preview →" action chip was removed — it
+      // restated the tool's whole purpose. `latestJsxBlock` is still
+      // imported because the parent page consumes it for the preview
+      // update, not for any chip.)
 
-          {messages.map((msg) => {
-            const raw = textFromParts(msg.parts as any);
-            const usage = usageFromMetadata(msg.metadata);
-            const refsInfo = refsFromMetadata(msg.metadata);
-            return (
-              <MessageRow
-                key={msg.id}
-                role={msg.role as "user" | "assistant"}
-                text={raw}
-                usage={usage}
-                refsInfo={refsInfo}
-              />
-            );
-          })}
-
-          {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
-            <ThinkingIndicator />
-          )}
-
-          {error && (
-            <ErrorBanner
-              error={error}
-              provider={settings.provider}
-              model={settings.model}
-              onDismiss={() => setMessages(messages)}
-            />
-          )}
-        </div>
-      </ScrollArea>
-
-      <div className="border-t border-border p-2.5 bg-card shrink-0 space-y-2">
-        {/* Selection chip — sits above the textarea when the user has picked
-            an element in the preview via the Select tool. The chip's × clears
-            the selection without affecting the current input. */}
-        {selection && (
-          <SelectionChip
-            selection={selection}
-            onClear={() => onClearSelection?.()}
-          />
-        )}
-        {/* Settings panel — surfaces structured controls for the currently-
-            selected DS component, so the user can toggle a variant or flip a
-            boolean without round-tripping through the chat. Only renders when
-            the selection carries a componentName (i.e. we snapped to a
-            `data-gds-part`). Source mutations bubble up through
-            onSourceMutation so the preview HMRs to the patched App. Skipped
-            when the parent is rendering the panel elsewhere (docked in the
-            right column) so the user isn't looking at two copies. */}
-        {selection?.componentName && !settingsPanelDocked && (
-          <StudioSettingsPanel
-            selection={selection}
-            appSource={currentCode}
-            onSourceChange={(next) => onSourceMutation?.(next)}
-            onRequestDock={onRequestSettingsDock}
-          />
-        )}
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => {
-              // Belt-and-braces: <textarea maxLength> already blocks typing
-              // past the limit, but a paste event can deliver more chars in
-              // one go — slice here so the state never exceeds the limit.
-              const next = e.target.value;
-              setInput(
-                next.length > INPUT_CHAR_LIMIT
-                  ? next.slice(0, INPUT_CHAR_LIMIT)
-                  : next
-              );
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              currentCode
-                ? "Describe a change — e.g. 'make the button pill-shaped'"
-                : "Describe a UI…"
+      return {
+        id: m.id,
+        role: m.role === "user" ? "user" : "assistant",
+        content,
+        timestamp: new Date(),
+        usage: usage
+          ? {
+              input: usage.inputTokens,
+              output: usage.outputTokens,
+              total: usage.totalTokens,
             }
-            disabled={isStreaming}
-            rows={1}
-            maxLength={INPUT_CHAR_LIMIT}
-            className={cn(
-              "flex-1 resize-none rounded-md border border-input bg-background px-2.5 py-2",
-              "text-sm text-foreground placeholder:text-muted-foreground",
-              "focus:outline-none focus:ring-2 focus:ring-ring",
-              "disabled:opacity-50 overflow-y-auto"
-            )}
-            style={{ minHeight: 36, maxHeight: INPUT_MAX_HEIGHT_PX }}
+          : undefined,
+        // Drop refs entirely when the toggle was off (no "0 refs"
+        // chip in that case). When the toggle was on we always pass
+        // the array — empty renders as "0 refs", populated renders
+        // the comma list.
+        refs:
+          refsInfo && refsInfo.refsIncluded ? refsInfo.refs : undefined,
+        duration: durationsByMessageId[m.id],
+      };
+      }
+    );
+    return mapped.filter((m): m is ChatMessage => m !== null);
+  }, [messages, durationsByMessageId, isStreaming, holdResponseUntilReady]);
+
+  // Header token total — sums input + output + total across every
+  // assistant turn. Falls back to `input + output` when a provider
+  // didn't return a `totalTokens` value. Hidden in the header when
+  // no assistant turn has reported usage yet.
+  const sessionTokens = useMemo<number | undefined>(() => {
+    let inp = 0;
+    let out = 0;
+    let total = 0;
+    let seen = false;
+    for (const m of messages as UIMessage[]) {
+      if (m.role !== "assistant") continue;
+      const u = usageFromMetadata(m.metadata);
+      if (!u) continue;
+      seen = true;
+      if (typeof u.inputTokens === "number") inp += u.inputTokens;
+      if (typeof u.outputTokens === "number") out += u.outputTokens;
+      if (typeof u.totalTokens === "number") total += u.totalTokens;
+    }
+    if (!seen) return undefined;
+    return total || inp + out;
+  }, [messages]);
+
+  // Show the loading-dots indicator for the WHOLE stream, not just
+  // pre-first-token. The dots render below the most recent message,
+  // so during streaming they read as "more is coming" — without
+  // them, the chat goes visibly silent once a few tokens land,
+  // which felt dead during long turns. Named distinct from the
+  // `showThinking` prop (which controls per-message reasoning
+  // disclosures) so the two don't shadow each other.
+  const showLoadingIndicator = isStreaming;
+
+  return (
+    // The whole panel is now <AIChat> from the DS. Studio supplies:
+    //  - title + icon + headerTokens (running session total)
+    //  - mapped chatMessages with usage / refs / per-turn actions
+    //  - showUsage + showRefs flip the developer-transparency strips on
+    //    (these will become user-toggleable from Studio's settings panel
+    //    rather than always-on as they are today)
+    //  - the empty state (StudioTemplate cards) when truly blank
+    //  - the error banner via errorSlot
+    //  - SelectionChip + SelectionInspector via composerAboveSlot
+    //  - the composer itself (with maxLength + paste + Stop) via composerSlot
+    //  - the disclaimer + char counter via composerBelowSlot
+    <AIChat
+      title="Ask Grade AI"
+      headerTokens={sessionTokens}
+      messages={chatMessages}
+      isLoading={showLoadingIndicator}
+      thinkingPhrase={`${phrase}…`}
+      showUsage={showUsage}
+      showRefs={showRefs}
+      showActions={showActions}
+      showThinking={showThinking}
+      showSteps={showSteps}
+      showDuration={showDuration}
+      assistantBubble={assistantBubble}
+      className={cn("h-full", className)}
+      emptyStateSlot={
+        messages.length === 0 && !currentCode ? (
+          <EmptyState templates={templates} onPick={handlePickTemplate} />
+        ) : null
+      }
+      errorSlot={
+        error ? (
+          <ErrorBanner
+            error={error}
+            provider={settings.provider}
+            model={settings.model}
+            onDismiss={() => setMessages(messages)}
           />
-          {isStreaming ? (
-            <button
-              type="button"
-              onClick={() => stop()}
-              className="h-9 px-2.5 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-1 text-xs"
-            >
-              <Square className="h-3 w-3" />
-              Stop
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={!input.trim()}
-              className={cn(
-                "h-9 w-9 rounded-md flex items-center justify-center transition-colors",
-                input.trim()
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-muted text-muted-foreground cursor-not-allowed"
-              )}
-              aria-label="Send message"
-            >
-              <Send className="h-3.5 w-3.5" />
-            </button>
+        ) : null
+      }
+      composerAboveSlot={
+        <>
+          {selection && (
+            <SelectionChip
+              selection={selection}
+              onClear={() => onClearSelection?.()}
+            />
           )}
-        </div>
+          {selection?.componentName && !settingsPanelDocked && (
+            <SelectionInspector
+              selection={selection}
+              appSource={currentCode}
+              onSourceChange={(next) => onSourceMutation?.(next)}
+              onRequestDock={onRequestSettingsDock}
+            />
+          )}
+        </>
+      }
+      composerSlot={
+        <AIChatComposer
+          ref={composerRef}
+          value={input}
+          onChange={(next) => {
+            // Belt-and-braces: <textarea maxLength> already blocks typing
+            // past the limit, but a paste event can deliver more chars in
+            // one go — slice here so the state never exceeds the limit.
+            setInput(
+              next.length > INPUT_CHAR_LIMIT
+                ? next.slice(0, INPUT_CHAR_LIMIT)
+                : next
+            );
+          }}
+          onSend={handleSend}
+          isLoading={isStreaming}
+          onStop={() => stop()}
+          placeholder={
+            currentCode
+              ? "Describe a change — e.g. 'make the button pill-shaped'"
+              : "Describe a UI…"
+          }
+          maxLength={INPUT_CHAR_LIMIT}
+          showHint={false}
+        />
+      }
+      composerBelowSlot={
         <InputFooter charCount={input.length} limit={INPUT_CHAR_LIMIT} />
-      </div>
-    </div>
+      }
+    />
   );
 }
 
@@ -697,201 +840,6 @@ function displayUserText(text: string): string {
   return text;
 }
 
-function MessageRow({
-  role,
-  text,
-  usage,
-  refsInfo,
-}: {
-  role: "user" | "assistant";
-  text: string;
-  usage: MessageUsage | null;
-  refsInfo: RefsInfo | null;
-}) {
-  const prose = role === "assistant" ? stripCodeBlocks(text) : text;
-  const hasCode = role === "assistant" && /```(?:jsx|tsx)/.test(text);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn("flex", role === "user" && "flex-row-reverse")}
-    >
-      <div
-        className={cn(
-          "min-w-0 rounded-xl border px-3 py-2",
-          role === "user"
-            ? "bg-primary text-primary-foreground border-primary rounded-tr-sm max-w-[85%] ml-auto"
-            : "flex-1 bg-card border-border rounded-tl-sm"
-        )}
-      >
-        {role === "user" ? (
-          <p className="text-xs whitespace-pre-wrap">
-            {displayUserText(text)}
-          </p>
-        ) : (
-          <div className="space-y-1.5">
-            {prose ? (
-              <div className="prose prose-sm dark:prose-invert max-w-none text-xs [&_p]:my-1 [&_pre]:bg-muted [&_code]:text-foreground">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {prose}
-                </ReactMarkdown>
-              </div>
-            ) : null}
-            {hasCode && (
-              <div className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground">
-                <Code2 className="h-3 w-3" />
-                Rendered in preview →
-              </div>
-            )}
-            {(usage || refsInfo) && (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                {usage && <TokenBadge usage={usage} />}
-                {refsInfo && <RefsChip info={refsInfo} />}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
-/**
- * Header-level running total across every assistant message in the active
- * conversation. Sums input/output/total independently so partial reports
- * (e.g. a provider that only returns `totalTokens`) still contribute.
- */
-function SessionTokenTotal({ messages }: { messages: UIMessage[] }) {
-  let inp = 0;
-  let out = 0;
-  let total = 0;
-  let seen = false;
-  for (const m of messages) {
-    if (m.role !== "assistant") continue;
-    const u = usageFromMetadata(m.metadata);
-    if (!u) continue;
-    seen = true;
-    if (typeof u.inputTokens === "number") inp += u.inputTokens;
-    if (typeof u.outputTokens === "number") out += u.outputTokens;
-    if (typeof u.totalTokens === "number") total += u.totalTokens;
-  }
-  if (!seen) return null;
-  const fmt = new Intl.NumberFormat();
-  return (
-    <span
-      className="flex items-center gap-1 text-[10px] font-normal normal-case tracking-normal text-muted-foreground"
-      title={`Session totals — Input: ${fmt.format(inp)} · Output: ${fmt.format(out)} · Total: ${fmt.format(total)}`}
-    >
-      <Gauge className="h-2.5 w-2.5" />
-      {fmt.format(total || inp + out)} tokens
-    </span>
-  );
-}
-
-/**
- * Compact per-call token readout. Renders as a text-only row so it doesn't
- * compete with the message bubble's own chrome. Numbers are grouped with
- * `Intl.NumberFormat` for legibility at larger context windows.
- *
- * Uses semantic tokens (`text-muted-foreground`) rather than hard colours so
- * the badge inherits the current Grade theme — same story as the rest of the
- * studio sidebar.
- */
-function TokenBadge({ usage }: { usage: MessageUsage }) {
-  const fmt = (n: number | undefined) =>
-    typeof n === "number" ? new Intl.NumberFormat().format(n) : null;
-  const inp = fmt(usage.inputTokens);
-  const out = fmt(usage.outputTokens);
-  const total = fmt(usage.totalTokens);
-  return (
-    <div
-      className="flex items-center gap-1 pt-0.5 text-[10px] text-muted-foreground"
-      title={`Input: ${inp ?? "?"} · Output: ${out ?? "?"} · Total: ${total ?? "?"}`}
-    >
-      <Gauge className="h-2.5 w-2.5" />
-      {inp != null && <span>{inp} in</span>}
-      {inp != null && out != null && <span aria-hidden>·</span>}
-      {out != null && <span>{out} out</span>}
-      {total != null && (inp != null || out != null) && (
-        <span aria-hidden className="opacity-60">
-          ({total} total)
-        </span>
-      )}
-      {total != null && inp == null && out == null && <span>{total} tokens</span>}
-    </div>
-  );
-}
-
-/**
- * Compact "which component .md files did we read" readout — a sibling of
- * TokenBadge. Shows alongside the token count so the user can answer two
- * questions at a glance: "how much did this cost?" and "what reference
- * material did the model see?".
- *
- * Three rendered states, matching server meaning:
- *   - toggle OFF         → muted "refs off" chip. Confirms the toggle is
- *                          doing what the user expects (no token spend on
- *                          refs) even when the answer is nominally good.
- *   - toggle ON, 0 hits  → "0 refs" chip. Most common on first-turn prompts
- *                          like "make me a login form" where no component
- *                          name has been mentioned yet; useful signal that
- *                          the next iteration might see refs once the
- *                          assistant's code introduces component names.
- *   - toggle ON, N hits  → "N refs: Button, Dialog, …" with a tooltip
- *                          listing every file that was pulled in verbatim.
- *
- * Intentionally monochrome (muted-foreground) so it doesn't compete with
- * the message content — this is a developer transparency affordance, not a
- * status badge.
- */
-function RefsChip({ info }: { info: RefsInfo }) {
-  const { refs, refsIncluded } = info;
-  const fmt = new Intl.NumberFormat();
-  if (!refsIncluded) {
-    return (
-      <div
-        className="flex items-center gap-1 pt-0.5 text-[10px] text-muted-foreground opacity-70"
-        title="Component reference toggle is OFF — no .md files were appended to the system prompt for this turn."
-      >
-        <BookOpen className="h-2.5 w-2.5" />
-        <span>refs off</span>
-      </div>
-    );
-  }
-  if (refs.length === 0) {
-    return (
-      <div
-        className="flex items-center gap-1 pt-0.5 text-[10px] text-muted-foreground"
-        title="No component .md files matched this turn — the conversation didn't mention any component names yet."
-      >
-        <BookOpen className="h-2.5 w-2.5" />
-        <span>0 refs</span>
-      </div>
-    );
-  }
-  // Render every loaded ref inline. The list can get long on rich prompts
-  // but transparency beats tidiness here — the whole point of the chip is
-  // to show exactly which .md files paid tokens. `flex-wrap` on the outer
-  // container handles overflow by line-breaking rather than clipping.
-  return (
-    <div
-      className="flex flex-wrap items-center gap-x-1 gap-y-0 pt-0.5 text-[10px] text-muted-foreground leading-relaxed"
-      title={`Loaded ${fmt.format(refs.length)} component .md ${
-        refs.length === 1 ? "file" : "files"
-      } for this turn:\n  ${refs.join(", ")}`}
-    >
-      <BookOpen className="h-2.5 w-2.5 shrink-0" />
-      <span>
-        {fmt.format(refs.length)} {refs.length === 1 ? "ref" : "refs"}
-      </span>
-      <span aria-hidden className="opacity-60">
-        :
-      </span>
-      <span className="opacity-80 break-words">{refs.join(", ")}</span>
-    </div>
-  );
-}
 
 /**
  * Presentational error banner used by the chat column. Pulls the raw
@@ -938,42 +886,6 @@ function ErrorBanner({
       >
         Dismiss
       </button>
-    </div>
-  );
-}
-
-function ThinkingIndicator() {
-  // Pulls from the shared phrase pool so the chat and the preview's bundling
-  // dialog feel like one continuous loading state rather than two unrelated
-  // spinners. Each surface owns its own rotation cadence (independent state)
-  // — that's fine, they're rarely visible at the same time anyway.
-  const phrase = useRotatingPhrase();
-  return (
-    <div className="rounded-xl rounded-tl-sm border border-border bg-card px-3 py-2 w-fit">
-      <div className="flex items-center gap-1.5">
-        <div className="flex gap-0.5">
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
-              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
-              className="w-1 h-1 rounded-full bg-primary"
-            />
-          ))}
-        </div>
-        <AnimatePresence mode="wait">
-          <motion.span
-            key={phrase}
-            initial={{ opacity: 0, y: 3 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -3 }}
-            transition={{ duration: 0.18 }}
-            className="text-[11px] text-muted-foreground"
-          >
-            {phrase}…
-          </motion.span>
-        </AnimatePresence>
-      </div>
     </div>
   );
 }
@@ -1070,23 +982,42 @@ function SelectionChip({
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10",
-        "px-2 py-0.5 text-[11px] text-primary-foreground w-fit max-w-full",
+        // Studio-accent (not theme primary) so the selection chip
+        // stays consistent across theme switches and reads as
+        // tool chrome rather than competing with the design's own
+        // brand colour.
+        "flex items-center gap-1.5 rounded-full border border-studio-accent/30 bg-studio-accent/10",
+        "px-2 py-0.5 text-[11px] w-fit max-w-full",
         "text-foreground"
       )}
       title={title}
     >
-      <MousePointerClick className="h-3 w-3 shrink-0 text-primary" />
+      <MousePointerClick className="h-3 w-3 shrink-0 text-studio-accent" />
       <span
         className={cn(
           "font-mono shrink-0",
           hasComponent
-            ? "text-[11px] font-medium text-primary"
+            ? "text-[11px] font-medium text-studio-accent"
             : "text-[10px] opacity-70"
         )}
       >
         &lt;{hasComponent ? selection.componentName : selection.tag}&gt;
       </span>
+      {/* Source-id badge — the stable identifier of the clicked JSX
+          node, captured at click time from `data-gds-source-id` and
+          used by the mutator to target the exact instance. Visible
+          here so it's obvious that (a) injection ran (badge present
+          = working), and (b) selecting different instances changes
+          the id (badge value flips). Looped iterations from one
+          source node will share an id — that's by design. */}
+      {hasComponent && selection.sourceId !== undefined && (
+        <span
+          className="text-[10px] opacity-60 font-mono shrink-0"
+          title={`Source ID: ${selection.sourceId}`}
+        >
+          #{selection.sourceId}
+        </span>
+      )}
       {!hasComponent && selection.text && (
         <span className="truncate min-w-0 opacity-90" title={selection.text}>
           &ldquo;{selection.text}&rdquo;
@@ -1096,7 +1027,7 @@ function SelectionChip({
         type="button"
         onClick={onClear}
         aria-label={`Clear selection: ${label}`}
-        className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors shrink-0"
+        className="ml-0.5 rounded-full p-0.5 hover:bg-studio-accent/20 transition-colors shrink-0"
       >
         <X className="h-3 w-3" />
       </button>

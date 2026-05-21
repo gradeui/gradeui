@@ -34,12 +34,27 @@ export interface ResolveRightPanelStageArgs {
  * always returns the same output. Easy to unit-test.
  *
  * Precedence:
- *   1. A DS component selected wins over everything else (Stage C/D).
+ *   1. ANY actionable selection wins over everything else (Stage C/D).
  *      The user explicitly pointed at something; the panel should
- *      respond to that.
+ *      respond to that — even when the selected element is a plain
+ *      intrinsic like `<h1>` / `<button>` that carries no DS
+ *      componentName, just a `sourceId` + `tag`. The SelectionInspector
+ *      itself is happy with either (its bail-out is
+ *      `!(componentName && part) && !sourceId`); the resolver needs
+ *      to mirror that so h1/h2/h3/button selections actually land on
+ *      the inspector instead of falling through to Stage B's
+ *      "nothing selected" view.
  *   2. Otherwise, an empty-or-trivial design routes to Stage A so the
  *      starter picker is visible.
  *   3. Anything else falls through to Stage B.
+ *
+ * "Actionable" means the SelectionInspector has something it can hang
+ * controls on:
+ *   - `componentName` — a DS-registered component (drives manifest /
+ *     contract sections).
+ *   - `sourceId` — a stamped JSX node, even if it's not a DS component
+ *     (drives Layer Name + Text + Spacing controls for raw
+ *     intrinsics).
  */
 export function resolveRightPanelStage({
   appSource,
@@ -47,6 +62,13 @@ export function resolveRightPanelStage({
 }: ResolveRightPanelStageArgs): RightPanelStage {
   if (selection?.componentName) {
     return isLayoutPrimitiveName(selection.componentName) ? "D" : "C";
+  }
+  // No componentName, but a sourceId means it's a text-bearing
+  // intrinsic (h1/h2/.../button/label/p/etc.) the user picked
+  // directly. Route to C — the inspector handles intrinsics in the
+  // same panel shell as DS components; no separate stage needed.
+  if (selection?.sourceId) {
+    return "C";
   }
   if (isEmptyDesign(appSource)) {
     return "A";

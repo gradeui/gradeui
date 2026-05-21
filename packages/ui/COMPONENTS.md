@@ -29,6 +29,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | Slider | `slider.tsx` | none — track h-2 thumb 20×20 | ✅ | |
 | Toggle | `toggle.tsx` | `variant` (default/outline), `size` (default/sm/lg) | ⚠️ | Figma covers default size only |
 | ToggleGroup / ToggleGroupItem | `toggle-group.tsx` | inherits Toggle variants | ✅ | type=single/multiple |
+| Toolbar / ToolbarSlot | `toolbar.tsx` | `position` (top/bottom/inline), `variant` (default/subtle/transparent), `size` (sm/md/lg), `sticky` | — | Slot-based: `leading` / `center` / `trailing` props. Apple HIG "Toolbar". Reach for instead of `Row justify="between"` + manual flex-1 middle. Use inside AppShellHeader for window chrome; standalone for section / bottom action toolbars. |
 
 ## Surfaces & feedback
 

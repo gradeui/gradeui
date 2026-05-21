@@ -322,7 +322,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Strip non-text UI parts from the history before conversion.
+    // Strip non-allowlisted UI parts from the history before conversion.
     //
     // Reasoning models (e.g. Groq's `openai/gpt-oss-120b`) emit `reasoning`
     // parts alongside `text` during the assistant turn. Those parts get
@@ -333,14 +333,17 @@ export async function POST(req: Request) {
     // fields" — it only accepts plain text (and image) content on input,
     // even though it happily emits reasoning on output.
     //
-    // We're a text-only chat surface, so keeping only `text` parts is safe
-    // across every provider and silently drops anything exotic a future
-    // reasoning/tool-call model might introduce. If we ever add file
-    // uploads, extend the allow-list with `"file"` / `"image"`.
+    // Allow-list: text (every provider) and file/image (vision-capable
+    // providers — Anthropic, OpenAI 4o/4.1+, Google Gemini, etc.). File
+    // parts come in as `{ type: "file", mediaType, url }` where `url`
+    // is a data URL or remote URL; convertToModelMessages forwards them
+    // unchanged. A provider that doesn't support vision will error on
+    // the file part; that's the right failure mode (visible, not silent).
     const sanitized = messages.map((m) => ({
       ...m,
       parts: (m.parts ?? []).filter(
-        (p: { type?: string }) => p?.type === "text"
+        (p: { type?: string }) =>
+          p?.type === "text" || p?.type === "file"
       ),
     })) as UIMessage[];
     const modelMessages = await convertToModelMessages(sanitized);

@@ -40,8 +40,23 @@ export const ToggleGroupContract = contract({
       description: "cascades to every ToggleGroupItem via context, matches Tabs/Button heights",
   },
   "variant": {
+      schema: z.enum(["default", "outline"]).optional(),
+      design: "knob",
+  },
+  "tooltip": {
       schema: z.unknown().optional(),
       design: "plumbing",
+      description: "when set, wraps the item in a Tooltip; required for icon-only items where the visible chrome doesn't carry a label",
+  },
+  "tooltipSide": {
+      schema: z.enum(["top", "right", "bottom", "left\", default \"top"]).optional(),
+      design: "knob",
+      description: "side the tooltip renders on",
+  },
+  "tooltipDelay": {
+      schema: z.number().optional(),
+      design: "knob",
+      description: "per-item delay override; falls back to the upstream TooltipProvider's delayDuration",
   },
   },
 });

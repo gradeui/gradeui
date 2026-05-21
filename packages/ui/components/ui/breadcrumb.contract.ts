@@ -20,6 +20,11 @@ export const BreadcrumbContract = contract({
       design: "plumbing",
       description: "passed to the underlying <nav>",
   },
+  "separator": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "**tree-wide default** for every <BreadcrumbSeparator/> inside. Pass a string (\"/\", \"›\", \"•\"), a lucide icon (`<Slash/>`, `<ChevronRight/>`), or any ReactNode. Default: `<ChevronRight/>`. Set once on the root; every separator below picks it up via context.",
+  },
   "className": {
       schema: z.unknown().optional(),
       design: "plumbing",
@@ -33,7 +38,7 @@ export const BreadcrumbContract = contract({
   "children": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "the visual separator between crumbs",
+      description: "per-instance override of the separator glyph. When set, beats the root's `separator` prop for this one slot. When not set, falls back to the root's `separator`, then to `<ChevronRight/>`.",
   },
   },
 });

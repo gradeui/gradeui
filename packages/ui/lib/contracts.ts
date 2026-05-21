@@ -8,6 +8,7 @@
 import type { ComponentContract } from "@gradeui/contracts";
 import { AccordionContract } from "../components/ui/accordion.contract";
 import { AiChatContract } from "../components/ui/ai-chat.contract";
+import { AiChatComposerContract } from "../components/ui/ai-chat-composer.contract";
 import { AppShellContract } from "../components/ui/app-shell.contract";
 import { AvatarContract } from "../components/ui/avatar.contract";
 import { BadgeContract } from "../components/ui/badge.contract";
@@ -57,12 +58,14 @@ import { ThreeSceneContract } from "../components/ui/three-scene.contract";
 import { ToastContract } from "../components/ui/toast.contract";
 import { ToggleContract } from "../components/ui/toggle.contract";
 import { ToggleGroupContract } from "../components/ui/toggle-group.contract";
+import { ToolbarContract } from "../components/ui/toolbar.contract";
 import { TooltipContract } from "../components/ui/tooltip.contract";
 import { VideoPlayerContract } from "../components/ui/video-player.contract";
 
 export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = {
   Accordion: AccordionContract,
   AiChat: AiChatContract,
+  AiChatComposer: AiChatComposerContract,
   AppShell: AppShellContract,
   Avatar: AvatarContract,
   Badge: BadgeContract,
@@ -112,6 +115,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Toast: ToastContract,
   Toggle: ToggleContract,
   ToggleGroup: ToggleGroupContract,
+  Toolbar: ToolbarContract,
   Tooltip: TooltipContract,
   VideoPlayer: VideoPlayerContract,
 };

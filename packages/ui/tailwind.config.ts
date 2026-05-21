@@ -19,6 +19,16 @@ const config: Config = {
     "./components/**/*.{ts,tsx}",
     "./lib/**/*.{ts,tsx}",
     "./styles/**/*.css",
+    // Playground scaffolds — siloed dev-only set rendered by Studio's
+    // Playground tab. Scanning them here means arbitrary Tailwind
+    // values (`h-[600px]`, `md:grid-cols-[minmax(0,440px)_1fr]`, etc.)
+    // get compiled into dist/styles.css — the bundle Fast Frame loads
+    // in its iframe. Without this, arbitrary classes would be present
+    // in the JSX but generate no CSS rules. Screenshot-driven
+    // playgrounds need exact pixel measurements during the first pass;
+    // discipline-driven curated scaffolds in ../scaffolds/ should
+    // refactor away from arbitrary values before graduating.
+    "../studio/src/playbook/layouts/scaffolds-playground/*.{jsx,tsx}",
   ],
 };
 

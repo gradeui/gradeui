@@ -60,6 +60,40 @@ export interface StudioSelection {
    *  Used by the settings panel to find the matching data-array entry
    *  in the JSX and mutate per-item rather than per-template. */
   instanceId?: string;
+  /** Stable JSX-node identifier auto-injected at `prepareAppSource`
+   *  time as `data-gds-source-id="N"`. Identifies WHICH JSX opening
+   *  tag in the source rendered this DOM element — robust across
+   *  loops, where many DOM nodes share a single source node. The
+   *  mutator finds the JSX tag by this id instead of counting
+   *  document-order matches (which broke for `.map()` loops). All
+   *  rendered iterations of one looped JSX node share the same
+   *  sourceId; their `instanceId` differentiates them within the
+   *  list. Undefined for ad-hoc clicks where the injection pass
+   *  hasn't run (e.g. `<div>` and other non-PascalCase tags). */
+  sourceId?: string;
+  /** Ancestor chain captured at click time, root → target. The last
+   *  entry is the currently-selected element itself. The Selection
+   *  inspector renders this as a clickable breadcrumb so the user
+   *  can jump to any ancestor with one click — addresses the
+   *  "I keep clicking the wrong nested Stack" pain point. Walk stops
+   *  at the layout shell (any `data-gds-part="app-shell-*"`) so it
+   *  doesn't include Studio chrome. */
+  chain?: SelectionChainSegment[];
+}
+
+/** One step in the ancestor chain. The inspector renders these as
+ *  small buttons labelled `Stack [34]`; clicking one re-selects the
+ *  matching element via the iframe's `grade:select-by-source-id`
+ *  message. */
+export interface SelectionChainSegment {
+  sourceId: string;
+  tag: string;
+  componentName?: string;
+  instanceId?: string;
+  /** User-supplied layer name from `data-gds-name`. The path bar
+   *  uses this as the primary label when set, falling back to
+   *  `componentName`/`tag`. */
+  name?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -68,11 +102,43 @@ export interface StudioSelection {
 
 /**
  * Heuristic: a "complete enough to render" JSX block ends with a closing
- * `}` or `)` on its own line. If it doesn't, assume it's still streaming.
- * Shared between DesignPreview (/chat) and StudioPreview (/studio).
+ * `}` or `)` once trailing comments + whitespace are stripped. If it
+ * doesn't, assume it's still streaming. Shared between DesignPreview
+ * (/chat) and StudioPreview (/studio).
+ *
+ * Why strip trailing comments: a perfectly valid file can end with a
+ * `// ...` explanatory block or a `/* ... *\/` JSDoc footer. Without
+ * the strip, those files trip the heuristic ("last char is a letter,
+ * not `}` or `)`") and the canvas falls back to the "Empty screen"
+ * overlay even though the JS is parseable. The playground scaffolds
+ * each carry a "DS gaps surfaced" comment block at the end; pre-fix,
+ * none of them rendered in the focused preview. Same risk for any
+ * hand-authored scaffold that ends with a note.
  */
 export function looksComplete(code: string): boolean {
-  const trimmed = code.trimEnd();
+  let trimmed = code.trimEnd();
+  // Peel trailing line / block comments + whitespace, one comment at a
+  // time, until we hit something that isn't a comment. Cheap loop;
+  // scaffolds rarely end with more than a handful of comment lines.
+  let prev = "";
+  while (trimmed && trimmed !== prev) {
+    prev = trimmed;
+    // Trailing line comment — match the last `// …` segment to EOF
+    // (no trailing newline by this point because of trimEnd).
+    const lineComment = /(^|\n)[ \t]*\/\/[^\n]*$/.exec(trimmed);
+    if (lineComment) {
+      trimmed = trimmed.slice(0, lineComment.index).trimEnd();
+      continue;
+    }
+    // Trailing block comment — find the matching `/*` looking backwards.
+    if (trimmed.endsWith("*/")) {
+      const openIdx = trimmed.lastIndexOf("/*", trimmed.length - 2);
+      if (openIdx >= 0) {
+        trimmed = trimmed.slice(0, openIdx).trimEnd();
+        continue;
+      }
+    }
+  }
   if (!trimmed) return false;
   const last = trimmed[trimmed.length - 1];
   return last === "}" || last === ")";
@@ -281,6 +347,15 @@ export function prepareAppSource(code: string): string {
   const trimmed = repaired.trim();
   if (!trimmed) return `export default function App() { return null }`;
 
+  // Final pipeline tail: media attrs first (existing), then source-id
+  // injection (new). Source-id stamps every PascalCase JSX opening
+  // tag with `data-gds-source-id="N"`, monotonically. The selection
+  // agent reads it on click, and the mutator finds the matching JSX
+  // tag in source — robust across `.map()` loops where one source
+  // node renders many DOM elements (they all share the same id).
+  const finalise = (src: string): string =>
+    injectSourceIds(injectMediaSourceAttrs(src));
+
   // Already a proper module — leave alone…ish. Still run the media-
   // source-attr injection so the iframe's `@gradeui/ui@<npm>` MediaSurface
   // (which doesn't yet emit `data-media-source` natively) gets the
@@ -288,7 +363,7 @@ export function prepareAppSource(code: string): string {
   // for the why; the transform is idempotent and a no-op on screens
   // with no MediaSurfaces.
   if (/export\s+default\s+/.test(trimmed)) {
-    return injectMediaSourceAttrs(trimmed);
+    return finalise(trimmed);
   }
 
   // Bare JSX expression — wrap it in a component.
@@ -297,17 +372,178 @@ export function prepareAppSource(code: string): string {
       .split("\n")
       .map((l) => "    " + l)
       .join("\n")}\n  )\n}`;
-    return injectMediaSourceAttrs(wrapped);
+    return finalise(wrapped);
   }
 
   // Named function — append default export.
   const fnMatch = trimmed.match(/function\s+([A-Z][A-Za-z0-9_]*)/);
   if (fnMatch) {
-    return injectMediaSourceAttrs(`${trimmed}\n\nexport default ${fnMatch[1]}`);
+    return finalise(`${trimmed}\n\nexport default ${fnMatch[1]}`);
   }
 
   // Fallback: wrap whatever we got.
-  return injectMediaSourceAttrs(`${trimmed}\n\nexport default App`);
+  return finalise(`${trimmed}\n\nexport default App`);
+}
+
+/**
+ * Inject `data-gds-source-id="N"` onto every PascalCase JSX opening
+ * tag in `source`, with a monotonic counter starting at 0. The id
+ * uniquely identifies the JSX node in source — so the selection
+ * mutator can find "the Stack you clicked" by id instead of by
+ * counting matches (which broke for loops, where one source node
+ * renders many DOM nodes that all need to share one id).
+ *
+ * Idempotency: when a tag already has a `data-gds-source-id`, the
+ * existing value is preserved and the counter is advanced past it
+ * so newly-injected ids stay unique.
+ *
+ * Caveats:
+ *   - We use a regex tag scanner that mirrors `findComponentOpenTag`'s
+ *     name pattern + brace/string-aware attrs walk. Strings or
+ *     comments containing `<Foo>`-like substrings could be falsely
+ *     matched — same vulnerability as the rest of the mutator stack,
+ *     and rare in real assistant output.
+ *   - PascalCase only — `<div>` and friends are skipped, which is
+ *     what we want (the inspector only operates on DS components).
+ */
+export function injectSourceIds(source: string): string {
+  // Match every JSX/HTML opening tag — both PascalCase DS components
+  // (<Stack>, <Card>) AND lowercase HTML tags (<div>, <section>).
+  // The expanded match is what lets the inspector edit raw <div>s
+  // via the Spacing & layout controls, which is the v1 escape
+  // hatch when the assistant still emits Tailwind soup instead of
+  // a DS primitive.
+  //
+  // The `[A-Za-z]` first-char filter intentionally excludes `<!`
+  // (HTML comments, doctypes) and the angle-brackets-in-string
+  // false-positives the rest of the mutator stack tolerates.
+  const tagPattern = /<([A-Za-z][A-Za-z0-9_]*)(?=[\s/>])/g;
+  const pieces: string[] = [];
+  let pos = 0;
+  let counter = 0;
+  const len = source.length;
+  let match: RegExpExecArray | null;
+  // Tracks every source-id observed during THIS pass so we can
+  // detect collisions. If the model regenerates a turn and copies
+  // a chunk of source verbatim (with its existing
+  // `data-gds-source-id="N"` attribute), the duplicate node would
+  // otherwise sail through the idempotency check and the sibling-
+  // overlay query would then match across unrelated JSX nodes —
+  // the "two distinct nodes look selected at once" bug. When we
+  // see a collision, treat the offending tag as id-less and
+  // assign a fresh one.
+  const seenIds = new Set<string>();
+
+  while ((match = tagPattern.exec(source)) !== null) {
+    const tagStart = match.index;
+    const componentName = match[1];
+    const attrsStart = tagStart + 1 + componentName.length;
+
+    // Walk forward to the `>` that closes this opening tag, skipping
+    // strings and JSX expression depth — same logic as
+    // `findComponentOpenTag` in studio-source-mutator.ts. Anything
+    // unterminated, we bail on quietly and leave the tag alone.
+    let j = attrsStart;
+    let depth = 0;
+    let inString: '"' | "'" | "`" | null = null;
+    let escaped = false;
+    let tagEnd = -1;
+    while (j < len) {
+      const ch = source[j];
+      if (escaped) {
+        escaped = false;
+        j++;
+        continue;
+      }
+      if (inString) {
+        if (ch === "\\") escaped = true;
+        else if (ch === inString) inString = null;
+        j++;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === "`") {
+        inString = ch;
+        j++;
+        continue;
+      }
+      if (ch === "{") {
+        depth++;
+        j++;
+        continue;
+      }
+      if (ch === "}") {
+        depth = Math.max(0, depth - 1);
+        j++;
+        continue;
+      }
+      if (depth === 0 && ch === ">") {
+        tagEnd = j;
+        break;
+      }
+      j++;
+    }
+    if (tagEnd === -1) continue;
+
+    const attrsText = source.slice(attrsStart, tagEnd);
+
+    // Idempotent: preserve any pre-existing id and advance the
+    // counter past it so subsequent injections stay unique.
+    //
+    // Collision handling: if the same id has already been seen
+    // this pass, the model duplicated a chunk of source. We can't
+    // safely preserve the duplicate (it would break the
+    // sourceId → JSX-node-uniqueness contract the sibling-overlay
+    // query relies on). Rewrite the duplicate tag's id by
+    // stripping the stale attribute from this tag's slice and
+    // injecting a fresh one in the regular splice path below.
+    const existing = attrsText.match(
+      /data-gds-source-id\s*=\s*["']([^"']+)["']/
+    );
+    if (existing) {
+      const id = existing[1];
+      if (!seenIds.has(id)) {
+        seenIds.add(id);
+        const existingNum = Number(id);
+        if (Number.isFinite(existingNum) && existingNum >= counter) {
+          counter = existingNum + 1;
+        }
+        continue;
+      }
+      // Collision — strip the duplicated attribute (and its
+      // leading whitespace) from this tag's attrs before
+      // splicing in a new id. We emit the source up to
+      // `attrsStart`, then the new attr, then we'll need to skip
+      // over the stale attr in the next emit. Easiest path: emit
+      // the cleaned attrs span explicitly here and advance `pos`
+      // past the closing tag entirely so the next iteration
+      // doesn't re-emit the stale id.
+      const cleanedAttrs = attrsText.replace(
+        /\s*data-gds-source-id\s*=\s*["'][^"']+["']/,
+        ""
+      );
+      const newId = String(counter++);
+      seenIds.add(newId);
+      pieces.push(source.slice(pos, attrsStart));
+      pieces.push(` data-gds-source-id="${newId}"`);
+      pieces.push(cleanedAttrs);
+      pieces.push(source[tagEnd]); // the `>` itself
+      pos = tagEnd + 1;
+      continue;
+    }
+
+    // Splice ` data-gds-source-id="N"` immediately after the
+    // component name. Emit everything from the last cursor position
+    // through `attrsStart` unchanged, then the new attribute, then
+    // bump the cursor.
+    const newId = String(counter++);
+    seenIds.add(newId);
+    pieces.push(source.slice(pos, attrsStart));
+    pieces.push(` data-gds-source-id="${newId}"`);
+    pos = attrsStart;
+  }
+
+  pieces.push(source.slice(pos));
+  return pieces.join("");
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -1069,6 +1305,54 @@ button, input, optgroup, select, textarea {
 .bg-destructive-soft { background-color: oklch(var(--destructive-soft)); }
 .text-destructive-deep { color: oklch(var(--destructive-deep)); }
 .border-destructive\\/30 { border-color: oklch(var(--destructive) / 0.3); }
+
+/* Opacity scale — safelisted because the Studio inspector edits these
+   tokens at runtime (the Appearance group's Opacity dropdown), and
+   the Play CDN's JIT scan can race the React re-render that injects
+   a new className. Pre-emitting every step of OPACITY_SCALE means
+   the rule is already in the cascade when the new class lands, so
+   the first pick visibly fades the element instead of waiting for
+   the next scan tick. Add a new scale entry → add a new line here. */
+.opacity-0 { opacity: 0; }
+.opacity-5 { opacity: 0.05; }
+.opacity-10 { opacity: 0.1; }
+.opacity-20 { opacity: 0.2; }
+.opacity-30 { opacity: 0.3; }
+.opacity-40 { opacity: 0.4; }
+.opacity-50 { opacity: 0.5; }
+.opacity-60 { opacity: 0.6; }
+.opacity-70 { opacity: 0.7; }
+.opacity-80 { opacity: 0.8; }
+.opacity-90 { opacity: 0.9; }
+.opacity-100 { opacity: 1; }
+
+/* Font weight scale — same safelist reasoning as Opacity above. The
+   Appearance group's Font weight dropdown writes font-{thin..black}
+   onto a heading or Button at runtime; pre-emitting every value
+   stops the JIT race from making the first pick look like a no-op. */
+.font-thin { font-weight: 100; }
+.font-extralight { font-weight: 200; }
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.font-extrabold { font-weight: 800; }
+.font-black { font-weight: 900; }
+
+/* Font size scale — same safelist reasoning. The Appearance group's
+   Font size dropdown writes text-{xs..5xl} onto a heading at
+   runtime. Values lifted from Tailwind's default scale (rem × 1rem
+   = 16px) plus matching line-heights. */
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-base { font-size: 1rem; line-height: 1.5rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+.text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+.text-5xl { font-size: 3rem; line-height: 1; }
 
 /* Interactive-state fallbacks — Tailwind CDN's JIT scanner misses classes
    inside cva() template strings (same failure mode as the base-color

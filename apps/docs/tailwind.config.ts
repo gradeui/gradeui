@@ -29,6 +29,12 @@ const config: Config = {
     // zero rules attached — most visibly: `pl-7` collapsing to 0px
     // padding-left so the search icon overlaps the placeholder.
     "../../packages/studio/src/playbook/layouts/scaffolds/*.{jsx,tsx}",
+    // Playground scaffolds — siloed dev-only set rendered by the
+    // StarterPicker's Playground tab. Scanned so arbitrary Tailwind
+    // values (`h-[600px]`, `md:grid-cols-[…]`) work, since the whole
+    // point of this folder is screenshot-faithful prototypes that
+    // often need exact pixel measurements during the first pass.
+    "../../packages/studio/src/playbook/layouts/scaffolds-playground/*.{jsx,tsx}",
     "../../packages/studio/src/playbook/templates/*.{ts,tsx}",
   ],
   theme: {
@@ -165,6 +171,16 @@ const config: Config = {
         primary: {
           DEFAULT: "oklch(var(--primary) / <alpha-value>)",
           foreground: "oklch(var(--primary-foreground) / <alpha-value>)",
+        },
+        // Studio-only accent — used by the preview selection ring,
+        // the SelectionChip in the chat composer, and any other
+        // tool affordance that should NOT shift with the active
+        // design theme. Defined in globals.css as
+        // `--studio-accent: 0.62 0.18 264`.
+        "studio-accent": {
+          DEFAULT: "oklch(var(--studio-accent) / <alpha-value>)",
+          foreground:
+            "oklch(var(--studio-accent-foreground) / <alpha-value>)",
         },
         secondary: {
           DEFAULT: "oklch(var(--secondary) / <alpha-value>)",

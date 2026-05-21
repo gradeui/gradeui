@@ -68,6 +68,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button"
     return (
       <Comp
+        // `data-gds-part="button"` is the identity attribute Studio's
+        // selection agent looks for to map a click to a DS component.
+        // Without it, clicking a Button (or anything inside it — the
+        // common case is a Lucide icon child) ends up selecting the
+        // inner SVG instead, and the inspector can't load the Button
+        // contract because there's no componentName to look up.
+        data-gds-part="button"
         className={cn("rds-button", buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}

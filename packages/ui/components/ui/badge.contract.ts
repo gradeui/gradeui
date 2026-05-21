@@ -19,8 +19,8 @@ export const BadgeContract = contract({
       design: "knob",
   },
   "rounded": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
+      schema: z.enum(["default", "full"]).optional(),
+      design: "knob",
       description: "\"full\" gives a pill shape",
   },
   },

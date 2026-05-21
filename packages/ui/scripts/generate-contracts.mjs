@@ -207,7 +207,18 @@ function parsePropSignature(line) {
     description = raw.slice(splitIdx + 3).trim();
   }
 
-  // Pull (default X) out.
+  // Pull (default X) out. Guarded against enum tails whose first
+  // option literally starts with "default" — e.g.
+  // `variant? (default | destructive | outline | …)`. The extractor
+  // would otherwise consume the whole `(default | … | …)` paren
+  // group, leave `variant?` with an empty tail, and fall through to
+  // `z.unknown()` / `design: "plumbing"` — silently hiding the prop
+  // from the Studio inspector.
+  //
+  // Rule: a real "(default X)" annotation has a single value between
+  // the open paren and close paren. A `|` inside the parens means
+  // we're looking at an enum, not a default annotation — abort the
+  // extraction and let the enum branch downstream pick it up.
   let defaultValue;
   const defIdx = head.toLowerCase().lastIndexOf("(default");
   if (defIdx !== -1) {
@@ -225,8 +236,14 @@ function parsePropSignature(line) {
       }
     }
     if (end !== -1) {
-      defaultValue = head.slice(defIdx + "(default".length, end).trim();
-      head = (head.slice(0, defIdx) + head.slice(end + 1)).trim();
+      const candidate = head.slice(defIdx + "(default".length, end).trim();
+      // Pipe inside the parens → this is an enum tail, not a
+      // default annotation. Leave `head` untouched so the enum
+      // branch can pick the (...) up later.
+      if (!candidate.includes("|")) {
+        defaultValue = candidate;
+        head = (head.slice(0, defIdx) + head.slice(end + 1)).trim();
+      }
     }
   }
 

@@ -39,22 +39,26 @@
  *   - Notes — per-design free-form text, owned by `notesByDesign`
  *     here and threaded down.
  *
- * Dev-only toggles (renderer, user tier) live behind a gear-icon
- * popover in the chrome (`StudioSettingsPopover`).
+ * Session-level settings (provider/model picker, theme + light/dark
+ * mode, AI chat display toggles, dev toggles, version line) live
+ * behind a gear icon in the topbar that opens `<StudioSettings>` —
+ * a right-side Sheet. The topbar itself is intentionally near-empty;
+ * everything else has been pulled out of the chrome.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UIMessage } from "ai";
-import {
-  ProviderPicker,
-  useChatSettings,
-} from "@/components/ai-elements/provider-picker";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { GradeThemeSwitcher } from "@/components/grade-theme-switcher";
+import { Loader2 } from "lucide-react";
+import { useChatSettings } from "@/components/ai-elements/provider-picker";
 import { StudioChat } from "@/components/studio/studio-chat";
 import { StudioCanvas } from "@/components/studio/studio-canvas";
 import { StudioRightTabs } from "@/components/studio/studio-right-tabs";
-import { StudioSettingsPopover } from "@/components/studio/studio-settings-popover";
+import {
+  StudioSettings,
+  StudioSettingsTrigger,
+  type RendererMode,
+  type UserTier,
+} from "@/components/studio/studio-settings";
 import { useGradeTheme } from "@/components/grade-theme-provider";
 import {
   ThemeBuilderProvider,
@@ -319,10 +323,66 @@ export default function StudioPage() {
   // userTier: placeholder for visibility-gated UI. No consumer yet —
   // when pro/enterprise-only chrome lands (e.g. exporting to a per-
   // client starter, hiding the npm path for free), read this state.
-  const [rendererMode, setRendererMode] =
-    useState<"sandpack" | "fast">("fast");
-  const [userTier, setUserTier] =
-    useState<"free" | "pro" | "enterprise">("free");
+  const [rendererMode, setRendererMode] = useState<RendererMode>("fast");
+  const [userTier, setUserTier] = useState<UserTier>("free");
+
+  // Settings sheet — controlled. Default closed; the topbar gear opens
+  // it. State lives here (not in StudioSettings) so the same sheet
+  // can be opened from anywhere else later (left rail, keyboard
+  // shortcut, etc.) without each entry point owning its own copy.
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // AI chat display toggles — owned at the page level so the settings
+  // sheet writes them and StudioChat / AIChat read them. Defaults
+  // match the previous always-on behavior so flipping them off is
+  // an explicit user choice rather than an unexpected regression.
+  const [showUsage, setShowUsage] = useState(true);
+  const [showRefs, setShowRefs] = useState(true);
+  const [showActions, setShowActions] = useState(true);
+  const [showDuration, setShowDuration] = useState(true);
+  // Layer 1 of the thinking/steps work: the UI surface exists and the
+  // toggles flip, but Studio's /api/chat doesn't yet emit reasoning
+  // parts or step events. Flip these on, you'll see no chips until
+  // Layer 2 lands. Default off so the chat stays clean for users on
+  // providers that can't emit either signal anyway (e.g. the
+  // free-tier Gemini default).
+  const [showThinking, setShowThinking] = useState(false);
+  const [showSteps, setShowSteps] = useState(false);
+  // Default OFF for streaming text → response is held until the
+  // preview is ready, then revealed in one snap. The user can flip
+  // this on from the Settings Sheet if they prefer to watch tokens
+  // arrive.
+  const [streamResponseText, setStreamResponseText] = useState(false);
+  const [assistantBubble, setAssistantBubble] = useState(true);
+
+  // Live elapsed counter for the topbar "Generating…" indicator.
+  // Rising edge of `streamingByDesign[activeId]` captures the start
+  // timestamp; an interval re-renders the counter every 100ms.
+  // Cleared on falling edge so the indicator vanishes the moment
+  // the turn completes (the per-message duration takes over in the
+  // chat from there). `liveElapsedMs` is intentionally NOT used as
+  // the final per-message duration — that's tracked in StudioChat,
+  // which has access to the just-completed message id.
+  const activeStreaming = Boolean(streamingByDesign[activeId]);
+  const [streamStartedAt, setStreamStartedAt] = useState<number | null>(
+    null
+  );
+  const [liveElapsedMs, setLiveElapsedMs] = useState(0);
+  useEffect(() => {
+    if (activeStreaming) {
+      setStreamStartedAt((prev) => prev ?? Date.now());
+    } else {
+      setStreamStartedAt(null);
+      setLiveElapsedMs(0);
+    }
+  }, [activeStreaming]);
+  useEffect(() => {
+    if (streamStartedAt === null) return;
+    const id = window.setInterval(() => {
+      setLiveElapsedMs(Date.now() - streamStartedAt);
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [streamStartedAt]);
 
   const handleLatestCode = useCallback(
     (code: string | null) => {
@@ -483,6 +543,53 @@ export default function StudioPage() {
     });
   }, [activeId]);
 
+  // Cmd/Ctrl+Shift+Up — "select parent". Walks one step up the chain
+  // captured in the current selection, posting `grade:select-by-source-id`
+  // at the focused iframe so the in-iframe agent re-runs its standard
+  // resolve heuristics + emits a fresh selection back. Mirrors the
+  // breadcrumb's parent-segment click as a power-user shortcut so users
+  // don't have to mouse to the right panel just to step up one Stack.
+  // Skipped when focus is in an input/textarea so it doesn't fight with
+  // line-cursor movement in the chat composer or other text fields.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "ArrowUp") return;
+      if (!e.shiftKey) return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const active = document.activeElement as HTMLElement | null;
+      if (active) {
+        const tag = active.tagName;
+        if (
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          active.isContentEditable
+        ) {
+          return;
+        }
+      }
+      const sel = selectionByDesign[activeId];
+      const chain = sel?.chain;
+      if (!chain || chain.length < 2) return;
+      const parent = chain[chain.length - 2];
+      e.preventDefault();
+      const container = document.querySelector<HTMLElement>(
+        "[data-grade-focused-frame]"
+      );
+      const win = container?.querySelector("iframe")?.contentWindow;
+      if (!win) return;
+      try {
+        win.postMessage(
+          { type: "grade:select-by-source-id", id: parent.sourceId },
+          "*"
+        );
+      } catch {
+        /* iframe gone */
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeId, selectionByDesign]);
+
   // Canvas scope cap — the "All" zoom mounts one Sandpack per design in
   // parallel, so we cap the count rather than let the user degrade their
   // own session. Empirically 8 is the point where boot latency of a
@@ -635,48 +742,68 @@ export default function StudioPage() {
         <div className="border-b bg-muted/30 shrink-0">
           {/* Full-bleed — no max-width wrapper. Studio is a tool, not a
               marketing page, so the chrome stretches edge-to-edge. */}
+          {/* Topbar is intentionally near-empty — just the product
+              title and a Settings gear. Every chrome control that
+              used to live up here (model picker, theme switcher,
+              light/dark mode, dev toggles) now lives inside the
+              <StudioSettings> Sheet that the gear opens. Version
+              numbers also moved into the Sheet footer. Eventually
+              the gear migrates out of the topbar entirely into a
+              left app rail. */}
           <div className="px-4 md:px-6 py-2.5 flex items-center justify-between gap-4">
-            <div className="min-w-0">
+            <div className="min-w-0 flex items-center gap-3">
               <h1 className="text-base font-semibold leading-tight">
                 Grade Studio
               </h1>
-              {/* Versions — deliberately technical copy. This is a
-                  pre-release tool and we want bug reports to carry the
-                  exact revision. @gradeui/studio is still 0.0.0 while
-                  the package is being carved out; it'll start bumping
-                  once the Studio shell stabilises. */}
-              <p className="text-[11px] text-muted-foreground font-mono leading-tight">
-                <span>@gradeui/ui v{GRADEUI_VERSION}</span>
-                <span className="mx-1.5 opacity-50">·</span>
-                <span>@gradeui/studio v{STUDIO_VERSION}</span>
-              </p>
+              {/* Transient streaming indicator — only renders while
+                  the active design is mid-turn. Counts up live (every
+                  100ms) so the user has a quick read on how long the
+                  turn is taking; the final per-message duration sits
+                  in the chat message itself. */}
+              {activeStreaming && (
+                <span
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums"
+                  aria-live="polite"
+                >
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>
+                    Generating… {(liveElapsedMs / 1000).toFixed(1)}s
+                  </span>
+                </span>
+              )}
             </div>
-            {/* Right-hand chrome cluster. Order mirrors how often a
-                designer reaches for each: model picker > theme > mode.
-                Mode/theme both flip the CHROME (site-wide theme), not
-                the preview iframe — the preview's mode + draft theme
-                are owned by the builder panel on the right of the page. */}
-            <div className="flex items-center gap-1">
-              <ProviderPicker settings={settings} onChange={updateSettings} />
-              <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-              <GradeThemeSwitcher />
-              <ThemeToggle />
-              <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-              {/* Dev-only toggles (renderer + user tier) live behind
-                  the gear icon now — they were crowding the chrome row
-                  and they're session-local, so the popover is the
-                  right home. See `StudioSettingsPopover` for the
-                  shape; both pieces of state still live on this page
-                  so other parts of the tree can read them. */}
-              <StudioSettingsPopover
-                rendererMode={rendererMode}
-                onRendererModeChange={setRendererMode}
-                userTier={userTier}
-                onUserTierChange={setUserTier}
-              />
-            </div>
+            <StudioSettingsTrigger onClick={() => setSettingsOpen(true)} />
           </div>
         </div>
+
+        <StudioSettings
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          settings={settings}
+          onSettingsChange={updateSettings}
+          rendererMode={rendererMode}
+          onRendererModeChange={setRendererMode}
+          userTier={userTier}
+          onUserTierChange={setUserTier}
+          showUsage={showUsage}
+          onShowUsageChange={setShowUsage}
+          showRefs={showRefs}
+          onShowRefsChange={setShowRefs}
+          showActions={showActions}
+          onShowActionsChange={setShowActions}
+          showThinking={showThinking}
+          onShowThinkingChange={setShowThinking}
+          showSteps={showSteps}
+          onShowStepsChange={setShowSteps}
+          showDuration={showDuration}
+          onShowDurationChange={setShowDuration}
+          streamResponseText={streamResponseText}
+          onStreamResponseTextChange={setStreamResponseText}
+          assistantBubble={assistantBubble}
+          onAssistantBubbleChange={setAssistantBubble}
+          gradeUiVersion={GRADEUI_VERSION}
+          studioVersion={STUDIO_VERSION}
+        />
 
         {/* Design tabs used to live here as a separate strip above the
             three-column main area. They were an artifact of the pre-
@@ -724,6 +851,21 @@ export default function StudioPage() {
               // Layout tab) under the new tabbed shell. Force `docked`
               // so the chat column never duplicates it.
               settingsPanelDocked
+              // Settings-sheet-driven display toggles. State owned by
+              // this page (see useState block above) so any other
+              // surface — keyboard shortcut, command palette — can
+              // mutate the same store.
+              showUsage={showUsage}
+              showRefs={showRefs}
+              showActions={showActions}
+              showThinking={showThinking}
+              showSteps={showSteps}
+              showDuration={showDuration}
+              assistantBubble={assistantBubble}
+              // Inverse mapping: "stream response text" ON in the
+              // Sheet means do NOT hold; OFF (the default) means
+              // hold until ready.
+              holdResponseUntilReady={!streamResponseText}
             />
             {/* Canvas replaces the single-iframe StudioPreview. It owns
                 its own header (zoom toggle + preview/code + select +

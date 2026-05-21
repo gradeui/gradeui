@@ -10,9 +10,10 @@ props:
   - SidebarHeader: any children — brand / logo / org switcher; hides nothing when collapsed (centred)
   - SidebarContent: any children — scrollable body
   - SidebarFooter: any children — user block, settings link, pinned chrome
-  - SidebarSection: title?: ReactNode — group label; hidden when sidebar is collapsed
+  - SidebarSection: title?: ReactNode — group label; **uppercase tracking-wide muted** styling auto-applied (Notion / Linear / Slack-style "GAMES", "FAVORITES", "WORKSPACE" headers); hidden when sidebar is collapsed
   - SidebarSection: icon?: ReactNode — optional icon beside the title
-  - SidebarSection: collapsible?: boolean — title acts as expand/collapse trigger (default true)
+  - SidebarSection: trailing?: ReactNode — **action(s) on the right edge of the header** — the canonical "+" / "..." slot (Notion's "+ Add page" next to Pages, Linear's "+" next to Favorites, Slack's "+" next to Channels). Pointer events isolated so a Button here doesn't toggle collapse.
+  - SidebarSection: collapsible?: boolean — title acts as expand/collapse trigger with a **chevron indicator** (default true). Set `false` for a static, non-clickable header.
   - SidebarSection: defaultExpanded?: boolean — initial open state (default true)
   - SidebarItem: icon?: ReactNode — leading icon
   - SidebarItem: badge?: ReactNode — trailing count / label (hidden when collapsed)
@@ -75,6 +76,31 @@ import Link from "next/link";
 </SidebarItem>
 ```
 
+```jsx
+// Section header with a trailing action — the Notion / Linear / Slack
+// "+" next to a section name. The trailing slot isolates pointer events
+// from the collapse toggle, so the Button doesn't also flip expand.
+<SidebarSection
+  title="Pages"
+  trailing={
+    <Button variant="ghost" size="icon" className="h-5 w-5">
+      <Plus className="h-3 w-3" />
+    </Button>
+  }
+>
+  <SidebarItem>Notes</SidebarItem>
+  <SidebarItem>Drafts</SidebarItem>
+</SidebarSection>
+```
+
+```jsx
+// Non-collapsible static header — for sections the user shouldn't
+// be able to fold. `collapsible={false}` hides the chevron.
+<SidebarSection title="Workspace" collapsible={false}>
+  <SidebarItem>...</SidebarItem>
+</SidebarSection>
+```
+
 ### Anti-patterns
 
 DO NOT pass a `sections={[...]}` data array — that was the old SideMenu shape (retired May 2026). Compose `<SidebarSection>` and `<SidebarItem>` directly so any non-list-shaped chrome (search input, drag handle, custom brand block) can sit alongside the nav.
@@ -84,3 +110,7 @@ DO NOT set `href` AND `onClick` AND `asChild` at once — pick one mode per row.
 DO NOT use Sidebar for primary marketing-style top navigation — that's TopMenu. Sidebar is for app chrome (logged-in product surfaces), not landing pages.
 
 DO NOT rely on the collapsed-state tooltip to convey critical-only information. When the sidebar is collapsed, only the icon is visible by default; the label is in the tooltip on hover, but mobile users + screen readers won't reliably see it. Keep icons recognisable and ship the label as actual text on hover/focus, not just as a tooltip.
+
+DO NOT hand-roll an uppercase "SECTION NAME" header above your items. `<SidebarSection title="…">` already gives you the uppercase + tracking-wide + muted styling, plus the chevron + expand/collapse behaviour. If your design has a "+" or "..." next to the section name, use the `trailing` prop — don't render the action as a separate SidebarItem below the section.
+
+DO NOT bypass `<Sidebar>` and compose an icon rail or projects pane from raw `<Stack>` + buttons. You lose the collapsed-state handling, the per-item tooltip, the `data-gds-part` markers that Studio's selection layer reads, and the consistent padding/gap CSS vars (`--rds-sidebar-*`). If you find yourself writing `<button className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted">{icon}{label}</button>`, that's a SidebarItem.

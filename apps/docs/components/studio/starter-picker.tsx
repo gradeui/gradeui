@@ -36,10 +36,12 @@
  */
 
 import { useState } from "react";
-import { FileText, LayoutGrid, Sparkles } from "lucide-react";
+import { FileText, LayoutGrid, Sparkles, FlaskConical, ExternalLink } from "lucide-react";
 import {
   REFERENCE_LAYOUTS,
   type ReferenceLayout,
+  PLAYGROUND_SCAFFOLDS,
+  type PlaygroundScaffold,
 } from "@gradeui/studio/playbook";
 import {
   Dialog,
@@ -49,6 +51,7 @@ import {
   DialogTitle,
   Button,
   Textarea,
+  Badge,
 } from "@gradeui/ui";
 import { cn } from "@/lib/utils";
 
@@ -94,13 +97,21 @@ interface StarterPickerProps {
     name?: string;
     /** Which starter path the source came from. Parent can log this
      *  later for discovery-metric purposes; ignored for now. */
-    origin: "layout" | "paste";
-    /** Non-null for layout starters — `ReferenceLayout["id"]`. */
+    origin: "layout" | "playground" | "paste";
+    /** Non-null for layout starters — `ReferenceLayout["id"]`.
+     *  For playground starters, the `PlaygroundScaffold["id"]`. */
     layoutId?: string;
   }) => void;
 }
 
-type Tab = "layouts" | "paste";
+type Tab = "layouts" | "playground" | "paste";
+
+// Stable picker order; iterating PLAYGROUND_SCAFFOLDS once at module
+// load so reorders happen deterministically (by id) and the result
+// survives HMR cleanly.
+const PLAYGROUND_LIST: PlaygroundScaffold[] = Object.values(PLAYGROUND_SCAFFOLDS).sort(
+  (a, b) => a.id.localeCompare(b.id),
+);
 
 export function StarterPicker({
   open,
@@ -124,6 +135,18 @@ export function StarterPicker({
       name: layout.label,
       origin: "layout",
       layoutId: layout.id,
+    });
+    onOpenChange(false);
+  };
+
+  const handlePickPlayground = (entry: PlaygroundScaffold) => {
+    onPick({
+      // Same freshen pass as curated starters — a playground scaffold
+      // may also use the `{ id: "..." }` data-array pattern.
+      source: freshenScaffoldIds(entry.scaffold),
+      name: entry.label,
+      origin: "playground",
+      layoutId: entry.id,
     });
     onOpenChange(false);
   };
@@ -168,7 +191,19 @@ export function StarterPicker({
             active={tab === "layouts"}
             onClick={() => setTab("layouts")}
             icon={<LayoutGrid className="h-3.5 w-3.5" />}
-            label="Start from a layout"
+            label="Starter templates"
+          />
+          {/* Playground tab — siloed dev-only set of scaffolds living
+              in apps/docs/playground-scaffolds/. Not shipped via
+              REFERENCE_LAYOUTS, not retrieved by the model. Surfaced
+              here so we can spawn screens from screenshot-generated
+              JSX without polluting the curated starter set. */}
+          <TabButton
+            active={tab === "playground"}
+            onClick={() => setTab("playground")}
+            icon={<FlaskConical className="h-3.5 w-3.5" />}
+            label="Playground"
+            badge={PLAYGROUND_LIST.length > 0 ? PLAYGROUND_LIST.length : undefined}
           />
           <TabButton
             active={tab === "paste"}
@@ -178,11 +213,9 @@ export function StarterPicker({
           />
         </div>
 
-        {tab === "layouts" ? (
-          <LayoutsGrid onPick={handlePickLayout} />
-        ) : (
-          <PasteCodeForm onSubmit={handleSubmitPaste} />
-        )}
+        {tab === "layouts" && <LayoutsGrid onPick={handlePickLayout} />}
+        {tab === "playground" && <PlaygroundGrid onPick={handlePickPlayground} />}
+        {tab === "paste" && <PasteCodeForm onSubmit={handleSubmitPaste} />}
       </DialogContent>
     </Dialog>
   );
@@ -197,11 +230,13 @@ function TabButton({
   onClick,
   icon,
   label,
+  badge,
 }: {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
+  badge?: number;
 }) {
   return (
     <button
@@ -219,6 +254,11 @@ function TabButton({
     >
       {icon}
       {label}
+      {badge !== undefined && (
+        <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px] leading-none">
+          {badge}
+        </Badge>
+      )}
     </button>
   );
 }
@@ -265,6 +305,119 @@ function LayoutCard({
         <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">
           {layout.description}
         </p>
+      </div>
+    </button>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Playground grid — dev-only siloed scaffolds
+// ────────────────────────────────────────────────────────────────────
+
+function PlaygroundGrid({ onPick }: { onPick: (e: PlaygroundScaffold) => void }) {
+  if (PLAYGROUND_LIST.length === 0) {
+    return (
+      <div className="px-6 py-10 max-h-[60vh] overflow-y-auto">
+        <div className="flex flex-col items-center text-center gap-3 py-12">
+          <FlaskConical className="h-8 w-8 text-muted-foreground/40" />
+          <h3 className="text-sm font-medium">No playground scaffolds yet</h3>
+          <p className="text-xs text-muted-foreground max-w-md leading-relaxed">
+            Drop a <code className="px-1 py-0.5 rounded bg-muted text-foreground">.jsx</code> file
+            in <code className="px-1 py-0.5 rounded bg-muted text-foreground">apps/docs/playground-scaffolds/</code>,
+            add a JSDoc frontmatter block at the top, then run{" "}
+            <code className="px-1 py-0.5 rounded bg-muted text-foreground">pnpm gen:playground</code>.
+            See the README in that folder for the format.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
+      {/* Banner — make it visually obvious these aren't shipped starters */}
+      <div className="mb-4 rounded-md border border-warning/30 bg-warning-soft/40 px-3 py-2">
+        <div className="flex items-center gap-1.5 text-xs text-warning-deep">
+          <FlaskConical className="h-3.5 w-3.5" />
+          <span className="font-medium">Dev-only — not shipped to gradeui.com.</span>
+          <span className="text-warning-deep/80">
+            Live in <code>apps/docs/playground-scaffolds/</code>.
+          </span>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {PLAYGROUND_LIST.map((entry) => (
+          <PlaygroundCard key={entry.id} entry={entry} onPick={() => onPick(entry)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PlaygroundCard({
+  entry,
+  onPick,
+}: {
+  entry: PlaygroundScaffold;
+  onPick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      className={cn(
+        "group flex flex-col rounded-lg border border-border bg-card overflow-hidden text-left",
+        "hover:border-primary/60 hover:shadow-sm transition-all",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+      )}
+    >
+      {/* Gradient placeholder using the same hash as missing real thumbs.
+          Overlaid with a "PLAYGROUND" chip + the scaffold id so it's
+          obvious at a glance. */}
+      <div
+        className="relative aspect-[16/10] w-full"
+        style={{ background: fallbackGradient(entry.id) }}
+      >
+        <div className="absolute top-2 left-2">
+          <Badge variant="secondary" className="text-[10px] font-medium gap-1">
+            <FlaskConical className="h-2.5 w-2.5" />
+            PLAYGROUND
+          </Badge>
+        </div>
+        <div className="absolute bottom-2 right-2 text-[10px] font-mono text-foreground/60">
+          {entry.id}
+        </div>
+      </div>
+      <div className="flex-1 px-3 py-2.5 border-t border-border">
+        <div className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
+          {entry.label}
+        </div>
+        {entry.description && (
+          <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">
+            {entry.description}
+          </p>
+        )}
+        {(entry.tags.length > 0 || entry.source) && (
+          <div className="flex items-center gap-1 mt-2 flex-wrap">
+            {entry.tags.slice(0, 4).map((tag) => (
+              <Badge key={tag} variant="outline" className="text-[9px] px-1 py-0 h-4">
+                {tag}
+              </Badge>
+            ))}
+            {entry.tags.length > 4 && (
+              <span className="text-[9px] text-muted-foreground">
+                +{entry.tags.length - 4}
+              </span>
+            )}
+            {entry.source && (
+              <span
+                className="ml-auto inline-flex items-center gap-0.5 text-[9px] text-muted-foreground"
+                title={entry.source}
+              >
+                <ExternalLink className="h-2.5 w-2.5" /> source
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </button>
   );

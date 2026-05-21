@@ -40,12 +40,13 @@ import {
   Crosshair,
   ExternalLink,
   Eye,
-  LayoutGrid,
+  Image as ImageIcon,
   Loader2,
   Maximize2,
   Monitor,
   MoreHorizontal,
   MousePointerClick,
+  MoveHorizontal,
   Package,
   Plus,
   Redo2,
@@ -67,6 +68,7 @@ import {
   DropdownMenuTrigger,
   ToggleGroup,
   ToggleGroupItem,
+  Toolbar,
 } from "@gradeui/ui";
 import { cn } from "@/lib/utils";
 import {
@@ -85,6 +87,7 @@ import { useRotatingPhrase } from "@/lib/studio-loading-phrases";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { Design } from "@/lib/studio-designs";
 import { DesignBreadcrumb } from "@/components/studio/design-breadcrumb";
+import { CanvasPathBar } from "@/components/studio/canvas-path-bar";
 import { StarterPicker } from "@/components/studio/starter-picker";
 import {
   FocusedSandpackMount,
@@ -270,24 +273,20 @@ export function StudioCanvas({
   const [viewportWidth, setViewportWidth] =
     useState<ViewportWidth>("responsive");
 
-  // Fidelity — wireframe (placeholders only, fast / abstract) vs full
-  // (placeholders filled with real or generated imagery). Persisted to
-  // localStorage so a user who designs in wireframe mode doesn't get
-  // their preference reset by every reload. The state lives here at the
-  // canvas level (rather than per-design) because fidelity is a *view*
-  // setting — the JSX is identical in both modes; only how MediaSurface
-  // renders changes. Forwarded down to FocusedFrame which posts it into
-  // the Sandpack iframe via the existing message bus.
+  // Fidelity — historically a wireframe vs full toggle, but the
+  // wireframe surface is no longer used in the canvas chrome (the
+  // toggle was removed; designs always render in "full" now). The
+  // constant + `setFidelity` no-op are kept so the postMessage
+  // contract with the iframe (`grade:set-fidelity`) and every
+  // downstream `fidelity={fidelity}` prop continue to compile and
+  // behave correctly. If the wireframe view returns, lift this back
+  // into useState + an explicit affordance.
   type Fidelity = "wireframe" | "full";
-  const [fidelity, setFidelity] = useState<Fidelity>(() => {
-    if (typeof window === "undefined") return "wireframe";
-    const stored = window.localStorage.getItem("studio:fidelity");
-    return stored === "full" ? "full" : "wireframe";
-  });
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem("studio:fidelity", fidelity);
-  }, [fidelity]);
+  const fidelity: Fidelity = "full";
+  const setFidelity = (_next: Fidelity) => {
+    // no-op — fidelity is pinned to "full" until the wireframe view
+    // gets a meaningful product surface again.
+  };
 
   // Fill-images flow — POSTs the focused design's appSource to the
   // /api/media/resolve route, which walks for MediaSurfaces with static
@@ -919,6 +918,104 @@ export function StudioCanvas({
     }
   };
 
+  // ─── Fill images — promoted out of the inline toolbar button into a
+  // shared handler so the overflow DropdownMenuItem can call it. The
+  // long form lives below; this is exactly the same flow:
+  //   1. Self-heal pass to mint missing instanceIds (waits for the
+  //      iframe to re-render before collecting).
+  //   2. Collect runtime { instanceId, source } items from the DOM.
+  //   3. POST to /api/media/resolve-batch to map sourceKey → URL.
+  //   4. Patch the focused JSX (data-array write first, inline write
+  //      as fall-through for standalone MediaSurfaces).
+  //   5. Push the patched JSX through onSourceMutation; auto-flip
+  //      fidelity to "full" so the result is visible.
+  // Errors and counts go into the existing fillError / fillReport
+  // state, which is surfaced as a small chip in the toolbar's leading
+  // slot rather than as a sibling of a button that no longer exists.
+  const handleFillImages = async () => {
+    if (!focusedAppSource || filling) return;
+    setFilling(true);
+    setFillError(null);
+    setFillReport(null);
+    try {
+      let patched = backfillMediaSurfaceSrcProp(focusedAppSource);
+      if (patched !== focusedAppSource && onSourceMutation) {
+        onSourceMutation(patched, "Self-heal for Fill");
+        await waitForFastCompiled(5000);
+      }
+      const items = await collectMediaSources();
+      if (items.length === 0) {
+        setFillReport({ filled: 0, skipped: 0 });
+        return;
+      }
+      const res = await fetch("/api/media/resolve-batch", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sources: items.map((it) => it.source) }),
+      });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(
+          `${res.status} ${res.statusText}${txt ? ` — ${txt.slice(0, 200)}` : ""}`,
+        );
+      }
+      const data = (await res.json()) as {
+        urls: Record<string, string>;
+        filled: number;
+        skipped: number;
+      };
+      let writtenCount = 0;
+      const skippedNoInstance: number = items.filter(
+        (it) => !it.instanceId,
+      ).length;
+      for (const it of items) {
+        if (!it.instanceId) continue;
+        const key = clientSideSourceKey(it.source);
+        const url = data.urls[key];
+        if (!url) continue;
+        const arrayWrite = updateDataArrayEntry(
+          patched,
+          it.instanceId,
+          "src",
+          url,
+        );
+        if (arrayWrite.ok && arrayWrite.jsx) {
+          patched = arrayWrite.jsx;
+          writtenCount += 1;
+          continue;
+        }
+        const inlineWrite = setInlineMediaSurfaceSrc(
+          patched,
+          it.instanceId,
+          url,
+        );
+        if (inlineWrite.ok && inlineWrite.jsx) {
+          patched = inlineWrite.jsx;
+          writtenCount += 1;
+        }
+      }
+      if (writtenCount > 0 && onSourceMutation) {
+        onSourceMutation(
+          patched,
+          writtenCount === 1
+            ? "Fill image"
+            : `Fill ${writtenCount} images`,
+        );
+      }
+      if (data.filled > 0 || writtenCount > 0) {
+        setFidelity("full");
+      }
+      setFillReport({
+        filled: writtenCount,
+        skipped: data.skipped + skippedNoInstance,
+      });
+    } catch (err) {
+      setFillError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setFilling(false);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -926,17 +1023,19 @@ export function StudioCanvas({
         className
       )}
     >
-      <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border shrink-0">
-        {/* Top row — single row hosting:
-              - screen-state: breadcrumb (All screens / Screen 1)
-                with inline rename, plus live status chips
-              - grid-state: "All screens (N)" label, status chips
-            Plus a right-aligned cluster (per-screen actions in
-            screen-state, add-a-screen actions in grid-state).
-            No bg-muted strip any more — the canvas is surface-less
-            at the top so the breadcrumb reads as part of the
-            content, not as separate chrome. */}
-        <div className="flex items-center gap-2 min-w-0 text-xs text-muted-foreground">
+      {/* Canvas toolbar — DS Toolbar primitive with leading/trailing
+          slots. Leading hosts the breadcrumb + live status chips;
+          trailing hosts the screen-state action cluster (or the
+          grid-state add-a-screen cluster when zoomed out). The
+          Toolbar's auto/1fr/auto grid keeps leading flush-left and
+          trailing flush-right with no manual flex math. */}
+      <Toolbar
+        position="top"
+        size="sm"
+        aria-label="Canvas toolbar"
+        className="px-3 shrink-0"
+        leading={
+          <div className="flex items-center gap-2 min-w-0 text-xs text-muted-foreground">
           {isFit && focused ? (
             <DesignBreadcrumb
               focused={focused}
@@ -975,7 +1074,32 @@ export function StudioCanvas({
               Generating
             </span>
           )}
-        </div>
+          {/* Fill status chip — surfaces success / skipped / error
+              counts now that the inline button has moved into the
+              overflow. Filling-in-progress is shown on the menu
+              item itself; this chip appears once the run completes.
+              Hidden again the next time Fill runs (the handler
+              clears fillReport + fillError on entry). */}
+          {isFit && fillReport && !filling && (
+            <span
+              className="text-[10px] text-muted-foreground tabular-nums"
+              title={`Filled ${fillReport.filled} slot${fillReport.filled === 1 ? "" : "s"}; skipped ${fillReport.skipped} (dynamic or no result)`}
+            >
+              {fillReport.filled} filled
+              {fillReport.skipped > 0 && ` · ${fillReport.skipped} skipped`}
+            </span>
+          )}
+          {isFit && fillError && !filling && (
+            <span
+              className="text-[10px] text-destructive tabular-nums truncate max-w-[12rem]"
+              title={fillError}
+            >
+              Fill failed
+            </span>
+          )}
+          </div>
+        }
+        trailing={
         <div className="flex items-center gap-1">
           {/* No more Fit/All toggle — navigation between the two
               states goes through the breadcrumb ("All screens" link
@@ -1042,31 +1166,32 @@ export function StudioCanvas({
                   <Redo2 />
                 </button>
               </div>
+              {/* Preview / Code — icon-only; the tooltip prop on each
+                  item carries the label (and fills in aria-label for
+                  screen readers, so we don't have to repeat it). */}
               <ToggleGroup
                 type="single"
+                size="sm"
                 value={view}
                 onValueChange={(v: string) => {
                   if (v === "preview" || v === "code") onViewChange(v);
                 }}
                 aria-label="Preview mode"
               >
-                <ToggleGroupItem
-                  value="preview"
-                  aria-label="Preview"
-                  title="Preview"
-                >
+                <ToggleGroupItem value="preview" tooltip="Preview">
                   <Eye />
                 </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="code"
-                  aria-label="Code"
-                  title="Code"
-                >
+                <ToggleGroupItem value="code" tooltip="Code">
                   <Code2 />
                 </ToggleGroupItem>
               </ToggleGroup>
+              {/* Viewport width — icon-only with tooltips. Responsive
+                  picks up MoveHorizontal (←→) as its glyph since it
+                  conveys "stretches to fill the column" without
+                  needing a text label. */}
               <ToggleGroup
                 type="single"
+                size="sm"
                 value={viewportWidth}
                 onValueChange={(v: string) => {
                   if (
@@ -1079,251 +1204,31 @@ export function StudioCanvas({
                 }}
                 aria-label="Viewport width"
               >
-                <ToggleGroupItem value="mobile" title="Mobile — 390px">
+                <ToggleGroupItem value="mobile" tooltip="Mobile — 390px">
                   <Smartphone />
-                  Mobile
                 </ToggleGroupItem>
-                <ToggleGroupItem value="tablet" title="Tablet — 768px">
+                <ToggleGroupItem value="tablet" tooltip="Tablet — 768px">
                   <Tablet />
-                  Tablet
                 </ToggleGroupItem>
-                <ToggleGroupItem value="desktop" title="Desktop — 1024px">
+                <ToggleGroupItem value="desktop" tooltip="Desktop — 1024px">
                   <Monitor />
-                  Desktop
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="responsive"
-                  title="Responsive — fills the column"
+                  tooltip="Responsive — fills the column"
                 >
-                  Responsive
+                  <MoveHorizontal />
                 </ToggleGroupItem>
               </ToggleGroup>
-              {/* Fidelity toggle — wireframe shows MediaSurface placeholders
-                  only; full mode reveals the underlying images / video /
-                  canvas content. The toggle is a single attribute on the
-                  iframe root (data-fidelity); the CSS does the rest. */}
-              <ToggleGroup
-                type="single"
-                value={fidelity}
-                onValueChange={(v: string) => {
-                  if (v === "wireframe" || v === "full") setFidelity(v);
-                }}
-                aria-label="Fidelity"
-              >
-                <ToggleGroupItem
-                  value="wireframe"
-                  title="Wireframe — show MediaSurface placeholders, hide imagery"
-                >
-                  <LayoutGrid />
-                  Wireframe
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="full"
-                  title="Full — show generated / sourced imagery in MediaSurfaces"
-                >
-                  <Sparkles />
-                  Full
-                </ToggleGroupItem>
-              </ToggleGroup>
-              {/* Fill images — walks the focused design's JSX for
-                  MediaSurfaces with a `source` prop, resolves each to a
-                  URL (MusicBrainz for album, Pollinations / Picsum for
-                  the rest), patches `src=` in place via the route, and
-                  auto-flips fidelity to "full" so the result is visible.
-                  Disabled while a fill is in flight or when no focused
-                  design exists. Errors and counts surface inline as a
-                  small pill next to the button. */}
-              <button
-                type="button"
-                disabled={!focusedAppSource || filling}
-                onClick={async () => {
-                  if (!focusedAppSource || filling) return;
-                  setFilling(true);
-                  setFillError(null);
-                  setFillReport(null);
-                  try {
-                    // Four steps; bail on the first that fails.
-                    //  1. Ask the iframe agent to collect runtime
-                    //     `{ instanceId, source }` items from the rendered
-                    //     DOM. Static JSX-parsing would miss anything
-                    //     inside a .map() (the common case for
-                    //     chat-generated screens) — by walking the DOM we
-                    //     see the post-evaluation values, and the
-                    //     instanceId stamp pairs each source back to its
-                    //     data-array entry.
-                    //  2. POST those descriptors to /api/media/resolve-batch
-                    //     to get a sourceKey → URL map.
-                    //  3. Patch the focused design's JSX: for each item
-                    //     with an instanceId, write `src: "<url>"` into
-                    //     the matching data-array entry. The JSX becomes
-                    //     self-contained — the URLs live alongside the
-                    //     content, undo snapshots them, exporting carries
-                    //     them.
-                    //  4. Push the patched JSX through onSourceMutation.
-                    //     Fast Frame HMRs to it; MediaSurface re-renders
-                    //     and the new `src` paints (no global URL map
-                    //     write needed any more).
-                    // ── Self-heal pass FIRST ──
-                    // Adds instanceIds and id-fields to any MediaSurface /
-                    // data-array that's missing them (older scaffolds and
-                    // AI-prompted screens). Has to happen BEFORE the DOM
-                    // collection — otherwise the iframe's <MediaSurface>
-                    // elements have no `data-gds-instance-id` attribute
-                    // and every collected item comes back with
-                    // `instanceId: undefined`, which Fill can't target.
-                    //
-                    // If the JSX changed, push the healed version to the
-                    // iframe and wait for the re-render so the next
-                    // collectMediaSources call sees the new instanceIds.
-                    let patched = backfillMediaSurfaceSrcProp(focusedAppSource);
-                    if (patched !== focusedAppSource && onSourceMutation) {
-                      onSourceMutation(patched, "Self-heal for Fill");
-                      // Wait for the iframe to actually finish rendering
-                      // the healed JSX before we collect — no arbitrary
-                      // timeout. The sandbox uses `flushSync` to commit
-                      // its React render synchronously, then posts
-                      // `grade:fast-compiled` back. Until that arrives,
-                      // the `data-gds-instance-id` attributes that the
-                      // self-heal pass minted aren't stamped on the DOM
-                      // yet, and a premature collection returns items
-                      // with `instanceId: undefined`. The 5s safety
-                      // timeout is a watchdog for unusual cases (sandbox
-                      // crashed, iframe blocked) — we proceed anyway and
-                      // accept partial results rather than hang Fill
-                      // forever.
-                      await waitForFastCompiled(5000);
-                    }
-
-                    const items = await collectMediaSources();
-                    if (items.length === 0) {
-                      setFillReport({ filled: 0, skipped: 0 });
-                      return;
-                    }
-                    const res = await fetch("/api/media/resolve-batch", {
-                      method: "POST",
-                      headers: { "content-type": "application/json" },
-                      body: JSON.stringify({
-                        sources: items.map((it) => it.source),
-                      }),
-                    });
-                    if (!res.ok) {
-                      const txt = await res.text().catch(() => "");
-                      throw new Error(
-                        `${res.status} ${res.statusText}${txt ? ` — ${txt.slice(0, 200)}` : ""}`,
-                      );
-                    }
-                    const data = (await res.json()) as {
-                      urls: Record<string, string>;
-                      filled: number;
-                      skipped: number;
-                    };
-
-                    // Two write paths, picked per-item:
-                    //   - Data-array entry (`updateDataArrayEntry`) when
-                    //     instanceId is `{x.id}` and matches an array
-                    //     entry. The normal scaffold case.
-                    //   - Inline JSX attribute (`setInlineMediaSurfaceSrc`)
-                    //     when instanceId is a string literal (synthesised
-                    //     by the backfill for standalone MediaSurfaces).
-                    //
-                    // Try data-array first; fall back to inline if no
-                    // matching entry exists. updateDataArrayEntry returns
-                    // `{ ok: false, reason: "no-match" }` for the standalone
-                    // case, so the cascade is clean.
-                    let writtenCount = 0;
-                    const skippedNoInstance: number = items.filter(
-                      (it) => !it.instanceId,
-                    ).length;
-                    for (const it of items) {
-                      if (!it.instanceId) continue;
-                      const key = clientSideSourceKey(it.source);
-                      const url = data.urls[key];
-                      if (!url) continue;
-                      const arrayWrite = updateDataArrayEntry(
-                        patched,
-                        it.instanceId,
-                        "src",
-                        url,
-                      );
-                      if (arrayWrite.ok && arrayWrite.jsx) {
-                        patched = arrayWrite.jsx;
-                        writtenCount += 1;
-                        continue;
-                      }
-                      // Fall through to inline write — standalone
-                      // MediaSurface where instanceId is "ms-XXX".
-                      const inlineWrite = setInlineMediaSurfaceSrc(
-                        patched,
-                        it.instanceId,
-                        url,
-                      );
-                      if (inlineWrite.ok && inlineWrite.jsx) {
-                        patched = inlineWrite.jsx;
-                        writtenCount += 1;
-                      }
-                    }
-                    if (writtenCount > 0 && onSourceMutation) {
-                      onSourceMutation(
-                        patched,
-                        writtenCount === 1
-                          ? "Fill image"
-                          : `Fill ${writtenCount} images`,
-                      );
-                    }
-                    if (data.filled > 0 || writtenCount > 0) {
-                      // Flip to Full so the user actually sees the
-                      // imagery the providers just resolved. Wireframe
-                      // would render the same placeholders we had
-                      // before — defeating the point of clicking.
-                      setFidelity("full");
-                    }
-                    setFillReport({
-                      filled: writtenCount,
-                      skipped: data.skipped + skippedNoInstance,
-                    });
-                  } catch (err) {
-                    setFillError(
-                      err instanceof Error ? err.message : String(err),
-                    );
-                  } finally {
-                    setFilling(false);
-                  }
-                }}
-                className={cn(
-                  "flex items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors",
-                  "text-muted-foreground hover:text-foreground",
-                  "disabled:opacity-40 disabled:pointer-events-none",
-                )}
-                title={
-                  fillError
-                    ? `Last fill failed: ${fillError}`
-                    : "Fill MediaSurface slots with real imagery (free providers — MusicBrainz, Pollinations, Picsum)"
-                }
-              >
-                {filling ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Sparkles className="h-3 w-3" />
-                )}
-                {filling ? "Filling…" : "Fill images"}
-              </button>
-              {fillReport && !filling && (
-                <span
-                  className="text-[10px] text-muted-foreground tabular-nums"
-                  title={`Filled ${fillReport.filled} slot${fillReport.filled === 1 ? "" : "s"}; skipped ${fillReport.skipped} (dynamic or no result)`}
-                >
-                  {fillReport.filled} filled
-                  {fillReport.skipped > 0 && ` · ${fillReport.skipped} skipped`}
-                </span>
-              )}
-              {fillError && !filling && (
-                <span
-                  className="text-[10px] text-destructive tabular-nums truncate max-w-[12rem]"
-                  title={fillError}
-                >
-                  Fill failed
-                </span>
-              )}
+              {/* Fidelity toggle removed — wireframe/full has no
+                  product surface yet; fidelity is pinned to "full"
+                  via the constant near the top of this component. */}
+              {/* Fill images has moved into the overflow menu below
+                  to cut toolbar clutter. The handler is hoisted as
+                  `handleFillImages` near the top of the component;
+                  status (filling spinner, filled count, errors) lives
+                  on the menu item label + a small chip in the
+                  toolbar's leading slot. */}
 
               {/* Select — element pick. Custom-rolled toggle until
                   Toggle picks up tooltip support. */}
@@ -1368,6 +1273,23 @@ export function StudioCanvas({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
+                  {/* Fill images — relocated from the inline toolbar
+                      button so the chrome reads cleaner. Same handler,
+                      same side effects (fidelity flip + onSourceMutation).
+                      Status surfaces as a chip in the leading slot
+                      after the action settles. */}
+                  <DropdownMenuItem
+                    onClick={handleFillImages}
+                    disabled={!focusedAppSource || filling}
+                  >
+                    {filling ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <ImageIcon />
+                    )}
+                    {filling ? "Filling images…" : "Fill images"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   {onDuplicateDesign && (
                     <DropdownMenuItem
                       onClick={() => onDuplicateDesign(focusedId)}
@@ -1500,7 +1422,18 @@ export function StudioCanvas({
             </>
           )}
         </div>
-      </div>
+        }
+      />
+
+      {/* Path bar — column-view-style breadcrumb between toolbar and
+          canvas. Lets the designer walk the rendered tree by clicking
+          dropdowns at each level rather than hunting for deeply-nested
+          components in the canvas. Only shown in Fit view (the All
+          tile grid has no single "selected design" to render a path
+          for). */}
+      {isFit && (
+        <CanvasPathBar selection={selection} />
+      )}
 
       {/* Body. Both FocusedFrame and TileGrid stay mounted once they've
           been visited — we toggle visibility via `hidden` rather than
@@ -1818,7 +1751,16 @@ function FocusedFrame({
         </div>
       )}
 
-      <PreviewLoadingDialog open={bundling && Boolean(appSource)} />
+      {/* Gated on Sandpack — the dialog masks Sandpack's post-stream
+          bundler lag. The fast renderer has no separate bundle
+          step, so firing the dialog there just produces a jarring
+          full-screen scrim at the moment of stream completion for
+          no reason. */}
+      <PreviewLoadingDialog
+        open={
+          rendererMode === "sandpack" && bundling && Boolean(appSource)
+        }
+      />
     </div>
   );
 }

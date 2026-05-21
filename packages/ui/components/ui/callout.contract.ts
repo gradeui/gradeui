@@ -16,8 +16,8 @@ export const CalloutContract = contract({
   composesWith: ["lucide-react icons as first child","Button (inside CalloutDescription)","Card (as a section callout)"],
   props: {
   "variant": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
+      schema: z.enum(["default", "destructive", "success", "warning", "info"]).optional(),
+      design: "knob",
       description: "semantic colouring; `default` is neutral",
   },
   },

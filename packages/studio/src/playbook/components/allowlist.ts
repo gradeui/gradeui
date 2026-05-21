@@ -35,12 +35,38 @@ export const ALLOWED_COMPONENTS = [
   "Row",
   "Grid",
   "Flex",
-  // App scaffold — the top-level page shell. nav=side|top|none picks the
-  // structure; AppShellMain's maxWidth caps content width. Reach for this
-  // instead of hand-rolling grid grid-cols-[auto_1fr] on every app layout.
+  // App scaffold — the top-level page shell. FOUR `nav` variants pick
+  // the structure; reach for AppShell instead of hand-rolling grid
+  // templates on every app layout:
+  //   nav="none"        Single column. Marketing, login.
+  //   nav="top"         Top bar + content. Reddit, Twitter chrome.
+  //   nav="side"        Left nav + content. Linear, Notion.
+  //   nav="three-pane"  **Narrow rail + Aside + Main.** Slack, WhatsApp,
+  //                     Mail, Plane, Discord. ANY screen with a vertical
+  //                     icon rail next to a separate list/sidebar is
+  //                     this — don't reach for raw `<div className="grid">`
+  //                     with three columns.
+  // AppShellHeader / AppShellFooter slot full-bleed top/bottom rows.
+  // AppShellAside is the middle column in three-pane (width via the CSS
+  // var: style={{ "--rds-app-shell-aside": "260px" }}). AppShellMain's
+  // maxWidth caps content width ("full" | "container").
   "AppShell",
+  "AppShellHeader",
   "AppShellNav",
+  "AppShellAside",
   "AppShellMain",
+  "AppShellFooter",
+  // Toolbar — slot-based chrome bar with `leading` / `center` /
+  // `trailing` props (Apple HIG "Toolbar" shape). THE ANSWER for any
+  // three-region top/bottom bar — Reddit / Twitter / GitHub / Linear's
+  // top chrome, section toolbars inside a Card, bottom action bars.
+  // Don't hand-roll `<Row justify="between">` with a flex-1 middle
+  // child — Toolbar's grid template is auto/1fr/auto so the center slot
+  // stays visually centered regardless of leading/trailing widths.
+  // position="top"|"bottom"|"inline", size="sm"|"md"|"lg", sticky.
+  // Drops naturally inside <AppShellHeader> for window chrome.
+  "Toolbar",
+  "ToolbarSlot",
   // Core primitives
   "Button",
   "Card",
@@ -113,11 +139,19 @@ export const ALLOWED_COMPONENTS = [
   "SelectContent",
   "SelectValue",
   "SelectItem",
-  // MultiSelect — multi-pick combobox, data-driven via `options`. The
-  // model should reach for this whenever the user asks for "tag picker",
-  // "multi select", "chips input", "filter by N things", or similar.
-  // Don't suggest it for unbounded/async lists — Command is the right
-  // fit there.
+  // MultiSelect — multi-pick combobox, data-driven via `options`. THE
+  // ANSWER for any "removable-chips-inside-an-input" / "chip-in-trigger"
+  // pattern: selected items render as Badges with X icons inside the
+  // trigger button; a Popover with searchable Command list opens for
+  // selection; "+N more" collapses past `maxCount`. Reach for it for:
+  //   - tag pickers, label pickers, category pickers
+  //   - filter chips (Linear / Jira filter bars — assignee, status, project)
+  //   - channel pickers (Slack), relation properties (Notion)
+  //   - GitHub label / reviewer pickers
+  //   - "filter by N things" everywhere
+  // Don't invent <ChipInput> / <TagInput> — MultiSelect covers it.
+  // Use Select for SINGLE selection; reach for Command directly when the
+  // option set is unbounded / async (users to @-mention, email recipients).
   "MultiSelect",
   // Date + Popover (shipped in @gradeui/ui@0.3.0)
   "DatePicker",

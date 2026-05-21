@@ -253,9 +253,11 @@ export {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbMenuTrigger,
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "../components/ui/breadcrumb";
+export type { BreadcrumbMenuItem } from "../components/ui/breadcrumb";
 
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 
@@ -263,6 +265,18 @@ export { Textarea } from "../components/ui/textarea";
 
 export { Toggle, toggleVariants } from "../components/ui/toggle";
 export { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
+
+// Toolbar — slot-based chrome bar with leading/center/trailing.
+// Apple HIG "Toolbar" shape. Reach for it any time you'd otherwise
+// hand-roll a <Row justify="between"> with a flex-1 middle child.
+// See packages/ui/components/ui/toolbar.md for slot semantics + size
+// + variant + sticky behaviour.
+export {
+  Toolbar,
+  ToolbarSlot,
+  type ToolbarProps,
+  type ToolbarSlotProps,
+} from "../components/ui/toolbar";
 
 // Navigation components
 // Sidebar — renamed from SideMenu (May 2026). Compound API:

@@ -36,7 +36,7 @@ import {
 } from "@/lib/studio-right-panel-stage";
 
 import { LayoutStartersPanel } from "./layout-starters-panel";
-import { StudioSettingsPanel } from "./settings-panel";
+import { SelectionInspector } from "./selection-inspector";
 import { StageBInspector } from "./stage-b-inspector";
 
 export interface StudioRightPanelProps {
@@ -95,7 +95,7 @@ export function StudioRightPanel({
     case "C":
     case "D":
       return (
-        <StudioSettingsPanel
+        <SelectionInspector
           variant="docked"
           selection={selection}
           appSource={appSource}

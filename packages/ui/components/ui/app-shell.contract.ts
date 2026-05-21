@@ -9,16 +9,15 @@ import { contract } from "@gradeui/contracts";
 
 export const AppShellContract = contract({
   name: "AppShell",
-  description: "The top-level page scaffold for app-like layouts — any screen that needs a nav region plus a content region. Reach for AppShell instead of hand-rolled `grid grid-cols-[auto_1fr]` so the layout shape (top vs side nav, constrained vs full-width main) is a prop the settings panel can mutate. Drop a Stack of nav items into AppShellNav for the nav region; drop a Stack into AppShellMain for the page's vertical rhythm.",
+  description: "The top-level page scaffold for any app-like or marketing layout. Reach for AppShell\ninstead of hand-rolling `grid grid-cols-[auto_1fr]` so the layout shape (top nav,\nside nav, three-pane Slack/Mail/Notion shape, constrained vs full-width main) is a\nprop the settings panel can mutate. Don't compose top-level layouts from raw grid\ntemplates — the four variants below cover most app shapes.\n\nPick the `nav` variant from the source:\n  nav=\"none\"        — Single column. Marketing landing, login, splash.\n  nav=\"top\"         — Top bar + content. Reddit, Twitter chrome.\n  nav=\"side\"        — Left nav + content. Linear, Notion sidebar shape.\n  nav=\"three-pane\"  — **Narrow icon rail + Aside + Main.** The Slack /\n                      WhatsApp / Mail / Plane / Discord / Notion-with-pages\n                      shape. ANY time you see a vertical icon rail next to\n                      a separate list/sidebar, this is the answer — don't\n                      reach for raw `<div className=\"grid\">` with three\n                      column tracks.",
   import: "@gradeui/ui",
-  aliases: ["app shell","page shell","layout","app layout","dashboard shell","scaffold","navigation split view","navigationsplitview","split view layout","safe area view","safeareaview"],
-  subcomponents: ["AppShellNav","AppShellMain"],
-  composesWith: ["Stack","Row","Card","Button","Separator","any page content"],
+  subcomponents: ["AppShellHeader","AppShellNav","AppShellAside","AppShellMain","AppShellFooter"],
+  composesWith: ["Stack","Row","Card","Button","Separator","Sidebar","Toolbar","any page content"],
   props: {
   "nav": {
-      schema: z.enum(["none", "top", "side"]).optional(),
+      schema: z.enum(["none", "top", "side", "three-pane"]).optional(),
       design: "knob",
-      description: "layout structure. \"top\" puts the nav above main, \"side\" to the left, \"none\" hides it",
+      description: "layout structure",
       default: "none",
   },
   "asChild": {

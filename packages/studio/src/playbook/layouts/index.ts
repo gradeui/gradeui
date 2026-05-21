@@ -95,6 +95,18 @@
 
 import { SCAFFOLDS } from "./scaffolds.generated";
 
+// Playground scaffolds — siloed dev-only set. Re-exported here as
+// `PLAYGROUND_SCAFFOLDS` + the `PlaygroundScaffold` type so the
+// docs-site picker can import them from `@gradeui/studio/playbook`
+// alongside `REFERENCE_LAYOUTS`. Separate export = tree-shaken away
+// from anything that doesn't explicitly ask for it (the system prompt
+// + retrieval + thumbnail pipeline all stay clean). See
+// `layouts/scaffolds-playground/README.md` for the authoring loop.
+export {
+  PLAYGROUND_SCAFFOLDS,
+  type PlaygroundScaffold,
+} from "./scaffolds-playground.generated";
+
 export interface ReferenceLayout {
   /** Stable id. Must match the scaffold's filename (sans `.jsx`) so
    *  `SCAFFOLDS[id]` resolves, and joins to a `StudioTemplate` by the

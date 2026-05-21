@@ -42,12 +42,17 @@ export const SidebarContract = contract({
   "title": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "group label; hidden when sidebar is collapsed",
+      description: "group label; **uppercase tracking-wide muted** styling auto-applied (Notion / Linear / Slack-style \"GAMES\", \"FAVORITES\", \"WORKSPACE\" headers); hidden when sidebar is collapsed",
   },
   "icon": {
       schema: z.unknown().optional(),
       design: "plumbing",
       description: "optional icon beside the title",
+  },
+  "trailing": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "**action(s) on the right edge of the header** — the canonical \"+\" / \"...\" slot (Notion's \"+ Add page\" next to Pages, Linear's \"+\" next to Favorites, Slack's \"+\" next to Channels). Pointer events isolated so a Button here doesn't toggle collapse.",
   },
   "defaultExpanded": {
       schema: z.boolean().optional(),

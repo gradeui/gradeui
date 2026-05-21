@@ -8,9 +8,12 @@ import { cn } from "@/lib/utils"
 /**
  * Breadcrumb — composable navigation primitive.
  *
- * Pure surface-less component. Density matches `TabsTrigger` so a
- * breadcrumb row placed above (or alongside) a tab strip reads at
- * the same scale.
+ * Pure surface-less component (no background, no border, no sticky
+ * positioning). Density matches `TabsTrigger` so a breadcrumb row
+ * placed above a tab strip — or alongside one — reads at the same
+ * scale.
+ *
+ * Composition is shadcn-flavoured:
  *
  *   <Breadcrumb>
  *     <BreadcrumbList>
@@ -23,16 +26,41 @@ import { cn } from "@/lib/utils"
  *       </BreadcrumbItem>
  *     </BreadcrumbList>
  *   </Breadcrumb>
+ *
+ * Note: the `TopMenu` component in this package wraps the same
+ * breadcrumb idea in an app-bar surface (sticky, bordered, padded).
+ * Use TopMenu when you want the full app-shell chrome; use
+ * Breadcrumb on its own when you want navigation embedded inside an
+ * existing surface (e.g. inside the Studio canvas).
  */
 
-const Breadcrumb = React.forwardRef<
-  HTMLElement,
-  React.ComponentPropsWithoutRef<"nav"> & {
-    separator?: React.ReactNode
-  }
->(({ ...props }, ref) => (
-  <nav ref={ref} aria-label="breadcrumb" {...props} />
-))
+// Separator inheritance context. Set on the Breadcrumb root via the
+// `separator` prop; every <BreadcrumbSeparator/> below it that doesn't
+// pass its own children reads from here. Per-instance children still
+// win — useful for "different separator just before the current page"
+// designs.
+const BreadcrumbSeparatorContext = React.createContext<React.ReactNode>(
+  <ChevronRight />,
+)
+
+export interface BreadcrumbProps extends React.ComponentPropsWithoutRef<"nav"> {
+  /** Default separator node for every <BreadcrumbSeparator/> inside this
+   *  tree. Pass a string ("/", "›", "•"), a lucide icon (<Slash />,
+   *  <ChevronRight />), or any ReactNode. Default: <ChevronRight />.
+   *  Per-instance `<BreadcrumbSeparator>children</BreadcrumbSeparator>`
+   *  still overrides. */
+  separator?: React.ReactNode
+}
+
+const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
+  ({ separator, children, ...props }, ref) => (
+    <BreadcrumbSeparatorContext.Provider value={separator ?? <ChevronRight />}>
+      <nav ref={ref} aria-label="breadcrumb" {...props}>
+        {children}
+      </nav>
+    </BreadcrumbSeparatorContext.Provider>
+  ),
+)
 Breadcrumb.displayName = "Breadcrumb"
 
 const BreadcrumbList = React.forwardRef<
@@ -62,6 +90,9 @@ const BreadcrumbItem = React.forwardRef<
 ))
 BreadcrumbItem.displayName = "BreadcrumbItem"
 
+// Shared link/button classes — the visual is identical regardless of
+// whether the underlying element is an <a> (has href) or a <button>
+// (in-app navigation via onClick).
 const breadcrumbLinkClasses = cn(
   "inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs",
   "transition-colors hover:text-foreground hover:bg-muted/60",
@@ -70,10 +101,16 @@ const breadcrumbLinkClasses = cn(
 )
 
 interface BreadcrumbLinkProps extends React.HTMLAttributes<HTMLElement> {
+  /** Anchor href. When set, renders an <a>; otherwise renders a <button>. */
   href?: string
+  /** Use a <span> instead of <a>/<button> — useful when wrapping in a
+   *  framework-specific Link component yourself. */
   asChild?: boolean
 }
 
+// Split into three forwardRefs (one per element) so TypeScript can
+// type the ref correctly. A polymorphic forwardRef would need a
+// generic ref type — more ceremony than the API needs.
 const BreadcrumbLink = React.forwardRef<HTMLElement, BreadcrumbLinkProps>(
   ({ asChild, className, href, ...props }, ref) => {
     if (asChild) {
@@ -130,19 +167,28 @@ const BreadcrumbSeparator = ({
   children,
   className,
   ...props
-}: React.ComponentProps<"li">) => (
-  <li
-    role="presentation"
-    aria-hidden="true"
-    className={cn(
-      "[&_svg]:size-3 [&_svg]:shrink-0 text-muted-foreground/60",
-      className
-    )}
-    {...props}
-  >
-    {children ?? <ChevronRight />}
-  </li>
-)
+}: React.ComponentProps<"li">) => {
+  // Per-instance `children` always wins (so designs that want a
+  // different glyph just before the current page can opt-out). When
+  // no children, read the tree-wide default from context — set by
+  // the Breadcrumb root's `separator` prop. If neither is set,
+  // ChevronRight is the fallback so a bare <BreadcrumbSeparator/>
+  // outside a Breadcrumb root still renders something.
+  const fromContext = React.useContext(BreadcrumbSeparatorContext)
+  return (
+    <li
+      role="presentation"
+      aria-hidden="true"
+      className={cn(
+        "[&_svg]:size-3 [&_svg]:shrink-0 text-muted-foreground/60",
+        className
+      )}
+      {...props}
+    >
+      {children ?? fromContext}
+    </li>
+  )
+}
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator"
 
 const BreadcrumbEllipsis = ({
