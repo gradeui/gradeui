@@ -506,10 +506,18 @@ export function StudioChat({
    * already trimmed the text and validated that there's something to
    * send, so we don't re-check here.
    *
-   * Attachments are accepted by the composer (paperclip / clipboard
-   * paste) but DROPPED here for now: `/api/chat` strips non-text
-   * parts and the default model isn't necessarily vision-capable.
-   * Wiring images end-to-end is its own task — see the TODO below.
+   * Attachments (paperclip + clipboard paste, via AIChatComposer)
+   * ARE forwarded end-to-end: each File is read as a data URL and
+   * shipped as an AI SDK `file` part alongside the text. `/api/chat`
+   * allow-lists `text` and `file` parts through `convertToModelMessages`,
+   * so any vision-capable model in the catalog (Gemini 2.5/3.5 Flash
+   * + Pro, Claude vision, GPT-4o, etc.) sees the image inline. A
+   * non-vision model will surface the provider's error in the chat
+   * banner rather than silently dropping the attachment.
+   *
+   * Trade-off: data URLs re-upload the same image on every turn until
+   * we land a media bucket. Cheap for the v1 path; revisit when
+   * follow-up turns get expensive.
    */
   const handleSend = async (
     text: string,

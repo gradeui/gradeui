@@ -12,7 +12,12 @@
  * green dot in the picker + a "Free" pill in the trigger label, so the user
  * can see at a glance where they don't need to spend money.
  *
- * Default: Gemini 2.5 Flash (free-tier friendly on Google AI Studio).
+ * Default: Gemini 3.5 Flash — GA at I/O 2026, free-tier on Google AI
+ * Studio, 4× faster than 2.5 Flash. We keep 2.5 Flash + variants in
+ * the catalog as the well-trodden free fallback in case 3.5 starts
+ * throttling or a user's key isn't whitelisted for the new tier yet.
+ * 3.5 Pro is omitted until it lands in June 2026; 3.1 Pro Preview is
+ * the current top-end Pro id.
  */
 
 import { useEffect, useState } from "react";
@@ -57,9 +62,10 @@ interface ProviderEntry {
 
 /**
  * Model catalog. First item is the default for each provider. Defaults are
- * chosen to be cheap-or-free: Gemini 2.5 Flash is free-tier on Google AI
- * Studio, Groq / Cerebras / OpenRouter all have generous free tiers, Claude
- * Haiku and GPT-4o Mini are the cheapest paid options.
+ * chosen to be cheap-or-free: Gemini 3.5 Flash is free-tier on Google AI
+ * Studio (and now the default after Google I/O 2026), Groq / Cerebras /
+ * OpenRouter all have generous free tiers, Claude Haiku and GPT-4o Mini
+ * are the cheapest paid options.
  */
 export const PROVIDER_CATALOG: Record<ProviderId, ProviderEntry> = {
   google: {
@@ -67,7 +73,14 @@ export const PROVIDER_CATALOG: Record<ProviderId, ProviderEntry> = {
     shortLabel: "Gemini",
     keyName: "GOOGLE_GENERATIVE_AI_API_KEY",
     keyHint: "Get a free key at aistudio.google.com/apikey",
+    // Order matters — first item is the default. 3.5 Flash leads; 2.5
+    // Flash is retained as the proven free fallback in case the 3.5
+    // tier throttles or the user's key isn't on the new quota yet.
+    // 3.5 Pro is intentionally absent until its June 2026 GA — listing
+    // it now would 404 the moment anyone clicked it.
     models: [
+      "gemini-3.5-flash",
+      "gemini-3.1-pro",
       "gemini-2.5-flash",
       "gemini-2.5-flash-lite",
       "gemini-2.5-pro",
@@ -145,7 +158,12 @@ export const PROVIDER_CATALOG: Record<ProviderId, ProviderEntry> = {
 
 export const DEFAULT_SETTINGS: ChatSettings = {
   provider: "google",
-  model: "gemini-2.5-flash",
+  // 3.5 Flash is the new free-tier default since Google I/O 2026. The
+  // self-heal block in `useChatSettings` below will silently migrate
+  // anyone whose persisted model id has been pulled from the catalog,
+  // so users mid-session on 2.5-flash stay on 2.5-flash (it's still
+  // listed); only orphaned ids get bumped to the first catalog entry.
+  model: "gemini-3.5-flash",
   apiKey: "",
   // On by default — the lazy keyword match in component-refs.ts keeps the
   // cost small (nothing ships unless the conversation actually names a

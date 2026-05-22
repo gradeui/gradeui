@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Circle,
   Clock,
+  Cpu,
   Gauge,
   Loader2,
 } from "lucide-react";
@@ -99,6 +100,13 @@ export interface ChatMessage {
    *  measures it — start at request, stop at stream-end). Rendered
    *  when `showDuration` is true on the parent <AIChat>. */
   duration?: number;
+  /** Optional model identifier that produced this turn, e.g.
+   *  "gemini-3.5-flash" or "google · gemini-3.5-flash". Rendered as a
+   *  small chip below the bubble when `showModel` is true on the
+   *  parent <AIChat>. Useful when the picker can swap providers
+   *  mid-session — without this stamp you can't tell after the fact
+   *  whether a given answer came from 2.5 Flash or 3.5 Flash. */
+  model?: string;
 }
 
 interface AIChatProps {
@@ -143,6 +151,13 @@ interface AIChatProps {
    * false.
    */
   showDuration?: boolean;
+  /**
+   * Show the per-turn model stamp ("gemini-3.5-flash") below the
+   * assistant bubble when a message carries `model`. Default false.
+   * Pair with `showUsage` / `showDuration` to give developer-facing
+   * chats a complete "what answered, how much, how fast" footer.
+   */
+  showModel?: boolean;
   /**
    * Show the per-turn reasoning ("thinking") disclosure above the
    * assistant prose when a message carries `thinking`. Default
@@ -261,6 +276,18 @@ function DurationRow({ duration }: { duration: number }) {
     >
       <Clock className="w-3 h-3" />
       <span>{formatDuration(duration)}</span>
+    </div>
+  );
+}
+
+function ModelRow({ model }: { model: string }) {
+  return (
+    <div
+      className="flex items-center gap-1 text-[11px] text-rds-gray-500 dark:text-rds-gray-400 font-mono"
+      title={`Answered by ${model}`}
+    >
+      <Cpu className="w-3 h-3" />
+      <span>{model}</span>
     </div>
   );
 }
