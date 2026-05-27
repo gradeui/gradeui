@@ -102,6 +102,9 @@ importers:
       '@gradeui/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@gradeui/walker':
+        specifier: workspace:*
+        version: link:../../packages/walker
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -622,6 +625,28 @@ importers:
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(@swc/core@1.15.30)(jiti@1.21.7)(postcss@8.5.10)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  packages/walker:
+    dependencies:
+      acorn:
+        specifier: ^8.14.0
+        version: 8.16.0
+      acorn-jsx:
+        specifier: ^5.3.2
+        version: 5.3.2(acorn@8.16.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.39
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      react:
+        specifier: ^19.0.0
+        version: 19.2.5
       typescript:
         specifier: ^5.6.3
         version: 5.9.3

@@ -46,6 +46,13 @@ import {
   type StudioSelection,
 } from "@/lib/chat-sandpack";
 import { CodeView } from "@/components/studio/code-view";
+import { FigmaIntroBanner } from "@/components/studio/figma-intro-banner";
+import { GradePayloadPanel } from "@gradeui/walker";
+import {
+  STUDIO_REWRITE_RULES,
+  STUDIO_UNWRAP_TYPES,
+} from "@/lib/studio-walker-register";
+import { toast } from "sonner";
 import { themeToCSSVars } from "@/lib/themes/apply";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { ViewportWidth } from "@/components/studio/sandpack-frame";
@@ -313,11 +320,69 @@ export function FocusedFastMount({
   );
 
   if (view === "code") {
-    // CodeView ships prism-react-renderer highlighting + the
-    // data-lenis-prevent attribute that lets trackpad scroll work
-    // inside this panel. Fast mode is still read-only; for editing,
-    // flip to Sandpack where SandpackCodeEditor is wired up.
-    return <CodeView code={preparedForCodeView} language="tsx" />;
+    // GradePayloadPanel wraps the Code view with a JSX|JSON segmented
+    // control + a single action button that flips between "Copy JSX"
+    // and "Send to Figma" based on the active tab. JSON is the Grade
+    // payload — paste into the code-to-figma plugin to build the same
+    // composition as linked component instances.
+    //
+    // The existing CodeView (prism-react-renderer) keeps doing what it
+    // did before; we hand it to GradePayloadPanel as its `renderCode`
+    // slot so the walker package stays portable (no Prism dep there).
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          width: "100%",
+        }}
+      >
+        <FigmaIntroBanner />
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <GradePayloadPanel
+            source={preparedForCodeView}
+            // Permissive: don't warn the user about every PascalCase tag
+            // the model emits that isn't pre-registered. The Send-to-Figma
+            // flow is best-effort; missing-component issues surface in the
+            // plugin itself with a clearer "no component named X in this
+            // file" diagnostic than the walker can give.
+            //
+            // excludeProps strips host-app implementation noise before
+            // it lands in the Walked JSX or the JSON payload. Two cases:
+            //   - data-gds-source-id is the Studio selection agent's
+            //     injection (see injectSourceIds in chat-sandpack.ts).
+            //     Pure runtime artifact; meaningless to Figma.
+            //   - className is Tailwind utility soup. Figma variants
+            //     drive their own visual state — className is implementation
+            //     noise on the Figma side too.
+            // If a Studio-side data-* attr ever needs to round-trip, narrow
+            // this rather than dropping it from here.
+            walkerOptions={{
+              permissive: true,
+              excludeProps: ["data-gds-source-id", "className"],
+              // Collapses every lucide-react icon into a single Figma
+              // `Icon` component with a kebab-case `name` variant. See
+              // lib/studio-walker-register.ts for the rule source +
+              // why this isn't done via excludeTypes.
+              rewriteTypes: STUDIO_REWRITE_RULES,
+              // Unwrap React-only typography wrappers (CardTitle,
+              // CardDescription). Children land inline in the parent.
+              unwrapTypes: STUDIO_UNWRAP_TYPES,
+            }}
+            renderCode={({ code, language }) => (
+              <CodeView code={code} language={language === "json" ? "json" : "tsx"} />
+            )}
+            onToast={(message) => toast(message)}
+            onSendToFigma={() => {
+              // Hook point for telemetry — see PRD §Metrics. Left bare
+              // for v1: the click-count + retention signal lives at this
+              // call site whenever the docs site grows a real events pipe.
+            }}
+          />
+        </div>
+      </div>
+    );
   }
 
   // Preview view — scope by viewport-width artboard to match Sandpack's

@@ -1,0 +1,36 @@
+{
+  "name": "@gradeui/walker",
+  "version": "0.1.0",
+  "description": "Grade Design System — React-to-Figma walker. Parses JSX/TSX source (or a runtime React tree) into a Grade payload that the code-to-figma Figma plugin consumes. Powers the Studio Code tab's `Send to Figma` flow: instantiate the same composition in Figma as linked component instances, not detached frames.",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Grade",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "lint": "echo \"(no lint configured for @gradeui/walker yet)\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "acorn": "^8.14.0",
+    "acorn-jsx": "^5.3.2"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "typescript": "^5.6.3"
+  }
+}
