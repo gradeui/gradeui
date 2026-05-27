@@ -234,6 +234,29 @@ export function useUndoHistory<T>(
  * alongside the URL + override map cleanup, so closing a design also
  * drops its undo stack.
  */
+/**
+ * Read the snapshot count for a design WITHOUT instantiating the
+ * hook. Used by ambient surfaces (projects menu, status chips) that
+ * want a quick "how many revisions does this screen have" read
+ * without subscribing to history updates. Returns 0 when the design
+ * has no persisted history (fresh screen, storage disabled, SSR).
+ *
+ * Counts include the seed snapshot — so a screen with zero edits
+ * still reads as 1 if its baseline was committed. Subtract 1 in the
+ * consumer if you want to show "edits since seed".
+ */
+export function readRevisionCount(designId: string): number {
+  if (typeof window === "undefined" || !designId) return 0;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_PREFIX + designId);
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw) as { snapshots?: unknown[] };
+    return Array.isArray(parsed?.snapshots) ? parsed.snapshots.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function pruneHistoryStorage(liveIds: Set<string>): void {
   if (typeof window === "undefined") return;
   try {

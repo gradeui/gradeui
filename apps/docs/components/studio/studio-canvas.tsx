@@ -48,6 +48,8 @@ import {
   MousePointerClick,
   MoveHorizontal,
   Package,
+  PanelLeft,
+  PanelRight,
   Plus,
   Redo2,
   Share2,
@@ -203,6 +205,32 @@ interface StudioCanvasProps {
   redoLabel?: string | null;
   onUndo?: () => void;
   onRedo?: () => void;
+  // ─── Side-panel visibility ───────────────────────────────────────
+  // The chat (left) and tabbed-settings (right) columns are owned by
+  // the page; the canvas toolbar just surfaces toggles for them. The
+  // canvas needs to know the current open/closed state so the icon
+  // and tooltip can reflect "show" vs "hide". `undefined` from the
+  // parent hides the toggle entirely — useful for embeds where the
+  // panels don't exist.
+  leftPanelOpen?: boolean;
+  rightPanelOpen?: boolean;
+  onToggleLeftPanel?: () => void;
+  onToggleRightPanel?: () => void;
+  // ─── Canvas zoom (controlled by parent) ──────────────────────────
+  // Lifted out of the canvas so the studio page can route the left
+  // panel based on view ("all" → Projects menu, "fit" → Chat).
+  // Optional so other consumers can still let the canvas manage its
+  // own zoom state internally. When provided, the parent owns the
+  // truth and the canvas drives it via onZoomChange.
+  zoom?: "fit" | "all";
+  onZoomChange?: (zoom: "fit" | "all") => void;
+  // ─── Project context ──────────────────────────────────────────────
+  // Name of the project currently loaded into the workbench. Shown
+  // as the parent crumb in Fit mode and as the heading in Grid mode
+  // so the canvas chrome reflects where the user actually is in the
+  // Studio hierarchy. Optional — embed consumers without project
+  // semantics fall back to the previous "All screens" wording.
+  projectName?: string;
   className?: string;
 }
 
@@ -230,14 +258,33 @@ export function StudioCanvas({
   redoLabel = null,
   onUndo,
   onRedo,
+  leftPanelOpen,
+  rightPanelOpen,
+  onToggleLeftPanel,
+  onToggleRightPanel,
+  zoom: controlledZoom,
+  onZoomChange,
+  projectName,
   rendererMode = "sandpack",
   className,
 }: StudioCanvasProps) {
-  // Zoom lives on the canvas itself, not the page — flipping between
-  // designs shouldn't reset your zoom, and no other surface needs to
-  // know what zoom we're at. Default to "fit" so the initial Studio
-  // experience matches the pre-canvas single-screen feel.
-  const [zoom, setZoom] = useState<"fit" | "all">("fit");
+  // Zoom — controlled by the parent when `controlledZoom` is passed
+  // (Studio uses this to route the left panel based on view), with
+  // an internal fallback for any consumer that doesn't lift state.
+  // Default to "fit" so the initial Studio experience matches the
+  // pre-canvas single-screen feel.
+  const [internalZoom, setInternalZoom] = useState<"fit" | "all">("fit");
+  const zoom = controlledZoom ?? internalZoom;
+  const setZoom = useCallback(
+    (next: "fit" | "all") => {
+      // Mirror to internal state for the uncontrolled path; emit to
+      // the parent on the controlled path so it can react (e.g. swap
+      // the left panel content).
+      if (controlledZoom === undefined) setInternalZoom(next);
+      onZoomChange?.(next);
+    },
+    [controlledZoom, onZoomChange],
+  );
 
   // Track whether the user has ever opened All view. The first flip
   // mounts the tile grid; after that we keep it mounted across every
@@ -1036,17 +1083,67 @@ export function StudioCanvas({
         className="px-3 shrink-0"
         leading={
           <div className="flex items-center gap-2 min-w-0 text-xs text-muted-foreground">
+          {/* Left-panel toggle — show/hide the chat column. Lives in the
+              start slot of the canvas toolbar (page-level chrome is
+              owned by the parent; this is just the affordance). The
+              icon is static — state is communicated by aria-pressed +
+              tooltip swap rather than an icon flip, which avoids the
+              "is it currently showing the open or closed glyph?"
+              ambiguity that PanelLeftOpen/Close pairs introduce. The
+              ⌘\ hint mirrors VS Code's "Toggle Sidebar" shortcut,
+              which the studio page wires globally. */}
+          {onToggleLeftPanel && (
+            <button
+              type="button"
+              onClick={onToggleLeftPanel}
+              aria-pressed={leftPanelOpen}
+              aria-label={leftPanelOpen ? "Hide chat panel" : "Show chat panel"}
+              title={
+                leftPanelOpen
+                  ? "Hide chat panel (⌘\\)"
+                  : "Show chat panel (⌘\\)"
+              }
+              className={cn(
+                "h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors",
+                "[&_svg]:size-3.5 [&_svg]:shrink-0",
+                leftPanelOpen
+                  ? "text-foreground hover:bg-muted"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
+              )}
+            >
+              <PanelLeft />
+            </button>
+          )}
           {isFit && focused ? (
             <DesignBreadcrumb
               focused={focused}
               onBack={() => setZoom("all")}
               onRename={onRenameDesign}
+              // Surface the project as the parent crumb so the
+              // breadcrumb reads as a real "you are here" trail.
+              // Click navigates back to the grid (same target the
+              // old "All screens" link served, just labelled with
+              // project context). Falls back to "All screens" for
+              // embed consumers without project semantics.
+              parentLabel={projectName ?? "All screens"}
             />
           ) : (
-            <span className="px-1 text-xs font-medium text-foreground">
-              All screens
+            // Grid-mode heading: project name as the where-am-I
+            // anchor, screen count as a subordinate counter.
+            <span className="flex items-center gap-1.5 px-1 text-xs">
+              {projectName && (
+                <>
+                  <span className="font-medium text-foreground">
+                    {projectName}
+                  </span>
+                  <span className="text-muted-foreground">/</span>
+                </>
+              )}
+              <span className="font-medium text-foreground">
+                All screens
+              </span>
               {designs.length > 1 && (
-                <span className="ml-1 text-muted-foreground">
+                <span className="text-muted-foreground">
                   ({designs.length})
                 </span>
               )}
@@ -1420,6 +1517,38 @@ export function StudioCanvas({
                 </button>
               )}
             </>
+          )}
+          {/* Right-panel toggle — sits at the very end of the toolbar
+              and lives in both Fit and Grid mode (panel visibility is
+              chrome, not canvas state). Mirror of the left toggle in
+              the leading slot — same icon-only treatment, same
+              aria-pressed semantics, tooltip swaps for show/hide.
+              ⌘⇧\ matches VS Code's "Toggle Secondary Sidebar". */}
+          {onToggleRightPanel && (
+            <button
+              type="button"
+              onClick={onToggleRightPanel}
+              aria-pressed={rightPanelOpen}
+              aria-label={
+                rightPanelOpen
+                  ? "Hide settings panel"
+                  : "Show settings panel"
+              }
+              title={
+                rightPanelOpen
+                  ? "Hide settings panel (⌘⇧\\)"
+                  : "Show settings panel (⌘⇧\\)"
+              }
+              className={cn(
+                "ml-1 h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors",
+                "[&_svg]:size-3.5 [&_svg]:shrink-0",
+                rightPanelOpen
+                  ? "text-foreground hover:bg-muted"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
+              )}
+            >
+              <PanelRight />
+            </button>
           )}
         </div>
         }

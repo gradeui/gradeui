@@ -46,9 +46,41 @@
  * everything else has been pulled out of the chrome.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UIMessage } from "ai";
-import { Loader2 } from "lucide-react";
+import * as React from "react";
+import {
+  ChevronDown,
+  LogOut,
+  Loader2,
+  Settings as SettingsIcon,
+  ShieldCheck,
+  Users as UsersIcon,
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  AppShell,
+  AppShellHeader,
+  AppShellMain,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@gradeui/ui";
 import { useChatSettings } from "@/components/ai-elements/provider-picker";
 import { StudioChat } from "@/components/studio/studio-chat";
 import { StudioCanvas } from "@/components/studio/studio-canvas";
@@ -57,6 +89,7 @@ import {
   StudioSettings,
   StudioSettingsTrigger,
   type RendererMode,
+  type StorageBackend,
   type UserTier,
 } from "@/components/studio/studio-settings";
 import { useGradeTheme } from "@/components/grade-theme-provider";
@@ -80,8 +113,36 @@ import {
   initialDesigns,
   type Design,
 } from "@/lib/studio-designs";
-import { useUndoHistory, pruneHistoryStorage } from "@/lib/use-undo-history";
+import {
+  useUndoHistory,
+  pruneHistoryStorage,
+  readRevisionCount,
+} from "@/lib/use-undo-history";
 import { GRADEUI_VERSION, STUDIO_VERSION } from "@/lib/versions";
+import {
+  getStudioStorage,
+  type Membership,
+  type OrgMembership,
+  type Organisation,
+  type Project,
+  type ProjectSnapshot,
+  type Team,
+  type User as StoredUser,
+} from "@/lib/studio-storage";
+import { ProjectsMenu } from "@/components/studio/projects-menu";
+import { SuperAdminSheet } from "@/components/studio/super-admin-sheet";
+import {
+  LOCAL_ORG_ID,
+  LOCAL_USER_ID,
+  UserSessionProvider,
+  useCurrentOrg,
+  useCurrentUser,
+  useImpersonation,
+} from "@/lib/studio-users";
+// Side-effect import: seeds the @gradeui/walker registry with the
+// playbook's ALLOWED_COMPONENTS so the Send-to-Figma JSON is built
+// with the right known-names set. See lib/studio-walker-register.ts.
+import "@/lib/studio-walker-register";
 
 // The system prompt now lives in `@gradeui/studio/playbook` — same text
 // previously duplicated here and in `app/chat/page.tsx`. See `buildSystemPrompt`
@@ -232,81 +293,473 @@ export default function StudioPage() {
     [activeId],
   );
 
-  // Session resume — persist the working session (designs, active
-  // tab, per-design chat history and notes) so a page refresh
-  // doesn't wipe the user's work. Mirrors what a "logged-in
-  // product" feels like, minus the server.
-  //
-  // Two effects:
-  //   1. On mount, hydrate from localStorage. Runs once.
-  //   2. On every change, write the snapshot back to localStorage.
-  //
-  // Ephemeral state (streamingByDesign, selectionByDesign) is NOT
-  // persisted — those should start fresh on every load.
-  //
-  // Lives below all the relevant `useState` declarations so the
-  // setters are in scope when this effect's dep array evaluates.
-  // Once a real persistence layer lands this becomes the fallback
-  // for offline / signed-out states.
-  const STUDIO_SESSION_KEY = "grade:studio:session";
+  // Projects — the layer above designs. A Project owns a set of
+  // screens (designs), each with its own chat history + notes, plus
+  // (in the future) its own theme draft. The page holds the project
+  // index and the currently-loaded project; everything else flows
+  // through the StudioStorage adapter so swapping localStorage for
+  // Supabase later is a one-file change.
+  const storage = useMemo(() => getStudioStorage(), []);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+
+  // Teams + memberships are the collaboration substrate. Loaded
+  // once on bootstrap from the storage adapter — today that's the
+  // local Personal team + a single admin membership row for the
+  // local user; tomorrow Supabase returns the user's full team
+  // graph. The permission resolver (resolveEffectiveRole / canAccess)
+  // walks BOTH lists to figure out what the current user can do on
+  // a given project, so any UI that gates write actions takes
+  // these as inputs.
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [memberships, setMemberships] = useState<Membership[]>([]);
+  // Users + orgs + org memberships are loaded alongside teams. The
+  // SuperAdminSheet enumerates from these; UserSessionProvider
+  // resolves impersonation against them.
+  const [allUsers, setAllUsers] = useState<StoredUser[]>([]);
+  const [allOrgs, setAllOrgs] = useState<Organisation[]>([]);
+  const [orgMemberships, setOrgMemberships] = useState<OrgMembership[]>([]);
+  // Mirrors the project id whose state is reflected in the
+  // designs/messages/notes maps right now. While a switch is in
+  // flight, this lags behind activeProjectId — the persistence
+  // effect uses the lag as a "don't save yet" signal.
+  const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
+
+  // Cross-project metadata for the Projects menu — design list
+  // (names only, not appSource) plus per-design turn + revision
+  // counts. Lets every project surface its expanded children
+  // without forcing the active project's full state to balloon
+  // out into all projects. Maintained two ways:
+  //   1. On bootstrap, loaded from storage for every project.
+  //   2. For the ACTIVE project, derived live from the in-memory
+  //      designs / messagesByDesign so the user sees fresh counts
+  //      as soon as a turn lands or a screen is added.
+  type ProjectSummary = {
+    designs: { id: string; name: string }[];
+    /** User-message count per design id. */
+    turnsByDesign: Record<string, number>;
+    /** Undo-history snapshot count per design id. */
+    revisionsByDesign: Record<string, number>;
+  };
+  const [projectSummaries, setProjectSummaries] = useState<
+    Record<string, ProjectSummary>
+  >({});
+
+  // Bootstrap — pull the project index, resolve the active project,
+  // hydrate designs/messages/notes from its snapshot. Runs once on
+  // mount; the storage adapter's own migration step seeds the
+  // "Default project" if there's no v2 data yet.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(STUDIO_SESSION_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as {
-        designs?: Design[];
-        activeId?: string;
-        messagesByDesign?: Record<string, UIMessage[]>;
-        notesByDesign?: Record<string, string>;
-      };
-      if (
-        parsed &&
-        Array.isArray(parsed.designs) &&
-        parsed.designs.length > 0
-      ) {
-        setDesigns(parsed.designs);
-        if (
-          parsed.activeId &&
-          parsed.designs.some((d) => d.id === parsed.activeId)
-        ) {
-          setActiveId(parsed.activeId);
-        }
-        if (
-          parsed.messagesByDesign &&
-          typeof parsed.messagesByDesign === "object"
-        ) {
-          setMessagesByDesign(parsed.messagesByDesign);
-        }
-        if (
-          parsed.notesByDesign &&
-          typeof parsed.notesByDesign === "object"
-        ) {
-          setNotesByDesign(parsed.notesByDesign);
-        }
+    let cancelled = false;
+    (async () => {
+      const list = await storage.listProjects();
+      if (cancelled) return;
+      // Empty index shouldn't happen — the adapter's migration
+      // guarantees at least the Default project. Belt-and-braces
+      // guard so a corrupted index doesn't leave Studio blank.
+      if (list.length === 0) {
+        const seeded = await storage.createProject({
+          name: "Default project",
+        });
+        if (cancelled) return;
+        setProjects([seeded]);
+        await storage.setActiveProjectId(seeded.id);
+        setActiveProjectId(seeded.id);
+        const snap = await storage.loadProject(seeded.id);
+        if (cancelled || !snap) return;
+        applySnapshot(snap);
+        setLoadedProjectId(seeded.id);
+        return;
       }
-    } catch {
-      // Corrupt / unparseable session blob — keep the default seed.
-    }
-    // Intentional empty deps — hydrate exactly once on first mount.
+      setProjects(list);
+      const stored = await storage.getActiveProjectId();
+      // URL takes precedence over storage-pointer — so a shared
+      // link or a back/forward landing on this page lands on the
+      // referenced project + screen, not on whatever was open last.
+      const urlParams =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search)
+          : null;
+      const urlProject = urlParams?.get("project");
+      const urlScreen = urlParams?.get("screen");
+      const targetId =
+        (urlProject && list.some((p) => p.id === urlProject) && urlProject) ||
+        (stored && list.some((p) => p.id === stored) && stored) ||
+        list[0].id;
+      setActiveProjectId(targetId);
+      const snap = await storage.loadProject(targetId);
+      if (cancelled || !snap) return;
+      // Override the loaded project's persisted activeDesignId with
+      // the URL's screen param when it resolves to a real design —
+      // same precedence rule applies one level down.
+      const initialDesignId =
+        urlScreen && snap.designs.some((d) => d.id === urlScreen)
+          ? urlScreen
+          : snap.activeDesignId;
+      applySnapshot({ ...snap, activeDesignId: initialDesignId });
+      setLoadedProjectId(targetId);
+      // Load every project's snapshot once on bootstrap to seed
+      // the Projects menu summaries. The active project's entry
+      // is then kept fresh by the live-update effect below.
+      // Sequential awaits would serialise reads needlessly —
+      // Promise.all parallelises the localStorage hits.
+      const allSnaps = await Promise.all(
+        list.map((p) => storage.loadProject(p.id)),
+      );
+      if (cancelled) return;
+      const summaries: Record<string, ProjectSummary> = {};
+      list.forEach((p, i) => {
+        const s = allSnaps[i];
+        if (s) summaries[p.id] = computeSummary(s);
+      });
+      setProjectSummaries(summaries);
+
+      // Teams + memberships + users + orgs + org memberships —
+      // pulled in parallel so a slow read doesn't gate the first
+      // paint. Bootstrap is one round-trip's worth of localStorage
+      // hits regardless; Supabase later does this as one
+      // joined query.
+      const [
+        teamList,
+        membershipList,
+        userList,
+        orgList,
+        orgMembershipList,
+      ] = await Promise.all([
+        storage.listTeams(),
+        storage.listMemberships(),
+        storage.listUsers(),
+        storage.listOrgs(),
+        storage.listOrgMemberships(),
+      ]);
+      if (cancelled) return;
+      setTeams(teamList);
+      setMemberships(membershipList);
+      setAllUsers(userList);
+      setAllOrgs(orgList);
+      setOrgMemberships(orgMembershipList);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Effect intentionally runs once; `storage` is a stable
+    // singleton.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Apply a snapshot's design/chat/notes payload to the in-memory
+  // page state. Pulled into a named function so both the bootstrap
+  // and project-switching code paths use the same atomic setter
+  // ordering — chat history and active design id must land in the
+  // same React batch as the design list, otherwise the chat panel
+  // would briefly key off the wrong activeId.
+  const applySnapshot = useCallback((snap: ProjectSnapshot) => {
+    setDesigns(snap.designs.length > 0 ? snap.designs : initialDesigns());
+    setActiveId(
+      snap.designs.some((d) => d.id === snap.activeDesignId)
+        ? snap.activeDesignId
+        : snap.designs[0]?.id ?? initialDesigns()[0].id,
+    );
+    setMessagesByDesign(snap.messagesByDesign);
+    setNotesByDesign(snap.notesByDesign);
+  }, []);
+
+  // Compute the ambient counts a project surfaces in the menu —
+  // screen list + turns + revisions. Pulled into a helper so the
+  // bootstrap loop and the active-project live updater build the
+  // shape identically.
+  const computeSummary = useCallback(
+    (snap: ProjectSnapshot): ProjectSummary => {
+      const turnsByDesign: Record<string, number> = {};
+      const revisionsByDesign: Record<string, number> = {};
+      for (const d of snap.designs) {
+        const msgs = snap.messagesByDesign[d.id] ?? [];
+        turnsByDesign[d.id] = msgs.filter(
+          (m) => m.role === "user",
+        ).length;
+        revisionsByDesign[d.id] = readRevisionCount(d.id);
+      }
+      return {
+        designs: snap.designs.map((d) => ({ id: d.id, name: d.name })),
+        turnsByDesign,
+        revisionsByDesign,
+      };
+    },
+    [],
+  );
+
+  // Persistence — write the current project's snapshot back to
+  // storage whenever any of its tracked fields change. Skips while
+  // the project switch is mid-flight (loadedProjectId !== active)
+  // so we don't save the OLD project's state under the NEW key.
+  useEffect(() => {
+    if (!activeProjectId) return;
+    if (loadedProjectId !== activeProjectId) return;
+    const project = projects.find((p) => p.id === activeProjectId);
+    if (!project) return;
+    const snapshot: ProjectSnapshot = {
+      project,
+      designs,
+      activeDesignId: activeId,
+      messagesByDesign,
+      notesByDesign,
+    };
+    storage.saveProject(snapshot).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.warn("[studio] saveProject failed:", err);
+    });
+  }, [
+    activeProjectId,
+    loadedProjectId,
+    projects,
+    designs,
+    activeId,
+    messagesByDesign,
+    notesByDesign,
+    storage,
+  ]);
+
+  // Keep the active project's Projects-menu summary in sync with
+  // the in-memory designs / messages. Inactive projects rely on
+  // their bootstrap-loaded entries until the user switches into
+  // them; that flips this project to the active one and the loop
+  // here takes over. Same gate as the persistence effect so an
+  // in-flight switch doesn't write stale counts to the new key.
+  useEffect(() => {
+    if (!activeProjectId || loadedProjectId !== activeProjectId) return;
+    const turnsByDesign: Record<string, number> = {};
+    const revisionsByDesign: Record<string, number> = {};
+    for (const d of designs) {
+      turnsByDesign[d.id] = (messagesByDesign[d.id] ?? []).filter(
+        (m) => m.role === "user",
+      ).length;
+      revisionsByDesign[d.id] = readRevisionCount(d.id);
+    }
+    setProjectSummaries((cur) => ({
+      ...cur,
+      [activeProjectId]: {
+        designs: designs.map((d) => ({ id: d.id, name: d.name })),
+        turnsByDesign,
+        revisionsByDesign,
+      },
+    }));
+  }, [
+    activeProjectId,
+    loadedProjectId,
+    designs,
+    messagesByDesign,
+  ]);
+
+  // URL history sync — keeps `?project=…&screen=…` in lockstep
+  // with the in-memory state so back/forward navigates between
+  // projects + screens, and shared links open to the right place.
+  //
+  // First write per session is a `replaceState` (no extra history
+  // entry — the initial URL was either already correct from a
+  // shared link or empty), every subsequent write is `pushState`
+  // so undo via back-button works. The `current === target` short-
+  // circuit also catches popstate-driven state updates (the
+  // listener mutated the URL already; our effect would otherwise
+  // push a redundant entry).
+  const urlInitializedRef = useRef(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        STUDIO_SESSION_KEY,
-        JSON.stringify({
-          designs,
-          activeId,
-          messagesByDesign,
-          notesByDesign,
-        }),
-      );
-    } catch {
-      /* storage disabled / quota — accept the loss silently */
+    if (!activeProjectId || loadedProjectId !== activeProjectId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("project", activeProjectId);
+    url.searchParams.set("screen", activeId);
+    const target = url.pathname + url.search;
+    const current = window.location.pathname + window.location.search;
+    if (current === target) {
+      urlInitializedRef.current = true;
+      return;
     }
-  }, [designs, activeId, messagesByDesign, notesByDesign]);
+    if (!urlInitializedRef.current) {
+      window.history.replaceState({}, "", target);
+      urlInitializedRef.current = true;
+    } else {
+      window.history.pushState({}, "", target);
+    }
+  }, [activeProjectId, loadedProjectId, activeId]);
+
+  // popstate listener — when the user hits back/forward, read the
+  // URL params and sync state. We compare against the live state
+  // refs so we don't fight the URL push effect above (its
+  // `current === target` guard handles the no-op write).
+  const popstateLatestRef = useRef({
+    activeProjectId,
+    activeId,
+    handleSwitchProject: (_id: string) => Promise.resolve(),
+  });
+  // Keep refs in sync with the latest closures — the popstate
+  // listener is installed once and would otherwise close over
+  // stale callbacks.
+  useEffect(() => {
+    popstateLatestRef.current.activeProjectId = activeProjectId;
+    popstateLatestRef.current.activeId = activeId;
+  }, [activeProjectId, activeId]);
+
+  // Project switching — flush the current state under the OUTGOING
+  // project, load the incoming one, apply its snapshot. Saved with
+  // `await` so the outgoing project's most-recent state is durable
+  // before we replace in-memory state.
+  const handleSwitchProject = useCallback(
+    async (id: string) => {
+      if (id === activeProjectId) return;
+      const current = projects.find((p) => p.id === activeProjectId);
+      if (current && loadedProjectId === activeProjectId) {
+        try {
+          await storage.saveProject({
+            project: current,
+            designs,
+            activeDesignId: activeId,
+            messagesByDesign,
+            notesByDesign,
+          });
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn("[studio] save-on-switch failed:", err);
+        }
+      }
+      const snap = await storage.loadProject(id);
+      if (!snap) return;
+      setActiveProjectId(id);
+      await storage.setActiveProjectId(id);
+      applySnapshot(snap);
+      setLoadedProjectId(id);
+    },
+    [
+      storage,
+      activeProjectId,
+      loadedProjectId,
+      projects,
+      designs,
+      activeId,
+      messagesByDesign,
+      notesByDesign,
+      applySnapshot,
+    ],
+  );
+
+  // Create — mints a project via the adapter (which also seeds it
+  // with a blank screen), refreshes the projects list, then
+  // switches to it. Wrapping in handleSwitchProject ensures the
+  // outgoing project's state is saved before we move.
+  const handleCreateProject = useCallback(async () => {
+    const name = window.prompt("Project name", "Untitled project");
+    if (!name) return;
+    const created = await storage.createProject({ name: name.trim() });
+    const list = await storage.listProjects();
+    setProjects(list);
+    // Seed an empty-ish summary for the new project so the Projects
+    // menu renders its row immediately without waiting for the
+    // switch to land. createProject's adapter seeds one blank screen
+    // — the live-update effect will replace this with the real
+    // counts once we become the active project.
+    const newSnap = await storage.loadProject(created.id);
+    if (newSnap) {
+      setProjectSummaries((cur) => ({
+        ...cur,
+        [created.id]: computeSummary(newSnap),
+      }));
+    }
+    await handleSwitchProject(created.id);
+  }, [storage, handleSwitchProject, computeSummary]);
+
+  const handleRenameProject = useCallback(
+    async (id: string, name: string) => {
+      await storage.renameProject(id, name);
+      const list = await storage.listProjects();
+      setProjects(list);
+    },
+    [storage],
+  );
+
+  // Click a screen inside ANY project from the Projects menu.
+  // If the screen belongs to the active project, just set it
+  // active and zoom in. Otherwise switch projects first (which
+  // saves the outgoing project + loads the incoming snapshot),
+  // then override activeId to the clicked screen before zooming.
+  const handleSelectScreenInProject = useCallback(
+    async (projectId: string, designId: string) => {
+      if (projectId !== activeProjectId) {
+        await handleSwitchProject(projectId);
+        // applySnapshot has already set activeId to the incoming
+        // project's persisted activeDesignId — override here so
+        // the user lands on the screen they actually clicked, not
+        // whatever was open last in that project.
+      }
+      setActiveId(designId);
+      setZoom("fit");
+    },
+    [activeProjectId, handleSwitchProject],
+  );
+
+  // Keep the popstate ref pointing at the latest handler — the
+  // listener installs once with a stable closure, so without this
+  // mirror it would call a stale switch.
+  useEffect(() => {
+    popstateLatestRef.current.handleSwitchProject = (id: string) =>
+      handleSwitchProject(id);
+  }, [handleSwitchProject]);
+
+  // popstate listener — back/forward in browser navigates between
+  // projects + screens. Installed once on mount; reads latest
+  // callbacks via the ref so it always sees the current
+  // handleSwitchProject.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onPop = () => {
+      const url = new URL(window.location.href);
+      const p = url.searchParams.get("project");
+      const s = url.searchParams.get("screen");
+      const cur = popstateLatestRef.current;
+      if (p && p !== cur.activeProjectId) {
+        cur.handleSwitchProject(p).then(() => {
+          if (s) setActiveId(s);
+        });
+      } else if (s && s !== cur.activeId) {
+        setActiveId(s);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const handleDeleteProject = useCallback(
+    async (id: string) => {
+      await storage.deleteProject(id);
+      const list = await storage.listProjects();
+      setProjects(list);
+      // Drop the deleted project's summary so the Projects menu
+      // doesn't render a phantom row.
+      setProjectSummaries((cur) => {
+        if (!(id in cur)) return cur;
+        const { [id]: _drop, ...rest } = cur;
+        return rest;
+      });
+      // If we just deleted the active project, switch to whatever's
+      // left (or a fresh default if we deleted the only one — but
+      // ProjectsMenu blocks that path by hiding the trash button
+      // when projects.length === 1).
+      if (id === activeProjectId) {
+        const next = list[0];
+        if (next) {
+          await handleSwitchProject(next.id);
+        } else {
+          // Should never happen given the menu guard, but rebuild a
+          // default if it somehow does.
+          const seeded = await storage.createProject({
+            name: "Default project",
+          });
+          const refreshed = await storage.listProjects();
+          setProjects(refreshed);
+          await handleSwitchProject(seeded.id);
+        }
+      }
+    },
+    [storage, activeProjectId, handleSwitchProject],
+  );
 
   const [view, setView] = useState<"preview" | "code">("preview");
 
@@ -324,6 +777,12 @@ export default function StudioPage() {
   // when pro/enterprise-only chrome lands (e.g. exporting to a per-
   // client starter, hiding the npm path for free), read this state.
   const [rendererMode, setRendererMode] = useState<RendererMode>("fast");
+  // Storage backend pick — defaults to localstorage so a fresh
+  // clone runs without setup. The factory in lib/studio-storage
+  // doesn't read this yet (always returns LocalStorage); it'll
+  // start branching once the Supabase adapter lands.
+  const [storageBackend, setStorageBackend] =
+    useState<StorageBackend>("localstorage");
   const [userTier, setUserTier] = useState<UserTier>("free");
 
   // Settings sheet — controlled. Default closed; the topbar gear opens
@@ -331,6 +790,143 @@ export default function StudioPage() {
   // can be opened from anywhere else later (left rail, keyboard
   // shortcut, etc.) without each entry point owning its own copy.
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Super admin sheet open state — toggled by the shield button in
+  // the topbar (only rendered for users with superAdmin=true) and
+  // by the ⌘⇧⌥A global shortcut.
+  const [superAdminOpen, setSuperAdminOpen] = useState(false);
+
+  // Side-panel visibility — left = chat, right = settings/tabs. Both
+  // default open so first-paint shows the familiar three-column layout
+  // and SSR markup matches the client. We rehydrate from localStorage
+  // in a one-shot effect (gated by a ref so React 18's StrictMode
+  // double-invoke doesn't undo the user's choice on second render).
+  //
+  // The same boolean drives two surfaces: on desktop (≥ md) it
+  // collapses the inline column inside AppShellMain; on mobile (< md)
+  // it opens a slide-in Sheet over the canvas. One state, two
+  // renderings — keeps keyboard shortcuts working identically across
+  // breakpoints.
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const panelHydratedRef = useRef(false);
+  useEffect(() => {
+    if (panelHydratedRef.current) return;
+    panelHydratedRef.current = true;
+    try {
+      const l = window.localStorage.getItem("studio:left-panel-open");
+      if (l === "false") setLeftPanelOpen(false);
+      const r = window.localStorage.getItem("studio:right-panel-open");
+      if (r === "false") setRightPanelOpen(false);
+    } catch {
+      /* storage disabled — fall back to default-open */
+    }
+  }, []);
+  useEffect(() => {
+    if (!panelHydratedRef.current) return;
+    try {
+      window.localStorage.setItem(
+        "studio:left-panel-open",
+        String(leftPanelOpen),
+      );
+    } catch {
+      /* storage disabled — visibility just won't survive reload */
+    }
+  }, [leftPanelOpen]);
+  useEffect(() => {
+    if (!panelHydratedRef.current) return;
+    try {
+      window.localStorage.setItem(
+        "studio:right-panel-open",
+        String(rightPanelOpen),
+      );
+    } catch {
+      /* see leftPanelOpen persist effect — same trade-off */
+    }
+  }, [rightPanelOpen]);
+
+  // Wrap the toggles in stable callbacks so they can be passed to both
+  // the canvas toolbar buttons and the keyboard-shortcut effect below
+  // without forcing a re-bind on every render.
+  const toggleLeftPanel = useCallback(
+    () => setLeftPanelOpen((v) => !v),
+    [],
+  );
+  const toggleRightPanel = useCallback(
+    () => setRightPanelOpen((v) => !v),
+    [],
+  );
+
+  // Keyboard shortcuts — match VS Code conventions so the muscle memory
+  // transfers:
+  //   ⌘\        — Toggle (primary) Sidebar    → left panel (chat)
+  //   ⌘⇧\       — Toggle Secondary Sidebar    → right panel (settings)
+  // The handler ignores key events fired while focus is in an input,
+  // textarea, or contenteditable — otherwise ⌘\ inside the chat
+  // composer would toggle the panel mid-typing. The check is broad
+  // (any editable element, not just inputs) so embedded Monaco /
+  // CodeMirror inside Sandpack panels also pass through.
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      // ⌘⇧⌥A — open the SuperAdminSheet. Deliberately a four-modifier
+      // chord so it can't be hit by accident. Open even from inputs
+      // since it's a chrome action, not an editing action.
+      if (
+        e.key.toLowerCase() === "a" &&
+        (e.metaKey || e.ctrlKey) &&
+        e.shiftKey &&
+        e.altKey
+      ) {
+        e.preventDefault();
+        setSuperAdminOpen((v) => !v);
+        return;
+      }
+
+      // ⌘\ / ⌘⇧\ — panel toggles.
+      if (e.key !== "\\") return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        const editable =
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          target.isContentEditable;
+        if (editable) return;
+      }
+      e.preventDefault();
+      if (e.shiftKey) {
+        toggleRightPanel();
+      } else {
+        toggleLeftPanel();
+      }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [toggleLeftPanel, toggleRightPanel]);
+
+  // Canvas zoom — lifted out of StudioCanvas so the page can route
+  // the left panel based on view: "fit" → StudioChat for the focused
+  // screen, "all" → ProjectsMenu for the workspace. Default "fit"
+  // matches the pre-projects behaviour (user lands on their focused
+  // screen). Studio's "Eat your own dogfood" target: the chrome
+  // reacts to canvas state without the canvas reaching up.
+  const [zoom, setZoom] = useState<"fit" | "all">("fit");
+
+  // Responsive mode — < md gets Sheet overlays instead of inline
+  // panels. SSR-safe: default false so server markup matches; the
+  // one-shot effect below flips it once we can read window.matchMedia.
+  // We subscribe to the MediaQueryList so a viewport resize during
+  // the session (devtools, window drag, rotate) keeps the layout in
+  // sync.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   // AI chat display toggles — owned at the page level so the settings
   // sheet writes them and StudioChat / AIChat read them. Defaults
@@ -732,24 +1328,124 @@ export default function StudioPage() {
     );
   }, []);
 
+  // Pre-build the left-panel + right-tabs subtrees. Each is
+  // referenced twice (once in the inline desktop body, once inside a
+  // Sheet for mobile), and we want the props (selection, notes,
+  // etc.) lined up identically in both spots — extracting to a const
+  // stops the two call sites drifting. Note: at any given breakpoint
+  // only ONE of the two render paths is mounted, so state lives in
+  // the active instance — flipping breakpoints will remount, but the
+  // page-level stores (messagesByDesign, notesByDesign,
+  // ThemeBuilderProvider) preserve the conversation, notes, and
+  // theme draft across the remount.
+  //
+  // The left pane is context-aware: ProjectsMenu when the canvas is
+  // in "all screens" mode (chat is screen-scoped — it makes no sense
+  // at the grid view); StudioChat when zoomed into a focused screen.
+  // The page owns `zoom` (lifted from StudioCanvas), so the swap is
+  // controlled here.
+  const leftPane = zoom === "all" && activeProjectId ? (
+    <ProjectsMenu
+      projects={projects}
+      teams={teams}
+      activeProjectId={activeProjectId}
+      activeDesignId={activeId}
+      summaries={projectSummaries}
+      onSelectProject={handleSwitchProject}
+      onSelectScreen={handleSelectScreenInProject}
+      onCreateProject={handleCreateProject}
+      onRenameProject={handleRenameProject}
+      onDeleteProject={handleDeleteProject}
+    />
+  ) : (
+    <StudioChat
+      key={`chat-${activeId}`}
+      chatId={activeId}
+      settings={settings}
+      systemPrompt={systemPrompt}
+      initialMessages={messagesByDesign[activeId]}
+      onMessagesChange={handleMessagesChange}
+      onStreamingChange={handleStreamingChange}
+      onLatestCode={handleLatestCode}
+      currentCode={activeDesign.appSource}
+      selection={selectionByDesign[activeId] ?? null}
+      onClearSelection={handleClearSelection}
+      onSourceMutation={handleSourceMutation}
+      settingsPanelDocked
+      showUsage={showUsage}
+      showRefs={showRefs}
+      showActions={showActions}
+      showThinking={showThinking}
+      showSteps={showSteps}
+      showDuration={showDuration}
+      assistantBubble={assistantBubble}
+      holdResponseUntilReady={!streamResponseText}
+    />
+  );
+
+  const rightTabsPane = (
+    <StudioRightTabs
+      appSource={activeDesign.appSource}
+      selection={selectionByDesign[activeId] ?? null}
+      onSourceChange={handleSourceMutation}
+      notes={notesByDesign[activeId] ?? ""}
+      onNotesChange={handleNotesChange}
+      designName={activeDesign.name}
+    />
+  );
+
+  // On desktop the inline panels read their width from CSS variables.
+  // Pulling them out of Tailwind into `--gds-studio-chat-width` /
+  // `--gds-studio-settings-width` lets a downstream theme tweak the
+  // chrome without forking the page, and matches the broader DS
+  // pattern (--rds-app-shell-aside etc.). Closed → 0; open → the
+  // var. The structure is intentionally shaped like a future
+  // ResizablePanelGroup (three siblings, side panes are shrink-0
+  // fixed-basis, canvas is flex-1) so swapping the wrapper to
+  // <ResizablePanelGroup> and the side panes to <ResizablePanel> is
+  // a small diff when drag-resize lands.
+  const inlineLeftStyle: React.CSSProperties = {
+    flexBasis: leftPanelOpen ? "var(--gds-studio-chat-width, 320px)" : 0,
+  };
+  const inlineRightStyle: React.CSSProperties = {
+    flexBasis: rightPanelOpen ? "var(--gds-studio-settings-width, 340px)" : 0,
+  };
+
+  // Pick the org the local user is "in" right now — first matching
+  // OrgMembership, falling back to LOCAL_ORG_ID for the very first
+  // session before the migration has run. UserSessionProvider uses
+  // this as the real-user org; impersonation overrides it.
+  const realOrgId =
+    orgMemberships.find((m) => m.userId === LOCAL_USER_ID)?.orgId ??
+    LOCAL_ORG_ID;
+
   return (
+    <UserSessionProvider
+      users={allUsers}
+      orgs={allOrgs}
+      realOrgId={realOrgId}
+    >
     <ThemeBuilderProvider
       initial={screenThemeBaseline}
       bindTo="draft"
       defaultMode={chromeIsDark ? "dark" : "light"}
     >
-      <div className="flex flex-col h-screen bg-background overflow-hidden">
-        <div className="border-b bg-muted/30 shrink-0">
-          {/* Full-bleed — no max-width wrapper. Studio is a tool, not a
-              marketing page, so the chrome stretches edge-to-edge. */}
-          {/* Topbar is intentionally near-empty — just the product
-              title and a Settings gear. Every chrome control that
-              used to live up here (model picker, theme switcher,
-              light/dark mode, dev toggles) now lives inside the
-              <StudioSettings> Sheet that the gear opens. Version
-              numbers also moved into the Sheet footer. Eventually
-              the gear migrates out of the topbar entirely into a
-              left app rail. */}
+      {/* AppShell takes over from the hand-rolled flex column.
+          `nav="none"` gives us Header + Main + (unused) Footer stacked
+          vertically — exactly the Studio shape. Studio is a tool that
+          fills the viewport, so we constrain to `h-screen` here
+          rather than the marketing-flavoured `min-h-screen` default
+          AppShell ships with. */}
+      <AppShell nav="none" className="h-screen min-h-0 overflow-hidden">
+        <AppShellHeader className="border-b bg-muted/30 shrink-0">
+          {/* Full-bleed — no max-width wrapper. Studio is a tool, not
+              a marketing page, so the chrome stretches edge-to-edge.
+              The header is deliberately near-empty — product title +
+              Settings gear. Every chrome control that used to live up
+              here (model picker, theme switcher, light/dark mode, dev
+              toggles) now lives inside the <StudioSettings> Sheet
+              that the gear opens. Eventually the gear migrates out of
+              the header entirely into a left app rail. */}
           <div className="px-4 md:px-6 py-2.5 flex items-center justify-between gap-4">
             <div className="min-w-0 flex items-center gap-3">
               <h1 className="text-base font-semibold leading-tight">
@@ -772,144 +1468,390 @@ export default function StudioPage() {
                 </span>
               )}
             </div>
-            <StudioSettingsTrigger onClick={() => setSettingsOpen(true)} />
-          </div>
-        </div>
-
-        <StudioSettings
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          settings={settings}
-          onSettingsChange={updateSettings}
-          rendererMode={rendererMode}
-          onRendererModeChange={setRendererMode}
-          userTier={userTier}
-          onUserTierChange={setUserTier}
-          showUsage={showUsage}
-          onShowUsageChange={setShowUsage}
-          showRefs={showRefs}
-          onShowRefsChange={setShowRefs}
-          showActions={showActions}
-          onShowActionsChange={setShowActions}
-          showThinking={showThinking}
-          onShowThinkingChange={setShowThinking}
-          showSteps={showSteps}
-          onShowStepsChange={setShowSteps}
-          showDuration={showDuration}
-          onShowDurationChange={setShowDuration}
-          streamResponseText={streamResponseText}
-          onStreamResponseTextChange={setStreamResponseText}
-          assistantBubble={assistantBubble}
-          onAssistantBubbleChange={setAssistantBubble}
-          gradeUiVersion={GRADEUI_VERSION}
-          studioVersion={STUDIO_VERSION}
-        />
-
-        {/* Design tabs used to live here as a separate strip above the
-            three-column main area. They were an artifact of the pre-
-            Fit/All world where there was only one preview at a time, so
-            the page owned screen navigation. Now the canvas owns it —
-            tabs render inside StudioCanvas in Fit mode, and the tile
-            grid takes over in All mode. The page just forwards the
-            design-management callbacks down. */}
-
-        <main className="flex-1 min-h-0 p-3 md:p-4">
-          <div
-            className="grid h-full gap-3 md:gap-4"
-            style={{
-              // CSS-grid-based three-column shell. Chat and builder are fixed-
-              // ish sidebars; the preview grabs the rest. The `minmax(0, 1fr)`
-              // is crucial — without the 0 minimum, Sandpack's iframe refuses
-              // to shrink below its intrinsic width on narrower laptops.
-              gridTemplateColumns:
-                "minmax(280px, 340px) minmax(0, 1fr) minmax(280px, 360px)",
-              // Pin the single row to 1fr with a 0 min so tall children
-              // (Sandpack layout, chat column) can actually fill the row
-              // instead of the row collapsing to content height.
-              gridTemplateRows: "minmax(0, 1fr)",
-            }}
-          >
-            {/* `key` keyed to activeId so chat + preview remount cleanly on
-                switch. On remount the chat is re-seeded with the cached
-                `UIMessage[]` for this design (see `messagesByDesign`), so the
-                conversation survives round-trips between designs even though
-                `useChat` itself does not persist by id. */}
-            <StudioChat
-              key={`chat-${activeId}`}
-              chatId={activeId}
-              settings={settings}
-              systemPrompt={systemPrompt}
-              initialMessages={messagesByDesign[activeId]}
-              onMessagesChange={handleMessagesChange}
-              onStreamingChange={handleStreamingChange}
-              onLatestCode={handleLatestCode}
-              currentCode={activeDesign.appSource}
-              selection={selectionByDesign[activeId] ?? null}
-              onClearSelection={handleClearSelection}
-              onSourceMutation={handleSourceMutation}
-              // Settings panel always lives on the right (inside the
-              // Layout tab) under the new tabbed shell. Force `docked`
-              // so the chat column never duplicates it.
-              settingsPanelDocked
-              // Settings-sheet-driven display toggles. State owned by
-              // this page (see useState block above) so any other
-              // surface — keyboard shortcut, command palette — can
-              // mutate the same store.
-              showUsage={showUsage}
-              showRefs={showRefs}
-              showActions={showActions}
-              showThinking={showThinking}
-              showSteps={showSteps}
-              showDuration={showDuration}
-              assistantBubble={assistantBubble}
-              // Inverse mapping: "stream response text" ON in the
-              // Sheet means do NOT hold; OFF (the default) means
-              // hold until ready.
-              holdResponseUntilReady={!streamResponseText}
-            />
-            {/* Canvas replaces the single-iframe StudioPreview. It owns
-                its own header (zoom toggle + preview/code + select +
-                npm) and renders either the focused design full-size or
-                a grid of tiles, per the canvas zoom mode. */}
-            <StudioThemedCanvas
-              designs={designs}
-              focusedId={activeId}
-              onFocus={setActiveId}
-              view={view}
-              onViewChange={setView}
-              isStreaming={Boolean(streamingByDesign[activeId])}
-              selection={selectionByDesign[activeId] ?? null}
-              onSelect={handleSelect}
-              onClearSelection={handleClearSelection}
-              onAddDesign={handleAddDesign}
-              onCloseDesign={handleCloseDesign}
-              onRenameDesign={handleRenameDesign}
-              onDuplicateDesign={handleDuplicateDesign}
-              canAddMore={!atCap}
-              onSourceMutation={handleSourceMutation}
-              rendererMode={rendererMode}
-              canUndo={undoHistory.canUndo}
-              canRedo={undoHistory.canRedo}
-              undoLabel={undoHistory.undoLabel}
-              redoLabel={undoHistory.redoLabel}
-              onUndo={handleUndo}
-              onRedo={handleRedo}
-            />
-            {/* Right column: tabbed shell. Layout (stage-aware) by
-                default, Theme (existing builder, scoped to its own
-                provider), Notes (per-design free-form text). */}
-            <StudioRightTabs
-              appSource={activeDesign.appSource}
-              selection={selectionByDesign[activeId] ?? null}
-              onSourceChange={handleSourceMutation}
-              notes={notesByDesign[activeId] ?? ""}
-              onNotesChange={handleNotesChange}
-              designName={activeDesign.name}
+            <TopBarRight
+              users={allUsers}
+              orgs={allOrgs}
+              orgMemberships={orgMemberships}
+              onOpenSettings={() => setSettingsOpen(true)}
+              onOpenSuperAdmin={() => setSuperAdminOpen(true)}
             />
           </div>
-        </main>
-      </div>
+        </AppShellHeader>
+
+        <AppShellMain className="min-h-0 overflow-hidden p-3 md:p-4">
+          {/* Body row — three siblings (chat | canvas | settings) on
+              desktop, canvas-only on mobile. Side panes use flex-basis
+              from CSS vars so a downstream theme can tweak widths
+              without touching this file. Toggle closes a pane by
+              animating basis → 0 + adding `hidden` on the inner div
+              so its content is fully removed from layout (otherwise
+              padding/border would still occupy ~1px). */}
+          <div className="flex h-full min-h-0 gap-3 md:gap-4">
+            {!isMobile && (
+              <div
+                className="min-w-0 shrink-0 overflow-hidden transition-[flex-basis] duration-150 ease-out"
+                style={inlineLeftStyle}
+                aria-hidden={!leftPanelOpen}
+              >
+                <div className={leftPanelOpen ? "h-full" : "hidden"}>
+                  {leftPane}
+                </div>
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <StudioThemedCanvas
+                designs={designs}
+                focusedId={activeId}
+                onFocus={setActiveId}
+                view={view}
+                onViewChange={setView}
+                isStreaming={Boolean(streamingByDesign[activeId])}
+                selection={selectionByDesign[activeId] ?? null}
+                onSelect={handleSelect}
+                onClearSelection={handleClearSelection}
+                onAddDesign={handleAddDesign}
+                onCloseDesign={handleCloseDesign}
+                onRenameDesign={handleRenameDesign}
+                onDuplicateDesign={handleDuplicateDesign}
+                canAddMore={!atCap}
+                onSourceMutation={handleSourceMutation}
+                rendererMode={rendererMode}
+                canUndo={undoHistory.canUndo}
+                canRedo={undoHistory.canRedo}
+                undoLabel={undoHistory.undoLabel}
+                redoLabel={undoHistory.redoLabel}
+                onUndo={handleUndo}
+                onRedo={handleRedo}
+                leftPanelOpen={leftPanelOpen}
+                rightPanelOpen={rightPanelOpen}
+                onToggleLeftPanel={toggleLeftPanel}
+                onToggleRightPanel={toggleRightPanel}
+                zoom={zoom}
+                onZoomChange={setZoom}
+                projectName={
+                  projects.find((p) => p.id === activeProjectId)?.name
+                }
+              />
+            </div>
+            {!isMobile && (
+              <div
+                className="min-w-0 shrink-0 overflow-hidden transition-[flex-basis] duration-150 ease-out"
+                style={inlineRightStyle}
+                aria-hidden={!rightPanelOpen}
+              >
+                <div className={rightPanelOpen ? "h-full" : "hidden"}>
+                  {rightTabsPane}
+                </div>
+              </div>
+            )}
+          </div>
+        </AppShellMain>
+      </AppShell>
+
+      {/* Mobile overlay path — below md the inline panes disappear and
+          chat + settings come in as Sheets driven by the same open
+          state. Keyboard shortcuts and toolbar buttons keep working
+          identically on either side of the breakpoint. */}
+      {isMobile && (
+        <>
+          <Sheet open={leftPanelOpen} onOpenChange={setLeftPanelOpen}>
+            <SheetContent
+              side="left"
+              className="w-[88vw] max-w-md p-0 flex flex-col"
+            >
+              <SheetHeader className="sr-only">
+                <SheetTitle>
+                  {zoom === "all" ? "Projects" : "Chat"}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 min-h-0 overflow-hidden">
+                {leftPane}
+              </div>
+            </SheetContent>
+          </Sheet>
+          <Sheet open={rightPanelOpen} onOpenChange={setRightPanelOpen}>
+            <SheetContent
+              side="right"
+              className="w-[88vw] max-w-md p-0 flex flex-col"
+            >
+              <SheetHeader className="sr-only">
+                <SheetTitle>Layout, Theme &amp; Notes</SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 min-h-0 overflow-hidden">
+                {rightTabsPane}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </>
+      )}
+
+      <StudioSettings
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        settings={settings}
+        onSettingsChange={updateSettings}
+        rendererMode={rendererMode}
+        onRendererModeChange={setRendererMode}
+        storageBackend={storageBackend}
+        onStorageBackendChange={setStorageBackend}
+        userTier={userTier}
+        onUserTierChange={setUserTier}
+        showUsage={showUsage}
+        onShowUsageChange={setShowUsage}
+        showRefs={showRefs}
+        onShowRefsChange={setShowRefs}
+        showActions={showActions}
+        onShowActionsChange={setShowActions}
+        showThinking={showThinking}
+        onShowThinkingChange={setShowThinking}
+        showSteps={showSteps}
+        onShowStepsChange={setShowSteps}
+        showDuration={showDuration}
+        onShowDurationChange={setShowDuration}
+        streamResponseText={streamResponseText}
+        onStreamResponseTextChange={setStreamResponseText}
+        assistantBubble={assistantBubble}
+        onAssistantBubbleChange={setAssistantBubble}
+        gradeUiVersion={GRADEUI_VERSION}
+        studioVersion={STUDIO_VERSION}
+      />
+
+      {/* Super admin sheet — internal-only impersonation surface.
+          Mounted at the page root so it overlays Studio. Only the
+          shield button + keyboard shortcut can open it; rendering
+          here doesn't expose it to non-admins. */}
+      <SuperAdminSheet
+        open={superAdminOpen}
+        onOpenChange={setSuperAdminOpen}
+        users={allUsers}
+        orgs={allOrgs}
+      />
     </ThemeBuilderProvider>
+    </UserSessionProvider>
+  );
+}
+
+/**
+ * Right-cluster of the Studio topbar. Lives inside
+ * UserSessionProvider so it can read the impersonation state and
+ * surface it. Renders, in order:
+ *
+ *   - Impersonating pill (only when impersonation is active)
+ *   - Shield button (only when current user is super admin)
+ *   - User avatar + display name
+ *   - Settings gear
+ */
+function TopBarRight({
+  users,
+  orgs,
+  orgMemberships,
+  onOpenSettings,
+  onOpenSuperAdmin,
+}: {
+  users: StoredUser[];
+  orgs: Organisation[];
+  orgMemberships: OrgMembership[];
+  onOpenSettings: () => void;
+  onOpenSuperAdmin: () => void;
+}) {
+  const user = useCurrentUser();
+  const org = useCurrentOrg();
+  const {
+    isImpersonating,
+    stopImpersonation,
+    startImpersonation,
+    realUser,
+  } = useImpersonation();
+  // Two-letter initials for the Avatar fallback. Take the first
+  // letter of the first two whitespace-separated words; fall back
+  // to a single letter for one-word names.
+  const initials = React.useMemo(() => {
+    const parts = user.name.trim().split(/\s+/).slice(0, 2);
+    return parts.map((p) => p[0]?.toUpperCase() ?? "").join("");
+  }, [user.name]);
+
+  // Org switcher items — orgs the REAL user is a member of, so a
+  // non-super-admin still gets to switch between their own orgs.
+  // Super admins additionally have the SuperAdminSheet for picking
+  // arbitrary orgs.
+  const myOrgs = React.useMemo(() => {
+    const myOrgIds = new Set(
+      orgMemberships
+        .filter((m) => m.userId === realUser.id)
+        .map((m) => m.orgId),
+    );
+    return orgs.filter((o) => myOrgIds.has(o.id));
+  }, [orgs, orgMemberships, realUser.id]);
+
+  return (
+    <div className="flex items-center gap-2">
+      {isImpersonating && (
+        <button
+          type="button"
+          onClick={stopImpersonation}
+          className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/15 transition-colors"
+          title="Stop impersonating (resets to your real identity)"
+        >
+          <ShieldCheck className="h-3 w-3" aria-hidden />
+          <span className="truncate max-w-[14rem]">
+            Impersonating {user.name}
+            {org ? ` · ${org.name}` : ""}
+          </span>
+          <X className="h-3 w-3" aria-hidden />
+        </button>
+      )}
+      {user.superAdmin && (
+        <button
+          type="button"
+          onClick={onOpenSuperAdmin}
+          aria-label="Open super admin"
+          title="Super admin (⌘⇧⌥A)"
+          className={cn(
+            "h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors",
+            "[&_svg]:size-3.5 [&_svg]:shrink-0",
+            "text-muted-foreground hover:text-foreground hover:bg-muted",
+          )}
+        >
+          <ShieldCheck />
+        </button>
+      )}
+
+      {/* User trigger — Avatar + identity → opens the account menu.
+          The whole pill is one clickable target with hover + focus
+          states so it reads as a button (per pattern the
+          Linear/Notion/Figma "click your avatar" surface follows). */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Open account menu"
+            className={cn(
+              "flex items-center gap-2 rounded-md px-1.5 py-1 text-xs transition-colors",
+              "hover:bg-muted focus-visible:bg-muted",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+              "data-[state=open]:bg-muted",
+            )}
+          >
+            <Avatar className="h-7 w-7">
+              {user.avatarUrl && (
+                <AvatarImage src={user.avatarUrl} alt={user.name} />
+              )}
+              <AvatarFallback className="text-[11px]">
+                {initials || "?"}
+              </AvatarFallback>
+            </Avatar>
+            <span className="hidden sm:flex flex-col leading-tight text-left">
+              <span className="font-medium text-foreground truncate max-w-[10rem]">
+                {user.name}
+              </span>
+              <span className="text-[10px] text-muted-foreground truncate max-w-[10rem]">
+                {org?.name ?? "no org"}
+              </span>
+            </span>
+            <ChevronDown
+              className="h-3 w-3 text-muted-foreground shrink-0"
+              aria-hidden
+            />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64">
+          {/* Identity block — read-only header showing who's
+              currently effective. When impersonating, a Badge
+              flags the override so the developer can't miss it. */}
+          <div className="flex items-center gap-2 px-2 py-2">
+            <Avatar className="h-9 w-9">
+              {user.avatarUrl && (
+                <AvatarImage src={user.avatarUrl} alt={user.name} />
+              )}
+              <AvatarFallback className="text-xs">
+                {initials || "?"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex min-w-0 flex-1 flex-col leading-tight">
+              <span className="text-sm font-medium text-foreground truncate">
+                {user.name}
+              </span>
+              <span className="text-[11px] text-muted-foreground truncate">
+                {user.email ?? "local"}
+              </span>
+            </div>
+            {isImpersonating && (
+              <Badge
+                variant="secondary"
+                className="text-[10px] px-1.5 py-0"
+              >
+                Acting
+              </Badge>
+            )}
+          </div>
+
+          <DropdownMenuSeparator />
+
+          {/* Org switcher — quick pick across orgs the real user is
+              a member of. Picking another org uses the impersonation
+              override for now (which sessionStorage-persists);
+              swap to a proper active-org pointer when the auth
+              layer lands. The "current" radio bullet reflects the
+              EFFECTIVE org (impersonation-aware). */}
+          {myOrgs.length > 1 && (
+            <>
+              <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Switch organisation
+              </DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={org?.id ?? ""}
+                onValueChange={(value) =>
+                  startImpersonation({ orgId: value || null })
+                }
+              >
+                {myOrgs.map((o) => (
+                  <DropdownMenuRadioItem key={o.id} value={o.id}>
+                    <span className="flex-1 truncate">{o.name}</span>
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] px-1.5 py-0 capitalize"
+                    >
+                      {o.plan}
+                    </Badge>
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
+            </>
+          )}
+
+          {/* Identity controls. Super admin gets the full sheet
+              entry; everyone gets the "stop impersonating" reset
+              when an override is active. */}
+          {isImpersonating && (
+            <DropdownMenuItem onClick={stopImpersonation}>
+              <X />
+              Stop impersonating
+            </DropdownMenuItem>
+          )}
+          {user.superAdmin && (
+            <DropdownMenuItem onClick={onOpenSuperAdmin}>
+              <UsersIcon />
+              Switch identity…
+              <DropdownMenuShortcut>⌘⇧⌥A</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
+          {(isImpersonating || user.superAdmin) && <DropdownMenuSeparator />}
+
+          <DropdownMenuItem onClick={onOpenSettings}>
+            <SettingsIcon />
+            Settings
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled>
+            <LogOut />
+            Sign out
+            <DropdownMenuShortcut>Soon</DropdownMenuShortcut>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <StudioSettingsTrigger onClick={onOpenSettings} />
+    </div>
   );
 }
 
@@ -948,6 +1890,13 @@ function StudioThemedCanvas({
   redoLabel,
   onUndo,
   onRedo,
+  leftPanelOpen,
+  rightPanelOpen,
+  onToggleLeftPanel,
+  onToggleRightPanel,
+  zoom,
+  onZoomChange,
+  projectName,
 }: {
   designs: Design[];
   focusedId: string;
@@ -971,6 +1920,13 @@ function StudioThemedCanvas({
   redoLabel: string | null;
   onUndo: () => void;
   onRedo: () => void;
+  leftPanelOpen: boolean;
+  rightPanelOpen: boolean;
+  onToggleLeftPanel: () => void;
+  onToggleRightPanel: () => void;
+  zoom: "fit" | "all";
+  onZoomChange: (zoom: "fit" | "all") => void;
+  projectName?: string;
 }) {
   const theme: GeneratedTheme = useGeneratedTheme();
   const [mode] = useThemeBuilderMode();
@@ -1000,6 +1956,13 @@ function StudioThemedCanvas({
       redoLabel={redoLabel}
       onUndo={onUndo}
       onRedo={onRedo}
+      leftPanelOpen={leftPanelOpen}
+      rightPanelOpen={rightPanelOpen}
+      onToggleLeftPanel={onToggleLeftPanel}
+      onToggleRightPanel={onToggleRightPanel}
+      zoom={zoom}
+      onZoomChange={onZoomChange}
+      projectName={projectName}
     />
   );
 }

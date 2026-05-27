@@ -7,6 +7,7 @@ props:
   - Sidebar: defaultCollapsed?: boolean — uncontrolled initial value (default false)
   - Sidebar: onCollapsedChange?: (next: boolean) => void
   - Sidebar: collapsible?: boolean — show the affordance for the user to collapse (default true)
+  - Sidebar: variant?: 'rail' | 'panel' — outer chrome treatment. `rail` (default) is the classic nav rail with a single right-border + tracked width via `--rds-sidebar-width`; drops cleanly into `<AppShellNav placement="side">`. `panel` is a card-style floating sidebar with full border + rounded corners + parent-controlled width; use when the sidebar is one of several adjacent panes in a body row (e.g. Projects | Canvas | Settings). The compound children (Header/Content/Footer/Section/Item) are identical in both treatments.
   - SidebarHeader: any children — brand / logo / org switcher; hides nothing when collapsed (centred)
   - SidebarContent: any children — scrollable body
   - SidebarFooter: any children — user block, settings link, pinned chrome
@@ -23,6 +24,10 @@ props:
   - SidebarItem: asButton?: boolean — render as <button> for action rows (open dialog, log out)
   - SidebarItem: disabled?: boolean
   - SidebarItem: collapsedLabel?: ReactNode — tooltip override when sidebar is collapsed (defaults to children text)
+  - SidebarItem: size?: 'sm' | 'md' — row size. `md` (default) is the standard `text-sm font-medium` nav row; `sm` is `text-xs` + lighter weight + tighter padding for visually subordinate rows (nested screens under a project, sub-pages under a section). Active state still wins on color + weight so the current row pops at either size.
+  - SidebarItem: description?: ReactNode — secondary line beneath the label (metadata like 'Edited 2m ago', '12 items', a brief description). Row layout adapts: label + description stacked vertically; icon vertically-centered against the stack; badge stays on trailing edge. Hidden when sidebar collapsed.
+  - SidebarTreeItem: description?: ReactNode — secondary line beneath the label, same shape as SidebarItem.description. Useful when a branch needs more than just a name (last-edited timestamp, item count, owner).
+  - SidebarTreeItem: trailing?: ReactNode — right-edge action slot (settings cog, more-actions overflow, "+ add child"). Rendered as a SIBLING of the branch button (not nested inside it, so `<button>` children in `trailing` stay valid HTML). Vertically centered against the row; click events are stopPropagation'd so a tap on a trailing button doesn't toggle expand/collapse. The branch row wrapper carries a `group/row` named-group, so consumer-provided trailing can opt into hover-only visibility via `hidden group-hover/row:flex` — the hover state is scoped to the branch row alone, not the nested children.
 when_to_use: Vertical app navigation. Drop inside `<AppShellNav placement="side">` for full-page layouts. Compound API — `<SidebarHeader>` for brand, `<SidebarContent>` for the scrollable body of `<SidebarSection>` + `<SidebarItem>` rows, `<SidebarFooter>` for user / settings chrome. For top nav reach for TopMenu; for command-palette style search reach for Command.
 composes_with: [AppShell (inside AppShellNav), Avatar (in Footer), Tooltip (auto-wrapped on collapsed items), Button (asChild for custom routing)]
 aliases: [sidebar, side menu, sidemenu, navigation sidebar, app sidebar, side nav, side nav rail, master pane, sidebarmenu, navigation rail, react native drawer]

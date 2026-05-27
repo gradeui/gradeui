@@ -34,6 +34,11 @@ export const SidebarContract = contract({
       design: "knob",
       description: "show the affordance for the user to collapse (default true)",
   },
+  "variant": {
+      schema: z.enum(["rail", "panel"]).optional(),
+      design: "knob",
+      description: "outer chrome — `rail` (default) sits flush against an adjacent surface with a single right-border + tracked width; `panel` is a card-style floating sidebar with full border + rounded corners and width inherited from the parent flex/grid track.",
+  },
   "any": {
       schema: z.unknown(),
       design: "plumbing",
@@ -52,7 +57,7 @@ export const SidebarContract = contract({
   "trailing": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "**action(s) on the right edge of the header** — the canonical \"+\" / \"...\" slot (Notion's \"+ Add page\" next to Pages, Linear's \"+\" next to Favorites, Slack's \"+\" next to Channels). Pointer events isolated so a Button here doesn't toggle collapse.",
+      description: "Right-edge action slot. On **SidebarSection**: the canonical \"+\" / \"...\" header affordance (Notion's \"+ Add page\", Linear's \"+\" next to Favorites). On **SidebarTreeItem**: a sibling-of-button slot for settings cog / more-actions / '+ add child'; vertically centered against the row; click events stopPropagation'd so taps don't toggle expand. Branch row exposes `group/row` named-group, so consumer can use `hidden group-hover/row:flex` for hover-only visibility scoped to the branch alone.",
   },
   "defaultExpanded": {
       schema: z.boolean().optional(),
@@ -92,6 +97,16 @@ export const SidebarContract = contract({
       schema: z.unknown().optional(),
       design: "plumbing",
       description: "tooltip override when sidebar is collapsed (defaults to children text)",
+  },
+  "size": {
+      schema: z.enum(["sm", "md"]).optional(),
+      design: "knob",
+      description: "row size — `md` (default) is the standard `text-sm font-medium` nav row; `sm` is `text-xs` + lighter weight + tighter padding for visually subordinate rows (nested screens, sub-pages). Active state still wins on color + weight.",
+  },
+  "description": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "secondary line under the label — `Edited 2m ago`, `12 items`, etc. Layout stacks label + description; icon vertically centered against stack; badge stays trailing. Hidden when sidebar collapsed.",
   },
   },
 });

@@ -97,6 +97,22 @@ export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
   onCollapsedChange?: (next: boolean) => void;
   /** Show / hide the affordance for the user to collapse. Defaults true. */
   collapsible?: boolean;
+  /**
+   * Visual treatment.
+   *
+   * - `"rail"` (default) — the classic nav rail: sits flush against an
+   *   adjacent surface with only a right-side border, fixed width via
+   *   `--rds-sidebar-width`. Designed to slot into `<AppShellNav placement="side">`.
+   * - `"panel"` — a floating card-style sidebar: full border, rounded
+   *   corners, width inherited from the parent (typically a flex/grid
+   *   track). Use when the sidebar is one of several adjacent panes
+   *   in a body row, like Studio's `Projects | Canvas | Settings`.
+   *
+   * The variant affects ONLY the outer chrome — header/content/footer/
+   * section/item internals are identical so the same compound markup
+   * works in both treatments.
+   */
+  variant?: "rail" | "panel";
 }
 
 interface SidebarRootComponent
@@ -118,6 +134,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
       defaultCollapsed = false,
       onCollapsedChange,
       collapsible = true,
+      variant = "rail",
       className,
       style,
       children,
@@ -128,6 +145,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
     const isControlled = controlledCollapsed !== undefined;
     const [internal, setInternal] = React.useState(defaultCollapsed);
     const collapsed = isControlled ? controlledCollapsed! : internal;
+    const isPanel = variant === "panel";
 
     const toggle = () => {
       const next = !collapsed;
@@ -142,22 +160,44 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
             ref={ref}
             data-gds-part="sidebar"
             data-collapsed={collapsed || undefined}
+            data-variant={variant}
             className={cn(
-              "relative flex h-full flex-col bg-card text-card-foreground border-r border-border",
-              "transition-[width] duration-200 ease-out",
+              "relative flex h-full flex-col bg-card text-card-foreground",
+              // Chrome is the only thing the variant changes. Rail
+              // hugs an adjacent surface with a single right border
+              // and a tracked width; panel floats as its own card
+              // and sizes from the parent flex/grid track.
+              isPanel
+                ? "w-full border border-border rounded-lg overflow-hidden"
+                : "border-r border-border transition-[width] duration-200 ease-out",
               className,
             )}
-            style={{
-              width: collapsed
-                ? "var(--rds-sidebar-collapsed-width, 4rem)"
-                : "var(--rds-sidebar-width, 16rem)",
-              ...style,
-            }}
+            style={
+              // Panel variant defers sizing to the parent container —
+              // typical use is inside a flex track that already
+              // constrains width, so an inline width would fight the
+              // parent. Rail variant keeps its tracked width as before.
+              isPanel
+                ? style
+                : {
+                    width: collapsed
+                      ? "var(--rds-sidebar-collapsed-width, 4rem)"
+                      : "var(--rds-sidebar-width, 16rem)",
+                    ...style,
+                  }
+            }
             {...rest}
           >
             {children}
 
-            {collapsible && (
+            {/* The hover-out toggle is a rail-mode affordance — it
+                deliberately overlaps the right border. In panel mode
+                the sidebar is a free-standing card whose width is
+                set by the parent layout, so a self-collapse handle
+                doesn't fit the model; callers wanting a hide/show
+                affordance there should add their own button (e.g.
+                the Studio canvas toolbar's PanelLeft toggle). */}
+            {collapsible && !isPanel && (
               <button
                 type="button"
                 onClick={toggle}
@@ -417,6 +457,26 @@ export interface SidebarItemProps
   /** Tooltip override shown when sidebar is collapsed. Defaults to the
    *  item's text content (children, when it's a string). */
   collapsedLabel?: React.ReactNode;
+  /**
+   * Row size.
+   *
+   * - `"md"` (default) — `text-sm font-medium`, the standard nav row.
+   * - `"sm"` — `text-xs`, lighter weight + tighter padding. Use for
+   *   visually-subordinate rows (nested screens under a parent
+   *   project, sub-pages under a section, etc.) so the hierarchy is
+   *   legible without manual className overrides. Active state still
+   *   wins on color + weight so the current row pops at either size.
+   */
+  size?: "sm" | "md";
+  /**
+   * Secondary line shown beneath the label — typically metadata like
+   * "Edited 2m ago", "12 items", or a brief description. Layout
+   * adapts: the row becomes label + description stacked vertically,
+   * with the icon vertically centered against the stack and the
+   * badge anchored to the trailing edge as usual. Hidden when the
+   * sidebar is collapsed (only the icon + tooltip remain).
+   */
+  description?: React.ReactNode;
 }
 
 const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
@@ -429,6 +489,8 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
       asChild = false,
       disabled = false,
       collapsedLabel,
+      size = "md",
+      description,
       className,
       children,
       ...rest
@@ -441,18 +503,69 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
     // get 0.75rem of left inset per level so the chevron column
     // stays aligned.
     const depth = useTreeDepth();
+    // Children indent matches the parent TreeItem's chevron+icon
+    // column (chevron 1rem + gap 0.375rem + icon 1rem = ~1.5rem),
+    // so a child's row content visually aligns with the parent's
+    // label column — the canonical tree pattern. Tunable via the
+    // `--rds-sidebar-tree-indent` CSS variable for consumers that
+    // want tighter or looser nesting.
     const depthStyle = !collapsed && depth > 0
-      ? { paddingLeft: `calc(0.5rem + ${depth} * 0.75rem)` }
+      ? {
+          paddingLeft: `calc(0.5rem + ${depth} * var(--rds-sidebar-tree-indent, 1.5rem))`,
+        }
       : undefined;
 
+    // Size + active interact: at md, both states use font-medium;
+    // at sm, inactive drops to font-normal so the row visually
+    // recedes, but active keeps font-medium so the current row
+    // still pops against its siblings.
+    const isSm = size === "sm";
+    const sizeClasses = isSm
+      ? "text-xs px-2 py-1"
+      : "text-sm px-2 py-1.5";
+    const weightClass =
+      isSm && !active ? "font-normal" : "font-medium";
+    // Inactive color at sm is muted-foreground to match its lighter
+    // role; md keeps the foreground/80 default. Active is the same
+    // primary highlight in either size.
+    const stateColor = active
+      ? "bg-primary/10 text-primary"
+      : isSm
+        ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+        : "text-foreground/80 hover:bg-muted hover:text-foreground";
+
+    // With a description the layout shifts from a single-line row
+    // (items-center) to a two-line stack inside the label column —
+    // icon stays vertically centered against the stack. Extra
+    // vertical padding gives the second line breathing room. The
+    // description is hidden when the sidebar is collapsed; only
+    // the icon + tooltip survive in rail-collapsed mode.
+    const hasDescription = !collapsed && description != null;
     const sharedClass = cn(
-      "group flex items-center gap-2.5 rounded-md text-sm font-medium transition-colors",
-      collapsed ? "justify-center px-2 py-2" : "px-2 py-1.5",
-      active
-        ? "bg-primary/10 text-primary"
-        : "text-foreground/80 hover:bg-muted hover:text-foreground",
+      "group flex items-center gap-2.5 rounded-md transition-colors",
+      sizeClasses,
+      weightClass,
+      hasDescription && (isSm ? "py-1.5" : "py-2"),
+      collapsed ? "justify-center px-2 py-2" : null,
+      stateColor,
       disabled && "opacity-50 pointer-events-none",
       className,
+    );
+
+    const labelStack = hasDescription ? (
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left leading-tight">
+        <span className="truncate">{children}</span>
+        <span
+          className={cn(
+            "truncate font-normal text-muted-foreground",
+            isSm ? "text-[10px]" : "text-[11px]",
+          )}
+        >
+          {description}
+        </span>
+      </span>
+    ) : (
+      <span className="flex-1 truncate text-left">{children}</span>
     );
 
     const body = (
@@ -462,9 +575,7 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
             {icon}
           </span>
         )}
-        {!collapsed && (
-          <span className="flex-1 truncate text-left">{children}</span>
-        )}
+        {!collapsed && labelStack}
         {!collapsed && badge !== undefined && badge !== null && (
           <span className="ml-auto inline-flex items-center justify-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             {badge}
@@ -599,6 +710,30 @@ export interface SidebarTreeItemProps
   disabled?: boolean;
   /** Nested children — SidebarItem or more SidebarTreeItem. */
   children?: React.ReactNode;
+  /**
+   * Secondary line shown beneath the label — same shape as
+   * SidebarItem's `description`. Useful when a branch needs more
+   * than just a name (last-edited timestamp, item count, owner).
+   * Layout adapts to stack label + description; chevron and icon
+   * stay vertically centered against the stack.
+   */
+  description?: React.ReactNode;
+  /**
+   * Right-edge action slot — settings cog, more-actions overflow,
+   * "+ add child" affordance. Rendered as a sibling of the branch
+   * button (not nested inside it, so `<button>` children inside
+   * trailing remain valid HTML). Vertically centered against the
+   * branch row, isolated from the expand/collapse click so a tap
+   * on a trailing button doesn't toggle the tree.
+   *
+   * The wrapper container also exposes a `group/row` named-group
+   * class so consumer-provided trailing can opt into hover-only
+   * visibility via Tailwind's `group-hover/row:` variant
+   * (`hidden group-hover/row:flex`) without writing custom CSS.
+   * Hovering nested children rows does NOT trigger the group hover
+   * — the named group is scoped to the branch row alone.
+   */
+  trailing?: React.ReactNode;
 }
 
 const SidebarTreeItem = React.forwardRef<HTMLButtonElement, SidebarTreeItemProps>(
@@ -612,6 +747,8 @@ const SidebarTreeItem = React.forwardRef<HTMLButtonElement, SidebarTreeItemProps
       expanded: controlledExpanded,
       onExpandedChange,
       disabled,
+      description,
+      trailing,
       className,
       style,
       children,
@@ -642,10 +779,18 @@ const SidebarTreeItem = React.forwardRef<HTMLButtonElement, SidebarTreeItemProps
       );
     }
 
-    const depthInset = depth * 0.75;
+    // Match the SidebarItem depth-indent math so nested TreeItems
+    // line up with their leaf siblings. Same `--rds-sidebar-tree-indent`
+    // CSS var drives both, in rem.
+    const depthInset = depth * 1.5;
 
     return (
       <div data-gds-part="sidebar-tree-item">
+        {/* Branch row + optional trailing slot. The `group/row`
+            named-group lets consumer-provided trailing content use
+            `group-hover/row:` to reveal on hover without leaking
+            the hover state to the nested children below. */}
+        <div className="group/row relative">
         <button
           ref={ref}
           type="button"
@@ -660,11 +805,14 @@ const SidebarTreeItem = React.forwardRef<HTMLButtonElement, SidebarTreeItemProps
               ? "bg-primary/10 text-primary"
               : "text-foreground/80 hover:bg-muted hover:text-foreground",
             disabled && "opacity-50 pointer-events-none",
+            // Reserve trailing padding when a trailing slot is
+            // mounted so the label doesn't slide under the actions.
+            trailing != null && "pr-12",
             className,
           )}
           style={{
             paddingLeft: `calc(0.25rem + ${depthInset}rem)`,
-            paddingRight: "0.5rem",
+            paddingRight: trailing != null ? "3rem" : "0.5rem",
             ...style,
           }}
           {...rest}
@@ -684,13 +832,37 @@ const SidebarTreeItem = React.forwardRef<HTMLButtonElement, SidebarTreeItemProps
               {icon}
             </span>
           )}
-          <span className="flex-1 truncate text-left">{label}</span>
+          {description != null ? (
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left leading-tight">
+              <span className="truncate">{label}</span>
+              <span className="truncate text-[11px] font-normal text-muted-foreground">
+                {description}
+              </span>
+            </span>
+          ) : (
+            <span className="flex-1 truncate text-left">{label}</span>
+          )}
           {badge !== undefined && badge !== null && (
             <span className="ml-auto inline-flex items-center justify-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
               {badge}
             </span>
           )}
         </button>
+        {trailing != null && (
+          <div
+            // Stop click propagation so a click inside trailing
+            // (the canonical 'open settings' button) doesn't bubble
+            // to the row's toggle handler and accidentally flip
+            // the expanded state. inset-y-0 anchors trailing to
+            // the button's height so vertical centering tracks
+            // size + description automatically.
+            onClick={(e) => e.stopPropagation()}
+            className="pointer-events-auto absolute inset-y-0 right-1.5 flex items-center gap-0.5"
+          >
+            {trailing}
+          </div>
+        )}
+        </div>
         {expanded && children && (
           <SidebarTreeDepthContext.Provider value={depth + 1}>
             <div className="space-y-[var(--rds-sidebar-section-gap,0.125rem)]">
