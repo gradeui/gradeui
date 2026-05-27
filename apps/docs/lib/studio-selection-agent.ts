@@ -89,6 +89,11 @@ export type SelectionPayload = {
    *  the source descriptor's terse identifier fields to work from.
    *  Undefined for non-MediaSurface elements. */
   mediaAlt?: string;
+  /** Stable identifier captured from `data-gds-source-id` at click time.
+   *  Lets the inspector mutate the exact JSX node the user clicked when
+   *  the same component appears multiple times in source (`.map()`
+   *  loops). Undefined when the click landed on a non-DS element. */
+  sourceId?: string;
 };
 
 export interface InstallSelectionAgentOptions {

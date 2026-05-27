@@ -18,8 +18,11 @@
      wrap with `oklch(var(--studio-accent))` and
      opt-in to an alpha channel via slash.
      ---------------------------------------- */
-  --studio-accent: 0.62 0.18 264;          /* indigo/blue — distinct from any built-in theme primary */
+  --studio-accent: 0.60 0.22 258;          /* studio blue — distinct from any built-in theme primary */
   --studio-accent-foreground: 0.985 0.0048 85;
+  /* Ambient halo paired with --studio-accent. Same hue, softer chroma so
+     it reads as a glow rather than a fill when applied as a box-shadow. */
+  --studio-glow: 0.66 0.18 258;
 
   /* ----------------------------------------
      Brand Colors - Neon Green (Primary)
@@ -183,15 +186,103 @@
   --rds-radius-2xl: 1.5rem;   /* 24px */
   --rds-radius-full: 9999px;
 
-  /* ----------------------------------------
-     Shadows
-     ---------------------------------------- */
-  --rds-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --rds-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --rds-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --rds-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --rds-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-  --rds-shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  /* ============================================
+     PRESENCE — Elevation / Surface / Aura
+     ============================================
+     Three parallel token systems. Canonical comment lives in
+     packages/ui/styles/globals.css; mirrored here until docs migrates
+     to importing @gradeui/ui's CSS directly. See gradeui/PRESENCE.md
+     for the design rationale.
+     -------------------------------------------- */
+
+  /* ── ELEVATION ─────────────────────────────────────────────── */
+  --shadow-bevel-hi-y: 1px;
+  --shadow-bevel-hi-alpha: 0.12;
+  --shadow-bevel-hi: inset 0 var(--shadow-bevel-hi-y) 0 oklch(1 0 0 / var(--shadow-bevel-hi-alpha));
+
+  --shadow-bevel-lo-y: 1px;
+  --shadow-bevel-lo-alpha: 0.30;
+  --shadow-bevel-lo: inset 0 calc(-1 * var(--shadow-bevel-lo-y)) 0 oklch(0 0 0 / var(--shadow-bevel-lo-alpha));
+
+  --shadow-contact-y: 1px;
+  --shadow-contact-blur: 2px;
+  --shadow-contact-alpha: 0.10;
+  --shadow-contact: 0 var(--shadow-contact-y) var(--shadow-contact-blur) oklch(0 0 0 / var(--shadow-contact-alpha));
+
+  --shadow-lift-y: 4px;
+  --shadow-lift-blur: 12px;
+  --shadow-lift-alpha: 0.18;
+  --shadow-lift: 0 var(--shadow-lift-y) var(--shadow-lift-blur) oklch(0 0 0 / var(--shadow-lift-alpha));
+
+  --shadow-lift-deep-y: 16px;
+  --shadow-lift-deep-blur: 40px;
+  --shadow-lift-deep-alpha: 0.28;
+  --shadow-lift-deep: 0 var(--shadow-lift-deep-y) var(--shadow-lift-deep-blur) oklch(0 0 0 / var(--shadow-lift-deep-alpha));
+
+  --shadow-heat-inner-y: 10px;
+  --shadow-heat-inner-blur: 24px;
+  --shadow-heat-inner-spread: 4px;
+  --shadow-heat-inner-alpha: 0.55;
+  --shadow-heat-inner: inset 0 calc(-1 * var(--shadow-heat-inner-y)) var(--shadow-heat-inner-blur) calc(-1 * var(--shadow-heat-inner-spread)) oklch(var(--btn-glow, var(--selected-glow)) / var(--shadow-heat-inner-alpha));
+
+  --shadow-heat-outer-y: 6px;
+  --shadow-heat-outer-blur: 18px;
+  --shadow-heat-outer-alpha: 0.30;
+  --shadow-heat-outer: 0 var(--shadow-heat-outer-y) var(--shadow-heat-outer-blur) oklch(var(--btn-glow, var(--selected-glow)) / var(--shadow-heat-outer-alpha));
+
+  --shadow-pressed-y: 2px;
+  --shadow-pressed-blur: 4px;
+  --shadow-pressed-alpha: 0.45;
+  --shadow-pressed-bevel: inset 0 var(--shadow-pressed-y) var(--shadow-pressed-blur) oklch(0 0 0 / var(--shadow-pressed-alpha));
+
+  --elevation-0: 0 0 0 0 transparent;
+  --elevation-1: var(--shadow-contact);
+  --elevation-2: var(--shadow-bevel-hi), var(--shadow-bevel-lo), var(--shadow-contact);
+  --elevation-3: var(--shadow-bevel-hi), var(--shadow-bevel-lo), var(--shadow-contact), var(--shadow-lift);
+  --elevation-4: var(--shadow-contact), var(--shadow-lift);
+  --elevation-5: var(--shadow-contact), var(--shadow-lift-deep);
+  --elevation-hot: var(--shadow-bevel-hi), var(--shadow-bevel-lo), var(--shadow-heat-inner), var(--shadow-contact), var(--shadow-heat-outer), var(--shadow-lift);
+  --elevation-pressed: var(--shadow-pressed-bevel), inset 0 -1px 0 oklch(1 0 0 / 0.04), var(--shadow-contact);
+
+  /* Legacy shim — repointed onto elevation */
+  --rds-shadow-sm: var(--elevation-1);
+  --rds-shadow-md: var(--elevation-4);
+  --rds-shadow-lg: var(--elevation-5);
+  --rds-shadow-xl: var(--elevation-5);
+  --rds-shadow-2xl: var(--elevation-5);
+  --rds-shadow-inner: var(--shadow-pressed-bevel);
+
+  /* ── SURFACE ───────────────────────────────────────────────── */
+  --surface-alpha-solid: 1;
+  --surface-alpha-translucent: 0.82;
+  --surface-alpha-glass: 0.58;
+  --surface-alpha-glass-strong: 0.42;
+  --surface-blur-subtle: 6px;
+  --surface-blur-glass: 14px;
+  --surface-blur-strong: 24px;
+  --surface-edge-alpha: 0.10;
+  --surface-edge: inset 0 1px 0 oklch(1 0 0 / var(--surface-edge-alpha));
+  --surface-solid: oklch(var(--card) / var(--surface-alpha-solid));
+  --surface-translucent: oklch(var(--card) / var(--surface-alpha-translucent));
+  --surface-glass: oklch(var(--card) / var(--surface-alpha-glass));
+  --surface-glass-strong: oklch(var(--card) / var(--surface-alpha-glass-strong));
+
+  /* ── AURA ──────────────────────────────────────────────────── */
+  --aura-color: var(--selected-glow);
+  --aura-ring-spread: 2px;
+  --aura-ring-blur: 14px;
+  --aura-ring-alpha-min: 0.00;
+  --aura-ring-alpha-max: 0.65;
+  --aura-pulse-duration: 2400ms;
+  --aura-pulse-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --aura-gradient-thickness: 1.5px;
+  --aura-gradient-duration: 6000ms;
+  --aura-gradient-ease: linear;
+  --aura-shimmer-width: 28%;
+  --aura-shimmer-alpha: 0.18;
+  --aura-shimmer-duration: 2000ms;
+  --aura-shimmer-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --aura-shimmer-delay-between: 1200ms;
 
   /* ----------------------------------------
      Typography - Font Families
@@ -313,6 +404,15 @@
   --info: 0.580 0.200 240;
   --highlight: 0.860 0.180 95;
 
+  /* Selection token pair — the solid blue fill behind a selected option
+     (e.g. picked radio row, active segmented control) and the ambient
+     halo that surrounds it on hover / focus. Distinct from --primary so
+     a theme can keep its primary cta colour while selection stays blue.
+     Distinct from the status --highlight token (which is amber). */
+  --selected: 0.55 0.22 258;                /* solid selected fill — blue */
+  --selected-foreground: 0.985 0.0018 85;
+  --selected-glow: 0.66 0.20 258;           /* ambient halo — softer chroma */
+
   /* Alert surface pairs — paler tinted surface + readable deep text for each
      status colour. Pre-hydration fallbacks; the JS theme pipeline overwrites
      these via lib/themes/oklch.ts#deriveAlertPair. Kept here so the Alert
@@ -360,6 +460,25 @@
   --warning: 0.800 0.180 60;
   --info: 0.700 0.200 240;
   --highlight: 0.880 0.180 95;
+
+  /* Selection pair — dark mode. Solid fill stays vivid; halo lifts in
+     lightness so it can glow against the dark canvas. */
+  --selected: 0.62 0.22 258;
+  --selected-foreground: 0.985 0.0018 85;
+  --selected-glow: 0.74 0.20 258;
+
+  /* Presence tuning — dark mode. Shadows fade against dark surfaces;
+     glass needs higher opacity to keep a visible boundary. */
+  --shadow-bevel-hi-alpha: 0.14;
+  --shadow-bevel-lo-alpha: 0.40;
+  --shadow-contact-alpha: 0.45;
+  --shadow-lift-alpha: 0.50;
+  --shadow-lift-deep-alpha: 0.60;
+
+  --surface-alpha-translucent: 0.74;
+  --surface-alpha-glass: 0.48;
+  --surface-alpha-glass-strong: 0.32;
+  --surface-edge-alpha: 0.06;
 
   /* Alert surface pairs — dark-mode variant: tint sits just above the dark
      background without going gray; deep text stays bright and readable. */
@@ -543,6 +662,184 @@
 [data-button-shape="square"] .rds-button,
 [data-button-shape="sharp"] .rds-button {
   border-radius: 0;
+}
+
+/* ============================================
+   BUTTON — RAISED VARIANT (token-based)
+   ============================================
+   See packages/ui/styles/globals.css for the canonical comment. */
+.rds-button-raised {
+  --btn-glow: var(--selected-glow);
+  background-color: oklch(var(--secondary));
+  color: oklch(var(--secondary-foreground));
+  box-shadow: var(--elevation-3);
+  transition:
+    box-shadow var(--rds-transition-base) var(--rds-ease-out),
+    transform var(--rds-transition-fast) var(--rds-ease-out),
+    background-color var(--rds-transition-base) var(--rds-ease-out);
+}
+
+.rds-button-raised:hover {
+  box-shadow: var(--elevation-hot);
+}
+
+.rds-button-raised:active {
+  transform: translateY(1px);
+  box-shadow: var(--elevation-pressed);
+}
+
+.rds-button-raised[data-state="on"],
+.rds-button-raised[data-state="active"],
+.rds-button-raised[aria-pressed="true"],
+.rds-button-raised[data-selected="true"] {
+  background-color: oklch(var(--selected) / 0.18);
+  color: oklch(var(--foreground));
+  box-shadow:
+    var(--shadow-bevel-hi),
+    inset 0 0 0 1px oklch(var(--selected) / 0.55),
+    var(--shadow-heat-inner),
+    0 0 0 1px oklch(var(--selected) / 0.20),
+    var(--shadow-heat-outer),
+    var(--shadow-lift);
+}
+
+.rds-button-raised:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--shadow-bevel-hi),
+    var(--shadow-bevel-lo),
+    0 0 0 2px oklch(var(--background)),
+    0 0 0 4px oklch(var(--btn-glow) / 0.70),
+    var(--shadow-lift);
+}
+
+/* ============================================
+   SURFACE CLASSES — see packages/ui canonical comment
+   ============================================ */
+.rds-surface-solid { background-color: var(--surface-solid); }
+.rds-surface-translucent { background-color: var(--surface-translucent); }
+
+.rds-surface-glass {
+  background-color: var(--surface-glass);
+  backdrop-filter: blur(var(--surface-blur-glass));
+  -webkit-backdrop-filter: blur(var(--surface-blur-glass));
+  border: 1px solid oklch(var(--border) / 0.5);
+  box-shadow: var(--surface-edge);
+}
+
+.rds-surface-glass-strong {
+  background-color: var(--surface-glass-strong);
+  backdrop-filter: blur(var(--surface-blur-strong));
+  -webkit-backdrop-filter: blur(var(--surface-blur-strong));
+  border: 1px solid oklch(var(--border) / 0.4);
+  box-shadow: var(--surface-edge);
+}
+
+/* ============================================
+   AURA — RING / GRADIENT / SHIMMER
+   ============================================ */
+@keyframes rds-aura-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 oklch(var(--aura-color) / var(--aura-ring-alpha-min)),
+      0 0 0 0 oklch(var(--aura-color) / 0);
+  }
+  50% {
+    box-shadow:
+      0 0 0 var(--aura-ring-spread) oklch(var(--aura-color) / var(--aura-ring-alpha-max)),
+      0 0 var(--aura-ring-blur) 0 oklch(var(--aura-color) / calc(var(--aura-ring-alpha-max) * 0.6));
+  }
+}
+
+.rds-aura-ring {
+  animation: rds-aura-pulse var(--aura-pulse-duration) var(--aura-pulse-ease) infinite;
+}
+
+@property --aura-gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rds-aura-gradient-spin {
+  to { --aura-gradient-angle: 360deg; }
+}
+
+.rds-aura-gradient {
+  position: relative;
+  isolation: isolate;
+}
+
+.rds-aura-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: var(--aura-gradient-thickness);
+  background: conic-gradient(
+    from var(--aura-gradient-angle),
+    oklch(var(--aura-color) / 0) 0deg,
+    oklch(var(--aura-color) / 0.9) 90deg,
+    oklch(var(--aura-color) / 0) 180deg,
+    oklch(var(--aura-color) / 0.9) 270deg,
+    oklch(var(--aura-color) / 0) 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+          mask-composite: exclude;
+  pointer-events: none;
+  animation: rds-aura-gradient-spin var(--aura-gradient-duration) var(--aura-gradient-ease) infinite;
+}
+
+@keyframes rds-aura-shimmer-sweep {
+  0%   { background-position: -150% 0; opacity: 0; }
+  8%   { opacity: var(--aura-shimmer-alpha); }
+  60%  { background-position: 250% 0; opacity: var(--aura-shimmer-alpha); }
+  62%  { opacity: 0; }
+  100% { background-position: 250% 0; opacity: 0; }
+}
+
+.rds-aura-shimmer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.rds-aura-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    105deg,
+    transparent 30%,
+    oklch(var(--aura-color) / 1) 50%,
+    transparent 70%
+  );
+  background-size: var(--aura-shimmer-width) 200%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  animation: rds-aura-shimmer-sweep
+    calc(var(--aura-shimmer-duration) + var(--aura-shimmer-delay-between))
+    var(--aura-shimmer-ease) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rds-aura-ring,
+  .rds-aura-gradient::before,
+  .rds-aura-shimmer::after {
+    animation: none;
+  }
+  .rds-aura-ring {
+    box-shadow:
+      0 0 0 var(--aura-ring-spread) oklch(var(--aura-color) / calc(var(--aura-ring-alpha-max) * 0.6)),
+      0 0 var(--aura-ring-blur) 0 oklch(var(--aura-color) / calc(var(--aura-ring-alpha-max) * 0.4));
+  }
 }
 
 /* ============================================

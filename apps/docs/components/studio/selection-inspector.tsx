@@ -413,6 +413,7 @@ export function SelectionInspector({
 
   const handleChange = (propName: string, value: PropValue) => {
     if (appSource == null) return;
+    if (!componentName) return;
     const design = propDesignByName[propName];
     const wantsPerItem = design === "content" || design === "structured";
     const instanceId = selection?.instanceId;
@@ -468,6 +469,7 @@ export function SelectionInspector({
   // reflects the bulk nature of the action.
   const handleReset = () => {
     if (!appSource) return;
+    if (!componentName) return;
     const instanceId = selection?.instanceId;
     let next = appSource;
     for (const prop of settableProps) {
@@ -563,7 +565,7 @@ export function SelectionInspector({
                 key={`${prop.name}::${perItem ? selection?.instanceId : `src#${selection?.sourceId ?? "?"}`}`}
                 prop={prop}
                 source={appSource}
-                componentName={componentName}
+                componentName={componentName ?? ""}
                 instanceId={perItem ? selection?.instanceId : undefined}
                 sourceId={selection?.sourceId}
                 disabled={!componentPresent}
@@ -652,7 +654,7 @@ export function SelectionInspector({
                     key={`${prop.name}::${perItem ? selection?.instanceId : `src#${selection?.sourceId ?? "?"}`}`}
                     prop={prop}
                     source={appSource}
-                    componentName={componentName}
+                    componentName={componentName ?? ""}
                     instanceId={perItem ? selection?.instanceId : undefined}
                     sourceId={selection?.sourceId}
                     disabled={!componentPresent}
@@ -683,6 +685,7 @@ export function SelectionInspector({
                 new Set(settableProps.map((p) => p.name.toLowerCase()))
               }
               onChangeClassName={(next) => {
+                if (appSource == null || !componentName) return;
                 const updated = updateComponentProp(
                   appSource,
                   componentName,

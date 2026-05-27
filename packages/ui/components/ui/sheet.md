@@ -44,3 +44,9 @@ aliases: [sheet, drawer, side panel, slide-in, nav drawer, mobile drawer, slide-
   </SheetContent>
 </Sheet>
 ```
+
+SheetContent ships at elevation-5. Opt into a frosted glass sheet when the canvas behind it should remain visible:
+
+```jsx
+<SheetContent className="rds-surface-glass">…</SheetContent>
+```

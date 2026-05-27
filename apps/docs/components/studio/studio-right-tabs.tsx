@@ -29,7 +29,7 @@
  */
 
 import * as React from "react";
-import { Layers, Palette, StickyNote, Sun, Moon } from "lucide-react";
+import { Layers, MessageSquare, Palette, StickyNote, Sun, Moon } from "lucide-react";
 
 import {
   Tabs,
@@ -65,13 +65,14 @@ import { StudioRightPanel } from "./studio-right-panel";
 import { NotesPanel } from "./notes-panel";
 import { ThemePickerSection } from "./theme-picker-section";
 
-type TabId = "layout" | "theme" | "notes";
+export type TabId = "layout" | "theme" | "notes" | "comments";
 
 // SVG sizing is owned by the package — TabsTrigger applies
 // `[&_svg]:size-3.5` to all icon children. No per-call sizes here.
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "layout", label: "Layout", icon: <Layers /> },
   { id: "theme", label: "Theme", icon: <Palette /> },
+  { id: "comments", label: "Comments", icon: <MessageSquare /> },
   { id: "notes", label: "Notes", icon: <StickyNote /> },
 ];
 
@@ -83,6 +84,15 @@ export interface StudioRightTabsProps {
   onNotesChange: (next: string) => void;
   designName?: string;
   defaultTab?: TabId;
+  /** Controlled active tab. When provided, the tab state is owned
+   *  upstream — used so other parts of the chrome (e.g. canvas
+   *  comment-mode pick) can jump the user to a specific tab. */
+  tab?: TabId;
+  onTabChange?: (next: TabId) => void;
+  /** Content for the Comments tab — fully assembled by the
+   *  parent. The right-tabs file doesn't know about storage or
+   *  selection mutations; it just hosts the pane. */
+  commentsContent?: React.ReactNode;
   className?: string;
 }
 
@@ -94,9 +104,20 @@ export function StudioRightTabs({
   onNotesChange,
   designName,
   defaultTab = "layout",
+  tab: controlledTab,
+  onTabChange,
+  commentsContent,
   className,
 }: StudioRightTabsProps) {
-  const [tab, setTab] = React.useState<TabId>(defaultTab);
+  const [internalTab, setInternalTab] = React.useState<TabId>(defaultTab);
+  const tab = controlledTab ?? internalTab;
+  const setTab = React.useCallback(
+    (next: TabId) => {
+      if (controlledTab === undefined) setInternalTab(next);
+      onTabChange?.(next);
+    },
+    [controlledTab, onTabChange],
+  );
 
   return (
     <Tabs
@@ -147,6 +168,12 @@ export function StudioRightTabs({
         className="flex-1 min-h-0 overflow-hidden"
       >
         <ThemeTabContent />
+      </TabsContent>
+      <TabsContent
+        value="comments"
+        className="flex-1 min-h-0 overflow-hidden"
+      >
+        {commentsContent}
       </TabsContent>
       <TabsContent
         value="notes"

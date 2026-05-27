@@ -19,7 +19,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 
 | Component | File | Key props | Figma | Notes |
 |---|---|---|---|---|
-| Button | `button.tsx` | `variant` (default/secondary/destructive/outline/ghost/link), `size` (default/sm/lg/icon) | ✅ | 6 × 4 = 24 variants |
+| Button | `button.tsx` | `variant` (default/secondary/destructive/outline/ghost/link/raised), `size` (default/sm/lg/icon) | ✅ | `raised` is the tactile bevel + drop-shadow variant; tone via `--btn-glow` |
 | Input | `input.tsx` | type, plus `with-icon-left` Figma-only variant | ⚠️ | Figma adds icon-left layout; source has none |
 | Textarea | `textarea.tsx` | min-h-80, no formal variants | ✅ | State variants in Figma |
 | Label | `label.tsx` | none — text-sm/medium/leading-none | ✅ | |

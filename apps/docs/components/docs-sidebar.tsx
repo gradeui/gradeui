@@ -158,9 +158,10 @@ const componentsNav: NavSection[] = [
   },
   {
     // Studio — Grade-specific surfaces (chat, contract-derived props
-    // rendering). Renamed from "Blocks" in May 2026.
+    // rendering, token visualisers). Renamed from "Blocks" in May 2026.
     title: "Studio",
     items: [
+      { title: "Presence", href: "/components/presence" },
       { title: "AI Chat", href: "/components/ai-chat" },
       { title: "Component Props", href: "/components/component-props" },
     ],

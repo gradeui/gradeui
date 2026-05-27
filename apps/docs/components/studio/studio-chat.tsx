@@ -26,6 +26,7 @@ import { humanizeChatError } from "@/lib/chat-error";
 import type { StudioSelection } from "@/lib/chat-sandpack";
 import { useRotatingPhrase } from "@/lib/studio-loading-phrases";
 import { SelectionInspector } from "@/components/studio/selection-inspector";
+import { SelectionChip } from "@/components/studio/selection-chip";
 import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
 import {
   AIChatComposer,
@@ -756,7 +757,7 @@ export function StudioChat({
           {selection && (
             <SelectionChip
               selection={selection}
-              onClear={() => onClearSelection?.()}
+              onDismiss={() => onClearSelection?.()}
             />
           )}
           {selection?.componentName && !settingsPanelDocked && (
@@ -972,75 +973,9 @@ function EmptyState({
  * Never shows the raw outerHTML here — that's the model's concern, not the
  * user's. It rides through in the request body only.
  */
-function SelectionChip({
-  selection,
-  onClear,
-}: {
-  selection: StudioSelection;
-  onClear: () => void;
-}) {
-  const hasComponent = Boolean(selection.componentName);
-  const label = hasComponent
-    ? `<${selection.componentName}>`
-    : `<${selection.tag}>`;
-  const title = hasComponent
-    ? `Selected <${selection.componentName}> in preview — next message will target this component`
-    : `Selected <${selection.tag}> in preview — next message will target it`;
-
-  return (
-    <div
-      className={cn(
-        // Studio-accent (not theme primary) so the selection chip
-        // stays consistent across theme switches and reads as
-        // tool chrome rather than competing with the design's own
-        // brand colour.
-        "flex items-center gap-1.5 rounded-full border border-studio-accent/30 bg-studio-accent/10",
-        "px-2 py-0.5 text-[11px] w-fit max-w-full",
-        "text-foreground"
-      )}
-      title={title}
-    >
-      <MousePointerClick className="h-3 w-3 shrink-0 text-studio-accent" />
-      <span
-        className={cn(
-          "font-mono shrink-0",
-          hasComponent
-            ? "text-[11px] font-medium text-studio-accent"
-            : "text-[10px] opacity-70"
-        )}
-      >
-        &lt;{hasComponent ? selection.componentName : selection.tag}&gt;
-      </span>
-      {/* Source-id badge — the stable identifier of the clicked JSX
-          node, captured at click time from `data-gds-source-id` and
-          used by the mutator to target the exact instance. Visible
-          here so it's obvious that (a) injection ran (badge present
-          = working), and (b) selecting different instances changes
-          the id (badge value flips). Looped iterations from one
-          source node will share an id — that's by design. */}
-      {hasComponent && selection.sourceId !== undefined && (
-        <span
-          className="text-[10px] opacity-60 font-mono shrink-0"
-          title={`Source ID: ${selection.sourceId}`}
-        >
-          #{selection.sourceId}
-        </span>
-      )}
-      {!hasComponent && selection.text && (
-        <span className="truncate min-w-0 opacity-90" title={selection.text}>
-          &ldquo;{selection.text}&rdquo;
-        </span>
-      )}
-      <button
-        type="button"
-        onClick={onClear}
-        aria-label={`Clear selection: ${label}`}
-        className="ml-0.5 rounded-full p-0.5 hover:bg-studio-accent/20 transition-colors shrink-0"
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </div>
-  );
-}
+// SelectionChip moved to ./selection-chip.tsx — single canonical
+// component shared across canvas toolbar + chat composer. See the
+// docstring there for the rationale (three bespoke pills before
+// the unification).
 
 

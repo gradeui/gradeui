@@ -84,14 +84,21 @@ interface ProjectsMenuProps {
   /** Click a screen inside any project — if it belongs to the
    *  inactive project, the page switches projects first. */
   onSelectScreen: (projectId: string, designId: string) => void;
-  /** Create a new project. */
+  /** Open the create-project dialog. (Renamed for clarity — the
+   *  page owns the dialog state; this callback just asks for it
+   *  to open.) */
   onCreateProject: () => void;
   /** Optional — rename a project (surfaced inside the settings sheet). */
   onRenameProject?: (id: string, name: string) => void;
+  /** Optional — patch a project's metadata (name + description) in
+   *  one call. Used by ProjectSettingsSheet for the description
+   *  editor; falls back to onRenameProject when only name changes. */
+  onUpdateProject?: (
+    id: string,
+    patch: { name?: string; description?: string },
+  ) => void;
   /** Optional — delete a project (surfaced inside the settings sheet). */
   onDeleteProject?: (id: string) => void;
-  /** Optional — reset a project's theme draft. */
-  onResetTheme?: (id: string) => void;
 }
 
 /** "4 turns · 12 revisions". ALWAYS renders both counts even when
@@ -114,8 +121,8 @@ export function ProjectsMenu({
   onSelectScreen,
   onCreateProject,
   onRenameProject,
+  onUpdateProject,
   onDeleteProject,
-  onResetTheme,
 }: ProjectsMenuProps) {
   // The settings sheet target — null when closed; project ref when
   // open. Tracking by Project (rather than id + a separate boolean)
@@ -224,12 +231,18 @@ export function ProjectsMenu({
               designsForProject.length === 1
                 ? "1 screen"
                 : `${designsForProject.length} screens`;
+            // The TreeItem's description line prefers the project's
+            // own description when set; falls back to the screen
+            // count so the row never looks empty. Same height
+            // either way — every row carries one secondary line.
+            const treeDescription =
+              project.description?.trim() || screenCountLabel;
 
             return (
               <SidebarTreeItem
                 key={project.id}
                 label={project.name}
-                description={screenCountLabel}
+                description={treeDescription}
                 // Folder icon swaps based on controlled expand state
                 // so visual + chevron + tree-state are all in sync.
                 icon={expanded ? <FolderOpen /> : <Folder />}
@@ -304,16 +317,22 @@ export function ProjectsMenu({
         onOpenChange={(open) => {
           if (!open) setSettingsTarget(null);
         }}
-        onRename={(id, name) => {
-          onRenameProject?.(id, name);
+        onUpdate={(id, patch) => {
+          // Prefer the general update handler when the consumer
+          // wires it; fall back to the rename-only handler for
+          // back-compat (older parents that haven't migrated yet).
+          if (onUpdateProject) {
+            onUpdateProject(id, patch);
+          } else if (patch.name !== undefined && onRenameProject) {
+            onRenameProject(id, patch.name);
+          }
           setSettingsTarget((cur) =>
-            cur && cur.id === id ? { ...cur, name } : cur,
+            cur && cur.id === id ? { ...cur, ...patch } : cur,
           );
         }}
         onDelete={(id) => {
           onDeleteProject?.(id);
         }}
-        onResetTheme={onResetTheme}
         canDelete={canDelete}
       />
     </Sidebar>

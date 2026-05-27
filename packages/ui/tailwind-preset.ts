@@ -192,6 +192,15 @@ const preset: Partial<Config> = {
           soft: "oklch(var(--highlight-soft) / <alpha-value>)",
           deep: "oklch(var(--highlight-deep) / <alpha-value>)",
         },
+        // Selection pair. `selected` = solid fill behind the chosen option,
+        // `selected-foreground` = on-fill text, `selected.glow` = ambient
+        // halo used as a box-shadow on hover / focus. Blue by default,
+        // theme-overridable via the same OKLCH triplet pattern.
+        selected: {
+          DEFAULT: "oklch(var(--selected) / <alpha-value>)",
+          foreground: "oklch(var(--selected-foreground) / <alpha-value>)",
+          glow: "oklch(var(--selected-glow) / <alpha-value>)",
+        },
         "chart-1": "oklch(var(--chart-1) / <alpha-value>)",
         "chart-2": "oklch(var(--chart-2) / <alpha-value>)",
         "chart-3": "oklch(var(--chart-3) / <alpha-value>)",
@@ -206,6 +215,53 @@ const preset: Partial<Config> = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      // Presence — elevation tokens exposed both as semantic
+      // `shadow-elevation-N` utilities AND as overrides of Tailwind's
+      // default `shadow-sm/md/lg/xl/2xl` scale so existing call sites
+      // inherit the new system without code changes. See PRESENCE.md.
+      boxShadow: {
+        // Default Tailwind shadow scale, repointed onto elevation
+        sm: "var(--elevation-1)",
+        DEFAULT: "var(--elevation-2)",
+        md: "var(--elevation-4)",
+        lg: "var(--elevation-5)",
+        xl: "var(--elevation-5)",
+        "2xl": "var(--elevation-5)",
+        inner: "var(--shadow-pressed-bevel)",
+        none: "var(--elevation-0)",
+        // Explicit elevation levels (preferred for new code)
+        "elevation-0": "var(--elevation-0)",
+        "elevation-1": "var(--elevation-1)",
+        "elevation-2": "var(--elevation-2)",
+        "elevation-3": "var(--elevation-3)",
+        "elevation-4": "var(--elevation-4)",
+        "elevation-5": "var(--elevation-5)",
+        // State variants for raised/tactile surfaces
+        raised: "var(--elevation-3)",
+        hot: "var(--elevation-hot)",
+        pressed: "var(--elevation-pressed)",
+        // Single-layer atoms (when you need bevel-only / lift-only)
+        "bevel-hi": "var(--shadow-bevel-hi)",
+        "bevel-lo": "var(--shadow-bevel-lo)",
+        contact: "var(--shadow-contact)",
+        lift: "var(--shadow-lift)",
+        "lift-deep": "var(--shadow-lift-deep)",
+        "heat-inner": "var(--shadow-heat-inner)",
+        "heat-outer": "var(--shadow-heat-outer)",
+      },
+      // Surface backgrounds — `bg-surface-glass` etc. work alongside
+      // the `.rds-surface-*` classes (those add backdrop-filter).
+      backgroundColor: {
+        "surface-solid": "var(--surface-solid)",
+        "surface-translucent": "var(--surface-translucent)",
+        "surface-glass": "var(--surface-glass)",
+        "surface-glass-strong": "var(--surface-glass-strong)",
+      },
+      backdropBlur: {
+        glass: "var(--surface-blur-glass)",
+        "glass-strong": "var(--surface-blur-strong)",
+        subtle: "var(--surface-blur-subtle)",
       },
       keyframes: {
         "accordion-down": {

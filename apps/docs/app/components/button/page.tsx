@@ -8,7 +8,7 @@ import { Mail, Loader2, ChevronRight } from "lucide-react";
 const buttonProps = [
   {
     name: "variant",
-    type: '"default" | "destructive" | "outline" | "secondary" | "ghost" | "link"',
+    type: '"default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "raised"',
     default: '"default"',
     description: "The visual style of the button.",
   },
@@ -101,6 +101,86 @@ export default function ButtonPage() {
         <h3 className="text-lg font-medium">Link</h3>
         <ComponentPreview code={`<Button variant="link">Link</Button>`}>
           <Button variant="link">Link</Button>
+        </ComponentPreview>
+
+        <h3 className="text-lg font-medium">Raised</h3>
+        <p className="text-sm text-muted-foreground -mt-2">
+          Tactile &quot;physical key&quot; treatment. Composed from the Presence elevation tokens
+          (<code className="bg-muted px-1 py-0.5 rounded text-xs">--elevation-3</code> at rest,
+          <code className="bg-muted px-1 py-0.5 rounded text-xs">--elevation-hot</code> on hover,
+          <code className="bg-muted px-1 py-0.5 rounded text-xs">--elevation-pressed</code> on
+          press). Tone is driven by <code className="bg-muted px-1 py-0.5 rounded text-xs">--btn-glow</code>{" "}
+          (defaults to <code className="bg-muted px-1 py-0.5 rounded text-xs">--selected-glow</code>).
+          See <a href="/components/presence" className="underline">the Presence page</a> for the full token system.
+        </p>
+        <ComponentPreview code={`<Button variant="raised">Raised</Button>`}>
+          <Button variant="raised">Raised</Button>
+        </ComponentPreview>
+
+        <h4 className="text-base font-medium">Tone override — &quot;traffic light&quot;</h4>
+        <p className="text-sm text-muted-foreground -mt-2">
+          Per-button glow via inline <code className="bg-muted px-1 py-0.5 rounded text-xs">--btn-glow</code>.
+          Hover each to see the heat-inner + heat-outer layers pick up the tone.
+        </p>
+        <ComponentPreview
+          code={`<div className="flex gap-3">
+  <Button variant="raised" style={{ "--btn-glow": "var(--warning)" } as React.CSSProperties}>
+    Iterate
+  </Button>
+  <Button variant="raised" style={{ "--btn-glow": "var(--success)" } as React.CSSProperties}>
+    Ship it
+  </Button>
+</div>`}
+        >
+          <div className="flex gap-3">
+            <Button
+              variant="raised"
+              style={{ ["--btn-glow" as never]: "var(--warning)" }}
+            >
+              Iterate
+            </Button>
+            <Button
+              variant="raised"
+              style={{ ["--btn-glow" as never]: "var(--success)" }}
+            >
+              Ship it
+            </Button>
+          </div>
+        </ComponentPreview>
+
+        <h4 className="text-base font-medium">Selected / held state</h4>
+        <p className="text-sm text-muted-foreground -mt-2">
+          Add <code className="bg-muted px-1 py-0.5 rounded text-xs">data-state=&quot;on&quot;</code>{" "}
+          (or <code className="bg-muted px-1 py-0.5 rounded text-xs">aria-pressed=&quot;true&quot;</code>)
+          for a held-down key look. Picks up the <code className="bg-muted px-1 py-0.5 rounded text-xs">--selected</code> blue
+          stroke + heat-inner glow.
+        </p>
+        <ComponentPreview
+          code={`<Button variant="raised" data-state="on">Selected</Button>`}
+        >
+          <div className="flex gap-3">
+            <Button variant="raised" data-state="on">Selected</Button>
+            <Button
+              variant="raised"
+              data-state="on"
+              style={{ ["--btn-glow" as never]: "var(--success)" }}
+            >
+              Confirmed
+            </Button>
+          </div>
+        </ComponentPreview>
+
+        <h4 className="text-base font-medium">All sizes</h4>
+        <ComponentPreview
+          code={`<Button variant="raised" size="sm">Small</Button>
+<Button variant="raised" size="default">Default</Button>
+<Button variant="raised" size="lg">Large</Button>`}
+        >
+          <div className="flex items-center gap-3">
+            <Button variant="raised" size="sm">Small</Button>
+            <Button variant="raised" size="default">Default</Button>
+            <Button variant="raised" size="lg">Large</Button>
+          </div>
         </ComponentPreview>
       </div>
 

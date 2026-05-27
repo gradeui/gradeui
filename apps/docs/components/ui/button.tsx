@@ -35,6 +35,9 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // Tactile "physical key" treatment — see packages/ui Button for
+        // the canonical comment. Heavy lift lives in .rds-button-raised.
+        raised: "rds-button-raised",
       },
       size: {
         sm: "h-7 gap-1.5 px-2.5 text-xs [&_svg]:size-3.5",

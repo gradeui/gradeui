@@ -584,7 +584,7 @@ export default function FastSandboxPage() {
               document.querySelector('[data-gds-part^="app-shell"]') ||
               document.body;
           }
-          const items = scope ? collect(scope) : [];
+          const items = scope ? collect(scope, depth) : [];
           try {
             window.parent.postMessage(
               { type: "grade:children", requestId, items },

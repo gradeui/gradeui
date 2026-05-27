@@ -27,3 +27,14 @@ aliases: [modal, popup, overlay, alert, system alert, alert dialog, modal dialog
   </DialogContent>
 </Dialog>
 ```
+
+DialogContent ships at elevation-5. Reach for the raised Button variant inside DialogFooter when the action carries weight ("Delete", "Publish", "Ship"):
+
+```jsx
+<DialogFooter>
+  <Button variant="outline">Cancel</Button>
+  <Button variant="raised" style={{ "--btn-glow": "var(--destructive)" }}>
+    Delete forever
+  </Button>
+</DialogFooter>
+```

@@ -12,6 +12,10 @@ import { LocalStorageStudioStorage } from "./local-adapter";
 import type { StudioStorage } from "./types";
 
 export type {
+  Comment,
+  CommentThread,
+  CommentThreadStatus,
+  CommentThreadWithMessages,
   Membership,
   OrgMembership,
   Organisation,

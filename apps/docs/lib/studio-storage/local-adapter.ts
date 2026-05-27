@@ -25,6 +25,13 @@
 import type { UIMessage } from "ai";
 import { initialDesigns, type Design } from "@/lib/studio-designs";
 import {
+  nextCommentId,
+  nextThreadId,
+  type Comment,
+  type CommentThread,
+  type CommentThreadWithMessages,
+} from "@/lib/studio-comments";
+import {
   LOCAL_ORG_ID,
   LOCAL_TEAM_ID,
   LOCAL_USER_ID,
@@ -55,7 +62,39 @@ const MEMBERSHIPS_KEY = "grade:studio:memberships";
 const USERS_KEY = "grade:studio:users";
 const ORGS_KEY = "grade:studio:orgs";
 const ORG_MEMBERSHIPS_KEY = "grade:studio:org-memberships";
+const COMMENTS_KEY_PREFIX = "grade:studio:comments:";
 const LEGACY_SESSION_KEY = "grade:studio:session";
+
+/** Comment storage key for a (project, design) pair. One blob per
+ *  screen — the panel only needs the active screen's threads at a
+ *  time, and grouping per-screen keeps each write small. */
+function commentsKey(projectId: string, designId: string): string {
+  return `${COMMENTS_KEY_PREFIX}${projectId}:${designId}`;
+}
+
+interface PersistedCommentBundle {
+  threads: CommentThread[];
+  comments: Comment[];
+}
+
+function loadCommentBundle(
+  storage: Storage,
+  projectId: string,
+  designId: string,
+): PersistedCommentBundle {
+  const raw = storage.getItem(commentsKey(projectId, designId));
+  const parsed = safeJsonParse<PersistedCommentBundle>(raw);
+  return parsed ?? { threads: [], comments: [] };
+}
+
+function saveCommentBundle(
+  storage: Storage,
+  projectId: string,
+  designId: string,
+  bundle: PersistedCommentBundle,
+): void {
+  storage.setItem(commentsKey(projectId, designId), JSON.stringify(bundle));
+}
 
 const CURRENT_VERSION = 5;
 const DEFAULT_PROJECT_ID = "p-default";
@@ -570,16 +609,25 @@ export class LocalStorageStudioStorage implements StudioStorage {
     };
   }
 
-  async createProject(input: { name: string }): Promise<Project> {
+  async createProject(input: {
+    name: string;
+    description?: string;
+  }): Promise<Project> {
     this.ensureHydrated();
     const storage = ssrSafeStorage();
     if (!storage) {
       throw new Error("LocalStorage unavailable — cannot create project");
     }
     const now = Date.now();
+    // Normalise the description: empty / whitespace-only strings
+    // become undefined so the UI's "fall back to N screens" logic
+    // works consistently between "user never set one" and "user
+    // cleared what they set".
+    const description = input.description?.trim() || undefined;
     const project: Project = {
       id: nextProjectId(),
       name: input.name,
+      description,
       createdAt: now,
       updatedAt: now,
       // New projects belong to the current user's Personal team —
@@ -610,31 +658,56 @@ export class LocalStorageStudioStorage implements StudioStorage {
   }
 
   async renameProject(id: string, name: string): Promise<Project> {
+    // Thin wrapper around updateProject for back-compat. New
+    // callers prefer updateProject directly so they can patch
+    // multiple fields at once.
+    return this.updateProject(id, { name });
+  }
+
+  async updateProject(
+    id: string,
+    patch: Partial<Pick<Project, "name" | "description">>,
+  ): Promise<Project> {
     this.ensureHydrated();
     const storage = ssrSafeStorage();
     if (!storage) throw new Error("LocalStorage unavailable");
     const list = await this.listProjects();
     const idx = list.findIndex((p) => p.id === id);
     if (idx < 0) throw new Error(`Project ${id} not found`);
-    const updated: Project = { ...list[idx], name, updatedAt: Date.now() };
+
+    // Normalise the patch:
+    //   - name is required-when-present (empty rejected to avoid
+    //     orphaning the row visually). Callers should guard at
+    //     the form layer; this is belt-and-braces.
+    //   - description empty/whitespace → undefined so the UI's
+    //     fallback to "N screens" is consistent.
+    const next: Project = { ...list[idx], updatedAt: Date.now() };
+    if (patch.name !== undefined) {
+      const trimmed = patch.name.trim();
+      if (trimmed) next.name = trimmed;
+    }
+    if (patch.description !== undefined) {
+      next.description = patch.description.trim() || undefined;
+    }
+
     const nextList = [...list];
-    nextList[idx] = updated;
+    nextList[idx] = next;
     storage.setItem(
       PROJECTS_KEY,
       JSON.stringify({ projects: nextList } as PersistedProjectIndex),
     );
     // Keep the per-project snapshot's embedded `project` field in
-    // sync so a subsequent loadProject() returns the new name.
+    // sync so a subsequent loadProject() returns the patched data.
     const snap = safeJsonParse<PersistedProject>(
       storage.getItem(projectKey(id)),
     );
     if (snap) {
       storage.setItem(
         projectKey(id),
-        JSON.stringify({ ...snap, project: updated } as PersistedProject),
+        JSON.stringify({ ...snap, project: next } as PersistedProject),
       );
     }
-    return updated;
+    return next;
   }
 
   async deleteProject(id: string): Promise<void> {
@@ -1070,5 +1143,241 @@ export class LocalStorageStudioStorage implements StudioStorage {
       JSON.stringify({ rows: next } as PersistedOrgMembershipIndex),
     );
     return updated;
+  }
+
+  // ─── Comments ──────────────────────────────────────────────────
+
+  async listThreads(
+    projectId: string,
+    designId: string,
+  ): Promise<CommentThreadWithMessages[]> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) return [];
+    const bundle = loadCommentBundle(storage, projectId, designId);
+    return bundle.threads
+      .map((thread) => ({
+        thread,
+        // Comments inside each thread sorted oldest-first so the
+        // conversation reads top-to-bottom. Stable id ties resolve
+        // the rare collision (two comments minted in the same ms).
+        comments: bundle.comments
+          .filter((c) => c.threadId === thread.id)
+          .sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id)),
+      }))
+      // Threads themselves render newest-first — the most recent
+      // conversation is what the user just had, so it floats top.
+      .sort((a, b) => b.thread.createdAt - a.thread.createdAt);
+  }
+
+  async createThread(input: {
+    projectId: string;
+    designId: string;
+    anchorId: string;
+    anchorKind: "source" | "instance";
+    elementLabel: string;
+    componentName?: string;
+    body: string;
+    authorId: string;
+  }): Promise<CommentThreadWithMessages> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) {
+      throw new Error("LocalStorage unavailable — cannot create thread");
+    }
+    const now = Date.now();
+    const thread: CommentThread = {
+      id: nextThreadId(),
+      projectId: input.projectId,
+      designId: input.designId,
+      anchorId: input.anchorId,
+      anchorKind: input.anchorKind,
+      elementLabel: input.elementLabel,
+      componentName: input.componentName,
+      status: "open",
+      createdBy: input.authorId,
+      createdAt: now,
+    };
+    const opener: Comment = {
+      id: nextCommentId(),
+      threadId: thread.id,
+      authorId: input.authorId,
+      body: input.body,
+      createdAt: now,
+    };
+    const bundle = loadCommentBundle(storage, input.projectId, input.designId);
+    saveCommentBundle(storage, input.projectId, input.designId, {
+      threads: [...bundle.threads, thread],
+      comments: [...bundle.comments, opener],
+    });
+    return { thread, comments: [opener] };
+  }
+
+  async resolveThread(input: {
+    projectId: string;
+    designId: string;
+    threadId: string;
+    userId: string;
+  }): Promise<CommentThread> {
+    return this.flipThreadStatus(
+      input.projectId,
+      input.designId,
+      input.threadId,
+      "resolved",
+      input.userId,
+    );
+  }
+
+  async reopenThread(input: {
+    projectId: string;
+    designId: string;
+    threadId: string;
+  }): Promise<CommentThread> {
+    return this.flipThreadStatus(
+      input.projectId,
+      input.designId,
+      input.threadId,
+      "open",
+    );
+  }
+
+  /** Shared body for resolve + reopen — only the status diff + the
+   *  resolvedBy/resolvedAt stamping changes between the two. */
+  private async flipThreadStatus(
+    projectId: string,
+    designId: string,
+    threadId: string,
+    status: CommentThread["status"],
+    userId?: string,
+  ): Promise<CommentThread> {
+    const storage = ssrSafeStorage();
+    if (!storage) throw new Error("LocalStorage unavailable");
+    const bundle = loadCommentBundle(storage, projectId, designId);
+    const idx = bundle.threads.findIndex((t) => t.id === threadId);
+    if (idx < 0) throw new Error(`Thread ${threadId} not found`);
+    const now = Date.now();
+    const updated: CommentThread = {
+      ...bundle.threads[idx],
+      status,
+      // resolvedBy/resolvedAt only meaningful in the "resolved"
+      // direction. Re-opening clears them so the audit trail
+      // reflects the most recent resolution attempt.
+      resolvedBy: status === "resolved" ? userId : undefined,
+      resolvedAt: status === "resolved" ? now : undefined,
+    };
+    const nextThreads = [...bundle.threads];
+    nextThreads[idx] = updated;
+    saveCommentBundle(storage, projectId, designId, {
+      threads: nextThreads,
+      comments: bundle.comments,
+    });
+    return updated;
+  }
+
+  async deleteThread(input: {
+    projectId: string;
+    designId: string;
+    threadId: string;
+  }): Promise<void> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) return;
+    const bundle = loadCommentBundle(storage, input.projectId, input.designId);
+    saveCommentBundle(storage, input.projectId, input.designId, {
+      threads: bundle.threads.filter((t) => t.id !== input.threadId),
+      comments: bundle.comments.filter((c) => c.threadId !== input.threadId),
+    });
+  }
+
+  async addComment(input: {
+    projectId: string;
+    designId: string;
+    threadId: string;
+    parentCommentId?: string;
+    authorId: string;
+    body: string;
+  }): Promise<Comment> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) throw new Error("LocalStorage unavailable");
+    const bundle = loadCommentBundle(storage, input.projectId, input.designId);
+    // Guard: rejecting a comment on a non-existent thread keeps the
+    // bundle internally consistent (no orphans). The UI shouldn't
+    // be able to trigger this — composers are tied to threads they
+    // can see — but a stale optimistic update could.
+    if (!bundle.threads.some((t) => t.id === input.threadId)) {
+      throw new Error(`Thread ${input.threadId} not found`);
+    }
+    const comment: Comment = {
+      id: nextCommentId(),
+      threadId: input.threadId,
+      parentCommentId: input.parentCommentId,
+      authorId: input.authorId,
+      body: input.body,
+      createdAt: Date.now(),
+    };
+    saveCommentBundle(storage, input.projectId, input.designId, {
+      threads: bundle.threads,
+      comments: [...bundle.comments, comment],
+    });
+    return comment;
+  }
+
+  async editComment(input: {
+    projectId: string;
+    designId: string;
+    commentId: string;
+    body: string;
+  }): Promise<Comment> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) throw new Error("LocalStorage unavailable");
+    const bundle = loadCommentBundle(storage, input.projectId, input.designId);
+    const idx = bundle.comments.findIndex((c) => c.id === input.commentId);
+    if (idx < 0) throw new Error(`Comment ${input.commentId} not found`);
+    const updated: Comment = {
+      ...bundle.comments[idx],
+      body: input.body,
+      editedAt: Date.now(),
+    };
+    const next = [...bundle.comments];
+    next[idx] = updated;
+    saveCommentBundle(storage, input.projectId, input.designId, {
+      threads: bundle.threads,
+      comments: next,
+    });
+    return updated;
+  }
+
+  async deleteComment(input: {
+    projectId: string;
+    designId: string;
+    commentId: string;
+  }): Promise<void> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) return;
+    const bundle = loadCommentBundle(storage, input.projectId, input.designId);
+    const target = bundle.comments.find((c) => c.id === input.commentId);
+    if (!target) return;
+    // Drop the comment + any replies that were nested under it
+    // (parentCommentId match). Empty threads (no remaining
+    // top-level comments) get pruned too — an orphan thread row
+    // with nothing in it is dead weight.
+    const remaining = bundle.comments.filter(
+      (c) => c.id !== input.commentId && c.parentCommentId !== input.commentId,
+    );
+    const stillHasOpeners = remaining.some(
+      (c) =>
+        c.threadId === target.threadId &&
+        c.parentCommentId === undefined,
+    );
+    const nextThreads = stillHasOpeners
+      ? bundle.threads
+      : bundle.threads.filter((t) => t.id !== target.threadId);
+    saveCommentBundle(storage, input.projectId, input.designId, {
+      threads: nextThreads,
+      comments: remaining,
+    });
   }
 }

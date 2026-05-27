@@ -39,6 +39,14 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // Tactile "physical key" treatment — inner bevel + outer drop +
+        // ambient hover glow keyed off `--btn-glow` (defaults to the
+        // --selected-glow blue). Drive the tone per-button with a style
+        // override, e.g. `style={{ '--btn-glow': 'var(--warning)' }}`,
+        // or with `data-state="on"` / `aria-pressed="true"` for a held
+        // selected look. Heavy lift lives in .rds-button-raised so the
+        // multi-stop shadow stack stays readable.
+        raised: "rds-button-raised",
       },
       size: {
         sm: "h-7 gap-1.5 px-2.5 text-xs [&_svg]:size-3.5",

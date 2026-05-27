@@ -43,6 +43,7 @@ import {
   Image as ImageIcon,
   Loader2,
   Maximize2,
+  MessageSquare,
   Monitor,
   MoreHorizontal,
   MousePointerClick,
@@ -88,8 +89,10 @@ import {
 import { useRotatingPhrase } from "@/lib/studio-loading-phrases";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { Design } from "@/lib/studio-designs";
+import type { CommentThreadWithMessages } from "@/lib/studio-storage";
 import { DesignBreadcrumb } from "@/components/studio/design-breadcrumb";
 import { CanvasPathBar } from "@/components/studio/canvas-path-bar";
+import { SelectionChip } from "@/components/studio/selection-chip";
 import { StarterPicker } from "@/components/studio/starter-picker";
 import {
   FocusedSandpackMount,
@@ -153,6 +156,28 @@ interface StudioCanvasProps {
    *  (currently: user pressed Escape inside the iframe). Wired to the
    *  same per-design selection state setter as the chat's chip ×. */
   onClearSelection?: () => void;
+  /** Fires when the user picks an element while Comment mode is on
+   *  (instead of Select mode). The payload is the same selection
+   *  shape — the consumer decides what to do with it. The canvas
+   *  itself uses this to pop an inline composer right next to the
+   *  picked element; consumers can also listen if they want to
+   *  surface the pick elsewhere (e.g. flip a side panel). */
+  onCommentSelect?: (selection: StudioSelection) => void;
+  /** Fires when the user posts a comment via the inline overlay.
+   *  Consumer creates the thread + comment via the storage adapter
+   *  and returns once persisted; the overlay closes on resolve. */
+  onCommentSubmit?: (input: {
+    selection: StudioSelection;
+    body: string;
+  }) => Promise<void> | void;
+  /** The current user — used by the inline overlay's composer
+   *  avatar + as the authorId when threads get created.
+   *  Optional so consumers that don't wire comment mode at all
+   *  can ignore it. */
+  currentUserForComment?: {
+    name: string;
+    avatarUrl?: string;
+  };
   /** Which renderer mounts inside the preview frames. "sandpack" is the
    *  legacy/stable path (npm install, iframe, full bundler). "fast" is
    *  an in-document same-origin renderer (no iframe, no npm, imports
@@ -224,6 +249,13 @@ interface StudioCanvasProps {
   // truth and the canvas drives it via onZoomChange.
   zoom?: "fit" | "all";
   onZoomChange?: (zoom: "fit" | "all") => void;
+  // ─── Comment pins ──────────────────────────────────────────────
+  // Open threads to surface as positioned pins over the preview.
+  // Forwarded through FocusedFrame → FocusedFastMount → the
+  // FastIframeHost overlay. Empty / undefined = no pins.
+  commentThreads?: CommentThreadWithMessages[];
+  activeCommentThreadId?: string | null;
+  onCommentPinClick?: (threadId: string) => void;
   // ─── Project context ──────────────────────────────────────────────
   // Name of the project currently loaded into the workbench. Shown
   // as the parent crumb in Fit mode and as the heading in Grid mode
@@ -246,6 +278,9 @@ export function StudioCanvas({
   selection = null,
   onSelect,
   onClearSelection,
+  onCommentSelect,
+  onCommentSubmit,
+  currentUserForComment,
   onAddDesign,
   onCloseDesign,
   onRenameDesign,
@@ -265,6 +300,9 @@ export function StudioCanvas({
   zoom: controlledZoom,
   onZoomChange,
   projectName,
+  commentThreads,
+  activeCommentThreadId,
+  onCommentPinClick,
   rendererMode = "sandpack",
   className,
 }: StudioCanvasProps) {
@@ -310,7 +348,40 @@ export function StudioCanvas({
   // controls, while still driving state that the frame's postMessage
   // bus consumes. Lifting it here also means flipping fit → all → fit
   // preserves the user's pick-mode intent.
-  const [selectMode, setSelectMode] = useState(false);
+  /**
+   * The canvas picker — one mode at a time, multiple possible
+   * destinations.
+   *
+   * The iframe has a single click-capture mechanism
+   * (`grade:select-mode`); what differs between modes is which
+   * page-side callback receives the picked element. Today there
+   * are two destinations:
+   *
+   *   - `"select"` — fires `onSelect`, used by chat to attach the
+   *     pick to the next prompt.
+   *   - `"comment"` — fires `onCommentSelect`, used by the
+   *     Comments tab to open a new-thread composer anchored to
+   *     the pick.
+   *
+   * `null` means the canvas is interactive — clicks pass through
+   * to the rendered preview as normal. Future modes (annotate,
+   * measure, etc.) slot into this enum without rewiring the
+   * iframe protocol.
+   */
+  type CanvasMode = "select" | "comment" | null;
+  const [canvasMode, setCanvasMode] = useState<CanvasMode>(null);
+  const selectMode = canvasMode === "select";
+  const commentMode = canvasMode === "comment";
+  // Capture is on whenever ANY non-null mode is active. The iframe
+  // doesn't care which mode it is — the same `grade:select-mode`
+  // enabled message turns on click capture.
+  const captureOn = canvasMode !== null;
+  // Toggling a mode is "click the active button to leave the mode,
+  // click another to switch". Pulled out so the toolbar buttons
+  // can call it without duplicating the if-equal-then-null logic.
+  const toggleCanvasMode = useCallback((next: Exclude<CanvasMode, null>) => {
+    setCanvasMode((cur) => (cur === next ? null : next));
+  }, []);
 
   // Viewport width for the focused frame. Default "responsive" matches
   // the pre-picker behavior (no width constraint). Canvas-level state
@@ -1150,20 +1221,7 @@ export function StudioCanvas({
             </span>
           )}
           {isFit && selection?.componentName && (
-            <span
-              className="flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-medium text-primary"
-              title={
-                selection.part
-                  ? `Editing <${selection.componentName}> (data-gds-part="${selection.part}")`
-                  : `Editing <${selection.componentName}>`
-              }
-            >
-              <Crosshair className="h-3 w-3" aria-hidden />
-              Editing
-              <span className="opacity-90">
-                &lt;{selection.componentName}&gt;
-              </span>
-            </span>
+            <SelectionChip selection={selection} prefix="Editing" />
           )}
           {isStreaming && isFit && (
             <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-primary">
@@ -1327,17 +1385,21 @@ export function StudioCanvas({
                   on the menu item label + a small chip in the
                   toolbar's leading slot. */}
 
-              {/* Select — element pick. Custom-rolled toggle until
-                  Toggle picks up tooltip support. */}
+              {/* Canvas picker — one toggle per destination mode.
+                  Mutually exclusive (the canvasMode state holds at
+                  most one); clicking the active mode again exits
+                  to the null/interactive state. Both buttons share
+                  the same active-style + capture mechanism in the
+                  iframe; only the page-side callback differs. */}
               <button
                 type="button"
-                onClick={() => setSelectMode((v) => !v)}
+                onClick={() => toggleCanvasMode("select")}
                 disabled={!focusedAppSource || !focusedCanRender}
                 aria-pressed={selectMode}
                 title={
                   selectMode
                     ? "Click an element in the preview to attach it to your next prompt"
-                    : "Enable element select — click a component to comment on it"
+                    : "Enable element select — click a component to attach it to chat"
                 }
                 className={cn(
                   "h-7 inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors",
@@ -1351,6 +1413,34 @@ export function StudioCanvas({
                 <MousePointerClick />
                 {selectMode ? "Pick…" : "Select"}
               </button>
+              {/* Comment mode — same picker mechanism, routes the
+                  pick into the Comments tab (new-thread composer)
+                  instead of chat. Hidden when there's no
+                  comment-select consumer wired (embed surfaces). */}
+              {onCommentSelect && (
+                <button
+                  type="button"
+                  onClick={() => toggleCanvasMode("comment")}
+                  disabled={!focusedAppSource || !focusedCanRender}
+                  aria-pressed={commentMode}
+                  title={
+                    commentMode
+                      ? "Click an element in the preview to start a comment thread on it"
+                      : "Enable comment mode — click a component to leave feedback on it"
+                  }
+                  className={cn(
+                    "h-7 inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors",
+                    "[&_svg]:size-3.5 [&_svg]:shrink-0",
+                    commentMode
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                    "disabled:opacity-40 disabled:pointer-events-none",
+                  )}
+                >
+                  <MessageSquare />
+                  {commentMode ? "Pick…" : "Comment"}
+                </button>
+              )}
 
               {/* Overflow — Duplicate (works), Open in CodeSandbox
                   (mostly works), Share (placeholder). */}
@@ -1579,7 +1669,23 @@ export function StudioCanvas({
         onSelect={onSelect}
         onClearSelection={onClearSelection}
         selectMode={selectMode}
-        onSelectModeChange={setSelectMode}
+        onSelectModeChange={(next) => {
+          // Bridge FocusedFrame's boolean API to the unified
+          // canvasMode enum. Frame asking to enable select while
+          // we're in comment mode wins for select (frame is the
+          // authority on its own state). Frame asking to disable
+          // only clears canvasMode when select was the active
+          // mode — leaves comment mode alone.
+          if (next) setCanvasMode("select");
+          else if (canvasMode === "select") setCanvasMode(null);
+        }}
+        commentMode={commentMode}
+        onCommentSelect={onCommentSelect}
+        onCommentSubmit={onCommentSubmit}
+        currentUserForComment={currentUserForComment}
+        commentThreads={commentThreads}
+        activeCommentThreadId={activeCommentThreadId}
+        onCommentPinClick={onCommentPinClick}
         viewportWidth={viewportWidth}
         fidelity={fidelity}
         mediaUrls={focusedUrls}
@@ -1640,6 +1746,28 @@ interface FocusedFrameProps {
    *  in the canvas header. */
   selectMode: boolean;
   onSelectModeChange: (next: boolean) => void;
+  /** Controlled comment-mode — same shape as selectMode. When true,
+   *  the same iframe capture mechanism is on, but element picks are
+   *  routed to `onCommentSelect` instead of `onSelect`. */
+  commentMode?: boolean;
+  onCommentSelect?: (selection: StudioSelection) => void;
+  /** Fires when the inline overlay's composer is submitted. Consumer
+   *  persists the thread; the overlay closes on resolve. */
+  onCommentSubmit?: (input: {
+    selection: StudioSelection;
+    body: string;
+  }) => Promise<void> | void;
+  /** Current user for the inline overlay's composer avatar. */
+  currentUserForComment?: {
+    name: string;
+    avatarUrl?: string;
+  };
+  /** Comment threads to surface as positioned pins over the
+   *  preview. Forwarded to FocusedFastMount → FastIframeHost
+   *  → CanvasCommentPinsOverlay. Empty / undefined = no pins. */
+  commentThreads?: CommentThreadWithMessages[];
+  activeCommentThreadId?: string | null;
+  onCommentPinClick?: (threadId: string) => void;
   /** Current viewport width constraint for the preview iframe.
    *  "responsive" means no constraint — the iframe fills the column.
    *  Applied only to the Preview view; the Code view always uses the
@@ -1686,6 +1814,11 @@ function FocusedFrame({
   onClearSelection,
   selectMode,
   onSelectModeChange,
+  commentMode = false,
+  onCommentSelect,
+  commentThreads,
+  activeCommentThreadId,
+  onCommentPinClick,
   viewportWidth,
   fidelity,
   mediaUrls,
@@ -1693,6 +1826,10 @@ function FocusedFrame({
   hidden = false,
   rendererMode = "sandpack",
 }: FocusedFrameProps) {
+  // Iframe-side capture is on whenever EITHER toolbar mode is on.
+  // The page-side handler routes to the right consumer based on
+  // which mode triggered it.
+  const captureOn = selectMode || commentMode;
   const canRender =
     Boolean(appSource) && (isStreaming || looksComplete(appSource || ""));
 
@@ -1780,8 +1917,8 @@ function FocusedFrame({
   );
 
   useEffect(() => {
-    postToIframe({ type: "grade:select-mode", enabled: selectMode });
-  }, [selectMode, postToIframe]);
+    postToIframe({ type: "grade:select-mode", enabled: captureOn });
+  }, [captureOn, postToIframe]);
 
   useEffect(() => {
     if (!selection) {
@@ -1805,7 +1942,16 @@ function FocusedFrame({
       if (type === "grade:selected") {
         const sel = (data as { selection?: StudioSelection }).selection;
         if (sel && typeof sel === "object") {
-          onSelect?.(sel);
+          // Route by mode. Both modes share the iframe's capture
+          // mechanism — the page-side handler is what differs.
+          // Comment mode wins when both happen to be on (shouldn't
+          // happen, the toolbar enforces mutual exclusivity, but
+          // belt-and-braces).
+          if (commentMode) {
+            onCommentSelect?.(sel);
+          } else {
+            onSelect?.(sel);
+          }
           // No auto-exit any more — the persistent selection ring (added
           // in the same redesign that introduced grade:selection-cleared)
           // requires select mode to stay on so the user can see what
@@ -1825,7 +1971,7 @@ function FocusedFrame({
         // re-sent here too: a Sandpack reboot drops the previous
         // data-fidelity attribute on <html>, and without this the iframe
         // would default to "full" until the next user-driven toggle.
-        postToIframe({ type: "grade:select-mode", enabled: selectMode });
+        postToIframe({ type: "grade:select-mode", enabled: captureOn });
         postToIframe({ type: "grade:set-fidelity", value: fidelity });
         if (!selection) {
           postToIframe({ type: "grade:clear-selection" });
@@ -1834,7 +1980,16 @@ function FocusedFrame({
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [onSelect, onSelectModeChange, postToIframe, selectMode, selection, fidelity]);
+  }, [
+    onSelect,
+    onCommentSelect,
+    onSelectModeChange,
+    postToIframe,
+    captureOn,
+    commentMode,
+    selection,
+    fidelity,
+  ]);
 
   return (
     <div
@@ -1862,6 +2017,9 @@ function FocusedFrame({
           fidelity={fidelity}
           mediaUrls={mediaUrls}
           mediaOverrides={mediaOverrides}
+          commentThreads={commentThreads}
+          activeCommentThreadId={activeCommentThreadId}
+          onCommentPinClick={onCommentPinClick}
         />
       ) : (
         <FocusedSandpackMount

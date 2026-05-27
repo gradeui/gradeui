@@ -37,6 +37,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  Textarea,
 } from "@gradeui/ui";
 
 import type { Project, Team } from "@/lib/studio-storage";
@@ -46,6 +47,8 @@ import {
   type ResourceAccess,
   type Subject,
 } from "@/lib/studio-users";
+import { useMaybeThemeBuilder } from "@/components/theme-builder";
+import { ThemePickerSection } from "@/components/studio/theme-picker-section";
 
 interface ProjectSettingsSheetProps {
   /** The project whose settings are being edited. When null the
@@ -60,18 +63,19 @@ interface ProjectSettingsSheetProps {
   /** Controlled open state — open === Boolean(project), close
    *  fires onClose so the parent can clear `project`. */
   onOpenChange: (open: boolean) => void;
-  /** Persist a new name. Parent is responsible for trimming + the
-   *  storage write; this component just emits the intent. */
-  onRename: (id: string, name: string) => void;
+  /** Patch a project's metadata in one call — name + description.
+   *  Parent normalises + writes to storage; this component just
+   *  emits the intent. Empty strings on `description` mean
+   *  "clear it" and are passed through verbatim — the storage
+   *  layer normalises to undefined. */
+  onUpdate: (
+    id: string,
+    patch: { name?: string; description?: string },
+  ) => void;
   /** Confirm + delete. Parent owns the confirmation UI — pass a
    *  handler that has already prompted for confirmation, OR show
    *  the inline confirm step inside the sheet (we do the latter). */
   onDelete: (id: string) => void;
-  /** Optional — reset this project's theme draft to defaults.
-   *  When undefined, the Theme reset section renders disabled with
-   *  a "Soon" hint. Wires up once per-project theme persistence
-   *  lands in ThemeBuilderProvider. */
-  onResetTheme?: (id: string) => void;
   /** Whether the user can delete this project. Hidden when only one
    *  project exists (can't delete the last one). */
   canDelete?: boolean;
@@ -81,12 +85,12 @@ export function ProjectSettingsSheet({
   project,
   teams,
   onOpenChange,
-  onRename,
+  onUpdate,
   onDelete,
-  onResetTheme,
   canDelete = true,
 }: ProjectSettingsSheetProps) {
   const [draftName, setDraftName] = React.useState("");
+  const [draftDescription, setDraftDescription] = React.useState("");
   const [confirmingDelete, setConfirmingDelete] = React.useState(false);
   const currentUser = useCurrentUser();
 
@@ -96,16 +100,28 @@ export function ProjectSettingsSheet({
   React.useEffect(() => {
     if (project) {
       setDraftName(project.name);
+      setDraftDescription(project.description ?? "");
       setConfirmingDelete(false);
     }
   }, [project?.id]);
 
-  const handleSaveName = () => {
-    if (!project) return;
-    const trimmed = draftName.trim();
-    if (trimmed && trimmed !== project.name) {
-      onRename(project.id, trimmed);
-    }
+  // Dirty-state guards. Whitespace-only changes on either field
+  // don't count as dirty (the storage layer normalises). Name is
+  // required-when-present; we don't let the user clear it to empty
+  // — they'd lose track of the project in the menu.
+  const nameDirty =
+    !!project && draftName.trim() !== project.name && draftName.trim().length > 0;
+  const descriptionDirty =
+    !!project &&
+    (draftDescription.trim() || "") !== (project.description ?? "");
+  const canSave = nameDirty || descriptionDirty;
+
+  const handleSave = () => {
+    if (!project || !canSave) return;
+    const patch: { name?: string; description?: string } = {};
+    if (nameDirty) patch.name = draftName.trim();
+    if (descriptionDirty) patch.description = draftDescription.trim();
+    onUpdate(project.id, patch);
   };
 
   const handleDelete = () => {
@@ -128,12 +144,16 @@ export function ProjectSettingsSheet({
         </SheetHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto py-4 flex flex-col gap-6">
-          {/* Rename — inline edit with explicit Save so the user
-              doesn't accidentally rename on blur or on closing the
-              Sheet without committing. */}
-          <section className="flex flex-col gap-2">
-            <Label htmlFor="project-name">Name</Label>
-            <div className="flex items-center gap-2">
+          {/* Name + description editor. Single Save button at the
+              bottom commits both at once so the user can edit both
+              without two round-trips. Enter inside the name input
+              also commits. The save button stays disabled until at
+              least one field is dirty (excludes whitespace-only
+              changes, which are normalised away by the storage
+              layer). */}
+          <section className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="project-name">Name</Label>
               <Input
                 id="project-name"
                 value={draftName}
@@ -141,22 +161,40 @@ export function ProjectSettingsSheet({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    handleSaveName();
+                    handleSave();
                   }
                 }}
-                className="flex-1"
               />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="project-description">
+                Description{" "}
+                <span className="text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </Label>
+              <Textarea
+                id="project-description"
+                value={draftDescription}
+                onChange={(e) => setDraftDescription(e.target.value)}
+                placeholder="What this project is for"
+                maxLength={240}
+                rows={2}
+                className="min-h-0"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Shown in the Projects menu instead of the screen
+                count. Leave empty to fall back to the count.
+              </p>
+            </div>
+            <div className="flex justify-end">
               <Button
                 variant="default"
                 size="sm"
-                onClick={handleSaveName}
-                disabled={
-                  !project ||
-                  draftName.trim().length === 0 ||
-                  draftName.trim() === project.name
-                }
+                onClick={handleSave}
+                disabled={!canSave}
               >
-                Save
+                Save changes
               </Button>
             </div>
           </section>
@@ -233,37 +271,11 @@ export function ProjectSettingsSheet({
 
           <Separator />
 
-          {/* Theme reset — placeholder until per-project theme
-              persistence is wired. The Sheet reserves the slot so
-              the eventual feature lands without rearranging UI. */}
-          <section className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label className="text-sm font-medium">Theme</Label>
-              {!onResetTheme && (
-                <Badge
-                  variant="secondary"
-                  className="text-[10px] px-1.5 py-0"
-                >
-                  Soon
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Reset this project's theme draft back to the Studio default.
-              Affects only this project.
-            </p>
-            <div>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!onResetTheme}
-                onClick={() => project && onResetTheme?.(project.id)}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Reset theme
-              </Button>
-            </div>
-          </section>
+          {/* Theme — quick selector + reset. Deep editing (hue
+              sliders, typography, shape) stays in the right-panel
+              Theme tab; this section is for "pick a different
+              base" + "discard my custom edits". */}
+          <ProjectThemeSection />
 
           {canDelete && (
             <>
@@ -319,6 +331,57 @@ export function ProjectSettingsSheet({
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Project theme section — embedded inside the settings sheet.
+ *  Reads from `useMaybeThemeBuilder` so it gracefully no-ops when
+ *  rendered outside a ThemeBuilderProvider (embed surfaces, tests).
+ *
+ *  Two affordances:
+ *
+ *    - Theme picker: reuses ThemePickerSection — switching swatches
+ *      rebases the builder's history onto the picked theme. Combined
+ *      with the per-project draft persister on the page, this means
+ *      "pick a theme inside Project A" writes that pick to Project
+ *      A's snapshot, not anywhere else.
+ *
+ *    - Reset: calls the builder's `reset()`, snapping back to the
+ *      project's last-saved baseline (the one the provider seeded
+ *      with on mount). Doesn't blow away the snapshot — just
+ *      discards in-flight edits since the last seed.
+ *
+ *  The "deep editing" (sliders, typography, shape) lives in the
+ *  right-panel Theme tab, not here, so the settings sheet stays
+ *  scannable. */
+function ProjectThemeSection() {
+  const builder = useMaybeThemeBuilder();
+  if (!builder) return null;
+  return (
+    <section className="flex flex-col gap-3">
+      <Label className="text-sm font-medium">Theme</Label>
+      <p className="text-xs text-muted-foreground">
+        Each project has its own theme draft. Pick a base, then
+        fine-tune in the Theme tab on the right.
+      </p>
+      <ThemePickerSection className="!p-0" />
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => builder.reset()}
+          disabled={!builder.isDirty}
+          title={
+            builder.isDirty
+              ? "Discard edits since this project last saved"
+              : "No edits to discard"
+          }
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Reset to saved
+        </Button>
+      </div>
+    </section>
   );
 }
 

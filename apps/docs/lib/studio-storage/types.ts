@@ -25,6 +25,12 @@
 import type { UIMessage } from "ai";
 import type { Design } from "@/lib/studio-designs";
 import type {
+  Comment,
+  CommentThread,
+  CommentThreadStatus,
+  CommentThreadWithMessages,
+} from "@/lib/studio-comments";
+import type {
   Membership,
   OrgMembership,
   Organisation,
@@ -48,6 +54,12 @@ import type {
 export interface Project {
   id: string;
   name: string;
+  /** Optional free-form description shown in the Projects menu
+   *  (replaces the default "N screens" line when set) and edited
+   *  in ProjectSettingsSheet. One line of plain text — not
+   *  markdown. Empty string normalises to undefined so the UI
+   *  fallback works cleanly. */
+  description?: string;
   createdAt: number;
   updatedAt: number;
   /** Polymorphic owner — typically a team for normal collaboration
@@ -62,9 +74,14 @@ export interface Project {
   access: ResourceAccess[];
 }
 
-// Re-exports of related entity types live at the bottom of this
-// file (after the StudioStorage interface) — see there for the
-// canonical list.
+// Re-exports of related entity types — keeps `@/lib/studio-storage`
+// the canonical import path for everything storage-adjacent.
+export type {
+  Comment,
+  CommentThread,
+  CommentThreadStatus,
+  CommentThreadWithMessages,
+} from "@/lib/studio-comments";
 
 /** Full project state — what `loadProject` returns and `saveProject`
  *  accepts. Mirrors the in-memory shape the Studio page maintains
@@ -103,10 +120,24 @@ export interface StudioStorage {
    *  design so the workspace is never empty. Returns the new
    *  project's metadata; the caller can `loadProject` if it needs
    *  the full snapshot. */
-  createProject(input: { name: string }): Promise<Project>;
+  createProject(input: {
+    name: string;
+    description?: string;
+  }): Promise<Project>;
 
-  /** Rename a project. Bumps `updatedAt`. */
+  /** Rename a project. Bumps `updatedAt`. Kept for back-compat;
+   *  new callers should prefer `updateProject` which accepts a
+   *  patch of any editable metadata. */
   renameProject(id: string, name: string): Promise<Project>;
+
+  /** Patch a project's editable metadata (name, description).
+   *  Bumps `updatedAt`. Empty strings on `description` are
+   *  normalised to undefined so the UI fallback to the screen
+   *  count works after a user clears the field. */
+  updateProject(
+    id: string,
+    patch: Partial<Pick<Project, "name" | "description">>,
+  ): Promise<Project>;
 
   /** Delete a project and everything it owns (designs, chat,
    *  notes). Idempotent — deleting a non-existent project is a
@@ -200,6 +231,87 @@ export interface StudioStorage {
     orgId: string;
     role: OrgMembership["role"];
   }): Promise<OrgMembership>;
+
+  // ─── Comments ──────────────────────────────────────────────────
+  // Comment threads anchored to a specific element on a screen.
+  // Storage organises them per-design so the panel can load just
+  // the active screen's threads. Each `CommentThreadWithMessages`
+  // bundles the thread row + its comments in createdAt order — the
+  // panel renders this shape directly without a join step.
+
+  /** Every thread (with messages) on a given screen. Returned in
+   *  createdAt ascending order. */
+  listThreads(
+    projectId: string,
+    designId: string,
+  ): Promise<CommentThreadWithMessages[]>;
+
+  /** Create a new thread anchored to a stable element identifier
+   *  (sourceId — preferred — or instanceId as a fallback). Adapter
+   *  mints the ids + timestamps and writes both rows atomically. */
+  createThread(input: {
+    projectId: string;
+    designId: string;
+    anchorId: string;
+    anchorKind: "source" | "instance";
+    elementLabel: string;
+    componentName?: string;
+    body: string;
+    authorId: string;
+  }): Promise<CommentThreadWithMessages>;
+
+  /** Flip a thread's status to `resolved` (or back to `open` with
+   *  `reopenThread`). `resolvedBy` + `resolvedAt` are stamped from
+   *  the caller. */
+  resolveThread(input: {
+    projectId: string;
+    designId: string;
+    threadId: string;
+    userId: string;
+  }): Promise<CommentThread>;
+  reopenThread(input: {
+    projectId: string;
+    designId: string;
+    threadId: string;
+  }): Promise<CommentThread>;
+
+  /** Delete a thread + every comment in it. Idempotent. */
+  deleteThread(input: {
+    projectId: string;
+    designId: string;
+    threadId: string;
+  }): Promise<void>;
+
+  /** Append a comment (or one-level reply) to an existing thread.
+   *  `parentCommentId` undefined = top-level follow-up; non-null =
+   *  reply to that comment. Adapter mints id + timestamp. */
+  addComment(input: {
+    projectId: string;
+    designId: string;
+    threadId: string;
+    parentCommentId?: string;
+    authorId: string;
+    body: string;
+  }): Promise<Comment>;
+
+  /** Edit a comment's body. Stamps `editedAt` so the UI can show
+   *  the edited-indicator. Returns the patched row. */
+  editComment(input: {
+    projectId: string;
+    designId: string;
+    commentId: string;
+    body: string;
+  }): Promise<Comment>;
+
+  /** Delete a comment. Idempotent. If the deleted comment is the
+   *  thread's opener AND the thread has no other comments, the
+   *  adapter also deletes the thread (orphan threads don't make
+   *  sense). */
+  deleteComment(input: {
+    projectId: string;
+    designId: string;
+    commentId: string;
+  }): Promise<void>;
 }
 
 // Re-export so consumers can import types from `@/lib/studio-storage`

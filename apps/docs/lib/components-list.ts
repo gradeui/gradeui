@@ -66,6 +66,7 @@ export const componentsList = [
   // order tools (chat, contract-derived props rendering). Renamed from
   // "Blocks" in May 2026; the category now reads as "what Grade Studio
   // is built from" rather than the older catch-all label.
+  { name: "Presence", href: "/components/presence", category: "Studio" },
   { name: "AI Chat", href: "/components/ai-chat", category: "Studio" },
   { name: "Component Props", href: "/components/component-props", category: "Studio" },
 ];

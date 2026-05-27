@@ -46,7 +46,9 @@ import {
   type StudioSelection,
 } from "@/lib/chat-sandpack";
 import { CodeView } from "@/components/studio/code-view";
+import { CanvasCommentPinsOverlay } from "@/components/studio/canvas-comment-pins-overlay";
 import { FigmaIntroBanner } from "@/components/studio/figma-intro-banner";
+import type { CommentThreadWithMessages } from "@/lib/studio-storage";
 import { GradePayloadPanel } from "@gradeui/walker";
 import {
   STUDIO_REWRITE_RULES,
@@ -101,6 +103,17 @@ interface FastIframeHostProps {
    *  inside the iframe applies its slot's overrides on top of the
    *  JSX prop values at render time. */
   mediaOverrides?: Record<string, Record<string, unknown>>;
+  /** Open comment threads whose anchored elements should display
+   *  positioned pins over the preview. Empty / undefined = no
+   *  overlay rendered. Tile/All mode passes nothing. */
+  commentThreads?: CommentThreadWithMessages[];
+  /** Optional — id of the currently focused thread (Comments tab
+   *  has it scrolled into view). The matching pin renders in its
+   *  active treatment. */
+  activeCommentThreadId?: string | null;
+  /** Click handler for any pin. Wires to "scroll the matching
+   *  thread into view + open the right panel if collapsed". */
+  onCommentPinClick?: (threadId: string) => void;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -116,6 +129,9 @@ function FastIframeHost({
   fidelity,
   mediaUrls,
   mediaOverrides,
+  commentThreads,
+  activeCommentThreadId,
+  onCommentPinClick,
   className,
   style,
 }: FastIframeHostProps) {
@@ -252,18 +268,33 @@ function FastIframeHost({
   }, [ready, mediaOverrides]);
 
   return (
-    <iframe
-      ref={iframeRef}
-      src={SANDBOX_URL}
-      title="Grade Studio preview"
-      // sandbox attribute left off deliberately — the iframe is same-
-      // origin (our own Next route) and we trust what we serve there.
-      // Setting sandbox="allow-scripts ..." would block same-origin
-      // access to iframe.contentDocument which we don't need here
-      // (all interop is via postMessage) but would break debugging.
-      className={cn("block w-full h-full bg-background", className)}
-      style={{ border: 0, ...style }}
-    />
+    <>
+      <iframe
+        ref={iframeRef}
+        src={SANDBOX_URL}
+        title="Grade Studio preview"
+        // sandbox attribute left off deliberately — the iframe is same-
+        // origin (our own Next route) and we trust what we serve there.
+        // Setting sandbox="allow-scripts ..." would block same-origin
+        // access to iframe.contentDocument which we don't need here
+        // (all interop is via postMessage) but would break debugging.
+        className={cn("block w-full h-full bg-background", className)}
+        style={{ border: 0, ...style }}
+      />
+      {/* Comment pins overlay — positioned fixed against viewport
+          coords by querying the iframe's contentDocument for each
+          thread's anchor element. Same-origin iframe makes the
+          query trivial. Empty / undefined commentThreads ⇒ no
+          pins rendered, no polling started. */}
+      {commentThreads && commentThreads.length > 0 && onCommentPinClick && (
+        <CanvasCommentPinsOverlay
+          iframeRef={iframeRef}
+          threads={commentThreads}
+          activeThreadId={activeCommentThreadId}
+          onPinClick={onCommentPinClick}
+        />
+      )}
+    </>
   );
 }
 
@@ -284,6 +315,10 @@ interface FocusedFastMountProps {
   fidelity?: "wireframe" | "full";
   mediaUrls?: Record<string, string>;
   mediaOverrides?: Record<string, Record<string, unknown>>;
+  /** Comment pin overlay. Forwarded to FastIframeHost.  */
+  commentThreads?: CommentThreadWithMessages[];
+  activeCommentThreadId?: string | null;
+  onCommentPinClick?: (threadId: string) => void;
 }
 
 // Pixel widths for the viewport artboard. Duplicated from sandpack-frame
@@ -311,6 +346,9 @@ export function FocusedFastMount({
   fidelity,
   mediaUrls,
   mediaOverrides,
+  commentThreads,
+  activeCommentThreadId,
+  onCommentPinClick,
 }: FocusedFastMountProps) {
   // Memoize the prepared source for the Code view so we don't re-run
   // prepareAppSource on every render purely to display the text.
@@ -440,6 +478,9 @@ export function FocusedFastMount({
             fidelity={fidelity}
             mediaUrls={mediaUrls}
             mediaOverrides={mediaOverrides}
+            commentThreads={commentThreads}
+            activeCommentThreadId={activeCommentThreadId}
+            onCommentPinClick={onCommentPinClick}
           />
         ) : null}
       </div>

@@ -121,6 +121,7 @@ import {
 import { GRADEUI_VERSION, STUDIO_VERSION } from "@/lib/versions";
 import {
   getStudioStorage,
+  type CommentThreadWithMessages,
   type Membership,
   type OrgMembership,
   type Organisation,
@@ -130,15 +131,19 @@ import {
   type User as StoredUser,
 } from "@/lib/studio-storage";
 import { ProjectsMenu } from "@/components/studio/projects-menu";
+import { NewProjectDialog } from "@/components/studio/new-project-dialog";
 import { SuperAdminSheet } from "@/components/studio/super-admin-sheet";
+import { ThemeDraftPersister } from "@/components/studio/theme-draft-persister";
 import {
   LOCAL_ORG_ID,
   LOCAL_USER_ID,
   UserSessionProvider,
+  useCanAccess,
   useCurrentOrg,
   useCurrentUser,
   useImpersonation,
 } from "@/lib/studio-users";
+import { CommentsTab } from "@/components/studio/comments-tab";
 // Side-effect import: seeds the @gradeui/walker registry with the
 // playbook's ALLOWED_COMPONENTS so the Send-to-Figma JSON is built
 // with the right known-names set. See lib/studio-walker-register.ts.
@@ -319,6 +324,143 @@ export default function StudioPage() {
   const [allUsers, setAllUsers] = useState<StoredUser[]>([]);
   const [allOrgs, setAllOrgs] = useState<Organisation[]>([]);
   const [orgMemberships, setOrgMemberships] = useState<OrgMembership[]>([]);
+
+  // Per-project theme draft, serialised as JSON. Loaded from
+  // snapshots on bootstrap, updated by ThemeDraftPersister
+  // (which lives inside ThemeBuilderProvider and reports input
+  // changes upward), persisted on every saveProject. The active
+  // project's entry is used as `initial` for the
+  // ThemeBuilderProvider; switching projects keys the provider on
+  // activeProjectId so it remounts with the new initial.
+  const [themeDraftJsonByProject, setThemeDraftJsonByProject] = useState<
+    Record<string, string>
+  >({});
+
+  // Comment threads for the active screen. Loaded on
+  // (activeProjectId, activeId) change via the storage adapter;
+  // mutated through the handlers below which always re-read after
+  // a write so the UI mirrors persisted state. Empty array while
+  // loading or for screens with no comments.
+  const [commentThreads, setCommentThreads] = useState<
+    CommentThreadWithMessages[]
+  >([]);
+  React.useEffect(() => {
+    if (!activeProjectId || !activeId) {
+      setCommentThreads([]);
+      return;
+    }
+    let cancelled = false;
+    storage
+      .listThreads(activeProjectId, activeId)
+      .then((rows) => {
+        if (!cancelled) setCommentThreads(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setCommentThreads([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeProjectId, activeId, storage]);
+
+  const refreshCommentThreads = useCallback(async () => {
+    if (!activeProjectId || !activeId) return;
+    const rows = await storage.listThreads(activeProjectId, activeId);
+    setCommentThreads(rows);
+  }, [activeProjectId, activeId, storage]);
+
+  const handleCreateThread = useCallback(
+    async (input: {
+      anchorId: string;
+      anchorKind: "source" | "instance";
+      elementLabel: string;
+      componentName?: string;
+      body: string;
+    }) => {
+      if (!activeProjectId || !activeId) return;
+      await storage.createThread({
+        ...input,
+        projectId: activeProjectId,
+        designId: activeId,
+        authorId: LOCAL_USER_ID,
+      });
+      await refreshCommentThreads();
+    },
+    [storage, activeProjectId, activeId, refreshCommentThreads],
+  );
+
+  const handleAddReply = useCallback(
+    async (
+      threadId: string,
+      parentCommentId: string | undefined,
+      body: string,
+    ) => {
+      if (!activeProjectId || !activeId) return;
+      await storage.addComment({
+        projectId: activeProjectId,
+        designId: activeId,
+        threadId,
+        parentCommentId,
+        authorId: LOCAL_USER_ID,
+        body,
+      });
+      await refreshCommentThreads();
+    },
+    [storage, activeProjectId, activeId, refreshCommentThreads],
+  );
+
+  const handleResolveThread = useCallback(
+    async (threadId: string) => {
+      if (!activeProjectId || !activeId) return;
+      await storage.resolveThread({
+        projectId: activeProjectId,
+        designId: activeId,
+        threadId,
+        userId: LOCAL_USER_ID,
+      });
+      await refreshCommentThreads();
+    },
+    [storage, activeProjectId, activeId, refreshCommentThreads],
+  );
+
+  const handleReopenThread = useCallback(
+    async (threadId: string) => {
+      if (!activeProjectId || !activeId) return;
+      await storage.reopenThread({
+        projectId: activeProjectId,
+        designId: activeId,
+        threadId,
+      });
+      await refreshCommentThreads();
+    },
+    [storage, activeProjectId, activeId, refreshCommentThreads],
+  );
+
+  const handleDeleteThread = useCallback(
+    async (threadId: string) => {
+      if (!activeProjectId || !activeId) return;
+      await storage.deleteThread({
+        projectId: activeProjectId,
+        designId: activeId,
+        threadId,
+      });
+      await refreshCommentThreads();
+    },
+    [storage, activeProjectId, activeId, refreshCommentThreads],
+  );
+
+  const handleDeleteComment = useCallback(
+    async (commentId: string) => {
+      if (!activeProjectId || !activeId) return;
+      await storage.deleteComment({
+        projectId: activeProjectId,
+        designId: activeId,
+        commentId,
+      });
+      await refreshCommentThreads();
+    },
+    [storage, activeProjectId, activeId, refreshCommentThreads],
+  );
   // Mirrors the project id whose state is reflected in the
   // designs/messages/notes maps right now. While a switch is in
   // flight, this lags behind activeProjectId — the persistence
@@ -408,11 +550,20 @@ export default function StudioPage() {
       );
       if (cancelled) return;
       const summaries: Record<string, ProjectSummary> = {};
+      const themeDrafts: Record<string, string> = {};
       list.forEach((p, i) => {
         const s = allSnaps[i];
-        if (s) summaries[p.id] = computeSummary(s);
+        if (s) {
+          summaries[p.id] = computeSummary(s);
+          // Pre-seed every project's theme draft from its
+          // persisted snapshot. The active project's entry feeds
+          // the ThemeBuilderProvider on its first mount; inactive
+          // entries hang here until the user switches into them.
+          if (s.themeDraftJson) themeDrafts[p.id] = s.themeDraftJson;
+        }
       });
       setProjectSummaries(summaries);
+      setThemeDraftJsonByProject(themeDrafts);
 
       // Teams + memberships + users + orgs + org memberships —
       // pulled in parallel so a slow read doesn't gate the first
@@ -503,6 +654,7 @@ export default function StudioPage() {
       activeDesignId: activeId,
       messagesByDesign,
       notesByDesign,
+      themeDraftJson: themeDraftJsonByProject[activeProjectId],
     };
     storage.saveProject(snapshot).catch((err) => {
       // eslint-disable-next-line no-console
@@ -516,6 +668,7 @@ export default function StudioPage() {
     activeId,
     messagesByDesign,
     notesByDesign,
+    themeDraftJsonByProject,
     storage,
   ]);
 
@@ -641,34 +794,58 @@ export default function StudioPage() {
     ],
   );
 
-  // Create — mints a project via the adapter (which also seeds it
-  // with a blank screen), refreshes the projects list, then
-  // switches to it. Wrapping in handleSwitchProject ensures the
-  // outgoing project's state is saved before we move.
-  const handleCreateProject = useCallback(async () => {
-    const name = window.prompt("Project name", "Untitled project");
-    if (!name) return;
-    const created = await storage.createProject({ name: name.trim() });
-    const list = await storage.listProjects();
-    setProjects(list);
-    // Seed an empty-ish summary for the new project so the Projects
-    // menu renders its row immediately without waiting for the
-    // switch to land. createProject's adapter seeds one blank screen
-    // — the live-update effect will replace this with the real
-    // counts once we become the active project.
-    const newSnap = await storage.loadProject(created.id);
-    if (newSnap) {
-      setProjectSummaries((cur) => ({
-        ...cur,
-        [created.id]: computeSummary(newSnap),
-      }));
-    }
-    await handleSwitchProject(created.id);
-  }, [storage, handleSwitchProject, computeSummary]);
+  // Two-step create flow:
+  //   - handleOpenCreateProject — invoked by the "+" affordance in
+  //     ProjectsMenu's section header. Just opens the dialog;
+  //     keeps the menu's prop contract unchanged (no input).
+  //   - handleSubmitCreateProject — invoked by NewProjectDialog
+  //     once the user fills in Name + (optional) Description.
+  //     Does the storage write + the switch.
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const handleOpenCreateProject = useCallback(() => {
+    setNewProjectOpen(true);
+  }, []);
+
+  const handleSubmitCreateProject = useCallback(
+    async (input: { name: string; description?: string }) => {
+      const created = await storage.createProject(input);
+      const list = await storage.listProjects();
+      setProjects(list);
+      // Seed an empty-ish summary for the new project so the menu
+      // renders its row immediately without waiting for the
+      // switch to land. The live-update effect replaces this with
+      // real counts once it becomes the active project.
+      const newSnap = await storage.loadProject(created.id);
+      if (newSnap) {
+        setProjectSummaries((cur) => ({
+          ...cur,
+          [created.id]: computeSummary(newSnap),
+        }));
+      }
+      await handleSwitchProject(created.id);
+    },
+    [storage, handleSwitchProject, computeSummary],
+  );
 
   const handleRenameProject = useCallback(
     async (id: string, name: string) => {
       await storage.renameProject(id, name);
+      const list = await storage.listProjects();
+      setProjects(list);
+    },
+    [storage],
+  );
+
+  // Patch a project — name and/or description in a single call.
+  // ProjectSettingsSheet uses this; ProjectsMenu's inline rename
+  // can keep using handleRenameProject (still works since rename
+  // is now a thin wrapper around update).
+  const handleUpdateProject = useCallback(
+    async (
+      id: string,
+      patch: { name?: string; description?: string },
+    ) => {
+      await storage.updateProject(id, patch);
       const list = await storage.listProjects();
       setProjects(list);
     },
@@ -1139,6 +1316,36 @@ export default function StudioPage() {
     });
   }, [activeId]);
 
+  // Right-panel tab is lifted to the page so comment mode can
+  // auto-switch the user to the Comments tab when they pick an
+  // element. Defaults to "layout" — the existing landing tab.
+  const [rightTab, setRightTab] = useState<
+    "layout" | "theme" | "comments" | "notes"
+  >("layout");
+
+  // A monotonic counter incremented every time a Comment-mode
+  // pick lands. CommentsTab watches this; each tick means
+  // "auto-open the composer for the current selection". Using a
+  // counter (not a boolean) lets a second pick in a row re-open
+  // the composer without the consumer having to reset state.
+  const [composerOpenTrigger, setComposerOpenTrigger] = useState(0);
+
+  // Comment-mode pick handler. Stores the selection (so the
+  // composer can read it), jumps the right panel to the Comments
+  // tab, bumps the trigger so the tab opens its composer, AND
+  // force-opens the right panel — the composer is invisible if
+  // the user has collapsed the panel, so a comment-mode pick
+  // implies "I want to see the comment surface right now".
+  const handleCommentSelect = useCallback(
+    (selection: StudioSelection) => {
+      setSelectionByDesign((m) => ({ ...m, [activeId]: selection }));
+      setRightTab("comments");
+      setRightPanelOpen(true);
+      setComposerOpenTrigger((n) => n + 1);
+    },
+    [activeId],
+  );
+
   // Cmd/Ctrl+Shift+Up — "select parent". Walks one step up the chain
   // captured in the current selection, posting `grade:select-by-source-id`
   // at the focused iframe so the in-iframe agent re-runs its standard
@@ -1353,7 +1560,8 @@ export default function StudioPage() {
       summaries={projectSummaries}
       onSelectProject={handleSwitchProject}
       onSelectScreen={handleSelectScreenInProject}
-      onCreateProject={handleCreateProject}
+      onCreateProject={handleOpenCreateProject}
+      onUpdateProject={handleUpdateProject}
       onRenameProject={handleRenameProject}
       onDeleteProject={handleDeleteProject}
     />
@@ -1383,6 +1591,10 @@ export default function StudioPage() {
     />
   );
 
+  // The active project (full row from the index) — used to gate
+  // comment write actions on access list + ownership.
+  const activeProject = projects.find((p) => p.id === activeProjectId);
+
   const rightTabsPane = (
     <StudioRightTabs
       appSource={activeDesign.appSource}
@@ -1391,6 +1603,25 @@ export default function StudioPage() {
       notes={notesByDesign[activeId] ?? ""}
       onNotesChange={handleNotesChange}
       designName={activeDesign.name}
+      tab={rightTab}
+      onTabChange={setRightTab}
+      commentsContent={
+        <CommentsTabHost
+          threads={commentThreads}
+          appSource={activeDesign.appSource}
+          selection={selectionByDesign[activeId] ?? null}
+          allUsers={allUsers}
+          memberships={memberships}
+          project={activeProject ?? null}
+          composerOpenTrigger={composerOpenTrigger}
+          onCreateThread={handleCreateThread}
+          onReply={handleAddReply}
+          onResolve={handleResolveThread}
+          onReopen={handleReopenThread}
+          onDeleteThread={handleDeleteThread}
+          onDeleteComment={handleDeleteComment}
+        />
+      }
     />
   );
 
@@ -1419,6 +1650,38 @@ export default function StudioPage() {
     orgMemberships.find((m) => m.userId === LOCAL_USER_ID)?.orgId ??
     LOCAL_ORG_ID;
 
+  // Resolve the active project's saved theme draft. ThemeInput is
+  // plain JSON so JSON.parse round-trips it; on a parse miss
+  // (corrupt entry, future schema bump) we fall back to the global
+  // baseline so the page still renders.
+  const projectThemeSeed: ThemeInput = React.useMemo(() => {
+    const raw = activeProjectId
+      ? themeDraftJsonByProject[activeProjectId]
+      : undefined;
+    if (!raw) return screenThemeBaseline;
+    try {
+      return JSON.parse(raw) as ThemeInput;
+    } catch {
+      return screenThemeBaseline;
+    }
+  }, [activeProjectId, themeDraftJsonByProject, screenThemeBaseline]);
+
+  // Callback for ThemeDraftPersister — invoked (debounced) whenever
+  // the active provider's input changes. Stamps the json against
+  // the active project's id so switching projects later finds the
+  // saved entry. The next persistence effect run picks it up and
+  // writes to storage.
+  const handleThemeDraftChange = React.useCallback(
+    (json: string) => {
+      if (!activeProjectId) return;
+      setThemeDraftJsonByProject((cur) => {
+        if (cur[activeProjectId] === json) return cur;
+        return { ...cur, [activeProjectId]: json };
+      });
+    },
+    [activeProjectId],
+  );
+
   return (
     <UserSessionProvider
       users={allUsers}
@@ -1426,10 +1689,21 @@ export default function StudioPage() {
       realOrgId={realOrgId}
     >
     <ThemeBuilderProvider
-      initial={screenThemeBaseline}
+      // Keying on activeProjectId forces a remount when the user
+      // switches projects, picking up the new project's saved
+      // draft as the seed. ThemeBuilderProvider ignores subsequent
+      // `initial` changes (line 160 in its source memoises the
+      // seed), so the remount is the only way to reseed.
+      key={`theme-${activeProjectId ?? "none"}`}
+      initial={projectThemeSeed}
       bindTo="draft"
       defaultMode={chromeIsDark ? "dark" : "light"}
     >
+      {/* Persister bridges the provider's internal input state
+          back to the page so we can save it on the project's
+          snapshot. Mounted as a sibling of the rest of the
+          provider's children. */}
+      <ThemeDraftPersister onChange={handleThemeDraftChange} />
       {/* AppShell takes over from the hand-rolled flex column.
           `nav="none"` gives us Header + Main + (unused) Footer stacked
           vertically — exactly the Studio shape. Studio is a tool that
@@ -1509,6 +1783,7 @@ export default function StudioPage() {
                 selection={selectionByDesign[activeId] ?? null}
                 onSelect={handleSelect}
                 onClearSelection={handleClearSelection}
+                onCommentSelect={handleCommentSelect}
                 onAddDesign={handleAddDesign}
                 onCloseDesign={handleCloseDesign}
                 onRenameDesign={handleRenameDesign}
@@ -1531,6 +1806,19 @@ export default function StudioPage() {
                 projectName={
                   projects.find((p) => p.id === activeProjectId)?.name
                 }
+                commentThreads={commentThreads}
+                onCommentPinClick={(threadId) => {
+                  // Click a pin → make sure the right panel is
+                  // open + the Comments tab is active. The thread
+                  // will be visible in the list there. Scrolling
+                  // the specific thread into focus is a refinement
+                  // (sticky-target inside CommentsTab keyed off a
+                  // focused-thread state) — for now this gets the
+                  // user to the right surface.
+                  setRightPanelOpen(true);
+                  setRightTab("comments");
+                  void threadId;
+                }}
               />
             </div>
             {!isMobile && (
@@ -1626,8 +1914,104 @@ export default function StudioPage() {
         users={allUsers}
         orgs={allOrgs}
       />
+
+      {/* New project dialog — proper form replacing the legacy
+          window.prompt flow. ProjectsMenu's "+" affordance opens
+          this; submit hits handleSubmitCreateProject which mints
+          the project, refreshes the index, and switches to it. */}
+      <NewProjectDialog
+        open={newProjectOpen}
+        onOpenChange={setNewProjectOpen}
+        onCreate={handleSubmitCreateProject}
+      />
     </ThemeBuilderProvider>
     </UserSessionProvider>
+  );
+}
+
+/**
+ * CommentsTabHost — mounted inside UserSessionProvider so it can
+ * read the impersonation-aware current user + permission state.
+ * Forwards everything else to the pure CommentsTab component.
+ *
+ * Lives in this file (rather than its own module) so it can pull
+ * the shared Project/Membership/User types without a circular
+ * import path. Pure pass-through of page state — the actual
+ * mutation handlers live on the page above.
+ */
+function CommentsTabHost({
+  threads,
+  appSource,
+  selection,
+  allUsers,
+  memberships,
+  project,
+  composerOpenTrigger,
+  onCreateThread,
+  onReply,
+  onResolve,
+  onReopen,
+  onDeleteThread,
+  onDeleteComment,
+}: {
+  threads: CommentThreadWithMessages[];
+  appSource: string | null;
+  selection: StudioSelection | null;
+  allUsers: StoredUser[];
+  memberships: Membership[];
+  project: Project | null;
+  composerOpenTrigger: number;
+  onCreateThread: (input: {
+    anchorId: string;
+    anchorKind: "source" | "instance";
+    elementLabel: string;
+    componentName?: string;
+    body: string;
+  }) => Promise<void>;
+  onReply: (
+    threadId: string,
+    parentCommentId: string | undefined,
+    body: string,
+  ) => Promise<void>;
+  onResolve: (threadId: string) => void;
+  onReopen: (threadId: string) => void;
+  onDeleteThread: (threadId: string) => void;
+  onDeleteComment: (commentId: string) => void;
+}) {
+  const currentUser = useCurrentUser();
+  // canWrite = the current effective user has write access to the
+  // active project. Viewers see threads but no composer; null
+  // project (loading) also reads as no-access until data lands.
+  const canWrite = useCanAccess(
+    memberships,
+    project?.owner,
+    project?.access,
+    "write",
+  );
+
+  // Build the id→user lookup the thread cards need for author
+  // avatars. Cheap; rebuilt only when the user list changes.
+  const getUser = React.useCallback(
+    (id: string) => allUsers.find((u) => u.id === id),
+    [allUsers],
+  );
+
+  return (
+    <CommentsTab
+      threads={threads}
+      appSource={appSource}
+      selection={selection}
+      getUser={getUser}
+      currentUser={currentUser}
+      canWrite={canWrite}
+      composerOpenTrigger={composerOpenTrigger}
+      onCreateThread={onCreateThread}
+      onReply={onReply}
+      onResolve={onResolve}
+      onReopen={onReopen}
+      onDeleteThread={onDeleteThread}
+      onDeleteComment={onDeleteComment}
+    />
   );
 }
 
@@ -1877,6 +2261,7 @@ function StudioThemedCanvas({
   selection,
   onSelect,
   onClearSelection,
+  onCommentSelect,
   onAddDesign,
   onCloseDesign,
   onRenameDesign,
@@ -1897,6 +2282,8 @@ function StudioThemedCanvas({
   zoom,
   onZoomChange,
   projectName,
+  commentThreads,
+  onCommentPinClick,
 }: {
   designs: Design[];
   focusedId: string;
@@ -1907,6 +2294,7 @@ function StudioThemedCanvas({
   selection: StudioSelection | null;
   onSelect: (selection: StudioSelection) => void;
   onClearSelection: () => void;
+  onCommentSelect?: (selection: StudioSelection) => void;
   onAddDesign: (seed?: { source: string; name?: string }) => void;
   onCloseDesign: (id: string) => void;
   onRenameDesign: (id: string, name: string) => void;
@@ -1927,6 +2315,8 @@ function StudioThemedCanvas({
   zoom: "fit" | "all";
   onZoomChange: (zoom: "fit" | "all") => void;
   projectName?: string;
+  commentThreads?: CommentThreadWithMessages[];
+  onCommentPinClick?: (threadId: string) => void;
 }) {
   const theme: GeneratedTheme = useGeneratedTheme();
   const [mode] = useThemeBuilderMode();
@@ -1943,6 +2333,7 @@ function StudioThemedCanvas({
       selection={selection}
       onSelect={onSelect}
       onClearSelection={onClearSelection}
+      onCommentSelect={onCommentSelect}
       onAddDesign={onAddDesign}
       onCloseDesign={onCloseDesign}
       onRenameDesign={onRenameDesign}
@@ -1963,6 +2354,8 @@ function StudioThemedCanvas({
       zoom={zoom}
       onZoomChange={onZoomChange}
       projectName={projectName}
+      commentThreads={commentThreads}
+      onCommentPinClick={onCommentPinClick}
     />
   );
 }
