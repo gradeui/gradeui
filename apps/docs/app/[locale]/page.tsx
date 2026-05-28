@@ -160,7 +160,17 @@ export default function App() {
 
       <footer className="border-t py-8">
         <div className="max-w-7xl mx-auto px-4 md:px-8 text-center text-sm text-muted-foreground">
-          <p>Grade Design System · Built with Radix UI and Tailwind CSS</p>
+          <p>
+            Grade Design System · Built with Radix UI and Tailwind CSS · Made by{" "}
+            <a
+              href="https://alastairdriver.com"
+              rel="author noopener"
+              target="_blank"
+              className="font-medium text-foreground hover:underline"
+            >
+              Alastair Driver
+            </a>
+          </p>
         </div>
       </footer>
     </div>

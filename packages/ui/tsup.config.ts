@@ -56,6 +56,16 @@ const sharedOptions = {
     "mapbox-gl",
     "@googlemaps/js-api-loader",
   ],
+  // Bundle @gradeui/contracts inline. The contracts package is
+  // `"private": true` and never publishes to npm, so anything
+  // consuming @gradeui/ui from outside the monorepo would otherwise
+  // hit "Cannot find package '@gradeui/contracts'". Inlining it
+  // (~80KB) makes the published bundle self-contained. The contracts
+  // package stays in @gradeui/ui's devDependencies so pnpm still
+  // links it at build time inside the workspace.
+  noExternal: [
+    "@gradeui/contracts",
+  ],
   treeshake: true,
   minify: true,
 } as const satisfies Partial<Options>;

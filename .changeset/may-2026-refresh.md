@@ -1,6 +1,5 @@
 ---
 "@gradeui/ui": minor
-"@gradeui/studio": patch
 ---
 
 May 2026 refresh — new components, two renames, AI pipeline upgrades, bug fixes

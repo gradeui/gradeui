@@ -1,7 +1,6 @@
 ---
 "@gradeui/ui": major
 "@gradeui/core": major
-"@gradeui/studio": major
 ---
 
 **BREAKING: runtime token namespace renamed from `rds-*` / `ramp-*` to `gds-*` / `grade-*`**
