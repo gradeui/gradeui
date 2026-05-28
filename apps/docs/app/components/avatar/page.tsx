@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
+import { InstallBlock } from "@/components/install-block";
 
 export default function AvatarPage() {
   return (
@@ -114,9 +115,7 @@ export default function AvatarPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+        <InstallBlock>{`import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 <Avatar>
   <AvatarImage src="https://github.com/user.png" alt="@user" />
@@ -134,9 +133,7 @@ export default function AvatarPage() {
     <AvatarFallback>JD</AvatarFallback>
   </Avatar>
   <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-2 ring-background" />
-</div>`}</code>
-          </pre>
-        </div>
+</div>`}</InstallBlock>
       </div>
 
       <SidecarBlock slug="avatar" />

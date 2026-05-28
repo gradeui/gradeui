@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
+import { InstallBlock } from "@/components/install-block";
 
 const stackProps = [
   {
@@ -64,11 +65,7 @@ export default function StackPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Stack } from "@gradeui/ui"`}</code>
-          </pre>
-        </div>
+        <InstallBlock>{`import { Stack } from "@gradeui/ui"`}</InstallBlock>
       </div>
 
       {/* Usage */}
@@ -194,16 +191,12 @@ export default function StackPage() {
           instead of wrapping it in a <code className="bg-muted px-1 py-0.5 rounded text-sm">div</code>.
           Useful for landmark tags.
         </p>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`<Stack asChild gap="lg">
+        <InstallBlock>{`<Stack asChild gap="lg">
   <section>
     <Hero>…</Hero>
     <Section>…</Section>
   </section>
-</Stack>`}</code>
-          </pre>
-        </div>
+</Stack>`}</InstallBlock>
       </div>
 
       {/* Composition */}

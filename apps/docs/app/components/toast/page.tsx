@@ -1,6 +1,7 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
+import { InstallBlock } from "@/components/install-block";
 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -54,18 +55,14 @@ export default function ToastPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`// Add Toaster to your layout
+        <InstallBlock>{`// Add Toaster to your layout
 import { Toaster } from "@gradeui/ui"
 
 // In your layout.tsx
 <Toaster />
 
 // Use toast function in components
-import { toast } from "sonner"`}</code>
-          </pre>
-        </div>
+import { toast } from "sonner"`}</InstallBlock>
       </div>
 
       <div className="space-y-4">

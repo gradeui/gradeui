@@ -7,6 +7,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { InstallBlock } from "@/components/install-block";
 import {
   Area,
   AreaChart,
@@ -187,11 +188,7 @@ export default function ChartsOverviewPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`npx shadcn@latest add chart`}</code>
-          </pre>
-        </div>
+        <InstallBlock>{`npx shadcn@latest add chart`}</InstallBlock>
         <p className="text-muted-foreground">
           This will install the chart component and its dependencies (Recharts).
         </p>
@@ -201,9 +198,7 @@ export default function ChartsOverviewPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Quick Start
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+        <InstallBlock>{`import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, XAxis, YAxis } from "recharts"
 
 const chartConfig = {
@@ -224,9 +219,7 @@ export function MyChart() {
       </BarChart>
     </ChartContainer>
   )
-}`}</code>
-          </pre>
-        </div>
+}`}</InstallBlock>
       </div>
 
       <div className="space-y-4">

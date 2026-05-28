@@ -3,6 +3,7 @@ import { SidecarBlock } from "@/components/sidecar-block";
 import { Button } from "@/components/ui/button";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
+import { InstallBlock } from "@/components/install-block";
 import { Mail, Loader2, ChevronRight } from "lucide-react";
 
 const buttonProps = [
@@ -48,11 +49,7 @@ export default function ButtonPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Button } from "@gradeui/ui"`}</code>
-          </pre>
-        </div>
+        <InstallBlock>{`import { Button } from "@gradeui/ui"`}</InstallBlock>
       </div>
 
       {/* Usage */}

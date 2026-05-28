@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
+import { InstallBlock } from "@/components/install-block";
 
 // ---------------------------------------------------------------------
 // Sample data — a richer conversation with usage, refs, and actions
@@ -344,9 +345,7 @@ export default function AIChatPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
+        <InstallBlock>{`import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
 
 const [messages, setMessages] = useState<ChatMessage[]>([]);
 const [isLoading, setIsLoading] = useState(false);
@@ -361,9 +360,7 @@ const [isLoading, setIsLoading] = useState(false);
   showUsage
   showRefs
   showActions
-/>`}</code>
-          </pre>
-        </div>
+/>`}</InstallBlock>
       </div>
 
       {/* Message Type */}
@@ -371,9 +368,7 @@ const [isLoading, setIsLoading] = useState(false);
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           ChatMessage Type
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`interface ChatMessage {
+        <InstallBlock>{`interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;            // Supports Markdown on assistant turns
@@ -392,9 +387,7 @@ interface ChatMessageStep {
   label: string;
   status: "pending" | "running" | "done" | "error";
   detail?: string;
-}`}</code>
-          </pre>
-        </div>
+}`}</InstallBlock>
       </div>
 
       {/* Dependencies */}
@@ -402,11 +395,7 @@ interface ChatMessageStep {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Dependencies
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`npm install framer-motion react-markdown remark-gfm lucide-react`}</code>
-          </pre>
-        </div>
+        <InstallBlock>{`npm install framer-motion react-markdown remark-gfm lucide-react`}</InstallBlock>
       </div>
 
       <SidecarBlock slug="ai-chat" />

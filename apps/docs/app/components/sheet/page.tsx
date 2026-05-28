@@ -1,6 +1,7 @@
 "use client";
 import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
+import { InstallBlock } from "@/components/install-block";
 
 import {
   Sheet,
@@ -67,9 +68,7 @@ export default function SheetPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import {
+        <InstallBlock>{`import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -77,9 +76,7 @@ export default function SheetPage() {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@gradeui/ui"`}</code>
-          </pre>
-        </div>
+} from "@gradeui/ui"`}</InstallBlock>
       </div>
 
       <div className="space-y-4">

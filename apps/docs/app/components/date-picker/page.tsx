@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
+import { InstallBlock } from "@/components/install-block";
 import { cn } from "@/lib/utils";
 import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
@@ -111,9 +112,7 @@ export default function DatePickerPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { DatePicker, DateRangePicker } from "@gradeui/ui"
+        <InstallBlock>{`import { DatePicker, DateRangePicker } from "@gradeui/ui"
 
 const [date, setDate] = React.useState<Date>()
 const [range, setRange] = React.useState<DateRange>()
@@ -124,9 +123,7 @@ const [range, setRange] = React.useState<DateRange>()
   value={range}
   onChange={setRange}
   numberOfMonths={2}
-/>`}</code>
-          </pre>
-        </div>
+/>`}</InstallBlock>
       </div>
 
       {/* Compose it yourself */}
@@ -162,9 +159,7 @@ const [range, setRange] = React.useState<DateRange>()
             />
           </PopoverContent>
         </Popover>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Calendar, Popover, PopoverTrigger, PopoverContent, Button } from "@gradeui/ui"
+        <InstallBlock>{`import { Calendar, Popover, PopoverTrigger, PopoverContent, Button } from "@gradeui/ui"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
 
@@ -178,9 +173,7 @@ import { Calendar as CalendarIcon } from "lucide-react"
   <PopoverContent className="w-auto p-0">
     <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
   </PopoverContent>
-</Popover>`}</code>
-          </pre>
-        </div>
+</Popover>`}</InstallBlock>
       </div>
 
       <SidecarBlock slug="date-picker" />

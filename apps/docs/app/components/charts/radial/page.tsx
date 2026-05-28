@@ -6,6 +6,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { InstallBlock } from "@/components/install-block";
 import {
   RadialBar,
   RadialBarChart,
@@ -289,9 +290,7 @@ export default function RadialChartPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { RadialBar, RadialBarChart, PolarAngleAxis, Label } from "recharts"
+        <InstallBlock>{`import { RadialBar, RadialBarChart, PolarAngleAxis, Label } from "recharts"
 import { ChartContainer } from "@/components/ui/chart"
 
 const data = [{ name: "progress", value: 72, fill: "oklch(var(--chart-1))" }]
@@ -312,9 +311,7 @@ const data = [{ name: "progress", value: 72, fill: "oklch(var(--chart-1))" }]
     />
     <Label content={...} />  {/* Center label */}
   </RadialBarChart>
-</ChartContainer>`}</code>
-          </pre>
-        </div>
+</ChartContainer>`}</InstallBlock>
       </div>
 
       <ComponentNav currentHref="/components/charts/radial" />

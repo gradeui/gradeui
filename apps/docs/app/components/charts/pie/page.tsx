@@ -8,6 +8,7 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { InstallBlock } from "@/components/install-block";
 import {
   Pie,
   PieChart,
@@ -305,9 +306,7 @@ export default function PieChartPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Pie, PieChart, Cell, Label } from "recharts"
+        <InstallBlock>{`import { Pie, PieChart, Cell, Label } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
 const data = [
@@ -334,9 +333,7 @@ const data = [
     </Pie>
     <ChartLegend content={<ChartLegendContent nameKey="name" />} />
   </PieChart>
-</ChartContainer>`}</code>
-          </pre>
-        </div>
+</ChartContainer>`}</InstallBlock>
       </div>
 
       <ComponentNav currentHref="/components/charts/pie" />

@@ -3,6 +3,7 @@
 import { Toggle } from "@/components/ui/toggle";
 import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
+import { InstallBlock } from "@/components/install-block";
 import { Bold, Italic, Underline } from "lucide-react";
 
 export default function TogglePage() {
@@ -98,9 +99,7 @@ export default function TogglePage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Toggle } from "@/components/ui/toggle"
+        <InstallBlock>{`import { Toggle } from "@/components/ui/toggle"
 import { Bold } from "lucide-react"
 
 <Toggle aria-label="Toggle bold">
@@ -118,9 +117,7 @@ import { Bold } from "lucide-react"
 
 {/* Sizes */}
 <Toggle size="sm">Small</Toggle>
-<Toggle size="lg">Large</Toggle>`}</code>
-          </pre>
-        </div>
+<Toggle size="lg">Large</Toggle>`}</InstallBlock>
       </div>
 
       <SidecarBlock slug="toggle" />

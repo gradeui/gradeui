@@ -3,6 +3,7 @@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
+import { InstallBlock } from "@/components/install-block";
 import { AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline } from "lucide-react";
 
 export default function ToggleGroupPage() {
@@ -114,9 +115,7 @@ export default function ToggleGroupPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+        <InstallBlock>{`import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 {/* Single selection */}
 <ToggleGroup type="single" defaultValue="center">
@@ -134,9 +133,7 @@ export default function ToggleGroupPage() {
 {/* With variant and size */}
 <ToggleGroup type="single" variant="outline" size="sm">
   ...
-</ToggleGroup>`}</code>
-          </pre>
-        </div>
+</ToggleGroup>`}</InstallBlock>
       </div>
 
       <SidecarBlock slug="toggle-group" />

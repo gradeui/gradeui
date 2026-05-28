@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
+import { InstallBlock } from "@/components/install-block";
 
 const appShellProps = [
   {
@@ -279,18 +280,14 @@ export default function AppShellPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import {
+        <InstallBlock>{`import {
   AppShell,
   AppShellHeader,
   AppShellNav,
   AppShellAside,
   AppShellMain,
   AppShellFooter,
-} from "@gradeui/ui"`}</code>
-          </pre>
-        </div>
+} from "@gradeui/ui"`}</InstallBlock>
       </div>
 
       {/* Usage */}
@@ -562,9 +559,7 @@ export default function AppShellPage() {
           <code className="bg-muted px-1 py-0.5 rounded text-sm">--gds-app-shell-aside</code>{" "}
           on the shell element (or any ancestor):
         </p>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`{/* Inline style on the shell */}
+        <InstallBlock>{`{/* Inline style on the shell */}
 <AppShell
   nav="three-pane"
   style={{ "--gds-app-shell-aside": "280px" } as React.CSSProperties}
@@ -575,9 +570,7 @@ export default function AppShellPage() {
 {/* Or via a parent class — useful for breakpoint-based switching */}
 <div className="[--gds-app-shell-aside:240px] lg:[--gds-app-shell-aside:360px]">
   <AppShell nav="three-pane">…</AppShell>
-</div>`}</code>
-          </pre>
-        </div>
+</div>`}</InstallBlock>
       </div>
 
       {/* sticky */}
@@ -632,9 +625,7 @@ export default function AppShellPage() {
           A typical productivity-app shell with site chrome, side nav, and a
           footer:
         </p>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`<AppShell nav="side">
+        <InstallBlock>{`<AppShell nav="side">
   <AppShellHeader sticky>
     <OrgSwitcher /> <SearchInput /> <UserMenu />
   </AppShellHeader>
@@ -661,9 +652,7 @@ export default function AppShellPage() {
   <AppShellFooter>
     <FooterLinks />
   </AppShellFooter>
-</AppShell>`}</code>
-          </pre>
-        </div>
+</AppShell>`}</InstallBlock>
       </div>
 
       {/* Props */}

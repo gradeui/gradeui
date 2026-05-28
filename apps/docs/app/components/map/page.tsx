@@ -16,6 +16,7 @@ import { SidecarBlock } from "@/components/sidecar-block";
 import { ComponentPreview } from "@/components/component-preview";
 import { Map, MapMarker } from "@/components/ui/map";
 import { PropsTable } from "@/components/props-table";
+import { InstallBlock } from "@/components/install-block";
 
 const mapProps = [
   {
@@ -199,17 +200,13 @@ export default function MapPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Map, MapMarker } from "@gradeui/ui"
+        <InstallBlock>{`import { Map, MapMarker } from "@gradeui/ui"
 
 // Then install ONE of these — only what you actually use.
 // All three SDKs are optional peer deps:
 pnpm add maplibre-gl                 // provider="maplibre" (default)
 pnpm add mapbox-gl                   // provider="mapbox"
-pnpm add @googlemaps/js-api-loader   // provider="google"`}</code>
-          </pre>
-        </div>
+pnpm add @googlemaps/js-api-loader   // provider="google"`}</InstallBlock>
         <p className="text-sm text-muted-foreground">
           The default <code>provider=&quot;maplibre&quot;</code> works
           zero-config on <code>gradeui.com</code> and <code>localhost</code>{" "}
@@ -329,9 +326,7 @@ pnpm add @googlemaps/js-api-loader   // provider="google"`}</code>
           <code>provider</code>. Mapbox and Google demos require keys, so
           they're shown as code only here.
         </p>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`// Mapbox — same engine as MapLibre, paid hosted styles + tiles
+        <InstallBlock>{`// Mapbox — same engine as MapLibre, paid hosted styles + tiles
 <Map
   provider="mapbox"
   accessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN!}
@@ -345,14 +340,10 @@ pnpm add @googlemaps/js-api-loader   // provider="google"`}</code>
   apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY!}
   center={[-0.1276, 51.5074]}
   zoom={11}
-/>`}</code>
-          </pre>
-        </div>
+/>`}</InstallBlock>
 
         <h3 className="text-lg font-medium">Imperative ref — fly-to + escape hatch</h3>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`const mapRef = useRef<MapHandle>(null);
+        <InstallBlock>{`const mapRef = useRef<MapHandle>(null);
 
 <Button onClick={() => mapRef.current?.flyTo("listing-3", { zoom: 15 })}>
   Focus listing 3
@@ -365,9 +356,7 @@ pnpm add @googlemaps/js-api-loader   // provider="google"`}</code>
 // Escape hatch — reach for the provider-native instance for features
 // the wrapper doesn't expose (3D extrusions, drawing tools, heatmaps).
 const mapbox = mapRef.current?.instance as mapboxgl.Map;
-mapbox.addLayer({ id: "3d-buildings", type: "fill-extrusion", ... });`}</code>
-          </pre>
-        </div>
+mapbox.addLayer({ id: "3d-buildings", type: "fill-extrusion", ... });`}</InstallBlock>
       </div>
 
       <div className="space-y-4">

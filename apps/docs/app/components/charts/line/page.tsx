@@ -8,6 +8,7 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { InstallBlock } from "@/components/install-block";
 import {
   Line,
   LineChart,
@@ -256,9 +257,7 @@ export default function LineChartPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Line, LineChart, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts"
+        <InstallBlock>{`import { Line, LineChart, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
 <ChartContainer config={chartConfig} className="min-h-[300px]">
@@ -279,9 +278,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 </ChartContainer>
 
 {/* Add reference line for targets */}
-<ReferenceLine y={100} stroke="yellow" strokeDasharray="5 5" />`}</code>
-          </pre>
-        </div>
+<ReferenceLine y={100} stroke="yellow" strokeDasharray="5 5" />`}</InstallBlock>
       </div>
 
       <ComponentNav currentHref="/components/charts/line" />

@@ -4,6 +4,7 @@ import * as React from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
+import { InstallBlock } from "@/components/install-block";
 import type { DateRange } from "react-day-picker";
 
 export default function CalendarPage() {
@@ -86,9 +87,7 @@ export default function CalendarPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Calendar } from "@/components/ui/calendar"
+        <InstallBlock>{`import { Calendar } from "@/components/ui/calendar"
 
 const [date, setDate] = React.useState<Date | undefined>(new Date())
 
@@ -111,9 +110,7 @@ const [date, setDate] = React.useState<Date | undefined>(new Date())
 <Calendar
   mode="single"
   disabled={(date) => date < new Date()}
-/>`}</code>
-          </pre>
-        </div>
+/>`}</InstallBlock>
       </div>
 
       <SidecarBlock slug="calendar" />

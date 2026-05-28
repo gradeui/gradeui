@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
+import { InstallBlock } from "@/components/install-block";
 
 const tableProps = [
   {
@@ -53,9 +54,7 @@ export default function TablePage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import {
+        <InstallBlock>{`import {
   Table,
   TableBody,
   TableCaption,
@@ -64,9 +63,7 @@ export default function TablePage() {
   TableHead,
   TableHeader,
   TableRow,
-} from "@gradeui/ui"`}</code>
-          </pre>
-        </div>
+} from "@gradeui/ui"`}</InstallBlock>
       </div>
 
       <div className="space-y-4">

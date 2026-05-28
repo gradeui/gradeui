@@ -8,6 +8,7 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { InstallBlock } from "@/components/install-block";
 import {
   Bar,
   BarChart,
@@ -208,9 +209,7 @@ export default function TooltipPage() {
             </ChartContainer>
           </CardContent>
         </Card>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Monitor, Smartphone, Tablet } from "lucide-react"
+        <InstallBlock>{`import { Monitor, Smartphone, Tablet } from "lucide-react"
 
 const chartConfig = {
   desktop: {
@@ -223,9 +222,7 @@ const chartConfig = {
     color: "oklch(var(--chart-2))",
     icon: Smartphone,
   },
-}`}</code>
-          </pre>
-        </div>
+}`}</InstallBlock>
       </div>
 
       {/* Custom Formatter */}
@@ -314,9 +311,7 @@ const chartConfig = {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
+        <InstallBlock>{`import { ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 
 {/* Basic tooltip */}
 <ChartTooltip content={<ChartTooltipContent />} />
@@ -337,9 +332,7 @@ const chartConfig = {
 <ChartLegend
   verticalAlign="top"  {/* "top" | "bottom" */}
   content={<ChartLegendContent nameKey="name" />}
-/>`}</code>
-          </pre>
-        </div>
+/>`}</InstallBlock>
       </div>
 
       {/* ChartConfig Reference */}

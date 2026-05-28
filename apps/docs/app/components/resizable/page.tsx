@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/resizable";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
+import { InstallBlock } from "@/components/install-block";
 
 const panelGroupProps = [
   {
@@ -132,15 +133,11 @@ export default function ResizablePage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import {
+        <InstallBlock>{`import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from "@gradeui/ui"`}</code>
-          </pre>
-        </div>
+} from "@gradeui/ui"`}</InstallBlock>
         <p className="text-sm text-muted-foreground">
           Built on{" "}
           <a
@@ -369,17 +366,13 @@ export default function ResizablePage() {
           <code className="bg-muted px-1 py-0.5 rounded text-sm">localStorage</code>{" "}
           under that key. Same drag, different visit, same layout.
         </p>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`<ResizablePanelGroup direction="horizontal" id="inbox-shell">
+        <InstallBlock>{`<ResizablePanelGroup direction="horizontal" id="inbox-shell">
   <ResizablePanel defaultSize={20} id="nav">…</ResizablePanel>
   <ResizableHandle />
   <ResizablePanel defaultSize={30} id="list">…</ResizablePanel>
   <ResizableHandle />
   <ResizablePanel defaultSize={50} id="detail">…</ResizablePanel>
-</ResizablePanelGroup>`}</code>
-          </pre>
-        </div>
+</ResizablePanelGroup>`}</InstallBlock>
       </div>
 
       {/* Static vs resizable */}

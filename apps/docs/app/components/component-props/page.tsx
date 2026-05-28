@@ -3,6 +3,7 @@
 import { ComponentProps } from "@/components/component-props";
 import { ComponentNav } from "@/components/component-nav";
 import { ComponentPreview } from "@/components/component-preview";
+import { InstallBlock } from "@/components/install-block";
 // Server-safe subpath — same reason as apps/docs/app/api/chat/route.ts.
 // Even though this page is a client component, importing from the
 // main "@gradeui/ui" entry would load every component's React code
@@ -40,14 +41,10 @@ export default function ComponentPropsPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { ComponentProps } from "@/components/component-props";
+        <InstallBlock>{`import { ComponentProps } from "@/components/component-props";
 import { CalloutContract } from "@gradeui/ui";
 
-<ComponentProps contract={CalloutContract} />`}</code>
-          </pre>
-        </div>
+<ComponentProps contract={CalloutContract} />`}</InstallBlock>
       </div>
 
       <div className="space-y-4">
@@ -124,13 +121,9 @@ import { CalloutContract } from "@gradeui/ui";
           full registry. Use it to render the props for any allow-listed
           component without per-page imports:
         </p>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm overflow-x-auto">
-          <pre>
-            <code>{`import { COMPONENT_CONTRACTS } from "@gradeui/ui";
+        <InstallBlock>{`import { COMPONENT_CONTRACTS } from "@gradeui/ui";
 
-<ComponentProps contract={COMPONENT_CONTRACTS.MultiSelect} />`}</code>
-          </pre>
-        </div>
+<ComponentProps contract={COMPONENT_CONTRACTS.MultiSelect} />`}</InstallBlock>
         <p className="text-xs text-muted-foreground">
           {Object.keys(COMPONENT_CONTRACTS).length} components registered.
         </p>

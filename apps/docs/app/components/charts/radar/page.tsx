@@ -8,6 +8,7 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { InstallBlock } from "@/components/install-block";
 import {
   Radar,
   RadarChart,
@@ -226,9 +227,7 @@ export default function RadarChartPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
-          <pre>
-            <code>{`import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
+        <InstallBlock>{`import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
 const data = [
@@ -251,9 +250,7 @@ const data = [
       fillOpacity={0.3}
     />
   </RadarChart>
-</ChartContainer>`}</code>
-          </pre>
-        </div>
+</ChartContainer>`}</InstallBlock>
       </div>
 
       <ComponentNav currentHref="/components/charts/radar" />
