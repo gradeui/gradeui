@@ -76,8 +76,12 @@ export interface CodeDiff {
 }
 
 export interface CodeProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
-  /** Source code to render. */
-  source: string;
+  /**
+   * Source code to render. Optional when `steps` is provided — the
+   * scripted machine builds its own buffer and ignores `source`. When
+   * neither `source` nor `steps` is set, the block renders empty.
+   */
+  source?: string;
   /** Prism language id — `tsx` handles JSX too. Defaults to `tsx`. */
   language?: CodeLanguage;
   /**
@@ -268,7 +272,10 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(function Code(
   // final line which throws the staggered reveal off by one frame.
   // When the step machine is driving, the buffer it builds is the
   // source of truth instead.
-  const sourceForRender = stepsActive ? stepBuffer : source;
+  // `source` is optional now (it's ignored when `steps` is set, and the
+  // empty-input case should render a no-op block rather than crash with
+  // "Cannot read properties of undefined").
+  const sourceForRender = stepsActive ? stepBuffer : (source ?? "");
   const code = React.useMemo(
     () => sourceForRender.replace(/\n$/, ""),
     [sourceForRender],
