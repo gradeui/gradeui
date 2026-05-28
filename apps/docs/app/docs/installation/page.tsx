@@ -17,7 +17,7 @@ export default function InstallationPage() {
         <p className="leading-7">
           Install the Grade UI package using npm, yarn, or pnpm:
         </p>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`# npm
 npm install @gradeui/ui
@@ -38,7 +38,7 @@ pnpm add @gradeui/ui`}</code>
         <p className="leading-7">
           Import the CSS file in your app&apos;s entry point (e.g., <code className="bg-muted px-1 py-0.5 rounded text-sm">layout.tsx</code> or <code className="bg-muted px-1 py-0.5 rounded text-sm">_app.tsx</code>):
         </p>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`import "@gradeui/ui/styles.css"`}</code>
           </pre>
@@ -52,7 +52,7 @@ pnpm add @gradeui/ui`}</code>
         <p className="leading-7">
           Import and use components directly:
         </p>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`import { Button, Card, Input, Badge } from "@gradeui/ui"
 
@@ -76,7 +76,7 @@ export function MyComponent() {
         <p className="leading-7">
           The package requires the following peer dependencies:
         </p>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`{
   "react": "^18.0.0 || ^19.0.0",
@@ -93,7 +93,7 @@ export function MyComponent() {
         <p className="leading-7">
           If you want to use the Sourceful color tokens in your own styles, extend your Tailwind config:
         </p>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`// tailwind.config.ts
 import type { Config } from "tailwindcss"
@@ -102,7 +102,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        sourceful: {
+        brand: {
           green: {
             500: "#00FF84",
             600: "#00cc6a",
@@ -130,7 +130,7 @@ export default config`}</code>
           The package includes TypeScript definitions. All components are fully typed
           with autocompletion support in your IDE.
         </p>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`import type { ButtonProps, BadgeProps } from "@gradeui/ui"`}</code>
           </pre>

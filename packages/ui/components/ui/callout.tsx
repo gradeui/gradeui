@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
  */
 const calloutVariants = cva(
   // Each variant uses the theme's semantic tokens instead of hard-coded
-  // rds-* classes. Status variants reference dedicated `*-soft` (surface)
+  // gds-* classes. Status variants reference dedicated `*-soft` (surface)
   // and `*-deep` (text + icon) tokens — those are generated from the status
   // colour by the theme pipeline, so tweaking the brand feel only requires
   // changing the mapping in one place (lib/themes/oklch.ts).

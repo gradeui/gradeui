@@ -17,7 +17,7 @@
 // on the Installation sections of the component doc pages.
 function CodeBlock({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+    <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
       <pre className="whitespace-pre">
         <code>{children}</code>
       </pre>
@@ -532,7 +532,7 @@ const refsBlock = renderComponentRefsBlock({ onlyFor: relevant });`}</CodeBlock>
             so targeted edits can find it. Use semantic theme tokens
             (<Tok>bg-card</Tok>, <Tok>text-foreground</Tok>,{" "}
             <Tok>border-border</Tok>) and expose sizing knobs as{" "}
-            <Tok>--rds-&lt;name&gt;-*</Tok> CSS variables.
+            <Tok>--gds-&lt;name&gt;-*</Tok> CSS variables.
           </li>
           <li>
             <strong>The sidecar</strong> —{" "}

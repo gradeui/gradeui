@@ -119,10 +119,10 @@ All theme-aware — read from `--card`, so each theme automatically gets its own
 
 | Class | What it does |
 |---|---|
-| `.rds-surface-solid` | bg only |
-| `.rds-surface-translucent` | bg only |
-| `.rds-surface-glass` | bg + backdrop-filter + edge highlight + faint border |
-| `.rds-surface-glass-strong` | bg + stronger blur + edge + border |
+| `.gds-surface-solid` | bg only |
+| `.gds-surface-translucent` | bg only |
+| `.gds-surface-glass` | bg + backdrop-filter + edge highlight + faint border |
+| `.gds-surface-glass-strong` | bg + stronger blur + edge + border |
 
 Tailwind utilities: `bg-surface-solid`, `bg-surface-translucent`, `bg-surface-glass`, `bg-surface-glass-strong` (just the colour). For the full glass effect including blur, use the class.
 
@@ -134,16 +134,16 @@ What's actively *radiating* from an element. State signals — AI attention, gen
 
 | Style | Implementation | Looks like |
 |---|---|---|
-| `.rds-aura-ring` | animated `box-shadow` outer ring | a soft halo breathing around the element (2.4s cycle) |
-| `.rds-aura-gradient` | rotating conic-gradient on a `::before` pseudo, masked to the border ring | a tonal light walking around the perimeter (6s rotation) |
-| `.rds-aura-shimmer` | diagonal sweep on `::after` via `background-position` | a highlight sliding across the surface (2s sweep + 1.2s pause) |
+| `.gds-aura-ring` | animated `box-shadow` outer ring | a soft halo breathing around the element (2.4s cycle) |
+| `.gds-aura-gradient` | rotating conic-gradient on a `::before` pseudo, masked to the border ring | a tonal light walking around the perimeter (6s rotation) |
+| `.gds-aura-shimmer` | diagonal sweep on `::after` via `background-position` | a highlight sliding across the surface (2s sweep + 1.2s pause) |
 
 ### Tone
 
 All three default to `--aura-color`, which defaults to `--selected-glow` (blue). Override per-element for danger / success / brand attention:
 
 ```jsx
-<Button className="rds-aura-ring" style={{ '--aura-color': 'var(--success)' }}>
+<Button className="gds-aura-ring" style={{ '--aura-color': 'var(--success)' }}>
   Ready to ship
 </Button>
 ```
@@ -153,7 +153,7 @@ All three default to `--aura-color`, which defaults to `--selected-glow` (blue).
 The three styles compose. A "Studio is generating" indicator can run ring + shimmer simultaneously:
 
 ```jsx
-<Card className="rds-aura-ring rds-aura-shimmer">…</Card>
+<Card className="gds-aura-ring gds-aura-shimmer">…</Card>
 ```
 
 ### Per-instance timing & easing
@@ -162,7 +162,7 @@ Every aura style exposes duration and easing as CSS vars. A heavier button that 
 
 ```jsx
 <Button
-  className="rds-aura-ring"
+  className="gds-aura-ring"
   style={{
     '--aura-pulse-duration': '3.2s',
     '--aura-pulse-ease': 'cubic-bezier(0.65, 0, 0.35, 1)',
@@ -184,8 +184,8 @@ Available knobs:
 ## Migration notes
 
 - Existing `shadow-sm/md/lg/xl/2xl` calls in components keep working — they're transparently routed onto the elevation tokens via the Tailwind preset.
-- `--rds-shadow-*` CSS var references (used inside `globals.css`, e.g. `[data-card-style="elevated"]`) are repointed too. No call-site changes required.
-- `.rds-button-raised` (the existing raised Button class) is now composed from elevation tokens internally. Visual output is identical to the pre-refactor version; future tweaks happen at the token level.
+- `--gds-shadow-*` CSS var references (used inside `globals.css`, e.g. `[data-card-style="elevated"]`) are repointed too. No call-site changes required.
+- `.gds-button-raised` (the existing raised Button class) is now composed from elevation tokens internally. Visual output is identical to the pre-refactor version; future tweaks happen at the token level.
 
 ## Future work
 

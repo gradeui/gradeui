@@ -60,17 +60,17 @@ export function FigmaIntroBanner() {
     <div
       role="status"
       // Visual chrome via CSS variables — keeps the banner aligned with
-      // the Studio theme even as the theme picker mutates --rds-*.
+      // the Studio theme even as the theme picker mutates --gds-*.
       style={{
         display: "flex",
         alignItems: "flex-start",
         gap: "0.75rem",
         padding: "0.625rem 0.875rem",
         borderBottom:
-          "1px solid oklch(var(--rds-border, 0.9 0 0))",
+          "1px solid oklch(var(--gds-border, 0.9 0 0))",
         background:
-          "color-mix(in oklab, oklch(var(--rds-primary, 0.2 0 0)) 6%, transparent)",
-        color: "oklch(var(--rds-foreground, 0.15 0 0))",
+          "color-mix(in oklab, oklch(var(--gds-primary, 0.2 0 0)) 6%, transparent)",
+        color: "oklch(var(--gds-foreground, 0.15 0 0))",
         fontSize: "0.8125rem",
         lineHeight: 1.5,
       }}
@@ -83,7 +83,7 @@ export function FigmaIntroBanner() {
           target="_blank"
           rel="noopener noreferrer"
           style={{
-            color: "oklch(var(--rds-primary, 0.2 0 0))",
+            color: "oklch(var(--gds-primary, 0.2 0 0))",
             textDecoration: "underline",
             textUnderlineOffset: "0.15em",
             fontWeight: 500,
@@ -100,7 +100,7 @@ export function FigmaIntroBanner() {
           appearance: "none",
           border: 0,
           background: "transparent",
-          color: "oklch(var(--rds-muted-foreground, 0.5 0 0))",
+          color: "oklch(var(--gds-muted-foreground, 0.5 0 0))",
           font: "inherit",
           fontSize: "0.75rem",
           padding: "0.125rem 0.375rem",

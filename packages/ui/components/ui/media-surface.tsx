@@ -13,8 +13,8 @@
  *   - **empty-state placeholder** with format-suggesting glyph + alt caption
  *
  * Design-system note: all visual dimensions are backed by CSS vars so
- * consumers can retheme via `--rds-media-radius`, `--rds-media-border`,
- * `--rds-media-placeholder-bg`, `--rds-media-placeholder-fg`. The
+ * consumers can retheme via `--gds-media-radius`, `--gds-media-border`,
+ * `--gds-media-placeholder-bg`, `--gds-media-placeholder-fg`. The
  * placeholder pair drives the empty-state treatment — it's the canonical
  * "image not yet loaded" surface across Grade until the image-generation
  * pipeline replaces empty slots with real pictures. Custom placeholder UI
@@ -150,7 +150,7 @@ const radiusVar: Record<MediaRadius, string> = {
  * Hint → glyph map. Lucide icons chosen to be visually unambiguous at
  * placeholder size (the glyph fills roughly 1/3 of the surface). Override
  * per-instance via the `glyph` prop, or globally per-theme by overriding
- * `--rds-media-hint-{name}-glyph` with a `url(...)` value (advanced).
+ * `--gds-media-hint-{name}-glyph` with a `url(...)` value (advanced).
  */
 const HINT_GLYPH: Record<MediaHint, React.ComponentType<{ className?: string }>> = {
   album: Disc3,
@@ -590,18 +590,18 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
           // WebGL canvases is 0. Override via `className="w-96"` etc.
           //
           // No `bg-muted` on the wrapper any more — the placeholder div
-          // below paints its own solid `--rds-media-placeholder-bg`, so
+          // below paints its own solid `--gds-media-placeholder-bg`, so
           // a wrapper background just risks a two-layer mismatch in
           // themes where `--muted` differs from the placeholder pair.
           // The surface is transparent under custom `children` (e.g. a
           // Three.js canvas), which is the intended behaviour.
-          "rds-media-surface relative w-full overflow-hidden",
+          "gds-media-surface relative w-full overflow-hidden",
           aspectClass[resolvedAspect],
           border && "border border-border",
           className,
         )}
         style={{
-          borderRadius: `var(--rds-media-radius, ${radiusVar[radius]})`,
+          borderRadius: `var(--gds-media-radius, ${radiusVar[radius]})`,
           ...style,
         }}
         {...props}
@@ -612,7 +612,7 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
             possible: a single ancestor CSS rule can hide the `src`/content
             layers and the placeholder beneath shows through — no React-side
             state, no re-mount. Surface and icon colours come from the
-            `--rds-media-placeholder-*` token pair so they retheme with
+            `--gds-media-placeholder-*` token pair so they retheme with
             the active mode. */}
         {hasPlaceholder && (
           <div
@@ -620,8 +620,8 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
             data-tier={tier}
             className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 pointer-events-none px-3 text-center"
             style={{
-              background: "var(--rds-media-placeholder-bg)",
-              color: "var(--rds-media-placeholder-fg)",
+              background: "var(--gds-media-placeholder-bg)",
+              color: "var(--gds-media-placeholder-fg)",
             }}
             aria-hidden
           >

@@ -127,10 +127,10 @@ export default function PresencePage() {
         </p>
 
         <ComponentPreview
-          code={`<div className="rds-surface-solid p-6 rounded-lg">solid</div>
-<div className="rds-surface-translucent p-6 rounded-lg">translucent</div>
-<div className="rds-surface-glass p-6 rounded-lg">glass</div>
-<div className="rds-surface-glass-strong p-6 rounded-lg">glass-strong</div>`}
+          code={`<div className="gds-surface-solid p-6 rounded-lg">solid</div>
+<div className="gds-surface-translucent p-6 rounded-lg">translucent</div>
+<div className="gds-surface-glass p-6 rounded-lg">glass</div>
+<div className="gds-surface-glass-strong p-6 rounded-lg">glass-strong</div>`}
         >
           {/* Patterned backdrop so translucent / glass surfaces have
               something visible to blur through. */}
@@ -142,19 +142,19 @@ export default function PresencePage() {
               backgroundColor: "oklch(var(--background))",
             }}
           >
-            <div className="rds-surface-solid rounded-md p-4 shadow-elevation-2">
+            <div className="gds-surface-solid rounded-md p-4 shadow-elevation-2">
               <div className="text-xs font-mono text-muted-foreground">solid</div>
               <div className="text-sm font-medium mt-1">100% opacity</div>
             </div>
-            <div className="rds-surface-translucent rounded-md p-4 shadow-elevation-2">
+            <div className="gds-surface-translucent rounded-md p-4 shadow-elevation-2">
               <div className="text-xs font-mono text-muted-foreground">translucent</div>
               <div className="text-sm font-medium mt-1">82% opacity</div>
             </div>
-            <div className="rds-surface-glass rounded-md p-4 shadow-elevation-4">
+            <div className="gds-surface-glass rounded-md p-4 shadow-elevation-4">
               <div className="text-xs font-mono text-muted-foreground">glass</div>
               <div className="text-sm font-medium mt-1">58% + blur</div>
             </div>
-            <div className="rds-surface-glass-strong rounded-md p-4 shadow-elevation-4">
+            <div className="gds-surface-glass-strong rounded-md p-4 shadow-elevation-4">
               <div className="text-xs font-mono text-muted-foreground">glass-strong</div>
               <div className="text-sm font-medium mt-1">42% + 24px blur</div>
             </div>
@@ -175,25 +175,25 @@ export default function PresencePage() {
         </p>
 
         <ComponentPreview
-          code={`<div className="rds-aura-ring p-6 rounded-lg">ring</div>
-<div className="rds-aura-gradient p-6 rounded-lg">gradient</div>
-<div className="rds-aura-shimmer p-6 rounded-lg">shimmer</div>
-<div className="rds-aura-ring rds-aura-shimmer p-6 rounded-lg">ring + shimmer</div>`}
+          code={`<div className="gds-aura-ring p-6 rounded-lg">ring</div>
+<div className="gds-aura-gradient p-6 rounded-lg">gradient</div>
+<div className="gds-aura-shimmer p-6 rounded-lg">shimmer</div>
+<div className="gds-aura-ring gds-aura-shimmer p-6 rounded-lg">ring + shimmer</div>`}
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-8 bg-background rounded-lg">
-            <div className="rds-aura-ring bg-card rounded-lg p-4 shadow-elevation-2 min-h-24 flex flex-col justify-between">
+            <div className="gds-aura-ring bg-card rounded-lg p-4 shadow-elevation-2 min-h-24 flex flex-col justify-between">
               <div className="text-xs font-mono text-muted-foreground">aura-ring</div>
               <div className="text-sm font-medium">pulsing halo</div>
             </div>
-            <div className="rds-aura-gradient bg-card rounded-lg p-4 shadow-elevation-2 min-h-24 flex flex-col justify-between">
+            <div className="gds-aura-gradient bg-card rounded-lg p-4 shadow-elevation-2 min-h-24 flex flex-col justify-between">
               <div className="text-xs font-mono text-muted-foreground">aura-gradient</div>
               <div className="text-sm font-medium">rotating border</div>
             </div>
-            <div className="rds-aura-shimmer bg-card rounded-lg p-4 shadow-elevation-2 min-h-24 flex flex-col justify-between">
+            <div className="gds-aura-shimmer bg-card rounded-lg p-4 shadow-elevation-2 min-h-24 flex flex-col justify-between">
               <div className="text-xs font-mono text-muted-foreground">aura-shimmer</div>
               <div className="text-sm font-medium">diagonal sweep</div>
             </div>
-            <div className="rds-aura-ring rds-aura-shimmer bg-card rounded-lg p-4 shadow-elevation-2 min-h-24 flex flex-col justify-between">
+            <div className="gds-aura-ring gds-aura-shimmer bg-card rounded-lg p-4 shadow-elevation-2 min-h-24 flex flex-col justify-between">
               <div className="text-xs font-mono text-muted-foreground">ring + shimmer</div>
               <div className="text-sm font-medium">stacked</div>
             </div>
@@ -202,7 +202,7 @@ export default function PresencePage() {
 
         <h3 className="text-lg font-medium mt-4">Tonal override</h3>
         <ComponentPreview
-          code={`<Button variant="raised" className="rds-aura-ring"
+          code={`<Button variant="raised" className="gds-aura-ring"
         style={{ "--aura-color": "var(--success)" } as React.CSSProperties}>
   Ready
 </Button>`}
@@ -210,21 +210,21 @@ export default function PresencePage() {
           <div className="flex flex-wrap items-center gap-4 p-6 bg-background rounded-lg">
             <Button
               variant="raised"
-              className="rds-aura-ring"
+              className="gds-aura-ring"
               style={{ ["--aura-color" as never]: "var(--success)" }}
             >
               Ready
             </Button>
             <Button
               variant="raised"
-              className="rds-aura-ring"
+              className="gds-aura-ring"
               style={{ ["--aura-color" as never]: "var(--warning)" }}
             >
               Attention
             </Button>
             <Button
               variant="raised"
-              className="rds-aura-ring"
+              className="gds-aura-ring"
               style={{ ["--aura-color" as never]: "var(--destructive)" }}
             >
               Alert
@@ -237,7 +237,7 @@ export default function PresencePage() {
           Slow the pulse on a heavy element by overriding the duration locally — no keyframe rewrite.
         </p>
         <ComponentPreview
-          code={`<Button variant="raised" className="rds-aura-ring"
+          code={`<Button variant="raised" className="gds-aura-ring"
         style={{ "--aura-pulse-duration": "4s" } as React.CSSProperties}>
   Slow pulse
 </Button>`}
@@ -245,21 +245,21 @@ export default function PresencePage() {
           <div className="flex flex-wrap items-center gap-4 p-6 bg-background rounded-lg">
             <Button
               variant="raised"
-              className="rds-aura-ring"
+              className="gds-aura-ring"
               style={{ ["--aura-pulse-duration" as never]: "1.2s" }}
             >
               1.2s
             </Button>
             <Button
               variant="raised"
-              className="rds-aura-ring"
+              className="gds-aura-ring"
               style={{ ["--aura-pulse-duration" as never]: "2.4s" }}
             >
               2.4s (default)
             </Button>
             <Button
               variant="raised"
-              className="rds-aura-ring"
+              className="gds-aura-ring"
               style={{ ["--aura-pulse-duration" as never]: "4s" }}
             >
               4s
@@ -276,11 +276,11 @@ export default function PresencePage() {
         <p className="text-sm text-muted-foreground">
           Elevation + Surface + Aura combine independently. A Studio AI-suggestion card is{" "}
           <code className="bg-muted px-1 py-0.5 rounded text-xs">shadow-elevation-4</code> +{" "}
-          <code className="bg-muted px-1 py-0.5 rounded text-xs">rds-surface-glass</code> +{" "}
-          <code className="bg-muted px-1 py-0.5 rounded text-xs">rds-aura-ring</code>.
+          <code className="bg-muted px-1 py-0.5 rounded text-xs">gds-surface-glass</code> +{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-xs">gds-aura-ring</code>.
         </p>
         <ComponentPreview
-          code={`<div className="shadow-elevation-4 rds-surface-glass rds-aura-ring rounded-lg p-6">
+          code={`<div className="shadow-elevation-4 gds-surface-glass gds-aura-ring rounded-lg p-6">
   AI is suggesting a layout
 </div>`}
         >
@@ -292,9 +292,9 @@ export default function PresencePage() {
               backgroundColor: "oklch(var(--background))",
             }}
           >
-            <div className="shadow-elevation-4 rds-surface-glass rds-aura-ring rounded-lg p-6 max-w-md">
+            <div className="shadow-elevation-4 gds-surface-glass gds-aura-ring rounded-lg p-6 max-w-md">
               <div className="text-xs font-mono text-muted-foreground mb-2">
-                shadow-elevation-4 · rds-surface-glass · rds-aura-ring
+                shadow-elevation-4 · gds-surface-glass · gds-aura-ring
               </div>
               <div className="text-sm font-medium mb-1">
                 Studio is suggesting a layout

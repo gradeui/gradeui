@@ -55,7 +55,7 @@ export const VideoPlayerContract = contract({
   "radius": {
       schema: z.enum(["none", "sm", "md", "lg", "xl"]).optional(),
       design: "knob",
-      description: "driven by `--rds-media-radius`",
+      description: "driven by `--gds-media-radius`",
       default: "lg",
   },
   "objectFit": {

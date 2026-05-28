@@ -25,7 +25,7 @@ interface SavedPlayground {
   createdAt: number;
 }
 
-const STORAGE_KEY = "rds-playgrounds";
+const STORAGE_KEY = "gds-playgrounds";
 
 const examples = {
   all: {

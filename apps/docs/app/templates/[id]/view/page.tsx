@@ -34,7 +34,7 @@ interface SavedTemplate {
   createdAt: number;
 }
 
-const STORAGE_KEY = "rds-template-saves";
+const STORAGE_KEY = "gds-template-saves";
 
 // Title bar component that uses Sandpack context
 function EditorTitleBar({

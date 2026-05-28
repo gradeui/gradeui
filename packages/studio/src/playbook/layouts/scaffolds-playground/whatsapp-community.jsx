@@ -93,7 +93,7 @@ export default function App() {
     <AppShell
       nav="three-pane"
       className="h-screen"
-      style={{ "--rds-app-shell-aside": "380px" }}
+      style={{ "--gds-app-shell-aside": "380px" }}
     >
       {/* ─── Left: icon rail ─── */}
       <AppShellNav placement="side" className="bg-muted/40 border-r border-border">

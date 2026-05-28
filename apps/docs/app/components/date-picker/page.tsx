@@ -111,7 +111,7 @@ export default function DatePickerPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`import { DatePicker, DateRangePicker } from "@gradeui/ui"
 
@@ -162,7 +162,7 @@ const [range, setRange] = React.useState<DateRange>()
             />
           </PopoverContent>
         </Popover>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`import { Calendar, Popover, PopoverTrigger, PopoverContent, Button } from "@gradeui/ui"
 import { format } from "date-fns"

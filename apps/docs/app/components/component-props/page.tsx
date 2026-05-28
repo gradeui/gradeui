@@ -40,7 +40,7 @@ export default function ComponentPropsPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`import { ComponentProps } from "@/components/component-props";
 import { CalloutContract } from "@gradeui/ui";
@@ -124,7 +124,7 @@ import { CalloutContract } from "@gradeui/ui";
           full registry. Use it to render the props for any allow-listed
           component without per-page imports:
         </p>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm overflow-x-auto">
           <pre>
             <code>{`import { COMPONENT_CONTRACTS } from "@gradeui/ui";
 

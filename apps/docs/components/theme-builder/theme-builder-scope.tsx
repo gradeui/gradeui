@@ -82,7 +82,7 @@ export function ThemeBuilderScope({
       className={cn(isDark && "dark", className)}
       style={mergedStyle}
       data-mode={mode}
-      data-ramp-theme={generated.id}
+      data-grade-theme={generated.id}
       data-button-shape={generated.components.buttonShape ?? "default"}
       data-input-style={generated.components.inputStyle ?? "outlined"}
       data-card-style={generated.components.cardStyle ?? "flat"}

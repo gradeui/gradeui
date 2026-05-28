@@ -40,7 +40,7 @@
  *
  * Theming: visual surfaces (bg, border, text colour) come from semantic
  * theme tokens, not hard-coded greys. Sizing knobs (collapsed width,
- * expanded width, item padding) live as `--rds-sidebar-*` CSS variables
+ * expanded width, item padding) live as `--gds-sidebar-*` CSS variables
  * so the consumer can retune without prop drilling.
  *
  * Composition: Sidebar slots inside `<AppShellNav placement="side">`
@@ -149,8 +149,8 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
             )}
             style={{
               width: collapsed
-                ? "var(--rds-sidebar-collapsed-width, 4rem)"
-                : "var(--rds-sidebar-width, 16rem)",
+                ? "var(--gds-sidebar-collapsed-width, 4rem)"
+                : "var(--gds-sidebar-width, 16rem)",
               ...style,
             }}
             {...rest}
@@ -199,7 +199,7 @@ const SidebarHeader = React.forwardRef<HTMLDivElement, SidebarHeaderProps>(
         className={cn(
           "flex shrink-0 items-center border-b border-border",
           collapsed ? "justify-center px-2" : "px-3",
-          "h-[var(--rds-sidebar-header-height,3.25rem)]",
+          "h-[var(--gds-sidebar-header-height,3.25rem)]",
           className,
         )}
         {...props}
@@ -220,7 +220,7 @@ const SidebarContent = React.forwardRef<HTMLElement, SidebarContentProps>(
       data-gds-part="sidebar-content"
       className={cn(
         "flex-1 overflow-y-auto overflow-x-hidden",
-        "py-[var(--rds-sidebar-content-py,0.5rem)]",
+        "py-[var(--gds-sidebar-content-py,0.5rem)]",
         className,
       )}
       {...props}
@@ -308,7 +308,7 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
           ref={ref}
           data-gds-part="sidebar-section"
           className={cn(
-            "px-[var(--rds-sidebar-section-px,0.5rem)] space-y-[var(--rds-sidebar-section-gap,0.125rem)]",
+            "px-[var(--gds-sidebar-section-px,0.5rem)] space-y-[var(--gds-sidebar-section-gap,0.125rem)]",
             className,
           )}
           {...rest}
@@ -323,7 +323,7 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
         ref={ref}
         data-gds-part="sidebar-section"
         className={cn(
-          "px-[var(--rds-sidebar-section-px,0.5rem)] pb-1",
+          "px-[var(--gds-sidebar-section-px,0.5rem)] pb-1",
           className,
         )}
         {...rest}
@@ -379,8 +379,8 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
         {expanded && (
           <div
             className={cn(
-              "mt-[var(--rds-sidebar-section-gap,0.125rem)]",
-              "space-y-[var(--rds-sidebar-section-gap,0.125rem)]",
+              "mt-[var(--gds-sidebar-section-gap,0.125rem)]",
+              "space-y-[var(--gds-sidebar-section-gap,0.125rem)]",
             )}
           >
             {children}
@@ -693,7 +693,7 @@ const SidebarTreeItem = React.forwardRef<HTMLButtonElement, SidebarTreeItemProps
         </button>
         {expanded && children && (
           <SidebarTreeDepthContext.Provider value={depth + 1}>
-            <div className="space-y-[var(--rds-sidebar-section-gap,0.125rem)]">
+            <div className="space-y-[var(--gds-sidebar-section-gap,0.125rem)]">
               {children}
             </div>
           </SidebarTreeDepthContext.Provider>

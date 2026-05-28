@@ -1,26 +1,41 @@
-import { defineConfig } from "tsup";
+import { defineConfig, type Options } from "tsup";
 
-export default defineConfig({
-  entry: {
-    index: "lib/index.ts",
-    "tailwind-preset": "tailwind-preset.ts",
-    // `@gradeui/ui/contracts` — server-safe entrypoint that exposes
-    // the typed contracts registry without dragging in any React
-    // component code. The main `./` entry bundles every component, so
-    // importing `COMPONENT_CONTRACTS` from it loads React at module
-    // init — which crashes in a Server Component / API route with
-    // "useEffect can't be used in a Server Component". This sub-entry
-    // only pulls in Zod + the per-component `*.contract.ts` files
-    // (which themselves only import Zod), so it's safe from anywhere
-    // (Edge runtime, API routes, MCP servers, CLI).
-    "contracts": "lib/contracts.ts",
-    // Sub-path entries for the Map adapters — let consumers preload a
-    // specific provider via `import "@gradeui/ui/map/<provider>"` and
-    // skip the dynamic-import boundary the default `<Map>` uses.
-    "map/maplibre": "components/ui/map/adapters/maplibre.ts",
-    "map/mapbox": "components/ui/map/adapters/mapbox.ts",
-    "map/google": "components/ui/map/adapters/google.ts",
-  },
+/*
+ * ─────────────────────────────────────────────────────────────────────
+ *  Two-config split — client entries vs. server-safe entries.
+ *
+ *  Why two configs:
+ *  ────────────────
+ *  The main `./` entry (lib/index.ts) bundles every React component in
+ *  the design system, including every hook usage (useRef, useEffect,
+ *  useState, useContext, …). Next.js 13+ App Router treats anything
+ *  using those hooks as a Client Component, and refuses to compile a
+ *  bundle that uses them without a top-of-file `"use client"`
+ *  directive.
+ *
+ *  We can't just put `"use client"` at the top of `lib/index.ts`
+ *  because `minify: true` rewrites the bundle and esbuild's minifier
+ *  treats a bare top-of-file string literal as a useless expression
+ *  statement and DROPS IT. (Verified May 2026 — that's exactly the
+ *  bug that broke consume-app's build.)
+ *
+ *  The reliable fix is `banner: { js: '"use client";' }`: tsup hands
+ *  the banner straight to esbuild, which appends it to the output AFTER
+ *  minification, so it survives untouched.
+ *
+ *  But banner applies to every entry in the config — and we don't want
+ *  it on the server-safe entries (`contracts`, `tailwind-preset`).
+ *  Marking those `"use client"` would re-export them as client modules,
+ *  which defeats the whole purpose of having `@gradeui/ui/contracts`
+ *  as a Zod-only subpath consumable from Server Components, API routes,
+ *  the Edge runtime, and MCP servers.
+ *
+ *  Hence: two configs. tsup runs both as separate esbuild builds and
+ *  writes them into the same dist/ directory.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+const sharedOptions = {
   format: ["cjs", "esm"],
   dts: true,
   splitting: false,
@@ -43,4 +58,76 @@ export default defineConfig({
   ],
   treeshake: true,
   minify: true,
-});
+} as const satisfies Partial<Options>;
+
+export default defineConfig([
+  // ── Client config ──────────────────────────────────────────────────
+  //
+  // Every entry that ends up shipping React components / hooks lives
+  // here. The `"use client"` directive is injected via `onSuccess`
+  // AFTER tsup finishes — esbuild's bundler refuses to honour a
+  // module-level "use client" inside a bundle (warns "Module level
+  // directives cause errors when bundled" and strips them), so the
+  // `banner` option doesn't work for this. Post-processing the
+  // emitted file on disk is the only reliable path.
+  //
+  // The map adapters use browser-only APIs (document, window,
+  // dynamically-imported map SDKs) — even though the adapter modules
+  // themselves don't call React hooks, anyone importing them from a
+  // Server Component would crash on the browser-API references. Safer
+  // to ship them as client modules too.
+  {
+    ...sharedOptions,
+    entry: {
+      index: "lib/index.ts",
+      "map/maplibre": "components/ui/map/adapters/maplibre.ts",
+      "map/mapbox": "components/ui/map/adapters/mapbox.ts",
+      "map/google": "components/ui/map/adapters/google.ts",
+    },
+    async onSuccess() {
+      const fs = await import("node:fs/promises");
+      const CLIENT_FILES = [
+        "dist/index.mjs",
+        "dist/index.js",
+        "dist/map/maplibre.mjs",
+        "dist/map/maplibre.js",
+        "dist/map/mapbox.mjs",
+        "dist/map/mapbox.js",
+        "dist/map/google.mjs",
+        "dist/map/google.js",
+      ];
+      const DIRECTIVE = '"use client";\n';
+      for (const file of CLIENT_FILES) {
+        try {
+          const content = await fs.readFile(file, "utf8");
+          if (!content.startsWith(DIRECTIVE.trim())) {
+            await fs.writeFile(file, DIRECTIVE + content);
+          }
+        } catch (err) {
+          // File missing — fine if a sub-entry didn't emit (e.g. during
+          // partial dev builds). Re-throw anything else.
+          if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+        }
+      }
+    },
+  },
+
+  // ── Server-safe config ─────────────────────────────────────────────
+  //
+  // These entries MUST be importable from Server Components, API
+  // routes, the Edge runtime, MCP servers, and CLIs. They contain
+  // only Zod schemas, plain config objects, and pure data — no React,
+  // no DOM, no `"use client"`.
+  //
+  // - `contracts` → `@gradeui/ui/contracts` — typed component registry
+  // - `tailwind-preset` → `@gradeui/ui/tailwind-preset` — Tailwind
+  //    config that consumers extend in their own `tailwind.config.ts`
+  //    (which is loaded server-side at build time).
+  {
+    ...sharedOptions,
+    entry: {
+      contracts: "lib/contracts.ts",
+      "tailwind-preset": "tailwind-preset.ts",
+    },
+  },
+]);

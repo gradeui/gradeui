@@ -5,115 +5,115 @@ import { Logo } from "@/components/logo";
 
 // Primary brand colors
 const brandColors = [
-  { name: "Neon Green", value: "#00FF84", variable: "--rds-green", primary: true },
-  { name: "Yellow", value: "#FFD500", variable: "--rds-yellow", primary: true },
-  { name: "Orange", value: "#FF6B00", variable: "--rds-orange", primary: true },
-  { name: "Red", value: "#FF0D0D", variable: "--rds-red", primary: true },
-  { name: "Teal", value: "#0D7377", variable: "--rds-teal", primary: true },
-  { name: "Navy", value: "#1E3A5F", variable: "--rds-navy", primary: true },
-  { name: "Blue", value: "#2196F3", variable: "--rds-blue", primary: true },
+  { name: "Neon Green", value: "#00FF84", variable: "--gds-green", primary: true },
+  { name: "Yellow", value: "#FFD500", variable: "--gds-yellow", primary: true },
+  { name: "Orange", value: "#FF6B00", variable: "--gds-orange", primary: true },
+  { name: "Red", value: "#FF0D0D", variable: "--gds-red", primary: true },
+  { name: "Teal", value: "#0D7377", variable: "--gds-teal", primary: true },
+  { name: "Navy", value: "#1E3A5F", variable: "--gds-navy", primary: true },
+  { name: "Blue", value: "#2196F3", variable: "--gds-blue", primary: true },
 ];
 
 const greenColors = [
-  { name: "Green 50", value: "#ecfff5", variable: "--rds-green-50" },
-  { name: "Green 100", value: "#d1ffea", variable: "--rds-green-100" },
-  { name: "Green 200", value: "#a6ffd6", variable: "--rds-green-200" },
-  { name: "Green 300", value: "#6affbd", variable: "--rds-green-300" },
-  { name: "Green 400", value: "#2bff9e", variable: "--rds-green-400" },
-  { name: "Green 500", value: "#00FF84", variable: "--rds-green-500", primary: true },
-  { name: "Green 600", value: "#00cc6a", variable: "--rds-green-600" },
-  { name: "Green 700", value: "#009950", variable: "--rds-green-700" },
-  { name: "Green 800", value: "#007a40", variable: "--rds-green-800" },
-  { name: "Green 900", value: "#006636", variable: "--rds-green-900" },
+  { name: "Green 50", value: "#ecfff5", variable: "--gds-green-50" },
+  { name: "Green 100", value: "#d1ffea", variable: "--gds-green-100" },
+  { name: "Green 200", value: "#a6ffd6", variable: "--gds-green-200" },
+  { name: "Green 300", value: "#6affbd", variable: "--gds-green-300" },
+  { name: "Green 400", value: "#2bff9e", variable: "--gds-green-400" },
+  { name: "Green 500", value: "#00FF84", variable: "--gds-green-500", primary: true },
+  { name: "Green 600", value: "#00cc6a", variable: "--gds-green-600" },
+  { name: "Green 700", value: "#009950", variable: "--gds-green-700" },
+  { name: "Green 800", value: "#007a40", variable: "--gds-green-800" },
+  { name: "Green 900", value: "#006636", variable: "--gds-green-900" },
 ];
 
 const yellowColors = [
-  { name: "Yellow 50", value: "#fffce8", variable: "--rds-yellow-50" },
-  { name: "Yellow 100", value: "#fff8c2", variable: "--rds-yellow-100" },
-  { name: "Yellow 200", value: "#fff089", variable: "--rds-yellow-200" },
-  { name: "Yellow 300", value: "#ffe545", variable: "--rds-yellow-300" },
-  { name: "Yellow 400", value: "#FFD500", variable: "--rds-yellow-400", primary: true },
-  { name: "Yellow 500", value: "#e6c000", variable: "--rds-yellow-500" },
-  { name: "Yellow 600", value: "#cc9f00", variable: "--rds-yellow-600" },
-  { name: "Yellow 700", value: "#a37700", variable: "--rds-yellow-700" },
+  { name: "Yellow 50", value: "#fffce8", variable: "--gds-yellow-50" },
+  { name: "Yellow 100", value: "#fff8c2", variable: "--gds-yellow-100" },
+  { name: "Yellow 200", value: "#fff089", variable: "--gds-yellow-200" },
+  { name: "Yellow 300", value: "#ffe545", variable: "--gds-yellow-300" },
+  { name: "Yellow 400", value: "#FFD500", variable: "--gds-yellow-400", primary: true },
+  { name: "Yellow 500", value: "#e6c000", variable: "--gds-yellow-500" },
+  { name: "Yellow 600", value: "#cc9f00", variable: "--gds-yellow-600" },
+  { name: "Yellow 700", value: "#a37700", variable: "--gds-yellow-700" },
 ];
 
 const orangeColors = [
-  { name: "Orange 50", value: "#fff5eb", variable: "--rds-orange-50" },
-  { name: "Orange 100", value: "#ffe6cc", variable: "--rds-orange-100" },
-  { name: "Orange 200", value: "#ffc999", variable: "--rds-orange-200" },
-  { name: "Orange 300", value: "#ffa866", variable: "--rds-orange-300" },
-  { name: "Orange 400", value: "#ff8533", variable: "--rds-orange-400" },
-  { name: "Orange 500", value: "#FF6B00", variable: "--rds-orange-500", primary: true },
-  { name: "Orange 600", value: "#cc5600", variable: "--rds-orange-600" },
-  { name: "Orange 700", value: "#994000", variable: "--rds-orange-700" },
-  { name: "Orange 800", value: "#662b00", variable: "--rds-orange-800" },
-  { name: "Orange 900", value: "#4d2000", variable: "--rds-orange-900" },
+  { name: "Orange 50", value: "#fff5eb", variable: "--gds-orange-50" },
+  { name: "Orange 100", value: "#ffe6cc", variable: "--gds-orange-100" },
+  { name: "Orange 200", value: "#ffc999", variable: "--gds-orange-200" },
+  { name: "Orange 300", value: "#ffa866", variable: "--gds-orange-300" },
+  { name: "Orange 400", value: "#ff8533", variable: "--gds-orange-400" },
+  { name: "Orange 500", value: "#FF6B00", variable: "--gds-orange-500", primary: true },
+  { name: "Orange 600", value: "#cc5600", variable: "--gds-orange-600" },
+  { name: "Orange 700", value: "#994000", variable: "--gds-orange-700" },
+  { name: "Orange 800", value: "#662b00", variable: "--gds-orange-800" },
+  { name: "Orange 900", value: "#4d2000", variable: "--gds-orange-900" },
 ];
 
 const redColors = [
-  { name: "Red 50", value: "#fff0f0", variable: "--rds-red-50" },
-  { name: "Red 100", value: "#ffd9d9", variable: "--rds-red-100" },
-  { name: "Red 200", value: "#ffb3b3", variable: "--rds-red-200" },
-  { name: "Red 300", value: "#ff8080", variable: "--rds-red-300" },
-  { name: "Red 400", value: "#ff4d4d", variable: "--rds-red-400" },
-  { name: "Red 500", value: "#FF0D0D", variable: "--rds-red-500", primary: true },
-  { name: "Red 600", value: "#cc0a0a", variable: "--rds-red-600" },
-  { name: "Red 700", value: "#990808", variable: "--rds-red-700" },
-  { name: "Red 800", value: "#660505", variable: "--rds-red-800" },
-  { name: "Red 900", value: "#4d0404", variable: "--rds-red-900" },
+  { name: "Red 50", value: "#fff0f0", variable: "--gds-red-50" },
+  { name: "Red 100", value: "#ffd9d9", variable: "--gds-red-100" },
+  { name: "Red 200", value: "#ffb3b3", variable: "--gds-red-200" },
+  { name: "Red 300", value: "#ff8080", variable: "--gds-red-300" },
+  { name: "Red 400", value: "#ff4d4d", variable: "--gds-red-400" },
+  { name: "Red 500", value: "#FF0D0D", variable: "--gds-red-500", primary: true },
+  { name: "Red 600", value: "#cc0a0a", variable: "--gds-red-600" },
+  { name: "Red 700", value: "#990808", variable: "--gds-red-700" },
+  { name: "Red 800", value: "#660505", variable: "--gds-red-800" },
+  { name: "Red 900", value: "#4d0404", variable: "--gds-red-900" },
 ];
 
 const tealColors = [
-  { name: "Teal 50", value: "#ecfeff", variable: "--rds-teal-50" },
-  { name: "Teal 100", value: "#cffafe", variable: "--rds-teal-100" },
-  { name: "Teal 200", value: "#a5f3fc", variable: "--rds-teal-200" },
-  { name: "Teal 300", value: "#67e8f9", variable: "--rds-teal-300" },
-  { name: "Teal 400", value: "#22d3ee", variable: "--rds-teal-400" },
-  { name: "Teal 500", value: "#14b8a6", variable: "--rds-teal-500" },
-  { name: "Teal 600", value: "#0D7377", variable: "--rds-teal-600", primary: true },
-  { name: "Teal 700", value: "#0a5c5f", variable: "--rds-teal-700" },
-  { name: "Teal 800", value: "#084547", variable: "--rds-teal-800" },
-  { name: "Teal 900", value: "#052e2f", variable: "--rds-teal-900" },
+  { name: "Teal 50", value: "#ecfeff", variable: "--gds-teal-50" },
+  { name: "Teal 100", value: "#cffafe", variable: "--gds-teal-100" },
+  { name: "Teal 200", value: "#a5f3fc", variable: "--gds-teal-200" },
+  { name: "Teal 300", value: "#67e8f9", variable: "--gds-teal-300" },
+  { name: "Teal 400", value: "#22d3ee", variable: "--gds-teal-400" },
+  { name: "Teal 500", value: "#14b8a6", variable: "--gds-teal-500" },
+  { name: "Teal 600", value: "#0D7377", variable: "--gds-teal-600", primary: true },
+  { name: "Teal 700", value: "#0a5c5f", variable: "--gds-teal-700" },
+  { name: "Teal 800", value: "#084547", variable: "--gds-teal-800" },
+  { name: "Teal 900", value: "#052e2f", variable: "--gds-teal-900" },
 ];
 
 const navyColors = [
-  { name: "Navy 50", value: "#f0f5fa", variable: "--rds-navy-50" },
-  { name: "Navy 100", value: "#d9e4f0", variable: "--rds-navy-100" },
-  { name: "Navy 200", value: "#b3c9e0", variable: "--rds-navy-200" },
-  { name: "Navy 300", value: "#8daed1", variable: "--rds-navy-300" },
-  { name: "Navy 400", value: "#5c8bc2", variable: "--rds-navy-400" },
-  { name: "Navy 500", value: "#3a6ca3", variable: "--rds-navy-500" },
-  { name: "Navy 600", value: "#1E3A5F", variable: "--rds-navy-600", primary: true },
-  { name: "Navy 700", value: "#182e4c", variable: "--rds-navy-700" },
-  { name: "Navy 800", value: "#122339", variable: "--rds-navy-800" },
-  { name: "Navy 900", value: "#0c1726", variable: "--rds-navy-900" },
+  { name: "Navy 50", value: "#f0f5fa", variable: "--gds-navy-50" },
+  { name: "Navy 100", value: "#d9e4f0", variable: "--gds-navy-100" },
+  { name: "Navy 200", value: "#b3c9e0", variable: "--gds-navy-200" },
+  { name: "Navy 300", value: "#8daed1", variable: "--gds-navy-300" },
+  { name: "Navy 400", value: "#5c8bc2", variable: "--gds-navy-400" },
+  { name: "Navy 500", value: "#3a6ca3", variable: "--gds-navy-500" },
+  { name: "Navy 600", value: "#1E3A5F", variable: "--gds-navy-600", primary: true },
+  { name: "Navy 700", value: "#182e4c", variable: "--gds-navy-700" },
+  { name: "Navy 800", value: "#122339", variable: "--gds-navy-800" },
+  { name: "Navy 900", value: "#0c1726", variable: "--gds-navy-900" },
 ];
 
 const blueColors = [
-  { name: "Blue 50", value: "#e8f4fd", variable: "--rds-blue-50" },
-  { name: "Blue 100", value: "#c5e3fa", variable: "--rds-blue-100" },
-  { name: "Blue 200", value: "#90c9f6", variable: "--rds-blue-200" },
-  { name: "Blue 300", value: "#5bb0f1", variable: "--rds-blue-300" },
-  { name: "Blue 400", value: "#2196F3", variable: "--rds-blue-400", primary: true },
-  { name: "Blue 500", value: "#1976d2", variable: "--rds-blue-500" },
-  { name: "Blue 600", value: "#1565c0", variable: "--rds-blue-600" },
-  { name: "Blue 700", value: "#0d47a1", variable: "--rds-blue-700" },
-  { name: "Blue 800", value: "#0a3880", variable: "--rds-blue-800" },
-  { name: "Blue 900", value: "#072960", variable: "--rds-blue-900" },
+  { name: "Blue 50", value: "#e8f4fd", variable: "--gds-blue-50" },
+  { name: "Blue 100", value: "#c5e3fa", variable: "--gds-blue-100" },
+  { name: "Blue 200", value: "#90c9f6", variable: "--gds-blue-200" },
+  { name: "Blue 300", value: "#5bb0f1", variable: "--gds-blue-300" },
+  { name: "Blue 400", value: "#2196F3", variable: "--gds-blue-400", primary: true },
+  { name: "Blue 500", value: "#1976d2", variable: "--gds-blue-500" },
+  { name: "Blue 600", value: "#1565c0", variable: "--gds-blue-600" },
+  { name: "Blue 700", value: "#0d47a1", variable: "--gds-blue-700" },
+  { name: "Blue 800", value: "#0a3880", variable: "--gds-blue-800" },
+  { name: "Blue 900", value: "#072960", variable: "--gds-blue-900" },
 ];
 
 const grayColors = [
-  { name: "White", value: "#ffffff", variable: "--rds-white" },
-  { name: "Gray 50", value: "#fafafa", variable: "--rds-gray-50" },
-  { name: "Gray 100", value: "#f1f1f1", variable: "--rds-gray-100" },
-  { name: "Gray 200", value: "#e5e5e5", variable: "--rds-gray-200" },
-  { name: "Gray 400", value: "#a3a3a3", variable: "--rds-gray-400" },
-  { name: "Gray 600", value: "#525252", variable: "--rds-gray-600" },
-  { name: "Gray 800", value: "#262626", variable: "--rds-gray-800" },
-  { name: "Gray 900", value: "#171717", variable: "--rds-gray-900" },
-  { name: "Gray 950", value: "#0a0a0a", variable: "--rds-gray-950" },
-  { name: "Black", value: "#000000", variable: "--rds-black" },
+  { name: "White", value: "#ffffff", variable: "--gds-white" },
+  { name: "Gray 50", value: "#fafafa", variable: "--gds-gray-50" },
+  { name: "Gray 100", value: "#f1f1f1", variable: "--gds-gray-100" },
+  { name: "Gray 200", value: "#e5e5e5", variable: "--gds-gray-200" },
+  { name: "Gray 400", value: "#a3a3a3", variable: "--gds-gray-400" },
+  { name: "Gray 600", value: "#525252", variable: "--gds-gray-600" },
+  { name: "Gray 800", value: "#262626", variable: "--gds-gray-800" },
+  { name: "Gray 900", value: "#171717", variable: "--gds-gray-900" },
+  { name: "Gray 950", value: "#0a0a0a", variable: "--gds-gray-950" },
+  { name: "Black", value: "#000000", variable: "--gds-black" },
 ];
 
 function ColorSwatch({ name, value, variable, primary }: { name: string; value: string; variable: string; primary?: boolean }) {
@@ -164,9 +164,9 @@ export default function BrandPage() {
               <h3 className="text-lg font-medium mb-3">Wordmark</h3>
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="rounded-lg border p-8 flex items-center justify-center bg-white">
-                  <Logo variant="full" size="xl" className="text-rds-gray-900" />
+                  <Logo variant="full" size="xl" className="text-gds-gray-900" />
                 </div>
-                <div className="rounded-lg border p-8 flex items-center justify-center bg-rds-gray-950">
+                <div className="rounded-lg border p-8 flex items-center justify-center bg-gds-gray-950">
                   <Logo variant="full" size="xl" className="text-white" />
                 </div>
               </div>
@@ -189,12 +189,12 @@ export default function BrandPage() {
                     ))}
                   </div>
                 </div>
-                <div className="rounded-lg border p-8 bg-rds-gray-950">
+                <div className="rounded-lg border p-8 bg-gds-gray-950">
                   <div className="flex items-end gap-6">
                     {[48, 32, 24, 20, 16].map((size) => (
                       <div key={size} className="flex flex-col items-center gap-2">
                         <Logo variant="symbol" size={size <= 20 ? "xs" : size <= 28 ? "sm" : size <= 36 ? "md" : size <= 44 ? "lg" : "xl"} />
-                        <span className="text-xs text-rds-gray-400 font-mono">{size}px</span>
+                        <span className="text-xs text-gds-gray-400 font-mono">{size}px</span>
                       </div>
                     ))}
                   </div>
@@ -539,8 +539,8 @@ export default function BrandPage() {
             {/* Usage Classes */}
             <div>
               <h3 className="text-lg font-medium mb-3">CSS Classes</h3>
-              <div className="rounded-lg border bg-rds-gray-100 dark:bg-rds-gray-800 border-rds-gray-200 dark:border-transparent p-4 overflow-x-auto">
-                <pre className="text-sm text-rds-green-700 dark:text-rds-green-400 font-mono">
+              <div className="rounded-lg border bg-gds-gray-100 dark:bg-gds-gray-800 border-gds-gray-200 dark:border-transparent p-4 overflow-x-auto">
+                <pre className="text-sm text-gds-green-700 dark:text-gds-green-400 font-mono">
 {`/* Headings */
 .text-display  /* 60px, bold, tight tracking */
 .text-h1       /* 40px, bold */
@@ -764,8 +764,8 @@ export default function BrandPage() {
             {/* Usage */}
             <div>
               <h3 className="text-lg font-medium mb-3">Usage</h3>
-              <div className="rounded-lg border bg-rds-gray-100 dark:bg-rds-gray-800 border-rds-gray-200 dark:border-transparent p-4 overflow-x-auto">
-                <pre className="text-sm text-rds-green-700 dark:text-rds-green-400 font-mono">
+              <div className="rounded-lg border bg-gds-gray-100 dark:bg-gds-gray-800 border-gds-gray-200 dark:border-transparent p-4 overflow-x-auto">
+                <pre className="text-sm text-gds-green-700 dark:text-gds-green-400 font-mono">
 {`import { Zap, Sun, Moon, Battery } from "lucide-react"
 
 // Default size (24px)

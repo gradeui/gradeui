@@ -13,7 +13,7 @@
  *   /public/index.html     — host page with Tailwind CDN + theme vars
  *   /src/index.tsx         — React entry
  *   /src/App.tsx           — user snippet with imports rewritten to @gradeui/ui
- *   /src/styles.css        — reset + rds-neutral bg
+ *   /src/styles.css        — reset + gds-neutral bg
  *
  * We deliberately keep Tailwind on the CDN (just like the Sandpack preview)
  * so the sandbox starts without waiting on a Tailwind build step. The CSS

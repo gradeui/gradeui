@@ -11,163 +11,163 @@
      Brand Colors - Neon Green (Primary)
      The signature RDS green
      ---------------------------------------- */
-  --rds-green: #00FF84;
-  --rds-green-50: #ecfff5;
-  --rds-green-100: #d1ffea;
-  --rds-green-200: #a6ffd6;
-  --rds-green-300: #6affbd;
-  --rds-green-400: #2bff9e;
-  --rds-green-500: #00FF84; /* Primary brand green */
-  --rds-green-600: #00cc6a;
-  --rds-green-700: #009950;
-  --rds-green-800: #007a40;
-  --rds-green-900: #006636;
-  --rds-green-950: #00331b;
+  --gds-green: #00FF84;
+  --gds-green-50: #ecfff5;
+  --gds-green-100: #d1ffea;
+  --gds-green-200: #a6ffd6;
+  --gds-green-300: #6affbd;
+  --gds-green-400: #2bff9e;
+  --gds-green-500: #00FF84; /* Primary brand green */
+  --gds-green-600: #00cc6a;
+  --gds-green-700: #009950;
+  --gds-green-800: #007a40;
+  --gds-green-900: #006636;
+  --gds-green-950: #00331b;
 
   /* ----------------------------------------
      Brand Colors - Yellow (Energy/Accent)
      ---------------------------------------- */
-  --rds-yellow: #FFD500;
-  --rds-yellow-50: #fffce8;
-  --rds-yellow-100: #fff8c2;
-  --rds-yellow-200: #fff089;
-  --rds-yellow-300: #ffe545;
-  --rds-yellow-400: #FFD500; /* Primary energy yellow */
-  --rds-yellow-500: #e6c000;
-  --rds-yellow-600: #cc9f00;
-  --rds-yellow-700: #a37700;
-  --rds-yellow-800: #865c00;
-  --rds-yellow-900: #704b00;
+  --gds-yellow: #FFD500;
+  --gds-yellow-50: #fffce8;
+  --gds-yellow-100: #fff8c2;
+  --gds-yellow-200: #fff089;
+  --gds-yellow-300: #ffe545;
+  --gds-yellow-400: #FFD500; /* Primary energy yellow */
+  --gds-yellow-500: #e6c000;
+  --gds-yellow-600: #cc9f00;
+  --gds-yellow-700: #a37700;
+  --gds-yellow-800: #865c00;
+  --gds-yellow-900: #704b00;
 
   /* ----------------------------------------
      Brand Colors - Orange (Warning)
      ---------------------------------------- */
-  --rds-orange: #FF6B00;
-  --rds-orange-50: #fff5eb;
-  --rds-orange-100: #ffe6cc;
-  --rds-orange-200: #ffc999;
-  --rds-orange-300: #ffa866;
-  --rds-orange-400: #ff8533;
-  --rds-orange-500: #FF6B00; /* Primary orange */
-  --rds-orange-600: #cc5600;
-  --rds-orange-700: #994000;
-  --rds-orange-800: #662b00;
-  --rds-orange-900: #4d2000;
+  --gds-orange: #FF6B00;
+  --gds-orange-50: #fff5eb;
+  --gds-orange-100: #ffe6cc;
+  --gds-orange-200: #ffc999;
+  --gds-orange-300: #ffa866;
+  --gds-orange-400: #ff8533;
+  --gds-orange-500: #FF6B00; /* Primary orange */
+  --gds-orange-600: #cc5600;
+  --gds-orange-700: #994000;
+  --gds-orange-800: #662b00;
+  --gds-orange-900: #4d2000;
 
   /* ----------------------------------------
      Brand Colors - Red (Error/Destructive)
      ---------------------------------------- */
-  --rds-red: #FF0D0D;
-  --rds-red-50: #fff0f0;
-  --rds-red-100: #ffd9d9;
-  --rds-red-200: #ffb3b3;
-  --rds-red-300: #ff8080;
-  --rds-red-400: #ff4d4d;
-  --rds-red-500: #FF0D0D; /* Primary red */
-  --rds-red-600: #cc0a0a;
-  --rds-red-700: #990808;
-  --rds-red-800: #660505;
-  --rds-red-900: #4d0404;
+  --gds-red: #FF0D0D;
+  --gds-red-50: #fff0f0;
+  --gds-red-100: #ffd9d9;
+  --gds-red-200: #ffb3b3;
+  --gds-red-300: #ff8080;
+  --gds-red-400: #ff4d4d;
+  --gds-red-500: #FF0D0D; /* Primary red */
+  --gds-red-600: #cc0a0a;
+  --gds-red-700: #990808;
+  --gds-red-800: #660505;
+  --gds-red-900: #4d0404;
 
   /* ----------------------------------------
      Brand Colors - Teal (Energetic Teal)
      Adjusted for light/dark mode
      ---------------------------------------- */
-  --rds-teal: #0D7377;
-  --rds-teal-50: #ecfeff;
-  --rds-teal-100: #cffafe;
-  --rds-teal-200: #a5f3fc;
-  --rds-teal-300: #67e8f9;
-  --rds-teal-400: #22d3ee;
-  --rds-teal-500: #14b8a6;
-  --rds-teal-600: #0D7377; /* Primary energetic teal */
-  --rds-teal-700: #0a5c5f;
-  --rds-teal-800: #084547;
-  --rds-teal-900: #052e2f;
-  --rds-teal-950: #021717;
+  --gds-teal: #0D7377;
+  --gds-teal-50: #ecfeff;
+  --gds-teal-100: #cffafe;
+  --gds-teal-200: #a5f3fc;
+  --gds-teal-300: #67e8f9;
+  --gds-teal-400: #22d3ee;
+  --gds-teal-500: #14b8a6;
+  --gds-teal-600: #0D7377; /* Primary energetic teal */
+  --gds-teal-700: #0a5c5f;
+  --gds-teal-800: #084547;
+  --gds-teal-900: #052e2f;
+  --gds-teal-950: #021717;
 
   /* ----------------------------------------
      Brand Colors - Navy (Deep Blue)
      ---------------------------------------- */
-  --rds-navy: #1E3A5F;
-  --rds-navy-50: #f0f5fa;
-  --rds-navy-100: #d9e4f0;
-  --rds-navy-200: #b3c9e0;
-  --rds-navy-300: #8daed1;
-  --rds-navy-400: #5c8bc2;
-  --rds-navy-500: #3a6ca3;
-  --rds-navy-600: #1E3A5F; /* Primary navy */
-  --rds-navy-700: #182e4c;
-  --rds-navy-800: #122339;
-  --rds-navy-900: #0c1726;
+  --gds-navy: #1E3A5F;
+  --gds-navy-50: #f0f5fa;
+  --gds-navy-100: #d9e4f0;
+  --gds-navy-200: #b3c9e0;
+  --gds-navy-300: #8daed1;
+  --gds-navy-400: #5c8bc2;
+  --gds-navy-500: #3a6ca3;
+  --gds-navy-600: #1E3A5F; /* Primary navy */
+  --gds-navy-700: #182e4c;
+  --gds-navy-800: #122339;
+  --gds-navy-900: #0c1726;
 
   /* ----------------------------------------
      Brand Colors - Blue (Info)
      ---------------------------------------- */
-  --rds-blue: #2196F3;
-  --rds-blue-50: #e8f4fd;
-  --rds-blue-100: #c5e3fa;
-  --rds-blue-200: #90c9f6;
-  --rds-blue-300: #5bb0f1;
-  --rds-blue-400: #2196F3; /* Primary blue */
-  --rds-blue-500: #1976d2;
-  --rds-blue-600: #1565c0;
-  --rds-blue-700: #0d47a1;
-  --rds-blue-800: #0a3880;
-  --rds-blue-900: #072960;
+  --gds-blue: #2196F3;
+  --gds-blue-50: #e8f4fd;
+  --gds-blue-100: #c5e3fa;
+  --gds-blue-200: #90c9f6;
+  --gds-blue-300: #5bb0f1;
+  --gds-blue-400: #2196F3; /* Primary blue */
+  --gds-blue-500: #1976d2;
+  --gds-blue-600: #1565c0;
+  --gds-blue-700: #0d47a1;
+  --gds-blue-800: #0a3880;
+  --gds-blue-900: #072960;
 
   /* ----------------------------------------
      Neutral Colors - Gray Scale (from Figma)
      ---------------------------------------- */
-  --rds-black: #000000;
-  --rds-gray-950: #0a0a0a;
-  --rds-gray-900: #171717;
-  --rds-gray-800: #262626;
-  --rds-gray-700: #3d3d3d;
-  --rds-gray-600: #525252;
-  --rds-gray-500: #737373;
-  --rds-gray-400: #a3a3a3;
-  --rds-gray-300: #d4d4d4;
-  --rds-gray-200: #e5e5e5;
-  --rds-gray-100: #f1f1f1;
-  --rds-gray-50: #fafafa;
-  --rds-white: #ffffff;
+  --gds-black: #000000;
+  --gds-gray-950: #0a0a0a;
+  --gds-gray-900: #171717;
+  --gds-gray-800: #262626;
+  --gds-gray-700: #3d3d3d;
+  --gds-gray-600: #525252;
+  --gds-gray-500: #737373;
+  --gds-gray-400: #a3a3a3;
+  --gds-gray-300: #d4d4d4;
+  --gds-gray-200: #e5e5e5;
+  --gds-gray-100: #f1f1f1;
+  --gds-gray-50: #fafafa;
+  --gds-white: #ffffff;
 
   /* ----------------------------------------
      Semantic Colors (Light Mode)
      ---------------------------------------- */
-  --rds-success: var(--rds-green-600);
-  --rds-warning: var(--rds-orange-500);
-  --rds-error: var(--rds-red-500);
-  --rds-info: var(--rds-blue-400);
-  --rds-energy: var(--rds-yellow-400);
-  --rds-teal-semantic: var(--rds-teal-700); /* Darker for light mode */
+  --gds-success: var(--gds-green-600);
+  --gds-warning: var(--gds-orange-500);
+  --gds-error: var(--gds-red-500);
+  --gds-info: var(--gds-blue-400);
+  --gds-energy: var(--gds-yellow-400);
+  --gds-teal-semantic: var(--gds-teal-700); /* Darker for light mode */
 
   /* ----------------------------------------
      Spacing Scale
      ---------------------------------------- */
-  --rds-space-1: 0.25rem;  /* 4px */
-  --rds-space-2: 0.5rem;   /* 8px */
-  --rds-space-3: 0.75rem;  /* 12px */
-  --rds-space-4: 1rem;     /* 16px */
-  --rds-space-5: 1.25rem;  /* 20px */
-  --rds-space-6: 1.5rem;   /* 24px */
-  --rds-space-8: 2rem;     /* 32px */
-  --rds-space-10: 2.5rem;  /* 40px */
-  --rds-space-12: 3rem;    /* 48px */
-  --rds-space-16: 4rem;    /* 64px */
-  --rds-space-20: 5rem;    /* 80px */
-  --rds-space-24: 6rem;    /* 96px */
+  --gds-space-1: 0.25rem;  /* 4px */
+  --gds-space-2: 0.5rem;   /* 8px */
+  --gds-space-3: 0.75rem;  /* 12px */
+  --gds-space-4: 1rem;     /* 16px */
+  --gds-space-5: 1.25rem;  /* 20px */
+  --gds-space-6: 1.5rem;   /* 24px */
+  --gds-space-8: 2rem;     /* 32px */
+  --gds-space-10: 2.5rem;  /* 40px */
+  --gds-space-12: 3rem;    /* 48px */
+  --gds-space-16: 4rem;    /* 64px */
+  --gds-space-20: 5rem;    /* 80px */
+  --gds-space-24: 6rem;    /* 96px */
 
   /* ----------------------------------------
      Border Radius
      ---------------------------------------- */
-  --rds-radius-sm: 0.25rem;   /* 4px */
-  --rds-radius-md: 0.5rem;    /* 8px */
-  --rds-radius-lg: 0.75rem;   /* 12px */
-  --rds-radius-xl: 1rem;      /* 16px */
-  --rds-radius-2xl: 1.5rem;   /* 24px */
-  --rds-radius-full: 9999px;
+  --gds-radius-sm: 0.25rem;   /* 4px */
+  --gds-radius-md: 0.5rem;    /* 8px */
+  --gds-radius-lg: 0.75rem;   /* 12px */
+  --gds-radius-xl: 1rem;      /* 16px */
+  --gds-radius-2xl: 1.5rem;   /* 24px */
+  --gds-radius-full: 9999px;
 
   /* ============================================
      ELEVATION SYSTEM
@@ -267,16 +267,16 @@
 
   /* ----------------------------------------
      Legacy shadow tokens — repointed onto the elevation system so call
-     sites that read `--rds-shadow-*` directly inherit the new look
+     sites that read `--gds-shadow-*` directly inherit the new look
      without a code change. Kept here as a compatibility shim; new code
      should prefer the elevation tokens above.
      ---------------------------------------- */
-  --rds-shadow-sm: var(--elevation-1);
-  --rds-shadow-md: var(--elevation-4);
-  --rds-shadow-lg: var(--elevation-5);
-  --rds-shadow-xl: var(--elevation-5);
-  --rds-shadow-2xl: var(--elevation-5);
-  --rds-shadow-inner: var(--shadow-pressed-bevel);
+  --gds-shadow-sm: var(--elevation-1);
+  --gds-shadow-md: var(--elevation-4);
+  --gds-shadow-lg: var(--elevation-5);
+  --gds-shadow-xl: var(--elevation-5);
+  --gds-shadow-2xl: var(--elevation-5);
+  --gds-shadow-inner: var(--shadow-pressed-bevel);
 
   /* ============================================
      SURFACE SYSTEM
@@ -320,13 +320,13 @@
      attention, generation-in-progress, selection focus. Three
      composable styles: ring (pulsing outer shadow), gradient
      (rotating conic border), shimmer (diagonal sweep). They stack —
-     `.rds-aura-ring.rds-aura-shimmer` runs both passes.
+     `.gds-aura-ring.gds-aura-shimmer` runs both passes.
 
      Per-style timing & easing vars are overridable at the consumer
      level, so a heavyweight button can slow its pulse without
      rewriting keyframes:
 
-       <Button className="rds-aura-ring"
+       <Button className="gds-aura-ring"
                style={{ '--aura-pulse-duration': '3.2s' }} />
 
      Color defaults to --selected-glow (blue, themed). Override
@@ -424,14 +424,14 @@
   /* ----------------------------------------
      Animation
      ---------------------------------------- */
-  --rds-transition-fast: 150ms;
-  --rds-transition-base: 200ms;
-  --rds-transition-slow: 300ms;
-  --rds-transition-slower: 500ms;
+  --gds-transition-fast: 150ms;
+  --gds-transition-base: 200ms;
+  --gds-transition-slow: 300ms;
+  --gds-transition-slower: 500ms;
 
-  --rds-ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --rds-ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --rds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --gds-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --gds-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --gds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ----------------------------------------
      Semantic Tokens (OKLCH) — CALM DEFAULTS.
@@ -485,7 +485,7 @@
      (image-not-yet-loaded slots, scaffolds without real photos, layouts
      waiting on the image-generation pipeline). Defined here as a token
      pair so themes can override per-brand and consumers can roll their
-     own placeholder UI with `background: var(--rds-media-placeholder-bg)`.
+     own placeholder UI with `background: var(--gds-media-placeholder-bg)`.
      Defaults to the secondary surface so it reads visibly distinct from
      `bg-card` and `bg-background` while staying neutral (not brand-loud).
      Resolves dynamically against the active mode because var(--secondary)
@@ -495,45 +495,45 @@
      produced a "half-cooked" look where the icon and caption faded into the
      surface. Solid muted-foreground reads as "intentional placeholder
      colour", not "loading half-way". */
-  --rds-media-placeholder-bg: oklch(var(--muted));
-  --rds-media-placeholder-fg: oklch(var(--muted-foreground));
+  --gds-media-placeholder-bg: oklch(var(--muted));
+  --gds-media-placeholder-fg: oklch(var(--muted-foreground));
 
   /* Sidebar knobs — the width pair drives the collapsed/expanded animation
      on `<Sidebar>` (compound nav primitive). Header height + section
      padding + per-section gap are exposed so consumers can retune density
      without prop drilling. */
-  --rds-sidebar-width: 16rem;
-  --rds-sidebar-collapsed-width: 4rem;
-  --rds-sidebar-header-height: 3.25rem;
-  --rds-sidebar-content-py: 0.5rem;
-  --rds-sidebar-section-px: 0.5rem;
-  --rds-sidebar-section-gap: 0.125rem;
+  --gds-sidebar-width: 16rem;
+  --gds-sidebar-collapsed-width: 4rem;
+  --gds-sidebar-header-height: 3.25rem;
+  --gds-sidebar-content-py: 0.5rem;
+  --gds-sidebar-section-px: 0.5rem;
+  --gds-sidebar-section-gap: 0.125rem;
 
   /* Carousel knobs — every visual dimension of <Carousel> is driven from
      this stanza so consumers can re-skin the slideshow (dot shape, arrow
      chrome, transition feel) without prop-drilling. The component reads
-     these as `var(--rds-carousel-* , <fallback>)` so missing values are
+     these as `var(--gds-carousel-* , <fallback>)` so missing values are
      safe. */
-  --rds-carousel-gap: 0;
-  --rds-carousel-radius: var(--rds-media-radius, 0.5rem);
-  --rds-carousel-fade-ms: 200ms;
-  --rds-carousel-slide-basis: 100%;
+  --gds-carousel-gap: 0;
+  --gds-carousel-radius: var(--gds-media-radius, 0.5rem);
+  --gds-carousel-fade-ms: 200ms;
+  --gds-carousel-slide-basis: 100%;
   /* Dots */
-  --rds-carousel-dot-size: 0.5rem;
-  --rds-carousel-dot-active-width: 1.25rem;
-  --rds-carousel-dot-color: oklch(var(--muted-foreground) / 0.4);
-  --rds-carousel-dot-active-color: oklch(var(--primary));
-  --rds-carousel-dots-gap: 0.75rem;        /* between viewport and below-dots */
-  --rds-carousel-dots-spacing: 0.5rem;     /* between adjacent dots */
-  --rds-carousel-dots-inset: 0.75rem;      /* overlay position from bottom */
+  --gds-carousel-dot-size: 0.5rem;
+  --gds-carousel-dot-active-width: 1.25rem;
+  --gds-carousel-dot-color: oklch(var(--muted-foreground) / 0.4);
+  --gds-carousel-dot-active-color: oklch(var(--primary));
+  --gds-carousel-dots-gap: 0.75rem;        /* between viewport and below-dots */
+  --gds-carousel-dots-spacing: 0.5rem;     /* between adjacent dots */
+  --gds-carousel-dots-inset: 0.75rem;      /* overlay position from bottom */
   /* Arrows */
-  --rds-carousel-arrow-size: 2.25rem;
-  --rds-carousel-arrow-inset: 0.75rem;
-  --rds-carousel-arrow-bg: oklch(var(--background) / 0.85);
-  --rds-carousel-arrow-hover-bg: oklch(var(--background));
-  --rds-carousel-arrow-fg: oklch(var(--foreground));
-  --rds-carousel-arrow-backdrop: blur(6px);
-  --rds-carousel-arrow-shadow: 0 2px 8px oklch(0 0 0 / 0.12);
+  --gds-carousel-arrow-size: 2.25rem;
+  --gds-carousel-arrow-inset: 0.75rem;
+  --gds-carousel-arrow-bg: oklch(var(--background) / 0.85);
+  --gds-carousel-arrow-hover-bg: oklch(var(--background));
+  --gds-carousel-arrow-fg: oklch(var(--foreground));
+  --gds-carousel-arrow-backdrop: blur(6px);
+  --gds-carousel-arrow-shadow: 0 2px 8px oklch(0 0 0 / 0.12);
 
   /* Alert surface pairs — paler tinted surface + readable deep text for each
      status colour. Pre-hydration fallbacks; the JS theme pipeline overwrites
@@ -617,11 +617,11 @@
 
 /* ============================================
    ENERGY THEME — scoped overrides.
-   Engaged when data-ramp-theme="energy" is set on :root (either by the
+   Engaged when data-grade-theme="energy" is set on :root (either by the
    pre-hydration inline script or GradeThemeProvider). Mirrors the Energy
    built-in (hues all at 175, teal primary, Geist sans).
    ============================================ */
-:root[data-ramp-theme="energy"] {
+:root[data-grade-theme="energy"] {
   --background: 0.985 0.0012 175;           /* neutral 50 */
   --foreground: 0.170 0.0032 175;           /* neutral 950 */
   --card: 1 0 0;
@@ -645,7 +645,7 @@
   --font-display: var(--font-geist), system-ui, sans-serif;
 }
 
-.dark[data-ramp-theme="energy"] {
+.dark[data-grade-theme="energy"] {
   --background: 0.170 0.0032 175;
   --foreground: 0.985 0.0012 175;
   --card: 0.245 0.0064 175;
@@ -708,26 +708,26 @@
    JSX doesn't matter; each slot has a fixed grid-area class assignment.
    ============================================ */
 
-.rds-app-shell-header { grid-area: header; }
-.rds-app-shell-nav    { grid-area: nav; }
-.rds-app-shell-aside  { grid-area: aside; }
-.rds-app-shell-main   { grid-area: main; }
-.rds-app-shell-footer { grid-area: footer; }
+.gds-app-shell-header { grid-area: header; }
+.gds-app-shell-nav    { grid-area: nav; }
+.gds-app-shell-aside  { grid-area: aside; }
+.gds-app-shell-main   { grid-area: main; }
+.gds-app-shell-footer { grid-area: footer; }
 
 /* nav="none" — Header / Main / Footer stacked vertically. */
-.rds-app-shell[data-nav="none"] {
+.gds-app-shell[data-nav="none"] {
   grid-template-areas: "header" "main" "footer";
   grid-template-rows: auto 1fr auto;
 }
 
 /* nav="top" — Header (site chrome), then in-app top nav, then Main. */
-.rds-app-shell[data-nav="top"] {
+.gds-app-shell[data-nav="top"] {
   grid-template-areas: "header" "nav" "main" "footer";
   grid-template-rows: auto auto 1fr auto;
 }
 
 /* nav="side" — Header full width, Nav rail + Main below, Footer full width. */
-.rds-app-shell[data-nav="side"] {
+.gds-app-shell[data-nav="side"] {
   grid-template-areas:
     "header header"
     "nav    main"
@@ -737,16 +737,16 @@
 }
 
 /* nav="three-pane" — Header full width, Nav rail + fixed Aside + flex Main,
-   Footer full width. Aside width is set by --rds-app-shell-aside (default
+   Footer full width. Aside width is set by --gds-app-shell-aside (default
    320px) so callers can override per-screen via inline style or a parent
    class without forking the component. */
-.rds-app-shell[data-nav="three-pane"] {
+.gds-app-shell[data-nav="three-pane"] {
   grid-template-areas:
     "header header header"
     "nav    aside  main"
     "footer footer footer";
   grid-template-rows: auto 1fr auto;
-  grid-template-columns: auto var(--rds-app-shell-aside, 320px) 1fr;
+  grid-template-columns: auto var(--gds-app-shell-aside, 320px) 1fr;
 }
 
 /* ============================================
@@ -757,38 +757,38 @@
    ============================================ */
 
 /* Card styles */
-[data-card-style="outlined"] .rds-card {
+[data-card-style="outlined"] .gds-card {
   box-shadow: none;
 }
 
-[data-card-style="flat"] .rds-card {
+[data-card-style="flat"] .gds-card {
   box-shadow: none;
   border-color: transparent;
   background-color: oklch(var(--muted));
 }
 
-[data-card-style="elevated"] .rds-card {
-  box-shadow: var(--rds-shadow-lg);
+[data-card-style="elevated"] .gds-card {
+  box-shadow: var(--gds-shadow-lg);
   border-color: transparent;
 }
 
-[data-card-style="glass"] .rds-card {
+[data-card-style="glass"] .gds-card {
   background-color: oklch(var(--card) / 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-color: oklch(var(--border) / 0.5);
-  box-shadow: var(--rds-shadow-md);
+  box-shadow: var(--gds-shadow-md);
 }
 
 /* Button shapes — themes can set buttonShape: "pill" | "square" | "sharp".
    The Button component's radius comes from --radius (shadcn), so we override
-   border-radius directly on the rds-button class when a shape is set. */
-[data-button-shape="pill"] .rds-button {
+   border-radius directly on the gds-button class when a shape is set. */
+[data-button-shape="pill"] .gds-button {
   border-radius: 9999px;
 }
 
-[data-button-shape="square"] .rds-button,
-[data-button-shape="sharp"] .rds-button {
+[data-button-shape="square"] .gds-button,
+[data-button-shape="sharp"] .gds-button {
   border-radius: 0;
 }
 
@@ -803,7 +803,7 @@
    Tabs and Toggle pick this up too via the same data-state / aria
    selectors below — TabsTrigger emits `data-state="active"`, Toggle
    emits `data-state="on"`, both listed. */
-.rds-button-raised {
+.gds-button-raised {
   --btn-glow: var(--selected-glow);
 
   background-color: oklch(var(--secondary));
@@ -812,24 +812,24 @@
   box-shadow: var(--elevation-3);
 
   transition:
-    box-shadow var(--rds-transition-base) var(--rds-ease-out),
-    transform var(--rds-transition-fast) var(--rds-ease-out),
-    background-color var(--rds-transition-base) var(--rds-ease-out);
+    box-shadow var(--gds-transition-base) var(--gds-ease-out),
+    transform var(--gds-transition-fast) var(--gds-ease-out),
+    background-color var(--gds-transition-base) var(--gds-ease-out);
 }
 
-.rds-button-raised:hover {
+.gds-button-raised:hover {
   box-shadow: var(--elevation-hot);
 }
 
-.rds-button-raised:active {
+.gds-button-raised:active {
   transform: translateY(1px);
   box-shadow: var(--elevation-pressed);
 }
 
-.rds-button-raised[data-state="on"],
-.rds-button-raised[data-state="active"],
-.rds-button-raised[aria-pressed="true"],
-.rds-button-raised[data-selected="true"] {
+.gds-button-raised[data-state="on"],
+.gds-button-raised[data-state="active"],
+.gds-button-raised[aria-pressed="true"],
+.gds-button-raised[data-selected="true"] {
   background-color: oklch(var(--selected) / 0.18);
   color: oklch(var(--foreground));
   box-shadow:
@@ -841,7 +841,7 @@
     var(--shadow-lift);
 }
 
-.rds-button-raised:focus-visible {
+.gds-button-raised:focus-visible {
   outline: none;
   box-shadow:
     var(--shadow-bevel-hi),
@@ -855,20 +855,20 @@
    SURFACE CLASSES
    ============================================
    Apply one to any container. Composes with elevation classes —
-   `<div class="rds-surface-glass shadow-elevation-4">` is a glass
+   `<div class="gds-surface-glass shadow-elevation-4">` is a glass
    popover sitting at popover elevation, no conflict.
 
    --card is theme-aware, so each theme automatically gets its own
    "frosted X" tint without per-theme overrides. */
-.rds-surface-solid {
+.gds-surface-solid {
   background-color: var(--surface-solid);
 }
 
-.rds-surface-translucent {
+.gds-surface-translucent {
   background-color: var(--surface-translucent);
 }
 
-.rds-surface-glass {
+.gds-surface-glass {
   background-color: var(--surface-glass);
   backdrop-filter: blur(var(--surface-blur-glass));
   -webkit-backdrop-filter: blur(var(--surface-blur-glass));
@@ -876,7 +876,7 @@
   box-shadow: var(--surface-edge);
 }
 
-.rds-surface-glass-strong {
+.gds-surface-glass-strong {
   background-color: var(--surface-glass-strong);
   backdrop-filter: blur(var(--surface-blur-strong));
   -webkit-backdrop-filter: blur(var(--surface-blur-strong));
@@ -887,12 +887,12 @@
 /* ============================================
    AURA — RING (pulsing outer halo)
    ============================================
-   Apply `.rds-aura-ring` to any element. Animation duration & easing
+   Apply `.gds-aura-ring` to any element. Animation duration & easing
    are CSS vars (`--aura-pulse-duration`, `--aura-pulse-ease`) — set
    them at the consumer level to retune without rewriting keyframes.
    Tone defaults to --aura-color (= --selected-glow); override per
    element for danger / success attention. */
-@keyframes rds-aura-pulse {
+@keyframes gds-aura-pulse {
   0%, 100% {
     box-shadow:
       0 0 0 0 oklch(var(--aura-color) / var(--aura-ring-alpha-min)),
@@ -905,8 +905,8 @@
   }
 }
 
-.rds-aura-ring {
-  animation: rds-aura-pulse var(--aura-pulse-duration) var(--aura-pulse-ease) infinite;
+.gds-aura-ring {
+  animation: gds-aura-pulse var(--aura-pulse-duration) var(--aura-pulse-ease) infinite;
 }
 
 /* ============================================
@@ -922,16 +922,16 @@
   inherits: false;
 }
 
-@keyframes rds-aura-gradient-spin {
+@keyframes gds-aura-gradient-spin {
   to { --aura-gradient-angle: 360deg; }
 }
 
-.rds-aura-gradient {
+.gds-aura-gradient {
   position: relative;
   isolation: isolate;
 }
 
-.rds-aura-gradient::before {
+.gds-aura-gradient::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -955,7 +955,7 @@
     linear-gradient(#000 0 0);
           mask-composite: exclude;
   pointer-events: none;
-  animation: rds-aura-gradient-spin var(--aura-gradient-duration) var(--aura-gradient-ease) infinite;
+  animation: gds-aura-gradient-spin var(--aura-gradient-duration) var(--aura-gradient-ease) infinite;
 }
 
 /* ============================================
@@ -966,7 +966,7 @@
    sweep clips to the element's shape. Uses background-position rather
    than transform so it composites cheaply with the gradient + ring
    layers. */
-@keyframes rds-aura-shimmer-sweep {
+@keyframes gds-aura-shimmer-sweep {
   0%   { background-position: -150% 0; opacity: 0; }
   8%   { opacity: var(--aura-shimmer-alpha); }
   60%  { background-position: 250% 0; opacity: var(--aura-shimmer-alpha); }
@@ -974,13 +974,13 @@
   100% { background-position: 250% 0; opacity: 0; }
 }
 
-.rds-aura-shimmer {
+.gds-aura-shimmer {
   position: relative;
   overflow: hidden;
   isolation: isolate;
 }
 
-.rds-aura-shimmer::after {
+.gds-aura-shimmer::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -994,7 +994,7 @@
   background-size: var(--aura-shimmer-width) 200%;
   background-repeat: no-repeat;
   pointer-events: none;
-  animation: rds-aura-shimmer-sweep
+  animation: gds-aura-shimmer-sweep
     calc(var(--aura-shimmer-duration) + var(--aura-shimmer-delay-between))
     var(--aura-shimmer-ease) infinite;
 }
@@ -1002,12 +1002,12 @@
 /* Reduce-motion: aura animations are decorative. Honor the user's
    pref by holding at the "peak" frame instead of animating. */
 @media (prefers-reduced-motion: reduce) {
-  .rds-aura-ring,
-  .rds-aura-gradient::before,
-  .rds-aura-shimmer::after {
+  .gds-aura-ring,
+  .gds-aura-gradient::before,
+  .gds-aura-shimmer::after {
     animation: none;
   }
-  .rds-aura-ring {
+  .gds-aura-ring {
     box-shadow:
       0 0 0 var(--aura-ring-spread) oklch(var(--aura-color) / calc(var(--aura-ring-alpha-max) * 0.6)),
       0 0 var(--aura-ring-blur) 0 oklch(var(--aura-color) / calc(var(--aura-ring-alpha-max) * 0.4));

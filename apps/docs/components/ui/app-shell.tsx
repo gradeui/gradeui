@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
  * - `top`         — Main below an in-app top-nav row (TopMenu)
  * - `side`        — Nav rail + Main (classic app layout)
  * - `three-pane`  — Nav rail + fixed Aside + flex Main (Slack/Mail/Notion
- *                   shape; aside width via --rds-app-shell-aside, default 320px)
+ *                   shape; aside width via --gds-app-shell-aside, default 320px)
  *
  * Each slot is assigned a fixed `grid-area` (header/nav/aside/main/footer),
  * so the **JSX child order doesn't matter** — drop slots in any order and
@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
  * - `sticky`    — Nav slot, Header slot. Pin to the viewport on scroll.
  */
 const shellVariants = cva(
-  "rds-app-shell min-h-screen w-full bg-background text-foreground grid",
+  "gds-app-shell min-h-screen w-full bg-background text-foreground grid",
   {
     variants: {
       nav: {
@@ -55,7 +55,7 @@ const shellVariants = cva(
   }
 );
 
-const headerVariants = cva("rds-app-shell-header", {
+const headerVariants = cva("gds-app-shell-header", {
   variants: {
     sticky: {
       true: "sticky top-0 z-30",
@@ -67,7 +67,7 @@ const headerVariants = cva("rds-app-shell-header", {
   },
 });
 
-const navVariants = cva("rds-app-shell-nav", {
+const navVariants = cva("gds-app-shell-nav", {
   variants: {
     placement: {
       top: "border-b bg-background",
@@ -97,7 +97,7 @@ const navVariants = cva("rds-app-shell-nav", {
   },
 });
 
-const asideVariants = cva("rds-app-shell-aside min-w-0 border-r bg-background", {
+const asideVariants = cva("gds-app-shell-aside min-w-0 border-r bg-background", {
   variants: {
     sticky: {
       true: "sticky top-0 h-screen self-start",
@@ -109,7 +109,7 @@ const asideVariants = cva("rds-app-shell-aside min-w-0 border-r bg-background", 
   },
 });
 
-const mainVariants = cva("rds-app-shell-main min-w-0", {
+const mainVariants = cva("gds-app-shell-main min-w-0", {
   variants: {
     maxWidth: {
       full: "w-full",
@@ -121,7 +121,7 @@ const mainVariants = cva("rds-app-shell-main min-w-0", {
   },
 });
 
-const footerVariants = cva("rds-app-shell-footer border-t bg-background");
+const footerVariants = cva("gds-app-shell-footer border-t bg-background");
 
 // ---------- AppShell root ----------
 

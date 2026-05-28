@@ -218,26 +218,26 @@ ${chartRows.map((r) => `| \`--chart-${r.slot}\` | \`${r.triplet}\` | \`${r.hex}\
 | Step | Value |
 |------|-------|
 | \`--radius\` (base) | \`${radius.base}\` |
-| \`--rds-radius-sm\` | \`${radius.sm}\` |
-| \`--rds-radius-md\` | \`${radius.md}\` |
-| \`--rds-radius-lg\` | \`${radius.lg}\` |
-| \`--rds-radius-xl\` | \`${radius.xl}\` |
-| \`--rds-radius-2xl\` | \`${radius["2xl"]}\` |
-| \`--rds-radius-full\` | \`${radius.full}\` |
+| \`--gds-radius-sm\` | \`${radius.sm}\` |
+| \`--gds-radius-md\` | \`${radius.md}\` |
+| \`--gds-radius-lg\` | \`${radius.lg}\` |
+| \`--gds-radius-xl\` | \`${radius.xl}\` |
+| \`--gds-radius-2xl\` | \`${radius["2xl"]}\` |
+| \`--gds-radius-full\` | \`${radius.full}\` |
 
 ### Spacing
 
-- **Density factor**: \`${spacing.densityFactor}\` (applied as \`var(--rds-density)\` on components that opt in)
+- **Density factor**: \`${spacing.densityFactor}\` (applied as \`var(--gds-density)\` on components that opt in)
 - **Base unit**: \`${spacing.baseUnit}\`
 
 ### Motion
 
 | Var | Duration |
 |-----|----------|
-| \`--rds-transition-fast\` | \`${effects.motion.fast}\` |
-| \`--rds-transition-base\` | \`${effects.motion.base}\` |
-| \`--rds-transition-slow\` | \`${effects.motion.slow}\` |
-| \`--rds-transition-slower\` | \`${effects.motion.slower}\` |
+| \`--gds-transition-fast\` | \`${effects.motion.fast}\` |
+| \`--gds-transition-base\` | \`${effects.motion.base}\` |
+| \`--gds-transition-slow\` | \`${effects.motion.slow}\` |
+| \`--gds-transition-slower\` | \`${effects.motion.slower}\` |
 
 ### Shadows
 
@@ -245,10 +245,10 @@ All shadows are applied via Tailwind's \`shadow-*\` utilities mapped to these va
 
 | Var | Value |
 |-----|-------|
-| \`--rds-shadow-sm\` | \`${effects.shadows.sm}\` |
-| \`--rds-shadow-md\` | \`${effects.shadows.md}\` |
-| \`--rds-shadow-lg\` | \`${effects.shadows.lg}\` |
-| \`--rds-shadow-xl\` | \`${effects.shadows.xl}\` |
+| \`--gds-shadow-sm\` | \`${effects.shadows.sm}\` |
+| \`--gds-shadow-md\` | \`${effects.shadows.md}\` |
+| \`--gds-shadow-lg\` | \`${effects.shadows.lg}\` |
+| \`--gds-shadow-xl\` | \`${effects.shadows.xl}\` |
 
 ## CSS variable conventions
 
@@ -457,7 +457,7 @@ export function downloadThemeMarkdown(theme: GeneratedTheme): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `ramp-theme-${theme.input.id}.md`;
+  a.download = `grade-theme-${theme.input.id}.md`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

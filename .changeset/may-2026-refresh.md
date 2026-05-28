@@ -8,7 +8,7 @@ May 2026 refresh — new components, two renames, AI pipeline upgrades, bug fixe
 ### Component renames (BREAKING for `@gradeui/ui`)
 
 - **`Alert` → `Callout`.** The old name implied modal / interruptive behaviour the component doesn't have (Apple HIG `Alert` is a modal, and `role="alert"` is assertive ARIA). The component is inline, ambient, and non-blocking — `Callout` is honest about that. `Alert` is now reserved in the barrel for a future genuinely-interruptive primitive. For modal-alert semantics (HIG / React Native `Alert`), use `<Dialog>`. The `highlight` variant was dropped in the same change — it overlapped `warning` (amber) without a distinct intent. ARIA role is now variant-conditional: `warning` / `destructive` → `role="alert"` (assertive), `info` / `success` / `default` → `role="status"` (polite).
-- **`SideMenu` → `Sidebar`**, rebuilt as a compound API: `Sidebar` / `SidebarHeader` / `SidebarContent` / `SidebarFooter` / `SidebarSection` / `SidebarItem`. `asChild` and `asButton` on Item for routing integration (Next/Link, React Router, action rows). Semantic theme tokens replace the old hard-coded greys; sizing knobs via `--rds-sidebar-*` CSS variables.
+- **`SideMenu` → `Sidebar`**, rebuilt as a compound API: `Sidebar` / `SidebarHeader` / `SidebarContent` / `SidebarFooter` / `SidebarSection` / `SidebarItem`. `asChild` and `asButton` on Item for routing integration (Next/Link, React Router, action rows). Semantic theme tokens replace the old hard-coded greys; sizing knobs via `--gds-sidebar-*` CSS variables.
 - **`SimpleTabs` deleted.** Merged into Tabs as `variant="underlined"` on TabsList (cascades to triggers via context). `pill` remains the default.
 
 ### Migration
@@ -26,7 +26,7 @@ May 2026 refresh — new components, two renames, AI pipeline upgrades, bug fixe
 
 ### New components
 
-- **`Carousel`** — embla-backed compound API (`Carousel` + `.Slide` + `.VideoSlide` + `.Dots` + `.Arrows` + `.Prev` + `.Next`). Custom autoplay loop (no plugin) so per-slide `duration` overrides and "advance-on-video-end" fall out cleanly. `VideoSlide` autoplays muted + loop with a poster swap on activation by default. Token-driven via `--rds-carousel-*`. Wired into the `tv-streaming` reference layout as the featured row.
+- **`Carousel`** — embla-backed compound API (`Carousel` + `.Slide` + `.VideoSlide` + `.Dots` + `.Arrows` + `.Prev` + `.Next`). Custom autoplay loop (no plugin) so per-slide `duration` overrides and "advance-on-video-end" fall out cleanly. `VideoSlide` autoplays muted + loop with a poster swap on activation by default. Token-driven via `--gds-carousel-*`. Wired into the `tv-streaming` reference layout as the featured row.
 - **`MultiSelect`** — multi-pick combobox (Popover + Command + Badge). Data-driven via `options`; selected items render as removable badges in the trigger with `maxCount` "+N more" overflow; Select All / Clear / Close actions in the dropdown footer. Per-option `icon` shows up in both the dropdown row and on the selected badge.
 - **`Stack.justify`** — new main-axis prop on Stack (mirrors Row's existing `justify`). Stops scaffolds from reaching for `className="flex flex-col justify-end"`.
 

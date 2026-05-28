@@ -279,7 +279,7 @@ export default function AppShellPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`import {
   AppShell,
@@ -396,7 +396,7 @@ export default function AppShellPage() {
           <code className="bg-muted px-1 py-0.5 rounded text-sm">Aside</code>{" "}
           (a list, channel picker, or page tree) + flex Main. The middle
           column's width comes from the{" "}
-          <code className="bg-muted px-1 py-0.5 rounded text-sm">--rds-app-shell-aside</code>{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">--gds-app-shell-aside</code>{" "}
           CSS variable (default 320px) — override per-screen via inline{" "}
           <code className="bg-muted px-1 py-0.5 rounded text-sm">style</code>{" "}
           or a parent class without forking the component.
@@ -417,7 +417,7 @@ export default function AppShellPage() {
 // Override the middle column width:
 <AppShell
   nav="three-pane"
-  style={{ "--rds-app-shell-aside": "280px" } as React.CSSProperties}
+  style={{ "--gds-app-shell-aside": "280px" } as React.CSSProperties}
 >
   …
 </AppShell>`}
@@ -425,7 +425,7 @@ export default function AppShellPage() {
           <AppShell
             nav="three-pane"
             className={previewShell}
-            style={{ "--rds-app-shell-aside": "200px" } as React.CSSProperties}
+            style={{ "--gds-app-shell-aside": "200px" } as React.CSSProperties}
           >
             <AppShellNav placement="side" sticky={false}>
               <MockSideRail />
@@ -559,21 +559,21 @@ export default function AppShellPage() {
           <code className="bg-muted px-1 py-0.5 rounded text-sm">320px</code>{" "}
           — fits a typical inbox / channel-list / file-tree comfortably. To
           override per-screen, set{" "}
-          <code className="bg-muted px-1 py-0.5 rounded text-sm">--rds-app-shell-aside</code>{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">--gds-app-shell-aside</code>{" "}
           on the shell element (or any ancestor):
         </p>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`{/* Inline style on the shell */}
 <AppShell
   nav="three-pane"
-  style={{ "--rds-app-shell-aside": "280px" } as React.CSSProperties}
+  style={{ "--gds-app-shell-aside": "280px" } as React.CSSProperties}
 >
   …
 </AppShell>
 
 {/* Or via a parent class — useful for breakpoint-based switching */}
-<div className="[--rds-app-shell-aside:240px] lg:[--rds-app-shell-aside:360px]">
+<div className="[--gds-app-shell-aside:240px] lg:[--gds-app-shell-aside:360px]">
   <AppShell nav="three-pane">…</AppShell>
 </div>`}</code>
           </pre>
@@ -632,7 +632,7 @@ export default function AppShellPage() {
           A typical productivity-app shell with site chrome, side nav, and a
           footer:
         </p>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`<AppShell nav="side">
   <AppShellHeader sticky>

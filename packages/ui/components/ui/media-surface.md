@@ -3,7 +3,7 @@ name: MediaSurface
 import: "@gradeui/ui"
 props:
   - aspect?: "video" | "square" | "portrait" | "wide" | "auto" — when omitted, derived from `hint` (album/product/food → square, portrait/poster → portrait, landscape → wide, video/audio/embed/generic → video)
-  - radius?: "none" | "sm" | "md" | "lg" | "xl" (default "lg") — driven by `--rds-media-radius` CSS var
+  - radius?: "none" | "sm" | "md" | "lg" | "xl" (default "lg") — driven by `--gds-media-radius` CSS var
   - border?: boolean (default false)
   - loading?: boolean — renders the muted skeleton overlay
   - hint?: "album" | "portrait" | "landscape" | "poster" | "product" | "food" | "video" | "audio" | "embed" | "3d" | "generic" (default "generic") — picks the placeholder glyph + the default aspect + the future generation provider
@@ -30,7 +30,7 @@ notes: |
     MediaSurface with the appropriate `hint`.
   - DO NOT inline manual gradient backgrounds (`bg-gradient-to-br …`) on
     MediaSurface as a "placeholder vibe" — the empty-state placeholder is
-    already styled via `--rds-media-placeholder-bg/-fg` and themes with
+    already styled via `--gds-media-placeholder-bg/-fg` and themes with
     the rest of the design system.
 
   When you have a real image URL, pass it as `src=`. The wrapper keeps its

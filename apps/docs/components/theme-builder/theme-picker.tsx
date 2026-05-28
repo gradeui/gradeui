@@ -8,7 +8,7 @@
  *
  *   1. `setThemeId(t.id)` — activate that theme site-wide, same as the
  *      header GradeThemeSwitcher used to do. CSS custom properties on
- *      `:root` (`--rds-*`) rewrite, the entire docs chrome re-skins.
+ *      `:root` (`--gds-*`) rewrite, the entire docs chrome re-skins.
  *   2. `rebase(cloneInput(t.input))` — push the picked theme's
  *      ThemeInput as the new history anchor on the builder. The working
  *      draft now starts from the picked theme; undo/redo resets; the
@@ -74,8 +74,8 @@ export function ThemePicker({ className }: ThemePickerProps) {
               type="button"
               onClick={() => {
                 // 1. Site-wide activation. Fires the GradeThemeProvider's
-                //    setThemeId, which writes --rds-* on :root + persists
-                //    to localStorage under the `ramp-theme` key.
+                //    setThemeId, which writes --gds-* on :root + persists
+                //    to localStorage under the `grade-theme` key.
                 setThemeId(t.id);
                 // 2. Reseed the builder draft. rebase clears history and
                 //    sets a new initial; the dirty dot goes quiet until

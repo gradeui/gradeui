@@ -9,7 +9,7 @@ props:
   - muted?: boolean (default = autoPlay)
   - pauseOffscreen?: boolean (default true) — pause when scrolled out of viewport
   - aspect?: "video" | "square" | "portrait" | "wide" | "auto" (default "video")
-  - radius?: "none" | "sm" | "md" | "lg" | "xl" (default "lg") — driven by `--rds-media-radius`
+  - radius?: "none" | "sm" | "md" | "lg" | "xl" (default "lg") — driven by `--gds-media-radius`
   - objectFit?: "cover" | "contain" | "fill" (default "cover")
   - poster?: string — image shown before playback. Always rendered as a `loading="lazy"` `<img>` overlay (not the native `poster` attribute, which fetches eagerly).
   - playbackRate?: number (default 1)

@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
  * with a shared gap; Split enforces an explicit pane ratio (1/3 + 2/3
  * etc.) and is a separate primitive.
  */
-const rowVariants = cva("rds-row flex flex-row", {
+const rowVariants = cva("gds-row flex flex-row", {
   variants: {
     gap: {
       none: "gap-0",

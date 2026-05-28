@@ -12,7 +12,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | Row | `row.tsx` | `gap`, `align`, `justify`, `wrap` | ✅ | Horizontal autolayout |
 | Grid | `grid.tsx` | `cols` (1/2/3/4/5/6/12), `gap`, `align` | ✅ | Responsive ladder per `cols` value |
 | Flex | `flex.tsx` | `direction`, `gap`, `align`, `justify`, `wrap` | ✅ | Escape hatch — CSS-aligned defaults |
-| AppShell + Header/Nav/Aside/Main/Footer | `app-shell.tsx` | `nav` (none/top/side/three-pane), `maxWidth`, `sticky` | ✅ | 5-slot CSS-grid template-areas layout. `nav="three-pane"` adds an `Aside` column with width via `--rds-app-shell-aside` (default 320px). Header + Footer span full width — covers marketing pages too. |
+| AppShell + Header/Nav/Aside/Main/Footer | `app-shell.tsx` | `nav` (none/top/side/three-pane), `maxWidth`, `sticky` | ✅ | 5-slot CSS-grid template-areas layout. `nav="three-pane"` adds an `Aside` column with width via `--gds-app-shell-aside` (default 320px). Header + Footer span full width — covers marketing pages too. |
 | ResizablePanelGroup / ResizablePanel / ResizableHandle | `resizable.tsx` | direction h/v · withHandle · id (persists layout) | ⏳ | Port of shadcn resizable on `react-resizable-panels`. Use for user-adjustable columns; for static fixed-width middle, prefer `AppShell nav="three-pane"`. |
 
 ## Form primitives
@@ -62,7 +62,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | Component | File | Key props | Figma | Notes |
 |---|---|---|---|---|
 | TopMenu | `top-menu.tsx` | breadcrumbs, leftContent, rightContent, sticky | ✅ | |
-| Sidebar (+ Header/Content/Footer/Section/Item) | `sidebar.tsx` | `collapsed`/`defaultCollapsed`/`onCollapsedChange`, `collapsible` · Header / Content / Footer slots · Section: `title`/`icon`/`collapsible`/`defaultExpanded` · Item: `icon`/`badge`/`active`/`asChild`/`asButton`/`disabled`/`collapsedLabel` · `href` on Item | ✅ | Renamed from SideMenu (May 2026) and rebuilt as a compound API so consumers can slot custom chrome (search, drag handles, custom brand) alongside nav. Sized via `--rds-sidebar-*` CSS vars. Auto-wraps collapsed items in Tooltips. |
+| Sidebar (+ Header/Content/Footer/Section/Item) | `sidebar.tsx` | `collapsed`/`defaultCollapsed`/`onCollapsedChange`, `collapsible` · Header / Content / Footer slots · Section: `title`/`icon`/`collapsible`/`defaultExpanded` · Item: `icon`/`badge`/`active`/`asChild`/`asButton`/`disabled`/`collapsedLabel` · `href` on Item | ✅ | Renamed from SideMenu (May 2026) and rebuilt as a compound API so consumers can slot custom chrome (search, drag handles, custom brand) alongside nav. Sized via `--gds-sidebar-*` CSS vars. Auto-wraps collapsed items in Tooltips. |
 | Tabs (+ List/Trigger/Content) | `tabs.tsx` | `variant` (pill/underlined), `size` (sm/md/lg) | ✅ | Pill = shadcn chip style (default). Underlined = minimal text + bottom-border (formerly SimpleTabs, merged May 2026). |
 
 ## Content & data
@@ -86,7 +86,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | MediaBlock | `media-block.tsx` | `layout` (single/carousel/grid/bento/sideBySide) | ✅ | single/grid/sideBySide/bento built |
 | MediaSurface | `media-surface.tsx` | `aspect` (square/video/portrait/wide) | ✅ | gradient placeholder fill |
 | FaqBlock | `faq-block.tsx` | composed Accordion section | ⏳ | |
-| Carousel (+ Slide / VideoSlide / Dots / Arrows / Prev / Next) | `carousel.tsx` | `loop`, `align`, `slidesPerView`, `autoplay`, `draggable`, `onSlideChange` · per-slide `duration` · VideoSlide `src`/`poster`/`alt`/`loop`/`controls`/`fit` | ⏳ | Embla-backed. Custom autoplay loop (no plugin) so per-slide duration + advance-on-video-ended fall out cleanly. Token-driven via `--rds-carousel-*` vars. Disambiguates from `<Slider>` (range input) at the sidecar level. |
+| Carousel (+ Slide / VideoSlide / Dots / Arrows / Prev / Next) | `carousel.tsx` | `loop`, `align`, `slidesPerView`, `autoplay`, `draggable`, `onSlideChange` · per-slide `duration` · VideoSlide `src`/`poster`/`alt`/`loop`/`controls`/`fit` | ⏳ | Embla-backed. Custom autoplay loop (no plugin) so per-slide duration + advance-on-video-ended fall out cleanly. Token-driven via `--gds-carousel-*` vars. Disambiguates from `<Slider>` (range input) at the sidecar level. |
 
 ## Interactions
 

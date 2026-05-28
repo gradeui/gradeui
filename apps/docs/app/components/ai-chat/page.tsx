@@ -193,7 +193,7 @@ export default function AIChatPage() {
           what Studio (or any host) would expose in a settings panel.
         </p>
 
-        <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 rounded-lg border border-rds-gray-200 dark:border-rds-gray-800 p-4 bg-rds-gray-50 dark:bg-rds-gray-900/40">
+        <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 rounded-lg border border-gds-gray-200 dark:border-gds-gray-800 p-4 bg-gds-gray-50 dark:bg-gds-gray-900/40">
           <ToggleRow
             id="opt-bare"
             label="bare"
@@ -344,7 +344,7 @@ export default function AIChatPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
 
@@ -371,7 +371,7 @@ const [isLoading, setIsLoading] = useState(false);
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           ChatMessage Type
         </h2>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`interface ChatMessage {
   id: string;
@@ -402,7 +402,7 @@ interface ChatMessageStep {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Dependencies
         </h2>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`npm install framer-motion react-markdown remark-gfm lucide-react`}</code>
           </pre>

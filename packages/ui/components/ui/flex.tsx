@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
  * they're easier to read at a glance and have defaults tuned for the 95%
  * case. Flex is the escape hatch, not the default.
  */
-const flexVariants = cva("rds-flex flex", {
+const flexVariants = cva("gds-flex flex", {
   variants: {
     direction: {
       row: "flex-row",

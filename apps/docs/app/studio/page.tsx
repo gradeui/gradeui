@@ -1629,7 +1629,7 @@ export default function StudioPage() {
   // Pulling them out of Tailwind into `--gds-studio-chat-width` /
   // `--gds-studio-settings-width` lets a downstream theme tweak the
   // chrome without forking the page, and matches the broader DS
-  // pattern (--rds-app-shell-aside etc.). Closed → 0; open → the
+  // pattern (--gds-app-shell-aside etc.). Closed → 0; open → the
   // var. The structure is intentionally shaped like a future
   // ResizablePanelGroup (three siblings, side panes are shrink-0
   // fixed-basis, canvas is flex-1) so swapping the wrapper to

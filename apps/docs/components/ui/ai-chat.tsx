@@ -228,9 +228,9 @@ function MessageActions({ actions }: { actions: ChatMessageAction[] }) {
           disabled={!a.onClick}
           className={cn(
             "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px]",
-            "bg-rds-gray-100 dark:bg-[#1a1a1a] text-rds-gray-700 dark:text-rds-gray-300",
-            "border border-rds-gray-200 dark:border-[#252525]",
-            a.onClick && "hover:bg-rds-gray-200 dark:hover:bg-[#252525] transition-colors",
+            "bg-gds-gray-100 dark:bg-[#1a1a1a] text-gds-gray-700 dark:text-gds-gray-300",
+            "border border-gds-gray-200 dark:border-[#252525]",
+            a.onClick && "hover:bg-gds-gray-200 dark:hover:bg-[#252525] transition-colors",
             !a.onClick && "cursor-default"
           )}
         >
@@ -256,7 +256,7 @@ function formatDuration(ms: number): string {
 function DurationRow({ duration }: { duration: number }) {
   return (
     <div
-      className="flex items-center gap-1 text-[11px] text-rds-gray-500 dark:text-rds-gray-400"
+      className="flex items-center gap-1 text-[11px] text-gds-gray-500 dark:text-gds-gray-400"
       title={`Turn took ${formatDuration(duration)}`}
     >
       <Clock className="w-3 h-3" />
@@ -271,7 +271,7 @@ function UsageRow({ usage }: { usage: ChatMessageUsage }) {
   const total = typeof usage.total === "number" ? formatThousands(usage.total) : null;
   return (
     <div
-      className="flex items-center flex-wrap gap-1 text-[11px] text-rds-gray-500 dark:text-rds-gray-400"
+      className="flex items-center flex-wrap gap-1 text-[11px] text-gds-gray-500 dark:text-gds-gray-400"
       title={`Input: ${inp ?? "?"} · Output: ${out ?? "?"} · Total: ${total ?? "?"}`}
     >
       <Gauge className="w-3 h-3" />
@@ -303,7 +303,7 @@ function StepIcon({ status }: { status: ChatMessageStepStatus }) {
     case "pending":
     default:
       return (
-        <Circle className="w-3 h-3 text-rds-gray-400 dark:text-rds-gray-600 shrink-0" />
+        <Circle className="w-3 h-3 text-gds-gray-400 dark:text-gds-gray-600 shrink-0" />
       );
   }
 }
@@ -319,24 +319,24 @@ function StepIcon({ status }: { status: ChatMessageStepStatus }) {
 function ThinkingDisclosure({ thinking }: { thinking: string }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div className="rounded-md border border-rds-gray-200 dark:border-[#252525] bg-rds-gray-50 dark:bg-[#141414] overflow-hidden">
+    <div className="rounded-md border border-gds-gray-200 dark:border-[#252525] bg-gds-gray-50 dark:bg-[#141414] overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-[11px] text-rds-gray-700 dark:text-rds-gray-300 hover:bg-rds-gray-100 dark:hover:bg-[#1a1a1a] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-[11px] text-gds-gray-700 dark:text-gds-gray-300 hover:bg-gds-gray-100 dark:hover:bg-[#1a1a1a] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
       >
-        <Brain className="w-3.5 h-3.5 text-rds-gray-500 dark:text-rds-gray-400 shrink-0" />
+        <Brain className="w-3.5 h-3.5 text-gds-gray-500 dark:text-gds-gray-400 shrink-0" />
         <span className="flex-1 text-left font-medium">Thoughts</span>
         <ChevronDown
           className={cn(
-            "w-3.5 h-3.5 text-rds-gray-500 dark:text-rds-gray-400 transition-transform shrink-0",
+            "w-3.5 h-3.5 text-gds-gray-500 dark:text-gds-gray-400 transition-transform shrink-0",
             expanded && "rotate-180"
           )}
         />
       </button>
       {expanded && (
-        <div className="px-3 py-2 border-t border-rds-gray-200 dark:border-[#252525] text-[11px] text-rds-gray-600 dark:text-rds-gray-400 whitespace-pre-wrap leading-relaxed">
+        <div className="px-3 py-2 border-t border-gds-gray-200 dark:border-[#252525] text-[11px] text-gds-gray-600 dark:text-gds-gray-400 whitespace-pre-wrap leading-relaxed">
           {thinking}
         </div>
       )}
@@ -375,28 +375,28 @@ function StepsDisclosure({ steps }: { steps: ChatMessageStep[] }) {
   }
 
   return (
-    <div className="rounded-md border border-rds-gray-200 dark:border-[#252525] bg-rds-gray-50 dark:bg-[#141414] overflow-hidden">
+    <div className="rounded-md border border-gds-gray-200 dark:border-[#252525] bg-gds-gray-50 dark:bg-[#141414] overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-[11px] text-rds-gray-700 dark:text-rds-gray-300 hover:bg-rds-gray-100 dark:hover:bg-[#1a1a1a] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-[11px] text-gds-gray-700 dark:text-gds-gray-300 hover:bg-gds-gray-100 dark:hover:bg-[#1a1a1a] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
       >
         <StepIcon status={summaryStatus} />
         <span className="flex-1 text-left truncate">{summaryLabel}</span>
         <ChevronDown
           className={cn(
-            "w-3.5 h-3.5 text-rds-gray-500 dark:text-rds-gray-400 transition-transform shrink-0",
+            "w-3.5 h-3.5 text-gds-gray-500 dark:text-gds-gray-400 transition-transform shrink-0",
             expanded && "rotate-180"
           )}
         />
       </button>
       {expanded && (
-        <ol className="px-3 py-2 border-t border-rds-gray-200 dark:border-[#252525] space-y-1.5 text-[11px]">
+        <ol className="px-3 py-2 border-t border-gds-gray-200 dark:border-[#252525] space-y-1.5 text-[11px]">
           {steps.map((s) => (
             <li
               key={s.id}
-              className="flex items-start gap-2 text-rds-gray-700 dark:text-rds-gray-300"
+              className="flex items-start gap-2 text-gds-gray-700 dark:text-gds-gray-300"
             >
               <span className="mt-0.5">
                 <StepIcon status={s.status} />
@@ -406,13 +406,13 @@ function StepsDisclosure({ steps }: { steps: ChatMessageStep[] }) {
                   className={cn(
                     "leading-snug",
                     s.status === "done" &&
-                      "text-rds-gray-500 dark:text-rds-gray-500"
+                      "text-gds-gray-500 dark:text-gds-gray-500"
                   )}
                 >
                   {s.label}
                 </div>
                 {s.detail && (
-                  <div className="text-[10px] text-rds-gray-500 dark:text-rds-gray-500 leading-snug mt-0.5">
+                  <div className="text-[10px] text-gds-gray-500 dark:text-gds-gray-500 leading-snug mt-0.5">
                     {s.detail}
                   </div>
                 )}
@@ -429,7 +429,7 @@ function RefsRow({ refs }: { refs: string[] }) {
   const fmt = new Intl.NumberFormat();
   if (refs.length === 0) {
     return (
-      <div className="flex items-center gap-1 text-[11px] text-rds-gray-500 dark:text-rds-gray-400">
+      <div className="flex items-center gap-1 text-[11px] text-gds-gray-500 dark:text-gds-gray-400">
         <BookOpen className="w-3 h-3" />
         <span>0 refs</span>
       </div>
@@ -437,7 +437,7 @@ function RefsRow({ refs }: { refs: string[] }) {
   }
   return (
     <div
-      className="flex flex-wrap items-baseline gap-x-1 gap-y-0 text-[11px] text-rds-gray-500 dark:text-rds-gray-400 leading-relaxed"
+      className="flex flex-wrap items-baseline gap-x-1 gap-y-0 text-[11px] text-gds-gray-500 dark:text-gds-gray-400 leading-relaxed"
       title={`${fmt.format(refs.length)} ${refs.length === 1 ? "ref" : "refs"}:\n  ${refs.join(", ")}`}
     >
       <BookOpen className="w-3 h-3 shrink-0 self-center" />
@@ -512,7 +512,7 @@ export function AIChat({
       className={cn(
         "flex flex-col overflow-hidden",
         !bare &&
-          "bg-white dark:bg-[#141414] rounded-lg border border-rds-gray-200 dark:border-[#252525]",
+          "bg-white dark:bg-[#141414] rounded-lg border border-gds-gray-200 dark:border-[#252525]",
         className
       )}
     >
@@ -520,9 +520,9 @@ export function AIChat({
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between gap-2 px-4 py-3 border-b border-rds-gray-200 dark:border-[#252525]"
+        className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gds-gray-200 dark:border-[#252525]"
       >
-        <span className="text-sm font-medium text-rds-gray-900 dark:text-white flex items-center gap-1.5 min-w-0">
+        <span className="text-sm font-medium text-gds-gray-900 dark:text-white flex items-center gap-1.5 min-w-0">
           {titleIcon}
           <span className="truncate">{title}</span>
         </span>
@@ -530,7 +530,7 @@ export function AIChat({
           <div className="flex items-center gap-2 shrink-0">
             {headerTokens !== undefined && (
               <span
-                className="flex items-center gap-1 text-[11px] text-rds-gray-500 dark:text-rds-gray-400"
+                className="flex items-center gap-1 text-[11px] text-gds-gray-500 dark:text-gds-gray-400"
                 title={`Session total: ${formatThousands(headerTokens)} tokens`}
               >
                 <Gauge className="w-3 h-3" />
@@ -570,10 +570,10 @@ export function AIChat({
                   transition={{ duration: 0.3 }}
                   className="flex flex-col items-center justify-center py-10 text-center"
                 >
-                  <h3 className="text-lg font-semibold text-rds-gray-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-semibold text-gds-gray-900 dark:text-white mb-2">
                     How can I help?
                   </h3>
-                  <p className="text-sm text-rds-gray-500 dark:text-rds-gray-400 max-w-xs mb-6">
+                  <p className="text-sm text-gds-gray-500 dark:text-gds-gray-400 max-w-xs mb-6">
                     Ask a question or pick a prompt to get started.
                   </p>
 
@@ -590,10 +590,10 @@ export function AIChat({
                         onClick={() => setQuery(prompt.text)}
                         className={cn(
                           "px-3 py-2 rounded-xl",
-                          "bg-rds-gray-100 dark:bg-[#1a1a1a]",
-                          "text-sm text-rds-gray-700 dark:text-rds-gray-300",
-                          "hover:bg-rds-gray-200 dark:hover:bg-[#252525]",
-                          "border border-rds-gray-200 dark:border-[#252525]",
+                          "bg-gds-gray-100 dark:bg-[#1a1a1a]",
+                          "text-sm text-gds-gray-700 dark:text-gds-gray-300",
+                          "hover:bg-gds-gray-200 dark:hover:bg-[#252525]",
+                          "border border-gds-gray-200 dark:border-[#252525]",
                           "transition-colors duration-200"
                         )}
                       >
@@ -643,7 +643,7 @@ export function AIChat({
                     message.role === "assistant" && "w-full",
                     message.role === "assistant" &&
                       assistantBubble &&
-                      "rounded-2xl rounded-tl-sm px-4 py-3 border bg-rds-gray-100 dark:bg-[#1a1a1a] border-rds-gray-200 dark:border-[#252525]"
+                      "rounded-2xl rounded-tl-sm px-4 py-3 border bg-gds-gray-100 dark:bg-[#1a1a1a] border-gds-gray-200 dark:border-[#252525]"
                   )}
                 >
                   {message.role === "assistant" ? (
@@ -671,7 +671,7 @@ export function AIChat({
                         </div>
                       )}
                       {hasMeta && (
-                        <div className="space-y-1.5 pt-2 border-t border-rds-gray-200/60 dark:border-[#252525]/80">
+                        <div className="space-y-1.5 pt-2 border-t border-gds-gray-200/60 dark:border-[#252525]/80">
                           {hasActions && <MessageActions actions={message.actions!} />}
                           {hasDuration && (
                             <DurationRow duration={message.duration!} />
@@ -698,9 +698,9 @@ export function AIChat({
                 exit={{ opacity: 0, y: -10 }}
                 className="flex"
               >
-                <div className="bg-rds-gray-100 dark:bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-3 border border-rds-gray-200 dark:border-[#252525]">
+                <div className="bg-gds-gray-100 dark:bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-3 border border-gds-gray-200 dark:border-[#252525]">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-rds-gray-500">{thinkingPhrase}</span>
+                    <span className="text-xs text-gds-gray-500">{thinkingPhrase}</span>
                     <div className="flex gap-1">
                       {[0, 1, 2].map((i) => (
                         <motion.div
@@ -732,7 +732,7 @@ export function AIChat({
       </div>
 
       {/* Composer area — above slot → composer → below slot */}
-      <div className="border-t border-rds-gray-200 dark:border-[#252525] p-3 sm:p-4 space-y-2">
+      <div className="border-t border-gds-gray-200 dark:border-[#252525] p-3 sm:p-4 space-y-2">
         {composerAboveSlot}
         {composerSlot ?? (
           <AIChatComposer

@@ -140,7 +140,7 @@ export function listThemes(): GeneratedTheme[] {
    holds { [id]: ThemeInput }.
    ─────────────────────────────────────────────────────────────────────── */
 
-const USER_THEMES_KEY = "ramp-user-themes";
+const USER_THEMES_KEY = "grade-user-themes";
 
 function readUserThemeStore(): Record<string, ThemeInput> {
   if (typeof localStorage === "undefined") return {};

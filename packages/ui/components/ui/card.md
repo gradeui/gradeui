@@ -32,9 +32,9 @@ Card is the most common host for Presence affordances. Three independent axes:
 <Card className="shadow-elevation-4">…</Card>
 
 // Surface — opt into glass / translucent backgrounds.
-<Card className="rds-surface-glass shadow-elevation-4">…</Card>
+<Card className="gds-surface-glass shadow-elevation-4">…</Card>
 
 // Aura — radiate AI-attention state. Combinable.
-<Card className="rds-aura-ring">Studio is reviewing this</Card>
-<Card className="rds-aura-ring rds-aura-shimmer">Generating…</Card>
+<Card className="gds-aura-ring">Studio is reviewing this</Card>
+<Card className="gds-aura-ring gds-aura-shimmer">Generating…</Card>
 ```

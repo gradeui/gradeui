@@ -171,7 +171,7 @@ export const DEFAULT_SETTINGS: ChatSettings = {
   includeComponentRefs: true,
 };
 
-const STORAGE_KEY = "rds-chat-settings";
+const STORAGE_KEY = "gds-chat-settings";
 
 /**
  * Small hook that hydrates from localStorage on mount and persists every

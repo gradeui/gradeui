@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
  * width, which is what 95% of callers want. Override with `align="center"`
  * for a centred narrow column (auth cards, marketing copy).
  */
-const stackVariants = cva("rds-stack flex flex-col", {
+const stackVariants = cva("gds-stack flex flex-col", {
   variants: {
     gap: {
       none: "gap-0",

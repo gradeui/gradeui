@@ -44,9 +44,9 @@ const buttonVariants = cva(
         // --selected-glow blue). Drive the tone per-button with a style
         // override, e.g. `style={{ '--btn-glow': 'var(--warning)' }}`,
         // or with `data-state="on"` / `aria-pressed="true"` for a held
-        // selected look. Heavy lift lives in .rds-button-raised so the
+        // selected look. Heavy lift lives in .gds-button-raised so the
         // multi-stop shadow stack stays readable.
-        raised: "rds-button-raised",
+        raised: "gds-button-raised",
       },
       size: {
         sm: "h-7 gap-1.5 px-2.5 text-xs [&_svg]:size-3.5",
@@ -83,7 +83,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         // inner SVG instead, and the inspector can't load the Button
         // contract because there's no componentName to look up.
         data-gds-part="button"
-        className={cn("rds-button", buttonVariants({ variant, size, className }))}
+        className={cn("gds-button", buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
       />

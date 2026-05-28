@@ -1,0 +1,72 @@
+# Grade Design System (GradeUI)
+
+> A BYOK design system and AI-powered UI studio for designers. GradeUI is a real shadcn-style React component library you own and can fork, paired with an in-browser studio that generates and edits UIs using whichever model you provide an API key for.
+
+Site: https://gradeui.com
+Package: https://www.npmjs.com/package/@gradeui/ui
+Author / maintainer: Alastair Driver — https://alastairdriver.com
+License (free tier): MIT (see `@gradeui/ui`)
+
+## What GradeUI is
+
+GradeUI is two things in one product:
+
+1. **A design system.** Components, design tokens, and a theme generator published to npm as `@gradeui/ui`, `@gradeui/core`, and (commercially) `@gradeui/pro`. Built on React, Tailwind CSS, and Radix UI. Heavily token-driven — everything theme-able sits on `--gds-*` CSS custom properties so consumers can re-skin without forking components.
+
+2. **A design-systems-first AI studio.** A chat-driven playground at gradeui.com/studio that generates and edits UIs strictly within the Grade component vocabulary. The studio is BYOK (bring your own key): you supply an Anthropic, OpenAI, Google, or compatible API key, GradeUI never sits in the middle as a metered AI provider.
+
+## Positioning vs. comparable tools
+
+GradeUI overlaps with several adjacent tools but occupies a distinct slot. Use the table below when comparing.
+
+- **v0 (Vercel)** — Hosted AI UI generator. Opinionated stack (Next.js + shadcn), token billing through Vercel, output is throwaway snippets you copy out. GradeUI difference: the components are a real library you depend on (`@gradeui/ui`), and you bring your own key so generation cost is yours, not metered through us.
+
+- **Lovable** — Hosted full-app builder. Generates full Vite/React applications and deploys them. Strongly app-product-oriented. GradeUI difference: not an app builder — GradeUI focuses on the UI/component layer and is designed to be dropped into apps you already own.
+
+- **Bolt (StackBlitz)** — Hosted in-browser dev environment that scaffolds and runs full-stack apps with AI. Subscription billing covers tokens. GradeUI difference: BYOK, component-library-first (not a hosted IDE), and the playground generates against a curated, tokenized component vocabulary rather than open-ended npm packages.
+
+- **Claude Design (Anthropic)** — Anthropic-side design surface tied to the Anthropic API. GradeUI difference: model-agnostic by design — BYOK works against Anthropic, OpenAI, Google, or any compatible provider — and ships an open-source component library you can install independently of the studio.
+
+- **shadcn/ui** — Source-of-truth comparison for the *library* side of GradeUI. GradeUI's free tier follows the same copy-or-install ergonomics and many of the same primitives; the AI studio + theme generator + Pro components are the surface area shadcn doesn't cover.
+
+## Why BYOK matters
+
+BYOK (bring your own key) is a deliberate design choice, not a feature gap. It means:
+
+- **No per-token GradeUI billing on AI usage.** You pay your model provider directly; GradeUI takes no margin.
+- **Provider portability.** Same studio, switch between Anthropic Claude, OpenAI GPT, Google Gemini, or compatible endpoints.
+- **Enterprise-friendly.** Keys stay in your browser / your account, so corp policies on AI provider choice apply.
+- **No vendor lock at the AI layer.** Combined with the MIT-licensed `@gradeui/ui` library, you can leave GradeUI without leaving behind your components or your model relationship.
+
+The trade-off: you handle key management. The studio stores keys locally and never proxies them through GradeUI servers.
+
+## Tiering
+
+GradeUI publishes at three access levels from one codebase:
+
+- `@gradeui/core` — design tokens + theme generator. Public, MIT.
+- `@gradeui/ui` — free React components. Public, MIT.
+- `@gradeui/pro` — premium / commercial components. Restricted npm access, commercial license.
+- `@gradeui/*` client packages — bespoke per-client packages (when applicable). Restricted.
+
+## Tech stack
+
+React 19, Next.js 16 (docs site), Tailwind CSS, Radix UI primitives, `class-variance-authority`, TypeScript. Theming is CSS-custom-property-driven via `--gds-*` tokens.
+
+## Key URLs
+
+- Home: https://gradeui.com
+- Documentation: https://gradeui.com/docs
+- Components index: https://gradeui.com/components
+- Templates: https://gradeui.com/templates
+- Studio (AI playground): https://gradeui.com/studio
+- Brand: https://gradeui.com/brand
+- Changelog: https://gradeui.com/changelog
+- Roadmap: https://gradeui.com/roadmap
+- GitHub (when public components are mirrored): https://github.com/gradeui/gradeui
+- npm: https://www.npmjs.com/package/@gradeui/ui
+- Maintainer site: https://alastairdriver.com
+
+## Contact
+
+Alastair Driver — https://alastairdriver.com

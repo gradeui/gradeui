@@ -75,7 +75,7 @@ export default function SidebarPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <div className="rounded-lg bg-rds-gray-100 dark:bg-rds-gray-800 border border-rds-gray-200 dark:border-transparent p-4 font-mono text-sm text-rds-gray-900 dark:text-white overflow-x-auto">
+        <div className="rounded-lg bg-gds-gray-100 dark:bg-gds-gray-800 border border-gds-gray-200 dark:border-transparent p-4 font-mono text-sm text-gds-gray-900 dark:text-white overflow-x-auto">
           <pre>
             <code>{`import {
   Sidebar,
@@ -261,12 +261,12 @@ export default function SidebarPage() {
           Sizing knobs live as CSS variables on{" "}
           <code className="font-mono">:root</code> so consumers can retune
           without prop drilling:{" "}
-          <code className="font-mono">--rds-sidebar-width</code>,{" "}
-          <code className="font-mono">--rds-sidebar-collapsed-width</code>,{" "}
-          <code className="font-mono">--rds-sidebar-header-height</code>,{" "}
-          <code className="font-mono">--rds-sidebar-content-py</code>,{" "}
-          <code className="font-mono">--rds-sidebar-section-px</code>,{" "}
-          <code className="font-mono">--rds-sidebar-section-gap</code>.
+          <code className="font-mono">--gds-sidebar-width</code>,{" "}
+          <code className="font-mono">--gds-sidebar-collapsed-width</code>,{" "}
+          <code className="font-mono">--gds-sidebar-header-height</code>,{" "}
+          <code className="font-mono">--gds-sidebar-content-py</code>,{" "}
+          <code className="font-mono">--gds-sidebar-section-px</code>,{" "}
+          <code className="font-mono">--gds-sidebar-section-gap</code>.
         </p>
       </div>
 

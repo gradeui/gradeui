@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
  * Stack / Row / Grid, those props transfer cleanly — only `cols`
  * (Grid-only) and `justify` / `wrap` (Row-only) are lost.
  */
-const gridVariants = cva("rds-grid grid", {
+const gridVariants = cva("gds-grid grid", {
   variants: {
     cols: {
       "1": "grid-cols-1",

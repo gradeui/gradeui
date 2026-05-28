@@ -104,7 +104,7 @@ type MapMarkerProps = {
 };
 ```
 
-Markers are DOM (all three adapters support DOM markers). That means they inherit `--rds-*` tokens for free — you can drop a full Grade `<Badge>` or `<Card>` in as the marker content.
+Markers are DOM (all three adapters support DOM markers). That means they inherit `--gds-*` tokens for free — you can drop a full Grade `<Badge>` or `<Card>` in as the marker content.
 
 **Marker count:** `<Map>` warns via `console.warn` in development when it renders more than **500** markers. DOM markers get janky past ~1k; above that, consumers should build a clustering layer via the `.instance` escape hatch (a first-class `<MapCluster>` primitive is a candidate for v1).
 
@@ -164,7 +164,7 @@ No token generator in v0. Each adapter ships a small lookup table of curated sty
 | `"satellite"`  | `satellite`                          | `mapbox://styles/mapbox/satellite-streets-v12` | `mapTypeId: "hybrid"`        |
 | `"auto"`       | reads `useGradeTheme()` → light/dark | same                              | same                                   |
 
-`appearance="auto"` subscribes to `GradeThemeProvider`'s mode via `useGradeTheme()` (not `data-ramp-theme` observation) so the map re-styles when the user toggles dark mode. Implementation: `useGradeTheme()` → `useEffect` → `map.setStyle(...)` / `map.setOptions({ styles })`. Debounced to 200ms to cover rapid toggling.
+`appearance="auto"` subscribes to `GradeThemeProvider`'s mode via `useGradeTheme()` (not `data-grade-theme` observation) so the map re-styles when the user toggles dark mode. Implementation: `useGradeTheme()` → `useEffect` → `map.setStyle(...)` / `map.setOptions({ styles })`. Debounced to 200ms to cover rapid toggling.
 
 Requires `<GradeThemeProvider>` in the tree for `appearance="auto"` — documented in the JSDoc. Without it, the hook returns a default and the map stays in light mode.
 
@@ -172,14 +172,14 @@ Requires `<GradeThemeProvider>` in the tree for `appearance="auto"` — document
 
 ## Tokens
 
-New CSS custom properties (keeping the `--rds-*` prefix per the deferred-rename rule):
+New CSS custom properties (keeping the `--gds-*` prefix per the deferred-rename rule):
 
 ```
---rds-map-radius                /* host container border-radius; defaults to var(--rds-radius) */
---rds-map-border                /* host container border; defaults to 1px solid var(--rds-border) */
---rds-map-overlay-bg            /* bg for built-in controls (zoom, attribution) */
---rds-map-overlay-fg
---rds-map-marker-shadow         /* filter applied to default <MapMarker> children without own shadow */
+--gds-map-radius                /* host container border-radius; defaults to var(--gds-radius) */
+--gds-map-border                /* host container border; defaults to 1px solid var(--gds-border) */
+--gds-map-overlay-bg            /* bg for built-in controls (zoom, attribution) */
+--gds-map-overlay-fg
+--gds-map-marker-shadow         /* filter applied to default <MapMarker> children without own shadow */
 ```
 
 No map-internal styling tokens — those require the generator, which is v1+.
@@ -258,7 +258,7 @@ const Map = dynamic(() => import("./MapImpl"), {
 });
 ```
 
-`<MapSkeleton>` uses the same `--rds-map-radius` / `--rds-map-border` tokens so the pre-hydration placeholder visually matches the loaded map's container.
+`<MapSkeleton>` uses the same `--gds-map-radius` / `--gds-map-border` tokens so the pre-hydration placeholder visually matches the loaded map's container.
 
 ### CSS bundling
 

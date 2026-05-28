@@ -57,7 +57,7 @@ aliases: [button, push button, plain button, bordered button, destructive button
 ```jsx
 // Combine with Aura for AI-attention states. The three Aura styles
 // (ring/gradient/shimmer) stack independently of the variant.
-<Button variant="raised" className="rds-aura-ring">
+<Button variant="raised" className="gds-aura-ring">
   Studio is reviewing this
 </Button>
 ```

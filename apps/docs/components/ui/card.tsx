@@ -10,7 +10,7 @@ const Card = React.forwardRef<
     ref={ref}
     data-gds-part="card"
     className={cn(
-      "rds-card rounded-xl border bg-card text-card-foreground shadow",
+      "gds-card rounded-xl border bg-card text-card-foreground shadow",
       className
     )}
     {...props}

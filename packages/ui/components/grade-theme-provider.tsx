@@ -29,8 +29,8 @@ import {
  * localStorage + prefers-color-scheme before React hydrates.
  */
 
-const STORAGE_THEME_KEY = "ramp-theme";
-const STORAGE_MODE_KEY = "ramp-mode";
+const STORAGE_THEME_KEY = "grade-theme";
+const STORAGE_MODE_KEY = "grade-mode";
 
 export const ALL_MODES: ModeName[] = [
   "superLight",
@@ -63,7 +63,7 @@ export const GRADE_PRE_HYDRATION_SCRIPT = `
     }
     document.documentElement.setAttribute('data-mode', mode);
     var themeId = localStorage.getItem('${STORAGE_THEME_KEY}');
-    if (themeId) document.documentElement.setAttribute('data-ramp-theme', themeId);
+    if (themeId) document.documentElement.setAttribute('data-grade-theme', themeId);
   } catch(e) {}
 })();
 `;

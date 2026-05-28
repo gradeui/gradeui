@@ -11,7 +11,7 @@
  *   - reduced-motion query
  *
  * Design-system note: all visual dimensions are backed by CSS vars so
- * consumers can retheme via `--rds-media-radius`, `--rds-media-border`, etc.
+ * consumers can retheme via `--gds-media-radius`, `--gds-media-border`, etc.
  * (These will rename to `--gds-*` when the broader codebase rename lands.)
  */
 
@@ -91,13 +91,13 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
           // it, a flex parent (e.g. items-center justify-center) collapses the
           // surface to the intrinsic width of its children, which for Rive /
           // WebGL canvases is 0. Override via `className="w-96"` etc.
-          "rds-media-surface relative w-full overflow-hidden bg-muted",
+          "gds-media-surface relative w-full overflow-hidden bg-muted",
           aspectClass[aspect],
           border && "border border-border",
           className,
         )}
         style={{
-          borderRadius: `var(--rds-media-radius, ${radiusVar[radius]})`,
+          borderRadius: `var(--gds-media-radius, ${radiusVar[radius]})`,
           ...style,
         }}
         {...props}

@@ -256,10 +256,10 @@ const Map = React.forwardRef<MapHandle, MapProps>(function Map(props, ref) {
     <div
       ref={containerRef}
       data-gds-part="map"
-      className={cn("rds-map relative isolate overflow-hidden", className)}
+      className={cn("gds-map relative isolate overflow-hidden", className)}
       style={{
-        borderRadius: "var(--rds-map-radius, var(--radius, 0.5rem))",
-        border: "var(--rds-map-border, 1px solid var(--border, transparent))",
+        borderRadius: "var(--gds-map-radius, var(--radius, 0.5rem))",
+        border: "var(--gds-map-border, 1px solid var(--border, transparent))",
         ...style,
       }}
     >

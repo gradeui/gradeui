@@ -92,12 +92,17 @@ Work in `apps/docs/`. The docs site currently keeps its own copy of components u
 ### Smoke-testing a published build
 Work in `apps/consume-app/`. It consumes `@gradeui/ui` via `workspace:*` so local changes in `packages/ui/` show up immediately. This is also the template for per-client consume repos (swap `workspace:*` → a real npm version).
 
-### Deferred renames — do not "fix" these opportunistically
-- `--rds-*` CSS custom properties
-- `data-ramp-theme` HTML attribute
-- localStorage keys: `ramp-mode`, `ramp-theme`, `rds-playgrounds`, `rds-template-saves`, `rds-chat-settings`
+### Runtime token namespace
 
-These are runtime tokens / persisted keys carried over from the `ramp-ds` predecessor. Renaming them is a coordinated breaking change (every component that reads `oklch(var(--rds-*))` would need to update, and localStorage rename without migration wipes user data). Do it in a dedicated PR with a migration path, not as a drive-by. The React API — `GradeThemeProvider` / `useGradeTheme` / `GRADE_PRE_HYDRATION_SCRIPT` — was renamed in the Ramp→Grade rebrand pass.
+All Grade runtime tokens live under the `gds-*` / `--gds-*` / `grade-*` prefixes:
+
+- **CSS custom properties** use `--gds-*` (e.g. `--gds-blue-500`, `--gds-sidebar-width`). The `--ramp-*` prefix is reserved for the per-step OKLCH color ramps (`--ramp-50` … `--ramp-950`) — that's technical color-ramp terminology, not brand, and stays.
+- **CSS class prefix** is `gds-*` (e.g. `.gds-app-shell`, `.gds-card`, `.gds-aura-ring`).
+- **HTML attribute** for the active theme on `<html>` is `data-grade-theme`.
+- **localStorage keys** sit under `grade-*` (`grade-mode`, `grade-theme`, `grade-user-themes`) and `gds-*` (`gds-playgrounds`, `gds-template-saves`, `gds-chat-settings`).
+- **React API** is `GradeThemeProvider` / `useGradeTheme` / `GRADE_PRE_HYDRATION_SCRIPT`.
+
+The May 2026 rename pass cleared the last of the legacy `ramp-*` / `--rds-*` / `rds-*` / `data-ramp-theme` references in a single sweep — no user-data migration was needed because the library had no external installs yet. The script that ran is checked in at `scripts/rename-rds-to-gds.py` and documents every pattern it touched; reach for that file as a model if you ever need another monorepo-wide rename.
 
 ## Versioning & publishing
 

@@ -43,10 +43,10 @@ notes: |
     AppShellMain    — <main>;   props: maxWidth ("full"|"container", default "full")
     AppShellFooter  — <footer>; full-bleed across the bottom
 
-  Three-pane sizing: the Aside column reads `--rds-app-shell-aside` (default 320px).
+  Three-pane sizing: the Aside column reads `--gds-app-shell-aside` (default 320px).
   Override on the AppShell root to tighten or widen:
-    style={{ "--rds-app-shell-aside": "245px" }}    // Plane-style
-    style={{ "--rds-app-shell-aside": "380px" }}    // WhatsApp-style
+    style={{ "--gds-app-shell-aside": "245px" }}    // Plane-style
+    style={{ "--gds-app-shell-aside": "380px" }}    // WhatsApp-style
 
   Nav rail in three-pane sizes to its content's intrinsic width (column track is
   `auto`). Add `w-[60px]` etc. to the AppShellNav child so the rail has a stable width.
@@ -76,7 +76,7 @@ notes: |
 // nav="three-pane" — Slack / WhatsApp / Mail / Plane shape.
 // Narrow icon rail + middle Aside + main content area. Override
 // the Aside width via the CSS var on the root.
-<AppShell nav="three-pane" style={{ "--rds-app-shell-aside": "260px" }}>
+<AppShell nav="three-pane" style={{ "--gds-app-shell-aside": "260px" }}>
   <AppShellNav placement="side">
     {/* icon rail — stack of icon buttons, ~60px wide */}
     <Stack gap="sm" align="center" className="w-[60px] py-3">
@@ -150,7 +150,7 @@ notes: |
 </div>
 
 // ✅ The Grade way.
-<AppShell nav="three-pane" style={{ "--rds-app-shell-aside": "280px" }}>
+<AppShell nav="three-pane" style={{ "--gds-app-shell-aside": "280px" }}>
   <AppShellNav placement="side"><Rail /></AppShellNav>
   <AppShellAside><Sidebar /></AppShellAside>
   <AppShellMain><Main /></AppShellMain>

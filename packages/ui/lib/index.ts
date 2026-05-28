@@ -1,3 +1,29 @@
+"use client";
+
+/*
+ * ─────────────────────────────────────────────────────────────────────
+ *  `"use client"` at the top is intent-as-documentation.
+ *
+ *  The actual load-bearing directive is injected by the `banner`
+ *  field in `tsup.config.ts` — esbuild's minifier strips bare
+ *  top-of-file string literals (treating them as useless expression
+ *  statements), so this source-level directive gets removed from
+ *  `dist/index.mjs` during build. The banner appends `"use client";`
+ *  to the emitted output AFTER minification runs, which is what
+ *  Next.js 15+ App Router actually reads at consume time.
+ *
+ *  Keeping the directive here too:
+ *    - Documents intent for anyone reading the source.
+ *    - Means a future `minify: false` build still produces a working
+ *      bundle without re-discovering this footgun.
+ *
+ *  If you change anything about how this barrel is shipped, also
+ *  check `packages/ui/tsup.config.ts` — the two configs (client +
+ *  server-safe) are deliberately split so the `contracts` and
+ *  `tailwind-preset` subpaths stay importable from Server Components.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
 // Component contracts (machine-readable component descriptors). The
 // Studio settings panel reads these to filter plumbing props, pick the
 // right control kind, and render action buttons. See packages/ui/lib/contracts.ts

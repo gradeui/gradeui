@@ -113,33 +113,122 @@ const FONT_VARS = [
   ibmPlexMono.variable,
 ];
 
+/* ═════════════════════ Site-level constants ═════════════════════
+   Pulled out so the Next.js Metadata object and the JSON-LD graph
+   stay aligned — every author / org / URL claim should resolve to
+   the same string in both places. Update here, not in two places.
+   ═════════════════════════════════════════════════════════════════ */
+
+const SITE_URL = "https://gradeui.com";
+const SITE_NAME = "Grade Design System";
+const SITE_TAGLINE = "A BYOK design system and AI-powered UI studio for designers — own the components, bring your own model.";
+const AUTHOR_NAME = "Alastair Driver";
+const AUTHOR_URL = "https://alastairdriver.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Grade Design System",
-    template: "%s | Grade Design System",
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
   },
-  description: "A collection of reusable React components, design tokens, and guidelines for building consistent, accessible interfaces.",
-  keywords: ["react", "components", "ui", "design-system", "grade", "gradeui", "tailwindcss", "radix-ui"],
-  authors: [{ name: "Grade" }],
-  creator: "Grade",
-  publisher: "Grade",
+  description: SITE_TAGLINE,
+  keywords: [
+    "react",
+    "components",
+    "ui",
+    "design-system",
+    "grade",
+    "gradeui",
+    "tailwindcss",
+    "radix-ui",
+    "ai design tools",
+    "byok",
+    "v0 alternative",
+    "lovable alternative",
+    "bolt alternative",
+    "claude design alternative",
+    "shadcn",
+  ],
+  authors: [{ name: AUTHOR_NAME, url: AUTHOR_URL }],
+  creator: AUTHOR_NAME,
+  publisher: AUTHOR_NAME,
+  alternates: {
+    canonical: SITE_URL,
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://gradeui.com",
-    siteName: "Grade Design System",
-    title: "Grade Design System",
-    description: "A collection of reusable React components, design tokens, and guidelines for building consistent, accessible interfaces.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_TAGLINE,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Grade Design System",
-    description: "Reusable React components and design tokens.",
+    title: SITE_NAME,
+    description: SITE_TAGLINE,
+    creator: "@alastairdriver",
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
   },
+};
+
+/* ─── JSON-LD graph ───────────────────────────────────────────────
+   Three-node graph (WebSite + Organization + SoftwareApplication)
+   that lets crawlers + LLM ingestion pipelines resolve a single
+   coherent claim: GradeUI is software, maintained by Alastair
+   Driver, whose canonical identity is alastairdriver.com.
+   The @id values are URI references so the nodes link to each other
+   inside the same graph (this is what `@graph` is for — separate
+   nodes that reference each other via @id).
+   ───────────────────────────────────────────────────────────────── */
+
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: SITE_NAME,
+      description: SITE_TAGLINE,
+      publisher: { "@id": `${AUTHOR_URL}/#person` },
+      inLanguage: "en",
+    },
+    {
+      "@type": "Person",
+      "@id": `${AUTHOR_URL}/#person`,
+      name: AUTHOR_NAME,
+      url: AUTHOR_URL,
+      sameAs: [AUTHOR_URL],
+      jobTitle: "Design systems engineer",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${SITE_URL}/#software`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      description: SITE_TAGLINE,
+      applicationCategory: "DeveloperApplication",
+      applicationSubCategory: "DesignSystem",
+      operatingSystem: "Web, Node.js",
+      author: { "@id": `${AUTHOR_URL}/#person` },
+      creator: { "@id": `${AUTHOR_URL}/#person` },
+      maintainer: { "@id": `${AUTHOR_URL}/#person` },
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        category: "Free + BYOK (bring your own key)",
+      },
+      license: "https://opensource.org/licenses/MIT",
+      keywords:
+        "design system, BYOK, AI UI generation, shadcn, tailwindcss, v0 alternative, lovable alternative, bolt alternative, claude design alternative",
+    },
+  ],
 };
 
 export default async function RootLayout({
@@ -199,6 +288,21 @@ export default async function RootLayout({
         >
           {GRADE_PRE_HYDRATION_SCRIPT}
         </Script>
+        {/*
+          JSON-LD graph (Person + WebSite + SoftwareApplication).
+          Plain <script type="application/ld+json"> rendered in the
+          React tree is the Next.js-recommended pattern for structured
+          data — crawlers (Google, Bing) and LLM ingestion pipelines
+          (OpenAI, Perplexity, Anthropic) both read the rendered HTML,
+          so server-rendering this block is sufficient. We render it
+          even on /fast-sandbox iframes — costs nothing and the iframe
+          page is not crawled anyway.
+        */}
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        />
         {isSandbox ? (
           // Sandbox tree: bare. The sandbox page imports its own
           // TooltipProvider (wrapping compiled previews) and manages

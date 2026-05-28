@@ -38,6 +38,6 @@ aliases: [popover, dropdown panel, floating panel, inline editor, attached panel
 PopoverContent ships at elevation-4. Opt into glass for a frosted look, or layer in aura when the popover is AI-driven:
 
 ```jsx
-<PopoverContent className="rds-surface-glass">…</PopoverContent>
-<PopoverContent className="rds-aura-ring">Studio suggestion</PopoverContent>
+<PopoverContent className="gds-surface-glass">…</PopoverContent>
+<PopoverContent className="gds-aura-ring">Studio suggestion</PopoverContent>
 ```

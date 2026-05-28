@@ -45,7 +45,6 @@ export function MarketingNav() {
     { name: "Playground", href: "/play", external: false },
     { name: "Studio", href: "/studio", external: false },
     { name: "Brand", href: "/brand", external: false },
-    { name: "Community", href: "/community", external: false },
   ];
 
   const toggleTheme = () => {
@@ -77,9 +76,6 @@ export function MarketingNav() {
           ))}
           <Button variant="ghost" asChild>
             <Link href="/about">{t("about")}</Link>
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link href="/contact">{t("contact")}</Link>
           </Button>
         </div>
 
@@ -140,13 +136,6 @@ export function MarketingNav() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {t("about")}
-                </Link>
-                <Link
-                  href="/contact"
-                  className="font-medium py-2 hover:text-primary"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {t("contact")}
                 </Link>
 
                 <div className="pt-4 border-t">

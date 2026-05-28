@@ -7,7 +7,7 @@ props:
   - Sidebar: defaultCollapsed?: boolean — uncontrolled initial value (default false)
   - Sidebar: onCollapsedChange?: (next: boolean) => void
   - Sidebar: collapsible?: boolean — show the affordance for the user to collapse (default true)
-  - Sidebar: variant?: 'rail' | 'panel' — outer chrome treatment. `rail` (default) is the classic nav rail with a single right-border + tracked width via `--rds-sidebar-width`; drops cleanly into `<AppShellNav placement="side">`. `panel` is a card-style floating sidebar with full border + rounded corners + parent-controlled width; use when the sidebar is one of several adjacent panes in a body row (e.g. Projects | Canvas | Settings). The compound children (Header/Content/Footer/Section/Item) are identical in both treatments.
+  - Sidebar: variant?: 'rail' | 'panel' — outer chrome treatment. `rail` (default) is the classic nav rail with a single right-border + tracked width via `--gds-sidebar-width`; drops cleanly into `<AppShellNav placement="side">`. `panel` is a card-style floating sidebar with full border + rounded corners + parent-controlled width; use when the sidebar is one of several adjacent panes in a body row (e.g. Projects | Canvas | Settings). The compound children (Header/Content/Footer/Section/Item) are identical in both treatments.
   - SidebarHeader: any children — brand / logo / org switcher; hides nothing when collapsed (centred)
   - SidebarContent: any children — scrollable body
   - SidebarFooter: any children — user block, settings link, pinned chrome
@@ -118,4 +118,4 @@ DO NOT rely on the collapsed-state tooltip to convey critical-only information. 
 
 DO NOT hand-roll an uppercase "SECTION NAME" header above your items. `<SidebarSection title="…">` already gives you the uppercase + tracking-wide + muted styling, plus the chevron + expand/collapse behaviour. If your design has a "+" or "..." next to the section name, use the `trailing` prop — don't render the action as a separate SidebarItem below the section.
 
-DO NOT bypass `<Sidebar>` and compose an icon rail or projects pane from raw `<Stack>` + buttons. You lose the collapsed-state handling, the per-item tooltip, the `data-gds-part` markers that Studio's selection layer reads, and the consistent padding/gap CSS vars (`--rds-sidebar-*`). If you find yourself writing `<button className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted">{icon}{label}</button>`, that's a SidebarItem.
+DO NOT bypass `<Sidebar>` and compose an icon rail or projects pane from raw `<Stack>` + buttons. You lose the collapsed-state handling, the per-item tooltip, the `data-gds-part` markers that Studio's selection layer reads, and the consistent padding/gap CSS vars (`--gds-sidebar-*`). If you find yourself writing `<button className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted">{icon}{label}</button>`, that's a SidebarItem.

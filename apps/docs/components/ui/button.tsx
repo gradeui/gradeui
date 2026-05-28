@@ -36,8 +36,8 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         // Tactile "physical key" treatment — see packages/ui Button for
-        // the canonical comment. Heavy lift lives in .rds-button-raised.
-        raised: "rds-button-raised",
+        // the canonical comment. Heavy lift lives in .gds-button-raised.
+        raised: "gds-button-raised",
       },
       size: {
         sm: "h-7 gap-1.5 px-2.5 text-xs [&_svg]:size-3.5",
@@ -65,7 +65,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button"
     return (
       <Comp
-        className={cn("rds-button", buttonVariants({ variant, size, className }))}
+        className={cn("gds-button", buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
       />

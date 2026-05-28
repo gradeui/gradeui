@@ -41,5 +41,5 @@ aliases: [dropdown, dropdown menu, overflow menu, kebab menu, more menu, action 
 DropdownMenuContent ships at elevation-4. For frosted overlays on rich canvases, opt into glass:
 
 ```jsx
-<DropdownMenuContent className="rds-surface-glass">…</DropdownMenuContent>
+<DropdownMenuContent className="gds-surface-glass">…</DropdownMenuContent>
 ```

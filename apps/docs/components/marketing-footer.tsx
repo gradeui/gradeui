@@ -48,11 +48,46 @@ export function MarketingFooter() {
             <h4 className="font-semibold mb-4">{t("company")}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/about" className="hover:text-foreground">{t("about")}</Link></li>
-              <li><Link href="/company" className="hover:text-foreground">Company</Link></li>
-              <li><Link href="/community" className="hover:text-foreground">{t("community")}</Link></li>
-              <li><Link href="/contact" className="hover:text-foreground">{t("contact")}</Link></li>
+              <li>
+                <a
+                  href="https://alastairdriver.com"
+                  className="hover:text-foreground"
+                  rel="author noopener"
+                  target="_blank"
+                >
+                  Maintainer
+                </a>
+              </li>
             </ul>
           </div>
+        </div>
+
+        {/*
+          "Made by" block — distinct from the © line on purpose. The
+          copyright row carries the project's legal identity; this
+          block carries authorship + a sameAs link for SEO/GEO. The
+          rel="author" + itemProp wiring lets crawlers and AI
+          ingestion tie the page to the same Person node declared
+          in the root layout's JSON-LD graph.
+        */}
+        <div
+          className="border-t pt-6 pb-6 flex flex-col items-center gap-2 text-center"
+          itemScope
+          itemType="https://schema.org/Person"
+        >
+          <span className="text-xs uppercase tracking-[var(--gds-tracking-wide,0.12em)] text-muted-foreground">
+            Made by
+          </span>
+          <a
+            href="https://alastairdriver.com"
+            rel="author noopener"
+            target="_blank"
+            itemProp="url"
+            className="text-base font-semibold text-foreground hover:text-[var(--gds-accent,theme(colors.foreground))] transition-colors"
+          >
+            <span itemProp="name">Alastair Driver</span>
+          </a>
+          <meta itemProp="jobTitle" content="Design systems engineer" />
         </div>
 
         <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4">

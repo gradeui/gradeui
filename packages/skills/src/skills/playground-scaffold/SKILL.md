@@ -91,7 +91,7 @@ Before writing line one of JSX, identify the structural patterns in the screensh
     icon rail next to a separate list/sidebar.** Compose with
     `<AppShellNav placement="side">` (the rail), `<AppShellAside>` (the
     middle column), `<AppShellMain>` (content). Override the middle
-    column's width via the CSS var: `style={{ "--rds-app-shell-aside":
+    column's width via the CSS var: `style={{ "--gds-app-shell-aside":
     "245px" }}` on the AppShell root. AppShellHeader / AppShellFooter
     add full-bleed top/bottom rows.
 - **Sidebar**: flat list of items? grouped sections? nested page tree? →

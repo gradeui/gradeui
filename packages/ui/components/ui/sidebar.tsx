@@ -40,7 +40,7 @@
  *
  * Theming: visual surfaces (bg, border, text colour) come from semantic
  * theme tokens, not hard-coded greys. Sizing knobs (collapsed width,
- * expanded width, item padding) live as `--rds-sidebar-*` CSS variables
+ * expanded width, item padding) live as `--gds-sidebar-*` CSS variables
  * so the consumer can retune without prop drilling.
  *
  * Composition: Sidebar slots inside `<AppShellNav placement="side">`
@@ -102,7 +102,7 @@ export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
    *
    * - `"rail"` (default) — the classic nav rail: sits flush against an
    *   adjacent surface with only a right-side border, fixed width via
-   *   `--rds-sidebar-width`. Designed to slot into `<AppShellNav placement="side">`.
+   *   `--gds-sidebar-width`. Designed to slot into `<AppShellNav placement="side">`.
    * - `"panel"` — a floating card-style sidebar: full border, rounded
    *   corners, width inherited from the parent (typically a flex/grid
    *   track). Use when the sidebar is one of several adjacent panes
@@ -181,8 +181,8 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
                 ? style
                 : {
                     width: collapsed
-                      ? "var(--rds-sidebar-collapsed-width, 4rem)"
-                      : "var(--rds-sidebar-width, 16rem)",
+                      ? "var(--gds-sidebar-collapsed-width, 4rem)"
+                      : "var(--gds-sidebar-width, 16rem)",
                     ...style,
                   }
             }
@@ -239,7 +239,7 @@ const SidebarHeader = React.forwardRef<HTMLDivElement, SidebarHeaderProps>(
         className={cn(
           "flex shrink-0 items-center border-b border-border",
           collapsed ? "justify-center px-2" : "px-3",
-          "h-[var(--rds-sidebar-header-height,3.25rem)]",
+          "h-[var(--gds-sidebar-header-height,3.25rem)]",
           className,
         )}
         {...props}
@@ -260,7 +260,7 @@ const SidebarContent = React.forwardRef<HTMLElement, SidebarContentProps>(
       data-gds-part="sidebar-content"
       className={cn(
         "flex-1 overflow-y-auto overflow-x-hidden",
-        "py-[var(--rds-sidebar-content-py,0.5rem)]",
+        "py-[var(--gds-sidebar-content-py,0.5rem)]",
         className,
       )}
       {...props}
@@ -348,7 +348,7 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
           ref={ref}
           data-gds-part="sidebar-section"
           className={cn(
-            "px-[var(--rds-sidebar-section-px,0.5rem)] space-y-[var(--rds-sidebar-section-gap,0.125rem)]",
+            "px-[var(--gds-sidebar-section-px,0.5rem)] space-y-[var(--gds-sidebar-section-gap,0.125rem)]",
             className,
           )}
           {...rest}
@@ -363,7 +363,7 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
         ref={ref}
         data-gds-part="sidebar-section"
         className={cn(
-          "px-[var(--rds-sidebar-section-px,0.5rem)] pb-1",
+          "px-[var(--gds-sidebar-section-px,0.5rem)] pb-1",
           className,
         )}
         {...rest}
@@ -419,8 +419,8 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
         {expanded && (
           <div
             className={cn(
-              "mt-[var(--rds-sidebar-section-gap,0.125rem)]",
-              "space-y-[var(--rds-sidebar-section-gap,0.125rem)]",
+              "mt-[var(--gds-sidebar-section-gap,0.125rem)]",
+              "space-y-[var(--gds-sidebar-section-gap,0.125rem)]",
             )}
           >
             {children}
@@ -507,11 +507,11 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
     // column (chevron 1rem + gap 0.375rem + icon 1rem = ~1.5rem),
     // so a child's row content visually aligns with the parent's
     // label column — the canonical tree pattern. Tunable via the
-    // `--rds-sidebar-tree-indent` CSS variable for consumers that
+    // `--gds-sidebar-tree-indent` CSS variable for consumers that
     // want tighter or looser nesting.
     const depthStyle = !collapsed && depth > 0
       ? {
-          paddingLeft: `calc(0.5rem + ${depth} * var(--rds-sidebar-tree-indent, 1.5rem))`,
+          paddingLeft: `calc(0.5rem + ${depth} * var(--gds-sidebar-tree-indent, 1.5rem))`,
         }
       : undefined;
 
@@ -780,7 +780,7 @@ const SidebarTreeItem = React.forwardRef<HTMLButtonElement, SidebarTreeItemProps
     }
 
     // Match the SidebarItem depth-indent math so nested TreeItems
-    // line up with their leaf siblings. Same `--rds-sidebar-tree-indent`
+    // line up with their leaf siblings. Same `--gds-sidebar-tree-indent`
     // CSS var drives both, in rem.
     const depthInset = depth * 1.5;
 
@@ -865,7 +865,7 @@ const SidebarTreeItem = React.forwardRef<HTMLButtonElement, SidebarTreeItemProps
         </div>
         {expanded && children && (
           <SidebarTreeDepthContext.Provider value={depth + 1}>
-            <div className="space-y-[var(--rds-sidebar-section-gap,0.125rem)]">
+            <div className="space-y-[var(--gds-sidebar-section-gap,0.125rem)]">
               {children}
             </div>
           </SidebarTreeDepthContext.Provider>

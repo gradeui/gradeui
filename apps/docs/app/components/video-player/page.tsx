@@ -11,7 +11,7 @@ const videoPlayerProps = [
   { name: "muted", type: "boolean", default: "autoPlay", description: "Mute audio. Required true if autoPlay (browser restriction)." },
   { name: "pauseOffscreen", type: "boolean", default: "true", description: "Pause when the surface leaves the viewport." },
   { name: "aspect", type: '"video" | "square" | "portrait" | "wide" | "auto"', default: '"video"', description: "Aspect ratio of the surface." },
-  { name: "radius", type: '"none" | "sm" | "md" | "lg" | "xl"', default: '"lg"', description: "Corner radius — driven by `--rds-media-radius` CSS var." },
+  { name: "radius", type: '"none" | "sm" | "md" | "lg" | "xl"', default: '"lg"', description: "Corner radius — driven by `--gds-media-radius` CSS var." },
   { name: "objectFit", type: '"cover" | "contain" | "fill"', default: '"cover"', description: "How the video sits inside the surface." },
   { name: "poster", type: "string", default: "-", description: "Poster image shown before playback." },
   { name: "playbackRate", type: "number", default: "1", description: "Playback speed." },

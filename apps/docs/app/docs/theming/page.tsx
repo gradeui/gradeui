@@ -275,8 +275,8 @@ export function ThemeToolbar() {
   /* Typography, radius, spacing, motion — also generated */
   --font-display: var(--font-sans);
   --radius: 0.5rem;
-  --rds-density: 1;
-  --rds-transition-base: 200ms;
+  --gds-density: 1;
+  --gds-transition-base: 200ms;
 }
 
 /* Tailwind exposes them as utilities: */

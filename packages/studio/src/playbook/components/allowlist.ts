@@ -48,7 +48,7 @@ export const ALLOWED_COMPONENTS = [
   //                     with three columns.
   // AppShellHeader / AppShellFooter slot full-bleed top/bottom rows.
   // AppShellAside is the middle column in three-pane (width via the CSS
-  // var: style={{ "--rds-app-shell-aside": "260px" }}). AppShellMain's
+  // var: style={{ "--gds-app-shell-aside": "260px" }}). AppShellMain's
   // maxWidth caps content width ("full" | "container").
   "AppShell",
   "AppShellHeader",
@@ -233,7 +233,7 @@ export const ALLOWED_COMPONENTS = [
   // Carousel (shipped in @gradeui/ui@0.11.0)
   //   - Embla-backed slideshow with a compound API: Carousel + .Slide,
   //     .VideoSlide, .Dots, .Arrows. All sizing/colour driven by
-  //     `--rds-carousel-*` CSS vars; data-gds-part on every addressable
+  //     `--gds-carousel-*` CSS vars; data-gds-part on every addressable
   //     piece for Studio selection.
   //   - VideoSlide is the canonical "video that plays when its slide is
   //     active" — muted + loop + no controls by default (autoplay-friendly).

@@ -181,8 +181,8 @@ export const AIChatComposer = forwardRef<HTMLTextAreaElement, AIChatComposerProp
       <div className={cn("w-full", className)}>
         <div
           className={cn(
-            "rounded-xl bg-rds-gray-50 dark:bg-[#1a1a1a]",
-            "border border-rds-gray-200 dark:border-[#252525]",
+            "rounded-xl bg-gds-gray-50 dark:bg-[#1a1a1a]",
+            "border border-gds-gray-200 dark:border-[#252525]",
             "focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent",
             "transition-shadow"
           )}
@@ -199,13 +199,13 @@ export const AIChatComposer = forwardRef<HTMLTextAreaElement, AIChatComposerProp
                 transition={{ duration: 0.18 }}
                 className="overflow-hidden"
               >
-                <div className="flex flex-wrap gap-2 p-2 border-b border-rds-gray-200 dark:border-[#252525]">
+                <div className="flex flex-wrap gap-2 p-2 border-b border-gds-gray-200 dark:border-[#252525]">
                   {attachments.map((att) => (
                     <div key={att.id} className="relative group">
                       <img
                         src={att.previewUrl}
                         alt={att.name}
-                        className="h-14 w-14 rounded-md object-cover border border-rds-gray-200 dark:border-[#252525]"
+                        className="h-14 w-14 rounded-md object-cover border border-gds-gray-200 dark:border-[#252525]"
                       />
                       <button
                         type="button"
@@ -213,8 +213,8 @@ export const AIChatComposer = forwardRef<HTMLTextAreaElement, AIChatComposerProp
                         aria-label={`Remove ${att.name}`}
                         className={cn(
                           "absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full",
-                          "bg-rds-gray-900 dark:bg-white",
-                          "text-white dark:text-rds-gray-900",
+                          "bg-gds-gray-900 dark:bg-white",
+                          "text-white dark:text-gds-gray-900",
                           "flex items-center justify-center",
                           "opacity-0 group-hover:opacity-100 focus:opacity-100",
                           "focus:outline-none focus:ring-2 focus:ring-primary",
@@ -246,8 +246,8 @@ export const AIChatComposer = forwardRef<HTMLTextAreaElement, AIChatComposerProp
             className={cn(
               "w-full resize-none bg-transparent",
               "px-3 sm:px-4 pt-3 pb-1",
-              "text-sm text-rds-gray-900 dark:text-white",
-              "placeholder:text-rds-gray-400",
+              "text-sm text-gds-gray-900 dark:text-white",
+              "placeholder:text-gds-gray-400",
               "focus:outline-none",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               "min-h-[44px] max-h-[200px] overflow-y-auto"
@@ -265,9 +265,9 @@ export const AIChatComposer = forwardRef<HTMLTextAreaElement, AIChatComposerProp
                 title="Attach image"
                 className={cn(
                   "h-8 w-8 rounded-lg flex items-center justify-center",
-                  "text-rds-gray-500",
-                  "hover:text-rds-gray-900 dark:hover:text-white",
-                  "hover:bg-rds-gray-200 dark:hover:bg-[#252525]",
+                  "text-gds-gray-500",
+                  "hover:text-gds-gray-900 dark:hover:text-white",
+                  "hover:bg-gds-gray-200 dark:hover:bg-[#252525]",
                   "focus:outline-none focus:ring-2 focus:ring-primary",
                   "transition-colors",
                   "disabled:opacity-50 disabled:cursor-not-allowed"
@@ -293,7 +293,7 @@ export const AIChatComposer = forwardRef<HTMLTextAreaElement, AIChatComposerProp
                   ? "bg-red-500 hover:bg-red-600 text-white disabled:opacity-50"
                   : value.trim() || attachments.length > 0
                     ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                    : "bg-rds-gray-200 dark:bg-[#252525] text-rds-gray-400 cursor-not-allowed"
+                    : "bg-gds-gray-200 dark:bg-[#252525] text-gds-gray-400 cursor-not-allowed"
               )}
             >
               {isLoading ? (
@@ -318,7 +318,7 @@ export const AIChatComposer = forwardRef<HTMLTextAreaElement, AIChatComposerProp
         </div>
 
         {showHint && (
-          <p className="text-xs text-rds-gray-400 mt-2 text-center hidden sm:block">
+          <p className="text-xs text-gds-gray-400 mt-2 text-center hidden sm:block">
             Press Enter to send, Shift+Enter for new line · Paste images to attach
           </p>
         )}

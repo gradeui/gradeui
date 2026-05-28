@@ -27,7 +27,7 @@
  *
  * Theming: visual surfaces (popover bg, badge fill, focus rings)
  * inherit from the theme tokens the underlying Popover / Badge /
- * Checkbox already read from. No new `--rds-multi-select-*` vars
+ * Checkbox already read from. No new `--gds-multi-select-*` vars
  * needed yet; if/when callers want to retune density (e.g. a
  * compact variant), add them then.
  */

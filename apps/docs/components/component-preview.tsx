@@ -54,8 +54,8 @@ export function ComponentPreview({
           </div>
         </TabsContent>
         <TabsContent value="code" className="p-0">
-          <div className="rounded-b-lg bg-rds-gray-100 dark:bg-rds-gray-800 p-4 overflow-x-auto">
-            <pre className="text-sm text-rds-gray-900 dark:text-white">
+          <div className="rounded-b-lg bg-gds-gray-100 dark:bg-gds-gray-800 p-4 overflow-x-auto">
+            <pre className="text-sm text-gds-gray-900 dark:text-white">
               <code>{code}</code>
             </pre>
           </div>

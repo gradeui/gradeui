@@ -12,9 +12,9 @@ import { RAMP_KEYS, type ModeName, type Ramp } from "./oklch";
  * Apart from color tokens, this also writes:
  *   - Typography CSS vars (--font-sans, --font-display, --font-mono,
  *     --font-heading-weight, --font-heading-tracking, plus the type scale)
- *   - Radius vars (--radius + --rds-radius-*)
- *   - Spacing density (--rds-density multiplier)
- *   - Shadow, motion, and border vars (--rds-shadow-*, --rds-transition-*)
+ *   - Radius vars (--radius + --gds-radius-*)
+ *   - Spacing density (--gds-density multiplier)
+ *   - Shadow, motion, and border vars (--gds-shadow-*, --gds-transition-*)
  *   - Ramp swatches (--ramp-neutral-50…950, etc.) for the theme builder UI
  *   - data-* attributes driving component shape CSS rules
  */
@@ -110,32 +110,32 @@ export function themeToCSSVars(
 
     // --- Radius ---
     "--radius": theme.radius.base,
-    "--rds-radius-sm": theme.radius.sm,
-    "--rds-radius-md": theme.radius.md,
-    "--rds-radius-lg": theme.radius.lg,
-    "--rds-radius-xl": theme.radius.xl,
-    "--rds-radius-2xl": theme.radius["2xl"],
-    "--rds-radius-full": theme.radius.full,
+    "--gds-radius-sm": theme.radius.sm,
+    "--gds-radius-md": theme.radius.md,
+    "--gds-radius-lg": theme.radius.lg,
+    "--gds-radius-xl": theme.radius.xl,
+    "--gds-radius-2xl": theme.radius["2xl"],
+    "--gds-radius-full": theme.radius.full,
 
     // --- Spacing density multiplier (consumed via calc()) ---
-    "--rds-density": String(theme.spacing.densityFactor),
+    "--gds-density": String(theme.spacing.densityFactor),
 
     // --- Shadows ---
-    "--rds-shadow-sm": theme.effects.shadows.sm,
-    "--rds-shadow-md": theme.effects.shadows.md,
-    "--rds-shadow-lg": theme.effects.shadows.lg,
-    "--rds-shadow-xl": theme.effects.shadows.xl,
-    "--rds-shadow-2xl": theme.effects.shadows["2xl"],
-    "--rds-shadow-inner": theme.effects.shadows.inner,
+    "--gds-shadow-sm": theme.effects.shadows.sm,
+    "--gds-shadow-md": theme.effects.shadows.md,
+    "--gds-shadow-lg": theme.effects.shadows.lg,
+    "--gds-shadow-xl": theme.effects.shadows.xl,
+    "--gds-shadow-2xl": theme.effects.shadows["2xl"],
+    "--gds-shadow-inner": theme.effects.shadows.inner,
 
     // --- Motion ---
-    "--rds-transition-fast": theme.effects.motion.fast,
-    "--rds-transition-base": theme.effects.motion.base,
-    "--rds-transition-slow": theme.effects.motion.slow,
-    "--rds-transition-slower": theme.effects.motion.slower,
+    "--gds-transition-fast": theme.effects.motion.fast,
+    "--gds-transition-base": theme.effects.motion.base,
+    "--gds-transition-slow": theme.effects.motion.slow,
+    "--gds-transition-slower": theme.effects.motion.slower,
 
     // --- Borders ---
-    "--rds-border-width": theme.effects.borderWidth,
+    "--gds-border-width": theme.effects.borderWidth,
   };
   return vars;
 }
@@ -157,7 +157,7 @@ function flattenRamp(
  * CSS rules key off of.
  *
  * Safe to call repeatedly — each call fully resets the vars the theme
- * controls. Vars the theme doesn't touch (e.g. --rds-green-500 in
+ * controls. Vars the theme doesn't touch (e.g. --gds-green-500 in
  * globals.css) are left alone.
  */
 export function applyThemeToRoot(theme: GeneratedTheme, mode: ModeName): void {
@@ -171,7 +171,7 @@ export function applyThemeToRoot(theme: GeneratedTheme, mode: ModeName): void {
   // Metadata attributes — components key styles off these.
   // Fall back to sensible defaults if a field is missing (shouldn't happen
   // for generator output, but keeps this safe if called with a partial).
-  root.setAttribute("data-ramp-theme", theme.id);
+  root.setAttribute("data-grade-theme", theme.id);
   root.setAttribute("data-mode", mode);
   root.setAttribute("data-button-shape", theme.components.buttonShape ?? "default");
   root.setAttribute("data-input-style", theme.components.inputStyle ?? "outlined");

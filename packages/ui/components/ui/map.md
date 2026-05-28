@@ -77,4 +77,4 @@ ANTI-PATTERNS — don't do these:
 - DO NOT call `setStyle` or reach for `mapboxgl.Marker` directly — use `appearance` and `<MapMarker>`. The escape hatch (`mapRef.current.instance`) is for things the wrapper genuinely doesn't expose (3D extrusions, drawing tools, heatmaps).
 - DO NOT render >500 markers without clustering. The component warns in dev. For larger datasets, drop to `.instance` and use the provider's clustering layer.
 
-Markers are DOM — children inherit `--rds-*` tokens. Drop a `<Card>`, `<Badge>`, `<Avatar>`, or anything else inside `<MapMarker>` and it themes correctly.
+Markers are DOM — children inherit `--gds-*` tokens. Drop a `<Card>`, `<Badge>`, `<Avatar>`, or anything else inside `<MapMarker>` and it themes correctly.

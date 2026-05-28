@@ -7,7 +7,7 @@
  *              (AppShellNav placement="side") + projects column (AppShellAside)
  *              + work item area (AppShellMain). The right properties pane is a
  *              grid column inside Main since AppShell only exposes one Aside
- *              slot. Aside width overridden via --rds-app-shell-aside so the
+ *              slot. Aside width overridden via --gds-app-shell-aside so the
  *              projects column matches the source's ~245px rather than the
  *              default 320px. SidebarTreeItem handles the ASMobbin page tree.
  */
@@ -41,7 +41,7 @@ export default function App() {
       // Tighten the Aside column from the default 320px to match
       // Plane's narrower projects pane. Set via the CSS var the
       // three-pane grid template reads.
-      style={{ "--rds-app-shell-aside": "245px" }}
+      style={{ "--gds-app-shell-aside": "245px" }}
     >
       {/* ─── Icon rail ─── */}
       <AppShellNav placement="side" className="border-r border-border">

@@ -170,7 +170,7 @@ export const MediaSurfaceContract = contract({
   antipatterns: [
     "Don't wrap <Avatar> inside <MediaSurface> to get an initials fallback. Set `alt` + `hint` on MediaSurface directly — the placeholder renders initials at small sizes derived from `alt`.",
     "Don't use <Avatar> for album art, posters, products, food, landscapes, etc. Avatar is for PEOPLE only.",
-    "Don't inline manual gradient backgrounds (`bg-gradient-to-br …`) on MediaSurface as a 'placeholder vibe' — the empty-state is already styled via `--rds-media-placeholder-bg/-fg` tokens.",
+    "Don't inline manual gradient backgrounds (`bg-gradient-to-br …`) on MediaSurface as a 'placeholder vibe' — the empty-state is already styled via `--gds-media-placeholder-bg/-fg` tokens.",
   ],
   composesWith: ["Card", "CardBlock", "MediaBlock", "VideoPlayer", "RivePlayer", "ThreeScene"],
   aliases: [
@@ -210,7 +210,7 @@ export const MediaSurfaceContract = contract({
       control: "toggle-group",
       label: "Corner radius",
       default: "lg",
-      description: "Driven by the `--rds-media-radius` CSS variable.",
+      description: "Driven by the `--gds-media-radius` CSS variable.",
     },
     border: {
       schema: z.boolean().optional(),

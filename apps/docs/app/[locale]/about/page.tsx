@@ -234,15 +234,19 @@ export default function AboutPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="lg" asChild>
-                <Link href="/contact">
+                <a href="mailto:ali@gradeui.com">
                   Get in Touch
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+                </a>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/community">
-                  Join Community
-                </Link>
+                <a
+                  href="https://github.com/gradeui/gradeui"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GitHub
+                </a>
               </Button>
             </div>
           </div>

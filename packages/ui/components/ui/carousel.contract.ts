@@ -79,7 +79,7 @@ export const CarouselContract = contract({
       label: "Slides per view",
       default: 1,
       description:
-        "How many slides show at once. 1 for hero rotations; 3 for thumbnail strips; etc. For media-query responsive layouts, leave this at 1 and override `--rds-carousel-slide-basis` on each Slide via CSS.",
+        "How many slides show at once. 1 for hero rotations; 3 for thumbnail strips; etc. For media-query responsive layouts, leave this at 1 and override `--gds-carousel-slide-basis` on each Slide via CSS.",
     },
     autoplay: {
       schema: AutoplaySchema.optional(),

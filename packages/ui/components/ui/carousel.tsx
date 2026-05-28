@@ -15,7 +15,7 @@
  *   </Carousel>
  *
  * Design-system contract:
- *   - All visual dimensions are CSS variables (`--rds-carousel-*`) so the
+ *   - All visual dimensions are CSS variables (`--gds-carousel-*`) so the
  *     control surface, dot size, gap, arrow look etc. are themable per
  *     consumer without prop drilling. Defaults live in `styles/globals.css`.
  *   - Root stamps `data-gds-part="carousel"` so Studio's selection agent
@@ -95,7 +95,7 @@ export interface CarouselProps extends React.HTMLAttributes<HTMLDivElement> {
   align?: "start" | "center" | "end";
   /** How many slides to show at once. Default `1` (full-bleed slides).
    *  For responsive multi-slide layouts (e.g. 1 mobile / 3 desktop) leave
-   *  this and use the `--rds-carousel-slide-basis` CSS var on `Slide`
+   *  this and use the `--gds-carousel-slide-basis` CSS var on `Slide`
    *  instead — it accepts media-query-driven values. */
   slidesPerView?: number;
   /** Autoplay config. Pass `true` for defaults (5s delay, pause on hover,
@@ -315,7 +315,7 @@ const CarouselRoot = React.forwardRef<HTMLDivElement, CarouselProps>(
     );
 
     // Inline CSS variable for slidesPerView so consumers can do
-    // ` style={{ "--rds-carousel-slide-basis": "33%" }}` on individual
+    // ` style={{ "--gds-carousel-slide-basis": "33%" }}` on individual
     // slides — but the default basis falls out of slidesPerView so the
     // common case is prop-driven.
     const basis = `calc(100% / ${slidesPerView})`;
@@ -327,7 +327,7 @@ const CarouselRoot = React.forwardRef<HTMLDivElement, CarouselProps>(
           data-gds-part="carousel"
           className={cn("relative", className)}
           style={{
-            ["--rds-carousel-slide-basis" as string]: basis,
+            ["--gds-carousel-slide-basis" as string]: basis,
             ...style,
           }}
           onMouseEnter={handleMouseEnter}
@@ -339,14 +339,14 @@ const CarouselRoot = React.forwardRef<HTMLDivElement, CarouselProps>(
             data-gds-part="carousel-viewport"
             className="overflow-hidden"
             style={{
-              borderRadius: "var(--rds-carousel-radius, var(--rds-media-radius, 0.5rem))",
+              borderRadius: "var(--gds-carousel-radius, var(--gds-media-radius, 0.5rem))",
             }}
           >
             <div
               data-gds-part="carousel-track"
               className="flex"
               style={{
-                gap: "var(--rds-carousel-gap, 0)",
+                gap: "var(--gds-carousel-gap, 0)",
                 touchAction: "pan-y pinch-zoom",
               }}
             >
@@ -400,7 +400,7 @@ const CarouselSlide = React.forwardRef<HTMLDivElement, CarouselSlideProps>(
         data-gds-part="carousel-slide"
         className={cn("min-w-0 shrink-0 grow-0", className)}
         style={{
-          flexBasis: "var(--rds-carousel-slide-basis, 100%)",
+          flexBasis: "var(--gds-carousel-slide-basis, 100%)",
           ...style,
         }}
         {...rest}
@@ -420,7 +420,7 @@ export interface CarouselVideoSlideProps
   extends Omit<CarouselSlideProps, "children"> {
   src: string;
   /** Poster shown until the slide becomes active. Reuses the
-   *  `--rds-media-placeholder-bg/-fg` tokens as a fallback. */
+   *  `--gds-media-placeholder-bg/-fg` tokens as a fallback. */
   poster?: string;
   alt?: string;
   /** Override default behaviour and show native controls. Default false —
@@ -488,7 +488,7 @@ const CarouselVideoSlide = React.forwardRef<HTMLDivElement, CarouselVideoSlidePr
         ref={slideRef}
         duration={duration}
         className={cn(
-          "relative overflow-hidden bg-[var(--rds-media-placeholder-bg)]",
+          "relative overflow-hidden bg-[var(--gds-media-placeholder-bg)]",
           className,
         )}
         style={style}
@@ -506,7 +506,7 @@ const CarouselVideoSlide = React.forwardRef<HTMLDivElement, CarouselVideoSlidePr
             style={{
               objectFit: fit,
               opacity: isActive ? 0 : 1,
-              transition: "opacity var(--rds-carousel-fade-ms, 200ms) ease-out",
+              transition: "opacity var(--gds-carousel-fade-ms, 200ms) ease-out",
             }}
           />
         )}
@@ -523,7 +523,7 @@ const CarouselVideoSlide = React.forwardRef<HTMLDivElement, CarouselVideoSlidePr
           style={{
             objectFit: fit,
             opacity: isActive ? 1 : 0,
-            transition: "opacity var(--rds-carousel-fade-ms, 200ms) ease-out",
+            transition: "opacity var(--gds-carousel-fade-ms, 200ms) ease-out",
           }}
           onEnded={() => {
             // Only relevant when loop=false. Advance the carousel so the
@@ -572,10 +572,10 @@ const CarouselDots = React.forwardRef<HTMLDivElement, CarouselDotsProps>(
             position: "absolute" as const,
             insetInlineStart: 0,
             insetInlineEnd: 0,
-            bottom: "var(--rds-carousel-dots-inset, 0.75rem)",
+            bottom: "var(--gds-carousel-dots-inset, 0.75rem)",
             zIndex: 1,
           }
-        : { marginBlockStart: "var(--rds-carousel-dots-gap, 0.75rem)" };
+        : { marginBlockStart: "var(--gds-carousel-dots-gap, 0.75rem)" };
 
     return (
       <div
@@ -583,7 +583,7 @@ const CarouselDots = React.forwardRef<HTMLDivElement, CarouselDotsProps>(
         data-gds-part="carousel-dots"
         className={cn("flex items-center justify-center", className)}
         style={{
-          gap: "var(--rds-carousel-dots-spacing, 0.5rem)",
+          gap: "var(--gds-carousel-dots-spacing, 0.5rem)",
           ...overlayStyles,
           ...style,
         }}
@@ -604,12 +604,12 @@ const CarouselDots = React.forwardRef<HTMLDivElement, CarouselDotsProps>(
               className="rounded-full transition-all"
               style={{
                 width: active
-                  ? "var(--rds-carousel-dot-active-width, 1.25rem)"
-                  : "var(--rds-carousel-dot-size, 0.5rem)",
-                height: "var(--rds-carousel-dot-size, 0.5rem)",
+                  ? "var(--gds-carousel-dot-active-width, 1.25rem)"
+                  : "var(--gds-carousel-dot-size, 0.5rem)",
+                height: "var(--gds-carousel-dot-size, 0.5rem)",
                 background: active
-                  ? "var(--rds-carousel-dot-active-color, oklch(var(--primary)))"
-                  : "var(--rds-carousel-dot-color, oklch(var(--muted-foreground) / 0.4))",
+                  ? "var(--gds-carousel-dot-active-color, oklch(var(--primary)))"
+                  : "var(--gds-carousel-dot-color, oklch(var(--muted-foreground) / 0.4))",
               }}
             />
           );
@@ -655,8 +655,8 @@ const CarouselArrows = React.forwardRef<HTMLDivElement, CarouselArrowsProps>(
         style={style}
         {...rest}
       >
-        <CarouselPrev className="pointer-events-auto absolute left-[var(--rds-carousel-arrow-inset,0.75rem)] top-1/2 -translate-y-1/2" />
-        <CarouselNext className="pointer-events-auto absolute right-[var(--rds-carousel-arrow-inset,0.75rem)] top-1/2 -translate-y-1/2" />
+        <CarouselPrev className="pointer-events-auto absolute left-[var(--gds-carousel-arrow-inset,0.75rem)] top-1/2 -translate-y-1/2" />
+        <CarouselNext className="pointer-events-auto absolute right-[var(--gds-carousel-arrow-inset,0.75rem)] top-1/2 -translate-y-1/2" />
       </div>
     );
   },
@@ -680,18 +680,18 @@ const CarouselPrev = React.forwardRef<HTMLButtonElement, CarouselNavButtonProps>
         className={cn(
           "inline-flex items-center justify-center rounded-full",
           "transition disabled:opacity-40 disabled:cursor-not-allowed",
-          "hover:[background:var(--rds-carousel-arrow-hover-bg,oklch(var(--background)))]",
+          "hover:[background:var(--gds-carousel-arrow-hover-bg,oklch(var(--background)))]",
           className,
         )}
         style={{
-          width: "var(--rds-carousel-arrow-size, 2.25rem)",
-          height: "var(--rds-carousel-arrow-size, 2.25rem)",
+          width: "var(--gds-carousel-arrow-size, 2.25rem)",
+          height: "var(--gds-carousel-arrow-size, 2.25rem)",
           background:
-            "var(--rds-carousel-arrow-bg, oklch(var(--background) / 0.85))",
-          color: "var(--rds-carousel-arrow-fg, oklch(var(--foreground)))",
-          backdropFilter: "var(--rds-carousel-arrow-backdrop, blur(6px))",
+            "var(--gds-carousel-arrow-bg, oklch(var(--background) / 0.85))",
+          color: "var(--gds-carousel-arrow-fg, oklch(var(--foreground)))",
+          backdropFilter: "var(--gds-carousel-arrow-backdrop, blur(6px))",
           boxShadow:
-            "var(--rds-carousel-arrow-shadow, 0 2px 8px oklch(0 0 0 / 0.12))",
+            "var(--gds-carousel-arrow-shadow, 0 2px 8px oklch(0 0 0 / 0.12))",
           ...style,
         }}
         {...rest}
@@ -717,18 +717,18 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, CarouselNavButtonProps>
         className={cn(
           "inline-flex items-center justify-center rounded-full",
           "transition disabled:opacity-40 disabled:cursor-not-allowed",
-          "hover:[background:var(--rds-carousel-arrow-hover-bg,oklch(var(--background)))]",
+          "hover:[background:var(--gds-carousel-arrow-hover-bg,oklch(var(--background)))]",
           className,
         )}
         style={{
-          width: "var(--rds-carousel-arrow-size, 2.25rem)",
-          height: "var(--rds-carousel-arrow-size, 2.25rem)",
+          width: "var(--gds-carousel-arrow-size, 2.25rem)",
+          height: "var(--gds-carousel-arrow-size, 2.25rem)",
           background:
-            "var(--rds-carousel-arrow-bg, oklch(var(--background) / 0.85))",
-          color: "var(--rds-carousel-arrow-fg, oklch(var(--foreground)))",
-          backdropFilter: "var(--rds-carousel-arrow-backdrop, blur(6px))",
+            "var(--gds-carousel-arrow-bg, oklch(var(--background) / 0.85))",
+          color: "var(--gds-carousel-arrow-fg, oklch(var(--foreground)))",
+          backdropFilter: "var(--gds-carousel-arrow-backdrop, blur(6px))",
           boxShadow:
-            "var(--rds-carousel-arrow-shadow, 0 2px 8px oklch(0 0 0 / 0.12))",
+            "var(--gds-carousel-arrow-shadow, 0 2px 8px oklch(0 0 0 / 0.12))",
           ...style,
         }}
         {...rest}
