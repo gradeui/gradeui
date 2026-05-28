@@ -1,6 +1,6 @@
 {
   "name": "@gradeui/core",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Grade Design System — foundations (design tokens, theme engine primitives, utilities). Placeholder: nothing is extracted here yet. See README for the migration plan.",
   "license": "MIT",
   "author": "Grade",
