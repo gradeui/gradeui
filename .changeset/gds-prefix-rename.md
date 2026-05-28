@@ -1,7 +1,6 @@
 ---
 "@gradeui/ui": major
 "@gradeui/core": major
-"@gradeui/pro": major
 "@gradeui/studio": major
 ---
 
