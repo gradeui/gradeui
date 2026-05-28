@@ -10,8 +10,17 @@
  *
  * Visual chrome is CSS-variables-only. No Tailwind, no @gradeui/ui import.
  * The walker package stays portable, and consumers wire it into their
- * own theme via the `--gds-walker-*` tokens at the bottom of this file
- * (they fall back to sensible defaults).
+ * own theme via the `--gds-walker-*` tokens at the bottom of this file.
+ *
+ * IMPORTANT (May 2026 fix): the fallback chain was previously pointing
+ * at `--gds-card`, `--gds-border`, `--gds-foreground` etc. — token
+ * names that DO NOT EXIST in the gradeui token system (our semantic
+ * tokens are unprefixed: `--card`, `--border`, `--foreground`). The
+ * mismatched names meant the inline-style numeric fallbacks (`1 0 0`
+ * white, `0.15 0 0` near-black) kicked in for every visitor — the
+ * panel washed out completely against the Studio dark surface. The
+ * fallback names are now correct; the `--gds-walker-*` override layer
+ * stays available for consumers that want to retune independently.
  *
  * Code rendering is a slot: `renderCode={({ code, language }) => ...}`
  * so the docs site can plug in its prism-react-renderer highlighter
@@ -235,8 +244,8 @@ const WRAPPER_STYLE: React.CSSProperties = {
   fontFamily:
     "var(--gds-walker-font, var(--font-sans, ui-sans-serif, system-ui, sans-serif))",
   background:
-    "var(--gds-walker-surface, oklch(var(--gds-card, 1 0 0)))",
-  color: "var(--gds-walker-foreground, oklch(var(--gds-foreground, 0.15 0 0)))",
+    "var(--gds-walker-surface, oklch(var(--card, 1 0 0)))",
+  color: "var(--gds-walker-foreground, oklch(var(--foreground, 0.15 0 0)))",
 };
 
 const TOOLBAR_STYLE: React.CSSProperties = {
@@ -246,9 +255,9 @@ const TOOLBAR_STYLE: React.CSSProperties = {
   gap: "var(--gds-walker-toolbar-gap, 0.5rem)",
   padding: "var(--gds-walker-toolbar-py, 0.5rem) var(--gds-walker-toolbar-px, 0.75rem)",
   borderBottom:
-    "1px solid var(--gds-walker-border, oklch(var(--gds-border, 0.9 0 0)))",
+    "1px solid var(--gds-walker-border, oklch(var(--border, 0.9 0 0)))",
   background:
-    "var(--gds-walker-toolbar-bg, oklch(var(--gds-muted, 0.96 0 0) / 0.5))",
+    "var(--gds-walker-toolbar-bg, oklch(var(--muted, 0.96 0 0) / 0.5))",
 };
 
 const TABS_STYLE: React.CSSProperties = {
@@ -258,16 +267,16 @@ const TABS_STYLE: React.CSSProperties = {
   padding: "0.125rem",
   borderRadius: "var(--gds-walker-radius, 0.5rem)",
   background:
-    "var(--gds-walker-tabs-bg, oklch(var(--gds-background, 1 0 0)))",
+    "var(--gds-walker-tabs-bg, oklch(var(--background, 1 0 0)))",
   border:
-    "1px solid var(--gds-walker-border, oklch(var(--gds-border, 0.9 0 0)))",
+    "1px solid var(--gds-walker-border, oklch(var(--border, 0.9 0 0)))",
 };
 
 const TAB_STYLE: React.CSSProperties = {
   appearance: "none",
   border: 0,
   background: "transparent",
-  color: "var(--gds-walker-muted-foreground, oklch(var(--gds-muted-foreground, 0.5 0 0)))",
+  color: "var(--gds-walker-muted-foreground, oklch(var(--muted-foreground, 0.5 0 0)))",
   font: "inherit",
   fontSize: "0.75rem",
   fontWeight: 500,
@@ -279,19 +288,19 @@ const TAB_STYLE: React.CSSProperties = {
 };
 
 const TAB_ACTIVE_STYLE: React.CSSProperties = {
-  color: "var(--gds-walker-foreground, oklch(var(--gds-foreground, 0.15 0 0)))",
+  color: "var(--gds-walker-foreground, oklch(var(--foreground, 0.15 0 0)))",
   background:
-    "var(--gds-walker-tab-active-bg, oklch(var(--gds-card, 1 0 0)))",
+    "var(--gds-walker-tab-active-bg, oklch(var(--card, 1 0 0)))",
   boxShadow:
     "var(--gds-walker-tab-active-shadow, 0 1px 2px oklch(0 0 0 / 0.06))",
 };
 
 const BUTTON_STYLE: React.CSSProperties = {
   appearance: "none",
-  border: "1px solid var(--gds-walker-border, oklch(var(--gds-border, 0.9 0 0)))",
+  border: "1px solid var(--gds-walker-border, oklch(var(--border, 0.9 0 0)))",
   background:
-    "var(--gds-walker-button-bg, oklch(var(--gds-background, 1 0 0)))",
-  color: "var(--gds-walker-foreground, oklch(var(--gds-foreground, 0.15 0 0)))",
+    "var(--gds-walker-button-bg, oklch(var(--background, 1 0 0)))",
+  color: "var(--gds-walker-foreground, oklch(var(--foreground, 0.15 0 0)))",
   font: "inherit",
   fontSize: "0.75rem",
   fontWeight: 500,
@@ -303,11 +312,11 @@ const BUTTON_STYLE: React.CSSProperties = {
 
 const BUTTON_PRIMARY_STYLE: React.CSSProperties = {
   background:
-    "var(--gds-walker-primary, oklch(var(--gds-primary, 0.2 0 0)))",
+    "var(--gds-walker-primary, oklch(var(--primary, 0.2 0 0)))",
   color:
-    "var(--gds-walker-primary-foreground, oklch(var(--gds-primary-foreground, 0.98 0 0)))",
+    "var(--gds-walker-primary-foreground, oklch(var(--primary-foreground, 0.98 0 0)))",
   borderColor:
-    "var(--gds-walker-primary, oklch(var(--gds-primary, 0.2 0 0)))",
+    "var(--gds-walker-primary, oklch(var(--primary, 0.2 0 0)))",
 };
 
 const BODY_STYLE: React.CSSProperties = {
@@ -337,11 +346,11 @@ const DIAGNOSTICS_STYLE: React.CSSProperties = {
   flexDirection: "column",
   gap: "0.25rem",
   borderBottom:
-    "1px solid var(--gds-walker-border, oklch(var(--gds-border, 0.9 0 0)))",
+    "1px solid var(--gds-walker-border, oklch(var(--border, 0.9 0 0)))",
   background:
-    "var(--gds-walker-diagnostic-bg, oklch(var(--gds-muted, 0.96 0 0) / 0.4))",
+    "var(--gds-walker-diagnostic-bg, oklch(var(--muted, 0.96 0 0) / 0.4))",
   fontSize: "0.6875rem",
-  color: "var(--gds-walker-muted-foreground, oklch(var(--gds-muted-foreground, 0.5 0 0)))",
+  color: "var(--gds-walker-muted-foreground, oklch(var(--muted-foreground, 0.5 0 0)))",
 };
 
 const DIAGNOSTIC_ITEM_STYLE: React.CSSProperties = {
@@ -362,5 +371,5 @@ const DIAGNOSTIC_LEVEL_STYLE: React.CSSProperties = {
 const DIAGNOSTIC_PATH_STYLE: React.CSSProperties = {
   fontFamily:
     "var(--gds-walker-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)",
-  color: "var(--gds-walker-foreground, oklch(var(--gds-foreground, 0.15 0 0)))",
+  color: "var(--gds-walker-foreground, oklch(var(--foreground, 0.15 0 0)))",
 };

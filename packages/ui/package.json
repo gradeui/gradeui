@@ -95,9 +95,12 @@
     "**/*.css"
   ],
   "scripts": {
+    "generate:contracts": "node scripts/generate-contracts.mjs",
+    "prebuild": "npm run generate:contracts",
     "build": "npm run clean && tsup && npm run build:css",
     "build:css": "tailwindcss -i ./styles/globals.css -o ./dist/styles.css --minify",
     "build:css:watch": "tailwindcss -i ./styles/globals.css -o ./dist/styles.css --watch",
+    "predev": "npm run generate:contracts",
     "dev": "npm run build:css && tsup --watch",
     "dev:full": "npm run build:css && (tsup --watch & npm run build:css:watch)",
     "lint": "echo \"(no lint configured for @gradeui/ui yet)\"",
@@ -156,6 +159,7 @@
     "lucide-react": "^0.562.0",
     "motion": "^12.24.0",
     "postprocessing": "^6.36.5",
+    "prism-react-renderer": "^2.4.1",
     "react-day-picker": "^9.13.0",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.7",

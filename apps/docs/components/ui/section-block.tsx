@@ -2,6 +2,7 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { Button, type buttonVariants } from "@/components/ui/button";
+import { SURFACE_CLASS, type Surface } from "@/lib/surface";
 
 const sectionBlockVariants = cva("relative w-full", {
   variants: {
@@ -87,6 +88,24 @@ export interface SectionBlockProps
     VariantProps<typeof containerVariants>,
     VariantProps<typeof headerVariants>,
     VariantProps<typeof titleVariants> {
+  /**
+   * What the section surface is *made of*. Orthogonal to `background`
+   * (which picks the tonal direction): `surface` picks the material
+   * applied on top.
+   *
+   * - `solid` (default): the `background` tint is opaque.
+   * - `translucent`: ~82% opacity, no blur — picks up the page underneath.
+   * - `glass`: ~58% opacity + 14px blur + edge highlight. Sections that
+   *   sit over a hero image / generative backdrop and need to read as
+   *   floating chrome.
+   * - `glass-strong`: 42% + 24px blur — for full-page-overlay sections.
+   *
+   * When `surface !== "solid"`, the `background` Tailwind classes still
+   * apply but get overlaid with the glass class so the alpha shows
+   * through the tint.
+   */
+  surface?: Surface;
+
   // Header content
   title?: string;
   subtitle?: string;
@@ -114,6 +133,7 @@ const SectionBlock = React.forwardRef<HTMLElement, SectionBlockProps>(
       fullBleed,
       container,
       alignment,
+      surface = "solid",
       title,
       titleSize,
       subtitle,
@@ -141,8 +161,10 @@ const SectionBlock = React.forwardRef<HTMLElement, SectionBlockProps>(
     return (
       <Comp
         ref={ref as any}
+        data-surface={surface}
         className={cn(
           sectionBlockVariants({ padding, background, fullBleed }),
+          SURFACE_CLASS[surface],
           className
         )}
         style={

@@ -413,6 +413,12 @@
   --selected-foreground: 0.985 0.0018 85;
   --selected-glow: 0.66 0.20 258;           /* ambient halo — softer chroma */
 
+  /* Accent glow — tonal halo for raised/tactile chrome. Defaults to
+     --primary so raised buttons read as branded by default, not as
+     "selected". Themes can retune independently. Per-button overrides
+     still flow via `style={{ "--btn-glow": "var(--warning)" }}`. */
+  --accent-glow: var(--primary);
+
   /* Alert surface pairs — paler tinted surface + readable deep text for each
      status colour. Pre-hydration fallbacks; the JS theme pipeline overwrites
      these via lib/themes/oklch.ts#deriveAlertPair. Kept here so the Alert
@@ -427,6 +433,31 @@
   --info-deep: 0.380 0.200 240;
   --highlight-soft: 0.965 0.040 95;
   --highlight-deep: 0.380 0.180 95;
+
+  /* Code surface tokens — used by `<Code>` (marketing/docs/Studio code
+     panels). Mirrors packages/ui/styles/globals.css so apps/docs picks
+     up the palette without having to import the dist CSS. Light values
+     tuned against a near-paper surface; `.dark` block below mirrors. */
+  --gds-code-bg: oklch(0.985 0.0018 85);
+  --gds-code-fg: oklch(0.220 0.012 250);
+  --gds-code-comment: oklch(0.620 0.030 250);
+  --gds-code-punctuation: oklch(0.420 0.020 250);
+  --gds-code-property: oklch(0.550 0.180 25);
+  --gds-code-number: oklch(0.560 0.180 35);
+  --gds-code-string: oklch(0.500 0.140 145);
+  --gds-code-operator: oklch(0.480 0.140 280);
+  --gds-code-keyword: oklch(0.490 0.220 285);
+  --gds-code-function: oklch(0.500 0.200 250);
+  --gds-code-variable: oklch(0.530 0.180 25);
+  --gds-code-tag: oklch(0.520 0.200 15);
+  --gds-code-attr-name: oklch(0.510 0.150 60);
+  --gds-code-attr-value: oklch(0.500 0.140 145);
+  --gds-code-line-highlight-bg: oklch(var(--selected-glow) / 0.10);
+  --gds-code-line-highlight-marker: oklch(var(--selected-glow) / 0.65);
+  --gds-code-diff-added-bg: oklch(var(--success) / 0.12);
+  --gds-code-diff-added-fg: oklch(0.300 0.140 145);
+  --gds-code-diff-removed-bg: oklch(var(--destructive) / 0.10);
+  --gds-code-diff-removed-fg: oklch(0.360 0.180 27);
 }
 
 .dark {
@@ -467,6 +498,11 @@
   --selected-foreground: 0.985 0.0018 85;
   --selected-glow: 0.74 0.20 258;
 
+  /* Accent glow — dark mode mirror. The dark variants of --primary
+     already carry the appropriate lift for a glow against dark
+     canvases. */
+  --accent-glow: var(--primary);
+
   /* Presence tuning — dark mode. Shadows fade against dark surfaces;
      glass needs higher opacity to keep a visible boundary. */
   --shadow-bevel-hi-alpha: 0.14;
@@ -492,6 +528,30 @@
   --info-deep: 0.820 0.180 240;
   --highlight-soft: 0.220 0.075 95;
   --highlight-deep: 0.820 0.162 95;
+
+  /* Code surface tokens — dark mode mirror. Background sits a touch
+     above the page bg so the code block reads as a distinct surface
+     even on a dark hero. Tokens lift in lightness to stay readable. */
+  --gds-code-bg: oklch(0.205 0.010 250);
+  --gds-code-fg: oklch(0.920 0.012 250);
+  --gds-code-comment: oklch(0.580 0.024 250);
+  --gds-code-punctuation: oklch(0.760 0.018 250);
+  --gds-code-property: oklch(0.780 0.150 25);
+  --gds-code-number: oklch(0.790 0.150 60);
+  --gds-code-string: oklch(0.780 0.140 145);
+  --gds-code-operator: oklch(0.770 0.130 280);
+  --gds-code-keyword: oklch(0.760 0.180 285);
+  --gds-code-function: oklch(0.770 0.150 250);
+  --gds-code-variable: oklch(0.790 0.160 25);
+  --gds-code-tag: oklch(0.780 0.180 15);
+  --gds-code-attr-name: oklch(0.800 0.140 60);
+  --gds-code-attr-value: oklch(0.780 0.140 145);
+  --gds-code-line-highlight-bg: oklch(var(--selected-glow) / 0.16);
+  --gds-code-line-highlight-marker: oklch(var(--selected-glow) / 0.85);
+  --gds-code-diff-added-bg: oklch(var(--success) / 0.18);
+  --gds-code-diff-added-fg: oklch(0.870 0.160 145);
+  --gds-code-diff-removed-bg: oklch(var(--destructive) / 0.18);
+  --gds-code-diff-removed-fg: oklch(0.870 0.180 27);
 }
 
 /* ============================================
@@ -669,7 +729,13 @@
    ============================================
    See packages/ui/styles/globals.css for the canonical comment. */
 .gds-button-raised {
-  --btn-glow: var(--selected-glow);
+  /* Cascade: per-element style override > --accent-glow (theme accent,
+     defaults to --primary) > --selected-glow (system selection blue).
+     Was hardcoded to --selected-glow before May 2026 — the user
+     flagged "should pull from theme accent, not selection blue", which
+     this fallback chain solves without breaking existing per-button
+     style overrides like `style={{ "--btn-glow": "var(--warning)" }}`. */
+  --btn-glow: var(--accent-glow, var(--selected-glow));
   background-color: oklch(var(--secondary));
   color: oklch(var(--secondary-foreground));
   box-shadow: var(--elevation-3);
@@ -711,6 +777,27 @@
     0 0 0 2px oklch(var(--background)),
     0 0 0 4px oklch(var(--btn-glow) / 0.70),
     var(--shadow-lift);
+}
+
+/* ============================================
+   CODE CURSOR — blinking caret for `<Code>` typewriter / terminal demos
+   ============================================ */
+@keyframes gds-code-caret-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.gds-code-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  vertical-align: text-bottom;
+  margin-left: 0.05em;
+  background-color: currentColor;
+  border-radius: 1px;
+  animation: gds-code-caret-blink 1.05s steps(1, end) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gds-code-cursor { animation: none; opacity: 1; }
 }
 
 /* ============================================

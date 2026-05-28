@@ -308,6 +308,13 @@ interface FocusedFastMountProps {
   /** False while the chat hasn't produced a renderable snippet yet. */
   canRender: boolean;
   viewportWidth: ViewportWidth;
+  /**
+   * Replay counter — forwarded as a `key` to the iframe host so a
+   * fresh integer remounts the iframe and replays every inView /
+   * mount animation. Owned by studio-canvas (the toolbar control
+   * lives there); FocusedFastMount is just a pass-through.
+   */
+  replayKey?: number;
   selectMode?: boolean;
   onSelect?: (selection: StudioSelection) => void;
   onClearSelection?: () => void;
@@ -339,6 +346,7 @@ export function FocusedFastMount({
   view,
   canRender,
   viewportWidth,
+  replayKey = 0,
   selectMode = false,
   onSelect,
   onClearSelection,
@@ -468,6 +476,7 @@ export function FocusedFastMount({
       >
         {canRender ? (
           <FastIframeHost
+            key={replayKey}
             appSource={appSource}
             theme={theme}
             mode={mode}

@@ -9,20 +9,20 @@ import { contract } from "@gradeui/contracts";
 
 export const CardContract = contract({
   name: "Card",
-  description: "Grouped content with a distinct surface — settings panels, dashboard tiles, list-of-cards layouts. Pair CardHeader (title + description) with CardContent and optional CardFooter (actions).",
+  description: "Grouped content with a distinct surface — settings panels, dashboard tiles, list-of-cards layouts, marketing hero containers, AI suggestion overlays. Pair CardHeader (title + description) with CardContent and optional CardFooter (actions). Reach for `surface=\"glass\"` whenever the card sits over a busy backdrop (gradient mesh, dot grid, generative art, image hero).",
   import: "@gradeui/ui",
-  aliases: ["card","group box","groupbox","panel","tile","surface"],
+  aliases: ["card","group box","groupbox","panel","tile","surface","glass card","frosted card","floating panel","hero card","ai suggestion card","dashboard tile","settings panel"],
   subcomponents: ["CardHeader","CardTitle","CardDescription","CardContent","CardFooter"],
-  composesWith: ["Button (in CardFooter)","Badge","Separator","Avatar","any form controls"],
+  composesWith: ["Button (in CardFooter)","Badge","Separator","Avatar","Code","MediaSurface","any form controls"],
   props: {
+  "surface": {
+      schema: z.enum(["solid", "translucent", "glass", "glass-strong"]).optional(),
+      design: "knob",
+      description: "what the card surface is *made of*. `solid` is the default opaque `bg-card`. `translucent` is ~82% opacity for menu sheets. `glass` is ~58% opacity + 14px blur + edge highlight for floating panels. `glass-strong` is ~42% + 24px blur for full-page overlays. Composes with `shadow-elevation-*` (depth) and `gds-aura-*` (state signal).",
+  },
   "Each": {
       schema: z.unknown(),
       design: "plumbing",
-  },
-  "No": {
-      schema: z.unknown(),
-      design: "plumbing",
-      description: "Card is a flexible container surface",
   },
   },
 });

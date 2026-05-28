@@ -12,6 +12,7 @@ import { AiChatComposerContract } from "../components/ui/ai-chat-composer.contra
 import { AppShellContract } from "../components/ui/app-shell.contract";
 import { AvatarContract } from "../components/ui/avatar.contract";
 import { BadgeContract } from "../components/ui/badge.contract";
+import { BannerContract } from "../components/ui/banner.contract";
 import { BreadcrumbContract } from "../components/ui/breadcrumb.contract";
 import { ButtonContract } from "../components/ui/button.contract";
 import { CalendarContract } from "../components/ui/calendar.contract";
@@ -20,6 +21,7 @@ import { CardContract } from "../components/ui/card.contract";
 import { CarouselContract } from "../components/ui/carousel.contract";
 import { ChartContract } from "../components/ui/chart.contract";
 import { CheckboxContract } from "../components/ui/checkbox.contract";
+import { CodeContract } from "../components/ui/code.contract";
 import { CollapsibleContract } from "../components/ui/collapsible.contract";
 import { CommandContract } from "../components/ui/command.contract";
 import { DatePickerContract } from "../components/ui/date-picker.contract";
@@ -40,6 +42,7 @@ import { ResizableContract } from "../components/ui/resizable.contract";
 import { RivePlayerContract } from "../components/ui/rive-player.contract";
 import { RowContract } from "../components/ui/row.contract";
 import { ScrollAreaContract } from "../components/ui/scroll-area.contract";
+import { SectionBlockContract } from "../components/ui/section-block.contract";
 import { SelectContract } from "../components/ui/select.contract";
 import { SeparatorContract } from "../components/ui/separator.contract";
 import { ShaderPresetPickerContract } from "../components/ui/shader-preset-picker.contract";
@@ -69,6 +72,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   AppShell: AppShellContract,
   Avatar: AvatarContract,
   Badge: BadgeContract,
+  Banner: BannerContract,
   Breadcrumb: BreadcrumbContract,
   Button: ButtonContract,
   Calendar: CalendarContract,
@@ -77,6 +81,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Carousel: CarouselContract,
   Chart: ChartContract,
   Checkbox: CheckboxContract,
+  Code: CodeContract,
   Collapsible: CollapsibleContract,
   Command: CommandContract,
   DatePicker: DatePickerContract,
@@ -97,6 +102,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   RivePlayer: RivePlayerContract,
   Row: RowContract,
   ScrollArea: ScrollAreaContract,
+  SectionBlock: SectionBlockContract,
   Select: SelectContract,
   Separator: SeparatorContract,
   ShaderPresetPicker: ShaderPresetPickerContract,

@@ -5,6 +5,7 @@ import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SURFACE_CLASS, surfaceBg, type Surface } from "@/lib/surface";
 
 const Sheet = SheetPrimitive.Root;
 
@@ -30,7 +31,7 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+  "fixed z-50 gap-4 p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
   {
     variants: {
       side: {
@@ -48,19 +49,33 @@ const sheetVariants = cva(
   }
 );
 
-interface SheetContentProps
+export interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-    VariantProps<typeof sheetVariants> {}
+    VariantProps<typeof sheetVariants> {
+  /**
+   * What the sheet panel is *made of*. `solid` is the default opaque
+   * `bg-background`. `glass` lets the page show through with a 14px
+   * blur — the canonical "inspector panel" feel. Composes with the
+   * overlay scrim. See sheet.md for scenarios.
+   */
+  surface?: Surface;
+}
 
 const SheetContent = React.forwardRef<
   React.ComponentRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
+>(({ side = "right", surface = "solid", className, children, ...props }, ref) => (
   <SheetPortal>
     <SheetOverlay />
     <SheetPrimitive.Content
       ref={ref}
-      className={cn(sheetVariants({ side }), className)}
+      data-surface={surface}
+      className={cn(
+        sheetVariants({ side }),
+        surfaceBg(surface, "bg-background"),
+        SURFACE_CLASS[surface],
+        className
+      )}
       {...props}
     >
       {children}

@@ -9,13 +9,13 @@ import { contract } from "@gradeui/contracts";
 
 export const ButtonContract = contract({
   name: "Button",
-  description: "Any clickable action. Use size=\"icon\" for square icon-only buttons, variant=\"link\" for inline links that should look like Button. A Button placed next to a TabsList of the same size lines up edge-to-edge without per-call overrides.",
+  description: "Any clickable action. Use size=\"icon\" for square icon-only buttons, variant=\"link\" for inline links that should look like Button, variant=\"raised\" for high-commitment / weighty actions where the chrome can afford a tactile \"physical key\" treatment. A Button placed next to a TabsList of the same size lines up edge-to-edge without per-call overrides.",
   import: "@gradeui/ui",
-  aliases: ["button","push button","plain button","bordered button","destructive button","capsule button","link button","action button","cta"],
+  aliases: ["button","push button","plain button","bordered button","destructive button","capsule button","link button","action button","cta","raised button","pill button","key button"],
   composesWith: ["Dialog","DropdownMenu","Tooltip","Card (in CardFooter)","Row","Form controls"],
   props: {
   "variant": {
-      schema: z.enum(["default", "destructive", "outline", "secondary", "ghost", "link"]).optional(),
+      schema: z.enum(["default", "destructive", "outline", "secondary", "ghost", "link", "raised"]).optional(),
       design: "knob",
   },
   "size": {

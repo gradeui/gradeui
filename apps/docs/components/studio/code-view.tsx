@@ -3,76 +3,65 @@
 /**
  * Read-only highlighted JSX/TSX view for Studio's "Code" mode.
  *
- * Replaces a plain `<pre>` of the user's snippet — gives proper token
- * colouring (keyword, string, tag, attribute, comment) so the panel
- * reads like a real editor rather than the diff log it was before.
+ * Thin wrapper around the shared `<Code>` primitive from @gradeui/ui.
+ * Previously this file held its own `prism-react-renderer` setup with
+ * `themes.vsLight` / `themes.vsDark` — those are the upstream VS Code
+ * palettes and read as washed-out grey against Grade's surfaces. The
+ * shared component drives token colour from `--gds-code-*` CSS
+ * variables, so Studio now picks up the same palette as marketing and
+ * docs without us maintaining a second theme.
  *
- * Why prism-react-renderer over shiki: prism is sync and tiny (~6kb
- * gzipped). Studio re-renders this panel on every streamed chunk from
- * the model, and an async highlighter would either flicker or lag
- * behind the stream. Prism just emits spans in one pass.
+ * Why we still wrap it (instead of using `<Code>` directly at the call
+ * site): two pieces of behaviour belong to Studio specifically and
+ * don't make sense on the public primitive — the `data-lenis-prevent`
+ * marker (Lenis-controlled smooth-scroll on the Studio page would
+ * otherwise eat trackpad deltas inside the panel) and `overscroll-
+ * contain` so a long scroll doesn't rubber-band into the parent canvas.
  *
- * Scroll behaviour: the outer wrapper carries `data-lenis-prevent` so
- * the global Lenis smooth-scroll on the Studio page stops intercepting
- * wheel events when the cursor's over the code. Without this, trackpad
- * scrolling inside the panel feels dead — Lenis swallows the deltas
- * and applies them to the page body instead.
+ * The component still re-renders on every streamed chunk from the
+ * model; `<Code>` uses sync prism tokenisation under the hood, so
+ * each chunk → tokens → DOM is one frame. No async flicker.
  */
 
-import { Highlight, themes, type Language } from "prism-react-renderer";
-import { useMaybeGradeTheme } from "@/components/grade-theme-provider";
+import { Code, type CodeLanguage } from "@gradeui/ui";
 
 interface CodeViewProps {
   code: string;
   /** Language hint — Prism's parser is forgiving; "tsx" handles JSX too. */
-  language?: Language;
+  language?: CodeLanguage;
   /** Optional class on the scrolling wrapper. */
   className?: string;
 }
 
 export function CodeView({ code, language = "tsx", className }: CodeViewProps) {
-  // Match the Studio mode so the highlight palette inverts with the
-  // rest of the chrome instead of fighting it. `useMaybeGradeTheme`
-  // returns null outside the provider — render as light in that case
-  // rather than crashing (the studio canvas tree is always inside the
-  // provider, but the safety belt costs nothing).
-  const gradeTheme = useMaybeGradeTheme();
-  const isDark = gradeTheme?.mode === "dark" || gradeTheme?.mode === "superDark";
-  const theme = isDark ? themes.vsDark : themes.vsLight;
-
   return (
     <div
       // Lenis would otherwise eat trackpad deltas before they reach the
       // overflow-auto div — see lib/lenis-provider for the context.
       data-lenis-prevent
       className={[
-        "h-full w-full overflow-auto bg-muted/20 p-4",
+        "h-full w-full overflow-auto p-4",
         // overscroll-contain keeps a long scroll inside the panel
         // (no rubber-band into the parent canvas when you hit the end).
         "overscroll-contain",
+        // Surface tint matches the Studio panel chrome — sits between
+        // canvas (`background`) and a real card (`muted`) so the panel
+        // reads as "secondary surface".
+        "bg-[var(--gds-code-bg)]",
         className ?? "",
       ].join(" ")}
     >
-      <Highlight code={code} language={language} theme={theme}>
-        {({ className: hlClass, style, tokens, getLineProps, getTokenProps }) => (
-          <pre
-            className={`${hlClass} text-xs font-mono leading-relaxed whitespace-pre`}
-            // Drop Prism's default bg so it inherits our muted/20 wrapper.
-            style={{ ...style, background: "transparent" }}
-          >
-            {tokens.map((line, i) => {
-              const lineProps = getLineProps({ line });
-              return (
-                <div key={i} {...lineProps}>
-                  {line.map((token, key) => (
-                    <span key={key} {...getTokenProps({ token })} />
-                  ))}
-                </div>
-              );
-            })}
-          </pre>
-        )}
-      </Highlight>
+      <Code
+        source={code}
+        language={language}
+        // bare drops the border/header/padding — the wrapper above
+        // already handles the panel chrome (scroll, Lenis, sizing).
+        bare
+        // Studio streams chunks; the reveal animation would replay on
+        // every chunk and feel laggy. Static render is correct here.
+        reveal="none"
+        className="text-xs"
+      />
     </div>
   );
 }

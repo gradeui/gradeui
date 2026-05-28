@@ -8,6 +8,21 @@
  * the Code tab. Dismissal is persisted to localStorage so the banner
  * doesn't reappear on subsequent visits.
  *
+ * v2 (May 2026) — gutted in favour of the `<Banner>` primitive after
+ * the user flagged the previous inline-style version as invisible. The
+ * old implementation reached for `--gds-primary` / `--gds-border` /
+ * `--gds-foreground` token names that don't exist in our system (our
+ * tokens are unprefixed: `--primary`, `--border`, `--foreground`). The
+ * inline-style fallback values kicked in and the chrome washed out
+ * completely against the Studio dark surface.
+ *
+ * This file now owns:
+ *   - the localStorage persistence (visibility state)
+ *   - the plugin URL constant
+ *   - the wording / link copy
+ * The visual chrome (tint, dismiss button, role mapping, theme
+ * inheritance) lives on `<Banner>`.
+ *
  * SSR-safety note: localStorage is only read inside useEffect after
  * mount. The initial render returns `null` so the server and the first
  * client render agree (no hydration mismatch). See the feedback memory
@@ -15,6 +30,7 @@
  */
 
 import * as React from "react";
+import { Banner } from "@gradeui/ui";
 
 const STORAGE_KEY = "studio:figma-intro-seen";
 
@@ -57,59 +73,22 @@ export function FigmaIntroBanner() {
   if (!show) return null;
 
   return (
-    <div
-      role="status"
-      // Visual chrome via CSS variables — keeps the banner aligned with
-      // the Studio theme even as the theme picker mutates --gds-*.
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: "0.75rem",
-        padding: "0.625rem 0.875rem",
-        borderBottom:
-          "1px solid oklch(var(--gds-border, 0.9 0 0))",
-        background:
-          "color-mix(in oklab, oklch(var(--gds-primary, 0.2 0 0)) 6%, transparent)",
-        color: "oklch(var(--gds-foreground, 0.15 0 0))",
-        fontSize: "0.8125rem",
-        lineHeight: 1.5,
-      }}
-      data-gds-part="figma-intro-banner"
-    >
-      <span style={{ flex: 1 }}>
-        Send your design to Figma as live components.{" "}
+    <Banner
+      variant="announcement"
+      dismissible
+      onDismiss={dismiss}
+      action={
         <a
           href={PLUGIN_INSTALL_URL}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            color: "oklch(var(--gds-primary, 0.2 0 0))",
-            textDecoration: "underline",
-            textUnderlineOffset: "0.15em",
-            fontWeight: 500,
-          }}
+          className="text-sm font-medium underline underline-offset-4 hover:opacity-80"
         >
           Get the Grade plugin →
         </a>
-      </span>
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="Dismiss"
-        style={{
-          appearance: "none",
-          border: 0,
-          background: "transparent",
-          color: "oklch(var(--gds-muted-foreground, 0.5 0 0))",
-          font: "inherit",
-          fontSize: "0.75rem",
-          padding: "0.125rem 0.375rem",
-          cursor: "pointer",
-          borderRadius: "0.25rem",
-        }}
-      >
-        Got it
-      </button>
-    </div>
+      }
+    >
+      Send your design to Figma as live components.
+    </Banner>
   );
 }

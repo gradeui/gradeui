@@ -73,9 +73,19 @@ function semanticTable(
   return lines.join("\n");
 }
 
-/** Stable JSON pretty-printer for the input snapshot. */
+/** Stable JSON pretty-printer for the input snapshot.
+ *
+ * Returns "{}" rather than `undefined` when theme.input is missing —
+ * `JSON.stringify(undefined, …)` evaluates to undefined (not the
+ * literal string), which then blows up downstream callers that do
+ * `.replace(/\n/g, …)`. Surfaced as a runtime TypeError ("Cannot read
+ * properties of undefined (reading 'replace')") on the home-diff-hero
+ * scaffold whenever a theme was loaded without an input snapshot.
+ */
 function stringifyInput(theme: GeneratedTheme): string {
-  return JSON.stringify(theme.input, null, 2);
+  if (!theme || theme.input == null) return "{}";
+  const out = JSON.stringify(theme.input, null, 2);
+  return out ?? "{}";
 }
 
 /** The full template. */

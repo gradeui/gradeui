@@ -9,11 +9,11 @@ import { contract } from "@gradeui/contracts";
 
 export const HoverCardContract = contract({
   name: "HoverCard",
-  description: "Rich preview content surfaced on hover — user profile mini-cards on @-mentions, link previews, definition popups. Pointer-only by design (no touch-friendly trigger); pair with a click target for touch devices, or fall back to Popover. NEVER use HoverCard for critical info — if the user can't reach it via keyboard or touch, it might as well not exist for accessibility.",
+  description: "Rich preview content surfaced on hover — user profile mini-cards on @-mentions, link previews, definition popups, layer-thumbnail peeks. Pointer-only by design (no touch-friendly trigger); pair with a click target for touch devices, or fall back to Popover. NEVER use HoverCard for critical info — if the user can't reach it via keyboard or touch, it might as well not exist for accessibility.",
   import: "@gradeui/ui",
-  aliases: ["hover card","hover preview","mention preview","profile peek","link preview","rich tooltip","link preview card","profile hover","peek card"],
+  aliases: ["hover card","hover preview","mention preview","profile peek","link preview","rich tooltip","link preview card","profile hover","peek card","glass preview","frosted preview"],
   subcomponents: ["HoverCardTrigger","HoverCardContent"],
-  composesWith: ["Avatar (user preview)","Card (richer content)","Link (the trigger)"],
+  composesWith: ["Avatar (user preview)","Card (richer content)","Link (the trigger)","MediaSurface (link/layer previews)","Code (snippet previews)"],
   props: {
   "open": {
       schema: z.unknown().optional(),
@@ -27,6 +27,11 @@ export const HoverCardContract = contract({
   "side": {
       schema: z.unknown().optional(),
       design: "plumbing",
+  },
+  "surface": {
+      schema: z.enum(["solid", "translucent", "glass", "glass-strong"]).optional(),
+      design: "knob",
+      description: "what the preview surface is *made of*. `solid` (default) is `bg-popover`. `glass` for hover previews over rich content (a media feed, a layout canvas).",
   },
   },
 });

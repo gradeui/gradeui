@@ -42,6 +42,7 @@ export const componentsList = [
   { name: "Separator", href: "/components/separator", category: "Data Display" },
   { name: "Hover Card", href: "/components/hover-card", category: "Data Display" },
   // Feedback
+  { name: "Banner", href: "/components/banner", category: "Feedback" },
   { name: "Callout", href: "/components/callout", category: "Feedback" },
   { name: "Dialog", href: "/components/dialog", category: "Feedback" },
   { name: "Popover", href: "/components/popover", category: "Feedback" },
@@ -50,6 +51,7 @@ export const componentsList = [
   { name: "Progress", href: "/components/progress", category: "Feedback" },
   // Media
   { name: "Carousel", href: "/components/carousel", category: "Media" },
+  { name: "Code", href: "/components/code", category: "Media" },
   { name: "Video Player", href: "/components/video-player", category: "Media" },
   { name: "Rive Player", href: "/components/rive-player", category: "Media" },
   { name: "Three Scene", href: "/components/three-scene", category: "Media" },

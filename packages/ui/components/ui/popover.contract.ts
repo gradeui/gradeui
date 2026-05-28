@@ -11,9 +11,9 @@ export const PopoverContract = contract({
   name: "Popover",
   description: "A floating panel anchored to a trigger that contains interactive content — date pickers, color pickers, filter pickers, \"more info\" panels, inline forms. Differs from Tooltip (hover-only, no focusable content) and Dialog (modal, blocks the page). DatePicker, DateRangePicker, and the Combobox pattern all compose Popover internally.",
   import: "@gradeui/ui",
-  aliases: ["popover","dropdown panel","floating panel","inline editor","attached panel","filter pop","popover view","popoverpresentation","attached popover"],
+  aliases: ["popover","dropdown panel","floating panel","inline editor","attached panel","filter pop","popover view","popoverpresentation","attached popover","glass popover","frosted popover","inspector popover"],
   subcomponents: ["PopoverTrigger","PopoverContent","PopoverAnchor"],
-  composesWith: ["Button (as trigger)","Calendar (date picker)","Command (combobox)","Form controls (inline edit popover)"],
+  composesWith: ["Button (as trigger)","Calendar (date picker)","Command (combobox)","Form controls (inline edit popover)","Code (code-detail popovers)"],
   props: {
   "open": {
       schema: z.unknown().optional(),
@@ -27,6 +27,11 @@ export const PopoverContract = contract({
   "side": {
       schema: z.enum(["top", "right", "bottom", "left", "start", "center", "end"]).optional(),
       design: "knob",
+  },
+  "surface": {
+      schema: z.enum(["solid", "translucent", "glass", "glass-strong"]).optional(),
+      design: "knob",
+      description: "what the popover surface is *made of*. `solid` is the default opaque `bg-popover`. `translucent` is the Apple HIG menu-sheet feel. `glass` for floating panels over rich canvases (Studio inspector, image-tool palette).",
   },
   },
 });

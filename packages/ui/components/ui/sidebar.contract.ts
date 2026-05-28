@@ -37,7 +37,7 @@ export const SidebarContract = contract({
   "variant": {
       schema: z.enum(["rail", "panel"]).optional(),
       design: "knob",
-      description: "outer chrome — `rail` (default) sits flush against an adjacent surface with a single right-border + tracked width; `panel` is a card-style floating sidebar with full border + rounded corners and width inherited from the parent flex/grid track.",
+      description: "outer chrome treatment. `rail` (default) is the classic nav rail with a single right-border + tracked width via `--gds-sidebar-width`; drops cleanly into `<AppShellNav placement=\"side\">`. `panel` is a card-style floating sidebar with full border + rounded corners + parent-controlled width; use when the sidebar is one of several adjacent panes in a body row (e.g. Projects | Canvas | Settings). The compound children (Header/Content/Footer/Section/Item) are identical in both treatments.",
   },
   "any": {
       schema: z.unknown(),
@@ -57,7 +57,7 @@ export const SidebarContract = contract({
   "trailing": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "Right-edge action slot. On **SidebarSection**: the canonical \"+\" / \"...\" header affordance (Notion's \"+ Add page\", Linear's \"+\" next to Favorites). On **SidebarTreeItem**: a sibling-of-button slot for settings cog / more-actions / '+ add child'; vertically centered against the row; click events stopPropagation'd so taps don't toggle expand. Branch row exposes `group/row` named-group, so consumer can use `hidden group-hover/row:flex` for hover-only visibility scoped to the branch alone.",
+      description: "**action(s) on the right edge of the header** — the canonical \"+\" / \"...\" slot (Notion's \"+ Add page\" next to Pages, Linear's \"+\" next to Favorites, Slack's \"+\" next to Channels). Pointer events isolated so a Button here doesn't toggle collapse.",
   },
   "defaultExpanded": {
       schema: z.boolean().optional(),
@@ -101,12 +101,12 @@ export const SidebarContract = contract({
   "size": {
       schema: z.enum(["sm", "md"]).optional(),
       design: "knob",
-      description: "row size — `md` (default) is the standard `text-sm font-medium` nav row; `sm` is `text-xs` + lighter weight + tighter padding for visually subordinate rows (nested screens, sub-pages). Active state still wins on color + weight.",
+      description: "row size. `md` (default) is the standard `text-sm font-medium` nav row; `sm` is `text-xs` + lighter weight + tighter padding for visually subordinate rows (nested screens under a project, sub-pages under a section). Active state still wins on color + weight so the current row pops at either size.",
   },
   "description": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "secondary line under the label — `Edited 2m ago`, `12 items`, etc. Layout stacks label + description; icon vertically centered against stack; badge stays trailing. Hidden when sidebar collapsed.",
+      description: "secondary line beneath the label (metadata like 'Edited 2m ago', '12 items', a brief description). Row layout adapts: label + description stacked vertically; icon vertically-centered against the stack; badge stays on trailing edge. Hidden when sidebar collapsed.",
   },
   },
 });

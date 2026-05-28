@@ -11,7 +11,7 @@ export const DropdownMenuContract = contract({
   name: "DropdownMenu",
   description: "A small action menu attached to a trigger — overflow \"…\" buttons on cards, user-avatar menus in headers, \"Insert\" menus in editors. For a full searchable list, use Command. For ONE primary action plus a secondary, use a Button next to a smaller ghost Button instead of a dropdown.",
   import: "@gradeui/ui",
-  aliases: ["dropdown","dropdown menu","overflow menu","kebab menu","more menu","action menu","context-style menu","menu","pull-down menu","pulldown menu","context menu","popup menu","actions menu"],
+  aliases: ["dropdown","dropdown menu","overflow menu","kebab menu","more menu","action menu","context-style menu","menu","pull-down menu","pulldown menu","context menu","popup menu","actions menu","glass menu","frosted menu","ios menu","hig menu"],
   subcomponents: ["DropdownMenuTrigger","DropdownMenuContent","DropdownMenuItem","DropdownMenuCheckboxItem","DropdownMenuRadioGroup","DropdownMenuRadioItem","DropdownMenuLabel","DropdownMenuSeparator","DropdownMenuShortcut","DropdownMenuGroup","DropdownMenuSub","DropdownMenuSubTrigger","DropdownMenuSubContent"],
   composesWith: ["Button (as trigger asChild)","Avatar (user menu)","Card (overflow on a tile)","Tooltip (on the trigger)"],
   props: {
@@ -27,6 +27,11 @@ export const DropdownMenuContract = contract({
   "align": {
       schema: z.enum(["start", "center", "end", "top", "right", "bottom", "left"]).optional(),
       design: "knob",
+  },
+  "surface": {
+      schema: z.enum(["solid", "translucent", "glass", "glass-strong"]).optional(),
+      design: "knob",
+      description: "what the menu surface is *made of*. `solid` (default) is `bg-popover`. `translucent` matches Apple HIG / iOS menu sheets. `glass` for menus floating over rich canvases.",
   },
   "onSelect": {
       schema: z.unknown().optional(),

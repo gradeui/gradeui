@@ -9,11 +9,11 @@ import { contract } from "@gradeui/contracts";
 
 export const SheetContract = contract({
   name: "Sheet",
-  description: "A panel that slides in from a screen edge — mobile nav drawers, side panels for editing a single record without leaving the list, filter trays on small viewports. For a centered focus modal use Dialog. For a transient announcement use Toast (Sonner). For inline reveals use Collapsible.",
+  description: "A panel that slides in from a screen edge — mobile nav drawers, side panels for editing a single record without leaving the list, filter trays on small viewports, Studio-style inspector panels. For a centered focus modal use Dialog. For a transient announcement use Toast (Sonner). For inline reveals use Collapsible.",
   import: "@gradeui/ui",
-  aliases: ["sheet","drawer","side panel","slide-in","nav drawer","mobile drawer","slide-over","action sheet","modal sheet","bottom sheet","side sheet","react native modal sheet","bottom-sheet","ios action sheet"],
+  aliases: ["sheet","drawer","side panel","slide-in","nav drawer","mobile drawer","slide-over","action sheet","modal sheet","bottom sheet","side sheet","react native modal sheet","bottom-sheet","ios action sheet","inspector panel","glass sheet","frosted drawer"],
   subcomponents: ["SheetTrigger","SheetContent","SheetHeader","SheetTitle","SheetDescription","SheetFooter","SheetClose"],
-  composesWith: ["Form controls (an inline edit sheet)","Button (trigger + close)","AppShellNav (mobile-only swap)"],
+  composesWith: ["Form controls (an inline edit sheet)","Button (trigger + close)","AppShellNav (mobile-only swap)","Code (changelog drawers)","MediaSurface (image-detail sheets)"],
   props: {
   "open": {
       schema: z.unknown().optional(),
@@ -27,6 +27,11 @@ export const SheetContract = contract({
       schema: z.enum(["top", "right", "bottom", "left"]).optional(),
       design: "knob",
       default: "right",
+  },
+  "surface": {
+      schema: z.enum(["solid", "translucent", "glass", "glass-strong"]).optional(),
+      design: "knob",
+      description: "what the sheet panel is *made of*. `solid` is the default opaque `bg-background`. Reach for `glass` whenever the canvas behind the sheet (a layout in progress, a media gallery, a dashboard) should remain visible.",
   },
   "className": {
       schema: z.string().optional(),

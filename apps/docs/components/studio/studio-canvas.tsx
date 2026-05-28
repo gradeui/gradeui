@@ -53,6 +53,7 @@ import {
   PanelRight,
   Plus,
   Redo2,
+  RotateCcw,
   Share2,
   Smartphone,
   Sparkles,
@@ -390,6 +391,15 @@ export function StudioCanvas({
   // full 1280 virtual width regardless.
   const [viewportWidth, setViewportWidth] =
     useState<ViewportWidth>("responsive");
+
+  // Replay counter — bumping it re-keys the focused iframe so every
+  // inView reveal + mount animation runs again. The control lives in
+  // the canvas toolbar (next to viewport toggles) and the state is
+  // forwarded down to FocusedFastMount as a key. Lives at this level
+  // so the toolbar and the mount stay synced without prop drilling
+  // through three layers.
+  const [replayKey, setReplayKey] = useState(0);
+  const replay = React.useCallback(() => setReplayKey((k) => k + 1), []);
 
   // Fidelity — historically a wireframe vs full toggle, but the
   // wireframe surface is no longer used in the canvas chrome (the
@@ -1340,6 +1350,27 @@ export function StudioCanvas({
                   <Code2 />
                 </ToggleGroupItem>
               </ToggleGroup>
+              {/* Replay — re-keys the focused iframe so every inView
+                  reveal + mount animation runs again. Lives next to the
+                  Preview/Code toggle (was a floating overlay in the
+                  preview chrome; user flagged that as out of place,
+                  toolbar is the right home). Disabled in Code view —
+                  there's no preview animation to replay there. */}
+              <button
+                type="button"
+                onClick={replay}
+                disabled={view !== "preview"}
+                title="Replay animations"
+                aria-label="Replay animations"
+                className={cn(
+                  "h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors",
+                  "[&_svg]:size-3.5 [&_svg]:shrink-0",
+                  "text-muted-foreground hover:text-foreground hover:bg-muted",
+                  "disabled:opacity-40 disabled:pointer-events-none",
+                )}
+              >
+                <RotateCcw />
+              </button>
               {/* Viewport width — icon-only with tooltips. Responsive
                   picks up MoveHorizontal (←→) as its glyph since it
                   conveys "stretches to fill the column" without
@@ -1687,6 +1718,7 @@ export function StudioCanvas({
         activeCommentThreadId={activeCommentThreadId}
         onCommentPinClick={onCommentPinClick}
         viewportWidth={viewportWidth}
+        replayKey={replayKey}
         fidelity={fidelity}
         mediaUrls={focusedUrls}
         mediaOverrides={focusedOverrides}
@@ -1773,6 +1805,11 @@ interface FocusedFrameProps {
    *  Applied only to the Preview view; the Code view always uses the
    *  full column because narrowing a text editor is user-hostile. */
   viewportWidth: ViewportWidth;
+  /** Replay counter. Bumping it re-keys the focused iframe so every
+   *  inView reveal + mount animation runs again. Owned by the outer
+   *  StudioCanvas (toolbar Replay button lives there); FocusedFrame
+   *  is a pass-through. */
+  replayKey: number;
   /** Fidelity — `"wireframe"` shows MediaSurface placeholders only;
    *  `"full"` shows the underlying images/video/canvas. The toggle is
    *  delivered to the iframe via postMessage and lands as a single
@@ -1820,6 +1857,7 @@ function FocusedFrame({
   activeCommentThreadId,
   onCommentPinClick,
   viewportWidth,
+  replayKey,
   fidelity,
   mediaUrls,
   mediaOverrides,
@@ -2010,6 +2048,7 @@ function FocusedFrame({
           view={view}
           canRender={canRender}
           viewportWidth={viewportWidth}
+          replayKey={replayKey}
           selectMode={selectMode}
           onSelect={onSelect}
           onClearSelection={onClearSelection}

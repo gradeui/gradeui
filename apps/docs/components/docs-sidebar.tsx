@@ -124,6 +124,7 @@ const componentsNav: NavSection[] = [
   {
     title: "Feedback",
     items: [
+      { title: "Banner", href: "/components/banner" },
       { title: "Callout", href: "/components/callout" },
       { title: "Dialog", href: "/components/dialog" },
       { title: "Popover", href: "/components/popover" },
@@ -136,6 +137,7 @@ const componentsNav: NavSection[] = [
     title: "Media",
     items: [
       { title: "Carousel", href: "/components/carousel" },
+      { title: "Code", href: "/components/code" },
       { title: "Video Player", href: "/components/video-player" },
       { title: "Rive Player", href: "/components/rive-player" },
       { title: "Three Scene", href: "/components/three-scene" },

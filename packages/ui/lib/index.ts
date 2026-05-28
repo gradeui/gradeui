@@ -94,6 +94,13 @@ export {
 
 export { Badge, badgeVariants } from "../components/ui/badge";
 
+// Banner — full-width horizontal strip for system-level state,
+// announcements, first-run guidance. Extracted out of the inline-style
+// `FigmaIntroBanner` in apps/docs after the user flagged that as
+// invisible (it referenced --gds-* tokens that don't exist; the
+// fallback values washed it out). See banner.md for scenarios.
+export { Banner, bannerVariants, type BannerProps } from "../components/ui/banner";
+
 export { Button, buttonVariants } from "../components/ui/button";
 
 export { Calendar, CalendarDayButton } from "../components/ui/calendar";
@@ -131,6 +138,21 @@ export {
 } from "../components/ui/card";
 
 export { Checkbox } from "../components/ui/checkbox";
+
+// Code — syntax-highlighted code surface for marketing heroes, docs,
+// changelog entries, AI-output displays. Sync prism-react-renderer
+// (shared with Studio's CodeView so the repo has one highlighter, not
+// two). Supports diff hero mode, line emphasis, scroll-triggered
+// reveals, and a token-by-token typewriter for "watch it generate"
+// surfaces. Token palette is `--gds-code-*` CSS variables.
+export {
+  Code,
+  type CodeProps,
+  type CodeLanguage,
+  type CodeReveal,
+  type CodeTrigger,
+  type CodeDiff,
+} from "../components/ui/code";
 
 export {
   DatePicker,

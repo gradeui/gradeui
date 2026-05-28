@@ -9,11 +9,11 @@ import { contract } from "@gradeui/contracts";
 
 export const DialogContract = contract({
   name: "Dialog",
-  description: "Modal interruptions — confirmations, focused forms, detail views. Dialog is the right primitive for Apple HIG / React Native \"Alert\" (modal) semantics. For non-blocking inline messaging use Callout; for transient notifications use Toaster (Sonner). Always include DialogTitle (a11y requirement).",
+  description: "Modal interruptions — confirmations, focused forms, detail views, AI suggestion sheets. Dialog is the right primitive for Apple HIG / React Native \"Alert\" (modal) semantics. For non-blocking inline messaging use Callout; for transient notifications use Toaster (Sonner). Always include DialogTitle (a11y requirement).",
   import: "@gradeui/ui",
-  aliases: ["modal","popup","overlay","alert","system alert","alert dialog","modal dialog","confirm dialog","react native modal","rn alert"],
+  aliases: ["modal","popup","overlay","alert","system alert","alert dialog","modal dialog","confirm dialog","react native modal","rn alert","glass modal","frosted modal","ai suggestion modal"],
   subcomponents: ["DialogTrigger","DialogContent","DialogHeader","DialogTitle","DialogDescription","DialogFooter","DialogClose"],
-  composesWith: ["Button (as DialogTrigger asChild","and inside DialogFooter)","Input/Textarea/Select inside DialogContent"],
+  composesWith: ["Button (as DialogTrigger asChild","and inside DialogFooter)","Input/Textarea/Select inside DialogContent","Code (for changelog / diff modals)","MediaSurface (for image / preview modals)"],
   props: {
   "open": {
       schema: z.unknown().optional(),
@@ -23,6 +23,11 @@ export const DialogContract = contract({
   "asChild": {
       schema: z.enum(["wrap a Button"]).optional(),
       design: "plumbing",
+  },
+  "surface": {
+      schema: z.enum(["solid", "translucent", "glass", "glass-strong"]).optional(),
+      design: "knob",
+      description: "what the modal panel is *made of*. Defaults to `solid` (opaque `bg-background`). `glass` lets the page show through softly — pairs with rich backdrops or AI-suggestion modals.",
   },
   "accepts": {
       schema: z.unknown(),

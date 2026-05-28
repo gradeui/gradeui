@@ -35,7 +35,8 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 
 | Component | File | Key props | Figma | Notes |
 |---|---|---|---|---|
-| Card + CardHeader/Title/Description/Content/Footer | `card.tsx` | none — bg-card text-card-foreground | ✅ | |
+| Card + CardHeader/Title/Description/Content/Footer | `card.tsx` | `surface` (solid/translucent/glass/glass-strong) — opt into the Presence Surface system | ✅ | First-class `surface` prop landed May 2026. Replaces the "roll `bg-card/40 backdrop-blur-md` by hand" pattern with theme-tuned blur + edge highlight. See `card.md` for scenarios. |
+| Banner | `banner.tsx` | `variant` (default/info/success/warning/destructive/announcement), `surface`, `align`, `sticky`, `dismissible`, `icon`, `action`, `onDismiss` | ⏳ | Full-width horizontal strip — system messages, announcements, first-run guidance. Extracted out of `FigmaIntroBanner` after invisible-banner dogfooding feedback (it referenced `--gds-*` tokens that don't exist). Distinct from Callout (inline boxed message). |
 | Callout | `callout.tsx` | `variant` (default/destructive/success/warning/info) | ✅ | Renamed from Alert (May 2026); `highlight` variant dropped. ARIA role conditional: `status` (polite) for info/success/default, `alert` (assertive) for warning/destructive. Soft-bg + deep-text. |
 | Badge | `badge.tsx` | 17 variants — solid/soft/outline × status colours | ✅ | |
 | Skeleton | `skeleton.tsx` | none — animate-pulse rounded-md bg-muted | ✅ | 4 shape variants in Figma |
@@ -47,12 +48,12 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 
 | Component | File | Key props | Figma | Notes |
 |---|---|---|---|---|
-| Dialog (+ Header/Content/Footer/Title/Description/Close) | `dialog.tsx` | none formally | ✅ | Built with overlay frame |
-| Sheet | `sheet.tsx` | `side` (top/right/bottom/left) | ✅ | 4 sides, on overlay |
-| Popover | `popover.tsx` | none — w-72 shadow-md | ✅ | |
-| Tooltip | `tooltip.tsx` | none — bg-primary px-3 py-1.5 | ✅ | 4 sides in Figma |
-| HoverCard | `hover-card.tsx` | none — w-64 shadow-md | ✅ | |
-| DropdownMenu (+ Item/CheckboxItem/RadioItem/Separator/Label) | `dropdown-menu.tsx` | none formally | ✅ | |
+| Dialog (+ Header/Content/Footer/Title/Description/Close) | `dialog.tsx` | DialogContent: `surface` (solid/translucent/glass/glass-strong) | ✅ | Built with overlay frame. `surface` prop landed May 2026 — solid for destructive confirmations, glass for canvas-tool aesthetic. |
+| Sheet | `sheet.tsx` | `side` (top/right/bottom/left), SheetContent: `surface` | ✅ | 4 sides, on overlay. `surface="glass"` is the Studio-inspector / iOS-action-sheet signature. |
+| Popover | `popover.tsx` | PopoverContent: `surface` | ✅ | w-72 shadow-md by default. Glass for inspector popovers. |
+| Tooltip | `tooltip.tsx` | none — bg-primary px-3 py-1.5 | ✅ | 4 sides in Figma. NO surface prop — tooltips are tiny and need maximum legibility; opaque by design. |
+| HoverCard | `hover-card.tsx` | HoverCardContent: `surface` | ✅ | w-64 shadow-md by default. Glass for layer-preview HoverCards in canvas tools. |
+| DropdownMenu (+ Item/CheckboxItem/RadioItem/Separator/Label) | `dropdown-menu.tsx` | DropdownMenuContent + DropdownMenuSubContent: `surface` | ✅ | Translucent matches iOS / Apple HIG menu sheets. Match surface between parent and submenus. |
 | Select (+ Trigger/Content/Item/Value) | `select.tsx` | none formally | ✅ | placeholder/filled/open in Figma |
 | MultiSelect | `multi-select.tsx` | `options`, `value`/`defaultValue`, `onValueChange`, `placeholder`, `maxCount` (badges before "+N more"), `searchable`, `badgeDismissible`, `modalPopover` | ⏳ | Composes Popover + Command + Badge. Data-driven via `options`; selected items render as removable Badges in the trigger with maxCount overflow. Select-all / Clear / Close actions in dropdown footer. For unbounded/async lists use `Command` directly. |
 | Command (+ Input/Item/Group) | `command.tsx` | none — bg-popover | ✅ | |
@@ -81,12 +82,13 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 
 | Component | File | Key props | Figma | Notes |
 |---|---|---|---|---|
-| SectionBlock | `section-block.tsx` | `padding`, `background` (transparent/muted/card/primary/gradient), `container` | ✅ | 5 background variants |
+| SectionBlock | `section-block.tsx` | `padding`, `background` (transparent/muted/card/primary/gradient), `surface` (solid/translucent/glass/glass-strong), `container`, `alignment`, `title`, `subtitle`, `cta1/cta2`, `backgroundImage`, `as` | ✅ | 5 background variants + Presence Surface axis. Marketing hero pattern: `background="gradient"` + glass Card children. |
 | CardBlock | `card-block.tsx` | `layout` (single/carousel/grid/bento/sideBySide), `columns` | ✅ | grid/sideBySide/bento built |
 | MediaBlock | `media-block.tsx` | `layout` (single/carousel/grid/bento/sideBySide) | ✅ | single/grid/sideBySide/bento built |
 | MediaSurface | `media-surface.tsx` | `aspect` (square/video/portrait/wide) | ✅ | gradient placeholder fill |
 | FaqBlock | `faq-block.tsx` | composed Accordion section | ⏳ | |
 | Carousel (+ Slide / VideoSlide / Dots / Arrows / Prev / Next) | `carousel.tsx` | `loop`, `align`, `slidesPerView`, `autoplay`, `draggable`, `onSlideChange` · per-slide `duration` · VideoSlide `src`/`poster`/`alt`/`loop`/`controls`/`fit` | ⏳ | Embla-backed. Custom autoplay loop (no plugin) so per-slide duration + advance-on-video-ended fall out cleanly. Token-driven via `--gds-carousel-*` vars. Disambiguates from `<Slider>` (range input) at the sidecar level. |
+| Code | `code.tsx` | `source`, `language` (tsx/jsx/ts/js/html/css/json/bash/md/…), `highlight` (line\|range\|mixed), `diff` ({added,removed}), `reveal` (none/lines/typewriter/diff), `trigger` (mount/inView/manual), `filename`, `showLineNumbers`, `wrap`, `bare` | ⏳ | Syntax-highlighted read-only code surface. Shared `prism-react-renderer` with Studio's `CodeView`. Token palette via `--gds-code-*` CSS vars. Diff hero pattern (added/removed line bgs + `+`/`-` gutter); scroll-triggered reveals via `motion`'s `useInView`. Not an editor — for editable code, compose CodeMirror/Monaco yourself. |
 
 ## Interactions
 
