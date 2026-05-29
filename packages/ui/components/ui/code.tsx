@@ -33,6 +33,13 @@ export type CodeLanguage = Language;
 export type CodeReveal = "none" | "lines" | "typewriter" | "diff";
 export type CodeTrigger = "mount" | "inView" | "manual";
 export type CodeSpeed = "slow" | "normal" | "fast";
+export type CodeSize = "xs" | "sm" | "md";
+
+const SIZE_CLASS: Record<CodeSize, string> = {
+  xs: "text-xs",
+  sm: "text-sm",
+  md: "text-base",
+};
 
 /**
  * Step shape for scripted terminal / CLI sessions. Lives on `<Code>`
@@ -173,6 +180,17 @@ export interface CodeProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "c
    * Overflowing content scrolls. Pair with `wrap` to break long lines
    * instead of horizontal scroll.
    */
+  /**
+   * Type-scale preset. `xs` (12px) for dense changelog cards and inline
+   * code in tables; `sm` (14px, default) for marketing heroes and most
+   * docs blocks; `md` (16px) for "this is the focal point" displays
+   * like AI-output demos and large screen-capture replacements.
+   *
+   * Composes with `maxLines` correctly because the container height
+   * uses `1lh` which inherits whatever line-height the size class
+   * produces — switching size resizes the container automatically.
+   */
+  size?: CodeSize;
   height?: number | string | "auto";
   /**
    * Cap the visible line count — the container is fixed at exactly
@@ -263,6 +281,7 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(function Code(
     cursor,
     steps,
     loop = false,
+    size = "sm",
     height,
     maxLines,
     className,
@@ -491,8 +510,10 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(function Code(
       data-gds-part="code"
       data-gds-reveal={reveal}
       data-gds-trigger={trigger}
+      data-gds-size={size}
       className={cn(
-        "gds-code relative w-full overflow-hidden text-sm",
+        "gds-code relative w-full overflow-hidden",
+        SIZE_CLASS[size],
         !bare && [
           "rounded-lg border bg-[var(--gds-code-bg)] text-[var(--gds-code-fg)]",
           "border-border/60",
