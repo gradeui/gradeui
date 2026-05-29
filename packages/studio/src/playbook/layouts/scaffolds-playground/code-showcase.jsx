@@ -277,6 +277,21 @@ export default function App() {
 
           <Separator />
 
+          {/* ── Type sizes ─────────────────────────────────────────── */}
+          <Stack gap="sm">
+            <Row gap="sm" align="center">
+              <Badge variant="outline" className="text-xs">05b — Type sizes</Badge>
+              <span className="text-sm text-muted-foreground">xs / sm / md — composes with maxLines via 1lh.</span>
+            </Row>
+            <Stack gap="md">
+              <Code source={PLAIN} language="tsx" size="xs" filename="size=xs (12px)" />
+              <Code source={PLAIN} language="tsx" size="sm" filename="size=sm (14px, default)" />
+              <Code source={PLAIN} language="tsx" size="md" filename="size=md (16px)" />
+            </Stack>
+          </Stack>
+
+          <Separator />
+
           {/* ── Typewriter ─────────────────────────────────────────── */}
           <Stack gap="sm">
             <Row gap="sm" align="center">

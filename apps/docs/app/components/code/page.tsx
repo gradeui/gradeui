@@ -123,6 +123,27 @@ const codeProps = [
     default: "false",
     description: "Drop chrome (border, header, padding) — for inline use.",
   },
+  {
+    name: "size",
+    type: '"xs" | "sm" | "md"',
+    default: '"sm"',
+    description:
+      "Type-scale preset. xs (12px) for dense changelog cards and inline blocks; sm (14px, default) for marketing heroes and docs; md (16px) for focal-point displays. Composes with maxLines via 1lh.",
+  },
+  {
+    name: "height",
+    type: '"auto" | number | string',
+    default: '"auto"',
+    description:
+      'Container sizing. Number = pixels (300 → "300px"). String passes through as CSS ("20rem", "50vh").',
+  },
+  {
+    name: "maxLines",
+    type: "number",
+    default: "-",
+    description:
+      "Cap visible line count at exactly N line-heights. Wins over `height`. Inherits the current `size`'s line-height so switching size resizes the container automatically.",
+  },
 ];
 
 const PLAIN = `function greet(name) {
@@ -403,6 +424,39 @@ export default function CodePage() {
             loop
             maxLines={4}
             steps={LOOPING_DEMO}
+            className="w-full max-w-2xl"
+          />
+        </ComponentPreview>
+
+        <h3 className="text-lg font-medium">Sizes</h3>
+        <p className="text-sm text-muted-foreground max-w-3xl">
+          <code className="font-mono">size=&quot;xs&quot;</code> /{" "}
+          <code className="font-mono">&quot;sm&quot;</code> (default) /{" "}
+          <code className="font-mono">&quot;md&quot;</code>. The block&rsquo;s line-height tracks the size, so <code className="font-mono">maxLines</code> stays correct across all three.
+        </p>
+        <ComponentPreview
+          code={`<Code language="tsx" size="xs" source={...} />
+<Code language="tsx" size="sm" source={...} />
+<Code language="tsx" size="md" source={...} />`}
+        >
+          <div className="w-full max-w-2xl space-y-4">
+            <Code language="tsx" size="xs" source={PLAIN} filename="size=xs (12px)" />
+            <Code language="tsx" size="sm" source={PLAIN} filename="size=sm (14px, default)" />
+            <Code language="tsx" size="md" source={PLAIN} filename="size=md (16px)" />
+          </div>
+        </ComponentPreview>
+
+        <h3 className="text-lg font-medium">Stable height (maxLines)</h3>
+        <p className="text-sm text-muted-foreground max-w-3xl">
+          <code className="font-mono">maxLines</code> fixes the container at exactly N line-heights so the page never shifts during animated reveals or scripted sessions. Pair with <code className="font-mono">size</code> and the container resizes automatically.
+        </p>
+        <ComponentPreview
+          code={`<Code language="tsx" maxLines={5} source={...} />`}
+        >
+          <Code
+            language="tsx"
+            maxLines={5}
+            source={SCROLL_REVEAL}
             className="w-full max-w-2xl"
           />
         </ComponentPreview>
