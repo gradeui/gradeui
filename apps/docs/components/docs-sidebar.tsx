@@ -83,6 +83,7 @@ const componentsNav: NavSection[] = [
       { title: "Button", href: "/components/button" },
       { title: "Input", href: "/components/input" },
       { title: "Textarea", href: "/components/textarea" },
+      { title: "Composer", href: "/components/composer" },
       { title: "Label", href: "/components/label" },
       { title: "Select", href: "/components/select" },
       { title: "Multi Select", href: "/components/multi-select" },
@@ -101,6 +102,7 @@ const componentsNav: NavSection[] = [
     items: [
       { title: "Avatar", href: "/components/avatar" },
       { title: "Badge", href: "/components/badge" },
+      { title: "Message", href: "/components/message" },
       { title: "Card", href: "/components/card" },
       { title: "Table", href: "/components/table" },
       { title: "Skeleton", href: "/components/skeleton" },

@@ -154,6 +154,60 @@ export {
   type CodeDiff,
 } from "../components/ui/code";
 
+// Message — canonical "avatar + author + timestamp + body" row. THE
+// primitive for any chat message, comment, post-reply, or activity-log
+// entry that follows the people-and-text shape. Slot-based avatar so
+// consumers pass any Avatar variant. See packages/ui/components/ui/message.md.
+export {
+  Message,
+  type MessageProps,
+} from "../components/ui/message";
+
+// Composer — the generic text composition surface. Lexical-backed,
+// rich text + mentions/slash + image attachments + scripted demo
+// playback. Hosts wrap it for AI chat (paperclip + send), comments
+// (no toolbar, no attachments), document editing (full toolbar), etc.
+// Shares lib/demo's step-machine vocabulary so demo scripts read the
+// same as <Code>'s. See packages/ui/components/ui/composer.md.
+export {
+  Composer,
+  ComposerReply,
+  type ComposerProps,
+  type ComposerHandle,
+  type ComposerContent,
+  type ComposerStep,
+  type ComposerFormat,
+  type ComposerMentionItem,
+  type ComposerTriggerConfig,
+  type ComposerAttachmentConfig,
+  type ComposerAttachment,
+} from "../components/ui/composer";
+
+// lib/demo — shared scripted-demo primitive. The spine behind every
+// "type this, wait, then reveal that" surface in gradeui. Used
+// internally by <Code> and <Composer>; <DemoStage> + <Reveal> are
+// re-exported here for marketing surfaces that want to stage whole-
+// interface reveals on cue. See packages/ui/lib/demo/README.md.
+export {
+  useScriptedDemo,
+  BlinkingCursor,
+  DemoStage,
+  Reveal,
+  DEMO_SPEED_PRESETS,
+  sleep as demoSleep,
+  typeText as demoTypeText,
+  type DemoSpeed,
+  type DemoTrigger,
+  type RevealStep,
+  type RevealAnimation,
+  type DemoStageProps,
+  type RevealProps,
+  type BlinkingCursorProps,
+  type UseScriptedDemoOptions,
+  type ScriptedDemoState,
+  type ScriptedDemoContext,
+} from "./demo";
+
 export {
   DatePicker,
   DateRangePicker,

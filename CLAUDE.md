@@ -86,6 +86,25 @@ For **per-client auth**, plan to extend the auth callback to attach a `clients: 
 ### Library work (fixing or adding a component)
 Work in `packages/ui/` (or `packages/pro/` for premium). The public barrel is `packages/ui/lib/index.ts`. Components live under `packages/ui/components/ui/`. See `packages/ui/README.md` for detail.
 
+### Creating a new component — the ship checklist
+
+A new component is not "done" until every line below is checked. Skipping any of these leaves the component invisible (no docs page), unusable in Studio (no allowlist), unthemeable (no tokens), or broken on first import (no barrel export). This list is non-negotiable.
+
+1. **Source** — `packages/ui/components/ui/<name>.tsx`
+2. **Sidecar** — `packages/ui/components/ui/<name>.md` with `props:`, `when_to_use:`, `composes_with:`, `aliases:` (drives the auto-generated contract + Studio retrieval).
+3. **Barrel export** — add to `packages/ui/lib/index.ts` so consumers can `import { X } from "@gradeui/ui"`.
+4. **Vendored copy** — `apps/docs/components/ui/<name>.tsx` mirrors the source. Required until docs migrates to importing from `@gradeui/ui`. The docs page imports the vendored copy (`@/components/ui/<name>`), not the published one.
+5. **Docs page** — `apps/docs/app/components/<slug>/page.tsx` with `<SidecarBlock slug="..." />`, `<ComponentNav currentHref="..." />`, an interactive playground, and a `<InstallBlock>` showing the basic usage.
+6. **Docs sidebar** — add to `apps/docs/components/docs-sidebar.tsx` (`componentsNav`) in the right category. Without this, the page exists but is unreachable.
+7. **Components list** — add to `apps/docs/lib/components-list.ts` (powers prev/next nav at the bottom of every docs page). Without this, neighbouring pages don't link back.
+8. **Playbook allowlist** — add to `packages/studio/src/playbook/components/allowlist.ts` if Studio should be able to emit it in generated JSX, and to the `componentFiles` map in `apps/docs/lib/chat-sandpack.ts` so Sandpack can resolve it. Skip only for components that are explicitly chrome-only (Studio surfaces).
+9. **Components inventory** — add a row to `packages/ui/COMPONENTS.md` (source-of-truth list + Figma sync status).
+10. **CSS tokens** — if the component introduces colours, spacing, or motion not covered by existing tokens, add `--gds-<name>-*` variables to `packages/ui/styles/globals.css` (alongside the other component palettes).
+11. **Contracts regen** — run `pnpm -F @gradeui/ui generate:contracts` so the auto-generated `<name>.contract.ts` lands alongside the sidecar. The Studio settings panel reads these.
+12. **Build** — `pnpm -F @gradeui/ui dev` in watch mode (or `pnpm build`) rebuilds the dist. Without this, `@gradeui/ui` imports won't see the new component even though the file exists.
+
+The vendored copy + dist rebuild are the two most common things to forget. If a new component "doesn't appear" on localhost, check those first.
+
 ### Docs-site work
 Work in `apps/docs/`. The docs site currently keeps its own copy of components under `components/ui/` — this is deliberate, to decouple the docs site's import graph from the published package during the transition. If you edit a component for a customer-facing change, edit it in **both** `packages/ui/components/ui/` and `apps/docs/components/ui/` until the docs site is migrated to import from `@gradeui/ui`.
 

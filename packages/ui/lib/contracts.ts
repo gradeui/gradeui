@@ -24,6 +24,7 @@ import { CheckboxContract } from "../components/ui/checkbox.contract";
 import { CodeContract } from "../components/ui/code.contract";
 import { CollapsibleContract } from "../components/ui/collapsible.contract";
 import { CommandContract } from "../components/ui/command.contract";
+import { ComposerContract } from "../components/ui/composer.contract";
 import { DatePickerContract } from "../components/ui/date-picker.contract";
 import { DialogContract } from "../components/ui/dialog.contract";
 import { DropdownMenuContract } from "../components/ui/dropdown-menu.contract";
@@ -34,6 +35,7 @@ import { InputContract } from "../components/ui/input.contract";
 import { LabelContract } from "../components/ui/label.contract";
 import { MapContract } from "../components/ui/map.contract";
 import { MediaSurfaceContract } from "../components/ui/media-surface.contract";
+import { MessageContract } from "../components/ui/message.contract";
 import { MultiSelectContract } from "../components/ui/multi-select.contract";
 import { PopoverContract } from "../components/ui/popover.contract";
 import { ProgressContract } from "../components/ui/progress.contract";
@@ -84,6 +86,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Code: CodeContract,
   Collapsible: CollapsibleContract,
   Command: CommandContract,
+  Composer: ComposerContract,
   DatePicker: DatePickerContract,
   Dialog: DialogContract,
   DropdownMenu: DropdownMenuContract,
@@ -94,6 +97,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Label: LabelContract,
   Map: MapContract,
   MediaSurface: MediaSurfaceContract,
+  Message: MessageContract,
   MultiSelect: MultiSelectContract,
   Popover: PopoverContract,
   Progress: ProgressContract,

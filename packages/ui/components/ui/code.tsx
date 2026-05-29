@@ -2,6 +2,12 @@ import * as React from "react";
 import { Highlight, type Language, type PrismTheme } from "prism-react-renderer";
 import { motion, useInView } from "motion/react";
 import { cn } from "@/lib/utils";
+import {
+  useScriptedDemo,
+  sleep,
+  DEMO_SPEED_PRESETS,
+  BlinkingCursor,
+} from "@/lib/demo";
 
 /**
  * Code — syntax-highlighted code surface with diff, line-emphasis, and
@@ -400,104 +406,95 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(function Code(
 
   // ─── Step runner ─────────────────────────────────────────────────
   //
-  // Walks `steps` once `shouldPlay` flips true. Cancels cleanly if the
-  // component unmounts mid-step or the steps array changes. Each `type`
-  // schedules a chain of setTimeouts (one per char) for that step's
-  // duration; `wait` is a single setTimeout; `output` writes synchronously
-  // and marks the new lines as output rows.
-  React.useEffect(() => {
-    if (!stepsActive || !steps || !shouldPlay) return;
-    let cancelled = false;
-    let timer: number | undefined;
-    setStepBuffer("");
-    setOutputLineSet(new Set());
-    setRevealComplete(false);
+  // Refactored 2026-05-29 onto `useScriptedDemo` from `lib/demo/`.
+  // The runner / cancellation / loop logic now lives in the shared
+  // hook (same one Composer and DemoStage use); Code only supplies
+  // the per-step interpret callback that mutates its own buffer +
+  // output-line state. trigger="manual" + `play={shouldPlay}` keeps
+  // Code's existing scroll/inView/play-prop semantics intact — the
+  // hook just runs the script when Code's outer shouldPlay flips true.
+  //
+  // The interpret callback uses a buffer ref (not the React state)
+  // for sequential reads — otherwise a `type` step's per-char ticks
+  // would read stale state and rewrite the same chunk repeatedly.
+  // We mirror writes to both the ref (next tick reads it) and React
+  // state (rendering picks it up).
+  const stepBufferRef = React.useRef("");
+  const outputLineSetRef = React.useRef<Set<number>>(new Set());
+  const updateBuffer = React.useCallback((next: string) => {
+    stepBufferRef.current = next;
+    setStepBuffer(next);
+  }, []);
+  const updateOutputs = React.useCallback((next: Set<number>) => {
+    outputLineSetRef.current = next;
+    setOutputLineSet(next);
+  }, []);
 
-    const runStep = (stepIdx: number, buffer: string, outputs: Set<number>) => {
-      if (cancelled) return;
-      if (stepIdx >= steps.length) {
-        // Sequence done. Either flag complete (cursor stops) and stop,
-        // or loop after a 2s pause if the consumer asked.
-        setRevealComplete(true);
-        if (loop) {
-          timer = window.setTimeout(() => {
-            if (cancelled) return;
-            setStepBuffer("");
-            setOutputLineSet(new Set());
-            setRevealComplete(false);
-            runStep(0, "", new Set());
-          }, 2000);
-        }
-        return;
-      }
-      const step = steps[stepIdx];
-
-      if (step.type === "wait") {
-        timer = window.setTimeout(
-          () => runStep(stepIdx + 1, buffer, outputs),
-          step.ms,
-        );
-        return;
-      }
-
+  const { isComplete: stepsComplete } = useScriptedDemo<CodeStep>({
+    steps: stepsActive ? steps : undefined,
+    speed,
+    trigger: "manual",
+    play: shouldPlay,
+    loop,
+    containerRef: innerRef,
+    onLoopReset: () => {
+      updateBuffer("");
+      updateOutputs(new Set());
+      setRevealComplete(false);
+    },
+    interpret: async (step, ctx) => {
+      const signal = ctx.signal;
+      if (step.type === "wait") return sleep(step.ms, signal);
       if (step.type === "clear") {
-        setStepBuffer("");
-        setOutputLineSet(new Set());
-        runStep(stepIdx + 1, "", new Set());
+        updateBuffer("");
+        updateOutputs(new Set());
         return;
       }
-
       if (step.type === "output") {
         // Output appends instantly. Each new line of the output is
-        // marked as an output row (1-indexed, line number in the final
-        // buffer including this insert).
+        // marked as an output row (1-indexed, line number in the
+        // final buffer including this insert).
+        const buffer = stepBufferRef.current;
         const base = buffer.length > 0 && !buffer.endsWith("\n") ? buffer + "\n" : buffer;
         const next = base + step.text;
         const startLine = base.split("\n").length;
         const outputLineCount = step.text.split("\n").length;
-        const nextOutputs = new Set(outputs);
+        const nextOutputs = new Set(outputLineSetRef.current);
         for (let i = 0; i < outputLineCount; i++) nextOutputs.add(startLine + i);
-        setStepBuffer(next);
-        setOutputLineSet(nextOutputs);
-        // Brief beat after output before the next prompt — gives the
-        // eye a chance to read the result.
-        timer = window.setTimeout(
-          () => runStep(stepIdx + 1, next + (next.endsWith("\n") ? "" : "\n"), nextOutputs),
-          240,
-        );
-        return;
+        updateBuffer(next);
+        updateOutputs(nextOutputs);
+        // Append a trailing newline so the next type step starts on
+        // its own row, matching the pre-refactor behaviour.
+        updateBuffer(next + (next.endsWith("\n") ? "" : "\n"));
+        // Brief beat after output before the next prompt.
+        return sleep(240, signal);
       }
-
       // type — append one char per tick at the resolved token stagger
       // (or the step's per-step speed override).
       const stepStagger = step.speed
-        ? SPEED_PRESETS[step.speed].tokenStagger
-        : preset.tokenStagger;
+        ? DEMO_SPEED_PRESETS[step.speed].tokenStagger
+        : ctx.speed.tokenStagger;
+      const buffer = stepBufferRef.current;
       const base = buffer.length > 0 && !buffer.endsWith("\n") ? buffer + "\n" : buffer;
-      const startBuffer = base;
-      let i = 0;
-      const tick = () => {
-        if (cancelled) return;
-        if (i >= step.text.length) {
-          runStep(stepIdx + 1, startBuffer + step.text, outputs);
-          return;
-        }
-        i++;
-        const partial = startBuffer + step.text.slice(0, i);
-        setStepBuffer(partial);
-        timer = window.setTimeout(tick, stepStagger);
-      };
-      // Hand off to first tick after a small intra-step settle (lets
-      // the prompt char render before the first key "press").
-      timer = window.setTimeout(tick, 60);
-    };
+      // Small intra-step settle so the prompt renders before the
+      // first key "press" (matches pre-refactor behaviour).
+      await sleep(60, signal);
+      for (let i = 0; i < step.text.length; i++) {
+        if (signal.aborted) return;
+        const partial = base + step.text.slice(0, i + 1);
+        updateBuffer(partial);
+        if (i < step.text.length - 1) await sleep(stepStagger, signal);
+      }
+    },
+  });
 
-    runStep(0, "", new Set());
-    return () => {
-      cancelled = true;
-      if (timer !== undefined) window.clearTimeout(timer);
-    };
-  }, [stepsActive, steps, shouldPlay, loop, preset.tokenStagger]);
+  // When the step machine completes, flag revealComplete so the
+  // cursor's "show only while in flight" logic fires. The existing
+  // non-step reveal-complete effect (above) doesn't touch this when
+  // stepsActive.
+  React.useEffect(() => {
+    if (stepsActive) setRevealComplete(stepsComplete);
+  }, [stepsActive, stepsComplete]);
 
   // Cursor visibility — defaults on for typewriter AND for scripted
   // step sessions (terminal demos always want a caret). Static blocks
@@ -646,11 +643,7 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(function Code(
                       ))
                     )}
                     {renderCursorHere && !isOutputLine ? (
-                      <span
-                        data-gds-part="code-cursor"
-                        aria-hidden
-                        className="gds-code-cursor"
-                      />
+                      <BlinkingCursor data-gds-part="code-cursor" />
                     ) : null}
                   </span>
                 </>

@@ -21,6 +21,7 @@ export const componentsList = [
   { name: "Button", href: "/components/button", category: "Forms" },
   { name: "Input", href: "/components/input", category: "Forms" },
   { name: "Textarea", href: "/components/textarea", category: "Forms" },
+  { name: "Composer", href: "/components/composer", category: "Forms" },
   { name: "Label", href: "/components/label", category: "Forms" },
   { name: "Select", href: "/components/select", category: "Forms" },
   { name: "Multi Select", href: "/components/multi-select", category: "Forms" },
@@ -35,6 +36,7 @@ export const componentsList = [
   // Data Display
   { name: "Avatar", href: "/components/avatar", category: "Data Display" },
   { name: "Badge", href: "/components/badge", category: "Data Display" },
+  { name: "Message", href: "/components/message", category: "Data Display" },
   { name: "Card", href: "/components/card", category: "Data Display" },
   { name: "Chart", href: "/components/charts", category: "Data Display" },
   { name: "Table", href: "/components/table", category: "Data Display" },

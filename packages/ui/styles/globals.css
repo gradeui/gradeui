@@ -952,6 +952,102 @@
 }
 
 /* ============================================
+   DEMO CURSOR — generic blinking caret used by lib/demo/ consumers
+   ============================================
+   The shared caret used wherever a gradeui component scripts typing
+   (Code's terminal lines, Composer's inline cursor, future surfaces).
+   Parameterised via CSS variables so each host can dial dimensions
+   and colour without forking the class.
+
+     --gds-demo-cursor-color    defaults to currentColor
+     --gds-demo-cursor-width    defaults to 0.55em
+     --gds-demo-cursor-height   defaults to 1.05em
+     --gds-demo-cursor-radius   defaults to 1px
+
+   Two variants — `inline` (default; thin caret for text) and `block`
+   (square cell for terminal demos). The block variant swaps width to
+   match height. */
+.gds-demo-cursor {
+  display: inline-block;
+  width: var(--gds-demo-cursor-width, 0.55em);
+  height: var(--gds-demo-cursor-height, 1.05em);
+  vertical-align: text-bottom;
+  margin-left: 0.05em;
+  background-color: var(--gds-demo-cursor-color, currentColor);
+  border-radius: var(--gds-demo-cursor-radius, 1px);
+  animation: gds-code-caret-blink 1.05s steps(1, end) infinite;
+}
+.gds-demo-cursor[data-gds-variant="block"] {
+  width: var(--gds-demo-cursor-height, 1.05em);
+  border-radius: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gds-demo-cursor { animation: none; opacity: 1; }
+}
+
+/* ============================================
+   COMPOSER — token palette for <Composer>
+   ============================================
+   The generic text composition surface (chat / comments / post body).
+   Tokens here drive the editor card, toolbar, mention pills, and
+   attachment chips. Theme via consumer CSS to retune any surface
+   without forking the component.
+
+   Two themes shipped inline: light + dark via .dark scoping. */
+:root {
+  --gds-composer-bg: var(--background);
+  --gds-composer-fg: var(--foreground);
+  --gds-composer-muted-fg: var(--muted-foreground);
+  --gds-composer-border: var(--border);
+  --gds-composer-action-fg: var(--muted-foreground);
+  --gds-composer-toolbar-fg: var(--muted-foreground);
+  --gds-composer-toolbar-hover-bg: var(--muted);
+  --gds-composer-toolbar-active-bg: var(--accent);
+  --gds-composer-toolbar-active-fg: var(--accent-foreground);
+  --gds-composer-chip-remove-bg: oklch(0.15 0 0);
+  --gds-composer-chip-remove-fg: #fff;
+  --gds-composer-mention-bg: oklch(var(--primary) / 0.12);
+  --gds-composer-mention-fg: oklch(var(--primary));
+  --gds-composer-mention-slash-bg: oklch(0.6 0.12 280 / 0.12);
+  --gds-composer-mention-slash-fg: oklch(0.6 0.12 280);
+}
+.dark {
+  --gds-composer-chip-remove-bg: #fff;
+  --gds-composer-chip-remove-fg: oklch(0.15 0 0);
+}
+
+/* Mention pill — applied via Lexical theme.beautifulMentions.
+   Renders as an inline rounded chip with a subtle background and
+   the trigger char + value. */
+.gds-composer-mention {
+  display: inline-block;
+  padding: 0 0.4em;
+  margin: 0 0.05em;
+  border-radius: 0.4em;
+  background: var(--gds-composer-mention-bg);
+  color: var(--gds-composer-mention-fg);
+  font-weight: 500;
+  cursor: default;
+}
+.gds-composer-mention-slash {
+  background: var(--gds-composer-mention-slash-bg);
+  color: var(--gds-composer-mention-slash-fg);
+}
+
+/* Pullquote — styled variant of blockquote. The Lexical node
+   carries a __pullquote sentinel; this rule applies whenever the
+   blockquote DOM is tagged with data-gds-pullquote (set via a
+   future custom node) OR carries the .gds-composer-pullquote class. */
+.gds-composer-pullquote,
+[data-gds-pullquote="true"] {
+  border-left: 3px solid var(--primary);
+  padding-left: 1rem;
+  font-size: 1.125rem;
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* ============================================
    SURFACE CLASSES
    ============================================
    Apply one to any container. Composes with elevation classes —

@@ -45,7 +45,7 @@ export const config = {
     //   `x-pathname` header the root layout reads to skip its provider
     //   chrome. The function's early return short-circuits before the
     //   intl rewrite happens, so fast-sandbox doesn't break.
-    "/((?!api|_next|_vercel|.*\\..*|docs|components|templates|blocks|brand|changelog|roadmap|play|chat|studio|layout-preview|skills|media).*)",
+    "/((?!api|_next|_vercel|.*\\..*|docs|components|templates|blocks|brand|changelog|roadmap|play|chat|studio|layout-preview|skills|media|v2).*)",
     // Always run for root
     "/",
   ],

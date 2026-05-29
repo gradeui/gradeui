@@ -68,6 +68,25 @@ export default function Home() {
                 </Link>
               </Button>
             </div>
+
+            {/*
+              Above-the-fold maker line. Lives inside the hero block (not the
+              footer) so it shows without scrolling and is part of the first
+              screenshot any social/AI surface captures. The `rel="author"`
+              link backs up the JSON-LD Person node in the root layout.
+            */}
+            <p className="pt-6 text-sm text-muted-foreground">
+              Built by{" "}
+              <a
+                href="https://alastairdriver.com"
+                rel="author noopener"
+                target="_blank"
+                className="font-medium text-foreground hover:underline"
+              >
+                Alastair Driver
+              </a>{" "}
+              · alastairdriver.com
+            </p>
           </div>
         </section>
 

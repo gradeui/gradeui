@@ -88,6 +88,11 @@ export const CodeContract = contract({
       design: "knob",
       description: "drop chrome (border, header, padding) — for inline use",
   },
+  "size": {
+      schema: z.enum(["xs", "sm", "md"]).optional(),
+      design: "knob",
+      description: "type-scale preset. `xs` (12px) for dense changelog cards / inline blocks; `sm` (14px, default) for marketing heroes and docs; `md` (16px) for focal-point displays.",
+  },
   "height": {
       schema: z.enum(["auto", "number", "string"]).optional(),
       design: "knob",
@@ -96,7 +101,7 @@ export const CodeContract = contract({
   "maxLines": {
       schema: z.number().optional(),
       design: "knob",
-      description: "cap the visible line count at exactly N line-heights. Wins over `height`. Use for terminal windows, code-tour cards, and surfaces that need a stable vertical rhythm regardless of snippet length.",
+      description: "cap the visible line count at exactly N line-heights. Wins over `height`. Inherits the current size's line-height automatically.",
   },
   },
 });

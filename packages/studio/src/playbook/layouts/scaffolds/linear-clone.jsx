@@ -9,16 +9,20 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuCheckboxItem,
   Sortable,
+  // New primitives that retired the inline comment-row + Tiptap composer.
+  Message, ComposerReply,
 } from "@gradeui/ui";
 import { useState, useMemo } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
 import {
   Inbox, ListFilter, CircleDashed, CircleDot, CheckCircle2,
   CircleAlert, GripVertical, Plus, Search,
   AtSign, Settings,
 } from "lucide-react";
+
+// Tone palette for comment avatars — keyed by author initials so the
+// same person gets the same colour across the activity feed.
+const AVATAR_TONES = { MA: "violet", AL: "amber", JE: "emerald", SA: "sky" };
+const toneFor = (initials) => AVATAR_TONES[initials] || "muted";
 
 export default function App() {
   // Issue model — Linear-ish minimal shape: id + title + status +
@@ -105,25 +109,14 @@ export default function App() {
       return next;
     });
 
-  // TipTap editor for the comment composer. Real Linear comments include
-  // @mention + slash menu + markdown shortcuts — StarterKit covers the
-  // markdown shortcuts (## becomes heading etc.) for free; add the
-  // Mention extension when you wire a real user list.
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({
-        placeholder: "Leave a comment… use markdown shortcuts (**bold**, # heading, - list)",
-      }),
-    ],
-    editorProps: {
-      attributes: {
-        class: "prose prose-sm dark:prose-invert max-w-none min-h-[80px] focus:outline-none",
-      },
-    },
-    content: "",
-    immediatelyRender: false,
-  });
+  // Mention items for the comment composer. Real Linear pulls these
+  // from workspace membership; we hard-code a few to demo the typeahead.
+  const teamMembers = [
+    { id: "u1", value: "marcus" },
+    { id: "u2", value: "alex" },
+    { id: "u3", value: "jess" },
+    { id: "u4", value: "sara" },
+  ];
 
   // Reorder operates on the FULL issues list (not the filtered view).
   // Sortable still receives the filtered ids so visible rows are the
@@ -366,42 +359,44 @@ export default function App() {
                   {selected.comments.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No comments yet.</p>
                   ) : (
-                    selected.comments.map((c) => (
-                      <Row key={c.id} gap="sm" align="start">
-                        <Avatar className="h-7 w-7 shrink-0">
-                          <AvatarFallback className="text-[10px]">
-                            {c.author.slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <Stack gap="xs" className="flex-1 min-w-0">
-                          <Row gap="xs" align="baseline">
-                            <span className="text-sm font-medium">{c.author}</span>
-                            <span className="text-xs text-muted-foreground">{c.at}</span>
-                          </Row>
-                          <p className="text-sm text-foreground">{c.body}</p>
-                        </Stack>
-                      </Row>
-                    ))
+                    selected.comments.map((c) => {
+                      const initials = c.author.slice(0, 2).toUpperCase();
+                      return (
+                        <Message
+                          key={c.id}
+                          author={c.author}
+                          timestamp={c.at}
+                          avatar={
+                            <Avatar size="sm">
+                              <AvatarFallback tone={toneFor(initials)}>
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                          }
+                        >
+                          {c.body}
+                        </Message>
+                      );
+                    })
                   )}
                 </Stack>
               </div>
 
-              {/* TipTap comment composer — pinned to bottom of pane */}
+              {/* Comment composer — ComposerReply preset wraps Composer
+                  with reply-friendly defaults (no toolbar, no attach,
+                  multi-line by default). Mention trigger wired to the
+                  team member list. */}
               <div className="border-t border-border bg-card p-3">
-                <Card className="border-border">
-                  <div className="p-3">
-                    <EditorContent editor={editor} />
-                  </div>
-                  <Separator />
-                  <Row justify="between" align="center" className="px-3 py-2">
-                    <span className="text-[11px] text-muted-foreground">
-                      Markdown shortcuts work • <kbd>⌘</kbd> + <kbd>Enter</kbd> to submit
-                    </span>
-                    <Button size="sm" disabled={!editor || editor.isEmpty}>
-                      Comment
-                    </Button>
-                  </Row>
-                </Card>
+                <ComposerReply
+                  placeholder="Leave a comment… use @ to mention"
+                  triggers={[{ char: "@", items: teamMembers }]}
+                  onSubmit={(content) => {
+                    // In a real Linear, this would POST the comment +
+                    // append it locally. The scaffold just demos the
+                    // surface, no persistence.
+                    console.log("comment submitted:", content.text);
+                  }}
+                />
               </div>
             </Stack>
           )}

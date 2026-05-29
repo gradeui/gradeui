@@ -4,15 +4,15 @@ import {
   Button, Avatar, AvatarFallback, Separator, Input,
   Sidebar, SidebarHeader, SidebarContent, SidebarSection, SidebarItem, SidebarTreeItem,
   Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator,
+  // Lexical-backed editor + Message replaced the Tiptap composer and
+  // the inline "comment row" pattern this scaffold used to ship with.
+  Composer, Message,
 } from "@gradeui/ui";
 import { useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
 import {
   Plus, Search, Hash, FileText, ChevronRight,
   Settings, Star, Trash2, Share2, MoreHorizontal, Sparkles,
-  Folder,
+  Folder, MessageSquare,
 } from "lucide-react";
 
 export default function App() {
@@ -95,26 +95,31 @@ export default function App() {
   const breadcrumb = ancestors(selectedId);
   const current = breadcrumb[breadcrumb.length - 1];
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({
-        placeholder: "Type '/' for commands, or just start writing…",
-        emptyEditorClass: "is-editor-empty",
-      }),
-    ],
-    editorProps: {
-      attributes: {
-        class: "prose prose-base dark:prose-invert max-w-none focus:outline-none min-h-[400px]",
-      },
+  // Slash commands the Composer surfaces when the user types "/".
+  // Hard-coded for the demo; real Notion pulls these from a command
+  // registry.
+  const slashCommands = [
+    { id: "cmd1", value: "heading" },
+    { id: "cmd2", value: "todo" },
+    { id: "cmd3", value: "image" },
+    { id: "cmd4", value: "table" },
+    { id: "cmd5", value: "code" },
+  ];
+
+  // Pre-baked comments on the page (Notion-style page comments shown
+  // in the footer). Rendered via <Message>.
+  const pageComments = [
+    {
+      id: "pc1", author: "Marcus", initials: "MA", tone: "violet",
+      at: "2 hours ago",
+      body: "The 'lazy retrieval' point is the one I'd lead with — it's the part designers and engineers both feel the pain of.",
     },
-    content: `<h2>Why we're building Grade as an AI-native DS</h2>
-<p>Most design systems are documented for humans and then translated by hand into prompts whenever someone wants an LLM to use them. The translation is brittle — it drifts from the source, bloats every prompt with the full catalog, and never quite covers the 10% of generation where the model reaches for raw Tailwind instead of the DS.</p>
-<p>Grade closes that gap by treating model-facing documentation as a <strong>first-class artefact colocated with the component</strong>. Four properties:</p>
-<ol><li>Single source of truth</li><li>Lazy retrieval</li><li>Pinned structural grammar</li><li>Contract-validated output</li></ol>
-<p>Cumulative effect: Studio generates a login form, a stat dashboard, or an app shell with correct DS components first-try.</p>`,
-    immediatelyRender: false,
-  });
+    {
+      id: "pc2", author: "Sara", initials: "SA", tone: "sky",
+      at: "32 minutes ago",
+      body: "Agreed. Also worth showing a side-by-side of a raw prompt vs. a retrieval-augmented one.",
+    },
+  ];
 
   return (
     <AppShell nav="side" className="min-h-screen bg-background">
@@ -192,7 +197,10 @@ export default function App() {
             </Row>
           </Row>
 
-          {/* Page body — TipTap editor under a Notion-style title block */}
+          {/* Page body — Composer with full formatting toolbar under
+              a Notion-style title block. The Composer's `bare` prop
+              strips the card chrome so it sits in the document like
+              an editable text area rather than a form control. */}
           <div className="flex-1 overflow-y-auto">
             <div className="mx-auto max-w-3xl px-6 py-12">
               {current && (
@@ -210,13 +218,54 @@ export default function App() {
                 </Stack>
               )}
               <div className="mt-8">
-                <EditorContent editor={editor} />
+                <Composer
+                  placeholder="Type '/' for commands, or just start writing…"
+                  toolbar
+                  formats={[
+                    "bold", "italic", "underline", "strikethrough", "code",
+                    "h2", "h3", "blockquote", "ul", "ol",
+                  ]}
+                  triggers={[{ char: "/", items: slashCommands, stripTrigger: true }]}
+                  initialText="Most design systems are documented for humans and then translated by hand into prompts whenever someone wants an LLM to use them. Grade closes that gap by treating model-facing documentation as a first-class artefact colocated with the component."
+                  submitOnEnter={false}
+                  hideSend
+                  bare
+                  className="min-h-[400px]"
+                />
               </div>
-              <div className="mt-12 pt-6 border-t border-border">
-                <Row gap="sm" align="center" className="text-xs text-muted-foreground">
-                  <Trash2 className="h-3 w-3" />
-                  <span>Add a comment, page-level action, or footnote here.</span>
+
+              {/* Page comments — Notion-style footer thread, rendered
+                  via <Message> instead of an inline row pattern. */}
+              <div className="mt-12 pt-6 border-t border-border space-y-4">
+                <Row gap="xs" align="center" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <MessageSquare className="h-3 w-3" />
+                  <span>Page comments</span>
                 </Row>
+                <Stack gap="md">
+                  {pageComments.map((c) => (
+                    <Message
+                      key={c.id}
+                      author={c.author}
+                      timestamp={c.at}
+                      avatar={
+                        <Avatar size="sm">
+                          <AvatarFallback tone={c.tone}>{c.initials}</AvatarFallback>
+                        </Avatar>
+                      }
+                    >
+                      {c.body}
+                    </Message>
+                  ))}
+                </Stack>
+                <Composer
+                  placeholder="Add a comment…"
+                  formats={false}
+                  triggers={[{ char: "@", items: [
+                    { id: "u1", value: "marcus" },
+                    { id: "u2", value: "sara" },
+                  ]}]}
+                  submitOnEnter={false}
+                />
               </div>
             </div>
           </div>

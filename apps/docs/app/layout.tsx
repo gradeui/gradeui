@@ -128,8 +128,12 @@ const AUTHOR_URL = "https://alastairdriver.com";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: SITE_NAME,
-    template: `%s | ${SITE_NAME}`,
+    // Every page title carries author attribution, so a Google SERP
+    // entry for any GradeUI page reads e.g. "Components | Grade
+    // Design System by Alastair Driver" — making authorship obvious
+    // in the result list without anyone clicking through.
+    default: `${SITE_NAME} by ${AUTHOR_NAME}`,
+    template: `%s | ${SITE_NAME} by ${AUTHOR_NAME}`,
   },
   description: SITE_TAGLINE,
   keywords: [
@@ -160,12 +164,12 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: SITE_NAME,
+    title: `${SITE_NAME} by ${AUTHOR_NAME}`,
     description: SITE_TAGLINE,
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_NAME,
+    title: `${SITE_NAME} by ${AUTHOR_NAME}`,
     description: SITE_TAGLINE,
     creator: "@alastairdriver",
   },

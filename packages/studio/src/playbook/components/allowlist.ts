@@ -78,6 +78,24 @@ export const ALLOWED_COMPONENTS = [
   "Input",
   "Label",
   "Textarea",
+  // Composer — Lexical-backed text composition surface. MANDATORY for
+  // any chat input (Slack / Discord / Teams clones), comment box
+  // (Linear / GitHub / Jira), reply input (Reddit / Twitter), AI prompt
+  // surface, or document body editor. CONCRETE TEST: if the layout
+  // would otherwise be `<textarea>` + a row of Bold/Italic/Paperclip/
+  // Send buttons, that IS `<Composer>`. Do NOT roll the textarea +
+  // toolbar + send button inline. Do NOT import @tiptap, @lexical, or
+  // any other editor framework directly — Composer wraps Lexical.
+  // Plain text via `formats={false}` or rich text via the `formats`
+  // array; `triggers` for @-mentions and /-commands; `attachments` for
+  // paperclip + paste-image intake with full object URL lifecycle.
+  // Scripted demo playback via the `steps` prop reads the same
+  // vocabulary as Code's step machine. See composer.md's anti-patterns.
+  "Composer",
+  // ComposerReply — preset for reply boxes (placeholder="Write a reply…",
+  // formats=false, submitOnEnter=false). Reach for it in comment threads
+  // and reply surfaces; falls through to Composer for everything richer.
+  "ComposerReply",
   // Feedback
   // Callout — renamed from Alert (May 2026). The Alert name is reserved
   // for a future blocking/interruptive primitive; current modal-alert
@@ -166,6 +184,17 @@ export const ALLOWED_COMPONENTS = [
   "Avatar",
   "AvatarImage",
   "AvatarFallback",
+  // Message — the canonical "avatar + author + timestamp + body" row.
+  // MANDATORY for any chat surface (Slack / Discord / Teams clones),
+  // comment thread (Linear / GitHub / Jira), post-reply feed (Reddit /
+  // Twitter), or in-app activity log. CONCRETE TEST: if the layout
+  // would otherwise be `<Avatar>` + `<Row>` of author/time + `<p>`
+  // body, that IS `<Message>`. Do NOT roll it inline with raw flex
+  // divs. The slot-based avatar prop accepts any Avatar composition
+  // (size + tone for stable per-author colour). align="end" mirrors
+  // the row for "your messages" in DM threads. See message.md's
+  // anti-patterns section for the exact shape to avoid.
+  "Message",
   // Tabs — has `variant: "pill" | "underlined"` on TabsList. The
   // underlined treatment replaced the retired SimpleTabs component
   // (May 2026); the model should pick `variant="underlined"` for
@@ -266,6 +295,17 @@ export const ALLOWED_COMPONENTS = [
   // route drag-end events. Standalone Sortable (no Group) still works
   // for single-column reorder.
   "SortableGroup",
+  // DemoStage + Reveal — whole-interface scripted reveals from
+  // lib/demo. Wrap a region in <DemoStage steps={[...]}> and the
+  // script drives which <Reveal id="x"> children become visible, in
+  // what order, with what cadence. Same speed / trigger / loop / play
+  // vocabulary as <Code> and <Composer>. Use for marketing heroes
+  // ("badge appears, then headline, then subhead, then CTA"),
+  // tutorial overlays, onboarding flows. <Reveal> outside a stage
+  // renders visible by default, so the same JSX ships to production
+  // without the demo wrapper.
+  "DemoStage",
+  "Reveal",
 ] as const;
 
 /**
