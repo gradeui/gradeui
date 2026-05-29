@@ -62,10 +62,18 @@ export type CodeStep =
  * finer control can still pass explicit `stagger` + `delay`, which
  * override the preset.
  */
-const SPEED_PRESETS: Record<CodeSpeed, { lineStagger: number; tokenStagger: number; preDelay: number }> = {
-  slow:   { lineStagger: 90, tokenStagger: 38, preDelay: 320 },
-  normal: { lineStagger: 50, tokenStagger: 22, preDelay: 180 },
-  fast:   { lineStagger: 24, tokenStagger: 10, preDelay: 80  },
+const SPEED_PRESETS: Record<
+  CodeSpeed,
+  { lineStagger: number; tokenStagger: number; preDelay: number; fadeMs: number }
+> = {
+  // Retuned May 2026: the previous `slow` (90/38/320) only differed
+  // from `normal` by ~40%, which the user couldn't feel. Tripling the
+  // line stagger + doubling the token stagger makes the three steps
+  // unambiguously distinct — slow lands as "I am being shown", normal
+  // as "I am being told", fast as "I am being briefed".
+  slow:   { lineStagger: 200, tokenStagger: 70, preDelay: 500, fadeMs: 480 },
+  normal: { lineStagger: 55,  tokenStagger: 22, preDelay: 200, fadeMs: 280 },
+  fast:   { lineStagger: 18,  tokenStagger: 8,  preDelay: 60,  fadeMs: 160 },
 };
 
 export interface CodeDiff {
@@ -159,6 +167,25 @@ export interface CodeProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "c
    * demos that need to keep playing.
    */
   loop?: boolean;
+  /**
+   * Container sizing — `auto` (default) grows with the rendered lines.
+   * A number is treated as pixels (`300` → `300px`); a string is passed
+   * through as CSS (`"20rem"`, `"50vh"`, `"calc(100vh - 4rem)"`).
+   *
+   * Overflowing content scrolls. Pair with `wrap` to break long lines
+   * instead of horizontal scroll.
+   */
+  height?: number | string | "auto";
+  /**
+   * Cap the visible line count — the container is fixed at exactly
+   * `maxLines * 1lh` and additional lines scroll. Use for terminal
+   * windows ("show me the last 8 lines"), code-tour cards, and
+   * marketing surfaces that need a stable vertical rhythm regardless
+   * of how much content is in the snippet.
+   *
+   * Wins over `height` when both are set.
+   */
+  maxLines?: number;
 }
 
 // ─── Prism theme bridge → CSS variables ──────────────────────────────
@@ -238,6 +265,8 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(function Code(
     cursor,
     steps,
     loop = false,
+    height,
+    maxLines,
     className,
     style,
     ...rest
@@ -495,8 +524,27 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(function Code(
               "font-mono leading-relaxed",
               bare ? "p-0" : "px-0 py-3",
               wrap ? "whitespace-pre-wrap break-words" : "overflow-x-auto whitespace-pre",
+              // When a fixed height / maxLines is set the pre needs
+              // vertical scroll too — otherwise overflowing lines just
+              // get clipped invisibly.
+              (height !== undefined || maxLines !== undefined) && "overflow-y-auto",
             )}
-            style={{ background: "transparent", margin: 0 }}
+            style={{
+              background: "transparent",
+              margin: 0,
+              // maxLines wins over height. `1lh` is the line-height of
+              // the current font — supported in all evergreen browsers.
+              // Add a small allowance for vertical padding so the last
+              // line isn't clipped by the bare-mode `p-0`.
+              ...(maxLines !== undefined
+                ? { height: `calc(${maxLines} * 1lh + 0.5rem)` }
+                : height !== undefined && height !== "auto"
+                  ? {
+                      height:
+                        typeof height === "number" ? `${height}px` : height,
+                    }
+                  : null),
+            }}
           >
             {tokens.map((line, lineIndex) => {
               const lineNumber = lineIndex + 1;
@@ -631,7 +679,13 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(function Code(
                   animate={{ opacity: 1, y: 0 }}
                   transition={{
                     delay: (intrinsicDelay + resolvedDelay + lineIndex * perLineStagger) / 1000,
-                    duration: 0.28,
+                    // Per-line fade duration scales with the speed
+                    // preset (slow = 480ms, normal = 280, fast = 160).
+                    // Without this the line stagger could push 200ms
+                    // apart while each line still resolved in 280ms —
+                    // they bunched up because the tail of line N was
+                    // still fading in when line N+1 started.
+                    duration: preset.fadeMs / 1000,
                     ease: [0.22, 1, 0.36, 1],
                   }}
                   style={lineProps.style}

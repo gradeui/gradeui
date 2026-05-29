@@ -41,7 +41,12 @@ export const createMaplibreAdapter: AdapterFactory = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let maplibregl: any;
   try {
-    // @ts-expect-error optional peer dep — only required when provider="maplibre" is used at runtime
+    // @ts-ignore optional peer dep — type resolves when maplibre-gl is
+    // installed, fails gracefully into the catch block when it isn't.
+    // (Was @ts-expect-error before May 2026 — but apps/docs now ships
+    // maplibre-gl as a regular dep so the import always resolves and
+    // strict TS treats expect-error directives without an error as a
+    // build failure. @ts-ignore handles both states.)
     maplibregl = await import("maplibre-gl");
     // ESM/CJS interop
     if (maplibregl.default) maplibregl = maplibregl.default;

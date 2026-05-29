@@ -18,6 +18,8 @@ props:
   - filename?: string — optional label rendered in the header chrome
   - wrap?: boolean — wrap long lines instead of horizontal scroll
   - bare?: boolean — drop chrome (border, header, padding) — for inline use
+  - height? (auto | number | string) — container sizing. `auto` (default) grows with content. Number = pixels (`300` → `300px`). String passes through as CSS (`"20rem"`, `"50vh"`).
+  - maxLines?: number — cap the visible line count at exactly N line-heights. Wins over `height`. Use for terminal windows, code-tour cards, and surfaces that need a stable vertical rhythm regardless of snippet length.
 when_to_use: Read-only code surface for marketing heroes, docs, changelog entries, AI-output displays. Use `diff` for the "diff hero" pattern (before/after side-by-side or stacked). Use `reveal="lines"` with `trigger="inView"` for scroll-driven marketing pages. Use `reveal="typewriter"` for AI-output / chat-style displays. Use `bare` for inline code inside prose. NOT a code editor — for editable code, reach for an external editor primitive (CodeMirror / Monaco).
 composes_with: [SectionBlock, Card, Tabs (for multi-file examples), Carousel (slide-to-slide code progression)]
 aliases: [code block, code, code snippet, code surface, syntax highlighted code, diff hero, diff view, diff block, changelog code, before after code, scroll-triggered code, typewriter code]

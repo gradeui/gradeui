@@ -88,5 +88,15 @@ export const CodeContract = contract({
       design: "knob",
       description: "drop chrome (border, header, padding) — for inline use",
   },
+  "height": {
+      schema: z.enum(["auto", "number", "string"]).optional(),
+      design: "knob",
+      description: "container sizing. `auto` (default) grows with content. Number = pixels (`300` → `300px`). String passes through as CSS (`\"20rem\"`, `\"50vh\"`).",
+  },
+  "maxLines": {
+      schema: z.number().optional(),
+      design: "knob",
+      description: "cap the visible line count at exactly N line-heights. Wins over `height`. Use for terminal windows, code-tour cards, and surfaces that need a stable vertical rhythm regardless of snippet length.",
+  },
   },
 });
