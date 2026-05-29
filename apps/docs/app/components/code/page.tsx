@@ -281,6 +281,7 @@ export default function CodePage() {
             reveal="lines"
             trigger="inView"
             stagger={50}
+            maxLines={8}
             source={SCROLL_REVEAL}
             className="w-full max-w-2xl"
           />
@@ -302,6 +303,7 @@ export default function CodePage() {
             language="tsx"
             reveal="typewriter"
             trigger="inView"
+            maxLines={5}
             source={TYPEWRITER}
             className="w-full max-w-2xl"
           />
@@ -317,9 +319,9 @@ export default function CodePage() {
           code={`<Code language="tsx" reveal="lines" trigger="inView" speed="slow" source={...} />`}
         >
           <div className="w-full max-w-2xl space-y-4">
-            <Code language="tsx" reveal="lines" trigger="inView" speed="slow" source={SCROLL_REVEAL} filename="speed=slow" />
-            <Code language="tsx" reveal="lines" trigger="inView" speed="normal" source={SCROLL_REVEAL} filename="speed=normal" />
-            <Code language="tsx" reveal="lines" trigger="inView" speed="fast" source={SCROLL_REVEAL} filename="speed=fast" />
+            <Code language="tsx" reveal="lines" trigger="inView" speed="slow" maxLines={8} source={SCROLL_REVEAL} filename="speed=slow" />
+            <Code language="tsx" reveal="lines" trigger="inView" speed="normal" maxLines={8} source={SCROLL_REVEAL} filename="speed=normal" />
+            <Code language="tsx" reveal="lines" trigger="inView" speed="fast" maxLines={8} source={SCROLL_REVEAL} filename="speed=fast" />
           </div>
         </ComponentPreview>
 
@@ -341,6 +343,7 @@ export default function CodePage() {
             prompt="$ "
             reveal="typewriter"
             trigger="inView"
+            maxLines={3}
             source={TERMINAL_TYPEWRITER}
             className="w-full max-w-2xl"
           />
@@ -368,6 +371,7 @@ export default function CodePage() {
             language="bash"
             prompt="$ "
             trigger="inView"
+            maxLines={6}
             steps={BASH_STEPS}
             className="w-full max-w-2xl"
           />
@@ -397,6 +401,7 @@ export default function CodePage() {
             prompt="$ "
             trigger="inView"
             loop
+            maxLines={4}
             steps={LOOPING_DEMO}
             className="w-full max-w-2xl"
           />
