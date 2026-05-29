@@ -60,7 +60,11 @@ export const createGoogleAdapter: AdapterFactory = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let LoaderCtor: any;
   try {
-    // @ts-expect-error optional peer dep — only required when provider="google" is used at runtime
+    // @ts-ignore optional peer dep — type resolves when the package is
+    // installed, fails gracefully into the catch when it isn't. Was
+    // @ts-expect-error before May 2026 — once apps/docs added the
+    // package as a regular dep for build-time bundler resolution, the
+    // strict expect-error fired as unused-directive.
     const mod = await import("@googlemaps/js-api-loader");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     LoaderCtor = (mod as any).Loader ?? (mod as any).default?.Loader;
