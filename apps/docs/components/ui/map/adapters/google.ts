@@ -61,10 +61,13 @@ export const createGoogleAdapter: AdapterFactory = async (
   let LoaderCtor: any;
   try {
     // @ts-ignore optional peer dep — type resolves when the package is
-    // installed, fails gracefully into the catch when it isn't. Was
-    // @ts-expect-error before May 2026 — once apps/docs added the
-    // package as a regular dep for build-time bundler resolution, the
-    // strict expect-error fired as unused-directive.
+    // installed, fails gracefully into the catch when it isn't. (Was
+    // a stricter ts-expect-error before May 2026; once apps/docs added
+    // the package as a regular dep for build-time bundler resolution,
+    // the strict directive fired as unused. Note the missing `@` in
+    // the prose here is deliberate — TypeScript parses ts-expect-error
+    // inside a `//` comment as a real directive even when it's just
+    // documentation.)
     const mod = await import("@googlemaps/js-api-loader");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     LoaderCtor = (mod as any).Loader ?? (mod as any).default?.Loader;
