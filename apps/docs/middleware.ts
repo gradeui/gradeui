@@ -37,6 +37,13 @@ export default async function middleware(req: NextRequest) {
     });
   }
 
+  // Public share links (/s/<token>) — fully public, no auth gate and no
+  // i18n rewrite. The route itself validates the token server-side and
+  // returns only the one shared screen. Bypass everything else.
+  if (pathname.startsWith("/s/")) {
+    return NextResponse.next();
+  }
+
   // Always refresh the Supabase session — even on public routes —
   // so the auth cookie stays fresh while a signed-in user browses
   // the marketing site. Returns user=null when Supabase isn't

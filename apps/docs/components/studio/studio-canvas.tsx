@@ -208,6 +208,9 @@ interface StudioCanvasProps {
   /** Duplicate a design by id. Omitting hides the Duplicate affordance
    *  in both mode toolbars and in the tab strip. */
   onDuplicateDesign?: (id: string) => void;
+  /** Mint + copy a public share link for a screen. Omitting disables
+   *  the "Share link" menu item. */
+  onShareScreen?: (id: string) => void;
   /** False when the design cap is reached. Disables New + Duplicate
    *  both in the tab strip and in the All-mode toolbar. */
   canAddMore?: boolean;
@@ -290,6 +293,7 @@ export function StudioCanvas({
   onCloseDesign,
   onRenameDesign,
   onDuplicateDesign,
+  onShareScreen,
   canAddMore = true,
   onSourceMutation,
   canUndo = false,
@@ -1569,12 +1573,12 @@ export function StudioCanvas({
                     {exportingNpm ? <Loader2 className="animate-spin" /> : <Package />}
                     Open in CodeSandbox
                   </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
+                  <DropdownMenuItem
+                    onClick={() => onShareScreen?.(focusedId)}
+                    disabled={!focusedAppSource || !onShareScreen}
+                  >
                     <Share2 />
-                    Share link
-                    <span className="ml-auto text-[10px] text-muted-foreground/70">
-                      Soon
-                    </span>
+                    Copy share link
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

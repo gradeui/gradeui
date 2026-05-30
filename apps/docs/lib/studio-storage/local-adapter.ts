@@ -51,7 +51,13 @@ import {
   type User,
 } from "@/lib/studio-users";
 
-import type { Project, ProjectSnapshot, StudioStorage } from "./types";
+import type {
+  Project,
+  ProjectSnapshot,
+  ScreenRevision,
+  ShareLink,
+  StudioStorage,
+} from "./types";
 
 const VERSION_KEY = "grade:studio:storage-version";
 const ACTIVE_KEY = "grade:studio:active-project-id";
@@ -864,6 +870,69 @@ export class LocalStorageStudioStorage implements StudioStorage {
     if (trimmed) notesByDesign[designId] = body;
     else delete notesByDesign[designId];
     this.writePersisted(storage, projectId, { ...snap, notesByDesign });
+  }
+
+  // ─── Revisions (localStorage, per design) ──────────────────────
+
+  async addRevision(input: {
+    projectId: string;
+    designId: string;
+    appSource: string | null;
+    label?: string;
+    authorId: string;
+  }): Promise<ScreenRevision> {
+    this.ensureHydrated();
+    const revision: ScreenRevision = {
+      id:
+        "rev-" +
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2, 6),
+      projectId: input.projectId,
+      designId: input.designId,
+      appSource: input.appSource,
+      label: input.label,
+      authorId: input.authorId,
+      createdAt: Date.now(),
+    };
+    const storage = ssrSafeStorage();
+    if (!storage) return revision;
+    const key = `grade:studio:revisions:${input.designId}`;
+    const existing =
+      safeJsonParse<ScreenRevision[]>(storage.getItem(key)) ?? [];
+    storage.setItem(key, JSON.stringify([...existing, revision]));
+    return revision;
+  }
+
+  async listRevisions(
+    _projectId: string,
+    designId: string,
+  ): Promise<ScreenRevision[]> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) return [];
+    const key = `grade:studio:revisions:${designId}`;
+    const rows = safeJsonParse<ScreenRevision[]>(storage.getItem(key)) ?? [];
+    // Newest first, matching the Supabase adapter's ordering.
+    return [...rows].sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  // ─── Share links — cloud only ──────────────────────────────────
+  // Public share links need a server route (/s/<token>) reading via the
+  // service role; there's no server in local-only mode. Surface a clear
+  // error rather than pretending to mint a link that can't resolve.
+
+  async createShareLink(): Promise<ShareLink> {
+    throw new Error(
+      "Sharing requires the cloud backend — sign in to create a share link.",
+    );
+  }
+
+  async listShareLinks(): Promise<ShareLink[]> {
+    return [];
+  }
+
+  async revokeShareLink(): Promise<void> {
+    /* no-op in local-only mode */
   }
 
   async getActiveProjectId(): Promise<string | null> {

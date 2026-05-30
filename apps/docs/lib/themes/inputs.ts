@@ -205,7 +205,202 @@ export const energyInput: ThemeInput = {
   },
 };
 
+/* ═══════════════════════════════════════════════════════════════════
+   WILD SEED — 8 deterministic "starting points" for the theme creator.
+   Hand-authored constants (NOT generated), so they're byte-identical on
+   every build and editable line-by-line for edge-testing. These are the
+   seed the theme creator will later let users fork + tweak. Each leans
+   into a distinct mood across hue / type / radius / shape so the picker
+   shows real breadth.
+   ═══════════════════════════════════════════════════════════════════ */
+
+export const neonBrutalistInput: ThemeInput = {
+  id: "neon-brutalist",
+  name: "Neon Brutalist",
+  description: "Electric magenta + acid green on near-black. Sharp, loud.",
+  tagline: "Wild",
+  hues: { neutral: 285, primary: 330, accent: 140 },
+  chroma: { neutral: 0.12, primary: 1.2, accent: 1.2 },
+  intensity: "vibrant",
+  typography: {
+    display: "spaceGrotesk",
+    body: "geist",
+    mono: "geistMono",
+    scale: "default",
+    headingWeight: 700,
+    headingTracking: "-0.02em",
+  },
+  spacing: { density: "tight" },
+  radius: { style: "sharp" },
+  effects: { shadows: "none", motionIntensity: 0.75, borderWidth: "2px" },
+  components: { buttonShape: "square", inputStyle: "underline", cardStyle: "flat" },
+};
+
+export const sunsetVaporInput: ThemeInput = {
+  id: "sunset-vapor",
+  name: "Sunset Vapor",
+  description: "Tangerine + violet vaporwave with glassy cards.",
+  tagline: "Wild",
+  hues: { neutral: 320, primary: 35, accent: 295 },
+  chroma: { neutral: 0.1, primary: 1.1, accent: 1.1 },
+  intensity: "vibrant",
+  typography: {
+    display: "outfit",
+    body: "outfit",
+    mono: "jetbrainsMono",
+    scale: "spacious",
+    headingWeight: 600,
+  },
+  spacing: { density: "roomy" },
+  radius: { style: "round" },
+  effects: { shadows: "dramatic", motionIntensity: 1.25 },
+  components: { buttonShape: "pill", inputStyle: "filled", cardStyle: "glass" },
+};
+
+export const forestTerminalInput: ThemeInput = {
+  id: "forest-terminal",
+  name: "Forest Terminal",
+  description: "Deep green + amber, monospace, terminal-flavoured.",
+  tagline: "Wild",
+  hues: { neutral: 150, primary: 155, accent: 75 },
+  chroma: { neutral: 0.06, primary: 0.9, accent: 1.0 },
+  intensity: "default",
+  typography: {
+    display: "ibmPlexMono",
+    body: "ibmPlexMono",
+    mono: "ibmPlexMono",
+    scale: "compact",
+    headingWeight: 600,
+  },
+  spacing: { density: "tight" },
+  radius: { style: "subtle" },
+  effects: { shadows: "subtle", motionIntensity: 0.5 },
+  components: { buttonShape: "square", inputStyle: "outlined", cardStyle: "outlined" },
+};
+
+export const candyPopInput: ThemeInput = {
+  id: "candy-pop",
+  name: "Candy Pop",
+  description: "Bubblegum pink + cyan. Round, roomy, cheerful.",
+  tagline: "Wild",
+  hues: { neutral: 330, primary: 350, accent: 195 },
+  chroma: { neutral: 0.08, primary: 1.1, accent: 1.1 },
+  intensity: "vibrant",
+  typography: {
+    display: "plusJakarta",
+    body: "plusJakarta",
+    mono: "geistMono",
+    scale: "default",
+    headingWeight: 700,
+  },
+  spacing: { density: "roomy" },
+  radius: { style: "pill" },
+  effects: { shadows: "default", motionIntensity: 1.25 },
+  components: { buttonShape: "pill", inputStyle: "filled", cardStyle: "elevated" },
+};
+
+export const monoNoirInput: ThemeInput = {
+  id: "mono-noir",
+  name: "Mono Noir",
+  description: "Pure greyscale, high-contrast, sharp editorial.",
+  tagline: "Wild",
+  hues: { neutral: 0, primary: 0, accent: 0 },
+  chroma: { neutral: 0, primary: 0, accent: 0 },
+  neutralPureGray: true,
+  intensity: "default",
+  typography: {
+    display: "spaceGrotesk",
+    body: "inter",
+    mono: "geistMono",
+    scale: "default",
+    headingWeight: 800,
+    headingTracking: "-0.03em",
+  },
+  spacing: { density: "default" },
+  radius: { style: "sharp" },
+  effects: { shadows: "dramatic", motionIntensity: 1, borderWidth: "1.5px" },
+  components: { buttonShape: "square", inputStyle: "underline", cardStyle: "outlined" },
+};
+
+export const broadsheetInput: ThemeInput = {
+  id: "broadsheet",
+  name: "Broadsheet",
+  description: "Ink navy + crimson, serif headlines, editorial.",
+  tagline: "Wild",
+  hues: { neutral: 250, primary: 255, accent: 20 },
+  chroma: { neutral: 0.05, primary: 0.7, accent: 0.9 },
+  intensity: "muted",
+  typography: {
+    display: "fraunces",
+    body: "sourceSerif",
+    mono: "ibmPlexMono",
+    scale: "spacious",
+    headingWeight: 600,
+    headingTracking: "-0.02em",
+  },
+  spacing: { density: "roomy" },
+  radius: { style: "subtle" },
+  effects: { shadows: "subtle", motionIntensity: 1 },
+  components: { buttonShape: "default", inputStyle: "underline", cardStyle: "flat" },
+};
+
+export const electricIndigoInput: ThemeInput = {
+  id: "electric-indigo",
+  name: "Electric Indigo",
+  description: "Indigo + lime, punchy, soft-cornered product UI.",
+  tagline: "Wild",
+  hues: { neutral: 265, primary: 270, accent: 120 },
+  chroma: { neutral: 0.07, primary: 1.15, accent: 1.15 },
+  intensity: "vibrant",
+  typography: {
+    display: "geist",
+    body: "geist",
+    mono: "geistMono",
+    scale: "default",
+    headingWeight: 700,
+    headingTracking: "-0.02em",
+  },
+  spacing: { density: "default" },
+  radius: { style: "soft" },
+  effects: { shadows: "default", motionIntensity: 1 },
+  components: { buttonShape: "default", inputStyle: "filled", cardStyle: "elevated" },
+};
+
+export const pastelDreamInput: ThemeInput = {
+  id: "pastel-dream",
+  name: "Pastel Dream",
+  description: "Soft lavender + mint, airy and muted.",
+  tagline: "Wild",
+  hues: { neutral: 280, primary: 285, accent: 160 },
+  chroma: { neutral: 0.05, primary: 0.55, accent: 0.55 },
+  intensity: "muted",
+  typography: {
+    display: "manrope",
+    body: "manrope",
+    mono: "jetbrainsMono",
+    scale: "spacious",
+    headingWeight: 600,
+  },
+  spacing: { density: "roomy" },
+  radius: { style: "round" },
+  effects: { shadows: "subtle", motionIntensity: 1.25 },
+  components: { buttonShape: "pill", inputStyle: "outlined", cardStyle: "flat" },
+};
+
 // Order matters — `defaultThemeId` in `index.ts` points at the first
 // entry. Studio leads because it's the chrome default; Calm + Energy
-// are the curated alternates surfaced in the picker.
-export const BUILT_IN_INPUTS: ThemeInput[] = [studioInput, calmInput, energyInput];
+// are the curated alternates; the 8 wild seeds follow as starting
+// points for the theme creator.
+export const BUILT_IN_INPUTS: ThemeInput[] = [
+  studioInput,
+  calmInput,
+  energyInput,
+  neonBrutalistInput,
+  sunsetVaporInput,
+  forestTerminalInput,
+  candyPopInput,
+  monoNoirInput,
+  broadsheetInput,
+  electricIndigoInput,
+  pastelDreamInput,
+];

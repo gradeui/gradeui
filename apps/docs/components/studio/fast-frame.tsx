@@ -123,7 +123,7 @@ interface FastIframeHostProps {
   style?: React.CSSProperties;
 }
 
-function FastIframeHost({
+export function FastIframeHost({
   appSource,
   theme,
   mode,

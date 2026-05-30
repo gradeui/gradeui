@@ -62,7 +62,13 @@ import {
   type User,
 } from "@/lib/studio-users";
 
-import type { Project, ProjectSnapshot, StudioStorage } from "./types";
+import type {
+  Project,
+  ProjectSnapshot,
+  ScreenRevision,
+  ShareLink,
+  StudioStorage,
+} from "./types";
 
 /** localStorage key for the active project id — same key the local
  *  adapter uses so a user toggling backends keeps their pointer. */
@@ -237,6 +243,57 @@ interface MessageRow {
   position: number;
   created_at: number;
 }
+
+interface RevisionRow {
+  id: string;
+  project_id: string;
+  design_id: string;
+  app_source: string | null;
+  label: string | null;
+  created_by: string | null;
+  created_at: number;
+}
+function rowToRevision(r: RevisionRow): ScreenRevision {
+  return {
+    id: r.id,
+    projectId: r.project_id,
+    designId: r.design_id,
+    appSource: r.app_source,
+    label: r.label ?? undefined,
+    authorId: r.created_by ?? undefined,
+    createdAt: r.created_at,
+  };
+}
+
+interface ShareLinkRow {
+  token: string;
+  project_id: string;
+  design_id: string | null;
+  revision_id: string | null;
+  mode: "view" | "comment";
+  color_mode: "light" | "dark";
+  created_by: string | null;
+  revoked: boolean;
+  expires_at: number | null;
+  created_at: number;
+}
+function rowToShareLink(r: ShareLinkRow): ShareLink {
+  return {
+    token: r.token,
+    projectId: r.project_id,
+    designId: r.design_id,
+    revisionId: r.revision_id ?? undefined,
+    mode: r.mode,
+    colorMode: r.color_mode,
+    createdBy: r.created_by ?? undefined,
+    revoked: r.revoked,
+    expiresAt: r.expires_at ?? undefined,
+    createdAt: r.created_at,
+  };
+}
+
+const SHARE_LINK_COLS =
+  "token, project_id, design_id, revision_id, mode, color_mode, created_by, revoked, expires_at, created_at";
 
 interface NoteRow {
   project_id: string;
@@ -665,6 +722,101 @@ export class SupabaseStudioStorage implements StudioStorage {
     await this.upsertNote(projectId, designId, body);
   }
 
+  // ── Revisions ────────────────────────────────────────────────
+
+  async addRevision(input: {
+    projectId: string;
+    designId: string;
+    appSource: string | null;
+    label?: string;
+    authorId: string;
+  }): Promise<ScreenRevision> {
+    const { data, error } = await this.supabase
+      .from("screen_revisions")
+      .insert({
+        project_id: input.projectId,
+        design_id: input.designId,
+        app_source: input.appSource,
+        label: input.label ?? null,
+        created_by: input.authorId,
+      })
+      .select("id, project_id, design_id, app_source, label, created_by, created_at")
+      .single();
+    if (error) throw error;
+    return rowToRevision(data as RevisionRow);
+  }
+
+  async listRevisions(
+    projectId: string,
+    designId: string,
+  ): Promise<ScreenRevision[]> {
+    const { data, error } = await this.supabase
+      .from("screen_revisions")
+      .select("id, project_id, design_id, app_source, label, created_by, created_at")
+      .eq("project_id", projectId)
+      .eq("design_id", designId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return ((data ?? []) as RevisionRow[]).map(rowToRevision);
+  }
+
+  // ── Share links ──────────────────────────────────────────────
+
+  async createShareLink(input: {
+    projectId: string;
+    designId: string;
+    mode?: "view" | "comment";
+    colorMode?: "light" | "dark";
+    revisionId?: string;
+  }): Promise<ShareLink> {
+    const { data: userData } = await this.supabase.auth.getUser();
+    const { data, error } = await this.supabase
+      .from("share_links")
+      .insert({
+        project_id: input.projectId,
+        design_id: input.designId,
+        mode: input.mode ?? "view",
+        color_mode: input.colorMode ?? "light",
+        revision_id: input.revisionId ?? null,
+        created_by: userData.user?.id ?? null,
+      })
+      .select(SHARE_LINK_COLS)
+      .single();
+    if (error) throw error;
+    return rowToShareLink(data as ShareLinkRow);
+  }
+
+  async listShareLinks(projectId: string): Promise<ShareLink[]> {
+    const { data, error } = await this.supabase
+      .from("share_links")
+      .select(SHARE_LINK_COLS)
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return ((data ?? []) as ShareLinkRow[]).map(rowToShareLink);
+  }
+
+  async revokeShareLink(token: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("share_links")
+      .update({ revoked: true })
+      .eq("token", token);
+    if (error) throw error;
+  }
+
+  /** The id of the most recent revision for a screen, or null. Used to
+   *  bind a new comment thread to the revision it was made on. */
+  private async latestRevisionId(designId: string): Promise<string | null> {
+    const { data } = await this.supabase
+      .from("screen_revisions")
+      .select("id")
+      .eq("design_id", designId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return (data as { id: string } | null)?.id ?? null;
+  }
+
   /** Wholesale-replace a screen's chat history: drop existing rows,
    *  insert one row per message keyed by array index. */
   private async replaceMessages(
@@ -1020,6 +1172,10 @@ export class SupabaseStudioStorage implements StudioStorage {
     body: string;
     authorId: string;
   }): Promise<CommentThreadWithMessages> {
+    // Bind the thread to the screen's current revision so it stays
+    // valid even after the screen is regenerated (the revision is an
+    // immutable snapshot with frozen source ids).
+    const revisionId = await this.latestRevisionId(input.designId);
     const { data: threadData, error: tErr } = await this.supabase
       .from("comment_threads")
       .insert({
@@ -1030,6 +1186,7 @@ export class SupabaseStudioStorage implements StudioStorage {
         element_label: input.elementLabel,
         component_name: input.componentName ?? null,
         created_by: input.authorId,
+        revision_id: revisionId,
       })
       .select(
         "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, created_by, resolved_by, resolved_at, created_at",

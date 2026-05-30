@@ -30,6 +30,8 @@ export type {
   Organisation,
   Project,
   ProjectSnapshot,
+  ScreenRevision,
+  ShareLink,
   StudioStorage,
   Subject,
   Team,

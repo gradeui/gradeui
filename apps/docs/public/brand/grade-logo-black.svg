@@ -1,0 +1,45 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_82_1013)">
+<rect y="4" width="4" height="4" fill="black"/>
+<rect y="8" width="4" height="4" fill="black"/>
+<rect y="12" width="4" height="4" fill="black"/>
+<rect y="16" width="4" height="4" fill="black"/>
+<rect y="20" width="4" height="4" fill="black"/>
+<rect y="24" width="4" height="4" fill="black"/>
+<rect x="4" y="28" width="4" height="4" fill="black"/>
+<rect x="8" y="28" width="4" height="4" fill="black"/>
+<rect x="12" y="28" width="4" height="4" fill="black"/>
+<rect x="16" y="28" width="4" height="4" fill="black"/>
+<rect x="24" y="20" width="4" height="4" fill="black"/>
+<rect x="20" y="24" width="4" height="4" fill="black"/>
+<path d="M20 28H24L22 30L20 32V28Z" fill="black"/>
+<path d="M24 24H28L26 26L24 28V24Z" fill="black"/>
+<path d="M4 4H8L6 6L4 8V4Z" fill="black"/>
+<path d="M22 22L24 20V24H20L22 22Z" fill="black"/>
+<path d="M2 2L4 0V4H0L2 2Z" fill="black"/>
+<path d="M18 26L20 24V28H16L18 26Z" fill="black"/>
+<rect x="28" y="28" width="4" height="4" fill="black"/>
+<rect x="28" y="24" width="4" height="4" fill="black"/>
+<rect x="28" y="20" width="4" height="4" fill="black"/>
+<rect x="28" y="16" width="4" height="4" fill="black"/>
+<rect x="24" y="16" width="4" height="4" fill="black"/>
+<path d="M24 4H28V8L26 6L24 4Z" fill="black"/>
+<path d="M0 28H4V32L2 30L0 28Z" fill="black"/>
+<rect x="20" y="16" width="4" height="4" fill="black"/>
+<rect x="16" y="16" width="4" height="4" fill="black"/>
+<rect x="28" y="4" width="4" height="4" fill="black"/>
+<path d="M28 0L30 2L32 4H28V0Z" fill="black"/>
+<path d="M4 24L6 26L8 28H4V24Z" fill="black"/>
+<rect x="24" width="4" height="4" fill="black"/>
+<rect x="20" width="4" height="4" fill="black"/>
+<rect x="16" width="4" height="4" fill="black"/>
+<rect x="12" width="4" height="4" fill="black"/>
+<rect x="8" width="4" height="4" fill="black"/>
+<rect x="4" width="4" height="4" fill="black"/>
+</g>
+<defs>
+<clipPath id="clip0_82_1013">
+<rect width="32" height="32" fill="black"/>
+</clipPath>
+</defs>
+</svg>

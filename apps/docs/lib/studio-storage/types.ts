@@ -107,6 +107,38 @@ export interface ProjectSnapshot {
   themeDraftJson?: string;
 }
 
+/** One immutable snapshot of a screen at a point in time. The source
+ *  ids inside `appSource` are frozen, which is what lets a comment bound
+ *  to this revision stay valid forever even after the screen is
+ *  regenerated. */
+export interface ScreenRevision {
+  id: string;
+  projectId: string;
+  designId: string;
+  appSource: string | null;
+  label?: string;
+  authorId?: string;
+  createdAt: number;
+}
+
+/** A public, obfuscated share link to a screen. `token` is the
+ *  capability key that goes in the /s/<token> URL. `revisionId` pins a
+ *  specific snapshot; undefined = always the latest (live). */
+export interface ShareLink {
+  token: string;
+  projectId: string;
+  designId: string | null;
+  revisionId?: string;
+  mode: "view" | "comment";
+  /** Light/dark the screen renders in — captured from the creator so
+   *  the share matches what they were viewing. */
+  colorMode: "light" | "dark";
+  createdBy?: string;
+  revoked: boolean;
+  expiresAt?: number;
+  createdAt: number;
+}
+
 export interface StudioStorage {
   /** List every project. Metadata only — call `loadProject` to get
    *  designs/chat/notes. */
@@ -191,6 +223,45 @@ export interface StudioStorage {
   /** Upsert a screen's free-form note body. Empty / whitespace-only
    *  clears the row. */
   saveNote(projectId: string, designId: string, body: string): Promise<void>;
+
+  // ─── Revisions (immutable screen-history snapshots) ─────────────
+  // Each sealed change to a screen writes one revision. Comments bind
+  // to the revision they were made on (see createThread), so they
+  // survive regeneration. The latest revision is the "current" screen.
+
+  /** Append an immutable revision snapshot for a screen. Returns the
+   *  created row (its id is the binding target for new comments). */
+  addRevision(input: {
+    projectId: string;
+    designId: string;
+    appSource: string | null;
+    label?: string;
+    authorId: string;
+  }): Promise<ScreenRevision>;
+
+  /** Every revision for a screen, newest first. */
+  listRevisions(
+    projectId: string,
+    designId: string,
+  ): Promise<ScreenRevision[]>;
+
+  // ─── Share links (public, obfuscated screen shares) ─────────────
+
+  /** Mint a public share link for a screen. Returns the row incl. its
+   *  `token` — the caller builds the /s/<token> URL. Cloud-only. */
+  createShareLink(input: {
+    projectId: string;
+    designId: string;
+    mode?: "view" | "comment";
+    colorMode?: "light" | "dark";
+    revisionId?: string;
+  }): Promise<ShareLink>;
+
+  /** Every share link for a project (to list/manage/revoke). */
+  listShareLinks(projectId: string): Promise<ShareLink[]>;
+
+  /** Revoke a link by token (soft — sets revoked = true). */
+  revokeShareLink(token: string): Promise<void>;
 
   /** Read the cross-session pointer to which project the user had
    *  open last. `null` on a fresh install. */

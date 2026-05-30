@@ -143,6 +143,7 @@ import {
 } from "@/lib/studio-users";
 import { CommentsTab } from "@/components/studio/comments-tab";
 import { useSupabaseAuth } from "@/components/supabase-provider";
+import { toast } from "sonner";
 // Side-effect import: seeds the @gradeui/walker registry with the
 // playbook's ALLOWED_COMPONENTS so the Send-to-Figma JSON is built
 // with the right known-names set. See lib/studio-walker-register.ts.
@@ -304,6 +305,37 @@ export default function StudioPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
+  // Author id for comments/threads. In cloud mode this MUST be the
+  // signed-in Supabase user id — `created_by` / `author_id` /
+  // `resolved_by` are uuid columns, so the local seed id "u-local"
+  // would be rejected (22P02). Falls back to the local stub only when
+  // signed out (local-only mode).
+  const { user: commentAuthUser } = useSupabaseAuth();
+  const commentAuthorId = commentAuthUser?.id ?? LOCAL_USER_ID;
+
+  // Persist an immutable revision snapshot when a screen change seals
+  // (a generation or an in-canvas edit). This is the durable spine:
+  // comments bind to the latest revision, so they survive
+  // regeneration. Fire-and-forget — never block the edit on the write.
+  const persistRevision = useCallback(
+    (designId: string, source: string | null, label: string) => {
+      if (!activeProjectId || !source) return;
+      void storage
+        .addRevision({
+          projectId: activeProjectId,
+          designId,
+          appSource: source,
+          label,
+          authorId: commentAuthorId,
+        })
+        .catch((err) => {
+          // eslint-disable-next-line no-console
+          console.warn("[studio] addRevision failed:", err);
+        });
+    },
+    [activeProjectId, storage, commentAuthorId],
+  );
+
   // Teams + memberships are the collaboration substrate. Loaded
   // once on bootstrap from the storage adapter — today that's the
   // local Personal team + a single admin membership row for the
@@ -378,11 +410,11 @@ export default function StudioPage() {
         ...input,
         projectId: activeProjectId,
         designId: activeId,
-        authorId: LOCAL_USER_ID,
+        authorId: commentAuthorId,
       });
       await refreshCommentThreads();
     },
-    [storage, activeProjectId, activeId, refreshCommentThreads],
+    [storage, activeProjectId, activeId, commentAuthorId, refreshCommentThreads],
   );
 
   const handleAddReply = useCallback(
@@ -397,12 +429,34 @@ export default function StudioPage() {
         designId: activeId,
         threadId,
         parentCommentId,
-        authorId: LOCAL_USER_ID,
+        authorId: commentAuthorId,
         body,
       });
       await refreshCommentThreads();
     },
-    [storage, activeProjectId, activeId, refreshCommentThreads],
+    [storage, activeProjectId, activeId, commentAuthorId, refreshCommentThreads],
+  );
+
+  // Mint a public share link for a screen and copy /s/<token> to the
+  // clipboard. Cloud-only — the local adapter throws a clear message.
+  const handleShareScreen = useCallback(
+    async (designId: string) => {
+      if (!activeProjectId) return;
+      try {
+        const link = await storage.createShareLink({
+          projectId: activeProjectId,
+          designId,
+          colorMode: chromeIsDark ? "dark" : "light",
+        });
+        const url = `${window.location.origin}/s/${link.token}`;
+        await navigator.clipboard.writeText(url);
+        toast.success("Share link copied", { description: url });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        toast.error("Couldn't create share link", { description: message });
+      }
+    },
+    [storage, activeProjectId, chromeIsDark],
   );
 
   const handleResolveThread = useCallback(
@@ -412,11 +466,11 @@ export default function StudioPage() {
         projectId: activeProjectId,
         designId: activeId,
         threadId,
-        userId: LOCAL_USER_ID,
+        userId: commentAuthorId,
       });
       await refreshCommentThreads();
     },
-    [storage, activeProjectId, activeId, refreshCommentThreads],
+    [storage, activeProjectId, activeId, commentAuthorId, refreshCommentThreads],
   );
 
   const handleReopenThread = useCallback(
@@ -524,7 +578,6 @@ export default function StudioPage() {
         (urlProject && list.some((p) => p.id === urlProject) && urlProject) ||
         (stored && list.some((p) => p.id === stored) && stored) ||
         list[0].id;
-      setActiveProjectId(targetId);
       const snap = await storage.loadProject(targetId);
       if (cancelled || !snap) return;
       // Override the loaded project's persisted activeDesignId with
@@ -534,6 +587,19 @@ export default function StudioPage() {
         urlScreen && snap.designs.some((d) => d.id === urlScreen)
           ? urlScreen
           : snap.activeDesignId;
+      // Seed the active project's theme draft BEFORE flipping
+      // activeProjectId — these batch into one render, so the keyed
+      // ThemeBuilderProvider mounts with the saved theme on its FIRST
+      // render. It ignores later `initial` changes, so without this a
+      // refresh reverts to the baseline theme (the saved draft loaded
+      // a tick too late to be picked up).
+      if (snap.themeDraftJson) {
+        const draft = snap.themeDraftJson;
+        setThemeDraftJsonByProject((cur) =>
+          cur[targetId] === draft ? cur : { ...cur, [targetId]: draft },
+        );
+      }
+      setActiveProjectId(targetId);
       applySnapshot({ ...snap, activeDesignId: initialDesignId });
       setLoadedProjectId(targetId);
       // Load every project's snapshot once on bootstrap to seed
@@ -1173,8 +1239,14 @@ export default function StudioPage() {
           return { ...d, appSource: code, updatedAt: Date.now() };
         })
       );
+      // Seal a revision for the new generation (skip prose-only / empty
+      // replies). Runs outside the updater so it fires once, not twice
+      // under StrictMode.
+      if (code && code.trim()) {
+        persistRevision(activeId, code, "Chat edit");
+      }
     },
-    [activeId]
+    [activeId, persistRevision]
   );
 
   // Source mutation that came from the settings panel, the Fill button,
@@ -1198,8 +1270,9 @@ export default function StudioPage() {
           return { ...d, appSource: nextSource, updatedAt: Date.now() };
         })
       );
+      persistRevision(activeId, nextSource, label ?? "Edit");
     },
-    [activeId, undoHistory]
+    [activeId, undoHistory, persistRevision]
   );
 
   // Undo / redo — restore the previous (or next) snapshot from the
@@ -1816,6 +1889,7 @@ export default function StudioPage() {
                 onCloseDesign={handleCloseDesign}
                 onRenameDesign={handleRenameDesign}
                 onDuplicateDesign={handleDuplicateDesign}
+                onShareScreen={handleShareScreen}
                 canAddMore={!atCap}
                 onSourceMutation={handleSourceMutation}
                 rendererMode={rendererMode}
@@ -2326,6 +2400,7 @@ function StudioThemedCanvas({
   onCloseDesign,
   onRenameDesign,
   onDuplicateDesign,
+  onShareScreen,
   canAddMore,
   onSourceMutation,
   rendererMode,
@@ -2360,6 +2435,7 @@ function StudioThemedCanvas({
   onCloseDesign: (id: string) => void;
   onRenameDesign: (id: string, name: string) => void;
   onDuplicateDesign?: (id: string) => void;
+  onShareScreen?: (id: string) => void;
   canAddMore: boolean;
   onSourceMutation: (next: string) => void;
   rendererMode: "sandpack" | "fast";
@@ -2400,6 +2476,7 @@ function StudioThemedCanvas({
       onCloseDesign={onCloseDesign}
       onRenameDesign={onRenameDesign}
       onDuplicateDesign={onDuplicateDesign}
+      onShareScreen={onShareScreen}
       canAddMore={canAddMore}
       onSourceMutation={onSourceMutation}
       rendererMode={rendererMode}
