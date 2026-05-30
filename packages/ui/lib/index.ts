@@ -90,6 +90,7 @@ export {
   Avatar,
   AvatarFallback,
   AvatarImage,
+  type AvatarTone,
 } from "../components/ui/avatar";
 
 export { Badge, badgeVariants } from "../components/ui/badge";

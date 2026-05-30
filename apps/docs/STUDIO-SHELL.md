@@ -290,22 +290,54 @@ URL params take precedence over the stored `activeProjectId` on bootstrap — a 
 - **Theme draft persistence per project.** Schema reserves `themeDraftJson` on `ProjectSnapshot`; the wire-up needs a public read API on `ThemeBuilderProvider` to capture the current input. Settings Sheet has a "Reset theme" button disabled with "Soon".
 - **Plan enforcement.** `OrgLimits` numbers are stored and read in display contexts; no callsite actually blocks or throttles based on them yet. Comes with the billing pass.
 - **Stripe / billing.** Not wired. The `stripeCustomerId` field on `Organisation` is reserved.
-- **Real auth.** All current users are LOCAL stubs or seed data. The `useCurrentUser` / `useCurrentOrg` hooks are designed to swap in a real provider with zero callsite changes.
-- **Invitations.** No invite flow, no email-out, no pending-user state. The Settings Sheet's "Invite people" button is disabled with "Soon". When this lands, an invitation creates a user record with `status: "pending_invite"` and an access entry referencing them; on accept (sign-up via the invite link), status flips to `active`.
+- ~~**Real auth.**~~ Now shipped. See "How auth works" below.
+- ~~**Invitations.**~~ Now shipped. See "Invitations" below.
 - **Onboarding modal.** No "first time setup" flow. Once real auth lands, the first verified login needs a name-capture + create-team-or-join step. The User type already carries `status` for this gate.
 - **Team management UI.** Storage methods exist for team membership mutations; no UI surface yet.
 
-## Future migration: Supabase
+## How auth works
 
-When Supabase Auth ships, the swap-in steps in roughly this order:
+Studio supports two deployment modes from a single codebase:
 
-1. **Supabase adapter.** `lib/studio-storage/supabase-adapter.ts` implements `StudioStorage` against Postgres tables. The factory in `lib/studio-storage/index.ts` branches on the user's auth state and the `storageBackend` setting.
-2. **Schema.** Postgres tables `users / orgs / teams / projects / designs / messages / notes / theme_drafts / memberships / org_memberships`. RLS policies enforce "user can only read projects via team membership or direct access". The migration uploads existing localStorage data via the adapter on first sign-in.
-3. **Auth provider.** Supabase Auth's `useSession` feeds into `UserSessionProvider`'s `realUser`. `getCurrentUser()` reads from Supabase Auth's sync API.
-4. **Invitations.** Edge function that emails an invite link via Resend. Accept handler creates the OrgMembership row + flips user status to active.
-5. **Stripe.** Subscriptions on Org. `stripeCustomerId` filled. Plan changes update `Organisation.plan` + `limits`.
+- **Local-only (self-host default).** No Supabase keys in env, no sign-in gate, no cloud sync, everything in localStorage. `pnpm dev` works out of the box. This is the open-source story: a fresh clone gives you a fully working Studio without any account setup.
+- **Cloud (hosted on gradeui.com, or self-host with Supabase keys).** With `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` set, `/studio` requires sign-in. Google OAuth + email magic-link by default; the active providers are driven by `NEXT_PUBLIC_GRADE_AUTH_PROVIDERS` (comma-separated list of `google` / `email`).
 
-Everything that lives in `lib/studio-storage/types.ts` (the `StudioStorage` interface, the entity types) doesn't change. Every callsite that goes through `getStudioStorage()` or `useCurrentUser()` keeps working as-is.
+The switch is made by `isAuthConfigured()` in `lib/supabase/env.ts`. Every gating decision reads that one predicate so the middleware gate, storage factory, and UI affordances never disagree.
+
+Setup walkthrough for keys + providers: [SETUP-AUTH.md](../../SETUP-AUTH.md).
+
+### Key files
+
+- `lib/supabase/env.ts` — single source of truth for configuration + provider list.
+- `lib/supabase/{client,server,middleware}.ts` — browser, server, and middleware Supabase clients.
+- `app/auth/callback/route.ts` — exchanges the OAuth / magic-link code for a session.
+- `app/auth/signout/route.ts` — POST-only sign-out endpoint.
+- `app/sign-in/page.tsx` + `sign-in-form.tsx` — the only sign-in surface; reads provider env to decide which buttons render.
+- `middleware.ts` — refreshes the Supabase session on every request and gates `/studio` + `/accept-invite` when auth is configured.
+- `components/supabase-provider.tsx` — React context for the current Supabase user; mounted in the root layout.
+- `lib/studio-storage/supabase-adapter.ts` — the `StudioStorage` impl against Postgres.
+- `lib/studio-storage/migration.ts` — first-sign-in local→cloud project migration. Idempotent (flagged on `auth.user.user_metadata.grade_migrated_v1`).
+- `supabase/migrations/0001_studio_schema.sql` — Postgres tables + RLS policies.
+- `lib/email/resend.ts` + `app/api/invitations/route.ts` + `app/accept-invite/[token]/` — the invitation flow.
+
+### Local-to-cloud migration
+
+On the first sign-in for a given Supabase account, `SupabaseProvider` fires `maybeRunFirstSignInMigration()`. It copies every local project into the cloud (owner = the new auth user), rewrites the `LOCAL_USER_ID` references onto the real Supabase user id, then sets a one-time flag in `user_metadata` so the migration doesn't re-run on subsequent sign-ins. The local data is left in place as a read-only safety net.
+
+Team-typed access grants are dropped in v1 — the cloud schema requires teams to belong to an org, and the migration doesn't yet do the org-creation dance. Team migration is the next phase.
+
+### Invitations
+
+`POST /api/invitations` creates a row in the `invitations` table and emails a tokenised link via Resend (`lib/email/resend.ts`). The invitee follows the link to `/accept-invite/[token]`, signs in if they haven't already, and the server action consumes the token by inserting the appropriate access grant.
+
+### What's still deferred
+
+- **Stripe / billing.** `Organisation.stripeCustomerId` is reserved; plan changes update `Organisation.plan` + `limits`. No checkout wired up yet.
+- **Plan enforcement.** Limits are stored and displayed; nothing actually blocks based on them yet.
+- **Onboarding modal.** First verified sign-in still drops the user straight into Studio. A name-capture + create-team-or-join step would slot in here.
+- **Team migration in first-sign-in.** Team-typed access grants from local data are dropped in v1 of the migration.
+
+Everything in `lib/studio-storage/types.ts` (the `StudioStorage` interface, the entity types) is stable across the local↔cloud swap. Every callsite that goes through `getStudioStorage()` or `useCurrentUser()` reads the right backend automatically.
 
 ## Reading order for someone new
 

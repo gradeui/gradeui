@@ -257,6 +257,10 @@ interface StudioCanvasProps {
   commentThreads?: CommentThreadWithMessages[];
   activeCommentThreadId?: string | null;
   onCommentPinClick?: (threadId: string) => void;
+  /** Resolve a userId → user record so the comment-pin overlay
+   *  can render the thread originator's Avatar. Pass through the
+   *  same lookup the Comments tab uses. */
+  getCommentUser?: (id: string) => import("@/lib/studio-users").User | undefined;
   // ─── Project context ──────────────────────────────────────────────
   // Name of the project currently loaded into the workbench. Shown
   // as the parent crumb in Fit mode and as the heading in Grid mode
@@ -304,6 +308,7 @@ export function StudioCanvas({
   commentThreads,
   activeCommentThreadId,
   onCommentPinClick,
+  getCommentUser,
   rendererMode = "sandpack",
   className,
 }: StudioCanvasProps) {
@@ -1717,6 +1722,7 @@ export function StudioCanvas({
         commentThreads={commentThreads}
         activeCommentThreadId={activeCommentThreadId}
         onCommentPinClick={onCommentPinClick}
+        getCommentUser={getCommentUser}
         viewportWidth={viewportWidth}
         replayKey={replayKey}
         fidelity={fidelity}
@@ -1800,6 +1806,9 @@ interface FocusedFrameProps {
   commentThreads?: CommentThreadWithMessages[];
   activeCommentThreadId?: string | null;
   onCommentPinClick?: (threadId: string) => void;
+  /** Forwarded to the pins overlay so each pin can render the
+   *  thread originator's Avatar. */
+  getCommentUser?: (id: string) => import("@/lib/studio-users").User | undefined;
   /** Current viewport width constraint for the preview iframe.
    *  "responsive" means no constraint — the iframe fills the column.
    *  Applied only to the Preview view; the Code view always uses the
@@ -1856,6 +1865,7 @@ function FocusedFrame({
   commentThreads,
   activeCommentThreadId,
   onCommentPinClick,
+  getCommentUser,
   viewportWidth,
   replayKey,
   fidelity,
@@ -2059,6 +2069,7 @@ function FocusedFrame({
           commentThreads={commentThreads}
           activeCommentThreadId={activeCommentThreadId}
           onCommentPinClick={onCommentPinClick}
+          getCommentUser={getCommentUser}
         />
       ) : (
         <FocusedSandpackMount

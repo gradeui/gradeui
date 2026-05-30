@@ -41,6 +41,7 @@ import {
 } from "@gradeui/ui";
 
 import type { StudioSelection } from "@/lib/chat-sandpack";
+import type { DesignStatus } from "@/lib/studio-designs";
 import { cn } from "@/lib/utils";
 import {
   Section,
@@ -83,6 +84,17 @@ export interface StudioRightTabsProps {
   notes: string;
   onNotesChange: (next: string) => void;
   designName?: string;
+  // Stage B metadata — forwarded straight through to the
+  // screen-info panel. Optional on this surface so the few non-
+  // studio consumers of the tabs (if any) don't have to thread
+  // through what they don't have; the screen-info panel falls back
+  // to sensible defaults on undefined.
+  designCreatedAt?: number;
+  designUpdatedAt?: number;
+  designStatus?: DesignStatus;
+  revisions?: number;
+  projectName?: string;
+  onStatusChange?: (status: DesignStatus) => void;
   defaultTab?: TabId;
   /** Controlled active tab. When provided, the tab state is owned
    *  upstream — used so other parts of the chrome (e.g. canvas
@@ -103,6 +115,12 @@ export function StudioRightTabs({
   notes,
   onNotesChange,
   designName,
+  designCreatedAt,
+  designUpdatedAt,
+  designStatus,
+  revisions = 0,
+  projectName = "—",
+  onStatusChange,
   defaultTab = "layout",
   tab: controlledTab,
   onTabChange,
@@ -161,6 +179,13 @@ export function StudioRightTabs({
           appSource={appSource}
           selection={selection}
           onSourceChange={onSourceChange}
+          designName={designName ?? "Untitled"}
+          designCreatedAt={designCreatedAt}
+          designUpdatedAt={designUpdatedAt}
+          designStatus={designStatus}
+          revisions={revisions}
+          projectName={projectName}
+          onStatusChange={onStatusChange ?? (() => {})}
         />
       </TabsContent>
       <TabsContent

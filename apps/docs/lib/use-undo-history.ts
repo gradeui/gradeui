@@ -66,6 +66,11 @@ export interface UndoHistoryAPI<T> {
   undoLabel: string | null;
   /** Label of the snapshot that `redo()` would restore. */
   redoLabel: string | null;
+  /** Total number of snapshots in the stack. Surfaced as the
+   *  "Revisions" count in the screen-info panel. Reactive — bumps
+   *  immediately on push/undo/redo. Includes the seed snapshot,
+   *  matching `readRevisionCount()`'s contract. */
+  snapshotCount: number;
   /** Commit a new state to the history. Drops any redo-future. */
   push: (value: T, label?: string) => void;
   /** Restore the previous snapshot. Returns the value (so the caller
@@ -221,6 +226,7 @@ export function useUndoHistory<T>(
     canRedo: state.cursor < state.snapshots.length - 1,
     undoLabel,
     redoLabel,
+    snapshotCount: state.snapshots.length,
     push,
     undo,
     redo,

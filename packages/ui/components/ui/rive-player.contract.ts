@@ -20,8 +20,8 @@ export const RivePlayerContract = contract({
       description: "URL or path to the .riv file",
   },
   "stateMachines": {
-      schema: z.string().optional(),
-      design: "content",
+      schema: z.union([z.string(), z.array(z.string())]).optional(),
+      design: "knob",
       description: "state machine(s) to run",
   },
   "artboard": {

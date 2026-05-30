@@ -26,13 +26,13 @@ export const AccordionContract = contract({
       description: "only valid with type=\"single\"; allows the open item to be toggled shut",
   },
   "defaultValue": {
-      schema: z.string().optional(),
-      design: "content",
+      schema: z.union([z.string(), z.array(z.string())]).optional(),
+      design: "knob",
       description: "initial open item(s)",
   },
   "value": {
-      schema: z.string().optional(),
-      design: "content",
+      schema: z.union([z.string(), z.array(z.string())]).optional(),
+      design: "knob",
       description: "controlled",
   },
   "onValueChange": {

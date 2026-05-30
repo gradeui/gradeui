@@ -114,6 +114,11 @@ interface FastIframeHostProps {
   /** Click handler for any pin. Wires to "scroll the matching
    *  thread into view + open the right panel if collapsed". */
   onCommentPinClick?: (threadId: string) => void;
+  /** Resolve a userId → user record for the comment-pin overlay
+   *  (powers the author Avatar inside each pin). Forwarded
+   *  straight through; the overlay handles the lookup + tone
+   *  hashing. */
+  getCommentUser?: (id: string) => import("@/lib/studio-users").User | undefined;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -132,6 +137,7 @@ function FastIframeHost({
   commentThreads,
   activeCommentThreadId,
   onCommentPinClick,
+  getCommentUser,
   className,
   style,
 }: FastIframeHostProps) {
@@ -292,6 +298,7 @@ function FastIframeHost({
           threads={commentThreads}
           activeThreadId={activeCommentThreadId}
           onPinClick={onCommentPinClick}
+          getUser={getCommentUser}
         />
       )}
     </>
@@ -326,6 +333,9 @@ interface FocusedFastMountProps {
   commentThreads?: CommentThreadWithMessages[];
   activeCommentThreadId?: string | null;
   onCommentPinClick?: (threadId: string) => void;
+  /** Resolve a userId → user record so each pin can render its
+   *  author Avatar. Forwarded straight through. */
+  getCommentUser?: (id: string) => import("@/lib/studio-users").User | undefined;
 }
 
 // Pixel widths for the viewport artboard. Duplicated from sandpack-frame
@@ -357,6 +367,7 @@ export function FocusedFastMount({
   commentThreads,
   activeCommentThreadId,
   onCommentPinClick,
+  getCommentUser,
 }: FocusedFastMountProps) {
   // Memoize the prepared source for the Code view so we don't re-run
   // prepareAppSource on every render purely to display the text.
@@ -490,6 +501,7 @@ export function FocusedFastMount({
             commentThreads={commentThreads}
             activeCommentThreadId={activeCommentThreadId}
             onCommentPinClick={onCommentPinClick}
+            getCommentUser={getCommentUser}
           />
         ) : null}
       </div>

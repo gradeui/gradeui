@@ -12,6 +12,11 @@
 //   - Booleans become z.boolean()
 //   - Numbers become z.number()
 //   - Enum shapes `(a | b | c)` become z.enum([...])
+//   - Primitive unions (`boolean | string`, `string | string[]`) become
+//     z.union([...]) so the panel sees both legal shapes. Without this
+//     the parser falls through to the FIRST primitive match and
+//     silently narrows the contract (caught by Message's `edited` prop
+//     which accepts a custom label string at runtime).
 //   - Unknown / complex types (ReactNode, () => void, generics) become
 //     z.unknown() and are tagged `design: "plumbing"` so the panel
 //     ignores them. The chat remains the escape hatch for these.
@@ -74,6 +79,10 @@ function inferDesign(propName, propKind) {
   }
   if (propKind === "enum" || propKind === "boolean" || propKind === "number") return "knob";
   if (propKind === "string") return "content";
+  // Primitive unions — bias the design hint by their composition.
+  // Anything that includes a boolean reads as a knob (toggleable
+  // with an optional custom label). Otherwise treat as content.
+  if (propKind === "union") return "knob";
   // unknown — could be ReactNode (plumbing-ish), object, function. Safest
   // to mark plumbing so the panel doesn't try to render a control for it.
   return "plumbing";
@@ -92,6 +101,9 @@ function zodForProp(prop) {
   if (prop.kind === "boolean") return `z.boolean()${opt}`;
   if (prop.kind === "number") return `z.number()${opt}`;
   if (prop.kind === "string") return `z.string()${opt}`;
+  if (prop.kind === "union" && Array.isArray(prop.union) && prop.union.length) {
+    return `z.union([${prop.union.join(", ")}])${opt}`;
+  }
   return `z.unknown()${opt}`;
 }
 
@@ -311,6 +323,37 @@ function parsePropSignature(line) {
         raw,
       };
     }
+  }
+
+  // Primitive union, e.g. `boolean | string`, `string | string[]`.
+  // MUST come before the singular primitive checks below — otherwise
+  // `^boolean\b` swallows `boolean | string` and the contract
+  // silently narrows to z.boolean(). Match against the leading run
+  // so a trailing prose annotation ("— renders ...") doesn't break
+  // the regex.
+  const PRIM = "(?:boolean|number|string(?:\\[\\])?)";
+  const unionRe = new RegExp(`^(${PRIM})(?:\\s*\\|\\s*${PRIM})+`, "i");
+  const unionMatch = tail.match(unionRe);
+  if (unionMatch) {
+    const members = unionMatch[0]
+      .split("|")
+      .map((s) => s.trim().toLowerCase());
+    const zodMembers = members.map((m) => {
+      if (m === "boolean") return "z.boolean()";
+      if (m === "number") return "z.number()";
+      if (m === "string") return "z.string()";
+      if (m === "string[]") return "z.array(z.string())";
+      return "z.unknown()";
+    });
+    return {
+      name,
+      optional,
+      kind: "union",
+      union: zodMembers,
+      defaultValue,
+      description,
+      raw,
+    };
   }
 
   if (/^boolean\b/i.test(tail)) return { name, optional, kind: "boolean", defaultValue, description, raw };

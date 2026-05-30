@@ -206,6 +206,79 @@ export default function MessagePage() {
         </div>
       </div>
 
+      {/* ── 04 Compact density ───────────────────────────────────── */}
+      <div className="space-y-4 rounded-lg border border-border p-5">
+        <SectionHeader
+          number="04"
+          title="Compact density"
+          hint="density='compact' tightens text + gaps for narrow side panels (Studio Comments, activity feeds, notification rows). Pair with Avatar size='xs'."
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-md border border-border bg-muted/20 p-3">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+              default
+            </div>
+            <div className="space-y-3">
+              <Msg
+                author="alice"
+                timestamp="2m ago"
+                edited
+                avatar={
+                  <Avatar size="sm">
+                    <AvatarFallback tone="violet">A</AvatarFallback>
+                  </Avatar>
+                }
+              >
+                Splitting this into two PRs makes the review tractable.
+              </Msg>
+              <Msg
+                author="ben"
+                timestamp="1m ago"
+                avatar={
+                  <Avatar size="sm">
+                    <AvatarFallback tone="amber">B</AvatarFallback>
+                  </Avatar>
+                }
+              >
+                Agreed. I'll take the schema PR.
+              </Msg>
+            </div>
+          </div>
+          <div className="rounded-md border border-border bg-muted/20 p-3">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+              compact
+            </div>
+            <div className="space-y-2">
+              <Msg
+                density="compact"
+                author="alice"
+                timestamp="2m ago"
+                edited="· edited 1m ago"
+                avatar={
+                  <Avatar size="xs">
+                    <AvatarFallback tone="violet">A</AvatarFallback>
+                  </Avatar>
+                }
+              >
+                Splitting this into two PRs makes the review tractable.
+              </Msg>
+              <Msg
+                density="compact"
+                author="ben"
+                timestamp="1m ago"
+                avatar={
+                  <Avatar size="xs">
+                    <AvatarFallback tone="amber">B</AvatarFallback>
+                  </Avatar>
+                }
+              >
+                Agreed. I'll take the schema PR.
+              </Msg>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Avatar tones reference ───────────────────────────────── */}
       <div className="space-y-4 rounded-lg border border-border p-5">
         <SectionHeader

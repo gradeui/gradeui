@@ -1603,6 +1603,18 @@ export default function StudioPage() {
       notes={notesByDesign[activeId] ?? ""}
       onNotesChange={handleNotesChange}
       designName={activeDesign.name}
+      designCreatedAt={activeDesign.createdAt}
+      designUpdatedAt={activeDesign.updatedAt}
+      designStatus={activeDesign.status}
+      revisions={undoHistory.snapshotCount}
+      projectName={activeProject?.name ?? "Untitled project"}
+      onStatusChange={(status) =>
+        setDesigns((ds) =>
+          ds.map((d) =>
+            d.id === activeId ? { ...d, status, updatedAt: Date.now() } : d,
+          ),
+        )
+      }
       tab={rightTab}
       onTabChange={setRightTab}
       commentsContent={
@@ -1819,6 +1831,7 @@ export default function StudioPage() {
                   setRightTab("comments");
                   void threadId;
                 }}
+                getCommentUser={(id) => allUsers.find((u) => u.id === id)}
               />
             </div>
             {!isMobile && (
@@ -2284,6 +2297,7 @@ function StudioThemedCanvas({
   projectName,
   commentThreads,
   onCommentPinClick,
+  getCommentUser,
 }: {
   designs: Design[];
   focusedId: string;
@@ -2317,6 +2331,7 @@ function StudioThemedCanvas({
   projectName?: string;
   commentThreads?: CommentThreadWithMessages[];
   onCommentPinClick?: (threadId: string) => void;
+  getCommentUser?: (id: string) => StoredUser | undefined;
 }) {
   const theme: GeneratedTheme = useGeneratedTheme();
   const [mode] = useThemeBuilderMode();
@@ -2356,6 +2371,7 @@ function StudioThemedCanvas({
       projectName={projectName}
       commentThreads={commentThreads}
       onCommentPinClick={onCommentPinClick}
+      getCommentUser={getCommentUser}
     />
   );
 }

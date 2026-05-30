@@ -13,6 +13,7 @@ props:
   - threadCount?: number — renders a "N replies" link affordance below the body
   - onThreadClick?: () => void — handler for the threadCount affordance
   - align?: "start" | "end" — `start` (default) puts the avatar on the left; `end` mirrors for "your messages" in DM threads
+  - density?: "default" | "compact" — `default` is the canonical chat / channel-feed rhythm; `compact` tightens text sizes + gaps for dense side panels (Studio comments, activity feeds). Pair with `Avatar size="xs"` for the tightest stack.
   - children: ReactNode — body content (plain text or rich nodes)
   - className?: string
 when_to_use: |
@@ -153,6 +154,39 @@ aliases: [
       {m.text}
     </Message>
   ))}
+</Stack>
+```
+
+```jsx
+// Compact density — for narrow side panels (Studio Comments tab,
+// activity feeds, notification rows). Notice the smaller Avatar size
+// pairs naturally with density="compact".
+<Stack gap="sm">
+  <Message
+    density="compact"
+    author="alice"
+    timestamp="2m ago"
+    edited="· edited 1m ago"
+    avatar={
+      <Avatar size="xs">
+        <AvatarFallback tone="violet">A</AvatarFallback>
+      </Avatar>
+    }
+  >
+    Splitting this into two PRs makes the review tractable.
+  </Message>
+  <Message
+    density="compact"
+    author="ben"
+    timestamp="1m ago"
+    avatar={
+      <Avatar size="xs">
+        <AvatarFallback tone="amber">B</AvatarFallback>
+      </Avatar>
+    }
+  >
+    Agreed. I'll take the schema PR.
+  </Message>
 </Stack>
 ```
 

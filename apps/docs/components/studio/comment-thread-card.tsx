@@ -31,6 +31,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  Message,
+  Stack,
 } from "@gradeui/ui";
 
 import type {
@@ -39,6 +41,7 @@ import type {
   CommentThreadWithMessages,
 } from "@/lib/studio-storage";
 import type { User } from "@/lib/studio-users";
+import { toneForUserId } from "@/lib/studio-users";
 
 import { CommentComposer } from "./comment-composer";
 
@@ -212,9 +215,11 @@ export function CommentThreadCard({
   );
 }
 
-/** Single comment row — avatar + author + body + replies (one
- *  level). Pulled into its own component so the styling stays
- *  consistent between the thread opener, follow-ups, and replies. */
+/** Single comment row — Message primitive with optional one-level
+ *  nested replies. Migrated from a hand-rolled flex layout to the
+ *  DS `Message` (which IS the canonical avatar+author+timestamp+body
+ *  shape). Replies render as a Stack of Messages inside the parent's
+ *  body slot with the existing border-l indent. */
 function CommentRow({
   comment,
   author,
@@ -240,63 +245,68 @@ function CommentRow({
     return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
   }, [author?.name, displayName]);
 
+  // Use the string form of `edited` so the relative time shows
+  // inline (was a hover-only `title` tooltip before — Message
+  // surfaces it as a muted hint next to the timestamp instead,
+  // which is clearer at a glance).
+  const editedHint = comment.editedAt
+    ? `· edited ${relativeTime(comment.editedAt)}`
+    : false;
+
   return (
-    <div className="flex gap-2">
-      <Avatar className="h-6 w-6 shrink-0">
-        {author?.avatarUrl && (
-          <AvatarImage src={author.avatarUrl} alt={displayName} />
-        )}
-        <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
-      </Avatar>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex items-baseline gap-1.5 text-[11px]">
-          <span className="font-medium text-foreground truncate">
-            {displayName}
-          </span>
-          <span className="text-muted-foreground">
-            {relativeTime(comment.createdAt)}
-          </span>
-          {comment.editedAt && (
-            <span
-              className="text-muted-foreground"
-              title={`Edited ${relativeTime(comment.editedAt)}`}
-            >
-              · edited
-            </span>
+    <Message
+      density="compact"
+      author={displayName}
+      timestamp={relativeTime(comment.createdAt)}
+      edited={editedHint}
+      avatar={
+        <Avatar size="xs">
+          {author?.avatarUrl && (
+            <AvatarImage src={author.avatarUrl} alt={displayName} />
           )}
-          {canWrite && isYou && (
-            <button
-              type="button"
-              onClick={() => onDelete(comment.id)}
-              className="ml-auto text-muted-foreground hover:text-destructive transition-colors"
-              title="Delete this comment"
-              aria-label="Delete comment"
-            >
-              <Trash2 className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-        <p className="text-xs text-foreground whitespace-pre-wrap break-words">
-          {comment.body}
-        </p>
-        {replies.length > 0 && (
-          <div className="mt-1 flex flex-col gap-2 border-l border-border/60 pl-2">
-            {replies.map((r) => (
-              <CommentRow
-                key={r.id}
-                comment={r}
-                author={getUser(r.authorId)}
-                currentUser={currentUser}
-                canWrite={canWrite}
-                replies={[]} // v1: one level only
-                onDelete={onDelete}
-                getUser={getUser}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+          <AvatarFallback
+            tone={author ? toneForUserId(author.id) : undefined}
+            className="text-[10px]"
+          >
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+      }
+      actions={
+        canWrite && isYou ? (
+          <button
+            type="button"
+            onClick={() => onDelete(comment.id)}
+            className="text-muted-foreground hover:text-destructive transition-colors"
+            title="Delete this comment"
+            aria-label="Delete comment"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        ) : undefined
+      }
+    >
+      <p className="whitespace-pre-wrap break-words">{comment.body}</p>
+      {replies.length > 0 && (
+        <Stack
+          gap="sm"
+          className="mt-2 border-l border-border/60 pl-2"
+        >
+          {replies.map((r) => (
+            <CommentRow
+              key={r.id}
+              comment={r}
+              author={getUser(r.authorId)}
+              currentUser={currentUser}
+              canWrite={canWrite}
+              replies={[]} // v1: one level only
+              onDelete={onDelete}
+              getUser={getUser}
+            />
+          ))}
+        </Stack>
+      )}
+    </Message>
   );
 }
 

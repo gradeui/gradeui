@@ -27,7 +27,7 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LenisProvider } from "@/components/lenis-provider";
-import { AuthProvider } from "@/components/auth-provider";
+import { SupabaseProvider } from "@/components/supabase-provider";
 
 /* ═════════════════════ Font loaders ═════════════════════
 
@@ -314,7 +314,7 @@ export default async function RootLayout({
           // providers needed.
           children
         ) : (
-          <AuthProvider>
+          <SupabaseProvider>
             <GradeThemeProvider>
               {/* TooltipProvider wraps the whole app so any tabs /
                   buttons / toggles that pass a `tooltip` prop (or use
@@ -328,7 +328,7 @@ export default async function RootLayout({
               </TooltipProvider>
               <Toaster />
             </GradeThemeProvider>
-          </AuthProvider>
+          </SupabaseProvider>
         )}
       </body>
     </html>

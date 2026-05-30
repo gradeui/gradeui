@@ -1,7 +1,12 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
+/**
+ * Compatibility re-export — `AuthProvider` is now `SupabaseProvider`.
+ *
+ * Kept as a thin re-export so any leftover importer keeps working
+ * during the transition. New code should import from
+ * `@/components/supabase-provider` directly. Safe to delete this
+ * file once no callers reference it.
+ */
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
-}
+export { SupabaseProvider as AuthProvider } from "./supabase-provider";

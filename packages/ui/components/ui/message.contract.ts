@@ -34,7 +34,7 @@ export const MessageContract = contract({
       description: "small chip(s) next to the author name (OP, Bot, Admin, role tag)",
   },
   "edited": {
-      schema: z.boolean().optional(),
+      schema: z.union([z.boolean(), z.string()]).optional(),
       design: "knob",
       description: "renders \"(edited)\" hint next to timestamp; pass a string to customise (\"(edited 2 minutes ago)\")",
   },
@@ -67,6 +67,11 @@ export const MessageContract = contract({
       schema: z.enum(["start", "end"]).optional(),
       design: "knob",
       description: "`start` (default) puts the avatar on the left; `end` mirrors for \"your messages\" in DM threads",
+  },
+  "density": {
+      schema: z.enum(["default", "compact"]).optional(),
+      design: "knob",
+      description: "`default` is the canonical chat / channel-feed rhythm; `compact` tightens text sizes + gaps for dense side panels (Studio comments, activity feeds). Pair with `Avatar size=\"xs\"` for the tightest stack.",
   },
   "children": {
       schema: z.unknown(),

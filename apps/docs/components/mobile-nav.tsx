@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/sheet";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
-import { FeedbackButton } from "@/components/feedback-button";
 
 const navItems = [
   { href: "/docs", label: "Docs" },
@@ -64,7 +63,6 @@ export function MobileNav() {
           ))}
         </nav>
         <div className="flex items-center gap-2 mt-8 pt-8 border-t">
-          <FeedbackButton />
           <Button variant="ghost" size="icon" onClick={toggleTheme}>
             {isDark ? (
               <Sun className="h-5 w-5" />

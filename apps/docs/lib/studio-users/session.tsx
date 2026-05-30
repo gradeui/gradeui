@@ -25,6 +25,7 @@
 
 import * as React from "react";
 
+import { useSupabaseAuth } from "@/components/supabase-provider";
 import { LOCAL_USER_ID } from "./index-constants";
 import type { Organisation, User } from "./types";
 
@@ -94,15 +95,48 @@ export function UserSessionProvider({
   realOrgId,
   children,
 }: UserSessionProviderProps) {
-  // Find the real user — by convention LOCAL_USER_ID is what the
-  // storage seeds with; once real auth lands this becomes the
-  // auth-provider's current user id.
-  const realUser =
-    users.find((u) => u.id === LOCAL_USER_ID) ?? users[0] ?? {
-      id: LOCAL_USER_ID,
-      name: "You",
-      status: "active" as const,
-    };
+  // Prefer the signed-in Supabase user when present. Falls back to
+  // the seeded local user — same shape as before — so the local-only
+  // and signed-in code paths run through the same provider without
+  // a hard branch.
+  //
+  // The resolution order is:
+  //   1. Supabase user (`auth.user.id` matched against the users
+  //      list — typically a row added by the on_auth_user_created
+  //      trigger in 0001_studio_schema.sql).
+  //   2. Synthesised user from Supabase claims (when the matching
+  //      users row hasn't propagated yet — covers the few ms
+  //      between sign-up and the public.users insert landing).
+  //   3. The seeded local stub (LOCAL_USER_ID) — the original
+  //      pre-auth behaviour for local-only deploys.
+  const supabaseAuth = useSupabaseAuth();
+  const supabaseUserId = supabaseAuth.user?.id ?? null;
+
+  const realUser = React.useMemo<User>(() => {
+    if (supabaseUserId) {
+      const matched = users.find((u) => u.id === supabaseUserId);
+      if (matched) return matched;
+      const meta = supabaseAuth.user?.user_metadata ?? {};
+      return {
+        id: supabaseUserId,
+        name:
+          (meta.full_name as string | undefined) ??
+          (meta.name as string | undefined) ??
+          supabaseAuth.user?.email?.split("@")[0] ??
+          "You",
+        email: supabaseAuth.user?.email ?? undefined,
+        avatarUrl: (meta.avatar_url as string | undefined) ?? undefined,
+        status: "active",
+      };
+    }
+    return (
+      users.find((u) => u.id === LOCAL_USER_ID) ?? users[0] ?? {
+        id: LOCAL_USER_ID,
+        name: "You",
+        status: "active" as const,
+      }
+    );
+  }, [supabaseUserId, supabaseAuth.user, users]);
   const realOrg = realOrgId
     ? orgs.find((o) => o.id === realOrgId) ?? null
     : null;

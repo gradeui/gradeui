@@ -21,13 +21,13 @@ export const ToggleGroupContract = contract({
       description: "single picks one, multiple picks any number",
   },
   "value": {
-      schema: z.string().optional(),
-      design: "content",
+      schema: z.union([z.string(), z.array(z.string())]).optional(),
+      design: "knob",
       description: "controlled; matches `type` (string for single, string[] for multiple)",
   },
   "defaultValue": {
-      schema: z.string().optional(),
-      design: "content",
+      schema: z.union([z.string(), z.array(z.string())]).optional(),
+      design: "knob",
       description: "uncontrolled initial",
   },
   "onValueChange": {

@@ -41,6 +41,7 @@ export type {
   User,
 } from "./types";
 export { isUserSubject, isTeamSubject } from "./types";
+export { toneForUserId } from "./tone";
 
 // Re-export the stable id constants from their dedicated file so
 // `@/lib/studio-users` remains the canonical import path. Splitting

@@ -26,9 +26,8 @@
  * own files, and any new stage is one entry in the switch.
  */
 
-import * as React from "react";
-
 import type { StudioSelection } from "@/lib/chat-sandpack";
+import type { DesignStatus } from "@/lib/studio-designs";
 import { cn } from "@/lib/utils";
 import {
   resolveRightPanelStage,
@@ -37,7 +36,7 @@ import {
 
 import { LayoutStartersPanel } from "./layout-starters-panel";
 import { SelectionInspector } from "./selection-inspector";
-import { StageBInspector } from "./stage-b-inspector";
+import { StageBScreenInfo } from "./stage-b-screen-info";
 
 export interface StudioRightPanelProps {
   /** Active design's JSX source. Drives the Stage A/B fork. */
@@ -51,6 +50,17 @@ export interface StudioRightPanelProps {
   /** Forwarded to the settings panel so the user can flip back to the
    *  inline variant if they prefer it in the chat column. */
   onRequestSettingsUndock?: () => void;
+  // Stage B metadata — surfaced by the screen-info panel.
+  designName: string;
+  designCreatedAt?: number;
+  designUpdatedAt?: number;
+  designStatus?: DesignStatus;
+  /** Snapshot count from the undo history hook. */
+  revisions: number;
+  /** Owning project's display name. */
+  projectName: string;
+  /** Patch status on the active design. */
+  onStatusChange: (status: DesignStatus) => void;
   className?: string;
 }
 
@@ -59,6 +69,13 @@ export function StudioRightPanel({
   selection,
   onSourceChange,
   onRequestSettingsUndock,
+  designName,
+  designCreatedAt,
+  designUpdatedAt,
+  designStatus,
+  revisions,
+  projectName,
+  onStatusChange,
   className,
 }: StudioRightPanelProps) {
   const stage: RightPanelStage = resolveRightPanelStage({
@@ -66,28 +83,13 @@ export function StudioRightPanel({
     selection,
   });
 
-  // The "show starter picker again" affordance pinned to Stage B's
-  // header. Toggled locally so it doesn't survive a tab switch — that
-  // would be a footgun (the user could clobber a non-empty design by
-  // accident).
-  const [forceStarters, setForceStarters] = React.useState(false);
-  // Selection change always wins over a forced Stage A — once you pick
-  // something, the panel responds to that pick.
-  React.useEffect(() => {
-    if (selection?.componentName) setForceStarters(false);
-  }, [selection?.componentName]);
-
-  const effectiveStage: RightPanelStage =
-    forceStarters && stage === "B" ? "A" : stage;
-
-  switch (effectiveStage) {
+  switch (stage) {
     case "A":
       return (
         <LayoutStartersPanel
           className={className}
           onPick={(scaffold) => {
             onSourceChange(scaffold);
-            setForceStarters(false);
           }}
         />
       );
@@ -116,16 +118,25 @@ export function StudioRightPanel({
 
     case "B":
     default:
-      // Stage B is "design has content, nothing selected". Replaced
-      // the original placeholder (May 2026) with a live inspector:
-      // shows Grade components + external libraries actually in use
-      // on the current screen. Page-level structure controls
-      // (AppShell on/off, container width, density) are deferred to
-      // a future iteration — STUDIO-LAYOUT-PANEL.md.
+      // Stage B is "design has content, nothing selected". The
+      // default view is now SCREEN METADATA (name, status, project,
+      // revisions, created, updated) — what the user typically
+      // wants to know about the thing they're working on. The
+      // component inventory that used to live here is still
+      // available, tucked inside the "Component inventory"
+      // accordion at the bottom of the panel. Page-level structure
+      // controls (AppShell on/off, container width, density) are
+      // deferred to a future iteration — STUDIO-LAYOUT-PANEL.md.
       return (
-        <StageBInspector
+        <StageBScreenInfo
           appSource={appSource}
-          onSwapStarter={() => setForceStarters(true)}
+          designName={designName}
+          createdAt={designCreatedAt}
+          updatedAt={designUpdatedAt}
+          status={designStatus}
+          revisions={revisions}
+          projectName={projectName}
+          onStatusChange={onStatusChange}
           className={className}
         />
       );

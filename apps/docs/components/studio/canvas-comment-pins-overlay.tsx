@@ -34,6 +34,8 @@
 import * as React from "react";
 
 import type { CommentThreadWithMessages } from "@/lib/studio-storage";
+import { toneForUserId } from "@/lib/studio-users";
+import type { User } from "@/lib/studio-users";
 
 import { CanvasCommentPin } from "./canvas-comment-pin";
 
@@ -51,6 +53,11 @@ interface CanvasCommentPinsOverlayProps {
   /** Pin click — usually scrolls the Comments tab to the
    *  matching thread (and opens the right panel if collapsed). */
   onPinClick: (threadId: string) => void;
+  /** Resolve the thread originator's user record so the pin can
+   *  render their Avatar. Pass through the same lookup the
+   *  Comments tab uses; pins fall back to a numeric label when
+   *  the lookup returns undefined (deleted user, etc). */
+  getUser?: (id: string) => User | undefined;
 }
 
 interface PinPosition {
@@ -64,7 +71,19 @@ export function CanvasCommentPinsOverlay({
   threads,
   activeThreadId,
   onPinClick,
+  getUser,
 }: CanvasCommentPinsOverlayProps) {
+  // Resolve thread → originator once per render. Threads carry
+  // `createdBy` (a user id); pins want a display name + avatar
+  // bits. Falls back gracefully when getUser is missing or returns
+  // undefined — pin renders the numeric label as before.
+  const authorByThreadId = React.useMemo(() => {
+    const map: Record<string, User | undefined> = {};
+    for (const t of threads) {
+      map[t.thread.id] = getUser?.(t.thread.createdBy);
+    }
+    return map;
+  }, [threads, getUser]);
   const [positions, setPositions] = React.useState<PinPosition[]>([]);
 
   React.useEffect(() => {
@@ -148,17 +167,23 @@ export function CanvasCommentPinsOverlay({
   return (
     <>
       {positions.map((p, i) => {
-        // Sequential 1-indexed label. Future: stable per-thread
-        // label so deleting thread #2 doesn't renumber the rest.
+        const author = authorByThreadId[p.threadId];
+        // Sequential 1-indexed label as the back-compat fallback
+        // when we can't resolve an author (rare — deleted user,
+        // missing lookup). Future: stable per-thread label so
+        // deleting thread #2 doesn't renumber the rest.
         const label = String(i + 1);
         return (
           <CanvasCommentPin
             key={p.threadId}
-            label={label}
             top={p.top}
             left={p.left}
             active={p.threadId === activeThreadId}
             onClick={() => onPinClick(p.threadId)}
+            authorName={author?.name}
+            avatarUrl={author?.avatarUrl}
+            avatarTone={author ? toneForUserId(author.id) : undefined}
+            label={label}
           />
         );
       })}

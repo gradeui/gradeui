@@ -20,6 +20,18 @@
  * to a future persistence layer (localStorage or a "saved sessions" API).
  */
 
+/**
+ * Lifecycle status for a screen — surfaced in the right-panel
+ * metadata view (Stage B). Maps to a small fixed vocab so the chip /
+ * select reads consistently across surfaces; we deliberately avoid
+ * "todo / doing / done" Jira-isms here in favour of softer screen
+ * design language.
+ *
+ * Optional on the type for backwards compatibility — undefined
+ * normalises to "draft" in the UI.
+ */
+export type DesignStatus = "draft" | "in_progress" | "in_review" | "done";
+
 export interface Design {
   id: string;
   name: string;
@@ -38,6 +50,10 @@ export interface Design {
    *  edited Nm ago" affordances; the undo timeline (task #42) will
    *  use the same field per-snapshot. */
   updatedAt?: number;
+  /** Lifecycle status. Optional — undefined means "draft" for legacy
+   *  persisted designs that pre-date this field. New designs default
+   *  to "draft" via `createDesign()`. */
+  status?: DesignStatus;
 }
 
 /**
@@ -70,8 +86,31 @@ export function createDesign(index: number, name?: string): Design {
     appSource: null,
     createdAt: now,
     updatedAt: now,
+    status: "draft",
   };
 }
+
+/** Human-readable label for a DesignStatus. Sentence case, no Jira. */
+export function designStatusLabel(status: DesignStatus | undefined): string {
+  switch (status ?? "draft") {
+    case "draft":
+      return "Draft";
+    case "in_progress":
+      return "In progress";
+    case "in_review":
+      return "In review";
+    case "done":
+      return "Done";
+  }
+}
+
+/** Stable ordering for status select / segmented controls. */
+export const DESIGN_STATUSES: DesignStatus[] = [
+  "draft",
+  "in_progress",
+  "in_review",
+  "done",
+];
 
 /**
  * Initial state: one blank design, ready to go.

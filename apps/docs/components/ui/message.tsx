@@ -98,12 +98,52 @@ export interface MessageProps
    */
   align?: "start" | "end";
   /**
+   * Row rhythm. `default` is the canonical chat / channel-feed shape.
+   * `compact` tightens text sizes + gaps for dense side-panel use
+   * (Studio comments tab, activity feeds, notification rows where many
+   * rows stack vertically and the surface is narrow). Avatar size is
+   * still consumer-controlled — pair `density="compact"` with
+   * `Avatar size="xs"` for the tightest rhythm.
+   */
+  density?: "default" | "compact";
+  /**
    * Body content (the message text). Accepts any node so consumers
    * can embed rich content — Markdown-rendered prose, images,
    * embedded cards, etc. Plain text is the common case.
    */
   children: React.ReactNode;
 }
+
+/**
+ * Density styling lookup. Keeping the deltas centralised here makes
+ * the variant matrix legible at a glance — one row per slot, two
+ * columns for the two densities. Add a third density later by adding
+ * a column, not by sprinkling more ternaries through the JSX.
+ *
+ * Compact deltas are calibrated for Studio's side panels (~20rem
+ * wide) and dense activity feeds: roughly a notch down on every
+ * typographic axis, gaps tightened by 1 step. Avatar size is NOT
+ * touched — that's the consumer's call (Avatar size="xs" pairs well
+ * with density="compact").
+ */
+const DENSITY = {
+  default: {
+    row: "gap-3",
+    content: "space-y-1",
+    author: "text-sm font-semibold",
+    meta: "text-xs",
+    body: "text-sm leading-relaxed",
+    thread: "text-xs",
+  },
+  compact: {
+    row: "gap-2",
+    content: "space-y-0.5",
+    author: "text-xs font-semibold",
+    meta: "text-[10px]",
+    body: "text-xs leading-relaxed",
+    thread: "text-[11px]",
+  },
+} as const;
 
 export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
   function Message(
@@ -119,6 +159,7 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
       threadCount,
       onThreadClick,
       align = "start",
+      density = "default",
       className,
       children,
       ...rest
@@ -127,15 +168,18 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
   ) {
     const isEnd = align === "end";
     const editedLabel = edited === true ? "(edited)" : edited || undefined;
+    const d = DENSITY[density];
 
     return (
       <div
         ref={ref}
         data-gds-part="message"
         data-gds-align={align}
+        data-gds-density={density}
         data-gds-pinned={pinned ? "true" : undefined}
         className={cn(
-          "flex items-start gap-3",
+          "flex items-start",
+          d.row,
           isEnd && "flex-row-reverse",
           className,
         )}
@@ -152,7 +196,8 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
         <div
           data-gds-part="message-content"
           className={cn(
-            "flex-1 min-w-0 space-y-1",
+            "flex-1 min-w-0",
+            d.content,
             isEnd && "text-right",
           )}
         >
@@ -184,7 +229,7 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
           >
             <span
               data-gds-part="message-author"
-              className="text-sm font-semibold"
+              className={d.author}
             >
               {author}
             </span>
@@ -194,7 +239,7 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
             {timestamp && (
               <span
                 data-gds-part="message-timestamp"
-                className="text-xs text-muted-foreground"
+                className={cn(d.meta, "text-muted-foreground")}
               >
                 {timestamp}
               </span>
@@ -202,7 +247,7 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
             {editedLabel && (
               <span
                 data-gds-part="message-edited"
-                className="text-xs text-muted-foreground"
+                className={cn(d.meta, "text-muted-foreground")}
               >
                 {editedLabel}
               </span>
@@ -218,7 +263,7 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
           </div>
           <div
             data-gds-part="message-body"
-            className="text-sm leading-relaxed"
+            className={d.body}
           >
             {children}
           </div>
@@ -239,7 +284,8 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
               data-gds-part="message-thread"
               onClick={onThreadClick}
               className={cn(
-                "inline-flex items-center gap-1 text-xs font-medium",
+                "inline-flex items-center gap-1 font-medium",
+                d.thread,
                 "text-primary hover:underline",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded",
                 isEnd && "flex-row-reverse",
