@@ -750,6 +750,122 @@ export class LocalStorageStudioStorage implements StudioStorage {
     );
   }
 
+  // ─── Screens (designs) — granular row-level writes ─────────────
+  // The local adapter stores everything as one per-project blob, so
+  // each granular method is a read-modify-write of that blob. The
+  // shapes mirror the Supabase adapter's row writes 1:1 so the page
+  // behaves identically on either backend.
+
+  /** Load + parse the persisted project blob, or null. Shared by the
+   *  granular screen helpers. */
+  private readPersisted(
+    storage: Storage,
+    projectId: string,
+  ): PersistedProject | null {
+    return safeJsonParse<PersistedProject>(storage.getItem(projectKey(projectId)));
+  }
+
+  private writePersisted(
+    storage: Storage,
+    projectId: string,
+    next: PersistedProject,
+  ): void {
+    storage.setItem(projectKey(projectId), JSON.stringify(next));
+  }
+
+  async addScreen(
+    projectId: string,
+    design: Design,
+    position: number,
+  ): Promise<void> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) return;
+    const snap = this.readPersisted(storage, projectId);
+    if (!snap) return;
+    // Idempotent on id — replace in place if it already exists,
+    // otherwise splice at `position` (clamped to the list bounds).
+    const without = snap.designs.filter((d) => d.id !== design.id);
+    const at = Math.max(0, Math.min(position, without.length));
+    const designs = [...without.slice(0, at), design, ...without.slice(at)];
+    this.writePersisted(storage, projectId, { ...snap, designs });
+  }
+
+  async deleteScreen(projectId: string, designId: string): Promise<void> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) return;
+    const snap = this.readPersisted(storage, projectId);
+    if (!snap) return;
+    const { [designId]: _m, ...messagesByDesign } = snap.messagesByDesign;
+    const { [designId]: _n, ...notesByDesign } = snap.notesByDesign;
+    this.writePersisted(storage, projectId, {
+      ...snap,
+      designs: snap.designs.filter((d) => d.id !== designId),
+      messagesByDesign,
+      notesByDesign,
+    });
+    // Drop the screen's comment bundle too — deleteScreen cascades.
+    storage.removeItem(commentsKey(projectId, designId));
+  }
+
+  async saveScreen(
+    projectId: string,
+    design: Design,
+    position?: number,
+  ): Promise<void> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) return;
+    const snap = this.readPersisted(storage, projectId);
+    if (!snap) return;
+    const idx = snap.designs.findIndex((d) => d.id === design.id);
+    let designs: Design[];
+    if (idx < 0) {
+      designs = [...snap.designs, design];
+    } else if (position !== undefined && position !== idx) {
+      const without = snap.designs.filter((d) => d.id !== design.id);
+      const at = Math.max(0, Math.min(position, without.length));
+      designs = [...without.slice(0, at), design, ...without.slice(at)];
+    } else {
+      designs = snap.designs.map((d) => (d.id === design.id ? design : d));
+    }
+    this.writePersisted(storage, projectId, { ...snap, designs });
+  }
+
+  async saveMessages(
+    projectId: string,
+    designId: string,
+    messages: UIMessage[],
+  ): Promise<void> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) return;
+    const snap = this.readPersisted(storage, projectId);
+    if (!snap) return;
+    this.writePersisted(storage, projectId, {
+      ...snap,
+      messagesByDesign: { ...snap.messagesByDesign, [designId]: messages },
+    });
+  }
+
+  async saveNote(
+    projectId: string,
+    designId: string,
+    body: string,
+  ): Promise<void> {
+    this.ensureHydrated();
+    const storage = ssrSafeStorage();
+    if (!storage) return;
+    const snap = this.readPersisted(storage, projectId);
+    if (!snap) return;
+    const trimmed = body.trim();
+    const notesByDesign = { ...snap.notesByDesign };
+    if (trimmed) notesByDesign[designId] = body;
+    else delete notesByDesign[designId];
+    this.writePersisted(storage, projectId, { ...snap, notesByDesign });
+  }
+
   async getActiveProjectId(): Promise<string | null> {
     this.ensureHydrated();
     const storage = ssrSafeStorage();

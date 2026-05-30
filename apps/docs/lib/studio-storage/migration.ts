@@ -71,11 +71,40 @@ export async function maybeRunFirstSignInMigration(
     await markMigrated(supabase);
     return { status: "migrated", projectsCopied: copied };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = describeError(err);
     // eslint-disable-next-line no-console
-    console.warn("[studio-storage] first-sign-in migration failed:", message);
+    console.warn("[studio-storage] first-sign-in migration failed:", message, err);
     return { status: "failed", projectsCopied: copied, error: message };
   }
+}
+
+/** Supabase / PostgREST errors are plain objects, not Error
+ *  instances, so `String(err)` collapses them to "[object Object]".
+ *  Pull out the fields PostgREST actually populates (message, code,
+ *  details, hint) so the console line is diagnosable. */
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object") {
+    const e = err as {
+      message?: string;
+      code?: string;
+      details?: string;
+      hint?: string;
+    };
+    const parts = [
+      e.message,
+      e.code ? `code=${e.code}` : undefined,
+      e.details ? `details=${e.details}` : undefined,
+      e.hint ? `hint=${e.hint}` : undefined,
+    ].filter(Boolean);
+    if (parts.length > 0) return parts.join(" | ");
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return String(err);
+    }
+  }
+  return String(err);
 }
 
 /** Rewrite the seed LOCAL_USER_ID references onto the real Supabase

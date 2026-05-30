@@ -26,7 +26,10 @@ import type {
 } from "@supabase/supabase-js";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { maybeRunFirstSignInMigration } from "@/lib/studio-storage/migration";
-import { resetStudioStorageCache } from "@/lib/studio-storage";
+import {
+  resetStudioStorageCache,
+  setStudioStorageUserId,
+} from "@/lib/studio-storage";
 
 interface SupabaseAuthContextValue {
   /** The browser Supabase client. Null in local-only mode. */
@@ -57,15 +60,19 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
+      // Report the id into the storage factory so getStudioStorage()
+      // resolves the cloud adapter without re-parsing the cookie.
+      setStudioStorageUserId(data.session?.user?.id ?? null);
       setSession(data.session);
       setLoaded(true);
     });
     const { data: sub } = supabase.auth.onAuthStateChange(
       (event, nextSession) => {
         setSession(nextSession);
-        // Invalidate the storage adapter cache — the next
-        // getStudioStorage() call must pick up the new identity
-        // (or fall back to local on sign-out).
+        // Push the new identity into the storage factory (also drops
+        // its cached adapter) so the next getStudioStorage() picks
+        // the right backend — cloud on sign-in, local on sign-out.
+        setStudioStorageUserId(nextSession?.user?.id ?? null);
         resetStudioStorageCache();
         // Run the first-sign-in local→cloud migration once per
         // account. The function is idempotent (gated by a flag in

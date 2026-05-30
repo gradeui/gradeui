@@ -36,8 +36,7 @@
  *   - Theme — picker (registered themes) + the full builder controls
  *     (mode, hue sliders, typography, shape, components). All wired
  *     to the page-level ThemeBuilderProvider.
- *   - Notes — per-design free-form text, owned by `notesByDesign`
- *     here and threaded down.
+ *   - Comments — per-design comment threads.
  *
  * Session-level settings (provider/model picker, theme + light/dark
  * mode, AI chat display toggles, dev toggles, version line) live
@@ -89,7 +88,6 @@ import {
   StudioSettings,
   StudioSettingsTrigger,
   type RendererMode,
-  type StorageBackend,
   type UserTier,
 } from "@/components/studio/studio-settings";
 import { useGradeTheme } from "@/components/grade-theme-provider";
@@ -288,15 +286,12 @@ export default function StudioPage() {
   // not persisted across page reloads yet (same model as the other
   // per-design state maps). Cleaned up alongside the others in
   // handleCloseDesign so closed designs don't leak.
+  // Retained for snapshot persistence/undo compatibility even though
+  // the Notes tab has been removed from the right column — closed
+  // designs are still cleaned out of this map and snapshots still
+  // round-trip it. No UI writes to it anymore.
   const [notesByDesign, setNotesByDesign] = useState<Record<string, string>>(
     {},
-  );
-
-  const handleNotesChange = useCallback(
-    (next: string) => {
-      setNotesByDesign((m) => ({ ...m, [activeId]: next }));
-    },
-    [activeId],
   );
 
   // Projects — the layer above designs. A Project owns a set of
@@ -955,12 +950,6 @@ export default function StudioPage() {
   // when pro/enterprise-only chrome lands (e.g. exporting to a per-
   // client starter, hiding the npm path for free), read this state.
   const [rendererMode, setRendererMode] = useState<RendererMode>("fast");
-  // Storage backend pick — defaults to localstorage so a fresh
-  // clone runs without setup. The factory in lib/studio-storage
-  // doesn't read this yet (always returns LocalStorage); it'll
-  // start branching once the Supabase adapter lands.
-  const [storageBackend, setStorageBackend] =
-    useState<StorageBackend>("localstorage");
   const [userTier, setUserTier] = useState<UserTier>("free");
 
   // Settings sheet — controlled. Default closed; the topbar gear opens
@@ -1321,7 +1310,7 @@ export default function StudioPage() {
   // auto-switch the user to the Comments tab when they pick an
   // element. Defaults to "layout" — the existing landing tab.
   const [rightTab, setRightTab] = useState<
-    "layout" | "theme" | "comments" | "notes"
+    "layout" | "theme" | "comments"
   >("layout");
 
   // A monotonic counter incremented every time a Comment-mode
@@ -1425,8 +1414,20 @@ export default function StudioPage() {
         : fresh;
       setDesigns((ds) => (ds.length >= MAX_DESIGNS ? ds : [...ds, next]));
       setActiveId(next.id);
+      // Persist the new screen as its own row immediately (the
+      // reconciling autosave below would catch it anyway, but the
+      // discrete add is the contract). Append position = current
+      // length.
+      if (activeProjectId) {
+        void storage
+          .addScreen(activeProjectId, next, designs.length)
+          .catch((err) => {
+            // eslint-disable-next-line no-console
+            console.warn("[studio] addScreen failed:", err);
+          });
+      }
     },
-    [designs.length]
+    [designs.length, activeProjectId, storage]
   );
 
   // Clone an existing design's JSX into a fresh slot. Copies the
@@ -1461,8 +1462,16 @@ export default function StudioPage() {
         return out;
       });
       setActiveId(duplicate.id);
+      if (activeProjectId) {
+        void storage
+          .addScreen(activeProjectId, duplicate, srcIdx + 1)
+          .catch((err) => {
+            // eslint-disable-next-line no-console
+            console.warn("[studio] addScreen (duplicate) failed:", err);
+          });
+      }
     },
-    [designs]
+    [designs, activeProjectId, storage]
   );
 
   const handleCloseDesign = useCallback(
@@ -1524,8 +1533,16 @@ export default function StudioPage() {
       // effect won't re-write the closed design's key after this
       // because the consumer state-slot is gone.
       pruneHistoryStorage(new Set(remaining.map((d) => d.id)));
+      // Delete the screen's row — FK cascade drops its messages,
+      // note, and comment threads server-side.
+      if (activeProjectId) {
+        void storage.deleteScreen(activeProjectId, id).catch((err) => {
+          // eslint-disable-next-line no-console
+          console.warn("[studio] deleteScreen failed:", err);
+        });
+      }
     },
-    [activeId, designs]
+    [activeId, designs, activeProjectId, storage]
   );
 
   const handleRenameDesign = useCallback((id: string, name: string) => {
@@ -1601,8 +1618,6 @@ export default function StudioPage() {
       appSource={activeDesign.appSource}
       selection={selectionByDesign[activeId] ?? null}
       onSourceChange={handleSourceMutation}
-      notes={notesByDesign[activeId] ?? ""}
-      onNotesChange={handleNotesChange}
       designName={activeDesign.name}
       designCreatedAt={activeDesign.createdAt}
       designUpdatedAt={activeDesign.updatedAt}
@@ -1894,8 +1909,6 @@ export default function StudioPage() {
         onSettingsChange={updateSettings}
         rendererMode={rendererMode}
         onRendererModeChange={setRendererMode}
-        storageBackend={storageBackend}
-        onStorageBackendChange={setStorageBackend}
         userTier={userTier}
         onUserTierChange={setUserTier}
         showUsage={showUsage}

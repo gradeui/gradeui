@@ -15,6 +15,7 @@
  */
 
 import { getBrowserSupabase } from "@/lib/supabase/client";
+import { supabaseUrl } from "@/lib/supabase/env";
 import { LocalStorageStudioStorage } from "./local-adapter";
 import { SupabaseStudioStorage } from "./supabase-adapter";
 import type { StudioStorage } from "./types";
@@ -44,6 +45,28 @@ interface CacheEntry {
 
 let cached: CacheEntry | null = null;
 
+/** Authoritative current user id, pushed in by `SupabaseProvider`
+ *  whenever auth state resolves or changes:
+ *    - `undefined` → provider hasn't reported yet; fall back to
+ *      reading the auth cookie synchronously (covers the very first
+ *      render after a sign-in redirect, before React effects run).
+ *    - `null`      → signed out.
+ *    - string      → the signed-in user id.
+ *  Using the SDK-parsed id (when available) avoids decoding the
+ *  cookie ourselves. */
+let reportedUserId: string | null | undefined = undefined;
+
+/** Called by `SupabaseProvider` on every auth-state change. Pushing
+ *  the id in (rather than having the factory poll) means a same-tab
+ *  sign-in / sign-out flips the backend without a cookie re-parse. */
+export function setStudioStorageUserId(id: string | null): void {
+  if (reportedUserId === id) return;
+  reportedUserId = id;
+  // Identity changed — drop the cached adapter so the next call
+  // builds the right one.
+  cached = null;
+}
+
 /** Returns the storage adapter appropriate to the current auth
  *  state. Callsites should call this on every render path that
  *  needs storage — it's cheap (cache hit unless identity changed). */
@@ -53,27 +76,21 @@ export function getStudioStorage(): StudioStorage {
     return getCachedLocal();
   }
 
-  // The browser Supabase client exposes the cached session
-  // synchronously via getSession() — but that's an async API. For
-  // the factory we read from getBrowserSupabase()'s internal
-  // session storage cookie, which the browser already has after
-  // SupabaseProvider's onAuthStateChange fired. Going through
-  // `auth.getSession()` here would force an async call site for
-  // every storage read, which the rest of the codebase isn't
-  // shaped for.
-  //
-  // Trade-off: between sign-in and the next render where the
-  // provider has dispatched, we may return the local adapter for
-  // one tick. That's fine — the provider triggers router.refresh()
-  // on auth state change so the next render uses the right adapter.
-  const session = readCurrentSessionSync();
-  if (!session) {
+  // Prefer the provider-reported id; before the provider has spoken
+  // (first render after a redirect), fall back to reading the auth
+  // cookie. `@supabase/ssr` stores the session in COOKIES, not
+  // localStorage — reading the cookie synchronously is what lets the
+  // very first render pick the cloud adapter instead of flashing the
+  // local one for the whole session.
+  const userId =
+    reportedUserId !== undefined ? reportedUserId : readUserIdSync();
+  if (!userId) {
     return getCachedLocal();
   }
 
-  if (cached?.key === session.userId) return cached.adapter;
+  if (cached?.key === userId) return cached.adapter;
   const adapter = new SupabaseStudioStorage(supabase);
-  cached = { key: session.userId, adapter };
+  cached = { key: userId, adapter };
   return adapter;
 }
 
@@ -84,17 +101,46 @@ function getCachedLocal(): StudioStorage {
   return adapter;
 }
 
-/** Reads the Supabase session from the browser-side auth storage
- *  synchronously. The Supabase SDK stores its session JSON under
- *  a localStorage key the project ref derives — we read it directly
- *  to keep `getStudioStorage()` synchronous. Returns null if no
- *  signed-in session is detected. */
-function readCurrentSessionSync(): { userId: string } | null {
-  if (typeof window === "undefined") return null;
+/** Synchronously resolve the signed-in user id from the browser's
+ *  auth state. Primary source is the `@supabase/ssr` auth COOKIE
+ *  (`sb-<project-ref>-auth-token`, possibly chunked `.0`, `.1`, …);
+ *  a legacy localStorage token is tried as a fallback. Returns null
+ *  when no signed-in session is detectable. */
+function readUserIdSync(): string | null {
+  if (typeof document === "undefined") return null;
+  return readUserIdFromCookie() ?? readUserIdFromLocalStorage();
+}
+
+function readUserIdFromCookie(): string | null {
   try {
-    // The @supabase/ssr browser client stores its token under a
-    // key of the form `sb-<project-ref>-auth-token`. The project
-    // ref varies, so we scan storage rather than computing it.
+    const ref = projectRefFromUrl();
+    const base = ref ? `sb-${ref}-auth-token` : null;
+    const cookies = document.cookie.split("; ").map((c) => {
+      const eq = c.indexOf("=");
+      return { name: c.slice(0, eq), value: c.slice(eq + 1) };
+    });
+    const matches = cookies.filter((c) =>
+      base
+        ? c.name === base || c.name.startsWith(`${base}.`)
+        : /^sb-.+-auth-token(\.\d+)?$/.test(c.name),
+    );
+    if (matches.length === 0) return null;
+    // Concatenate chunk values in numeric order (unchunked = -1 sorts
+    // first), then decode.
+    matches.sort((a, b) => chunkIndex(a.name) - chunkIndex(b.name));
+    let raw = matches.map((c) => decodeURIComponent(c.value)).join("");
+    if (raw.startsWith("base64-")) {
+      raw = base64Decode(raw.slice("base64-".length));
+    }
+    return extractUserId(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+function readUserIdFromLocalStorage(): string | null {
+  try {
+    if (typeof window === "undefined") return null;
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i);
       if (!key || !key.startsWith("sb-") || !key.endsWith("-auth-token")) {
@@ -102,20 +148,52 @@ function readCurrentSessionSync(): { userId: string } | null {
       }
       const raw = window.localStorage.getItem(key);
       if (!raw) continue;
-      const parsed = JSON.parse(raw) as
-        | { user?: { id?: string } }
-        | { currentSession?: { user?: { id?: string } } }
-        | null;
-      const uid =
-        (parsed as { user?: { id?: string } } | null)?.user?.id ??
-        (parsed as { currentSession?: { user?: { id?: string } } } | null)
-          ?.currentSession?.user?.id;
-      if (uid) return { userId: uid };
+      const id = extractUserId(JSON.parse(raw));
+      if (id) return id;
     }
     return null;
   } catch {
     return null;
   }
+}
+
+/** Pull `<ref>` out of `https://<ref>.supabase.co`. */
+function projectRefFromUrl(): string | null {
+  const url = supabaseUrl();
+  if (!url) return null;
+  return url.match(/^https?:\/\/([^.]+)\./)?.[1] ?? null;
+}
+
+function chunkIndex(name: string): number {
+  const m = name.match(/\.(\d+)$/);
+  return m ? Number(m[1]) : -1;
+}
+
+/** Tolerant base64 decode — handles the url-safe alphabet some
+ *  versions emit. */
+function base64Decode(b64: string): string {
+  return atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
+}
+
+/** Dig the user id out of a parsed session payload, whichever shape
+ *  the SDK persisted it in (bare Session, `{ currentSession }`, or an
+ *  array wrapper). */
+function extractUserId(parsed: unknown): string | null {
+  const fromObj = (o: unknown): string | null => {
+    const s = o as
+      | { user?: { id?: string }; currentSession?: { user?: { id?: string } } }
+      | null
+      | undefined;
+    return s?.user?.id ?? s?.currentSession?.user?.id ?? null;
+  };
+  if (Array.isArray(parsed)) {
+    for (const item of parsed) {
+      const id = fromObj(item);
+      if (id) return id;
+    }
+    return null;
+  }
+  return fromObj(parsed);
 }
 
 /** Clear the cached adapter — call this after sign-out so the next

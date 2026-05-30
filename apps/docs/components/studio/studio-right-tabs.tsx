@@ -11,16 +11,17 @@
  *
  * Three tabs:
  *
- *   Layout — default. Hosts <StudioRightPanel>, which is itself
- *            stage-aware (A: starter picker, B: page structure
- *            placeholder, C/D: docked settings panel when a
- *            component is selected).
- *   Theme  — picker (registered themes) on top, then the inline
- *            theme builder controls (mode toggle, hue sliders,
- *            typography, shape, components). All wired to the
- *            page-level ThemeBuilderProvider so screen edits never
- *            touch the docs chrome.
- *   Notes  — per-design free-form text. Parent owns the state map.
+ *   Layout   — default. Hosts <StudioRightPanel>, which is itself
+ *              stage-aware (A: starter picker, B: page structure
+ *              placeholder, C/D: docked settings panel when a
+ *              component is selected).
+ *   Theme    — picker (registered themes) on top, then the inline
+ *              theme builder controls (mode toggle, hue sliders,
+ *              typography, shape, components). All wired to the
+ *              page-level ThemeBuilderProvider so screen edits never
+ *              touch the docs chrome.
+ *   Comments — per-design comment threads, assembled by the parent
+ *              and passed in as `commentsContent`.
  *
  * Each panel renders BARE — the bordered card chrome is owned by
  * this file's outer wrapper, not the panels themselves. That's the
@@ -29,7 +30,7 @@
  */
 
 import * as React from "react";
-import { Layers, MessageSquare, Palette, StickyNote, Sun, Moon } from "lucide-react";
+import { Layers, MessageSquare, Palette, Sun, Moon } from "lucide-react";
 
 import {
   Tabs,
@@ -63,10 +64,9 @@ import {
 } from "@/lib/themes";
 
 import { StudioRightPanel } from "./studio-right-panel";
-import { NotesPanel } from "./notes-panel";
 import { ThemePickerSection } from "./theme-picker-section";
 
-export type TabId = "layout" | "theme" | "notes" | "comments";
+export type TabId = "layout" | "theme" | "comments";
 
 // SVG sizing is owned by the package — TabsTrigger applies
 // `[&_svg]:size-3.5` to all icon children. No per-call sizes here.
@@ -74,15 +74,12 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "layout", label: "Layout", icon: <Layers /> },
   { id: "theme", label: "Theme", icon: <Palette /> },
   { id: "comments", label: "Comments", icon: <MessageSquare /> },
-  { id: "notes", label: "Notes", icon: <StickyNote /> },
 ];
 
 export interface StudioRightTabsProps {
   appSource: string | null;
   selection: StudioSelection | null;
   onSourceChange: (next: string) => void;
-  notes: string;
-  onNotesChange: (next: string) => void;
   designName?: string;
   // Stage B metadata — forwarded straight through to the
   // screen-info panel. Optional on this surface so the few non-
@@ -112,8 +109,6 @@ export function StudioRightTabs({
   appSource,
   selection,
   onSourceChange,
-  notes,
-  onNotesChange,
   designName,
   designCreatedAt,
   designUpdatedAt,
@@ -199,16 +194,6 @@ export function StudioRightTabs({
         className="flex-1 min-h-0 overflow-hidden"
       >
         {commentsContent}
-      </TabsContent>
-      <TabsContent
-        value="notes"
-        className="flex-1 min-h-0 overflow-hidden"
-      >
-        <NotesPanel
-          value={notes}
-          onChange={onNotesChange}
-          designName={designName}
-        />
       </TabsContent>
     </Tabs>
   );

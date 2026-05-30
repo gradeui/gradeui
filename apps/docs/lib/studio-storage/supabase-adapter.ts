@@ -6,23 +6,36 @@
  * authorisation server-side — the adapter never has to filter rows
  * by current user.
  *
- * Storage shape (v1):
+ * Storage shape (v2 — fully normalised):
  *
- *   projects (row per project) — carries the full ProjectSnapshot
- *     as a JSONB blob in `snapshot`. Mirrors the local adapter so
- *     the page sees identical shapes regardless of backend. v2
- *     will lift designs/messages/notes into the normalised tables
- *     that already exist in the schema; v1 keeps them empty for
- *     simplicity.
+ *   projects (row per project) — metadata only: name, description,
+ *     owner, the active-screen pointer (`active_design_id`) and the
+ *     theme draft (`theme_draft_json`). The v1 `snapshot` JSONB blob
+ *     is no longer read or written — screens/messages/notes are
+ *     their own rows now (see migration 0002).
+ *
+ *   designs (row per screen) — `state` JSONB carries appSource +
+ *     status; `position` is the 0-based order in the screen list.
+ *     `id` is the client-minted screen id (text, not uuid).
+ *
+ *   messages (row per chat message) — `payload` JSONB is the AI SDK
+ *     UIMessage; `position` orders the thread within a screen.
+ *
+ *   notes (row per screen) — PK (project_id, design_id), `body` text.
  *
  *   project_access — row per ResourceAccess grant on a project.
  *
  *   users / orgs / teams / memberships / org_memberships — what
  *     they say on the tin. Mirror the entity types directly.
  *
- *   comment_threads + comments — normalised per-thread. Comments
- *     aren't part of the project snapshot blob so the comments
- *     panel can query them without loading the whole project.
+ *   comment_threads + comments — normalised per-thread, anchored to
+ *     a screen so the comments panel queries just the active screen.
+ *
+ * loadProject reassembles the in-memory ProjectSnapshot by joining
+ * designs + messages + notes for the project. saveProject reconciles
+ * those rows against the snapshot (upsert present, delete removed);
+ * the granular addScreen/deleteScreen/saveMessages/saveNote helpers
+ * are the fast path for discrete user actions.
  *
  * Cross-session pointer (active project id) lives in localStorage,
  * the same as in local-only mode — it's a per-device UI preference
@@ -32,7 +45,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { UIMessage } from "ai";
-import type { Design } from "@/lib/studio-designs";
+import type { Design, DesignStatus } from "@/lib/studio-designs";
 import {
   type Comment,
   type CommentThread,
@@ -155,21 +168,89 @@ interface ProjectRow {
   description: string | null;
   owner_type: "user" | "team";
   owner_id: string;
-  snapshot: ProjectSnapshotBlob | null;
+  active_design_id: string | null;
+  theme_draft_json: string | null;
   created_at: number;
   updated_at: number;
 }
 
-/** Shape of the JSONB `snapshot` column. Identical to
- *  ProjectSnapshot minus the embedded Project metadata (which is
- *  on the row's own columns). Pulled into its own type so the
- *  pack/unpack helpers stay tidy. */
-interface ProjectSnapshotBlob {
-  designs: Design[];
-  activeDesignId: string;
-  messagesByDesign: Record<string, UIMessage[]>;
-  notesByDesign: Record<string, string>;
-  themeDraftJson?: string;
+/** Columns selected for the metadata view (no active/theme — those
+ *  are only needed by loadProject). Kept as a const so listProjects
+ *  and the mutation methods select an identical shape. */
+const PROJECT_META_COLS =
+  "id, name, description, owner_type, owner_id, created_at, updated_at";
+const PROJECT_FULL_COLS =
+  "id, name, description, owner_type, owner_id, active_design_id, theme_draft_json, created_at, updated_at";
+
+// ─── Screen / message / note rows ─────────────────────────────────
+
+/** JSONB `state` column on a design row — everything about a screen
+ *  that isn't its name / position / timestamps. */
+interface DesignState {
+  appSource?: string | null;
+  status?: DesignStatus | null;
+}
+
+interface DesignRow {
+  id: string;
+  project_id: string;
+  name: string;
+  state: DesignState | null;
+  position: number;
+  created_at: number;
+  updated_at: number;
+}
+
+function rowToDesign(r: DesignRow): Design {
+  return {
+    id: r.id,
+    name: r.name,
+    appSource: r.state?.appSource ?? null,
+    status: r.state?.status ?? undefined,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+function designToRow(
+  projectId: string,
+  d: Design,
+  position: number,
+): DesignRow {
+  const now = nowMs();
+  return {
+    id: d.id,
+    project_id: projectId,
+    name: d.name,
+    state: { appSource: d.appSource ?? null, status: d.status ?? null },
+    position,
+    created_at: d.createdAt ?? now,
+    updated_at: d.updatedAt ?? now,
+  };
+}
+
+interface MessageRow {
+  id: string;
+  project_id: string;
+  design_id: string;
+  payload: UIMessage;
+  position: number;
+  created_at: number;
+}
+
+interface NoteRow {
+  project_id: string;
+  design_id: string;
+  body: string;
+  updated_at: number;
+}
+
+/** Mint a client-style screen id — mirrors studio-designs `nextId`
+ *  so a cloud-seeded screen is indistinguishable from one the page
+ *  adds. NOT a uuid: the `designs.id` column is text (migration
+ *  0002) precisely so client ids round-trip unchanged. */
+function mintDesignId(): string {
+  return "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
 interface ProjectAccessRow {
@@ -261,7 +342,7 @@ export class SupabaseStudioStorage implements StudioStorage {
   async listProjects(): Promise<Project[]> {
     const { data: projectRows, error: pErr } = await this.supabase
       .from("projects")
-      .select("id, name, description, owner_type, owner_id, created_at, updated_at")
+      .select(PROJECT_META_COLS)
       .order("updated_at", { ascending: false });
     if (pErr) throw pErr;
     if (!projectRows || projectRows.length === 0) return [];
@@ -281,49 +362,77 @@ export class SupabaseStudioStorage implements StudioStorage {
     }
 
     return projectRows.map((r) =>
-      rowToProject(
-        { ...(r as ProjectRow), snapshot: null },
-        accessByProject.get(r.id) ?? [],
-      ),
+      rowToProject(r as unknown as ProjectRow, accessByProject.get(r.id) ?? []),
     );
   }
 
   async loadProject(id: string): Promise<ProjectSnapshot | null> {
     const { data: row, error } = await this.supabase
       .from("projects")
-      .select("id, name, description, owner_type, owner_id, snapshot, created_at, updated_at")
+      .select(PROJECT_FULL_COLS)
       .eq("id", id)
       .maybeSingle();
     if (error) throw error;
     if (!row) return null;
+    const projectRow = row as unknown as ProjectRow;
 
-    const { data: accessRows } = await this.supabase
-      .from("project_access")
-      .select("project_id, subject_type, subject_id, role")
-      .eq("project_id", id);
-    const access = ((accessRows ?? []) as ProjectAccessRow[]).map(rowToAccess);
+    // Fan out the three child reads + access in parallel — they're
+    // independent and RLS already scopes each to this project.
+    const [accessRes, designRes, messageRes, noteRes] = await Promise.all([
+      this.supabase
+        .from("project_access")
+        .select("project_id, subject_type, subject_id, role")
+        .eq("project_id", id),
+      this.supabase
+        .from("designs")
+        .select("id, project_id, name, state, position, created_at, updated_at")
+        .eq("project_id", id)
+        .order("position", { ascending: true }),
+      this.supabase
+        .from("messages")
+        .select("id, project_id, design_id, payload, position, created_at")
+        .eq("project_id", id)
+        .order("position", { ascending: true }),
+      this.supabase
+        .from("notes")
+        .select("project_id, design_id, body, updated_at")
+        .eq("project_id", id),
+    ]);
 
-    const project = rowToProject(row as ProjectRow, access);
-    const snapshot = (row as ProjectRow).snapshot;
-    if (!snapshot) {
-      // Project exists but has no snapshot yet — return a minimal
-      // ProjectSnapshot so the page can render an empty workspace
-      // and the next save fills it in.
-      return {
-        project,
-        designs: [],
-        activeDesignId: "",
-        messagesByDesign: {},
-        notesByDesign: {},
-      };
+    const access = ((accessRes.data ?? []) as ProjectAccessRow[]).map(
+      rowToAccess,
+    );
+    const project = rowToProject(projectRow, access);
+
+    const designs = ((designRes.data ?? []) as DesignRow[]).map(rowToDesign);
+
+    // Group messages by screen, preserving the position order the
+    // query already applied.
+    const messagesByDesign: Record<string, UIMessage[]> = {};
+    for (const m of (messageRes.data ?? []) as MessageRow[]) {
+      (messagesByDesign[m.design_id] ??= []).push(m.payload);
     }
+
+    const notesByDesign: Record<string, string> = {};
+    for (const n of (noteRes.data ?? []) as NoteRow[]) {
+      if (n.body) notesByDesign[n.design_id] = n.body;
+    }
+
+    // active_design_id is a soft pointer — fall back to the first
+    // screen if it's null or points at a since-deleted screen.
+    const activeDesignId =
+      projectRow.active_design_id &&
+      designs.some((d) => d.id === projectRow.active_design_id)
+        ? projectRow.active_design_id
+        : designs[0]?.id ?? "";
+
     return {
       project,
-      designs: snapshot.designs ?? [],
-      activeDesignId: snapshot.activeDesignId ?? "",
-      messagesByDesign: snapshot.messagesByDesign ?? {},
-      notesByDesign: snapshot.notesByDesign ?? {},
-      themeDraftJson: snapshot.themeDraftJson,
+      designs,
+      activeDesignId,
+      messagesByDesign,
+      notesByDesign,
+      themeDraftJson: projectRow.theme_draft_json ?? undefined,
     };
   }
 
@@ -345,10 +454,36 @@ export class SupabaseStudioStorage implements StudioStorage {
         owner_type: "user",
         owner_id: uid,
       })
-      .select("id, name, description, owner_type, owner_id, created_at, updated_at")
+      .select(PROJECT_META_COLS)
       .single();
     if (error) throw error;
-    return rowToProject({ ...(data as ProjectRow), snapshot: null }, []);
+    const project = rowToProject(data as unknown as ProjectRow, []);
+
+    // Seed the project with one blank screen so the workspace is
+    // never empty — mirrors the local adapter + the pre-projects
+    // bootstrap. The id is client-style (text column) and unique per
+    // project, so no PK collision with other projects' seed screens.
+    const now = nowMs();
+    const seed: Design = {
+      id: mintDesignId(),
+      name: "Screen 1",
+      appSource: null,
+      createdAt: now,
+      updatedAt: now,
+      status: "draft",
+    };
+    const { error: dErr } = await this.supabase
+      .from("designs")
+      .insert(designToRow(project.id, seed, 0));
+    if (dErr) throw dErr;
+
+    // Point the project at its seed screen.
+    await this.supabase
+      .from("projects")
+      .update({ active_design_id: seed.id })
+      .eq("id", project.id);
+
+    return project;
   }
 
   async renameProject(id: string, name: string): Promise<Project> {
@@ -369,7 +504,7 @@ export class SupabaseStudioStorage implements StudioStorage {
       .from("projects")
       .update(update)
       .eq("id", id)
-      .select("id, name, description, owner_type, owner_id, created_at, updated_at")
+      .select(PROJECT_META_COLS)
       .single();
     if (error) throw error;
 
@@ -378,7 +513,7 @@ export class SupabaseStudioStorage implements StudioStorage {
       .select("project_id, subject_type, subject_id, role")
       .eq("project_id", id);
     const access = ((accessRows ?? []) as ProjectAccessRow[]).map(rowToAccess);
-    return rowToProject({ ...(data as ProjectRow), snapshot: null }, access);
+    return rowToProject(data as unknown as ProjectRow, access);
   }
 
   async deleteProject(id: string): Promise<void> {
@@ -389,16 +524,18 @@ export class SupabaseStudioStorage implements StudioStorage {
   }
 
   async saveProject(snapshot: ProjectSnapshot): Promise<void> {
-    const { project, designs, activeDesignId, messagesByDesign, notesByDesign, themeDraftJson } =
-      snapshot;
-    const blob: ProjectSnapshotBlob = {
+    const {
+      project,
       designs,
       activeDesignId,
       messagesByDesign,
       notesByDesign,
       themeDraftJson,
-    };
+    } = snapshot;
 
+    // 1. Project metadata + the soft pointers (active screen, theme
+    //    draft). No snapshot blob — the children below are the
+    //    source of truth now.
     const { error } = await this.supabase
       .from("projects")
       .update({
@@ -406,24 +543,169 @@ export class SupabaseStudioStorage implements StudioStorage {
         description: project.description ?? null,
         owner_type: project.owner.type,
         owner_id: project.owner.id,
-        snapshot: blob,
+        active_design_id: activeDesignId || null,
+        theme_draft_json: themeDraftJson ?? null,
       })
       .eq("id", project.id);
     if (error) throw error;
 
-    // Sync access grants — wipe + rewrite. Cheap (low row count per
-    // project), keeps the code path simple. RLS only allows the
-    // owner to do this so safe to do as a single transaction.
-    await this.supabase.from("project_access").delete().eq("project_id", project.id);
+    // 2. Access grants — wipe + rewrite. Cheap (low row count) and
+    //    RLS scopes it to the owner.
+    await this.supabase
+      .from("project_access")
+      .delete()
+      .eq("project_id", project.id);
     if (project.access.length > 0) {
-      const rows = project.access.map((a) => ({
-        project_id: project.id,
-        subject_type: a.subject.type,
-        subject_id: a.subject.id,
-        role: a.role,
-      }));
-      await this.supabase.from("project_access").insert(rows);
+      await this.supabase.from("project_access").insert(
+        project.access.map((a) => ({
+          project_id: project.id,
+          subject_type: a.subject.type,
+          subject_id: a.subject.id,
+          role: a.role,
+        })),
+      );
     }
+
+    // 3. Screens — reconcile rows against the snapshot. Delete the
+    //    screens that went away (cascades their messages / notes /
+    //    threads via FK), then upsert the survivors with fresh
+    //    positions.
+    const { data: existingDesignRows } = await this.supabase
+      .from("designs")
+      .select("id")
+      .eq("project_id", project.id);
+    const wantIds = new Set(designs.map((d) => d.id));
+    const staleIds = ((existingDesignRows ?? []) as { id: string }[])
+      .map((r) => r.id)
+      .filter((id) => !wantIds.has(id));
+    if (staleIds.length > 0) {
+      await this.supabase.from("designs").delete().in("id", staleIds);
+    }
+    if (designs.length > 0) {
+      await this.supabase
+        .from("designs")
+        .upsert(
+          designs.map((d, i) => designToRow(project.id, d, i)),
+          { onConflict: "id" },
+        );
+    }
+
+    // 4. Messages + notes — replace per surviving screen. Cheap for a
+    //    single-user workspace; a future optimisation could diff
+    //    instead of wholesale-replacing. Runs in parallel per screen.
+    await Promise.all(
+      designs.map((d) =>
+        this.replaceMessages(project.id, d.id, messagesByDesign[d.id] ?? []),
+      ),
+    );
+    await Promise.all(
+      designs.map((d) =>
+        this.upsertNote(project.id, d.id, notesByDesign[d.id] ?? ""),
+      ),
+    );
+  }
+
+  // ─── Screens (designs) — granular row-level writes ─────────────
+
+  async addScreen(
+    projectId: string,
+    design: Design,
+    position: number,
+  ): Promise<void> {
+    const { error } = await this.supabase
+      .from("designs")
+      .upsert(designToRow(projectId, design, position), { onConflict: "id" });
+    if (error) throw error;
+  }
+
+  async deleteScreen(projectId: string, designId: string): Promise<void> {
+    // FK cascade drops the screen's messages, note, and comment
+    // threads. Scope by project_id too as belt-and-braces.
+    const { error } = await this.supabase
+      .from("designs")
+      .delete()
+      .eq("project_id", projectId)
+      .eq("id", designId);
+    if (error) throw error;
+  }
+
+  async saveScreen(
+    projectId: string,
+    design: Design,
+    position?: number,
+  ): Promise<void> {
+    let pos = position;
+    if (pos === undefined) {
+      const { data } = await this.supabase
+        .from("designs")
+        .select("position")
+        .eq("id", design.id)
+        .maybeSingle();
+      pos = (data as { position: number } | null)?.position ?? 0;
+    }
+    const { error } = await this.supabase
+      .from("designs")
+      .upsert(designToRow(projectId, design, pos), { onConflict: "id" });
+    if (error) throw error;
+  }
+
+  async saveMessages(
+    projectId: string,
+    designId: string,
+    messages: UIMessage[],
+  ): Promise<void> {
+    await this.replaceMessages(projectId, designId, messages);
+  }
+
+  async saveNote(
+    projectId: string,
+    designId: string,
+    body: string,
+  ): Promise<void> {
+    await this.upsertNote(projectId, designId, body);
+  }
+
+  /** Wholesale-replace a screen's chat history: drop existing rows,
+   *  insert one row per message keyed by array index. */
+  private async replaceMessages(
+    projectId: string,
+    designId: string,
+    messages: UIMessage[],
+  ): Promise<void> {
+    await this.supabase.from("messages").delete().eq("design_id", designId);
+    if (messages.length === 0) return;
+    const rows = messages.map((m, i) => ({
+      project_id: projectId,
+      design_id: designId,
+      payload: m,
+      position: i,
+    }));
+    const { error } = await this.supabase.from("messages").insert(rows);
+    if (error) throw error;
+  }
+
+  /** Upsert (or clear) a screen's note. Empty / whitespace-only body
+   *  deletes the row so an empty note never lingers. */
+  private async upsertNote(
+    projectId: string,
+    designId: string,
+    body: string,
+  ): Promise<void> {
+    if (!body.trim()) {
+      await this.supabase
+        .from("notes")
+        .delete()
+        .eq("project_id", projectId)
+        .eq("design_id", designId);
+      return;
+    }
+    const { error } = await this.supabase
+      .from("notes")
+      .upsert(
+        { project_id: projectId, design_id: designId, body },
+        { onConflict: "project_id,design_id" },
+      );
+    if (error) throw error;
   }
 
   async getActiveProjectId(): Promise<string | null> {

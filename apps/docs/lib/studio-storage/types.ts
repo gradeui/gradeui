@@ -144,9 +144,53 @@ export interface StudioStorage {
    *  no-op. */
   deleteProject(id: string): Promise<void>;
 
-  /** Persist the project's current in-memory state. Replaces the
-   *  stored snapshot wholesale. */
+  /** Persist the project's current in-memory state. Reconciles the
+   *  normalised rows (screens, messages, notes) against the snapshot
+   *  — upserting present rows and deleting removed ones. The bulk
+   *  catch-all used by the page's autosave + project-switch flush;
+   *  discrete user actions prefer the granular helpers below. */
   saveProject(snapshot: ProjectSnapshot): Promise<void>;
+
+  // ─── Screens (designs) — granular, row-level writes ─────────────
+  // These exist so the page persists a discrete user action (add a
+  // screen, close a screen) as a single row write rather than
+  // re-serialising the whole project. `saveProject` remains the
+  // reconciling catch-all; these are the fast path.
+
+  /** Append a screen to a project. The page mints the `Design`
+   *  (id, name, status, timestamps); the adapter writes one row at
+   *  `position` (0-based index in the screen list). */
+  addScreen(
+    projectId: string,
+    design: Design,
+    position: number,
+  ): Promise<void>;
+
+  /** Delete a screen and everything anchored to it — its chat
+   *  history (messages), its note, and its comment threads. The
+   *  active-screen pointer is the caller's concern. Idempotent. */
+  deleteScreen(projectId: string, designId: string): Promise<void>;
+
+  /** Persist a screen's editable fields (name, appSource, status,
+   *  updatedAt) without touching its siblings. Used after inline
+   *  rename / source regeneration. */
+  saveScreen(
+    projectId: string,
+    design: Design,
+    position?: number,
+  ): Promise<void>;
+
+  /** Replace a screen's chat history wholesale. One row per message,
+   *  ordered by array index. */
+  saveMessages(
+    projectId: string,
+    designId: string,
+    messages: UIMessage[],
+  ): Promise<void>;
+
+  /** Upsert a screen's free-form note body. Empty / whitespace-only
+   *  clears the row. */
+  saveNote(projectId: string, designId: string, body: string): Promise<void>;
 
   /** Read the cross-session pointer to which project the user had
    *  open last. `null` on a fresh install. */

@@ -56,25 +56,6 @@ import type { ChatSettings } from "@/components/ai-elements/provider-picker";
 export type RendererMode = "fast" | "sandpack";
 export type UserTier = "free" | "pro" | "enterprise";
 
-/**
- * StorageBackend — where Studio's project/team/user data lives.
- *
- * - `localstorage` (default): zero-setup, browser-only. Anyone who
- *   clones the repo + runs `pnpm dev` gets a working Studio
- *   immediately. State doesn't sync between devices.
- * - `supabase`: cloud-backed (real auth, multi-device, real
- *   collaboration). Disabled until the Supabase adapter ships;
- *   exposed here as a "Soon" choice so the setting slot is in
- *   place ahead of time.
- *
- * The factory at `lib/studio-storage/index.ts` reads this setting
- * (eventually — today it always returns LocalStorage). Local-first
- * is non-negotiable: the localstorage path must keep working with
- * no setup for the open-source / self-host story.
- */
-export type StorageBackend = "localstorage" | "supabase";
-
-
 export interface StudioSettingsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -90,12 +71,6 @@ export interface StudioSettingsProps {
   onRendererModeChange: (mode: RendererMode) => void;
   userTier: UserTier;
   onUserTierChange: (tier: UserTier) => void;
-  // Where project / team / user data is persisted. Local-first by
-  // default; cloud-backed when Supabase wires in. Exposed as a
-  // setting so self-host installs can stay local and hosted
-  // installs can flip to cloud.
-  storageBackend: StorageBackend;
-  onStorageBackendChange: (backend: StorageBackend) => void;
 
   // AI Chat — new section. These toggles flow down to <AIChat>
   // via <StudioChat>. Defaults are owned by the parent so a refresh
@@ -165,8 +140,6 @@ export function StudioSettings({
   onSettingsChange,
   rendererMode,
   onRendererModeChange,
-  storageBackend,
-  onStorageBackendChange,
   userTier,
   onUserTierChange,
   showUsage,
@@ -311,25 +284,6 @@ export function StudioSettings({
                 { value: "free", label: "Free" },
                 { value: "pro", label: "Pro" },
                 { value: "enterprise", label: "Enterprise" },
-              ]}
-            />
-          </Section>
-
-          <Section
-            title="Storage"
-            description="Where project, team, and user data is persisted. Local-first by default so a fresh clone runs without any setup. Cloud backend wires in when Supabase ships."
-          >
-            <SelectField
-              id="settings-storage"
-              label="Backend"
-              hint="LocalStorage is browser-only and stores everything on this device. Supabase (when available) syncs across devices and supports real collaboration. Local is the right pick for self-host."
-              value={storageBackend}
-              onValueChange={(v) =>
-                onStorageBackendChange(v as StorageBackend)
-              }
-              options={[
-                { value: "localstorage", label: "LocalStorage (default)" },
-                { value: "supabase", label: "Supabase — Soon" },
               ]}
             />
           </Section>
