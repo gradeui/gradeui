@@ -219,16 +219,19 @@ create table if not exists public.comment_threads (
   element_label text not null,
   component_name text,
   status text not null default 'open' check (status in ('open','resolved')),
+  created_by uuid not null references public.users (id) on delete cascade,
   resolved_by uuid references public.users (id),
   resolved_at bigint,
-  created_at bigint not null default (extract(epoch from now()) * 1000)::bigint,
-  updated_at bigint not null default (extract(epoch from now()) * 1000)::bigint
+  created_at bigint not null default (extract(epoch from now()) * 1000)::bigint
 );
 
-drop trigger if exists comment_threads_set_updated_at on public.comment_threads;
-create trigger comment_threads_set_updated_at
-  before update on public.comment_threads
-  for each row execute function set_updated_at();
+-- Backfill for installs that ran the original 0001 before this fix:
+-- add `created_by` if missing, drop the unused `updated_at`.
+-- Safe to re-run; both ops are conditional.
+alter table public.comment_threads
+  add column if not exists created_by uuid references public.users (id) on delete cascade;
+alter table public.comment_threads
+  drop column if exists updated_at;
 
 create index if not exists comment_threads_design_idx on public.comment_threads (design_id, created_at);
 

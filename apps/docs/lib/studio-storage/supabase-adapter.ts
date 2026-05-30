@@ -206,10 +206,10 @@ interface ThreadRow {
   element_label: string;
   component_name: string | null;
   status: "open" | "resolved";
+  created_by: string;
   resolved_by: string | null;
   resolved_at: number | null;
   created_at: number;
-  updated_at: number;
 }
 function rowToThread(r: ThreadRow): CommentThread {
   return {
@@ -221,10 +221,10 @@ function rowToThread(r: ThreadRow): CommentThread {
     elementLabel: r.element_label,
     componentName: r.component_name ?? undefined,
     status: r.status,
+    createdBy: r.created_by,
     resolvedBy: r.resolved_by ?? undefined,
     resolvedAt: r.resolved_at ?? undefined,
     createdAt: r.created_at,
-    updatedAt: r.updated_at,
   };
 }
 
@@ -699,7 +699,7 @@ export class SupabaseStudioStorage implements StudioStorage {
     const { data: threadRows, error: tErr } = await this.supabase
       .from("comment_threads")
       .select(
-        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, resolved_by, resolved_at, created_at, updated_at",
+        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, created_by, resolved_by, resolved_at, created_at",
       )
       .eq("project_id", projectId)
       .eq("design_id", designId)
@@ -747,9 +747,10 @@ export class SupabaseStudioStorage implements StudioStorage {
         anchor_kind: input.anchorKind,
         element_label: input.elementLabel,
         component_name: input.componentName ?? null,
+        created_by: input.authorId,
       })
       .select(
-        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, resolved_by, resolved_at, created_at, updated_at",
+        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, created_by, resolved_by, resolved_at, created_at",
       )
       .single();
     if (tErr) throw tErr;
@@ -786,7 +787,7 @@ export class SupabaseStudioStorage implements StudioStorage {
       })
       .eq("id", input.threadId)
       .select(
-        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, resolved_by, resolved_at, created_at, updated_at",
+        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, created_by, resolved_by, resolved_at, created_at",
       )
       .single();
     if (error) throw error;
@@ -803,7 +804,7 @@ export class SupabaseStudioStorage implements StudioStorage {
       .update({ status: "open", resolved_by: null, resolved_at: null })
       .eq("id", input.threadId)
       .select(
-        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, resolved_by, resolved_at, created_at, updated_at",
+        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, created_by, resolved_by, resolved_at, created_at",
       )
       .single();
     if (error) throw error;
