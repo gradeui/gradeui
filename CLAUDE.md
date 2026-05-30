@@ -31,7 +31,7 @@ Grade ships components at three access levels, **all from this single codebase**
 The tiering is enforced by two independent controls:
 
 1. **npm publishing** — the `publishConfig.access` field on each package's `package.json` decides whether it publishes `public` (anyone can `npm install`) or `restricted` (only team members + per-user grants). The `.github/workflows/publish.yml` hook runs changesets, which reads those fields per package.
-2. **Docs site rendering** — `apps/docs` uses NextAuth (GitHub provider) to gate routes. Public content is statically rendered; pro/client content sits behind auth. This is how `gradeui.com` stays the one place everyone logs into.
+2. **Docs site rendering** — `apps/docs` uses Supabase Auth (Google OAuth + email magic-link, env-configurable) to gate routes. Public content is statically rendered; Studio + pro/client content sits behind auth. This is how `gradeui.com` stays the one place everyone logs into. See `SETUP-AUTH.md` for setup, `apps/docs/STUDIO-SHELL.md` for the implementation walkthrough.
 
 ### 1. Public / free — `@gradeui/core`, `@gradeui/ui`
 - `publishConfig.access: "public"`
@@ -41,7 +41,7 @@ The tiering is enforced by two independent controls:
 ### 2. Pro / paid — `@gradeui/pro`
 - `publishConfig.access: "restricted"` — requires the npm Teams plan
 - Commercial license — see `packages/pro/LICENSE.md`
-- Rendered on `gradeui.com/pro/**` behind an auth check (user must be logged in AND have an active pro entitlement — entitlement check to be layered on top of NextAuth)
+- Rendered on `gradeui.com/pro/**` behind an auth check (user must be logged in AND have an active pro entitlement — entitlement check to be layered on top of the Supabase session)
 
 ### 3. Per-client private — `packages/clients/<name>/` (when needed)
 - Same scope `@gradeui/*` (e.g. `@gradeui/acme-forms`) with `publishConfig.access: "restricted"`, or a client-owned scope like `@acme/*`
@@ -72,14 +72,26 @@ The template for an extracted client repo is `apps/consume-app/` — a Next.js a
 
 ## Auth on gradeui.com
 
-`apps/docs` already has NextAuth v5 wired in with a GitHub OAuth provider (see `apps/docs/.env.example`, `apps/docs/components/auth-provider.tsx`, `apps/docs/app/api/auth/[...nextauth]/route.ts`). To gate a route behind auth:
+`apps/docs` uses Supabase Auth — Google OAuth + email magic-link, configurable via `NEXT_PUBLIC_GRADE_AUTH_PROVIDERS`. Two modes from one codebase:
 
-1. Check the session in the page or layout: `auth()` from `@/lib/auth`
-2. If `!session`, redirect to `/sign-in` (or render a paywall / upgrade CTA for pro routes)
+- **Local-only (self-host default):** no Supabase keys in env → sign-in gate bypassed, storage is localStorage. `pnpm dev` works without any setup.
+- **Cloud:** keys present → `/studio` requires sign-in, projects sync to Postgres. RLS policies enforce visibility; first-sign-in auto-migrates existing local projects into the cloud account.
 
-For **pro entitlement** (logged-in ≠ has-paid), plan to layer on an entitlement check — either a simple allowlist in an env var, a Stripe subscription lookup, or a dedicated `user_entitlements` table once the user store outgrows GitHub login. This hasn't been built yet; keep the hook points obvious in any new gated route.
+The switch is driven by `isAuthConfigured()` in `apps/docs/lib/supabase/env.ts`. Setup walkthrough: [SETUP-AUTH.md](./SETUP-AUTH.md). Full architecture in [apps/docs/STUDIO-SHELL.md](./apps/docs/STUDIO-SHELL.md) under "How auth works".
 
-For **per-client auth**, plan to extend the auth callback to attach a `clients: string[]` claim to the session. Gated client routes then check `session.clients.includes("acme")`.
+To gate a new route:
+
+1. Server component: `getServerUser()` from `@/lib/supabase/server` — returns the signed-in Supabase user or null.
+2. Compat shim: `auth()` from `@/lib/auth` returns a NextAuth-style `{ user: { id, email, name } }` envelope for legacy callsites.
+3. Middleware: add the route's path prefix to `GATED_PREFIXES` in `apps/docs/middleware.ts` so unsigned users are redirected to `/sign-in?next=<path>`.
+
+For **pro entitlement** (logged-in ≠ has-paid), plan to layer on an entitlement check — either an allowlist in env, a Stripe subscription lookup, or a dedicated `user_entitlements` table. The `Organisation.plan` + `OrgLimits` shape is already in the schema; just not enforced yet.
+
+For **per-client auth**, plan to extend the auth-state-change handler to attach a `clients: string[]` claim derived from `org_memberships`. Gated client routes then check `clients.includes("acme")`.
+
+### Invitations
+
+`POST /api/invitations` + `/accept-invite/[token]/` ship a working invitation flow via Resend. Owner of a project can invite by email; the recipient gets a tokenised link; clicking it (and signing in if needed) inserts the access grant. See `apps/docs/lib/email/resend.ts` and `apps/docs/app/api/invitations/route.ts`.
 
 ## Working in this repo
 

@@ -97,21 +97,20 @@ The docs site lives at `apps/docs/` and should serve `gradeui.com`.
    - **Framework Preset:** Next.js (auto-detected)
    - **Build Command:** leave default (`next build`) — Vercel infers `pnpm build` from the root lockfile
    - **Install Command:** `pnpm install` (Vercel detects pnpm automatically from `packageManager`)
-3. Environment variables — add these under **Project Settings → Environment Variables**:
+3. Environment variables — auth + cloud storage are **optional**. Without these vars, gradeui.com boots in local-only mode (Studio works, sign-in gate bypassed, data in localStorage). When you're ready to turn auth on, follow [SETUP-AUTH.md](./SETUP-AUTH.md) — it walks through creating the Supabase project, running the SQL migration, enabling providers, and setting:
 
    | Name | Value | Environments |
    |---|---|---|
-   | `AUTH_SECRET` | `openssl rand -base64 32` output | Preview + Production |
-   | `GITHUB_CLIENT_ID` | from the OAuth app you'll create below | Preview + Production |
-   | `GITHUB_CLIENT_SECRET` | from the same OAuth app | Preview + Production |
+   | `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` | Preview + Production |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | publishable key from Supabase | Preview + Production |
+   | `SUPABASE_SERVICE_ROLE_KEY` | secret key from Supabase | Preview + Production |
+   | `NEXT_PUBLIC_GRADE_AUTH_PROVIDERS` | `google,email` (or just `email`) | Preview + Production |
+   | `RESEND_API_KEY` | optional — for invitation emails | Preview + Production |
+   | `GRADE_EMAIL_FROM` | optional — `Grade <noreply@yourdomain>` | Preview + Production |
 
-4. GitHub OAuth for the docs site's feedback widget:
-   - https://github.com/settings/developers → **New OAuth App**
-   - Homepage URL: `https://gradeui.com`
-   - Callback URL: `https://gradeui.com/api/auth/callback/github`
-   - Save the client ID + secret into the Vercel env vars above
-   - For local dev, repeat with `http://localhost:3000` URLs and put the values into `apps/docs/.env.local`
-5. Attach the domain:
+   After adding `NEXT_PUBLIC_*` vars you must redeploy — they bake at build time.
+
+4. Attach the domain:
    - **Project Settings → Domains** → add `gradeui.com`
    - Vercel will guide you through the DNS changes. If `gradeui.com` was bought through Vercel, it's one click.
 
@@ -177,13 +176,17 @@ Extracting client code to a separate repo is an escape hatch, not the default �
 
 ## 5b. Auth on gradeui.com
 
-`apps/docs` already ships with NextAuth v5 configured for GitHub OAuth. To activate it in production:
+`apps/docs` ships with Supabase Auth (Google OAuth + email magic-link) wired in but inert until you set the env vars. Full setup walkthrough: [SETUP-AUTH.md](./SETUP-AUTH.md). Short version:
 
-1. Create the GitHub OAuth App (step 3, item 4 above) if you haven't already
-2. Confirm `AUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` are in Vercel's env vars
-3. For local dev: copy `apps/docs/.env.example` to `apps/docs/.env.local` and fill it in with the dev-mode OAuth App credentials
+1. Create a Supabase project, copy URL + publishable key + secret key
+2. Run `apps/docs/supabase/migrations/0001_studio_schema.sql` in the Supabase SQL editor
+3. Enable providers (Google in the Supabase dashboard; email magic-link is on by default)
+4. Drop the env vars from §3 above into Vercel + redeploy
+5. For local dev: copy `apps/docs/.env.example` to `apps/docs/.env.local`, fill in the same vars
 
-The current auth setup lets users sign in. It does **not** yet distinguish paid-pro users from free ones — that's the next layer (entitlements check on top of the session), to be added when `@gradeui/pro` content actually lands. Hook points live in `apps/docs/lib/auth.ts` and `apps/docs/components/auth-provider.tsx`.
+Auth + cloud storage is **optional** — a deploy with no Supabase env vars boots in local-only mode (no sign-in gate, localStorage-only). This is the self-host story.
+
+The current setup lets users sign in. It does **not** yet enforce paid-pro entitlement — that's the next layer (entitlements check on top of the Supabase session), to be added when `@gradeui/pro` content actually lands. Architecture detail in `apps/docs/STUDIO-SHELL.md` § "How auth works".
 
 ---
 

@@ -144,6 +144,7 @@ import {
   useImpersonation,
 } from "@/lib/studio-users";
 import { CommentsTab } from "@/components/studio/comments-tab";
+import { useSupabaseAuth } from "@/components/supabase-provider";
 // Side-effect import: seeds the @gradeui/walker registry with the
 // playbook's ALLOWED_COMPONENTS so the Send-to-Figma JSON is built
 // with the right known-names set. See lib/studio-walker-register.ts.
@@ -2059,6 +2060,11 @@ function TopBarRight({
     startImpersonation,
     realUser,
   } = useImpersonation();
+  // Supabase auth client — only present when the deploy has auth
+  // configured. Used to drive the Sign out menu item (which is only
+  // meaningful when the user actually has a session to sign out of).
+  const supabaseAuth = useSupabaseAuth();
+  const canSignOut = Boolean(supabaseAuth.supabase && supabaseAuth.user);
   // Two-letter initials for the Avatar fallback. Take the first
   // letter of the first two whitespace-separated words; fall back
   // to a single letter for one-word names.
@@ -2239,11 +2245,39 @@ function TopBarRight({
             <SettingsIcon />
             Settings
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            <LogOut />
-            Sign out
-            <DropdownMenuShortcut>Soon</DropdownMenuShortcut>
-          </DropdownMenuItem>
+          {canSignOut ? (
+            // Two-phase sign-out:
+            //   1. supabase.auth.signOut() clears the SDK's in-memory
+            //      session + localStorage token on the client. The UI
+            //      flips to signed-out state immediately.
+            //   2. POSTing to /auth/signout runs the server route,
+            //      which calls signOut() again with the request
+            //      cookies — that's the only way to reliably clear
+            //      the HttpOnly refresh-token cookie across browsers.
+            //      The route then 303-redirects to `/` so the user
+            //      lands on the marketing home with a clean session.
+            <DropdownMenuItem
+              onClick={async () => {
+                if (supabaseAuth.supabase) {
+                  await supabaseAuth.supabase.auth.signOut();
+                }
+                const form = document.createElement("form");
+                form.method = "POST";
+                form.action = "/auth/signout";
+                document.body.appendChild(form);
+                form.submit();
+              }}
+            >
+              <LogOut />
+              Sign out
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem disabled>
+              <LogOut />
+              Sign out
+              <DropdownMenuShortcut>Local</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
