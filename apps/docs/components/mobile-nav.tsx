@@ -21,8 +21,6 @@ const navItems = [
   { href: "/docs", label: "Docs" },
   { href: "/components", label: "Components" },
   { href: "/studio", label: "Studio" },
-  { href: "/changelog", label: "Changelog" },
-  { href: "/roadmap", label: "Roadmap" },
 ];
 
 export function MobileNav() {
