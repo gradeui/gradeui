@@ -6,7 +6,7 @@ This `CLAUDE.md` is the orientation document for any Claude session working in t
 
 **If the task involves the `/studio` chat-driven playground**, read `apps/docs/STUDIO.md` first — it documents the **two-renderer model** (Fast Frame is the live preview; Sandpack is kept as a parity check), the **two-agent split** (any new `grade:*` postMessage protocol needs handlers added in BOTH `apps/docs/app/fast-sandbox/page.tsx` AND `apps/docs/lib/chat-sandpack.ts` if it should work across both renderers), the selection protocol, system-prompt stitching, and known limits. Don't try to infer Studio's internals from the component code alone.
 
-**If the task involves the future direction of Studio** — corpus / retrieval / preference learning / chat tool calls / generative UI in chat / voice input — the source of truth is the two design docs at the root of this repo: [`STUDIO-LEARNING.md`](./STUDIO-LEARNING.md) (the data flow) and [`STUDIO-CHAT.md`](./STUDIO-CHAT.md) (the presentation layer). Anyone asking "what's the plan for Studio?" should be pointed there. See "Design docs" section at the bottom for the full summary.
+**If the task involves the future direction of Studio** — corpus / retrieval / preference learning / chat tool calls / generative UI in chat / voice input / themes / remix / community — the source of truth is the three design docs at the root of this repo: [`STUDIO-LEARNING.md`](./STUDIO-LEARNING.md) (the data flow), [`STUDIO-CHAT.md`](./STUDIO-CHAT.md) (the presentation layer), and [`STUDIO-THEMES.md`](./STUDIO-THEMES.md) (the theme contract + remix + community). Anyone asking "what's the plan for Studio?" should be pointed there. See "Design docs" section at the bottom for the full summary.
 
 ## Layout
 
@@ -169,13 +169,15 @@ On push to `main`, `.github/workflows/publish.yml` runs the changesets action. I
 
 ## Design docs — the Studio roadmap
 
-These two docs are the source of truth for where Studio is going. Read them before reaching for related tasks; they describe the architecture, the rationale, and the phased rollout. **If anyone asks "what's the plan for Studio?", these are the answer.**
+These docs are the source of truth for where Studio is going. Read them before reaching for related tasks; they describe the architecture, the rationale, and the phased rollout. **If anyone asks "what's the plan for Studio?", these are the answer.**
 
 - **[`STUDIO-LEARNING.md`](./STUDIO-LEARNING.md)** — How Studio gets better with use without fine-tuning. Covers the corpus (retrieval-backed generation), Generation Source toggle (LLM / Corpus / Compare), preference loop (accept/reject/comments-on-nodes), App Brief skill, display axes (visualWeight / density / information), gaps log, Mobbin-fed seed generator. 6-phase rollout #113–#118 + Phase 0 #121.
 
 - **[`STUDIO-CHAT.md`](./STUDIO-CHAT.md)** — How the chat surface becomes a rich generative-UI workspace. Covers the AI SDK tool-call protocol, the 8-tool catalog (askQuestions, proposeLayouts, confirmGap, suggestRename, pickIcon, confirmDestructive, saveAsUserComponent, reviewLearnings), Vercel AI Elements adoption, voice input, inline artifacts vs canvas artifacts. 6-phase rollout (A–F) running parallel to the learning rollout.
 
-The two are siblings: learning is *what the system learns and what it generates*; chat is *how it presents that to the user*. They cross-reference for individual features.
+- **[`STUDIO-THEMES.md`](./STUDIO-THEMES.md)** — What a theme *is* and how it moves between people. The `ThemeInput` contract (deterministic, portable), the three visibility tiers (private project variants → curated share set → community catalog), remix lineage (`remixOf`), and showcase "clones" as seed content. T0–T5 rollout; T0 (variant storage, migration `0013`) is built.
+
+The three are siblings: learning is *what the system learns and generates*; chat is *how it presents that*; themes is *the unit people remix and share*. They cross-reference for individual features.
 
 ## See also
 

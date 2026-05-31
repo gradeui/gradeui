@@ -32,6 +32,7 @@ export type {
   ProjectSnapshot,
   ScreenRevision,
   ShareLink,
+  ShareViewport,
   StudioStorage,
   Subject,
   Team,

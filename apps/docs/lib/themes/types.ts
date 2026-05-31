@@ -295,6 +295,21 @@ export type CardStyle = "flat" | "outlined" | "elevated" | "glass";
  * localStorage, exported as JSON, and shared via URL. The generator
  * consumes this and produces a full GeneratedTheme.
  */
+/** A saved remix — a named ThemeInput derived from the project theme.
+ *  Stored as a JSON array on the project (theme_variants_json). Because
+ *  the generator is deterministic, persisting the INPUT reproduces the
+ *  exact theme; we never store the generated output. Variants with
+ *  `includeInShare` form the curated A/B set the share toolbar offers. */
+export interface ThemeVariant {
+  id: string;
+  name: string;
+  input: ThemeInput;
+  /** When true, this variant travels with the share link and shows up in
+   *  the share toolbar's theme switcher. */
+  includeInShare: boolean;
+  createdAt: number;
+}
+
 export interface ThemeInput {
   /** Stable id. For user themes: "user:<uuid>"; for built-ins: short slug. */
   id: string;

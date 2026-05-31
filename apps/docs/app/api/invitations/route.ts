@@ -28,6 +28,152 @@ import { projectInvitationEmail } from "@/lib/email/templates";
 
 const INVITATION_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
+/**
+ * Shared guard for the list/revoke paths: confirm the signed-in user
+ * owns `projectId`. Returns the user on success, or a NextResponse to
+ * short-circuit with the right status. Mirrors the inline check in POST
+ * (owner-only for v1 — team-admin reach lands with that UI).
+ */
+async function requireProjectOwner(projectId: string) {
+  const user = await getServerUser();
+  if (!user) {
+    return {
+      error: NextResponse.json({ error: "Not signed in" }, { status: 401 }),
+    };
+  }
+  const userSupabase = await getServerSupabase();
+  if (!userSupabase) {
+    return {
+      error: NextResponse.json(
+        { error: "Auth is not configured on this deploy" },
+        { status: 500 },
+      ),
+    };
+  }
+  const { data: project } = await userSupabase
+    .from("projects")
+    .select("id, owner_type, owner_id")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (!project) {
+    return {
+      error: NextResponse.json(
+        { error: "Project not found or you can't access it" },
+        { status: 404 },
+      ),
+    };
+  }
+  const isOwner =
+    project.owner_type === "user" && project.owner_id === user.id;
+  if (!isOwner) {
+    return {
+      error: NextResponse.json(
+        { error: "Only the project owner can manage invites" },
+        { status: 403 },
+      ),
+    };
+  }
+  return { user };
+}
+
+/**
+ * GET /api/invitations?projectId=<id>
+ *
+ * Lists the project's invitations (pending + accepted) so the owner can
+ * see who's been invited and whether they've responded. Owner-only.
+ */
+export async function GET(req: NextRequest) {
+  const projectId = req.nextUrl.searchParams.get("projectId");
+  if (!projectId) {
+    return NextResponse.json({ error: "projectId is required" }, { status: 400 });
+  }
+  const guard = await requireProjectOwner(projectId);
+  if ("error" in guard) return guard.error;
+
+  const service = getServiceRoleSupabase();
+  if (!service) {
+    return NextResponse.json(
+      { error: "Service-role key not configured" },
+      { status: 500 },
+    );
+  }
+  const { data, error } = await service
+    .from("invitations")
+    .select("token, email, role, accepted_at, accepted_by, expires_at, created_at")
+    .eq("resource_kind", "project")
+    .eq("resource_id", projectId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true, invitations: data ?? [] });
+}
+
+/**
+ * DELETE /api/invitations  body: { token }
+ *
+ * Revokes a PENDING invitation. Owner-only. Accepted invites can't be
+ * revoked here (the grant already exists — removing a member is a
+ * separate action), so we 409 those.
+ */
+export async function DELETE(req: NextRequest) {
+  const body = (await req.json().catch(() => null)) as
+    | { token?: string }
+    | null;
+  if (!body?.token) {
+    return NextResponse.json({ error: "token is required" }, { status: 400 });
+  }
+
+  const service = getServiceRoleSupabase();
+  if (!service) {
+    return NextResponse.json(
+      { error: "Service-role key not configured" },
+      { status: 500 },
+    );
+  }
+
+  // Look up the invite (service-role) to find which project it's for,
+  // then gate on ownership of THAT project.
+  const { data: inv } = await service
+    .from("invitations")
+    .select("token, resource_kind, resource_id, accepted_at")
+    .eq("token", body.token)
+    .maybeSingle();
+  if (!inv) {
+    return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
+  }
+  const invitation = inv as {
+    token: string;
+    resource_kind: string;
+    resource_id: string;
+    accepted_at: number | null;
+  };
+  if (invitation.resource_kind !== "project") {
+    return NextResponse.json(
+      { error: "Only project invites can be revoked here" },
+      { status: 400 },
+    );
+  }
+  if (invitation.accepted_at) {
+    return NextResponse.json(
+      { error: "This invite was already accepted" },
+      { status: 409 },
+    );
+  }
+
+  const guard = await requireProjectOwner(invitation.resource_id);
+  if ("error" in guard) return guard.error;
+
+  const { error } = await service
+    .from("invitations")
+    .delete()
+    .eq("token", body.token);
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(req: NextRequest) {
   const user = await getServerUser();
   if (!user) {

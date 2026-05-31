@@ -125,11 +125,16 @@ import {
   type Organisation,
   type Project,
   type ProjectSnapshot,
+  type ShareViewport,
   type Team,
   type User as StoredUser,
 } from "@/lib/studio-storage";
 import { ProjectsMenu } from "@/components/studio/projects-menu";
 import { NewProjectDialog } from "@/components/studio/new-project-dialog";
+import {
+  InvitePeopleDialog,
+  type InviteRole,
+} from "@/components/studio/invite-people-dialog";
 import { SuperAdminSheet } from "@/components/studio/super-admin-sheet";
 import { ThemeDraftPersister } from "@/components/studio/theme-draft-persister";
 import {
@@ -440,13 +445,14 @@ export default function StudioPage() {
   // Mint a public share link for a screen and copy /s/<token> to the
   // clipboard. Cloud-only — the local adapter throws a clear message.
   const handleShareScreen = useCallback(
-    async (designId: string) => {
+    async (designId: string, viewport?: ShareViewport) => {
       if (!activeProjectId) return;
       try {
         const link = await storage.createShareLink({
           projectId: activeProjectId,
           designId,
           colorMode: chromeIsDark ? "dark" : "light",
+          viewport: viewport ?? "responsive",
         });
         const url = `${window.location.origin}/s/${link.token}`;
         await navigator.clipboard.writeText(url);
@@ -457,6 +463,63 @@ export default function StudioPage() {
       }
     },
     [storage, activeProjectId, chromeIsDark],
+  );
+
+  // Invite someone to the active project. POSTs to /api/invitations,
+  // which creates the invite event + emails a tokenised /accept-invite
+  // link. On accept, the recipient gets a project_access grant (see
+  // accept-invite/actions) and the project surfaces under "Shared with
+  // you" in their Projects menu. When Resend isn't configured (local
+  // dev), the API still mints the token — we copy the accept link to
+  // the clipboard so the flow is testable without email.
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const handleInvite = useCallback(
+    async ({ email, role }: { email: string; role: InviteRole }) => {
+      if (!activeProjectId) {
+        toast.error("Open a project before inviting people");
+        throw new Error("no active project");
+      }
+      const res = await fetch("/api/invitations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: activeProjectId, email, role }),
+      });
+      const data = (await res.json().catch(() => null)) as
+        | {
+            ok?: boolean;
+            token?: string;
+            emailStatus?: string;
+            emailError?: string;
+            error?: string;
+          }
+        | null;
+      if (!res.ok || !data?.ok) {
+        const message = data?.error ?? `Invite failed (${res.status})`;
+        toast.error("Couldn't send invite", { description: message });
+        throw new Error(message);
+      }
+      // Email wired + sent → just confirm. Otherwise hand over the
+      // accept link so the owner can share it manually.
+      if (data.emailStatus === "sent") {
+        toast.success("Invite sent", { description: email });
+      } else {
+        const acceptUrl = data.token
+          ? `${window.location.origin}/accept-invite/${data.token}`
+          : undefined;
+        if (acceptUrl) {
+          try {
+            await navigator.clipboard.writeText(acceptUrl);
+          } catch {
+            /* clipboard may be blocked — toast still shows the URL */
+          }
+        }
+        toast.success("Invite created — link copied", {
+          description:
+            acceptUrl ?? "Email isn't configured, but the invite was created.",
+        });
+      }
+    },
+    [activeProjectId],
   );
 
   const handleResolveThread = useCallback(
@@ -1646,6 +1709,7 @@ export default function StudioPage() {
     <ProjectsMenu
       projects={projects}
       teams={teams}
+      currentUserId={commentAuthUser?.id}
       activeProjectId={activeProjectId}
       activeDesignId={activeId}
       summaries={projectSummaries}
@@ -1890,6 +1954,7 @@ export default function StudioPage() {
                 onRenameDesign={handleRenameDesign}
                 onDuplicateDesign={handleDuplicateDesign}
                 onShareScreen={handleShareScreen}
+                onInviteToProject={() => setInviteOpen(true)}
                 canAddMore={!atCap}
                 onSourceMutation={handleSourceMutation}
                 rendererMode={rendererMode}
@@ -2024,6 +2089,13 @@ export default function StudioPage() {
         open={newProjectOpen}
         onOpenChange={setNewProjectOpen}
         onCreate={handleSubmitCreateProject}
+      />
+      <InvitePeopleDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        projectId={activeProjectId ?? undefined}
+        projectName={activeProject?.name}
+        onInvite={handleInvite}
       />
     </ThemeBuilderProvider>
     </UserSessionProvider>
@@ -2401,6 +2473,7 @@ function StudioThemedCanvas({
   onRenameDesign,
   onDuplicateDesign,
   onShareScreen,
+  onInviteToProject,
   canAddMore,
   onSourceMutation,
   rendererMode,
@@ -2436,6 +2509,7 @@ function StudioThemedCanvas({
   onRenameDesign: (id: string, name: string) => void;
   onDuplicateDesign?: (id: string) => void;
   onShareScreen?: (id: string) => void;
+  onInviteToProject?: () => void;
   canAddMore: boolean;
   onSourceMutation: (next: string) => void;
   rendererMode: "sandpack" | "fast";
@@ -2477,6 +2551,7 @@ function StudioThemedCanvas({
       onRenameDesign={onRenameDesign}
       onDuplicateDesign={onDuplicateDesign}
       onShareScreen={onShareScreen}
+      onInviteToProject={onInviteToProject}
       canAddMore={canAddMore}
       onSourceMutation={onSourceMutation}
       rendererMode={rendererMode}

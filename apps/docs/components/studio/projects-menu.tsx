@@ -70,6 +70,11 @@ interface ProjectsMenuProps {
    *  team-share). Forwarded to ProjectSettingsSheet so the
    *  Shared-with section can resolve team-subject names. */
   teams: Team[];
+  /** The signed-in user's id. Used to split the list into the user's
+   *  own/team projects and ones shared with them as a guest. When
+   *  omitted (or in local-only mode), everything renders under the one
+   *  "Projects" section. */
+  currentUserId?: string;
   /** The id of the project currently loaded into the workbench. */
   activeProjectId: string;
   /** The active design id within the active project. */
@@ -114,6 +119,7 @@ function formatScreenCounts(turns: number, revisions: number): string {
 export function ProjectsMenu({
   projects,
   teams,
+  currentUserId,
   activeProjectId,
   activeDesignId,
   summaries,
@@ -168,6 +174,27 @@ export function ProjectsMenu({
     return [...active, ...rest];
   }, [projects, activeProjectId]);
 
+  // Split into "mine" (owned by me, or by a team I'm in) and "shared
+  // with me" (I only have it via a guest grant). A project is mine when
+  // it's user-owned by me, or team-owned by a team in my list. Anything
+  // else I can see, I can only see because someone shared it → guest.
+  // Without a currentUserId (local-only) we can't tell, so treat all as
+  // mine and skip the second section entirely.
+  const teamIds = React.useMemo(() => new Set(teams.map((t) => t.id)), [teams]);
+  const isMine = React.useCallback(
+    (project: Project) => {
+      if (!currentUserId) return true;
+      if (project.owner.type === "user") return project.owner.id === currentUserId;
+      if (project.owner.type === "team") return teamIds.has(project.owner.id);
+      return true;
+    },
+    [currentUserId, teamIds],
+  );
+  const ownedProjects = sortedProjects.filter(isMine);
+  const sharedProjects = currentUserId
+    ? sortedProjects.filter((p) => !isMine(p))
+    : [];
+
   const canDelete = projects.length > 1 && !!onDeleteProject;
 
   const renderSettingsButton = (project: Project) => (
@@ -184,6 +211,61 @@ export function ProjectsMenu({
       <Settings />
     </button>
   );
+
+  // One project → its tree row. Extracted so the "Projects" and
+  // "Shared with you" sections render identical rows.
+  const renderProjectRow = (project: Project) => {
+    const isActive = project.id === activeProjectId;
+    const expanded = !!expandedProjects[project.id];
+    const summary = summaries[project.id];
+    const designsForProject = summary?.designs ?? [];
+    const screenCountLabel =
+      designsForProject.length === 1
+        ? "1 screen"
+        : `${designsForProject.length} screens`;
+    const treeDescription =
+      project.description?.trim() || screenCountLabel;
+
+    return (
+      <SidebarTreeItem
+        key={project.id}
+        label={project.name}
+        description={treeDescription}
+        icon={expanded ? <FolderOpen /> : <Folder />}
+        active={isActive}
+        expanded={expanded}
+        onExpandedChange={(next) => toggleProjectExpand(project.id, next)}
+        trailing={renderSettingsButton(project)}
+        onDoubleClick={() => {
+          if (!isActive) onSelectProject(project.id);
+        }}
+      >
+        {designsForProject.length === 0 ? (
+          <div className="px-3 py-1 text-xs text-muted-foreground italic">
+            No screens yet
+          </div>
+        ) : (
+          designsForProject.map((d) => {
+            const turns = summary?.turnsByDesign[d.id] ?? 0;
+            const revisions = summary?.revisionsByDesign[d.id] ?? 0;
+            return (
+              <SidebarItem
+                key={d.id}
+                asButton
+                size="sm"
+                active={isActive && d.id === activeDesignId}
+                icon={<FileText />}
+                description={formatScreenCounts(turns, revisions)}
+                onClick={() => onSelectScreen(project.id, d.id)}
+              >
+                <span className="min-w-0 flex-1 truncate">{d.name}</span>
+              </SidebarItem>
+            );
+          })
+        )}
+      </SidebarTreeItem>
+    );
+  };
 
   return (
     <Sidebar
@@ -222,89 +304,17 @@ export function ProjectsMenu({
             </button>
           }
         >
-          {sortedProjects.map((project) => {
-            const isActive = project.id === activeProjectId;
-            const expanded = !!expandedProjects[project.id];
-            const summary = summaries[project.id];
-            const designsForProject = summary?.designs ?? [];
-            const screenCountLabel =
-              designsForProject.length === 1
-                ? "1 screen"
-                : `${designsForProject.length} screens`;
-            // The TreeItem's description line prefers the project's
-            // own description when set; falls back to the screen
-            // count so the row never looks empty. Same height
-            // either way — every row carries one secondary line.
-            const treeDescription =
-              project.description?.trim() || screenCountLabel;
-
-            return (
-              <SidebarTreeItem
-                key={project.id}
-                label={project.name}
-                description={treeDescription}
-                // Folder icon swaps based on controlled expand state
-                // so visual + chevron + tree-state are all in sync.
-                icon={expanded ? <FolderOpen /> : <Folder />}
-                active={isActive}
-                expanded={expanded}
-                onExpandedChange={(next) =>
-                  toggleProjectExpand(project.id, next)
-                }
-                trailing={renderSettingsButton(project)}
-                // The branch button's own onClick toggles expand;
-                // we'd also like clicking the row to switch active
-                // project. The DS doesn't expose a separate
-                // "primary action" prop today, so we layer:
-                // - chevron toggle still works (button click)
-                // - but if the user clicks the row of an INACTIVE
-                //   project we ALSO want to switch to it. We catch
-                //   this via the icon click below, plus the
-                //   double-click affordance on the branch button.
-                onDoubleClick={() => {
-                  if (!isActive) onSelectProject(project.id);
-                }}
-              >
-                {designsForProject.length === 0 ? (
-                  // Empty state — a project with no screens yet.
-                  // Rendered as a non-interactive muted line so the
-                  // empty tree doesn't look broken.
-                  <div className="px-3 py-1 text-xs text-muted-foreground italic">
-                    No screens yet
-                  </div>
-                ) : (
-                  designsForProject.map((d) => {
-                    const turns = summary?.turnsByDesign[d.id] ?? 0;
-                    const revisions =
-                      summary?.revisionsByDesign[d.id] ?? 0;
-                    return (
-                      <SidebarItem
-                        key={d.id}
-                        asButton
-                        size="sm"
-                        active={
-                          isActive && d.id === activeDesignId
-                        }
-                        icon={<FileText />}
-                        // Description is always non-null so every
-                        // screen row is the same height as its
-                        // siblings; the formatter writes a "0
-                        // turns · 0 revisions" stub for fresh
-                        // screens.
-                        description={formatScreenCounts(turns, revisions)}
-                        onClick={() => onSelectScreen(project.id, d.id)}
-                      >
-                        <span className="min-w-0 flex-1 truncate">
-                          {d.name}
-                        </span>
-                      </SidebarItem>
-                    );
-                  })
-                )}
-              </SidebarTreeItem>
-            );
-          })}
+          {ownedProjects.map(renderProjectRow)}
         </SidebarSection>
+
+        {/* Guest grants — projects another user shared with me. Only
+            shows when there are any, so solo / local users never see an
+            empty section. */}
+        {sharedProjects.length > 0 && (
+          <SidebarSection title="Shared with you">
+            {sharedProjects.map(renderProjectRow)}
+          </SidebarSection>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="text-[10px] text-muted-foreground">

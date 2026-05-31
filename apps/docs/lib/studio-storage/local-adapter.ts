@@ -196,6 +196,7 @@ interface PersistedProject {
   messagesByDesign: Record<string, UIMessage[]>;
   notesByDesign: Record<string, string>;
   themeDraftJson?: string;
+  themeVariantsJson?: string;
 }
 
 /** Pre-v4 project shape carrying the flat ownerId + access. Kept
@@ -612,6 +613,7 @@ export class LocalStorageStudioStorage implements StudioStorage {
       messagesByDesign: parsed.messagesByDesign,
       notesByDesign: parsed.notesByDesign,
       themeDraftJson: parsed.themeDraftJson,
+      themeVariantsJson: parsed.themeVariantsJson,
     };
   }
 
@@ -745,6 +747,7 @@ export class LocalStorageStudioStorage implements StudioStorage {
       messagesByDesign: snapshot.messagesByDesign,
       notesByDesign: snapshot.notesByDesign,
       themeDraftJson: snapshot.themeDraftJson,
+      themeVariantsJson: snapshot.themeVariantsJson,
     };
     storage.setItem(projectKey(updated.id), JSON.stringify(toPersist));
     // Bubble the new updatedAt into the index too.

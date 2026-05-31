@@ -55,6 +55,7 @@ import {
   Redo2,
   RotateCcw,
   Share2,
+  UserPlus,
   Smartphone,
   Sparkles,
   Tablet,
@@ -208,9 +209,14 @@ interface StudioCanvasProps {
   /** Duplicate a design by id. Omitting hides the Duplicate affordance
    *  in both mode toolbars and in the tab strip. */
   onDuplicateDesign?: (id: string) => void;
-  /** Mint + copy a public share link for a screen. Omitting disables
-   *  the "Share link" menu item. */
-  onShareScreen?: (id: string) => void;
+  /** Mint + copy a public share link for a screen. Receives the canvas's
+   *  current viewport so the share captures the device the creator was
+   *  viewing. Omitting disables the "Share link" menu item. */
+  onShareScreen?: (id: string, viewport?: ViewportWidth) => void;
+  /** Open the "Invite people" dialog for the active project. Omitting
+   *  disables the menu item. Project-scoped (the grant is project-level)
+   *  even though it lives in the screen-actions menu. */
+  onInviteToProject?: () => void;
   /** False when the design cap is reached. Disables New + Duplicate
    *  both in the tab strip and in the All-mode toolbar. */
   canAddMore?: boolean;
@@ -294,6 +300,7 @@ export function StudioCanvas({
   onRenameDesign,
   onDuplicateDesign,
   onShareScreen,
+  onInviteToProject,
   canAddMore = true,
   onSourceMutation,
   canUndo = false,
@@ -1574,11 +1581,18 @@ export function StudioCanvas({
                     Open in CodeSandbox
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => onShareScreen?.(focusedId)}
+                    onClick={() => onShareScreen?.(focusedId, viewportWidth)}
                     disabled={!focusedAppSource || !onShareScreen}
                   >
                     <Share2 />
                     Copy share link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => onInviteToProject?.()}
+                    disabled={!onInviteToProject}
+                  >
+                    <UserPlus />
+                    Invite people…
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

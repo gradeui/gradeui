@@ -176,6 +176,7 @@ interface ProjectRow {
   owner_id: string;
   active_design_id: string | null;
   theme_draft_json: string | null;
+  theme_variants_json: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -186,7 +187,7 @@ interface ProjectRow {
 const PROJECT_META_COLS =
   "id, name, description, owner_type, owner_id, created_at, updated_at";
 const PROJECT_FULL_COLS =
-  "id, name, description, owner_type, owner_id, active_design_id, theme_draft_json, created_at, updated_at";
+  "id, name, description, owner_type, owner_id, active_design_id, theme_draft_json, theme_variants_json, created_at, updated_at";
 
 // ─── Screen / message / note rows ─────────────────────────────────
 
@@ -272,6 +273,7 @@ interface ShareLinkRow {
   revision_id: string | null;
   mode: "view" | "comment";
   color_mode: "light" | "dark";
+  viewport: "responsive" | "mobile" | "tablet" | "desktop";
   created_by: string | null;
   revoked: boolean;
   expires_at: number | null;
@@ -285,6 +287,7 @@ function rowToShareLink(r: ShareLinkRow): ShareLink {
     revisionId: r.revision_id ?? undefined,
     mode: r.mode,
     colorMode: r.color_mode,
+    viewport: r.viewport ?? "responsive",
     createdBy: r.created_by ?? undefined,
     revoked: r.revoked,
     expiresAt: r.expires_at ?? undefined,
@@ -293,7 +296,7 @@ function rowToShareLink(r: ShareLinkRow): ShareLink {
 }
 
 const SHARE_LINK_COLS =
-  "token, project_id, design_id, revision_id, mode, color_mode, created_by, revoked, expires_at, created_at";
+  "token, project_id, design_id, revision_id, mode, color_mode, viewport, created_by, revoked, expires_at, created_at";
 
 interface NoteRow {
   project_id: string;
@@ -490,6 +493,7 @@ export class SupabaseStudioStorage implements StudioStorage {
       messagesByDesign,
       notesByDesign,
       themeDraftJson: projectRow.theme_draft_json ?? undefined,
+      themeVariantsJson: projectRow.theme_variants_json ?? undefined,
     };
   }
 
@@ -588,6 +592,7 @@ export class SupabaseStudioStorage implements StudioStorage {
       messagesByDesign,
       notesByDesign,
       themeDraftJson,
+      themeVariantsJson,
     } = snapshot;
 
     // 1. Project metadata + the soft pointers (active screen, theme
@@ -602,6 +607,7 @@ export class SupabaseStudioStorage implements StudioStorage {
         owner_id: project.owner.id,
         active_design_id: activeDesignId || null,
         theme_draft_json: themeDraftJson ?? null,
+        theme_variants_json: themeVariantsJson ?? null,
       })
       .eq("id", project.id);
     if (error) throw error;
@@ -767,6 +773,7 @@ export class SupabaseStudioStorage implements StudioStorage {
     designId: string;
     mode?: "view" | "comment";
     colorMode?: "light" | "dark";
+    viewport?: "responsive" | "mobile" | "tablet" | "desktop";
     revisionId?: string;
   }): Promise<ShareLink> {
     const { data: userData } = await this.supabase.auth.getUser();
@@ -777,6 +784,7 @@ export class SupabaseStudioStorage implements StudioStorage {
         design_id: input.designId,
         mode: input.mode ?? "view",
         color_mode: input.colorMode ?? "light",
+        viewport: input.viewport ?? "responsive",
         revision_id: input.revisionId ?? null,
         created_by: userData.user?.id ?? null,
       })

@@ -699,8 +699,117 @@ export default function FastSandboxPage() {
           }
           break;
         }
+        case "grade:set-comments": {
+          // Parent handing us the open threads to pin in-place. Each
+          // entry carries the anchor + the originator's display bits.
+          const threads = Array.isArray(data.threads)
+            ? (data.threads as PinThread[])
+            : [];
+          setComments(threads);
+          break;
+        }
       }
     }
+
+    // ─── In-iframe comment pins ──────────────────────────────────
+    // Pins live in the iframe's OWN DOM (runtime only — never written
+    // into the compiled source), so they ride document scroll and the
+    // parent's zoom transform natively: no parent-realm position
+    // chasing, no per-frame jank. The parent posts threads via
+    // `grade:set-comments`; a click posts back `grade:comment-pin-click`
+    // with the pin's viewport rect so the parent can anchor a popover.
+    interface PinThread {
+      id: string;
+      anchorId: string;
+      anchorKind?: string;
+      authorName?: string;
+      avatarUrl?: string;
+    }
+    let pinThreads: PinThread[] = [];
+    let pinHost: HTMLDivElement | null = null;
+    const PIN_PX = 28;
+
+    function ensurePinHost(): HTMLDivElement {
+      if (pinHost && pinHost.isConnected) return pinHost;
+      const host = document.createElement("div");
+      host.setAttribute("data-grade-comment-pins", "");
+      host.style.cssText =
+        "position:absolute;top:0;left:0;width:0;height:0;z-index:2147482000;pointer-events:none;";
+      document.body.appendChild(host);
+      pinHost = host;
+      return host;
+    }
+
+    function renderPins() {
+      if (pinThreads.length === 0) {
+        pinHost?.replaceChildren();
+        return;
+      }
+      const host = ensurePinHost();
+      host.replaceChildren();
+      for (const t of pinThreads) {
+        const attr =
+          t.anchorKind === "instance"
+            ? "data-gds-instance-id"
+            : "data-gds-source-id";
+        const safe =
+          typeof CSS !== "undefined" && CSS.escape
+            ? CSS.escape(t.anchorId)
+            : t.anchorId;
+        const el = document.querySelector(`[${attr}="${safe}"]`);
+        if (!el) continue; // stale anchor (regenerated source) — skip
+        const r = el.getBoundingClientRect();
+        const top = r.top + window.scrollY;
+        const left = r.left + window.scrollX;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.dataset.threadId = t.id;
+        btn.style.cssText = `position:absolute;top:${top}px;left:${left}px;width:${PIN_PX}px;height:${PIN_PX}px;transform:translate(0,-100%);border-radius:9999px 9999px 9999px 0;background:#3b82f6;border:none;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer;pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;padding:0;`;
+        if (t.avatarUrl) {
+          const img = document.createElement("img");
+          img.src = t.avatarUrl;
+          img.alt = t.authorName ?? "";
+          img.style.cssText =
+            "width:24px;height:24px;border-radius:9999px;object-fit:cover;";
+          btn.appendChild(img);
+        } else {
+          const span = document.createElement("span");
+          span.textContent = (t.authorName ?? "?").slice(0, 1).toUpperCase();
+          span.style.cssText = "color:#fff;font-size:11px;font-weight:600;";
+          btn.appendChild(span);
+        }
+        btn.addEventListener("click", () => {
+          const rect = btn.getBoundingClientRect();
+          window.parent.postMessage(
+            {
+              type: "grade:comment-pin-click",
+              threadId: t.id,
+              rect: {
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height,
+              },
+            },
+            "*"
+          );
+        });
+        host.appendChild(btn);
+      }
+    }
+
+    function setComments(threads: PinThread[]) {
+      pinThreads = threads;
+      renderPins();
+    }
+
+    // Reposition only on layout reflow — NOT scroll (absolute pins ride
+    // the document) and NOT zoom (the parent's transform scales them).
+    // A cheap poll covers image/font loads + post-render reflows.
+    window.addEventListener("resize", renderPins);
+    const pinPoll = window.setInterval(() => {
+      if (pinThreads.length) renderPins();
+    }, 500);
 
     window.addEventListener("message", handleMessage);
 
@@ -782,6 +891,10 @@ export default function FastSandboxPage() {
     return () => {
       window.removeEventListener("message", handleMessage);
       if (onStorage) window.removeEventListener("storage", onStorage);
+      window.removeEventListener("resize", renderPins);
+      window.clearInterval(pinPoll);
+      pinHost?.remove();
+      pinHost = null;
       agentTeardownRef.current?.teardown();
       agentTeardownRef.current = null;
       reactRootRef.current?.unmount();

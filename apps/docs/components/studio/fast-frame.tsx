@@ -119,6 +119,14 @@ interface FastIframeHostProps {
    *  straight through; the overlay handles the lookup + tone
    *  hashing. */
   getCommentUser?: (id: string) => import("@/lib/studio-users").User | undefined;
+  /** When false, comment pins fade out (share view uses this to hide
+   *  them during a zoom transition). Defaults to visible. */
+  commentsVisible?: boolean;
+  /** Render comment pins INSIDE the iframe (runtime DOM only, never in
+   *  the source) instead of the parent overlay — they then ride scroll
+   *  and the parent's zoom transform natively. The share view uses this;
+   *  studio keeps the parent overlay for now. */
+  inlineComments?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -138,6 +146,8 @@ export function FastIframeHost({
   activeCommentThreadId,
   onCommentPinClick,
   getCommentUser,
+  commentsVisible = true,
+  inlineComments = false,
   className,
   style,
 }: FastIframeHostProps) {
@@ -150,11 +160,13 @@ export function FastIframeHost({
   const onSelectRef = useRef(onSelect);
   const onClearSelectionRef = useRef(onClearSelection);
   const onSelectModeChangeRef = useRef(onSelectModeChange);
+  const onCommentPinClickRef = useRef(onCommentPinClick);
   useEffect(() => {
     onSelectRef.current = onSelect;
     onClearSelectionRef.current = onClearSelection;
     onSelectModeChangeRef.current = onSelectModeChange;
-  }, [onSelect, onClearSelection, onSelectModeChange]);
+    onCommentPinClickRef.current = onCommentPinClick;
+  }, [onSelect, onClearSelection, onSelectModeChange, onCommentPinClick]);
 
   // Listen for sandbox → parent messages. Guard on source so multiple
   // Fast iframes (one focused + N tiles in All mode) don't cross-talk.
@@ -188,6 +200,17 @@ export function FastIframeHost({
           // drop the right-panel chip in sync.
           onClearSelectionRef.current?.();
           break;
+        case "grade:comment-pin-click": {
+          // Inline-comments mode — a pin rendered INSIDE the iframe was
+          // clicked. The sandbox sends the thread id; bubble it up so
+          // the share view can open its comment popover. (The element
+          // rect also rides along on the message for future popover
+          // anchoring, but the id is all the current handler needs.)
+          const threadId =
+            typeof data.threadId === "string" ? data.threadId : "";
+          if (threadId) onCommentPinClickRef.current?.(threadId);
+          break;
+        }
         // grade:fast-error messages currently just log — the sandbox
         // already rendered its own failure panel inside the iframe, so
         // there's nothing more for the parent to paint.
@@ -273,6 +296,41 @@ export function FastIframeHost({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, mediaOverrides]);
 
+  // Inline comments — when enabled, serialize the open threads (with the
+  // author's display name + avatar resolved on the parent side) and post
+  // them into the sandbox, which renders pins directly in the live DOM.
+  // The pins then ride scroll + the parent's zoom transform natively —
+  // no parent overlay chasing rects. CRITICAL: this is runtime-only DOM
+  // injected by the sandbox; it is NEVER written into appSource, so it
+  // can't leak into stored source or the Code view. An undefined /
+  // empty commentThreads posts an empty list, which clears the pins
+  // (this is how the share's "hide comments" toggle drops them).
+  // Stable signature of the threads we'd post — drives the effect below
+  // off a primitive instead of the array's identity (which changes every
+  // parent render and would re-post on each one).
+  const commentSig = useMemo(
+    () =>
+      (commentThreads ?? [])
+        .map((t) => `${t.thread.id}:${t.thread.anchorId}:${t.thread.createdBy}`)
+        .join("|"),
+    [commentThreads]
+  );
+  useEffect(() => {
+    if (!ready || !inlineComments) return;
+    const payload = (commentThreads ?? []).map((t) => {
+      const u = getCommentUser?.(t.thread.createdBy);
+      return {
+        id: t.thread.id,
+        anchorId: t.thread.anchorId,
+        anchorKind: t.thread.anchorKind,
+        authorName: u?.name,
+        avatarUrl: u?.avatarUrl,
+      };
+    });
+    postToSandbox({ type: "grade:set-comments", threads: payload });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, inlineComments, commentSig]);
+
   return (
     <>
       <iframe
@@ -292,13 +350,14 @@ export function FastIframeHost({
           thread's anchor element. Same-origin iframe makes the
           query trivial. Empty / undefined commentThreads ⇒ no
           pins rendered, no polling started. */}
-      {commentThreads && commentThreads.length > 0 && onCommentPinClick && (
+      {!inlineComments && commentThreads && commentThreads.length > 0 && onCommentPinClick && (
         <CanvasCommentPinsOverlay
           iframeRef={iframeRef}
           threads={commentThreads}
           activeThreadId={activeCommentThreadId}
           onPinClick={onCommentPinClick}
           getUser={getCommentUser}
+          visible={commentsVisible}
         />
       )}
     </>

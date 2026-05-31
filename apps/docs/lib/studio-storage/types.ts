@@ -105,6 +105,13 @@ export interface ProjectSnapshot {
    * not a storage migration.
    */
   themeDraftJson?: string;
+  /**
+   * JSON-serialised `ThemeVariant[]` — the project's saved remixes.
+   * Opaque to the storage layer (a string); the page parses it into
+   * ThemeVariant objects. NULL/undefined = no variants yet. Mirrors the
+   * themeDraftJson persistence path exactly.
+   */
+  themeVariantsJson?: string;
 }
 
 /** One immutable snapshot of a screen at a point in time. The source
@@ -124,6 +131,12 @@ export interface ScreenRevision {
 /** A public, obfuscated share link to a screen. `token` is the
  *  capability key that goes in the /s/<token> URL. `revisionId` pins a
  *  specific snapshot; undefined = always the latest (live). */
+/** Device preset a share renders in. `responsive` fills the canvas
+ *  (the original behaviour); the others frame the screen at a fixed
+ *  artboard width. Shared with Studio's ViewportWidth vocabulary so the
+ *  two surfaces stay in lockstep. */
+export type ShareViewport = "responsive" | "mobile" | "tablet" | "desktop";
+
 export interface ShareLink {
   token: string;
   projectId: string;
@@ -133,6 +146,9 @@ export interface ShareLink {
   /** Light/dark the screen renders in — captured from the creator so
    *  the share matches what they were viewing. */
   colorMode: "light" | "dark";
+  /** Device preset captured at share time — part of the share
+   *  contract. Defaults to "responsive" (fill). */
+  viewport: ShareViewport;
   createdBy?: string;
   revoked: boolean;
   expiresAt?: number;
@@ -254,6 +270,7 @@ export interface StudioStorage {
     designId: string;
     mode?: "view" | "comment";
     colorMode?: "light" | "dark";
+    viewport?: ShareViewport;
     revisionId?: string;
   }): Promise<ShareLink>;
 

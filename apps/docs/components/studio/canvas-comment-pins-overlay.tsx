@@ -58,6 +58,11 @@ interface CanvasCommentPinsOverlayProps {
    *  Comments tab uses; pins fall back to a numeric label when
    *  the lookup returns undefined (deleted user, etc). */
   getUser?: (id: string) => User | undefined;
+  /** When false, the pins fade out (and stop catching clicks). Used by
+   *  the share view to hide pins during a zoom transition — they only
+   *  re-position on a poll, so fading hides the catch-up jank. Defaults
+   *  to visible. */
+  visible?: boolean;
 }
 
 interface PinPosition {
@@ -72,6 +77,7 @@ export function CanvasCommentPinsOverlay({
   activeThreadId,
   onPinClick,
   getUser,
+  visible = true,
 }: CanvasCommentPinsOverlayProps) {
   // Resolve thread → originator once per render. Threads carry
   // `createdBy` (a user id); pins want a display name + avatar
@@ -85,6 +91,10 @@ export function CanvasCommentPinsOverlay({
     return map;
   }, [threads, getUser]);
   const [positions, setPositions] = React.useState<PinPosition[]>([]);
+  // True while the iframe is mid-scroll. Repositioning pins per scroll
+  // event lags the native scroll (setState + rect reads), so we fade
+  // them out during the scroll and snap them back when it settles.
+  const [scrolling, setScrolling] = React.useState(false);
 
   React.useEffect(() => {
     if (threads.length === 0) {
@@ -108,6 +118,14 @@ export function CanvasCommentPinsOverlay({
       if (!doc) return;
 
       const iframeRect = iframe.getBoundingClientRect();
+      // The iframe may be CSS-scaled by an ancestor (e.g. the share
+      // view's zoom). getBoundingClientRect returns the SCALED box, but
+      // the inner element rects we read below are in the iframe's own
+      // (unscaled) coordinate space — so we must multiply those offsets
+      // by the effective scale. rendered width ÷ layout width = scale
+      // (== 1 in studio, where nothing scales the iframe).
+      const scale =
+        iframe.offsetWidth > 0 ? iframeRect.width / iframe.offsetWidth : 1;
       const next: PinPosition[] = [];
       for (const t of threads) {
         const attr =
@@ -131,8 +149,8 @@ export function CanvasCommentPinsOverlay({
         // top-left so the pin appears just outside that corner.
         next.push({
           threadId: t.thread.id,
-          top: iframeRect.top + r.top,
-          left: iframeRect.left + r.left,
+          top: iframeRect.top + r.top * scale,
+          left: iframeRect.left + r.left * scale,
         });
       }
       setPositions(next);
@@ -154,18 +172,37 @@ export function CanvasCommentPinsOverlay({
     } catch {
       doc = null;
     }
-    doc?.addEventListener("scroll", update, true);
+    // Fade out while scrolling, snap back to fresh positions on settle —
+    // smoother than chasing the scroll with per-event repositioning.
+    let scrollTimer: number | undefined;
+    const onScroll = () => {
+      setScrolling(true);
+      if (scrollTimer) window.clearTimeout(scrollTimer);
+      scrollTimer = window.setTimeout(() => {
+        setScrolling(false);
+        update();
+      }, 140);
+    };
+    doc?.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", update);
 
     return () => {
       window.clearInterval(interval);
-      doc?.removeEventListener("scroll", update, true);
+      if (scrollTimer) window.clearTimeout(scrollTimer);
+      doc?.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", update);
     };
   }, [threads, iframeRef]);
 
   return (
-    <>
+    <div
+      aria-hidden={!visible || scrolling}
+      style={{
+        opacity: visible && !scrolling ? 1 : 0,
+        transition: "opacity 140ms ease",
+        pointerEvents: visible && !scrolling ? undefined : "none",
+      }}
+    >
       {positions.map((p, i) => {
         const author = authorByThreadId[p.threadId];
         // Sequential 1-indexed label as the back-compat fallback
@@ -187,6 +224,6 @@ export function CanvasCommentPinsOverlay({
           />
         );
       })}
-    </>
+    </div>
   );
 }

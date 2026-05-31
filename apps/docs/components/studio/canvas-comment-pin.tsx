@@ -117,14 +117,14 @@ export function CanvasCommentPin({
         // Translate so the squared bottom-left corner sits on the
         // anchored point — i.e. the pin "hangs off" the element's
         // top-left corner, like Figma.
-        transform: "translate(-50%, -100%)",
+        transform: "translate(0, -100%)",
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform =
-          "translate(-50%, -100%) scale(1.1)";
+          "translate(0, -100%) scale(1.1)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translate(-50%, -100%)";
+        e.currentTarget.style.transform = "translate(0, -100%)";
       }}
     >
       {authorName ? (

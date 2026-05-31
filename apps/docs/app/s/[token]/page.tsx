@@ -12,8 +12,42 @@
 import { notFound } from "next/navigation";
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { SharedScreen } from "@/components/studio/shared-screen";
+import type { CommentThreadWithMessages } from "@/lib/studio-storage";
+import type { User } from "@/lib/studio-users";
 
 export const dynamic = "force-dynamic";
+
+interface ThreadRow {
+  id: string;
+  project_id: string;
+  design_id: string;
+  anchor_id: string;
+  anchor_kind: "source" | "instance";
+  element_label: string;
+  component_name: string | null;
+  status: "open" | "resolved";
+  created_by: string;
+  resolved_by: string | null;
+  resolved_at: number | null;
+  created_at: number;
+}
+interface CommentRow {
+  id: string;
+  thread_id: string;
+  parent_comment_id: string | null;
+  author_id: string;
+  body: string;
+  edited_at: number | null;
+  created_at: number;
+}
+interface UserRow {
+  id: string;
+  name: string;
+  email: string | null;
+  avatar_url: string | null;
+  status: "unverified" | "active" | "suspended";
+  super_admin: boolean;
+}
 
 interface ShareLinkRow {
   token: string;
@@ -22,6 +56,7 @@ interface ShareLinkRow {
   revision_id: string | null;
   mode: "view" | "comment";
   color_mode: "light" | "dark";
+  viewport: "responsive" | "mobile" | "tablet" | "desktop";
   revoked: boolean;
   expires_at: number | null;
 }
@@ -37,7 +72,7 @@ export default async function SharePage({
 
   const { data: link } = await supabase
     .from("share_links")
-    .select("token, project_id, design_id, revision_id, mode, color_mode, revoked, expires_at")
+    .select("token, project_id, design_id, revision_id, mode, color_mode, viewport, revoked, expires_at")
     .eq("token", token)
     .maybeSingle();
 
@@ -84,14 +119,104 @@ export default async function SharePage({
     name: string;
   } | null;
 
+  // Open comment threads on this screen — rendered read-only as pins in
+  // the share. (Adding a comment requires sign-in; that's handled in the
+  // client.) Authors are resolved to users for the pin avatars.
+  const commentThreads: CommentThreadWithMessages[] = [];
+  const commentUsers: User[] = [];
+  {
+    const { data: threadData } = await supabase
+      .from("comment_threads")
+      .select(
+        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, created_by, resolved_by, resolved_at, created_at",
+      )
+      .eq("project_id", share.project_id)
+      .eq("design_id", share.design_id)
+      .eq("status", "open")
+      .order("created_at", { ascending: true });
+    const threadRows = (threadData ?? []) as ThreadRow[];
+    if (threadRows.length) {
+      const threadIds = threadRows.map((t) => t.id);
+      const { data: commentData } = await supabase
+        .from("comments")
+        .select("id, thread_id, parent_comment_id, author_id, body, edited_at, created_at")
+        .in("thread_id", threadIds)
+        .order("created_at", { ascending: true });
+      const commentRows = (commentData ?? []) as CommentRow[];
+
+      const byThread = new Map<string, CommentRow[]>();
+      for (const c of commentRows) {
+        const arr = byThread.get(c.thread_id) ?? [];
+        arr.push(c);
+        byThread.set(c.thread_id, arr);
+      }
+
+      const userIds = [
+        ...new Set(
+          [
+            ...threadRows.map((t) => t.created_by),
+            ...commentRows.map((c) => c.author_id),
+          ].filter(Boolean),
+        ),
+      ];
+      if (userIds.length) {
+        const { data: userData } = await supabase
+          .from("users")
+          .select("id, name, email, avatar_url, status, super_admin")
+          .in("id", userIds);
+        for (const u of (userData ?? []) as UserRow[]) {
+          commentUsers.push({
+            id: u.id,
+            name: u.name,
+            email: u.email ?? undefined,
+            avatarUrl: u.avatar_url ?? undefined,
+            status: u.status,
+            superAdmin: u.super_admin || undefined,
+          });
+        }
+      }
+
+      for (const t of threadRows) {
+        commentThreads.push({
+          thread: {
+            id: t.id,
+            projectId: t.project_id,
+            designId: t.design_id,
+            anchorId: t.anchor_id,
+            anchorKind: t.anchor_kind,
+            elementLabel: t.element_label,
+            componentName: t.component_name ?? undefined,
+            status: t.status,
+            createdBy: t.created_by,
+            resolvedBy: t.resolved_by ?? undefined,
+            resolvedAt: t.resolved_at ?? undefined,
+            createdAt: t.created_at,
+          },
+          comments: (byThread.get(t.id) ?? []).map((c) => ({
+            id: c.id,
+            threadId: c.thread_id,
+            parentCommentId: c.parent_comment_id ?? undefined,
+            authorId: c.author_id,
+            body: c.body,
+            editedAt: c.edited_at ?? undefined,
+            createdAt: c.created_at,
+          })),
+        });
+      }
+    }
+  }
+
   return (
     <SharedScreen
       appSource={appSource}
       themeDraftJson={projectRow?.theme_draft_json ?? null}
       mode={share.color_mode}
+      viewport={share.viewport ?? "responsive"}
       screenName={screenName}
       projectName={projectRow?.name ?? "Untitled project"}
       canComment={share.mode === "comment"}
+      commentThreads={commentThreads}
+      commentUsers={commentUsers}
     />
   );
 }
