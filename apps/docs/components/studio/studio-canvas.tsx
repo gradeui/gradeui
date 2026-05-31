@@ -59,6 +59,7 @@ import {
   Smartphone,
   Sparkles,
   Tablet,
+  Trash2,
   Undo2,
   X,
 } from "lucide-react";
@@ -1763,6 +1764,7 @@ export function StudioCanvas({
             setZoom("fit");
           }}
           onClose={onCloseDesign}
+          onShareScreen={onShareScreen}
           theme={theme}
           mode={mode}
           fidelity={fidelity}
@@ -2218,6 +2220,8 @@ interface TileGridProps {
    *  than one design is open (the grid is the only nav path now —
    *  removing a screen always happens here). */
   onClose: (id: string) => void;
+  /** Mint + copy a share link for a screen (tile overflow menu). */
+  onShareScreen?: (id: string) => void;
   theme: GeneratedTheme;
   mode: "light" | "dark";
   /** Wireframe / full toggle, forwarded to each tile's iframe so the
@@ -2250,6 +2254,7 @@ function TileGrid({
   onFocus,
   onExpand,
   onClose,
+  onShareScreen,
   theme,
   mode,
   fidelity,
@@ -2291,10 +2296,14 @@ function TileGrid({
           <ScreenTile
             key={d.id}
             design={d}
-            focused={d.id === focusedId}
+            // The grid only ever renders at the project home (no screen
+            // focused), so no tile is "focused" here — the active id is
+            // just where you'll land when you open one, not a selection.
+            focused={false}
             onFocus={() => onFocus(d.id)}
             onExpand={() => onExpand(d.id)}
             onClose={canClose ? () => onClose(d.id) : undefined}
+            onShareScreen={onShareScreen ? () => onShareScreen(d.id) : undefined}
             theme={theme}
             mode={mode}
             fidelity={fidelity}
@@ -2322,6 +2331,9 @@ interface ScreenTileProps {
    *  this only when more than one screen is open, so the user can't
    *  delete their way to an empty canvas. */
   onClose?: () => void;
+  /** Mint + copy a share link for this screen (overflow menu). Omit to
+   *  hide the Share item. */
+  onShareScreen?: () => void;
   theme: GeneratedTheme;
   mode: "light" | "dark";
   fidelity: "wireframe" | "full";
@@ -2342,9 +2354,9 @@ interface ScreenTileProps {
 function ScreenTile({
   design,
   focused,
-  onFocus,
   onExpand,
   onClose,
+  onShareScreen,
   theme,
   mode,
   fidelity,
@@ -2398,15 +2410,17 @@ function ScreenTile({
     <div
       role="button"
       aria-pressed={focused}
-      aria-label={`Focus ${design.name}${focused ? " (currently focused)" : ""}`}
+      aria-label={`Open ${design.name}`}
       tabIndex={0}
-      onClick={onFocus}
-      onDoubleClick={onExpand}
+      // A single click opens the screen — clicking a thumbnail takes you
+      // straight to the actual screen rather than just selecting it in
+      // place. (onExpand = focus this design + enter the fit view.)
+      onClick={onExpand}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
-          // Space would otherwise scroll. Eat both and route to focus.
+          // Space would otherwise scroll. Eat both and open the screen.
           e.preventDefault();
-          onFocus();
+          onExpand();
         }
       }}
       className={cn(
@@ -2426,49 +2440,93 @@ function ScreenTile({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-0.5 shrink-0">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onExpand();
-            }}
-            onKeyDown={(e) => {
-              // Prevent the outer key handler from also firing on Space /
-              // Enter — the expand button should only expand, not also
-              // focus-then-expand which would double-dispatch.
-              if (e.key === "Enter" || e.key === " ") e.stopPropagation();
-            }}
-            className={cn(
-              "flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] transition-colors",
-              "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-            title="Expand — focus this screen and switch to Fit zoom"
-            aria-label={`Expand ${design.name} to Fit zoom`}
-          >
-            <Maximize2 className="h-3 w-3" />
-          </button>
-          {onClose && (
+        {/* Overflow menu — replaces the old expand/close icons. The tile
+            body is a single click-to-open target now; per-screen actions
+            live here. stopPropagation everywhere so opening the menu (or
+            picking an item) doesn't also fire the tile's open click. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
+              onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") e.stopPropagation();
               }}
-              className={cn(
-                "flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] transition-colors",
-                "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              )}
-              title={`Delete ${design.name}`}
-              aria-label={`Delete ${design.name}`}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
+              title="More"
+              aria-label={`More actions for ${design.name}`}
             >
-              <X className="h-3 w-3" />
+              <MoreHorizontal />
             </button>
-          )}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onExpand();
+              }}
+            >
+              <Maximize2 />
+              Open
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!design.appSource}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!design.appSource || typeof window === "undefined") return;
+                const key = `grade:screen:${design.id}`;
+                try {
+                  window.localStorage.setItem(
+                    key,
+                    JSON.stringify({
+                      source: design.appSource,
+                      name: design.name,
+                    }),
+                  );
+                } catch {
+                  return;
+                }
+                window.open(
+                  `/fast-sandbox#screen=${encodeURIComponent(key)}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }}
+            >
+              <Eye />
+              Preview
+            </DropdownMenuItem>
+            {onShareScreen && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShareScreen();
+                }}
+              >
+                <Share2 />
+                Share
+              </DropdownMenuItem>
+            )}
+            {onClose && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
+                >
+                  <Trash2 />
+                  Delete
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* The tile body. We set an explicit aspect ratio rather than

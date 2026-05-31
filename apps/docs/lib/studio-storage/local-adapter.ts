@@ -52,10 +52,12 @@ import {
 } from "@/lib/studio-users";
 
 import type {
+  Asset,
   Project,
   ProjectSnapshot,
   ScreenRevision,
   ShareLink,
+  StudioEvent,
   StudioStorage,
 } from "./types";
 
@@ -732,6 +734,16 @@ export class LocalStorageStudioStorage implements StudioStorage {
     if (storage.getItem(ACTIVE_KEY) === id) storage.removeItem(ACTIVE_KEY);
   }
 
+  // Local-only mode has no trash — restores are no-ops. (deleteScreen
+  // below still hard-removes from the blob; that's the local behaviour.)
+  async restoreProject(): Promise<void> {
+    /* no recovery surface in local-only mode */
+  }
+
+  async restoreScreen(): Promise<void> {
+    /* no recovery surface in local-only mode */
+  }
+
   async saveProject(snapshot: ProjectSnapshot): Promise<void> {
     this.ensureHydrated();
     const storage = ssrSafeStorage();
@@ -936,6 +948,38 @@ export class LocalStorageStudioStorage implements StudioStorage {
 
   async revokeShareLink(): Promise<void> {
     /* no-op in local-only mode */
+  }
+
+  // Assets need a server-side object store (the private bucket); there
+  // isn't one in local-only mode. List is empty; upload surfaces a clear
+  // error rather than pretending to store bytes that won't persist.
+  async listAssets(): Promise<Asset[]> {
+    return [];
+  }
+
+  async uploadAsset(): Promise<Asset> {
+    throw new Error(
+      "Uploading assets requires the cloud backend — sign in to upload.",
+    );
+  }
+
+  async updateAsset(): Promise<Asset> {
+    throw new Error(
+      "Assets require the cloud backend — sign in to manage them.",
+    );
+  }
+
+  async deleteAsset(): Promise<void> {
+    /* no-op in local-only mode */
+  }
+
+  // No server, no trail. Logging no-ops; the feed is empty.
+  async logEvent(): Promise<void> {
+    /* no-op in local-only mode */
+  }
+
+  async listEvents(): Promise<StudioEvent[]> {
+    return [];
   }
 
   async getActiveProjectId(): Promise<string | null> {

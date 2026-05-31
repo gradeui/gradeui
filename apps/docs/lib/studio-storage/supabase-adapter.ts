@@ -63,12 +63,71 @@ import {
 } from "@/lib/studio-users";
 
 import type {
+  Asset,
+  AssetOrigin,
+  AssetType,
   Project,
   ProjectSnapshot,
   ScreenRevision,
   ShareLink,
+  StudioEvent,
   StudioStorage,
 } from "./types";
+
+/** Private bucket holding user assets. Created by migration 0014. */
+const ASSET_BUCKET = "user-assets";
+/** Signed-URL lifetime for asset delivery (1 hour). Re-minted on every
+ *  list, so a long-lived browser session just refetches. */
+const ASSET_URL_TTL = 60 * 60;
+
+interface AssetRow {
+  id: string;
+  owner_id: string;
+  project_id: string | null;
+  type: AssetType;
+  path: string;
+  name: string;
+  content_type: string;
+  width: number | null;
+  height: number | null;
+  bytes: number;
+  origin: AssetOrigin;
+  source_prompt: string | null;
+  alt_text: string | null;
+  enrichment: Record<string, unknown> | null;
+  created_at: number;
+}
+const ASSET_COLS =
+  "id, owner_id, project_id, type, path, name, content_type, width, height, bytes, origin, source_prompt, alt_text, enrichment, created_at";
+function rowToAsset(r: AssetRow, url?: string): Asset {
+  return {
+    id: r.id,
+    ownerId: r.owner_id,
+    projectId: r.project_id ?? undefined,
+    type: r.type,
+    path: r.path,
+    name: r.name,
+    contentType: r.content_type,
+    width: r.width ?? undefined,
+    height: r.height ?? undefined,
+    bytes: r.bytes,
+    origin: r.origin,
+    sourcePrompt: r.source_prompt ?? undefined,
+    altText: r.alt_text ?? undefined,
+    enrichment: r.enrichment ?? undefined,
+    createdAt: r.created_at,
+    url,
+  };
+}
+/** Best-effort extension from a filename, else from the content type. */
+function extFor(file: File): string {
+  const dot = file.name.lastIndexOf(".");
+  if (dot >= 0 && dot < file.name.length - 1) {
+    return file.name.slice(dot + 1).toLowerCase();
+  }
+  const sub = file.type.split("/")[1];
+  return sub ? sub.toLowerCase() : "bin";
+}
 
 /** localStorage key for the active project id — same key the local
  *  adapter uses so a user toggling backends keeps their pointer. */
@@ -403,6 +462,7 @@ export class SupabaseStudioStorage implements StudioStorage {
     const { data: projectRows, error: pErr } = await this.supabase
       .from("projects")
       .select(PROJECT_META_COLS)
+      .is("deleted_at", null)
       .order("updated_at", { ascending: false });
     if (pErr) throw pErr;
     if (!projectRows || projectRows.length === 0) return [];
@@ -431,6 +491,7 @@ export class SupabaseStudioStorage implements StudioStorage {
       .from("projects")
       .select(PROJECT_FULL_COLS)
       .eq("id", id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw error;
     if (!row) return null;
@@ -447,6 +508,7 @@ export class SupabaseStudioStorage implements StudioStorage {
         .from("designs")
         .select("id, project_id, name, state, position, created_at, updated_at")
         .eq("project_id", id)
+        .is("deleted_at", null)
         .order("position", { ascending: true }),
       this.supabase
         .from("messages")
@@ -578,11 +640,36 @@ export class SupabaseStudioStorage implements StudioStorage {
   }
 
   async deleteProject(id: string): Promise<void> {
-    // Cascade on FK takes care of access, designs, messages, notes,
-    // comments — see the SQL migration.
-    const { error } = await this.supabase.from("projects").delete().eq("id", id);
+    // Soft-delete — mark deleted_at so it drops out of listProjects but
+    // stays recoverable. A true purge (hard delete + cascade) is a
+    // separate, explicit action not wired here.
+    const { error } = await this.supabase
+      .from("projects")
+      .update({ deleted_at: Date.now() })
+      .eq("id", id);
     if (error) throw error;
+    await this.logEvent({
+      projectId: id,
+      action: "project.delete",
+      targetKind: "project",
+      targetId: id,
+    });
   }
+
+  async restoreProject(id: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("projects")
+      .update({ deleted_at: null })
+      .eq("id", id);
+    if (error) throw error;
+    await this.logEvent({
+      projectId: id,
+      action: "project.restore",
+      targetKind: "project",
+      targetId: id,
+    });
+  }
+
 
   async saveProject(snapshot: ProjectSnapshot): Promise<void> {
     const {
@@ -629,21 +716,14 @@ export class SupabaseStudioStorage implements StudioStorage {
       );
     }
 
-    // 3. Screens — reconcile rows against the snapshot. Delete the
-    //    screens that went away (cascades their messages / notes /
-    //    threads via FK), then upsert the survivors with fresh
-    //    positions.
-    const { data: existingDesignRows } = await this.supabase
-      .from("designs")
-      .select("id")
-      .eq("project_id", project.id);
-    const wantIds = new Set(designs.map((d) => d.id));
-    const staleIds = ((existingDesignRows ?? []) as { id: string }[])
-      .map((r) => r.id)
-      .filter((id) => !wantIds.has(id));
-    if (staleIds.length > 0) {
-      await this.supabase.from("designs").delete().in("id", staleIds);
-    }
+    // 3. Screens — upsert the snapshot's screens with fresh positions.
+    //    We deliberately DON'T delete screens that are absent from the
+    //    snapshot any more: screen removal is now an explicit (soft)
+    //    deleteDesign() that sets deleted_at, and soft-deleted screens
+    //    are already filtered out of loadProject — so "absent here" just
+    //    means "not currently loaded", never "erase it". (Pre-0016 this
+    //    block hard-deleted absent screens, which is the implicit
+    //    erasure soft-delete removes.)
     if (designs.length > 0) {
       await this.supabase
         .from("designs")
@@ -674,22 +754,75 @@ export class SupabaseStudioStorage implements StudioStorage {
     projectId: string,
     design: Design,
     position: number,
+    duplicatedFrom?: { id: string; name: string },
   ): Promise<void> {
     const { error } = await this.supabase
       .from("designs")
       .upsert(designToRow(projectId, design, position), { onConflict: "id" });
     if (error) throw error;
+    // A duplicate gets its own verb + remembers the source screen; a
+    // plain add is a create. Name is stamped either way so the trail
+    // reads "created Pricing v2" / "duplicated Screen 1 → Screen 1 copy".
+    await this.logEvent({
+      projectId,
+      designId: design.id,
+      action: duplicatedFrom ? "screen.duplicate" : "screen.create",
+      targetKind: "screen",
+      targetId: design.id,
+      metadata: duplicatedFrom
+        ? {
+            name: design.name,
+            fromId: duplicatedFrom.id,
+            fromName: duplicatedFrom.name,
+          }
+        : { name: design.name },
+    });
   }
 
   async deleteScreen(projectId: string, designId: string): Promise<void> {
-    // FK cascade drops the screen's messages, note, and comment
-    // threads. Scope by project_id too as belt-and-braces.
+    // Grab the name BEFORE marking it deleted so the trail can say WHICH
+    // screen — a soft-deleted screen drops out of loadProject, so the
+    // feed couldn't resolve its name afterwards.
+    const { data: row } = await this.supabase
+      .from("designs")
+      .select("name")
+      .eq("id", designId)
+      .maybeSingle();
+    const name = (row as { name: string } | null)?.name;
+    // Soft-delete — mark deleted_at so the screen drops out of
+    // loadProject but stays recoverable (its revisions + messages +
+    // threads are untouched, so restore brings the whole history back).
+    // Scope by project_id too as belt-and-braces.
     const { error } = await this.supabase
       .from("designs")
-      .delete()
+      .update({ deleted_at: Date.now() })
       .eq("project_id", projectId)
       .eq("id", designId);
     if (error) throw error;
+    await this.logEvent({
+      projectId,
+      designId,
+      action: "screen.delete",
+      targetKind: "screen",
+      targetId: designId,
+      metadata: name ? { name } : undefined,
+    });
+  }
+
+  async restoreScreen(projectId: string, designId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("designs")
+      .update({ deleted_at: null })
+      .eq("project_id", projectId)
+      .eq("id", designId);
+    if (error) throw error;
+    await this.logEvent({
+      projectId,
+      designId,
+      action: "screen.restore",
+      targetKind: "screen",
+      targetId: designId,
+    });
   }
 
   async saveScreen(
@@ -810,6 +943,253 @@ export class SupabaseStudioStorage implements StudioStorage {
       .update({ revoked: true })
       .eq("token", token);
     if (error) throw error;
+  }
+
+  // ─── Assets ──────────────────────────────────────────────────────
+
+  async listAssets(opts?: {
+    type?: AssetType;
+    projectId?: string;
+  }): Promise<Asset[]> {
+    let q = this.supabase
+      .from("assets")
+      .select(ASSET_COLS)
+      .order("created_at", { ascending: false });
+    if (opts?.type) q = q.eq("type", opts.type);
+    if (opts?.projectId) q = q.eq("project_id", opts.projectId);
+    const { data, error } = await q;
+    if (error) throw error;
+    const rows = (data ?? []) as AssetRow[];
+    if (rows.length === 0) return [];
+
+    // Batch-mint signed delivery URLs for the private objects.
+    const { data: signed } = await this.supabase.storage
+      .from(ASSET_BUCKET)
+      .createSignedUrls(
+        rows.map((r) => r.path),
+        ASSET_URL_TTL,
+      );
+    const urlByPath = new Map<string, string>();
+    for (const s of signed ?? []) {
+      if (s.signedUrl && s.path) urlByPath.set(s.path, s.signedUrl);
+    }
+    return rows.map((r) => rowToAsset(r, urlByPath.get(r.path)));
+  }
+
+  async uploadAsset(input: {
+    file: File;
+    type?: AssetType;
+    projectId?: string;
+    width?: number;
+    height?: number;
+    origin?: AssetOrigin;
+    sourcePrompt?: string;
+    altText?: string;
+    enrichment?: Record<string, unknown>;
+  }): Promise<Asset> {
+    const { data: userData } = await this.supabase.auth.getUser();
+    const uid = userData.user?.id;
+    if (!uid) throw new Error("Cannot upload: not signed in");
+
+    const id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const path = `${uid}/${id}.${extFor(input.file)}`;
+
+    const { error: upErr } = await this.supabase.storage
+      .from(ASSET_BUCKET)
+      .upload(path, input.file, {
+        contentType: input.file.type || "application/octet-stream",
+        upsert: false,
+      });
+    if (upErr) throw upErr;
+
+    const { data, error } = await this.supabase
+      .from("assets")
+      .insert({
+        id,
+        owner_id: uid,
+        project_id: input.projectId ?? null,
+        type: input.type ?? "media",
+        path,
+        name: input.file.name,
+        content_type: input.file.type || "application/octet-stream",
+        width: input.width ?? null,
+        height: input.height ?? null,
+        bytes: input.file.size,
+        origin: input.origin ?? "upload",
+        source_prompt: input.sourcePrompt ?? null,
+        alt_text: input.altText ?? null,
+        enrichment: input.enrichment ?? null,
+      })
+      .select(ASSET_COLS)
+      .single();
+    if (error) {
+      // Roll back the orphaned object so a failed row-insert doesn't
+      // leave bytes stranded in the bucket.
+      await this.supabase.storage.from(ASSET_BUCKET).remove([path]);
+      throw error;
+    }
+
+    const { data: signed } = await this.supabase.storage
+      .from(ASSET_BUCKET)
+      .createSignedUrl(path, ASSET_URL_TTL);
+    const asset = rowToAsset(data as AssetRow, signed?.signedUrl);
+
+    // Trail entry — only project-scoped uploads land on a feed (a
+    // general-library upload has no project to scope to). The verb
+    // reflects how it was made.
+    if (asset.projectId) {
+      const action =
+        asset.origin === "generated"
+          ? "asset.generate"
+          : asset.origin === "filled"
+            ? "asset.fill"
+            : "asset.upload";
+      await this.logEvent({
+        projectId: asset.projectId,
+        action,
+        targetKind: "asset",
+        targetId: asset.id,
+        metadata: {
+          name: asset.name,
+          ...(asset.sourcePrompt ? { prompt: asset.sourcePrompt } : {}),
+        },
+      });
+    }
+    return asset;
+  }
+
+  async updateAsset(
+    id: string,
+    patch: {
+      projectId?: string | null;
+      altText?: string;
+      enrichment?: Record<string, unknown>;
+    },
+  ): Promise<Asset> {
+    const row: Record<string, unknown> = {};
+    if ("projectId" in patch) row.project_id = patch.projectId ?? null;
+    if (patch.altText !== undefined) row.alt_text = patch.altText;
+    if (patch.enrichment !== undefined) row.enrichment = patch.enrichment;
+    const { data, error } = await this.supabase
+      .from("assets")
+      .update(row)
+      .eq("id", id)
+      .select(ASSET_COLS)
+      .single();
+    if (error) throw error;
+    const asset = data as AssetRow;
+    const { data: signed } = await this.supabase.storage
+      .from(ASSET_BUCKET)
+      .createSignedUrl(asset.path, ASSET_URL_TTL);
+    return rowToAsset(asset, signed?.signedUrl);
+  }
+
+  async deleteAsset(id: string): Promise<void> {
+    const { data: row } = await this.supabase
+      .from("assets")
+      .select("path, project_id, name")
+      .eq("id", id)
+      .maybeSingle();
+    const meta = row as
+      | { path: string; project_id: string | null; name: string }
+      | null;
+    if (meta?.path) {
+      await this.supabase.storage.from(ASSET_BUCKET).remove([meta.path]);
+    }
+    const { error } = await this.supabase.from("assets").delete().eq("id", id);
+    if (error) throw error;
+    if (meta?.project_id) {
+      await this.logEvent({
+        projectId: meta.project_id,
+        action: "asset.delete",
+        targetKind: "asset",
+        targetId: id,
+        metadata: { name: meta.name },
+      });
+    }
+  }
+
+  // ─── Activity trail ──────────────────────────────────────────────
+
+  async logEvent(input: {
+    projectId: string;
+    designId?: string;
+    action: string;
+    targetKind?: string;
+    targetId?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
+    // Best-effort: a failed trail write must never break the action that
+    // triggered it. Swallow everything.
+    try {
+      const { data: u } = await this.supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) return;
+      await this.supabase.from("events").insert({
+        actor_id: uid,
+        project_id: input.projectId,
+        design_id: input.designId ?? null,
+        action: input.action,
+        target_kind: input.targetKind ?? null,
+        target_id: input.targetId ?? null,
+        metadata: input.metadata ?? null,
+      });
+      // Nudge any live activity feed to refetch — decoupled from who
+      // triggered the action (screen add/delete, asset, comment, …).
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("grade:event-logged", {
+            detail: { projectId: input.projectId },
+          }),
+        );
+      }
+    } catch {
+      /* trail gaps are acceptable; broken actions are not */
+    }
+  }
+
+  async listEvents(opts: {
+    projectId: string;
+    designId?: string;
+    limit?: number;
+  }): Promise<StudioEvent[]> {
+    let q = this.supabase
+      .from("events")
+      .select(
+        "id, actor_id, project_id, design_id, action, target_kind, target_id, metadata, created_at",
+      )
+      .eq("project_id", opts.projectId)
+      .order("created_at", { ascending: false })
+      .limit(opts.limit ?? 100);
+    if (opts.designId) q = q.eq("design_id", opts.designId);
+    const { data, error } = await q;
+    if (error) throw error;
+    return (
+      (data ?? []) as Array<{
+        id: string;
+        actor_id: string | null;
+        project_id: string;
+        design_id: string | null;
+        action: string;
+        target_kind: string | null;
+        target_id: string | null;
+        metadata: Record<string, unknown> | null;
+        created_at: number;
+      }>
+    ).map((r) => ({
+      id: r.id,
+      actorId: r.actor_id ?? undefined,
+      projectId: r.project_id,
+      designId: r.design_id ?? undefined,
+      action: r.action,
+      targetKind: r.target_kind ?? undefined,
+      targetId: r.target_id ?? undefined,
+      metadata: r.metadata ?? undefined,
+      createdAt: r.created_at,
+    }));
   }
 
   /** The id of the most recent revision for a screen, or null. Used to

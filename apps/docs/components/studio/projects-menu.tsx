@@ -31,13 +31,7 @@
  */
 
 import * as React from "react";
-import {
-  Folder,
-  FolderOpen,
-  Plus,
-  FileText,
-  Settings,
-} from "lucide-react";
+import { Folder, Plus, Settings } from "lucide-react";
 import {
   Badge,
   Sidebar,
@@ -46,7 +40,6 @@ import {
   SidebarHeader,
   SidebarItem,
   SidebarSection,
-  SidebarTreeItem,
 } from "@gradeui/ui";
 
 import type { Project, Team } from "@/lib/studio-storage";
@@ -77,8 +70,6 @@ interface ProjectsMenuProps {
   currentUserId?: string;
   /** The id of the project currently loaded into the workbench. */
   activeProjectId: string;
-  /** The active design id within the active project. */
-  activeDesignId: string;
   /** Per-project summaries — design list + turn + revision counts.
    *  Owned by the page so cross-project counts stay accurate when
    *  the user switches projects. Missing entries render with empty
@@ -86,9 +77,6 @@ interface ProjectsMenuProps {
   summaries: Record<string, ProjectsMenuSummary>;
   /** Switch active project. Page handles the save-then-load dance. */
   onSelectProject: (id: string) => void;
-  /** Click a screen inside any project — if it belongs to the
-   *  inactive project, the page switches projects first. */
-  onSelectScreen: (projectId: string, designId: string) => void;
   /** Open the create-project dialog. (Renamed for clarity — the
    *  page owns the dialog state; this callback just asks for it
    *  to open.) */
@@ -104,31 +92,28 @@ interface ProjectsMenuProps {
   ) => void;
   /** Optional — delete a project (surfaced inside the settings sheet). */
   onDeleteProject?: (id: string) => void;
+  /** Optional content rendered below the project sections — the asset
+   *  browser lives here so the user's library sits in the left panel
+   *  alongside their projects. */
+  assetsSlot?: React.ReactNode;
 }
 
 /** "4 turns · 12 revisions". ALWAYS renders both counts even when
  *  zero — keeps every screen row at the same height so the tree
  *  reads as a uniform list. Single-vs-plural words are still
  *  picked correctly ("0 turns", "1 turn", "2 turns"). */
-function formatScreenCounts(turns: number, revisions: number): string {
-  const turnWord = turns === 1 ? "turn" : "turns";
-  const revWord = revisions === 1 ? "revision" : "revisions";
-  return `${turns} ${turnWord} · ${revisions} ${revWord}`;
-}
-
 export function ProjectsMenu({
   projects,
   teams,
   currentUserId,
   activeProjectId,
-  activeDesignId,
   summaries,
   onSelectProject,
-  onSelectScreen,
   onCreateProject,
   onRenameProject,
   onUpdateProject,
   onDeleteProject,
+  assetsSlot,
 }: ProjectsMenuProps) {
   // The settings sheet target — null when closed; project ref when
   // open. Tracking by Project (rather than id + a separate boolean)
@@ -138,34 +123,7 @@ export function ProjectsMenu({
     Project | null
   >(null);
 
-  // Per-project expanded state. We control it so the icon (Folder vs
-  // FolderOpen) can swap based on the same source of truth the
-  // chevron reads from. The active project starts expanded; the
-  // record is keyed by project id so the user's preference survives
-  // across switches within a session.
-  const [expandedProjects, setExpandedProjects] = React.useState<
-    Record<string, boolean>
-  >(() => ({ [activeProjectId]: true }));
-
-  // When the active project changes (project switch), auto-expand
-  // the new one. Don't COLLAPSE the previously-active project — the
-  // user might want to keep peeking at it. Mirrors Notion / Linear
-  // sidebar behavior.
-  React.useEffect(() => {
-    setExpandedProjects((cur) =>
-      cur[activeProjectId] ? cur : { ...cur, [activeProjectId]: true },
-    );
-  }, [activeProjectId]);
-
-  const toggleProjectExpand = React.useCallback(
-    (id: string, next: boolean) => {
-      setExpandedProjects((cur) => ({ ...cur, [id]: next }));
-    },
-    [],
-  );
-
-  // Sort: active first (so the expanded children stay at the top of
-  // the column), then by updatedAt desc.
+  // Sort: active first, then by updatedAt desc.
   const sortedProjects = React.useMemo(() => {
     const active = projects.filter((p) => p.id === activeProjectId);
     const rest = projects
@@ -212,58 +170,35 @@ export function ProjectsMenu({
     </button>
   );
 
-  // One project → its tree row. Extracted so the "Projects" and
-  // "Shared with you" sections render identical rows.
+  // One project → a flat switcher row. Screens are NOT nested here any
+  // more — the screen grid (middle) + the project home (right) are the
+  // canonical "pick a screen" surfaces; this list is purely for
+  // switching between projects. Clicking selects the project (and lands
+  // on its home); the cog opens settings.
   const renderProjectRow = (project: Project) => {
     const isActive = project.id === activeProjectId;
-    const expanded = !!expandedProjects[project.id];
-    const summary = summaries[project.id];
-    const designsForProject = summary?.designs ?? [];
-    const screenCountLabel =
-      designsForProject.length === 1
-        ? "1 screen"
-        : `${designsForProject.length} screens`;
-    const treeDescription =
-      project.description?.trim() || screenCountLabel;
+    const count = summaries[project.id]?.designs.length ?? 0;
+    const description =
+      project.description?.trim() ||
+      (count === 1 ? "1 screen" : `${count} screens`);
 
     return (
-      <SidebarTreeItem
-        key={project.id}
-        label={project.name}
-        description={treeDescription}
-        icon={expanded ? <FolderOpen /> : <Folder />}
-        active={isActive}
-        expanded={expanded}
-        onExpandedChange={(next) => toggleProjectExpand(project.id, next)}
-        trailing={renderSettingsButton(project)}
-        onDoubleClick={() => {
-          if (!isActive) onSelectProject(project.id);
-        }}
-      >
-        {designsForProject.length === 0 ? (
-          <div className="px-3 py-1 text-xs text-muted-foreground italic">
-            No screens yet
-          </div>
-        ) : (
-          designsForProject.map((d) => {
-            const turns = summary?.turnsByDesign[d.id] ?? 0;
-            const revisions = summary?.revisionsByDesign[d.id] ?? 0;
-            return (
-              <SidebarItem
-                key={d.id}
-                asButton
-                size="sm"
-                active={isActive && d.id === activeDesignId}
-                icon={<FileText />}
-                description={formatScreenCounts(turns, revisions)}
-                onClick={() => onSelectScreen(project.id, d.id)}
-              >
-                <span className="min-w-0 flex-1 truncate">{d.name}</span>
-              </SidebarItem>
-            );
-          })
-        )}
-      </SidebarTreeItem>
+      // Settings cog is a sibling (not nested in the row button — that'd
+      // be invalid HTML), absolutely positioned + hover-revealed.
+      <div key={project.id} className="group/proj relative">
+        <SidebarItem
+          asButton
+          active={isActive}
+          icon={<Folder />}
+          description={description}
+          onClick={() => onSelectProject(project.id)}
+        >
+          <span className="min-w-0 flex-1 truncate pr-7">{project.name}</span>
+        </SidebarItem>
+        <span className="absolute right-1.5 top-1.5 opacity-0 transition-opacity group-hover/proj:opacity-100">
+          {renderSettingsButton(project)}
+        </span>
+      </div>
     );
   };
 
@@ -315,6 +250,8 @@ export function ProjectsMenu({
             {sharedProjects.map(renderProjectRow)}
           </SidebarSection>
         )}
+
+        {assetsSlot}
       </SidebarContent>
 
       <SidebarFooter className="text-[10px] text-muted-foreground">

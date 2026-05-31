@@ -177,9 +177,11 @@ These docs are the source of truth for where Studio is going. Read them before r
 
 - **[`STUDIO-THEMES.md`](./STUDIO-THEMES.md)** — What a theme *is* and how it moves between people. The `ThemeInput` contract (deterministic, portable), the three visibility tiers (private project variants → curated share set → community catalog), remix lineage (`remixOf`), and showcase "clones" as seed content. T0–T5 rollout; T0 (variant storage, migration `0013`) is built.
 
-- **[`STUDIO-STORAGE.md`](./STUDIO-STORAGE.md)** — User-owned **assets** (their own images, later fonts/video/exports) as distinct from row-based project data. Supabase Storage bucket + `assets` table with RLS mirroring `project_access`, an upload/library flow, and wiring uploaded URLs into the existing `mediaUrls` channel that today only carries stock/generated fills. Signed-URL delivery for shares. S0–S4 rollout; none built yet. This is what turns "pretty mockups" into "a prototype of *my* product."
+- **[`STUDIO-STORAGE.md`](./STUDIO-STORAGE.md)** — User-owned **assets** (their own images, later fonts/video/exports) as distinct from row-based project data. Supabase Storage bucket + `assets` table with RLS mirroring `project_access`, an upload/library flow, and wiring uploaded URLs into the existing `mediaUrls` channel that today only carries stock/generated fills. Signed-URL delivery for shares. S0–S4 rollout; S0 substrate + S1 browser + provenance metadata built (migration `0014`).
 
-The four are siblings: learning is *what the system learns and generates*; chat is *how it presents that*; themes is *the unit people remix and share*; storage is *the user's own bytes that make a prototype theirs*. They cross-reference for individual features.
+- **[`STUDIO-AUDIT.md`](./STUDIO-AUDIT.md)** — The cross-cutting **activity trail**. One `events` table + one `logEvent` primitive every feature funnels through, append-only, RLS-scoped to projects. Renders "Ali created an image on {Screen} inside {Project} at {time}, using {model}". Pairs with asset provenance and the revision spine (object vs. timeline). A0–A4 rollout.
+
+These are siblings: learning is *what the system learns and generates*; chat is *how it presents that*; themes is *the unit people remix and share*; storage is *the user's own bytes that make a prototype theirs*; audit is *the trail of who did what across all of it*. They cross-reference for individual features.
 
 ## See also
 

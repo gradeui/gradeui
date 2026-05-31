@@ -81,6 +81,25 @@ export default async function SharePage({
   if (share.expires_at && share.expires_at < Date.now()) notFound();
   if (!share.design_id) notFound();
 
+  // Trail entry — record that the share was opened. Anonymous viewers
+  // have no user, so this is written with the service role (bypasses the
+  // events insert policy) and a null actor. Best-effort: a failed log
+  // must never break the render. Coarse "viewed" only — no interaction
+  // telemetry. A signed-in member viewing their own share still lands
+  // here with a null actor; dedup/attribution is a later refinement.
+  try {
+    await supabase.from("events").insert({
+      actor_id: null,
+      project_id: share.project_id,
+      design_id: share.design_id,
+      action: "share.view",
+      target_kind: "share",
+      target_id: share.token,
+    });
+  } catch {
+    /* trail gaps are acceptable; broken shares are not */
+  }
+
   // Source: a pinned revision if set, else the screen's current state.
   let appSource: string | null = null;
   if (share.revision_id) {

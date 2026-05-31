@@ -128,6 +128,73 @@ export interface ScreenRevision {
   createdAt: number;
 }
 
+/** Broad asset category. Drives the type tabs in the asset browser and
+ *  later how each asset is consumed (media → MediaSurface, font → theme
+ *  typography, document → reference/attachment). */
+export type AssetType = "media" | "font" | "document";
+
+/** How an asset came to be. `owner_id` is always the creator (whoever
+ *  pressed the button); origin records the mechanism. "filled" =
+ *  resolved via the MediaSurface fill flow; "generated" = AI-created;
+ *  "stock" = pulled from a stock provider; "upload" = the user's bytes. */
+export type AssetOrigin = "upload" | "generated" | "filled" | "stock";
+
+/** A user-owned binary file (image, font, document). Owned by a USER —
+ *  reusable across their projects — with an optional `projectId` tag.
+ *  Bytes live in a private bucket; `url` is a short-lived signed URL
+ *  minted on read (absent until then). */
+export interface Asset {
+  id: string;
+  ownerId: string;
+  /** Optional project association. Undefined = lives in the user's
+   *  general library, usable anywhere. */
+  projectId?: string;
+  type: AssetType;
+  /** Object path inside the bucket: {ownerId}/{id}.{ext}. */
+  path: string;
+  /** Original filename, shown in the browser. */
+  name: string;
+  contentType: string;
+  /** Pixel dimensions for media (so a slot can reserve space). */
+  width?: number;
+  height?: number;
+  bytes: number;
+  /** How it was created (audit trail). */
+  origin: AssetOrigin;
+  /** The prompt/description that produced it — for generated/filled
+   *  assets. The bit that lets you see (and re-run) what made an image. */
+  sourcePrompt?: string;
+  /** Accessibility text; also the seed for enrichment suggestions. */
+  altText?: string;
+  /** Open bag for derived metadata (alt-text suggestions, tags, colours,
+   *  detected objects). Grows without a migration per signal. */
+  enrichment?: Record<string, unknown>;
+  createdAt: number;
+  /** Signed, short-lived delivery URL. Minted on read; never persisted. */
+  url?: string;
+}
+
+/** One immutable entry in the activity trail. Append-only; rendered as
+ *  "{actor} {action} {target} on {designId} inside {projectId} at
+ *  {createdAt}". See STUDIO-AUDIT.md. */
+export interface StudioEvent {
+  id: string;
+  /** Who did it (users.id). Resolved to a name at render time. Undefined
+   *  for anonymous actions — e.g. a `share.view` by a non-member. */
+  actorId?: string;
+  /** RLS scope. */
+  projectId: string;
+  /** The screen/variant it happened on; undefined = project-level. */
+  designId?: string;
+  /** Namespaced verb — "asset.generate", "comment.add", "screen.rename". */
+  action: string;
+  targetKind?: string;
+  targetId?: string;
+  /** Human-facing context: { model, prompt, from, to, … }. */
+  metadata?: Record<string, unknown>;
+  createdAt: number;
+}
+
 /** A public, obfuscated share link to a screen. `token` is the
  *  capability key that goes in the /s/<token> URL. `revisionId` pins a
  *  specific snapshot; undefined = always the latest (live). */
@@ -187,10 +254,15 @@ export interface StudioStorage {
     patch: Partial<Pick<Project, "name" | "description">>,
   ): Promise<Project>;
 
-  /** Delete a project and everything it owns (designs, chat,
-   *  notes). Idempotent — deleting a non-existent project is a
-   *  no-op. */
+  /** Soft-delete a project — marks `deleted_at` so it drops out of
+   *  listProjects but stays recoverable. Cloud adapter soft-deletes +
+   *  logs the event; the local adapter hard-deletes (no recovery
+   *  surface in local-only mode). Idempotent. */
   deleteProject(id: string): Promise<void>;
+
+  /** Restore a soft-deleted project (clears `deleted_at`). Cloud-only;
+   *  local has no trash. */
+  restoreProject(id: string): Promise<void>;
 
   /** Persist the project's current in-memory state. Reconciles the
    *  normalised rows (screens, messages, notes) against the snapshot
@@ -207,17 +279,26 @@ export interface StudioStorage {
 
   /** Append a screen to a project. The page mints the `Design`
    *  (id, name, status, timestamps); the adapter writes one row at
-   *  `position` (0-based index in the screen list). */
+   *  `position` (0-based index in the screen list). Logs a
+   *  `screen.create` event — or `screen.duplicate` (carrying the source
+   *  screen) when `duplicatedFrom` is supplied. */
   addScreen(
     projectId: string,
     design: Design,
     position: number,
+    duplicatedFrom?: { id: string; name: string },
   ): Promise<void>;
 
-  /** Delete a screen and everything anchored to it — its chat
-   *  history (messages), its note, and its comment threads. The
+  /** Soft-delete a screen — marks `deleted_at` so it drops out of
+   *  loadProject but its chat, note, threads, and revisions are left
+   *  intact for recovery. Cloud adapter soft-deletes + logs a
+   *  `screen.delete` event; local hard-removes (no trash). The
    *  active-screen pointer is the caller's concern. Idempotent. */
   deleteScreen(projectId: string, designId: string): Promise<void>;
+
+  /** Restore a soft-deleted screen (clears `deleted_at`); it returns
+   *  with its full history thanks to the revision spine. Cloud-only. */
+  restoreScreen(projectId: string, designId: string): Promise<void>;
 
   /** Persist a screen's editable fields (name, appSource, status,
    *  updatedAt) without touching its siblings. Used after inline
@@ -279,6 +360,74 @@ export interface StudioStorage {
 
   /** Revoke a link by token (soft — sets revoked = true). */
   revokeShareLink(token: string): Promise<void>;
+
+  // ─── Assets (user-owned files: media / fonts / documents) ───────
+  // Cloud-only — the bytes live in a private Supabase Storage bucket.
+  // The local adapter degrades gracefully (empty list / clear error).
+
+  /** The signed-in user's assets, newest first. Optionally filter by
+   *  type and/or project tag. Each returned asset carries a freshly
+   *  minted, short-lived signed `url`. */
+  listAssets(opts?: {
+    type?: AssetType;
+    projectId?: string;
+  }): Promise<Asset[]>;
+
+  /** Upload a file to the user's library. Writes the bytes to the
+   *  bucket + the metadata row, and returns the asset with a signed
+   *  `url`. `projectId` optionally tags it to a project; origin +
+   *  sourcePrompt record provenance (e.g. a generated/filled image
+   *  carries the prompt that made it). Cloud-only. */
+  uploadAsset(input: {
+    file: File;
+    type?: AssetType;
+    projectId?: string;
+    width?: number;
+    height?: number;
+    origin?: AssetOrigin;
+    sourcePrompt?: string;
+    altText?: string;
+    enrichment?: Record<string, unknown>;
+  }): Promise<Asset>;
+
+  /** Patch an asset's mutable metadata — tag it to (or off) a project,
+   *  set alt text, attach enrichment. Owner-only. Returns the updated
+   *  asset (with a fresh signed `url`). */
+  updateAsset(
+    id: string,
+    patch: {
+      projectId?: string | null;
+      altText?: string;
+      enrichment?: Record<string, unknown>;
+    },
+  ): Promise<Asset>;
+
+  /** Delete an asset (bucket object + metadata row). Owner-only. */
+  deleteAsset(id: string): Promise<void>;
+
+  // ─── Activity trail (cross-cutting audit log) ───────────────────
+  // Append-only. Every meaningful action funnels through logEvent;
+  // feeds read via listEvents. See STUDIO-AUDIT.md.
+
+  /** Record one action on the trail. Best-effort — never throws; a
+   *  failed log must not break the action that triggered it. Cloud-only
+   *  (local mode no-ops). */
+  logEvent(input: {
+    projectId: string;
+    designId?: string;
+    action: string;
+    targetKind?: string;
+    targetId?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<void>;
+
+  /** Read a project's trail, newest first. Filter by `designId` for a
+   *  single screen's history. */
+  listEvents(opts: {
+    projectId: string;
+    designId?: string;
+    limit?: number;
+  }): Promise<StudioEvent[]>;
 
   /** Read the cross-session pointer to which project the user had
    *  open last. `null` on a fresh install. */

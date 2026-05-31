@@ -130,6 +130,8 @@ import {
   type User as StoredUser,
 } from "@/lib/studio-storage";
 import { ProjectsMenu } from "@/components/studio/projects-menu";
+import { AssetBrowser } from "@/components/studio/asset-browser";
+import { ProjectHome } from "@/components/studio/project-home";
 import { NewProjectDialog } from "@/components/studio/new-project-dialog";
 import {
   InvitePeopleDialog,
@@ -189,6 +191,14 @@ export default function StudioPage() {
   // refreshing the page resets to one blank slot.
   const [designs, setDesigns] = useState<Design[]>(() => initialDesigns());
   const [activeId, setActiveId] = useState<string>(() => designs[0].id);
+
+  // Canvas focus. Declared up here (above the URL-sync and bootstrap
+  // effects that read it) to stay out of the temporal dead zone. "all" =
+  // project home / no screen focused (the default landing); "fit" =
+  // zoomed into a screen. The left + right panels and the URL's ?screen
+  // param all follow this. Bootstrap flips it to "fit" only when the URL
+  // carries a ?screen.
+  const [zoom, setZoom] = useState<"fit" | "all">("all");
 
   // Per-design undo / redo for `appSource` (JSX). The hook is
   // self-persisting via localStorage keyed by `designId`, and reseeds
@@ -646,10 +656,15 @@ export default function StudioPage() {
       // Override the loaded project's persisted activeDesignId with
       // the URL's screen param when it resolves to a real design —
       // same precedence rule applies one level down.
-      const initialDesignId =
-        urlScreen && snap.designs.some((d) => d.id === urlScreen)
-          ? urlScreen
-          : snap.activeDesignId;
+      const focusFromUrl = Boolean(
+        urlScreen && snap.designs.some((d) => d.id === urlScreen),
+      );
+      const initialDesignId = focusFromUrl ? urlScreen! : snap.activeDesignId;
+      // A ?screen in the URL means "open focused on this screen"; no
+      // screen param means "land on the project home" (no focus). This
+      // is what lets removing ?screen keep you on the home rather than
+      // bouncing back into a screen.
+      setZoom(focusFromUrl ? "fit" : "all");
       // Seed the active project's theme draft BEFORE flipping
       // activeProjectId — these batch into one render, so the keyed
       // ThemeBuilderProvider mounts with the saved theme on its FIRST
@@ -845,7 +860,15 @@ export default function StudioPage() {
     if (!activeProjectId || loadedProjectId !== activeProjectId) return;
     const url = new URL(window.location.href);
     url.searchParams.set("project", activeProjectId);
-    url.searchParams.set("screen", activeId);
+    // The screen param tracks FOCUS, not just "which screen is active":
+    // present when zoomed into a screen, absent at the project home. So
+    // a no-screen URL is a first-class state (the home), and removing the
+    // param doesn't get silently re-added.
+    if (zoom === "fit") {
+      url.searchParams.set("screen", activeId);
+    } else {
+      url.searchParams.delete("screen");
+    }
     const target = url.pathname + url.search;
     const current = window.location.pathname + window.location.search;
     if (current === target) {
@@ -858,7 +881,7 @@ export default function StudioPage() {
     } else {
       window.history.pushState({}, "", target);
     }
-  }, [activeProjectId, loadedProjectId, activeId]);
+  }, [activeProjectId, loadedProjectId, activeId, zoom]);
 
   // popstate listener — when the user hits back/forward, read the
   // URL params and sync state. We compare against the live state
@@ -905,6 +928,10 @@ export default function StudioPage() {
       await storage.setActiveProjectId(id);
       applySnapshot(snap);
       setLoadedProjectId(id);
+      // Switching a project lands on its home — not whatever focus state
+      // the previous project was in. (The URL-sync effect then drops the
+      // ?screen param to match.)
+      setZoom("all");
     },
     [
       storage,
@@ -1016,12 +1043,19 @@ export default function StudioPage() {
       const p = url.searchParams.get("project");
       const s = url.searchParams.get("screen");
       const cur = popstateLatestRef.current;
+      // Screen present → focus it; absent → land on the project home.
+      const applyFocus = () => {
+        if (s) {
+          setActiveId(s);
+          setZoom("fit");
+        } else {
+          setZoom("all");
+        }
+      };
       if (p && p !== cur.activeProjectId) {
-        cur.handleSwitchProject(p).then(() => {
-          if (s) setActiveId(s);
-        });
-      } else if (s && s !== cur.activeId) {
-        setActiveId(s);
+        cur.handleSwitchProject(p).then(applyFocus);
+      } else {
+        applyFocus();
       }
     };
     window.addEventListener("popstate", onPop);
@@ -1206,7 +1240,6 @@ export default function StudioPage() {
   // matches the pre-projects behaviour (user lands on their focused
   // screen). Studio's "Eat your own dogfood" target: the chrome
   // reacts to canvas state without the canvas reaching up.
-  const [zoom, setZoom] = useState<"fit" | "all">("fit");
 
   // Responsive mode — < md gets Sheet overlays instead of inline
   // panels. SSR-safe: default false so server markup matches; the
@@ -1600,7 +1633,10 @@ export default function StudioPage() {
       setActiveId(duplicate.id);
       if (activeProjectId) {
         void storage
-          .addScreen(activeProjectId, duplicate, srcIdx + 1)
+          .addScreen(activeProjectId, duplicate, srcIdx + 1, {
+            id: source.id,
+            name: source.name,
+          })
           .catch((err) => {
             // eslint-disable-next-line no-console
             console.warn("[studio] addScreen (duplicate) failed:", err);
@@ -1711,14 +1747,13 @@ export default function StudioPage() {
       teams={teams}
       currentUserId={commentAuthUser?.id}
       activeProjectId={activeProjectId}
-      activeDesignId={activeId}
       summaries={projectSummaries}
       onSelectProject={handleSwitchProject}
-      onSelectScreen={handleSelectScreenInProject}
       onCreateProject={handleOpenCreateProject}
       onUpdateProject={handleUpdateProject}
       onRenameProject={handleRenameProject}
       onDeleteProject={handleDeleteProject}
+      assetsSlot={<AssetBrowser />}
     />
   ) : (
     <StudioChat
@@ -1789,6 +1824,27 @@ export default function StudioPage() {
       }
     />
   );
+
+  // Right pane follows canvas focus: the project home at the all-screens
+  // view (no screen focused), the focused screen's settings tabs when
+  // zoomed into one. No manual toggle — focus is the single source of
+  // truth, so it lines up with the left panel + the URL's screen param.
+  const rightPane =
+    zoom === "all" && activeProjectId ? (
+      <ProjectHome
+        projectId={activeProjectId}
+        projectName={activeProject?.name ?? "Untitled project"}
+        createdAt={activeProject?.createdAt}
+        screens={designs.map((d) => ({ id: d.id, name: d.name }))}
+        activeScreenId={activeId}
+        onSelectScreen={(id) => handleSelectScreenInProject(activeProjectId, id)}
+        onInvite={() => setInviteOpen(true)}
+        memberCount={activeProject?.access?.length ?? 0}
+        currentUserId={commentAuthUser?.id}
+      />
+    ) : (
+      rightTabsPane
+    );
 
   // On desktop the inline panels read their width from CSS variables.
   // Pulling them out of Tailwind into `--gds-studio-chat-width` /
@@ -1996,7 +2052,7 @@ export default function StudioPage() {
                 aria-hidden={!rightPanelOpen}
               >
                 <div className={rightPanelOpen ? "h-full" : "hidden"}>
-                  {rightTabsPane}
+                  {rightPane}
                 </div>
               </div>
             )}
@@ -2034,7 +2090,7 @@ export default function StudioPage() {
                 <SheetTitle>Layout, Theme &amp; Notes</SheetTitle>
               </SheetHeader>
               <div className="flex-1 min-h-0 overflow-hidden">
-                {rightTabsPane}
+                {rightPane}
               </div>
             </SheetContent>
           </Sheet>

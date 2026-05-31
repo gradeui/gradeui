@@ -21,6 +21,9 @@ import { SupabaseStudioStorage } from "./supabase-adapter";
 import type { StudioStorage } from "./types";
 
 export type {
+  Asset,
+  AssetOrigin,
+  AssetType,
   Comment,
   CommentThread,
   CommentThreadStatus,
@@ -33,6 +36,7 @@ export type {
   ScreenRevision,
   ShareLink,
   ShareViewport,
+  StudioEvent,
   StudioStorage,
   Subject,
   Team,
