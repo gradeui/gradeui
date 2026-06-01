@@ -15,6 +15,27 @@ const inputProps = [
     description: "The type of input (text, email, password, etc.).",
   },
   {
+    name: "size",
+    type: '"default" | "sm" | "xs"',
+    default: '"default"',
+    description:
+      "Control density. default = h-9 (forms); sm = h-8 and xs = h-7 for dense tool panels (the Studio inspector).",
+  },
+  {
+    name: "startSlot",
+    type: "ReactNode",
+    default: "-",
+    description:
+      "Adornment inside the leading edge — icon, prefix, currency symbol. Non-interactive by default; clicks pass through to focus the input.",
+  },
+  {
+    name: "endSlot",
+    type: "ReactNode",
+    default: "-",
+    description:
+      'Adornment inside the trailing edge — a unit ("px"), a clear button, a stepper. Same pointer rules as startSlot.',
+  },
+  {
     name: "placeholder",
     type: "string",
     default: "-",
@@ -85,16 +106,49 @@ export default function InputPage() {
           <Input type="password" placeholder="Enter password" className="max-w-sm" />
         </ComponentPreview>
 
-        <h3 className="text-lg font-medium">With Icon</h3>
+        <h3 className="text-lg font-medium">Sizes</h3>
         <ComponentPreview
-          code={`<div className="relative">
-  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-  <Input placeholder="Search..." className="pl-9" />
+          code={`<div className="grid gap-2">
+  <Input size="default" placeholder="Default (h-9)" />
+  <Input size="sm" placeholder="Small (h-8)" />
+  <Input size="xs" placeholder="Extra small (h-7)" />
 </div>`}
         >
-          <div className="relative max-w-sm w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search..." className="pl-9" />
+          <div className="grid gap-2 w-full max-w-sm">
+            <Input size="default" placeholder="Default (h-9)" />
+            <Input size="sm" placeholder="Small (h-8)" />
+            <Input size="xs" placeholder="Extra small (h-7)" />
+          </div>
+        </ComponentPreview>
+
+        <h3 className="text-lg font-medium">Slots</h3>
+        <p className="text-sm text-muted-foreground">
+          Use <code className="bg-muted px-1 py-0.5 rounded text-sm">startSlot</code> and{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">endSlot</code> for icons,
+          prefixes and units instead of hand-positioning absolute children. Padding is
+          reserved automatically per size.
+        </p>
+        <ComponentPreview
+          code={`<Input
+  placeholder="Search..."
+  startSlot={<Search />}
+/>
+
+<Input
+  type="number"
+  placeholder="0"
+  startSlot={<Mail />}
+  endSlot={<span className="text-xs text-muted-foreground">px</span>}
+/>`}
+        >
+          <div className="grid gap-2 w-full max-w-sm">
+            <Input placeholder="Search..." startSlot={<Search />} />
+            <Input
+              type="number"
+              placeholder="0"
+              startSlot={<Mail />}
+              endSlot={<span className="text-xs text-muted-foreground">px</span>}
+            />
           </div>
         </ComponentPreview>
 

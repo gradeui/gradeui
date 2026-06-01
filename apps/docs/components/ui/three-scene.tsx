@@ -28,10 +28,15 @@ import type {
   SceneFactory,
   SceneHandle,
   Palette,
+  PostPreset,
 } from "@/lib/three/types";
 import { createPostComposer } from "@/lib/three/post-composer";
 import { sceneRegistry, shaderPresetById } from "@/lib/three/shader-presets";
 import { postPresets, defaultPostPreset } from "@/lib/three/post-presets";
+import {
+  buildFragmentShaderScene,
+  ShaderCompileError,
+} from "@/lib/three/custom-fragment";
 
 /** Theme-friendly default palette. Consumers override per-tile if they want. */
 const DEFAULT_PALETTE: Palette = {
@@ -41,34 +46,167 @@ const DEFAULT_PALETTE: Palette = {
   background: "#0a0a14",
 };
 
+// Shadcn / gradeui store their design tokens as bare channel triplets so the
+// same custom property can be composed into `oklch()`, `hsl()`, or relative
+// colour expressions at the use-site. But that means `var(--primary)` on its
+// own expands to something like `"0.610 0.128 20"` which is NOT a valid CSS
+// <color>, so the browser silently falls back to the inherited colour —
+// usually black. We detect that pattern here and re-wrap before handing the
+// value to the DOM probe.
+const OKLCH_TRIPLET =
+  /^[\d.]+\s+[\d.]+\s+[\d.]+(?:\s*\/\s*[\d.%]+)?$/; // "0.61 0.13 20" — no % signs
+const HSL_TRIPLET =
+  /^[\d.]+\s+[\d.]+%\s+[\d.]+%(?:\s*\/\s*[\d.%]+)?$/; // "20 90% 48%" — shadcn HSL
+const VAR_REF = /^\s*var\(\s*(--[^,)\s]+)(?:\s*,[^)]*)?\s*\)\s*$/;
+
+/**
+ * Resolve any CSS-legal colour expression to a THREE-parseable string.
+ *
+ * Three-step resolution:
+ *
+ *   1. Design-token unwrap — if the input is a `var(--token)` reference,
+ *      read the raw custom-property value off the host. If that value is a
+ *      bare channel triplet (shadcn/gradeui convention), re-wrap it as
+ *      `oklch(...)` / `hsl(...)` so the DOM probe gets a valid colour.
+ *
+ *   2. DOM probe — assign to a detached span's inline colour and read
+ *      `getComputedStyle(probe).color`. Resolves remaining var() and
+ *      validates syntax.
+ *
+ *   3. Canvas rasterisation — the computed form may be `oklch(...)`,
+ *      `oklab(...)` or `color(srgb ...)`. `THREE.Color.setStyle()` only
+ *      parses `rgb()`/`hsl()`/hex/named, so we paint the computed colour
+ *      into a 1×1 canvas and read the rasterised sRGB bytes. Canvas is
+ *      guaranteed to gamut-convert any CSS colour, so the round-trip
+ *      always yields a THREE-parseable `rgb()`.
+ */
+function resolveCssColor(
+  input: string,
+  host: HTMLElement,
+  fallback: string,
+): string {
+  if (typeof document === "undefined") return fallback;
+
+  // Step 1: detect bare-triplet design tokens and re-wrap.
+  let effectiveInput = input;
+  const varRef = VAR_REF.exec(input);
+  if (varRef) {
+    const raw = getComputedStyle(host).getPropertyValue(varRef[1]).trim();
+    if (raw) {
+      if (OKLCH_TRIPLET.test(raw)) {
+        effectiveInput = `oklch(${raw})`;
+      } else if (HSL_TRIPLET.test(raw)) {
+        effectiveInput = `hsl(${raw})`;
+      }
+    }
+  }
+
+  // Step 2: resolve remaining var() and validate via DOM probe.
+  const probe = document.createElement("span");
+  probe.style.color = "";
+  probe.style.color = effectiveInput;
+  if (probe.style.color === "") return fallback;
+  probe.style.display = "none";
+  host.appendChild(probe);
+  const computed = getComputedStyle(probe).color;
+  host.removeChild(probe);
+  if (!computed) return fallback;
+
+  // Fast path: already in rgb()/rgba() form — skip canvas round-trip.
+  if (computed.startsWith("rgb")) return computed;
+
+  // Step 3: gamut-convert oklch()/oklab()/color(...) via canvas rasterisation.
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return computed;
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = computed;
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return `rgb(${r}, ${g}, ${b})`;
+  } catch {
+    // Bail gracefully — return whatever the DOM probe gave us and let
+    // THREE.Color fall back to its own default on an unparseable input.
+    return computed;
+  }
+}
+
+function resolvePalette(palette: Palette, host: HTMLElement): Palette {
+  return {
+    primary: resolveCssColor(palette.primary, host, DEFAULT_PALETTE.primary),
+    secondary: resolveCssColor(
+      palette.secondary,
+      host,
+      DEFAULT_PALETTE.secondary,
+    ),
+    accent: resolveCssColor(palette.accent, host, DEFAULT_PALETTE.accent),
+    background: resolveCssColor(
+      palette.background,
+      host,
+      DEFAULT_PALETTE.background,
+    ),
+  };
+}
+
 export interface ThreeSceneProps
-  extends Omit<BaseMediaProps, "src" | "poster"> {
+  extends Omit<BaseMediaProps, "src" | "poster">,
+    Omit<React.HTMLAttributes<HTMLDivElement>, keyof BaseMediaProps> {
   /** Preset id from the shader preset registry. */
   preset?: string;
-  /** Post-FX preset id. Defaults to the preset's `defaultPostPreset` or "vhs". */
-  postPreset?: string;
+  /**
+   * User-authored GLSL fragment shader body. Runs on a fullscreen quad with
+   * a standardised uniform contract (uTime, uResolution, uMouse, uPrimary,
+   * uSecondary, uAccent, uBackground + varying vUv). Header is auto-injected
+   * — DO NOT redeclare the uniforms. Write `void main()` only.
+   *
+   * Precedence: `createScene` > `fragmentShader` > `preset`. On compile
+   * failure the component falls back to `preset="space"` and fires
+   * `onShaderError`.
+   */
+  fragmentShader?: string;
+  /** Called when a supplied `fragmentShader` fails to compile. */
+  onShaderError?: (error: ShaderCompileError) => void;
+  /** Post-FX preset. Either a registry id (`"vhs"`) OR a full `PostPreset`
+   *  object — pass an object (e.g. from `postStateToPreset`) to drive the
+   *  stack live from a controls panel; changes are applied via the
+   *  composer's `setPreset` WITHOUT remounting WebGL. Defaults to the
+   *  base preset's `defaultPostPreset` or "vhs". */
+  postPreset?: string | PostPreset;
   /** Palette overrides. Unset slots fall back to `DEFAULT_PALETTE`. */
   palette?: Partial<Palette>;
   /**
-   * Custom scene factory. Takes precedence over `preset`.
-   * Use for bespoke three.js scenes that don't fit a preset.
+   * Custom scene factory. Takes precedence over `preset` and `fragmentShader`.
+   * Use for bespoke three.js scenes that don't fit a preset or fullscreen quad.
    */
   createScene?: SceneFactory;
   /** Static poster to show while the GL context warms up. */
   poster?: string;
   /** Pixel-ratio cap. Defaults to `Math.min(window.devicePixelRatio, 2)`. */
   maxDpr?: number;
+  /**
+   * Controlled play/pause. When provided, pauses/resumes the render loop
+   * WITHOUT remounting the WebGL context (unlike `autoPlay`, which only
+   * sets the initial state and remounts on change). Use for "animate on
+   * hover" thumbnails. Reduced-motion still forces paused.
+   */
+  play?: boolean;
 }
 
 export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
   (
     {
       preset,
+      fragmentShader,
+      onShaderError,
       postPreset,
       palette: paletteProp,
       createScene: createSceneProp,
       controls = false,
       autoPlay = true,
+      play,
       pauseOffscreen = true,
       aspect = "video",
       radius = "lg",
@@ -78,11 +216,12 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       className,
       style,
       maxDpr,
+      ...rest
     },
     ref,
   ) => {
     const hostRef = React.useRef<HTMLDivElement | null>(null);
-    const [playing, setPlaying] = React.useState(autoPlay);
+    const [playing, setPlaying] = React.useState(play ?? autoPlay);
     const [ready, setReady] = React.useState(false);
     const reduced = usePrefersReducedMotion();
 
@@ -92,22 +231,39 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       [paletteProp],
     );
 
-    // Resolve scene factory: explicit createScene wins, otherwise look up preset.
+    // Resolve scene factory.
+    //   1. Explicit createScene wins (power-user escape hatch).
+    //   2. fragmentShader — user wrote GLSL; build a fullscreen-quad scene.
+    //      We wrap in an outer arrow so compile errors throw inside the effect
+    //      and can be caught + surfaced, rather than bubbling out of useMemo.
+    //   3. Preset id from the registry.
     const resolvedFactory: SceneFactory | null = React.useMemo(() => {
       if (createSceneProp) return createSceneProp;
+      if (fragmentShader) return buildFragmentShaderScene(fragmentShader);
       if (preset && sceneRegistry[preset]) return sceneRegistry[preset];
       return null;
-    }, [createSceneProp, preset]);
+    }, [createSceneProp, fragmentShader, preset]);
 
-    // Resolve post preset id
-    const resolvedPostPresetId = React.useMemo(() => {
-      if (postPreset) return postPreset;
-      if (preset) {
-        const p = shaderPresetById[preset];
-        if (p?.defaultPostPreset) return p.defaultPostPreset;
-      }
-      return defaultPostPreset;
+    // Resolve the post-FX preset to a concrete PostPreset object. A
+    // string is looked up in the registry; an object is used as-is (the
+    // live-driven path). Falls back to the base preset's default, then
+    // the global default.
+    const resolvedPost = React.useMemo<PostPreset>(() => {
+      if (postPreset && typeof postPreset === "object") return postPreset;
+      const id =
+        typeof postPreset === "string"
+          ? postPreset
+          : (preset ? shaderPresetById[preset]?.defaultPostPreset : undefined) ??
+            defaultPostPreset;
+      return postPresets[id] ?? postPresets[defaultPostPreset];
     }, [postPreset, preset]);
+
+    // Ref mirror so the build effect reads the CURRENT post object for
+    // its initial composer without depending on `resolvedPost` (which
+    // would remount WebGL on every slider tweak). Ongoing changes flow
+    // through the live effect below via the composer's `setPreset`.
+    const resolvedPostRef = React.useRef(resolvedPost);
+    resolvedPostRef.current = resolvedPost;
 
     React.useEffect(() => {
       const host = hostRef.current;
@@ -115,6 +271,11 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
 
       const width = host.clientWidth || 1;
       const height = host.clientHeight || 1;
+
+      // Resolve palette CSS expressions (var(), oklch(), lab(), hex, rgb(),
+      // named colours) into THREE-parseable rgb() strings via a DOM probe.
+      // Done AFTER host is in the document so custom properties resolve.
+      const livePalette = resolvePalette(palette, host);
 
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -124,22 +285,44 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       const dpr = maxDpr ?? Math.min(window.devicePixelRatio || 1, 2);
       renderer.setPixelRatio(dpr);
       renderer.setSize(width, height);
-      renderer.setClearColor(new THREE.Color(palette.background), 1);
+      renderer.setClearColor(new THREE.Color(livePalette.background), 1);
       renderer.domElement.dataset.gdsPart = "shader-canvas";
       renderer.domElement.style.width = "100%";
       renderer.domElement.style.height = "100%";
       renderer.domElement.style.display = "block";
       host.appendChild(renderer.domElement);
 
-      const handle: SceneHandle = resolvedFactory({
-        renderer,
-        width,
-        height,
-        palette,
-      });
+      // Instantiate the scene. A user-supplied fragment shader can fail to
+      // compile here — we catch, fire onShaderError, and fall back to the
+      // "space" preset so the surface is never left blank.
+      let handle: SceneHandle;
+      try {
+        handle = resolvedFactory({
+          renderer,
+          width,
+          height,
+          palette: livePalette,
+        });
+      } catch (err) {
+        if (err instanceof ShaderCompileError) {
+          onShaderError?.(err);
+          handle = sceneRegistry.space({
+            renderer,
+            width,
+            height,
+            palette: livePalette,
+          });
+        } else {
+          // Unknown failure — tear down and re-throw so the app sees it.
+          renderer.dispose();
+          if (renderer.domElement.parentElement === host) {
+            host.removeChild(renderer.domElement);
+          }
+          throw err;
+        }
+      }
 
-      const postPresetObj =
-        postPresets[resolvedPostPresetId] ?? postPresets[defaultPostPreset];
+      const postPresetObj = resolvedPostRef.current;
 
       const post = createPostComposer({
         renderer,
@@ -152,7 +335,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
 
       const clock = new THREE.Clock();
       let rafId = 0;
-      let running = autoPlay && !reduced;
+      let running = (play ?? autoPlay) && !reduced;
       let visible = true;
 
       const tick = () => {
@@ -163,8 +346,13 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
         handle.update?.(elapsed, delta);
         post.composer.render(delta);
       };
+      // Always paint ONE frame, even when not auto-playing, so a paused
+      // scene shows a static still (preset thumbnails rely on this) rather
+      // than a blank surface. The raf loop only continues while `running`.
+      handle.update?.(0, 0);
+      post.composer.render(0);
+      setReady(true);
       tick();
-      if (running) setReady(true);
 
       // ResizeObserver for responsive canvas
       const ro = new ResizeObserver(([entry]) => {
@@ -173,6 +361,14 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
         renderer.setSize(w, h);
         post.resize(w, h);
         handle.resize?.(w, h);
+        // When PAUSED (thumbnail, autoPlay=false, or reduced-motion) the
+        // raf loop isn't running, so the one-shot mount frame can land at
+        // 0×0 before layout and stay blank. Re-paint the still frame on
+        // every resize so a paused scene always shows correct content.
+        if (!running) {
+          handle.update?.(clock.getElapsedTime(), 0);
+          post.composer.render(0);
+        }
       });
       ro.observe(host);
 
@@ -185,18 +381,61 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       );
       io.observe(host);
 
+      // Theme-change observer — when a consumer flips the root class / data-theme
+      // attr (GradeThemeProvider, dark-mode toggle, custom theme swap), re-resolve
+      // any CSS-var-driven palette entries and push them into the live scene
+      // without remounting WebGL.
+      const themeObserver = new MutationObserver(() => {
+        if (!hostRef.current) return;
+        const next = resolvePalette(palette, hostRef.current);
+        renderer.setClearColor(new THREE.Color(next.background), 1);
+        handle.setPalette?.(next);
+      });
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: [
+          "class",
+          "style",
+          "data-theme",
+          "data-gds-theme",
+          "data-grade-mode",
+        ],
+      });
+
+      // Pointer tracking — only wired up if the scene exposes `setMouse`
+      // (currently just fragment-shader scenes). Normalised to [0,1] with
+      // y flipped so the coordinates match GLSL's origin-at-bottom-left.
+      const sceneWithMouse = handle as SceneHandle & {
+        setMouse?: (x: number, y: number) => void;
+      };
+      const onPointerMove = sceneWithMouse.setMouse
+        ? (ev: PointerEvent) => {
+            const rect = host.getBoundingClientRect();
+            const x = (ev.clientX - rect.left) / rect.width;
+            const y = 1 - (ev.clientY - rect.top) / rect.height;
+            sceneWithMouse.setMouse!(x, y);
+          }
+        : null;
+      if (onPointerMove) host.addEventListener("pointermove", onPointerMove);
+
       // Expose a live handle for the controls overlay + palette updates
       liveRef.current = {
         toggle: () => {
           running = !running;
           setPlaying(running);
         },
+        setRunning: (next: boolean) => {
+          // Pause/resume WITHOUT remounting (the raf loop stays alive and
+          // just skips rendering while paused). Reduced-motion always wins.
+          running = next && !reduced;
+          setPlaying(running);
+        },
         setPalette: (p: Palette) => {
           renderer.setClearColor(new THREE.Color(p.background), 1);
           handle.setPalette?.(p);
         },
-        setPostPreset: (id: string) => {
-          const next = postPresets[id];
+        setPostPreset: (p: string | PostPreset) => {
+          const next = typeof p === "string" ? postPresets[p] : p;
           if (next) post.setPreset(next);
         },
       };
@@ -205,6 +444,8 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
         cancelAnimationFrame(rafId);
         ro.disconnect();
         io.disconnect();
+        themeObserver.disconnect();
+        if (onPointerMove) host.removeEventListener("pointermove", onPointerMove);
         post.dispose();
         handle.dispose?.();
         renderer.dispose();
@@ -215,26 +456,43 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       };
       // Factory/palette/post-preset changes remount the whole thing (simpler than
       // rebuilding in place, and palette changes are rare enough that it's fine).
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       resolvedFactory,
-      resolvedPostPresetId,
       palette,
       autoPlay,
       reduced,
       pauseOffscreen,
       maxDpr,
+      onShaderError,
     ]);
 
     const liveRef = React.useRef<{
       toggle: () => void;
+      setRunning: (next: boolean) => void;
       setPalette: (p: Palette) => void;
-      setPostPreset: (id: string) => void;
+      setPostPreset: (p: string | PostPreset) => void;
     } | null>(null);
+
+    // Live post-FX updates — push the resolved post object through the
+    // composer's setPreset on change, no remount. No-op until the build
+    // effect has wired liveRef.
+    React.useEffect(() => {
+      liveRef.current?.setPostPreset(resolvedPost);
+    }, [resolvedPost]);
+
+    // Controlled play/pause — pause/resume WITHOUT remounting (used by
+    // preset thumbnails to animate on hover without a context churn). Only
+    // active when `play` is explicitly controlled.
+    React.useEffect(() => {
+      if (play !== undefined) liveRef.current?.setRunning(play);
+    }, [play]);
 
     const togglePlay = () => liveRef.current?.toggle();
 
     return (
       <MediaSurface
+        {...rest}
         ref={(node) => {
           hostRef.current = node;
           if (typeof ref === "function") ref(node);

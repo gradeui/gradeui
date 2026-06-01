@@ -292,6 +292,38 @@ const [showPanel, setShowPanel] = useState(false);
             </DropdownMenuContent>
           </DropdownMenu>
         </ComponentPreview>
+
+        <h3 className="text-lg font-medium">Compact (size)</h3>
+        <p className="text-sm text-muted-foreground">
+          Set <code className="bg-muted px-1 py-0.5 rounded text-sm">size=&quot;xs&quot;</code> on{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">DropdownMenuContent</code> and the density
+          cascades to every item (Item, Checkbox, Radio, SubTrigger, Label) — for dense tool panels.
+          Mirrors Select.
+        </p>
+        <ComponentPreview
+          code={`<DropdownMenuContent size="xs" align="end">
+  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+  <DropdownMenuItem>Duplicate</DropdownMenuItem>
+  <DropdownMenuItem>Share</DropdownMenuItem>
+  <DropdownMenuSeparator />
+  <DropdownMenuItem>Delete</DropdownMenuItem>
+</DropdownMenuContent>`}
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Compact menu
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent size="xs" align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem>Duplicate</DropdownMenuItem>
+              <DropdownMenuItem>Share</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Delete</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </ComponentPreview>
       </div>
 
       <div className="space-y-4">

@@ -33,6 +33,11 @@ export const DropdownMenuContract = contract({
       design: "knob",
       description: "what the menu surface is *made of*. `solid` (default) is `bg-popover`. `translucent` matches Apple HIG / iOS menu sheets. `glass` for menus floating over rich canvases.",
   },
+  "size": {
+      schema: z.enum(["default", "sm", "xs"]).optional(),
+      design: "knob",
+      description: "menu density; cascades to every item (Item, Checkbox, Radio, SubTrigger, Label) via context so a compact trigger gets a compact menu. Use \"xs\" in dense tool panels.",
+  },
   "onSelect": {
       schema: z.unknown().optional(),
       design: "event",

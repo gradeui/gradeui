@@ -9,14 +9,29 @@ import { contract } from "@gradeui/contracts";
 
 export const InputContract = contract({
   name: "Input",
-  description: "Any single-line text entry. Always pair with a Label for accessibility.",
+  description: "Any single-line text entry. Always pair with a Label for accessibility. Use startSlot/endSlot for icons, prefixes and units instead of hand-positioning absolute children; use size=\"sm\"/\"xs\" in dense tool panels.",
   import: "@gradeui/ui",
-  aliases: ["text field","textbox","textfield","form field","text input","secure field","search field","url field","number field","textinput","text input field","react native textinput"],
+  aliases: ["text field","textbox","textfield","form field","text input","secure field","search field","url field","number field","textinput","text input field","react native textinput","unit input","input with icon"],
   composesWith: ["Label","Form","Card (in CardContent)","Button (form submit)"],
   props: {
   "type": {
       schema: z.string().optional(),
       design: "content",
+  },
+  "size": {
+      schema: z.enum(["default", "sm", "xs"]).optional(),
+      design: "knob",
+      description: "control density. `default` (h-9) for forms; `sm` (h-8) and `xs` (h-7) for dense tool panels like the inspector.",
+  },
+  "startSlot": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "adornment rendered inside the leading edge (icon, prefix, currency symbol). Non-interactive by default so clicks focus the input.",
+  },
+  "endSlot": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "adornment rendered inside the trailing edge (unit like \"px\", a clear button, a stepper). Same pointer rules as startSlot.",
   },
   },
 });

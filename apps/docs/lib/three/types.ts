@@ -58,6 +58,42 @@ export interface PostPreset {
   };
 }
 
+// The tweakable-parameter schema is the canonical `ControlSpec` in
+// `./schema` (slider / color / colorList / toggle / select / segmented /
+// divider) + `DemoState` + `defaultsOf` / typed getters. It lives in its
+// own file so renderers (post-stack etc.) can import it without a
+// circular dependency. Re-exported here for convenience.
+export type {
+  ControlSpec,
+  DemoState,
+  PaletteSlot,
+  NumberControl,
+  ColorControl,
+  ColorListControl,
+  ToggleControl,
+  SelectControl,
+  SegmentedControl,
+  DividerControl,
+} from "./schema";
+import type { ControlSpec } from "./schema";
+
+/**
+ * A composable EFFECT layer — the generalisation of the post-FX model.
+ * Grain, dither, vignette, chromatic, etc. are effect layers that stack
+ * ON TOP of any base scene (mix-and-match), each carrying its own
+ * control schema. This is the "grain should apply to all" contract: an
+ * effect is independent of which base shader it sits over.
+ */
+export interface EffectLayerSpec {
+  /** Stable id — also the effect's key in the composer stack. */
+  id: string;
+  label: string;
+  /** One-line description for the picker / LLM. */
+  description?: string;
+  /** Tweakable controls for this layer. */
+  controls?: ControlSpec[];
+}
+
 /** A shader preset is the data needed to instantiate one of the canned scenes. */
 export interface ShaderPreset {
   id: string;
@@ -75,6 +111,10 @@ export interface ShaderPreset {
   defaultPalette?: Partial<Palette>;
   /** Static poster image path for non-hover previews. Served from /public. */
   poster?: string;
+  /** Tweakable controls for this base shader (drives the controls panel
+   *  + maps to uniforms). Effect layers (grain etc.) carry their own
+   *  controls separately via EffectLayerSpec. */
+  controls?: ControlSpec[];
 }
 
 /** Composer factory signature — wraps a scene with a post-FX chain. */

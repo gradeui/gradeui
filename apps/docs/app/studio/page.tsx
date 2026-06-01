@@ -1062,6 +1062,40 @@ export default function StudioPage() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
+  // Image-action trail. Fill / asset-pick / library-upload sites dispatch
+  // a `grade:image-action` window event (they lack project+screen
+  // context); the page has it, so it logs here. Keeps those call sites
+  // free of context plumbing. `logEvent` is best-effort + broadcasts
+  // grade:event-logged, so the project-home activity feed refreshes live.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onImageAction = (ev: Event) => {
+      const d = (ev as CustomEvent).detail as
+        | {
+            action?: string;
+            designId?: string;
+            name?: string;
+            model?: string;
+            prompt?: string;
+          }
+        | undefined;
+      if (!d?.action || !activeProjectId) return;
+      void storage.logEvent({
+        projectId: activeProjectId,
+        designId: d.designId ?? activeId,
+        action: d.action,
+        targetKind: "asset",
+        metadata: {
+          ...(d.name ? { name: d.name } : {}),
+          ...(d.model ? { model: d.model } : {}),
+          ...(d.prompt ? { prompt: d.prompt } : {}),
+        },
+      });
+    };
+    window.addEventListener("grade:image-action", onImageAction);
+    return () => window.removeEventListener("grade:image-action", onImageAction);
+  }, [storage, activeProjectId, activeId]);
+
   const handleDeleteProject = useCallback(
     async (id: string) => {
       await storage.deleteProject(id);

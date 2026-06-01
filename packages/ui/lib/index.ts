@@ -447,6 +447,19 @@ export { VideoPlayer, type VideoPlayerProps } from "../components/ui/video-playe
 export { RivePlayer, type RivePlayerProps } from "../components/ui/rive-player";
 
 export { ThreeScene, type ThreeSceneProps } from "../components/ui/three-scene";
+export { ShaderControls, type ShaderControlsProps } from "../components/ui/shader-controls";
+export {
+  BackgroundFill,
+  type BackgroundFillProps,
+  type BackgroundFillType,
+  type BackgroundFillFit,
+} from "../components/ui/background-fill";
+export {
+  FillPicker,
+  type FillPickerProps,
+  type FillValue,
+  FILL_TOKENS,
+} from "../components/ui/fill-picker";
 
 export {
   ShaderPresetPreview,

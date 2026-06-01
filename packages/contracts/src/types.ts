@@ -121,6 +121,14 @@ export interface PropContract<T = unknown> {
   schema: z.ZodType<T>;
   /** Which design axis this prop sits on. Drives panel filtering. */
   design: Design;
+  /** Optional inspector section this prop belongs to. Lets a component
+   *  declare its own panel grouping — e.g. MediaSurface tags `src` / `alt`
+   *  / `hint` with `group: "image"` so they render together in an "Image"
+   *  section instead of the generic Properties bucket. Omitted → the
+   *  panel's default placement (Layout for layout-family props, else
+   *  Properties). Purely a presentation hint; orthogonal to `design`,
+   *  which governs mutation routing. */
+  group?: string;
   /** Override the panel's default control kind. Most knobs pick a sensible
    *  default from the Zod shape; this is for cases like
    *  `hint: { control: "glyph-picker" }`. */

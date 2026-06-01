@@ -53,6 +53,19 @@ create table if not exists public.assets (
   created_at bigint not null default (extract(epoch from now()) * 1000)::bigint
 );
 
+-- Self-heal: if an EARLIER version of this migration created `assets`
+-- before the provenance columns existed, `create table if not exists`
+-- above skips the whole table and those columns stay missing — which
+-- makes every select/insert fail ("column origin does not exist"). These
+-- idempotent ALTERs add anything missing so re-running 0014 fixes it.
+alter table public.assets add column if not exists project_id uuid references public.projects (id) on delete set null;
+alter table public.assets add column if not exists origin text not null default 'upload';
+alter table public.assets add column if not exists source_prompt text;
+alter table public.assets add column if not exists alt_text text;
+alter table public.assets add column if not exists enrichment jsonb;
+alter table public.assets add column if not exists width int;
+alter table public.assets add column if not exists height int;
+
 create index if not exists assets_owner_idx
   on public.assets (owner_id, type, created_at desc);
 create index if not exists assets_project_idx
@@ -82,23 +95,22 @@ drop policy if exists "assets_delete" on public.assets;
 create policy "assets_delete" on public.assets for delete to authenticated
   using (owner_id = auth.uid());
 
--- ─── Storage bucket (private) ───────────────────────────────────────
--- 25 MB per-object cap; tune later. `public=false` → all delivery is via
--- signed URLs.
+-- ─── Storage bucket (PUBLIC) ────────────────────────────────────────
+-- 25 MB per-object cap; tune later. `public=true` → objects are served
+-- via permanent, openly-loadable URLs (getPublicUrl), so an asset
+-- referenced in a screen / share keeps working with no signing and no
+-- expiry. Trade-off: anyone with a link can fetch the file — acceptable
+-- for prototype media; revisit (private + signed) if a client ever needs
+-- confidential assets. The `do update` flips an already-created bucket
+-- to public on re-run.
 insert into storage.buckets (id, name, public, file_size_limit)
-values ('user-assets', 'user-assets', false, 26214400)
-on conflict (id) do nothing;
+values ('user-assets', 'user-assets', true, 26214400)
+on conflict (id) do update set public = true;
 
--- Object-level RLS: an object lives under its owner's folder, so the
--- gate is "the first path segment is my uid". Signed URLs (minted by the
--- owner's session, or server-side for shares) bypass this for delivery
--- to other viewers.
+-- Writes (insert/update/delete) stay owner-scoped — only you can put
+-- bytes under your own {uid}/ folder. Reads go through the public URL,
+-- which bypasses RLS, so no SELECT policy is needed.
 drop policy if exists "user-assets read own" on storage.objects;
-create policy "user-assets read own" on storage.objects for select to authenticated
-  using (
-    bucket_id = 'user-assets'
-    and (storage.foldername(name))[1] = auth.uid()::text
-  );
 
 drop policy if exists "user-assets insert own" on storage.objects;
 create policy "user-assets insert own" on storage.objects for insert to authenticated

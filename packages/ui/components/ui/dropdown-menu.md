@@ -7,7 +7,9 @@ props:
   - DropdownMenuTrigger: asChild?: boolean — usually wraps a Button
   - DropdownMenuContent: align? "start" | "center" | "end"; side? "top" | "right" | "bottom" | "left"; sideOffset? number
   - DropdownMenuContent: surface? (solid | translucent | glass | glass-strong) — what the menu surface is *made of*. `solid` (default) is `bg-popover`. `translucent` matches Apple HIG / iOS menu sheets. `glass` for menus floating over rich canvases.
+  - DropdownMenuContent: size? "default" | "sm" | "xs" — menu density; cascades to every item (Item, Checkbox, Radio, SubTrigger, Label) via context so a compact trigger gets a compact menu. Use "xs" in dense tool panels.
   - DropdownMenuSubContent: surface? (solid | translucent | glass | glass-strong) — same axis applied to nested submenu surfaces
+  - DropdownMenuSubContent: size? "default" | "sm" | "xs" — match the parent content's size down the tree
   - DropdownMenuItem: onSelect?, disabled?, asChild?, inset?
   - DropdownMenuCheckboxItem / DropdownMenuRadioItem: checked? / value, onCheckedChange? / onValueChange? (radio is on the group)
   - DropdownMenuSub / DropdownMenuSubTrigger / DropdownMenuSubContent: nested menu — sub-trigger shows children, sub-content holds the deeper items

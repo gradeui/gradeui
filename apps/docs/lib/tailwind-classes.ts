@@ -414,8 +414,9 @@ export function parseRadius(
   RADIUS_RE.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = RADIUS_RE.exec(className)) !== null) {
-    // match[1] is undefined for bare `rounded`; coerce to "".
-    last = ((match[1] ?? "") as RadiusValue) ?? null;
+    // Group 1 is the (^|\s) anchor; group 2 is the radius suffix
+    // (undefined for the bare `rounded` token → coerce to "").
+    last = ((match[2] ?? "") as RadiusValue) ?? null;
   }
   return last;
 }
@@ -431,6 +432,121 @@ export function setRadius(
   if (value === null) return stripped;
   const token = value === "" ? "rounded" : `rounded-${value}`;
   return stripped ? `${stripped} ${token}` : token;
+}
+
+// ─── Per-corner radius ───────────────────────────────────────────────
+//
+// Same family as Border Radius, but corner-aware: `rounded-tl-lg`,
+// `rounded-tr`, … plus the edge shorthands (`rounded-t-*` = top two
+// corners) and the bare all-corners token. Mirrors the per-side padding
+// model: each of { tl, tr, br, bl } is a RadiusValue or null (no token).
+
+export interface CornerValues {
+  tl: RadiusValue | null;
+  tr: RadiusValue | null;
+  br: RadiusValue | null;
+  bl: RadiusValue | null;
+}
+
+const EMPTY_CORNERS: CornerValues = { tl: null, tr: null, br: null, bl: null };
+
+// Corner group ordered longest-first so `tl` wins over `t`.
+const RADIUS_CORNER_SCAN_RE =
+  /(^|\s)rounded(?:-(tl|tr|br|bl|t|r|b|l))?(?:-(none|sm|md|lg|xl|2xl|3xl|full))?(?=\s|$)/g;
+const RADIUS_CORNER_STRIP_RE =
+  /(^|\s)rounded(?:-(?:tl|tr|br|bl|t|r|b|l))?(?:-(?:none|sm|md|lg|xl|2xl|3xl|full))?(?=\s|$)/g;
+
+/** Parse per-corner radius. Edge tokens (`rounded-t-*`) spread across
+ *  the two corners they cover; the bare token covers all four. Later
+ *  tokens win (Tailwind shadows-later). */
+export function parseRadiusCorners(
+  className: string | null | undefined,
+): CornerValues {
+  if (!className) return { ...EMPTY_CORNERS };
+  const out: CornerValues = { ...EMPTY_CORNERS };
+  RADIUS_CORNER_SCAN_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = RADIUS_CORNER_SCAN_RE.exec(className)) !== null) {
+    const corner = m[2];
+    const val = (m[3] ?? "") as RadiusValue;
+    switch (corner) {
+      case undefined:
+        out.tl = out.tr = out.br = out.bl = val;
+        break;
+      case "t":
+        out.tl = val;
+        out.tr = val;
+        break;
+      case "r":
+        out.tr = val;
+        out.br = val;
+        break;
+      case "b":
+        out.br = val;
+        out.bl = val;
+        break;
+      case "l":
+        out.tl = val;
+        out.bl = val;
+        break;
+      case "tl":
+        out.tl = val;
+        break;
+      case "tr":
+        out.tr = val;
+        break;
+      case "br":
+        out.br = val;
+        break;
+      case "bl":
+        out.bl = val;
+        break;
+    }
+  }
+  return out;
+}
+
+/** Write per-corner radius. Strips every rounded token, then emits a
+ *  single all-corners token when uniform, else per-corner tokens. */
+export function setRadiusCorners(
+  className: string | null | undefined,
+  corners: CornerValues,
+): string {
+  const stripped = (className ?? "")
+    .replace(RADIUS_CORNER_STRIP_RE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const { tl, tr, br, bl } = corners;
+  const tok = (corner: string, v: RadiusValue) =>
+    corner
+      ? v === ""
+        ? `rounded-${corner}`
+        : `rounded-${corner}-${v}`
+      : v === ""
+        ? "rounded"
+        : `rounded-${v}`;
+  if (tl === null && tr === null && br === null && bl === null) return stripped;
+  const tokens: string[] = [];
+  if (tl !== null && tl === tr && tr === br && br === bl) {
+    tokens.push(tok("", tl));
+  } else {
+    if (tl !== null) tokens.push(tok("tl", tl));
+    if (tr !== null) tokens.push(tok("tr", tr));
+    if (br !== null) tokens.push(tok("br", br));
+    if (bl !== null) tokens.push(tok("bl", bl));
+  }
+  if (tokens.length === 0) return stripped;
+  return stripped ? `${stripped} ${tokens.join(" ")}` : tokens.join(" ");
+}
+
+export function hasAnyCorner(c: CornerValues): boolean {
+  return c.tl !== null || c.tr !== null || c.br !== null || c.bl !== null;
+}
+
+export function cornersUniform(c: CornerValues): boolean {
+  const { tl, tr, br, bl } = c;
+  if (tl === null || tr === null || br === null || bl === null) return false;
+  return tl === tr && tr === br && br === bl;
 }
 
 // ─── Font size ───────────────────────────────────────────────────────
@@ -579,6 +695,483 @@ export function setOpacity(
     "opacity",
     value,
   );
+}
+
+// ─── Border ──────────────────────────────────────────────────────────
+//
+// A "border" in a vector tool like Figma / Paper carries a *position*
+// (inside / center / outside) that CSS borders don't have — a CSS
+// border is always drawn on the box edge. We model the three positions
+// by mapping each to the closest real Tailwind behaviour:
+//
+//   - center  → a genuine CSS border (`border`, `border-2`, …). Drawn
+//               on the box edge; the honest analogue of "centre".
+//   - outside → a Tailwind ring (`ring-2 …`). Rings are box-shadows
+//               painted OUTSIDE the element, no layout shift.
+//   - inside  → an inset ring (`ring-2 ring-inset …`). Same box-shadow
+//               mechanism, painted INSIDE the edge.
+//
+// Style (solid / dashed / dotted / double) only applies to the `center`
+// position — rings are always solid, so the UI hides the style control
+// for inside / outside. Colour is a theme token suffix shared by both
+// `border-{color}` and `ring-{color}`.
+//
+// Width 0 (or null) means "no border" — the setter strips the whole
+// family and emits nothing.
+
+export const BORDER_WIDTH_SCALE = [0, 1, 2, 4, 8] as const;
+
+export type BorderPosition = "inside" | "center" | "outside";
+export const BORDER_POSITIONS = ["inside", "center", "outside"] as const;
+
+// Which edge(s) the border applies to. `all` = every side; t/r/b/l =
+// a single edge (`border-t`, …). Per-side borders are a CSS-border
+// (centre) concept — rings can't be per-side, so a non-`all` side
+// always serialises as a centre border regardless of position.
+export type BorderSide = "all" | "t" | "r" | "b" | "l";
+export const BORDER_SIDES = ["all", "t", "r", "b", "l"] as const;
+export const BORDER_SIDE_LABELS: Record<BorderSide, string> = {
+  all: "All",
+  t: "Top",
+  r: "Right",
+  b: "Bottom",
+  l: "Left",
+};
+
+export const BORDER_STYLE_SCALE = [
+  "solid",
+  "dashed",
+  "dotted",
+  "double",
+] as const;
+export type BorderStyle = (typeof BORDER_STYLE_SCALE)[number];
+
+// Theme colour suffixes that resolve as both `border-*` and `ring-*`
+// utilities in the Grade Tailwind config. Kept short + semantic so the
+// swatch row stays scannable.
+export const BORDER_COLOR_TOKENS = [
+  "border",
+  "foreground",
+  "primary",
+  "muted-foreground",
+  "destructive",
+  "ring",
+] as const;
+export type BorderColorToken = (typeof BORDER_COLOR_TOKENS)[number];
+
+export interface BorderValue {
+  /** null = no border set. 0 is treated the same (stripped). */
+  width: number | null;
+  /** Which edge(s) the border is on. */
+  side: BorderSide;
+  position: BorderPosition;
+  style: BorderStyle;
+  /** null = no explicit colour token (inherits theme default). */
+  color: BorderColorToken | null;
+}
+
+export const EMPTY_BORDER: BorderValue = {
+  width: null,
+  side: "all",
+  position: "center",
+  style: "solid",
+  color: null,
+};
+
+// Width tokens — side-aware. Group 2 = optional side (t/r/b/l/x/y),
+// group 3 = optional numeric width (0/2/4/8). A bare `border` (no side,
+// no width) is 1px on every edge; `border-t` is 1px top; `border-t-2`
+// is 2px top. The exact numeric alternation keeps `border-primary`
+// (colour) and `border-dashed` (style) out of the width scan.
+const BORDER_WIDTH_RE =
+  /(^|\s)border(?:-(t|r|b|l|x|y))?(?:-(0|2|4|8))?(?=\s|$)/g;
+const BORDER_STYLE_RE = /(^|\s)border-(solid|dashed|dotted|double)(?=\s|$)/g;
+const RING_WIDTH_RE = /(^|\s)ring(?:-(0|1|2|4|8))?(?=\s|$)/g;
+const RING_INSET_RE = /(^|\s)ring-inset(?=\s|$)/;
+// Colour suffixes — side-aware too (`border-t-primary`). Exact
+// alternation so widths/styles never get mistaken for a colour.
+const COLOR_ALT = BORDER_COLOR_TOKENS.join("|");
+const BORDER_COLOR_RE = new RegExp(
+  `(^|\\s)border(?:-(t|r|b|l|x|y))?-(${COLOR_ALT})(?=\\s|$)`,
+  "g",
+);
+const RING_COLOR_RE = new RegExp(`(^|\\s)ring-(${COLOR_ALT})(?=\\s|$)`, "g");
+
+function lastMatch(re: RegExp, s: string, group: number): string | null {
+  re.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  let last: string | null = null;
+  while ((m = re.exec(s)) !== null) last = m[group] ?? "";
+  return last;
+}
+
+// Last CSS-border width token → { side, width }, or null if none.
+// x/y (axis) tokens aren't representable as a single side in this
+// model, so they collapse to `all`.
+function lastBorderWidth(
+  className: string,
+): { side: BorderSide; width: number } | null {
+  BORDER_WIDTH_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  let last: { side: BorderSide; width: number } | null = null;
+  while ((m = BORDER_WIDTH_RE.exec(className)) !== null) {
+    const sideRaw = m[2];
+    const wRaw = m[3];
+    const width = wRaw === undefined ? 1 : Number(wRaw);
+    if (!Number.isFinite(width)) continue;
+    const side: BorderSide =
+      sideRaw === "t" || sideRaw === "r" || sideRaw === "b" || sideRaw === "l"
+        ? sideRaw
+        : "all";
+    last = { side, width };
+  }
+  return last;
+}
+
+/**
+ * Parse the border family out of a className. Ring tokens win the
+ * position read (they're the explicit position-bearing utilities); a
+ * bare/side `border` with no ring resolves to the `center` position.
+ * Returns `EMPTY_BORDER` (width null) when neither family is present.
+ */
+export function parseBorder(
+  className: string | null | undefined,
+): BorderValue {
+  if (!className) return { ...EMPTY_BORDER };
+
+  const hasInset = RING_INSET_RE.test(className);
+  const ringWidthRaw = lastMatch(RING_WIDTH_RE, className, 2);
+  const ringPresent = ringWidthRaw !== null;
+
+  if (ringPresent) {
+    // Bare `ring` = 3px → not on our scale; surface as 2 so the input
+    // shows a sensible value. Our own setter never writes bare ring.
+    const width = ringWidthRaw === "" ? 2 : Number(ringWidthRaw);
+    return {
+      width: Number.isFinite(width) ? width : null,
+      side: "all",
+      position: hasInset ? "inside" : "outside",
+      style: "solid",
+      color: (lastMatch(RING_COLOR_RE, className, 2) as BorderColorToken) ?? null,
+    };
+  }
+
+  const bw = lastBorderWidth(className);
+  if (bw) {
+    const style =
+      (lastMatch(BORDER_STYLE_RE, className, 2) as BorderStyle) ?? "solid";
+    // Colour is at capture group 3 (group 2 is the optional side).
+    return {
+      width: bw.width,
+      side: bw.side,
+      position: "center",
+      style,
+      color: (lastMatch(BORDER_COLOR_RE, className, 3) as BorderColorToken) ?? null,
+    };
+  }
+
+  return { ...EMPTY_BORDER };
+}
+
+function stripBorder(className: string | null | undefined): string {
+  return (className ?? "")
+    .replace(RING_INSET_RE, " ")
+    .replace(RING_COLOR_RE, " ")
+    .replace(RING_WIDTH_RE, " ")
+    .replace(BORDER_COLOR_RE, " ")
+    .replace(BORDER_STYLE_RE, " ")
+    .replace(BORDER_WIDTH_RE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Write the border family to a className. Strips every border/ring
+ * token first, then emits the minimal token set for `value`. Width
+ * null or 0 clears the border entirely. A non-`all` side always
+ * serialises as a CSS border (rings can't be per-edge).
+ */
+export function setBorder(
+  className: string | null | undefined,
+  value: BorderValue,
+): string {
+  const stripped = stripBorder(className);
+  const tokens: string[] = [];
+  const w = value.width;
+  if (w !== null && w > 0) {
+    const perSide = value.side !== "all";
+    const usesRing = value.position !== "center" && !perSide;
+    if (usesRing) {
+      // ring / ring-1 / … (width 1 keeps an explicit ring-1 — bare
+      // `ring` is 3px, which isn't what the user picked).
+      tokens.push(`ring-${w}`);
+      if (value.position === "inside") tokens.push("ring-inset");
+      // Rings need an explicit colour to render predictably (the
+      // default --tw-ring-color is a blue). Fall back to the theme
+      // border token when the user hasn't chosen one.
+      tokens.push(`ring-${value.color ?? "border"}`);
+    } else {
+      // CSS border, optionally on a single edge. `sidePart` is "" for
+      // all-sides, "-t"/"-r"/… for a single edge.
+      const sidePart = perSide ? `-${value.side}` : "";
+      tokens.push(w === 1 ? `border${sidePart}` : `border${sidePart}-${w}`);
+      // border-style is global in Tailwind (no per-edge utility) but
+      // only paints the edges that have a width, so it reads correctly
+      // for per-side borders too.
+      if (value.style !== "solid") tokens.push(`border-${value.style}`);
+      if (value.color) tokens.push(`border${sidePart}-${value.color}`);
+    }
+  }
+  if (tokens.length === 0) return stripped;
+  return stripped ? `${stripped} ${tokens.join(" ")}` : tokens.join(" ");
+}
+
+/** True when a border is actually set (non-zero width). */
+export function hasBorder(value: BorderValue): boolean {
+  return value.width !== null && value.width > 0;
+}
+
+// ─── Border (multi-entry / stack) ────────────────────────────────────
+//
+// Paper/Figma let you stack several borders, each targeting an edge.
+// CSS can't paint two borders on the same edge, but it CAN carry one
+// border per edge — so we model a "stack" as a list of per-edge
+// entries (All / Top / Right / Bottom / Left). Each entry serialises to
+// its per-side tokens (`border-t-2 border-t-primary`). border-style is
+// global in Tailwind (no per-edge utility), so it's a single section-
+// level value, not per entry.
+//
+// Border width here is literal px (Tailwind border widths ARE pixels:
+// `border-2` = 2px), unlike the spacing scale.
+
+export interface BorderEntry {
+  side: BorderSide;
+  /** px (1 / 2 / 4 / 8). */
+  width: number;
+  color: BorderColorToken | null;
+}
+
+const BORDER_SIDE_ORDER: BorderSide[] = ["all", "t", "r", "b", "l"];
+
+function sideOf(raw: string | undefined): BorderSide {
+  return raw === "t" || raw === "r" || raw === "b" || raw === "l"
+    ? raw
+    : "all";
+}
+
+/** Section-level stroke style parsed from the className. */
+export function parseBorderStyle(
+  className: string | null | undefined,
+): BorderStyle {
+  return (
+    (lastMatch(BORDER_STYLE_RE, className ?? "", 2) as BorderStyle) ?? "solid"
+  );
+}
+
+/**
+ * Parse every per-edge CSS border into an ordered list of entries
+ * (All first, then T R B L). Ring tokens are ignored by the stack model
+ * — the stack is CSS-border only. Returns [] when no border is set.
+ */
+export function parseBorderList(
+  className: string | null | undefined,
+): BorderEntry[] {
+  if (!className) return [];
+  const widthBySide = new Map<BorderSide, number>();
+  BORDER_WIDTH_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = BORDER_WIDTH_RE.exec(className)) !== null) {
+    const width = m[3] === undefined ? 1 : Number(m[3]);
+    if (!Number.isFinite(width)) continue;
+    widthBySide.set(sideOf(m[2]), width);
+  }
+  const colorBySide = new Map<BorderSide, BorderColorToken>();
+  BORDER_COLOR_RE.lastIndex = 0;
+  while ((m = BORDER_COLOR_RE.exec(className)) !== null) {
+    colorBySide.set(sideOf(m[2]), m[3] as BorderColorToken);
+  }
+  const entries: BorderEntry[] = [];
+  for (const side of BORDER_SIDE_ORDER) {
+    if (!widthBySide.has(side)) continue;
+    entries.push({
+      side,
+      width: widthBySide.get(side)!,
+      color:
+        colorBySide.get(side) ??
+        (side !== "all" ? colorBySide.get("all") ?? null : null),
+    });
+  }
+  return entries;
+}
+
+/**
+ * Serialise a border stack back into a className. Strips all existing
+ * border/ring tokens, then emits per-entry width + colour and a single
+ * global stroke style (Tailwind has no per-edge style utility).
+ */
+export function serializeBorderList(
+  className: string | null | undefined,
+  entries: BorderEntry[],
+  style: BorderStyle,
+): string {
+  const stripped = stripBorder(className);
+  const tokens: string[] = [];
+  for (const e of entries) {
+    if (!(e.width > 0)) continue;
+    const sidePart = e.side === "all" ? "" : `-${e.side}`;
+    tokens.push(e.width === 1 ? `border${sidePart}` : `border${sidePart}-${e.width}`);
+    if (e.color) tokens.push(`border${sidePart}-${e.color}`);
+  }
+  if (tokens.length > 0 && style !== "solid") tokens.push(`border-${style}`);
+  if (tokens.length === 0) return stripped;
+  return stripped ? `${stripped} ${tokens.join(" ")}` : tokens.join(" ");
+}
+
+// ─── Blending (opacity + mix-blend-mode) ─────────────────────────────
+//
+// `mix-blend-*` utilities map straight to CSS mix-blend-mode. A curated
+// subset of the most-reached-for modes keeps the dropdown scannable;
+// `normal` is the implicit default (no token).
+
+export const BLEND_MODES = [
+  "normal",
+  "multiply",
+  "screen",
+  "overlay",
+  "darken",
+  "lighten",
+  "color-dodge",
+  "color-burn",
+  "difference",
+  "exclusion",
+  "hue",
+  "saturation",
+  "color",
+  "luminosity",
+] as const;
+export type BlendMode = (typeof BLEND_MODES)[number];
+
+const BLEND_RE =
+  /(^|\s)mix-blend-(normal|multiply|screen|overlay|darken|lighten|color-dodge|color-burn|difference|exclusion|hue|saturation|color|luminosity)(?=\s|$)/g;
+
+export function parseBlend(
+  className: string | null | undefined,
+): BlendMode {
+  return (lastMatch(BLEND_RE, className ?? "", 2) as BlendMode) ?? "normal";
+}
+
+export function setBlend(
+  className: string | null | undefined,
+  value: BlendMode,
+): string {
+  const stripped = (className ?? "")
+    .replace(BLEND_RE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (value === "normal") return stripped;
+  const token = `mix-blend-${value}`;
+  return stripped ? `${stripped} ${token}` : token;
+}
+
+// ─── Shadow ──────────────────────────────────────────────────────────
+//
+// Tailwind's elevation scale (`shadow-sm` … `shadow-2xl`, plus
+// `shadow-inner` and the bare `shadow` default). These are entirely
+// THEME-DEFINED — the actual box-shadow values live in the Tailwind
+// `boxShadow` theme (and, in Grade, behind `--gds-*` shadow tokens),
+// so picking "md" here writes a token the theme owns and can restyle
+// globally. No raw px shadow ever lands in the JSX. The empty string
+// maps to the bare `shadow` token (Tailwind's default elevation).
+
+export const SHADOW_SCALE = [
+  "none",
+  "sm",
+  "",
+  "md",
+  "lg",
+  "xl",
+  "2xl",
+  "inner",
+] as const;
+export type ShadowValue = (typeof SHADOW_SCALE)[number];
+
+const SHADOW_RE =
+  /(^|\s)shadow(?:-(none|sm|md|lg|xl|2xl|inner))?(?=\s|$)/g;
+
+export function parseShadow(
+  className: string | null | undefined,
+): ShadowValue | null {
+  if (!className) return null;
+  let last: ShadowValue | null = null;
+  SHADOW_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = SHADOW_RE.exec(className)) !== null) {
+    // Group 1 is the (^|\s) anchor; group 2 is the size suffix
+    // (undefined for the bare `shadow` token → coerce to "").
+    last = ((m[2] ?? "") as ShadowValue) ?? null;
+  }
+  return last;
+}
+
+export function setShadow(
+  className: string | null | undefined,
+  value: ShadowValue | null,
+): string {
+  const stripped = (className ?? "")
+    .replace(/(^|\s)shadow(?:-(?:none|sm|md|lg|xl|2xl|inner))?(?=\s|$)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (value === null) return stripped;
+  const token = value === "" ? "shadow" : `shadow-${value}`;
+  return stripped ? `${stripped} ${token}` : token;
+}
+
+// ─── Fill (background) ───────────────────────────────────────────────
+//
+// Background colour as a THEME token (`bg-card`, `bg-muted`, …) — never
+// a raw hex. The token resolves through the theme's colour scale, so a
+// fill picked here restyles globally when the theme changes. `null`
+// means "no fill token" (the element inherits / stays transparent);
+// `transparent` is an explicit `bg-transparent` override.
+//
+// Surface-bearing DS components (Card, etc.) already carry a fill via
+// their own `surface`/variant prop — this control writes a className
+// `bg-*` that stacks ON TOP of that, so it's an override, not the
+// component's canonical fill.
+
+export const FILL_COLOR_TOKENS = [
+  "background",
+  "card",
+  "muted",
+  "secondary",
+  "accent",
+  "primary",
+  "destructive",
+  "transparent",
+] as const;
+export type FillColorToken = (typeof FILL_COLOR_TOKENS)[number];
+
+const FILL_ALT = FILL_COLOR_TOKENS.join("|");
+const FILL_RE = new RegExp(`(^|\\s)bg-(${FILL_ALT})(?=\\s|$)`, "g");
+
+export function parseFill(
+  className: string | null | undefined,
+): FillColorToken | null {
+  if (!className) return null;
+  return (lastMatch(FILL_RE, className, 2) as FillColorToken) ?? null;
+}
+
+export function setFill(
+  className: string | null | undefined,
+  value: FillColorToken | null,
+): string {
+  const stripped = (className ?? "")
+    .replace(FILL_RE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (value === null) return stripped;
+  const token = `bg-${value}`;
+  return stripped ? `${stripped} ${token}` : token;
 }
 
 // ─── Internal helpers ────────────────────────────────────────────────

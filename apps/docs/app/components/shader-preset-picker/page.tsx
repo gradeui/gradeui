@@ -4,6 +4,7 @@ import * as React from "react";
 import { ShaderPresetPicker } from "@/components/ui/shader-preset-picker";
 import { SidecarBlock } from "@/components/sidecar-block";
 import { ThreeScene } from "@/components/ui/three-scene";
+import { THEME_REACTIVE_PALETTE } from "@/lib/three/theme-palette";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
 
@@ -51,6 +52,7 @@ export default function ShaderPresetPickerPage() {
               postPreset="vhs"
               aspect="wide"
               radius="lg"
+              palette={THEME_REACTIVE_PALETTE}
             />
             <ShaderPresetPicker
               value={preset}

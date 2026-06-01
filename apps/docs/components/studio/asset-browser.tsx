@@ -41,6 +41,25 @@ const TYPE_TABS: { id: AssetType; label: string; icon: typeof ImageIcon; accept:
 ];
 
 /** Read an image file's natural dimensions before upload (best-effort). */
+/** Supabase errors are plain objects ({ message, details, hint, code }),
+ *  not Error instances — String() on them yields "[object Object]". Pull
+ *  out something human-readable. */
+function errMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object") {
+    const o = e as { message?: unknown; details?: unknown; hint?: unknown };
+    const parts = [o.message, o.details, o.hint]
+      .filter((p): p is string => typeof p === "string" && p.length > 0);
+    if (parts.length) return parts.join(" — ");
+    try {
+      return JSON.stringify(e);
+    } catch {
+      return String(e);
+    }
+  }
+  return String(e);
+}
+
 function readImageSize(
   file: File,
 ): Promise<{ width?: number; height?: number }> {
@@ -77,7 +96,7 @@ export function AssetBrowser() {
       // Local mode returns [] rather than throwing; a real error here is
       // worth surfacing (e.g. the 0014 migration hasn't run).
       toast.error("Couldn't load assets", {
-        description: err instanceof Error ? err.message : String(err),
+        description: errMessage(err),
       });
       setAssets([]);
     } finally {
@@ -100,10 +119,23 @@ export function AssetBrowser() {
           await getStudioStorage().uploadAsset({ file, type, width, height });
         }
         await load(type);
+        // Trail entry — the page logs via grade:image-action (it has the
+        // active project + screen context the browser doesn't).
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("grade:image-action", {
+              detail: {
+                action: "asset.upload",
+                name:
+                  arr.length === 1 ? arr[0].name : `${arr.length} files`,
+              },
+            }),
+          );
+        }
         toast.success(arr.length === 1 ? "Uploaded" : `Uploaded ${arr.length}`);
       } catch (err) {
         toast.error("Upload failed", {
-          description: err instanceof Error ? err.message : String(err),
+          description: errMessage(err),
         });
       } finally {
         setUploading(false);
@@ -120,7 +152,7 @@ export function AssetBrowser() {
         await getStudioStorage().deleteAsset(asset.id);
       } catch (err) {
         toast.error("Couldn't delete", {
-          description: err instanceof Error ? err.message : String(err),
+          description: errMessage(err),
         });
         load(type);
       }
@@ -230,11 +262,14 @@ function AssetTile({
   return (
     <div className="group relative aspect-square overflow-hidden rounded-md border border-border bg-muted/40">
       {isImage && asset.url ? (
+        // object-contain (not cover) so the WHOLE asset shows — logos,
+        // wide banners, and tall shots don't get center-cropped in the
+        // library. The muted tile reads as the neutral backing.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={asset.url}
           alt={asset.name}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain p-1"
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1 p-1 text-center">

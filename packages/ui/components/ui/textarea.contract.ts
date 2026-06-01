@@ -9,9 +9,15 @@ import { contract } from "@gradeui/contracts";
 
 export const TextareaContract = contract({
   name: "Textarea",
-  description: "Multi-line text entry (descriptions, messages, comments). Pair with a Label. Single-line input → use Input instead.",
+  description: "Multi-line text entry (descriptions, messages, comments). Pair with a Label. Single-line input → use Input instead. Use size=\"sm\"/\"xs\" in dense tool panels.",
   import: "@gradeui/ui",
   aliases: ["text area","multiline","comment box","message field","text editor","multi-line text","multiline input","multiline text field","comments box","multiline textinput"],
   composesWith: ["Label","Form","Card (in CardContent)"],
-  props: {},
+  props: {
+  "size": {
+      schema: z.enum(["default", "sm", "xs"]).optional(),
+      design: "knob",
+      description: "control density, mirrors Input. default = min-h-80 / text-sm; sm and xs shrink the min-height + padding for dense panels.",
+  },
+  },
 });

@@ -38,18 +38,32 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  Link as LinkIcon,
+  Eye,
+  EyeOff,
   Loader2,
+  Maximize2,
+  Minimize2,
+  Minus,
+  MoveHorizontal,
+  MoveVertical,
   PanelBottom,
   PanelLeft,
   PanelRight,
   PanelRightClose,
   PanelTop,
-  RotateCcw,
+  Plus,
   Settings2,
-  Unlink,
 } from "lucide-react";
-import { getComponentContract, Toggle } from "@gradeui/ui";
+import {
+  getComponentContract,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@gradeui/ui";
+import { Image as ImageIcon } from "lucide-react";
+import { getStudioStorage } from "@/lib/studio-storage";
+import type { Asset } from "@/lib/studio-storage";
 import type {
   ActionContract,
   ComponentContract,
@@ -91,9 +105,7 @@ import {
   FONT_WEIGHT_SCALE,
   GAP_SCALE,
   GRID_COLS_SCALE,
-  MARGIN_SCALE,
   OPACITY_SCALE,
-  PADDING_SCALE,
   RADIUS_SCALE,
   parseFontSize,
   parseFontWeight,
@@ -113,12 +125,47 @@ import {
   setOpacity,
   setPaddingSides,
   setRadius,
+  parseRadiusCorners,
+  setRadiusCorners,
+  hasAnyCorner,
+  cornersUniform,
   hasAnySide,
-  sidesAreUniform,
+  BORDER_WIDTH_SCALE,
+  BORDER_POSITIONS,
+  BORDER_SIDES,
+  BORDER_SIDE_LABELS,
+  BORDER_STYLE_SCALE,
+  BORDER_COLOR_TOKENS,
+  EMPTY_BORDER,
+  parseBorder,
+  setBorder,
+  hasBorder,
+  parseBorderList,
+  serializeBorderList,
+  parseBorderStyle,
+  SHADOW_SCALE,
+  parseShadow,
+  setShadow,
+  BLEND_MODES,
+  parseBlend,
+  setBlend,
+  FILL_COLOR_TOKENS,
+  parseFill,
+  setFill,
+  type FillColorToken,
+  type BorderEntry,
+  type BlendMode,
   type FontSizeValue,
   type FontWeightValue,
   type RadiusValue,
   type SideValues,
+  type CornerValues,
+  type BorderValue,
+  type BorderPosition,
+  type BorderSide,
+  type BorderStyle,
+  type BorderColorToken,
+  type ShadowValue,
 } from "@/lib/tailwind-classes";
 import {
   getSpacingCapabilities,
@@ -172,6 +219,10 @@ export function SelectionInspector({
 }: SelectionInspectorProps) {
   const part = selection?.part;
   const componentName = selection?.componentName;
+  // Image-like slot → offer the "Replace from library" asset picker.
+  // Covers the DS MediaSurface and raw <img>.
+  const isImageSlot =
+    componentName === "MediaSurface" || selection?.tag === "img";
 
   // Contract-first: if the selected component has a typed contract
   // (Zod-based, see @gradeui/contracts), use it as the source of
@@ -324,12 +375,27 @@ export function SelectionInspector({
   );
   const layoutProps = useMemo(
     () =>
-      settableProps.filter((p) => LAYOUT_PROP_NAMES.has(p.name.toLowerCase())),
+      settableProps.filter(
+        (p) =>
+          p.group !== "image" &&
+          LAYOUT_PROP_NAMES.has(p.name.toLowerCase()),
+      ),
     [settableProps, LAYOUT_PROP_NAMES],
+  );
+  // Props the component's contract tagged `group: "image"` — rendered in
+  // the dedicated Image section (with the asset picker + Fill action),
+  // not the generic Properties bucket.
+  const imageProps = useMemo(
+    () => settableProps.filter((p) => p.group === "image"),
+    [settableProps],
   );
   const otherProps = useMemo(
     () =>
-      settableProps.filter((p) => !LAYOUT_PROP_NAMES.has(p.name.toLowerCase())),
+      settableProps.filter(
+        (p) =>
+          p.group !== "image" &&
+          !LAYOUT_PROP_NAMES.has(p.name.toLowerCase()),
+      ),
     [settableProps, LAYOUT_PROP_NAMES],
   );
 
@@ -352,6 +418,21 @@ export function SelectionInspector({
   // and this in-memory id agree.
   const componentPresent = useMemo(() => {
     if (!appSource) return false;
+    // Fast path: the clicked element's id is LITERALLY in the stored
+    // source. After a save the source can carry baked-in
+    // `data-gds-source-id` attrs; re-running injectSourceIds on an
+    // already-stamped source can mint a different sequence, so the
+    // lookups below miss and we'd falsely report "not in source" — which
+    // disables every control (and the asset picker). A direct substring
+    // match on the live-clicked id is the most reliable "it's there"
+    // signal and sidesteps brace-scanner edge cases on complex tags
+    // (e.g. a MediaSurface with a nested `overlay={<Button/>}` prop).
+    if (
+      selection?.sourceId &&
+      appSource.includes(`data-gds-source-id="${selection.sourceId}"`)
+    ) {
+      return true;
+    }
     const ensured = injectSourceIds(appSource);
     // Prefer source-id lookup — robust to compound JSX names like
     // `<Sortable.Group>` where `componentName` (derived from
@@ -463,37 +544,22 @@ export function SelectionInspector({
     if (next !== appSource) onSourceChange(next, literalPreview);
   };
 
-  // ─── Reset ────────────────────────────────────────────────────
-  // Clear every settable prop on the selected component / instance.
-  // The undo snapshot is tagged "Reset properties" so the tooltip
-  // reflects the bulk nature of the action.
-  const handleReset = () => {
+  // Shared className writer for the style sections (Blending, Radius,
+  // Shadow, Typography, Fill, Border). Falls back to selection.tag so
+  // raw intrinsics (<h1>/<p>/<div>) — which carry no data-gds-part and
+  // thus no componentName — still get their className mutated.
+  const applyClassName = (next: string, label = "Set className") => {
     if (!appSource) return;
-    if (!componentName) return;
-    const instanceId = selection?.instanceId;
-    let next = appSource;
-    for (const prop of settableProps) {
-      const design = propDesignByName[prop.name];
-      const wantsPerItem = design === "content" || design === "structured";
-      if (wantsPerItem && instanceId) {
-        const result = updateDataArrayEntry(
-          next,
-          instanceId,
-          prop.name,
-          undefined,
-        );
-        if (result.ok && result.jsx) next = result.jsx;
-        continue;
-      }
-      next = updateComponentProp(
-        next,
-        componentName,
-        prop.name,
-        null,
-        selection?.sourceId
-      );
-    }
-    if (next !== appSource) onSourceChange(next, "Reset properties");
+    const target = componentName ?? selection?.tag;
+    if (!target) return;
+    const updated = updateComponentProp(
+      appSource,
+      target,
+      "className",
+      next,
+      selection?.sourceId,
+    );
+    if (updated !== appSource) onSourceChange(updated, label);
   };
 
   const headerBadge = (
@@ -512,6 +578,7 @@ export function SelectionInspector({
           means "use the default" — the path bar will fall back to
           the component name. */}
       {selection?.sourceId && appSource && (
+        <div className="px-3 py-2.5">
         <LayerNameRow
           source={appSource}
           sourceId={selection.sourceId}
@@ -534,6 +601,55 @@ export function SelectionInspector({
             }
           }}
         />
+        </div>
+      )}
+
+      {/* ============================================================
+          IMAGE group — everything about the image in one place:
+          the asset picker (preview + Change), the contract props the
+          component tagged `group: "image"` (src / alt / hint), and the
+          Fill action. Driven by the contract's `group`, not a hardcoded
+          name list — see the MediaSurface contract.
+          ============================================================ */}
+      {isImageSlot && selection?.sourceId && appSource && (
+        <CollapsibleSection title="Image">
+          <AssetSlotPicker
+            appSource={appSource}
+            selection={selection}
+            disabled={!componentPresent}
+            onSourceChange={onSourceChange}
+          />
+          {imageProps.map((prop) => {
+            const design = propDesignByName[prop.name];
+            const perItem =
+              (design === "content" || design === "structured") &&
+              Boolean(selection?.instanceId);
+            return (
+              <PropControl
+                key={`${prop.name}::${perItem ? selection?.instanceId : `src#${selection?.sourceId ?? "?"}`}`}
+                prop={prop}
+                source={appSource}
+                componentName={componentName ?? ""}
+                instanceId={perItem ? selection?.instanceId : undefined}
+                sourceId={selection?.sourceId}
+                disabled={!componentPresent}
+                onChange={handleChange}
+              />
+            );
+          })}
+          {/* Fill action lives here (not the bottom ActionsRow) since
+              it's an image action — headerless so it reads as part of
+              the Image group, not its own "Actions" section. */}
+          {contract?.actions && Object.keys(contract.actions).length > 0 && (
+            <ActionsRow
+              actions={contract.actions}
+              componentName={contract.name}
+              selection={selection}
+              appSource={appSource}
+              hideHeader
+            />
+          )}
+        </CollapsibleSection>
       )}
 
       {/* ============================================================
@@ -547,8 +663,7 @@ export function SelectionInspector({
           Properties = what it is, Layout = how it sits.
           ============================================================ */}
       {otherProps.length > 0 && (
-        <div className={cn("space-y-2.5", variant === "docked" && "space-y-3")}>
-          <GroupHeader title="Properties" />
+        <CollapsibleSection title="Properties">
           {otherProps.map((prop) => {
             const design = propDesignByName[prop.name];
             const perItem =
@@ -573,7 +688,7 @@ export function SelectionInspector({
               />
             );
           })}
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Text content — sits below Properties. For Button it's the
@@ -601,7 +716,7 @@ export function SelectionInspector({
       )}
 
       {!componentPresent && appSource && (
-        <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[11px] text-amber-700 dark:text-amber-300">
+        <div className="mx-3 my-2.5 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[11px] text-amber-700 dark:text-amber-300">
           <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
           <span>
             <code className="font-mono">&lt;{componentName}&gt;</code> isn&rsquo;t
@@ -612,7 +727,7 @@ export function SelectionInspector({
       )}
 
       {error && (
-        <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive-soft p-2 text-[11px] text-destructive-deep">
+        <div className="mx-3 my-2.5 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive-soft p-2 text-[11px] text-destructive-deep">
           <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
           <span>
             Couldn&rsquo;t load settings: {error}. Use the chat to edit this
@@ -622,7 +737,7 @@ export function SelectionInspector({
       )}
 
       {effectiveManifest && settableProps.length === 0 && !error && !contract?.actions && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="px-3 py-2.5 text-[11px] text-muted-foreground">
           No quick controls for this component. Use the chat to edit it.
         </p>
       )}
@@ -640,77 +755,95 @@ export function SelectionInspector({
           "Layout" rather than nameless rows.
           ============================================================ */}
       {(layoutProps.length > 0 || selection?.sourceId !== undefined) && (
-        <div className={cn("space-y-2.5", variant === "docked" && "space-y-3")}>
-          {layoutProps.length > 0 && (
-            <>
-              <GroupHeader title="Layout" />
-              {layoutProps.map((prop) => {
-                const design = propDesignByName[prop.name];
-                const perItem =
-                  (design === "content" || design === "structured") &&
-                  Boolean(selection?.instanceId);
-                return (
-                  <PropControl
-                    key={`${prop.name}::${perItem ? selection?.instanceId : `src#${selection?.sourceId ?? "?"}`}`}
-                    prop={prop}
-                    source={appSource}
-                    componentName={componentName ?? ""}
-                    instanceId={perItem ? selection?.instanceId : undefined}
-                    sourceId={selection?.sourceId}
-                    disabled={!componentPresent}
-                    onChange={handleChange}
-                  />
-                );
-              })}
-            </>
-          )}
-          {selection?.sourceId !== undefined && (
-            <LayoutGroup
-              source={appSource}
-              componentName={componentName ?? selection.tag}
-              // Pass the raw tag alongside componentName so the
-              // capability resolver inside LayoutGroup can see BOTH
-              // the DS name (when present) and the underlying
-              // intrinsic — needed for cases like `<Button>` which
-              // renders a `<button>` tag, or `<h1>` which has no
-              // componentName at all.
-              tag={selection.tag}
-              sourceId={selection?.sourceId}
-              disabled={false}
-              // Names of structured props the component's contract
-              // already exposes. The Layout group hides the Tailwind
-              // family for any name it sees here — so Row's `gap`
-              // prop remains the canonical control.
-              manifestPropNames={
-                new Set(settableProps.map((p) => p.name.toLowerCase()))
-              }
-              onChangeClassName={(next) => {
-                if (appSource == null || !componentName) return;
-                const updated = updateComponentProp(
-                  appSource,
-                  componentName,
-                  "className",
-                  next,
-                  selection?.sourceId
-                );
-                if (updated !== appSource) {
-                  onSourceChange(updated, `Set className`);
-                }
-              }}
-            />
-          )}
-        </div>
+        <LayoutGroup
+          source={appSource}
+          componentName={componentName ?? selection.tag}
+          // Pass the raw tag alongside componentName so the capability
+          // resolver inside LayoutGroup can see BOTH the DS name (when
+          // present) and the underlying intrinsic — needed for cases
+          // like `<Button>` (renders a `<button>`) or `<h1>` (no
+          // componentName at all).
+          tag={selection.tag}
+          sourceId={selection?.sourceId}
+          disabled={false}
+          // Names of structured props the component's contract already
+          // exposes. LayoutGroup hides the Tailwind family for any name
+          // it sees here — so e.g. Row's `gap` prop stays canonical.
+          manifestPropNames={
+            new Set(settableProps.map((p) => p.name.toLowerCase()))
+          }
+          // Contract layout props (gap/align/justify) render at the top
+          // of the Layout section, above the Tailwind padding/margin
+          // rows — one section, one header.
+          leadingRows={layoutProps.map((prop) => {
+            const design = propDesignByName[prop.name];
+            const perItem =
+              (design === "content" || design === "structured") &&
+              Boolean(selection?.instanceId);
+            return (
+              <PropControl
+                key={`${prop.name}::${perItem ? selection?.instanceId : `src#${selection?.sourceId ?? "?"}`}`}
+                prop={prop}
+                source={appSource}
+                componentName={componentName ?? ""}
+                instanceId={perItem ? selection?.instanceId : undefined}
+                sourceId={selection?.sourceId}
+                disabled={!componentPresent}
+                onChange={handleChange}
+              />
+            );
+          })}
+          onChangeClassName={(next) => {
+            if (appSource == null || !componentName) return;
+            const updated = updateComponentProp(
+              appSource,
+              componentName,
+              "className",
+              next,
+              selection?.sourceId
+            );
+            if (updated !== appSource) {
+              onSourceChange(updated, `Set className`);
+            }
+          }}
+        />
       )}
 
       {/* ============================================================
-          APPEARANCE group — visual-feel knobs that aren't fill/
-          stroke/effects. Currently Opacity + Border Radius. Self-
-          hides for elements where neither applies (e.g. AppShell
-          chrome). Fill / Stroke / Effects each get their own group
-          when they land.
+          Style sections — each its own collapsible/addable section
+          (Figma/Paper order). Typography (text only) → Blending
+          (opacity + blend mode) → Radius → Fill → Border → Shadow.
+          Every one self-hides when it doesn't apply to the element.
+          ============================================================ */}
+      {selection?.sourceId !== undefined &&
+        (() => {
+          const styleProps: StyleGroupProps = {
+            source: appSource,
+            componentName: componentName ?? selection.tag,
+            tag: selection.tag,
+            sourceId: selection?.sourceId,
+            disabled: !componentPresent,
+            manifestPropNames: new Set(
+              settableProps.map((p) => p.name.toLowerCase()),
+            ),
+            onChangeClassName: applyClassName,
+          };
+          return (
+            <>
+              <TypographyGroup {...styleProps} />
+              <BlendingGroup {...styleProps} />
+              <RadiusGroup {...styleProps} />
+            </>
+          );
+        })()}
+
+      {/* ============================================================
+          FILL group — background colour token. Sits above Border
+          (Paper order: Fill → Border). Self-hides for text + app-shell
+          and for components whose contract owns the surface/fill.
           ============================================================ */}
       {selection?.sourceId !== undefined && (
-        <AppearanceGroup
+        <FillGroup
           source={appSource}
           componentName={componentName ?? selection.tag}
           tag={selection.tag}
@@ -720,13 +853,6 @@ export function SelectionInspector({
             new Set(settableProps.map((p) => p.name.toLowerCase()))
           }
           onChangeClassName={(next) => {
-            // CRITICAL: fall back to selection.tag — not just
-            // componentName — so writes work for raw intrinsics
-            // like <h1>/<p>/<span> that carry no data-gds-part
-            // (componentName is undefined for them). Without this
-            // fallback the write silently no-ops and the picked
-            // opacity / radius never lands. updateComponentProp
-            // accepts lowercase tag names (see task #76).
             if (!appSource) return;
             const target = componentName ?? selection?.tag;
             if (!target) return;
@@ -738,9 +864,58 @@ export function SelectionInspector({
               selection?.sourceId,
             );
             if (updated !== appSource) {
-              onSourceChange(updated, `Set className`);
+              onSourceChange(updated, `Set fill`);
             }
           }}
+        />
+      )}
+
+      {/* ============================================================
+          BORDER group — width / position (inside·centre·outside) /
+          style / colour, all theme-token driven. Sits below
+          Appearance, above the className override. Self-hides for
+          text + app-shell via caps.border.
+          ============================================================ */}
+      {selection?.sourceId !== undefined && (
+        <BorderGroup
+          source={appSource}
+          componentName={componentName ?? selection.tag}
+          tag={selection.tag}
+          sourceId={selection?.sourceId}
+          disabled={!componentPresent}
+          manifestPropNames={
+            new Set(settableProps.map((p) => p.name.toLowerCase()))
+          }
+          onChangeClassName={(next) => {
+            if (!appSource) return;
+            const target = componentName ?? selection?.tag;
+            if (!target) return;
+            const updated = updateComponentProp(
+              appSource,
+              target,
+              "className",
+              next,
+              selection?.sourceId,
+            );
+            if (updated !== appSource) {
+              onSourceChange(updated, `Set border`);
+            }
+          }}
+        />
+      )}
+
+      {/* SHADOW — theme elevation, addable section (below Border). */}
+      {selection?.sourceId !== undefined && (
+        <ShadowGroup
+          source={appSource}
+          componentName={componentName ?? selection.tag}
+          tag={selection.tag}
+          sourceId={selection?.sourceId}
+          disabled={!componentPresent}
+          manifestPropNames={
+            new Set(settableProps.map((p) => p.name.toLowerCase()))
+          }
+          onChangeClassName={(next) => applyClassName(next, "Set shadow")}
         />
       )}
 
@@ -771,32 +946,28 @@ export function SelectionInspector({
         />
       )}
 
-      {settableProps.length > 0 && componentPresent && (
-        <button
-          type="button"
-          onClick={handleReset}
-          className={cn(
-            "flex items-center gap-1 self-start rounded-md border border-border bg-background px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors",
-          )}
-          title="Remove all panel-controllable attributes from the component"
-        >
-          <RotateCcw className="h-3 w-3" />
-          Reset to defaults
-        </button>
-      )}
+      {/* "Reset to defaults" removed — stripping every panel-controllable
+          attribute at once is a blunt, surprising action for end users
+          (it wipes intentional edits + can leave a component looking
+          broken). Per-control clearing + undo cover the real need. */}
 
       {/* Contract-declared actions. Imperative things the user can DO with
           this component, distinct from prop edits. MediaSurface exposes
           "Fill image" + "Refresh" — the canvas listens for the dispatched
           `grade:component-action` event and runs the appropriate handler
-          (resolve via the free providers, cache-bust + re-resolve, etc.). */}
-      {contract?.actions && Object.keys(contract.actions).length > 0 && (
-        <ActionsRow
-          actions={contract.actions}
-          componentName={contract.name}
-          selection={selection}
-          appSource={appSource}
-        />
+          (resolve via the free providers, cache-bust + re-resolve, etc.).
+          Skipped for image slots — their actions render inside the Image
+          group above, not down here. */}
+      {!isImageSlot && contract?.actions && Object.keys(contract.actions).length > 0 && (
+        <CollapsibleSection title="Actions">
+          <ActionsRow
+            actions={contract.actions}
+            componentName={contract.name}
+            selection={selection}
+            appSource={appSource}
+            hideHeader
+          />
+        </CollapsibleSection>
       )}
     </>
   );
@@ -805,9 +976,16 @@ export function SelectionInspector({
     return (
       <div
         className={cn(
-          "flex h-full flex-col gap-3 rounded-lg border border-border bg-card p-3 overflow-y-auto",
+          // No horizontal padding on the shell — each section owns its
+          // own px-3, so the section dividers run edge-to-edge across
+          // the whole surface (Figma/Paper style).
+          "flex h-full flex-col rounded-lg border border-border bg-card overflow-y-auto",
           className
         )}
+        // The docs site runs Lenis smooth-scroll, which hijacks wheel
+        // events unless a scroll container opts out. Without this the
+        // inspector can't scroll vertically and long panels get clipped.
+        data-lenis-prevent
         data-gds-part="selection-inspector"
       >
         {/* Header — title + status badge only. The Settings2 icon
@@ -816,7 +994,7 @@ export function SelectionInspector({
             and the in-panel icon was just visual noise. The
             verbose `when_to_use` paragraph below was removed too —
             see comment below. */}
-        <header className="flex items-center gap-2 text-sm border-b border-border pb-2">
+        <header className="flex items-center gap-2 px-3 py-2.5 text-sm border-b border-border">
           <span className="font-semibold">Component settings</span>
           {headerBadge}
           {loadingPart === part && (
@@ -849,12 +1027,15 @@ export function SelectionInspector({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-lg border border-border bg-card/60 p-2.5",
+        // No horizontal padding — sections own px-3 so dividers run
+        // full-width. overflow-hidden clips section rules to the
+        // rounded corners.
+        "flex flex-col rounded-lg border border-border bg-card/60 overflow-hidden",
         className
       )}
       data-gds-part="selection-inspector"
     >
-      <header className="flex items-center gap-2 text-xs">
+      <header className="flex items-center gap-2 px-3 py-2.5 text-xs">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -890,7 +1071,9 @@ export function SelectionInspector({
         )}
       </header>
 
-      {open && <div className="flex flex-col gap-2.5 pt-1">{body}</div>}
+      {open && (
+        <div className="flex flex-col border-t border-border">{body}</div>
+      )}
     </div>
   );
 }
@@ -905,6 +1088,252 @@ export function SelectionInspector({
  * source only on `onChange` via requestAnimationFrame-debounced commits.
  * This keeps typing snappy without throwing away intermediate keystrokes.
  */
+
+/**
+ * AssetSlotPicker — the "Image" section for an image slot. Shows a small
+ * preview of the CURRENT image + a "Change" button; the full library
+ * lives in a dedicated dialog (opened on demand) rather than an
+ * always-on grid, so the inspector stays compact. On pick, writes the
+ * asset's permanent public URL into `src` — per-item when the slot is in
+ * a `.map()` (instanceId present) so only that row changes; template-wide
+ * otherwise. Durable across reload + share (public URL never expires).
+ */
+/** Tailwind aspect class that mirrors how a MediaSurface frames its
+ *  image — explicit `aspect` prop wins, else derived from `hint` the same
+ *  way the component does. Lets the preview show the real crop the canvas
+ *  will apply (cover at this aspect), not a generic 16:9. */
+function slotAspectClass(aspect?: string, hint?: string): string {
+  const eff =
+    aspect && aspect !== "auto"
+      ? aspect
+      : hint === "album" || hint === "product" || hint === "food"
+        ? "square"
+        : hint === "portrait" || hint === "poster"
+          ? "portrait"
+          : hint === "landscape"
+            ? "wide"
+            : "video";
+  switch (eff) {
+    case "square":
+      return "aspect-square";
+    case "portrait":
+      return "aspect-[3/4]";
+    case "wide":
+      return "aspect-[21/9]";
+    default:
+      return "aspect-video";
+  }
+}
+
+function AssetSlotPicker({
+  appSource,
+  selection,
+  disabled,
+  onSourceChange,
+}: {
+  appSource: string;
+  selection: StudioSelection;
+  disabled?: boolean;
+  onSourceChange: (next: string, label?: string) => void;
+}) {
+  // Mirror the slot's framing in the preview so it crops the way the
+  // canvas will (cover at this aspect).
+  const previewAspect = useMemo(() => {
+    const target = selection.componentName ?? selection.tag;
+    const a = readComponentProp(appSource, target, "aspect", selection.sourceId);
+    const h = readComponentProp(appSource, target, "hint", selection.sourceId);
+    return slotAspectClass(
+      a?.kind === "string" ? a.value : undefined,
+      h?.kind === "string" ? h.value : undefined,
+    );
+  }, [appSource, selection.componentName, selection.tag, selection.sourceId]);
+  const [open, setOpen] = useState(false);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // The current literal `src` — drives the preview thumbnail. Per-item
+  // when looped, else the tag's prop.
+  const currentSrc = useMemo<string | undefined>(() => {
+    try {
+      // Per-item first — readDataArrayEntryField returns a tagged value
+      // ({ kind: "string", value }), NOT a raw string.
+      if (selection.instanceId) {
+        const v = readDataArrayEntryField(
+          appSource,
+          selection.instanceId,
+          "src",
+        );
+        if (v?.kind === "string" && v.value) return v.value;
+      }
+      const read = readComponentProp(
+        appSource,
+        selection.componentName ?? selection.tag,
+        "src",
+        selection.sourceId,
+      );
+      return read?.kind === "string" && read.value ? read.value : undefined;
+    } catch {
+      return undefined;
+    }
+  }, [
+    appSource,
+    selection.instanceId,
+    selection.componentName,
+    selection.tag,
+    selection.sourceId,
+  ]);
+
+  // Lazy-load the library only when the dialog opens.
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    setLoading(true);
+    getStudioStorage()
+      .listAssets({ type: "media" })
+      .then((a) => live && setAssets(a))
+      .catch(() => live && setAssets([]))
+      .finally(() => live && setLoading(false));
+    return () => {
+      live = false;
+    };
+  }, [open]);
+
+  const writeSrc = (value: string | null, label: string) => {
+    if (disabled) return;
+    // Looped slot → write ONLY that item's data-array `src` (never a
+    // template-wide attribute, which would clobber every instance).
+    if (selection.instanceId) {
+      const result = updateDataArrayEntry(
+        appSource,
+        selection.instanceId,
+        "src",
+        value ?? undefined,
+      );
+      if (result.ok && result.jsx && result.jsx !== appSource) {
+        onSourceChange(result.jsx, label);
+      }
+      return;
+    }
+    const next = updateComponentProp(
+      appSource,
+      selection.componentName ?? selection.tag,
+      "src",
+      value,
+      selection.sourceId,
+    );
+    if (next !== appSource) onSourceChange(next, label);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      {/* Large, full-width preview — click it (or "Change image") to open
+          the picker. Reads as a proper image well, not a tiny chip. */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        disabled={disabled}
+        title="Change image"
+        className={cn(
+          "group/img flex w-full items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40 transition hover:border-primary disabled:opacity-50",
+          previewAspect,
+        )}
+      >
+        {currentSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={currentSrc}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="flex flex-col items-center gap-1 text-muted-foreground/60">
+            <ImageIcon className="h-5 w-5" />
+            <span className="text-[11px]">No image</span>
+          </span>
+        )}
+      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          disabled={disabled}
+          className="rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground transition hover:bg-muted disabled:opacity-50"
+        >
+          Change image
+        </button>
+        {currentSrc && (
+          <button
+            type="button"
+            onClick={() => writeSrc(null, "Clear image")}
+            disabled={disabled}
+            className="text-[11px] text-muted-foreground transition hover:text-foreground"
+          >
+            Remove
+          </button>
+        )}
+      </div>
+
+      {/* Dedicated picker — opens on demand so the inspector stays compact. */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Choose an image</DialogTitle>
+          </DialogHeader>
+          {loading ? (
+            <div className="flex items-center justify-center py-10 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : assets.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No media in your library yet. Upload images in the Assets panel
+              (left), then pick one here.
+            </p>
+          ) : (
+            <div className="grid max-h-[60vh] grid-cols-4 gap-2 overflow-y-auto p-0.5">
+              {assets.map((a) => {
+                const selected = a.url === currentSrc;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => {
+                      if (a.url) {
+                        writeSrc(a.url, `Set image to ${a.name}`);
+                        // Trail entry — page logs via grade:image-action.
+                        if (typeof window !== "undefined") {
+                          window.dispatchEvent(
+                            new CustomEvent("grade:image-action", {
+                              detail: { action: "image.set", name: a.name },
+                            }),
+                          );
+                        }
+                      }
+                      setOpen(false);
+                    }}
+                    title={a.name}
+                    className={cn(
+                      "aspect-square overflow-hidden rounded-md border bg-muted/40 transition hover:border-primary",
+                      selected ? "border-primary ring-2 ring-primary/30" : "border-border",
+                    )}
+                  >
+                    {/* contain (not cover) — show the whole asset in the
+                        picker, matching the library grid. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={a.url}
+                      alt={a.name}
+                      className="h-full w-full object-contain p-1"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
 /**
  * Layer Name field — user-supplied label for the selected node.
@@ -946,13 +1375,13 @@ function LayerNameRow({
 
   return (
     <div className="space-y-1">
-      <Label htmlFor="layer-name" className="text-xs font-medium">
+      <Label htmlFor="layer-name" className={FIELD_LABEL}>
         Layer name
       </Label>
       <Input
         id="layer-name"
         ref={inputRef}
-        size="sm"
+        size="xs"
         value={liveValue}
         placeholder={componentName}
         onChange={(e) => setDraft(e.currentTarget.value)}
@@ -1245,14 +1674,14 @@ function TextEditRow({
   const liveValue = draft ?? currentText;
 
   return (
-    <div className="space-y-1">
-      <Label htmlFor="text-content" className="text-xs font-medium">
+    <div className="space-y-1 px-3 py-2.5 border-t border-border/60">
+      <Label htmlFor="text-content" className={FIELD_LABEL}>
         Text
       </Label>
       <Input
         id="text-content"
         ref={inputRef}
-        size="sm"
+        size="xs"
         value={liveValue}
         onChange={(e) => {
           const next = e.currentTarget.value;
@@ -1308,29 +1737,141 @@ function TextEditRow({
  * `lib/tailwind-classes.ts` and a select row here.
  */
 /**
- * Section header — uppercase muted-tone label with optional right-
- * aligned hint. Used by every group (Properties, Layout, Appearance)
- * so the inspector reads as a coherent stack of labelled sections
- * rather than a soup of controls. The top border + padding give the
- * visual separator between groups.
+ * CollapsibleSection — a full-width, collapsible inspector section
+ * (Figma / Paper style). Two-tier hierarchy:
+ *
+ *   - the SECTION HEADER is the prominent tier — larger (text-sm),
+ *     foreground, with a disclosure chevron.
+ *   - field labels INSIDE a section sit a tier below — small + muted
+ *     (see FIELD_LABEL).
+ *
+ * The top border runs edge-to-edge: the surrounding shell carries no
+ * horizontal padding, and each section owns its own `px-3`, so the
+ * divider spans the whole surface rather than stopping at a gutter.
+ * `first:border-t-0` drops the leading rule (the panel header already
+ * provides one).
  */
-function GroupHeader({
+function CollapsibleSection({
   title,
   hint,
+  defaultOpen = true,
+  children,
 }: {
   title: string;
   hint?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="border-t border-border/60 first:border-t-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className={cn(
+          "flex w-full items-center gap-1.5 px-3 pt-2.5 text-left",
+          // Tighter gap to the values when open; balanced when collapsed.
+          open ? "pb-1.5" : "pb-2.5",
+        )}
+      >
+        <ChevronDown
+          aria-hidden
+          className={cn(
+            "h-3 w-3 shrink-0 text-muted-foreground transition-transform",
+            !open && "-rotate-90",
+          )}
+        />
+        <span className="text-[13px] font-medium text-foreground">{title}</span>
+        {hint ? <span className="ml-auto pl-2">{hint}</span> : null}
+      </button>
+      {open && <div className="space-y-2 px-3 pb-3">{children}</div>}
+    </section>
+  );
+}
+
+/**
+ * AddableSection — a full-width section for the "additive" style
+ * families (Fill, Border, …) that mirror Figma/Paper's pattern: the
+ * title is MUTED when the section is empty, and a ＋ on the right adds
+ * an entry. Once populated the title goes foreground and the body (the
+ * entry rows) shows. `headerExtra` slots a control (e.g. stroke style)
+ * left of the ＋. Same edge-to-edge divider as CollapsibleSection.
+ */
+function AddableSection({
+  title,
+  empty,
+  onAdd,
+  addLabel,
+  headerExtra,
+  children,
+}: {
+  title: string;
+  empty: boolean;
+  onAdd: () => void;
+  addLabel?: string;
+  headerExtra?: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
-    // Sentence case — no uppercase, no wide tracking. Titles read
-    // as labels ("Layout", "Appearance"), not shouted section
-    // headings. House style across Studio.
-    <div className="flex items-baseline justify-between gap-2 pt-2 border-t border-border/60">
-      <h4 className="text-[11px] font-medium text-muted-foreground">
-        {title}
-      </h4>
-      {hint}
-    </div>
+    <section className="border-t border-border/60 first:border-t-0">
+      <div
+        className={cn(
+          "flex items-center gap-1.5 px-3 pt-2.5",
+          !empty && children ? "pb-1.5" : "pb-2.5",
+        )}
+      >
+        <span
+          className={cn(
+            "text-[13px] font-medium",
+            empty ? "text-muted-foreground" : "text-foreground",
+          )}
+        >
+          {title}
+        </span>
+        <div className="ml-auto flex items-center gap-0.5">
+          {headerExtra}
+          <button
+            type="button"
+            onClick={onAdd}
+            aria-label={addLabel ?? `Add ${title.toLowerCase()}`}
+            title={addLabel ?? `Add ${title.toLowerCase()}`}
+            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
+          >
+            <Plus />
+          </button>
+        </div>
+      </div>
+      {!empty && children ? (
+        <div className="space-y-2 px-3 pb-3">{children}</div>
+      ) : null}
+    </section>
+  );
+}
+
+/** Small square icon button used inside entry rows (eye / remove). */
+function EntryIconButton({
+  onClick,
+  label,
+  disabled,
+  children,
+}: {
+  onClick: () => void;
+  label: string;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="inline-flex h-7 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 [&_svg]:size-3.5"
+    >
+      {children}
+    </button>
   );
 }
 
@@ -1354,6 +1895,7 @@ function LayoutGroup({
   disabled,
   manifestPropNames,
   onChangeClassName,
+  leadingRows,
 }: {
   source: string | null;
   componentName: string;
@@ -1372,6 +1914,11 @@ function LayoutGroup({
   /** Receives the new className string; the parent splices it into
    *  the JSX via `updateComponentProp(..., "className", next, sourceId)`. */
   onChangeClassName: (nextClassName: string) => void;
+  /** Contract layout props (gap / align / justify …) rendered by the
+   *  parent. They sit at the TOP of the Layout section, above the
+   *  Tailwind padding/margin rows. Passed in (rather than the parent
+   *  rendering its own header) so Layout stays a single section. */
+  leadingRows?: React.ReactNode;
 }) {
   // What spacing controls actually make sense for this element type.
   // Text intrinsics get margin only; layout primitives drop grid-cols;
@@ -1423,35 +1970,33 @@ function LayoutGroup({
     gap !== null ||
     gridCols !== null;
 
-  // Self-hide when no row applies (e.g. media leaves whose only
-  // applicable Layout capability is `margin`-but-contract-owned).
+  // Self-hide when nothing applies — neither contract leading rows
+  // (gap/align/justify from the parent) nor any Tailwind row.
   const anyRowVisible =
     showPadding || showMargin || showGap || showGridCols;
-  if (!anyRowVisible) return null;
+  const hasLeading = React.Children.count(leadingRows) > 0;
+  if (!anyRowVisible && !hasLeading) return null;
 
   return (
-    // Same tightened spacing as AppearanceGroup — see comment there.
-    <div className="space-y-2">
-      <GroupHeader
-        title="Layout"
-        hint={
-          anyOverride ? (
-            <span
-              className="text-[11px] text-warning-deep leading-none"
-              title="Structured values below override the component's theme defaults. Resetting them all to None restores theme behavior."
-            >
-              Overrides theme defaults
-            </span>
-          ) : null
-        }
-      />
+    <CollapsibleSection
+      title="Layout"
+      hint={
+        anyOverride ? (
+          <span
+            className="text-[11px] text-warning-deep leading-none"
+            title="Structured values below override the component's theme defaults. Resetting them all to None restores theme behavior."
+          >
+            Overrides theme defaults
+          </span>
+        ) : null
+      }
+    >
+      {leadingRows}
 
       {showPadding && (
         <PerSideRow
           id="spacing-padding"
           label="Padding"
-          tokenPrefix="p"
-          scale={PADDING_SCALE}
           value={paddingSides}
           disabled={disabled}
           onValueChange={(next) =>
@@ -1463,8 +2008,6 @@ function LayoutGroup({
         <PerSideRow
           id="spacing-margin"
           label="Margin"
-          tokenPrefix="m"
-          scale={MARGIN_SCALE}
           value={marginSides}
           disabled={disabled}
           onValueChange={(next) =>
@@ -1480,6 +2023,7 @@ function LayoutGroup({
           scale={GAP_SCALE}
           value={gap}
           disabled={disabled}
+          unit={(n) => `${n * 4}px`}
           onValueChange={(v) => onChangeClassName(setGap(currentClassName, v))}
         />
       )}
@@ -1496,28 +2040,12 @@ function LayoutGroup({
           }
         />
       )}
-    </div>
+    </CollapsibleSection>
   );
 }
 
-/**
- * AppearanceGroup — visual-feel knobs that aren't fill/stroke/effects.
- * v1 holds Border Radius (moved out of the old SpacingGroup) and
- * Opacity. Fill / Stroke / Effects each get their own group when they
- * land — same shape as this one.
- *
- * Self-hides when nothing applies — text intrinsics that get neither
- * radius nor opacity won't render the section header at all.
- */
-function AppearanceGroup({
-  source,
-  componentName,
-  tag,
-  sourceId,
-  disabled,
-  manifestPropNames,
-  onChangeClassName,
-}: {
+// Shared prop shape for the className-driven style sections.
+interface StyleGroupProps {
   source: string | null;
   componentName: string;
   tag?: string;
@@ -1525,97 +2053,69 @@ function AppearanceGroup({
   disabled?: boolean;
   manifestPropNames?: Set<string>;
   onChangeClassName: (nextClassName: string) => void;
-}) {
+}
+
+/** Read the live className off the selected node. */
+function readClassName(
+  source: string | null,
+  componentName: string,
+  sourceId?: string,
+): string | null {
+  if (!source) return null;
+  const read = readComponentProp(source, componentName, "className", sourceId);
+  return read?.kind === "string" ? read.value : null;
+}
+
+const ownsAny = (names: Set<string> | undefined, aliases: string[]) =>
+  aliases.some((a) => names?.has(a) ?? false);
+
+/**
+ * TypographyGroup — font size + weight. Text intrinsics only (the
+ * capability layer keeps these off containers).
+ */
+function TypographyGroup({
+  source,
+  componentName,
+  tag,
+  sourceId,
+  disabled,
+  manifestPropNames,
+  onChangeClassName,
+}: StyleGroupProps) {
   const caps = getSpacingCapabilities({ tag, componentName });
-  const owns = (aliases: string[]) =>
-    aliases.some((a) => manifestPropNames?.has(a) ?? false);
-  const contractOwnsRadius = owns(["rounded", "radius"]);
-  const contractOwnsOpacity = owns(["opacity"]);
-  const contractOwnsFontWeight = owns(["weight", "fontweight", "font-weight"]);
-  const contractOwnsFontSize = owns(["size", "fontsize", "font-size"]);
-  const showRadius = caps.radius && !contractOwnsRadius;
-  const showOpacity = caps.opacity && !contractOwnsOpacity;
-  const showFontWeight = caps.fontWeight && !contractOwnsFontWeight;
-  const showFontSize = caps.fontSize && !contractOwnsFontSize;
+  const showFontSize =
+    caps.fontSize && !ownsAny(manifestPropNames, ["size", "fontsize", "font-size"]);
+  const showFontWeight =
+    caps.fontWeight &&
+    !ownsAny(manifestPropNames, ["weight", "fontweight", "font-weight"]);
+  if (!showFontSize && !showFontWeight) return null;
 
-  const currentClassName: string | null = (() => {
-    if (!source) return null;
-    const read = readComponentProp(source, componentName, "className", sourceId);
-    return read?.kind === "string" ? read.value : null;
-  })();
-  const radius = parseRadius(currentClassName);
-  const opacity = parseOpacity(currentClassName);
-  const fontWeight = parseFontWeight(currentClassName);
-  const fontSize = parseFontSize(currentClassName);
-
-  const anyOverride =
-    radius !== null ||
-    opacity !== null ||
-    fontWeight !== null ||
-    fontSize !== null;
-  const anyRowVisible =
-    showRadius || showOpacity || showFontWeight || showFontSize;
-  if (!anyRowVisible) return null;
+  const cn0 = readClassName(source, componentName, sourceId);
+  const fontSize = parseFontSize(cn0);
+  const fontWeight = parseFontWeight(cn0);
 
   return (
-    // Tighter row stack than the default 3-unit gap. The Appearance
-    // rows are small selects with their own internal label/control
-    // spacing — at space-y-3 they read as four loose pages instead of
-    // one coherent panel. space-y-2 brings them inside a single
-    // perceptual block.
-    <div className="space-y-2">
-      <GroupHeader
-        title="Appearance"
-        hint={
-          anyOverride ? (
-            <span
-              className="text-[11px] text-warning-deep leading-none"
-              title="Structured values below override the component's theme defaults."
-            >
-              Overrides theme defaults
-            </span>
-          ) : null
-        }
-      />
-
-      {/* Reading order inside Appearance: typography (size → weight)
-          → whole-element knob (opacity) → corner treatment (radius).
-          When the Typography group lands (leading, tracking, etc.)
-          font-size + font-weight migrate there — the row bodies are
-          simple Select rows that'll move with no changes. */}
+    <CollapsibleSection title="Typography">
       {showFontSize && (
         <div className="space-y-1">
-          <Label htmlFor="appearance-font-size" className="text-xs font-medium">
+          <Label htmlFor="type-font-size" className={FIELD_LABEL}>
             Font size
           </Label>
           <Select
             value={fontSize ?? "inherit"}
-            onValueChange={(next) => {
-              // "inherit" sentinel maps to null (strip family) —
-              // matches the font-weight pattern. With no token set
-              // the element inherits its size from parent / heading
-              // semantics, which is exactly what designers expect
-              // for h1-h6 by default.
-              const v: FontSizeValue | null =
-                next === "inherit" ? null : (next as FontSizeValue);
-              onChangeClassName(setFontSize(currentClassName, v));
-            }}
+            onValueChange={(next) =>
+              onChangeClassName(
+                setFontSize(cn0, next === "inherit" ? null : (next as FontSizeValue)),
+              )
+            }
             disabled={disabled}
           >
-            <SelectTrigger
-              id="appearance-font-size"
-              size="sm"
-              className="w-full"
-            >
+            <SelectTrigger id="type-font-size" size="xs" className="w-full">
               <SelectValue placeholder="Inherit" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent size="xs">
               <SelectItem value="inherit">Inherit</SelectItem>
               {FONT_SIZE_SCALE.map((s) => (
-                // Plain label only. Rendering each option at its
-                // actual rendered size makes the dropdown look
-                // chaotic (5xl item dwarfs xs item) — dropdowns
-                // shouldn't convey style, just the value name.
                 <SelectItem key={s} value={s}>
                   text-{s}
                 </SelectItem>
@@ -1626,36 +2126,27 @@ function AppearanceGroup({
       )}
       {showFontWeight && (
         <div className="space-y-1">
-          <Label htmlFor="appearance-font-weight" className="text-xs font-medium">
+          <Label htmlFor="type-font-weight" className={FIELD_LABEL}>
             Font weight
           </Label>
           <Select
             value={fontWeight ?? "inherit"}
-            onValueChange={(next) => {
-              // "inherit" sentinel maps to null → setter strips
-              // every font-weight token, leaving the element to
-              // pick up weight from its parent / CSS defaults.
-              // "Inherit" reads better than "None" here because
-              // there's no zero-weight; absence of token = inherit.
-              const v: FontWeightValue | null =
-                next === "inherit" ? null : (next as FontWeightValue);
-              onChangeClassName(setFontWeight(currentClassName, v));
-            }}
+            onValueChange={(next) =>
+              onChangeClassName(
+                setFontWeight(
+                  cn0,
+                  next === "inherit" ? null : (next as FontWeightValue),
+                ),
+              )
+            }
             disabled={disabled}
           >
-            <SelectTrigger
-              id="appearance-font-weight"
-              size="sm"
-              className="w-full"
-            >
+            <SelectTrigger id="type-font-weight" size="xs" className="w-full">
               <SelectValue placeholder="Inherit" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent size="xs">
               <SelectItem value="inherit">Inherit</SelectItem>
               {FONT_WEIGHT_SCALE.map((w) => (
-                // Plain label only — see the font-size row above
-                // for the same call. Dropdowns shouldn't convey
-                // style, just the value name.
                 <SelectItem key={w} value={w}>
                   font-{w}
                 </SelectItem>
@@ -1664,63 +2155,612 @@ function AppearanceGroup({
           </Select>
         </div>
       )}
-      {showOpacity && (
+    </CollapsibleSection>
+  );
+}
+
+/**
+ * BlendingGroup — opacity + mix-blend-mode, the "Blending" section.
+ * Both are whole-element knobs; gated on the opacity capability.
+ */
+function BlendingGroup({
+  source,
+  componentName,
+  tag,
+  sourceId,
+  disabled,
+  manifestPropNames,
+  onChangeClassName,
+}: StyleGroupProps) {
+  const caps = getSpacingCapabilities({ tag, componentName });
+  if (!caps.opacity || ownsAny(manifestPropNames, ["opacity"])) return null;
+
+  const cn0 = readClassName(source, componentName, sourceId);
+  const opacity = parseOpacity(cn0);
+  const blend = parseBlend(cn0);
+
+  return (
+    <CollapsibleSection title="Blending">
+      <div className="grid grid-cols-2 gap-1.5">
         <NumericSelectRow
-          id="appearance-opacity"
+          id="blending-opacity"
           label="Opacity"
           tokenPrefix="opacity"
           scale={OPACITY_SCALE}
           value={opacity}
           disabled={disabled}
-          // No token = visually 100% opaque; show that in the
-          // dropdown rather than the misleading "None".
           noneLabel="100%"
-          onValueChange={(v) =>
-            onChangeClassName(setOpacity(currentClassName, v))
-          }
+          onValueChange={(v) => onChangeClassName(setOpacity(cn0, v))}
         />
-      )}
-
-      {showRadius && (
-        <div className="space-y-1">
-          <Label htmlFor="appearance-radius" className="text-xs font-medium">
-            Border radius
+        <div className="min-w-0 space-y-1">
+          <Label htmlFor="blending-mode" className={FIELD_LABEL}>
+            Blend mode
           </Label>
           <Select
-            value={radius === null ? "none-set" : radius === "" ? "default" : radius}
+            value={blend}
+            onValueChange={(v) => onChangeClassName(setBlend(cn0, v as BlendMode))}
+            disabled={disabled}
+          >
+            <SelectTrigger id="blending-mode" size="xs" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent size="xs">
+              {BLEND_MODES.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+/** A single radius-keyword select (None + the rounded-* scale, px-tagged). */
+function RadiusSelect({
+  id,
+  value,
+  disabled,
+  onValueChange,
+}: {
+  id?: string;
+  value: RadiusValue | null;
+  disabled?: boolean;
+  onValueChange: (v: RadiusValue | null) => void;
+}) {
+  return (
+    <Select
+      value={value === null ? "none-set" : value === "" ? "default" : value}
+      onValueChange={(next) =>
+        onValueChange(
+          next === "none-set" ? null : next === "default" ? "" : (next as RadiusValue),
+        )
+      }
+      disabled={disabled}
+    >
+      <SelectTrigger id={id} size="xs" className="w-full">
+        <SelectValue placeholder="None" />
+      </SelectTrigger>
+      <SelectContent size="xs">
+        <SelectItem value="none-set">None</SelectItem>
+        {RADIUS_SCALE.map((r) => (
+          <SelectItem key={r || "default"} value={r === "" ? "default" : r}>
+            {r === "" ? "rounded" : `rounded-${r}`}
+            {RADIUS_PX[r] ? ` · ${RADIUS_PX[r]}` : ""}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/**
+ * RadiusGroup — corner radius with a combined ↔ per-corner toggle
+ * (mirrors padding/margin). Combined edits all four corners at once;
+ * per-corner exposes TL / TR / BL / BR individually. Auto-opens
+ * per-corner when the parsed corners aren't uniform.
+ */
+function RadiusGroup({
+  source,
+  componentName,
+  tag,
+  sourceId,
+  disabled,
+  manifestPropNames,
+  onChangeClassName,
+}: StyleGroupProps) {
+  const caps = getSpacingCapabilities({ tag, componentName });
+  const corners = parseRadiusCorners(
+    readClassName(source, componentName, sourceId),
+  );
+  const uniform = cornersUniform(corners) || !hasAnyCorner(corners);
+  const [userMode, setUserMode] = useState<"all" | "corners" | null>(null);
+
+  if (!caps.radius || ownsAny(manifestPropNames, ["rounded", "radius"]))
+    return null;
+
+  const cn0 = readClassName(source, componentName, sourceId);
+  const mode: "all" | "corners" = userMode ?? (uniform ? "all" : "corners");
+
+  const setAll = (v: RadiusValue | null) =>
+    onChangeClassName(setRadiusCorners(cn0, { tl: v, tr: v, br: v, bl: v }));
+  const setCorner = (corner: keyof CornerValues, v: RadiusValue | null) =>
+    onChangeClassName(setRadiusCorners(cn0, { ...corners, [corner]: v }));
+
+  // Combined value = the shared corner value when uniform, else null.
+  const combined = uniform && hasAnyCorner(corners) ? corners.tl : null;
+
+  return (
+    <CollapsibleSection title="Radius">
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <Label className={FIELD_LABEL}>Corner radius</Label>
+          <button
+            type="button"
+            onClick={() => setUserMode(mode === "all" ? "corners" : "all")}
+            disabled={disabled}
+            aria-label={
+              mode === "all" ? "Edit each corner" : "Set all corners together"
+            }
+            title={
+              mode === "all" ? "Edit each corner" : "Set all corners together"
+            }
+            className={cn(
+              "inline-flex h-5 w-5 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-3",
+              mode === "corners" && "bg-muted text-foreground",
+            )}
+          >
+            {mode === "all" ? <Maximize2 /> : <Minimize2 />}
+          </button>
+        </div>
+        {mode === "all" ? (
+          <RadiusSelect
+            id="radius-all"
+            value={combined}
+            disabled={disabled}
+            onValueChange={setAll}
+          />
+        ) : (
+          <div className="grid grid-cols-2 gap-1.5">
+            {(
+              [
+                ["tl", "Top left"],
+                ["tr", "Top right"],
+                ["bl", "Bottom left"],
+                ["br", "Bottom right"],
+              ] as [keyof CornerValues, string][]
+            ).map(([corner, label]) => (
+              <div key={corner} className="space-y-1">
+                <Label className={FIELD_LABEL}>{label}</Label>
+                <RadiusSelect
+                  value={corners[corner]}
+                  disabled={disabled}
+                  onValueChange={(v) => setCorner(corner, v)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+/**
+ * ShadowGroup — theme-defined elevation, its own additive section.
+ * Empty (no shadow token) → muted title + ＋ to add a default (md).
+ * Populated → the elevation select + a remove (−).
+ */
+function ShadowGroup({
+  source,
+  componentName,
+  tag,
+  sourceId,
+  disabled,
+  manifestPropNames,
+  onChangeClassName,
+}: StyleGroupProps) {
+  const caps = getSpacingCapabilities({ tag, componentName });
+  if (!caps.shadow || ownsAny(manifestPropNames, ["shadow", "elevation"]))
+    return null;
+
+  const cn0 = readClassName(source, componentName, sourceId);
+  const shadow = parseShadow(cn0);
+  const empty = shadow === null;
+
+  return (
+    <AddableSection
+      title="Shadow"
+      empty={empty}
+      addLabel="Add shadow"
+      onAdd={() => onChangeClassName(setShadow(cn0, "md"))}
+    >
+      <div className="flex items-end gap-1.5">
+        <div className="flex-1 space-y-1">
+          <Label htmlFor="shadow-value" className={FIELD_LABEL}>
+            Elevation
+          </Label>
+          <Select
+            value={shadow === null ? "none-set" : shadow === "" ? "default" : shadow}
             onValueChange={(next) => {
-              const v: RadiusValue | null =
+              const v: ShadowValue | null =
                 next === "none-set"
                   ? null
                   : next === "default"
                     ? ""
-                    : (next as RadiusValue);
-              onChangeClassName(setRadius(currentClassName, v));
+                    : (next as ShadowValue);
+              onChangeClassName(setShadow(cn0, v));
             }}
             disabled={disabled}
           >
-            <SelectTrigger
-              id="appearance-radius"
-              size="sm"
-              className="w-full"
-            >
+            <SelectTrigger id="shadow-value" size="xs" className="w-full">
               <SelectValue placeholder="None" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent size="xs">
               <SelectItem value="none-set">None</SelectItem>
-              {RADIUS_SCALE.map((r) => (
-                <SelectItem
-                  key={r || "default"}
-                  value={r === "" ? "default" : r}
-                >
-                  {r === "" ? "rounded" : `rounded-${r}`}
+              {SHADOW_SCALE.map((s) => (
+                <SelectItem key={s || "default"} value={s === "" ? "default" : s}>
+                  {s === "none"
+                    ? "shadow-none"
+                    : s === ""
+                      ? "shadow"
+                      : `shadow-${s}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <EntryIconButton
+          label="Remove shadow"
+          disabled={disabled}
+          onClick={() => onChangeClassName(setShadow(cn0, null))}
+        >
+          <Minus />
+        </EntryIconButton>
+      </div>
+    </AddableSection>
+  );
+}
+
+// Single source of truth for inspector field-label typography. Every
+// control label (Padding, Opacity, Width, Colour, gap, align, …) uses
+// this so the panel reads as one consistent system. This is the LOWER
+// tier — small + muted + regular weight. The prominent tier is the
+// CollapsibleSection header (text-sm, foreground). Keeping the two
+// deliberately distinct is the hierarchy Figma/Paper use.
+const FIELD_LABEL = "text-[11px] font-normal text-muted-foreground";
+
+// Static swatch classes for the fill colour tokens. Literal strings so
+// Tailwind's JIT keeps them in the build (no interpolation).
+const FILL_SWATCH: Record<FillColorToken, string> = {
+  background: "bg-background",
+  card: "bg-card",
+  muted: "bg-muted",
+  secondary: "bg-secondary",
+  accent: "bg-accent",
+  primary: "bg-primary",
+  destructive: "bg-destructive",
+  transparent: "bg-transparent",
+};
+
+/**
+ * FillGroup — background colour as a theme token (`bg-card`, `bg-muted`,
+ * …). Writes a className `bg-*` override; never a raw hex. Hides when a
+ * component's contract already owns the surface/fill (Card's `surface`
+ * prop is canonical — the generic override would just fight it), and
+ * for element types where a fill makes no sense (text, app-shell).
+ */
+function FillGroup({
+  source,
+  componentName,
+  tag,
+  sourceId,
+  disabled,
+  manifestPropNames,
+  onChangeClassName,
+}: StyleGroupProps) {
+  const caps = getSpacingCapabilities({ tag, componentName });
+  // `surface` included so Card (whose contract owns its fill via the
+  // surface prop) doesn't get a competing generic Fill control.
+  const contractOwnsFill = ownsAny(manifestPropNames, [
+    "fill",
+    "background",
+    "bg",
+    "surface",
+  ]);
+  const cn0 = readClassName(source, componentName, sourceId);
+  const fill = parseFill(cn0);
+
+  if (!caps.fill || contractOwnsFill) return null;
+
+  return (
+    <AddableSection
+      title="Fill"
+      empty={fill === null}
+      addLabel="Add fill"
+      // Default to the surface token so the added fill is visible.
+      onAdd={() => onChangeClassName(setFill(cn0, "card"))}
+    >
+      <div className="flex items-end gap-1.5">
+        <div className="flex-1 space-y-1">
+          <Label htmlFor="fill-color" className={FIELD_LABEL}>
+            Colour
+          </Label>
+          <Select
+            value={fill ?? "none"}
+            onValueChange={(v) =>
+              onChangeClassName(
+                setFill(cn0, v === "none" ? null : (v as FillColorToken)),
+              )
+            }
+            disabled={disabled}
+          >
+            <SelectTrigger id="fill-color" size="xs" className="w-full">
+              <SelectValue placeholder="None" />
+            </SelectTrigger>
+            <SelectContent size="xs">
+              <SelectItem value="none">None</SelectItem>
+              {FILL_COLOR_TOKENS.map((c) => (
+                <SelectItem key={c} value={c}>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={cn(
+                        "inline-block h-3 w-3 rounded-[3px] border border-border/60",
+                        FILL_SWATCH[c],
+                      )}
+                    />
+                    {c}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <EntryIconButton
+          label="Remove fill"
+          disabled={disabled}
+          onClick={() => onChangeClassName(setFill(cn0, null))}
+        >
+          <Minus />
+        </EntryIconButton>
+      </div>
+    </AddableSection>
+  );
+}
+
+// Static swatch classes for the border colour tokens. Kept as literal
+// strings (not interpolated) so Tailwind's JIT keeps them in the build.
+const BORDER_SWATCH: Record<BorderColorToken, string> = {
+  border: "bg-border",
+  foreground: "bg-foreground",
+  primary: "bg-primary",
+  "muted-foreground": "bg-muted-foreground",
+  destructive: "bg-destructive",
+  ring: "bg-ring",
+};
+
+// Default px for each Tailwind radius token (theme default scale). Used
+// to show the rendered pixels alongside the token (rounded-lg · 8px).
+// `full` is omitted (it's a 9999px pill, not a meaningful px value).
+const RADIUS_PX: Record<string, string> = {
+  none: "0",
+  sm: "2px",
+  "": "4px",
+  md: "6px",
+  lg: "8px",
+  xl: "12px",
+  "2xl": "16px",
+  "3xl": "24px",
+};
+
+type UiBorderEntry = BorderEntry & { id: number; visible: boolean };
+
+/**
+ * BorderGroup — Paper-style multi-entry border stack. CSS can't paint
+ * two borders on one edge, so a "stack" is one entry per edge (All /
+ * Top / Right / Bottom / Left). The ＋ in the section header adds an
+ * entry (next unused edge); each row has its own width / side / colour,
+ * a visibility eye (hide without losing settings — held in local
+ * state), and a remove (−). Stroke style is section-level (Tailwind has
+ * no per-edge style utility). The section title is muted when empty.
+ *
+ * Visibility note: hidden entries persist for the lifetime of the
+ * selection (component state), not across reloads — only visible
+ * entries serialise into the className.
+ */
+function BorderGroup({
+  source,
+  componentName,
+  tag,
+  sourceId,
+  disabled,
+  manifestPropNames,
+  onChangeClassName,
+}: StyleGroupProps) {
+  const caps = getSpacingCapabilities({ tag, componentName });
+  const contractOwnsBorder = ownsAny(manifestPropNames, [
+    "border",
+    "borderwidth",
+    "border-width",
+    "outline",
+  ]);
+  const cn0 = readClassName(source, componentName, sourceId);
+
+  const idSeq = useRef(0);
+  const [entries, setEntries] = useState<UiBorderEntry[]>([]);
+  const [style, setStyle] = useState<BorderStyle>("solid");
+
+  // Re-seed from the className whenever the SELECTION changes (not on
+  // our own writes — keying on cn0 would wipe hidden entries the moment
+  // we serialise). cn0 is read fresh each render, so the effect closure
+  // sees the new selection's className when sourceId/componentName flip.
+  useEffect(() => {
+    const parsed = parseBorderList(cn0);
+    setEntries(parsed.map((e) => ({ ...e, id: idSeq.current++, visible: true })));
+    setStyle(parseBorderStyle(cn0));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceId, componentName]);
+
+  if (!caps.border || contractOwnsBorder) return null;
+
+  const commit = (next: UiBorderEntry[], nextStyle: BorderStyle) => {
+    setEntries(next);
+    setStyle(nextStyle);
+    const visible: BorderEntry[] = next
+      .filter((e) => e.visible)
+      .map(({ side, width, color }) => ({ side, width, color }));
+    onChangeClassName(serializeBorderList(cn0, visible, nextStyle));
+  };
+
+  const addEntry = () => {
+    const used = new Set(entries.map((e) => e.side));
+    const nextSide =
+      (BORDER_SIDES as readonly BorderSide[]).find((s) => !used.has(s)) ?? "t";
+    commit(
+      [
+        ...entries,
+        { id: idSeq.current++, side: nextSide, width: 1, color: null, visible: true },
+      ],
+      style,
+    );
+  };
+  const patchEntry = (id: number, patch: Partial<UiBorderEntry>) =>
+    commit(
+      entries.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+      style,
+    );
+  const removeEntry = (id: number) =>
+    commit(
+      entries.filter((e) => e.id !== id),
+      style,
+    );
+
+  return (
+    <AddableSection
+      title="Border"
+      empty={entries.length === 0}
+      addLabel="Add border"
+      onAdd={addEntry}
+    >
+      {entries.map((entry) => (
+        <div
+          key={entry.id}
+          className={cn(
+            "space-y-1.5 border-t border-border/40 pt-2 first:border-t-0 first:pt-0",
+            !entry.visible && "opacity-50",
+          )}
+        >
+          <div className="flex items-end gap-1.5">
+            <div className="w-16 shrink-0 space-y-1">
+              <Label className={FIELD_LABEL}>Width</Label>
+              <Select
+                value={String(entry.width)}
+                onValueChange={(v) => patchEntry(entry.id, { width: Number(v) })}
+                disabled={disabled}
+              >
+                <SelectTrigger size="xs" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent size="xs">
+                  {BORDER_WIDTH_SCALE.filter((w) => w > 0).map((w) => (
+                    <SelectItem key={w} value={String(w)}>
+                      {w}px
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="min-w-0 flex-1 space-y-1">
+              <Label className={FIELD_LABEL}>Side</Label>
+              <Select
+                value={entry.side}
+                onValueChange={(v) => patchEntry(entry.id, { side: v as BorderSide })}
+                disabled={disabled}
+              >
+                <SelectTrigger size="xs" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent size="xs">
+                  {BORDER_SIDES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {BORDER_SIDE_LABELS[s]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <EntryIconButton
+              label={entry.visible ? "Hide border" : "Show border"}
+              disabled={disabled}
+              onClick={() => patchEntry(entry.id, { visible: !entry.visible })}
+            >
+              {entry.visible ? <Eye /> : <EyeOff />}
+            </EntryIconButton>
+            <EntryIconButton
+              label="Remove border"
+              disabled={disabled}
+              onClick={() => removeEntry(entry.id)}
+            >
+              <Minus />
+            </EntryIconButton>
+          </div>
+          <Select
+            value={entry.color ?? "default"}
+            onValueChange={(v) =>
+              patchEntry(entry.id, {
+                color: v === "default" ? null : (v as BorderColorToken),
+              })
+            }
+            disabled={disabled}
+          >
+            <SelectTrigger size="xs" className="w-full">
+              <SelectValue placeholder="Default" />
+            </SelectTrigger>
+            <SelectContent size="xs">
+              <SelectItem value="default">Default colour</SelectItem>
+              {BORDER_COLOR_TOKENS.map((c) => (
+                <SelectItem key={c} value={c}>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={cn(
+                        "inline-block h-3 w-3 rounded-[3px] border border-border/60",
+                        BORDER_SWATCH[c],
+                      )}
+                    />
+                    {c}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ))}
+      {entries.length > 0 && (
+        <div className="space-y-1 border-t border-border/40 pt-2">
+          <Label htmlFor="border-style" className={FIELD_LABEL}>
+            Stroke style
+          </Label>
+          <Select
+            value={style}
+            onValueChange={(v) => commit(entries, v as BorderStyle)}
+            disabled={disabled}
+          >
+            <SelectTrigger id="border-style" size="xs" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent size="xs">
+              {BORDER_STYLE_SCALE.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
       )}
-    </div>
+    </AddableSection>
   );
 }
 
@@ -1754,13 +2794,12 @@ function ClassNameOverride({
   const [draft, setDraft] = useState<string | null>(null);
   const liveValue = draft ?? currentClassName ?? "";
   return (
-    <div className="space-y-1 pt-2 border-t border-border/60">
-      <Label htmlFor="classname-override" className="text-xs font-medium">
-        className override
-      </Label>
+    // Advanced escape hatch — collapsed by default so it doesn't add
+    // noise to the common path.
+    <CollapsibleSection title="className override" defaultOpen={false}>
       <Input
         id="classname-override"
-        size="sm"
+        size="xs"
         value={liveValue}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
@@ -1778,7 +2817,7 @@ function ClassNameOverride({
         controls above don't recognise (responsive variants, hover
         states, arbitrary values) is preserved here.
       </p>
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -1795,6 +2834,7 @@ function NumericSelectRow({
   value,
   disabled,
   noneLabel = "None",
+  unit,
   onValueChange,
 }: {
   id: string;
@@ -1810,11 +2850,15 @@ function NumericSelectRow({
    *  fully opaque — users expect to see the rendered state, not the
    *  storage state. */
   noneLabel?: string;
+  /** Optional secondary readout appended to each option as " · <unit>"
+   *  — e.g. gap maps the step to its px value (gap-4 · 16px) so the
+   *  token AND its rendered size are both visible. */
+  unit?: (n: number) => string;
   onValueChange: (next: number | null) => void;
 }) {
   return (
     <div className="space-y-1">
-      <Label htmlFor={id} className="text-xs font-medium">
+      <Label htmlFor={id} className={FIELD_LABEL}>
         {label}
       </Label>
       <Select
@@ -1824,14 +2868,15 @@ function NumericSelectRow({
         }
         disabled={disabled}
       >
-        <SelectTrigger id={id} size="sm" className="w-full">
+        <SelectTrigger id={id} size="xs" className="w-full">
           <SelectValue placeholder={noneLabel} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent size="xs">
           <SelectItem value="none">{noneLabel}</SelectItem>
           {scale.map((n) => (
             <SelectItem key={n} value={String(n)}>
               {tokenPrefix}-{n}
+              {unit ? ` · ${unit(n)}` : ""}
             </SelectItem>
           ))}
         </SelectContent>
@@ -1841,183 +2886,255 @@ function NumericSelectRow({
 }
 
 /**
- * Per-side numeric row — Figma-style four-sided spacing control.
+ * Per-side numeric row — Paper / Figma-style spacing control with a
+ * combined ↔ individual toggle.
  *
- * Renders a 2x2 grid of inputs, each prefixed with a lucide
- * Panel{Top,Right,Bottom,Left} icon so the user can identify which
- * side an input drives without reading the label every time. A
- * chain toggle to the right of the section label links/unlinks the
- * four sides:
+ * Two layouts, switched by the button on the section label:
  *
- *   - Linked (chain icon, primary-tinted): editing ANY side mirrors
- *     the value to all four. The serialiser collapses to a single
- *     `m-N` / `p-N` token on write.
- *   - Unlinked (broken-chain icon): each side is independent.
- *     Serialiser writes the minimal token set — axis pairs
- *     (`mx-X my-Y`) when both halves match, individual sides
- *     (`mt-T mr-R …`) otherwise.
+ *   - Combined (default when sides are axis-symmetric): two compact
+ *     inputs — Horizontal (drives left+right) and Vertical (drives
+ *     top+bottom). Mirrors Figma auto-layout padding.
+ *   - Individual: four inputs (T / R / B / L), each independent.
  *
- * The "linked" mode auto-defaults to true when the parsed
- * SideValues is uniform (all four equal) OR fully empty. Once the
- * user explicitly clicks the toggle the local override sticks for
- * the lifetime of the selection.
+ * Inputs are directly TYPEABLE — the value is the Tailwind spacing
+ * step, so typing 6 writes `p-6`; an empty input clears that side.
+ * Decimals (`0.5` → `p-0.5`) are accepted. The serialiser
+ * (setPaddingSides / setMarginSides) folds the four-side state into
+ * the minimal token set on write, so combined values still collapse
+ * to `px-4 py-2` etc.
+ *
+ * Auto-opens in Individual mode when the parsed sides can't be
+ * represented as an x/y pair (e.g. only `pt-4` set). The user can
+ * flip either way; the override sticks for the selection's lifetime.
  */
 function PerSideRow({
   id,
   label,
-  tokenPrefix,
-  scale,
   value,
   disabled,
   onValueChange,
 }: {
   id: string;
   label: string;
-  /** "m" for margin, "p" for padding — used in the dropdown option
-   *  labels (`m-4`, `p-4`) so the user sees the literal that lands
-   *  in the JSX. */
-  tokenPrefix: "m" | "p";
-  scale: readonly number[];
   value: SideValues;
   disabled?: boolean;
   onValueChange: (next: SideValues) => void;
 }) {
-  // User's explicit toggle of the chain. `null` = "let the auto
-  // rule decide" — auto-link when sides are uniform OR fully empty.
-  const [userLinked, setUserLinked] = useState<boolean | null>(null);
-  const autoLinked = sidesAreUniform(value) || !hasAnySide(value);
-  const linked = userLinked ?? autoLinked;
+  // Sides collapse to an x/y pair only when opposite sides match.
+  const axisRepresentable = value.l === value.r && value.t === value.b;
+  const [userMode, setUserMode] = useState<"axes" | "sides" | null>(null);
+  const mode: "axes" | "sides" =
+    userMode ?? (axisRepresentable ? "axes" : "sides");
 
-  const setSide = (side: keyof SideValues, next: number | null) => {
-    if (linked) {
-      // Linked: mirror the new value to every side. Stripping is
-      // handled by setMarginSides / setPaddingSides — they always
-      // strip the family before reassembling, so null sides land as
-      // "no token written" cleanly.
-      onValueChange({ t: next, r: next, b: next, l: next });
-    } else {
-      onValueChange({ ...value, [side]: next });
-    }
-  };
+  const setSide = (side: keyof SideValues, next: number | null) =>
+    onValueChange({ ...value, [side]: next });
+  const setAxis = (axis: "x" | "y", next: number | null) =>
+    axis === "x"
+      ? onValueChange({ ...value, l: next, r: next })
+      : onValueChange({ ...value, t: next, b: next });
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <Label className="text-xs font-medium">{label}</Label>
-        {/* DS Toggle primitive — `pressed` + `onPressedChange` are
-            the Radix-controlled API. The h-5/w-5/min-w-0/p-0/svg-size
-            overrides shrink the default `size="sm"` (h-8/min-w-8)
-            down to the tight 20px square the inspector chrome wants
-            without forking the primitive. */}
-        <Toggle
-          size="sm"
-          pressed={linked}
-          onPressedChange={(next) => setUserLinked(next)}
+        <Label className={FIELD_LABEL}>{label}</Label>
+        {/* Mode toggle — Paper's little expand glyph. Maximize2 when
+            combined (offers "break out into 4 sides"); Minimize2 when
+            individual (offers "collapse to H/V"). Tinted when in the
+            individual state so the panel reads its current mode at a
+            glance. */}
+        <button
+          type="button"
+          onClick={() => setUserMode(mode === "axes" ? "sides" : "axes")}
+          disabled={disabled}
           aria-label={
-            linked
-              ? "Sides linked — editing one updates all four. Click to unlink."
-              : "Sides independent. Click to link all four sides."
+            mode === "axes"
+              ? "Edit each side individually"
+              : "Collapse to horizontal and vertical"
           }
           title={
-            linked
-              ? "Sides linked — editing one updates all four"
-              : "Sides independent — edit each side separately"
+            mode === "axes"
+              ? "Edit each side individually"
+              : "Collapse to horizontal / vertical"
           }
-          disabled={disabled}
-          className="h-5 w-5 min-w-0 p-0 [&_svg]:size-3"
+          className={cn(
+            "inline-flex h-5 w-5 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-3",
+            mode === "sides" && "bg-muted text-foreground",
+          )}
         >
-          {linked ? <LinkIcon /> : <Unlink />}
-        </Toggle>
+          {mode === "axes" ? <Maximize2 /> : <Minimize2 />}
+        </button>
       </div>
-      <div className="grid grid-cols-2 gap-1.5">
-        <SideCell
-          id={`${id}-t`}
-          icon={<PanelTop />}
-          value={value.t}
-          scale={scale}
-          tokenPrefix={tokenPrefix}
-          disabled={disabled}
-          onChange={(v) => setSide("t", v)}
-        />
-        <SideCell
-          id={`${id}-r`}
-          icon={<PanelRight />}
-          value={value.r}
-          scale={scale}
-          tokenPrefix={tokenPrefix}
-          disabled={disabled}
-          onChange={(v) => setSide("r", v)}
-        />
-        <SideCell
-          id={`${id}-b`}
-          icon={<PanelBottom />}
-          value={value.b}
-          scale={scale}
-          tokenPrefix={tokenPrefix}
-          disabled={disabled}
-          onChange={(v) => setSide("b", v)}
-        />
-        <SideCell
-          id={`${id}-l`}
-          icon={<PanelLeft />}
-          value={value.l}
-          scale={scale}
-          tokenPrefix={tokenPrefix}
-          disabled={disabled}
-          onChange={(v) => setSide("l", v)}
-        />
-      </div>
+      {mode === "axes" ? (
+        <div className="grid grid-cols-2 gap-1.5">
+          <SideInput
+            id={`${id}-x`}
+            icon={<MoveHorizontal />}
+            ariaLabel={`${label} horizontal`}
+            value={value.l}
+            disabled={disabled}
+            onCommit={(v) => setAxis("x", v)}
+          />
+          <SideInput
+            id={`${id}-y`}
+            icon={<MoveVertical />}
+            ariaLabel={`${label} vertical`}
+            value={value.t}
+            disabled={disabled}
+            onCommit={(v) => setAxis("y", v)}
+          />
+        </div>
+      ) : (
+        // All four edges in a single tight row (4×1, not a 2×2 grid).
+        <div className="grid grid-cols-4 gap-1">
+          <SideInput
+            id={`${id}-t`}
+            icon={<PanelTop />}
+            ariaLabel={`${label} top`}
+            value={value.t}
+            disabled={disabled}
+            onCommit={(v) => setSide("t", v)}
+          />
+          <SideInput
+            id={`${id}-r`}
+            icon={<PanelRight />}
+            ariaLabel={`${label} right`}
+            value={value.r}
+            disabled={disabled}
+            onCommit={(v) => setSide("r", v)}
+          />
+          <SideInput
+            id={`${id}-b`}
+            icon={<PanelBottom />}
+            ariaLabel={`${label} bottom`}
+            value={value.b}
+            disabled={disabled}
+            onCommit={(v) => setSide("b", v)}
+          />
+          <SideInput
+            id={`${id}-l`}
+            icon={<PanelLeft />}
+            ariaLabel={`${label} left`}
+            value={value.l}
+            disabled={disabled}
+            onCommit={(v) => setSide("l", v)}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
-/** Single cell of the per-side grid — small Select trigger with an
- *  inline side-icon on the leading edge and the numeric scale in
- *  the dropdown. */
-function SideCell({
+/**
+ * Compact typeable spacing input — a small bordered field with a
+ * leading side glyph (Paper-style). The value is the Tailwind spacing
+ * step; empty means "no token on this side". Local draft + debounced
+ * commit so typing stays snappy and the canvas only re-renders on a
+ * typing pause; blur + Enter flush immediately. Resyncs from source
+ * when not focused (chat regen / undo flows back in).
+ */
+function SideInput({
   id,
   icon,
+  ariaLabel,
   value,
-  scale,
-  tokenPrefix,
   disabled,
-  onChange,
+  onCommit,
 }: {
   id: string;
   icon: React.ReactNode;
+  ariaLabel: string;
   value: number | null;
-  scale: readonly number[];
-  tokenPrefix: "m" | "p";
   disabled?: boolean;
-  onChange: (next: number | null) => void;
+  onCommit: (next: number | null) => void;
 }) {
+  // px-PRIMARY: the input shows/accepts pixels (Paper-style) while the
+  // stored value is the Tailwind spacing STEP (px ÷ 4). On commit we
+  // snap to the nearest valid half-step so it always round-trips to a
+  // real token (p-4, p-3.5, …) — no arbitrary p-[13px] ever lands.
+  const stepToPx = (step: number) => step * 4;
+  const [draft, setDraft] = useState(
+    value === null ? "" : String(stepToPx(value)),
+  );
+  const inputRef = useRef<HTMLInputElement>(null);
+  const timer = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (inputRef.current && document.activeElement === inputRef.current) return;
+    setDraft(value === null ? "" : String(stepToPx(value)));
+  }, [value]);
+
+  useEffect(
+    () => () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const commit = (raw: string) => {
+    const trimmed = raw.trim().replace(/px$/i, "").trim();
+    if (trimmed === "") {
+      onCommit(null);
+      return;
+    }
+    const px = Number(trimmed);
+    if (!Number.isFinite(px) || px < 0) return;
+    // px → step, snapped to the nearest 0.5 (Tailwind's finest grain).
+    const step = Math.round((px / 4) * 2) / 2;
+    onCommit(step);
+  };
+  const schedule = (raw: string) => {
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      timer.current = null;
+      commit(raw);
+    }, 150);
+  };
+
+  // Built on the standard Input with start/end slots — the side glyph
+  // leads, a muted "px" unit trails — so this is just a configured DS
+  // input, not a bespoke field. Reusable anywhere a unit input is
+  // wanted (shader params, etc.).
   return (
-    <Select
-      value={value === null ? "none" : String(value)}
-      onValueChange={(next) =>
-        onChange(next === "none" ? null : Number(next))
-      }
+    <Input
+      id={id}
+      ref={inputRef}
+      size="xs"
+      type="text"
+      inputMode="decimal"
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      value={draft}
+      placeholder="–"
       disabled={disabled}
-    >
-      <SelectTrigger
-        id={id}
-        size="sm"
-        className="w-full gap-1.5 [&_svg]:size-3"
-      >
-        <span className="inline-flex items-center text-muted-foreground">
+      className="tabular-nums"
+      onChange={(e) => {
+        setDraft(e.currentTarget.value);
+        schedule(e.currentTarget.value);
+      }}
+      onBlur={(e) => {
+        if (timer.current !== null) {
+          window.clearTimeout(timer.current);
+          timer.current = null;
+        }
+        commit(e.currentTarget.value);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          inputRef.current?.blur();
+        }
+      }}
+      startSlot={
+        <span aria-hidden className="inline-flex [&_svg]:size-3">
           {icon}
         </span>
-        <SelectValue placeholder="—" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="none">None</SelectItem>
-        {scale.map((n) => (
-          <SelectItem key={n} value={String(n)}>
-            {tokenPrefix}-{n}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      }
+      endSlot={
+        draft.trim() !== "" ? (
+          <span className="text-[9px] text-muted-foreground/60">px</span>
+        ) : undefined
+      }
+    />
   );
 }
 
@@ -2071,10 +3188,10 @@ function PropControl({
           }}
           disabled={disabled}
         >
-          <SelectTrigger className="h-8 text-xs">
+          <SelectTrigger className="h-7 text-xs">
             <SelectValue placeholder={prop.defaultValue ?? "(default)"} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent size="xs">
             {values.map((v) => (
               <SelectItem
                 key={String(v)}
@@ -2209,10 +3326,11 @@ function LiveInput({
       <Input
         ref={inputRef}
         type={type}
-        className={cn(
-          "h-8 text-xs",
-          type === "text" && "font-mono"
-        )}
+        // size="xs" gives a clean text-xs; relying on a `text-xs`
+        // className override didn't beat the default size's `md:text-sm`
+        // at desktop widths, which made the src/url field render oversized.
+        size="xs"
+        className={cn(type === "text" && "font-mono")}
         value={draft}
         placeholder={prop.defaultValue ?? ""}
         disabled={disabled}
@@ -2246,7 +3364,7 @@ function PropRow({
     <div className="grid grid-cols-[minmax(0,96px)_minmax(0,1fr)] items-center gap-2">
       <Label
         htmlFor={`prop-${prop.name}`}
-        className="truncate text-[11px] font-medium text-foreground"
+        className={cn("truncate", FIELD_LABEL)}
         title={prop.description || prop.raw}
       >
         {prop.name}
@@ -2329,22 +3447,34 @@ function ActionsRow({
   componentName,
   selection,
   appSource,
+  hideHeader,
 }: {
   actions: NonNullable<ComponentContract["actions"]>;
   componentName: string;
   selection: StudioSelection | null;
   appSource: string | null;
+  /** Suppress the "Actions" header + top divider — used when the row is
+   *  nested inside another group (e.g. Fill/Refresh inside the Image
+   *  section) and shouldn't read as its own section. */
+  hideHeader?: boolean;
 }) {
   const entries = Object.entries(actions) as [string, ActionContract][];
   if (entries.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-2 pt-1 border-t border-border">
-      {/* Sentence case, no uppercase — matches the rest of the
-          inspector group headers. House style. */}
-      <span className="text-[11px] font-medium text-muted-foreground">
-        Actions
-      </span>
+    <div
+      className={cn(
+        "flex flex-col gap-2",
+        !hideHeader && "pt-1 border-t border-border",
+      )}
+    >
+      {!hideHeader && (
+        // Sentence case, no uppercase — matches the rest of the
+        // inspector group headers. House style.
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Actions
+        </span>
+      )}
       <div className="flex flex-wrap gap-1.5">
         {entries.map(([id, action]) => (
           <ActionButton

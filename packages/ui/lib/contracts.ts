@@ -11,6 +11,7 @@ import { AiChatContract } from "../components/ui/ai-chat.contract";
 import { AiChatComposerContract } from "../components/ui/ai-chat-composer.contract";
 import { AppShellContract } from "../components/ui/app-shell.contract";
 import { AvatarContract } from "../components/ui/avatar.contract";
+import { BackgroundFillContract } from "../components/ui/background-fill.contract";
 import { BadgeContract } from "../components/ui/badge.contract";
 import { BannerContract } from "../components/ui/banner.contract";
 import { BreadcrumbContract } from "../components/ui/breadcrumb.contract";
@@ -28,6 +29,7 @@ import { ComposerContract } from "../components/ui/composer.contract";
 import { DatePickerContract } from "../components/ui/date-picker.contract";
 import { DialogContract } from "../components/ui/dialog.contract";
 import { DropdownMenuContract } from "../components/ui/dropdown-menu.contract";
+import { FillPickerContract } from "../components/ui/fill-picker.contract";
 import { FlexContract } from "../components/ui/flex.contract";
 import { GridContract } from "../components/ui/grid.contract";
 import { HoverCardContract } from "../components/ui/hover-card.contract";
@@ -73,6 +75,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   AiChatComposer: AiChatComposerContract,
   AppShell: AppShellContract,
   Avatar: AvatarContract,
+  BackgroundFill: BackgroundFillContract,
   Badge: BadgeContract,
   Banner: BannerContract,
   Breadcrumb: BreadcrumbContract,
@@ -90,6 +93,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   DatePicker: DatePickerContract,
   Dialog: DialogContract,
   DropdownMenu: DropdownMenuContract,
+  FillPicker: FillPickerContract,
   Flex: FlexContract,
   Grid: GridContract,
   HoverCard: HoverCardContract,

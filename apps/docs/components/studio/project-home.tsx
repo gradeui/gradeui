@@ -49,6 +49,7 @@ const VERB: Record<string, string> = {
   "asset.generate": "generated an image",
   "asset.fill": "filled an image",
   "asset.delete": "deleted an image",
+  "image.set": "set an image",
   "comment.add": "left a comment",
   "comment.resolve": "resolved a comment",
   "theme.save": "saved a theme",

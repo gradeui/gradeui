@@ -17,6 +17,7 @@ import {
   VignetteEffect,
   ChromaticAberrationEffect,
   GlitchEffect,
+  GlitchMode,
   BlendFunction,
   KernelSize,
 } from "postprocessing";
@@ -69,10 +70,21 @@ export const createPostComposer: PostComposerFactory = ({
   });
   glitch.minStrength = 0;
   glitch.maxStrength = 0;
+  // Off by default. GlitchEffect self-triggers in SPORADIC mode regardless
+  // of strength, so we kill it two ways: DISABLED mode + zero blend opacity
+  // (it then contributes nothing), the same pattern noise/scanlines use.
+  glitch.mode = GlitchMode.DISABLED;
+  glitch.blendMode.opacity.value = 0;
 
   // Passes must separate convolution effects (Bloom) from UV-transforming
   // effects (Chromatic Aberration, Glitch). The library throws at construction
   // time if these mix. Four passes keeps everything happy.
+  //
+  // IMPORTANT: we NEVER disable a pass. The composer renders the literal
+  // last pass to screen, so a disabled pass can blank the whole output
+  // (that was the "nothing renders unless glitch>0" bug). Every pass stays
+  // enabled; effects are turned off by zeroing their blend (opacity / mode
+  // / offset), so rendering never depends on which effects are active.
   composer.addPass(new EffectPass(camera, bloom));
   composer.addPass(new EffectPass(camera, noise, scanlines, vignette));
   composer.addPass(new EffectPass(camera, chromatic));
@@ -97,10 +109,18 @@ export const createPostComposer: PostComposerFactory = ({
     const chromaOffset = e.chromatic?.offset ?? 0;
     chromatic.offset?.set(chromaOffset, chromaOffset);
 
-    if (e.glitch) {
+    const glitchMax = e.glitch?.strength?.[1] ?? 0;
+    if (e.glitch && glitchMax > 0) {
+      glitch.mode = GlitchMode.SPORADIC;
+      glitch.blendMode.opacity.value = 1;
       glitch.minStrength = e.glitch.strength?.[0] ?? 0;
-      glitch.maxStrength = e.glitch.strength?.[1] ?? 0;
+      glitch.maxStrength = glitchMax;
     } else {
+      // Off — never disable the pass (that can blank the composer's
+      // screen output). DISABLED mode stops the self-trigger and zero
+      // blend opacity makes it contribute nothing.
+      glitch.mode = GlitchMode.DISABLED;
+      glitch.blendMode.opacity.value = 0;
       glitch.minStrength = 0;
       glitch.maxStrength = 0;
     }

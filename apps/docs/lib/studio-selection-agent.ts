@@ -436,10 +436,14 @@ export function installStudioSelectionAgent(
           instanceId: nodeInstanceId || undefined,
           name: nodeName || undefined,
         });
-        // Stop at the layout shell — anything above is Studio chrome
-        // (FastSandboxRoot, body, html) the user can't meaningfully
-        // act on from the breadcrumb.
-        if (nodePart && nodePart.indexOf("app-shell") === 0) break;
+        // Stop at the AppShell ROOT — it's the user's topmost wrapper
+        // and a valid target (e.g. for a page-wide background fill), so
+        // we INCLUDE it as the final crumb, then stop. We must not break
+        // on the inner `app-shell-*` parts (header/nav/aside/main/footer)
+        // — those sit BELOW the root, so breaking there would drop
+        // AppShell from the breadcrumb. Anything above the root
+        // (FastSandboxRoot, body, html) is Studio chrome.
+        if (nodePart === "app-shell") break;
       }
       node = node.parentElement;
     }
@@ -501,8 +505,8 @@ export function installStudioSelectionAgent(
   function makeOverlay(persistent: boolean): HTMLDivElement {
     const el = document.createElement("div");
     el.setAttribute("data-grade-selection-overlay", persistent ? "persist" : "hover");
-    // Clean 2px outline; no fill. Two outline-offsets:
-    //   - hover: -2px (sits inside the element so a Card's
+    // Clean 1px outline; no fill. Two outline-offsets:
+    //   - hover: -1px (sits inside the element so a Card's
     //     overflow:hidden corners don't clip it)
     //   - persistent: 0px (sits AT the element boundary — visually
     //     distinct from hover, slightly emphatic without flooding
@@ -523,13 +527,63 @@ export function installStudioSelectionAgent(
       "position:" + (useFixedPositioning ? "fixed" : "absolute"),
       "pointer-events:none",
       "z-index:" + (persistent ? "2147483646" : "2147483647"),
-      `outline:2px solid ${baseColor}`,
-      persistent ? "outline-offset:0px" : "outline-offset:-2px",
+      // Thin 1px stroke — Figma/Paper weight. The old 2px read as
+      // "fat". `outline` stays off-layout and crisp.
+      `outline:1px solid ${baseColor}`,
+      persistent ? "outline-offset:0px" : "outline-offset:-1px",
       "background:transparent",
-      "border-radius:4px",
+      // Sharp rectangle (no radius) — the selection chrome frames the
+      // box regardless of the element's own corner radius.
+      "border-radius:0",
       "transition:left 80ms ease-out, top 80ms ease-out, width 80ms ease-out, height 80ms ease-out",
       "display:none",
     ].join(";");
+
+    if (persistent) {
+      // Corner handles + a dimension badge — the Figma-style selection
+      // chrome. NOTE: these are purely VISUAL. Drag-to-resize isn't
+      // wired up, so every piece keeps `pointer-events:none` and never
+      // captures a click (no false "you can drag me" affordance beyond
+      // the look).
+      for (const pos of [
+        "top:0;left:0",
+        "top:0;left:100%",
+        "top:100%;left:100%",
+        "top:100%;left:0",
+      ]) {
+        const handle = document.createElement("div");
+        handle.setAttribute("data-grade-handle", "");
+        handle.style.cssText = [
+          "position:absolute",
+          pos,
+          "transform:translate(-50%,-50%)",
+          "width:7px",
+          "height:7px",
+          "background:#fff",
+          `border:1px solid ${baseColor}`,
+          "border-radius:1px",
+          "box-shadow:0 0 0 0.5px rgba(255,255,255,.7)",
+          "pointer-events:none",
+        ].join(";");
+        el.appendChild(handle);
+      }
+      const label = document.createElement("div");
+      label.setAttribute("data-grade-dim-label", "");
+      label.style.cssText = [
+        "position:absolute",
+        "top:100%",
+        "left:50%",
+        "transform:translate(-50%,6px)",
+        "background:" + baseColor,
+        "color:#fff",
+        "font:500 11px/1.35 ui-sans-serif,system-ui,sans-serif",
+        "padding:2px 6px",
+        "border-radius:4px",
+        "white-space:nowrap",
+        "pointer-events:none",
+      ].join(";");
+      el.appendChild(label);
+    }
     return el;
   }
 
@@ -555,7 +609,7 @@ export function installStudioSelectionAgent(
       "position:" + (useFixedPositioning ? "fixed" : "absolute"),
       "pointer-events:none",
       "z-index:2147483645",
-      "outline:2px dashed oklch(var(--studio-accent, 0.62 0.18 264) / 0.6)",
+      "outline:1px dashed oklch(var(--studio-accent, 0.62 0.18 264) / 0.6)",
       "outline-offset:0px",
       "background:transparent",
       "border-radius:4px",
@@ -614,6 +668,14 @@ export function installStudioSelectionAgent(
     overlay.style.width = rect.width + "px";
     overlay.style.height = rect.height + "px";
     overlay.style.display = "block";
+    // Keep the dimension badge (selection overlay only) in sync with
+    // the live size — rounded to whole pixels.
+    const dimLabel = overlay.querySelector<HTMLElement>(
+      "[data-grade-dim-label]",
+    );
+    if (dimLabel) {
+      dimLabel.textContent = `${Math.round(rect.width)} × ${Math.round(rect.height)}`;
+    }
   }
 
   function hideOverlay(overlay: HTMLDivElement) {
@@ -1015,7 +1077,11 @@ export function installStudioSelectionAgent(
         `[data-gds-source-id="${CSS.escape(id)}"]`
       );
     } else {
+      // Root the tree at the AppShell ROOT — it's the user's topmost
+      // wrapper and a valid target (e.g. a page-wide background fill).
+      // Fall back to main content, then any shell part, then body.
       scope =
+        docOrEl.querySelector('[data-gds-part="app-shell"]') ||
         docOrEl.querySelector('[data-gds-part="app-shell-main"]') ||
         docOrEl.querySelector('[data-gds-part^="app-shell"]') ||
         (root instanceof Document ? root.body : (root as Element));

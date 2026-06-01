@@ -229,6 +229,14 @@ export const ALLOWED_COMPONENTS = [
   "MediaSurface",
   "ShaderPresetPreview",
   "ShaderPresetPicker",
+  //   - BackgroundFill is the "set a background" primitive. A background
+  //     (shader / image / video / gradient / solid) is a FILL of a frame,
+  //     not a free-standing node: drop <BackgroundFill> as the first child
+  //     of a `relative overflow-hidden` frame and put content above it with
+  //     `relative z-10`. When the user asks to "set a background" / "add a
+  //     shader background", reach for this — NOT a full-bleed <ThreeScene>
+  //     sibling (which floats unselectable at z-0).
+  "BackgroundFill",
   // Sidebar (renamed from SideMenu, May 2026). Compound API — the model
   // should compose <Sidebar><SidebarHeader/><SidebarContent>...
   // <SidebarSection title="..."><SidebarItem icon={...}>Label</SidebarItem>

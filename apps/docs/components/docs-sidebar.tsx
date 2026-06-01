@@ -145,6 +145,7 @@ const componentsNav: NavSection[] = [
       { title: "Three Scene", href: "/components/three-scene" },
       { title: "Shader Preset Preview", href: "/components/shader-preset-preview" },
       { title: "Shader Preset Picker", href: "/components/shader-preset-picker" },
+      { title: "Background Fill", href: "/components/background-fill" },
     ],
   },
   {

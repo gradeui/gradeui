@@ -13,6 +13,17 @@ const SelectGroup = SelectPrimitive.Group;
 const SelectValue = SelectPrimitive.Value;
 
 /**
+ * Menu density. Set `size` on `<SelectContent>` and every `<SelectItem>`
+ * inside it picks up matching padding / text-size / check-indicator
+ * sizing via context — so a compact trigger (`size="xs"`) can have an
+ * equally compact dropdown without per-item overrides. React context
+ * flows through the Radix portal (it follows the React tree, not the
+ * DOM), so items styled this way work even though the menu is portaled.
+ */
+type SelectMenuSize = "default" | "sm" | "xs";
+const SelectMenuSizeContext = React.createContext<SelectMenuSize>("default");
+
+/**
  * Select trigger variants — `size` lets dense surfaces (the
  * Studio inspector, settings sheets) reach for a compact `sm`
  * trigger without hand-rolling className overrides. Default keeps
@@ -26,6 +37,8 @@ const selectTriggerVariants = cva(
       size: {
         default: "h-10 px-3 py-2 text-sm",
         sm: "h-8 px-2 py-1 text-xs",
+        // Figma-density — tool panels (the Studio inspector, shader controls).
+        xs: "h-7 px-2 py-0 text-xs",
       },
     },
     defaultVariants: { size: "default" },
@@ -97,8 +110,10 @@ SelectScrollDownButton.displayName =
 
 const SelectContent = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
->(({ className, children, position = "popper", ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & {
+    size?: SelectMenuSize;
+  }
+>(({ className, children, position = "popper", size = "default", ...props }, ref) => (
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
@@ -114,12 +129,14 @@ const SelectContent = React.forwardRef<
       <SelectScrollUpButton />
       <SelectPrimitive.Viewport
         className={cn(
-          "p-1",
+          size === "default" ? "p-1" : "p-0.5",
           position === "popper" &&
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
         )}
       >
-        {children}
+        <SelectMenuSizeContext.Provider value={size}>
+          {children}
+        </SelectMenuSizeContext.Provider>
       </SelectPrimitive.Viewport>
       <SelectScrollDownButton />
     </SelectPrimitive.Content>
@@ -139,26 +156,46 @@ const SelectLabel = React.forwardRef<
 ));
 SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
+const selectItemVariants = cva(
+  "relative flex w-full cursor-default select-none items-center rounded-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+  {
+    variants: {
+      size: {
+        default: "py-1.5 pl-8 pr-2 text-sm",
+        sm: "py-1 pl-7 pr-2 text-xs",
+        xs: "py-1 pl-6 pr-2 text-xs",
+      },
+    },
+    defaultVariants: { size: "default" },
+  }
+);
+
 const SelectItem = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
->(({ className, children, ...props }, ref) => (
-  <SelectPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      className
-    )}
-    {...props}
-  >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
-      </SelectPrimitive.ItemIndicator>
-    </span>
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-  </SelectPrimitive.Item>
-));
+>(({ className, children, ...props }, ref) => {
+  const size = React.useContext(SelectMenuSizeContext);
+  const compact = size !== "default";
+  return (
+    <SelectPrimitive.Item
+      ref={ref}
+      className={cn(selectItemVariants({ size }), className)}
+      {...props}
+    >
+      <span
+        className={cn(
+          "absolute flex items-center justify-center",
+          compact ? "left-1.5 h-3 w-3" : "left-2 h-3.5 w-3.5",
+        )}
+      >
+        <SelectPrimitive.ItemIndicator>
+          <Check className={compact ? "h-3 w-3" : "h-4 w-4"} />
+        </SelectPrimitive.ItemIndicator>
+      </span>
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    </SelectPrimitive.Item>
+  );
+});
 SelectItem.displayName = SelectPrimitive.Item.displayName;
 
 const SelectSeparator = React.forwardRef<

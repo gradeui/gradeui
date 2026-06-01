@@ -114,6 +114,11 @@ export interface PropManifest {
   /** The original descriptor line, verbatim. Useful when the parser falls
    *  back to `kind: "unknown"` — the UI can still surface the raw hint. */
   raw: string;
+  /** Optional inspector section the prop belongs to (from the contract's
+   *  `group`). The settings panel groups props under named sections —
+   *  e.g. MediaSurface's `src`/`alt`/`hint` carry `group: "image"`.
+   *  Undefined → the panel's default placement. */
+  group?: string;
 }
 
 export interface ComponentManifest {

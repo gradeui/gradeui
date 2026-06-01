@@ -17,6 +17,7 @@ import * as React from "react";
 import { ThreeScene } from "./three-scene";
 import { MediaSurface } from "./media-surface";
 import { shaderPresetById } from "@/lib/three/shader-presets";
+import { THEME_REACTIVE_PALETTE } from "@/lib/three/theme-palette";
 import { cn } from "@/lib/utils";
 import type { Palette } from "@/lib/three/types";
 
@@ -26,7 +27,7 @@ export interface ShaderPresetPreviewProps {
   postPreset?: string;
   palette?: Partial<Palette>;
   className?: string;
-  aspect?: "video" | "square" | "portrait" | "wide";
+  aspect?: "video" | "standard" | "square" | "portrait" | "wide";
   radius?: "none" | "sm" | "md" | "lg" | "xl";
   /** Text label shown on the card. Defaults to preset label. */
   label?: string;
@@ -56,7 +57,12 @@ export const ShaderPresetPreview = React.forwardRef<
   ) => {
     const entry = shaderPresetById[preset];
     const [hovered, setHovered] = React.useState(false);
-    const shouldRender = live === "always" || (live === "hover" && hovered);
+    // `live="never"` stays a static poster/placeholder. Otherwise the
+    // scene is always mounted so the thumbnail shows a real STILL frame
+    // of the shader (ThreeScene paints one frame even when paused); it
+    // only ANIMATES on hover (or when live="always").
+    const showScene = live !== "never";
+    const animate = live === "always" || (live === "hover" && hovered);
 
     return (
       <div
@@ -71,14 +77,20 @@ export const ShaderPresetPreview = React.forwardRef<
           className,
         )}
       >
-        {shouldRender ? (
+        {showScene ? (
           <ThreeScene
+            key={preset}
             preset={preset}
             postPreset={postPreset}
-            palette={palette}
+            // Theme-reactive by default so thumbnails re-tint with the page
+            // theme (same as the live playground). Caller can override.
+            palette={palette ?? THEME_REACTIVE_PALETTE}
             aspect={aspect}
             radius={radius}
-            autoPlay
+            // Mount PAUSED (still frame), animate on hover via the
+            // controlled `play` prop — no remount, no context churn.
+            autoPlay={false}
+            play={animate}
             controls={false}
             pauseOffscreen
             poster={entry?.poster}

@@ -2,6 +2,7 @@ import { ThreeScene } from "@/components/ui/three-scene";
 import { SidecarBlock } from "@/components/sidecar-block";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
+import { PostPlayground } from "./post-playground";
 
 const threeSceneProps = [
   { name: "preset", type: "string", default: "-", description: "Shader preset id from the registry (e.g. \"space\")." },
@@ -38,6 +39,18 @@ export default function ThreeScenePage() {
         <ComponentPreview code={`<ThreeScene preset="space" postPreset="vhs" aspect="wide" />`}>
           <ThreeScene preset="space" postPreset="vhs" aspect="wide" radius="lg" />
         </ComponentPreview>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">Live post-FX (tweakable)</h2>
+        <p className="text-sm text-muted-foreground">
+          Every post knob is a <code className="bg-muted px-1 py-0.5 rounded text-sm">ControlSpec</code>, rendered by{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">ShaderControls</code>. Dragging a control rebuilds the{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">PostPreset</code> and pushes it through the composer&rsquo;s
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">setPreset</code> — the running shader updates live, no remount.
+          The same panel + post stack work over any source (shader, image, video).
+        </p>
+        <PostPlayground />
       </div>
 
       <div className="space-y-4">

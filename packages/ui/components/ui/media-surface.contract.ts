@@ -189,6 +189,7 @@ export const MediaSurfaceContract = contract({
     hint: {
       schema: HintSchema.optional(),
       design: "knob",
+      group: "image",
       control: "glyph-picker",
       label: "Slot kind",
       description:
@@ -239,6 +240,7 @@ export const MediaSurfaceContract = contract({
     alt: {
       schema: z.string().optional(),
       design: "content",
+      group: "image",
       control: "text",
       label: "Alt text",
       description:
@@ -251,6 +253,7 @@ export const MediaSurfaceContract = contract({
     src: {
       schema: z.string().url().optional(),
       design: "content",
+      group: "image",
       control: "url",
       label: "Image URL",
       description:
@@ -334,14 +337,10 @@ export const MediaSurfaceContract = contract({
       // a `source` first).
       enabledWhen: { propPresent: "source" },
     },
-    refresh: {
-      label: "Refresh",
-      icon: "RotateCw",
-      description:
-        "Re-fetch this slot's resolved URL (cache-busts the browser AND the local URL map). Useful when a Pollinations URL failed to load on first hit — Pollinations has typically finished its cold-start by now, so a retry usually succeeds.",
-      kind: "refresh-media-source",
-      enabledWhen: { propPresent: "source" },
-    },
+    // "Refresh" (refresh-media-source) removed — its cache-bust re-resolve
+    // read as "step the image back" and confused more than it helped. Fill
+    // re-resolves anyway; a dedicated retry can return behind a clearer
+    // affordance if a real need resurfaces.
   },
 });
 

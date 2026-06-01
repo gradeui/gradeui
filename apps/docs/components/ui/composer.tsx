@@ -1124,7 +1124,13 @@ function ComposerInner({
               placeholder={
                 <div
                   data-gds-part="composer-placeholder"
-                  className="absolute top-3 left-3 sm:left-4 text-sm text-[var(--gds-composer-muted-fg)] pointer-events-none select-none"
+                  // Match the standard Input placeholder exactly.
+                  // (The old `text-[var(--gds-composer-muted-fg)]`
+                  // emitted a bare OKLCH triplet with no oklch()
+                  // wrapper — an invalid color — so the placeholder
+                  // fell back to the dark editor foreground and read
+                  // like already-typed text.)
+                  className="absolute top-3 left-3 sm:left-4 text-sm text-muted-foreground pointer-events-none select-none"
                 >
                   {placeholder}
                 </div>

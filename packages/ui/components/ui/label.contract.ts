@@ -9,7 +9,7 @@ import { contract } from "@gradeui/contracts";
 
 export const LabelContract = contract({
   name: "Label",
-  description: "Every Input / Textarea / Checkbox / Switch / RadioGroup. Always use htmlFor so clicking the label focuses the control.",
+  description: "Every Input / Textarea / Checkbox / Switch / RadioGroup. Always use htmlFor so clicking the label focuses the control. Match `size` to the field it labels (size=\"xs\" label over a size=\"xs\" input).",
   import: "@gradeui/ui",
   aliases: ["label","form label","field label","caption"],
   composesWith: ["Input","Textarea","Checkbox","Switch","RadioGroup","Select"],
@@ -18,6 +18,11 @@ export const LabelContract = contract({
       schema: z.string().optional(),
       design: "content",
       description: "binds to the input's id",
+  },
+  "size": {
+      schema: z.enum(["default", "sm", "xs"]).optional(),
+      design: "knob",
+      description: "text size, mirrors Input/Select/Textarea so a field and its label scale together. default = text-sm; xs = 11px for dense tool panels.",
   },
   },
 });

@@ -847,6 +847,15 @@ export function StudioCanvas({
               filled: wroteToJsx ? 1 : data.filled,
               skipped: wroteToJsx ? 0 : data.skipped,
             });
+            // Trail entry — the page (which has project + screen context)
+            // listens for grade:image-action and logs it.
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("grade:image-action", {
+                  detail: { action: "asset.fill", designId: focusedIdRef.current },
+                }),
+              );
+            }
           } else {
             setFillReport({ filled: 0, skipped: data.skipped });
           }

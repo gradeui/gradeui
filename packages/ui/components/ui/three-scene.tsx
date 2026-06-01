@@ -28,6 +28,7 @@ import type {
   SceneFactory,
   SceneHandle,
   Palette,
+  PostPreset,
 } from "@/lib/three/types";
 import { createPostComposer } from "@/lib/three/post-composer";
 import { sceneRegistry, shaderPresetById } from "@/lib/three/shader-presets";
@@ -151,7 +152,8 @@ function resolvePalette(palette: Palette, host: HTMLElement): Palette {
 }
 
 export interface ThreeSceneProps
-  extends Omit<BaseMediaProps, "src" | "poster"> {
+  extends Omit<BaseMediaProps, "src" | "poster">,
+    Omit<React.HTMLAttributes<HTMLDivElement>, keyof BaseMediaProps> {
   /** Preset id from the shader preset registry. */
   preset?: string;
   /**
@@ -167,8 +169,12 @@ export interface ThreeSceneProps
   fragmentShader?: string;
   /** Called when a supplied `fragmentShader` fails to compile. */
   onShaderError?: (error: ShaderCompileError) => void;
-  /** Post-FX preset id. Defaults to the preset's `defaultPostPreset` or "vhs". */
-  postPreset?: string;
+  /** Post-FX preset. Either a registry id (`"vhs"`) OR a full `PostPreset`
+   *  object — pass an object (e.g. from `postStateToPreset`) to drive the
+   *  stack live from a controls panel; changes are applied via the
+   *  composer's `setPreset` WITHOUT remounting WebGL. Defaults to the
+   *  base preset's `defaultPostPreset` or "vhs". */
+  postPreset?: string | PostPreset;
   /** Palette overrides. Unset slots fall back to `DEFAULT_PALETTE`. */
   palette?: Partial<Palette>;
   /**
@@ -180,6 +186,13 @@ export interface ThreeSceneProps
   poster?: string;
   /** Pixel-ratio cap. Defaults to `Math.min(window.devicePixelRatio, 2)`. */
   maxDpr?: number;
+  /**
+   * Controlled play/pause. When provided, pauses/resumes the render loop
+   * WITHOUT remounting the WebGL context (unlike `autoPlay`, which only
+   * sets the initial state and remounts on change). Use for "animate on
+   * hover" thumbnails. Reduced-motion still forces paused.
+   */
+  play?: boolean;
 }
 
 export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
@@ -193,6 +206,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       createScene: createSceneProp,
       controls = false,
       autoPlay = true,
+      play,
       pauseOffscreen = true,
       aspect = "video",
       radius = "lg",
@@ -202,11 +216,12 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       className,
       style,
       maxDpr,
+      ...rest
     },
     ref,
   ) => {
     const hostRef = React.useRef<HTMLDivElement | null>(null);
-    const [playing, setPlaying] = React.useState(autoPlay);
+    const [playing, setPlaying] = React.useState(play ?? autoPlay);
     const [ready, setReady] = React.useState(false);
     const reduced = usePrefersReducedMotion();
 
@@ -229,15 +244,26 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       return null;
     }, [createSceneProp, fragmentShader, preset]);
 
-    // Resolve post preset id
-    const resolvedPostPresetId = React.useMemo(() => {
-      if (postPreset) return postPreset;
-      if (preset) {
-        const p = shaderPresetById[preset];
-        if (p?.defaultPostPreset) return p.defaultPostPreset;
-      }
-      return defaultPostPreset;
+    // Resolve the post-FX preset to a concrete PostPreset object. A
+    // string is looked up in the registry; an object is used as-is (the
+    // live-driven path). Falls back to the base preset's default, then
+    // the global default.
+    const resolvedPost = React.useMemo<PostPreset>(() => {
+      if (postPreset && typeof postPreset === "object") return postPreset;
+      const id =
+        typeof postPreset === "string"
+          ? postPreset
+          : (preset ? shaderPresetById[preset]?.defaultPostPreset : undefined) ??
+            defaultPostPreset;
+      return postPresets[id] ?? postPresets[defaultPostPreset];
     }, [postPreset, preset]);
+
+    // Ref mirror so the build effect reads the CURRENT post object for
+    // its initial composer without depending on `resolvedPost` (which
+    // would remount WebGL on every slider tweak). Ongoing changes flow
+    // through the live effect below via the composer's `setPreset`.
+    const resolvedPostRef = React.useRef(resolvedPost);
+    resolvedPostRef.current = resolvedPost;
 
     React.useEffect(() => {
       const host = hostRef.current;
@@ -296,8 +322,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
         }
       }
 
-      const postPresetObj =
-        postPresets[resolvedPostPresetId] ?? postPresets[defaultPostPreset];
+      const postPresetObj = resolvedPostRef.current;
 
       const post = createPostComposer({
         renderer,
@@ -310,7 +335,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
 
       const clock = new THREE.Clock();
       let rafId = 0;
-      let running = autoPlay && !reduced;
+      let running = (play ?? autoPlay) && !reduced;
       let visible = true;
 
       const tick = () => {
@@ -321,8 +346,13 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
         handle.update?.(elapsed, delta);
         post.composer.render(delta);
       };
+      // Always paint ONE frame, even when not auto-playing, so a paused
+      // scene shows a static still (preset thumbnails rely on this) rather
+      // than a blank surface. The raf loop only continues while `running`.
+      handle.update?.(0, 0);
+      post.composer.render(0);
+      setReady(true);
       tick();
-      if (running) setReady(true);
 
       // ResizeObserver for responsive canvas
       const ro = new ResizeObserver(([entry]) => {
@@ -331,6 +361,14 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
         renderer.setSize(w, h);
         post.resize(w, h);
         handle.resize?.(w, h);
+        // When PAUSED (thumbnail, autoPlay=false, or reduced-motion) the
+        // raf loop isn't running, so the one-shot mount frame can land at
+        // 0×0 before layout and stay blank. Re-paint the still frame on
+        // every resize so a paused scene always shows correct content.
+        if (!running) {
+          handle.update?.(clock.getElapsedTime(), 0);
+          post.composer.render(0);
+        }
       });
       ro.observe(host);
 
@@ -386,12 +424,18 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
           running = !running;
           setPlaying(running);
         },
+        setRunning: (next: boolean) => {
+          // Pause/resume WITHOUT remounting (the raf loop stays alive and
+          // just skips rendering while paused). Reduced-motion always wins.
+          running = next && !reduced;
+          setPlaying(running);
+        },
         setPalette: (p: Palette) => {
           renderer.setClearColor(new THREE.Color(p.background), 1);
           handle.setPalette?.(p);
         },
-        setPostPreset: (id: string) => {
-          const next = postPresets[id];
+        setPostPreset: (p: string | PostPreset) => {
+          const next = typeof p === "string" ? postPresets[p] : p;
           if (next) post.setPreset(next);
         },
       };
@@ -412,9 +456,9 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       };
       // Factory/palette/post-preset changes remount the whole thing (simpler than
       // rebuilding in place, and palette changes are rare enough that it's fine).
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       resolvedFactory,
-      resolvedPostPresetId,
       palette,
       autoPlay,
       reduced,
@@ -425,14 +469,30 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
 
     const liveRef = React.useRef<{
       toggle: () => void;
+      setRunning: (next: boolean) => void;
       setPalette: (p: Palette) => void;
-      setPostPreset: (id: string) => void;
+      setPostPreset: (p: string | PostPreset) => void;
     } | null>(null);
+
+    // Live post-FX updates — push the resolved post object through the
+    // composer's setPreset on change, no remount. No-op until the build
+    // effect has wired liveRef.
+    React.useEffect(() => {
+      liveRef.current?.setPostPreset(resolvedPost);
+    }, [resolvedPost]);
+
+    // Controlled play/pause — pause/resume WITHOUT remounting (used by
+    // preset thumbnails to animate on hover without a context churn). Only
+    // active when `play` is explicitly controlled.
+    React.useEffect(() => {
+      if (play !== undefined) liveRef.current?.setRunning(play);
+    }, [play]);
 
     const togglePlay = () => liveRef.current?.toggle();
 
     return (
       <MediaSurface
+        {...rest}
         ref={(node) => {
           hostRef.current = node;
           if (typeof ref === "function") ref(node);

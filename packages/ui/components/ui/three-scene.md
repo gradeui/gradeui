@@ -2,7 +2,7 @@
 name: ThreeScene
 import: "@gradeui/ui"
 props:
-  - preset?: "space" | "plasma" | "voronoi" | "synthwave" — shader preset id from the registry
+  - preset?: "mesh" | "waves" | "space" | "plasma" | "voronoi" | "synthwave" — shader preset id from the registry
   - fragmentShader?: string — user-authored GLSL body; takes precedence over preset
   - onShaderError?: (error: ShaderCompileError) => void — fires on compile failure; scene falls back to `preset="space"`
   - postPreset?: "none" | "vhs" | "cinematic" | "synthwave" | "crt" (default "vhs") — post-processing pass
@@ -23,6 +23,8 @@ notes: |
   ## Path 1 — `preset` (pick one, fastest, highest quality)
 
   Valid `preset` ids (complete list — do NOT invent any others):
+    - "mesh"      — smooth moving blobs of primary/secondary/accent over the background; soft, theme-reactive. THE default soft background. Default post: "none".
+    - "waves"     — flowing banded ribbons rippling across the surface; clean motion for headers/heroes. Default post: "none".
     - "space"     — Hyperspace starfield, streaking stars. Default post: "vhs".
     - "plasma"    — soft rolling colour clouds, ambient/abstract. Default post: "synthwave".
     - "voronoi"   — jittered cellular grid with glowing edges. Default post: "crt".
@@ -118,6 +120,25 @@ notes: |
   ## Fullscreen backgrounds
 
   Surface defaults to `aspect="video"` (16:9). For a full-bleed hero background using `className="absolute inset-0"`, ALWAYS also pass `aspect="auto"` — otherwise the aspect-ratio constraint fights the absolute positioning and you get letterboxing.
+
+  ## Layering & tweakable params (direction)
+
+  Shaders are composable, not monolithic. A rendered visual is a BASE
+  layer (the generative scene — gradient, dots, waves, space…) plus a
+  stack of EFFECT layers applied on top (grain, dither, vignette,
+  chromatic…). This is the same model as the post-FX composer — an
+  effect is independent of the base it sits over, so e.g. `grain`
+  applies to ALL bases (mix-and-match).
+
+  Every layer — base and effect — declares a `params: ParamSpec[]`
+  schema (see lib/three/types.ts): `range` (slider + number),
+  `segmented`, `select`, `toggle`, `color`, `colorList`. A param's
+  `key` doubles as the GLSL uniform name, so values map to uniforms
+  generically. The same `ParamSpec` shape is what a controls panel
+  renders from — the Paper-style "Presets + sliders + swatches" panel —
+  and is the canonical "this section is a form" descriptor shared with
+  the inspector controls kit (Input slots, sized Select, segmented
+  control, slider+number).
 ---
 
 ```jsx

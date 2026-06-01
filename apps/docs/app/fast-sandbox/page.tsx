@@ -579,7 +579,9 @@ export default function FastSandboxPage() {
               `[data-gds-source-id="${CSS.escape(id)}"]`
             );
           } else {
+            // Root at the AppShell root — the user's topmost wrapper.
             scope =
+              document.querySelector('[data-gds-part="app-shell"]') ||
               document.querySelector('[data-gds-part="app-shell-main"]') ||
               document.querySelector('[data-gds-part^="app-shell"]') ||
               document.body;

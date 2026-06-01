@@ -24,22 +24,13 @@ import type { ThemeInput } from "./types";
 /**
  * Studio — the app's chrome theme.
  *
- * Cream off-white background with a clearly visible warm tint, plus
- * near-black text and near-black buttons. Built to match the
- * "parchment + black UI" reference image: an app surface that reads
- * as quiet paper, not as gray. The warmth comes from neutral hue 85°
- * (very yellow-leaning) with chroma 0.20× — strong enough to register
- * as cream rather than off-white.
- *
- * The "black text + black buttons" half doesn't come from this input
- * alone — the generator's default ramp puts primary at step 500
- * (L≈0.61, mid-grey at zero chroma). To land near-black we apply a
- * `tokenOverrides` post-process in `lib/themes/index.ts` that
- * remaps `colors.light.primary` to the dark end of the neutral ramp,
- * and similar for the other modes. Primary hue + chroma below are
- * still wired into the ramps map (so the theme builder UI has
- * coherent values to display), but the rendered token uses the
- * override.
+ * Cream off-white background with a clearly visible warm tint (neutral
+ * hue 85°), now paired with a blue primary and a teal-cyan secondary
+ * brand colour. Constructed exactly like every other built-in theme:
+ * a plain ThemeInput fed through `generateTheme`, with no per-theme
+ * post-process override (the old near-black-button override in
+ * `lib/themes/index.ts` has been removed). Brand colours come straight
+ * from `hues.primary` / `hues.accent` below.
  *
  * Future: this will be the locked chrome theme for non-pro users.
  * For now it sits in the picker alongside Calm and Energy so we can
@@ -53,39 +44,39 @@ export const studioInput: ThemeInput = {
   hues: {
     // Yellow-leaning neutral — 85° lands close to "warm paper" /
     // "parchment". Visibly warm at the light end without crossing
-    // into amber territory.
+    // into amber territory. The cream surface stays; only the brand
+    // colours below change.
     neutral: 85,
-    // Primary hue is functionally irrelevant — the post-process in
-    // `index.ts` re-routes the primary token to the neutral-dark
-    // step. Keep it aligned with neutral so any residual chroma
-    // matches the rest of the theme.
-    primary: 85,
-    // Accent stays in the same warm family. Used for secondary
-    // highlights where a hint of warmth is wanted without breaking
-    // the monochrome chrome.
-    accent: 85,
+    // Brand primary — blue. Exact hue of the requested
+    // oklch(0.5667 0.1529 250.94); the generator's step-500 primary
+    // token lands at L 0.610 / C 0.153 at this hue (chroma scale 0.90
+    // below × the 0.170 peak).
+    primary: 250.94,
+    // Secondary brand colour — teal-cyan. Exact hue of the requested
+    // oklch(0.5667 0.1085 214.94). Surfaced through the `accent`
+    // token (the generator's `secondary` token is always a neutral
+    // surface, so the second brand colour rides on accent).
+    accent: 214.94,
   },
   chroma: {
-    // Visible warmth — turns the off-white into a cream. Higher
-    // than the calm-leaning 0.12 of an earlier pass because the
-    // reference image is clearly tinted, not just barely off-white.
-    neutral: 0.2,
-    // Effectively zero — primary ramp is monochromatic. The
-    // override in `index.ts` makes this moot for the rendered
-    // primary token, but a clean primary ramp keeps the theme
-    // builder UI honest (the swatch reads neutral, matching what
-    // buttons actually look like).
-    primary: 0.01,
-    // Subtle warm accent — kept low so accent surfaces read as
-    // "slightly warmer cream" not as a competing brand colour.
-    accent: 0.3,
+    // Rebalanced for `default` intensity (was 0.2 under `muted` =
+    // 0.12 effective). Keeps the cream surface visually identical.
+    neutral: 0.12,
+    // 0.90 × 0.170 peak = C 0.153 on the primary token — matches the
+    // requested primary chroma.
+    primary: 0.9,
+    // 0.64 × 0.170 peak = C 0.109 on the accent token — matches the
+    // requested secondary chroma.
+    accent: 0.64,
   },
-  // Muted intensity throughout — Studio is meant to be chrome, not a
-  // brand statement.
-  intensity: "muted",
+  // Default intensity so the brand chroma above renders at full
+  // strength (muted would scale it down by 0.6).
+  intensity: "default",
   typography: {
-    display: "inter",
-    body: "inter",
+    // IBM Plex Mono across the board — borrowed from the Forest Terminal
+    // theme. Studio now reads as a monospace, terminal-flavoured chrome.
+    display: "ibmPlexMono",
+    body: "ibmPlexMono",
     mono: "ibmPlexMono",
     scale: "default",
     headingWeight: 600,

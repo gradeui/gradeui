@@ -231,6 +231,13 @@ export default function App() {
                     hint="product"
                     alt={`${p.name} running shoe`}
                     source={{ kind: "product", name: p.name, brand: "Acme" }}
+                    // Per-item src — set by Studio's Fill button / asset
+                    // picker (writes the resolved URL into THIS product's
+                    // data entry). Unset → falls through to the `source`
+                    // descriptor resolution. Binding to `p.src` (not a
+                    // hardcoded literal) is what keeps each card's image
+                    // independent inside the .map().
+                    src={p.src ?? undefined}
                     radius="none"
                     overlay={
                       <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 bg-background/80 backdrop-blur">

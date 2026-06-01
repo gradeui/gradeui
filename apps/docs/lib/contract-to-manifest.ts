@@ -95,6 +95,17 @@ export function adaptContractProp(
   name: string,
   prop: PropContract,
 ): PropManifest | null {
+  const adapted = adaptPropShape(name, prop);
+  // Carry the contract's `group` through so the inspector can render
+  // the prop in its declared section (e.g. MediaSurface → "image").
+  if (adapted && prop.group) adapted.group = prop.group;
+  return adapted;
+}
+
+function adaptPropShape(
+  name: string,
+  prop: PropContract,
+): PropManifest | null {
   if (
     prop.design === "plumbing" ||
     prop.design === "event" ||

@@ -9,7 +9,7 @@ import { contract } from "@gradeui/contracts";
 
 export const SelectContract = contract({
   name: "Select",
-  description: "Single-choice from 3+ known options. Fewer than 3 → RadioGroup. Huge list with search → use a Combobox (not in DS yet). Multi-select → not supported by this primitive.",
+  description: "Single-choice from 3+ known options. Fewer than 3 → RadioGroup. Huge list with search → use a Combobox (not in DS yet). Multi-select → not supported by this primitive. In dense tool panels, set size=\"xs\" on BOTH the trigger and the content so the closed control and open menu match.",
   import: "@gradeui/ui",
   aliases: ["dropdown","combobox","picker","select","pop-up button","popup button","popup picker","picker view","rnpickerselect","react native picker","native picker"],
   subcomponents: ["SelectTrigger","SelectValue","SelectContent","SelectItem","SelectGroup","SelectLabel","SelectSeparator"],
@@ -20,18 +20,15 @@ export const SelectContract = contract({
       design: "plumbing",
       description: "Radix root",
   },
-  "wraps": {
-      schema: z.unknown(),
-      design: "plumbing",
+  "size": {
+      schema: z.enum(["default", "sm", "xs"]).optional(),
+      design: "knob",
+      description: "control density; wraps the clickable control, nest SelectValue inside",
   },
   "placeholder": {
       schema: z.string().optional(),
       design: "content",
       description: "text when nothing is selected",
-  },
-  "accepts": {
-      schema: z.unknown(),
-      design: "plumbing",
   },
   },
 });

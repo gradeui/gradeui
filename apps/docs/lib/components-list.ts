@@ -59,6 +59,7 @@ export const componentsList = [
   { name: "Three Scene", href: "/components/three-scene", category: "Media" },
   { name: "Shader Preset Preview", href: "/components/shader-preset-preview", category: "Media" },
   { name: "Shader Preset Picker", href: "/components/shader-preset-picker", category: "Media" },
+  { name: "Background Fill", href: "/components/background-fill", category: "Media" },
   // Interactions — drag/drop, motion, gesture primitives. New category
   // landed May 2026 with Sortable; motion is documented here too even
   // though it's an external library (allow-listed import), not a Grade

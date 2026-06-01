@@ -49,6 +49,9 @@ const buttonVariants = cva(
         raised: "gds-button-raised",
       },
       size: {
+        // xs: h-6 (24px) — Figma-density for tool panels (the Studio
+        // inspector), matches `<TabsList size="sm">`-era 24px controls.
+        xs: "h-6 gap-1 px-2 text-[11px] [&_svg]:size-3",
         sm: "h-7 gap-1.5 px-2.5 text-xs [&_svg]:size-3.5",
         md: "h-8 gap-1.5 px-3 text-xs [&_svg]:size-3.5",
         // Alias for md — back-compat with usages that predate the

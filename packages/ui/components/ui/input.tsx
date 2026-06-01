@@ -22,6 +22,9 @@ const inputVariants = cva(
       size: {
         default: "h-9 pl-3 pr-3 py-1 text-base file:text-sm md:text-sm",
         sm: "h-8 pl-2 pr-2 py-1 text-xs file:text-xs",
+        // Figma-density — for tool panels (the Studio inspector) where
+        // many controls stack in a narrow column and 28px rows matter.
+        xs: "h-7 pl-2 pr-2 py-0 text-xs file:text-xs",
       },
     },
     defaultVariants: { size: "default" },
@@ -32,17 +35,76 @@ type InputSize = NonNullable<VariantProps<typeof inputVariants>["size"]>;
 
 type InputProps = Omit<React.ComponentProps<"input">, "size"> & {
   size?: InputSize;
+  /** Adornment rendered inside the field on the leading edge — an icon,
+   *  a unit, a prefix. Non-interactive by default (clicks pass through
+   *  to focus the input); pass an element with its own pointer-events
+   *  if you need it clickable. */
+  startSlot?: React.ReactNode;
+  /** Adornment rendered inside the field on the trailing edge — a unit
+   *  ("px"), a clear button, a stepper. Same pointer rules as
+   *  `startSlot`. */
+  endSlot?: React.ReactNode;
+};
+
+// Reserved space + adornment inset per size, so the text never collides
+// with a slot. Consumers can still override via `className` (twMerge
+// lets a later pl-*/pr-* win) for extra-tight cases.
+const SLOT_PADDING: Record<
+  InputSize,
+  { startPad: string; endPad: string; startInset: string; endInset: string }
+> = {
+  default: { startPad: "pl-9", endPad: "pr-9", startInset: "pl-3", endInset: "pr-3" },
+  sm: { startPad: "pl-7", endPad: "pr-6", startInset: "pl-2", endInset: "pr-2" },
+  xs: { startPad: "pl-6", endPad: "pr-5", startInset: "pl-2", endInset: "pr-2" },
 };
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, size = "default", ...props }, ref) => {
+  ({ className, type, size = "default", startSlot, endSlot, ...props }, ref) => {
+    if (!startSlot && !endSlot) {
+      return (
+        <input
+          type={type}
+          className={cn(inputVariants({ size }), className)}
+          ref={ref}
+          {...props}
+        />
+      );
+    }
+    const pad = SLOT_PADDING[size];
     return (
-      <input
-        type={type}
-        className={cn(inputVariants({ size }), className)}
-        ref={ref}
-        {...props}
-      />
+      <div className="relative flex w-full items-center">
+        {startSlot ? (
+          <span
+            className={cn(
+              "pointer-events-none absolute inset-y-0 left-0 flex items-center text-muted-foreground [&_svg]:size-3.5",
+              pad.startInset,
+            )}
+          >
+            {startSlot}
+          </span>
+        ) : null}
+        <input
+          type={type}
+          ref={ref}
+          className={cn(
+            inputVariants({ size }),
+            startSlot && pad.startPad,
+            endSlot && pad.endPad,
+            className,
+          )}
+          {...props}
+        />
+        {endSlot ? (
+          <span
+            className={cn(
+              "pointer-events-none absolute inset-y-0 right-0 flex items-center text-muted-foreground [&_svg]:size-3.5",
+              pad.endInset,
+            )}
+          >
+            {endSlot}
+          </span>
+        ) : null}
+      </div>
     );
   }
 );

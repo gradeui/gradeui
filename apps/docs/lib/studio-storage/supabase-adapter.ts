@@ -74,11 +74,9 @@ import type {
   StudioStorage,
 } from "./types";
 
-/** Private bucket holding user assets. Created by migration 0014. */
+/** Public bucket holding user assets (migration 0014). Public so the
+ *  permanent getPublicUrl works in screens + shares without signing. */
 const ASSET_BUCKET = "user-assets";
-/** Signed-URL lifetime for asset delivery (1 hour). Re-minted on every
- *  list, so a long-lived browser session just refetches. */
-const ASSET_URL_TTL = 60 * 60;
 
 interface AssetRow {
   id: string;
@@ -961,19 +959,15 @@ export class SupabaseStudioStorage implements StudioStorage {
     if (error) throw error;
     const rows = (data ?? []) as AssetRow[];
     if (rows.length === 0) return [];
+    // Public bucket → permanent URLs, no signing round-trip.
+    return rows.map((r) => rowToAsset(r, this.assetPublicUrl(r.path)));
+  }
 
-    // Batch-mint signed delivery URLs for the private objects.
-    const { data: signed } = await this.supabase.storage
-      .from(ASSET_BUCKET)
-      .createSignedUrls(
-        rows.map((r) => r.path),
-        ASSET_URL_TTL,
-      );
-    const urlByPath = new Map<string, string>();
-    for (const s of signed ?? []) {
-      if (s.signedUrl && s.path) urlByPath.set(s.path, s.signedUrl);
-    }
-    return rows.map((r) => rowToAsset(r, urlByPath.get(r.path)));
+  /** Permanent public URL for a bucket object. The bucket is public
+   *  (0014), so this never expires and is safe to store in a screen. */
+  private assetPublicUrl(path: string): string {
+    return this.supabase.storage.from(ASSET_BUCKET).getPublicUrl(path).data
+      .publicUrl;
   }
 
   async uploadAsset(input: {
@@ -1032,10 +1026,7 @@ export class SupabaseStudioStorage implements StudioStorage {
       throw error;
     }
 
-    const { data: signed } = await this.supabase.storage
-      .from(ASSET_BUCKET)
-      .createSignedUrl(path, ASSET_URL_TTL);
-    const asset = rowToAsset(data as AssetRow, signed?.signedUrl);
+    const asset = rowToAsset(data as AssetRow, this.assetPublicUrl(path));
 
     // Trail entry — only project-scoped uploads land on a feed (a
     // general-library upload has no project to scope to). The verb
@@ -1081,10 +1072,7 @@ export class SupabaseStudioStorage implements StudioStorage {
       .single();
     if (error) throw error;
     const asset = data as AssetRow;
-    const { data: signed } = await this.supabase.storage
-      .from(ASSET_BUCKET)
-      .createSignedUrl(asset.path, ASSET_URL_TTL);
-    return rowToAsset(asset, signed?.signedUrl);
+    return rowToAsset(asset, this.assetPublicUrl(asset.path));
   }
 
   async deleteAsset(id: string): Promise<void> {

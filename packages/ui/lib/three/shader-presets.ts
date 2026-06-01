@@ -16,16 +16,37 @@ import { spaceScene } from "./scenes/space";
 import { plasmaScene } from "./scenes/plasma";
 import { voronoiScene } from "./scenes/voronoi";
 import { synthwaveScene } from "./scenes/synthwave";
+import { meshScene, wavesScene } from "./scenes/fragment-scenes";
 
 export const sceneRegistry: Record<string, SceneFactory> = {
   space: spaceScene,
   plasma: plasmaScene,
   voronoi: voronoiScene,
   synthwave: synthwaveScene,
+  mesh: meshScene,
+  waves: wavesScene,
   // Further candidates: icosa, oscilloscope, retro-sunset, sdf
 };
 
 export const shaderPresets: ShaderPreset[] = [
+  {
+    id: "mesh",
+    label: "Mesh gradient",
+    description:
+      "Smooth moving blobs of the primary / secondary / accent colours over the background — the go-to soft, theme-reactive background.",
+    tags: ["gradient", "mesh", "abstract", "hero", "background"],
+    scene: "mesh",
+    defaultPostPreset: "none",
+  },
+  {
+    id: "waves",
+    label: "Waves",
+    description:
+      "Flowing banded ribbons that ripple across the surface. Clean motion for headers and hero backdrops.",
+    tags: ["waves", "motion", "abstract", "hero"],
+    scene: "waves",
+    defaultPostPreset: "none",
+  },
   {
     id: "space",
     label: "Hyperspace",

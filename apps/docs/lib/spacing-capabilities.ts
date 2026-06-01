@@ -46,6 +46,20 @@ export interface SpacingCapabilities {
    *  here on the same capability object because the rule "which
    *  element types this applies to" runs in the same place. */
   radius: boolean;
+  /** Border (width + position + style + colour). Lives in its own
+   *  Border group below Appearance. Applies to anything with a box —
+   *  layout primitives, grids, buttons, media leaves, raw divs. Off
+   *  for text intrinsics (a border on an `<h1>` is unusual noise) and
+   *  full-bleed app-shell chrome. */
+  border: boolean;
+  /** Box shadow / elevation (theme-defined `shadow-*` tokens). Same
+   *  scope as border — boxes, not text. The actual shadow values are
+   *  owned by the theme, so this only ever writes a token. */
+  shadow: boolean;
+  /** Background fill (theme `bg-*` colour tokens). Boxes only — text
+   *  intrinsics + app-shell chrome stay out of it. Surface-bearing DS
+   *  components carry their own fill; this writes an override on top. */
+  fill: boolean;
   /** Tailwind `opacity-N`. Applies to virtually everything that
    *  renders — defaults to true; only intentionally false for
    *  full-bleed app chrome that shouldn't go translucent. */
@@ -70,11 +84,16 @@ const ALL_CAPS: SpacingCapabilities = {
   gridCols: true,
   radius: true,
   opacity: true,
-  // Default ON for unknown elements (raw divs, future DS components);
-  // text-intrinsic profiles keep it true; AppShell chrome turns it
-  // off (chrome shouldn't restyle text weight at the wrapper level).
-  fontWeight: true,
-  fontSize: true,
+  border: true,
+  shadow: true,
+  fill: true,
+  // font-weight + font-size are now TEXT-NODE ONLY. Containers
+  // (div / Stack / Row / Grid / unknown) don't surface them — a
+  // wrapper restyling its text weight/size is rarely the intent and
+  // it just crowds the panel. Only the TEXT_INTRINSICS bucket flips
+  // these back on.
+  fontWeight: false,
+  fontSize: false,
 };
 
 const NO_CAPS: SpacingCapabilities = {
@@ -84,6 +103,9 @@ const NO_CAPS: SpacingCapabilities = {
   gridCols: false,
   radius: false,
   opacity: false,
+  border: false,
+  shadow: false,
+  fill: false,
   fontWeight: false,
   fontSize: false,
 };
@@ -188,9 +210,10 @@ export function getSpacingCapabilities(args: {
   for (const c of candidates) {
     if (APP_SHELL_PARTS.has(c)) {
       // App-shell chrome shouldn't go translucent — it's the page
-      // frame, not a content surface. Opacity off; everything else
-      // stays per the original rule.
-      return { ...NO_CAPS, padding: true, gap: true };
+      // frame, not a content surface. Opacity off. But it IS a frame,
+      // so it can carry a background fill (the outermost frame is the
+      // natural place for a page-wide shader / image / gradient).
+      return { ...NO_CAPS, padding: true, gap: true, fill: true };
     }
     if (GRID_PRIMITIVES.has(c)) {
       return ALL_CAPS;
@@ -206,11 +229,12 @@ export function getSpacingCapabilities(args: {
         gap: true,
         radius: true,
         opacity: true,
-        // Button labels can take per-instance weight and size
-        // (a "Buy now" CTA might want bolder + bigger than the
-        // default). Both cascade to the label.
-        fontWeight: true,
-        fontSize: true,
+        border: true,
+        shadow: true,
+        fill: true,
+        // font-weight / font-size deliberately OFF — those are
+        // text-node controls now. A button's label sizing is driven
+        // by its variant/size prop, not a per-instance font knob.
       };
     }
     if (TEXT_INTRINSICS.has(c)) {
@@ -226,12 +250,27 @@ export function getSpacingCapabilities(args: {
         fontSize: true,
       };
     }
+    if (c === "MediaSurface") {
+      // No margin on MediaSurface — spacing around a media slot is the
+      // parent layout's job (Stack/Grid gap), and a margin control here
+      // just fought that. Keep radius + opacity + border (framing a
+      // media slot with a hairline is common).
+      return {
+        ...NO_CAPS,
+        radius: true,
+        opacity: true,
+        border: true,
+        shadow: true,
+      };
+    }
     if (MEDIA_LEAVES.has(c)) {
       return {
         ...NO_CAPS,
         margin: true,
         radius: true,
         opacity: true,
+        border: true,
+        shadow: true,
       };
     }
   }
@@ -253,7 +292,9 @@ export function hasAnyLayoutCapability(caps: SpacingCapabilities): boolean {
 /** True when at least one Appearance-group capability is enabled.
  *  Appearance currently covers Border Radius + Opacity + Font
  *  Weight + Font Size. The font-* knobs will likely migrate to a
- *  dedicated Typography group once leading/tracking/etc. land. */
+ *  dedicated Typography group once leading/tracking/etc. land.
+ *  (Border has its own group + `caps.border` check, so it's not
+ *  folded in here.) */
 export function hasAnyAppearanceCapability(
   caps: SpacingCapabilities,
 ): boolean {

@@ -180,6 +180,37 @@ export default function SelectPage() {
             </SelectContent>
           </Select>
         </ComponentPreview>
+
+        <h3 className="text-lg font-medium">Compact (sizes)</h3>
+        <p className="text-sm text-muted-foreground">
+          For dense tool panels, set <code className="bg-muted px-1 py-0.5 rounded text-sm">size</code> on{" "}
+          <strong>both</strong> the <code className="bg-muted px-1 py-0.5 rounded text-sm">SelectTrigger</code>{" "}
+          and the <code className="bg-muted px-1 py-0.5 rounded text-sm">SelectContent</code> so the closed
+          control and the open menu match. The content&rsquo;s size cascades to its items.
+        </p>
+        <ComponentPreview
+          code={`<Select defaultValue="md">
+  <SelectTrigger size="xs" className="w-[140px]">
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent size="xs">
+    <SelectItem value="sm">Small</SelectItem>
+    <SelectItem value="md">Medium</SelectItem>
+    <SelectItem value="lg">Large</SelectItem>
+  </SelectContent>
+</Select>`}
+        >
+          <Select defaultValue="md">
+            <SelectTrigger size="xs" className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent size="xs">
+              <SelectItem value="sm">Small</SelectItem>
+              <SelectItem value="md">Medium</SelectItem>
+              <SelectItem value="lg">Large</SelectItem>
+            </SelectContent>
+          </Select>
+        </ComponentPreview>
       </div>
 
       <div className="space-y-4">

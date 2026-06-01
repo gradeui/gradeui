@@ -57,7 +57,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type MediaAspect = "video" | "square" | "portrait" | "wide" | "auto";
+export type MediaAspect =
+  | "video"
+  | "standard"
+  | "square"
+  | "portrait"
+  | "wide"
+  | "auto";
 export type MediaRadius = "none" | "sm" | "md" | "lg" | "xl";
 
 /**
@@ -132,6 +138,7 @@ export type MediaSource =
 
 const aspectClass: Record<MediaAspect, string> = {
   video: "aspect-video",
+  standard: "aspect-[4/3]",
   square: "aspect-square",
   portrait: "aspect-[3/4]",
   wide: "aspect-[21/9]",

@@ -15,7 +15,7 @@ export const ThreeSceneContract = contract({
   composesWith: ["MediaSurface (internal)","foreground content stacked above with `position: absolute/relative z-10`"],
   props: {
   "preset": {
-      schema: z.enum(["space", "plasma", "voronoi", "synthwave"]).optional(),
+      schema: z.enum(["mesh", "waves", "space", "plasma", "voronoi", "synthwave"]).optional(),
       design: "knob",
       description: "shader preset id from the registry",
   },
