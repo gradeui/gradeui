@@ -181,7 +181,11 @@ These docs are the source of truth for where Studio is going. Read them before r
 
 - **[`STUDIO-AUDIT.md`](./STUDIO-AUDIT.md)** — The cross-cutting **activity trail**. One `events` table + one `logEvent` primitive every feature funnels through, append-only, RLS-scoped to projects. Renders "Ali created an image on {Screen} inside {Project} at {time}, using {model}". Pairs with asset provenance and the revision spine (object vs. timeline). A0–A4 rollout.
 
-These are siblings: learning is *what the system learns and generates*; chat is *how it presents that*; themes is *the unit people remix and share*; storage is *the user's own bytes that make a prototype theirs*; audit is *the trail of who did what across all of it*. They cross-reference for individual features.
+- **[`STUDIO-FILLS.md`](./STUDIO-FILLS.md)** — The **fill model**: a background (shader / image / video / gradient / solid) is a *fill of a frame*, never a free-standing node. The `BackgroundFill` render boundary + `FillValue` shape, the Figma-style `FillPicker`, frame capability (incl. AppShell) + breadcrumb rooting, and the future grouped/searchable **token picker** (registry-abstracted for the DTCG migration) + Studio popover-panel rationalisation. F0 built; F1–F5 rollout.
+
+- **[`STUDIO-EMBED.md`](./STUDIO-EMBED.md)** — **`grade-embed`**: live, isolated Grade renders embeddable anywhere (personal site, blog, Webflow). Fast Frame minus editing chrome — reuses `FastIframeHost`, the share-link record, and the share view's viewport/Fit-scale math. Two modes (React `<GradeEmbed>` + hosted `embed.gradeui.com/e/<id>`), point-at-share-id payload, and the non-trivial sizing story (aspect-ratio + device-frame done; cross-origin auto-height is the new bit). Same kernel-extraction workstream. E0–E4 rollout.
+
+These are siblings: learning is *what the system learns and generates*; chat is *how it presents that*; themes is *the unit people remix and share*; storage is *the user's own bytes that make a prototype theirs*; audit is *the trail of who did what across all of it*; fills is *how a frame gets painted*; embed is *how a finished render leaves Grade for the open web*. They cross-reference for individual features.
 
 ## See also
 
