@@ -9,6 +9,9 @@ import {
   type DemoTrigger,
 } from "./types";
 import { isAbortError, sleep } from "./sleep";
+// Reduced-motion hook from the published package (lib/motion). Folds the OS
+// prefers-reduced-motion query with the global data-motion="off" toggle.
+import { useReducedMotion } from "@gradeui/ui";
 
 /**
  * useScriptedDemo — the shared step-machine hook behind every
@@ -23,11 +26,22 @@ import { isAbortError, sleep } from "./sleep";
  * (mount / inView / manual), loop, pre-delay, completion signal, and
  * the imperative play() / stop() API.
  *
+ * Reduced motion: this hook is the declarative-motion layer's accessibility
+ * boundary. When the OS reports `prefers-reduced-motion: reduce` OR the
+ * global `data-motion="off"` toggle is set (both via `useReducedMotion`),
+ * the runner settles on the FINAL frame instead of animating — zeroed
+ * timings run every step instantly and the sequence never loops, so the
+ * end state shows and holds. That keeps lib/demo honouring the same motion
+ * control as ThreeScene and the CSS reset; without it, a screen built with
+ * <Code> would keep typing under reduced motion and would not be accessible.
+ *
  * Authoring guide for `interpret`:
  *   - `await sleep(ms, ctx.signal)` for any pause so stop() can short
  *     a long wait cleanly.
  *   - `await typeText(text, onTick, stagger, ctx.signal)` for typing
- *     loops, again so stop() interrupts mid-character.
+ *     loops, again so stop() interrupts mid-character. A non-positive
+ *     stagger (what the reduced-motion preset supplies) emits the whole
+ *     string in one tick, so the final state shows with no animation.
  *   - Read `ctx.speed` to grab the resolved DEMO_SPEED_PRESETS entry
  *     when a step doesn't pin its own cadence.
  *   - Throw nothing on cancel — the helpers do it for you. Anything
@@ -35,12 +49,16 @@ import { isAbortError, sleep } from "./sleep";
  */
 
 export interface ScriptedDemoContext {
-  /** Resolved speed preset for the current run. */
+  /** Resolved speed preset for the current run. Zeroed under reduced motion. */
   speed: (typeof DEMO_SPEED_PRESETS)[DemoSpeed];
   /** AbortSignal that fires on stop() / unmount / steps change. */
   signal: AbortSignal;
   /** Live cancellation check for code paths that can't take a signal. */
   cancelled: () => boolean;
+  /** True when the run is in reduced-motion mode (settling, not animating).
+   *  Most interpreters don't need this — zeroed timings handle it — but a
+   *  step that does something non-timing-based (confetti, sound) can skip it. */
+  reduced: boolean;
 }
 
 export interface UseScriptedDemoOptions<TStep> {
@@ -104,6 +122,17 @@ export interface ScriptedDemoState {
 
 const DEFAULT_LOOP_DELAY_MS = 2000;
 
+// Reduced-motion timings — everything instant. `typeText` treats a
+// non-positive stagger as "emit the whole string in one tick", so steps
+// complete without the typing animation (or the flicker a 0ms loop causes)
+// and the surface lands on its final frame.
+const INSTANT_PRESET: (typeof DEMO_SPEED_PRESETS)[DemoSpeed] = {
+  tokenStagger: 0,
+  lineStagger: 0,
+  preDelay: 0,
+  fadeMs: 0,
+};
+
 export function useScriptedDemo<TStep>(
   opts: UseScriptedDemoOptions<TStep>,
 ): ScriptedDemoState {
@@ -120,7 +149,11 @@ export function useScriptedDemo<TStep>(
     onLoopReset,
   } = opts;
 
-  const preset = DEMO_SPEED_PRESETS[speed];
+  // Reduced motion (OS preference OR the global data-motion toggle): settle
+  // on the final frame instead of animating. Zeroed timings + no loop.
+  const reduced = useReducedMotion();
+  const preset = reduced ? INSTANT_PRESET : DEMO_SPEED_PRESETS[speed];
+  const effectiveLoop = reduced ? false : loop;
 
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isComplete, setIsComplete] = React.useState(false);
@@ -217,14 +250,18 @@ export function useScriptedDemo<TStep>(
   }, []);
 
   React.useEffect(() => {
-    if (!steps || steps.length === 0 || !shouldPlay) return;
+    if (!steps || steps.length === 0) return;
+    // Under reduced motion, run once to settle on the final frame even if
+    // the normal trigger (inView / manual) hasn't fired — the content
+    // should be present, just not animated.
+    if (!shouldPlay && !reduced) return;
 
     const controller = new AbortController();
     controllerRef.current = controller;
     const { signal } = controller;
     const cancelled = () => signal.aborted;
 
-    const ctx: ScriptedDemoContext = { speed: preset, signal, cancelled };
+    const ctx: ScriptedDemoContext = { speed: preset, signal, cancelled, reduced };
 
     let active = true;
 
@@ -238,7 +275,7 @@ export function useScriptedDemo<TStep>(
           // Initial pre-delay so the static state is visible for a
           // beat before the first step fires. Mostly matters for
           // `trigger="inView"` (the eye needs an anchor) but it's
-          // cheap to apply universally.
+          // cheap to apply universally. Zero under reduced motion.
           await sleep(trigger === "inView" ? preset.preDelay : 0, signal);
 
           for (let i = 0; i < steps.length; i++) {
@@ -252,7 +289,7 @@ export function useScriptedDemo<TStep>(
           setIsComplete(true);
           completeRef.current?.();
 
-          if (!loop) {
+          if (!effectiveLoop) {
             setIsPlaying(false);
             return;
           }
@@ -272,7 +309,7 @@ export function useScriptedDemo<TStep>(
           setIsPlaying(false);
           return;
         }
-      } while (active && loop && !signal.aborted);
+      } while (active && effectiveLoop && !signal.aborted);
     };
 
     void run();
@@ -284,9 +321,20 @@ export function useScriptedDemo<TStep>(
     };
     // `interpret` is intentionally NOT in the dep list — we read it
     // through interpretRef so the effect doesn't restart on every
-    // render. Same for the completion callbacks.
+    // render. Same for the completion callbacks. `reduced` IS a dep so
+    // toggling motion re-runs (settles instantly when turned off,
+    // re-animates when turned on).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [steps, shouldPlay, loop, loopDelay, preset, trigger, manualPlayTick]);
+  }, [
+    steps,
+    shouldPlay,
+    effectiveLoop,
+    loopDelay,
+    preset,
+    trigger,
+    manualPlayTick,
+    reduced,
+  ]);
 
   return { isPlaying, isComplete, currentIndex, play, stop, restart };
 }

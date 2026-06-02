@@ -47,7 +47,7 @@ import {
 } from "@/lib/chat-sandpack";
 import { CodeView } from "@/components/studio/code-view";
 import { CanvasCommentPinsOverlay } from "@/components/studio/canvas-comment-pins-overlay";
-import { FigmaIntroBanner } from "@/components/studio/figma-intro-banner";
+import { SourceEditor } from "@/components/studio/source-editor";
 import type { CommentThreadWithMessages } from "@/lib/studio-storage";
 import { GradePayloadPanel } from "@gradeui/walker";
 import {
@@ -412,6 +412,15 @@ interface FocusedFastMountProps {
   /** Resolve a userId → user record so each pin can render its
    *  author Avatar. Forwarded straight through. */
   getCommentUser?: (id: string) => import("@/lib/studio-users").User | undefined;
+  /** Edit-mode write-back for the Code view. Same signature as the
+   *  canvas's `onSourceMutation` — debounced edits from the CodeMirror
+   *  editor flow here, landing in undo history + persistence like a chat
+   *  edit. When omitted, the Code view stays read-only. */
+  onSourceEdit?: (next: string, label?: string) => void;
+  /** Whether the Code view offers an "Edit" toggle. Defaults true; the
+   *  hook for role/tier gating (some users view-only) — pass
+   *  `user_can_edit_project` here once that's wired. */
+  canEditSource?: boolean;
 }
 
 // Pixel widths for the viewport artboard. Duplicated from sandpack-frame
@@ -444,6 +453,8 @@ export function FocusedFastMount({
   activeCommentThreadId,
   onCommentPinClick,
   getCommentUser,
+  onSourceEdit,
+  canEditSource = true,
 }: FocusedFastMountProps) {
   // Memoize the prepared source for the Code view so we don't re-run
   // prepareAppSource on every render purely to display the text.
@@ -451,6 +462,13 @@ export function FocusedFastMount({
     () => (appSource ? prepareAppSource(appSource) : ""),
     [appSource]
   );
+
+  // Code view sub-mode: read-only payload panel ("view") vs the live
+  // CodeMirror editor ("edit"). Editing writes raw appSource back through
+  // onSourceEdit. Forced to "view" when the user can't edit.
+  const [sourceMode, setSourceMode] = useState<"view" | "edit">("view");
+  const effectiveSourceMode =
+    sourceMode === "edit" && canEditSource && onSourceEdit ? "edit" : "view";
 
   if (view === "code") {
     // GradePayloadPanel wraps the Code view with a JSX|JSON segmented
@@ -471,8 +489,46 @@ export function FocusedFastMount({
           width: "100%",
         }}
       >
-        <FigmaIntroBanner />
+        {/* Source toolbar — View | Edit. Edit shows only when permitted;
+            the Figma intro banner is intentionally gone from source mode. */}
+        <div className="flex shrink-0 items-center border-b border-border px-3 py-1.5">
+          <div className="inline-flex rounded-md border border-border p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setSourceMode("view")}
+              className={cn(
+                "rounded-sm px-2 py-0.5 transition",
+                effectiveSourceMode === "view"
+                  ? "bg-foreground/10 text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              View
+            </button>
+            {canEditSource && onSourceEdit && (
+              <button
+                type="button"
+                onClick={() => setSourceMode("edit")}
+                className={cn(
+                  "rounded-sm px-2 py-0.5 transition",
+                  effectiveSourceMode === "edit"
+                    ? "bg-foreground/10 text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Edit
+              </button>
+            )}
+          </div>
+        </div>
         <div style={{ flex: 1, minHeight: 0 }}>
+          {effectiveSourceMode === "edit" ? (
+            <SourceEditor
+              value={appSource ?? ""}
+              mode={mode}
+              onSourceEdit={onSourceEdit}
+            />
+          ) : (
           <GradePayloadPanel
             source={preparedForCodeView}
             // Permissive: don't warn the user about every PascalCase tag
@@ -513,6 +569,7 @@ export function FocusedFastMount({
               // call site whenever the docs site grows a real events pipe.
             }}
           />
+          )}
         </div>
       </div>
     );

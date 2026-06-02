@@ -133,6 +133,7 @@ import { ProjectsMenu } from "@/components/studio/projects-menu";
 import { AssetBrowser } from "@/components/studio/asset-browser";
 import { ProjectHome } from "@/components/studio/project-home";
 import { NewProjectDialog } from "@/components/studio/new-project-dialog";
+import { ConfirmDeleteDialog } from "@/components/studio/confirm-delete-dialog";
 import {
   InvitePeopleDialog,
   type InviteRole,
@@ -1096,7 +1097,7 @@ export default function StudioPage() {
     return () => window.removeEventListener("grade:image-action", onImageAction);
   }, [storage, activeProjectId, activeId]);
 
-  const handleDeleteProject = useCallback(
+  const performDeleteProject = useCallback(
     async (id: string) => {
       await storage.deleteProject(id);
       const list = await storage.listProjects();
@@ -1680,7 +1681,7 @@ export default function StudioPage() {
     [designs, activeProjectId, storage]
   );
 
-  const handleCloseDesign = useCallback(
+  const performCloseDesign = useCallback(
     (id: string) => {
       if (designs.length <= 1) return; // Guardrail — never close the last one.
       // Precompute the fallback activeId against the CURRENT designs so
@@ -1750,6 +1751,82 @@ export default function StudioPage() {
     },
     [activeId, designs, activeProjectId, storage]
   );
+
+  // ── Delete confirmation ─────────────────────────────────────────────
+  // Deletions route through a confirm dialog so nothing is removed on a
+  // stray click. We also look up whether the target is shared — deleting
+  // a shared screen breaks its /s/ link + any /e/ embeds — and surface
+  // that as a louder warning. Share lookup is best-effort: local-only
+  // mode has no shares, so a failure just means "no warning". The actual
+  // deletion work lives in performDeleteProject / performCloseDesign; the
+  // handlers below only open the dialog, and confirmDelete commits.
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: "project"; id: string; name: string; sharedCount: number }
+    | { kind: "screen"; id: string; name: string; shared: boolean }
+    | null
+  >(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const handleDeleteProject = useCallback(
+    async (id: string) => {
+      const name = projects.find((p) => p.id === id)?.name ?? "this project";
+      let sharedCount = 0;
+      try {
+        const links = await storage.listShareLinks(id);
+        const now = Date.now();
+        const sharedDesignIds = new Set(
+          links
+            .filter((l) => !l.revoked && (!l.expiresAt || l.expiresAt > now))
+            .map((l) => l.designId)
+            .filter((d): d is string => Boolean(d)),
+        );
+        sharedCount = sharedDesignIds.size;
+      } catch {
+        /* local-only / no shares — no warning */
+      }
+      setPendingDelete({ kind: "project", id, name, sharedCount });
+    },
+    [projects, storage],
+  );
+
+  const handleCloseDesign = useCallback(
+    async (id: string) => {
+      if (designs.length <= 1) return; // never delete the last screen
+      const name = designs.find((d) => d.id === id)?.name ?? "this screen";
+      let shared = false;
+      try {
+        if (activeProjectId) {
+          const links = await storage.listShareLinks(activeProjectId);
+          const now = Date.now();
+          shared = links.some(
+            (l) =>
+              l.designId === id &&
+              !l.revoked &&
+              (!l.expiresAt || l.expiresAt > now),
+          );
+        }
+      } catch {
+        /* local-only / no shares — no warning */
+      }
+      setPendingDelete({ kind: "screen", id, name, shared });
+    },
+    [designs, activeProjectId, storage],
+  );
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDelete) return;
+    setDeleteBusy(true);
+    try {
+      if (pendingDelete.kind === "project") {
+        await performDeleteProject(pendingDelete.id);
+      } else {
+        performCloseDesign(pendingDelete.id);
+      }
+      setPendingDelete(null);
+    } finally {
+      setDeleteBusy(false);
+    }
+  }, [pendingDelete, performDeleteProject, performCloseDesign]);
 
   const handleRenameDesign = useCallback((id: string, name: string) => {
     setDesigns((ds) =>
@@ -1959,6 +2036,52 @@ export default function StudioPage() {
           snapshot. Mounted as a sibling of the rest of the
           provider's children. */}
       <ThemeDraftPersister onChange={handleThemeDraftChange} />
+
+      {/* Delete confirmation — gates screen + project deletion so nothing
+          goes on a stray click, with a louder warning when the target is
+          shared (deleting breaks the live /s/ share + /e/ embeds). */}
+      {pendingDelete && (
+        <ConfirmDeleteDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setPendingDelete(null);
+          }}
+          busy={deleteBusy}
+          title={`Delete "${pendingDelete.name}"?`}
+          confirmLabel={
+            pendingDelete.kind === "project"
+              ? "Delete project"
+              : "Delete screen"
+          }
+          description={
+            pendingDelete.kind === "project"
+              ? "This deletes the project and all of its screens."
+              : "This deletes this screen."
+          }
+          warning={
+            pendingDelete.kind === "project" && pendingDelete.sharedCount > 0 ? (
+              pendingDelete.sharedCount === 1 ? (
+                <>
+                  1 screen in this project is shared. Deleting the project will
+                  break its live share link and any embeds.
+                </>
+              ) : (
+                <>
+                  {pendingDelete.sharedCount} screens in this project are
+                  shared. Deleting the project will break their live share
+                  links and any embeds.
+                </>
+              )
+            ) : pendingDelete.kind === "screen" && pendingDelete.shared ? (
+              <>
+                This screen is shared. Deleting it will break its live share
+                link and any embeds pointing at it.
+              </>
+            ) : undefined
+          }
+          onConfirm={confirmDelete}
+        />
+      )}
       {/* AppShell takes over from the hand-rolled flex column.
           `nav="none"` gives us Header + Main + (unused) Footer stacked
           vertically — exactly the Studio shape. Studio is a tool that

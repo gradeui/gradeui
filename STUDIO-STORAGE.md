@@ -111,6 +111,28 @@ Each phase shippable on its own.
 
 **Phase S4 — Optimization + beyond-images.** Image transforms; then the `kind` union opens to fonts (custom typefaces feed the theme contract — see STUDIO-THEMES), and eventually exported prototype bundles.
 
+## Asset lifecycle + project deletion (decided 2026-06-02)
+
+As built (migration `0014`), assets are **user-owned** with an **optional `project_id` tag**, not strictly project-scoped as the Data model section above first sketched. That tag is the hook for lifecycle:
+
+- **Tagged asset** (`project_id` set) = belongs to that project; removed when the project is purged.
+- **Untagged asset** (`project_id` null) = personal library; persists across projects, never auto-removed.
+
+So tagging is the explicit "this belongs to this prototype" signal, and the personal library stays reusable. Tagging is already wired — the Supabase adapter sets `project_id` on asset create.
+
+**Cleanup runs on purge, not soft-delete.** `deleteProject` is a soft delete (`deleted_at`, recoverable via `restoreProject`), so it must leave assets alone — otherwise a restore returns an assetless project. Asset removal belongs on a **purge** (permanent delete), a primitive that does not exist yet (`deleteProject`'s own comment notes "a true purge … is a separate, explicit action not wired here"). Building purge is the prerequisite for this feature.
+
+**On purge, for each asset tagged to the project:**
+
+1. **Skip if referenced.** If the asset's URL appears in any other screen's `mediaUrls` / `appSource` (or a live share/embed), don't delete it — untag it (`project_id = null`) so it falls back to the personal library. Nothing breaks elsewhere.
+2. **Otherwise delete both the row and the bytes.** Remove the `assets` row AND the Storage object. A DB cascade only removes the row; the bytes would orphan in the bucket and keep costing storage, so the Storage object must be deleted explicitly (app-level, via the Storage API).
+
+The `project_id` FK stays `on delete set null` as a safety net for any delete path that bypasses the app cleanup; the real cleanup is the app-level purge routine, because the skip-if-referenced check can't live in a SQL cascade.
+
+**Untagged assets** are out of scope for project purge — a separate, later GC pass can reclaim personal-library assets nothing references.
+
+**Build order:** (1) a `purgeProject(id)` primitive on `StudioStorage` (hard delete + cascade) on both adapters; (2) the asset-cleanup routine it calls (the reference scan + row/byte deletion above); (3) a trigger for purge — an explicit "delete permanently" / empty-trash action, and optionally a scheduled auto-purge after a retention window (the marketing copy already promises "30 days after cancellation, then permanently deleted").
+
 ## Constraints we're honest about
 
 **Local-only mode has no bucket.** Like sharing, uploads require the cloud backend. The local adapter either keeps assets in IndexedDB/object URLs (works in-session, doesn't survive a share) or surfaces a clear "sign in to upload" message. Don't pretend a local upload produces a shareable URL.

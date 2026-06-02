@@ -1725,6 +1725,7 @@ export function StudioCanvas({
           don't pay the boot cost until the user actually opens it. */}
       <FocusedFrame
         appSource={focusedAppSource}
+        onSourceMutation={onSourceMutation}
         theme={theme}
         mode={mode}
         view={view}
@@ -1802,6 +1803,9 @@ export function StudioCanvas({
 
 interface FocusedFrameProps {
   appSource: string | null;
+  /** Source write-back (chat/Fill/editor). Forwarded to FocusedFastMount
+   *  as onSourceEdit so the Code view's editor can mutate the source. */
+  onSourceMutation?: (next: string, label?: string) => void;
   theme: GeneratedTheme;
   mode: "light" | "dark";
   view: "preview" | "code";
@@ -1880,6 +1884,7 @@ interface FocusedFrameProps {
  */
 function FocusedFrame({
   appSource,
+  onSourceMutation,
   theme,
   mode,
   view,
@@ -2099,6 +2104,7 @@ function FocusedFrame({
           activeCommentThreadId={activeCommentThreadId}
           onCommentPinClick={onCommentPinClick}
           getCommentUser={getCommentUser}
+          onSourceEdit={onSourceMutation}
         />
       ) : (
         <FocusedSandpackMount

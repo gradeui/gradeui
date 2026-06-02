@@ -29,6 +29,8 @@ import {
   Smartphone,
   Tablet,
   Monitor,
+  Play,
+  Pause,
 } from "lucide-react";
 import { FastIframeHost } from "@/components/studio/fast-frame";
 import { GradeLogo } from "@/components/grade-logo";
@@ -149,6 +151,10 @@ export function SharedScreen({
   const [activeThemeId, setActiveThemeId] = React.useState(projectTheme.id);
   const [mode, setMode] = React.useState<"light" | "dark">(initialMode);
   const [chromeVisible, setChromeVisible] = React.useState(true);
+  // Motion toggle. true = animate (still respects the viewer's OS
+  // reduced-motion, reduce-only); false = force still. Forwarded to
+  // FastIframeHost as the `motion` prop → grade:set-motion.
+  const [motionOn, setMotionOn] = React.useState(true);
   // Manual zoom level (one of ZOOM_LEVELS). `fitMode` overrides it with a
   // computed scale that fits the artboard in the visible canvas — see
   // `fitZoom` below. Picking a discrete level drops fit; picking Fit
@@ -256,6 +262,7 @@ export function SharedScreen({
   //   1–4      jump to a zoom level (100 / 90 / 75 / 50)
   //   − / =    step zoom out / in through the levels
   //   C        toggle comments
+  //   M        toggle motion (animate / hold still)
   React.useEffect(() => {
     const stepZoom = (dir: number) => {
       setFitMode(false);
@@ -285,6 +292,10 @@ export function SharedScreen({
         case "c":
         case "C":
           setShowComments((v) => !v);
+          break;
+        case "m":
+        case "M":
+          setMotionOn((v) => !v);
           break;
         case "0":
           setFitMode(true);
@@ -509,6 +520,24 @@ export function SharedScreen({
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Motion — pause/resume animation (shaders, ThreeScene, CSS).
+                Mirrors ThreeScene's own play/pause vocabulary. Reduce-only:
+                the viewer's OS reduced-motion is honoured regardless. */}
+            <button
+              type="button"
+              onClick={() => setMotionOn((v) => !v)}
+              aria-pressed={!motionOn}
+              title={motionOn ? "Pause motion (press M)" : "Play motion (press M)"}
+              aria-label={motionOn ? "Pause motion" : "Play motion"}
+              className={cn(iconBtn, !motionOn && "bg-foreground/10 text-foreground")}
+            >
+              {motionOn ? (
+                <Pause className="h-4 w-4" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+            </button>
+
             {hasComments && (
               <button
                 type="button"
@@ -599,6 +628,7 @@ export function SharedScreen({
             appSource={appSource}
             theme={activeTheme}
             mode={mode}
+            motion={motionOn}
             commentThreads={showComments ? threads : undefined}
             getCommentUser={getCommentUser}
             // Inline mode — pins are injected into the iframe's live DOM by

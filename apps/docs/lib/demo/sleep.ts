@@ -51,6 +51,14 @@ export async function typeText(
   stagger = 22,
   signal?: AbortSignal,
 ): Promise<void> {
+  // Non-positive stagger (the reduced-motion preset, or any caller that
+  // wants no typing animation): emit the whole string in a single tick so
+  // the surface lands on its final state without per-character motion, or
+  // the flicker a 0ms loop would produce.
+  if (stagger <= 0) {
+    onTick(text);
+    return;
+  }
   for (let i = 1; i <= text.length; i++) {
     onTick(text.slice(0, i));
     if (i < text.length) await sleep(stagger, signal);
