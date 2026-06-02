@@ -236,6 +236,26 @@ export default function StudioEmbedPage() {
         </p>
       </section>
 
+      {/* Motion */}
+      <section className="space-y-4">
+        <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
+          Motion
+        </h2>
+        <p className="leading-7">
+          By default the embed animates and honours the viewer&apos;s OS{" "}
+          <Tok>prefers-reduced-motion</Tok> setting. To force a still embed,
+          add <Tok>?motion=off</Tok>: shader / ThreeScene surfaces hold a single
+          frame and CSS animation is suppressed. Useful for a calmer placement,
+          or a still hero next to a live one.
+        </p>
+        <p className="leading-7 text-muted-foreground">
+          The toggle is reduce-only: <Tok>?motion=off</Tok> stills the embed,
+          but there is no way to force motion onto a viewer who has asked their
+          OS for reduced motion. Combine it with the sizing params, e.g.{" "}
+          <Tok>?w=1280&amp;motion=off</Tok> for a still desktop thumbnail.
+        </p>
+      </section>
+
       {/* Security */}
       <section className="space-y-4">
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">

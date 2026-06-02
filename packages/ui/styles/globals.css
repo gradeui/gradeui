@@ -1211,6 +1211,34 @@
 }
 
 /* ============================================
+   MOTION TOGGLE — data-motion="off" on <html>
+   ============================================
+   The manual motion switch (lib/motion). Mirrors the OS reduced-motion
+   behaviour but driven by an attribute, so it can be flipped from a toolbar
+   and posted into Studio's Fast Frame / embed iframes (grade:set-motion).
+   Reduce-only: this never forces motion ON, it only suppresses it.
+
+   Broad reset first — neutralises animation/transition on arbitrary
+   (generated-screen) content, the same shape the canonical
+   prefers-reduced-motion reset uses. */
+[data-motion="off"] *,
+[data-motion="off"] *::before,
+[data-motion="off"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Aura keeps its bespoke static fallback (the broad reset can't supply the
+   resting box-shadow). */
+[data-motion="off"] .gds-aura-ring {
+  box-shadow:
+    0 0 0 var(--aura-ring-spread) oklch(var(--aura-color) / calc(var(--aura-ring-alpha-max) * 0.6)),
+    0 0 var(--aura-ring-blur) 0 oklch(var(--aura-color) / calc(var(--aura-ring-alpha-max) * 0.4));
+}
+
+/* ============================================
    TYPOGRAPHY UTILITIES
    ============================================ */
 

@@ -432,10 +432,19 @@ export {
   type MapProps,
 } from "../components/ui/map";
 
+// lib/motion — global motion control. The reduced-motion hook (now folds the
+// data-motion="off" toggle in addition to the OS query), the imperative
+// setMotion(), and the data-motion attribute name. See lib/motion/README.md.
+export {
+  useReducedMotion,
+  usePrefersReducedMotion,
+  setMotion,
+  MOTION_ATTR,
+} from "./motion";
+
 // Media components
 export {
   MediaSurface,
-  usePrefersReducedMotion,
   type MediaSurfaceProps,
   type MediaAspect,
   type MediaRadius,

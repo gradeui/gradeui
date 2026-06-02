@@ -52,6 +52,14 @@ export default async function EmbedPage({
   const renderWidth = toDim(sp.w);
   const renderHeight = toDim(sp.h);
 
+  // Optional motion toggle: ?motion=off suppresses animation (ThreeScene
+  // pauses, CSS animation stills); ?motion=on removes the suppression
+  // (still respects the viewer's OS reduced-motion). Absent = leave the
+  // iframe to its own OS default. Reduce-only.
+  const motionRaw = Array.isArray(sp.motion) ? sp.motion[0] : sp.motion;
+  const motion =
+    motionRaw === "off" ? false : motionRaw === "on" ? true : undefined;
+
   const supabase = getServiceSupabase();
   if (!supabase) notFound();
 
@@ -121,6 +129,7 @@ export default async function EmbedPage({
       mode={share.color_mode}
       renderWidth={renderWidth}
       renderHeight={renderHeight}
+      motion={motion}
     />
   );
 }

@@ -1138,6 +1138,17 @@ function findComponentOwner(el: Element | null): Element | null {
       // beneath. No re-bundle, no re-mount.
       const v = data.value === "wireframe" ? "wireframe" : "full";
       document.documentElement.dataset.fidelity = v;
+    } else if (data.type === "grade:set-motion") {
+      // Global motion toggle (lib/motion). Stamp / remove data-motion on
+      // <html>; the useReducedMotion hook + the [data-motion="off"] CSS
+      // reset both react, pausing ThreeScene + stilling CSS animation.
+      // Mirrors the Fast sandbox handler — kept in sync per the two-agent
+      // rule in STUDIO.md. enabled !== false defaults to motion-on.
+      if (data.enabled !== false) {
+        document.documentElement.removeAttribute("data-motion");
+      } else {
+        document.documentElement.setAttribute("data-motion", "off");
+      }
     } else if (data.type === "grade:collect-media-sources") {
       // Walk every rendered MediaSurface, harvest the
       // \`data-media-source\` JSON the component stamps on its root

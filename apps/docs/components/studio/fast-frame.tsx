@@ -87,6 +87,12 @@ interface FastIframeHostProps {
    *  `grade:set-fidelity`. Defaults to "wireframe" so a fresh iframe
    *  doesn't flash content before the parent's first push. */
   fidelity?: "wireframe" | "full";
+  /** Global motion toggle, posted to the iframe via `grade:set-motion`.
+   *  `false` stamps `data-motion="off"` inside the sandbox so ThreeScene
+   *  surfaces pause + CSS animation stills (lib/motion). `undefined` = don't
+   *  drive it, leaving the iframe to honour the viewer's OS reduced-motion
+   *  preference on its own. Reduce-only by design. */
+  motion?: boolean;
   /** Source-key → URL map for the "Fill images" flow. Posted into the
    *  iframe via `grade:set-media-urls` whenever it changes (or when the
    *  iframe finishes booting), where the sandbox agent stashes it on
@@ -140,6 +146,7 @@ export function FastIframeHost({
   onClearSelection,
   onSelectModeChange,
   fidelity,
+  motion,
   mediaUrls,
   mediaOverrides,
   commentThreads,
@@ -268,6 +275,16 @@ export function FastIframeHost({
     postToSandbox({ type: "grade:set-fidelity", value: fidelity });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, fidelity]);
+
+  // Motion toggle. Posted on change + on boot so a fresh iframe inherits the
+  // parent's current setting. Only fires when `motion` is defined — leaving
+  // it undefined lets the iframe honour its own OS reduced-motion default
+  // without the parent forcing anything.
+  useEffect(() => {
+    if (!ready || motion === undefined) return;
+    postToSandbox({ type: "grade:set-motion", enabled: motion });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, motion]);
 
   // Media URL map — every time the canvas's resolved-URL state changes
   // (or this iframe finishes booting), push the current map in. The

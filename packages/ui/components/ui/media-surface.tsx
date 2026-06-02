@@ -755,15 +755,8 @@ export interface BaseMediaProps {
   style?: React.CSSProperties;
 }
 
-/** Hook — returns `true` when the OS reports reduced-motion preference. */
-export function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = React.useState(false);
-  React.useEffect(() => {
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mql.matches);
-    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
-  }, []);
-  return reduced;
-}
+// The reduced-motion hook moved to lib/motion, where it now folds in the
+// global `data-motion="off"` toggle as well as the OS query. Re-exported
+// here so the components that import it from this module
+// (ThreeScene/RivePlayer/VideoPlayer) keep resolving unchanged.
+export { usePrefersReducedMotion } from "@/lib/motion";

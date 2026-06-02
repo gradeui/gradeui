@@ -134,6 +134,7 @@ export function EmbedScreen({
   mode = "light",
   renderWidth,
   renderHeight,
+  motion,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -143,6 +144,11 @@ export function EmbedScreen({
    *  exact contain-fit artboard. No width = responsive. */
   renderWidth?: number;
   renderHeight?: number;
+  /** Global motion toggle, forwarded to the iframe. `false` suppresses
+   *  animation (ThreeScene pauses, CSS animation stills); `undefined` leaves
+   *  the iframe to honour the viewer's OS reduced-motion preference.
+   *  Reduce-only. */
+  motion?: boolean;
 }) {
   // Project theme — same resolution as SharedScreen: parse the draft,
   // generate the ramp set, fall back to the default built-in on any
@@ -183,6 +189,7 @@ export function EmbedScreen({
             appSource={appSource}
             theme={theme}
             mode={mode}
+            motion={motion}
             className="block h-full w-full"
           />
         </ScaledRender>
@@ -191,6 +198,7 @@ export function EmbedScreen({
           appSource={appSource}
           theme={theme}
           mode={mode}
+          motion={motion}
           className="block h-full w-full"
         />
       )}

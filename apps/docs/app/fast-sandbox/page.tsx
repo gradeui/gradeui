@@ -607,6 +607,22 @@ export default function FastSandboxPage() {
           document.documentElement.dataset.fidelity = v;
           break;
         }
+        case "grade:set-motion": {
+          // Global motion toggle (lib/motion). Stamp / remove `data-motion`
+          // on <html>; the @gradeui/ui `useReducedMotion` hook AND the
+          // `[data-motion="off"]` reset in the sandbox stylesheet both react,
+          // so ThreeScene surfaces pause + paint a still frame and CSS
+          // animation/transition stills. Same shape as `grade:set-fidelity`.
+          // `enabled !== false` defaults to motion-on. Reduce-only: this only
+          // suppresses; the OS reduced-motion query still wins on its own.
+          const enabled = data.enabled !== false;
+          if (enabled) {
+            document.documentElement.removeAttribute("data-motion");
+          } else {
+            document.documentElement.setAttribute("data-motion", "off");
+          }
+          break;
+        }
         case "grade:collect-media-sources": {
           // Walk the live DOM for every MediaSurface and pair each
           // source descriptor with its instanceId. The pairing is

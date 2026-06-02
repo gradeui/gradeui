@@ -208,6 +208,7 @@ Studio's preview iframe runs **one of two** in-iframe agents depending on the ac
 Protocols currently handled in **both** places (keep them in sync):
 - `grade:select-mode` / `grade:clear-selection` / `grade:selected`
 - `grade:set-fidelity` (wireframe / full toggle)
+- `grade:set-motion` (global motion toggle — stamps `data-motion="off"` on `<html>`; lib/motion)
 - `grade:collect-media-sources` / `grade:media-sources` (Fill-images flow request/response)
 - `grade:set-media-urls` (Fill-images URL-map push back into the iframe)
 
