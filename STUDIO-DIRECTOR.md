@@ -47,6 +47,26 @@ interface DemoPayload {
 
 Each event is `{ t, … }` in ms. Get this schema right and every other piece is an editor or a player for it.
 
+## AI-first: the demo is generated, not just edited
+
+The director is **AI-first**. The payload is declarative JSON, so the model emits a whole demo the way it emits JSX today, and the editor (D4) is for *refining* the AI's cut, not building from a blank timeline. The captions `ScreenAnimator` already renders are exactly the model's narration surface: it writes the sentiment ("Revenue is up 24%"), the camera just carries it.
+
+The brief is natural language over the things Grade already understands:
+
+> Do me a demo of #Homepage, #Dashboard and #Settings, through the eyes of @persona, in dark mode (it's night). I've attached extra data to include. Show the best parts of each screen, scroll up and down. Mobile viewport.
+
+What the model turns that into, and why it can:
+
+- **`#Homepage #Dashboard #Settings`** → the flow: three screens, ordered, with link transitions. The model already references screens.
+- **`@persona`** → the point of view: the caption voice, what counts as "interesting," even the pace. A founder demo and an end-user demo of the same screens narrate differently.
+- **dark mode / mobile viewport** → theme + render width, both already first-class (`mode`, fixed-width). "It's night" is the model *inferring* the setting.
+- **attached data** → content woven into the screens before the tour (the existing fill/media + prompt path).
+- **"show the best parts" / "scroll up and down"** → the model *reads the screen* (it knows the components and their `data-gds-source-id`s) and picks salient elements to frame, emitting camera shots + scrolls to bring off-screen content into view. "Best parts" is a saliency call the model is well placed to make over a structure it generated.
+
+So the output of that one sentence is a full `DemoPayload`: flow order, per-screen camera shots, captions in the persona's voice, theme + viewport, the DOM/annotation beats. Generate-then-refine, exactly like the rest of Studio: prompt → a directed demo → nudge a shot or a caption. This is "prompt to demo in minutes" made concrete, and it's *why the payload schema (D0) is the load-bearing piece*: a clean JSON the model can author makes the whole thing a generation target.
+
+("Scroll up and down" is its own operation, scrolling the live screen to reveal content, distinct from the camera transform. The camera frames a region; a scroll brings off-screen content into the frame first. Both ride the timeline.)
+
 ## It's mostly already built
 
 The hard substrate exists; the new work is narrow.
@@ -101,16 +121,36 @@ No video can do this: a recording is one viewport, frozen. This needs a *live re
 
 Mechanically it needs: (1) a shot carrying a target element id + a target viewport width; (2) the renderer re-laying-out at that width (the embed already does fixed-width + responsive reflow); (3) the camera tweening the transform from the element's rect-at-width-A to its rect-at-width-B. The reflow animates if the layout uses transitions; the camera glides over the top.
 
+## FlowCanvas — the multi-screen layer (above ScreenAnimator)
+
+`ScreenAnimator` stays single-screen; that's the per-frame primitive. Animating *between* screens is a layer above it: **FlowCanvas**, a canvas that holds several screens and a camera that tours them. Build single-screen first; this is the next architectural layer, not a `ScreenAnimator` change.
+
+The shape that keeps it simple: each screen stays **isolated** (its own render, its own iframe), never merged into one monolithic app. But the screens are **linked** the way a Figma prototype links frames, hotspots that move you from screen A to screen B. So FlowCanvas is a familiar object: a prototype graph (screens + links) where every frame is *live, animated, and annotated* instead of a static mock. Close to a real product without the complexity of building everything into one app.
+
+That gives three ways to consume one flow, and the last two are the live-canvas dividend a video can't touch:
+
+- **Auto-play (timed clickthrough).** The flow walks itself: the camera tours screen A, a link "clicks," it transitions to screen B, tours it, and on. A timed, narrated, step-by-step product walkthrough.
+- **Take over.** Because every frame is live, the viewer can grab the wheel at any point and click the real links themselves, then let it resume. You can't take over a video; you can take over this.
+- **Scrub.** A timeline you can jump along, ahead to the screen you care about, back to re-watch a step.
+
+FlowCanvas has its own timeline, a **screen-level** track: you drop screens onto it and arrange the order + transitions, while each screen's *own* `ScreenAnimator` timeline directs the camera *within* it. Two nested timelines: the flow (screens) and the shot (camera). Plus the DOM/annotation track for comments, dim, highlight, and measurements.
+
+Screen transitions are navigations between isolated embeds (the link model), so there's no shared app state to wrangle, each screen is self-contained, exactly like a prototype frame. Memory follows `STUDIO-CAPTURE`: only the screens near the camera are live, the rest are posters, promoted on approach.
+
+This is the convergence point: a multi-screen **share** is a FlowCanvas; a multi-screen **embed** is a FlowCanvas, chrome-free. Share, embed, and director all become "frames on a canvas + the shared kernel + a camera + overlays."
+
 ## Rollout
 
 - **D0 — Payload schema.** Define the JSON tracks (camera is already track one). The contract everything else targets.
 - **D1 — Alt-cursor + replay driver.** Synthetic cursor + camera driven by a payload; captions on shot boundaries. "A payload plays as a demo," no recording yet. Extends the camera shipped today.
+- **DA — AI authoring (the primary path).** The model emits a `DemoPayload` from a natural-language brief (screens + persona + theme + viewport + "best parts"). Generate-then-refine; recording (D2) and the editor (D4) are alternate ways in, but AI-first means this lands as soon as the schema (D0) + a player (D1) exist, not as a late add-on.
 - **D2 — Recorder.** Capture clicks / scroll / move via `grade:demo-event`; auto-derive camera shots from click rects (the selection-agent primitive). Now a walkthrough becomes a payload.
 - **D3 — A/V layer.** Mic voiceover + webcam head-shot via `MediaRecorder`, stored as assets, synced on the timeline.
 - **D4 — Authoring + 16:9.** A camera/timeline editor on a fixed 16:9 artboard (deterministic shot placement), tweak shots, re-record a step, reorder captions.
 - **D5 — DOM track.** Element-targeted overlays/effects on a timeline — comment, dim, highlight, callout — reusing the comment-pin anchoring (`data-gds-source-id`). The second timeline.
 - **D6 — Element-targeted camera + inter-viewport.** Shots that frame an element id (camera resolves its live rect), and zooming *between viewport widths* while tracking the same node. The capability nothing else has.
 - **D7 — Video export.** Playwright + capture for an mp4 from the same payload.
+- **D8 — FlowCanvas.** The multi-screen layer above `ScreenAnimator`: isolated-but-linked screens on a canvas, a screen-level timeline, link transitions, take-over + scrub. The convergence with multi-screen share/embed.
 
 ## See also
 
