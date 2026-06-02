@@ -30,6 +30,11 @@ const SHOTS = [
   { zoom: 2.2, cx: 0.74, cy: 0.34, hold: 2600, label: "12,480 active devs" },
   { zoom: 1.8, cx: 0.5, cy: 0.6, hold: 2800, label: "Pipeline, by stage" },
   { zoom: 2.6, cx: 0.32, cy: 0.85, hold: 2600, label: "Live activity feed" },
+  // Close out: pan up-and-right off the bottom-left feed, pulling out to a
+  // slightly-zoomed-out centred overview. <1 zoom means the screen sits inside
+  // the frame, revealing the canvas fill (--gds-canvas-fill, the ScreenAnimator
+  // default stage) around it.
+  { zoom: 0.9, cx: 0.5, cy: 0.5, hold: 2800, label: "The App" },
 ];
 
 function Kpi({ icon: Icon, label, value, delta, up = true }) {
@@ -181,7 +186,7 @@ export default function App() {
   // Wrap any screen in <ScreenAnimator shots={...}> to give it a directed
   // camera. Everything below is a normal, live Grade screen.
   return (
-    <ScreenAnimator shots={SHOTS}>
+    <ScreenAnimator shots={SHOTS} spotlight>
       <Dashboard />
     </ScreenAnimator>
   );

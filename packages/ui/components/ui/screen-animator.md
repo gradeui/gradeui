@@ -10,7 +10,7 @@ props:
   - autoplay?: boolean (default true)
   - loop?: boolean (default true) — fly in → shots → back to start → exit → repeat
   - controls?: boolean (default true) — play / pause / restart transport
-  - spotlight?: boolean (default true) — dim the edges when pushed in
+  - spotlight?: boolean (default false) — opt in to dim the edges (vignette) when pushed in
   - cursor?: boolean (default true) — synthetic cursor pulse on detail shots
   - enter?: boolean (default true) — fly in from offscreen on start
   - stage?: string — CSS background of the stage behind the screen (default dark)

@@ -328,6 +328,16 @@ The fix: `buildPlaygroundThemeOptionsTsx` now computes a short dbj2 hash of the 
 
 `<ThreeScene>` already watches that attribute (see `themeObserver.observe(document.documentElement, { attributeFilter: [..., "data-gds-theme", ...] })` in `packages/ui/components/ui/three-scene.tsx`). New theme-sensitive media primitives should piggyback on the same attribute instead of inventing their own signal.
 
+## Timeline view mode (v1.5 — reads shots, not yet editable)
+
+The preview toggle is now `Preview | Code | Timeline` (`view` union widened in `studio-canvas.tsx` + the page; it collapses to `preview` for the renderer, so the screen stays live above the dock). Timeline docks `TimelineDock` (`components/studio/timeline-dock.tsx`) under app-main in Fit view.
+
+The dock **populates from the focused screen's source** — `extractCameraShots(appSource)` reads the `<ScreenAnimator>` shot list (inline `shots={[...]}` or `const SHOTS=[...]`), the same JSON the iframe animates from. `serializeShots` / `replaceShotsInSource` are the write half (round-trips edits back through the source-mutation channel), wired-ready but not yet driven by a drag UI.
+
+Two views of the same data, toggled in the header: **Events** (foci-and-noodles — each shot a focus node, transitions as connectors) and **Timeline** (clips on a time ruler, sized to duration). Both are read-only today.
+
+Design model + roadmap live in [`STUDIO-DIRECTOR.md`](../../STUDIO-DIRECTOR.md) (foci-and-noodles, event-anchored camera, props-in-source ringfencing, the per-screen vs FlowCanvas scales). Next slices: parse `DemoStage` `SCRIPT` reveals into a second track, a scrub playhead that seeks the live preview, and per-event editing (or prompt-to-edit).
+
 ## Future work / known limits
 
 Things deliberately out of scope for v1 of highlight-and-comment, captured here so they don't get lost:

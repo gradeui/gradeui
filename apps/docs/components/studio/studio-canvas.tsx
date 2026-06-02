@@ -40,6 +40,7 @@ import {
   Crosshair,
   ExternalLink,
   Eye,
+  Film,
   Image as ImageIcon,
   Loader2,
   Maximize2,
@@ -97,6 +98,7 @@ import { DesignBreadcrumb } from "@/components/studio/design-breadcrumb";
 import { CanvasPathBar } from "@/components/studio/canvas-path-bar";
 import { SelectionChip } from "@/components/studio/selection-chip";
 import { StarterPicker } from "@/components/studio/starter-picker";
+import { TimelineDock } from "@/components/studio/timeline-dock";
 import {
   FocusedSandpackMount,
   TileSandpackMount,
@@ -144,8 +146,8 @@ interface StudioCanvasProps {
   onFocus: (id: string) => void;
   theme: GeneratedTheme;
   mode: "light" | "dark";
-  view: "preview" | "code";
-  onViewChange: (view: "preview" | "code") => void;
+  view: "preview" | "code" | "timeline";
+  onViewChange: (view: "preview" | "code" | "timeline") => void;
   /** True while the chat is generating a response for the focused
    *  design. Drives the header spinner + the full-column placeholder in
    *  fit mode. */
@@ -1365,7 +1367,8 @@ export function StudioCanvas({
                 size="sm"
                 value={view}
                 onValueChange={(v: string) => {
-                  if (v === "preview" || v === "code") onViewChange(v);
+                  if (v === "preview" || v === "code" || v === "timeline")
+                    onViewChange(v);
                 }}
                 aria-label="Preview mode"
               >
@@ -1374,6 +1377,9 @@ export function StudioCanvas({
                 </ToggleGroupItem>
                 <ToggleGroupItem value="code" tooltip="Code">
                   <Code2 />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="timeline" tooltip="Timeline">
+                  <Film />
                 </ToggleGroupItem>
               </ToggleGroup>
               {/* Replay — re-keys the focused iframe so every inView
@@ -1728,7 +1734,10 @@ export function StudioCanvas({
         onSourceMutation={onSourceMutation}
         theme={theme}
         mode={mode}
-        view={view}
+        // Timeline is a dock UNDER the preview, not a replacement for it —
+        // collapse it to the preview render so the screen still shows above
+        // the timeline panel.
+        view={view === "code" ? "code" : "preview"}
         isStreaming={isStreaming}
         selection={selection}
         onSelect={onSelect}
@@ -1760,6 +1769,13 @@ export function StudioCanvas({
         hidden={!isFit}
         rendererMode={rendererMode}
       />
+      {/* Timeline dock — a flex child at the bottom of app-main, so the
+          preview (flex-1, above) shrinks to make room. Placeholder for now;
+          the real thing gets camera + element tracks with draggable scrub
+          handles. Only in Fit view (the grid has no single screen to direct). */}
+      {view === "timeline" && isFit && (
+        <TimelineDock appSource={focusedAppSource} />
+      )}
       {hasEnteredAll && (
         <TileGrid
           designs={designs}

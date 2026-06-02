@@ -67,6 +67,49 @@ So the output of that one sentence is a full `DemoPayload`: flow order, per-scre
 
 ("Scroll up and down" is its own operation, scrolling the live screen to reveal content, distinct from the camera transform. The camera frames a region; a scroll brings off-screen content into the frame first. Both ride the timeline.)
 
+## Where the timeline lives — props on the component, ringfenced
+
+The screen is stored as a source blob, so the timeline lives where it composes best: **as props on the component itself**, `<ScreenAnimator shots={[...]}>` right in the source. No parallel store. The dock reads the shots out of the blob (`extractCameraShots`) and writes edits back in (`replaceShotsInSource`), round-tripping through the same source-mutation channel the inspector already uses.
+
+Why props-in-source beats a separate timeline blob:
+
+- **It travels with the screen.** Copy the screen, remix it, save it as a starter, the direction comes with it, because it *is* part of the thing. A side-car store has to be kept in sync and drifts (ids, focal points).
+- **It just renders.** The props aren't a description of an animation; they *are* the animation. Nothing has to interpret a separate payload.
+- **It round-trips losslessly** through the channel that already exists.
+
+The cost is that the camera shares the blob with agent edits, so a regeneration could clobber the shots. Two protections, and they're the two halves the ringfence needs:
+
+- **Wrapper preservation (live HEAD).** The camera *wraps* the screen (`<ScreenAnimator shots>` around the content), so an agent regenerates the **child** and the compose pipeline preserves the outer wrapper + its props. The direction is structurally separable from the content it directs: the agent edits the content, the camera survives. (Focal *fractions* can still drift if the layout moves, which is the argument for **element-targeted** shots that track a `data-gds-source-id` instead of a coordinate.)
+- **Revision pinning (shipped demo).** A published demo binds to a `revisionId`, a historic save, a frozen blob, so the live screen keeps evolving while the demo stays exactly as shot. Same pin already on the payload (`screen.revisionId`) and the embed/share.
+
+So: **bound to the component as props** for composition and round-trip, **wrapper-preserved** so agents don't clobber HEAD, **revision-pinned** when it has to be permanent. Live-editable and freezable, the same duality as the rest of the director.
+
+## The whole thing is foci and noodles
+
+Stripped all the way down, a demo is **a set of foci connected by transitions**: "here's a thing to focus on, take me from here to there." The animation lives *entirely in the connections* , the noodles between events. Nothing else is stored.
+
+- A **node** is a focus: *which* thing (an element by `data-gds-source-id`, or a beat/event) plus its context , zoom, viewport, theme, the screen's state at that point. You don't author nodes from scratch; you *pick* foci that already exist in the live DOM.
+- An **edge** (noodle) is the only authored thing: how to travel from one focus to the next , zoom out then in, pan back, the ease, the duration. "Here to there, like this."
+
+Two things fall out of that:
+
+- **It's fractal.** Foci joined by noodles *within* a screen (element → element) is the camera; foci joined by noodles *across* screens is FlowCanvas. Same model, two scales , a node is an element or a whole screen.
+- **It's exactly what the AI authors.** The nodes are already in the DOM, so generation is just choosing foci and drawing edges. "Focus the revenue card, then the feed, pull out between" is two nodes and a noodle. A human scrub is walking those edges by hand , the intervention hatch.
+
+A timeline and a node-graph are then the *same data* shown two ways: the timeline is the linear walk, the noodle view is the connections. Pick the view; the foci-and-edges underneath don't change.
+
+## Anchor the camera to events, not seconds
+
+"Event-synced vs time-based" was a false split — the reveals elapse in seconds too, so *everything* is on a clock. The real question is what a camera keyframe is *anchored to*. Anchor it to an **event**, not an absolute time:
+
+> at `pressB`: zoom 0.9, arrive by panning out over 600ms
+
+The event (the reveal) owns the *when*; the keyframe owns the *where* and the *how you get there* (zoom out, pan back, ease). The camera then has no independent clock — it's pinned to the same scripted timeline as the reveals. That's **one clock**, so it can't drift no matter how the reveal cadence changes; re-time a reveal and the camera follows for free. (The drift between two independent clocks is exactly why the camera got hand-rolled inline on the confetti screen the first time — event-anchoring removes the reason.)
+
+It's also the more promptable shape: "zoom into the button when it appears" maps straight to `{ at: "btnA", zoom: 1.12 }`, no seconds to compute. And because it's one elapsed timeline, **scrubbing falls out** — a playhead at time *t* has a single deterministic state (which reveals have fired, where the camera is), so seek is a pure function of *t*, and the timeline width auto-fits the total duration.
+
+So the model is: the **timeline is the event script**; the **camera is one track of keyframes anchored to events**, each saying "by this beat, be here, arriving like this"; and **each animated DOM item is its own track** of show/hide/move on the same clock. The absolute-time `shots={[...]}` the camera-tour and the confetti dogfood use today are the degenerate case where the "events" are just ticks — fine for a standalone camera, but the event-anchored form is what unifies camera + reveals under one clock, and it's what makes a human scrub (the intervention escape hatch under an otherwise-prompted flow) actually work.
+
 ## It's mostly already built
 
 The hard substrate exists; the new work is narrow.

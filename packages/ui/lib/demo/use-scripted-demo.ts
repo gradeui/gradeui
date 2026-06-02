@@ -9,7 +9,7 @@ import {
   type DemoTrigger,
 } from "./types";
 import { isAbortError, sleep } from "./sleep";
-import { useReducedMotion } from "../motion";
+import { useReducedMotion, usePageActive } from "../motion";
 
 /**
  * useScriptedDemo — the shared step-machine hook behind every
@@ -76,6 +76,10 @@ export interface UseScriptedDemoOptions<TStep> {
   play?: boolean;
   /** Loop the sequence forever after completion. Pause length controlled by `loopDelay`. */
   loop?: boolean;
+  /** Cap the number of loop cycles, then settle and stop. A demo is a movie —
+   *  it shouldn't spin forever. Default Infinity. Grid/embed surfaces set a
+   *  small number so the loop ends instead of running unattended. */
+  maxLoops?: number;
   /**
    * Milliseconds to pause between loop cycles. Only applies when
    * `loop` is true. Defaults to 2000. Marketing surfaces that want
@@ -142,6 +146,7 @@ export function useScriptedDemo<TStep>(
     play: playProp,
     loop = false,
     loopDelay = DEFAULT_LOOP_DELAY_MS,
+    maxLoops = Infinity,
     containerRef,
     onComplete,
     onLoopReset,
@@ -152,6 +157,11 @@ export function useScriptedDemo<TStep>(
   const reduced = useReducedMotion();
   const preset = reduced ? INSTANT_PRESET : DEMO_SPEED_PRESETS[speed];
   const effectiveLoop = reduced ? false : loop;
+
+  // Playback gate part 1 of 2: is the page even being watched? Pauses every
+  // loop when the tab is hidden/unfocused — a movie stops when you tab away.
+  // (Part 2, element-in-view, is wired below once we have the container ref.)
+  const pageActive = usePageActive();
 
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isComplete, setIsComplete] = React.useState(false);
@@ -172,6 +182,16 @@ export function useScriptedDemo<TStep>(
       amount: DEMO_IN_VIEW_AMOUNT,
     },
   );
+
+  // Playback gate part 2 of 2: a LIVE in-view (re-fires on leave, unlike the
+  // once-only trigger above). Only meaningful when a container ref is being
+  // observed; with no ref we can't see the element, so we don't gate on it
+  // (tab visibility still applies). Together: pause when nobody's watching.
+  const liveInView = useInView(
+    (containerRef ?? noopRef) as React.RefObject<Element>,
+    { amount: DEMO_IN_VIEW_AMOUNT },
+  );
+  const playbackActive = pageActive && (containerRef ? liveInView : true);
 
   // Manual play trigger — a counter we bump from the imperative play()
   // method. The runner effect depends on it so a second play() call
@@ -252,7 +272,7 @@ export function useScriptedDemo<TStep>(
     // Under reduced motion, run once to settle on the final frame even if
     // the normal trigger (inView / manual) hasn't fired — the content
     // should be present, just not animated.
-    if (!shouldPlay && !reduced) return;
+    if (!reduced && (!shouldPlay || !playbackActive)) return;
 
     const controller = new AbortController();
     controllerRef.current = controller;
@@ -262,6 +282,7 @@ export function useScriptedDemo<TStep>(
     const ctx: ScriptedDemoContext = { speed: preset, signal, cancelled, reduced };
 
     let active = true;
+    let cycles = 0;
 
     const run = async () => {
       do {
@@ -287,7 +308,10 @@ export function useScriptedDemo<TStep>(
           setIsComplete(true);
           completeRef.current?.();
 
-          if (!effectiveLoop) {
+          cycles += 1;
+          // Stop when not looping, or once we've hit the loop cap — settle on
+          // the final frame and don't spin unattended.
+          if (!effectiveLoop || cycles >= maxLoops) {
             setIsPlaying(false);
             return;
           }
@@ -326,6 +350,7 @@ export function useScriptedDemo<TStep>(
   }, [
     steps,
     shouldPlay,
+    playbackActive,
     effectiveLoop,
     loopDelay,
     preset,

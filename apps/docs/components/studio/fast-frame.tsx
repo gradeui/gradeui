@@ -681,6 +681,12 @@ export function TileFastMount({
       fidelity={fidelity}
       mediaUrls={mediaUrls}
       mediaOverrides={mediaOverrides}
+      // A grid tile is a poster, not a player. motion=off stills every
+      // animation to its settled frame (scripted demos → final state,
+      // ScreenAnimator → starter shot, ThreeScene paused) — so a wall of
+      // tiles doesn't run a wall of loops. Animation resumes when you open
+      // the screen (the focused frame mounts without this).
+      motion={false}
     />
   );
 }

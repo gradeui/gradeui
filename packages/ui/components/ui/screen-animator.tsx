@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useReducedMotion } from "../../lib/motion";
+import { useInView } from "motion/react";
+import { useReducedMotion, usePageActive } from "../../lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -40,14 +41,20 @@ export interface ScreenAnimatorProps {
   autoplay?: boolean;
   /** Loop the tour (fly in → shots → back to start → exit → repeat). Default true. */
   loop?: boolean;
+  /** Cap the number of loop cycles, then settle and stop — a demo is a movie,
+   *  it shouldn't spin forever. Default Infinity (loops while watched). Set a
+   *  small number for grid/embed contexts so it ends. */
+  maxLoops?: number;
   /** Show the play / pause / restart transport. Default true. */
   controls?: boolean;
-  /** Dim the edges when pushed in (focus vignette). Default true. */
+  /** Dim the edges when pushed in (focus vignette). Default false — opt in. */
   spotlight?: boolean;
   /** Render the synthetic cursor pulse on detail shots. Default true. */
   cursor?: boolean;
   /** Fly in from offscreen on start (and exit on loop). Default true. */
   enter?: boolean;
+  /** Where the caption sits over the frame. Default "bottom". */
+  captionPosition?: "top" | "bottom";
   /** Background of the stage the content sits on while it's small (fly in/out).
    *  A CSS background string. Default a dark cinematic stage. */
   stage?: string;
@@ -64,7 +71,12 @@ const TRANS_MS = 1150;
 const ENTER_MS = 1500;
 const ENTER_TRANSFORM = "translate(101%, 95%) scale(0.18)";
 const EXIT_TRANSFORM = "translate(122%, 36%) scale(0.2)";
-const DEFAULT_STAGE = "radial-gradient(circle at 50% 38%, #1b1b22, #0b0b0e)";
+// The canvas behind the screen. Reads the design-system canvas-fill token so
+// every canvas surface (embed, share, animator) matches; falls back to a
+// cinematic dark gradient where the token isn't loaded. Pass `stage` (incl.
+// "transparent") to override per-instance.
+const DEFAULT_STAGE =
+  "var(--gds-canvas-fill, radial-gradient(circle at 50% 38%, #1b1b22, #0b0b0e))";
 const SETTLE = "cubic-bezier(0.34, 1.16, 0.64, 1)";
 const PUSH = "cubic-bezier(0.65, 0, 0.35, 1)";
 
@@ -142,10 +154,12 @@ export function ScreenAnimator({
   shots,
   autoplay = true,
   loop = true,
+  maxLoops = Infinity,
   controls = true,
-  spotlight = true,
+  spotlight = false,
   cursor = true,
   enter = true,
+  captionPosition = "bottom",
   stage = DEFAULT_STAGE,
   backdrop,
   className,
@@ -153,6 +167,16 @@ export function ScreenAnimator({
   children,
 }: ScreenAnimatorProps) {
   const reduced = useReducedMotion();
+
+  // Pause the camera when nobody's watching: tab hidden/unfocused, or the
+  // animator scrolled out of view. A movie stops when you look away. (Note:
+  // inside a grid iframe, `inView` only sees the iframe's own viewport, so the
+  // tab-visibility half of `pageActive` is what pauses an offscreen grid item;
+  // freeing the iframe's memory is the parent's job — see STUDIO-CAPTURE.md.)
+  const rootRef = React.useRef<HTMLDivElement>(null);
+  const pageActive = usePageActive();
+  const inView = useInView(rootRef, { amount: 0.25 });
+  const active = pageActive && inView;
 
   // Build the full loop as explicit frames.
   const frames = React.useMemo<Frame[]>(() => {
@@ -188,18 +212,40 @@ export function ScreenAnimator({
   const starter = enter && frames.length > 1 ? 1 : 0;
   const [i, setI] = React.useState(autoplay ? 0 : starter);
   const [playing, setPlaying] = React.useState(autoplay);
+  // True once the tour has run to its end (and stopped — not merely paused).
+  // Drives the centred replay affordance, the way an ended video shows one.
+  const [finished, setFinished] = React.useState(false);
+  const loopsRef = React.useRef(0);
 
+  // Restart from the top: reset the loop counter and play from frame 0.
+  const replay = React.useCallback(() => {
+    loopsRef.current = 0;
+    setFinished(false);
+    setI(0);
+    setPlaying(true);
+  }, []);
   React.useEffect(() => {
-    if (reduced || !playing || frames.length <= 1) return;
+    // Don't advance when reduced, paused, or unwatched (tab hidden / offscreen).
+    if (reduced || !playing || !active || frames.length <= 1) return;
     const t = setTimeout(() => {
       setI((n) => {
         const next = n + 1;
-        if (next >= frames.length) return loop ? 0 : n;
+        if (next >= frames.length) {
+          // End of a cycle. Loop only while we're under the cap; otherwise
+          // settle on the starter frame and stop — a movie ends.
+          if (loop && loopsRef.current + 1 < maxLoops) {
+            loopsRef.current += 1;
+            return 0;
+          }
+          setPlaying(false);
+          setFinished(true);
+          return starter;
+        }
         return next;
       });
     }, frames[i].hold);
     return () => clearTimeout(t);
-  }, [i, playing, reduced, frames, loop]);
+  }, [i, playing, active, reduced, frames, loop, maxLoops, starter]);
 
   // Reduced motion holds the starter frame, no movement.
   const fi = reduced ? starter : Math.min(i, frames.length - 1);
@@ -210,6 +256,7 @@ export function ScreenAnimator({
 
   return (
     <div
+      ref={rootRef}
       className={cn("gds-screen-animator", className)}
       data-gds-part="screen-animator"
       style={{
@@ -305,17 +352,23 @@ export function ScreenAnimator({
         </div>
       )}
 
-      {/* Caption. */}
-      {f.label && (
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 22,
-            transform: "translateX(-50%)",
-            pointerEvents: "none",
-          }}
-        >
+      {/* Caption — the narration track. It's a polite live region, so a
+          screen reader announces each beat's caption as the shot changes:
+          the closest thing to narrating the demo. Always mounted (stable
+          region); the visible pill renders only when there's a label. */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        style={{
+          position: "absolute",
+          left: "50%",
+          [captionPosition === "top" ? "top" : "bottom"]: 22,
+          transform: "translateX(-50%)",
+          pointerEvents: "none",
+        }}
+      >
+        {f.label && (
           <span
             style={{
               display: "inline-flex",
@@ -332,6 +385,7 @@ export function ScreenAnimator({
             }}
           >
             <span
+              aria-hidden
               style={{
                 width: 7,
                 height: 7,
@@ -342,12 +396,14 @@ export function ScreenAnimator({
             />
             {f.label}
           </span>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Transport — it's a directed playback: play / pause / restart. */}
       {controls && frames.length > 1 && !reduced && (
         <div
+          role="group"
+          aria-label="Demo playback controls"
           style={{
             position: "absolute",
             right: 16,
@@ -364,24 +420,52 @@ export function ScreenAnimator({
         >
           <button
             type="button"
-            onClick={() => setPlaying((p) => !p)}
-            aria-label={playing ? "Pause" : "Play"}
+            onClick={() => (finished ? replay() : setPlaying((p) => !p))}
+            aria-label={finished ? "Replay" : playing ? "Pause" : "Play"}
             style={btn}
           >
-            {playing ? <PauseIcon /> : <PlayIcon />}
+            {finished ? <RestartIcon /> : playing ? <PauseIcon /> : <PlayIcon />}
           </button>
           <button
             type="button"
-            onClick={() => {
-              setI(0);
-              setPlaying(true);
-            }}
+            onClick={replay}
             aria-label="Restart"
             style={btn}
           >
             <RestartIcon />
           </button>
         </div>
+      )}
+
+      {/* Ended state — a centred replay button, like a video that's finished.
+          Appears only when the tour has run to its cap and stopped. */}
+      {finished && !reduced && (
+        <button
+          type="button"
+          onClick={replay}
+          aria-label="Replay"
+          style={{
+            position: "absolute",
+            inset: 0,
+            margin: "auto",
+            width: 64,
+            height: 64,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: 999,
+            border: "none",
+            color: "#fff",
+            background: "rgba(15,15,17,0.55)",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 8px 30px rgba(0,0,0,0.35)",
+            cursor: "pointer",
+          }}
+        >
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+        </button>
       )}
     </div>
   );

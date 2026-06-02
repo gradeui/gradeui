@@ -114,6 +114,10 @@ function ScaledRender({
         "absolute inset-0 overflow-hidden",
         centered && "flex items-center justify-center",
       )}
+      // The canvas behind the screen — only visible as letterbox bars in
+      // contain-fit. Reads the DS canvas-fill token so embed/share/animator
+      // all match; a theme can restyle it in one place.
+      style={{ background: "var(--gds-canvas-fill)" }}
     >
       <div
         style={{

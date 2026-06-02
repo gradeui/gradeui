@@ -506,6 +506,15 @@
   --gds-media-placeholder-bg: oklch(var(--muted));
   --gds-media-placeholder-fg: oklch(var(--muted-foreground));
 
+  /* Canvas fill — the standard backdrop behind a screen when it doesn't fill
+     its frame: the letterbox bars in an embed/share, and the stage a
+     `<ScreenAnimator>` reveals when it flies in or pulls below 1× zoom. One
+     token so every "canvas" surface (embed, share, animator) matches and a
+     theme/brand can restyle it in one place. Deep near-black by default — a
+     neutral cinematic backdrop that flatters a screen sitting on top of it;
+     set it to `transparent` to let the host page show through. */
+  --gds-canvas-fill: #0b0b0e;
+
   /* Sidebar knobs — the width pair drives the collapsed/expanded animation
      on `<Sidebar>` (compound nav primitive). Header height + section
      padding + per-section gap are exposed so consumers can retune density

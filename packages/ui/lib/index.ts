@@ -462,6 +462,7 @@ export {
 export {
   useReducedMotion,
   usePrefersReducedMotion,
+  usePageActive,
   setMotion,
   MOTION_ATTR,
 } from "./motion";

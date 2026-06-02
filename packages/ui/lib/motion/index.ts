@@ -86,6 +86,50 @@ export function useReducedMotion(): boolean {
 export const usePrefersReducedMotion = useReducedMotion;
 
 /**
+ * Returns `true` when the page is actually being watched — the tab is visible
+ * AND (for a top-level document) the window is focused. Inside an iframe the
+ * focus check is skipped, because an iframe rarely "has focus" even when its
+ * tab is frontmost; it falls back to visibility, which correctly tracks the
+ * top tab. Use it to PAUSE autoplay loops when nobody's looking: a movie stops
+ * when you tab away.
+ *
+ * SSR-safe — defaults to `true` and rehydrates in an effect.
+ *
+ * Scope, deliberately: this knows about tab visibility + window focus, NOT
+ * whether the element is scrolled into view (pair it with an
+ * IntersectionObserver — e.g. motion's `useInView` — for that), and NOT
+ * whether a cross-document iframe has scrolled off its PARENT's viewport. An
+ * iframe can't see the parent's scroll; the parent must observe the host and
+ * pause it. See the grid poster/promote policy in STUDIO-CAPTURE.md.
+ */
+export function usePageActive(): boolean {
+  const [active, setActive] = React.useState(true);
+
+  React.useEffect(() => {
+    // window.top identity check is safe cross-origin (no property access).
+    const framed = window.self !== window.top;
+    const compute = () =>
+      document.visibilityState !== "hidden" && (framed || document.hasFocus());
+    const update = () => setActive(compute());
+    update();
+
+    document.addEventListener("visibilitychange", update);
+    window.addEventListener("focus", update);
+    window.addEventListener("blur", update);
+    window.addEventListener("pageshow", update);
+
+    return () => {
+      document.removeEventListener("visibilitychange", update);
+      window.removeEventListener("focus", update);
+      window.removeEventListener("blur", update);
+      window.removeEventListener("pageshow", update);
+    };
+  }, []);
+
+  return active;
+}
+
+/**
  * Imperatively set the global motion toggle on `<html>`.
  *
  *   setMotion(false) → stamps `data-motion="off"` (animation suppressed)

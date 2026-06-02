@@ -1232,7 +1232,7 @@ export default function StudioPage() {
     [storage, activeProjectId, handleSwitchProject],
   );
 
-  const [view, setView] = useState<"preview" | "code">("preview");
+  const [view, setView] = useState<"preview" | "code" | "timeline">("preview");
 
   // Dev toggles in the header chrome. Scaffolding for the upcoming
   // renderer split + tier gating — surfaced now so the controls exist
@@ -2810,8 +2810,8 @@ function StudioThemedCanvas({
   designs: Design[];
   focusedId: string;
   onFocus: (id: string) => void;
-  view: "preview" | "code";
-  onViewChange: (v: "preview" | "code") => void;
+  view: "preview" | "code" | "timeline";
+  onViewChange: (v: "preview" | "code" | "timeline") => void;
   isStreaming: boolean;
   selection: StudioSelection | null;
   onSelect: (selection: StudioSelection) => void;
