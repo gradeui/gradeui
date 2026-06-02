@@ -43,6 +43,7 @@ const docsNav: NavSection[] = [
     title: "Studio",
     items: [
       { title: "How it works", href: "/docs/studio/how-it-works" },
+      { title: "Embed a screen", href: "/docs/studio/embed" },
     ],
   },
 ];

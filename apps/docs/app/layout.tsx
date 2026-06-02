@@ -252,7 +252,11 @@ export default async function RootLayout({
   // to what the preview is trying to show. Render a bare tree for them.
   const h = await headers();
   const pathname = h.get("x-pathname") ?? "";
-  const isSandbox = pathname.startsWith("/fast-sandbox");
+  // Both the Fast sandbox iframe (/fast-sandbox) and the public embed
+  // (/e/<token>) want a bare tree: no AuthProvider (its config-error
+  // banner would leak into the iframe / embed), no Lenis, no Toaster.
+  const isSandbox =
+    pathname.startsWith("/fast-sandbox") || pathname.startsWith("/e/");
 
   return (
     // Font-loader classes go on <html> (not <body>) so their --font-*

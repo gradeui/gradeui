@@ -37,6 +37,20 @@ export default async function middleware(req: NextRequest) {
     });
   }
 
+  // Public embed (/e/<token>) — like /s/ it's fully public and validates
+  // the token server-side, but it renders chrome-free for dropping into
+  // an outside site. Stamp the pathname (same as /fast-sandbox) so the
+  // root layout renders a BARE tree — no AuthProvider (its config-error
+  // banner would surface inside the embed), no Lenis, no Toaster. Keep
+  // this before the auth/intl machinery so neither touches it.
+  if (pathname.startsWith("/e/")) {
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-pathname", pathname);
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+  }
+
   // Public share links (/s/<token>) — fully public, no auth gate and no
   // i18n rewrite. The route itself validates the token server-side and
   // returns only the one shared screen. Bypass everything else.
