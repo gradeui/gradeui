@@ -591,6 +591,19 @@ export default function StudioPage() {
   // effect uses the lag as a "don't save yet" signal.
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
 
+  // ── Persistence guard ───────────────────────────────────────────────
+  // `lastSavedSig` is the content signature of what's currently durable in
+  // storage. The autosave only writes when the live signature differs, so
+  // (a) loading a project never re-saves the just-loaded state (which is
+  // what was overwriting newer edits), and (b) we stop hammering storage on
+  // every keystroke. Reset to `null` on load/switch so the first settle
+  // records the baseline without writing. `saveTimer` debounces the write;
+  // `flushFn` holds the latest "save now if dirty" closure for unmount /
+  // tab-hide.
+  const lastSavedSigRef = useRef<string | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushSaveRef = useRef<() => void>(() => {});
+
   // Cross-project metadata for the Projects menu — design list
   // (names only, not appSource) plus per-design turn + revision
   // counts. Lets every project surface its expanded children
@@ -754,6 +767,14 @@ export default function StudioPage() {
     );
     setMessagesByDesign(snap.messagesByDesign);
     setNotesByDesign(snap.notesByDesign);
+    // Loaded a fresh project state — make the autosave re-baseline on its
+    // next run (record the loaded sig, write nothing) so we never re-save
+    // what we just read over a newer edit.
+    lastSavedSigRef.current = null;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
   }, []);
 
   // Compute the ambient counts a project surfaces in the menu —
@@ -786,21 +807,83 @@ export default function StudioPage() {
   // so we don't save the OLD project's state under the NEW key.
   useEffect(() => {
     if (!activeProjectId) return;
+    // Don't save while a project switch is mid-flight (the loaded state
+    // hasn't caught up to the active id yet).
     if (loadedProjectId !== activeProjectId) return;
     const project = projects.find((p) => p.id === activeProjectId);
     if (!project) return;
-    const snapshot: ProjectSnapshot = {
-      project,
-      designs,
-      activeDesignId: activeId,
-      messagesByDesign,
-      notesByDesign,
-      themeDraftJson: themeDraftJsonByProject[activeProjectId],
-    };
-    storage.saveProject(snapshot).catch((err) => {
-      // eslint-disable-next-line no-console
-      console.warn("[studio] saveProject failed:", err);
+
+    const themeDraftJson = themeDraftJsonByProject[activeProjectId];
+    // Content signature of everything we persist. Only a real change to a
+    // screen / message / note / theme moves it — so loading a project, or a
+    // re-render with no content change, produces an identical sig and writes
+    // nothing.
+    const sig = JSON.stringify({
+      d: designs.map((d) => [d.id, d.name, d.status ?? "", d.appSource ?? ""]),
+      a: activeId,
+      m: Object.keys(messagesByDesign)
+        .sort()
+        .map((k) => [k, messagesByDesign[k]?.length ?? 0]),
+      n: notesByDesign,
+      t: themeDraftJson ?? "",
     });
+
+    // Rebuild the "save now if dirty" closure off the latest state each
+    // render so the flush listeners (unmount / tab-hide) write the newest.
+    flushSaveRef.current = () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      if (lastSavedSigRef.current === null || sig === lastSavedSigRef.current) {
+        return;
+      }
+      void storage
+        .saveProject({
+          project,
+          designs,
+          activeDesignId: activeId,
+          messagesByDesign,
+          notesByDesign,
+          themeDraftJson,
+        })
+        .then(() => {
+          lastSavedSigRef.current = sig;
+        })
+        .catch(() => {});
+    };
+
+    // First settle after a load/switch records the baseline WITHOUT writing.
+    // The loaded state is already durable; re-saving it is exactly what was
+    // overwriting newer edits with the just-read snapshot.
+    if (lastSavedSigRef.current === null) {
+      lastSavedSigRef.current = sig;
+      return;
+    }
+    // Nothing changed since the last successful save → no write (no hammer).
+    if (sig === lastSavedSigRef.current) return;
+
+    // Debounced write — a burst of edits collapses into one save.
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      void storage
+        .saveProject({
+          project,
+          designs,
+          activeDesignId: activeId,
+          messagesByDesign,
+          notesByDesign,
+          themeDraftJson,
+        })
+        .then(() => {
+          lastSavedSigRef.current = sig;
+        })
+        .catch((err) => {
+          // eslint-disable-next-line no-console
+          console.warn("[studio] saveProject failed:", err);
+        });
+    }, 1500); // ~1.5s trailing debounce
   }, [
     activeProjectId,
     loadedProjectId,
@@ -812,6 +895,23 @@ export default function StudioPage() {
     themeDraftJsonByProject,
     storage,
   ]);
+
+  // Flush a pending save when the user leaves — tab hidden, page unload, or
+  // this component unmounting — so the last edit isn't stuck in the debounce
+  // window. Mount-once; reads the latest state via flushSaveRef.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushSaveRef.current();
+    };
+    const onBeforeUnload = () => flushSaveRef.current();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      flushSaveRef.current();
+    };
+  }, []);
 
   // Keep the active project's Projects-menu summary in sync with
   // the in-memory designs / messages. Inactive projects rely on

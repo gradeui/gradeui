@@ -723,12 +723,20 @@ export class SupabaseStudioStorage implements StudioStorage {
     //    block hard-deleted absent screens, which is the implicit
     //    erasure soft-delete removes.)
     if (designs.length > 0) {
-      await this.supabase
+      // Screen rows carry appSource in `state`. This upsert previously
+      // dropped its error silently — a failed screen write (most likely an
+      // RLS denial when the browser client writes the row; the chat API
+      // route persists via the service role and so was unaffected) looked
+      // like a successful save, and the user's manual edits vanished on
+      // reload while agent edits persisted. Throw like the project update
+      // above so failures surface instead of eating the user's work.
+      const { error: designsError } = await this.supabase
         .from("designs")
         .upsert(
           designs.map((d, i) => designToRow(project.id, d, i)),
           { onConflict: "id" },
         );
+      if (designsError) throw designsError;
     }
 
     // 4. Messages + notes — replace per surviving screen. Cheap for a
