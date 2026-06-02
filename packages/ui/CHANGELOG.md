@@ -1,5 +1,65 @@
 # @gradeui/ui
 
+## 1.3.0
+
+### Minor Changes
+
+- 1022fd3: `lib/demo` (the declarative scripted-motion layer behind `<Code>`, `<Composer>`, `<DemoStage>`) now honours reduced motion.
+
+  `useScriptedDemo` reads `useReducedMotion()`, so when the OS reports `prefers-reduced-motion: reduce` (or the global `data-motion="off"` toggle is set) the runner settles on the final frame instead of animating: every step completes instantly, the sequence never loops, and `typeText` emits whole strings in one tick. Previously the typing/reveal loop ran regardless, which meant a screen built with `<Code>` kept animating under reduced motion.
+
+  This closes the accessibility gap for the declarative-motion surfaces and brings them in line with ThreeScene, the CSS reset, and the rest of the motion control. `ScriptedDemoContext` also gains a `reduced` flag for interpreters that do non-timing-based work (confetti, sound) and want to opt out under reduced motion.
+
+- 276cbe0: Compact control sizes for dense editing UI, plus fills and an upgraded ThreeScene renderer.
+
+  Much of this came out of building the Studio editing surfaces (inspector, side panels), where controls need to sit at a tighter rhythm than page UI.
+
+  New components and exports:
+
+  - `FillPicker` (with `FillValue` and `FILL_TOKENS`) and `BackgroundFill` (`BackgroundFillProps`, `BackgroundFillType`, `BackgroundFillFit`): a frame's background as a first-class fill (shader / image / gradient / solid) with a Figma-style picker.
+  - `ShaderControls` (`ShaderControlsProps`): live controls for the shader/post-processing fills.
+  - `AvatarTone` type export.
+
+  Compact sizes across form controls:
+
+  - `Button` gains an `xs` size (24px) for tool panels.
+  - `Input` gains a `size` prop plus `startSlot` / `endSlot` adornments.
+  - `Select` gains menu density (`size="xs" | "sm"` on `SelectContent`, propagated to every `SelectItem` via context).
+  - `Textarea` gains a `size` prop mirroring `Input`.
+  - `Label` gains a `size` prop.
+  - `Message` gains a `compact` variant for dense side-panel use.
+
+  ThreeScene:
+
+  - Upgraded render pipeline: post-processing composer, shader presets, fragment scenes, and theme-aware palettes, so backgrounds react to the active Grade theme.
+
+- f63c05f: Add `Logo` — a brand mark with built-in lockup, on-light / on-dark, and monochrome variations.
+
+  A brand rarely has one logo: a square mark for tight spaces, a horizontal lockup for headers, single-colour versions for busy or inverted surfaces. `Logo` holds that set and renders the right one for the context, so toolbars, sidenavs, and footers can all reach for the same component.
+
+  - `sources` — artwork keyed by lockup (`square` / `horizontal` / `icon`) then appearance (`light` / `dark` / `mono`). Each slot is any node (inline `<svg>`, `<img>`, a component). Supply only what you have; it falls back across appearances and lockups.
+  - `lockup`, `mode` (explicit light/dark, not theme-coupled), `mono`, `size` (t-shirt or pixel height), `label` / `decorative` for a11y, optional `href` to link.
+  - Monochrome artwork inherits `currentColor`. A neutral placeholder renders when a slot has no artwork yet (handy in Studio before wiring real art).
+
+- 7770369: Add `lib/motion`: a global motion control.
+
+  `useReducedMotion()` is now the single choke point for "should this animate?". It ORs the OS `prefers-reduced-motion: reduce` query with a `data-motion="off"` attribute on `<html>`, so a manual toggle can still every animated surface at once (ThreeScene, RivePlayer, VideoPlayer, aura) on top of honouring the OS preference.
+
+  - `useReducedMotion()` — live (media-query change + attribute observer), SSR-safe.
+  - `setMotion(enabled)` — imperatively flip the `<html>` toggle.
+  - `MOTION_ATTR` — the `data-motion` attribute name.
+  - `usePrefersReducedMotion` — deprecated alias of `useReducedMotion`, kept for back-compat; it now also folds in the toggle.
+
+  Reduce-only by design: the toggle can suppress motion but never forces it on for a viewer whose OS asks for reduced motion. A matching `[data-motion="off"]` reset in the stylesheet covers pure-CSS animation and transition.
+
+- f63c05f: Add `Field` plus the selection-card family (`RadioCard`, `CheckboxCard`, `SwitchCard`), and fix elevation so it works in generated/runtime UI.
+
+  `Field` is the inline composition primitive for a control and its caption. It pairs a bare `Checkbox`, `RadioGroupItem`, or `Switch` with `Field.Label`, an optional `Field.Description`, and an optional `Field.Trailing` slot, and wires the `id` plus `aria-describedby` automatically by cloning the control. The primitives stay bare (no new `description` prop). `layout="option"` (default) leads with the control; `layout="setting"` leads with the text and pins the control trailing, for settings rows.
+
+  `RadioCard` / `CheckboxCard` / `SwitchCard` make the whole card the control: it renders as the underlying Radix `Item` / `Checkbox.Root` / `Switch.Root`, so focus, hover, and the checked state all live on the card surface and the entire card is the hit target. All three share one token-driven surface (`.gds-selection-card`, themeable via the new `--gds-selection-card-*` variables) so they look identical sitting together; the dot/check/switch glyph differs by type by design. Props: `label`, `description`, `aside` (a trailing slot for a Badge), `hideIndicator`, `indicatorPosition`, plus arbitrary `children` for custom static content. The checked glyph defaults to `--primary` so a control reads the same colour in a card as standalone. RadioCard must sit inside a `RadioGroup`; static content only (no nested interactive controls).
+
+  Elevation fix: the Presence elevation system was defined as Tailwind utilities (`shadow-elevation-N`, `shadow-raised`, the single-layer atoms) that only compiled when a scanned source file used the literal class, so typing `shadow-elevation-3` in Studio output or a consumer screen produced no CSS. This adds JIT-proof real classes (`.gds-elevation-0` through `.gds-elevation-5`, `.gds-elevation-hot`, `.gds-elevation-pressed`, and `.gds-shadow-*` atoms) that are always present in the shipped stylesheet, mirroring how `.gds-surface-*` already works, and safelists the Tailwind utility names so the documented API also compiles into every build.
+
 ## 1.2.0
 
 ### Minor Changes
