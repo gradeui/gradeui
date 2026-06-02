@@ -9,10 +9,10 @@ import { contract } from "@gradeui/contracts";
 
 export const CheckboxContract = contract({
   name: "Checkbox",
-  description: "Binary on/off tied to a list (select multiple, agree to terms). Single on/off that controls a setting is better with Switch.",
+  description: "Binary on/off tied to a list (select multiple, agree to terms). Single on/off that controls a setting is better with Switch. For a label + description row, wrap in Field. When each option should be a whole selectable card (label + description, selected state on the card surface), use CheckboxCard.",
   import: "@gradeui/ui",
   aliases: ["checkbox","tickbox","tick box","check","multi-select item"],
-  composesWith: ["Label (via htmlFor)","Card","Form rows","Table (for row selection)"],
+  composesWith: ["Label (via htmlFor)","Field (label + description row)","CheckboxCard (whole-card selectable option)","Card","Form rows","Table (for row selection)"],
   props: {
   "checked": {
       schema: z.boolean().optional(),

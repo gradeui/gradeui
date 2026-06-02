@@ -4,6 +4,8 @@ import { SidecarBlock } from "@/components/sidecar-block";
 import { InstallBlock } from "@/components/install-block";
 
 import { Checkbox } from "@/components/ui/checkbox";
+import { CheckboxCard } from "@/components/ui/selection-card";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
@@ -140,6 +142,95 @@ export default function CheckboxPage() {
             </div>
           </div>
         </ComponentPreview>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
+          Card variant
+        </h2>
+        <p className="leading-7 text-muted-foreground">
+          CheckboxCard turns the whole card into the control. Focus and the
+          checked state live on the card surface, and the entire card is the
+          hit target. Reach for it for selectable add-on or feature cards. Put
+          only static content inside (text, images, badges), never another
+          interactive control.
+        </p>
+        <ComponentPreview
+          code={`<div className="grid gap-3">
+  <CheckboxCard
+    label="Priority support"
+    description="24/7 response within an hour"
+    defaultChecked
+  />
+  <CheckboxCard
+    label="Extended warranty"
+    description="3 years parts and labour"
+  />
+</div>`}
+        >
+          <div className="grid gap-3">
+            <CheckboxCard
+              label="Priority support"
+              description="24/7 response within an hour"
+              defaultChecked
+            />
+            <CheckboxCard
+              label="Extended warranty"
+              description="3 years parts and labour"
+            />
+          </div>
+        </ComponentPreview>
+        <p className="leading-7 text-muted-foreground">
+          Hide the glyph with <code className="bg-muted px-1 py-0.5 rounded text-sm">hideIndicator</code>{" "}
+          (selection then reads from the card border and background), or move
+          it with <code className="bg-muted px-1 py-0.5 rounded text-sm">indicatorPosition=&quot;leading&quot;</code>.
+        </p>
+        <h3 className="text-lg font-medium">Variations</h3>
+        <p className="text-muted-foreground">
+          Indicator on the leading edge with a Badge in the{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">aside</code>{" "}
+          slot, and indicator hidden in a two-up grid.
+        </p>
+        <ComponentPreview
+          code={`{/* Indicator leading, Badge in aside */}
+<CheckboxCard
+  indicatorPosition="leading"
+  label="Priority support"
+  description="24/7 response within an hour"
+  aside={<Badge variant="info-soft">Popular</Badge>}
+  defaultChecked
+/>
+
+{/* Hidden tick, two-up grid */}
+<div className="grid grid-cols-2 gap-3">
+  <CheckboxCard hideIndicator label="Email" description="Weekly digest" defaultChecked />
+  <CheckboxCard hideIndicator label="SMS" description="Critical alerts only" />
+</div>`}
+        >
+          <div className="grid gap-6">
+            <CheckboxCard
+              indicatorPosition="leading"
+              label="Priority support"
+              description="24/7 response within an hour"
+              aside={<Badge variant="info-soft">Popular</Badge>}
+              defaultChecked
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <CheckboxCard
+                hideIndicator
+                label="Email"
+                description="Weekly digest"
+                defaultChecked
+              />
+              <CheckboxCard
+                hideIndicator
+                label="SMS"
+                description="Critical alerts only"
+              />
+            </div>
+          </div>
+        </ComponentPreview>
+        <SidecarBlock slug="checkbox-card" title="CheckboxCard sidecar" />
       </div>
 
       <div className="space-y-4">

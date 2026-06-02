@@ -140,6 +140,30 @@ export {
 
 export { Checkbox } from "../components/ui/checkbox";
 
+// Field — inline composition primitive (control + label + description +
+// trailing slot) with automatic id / aria-describedby wiring. Keeps the
+// Checkbox / RadioGroupItem / Switch primitives bare.
+export {
+  Field,
+  FieldLabel,
+  FieldDescription,
+  FieldTrailing,
+  type FieldProps,
+} from "../components/ui/field";
+
+// Selection cards — RadioCard / CheckboxCard / SwitchCard. The whole card
+// is the control (focus + checked state on the parent surface), sharing one
+// `.gds-selection-card` look. Static content only — never nest interactive
+// controls inside (see the component header).
+export {
+  RadioCard,
+  CheckboxCard,
+  SwitchCard,
+  type RadioCardProps,
+  type CheckboxCardProps,
+  type SwitchCardProps,
+} from "../components/ui/selection-card";
+
 // Code — syntax-highlighted code surface for marketing heroes, docs,
 // changelog entries, AI-output displays. Sync prism-react-renderer
 // (shared with Studio's CodeView so the repo has one highlighter, not
@@ -454,6 +478,17 @@ export {
 export { VideoPlayer, type VideoPlayerProps } from "../components/ui/video-player";
 
 export { RivePlayer, type RivePlayerProps } from "../components/ui/rive-player";
+
+// Brand
+export {
+  Logo,
+  type LogoProps,
+  type LogoSources,
+  type LogoVariant,
+  type LogoLockup,
+  type LogoMode,
+  type LogoSize,
+} from "../components/ui/logo";
 
 export { ThreeScene, type ThreeSceneProps } from "../components/ui/three-scene";
 export { ShaderControls, type ShaderControlsProps } from "../components/ui/shader-controls";

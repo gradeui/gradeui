@@ -4,6 +4,7 @@ import { SidecarBlock } from "@/components/sidecar-block";
 import { InstallBlock } from "@/components/install-block";
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RadioCard } from "@/components/ui/selection-card";
 import { Label } from "@/components/ui/label";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
@@ -239,6 +240,103 @@ export default function RadioGroupPage() {
             </div>
           </RadioGroup>
         </ComponentPreview>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
+          Card variant
+        </h2>
+        <p className="leading-7 text-muted-foreground">
+          For a selectable card where the whole surface is the control, use
+          RadioCard inside a RadioGroup. Focus and the selected state live on
+          the card, the entire card is clickable, and the group keeps roving
+          focus and single-select intact. Put only static content inside
+          (text, images, badges), never another interactive control.
+        </p>
+        <ComponentPreview
+          code={`<RadioGroup defaultValue="standard" className="grid gap-3">
+  <RadioCard value="standard" label="Standard" description="4–10 business days" />
+  <RadioCard value="fast" label="Fast" description="2–5 business days" />
+  <RadioCard value="next-day" label="Next day" description="1 business day" />
+</RadioGroup>`}
+        >
+          <RadioGroup defaultValue="standard" className="grid gap-3">
+            <RadioCard
+              value="standard"
+              label="Standard"
+              description="4–10 business days"
+            />
+            <RadioCard
+              value="fast"
+              label="Fast"
+              description="2–5 business days"
+            />
+            <RadioCard
+              value="next-day"
+              label="Next day"
+              description="1 business day"
+            />
+          </RadioGroup>
+        </ComponentPreview>
+        <p className="leading-7 text-muted-foreground">
+          Hide the dot with <code className="bg-muted px-1 py-0.5 rounded text-sm">hideIndicator</code>,
+          move it with{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">indicatorPosition=&quot;leading&quot;</code>,
+          or pass arbitrary content (an image, a custom layout) as children
+          instead of label/description.
+        </p>
+        <h3 className="text-lg font-medium">Variations</h3>
+        <p className="text-muted-foreground">
+          Indicator on the leading edge, and indicator hidden (selection reads
+          from the card border and background) laid out in a grid via{" "}
+          <code className="bg-muted px-1 py-0.5 rounded text-sm">className</code>{" "}
+          on the group.
+        </p>
+        <ComponentPreview
+          code={`{/* Indicator leading */}
+<RadioGroup defaultValue="standard" className="grid gap-3">
+  <RadioCard value="standard" indicatorPosition="leading" label="Standard" description="4–10 business days" />
+  <RadioCard value="fast" indicatorPosition="leading" label="Fast" description="2–5 business days" />
+</RadioGroup>
+
+{/* Indicator hidden, two-up grid */}
+<RadioGroup defaultValue="m" className="grid grid-cols-2 gap-3">
+  <RadioCard value="s" hideIndicator label="Small" description="Up to 10 seats" />
+  <RadioCard value="m" hideIndicator label="Medium" description="Up to 50 seats" />
+</RadioGroup>`}
+        >
+          <div className="grid gap-6">
+            <RadioGroup defaultValue="standard" className="grid gap-3">
+              <RadioCard
+                value="standard"
+                indicatorPosition="leading"
+                label="Standard"
+                description="4–10 business days"
+              />
+              <RadioCard
+                value="fast"
+                indicatorPosition="leading"
+                label="Fast"
+                description="2–5 business days"
+              />
+            </RadioGroup>
+            <RadioGroup defaultValue="m" className="grid grid-cols-2 gap-3">
+              <RadioCard
+                value="s"
+                hideIndicator
+                label="Small"
+                description="Up to 10 seats"
+              />
+              <RadioCard
+                value="m"
+                hideIndicator
+                label="Medium"
+                description="Up to 50 seats"
+              />
+            </RadioGroup>
+          </div>
+        </ComponentPreview>
+        <SidecarBlock slug="radio-card" title="RadioCard sidecar" />
       </div>
 
       <div className="space-y-4">

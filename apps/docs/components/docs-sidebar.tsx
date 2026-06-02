@@ -86,6 +86,7 @@ const componentsNav: NavSection[] = [
       { title: "Textarea", href: "/components/textarea" },
       { title: "Composer", href: "/components/composer" },
       { title: "Label", href: "/components/label" },
+      { title: "Field", href: "/components/field" },
       { title: "Select", href: "/components/select" },
       { title: "Multi Select", href: "/components/multi-select" },
       { title: "Checkbox", href: "/components/checkbox" },
@@ -102,6 +103,7 @@ const componentsNav: NavSection[] = [
     title: "Data Display",
     items: [
       { title: "Avatar", href: "/components/avatar" },
+      { title: "Logo", href: "/components/logo" },
       { title: "Badge", href: "/components/badge" },
       { title: "Message", href: "/components/message" },
       { title: "Card", href: "/components/card" },

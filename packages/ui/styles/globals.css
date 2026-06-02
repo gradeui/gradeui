@@ -1655,3 +1655,188 @@
 .animate-scroll-right:hover {
   animation-play-state: paused;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Selection cards — RadioCard / CheckboxCard / SwitchCard
+   ---------------------------------------------------------------------------
+   The whole card is the control, so focus / hover / checked all live on the
+   parent surface. Every visual reads from a `--gds-selection-card-*` token
+   with a semantic fallback, so a project can re-skin the cards via the
+   per-project override layer (set the token at theme scope) without touching
+   the component. Per-instance overrides still flow through `style={{ … }}`.
+   ───────────────────────────────────────────────────────────────────────── */
+.gds-selection-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gds-selection-card-gap, 0.75rem);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--gds-selection-card-padding, 1rem);
+  border-radius: var(--gds-selection-card-radius, var(--radius));
+  border: var(--gds-selection-card-border-width, 1px) solid
+    oklch(var(--gds-selection-card-border, var(--border)));
+  background: oklch(var(--gds-selection-card-bg, var(--card)));
+  color: oklch(var(--foreground));
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.gds-selection-card:hover {
+  background: var(--gds-selection-card-hover-bg, oklch(var(--muted) / 0.55));
+}
+.gds-selection-card:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px oklch(var(--background)),
+    0 0 0 4px oklch(var(--gds-selection-card-ring, var(--ring)) / 0.85);
+}
+.gds-selection-card[data-state="checked"] {
+  border-color: oklch(
+    var(--gds-selection-card-selected-border, var(--foreground))
+  );
+  background: var(
+    --gds-selection-card-selected-bg,
+    oklch(var(--muted) / 0.4)
+  );
+}
+.gds-selection-card:disabled,
+.gds-selection-card[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Content blocks */
+.gds-selection-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.gds-selection-card__slot {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.gds-selection-card__title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: oklch(var(--foreground));
+}
+.gds-selection-card__desc {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: oklch(var(--muted-foreground));
+}
+
+/* ── Indicators (the small glyph; differs by control type) ─────────────── */
+.gds-selection-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-top: 0.0625rem;
+}
+
+/* Radio — empty ring → filled circle with a light inner dot when checked */
+.gds-selection-indicator--radio {
+  height: 1.25rem;
+  width: 1.25rem;
+  border-radius: 9999px;
+  border: 1.5px solid oklch(var(--gds-selection-card-control, var(--border)));
+  background: oklch(var(--background));
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+.gds-selection-card[data-state="checked"] .gds-selection-indicator--radio {
+  border-color: oklch(var(--gds-selection-card-control-checked, var(--primary)));
+  background: oklch(var(--gds-selection-card-control-checked, var(--primary)));
+}
+.gds-selection-indicator__dot {
+  display: block;
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  background: oklch(var(--background));
+}
+
+/* Checkbox — rounded square, check glyph when checked */
+.gds-selection-indicator--checkbox {
+  height: 1.2rem;
+  width: 1.2rem;
+  border-radius: 0.3rem;
+  border: 1.5px solid oklch(var(--gds-selection-card-control, var(--border)));
+  background: oklch(var(--background));
+  color: oklch(var(--background));
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+.gds-selection-card[data-state="checked"] .gds-selection-indicator--checkbox {
+  border-color: oklch(var(--gds-selection-card-control-checked, var(--primary)));
+  background: oklch(var(--gds-selection-card-control-checked, var(--primary)));
+}
+.gds-selection-indicator__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: oklch(var(--background));
+}
+
+/* Switch — track + thumb that slides on checked */
+.gds-selection-indicator--switch {
+  height: 1.25rem;
+  width: 2.25rem;
+  padding: 2px;
+  border-radius: 9999px;
+  background: oklch(var(--input));
+  justify-content: flex-start;
+  transition: background-color 150ms ease;
+}
+.gds-selection-card[data-state="checked"] .gds-selection-indicator--switch {
+  background: oklch(var(--gds-selection-card-control-checked, var(--primary)));
+}
+.gds-selection-indicator__thumb {
+  display: block;
+  height: 1rem;
+  width: 1rem;
+  border-radius: 9999px;
+  background: oklch(var(--background));
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.25);
+  transition: transform 150ms ease;
+}
+.gds-selection-card[data-state="checked"] .gds-selection-indicator__thumb {
+  transform: translateX(1rem);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Elevation — real classes (JIT-proof, always in the bundle).
+   ---------------------------------------------------------------------------
+   The `shadow-elevation-N` Tailwind utilities (declared in tailwind-preset.ts)
+   only compile when a scanned source file actually uses the class string, so
+   typing `shadow-elevation-3` in Studio output or a consumer screen produced
+   no CSS. These plain classes always exist in the shipped stylesheet, exactly
+   like `.gds-surface-*`, so elevation works everywhere regardless of the JIT
+   content scan. Prefer these for runtime/generated UI; the Tailwind utilities
+   remain available for component-internal use.
+   ───────────────────────────────────────────────────────────────────────── */
+.gds-elevation-0 { box-shadow: var(--elevation-0); }
+.gds-elevation-1 { box-shadow: var(--elevation-1); }
+.gds-elevation-2 { box-shadow: var(--elevation-2); }
+.gds-elevation-3 { box-shadow: var(--elevation-3); }
+.gds-elevation-4 { box-shadow: var(--elevation-4); }
+.gds-elevation-5 { box-shadow: var(--elevation-5); }
+.gds-elevation-hot { box-shadow: var(--elevation-hot); }
+.gds-elevation-pressed { box-shadow: var(--elevation-pressed); }
+/* Single-layer atoms, for composing a custom stack */
+.gds-shadow-bevel-hi { box-shadow: var(--shadow-bevel-hi); }
+.gds-shadow-bevel-lo { box-shadow: var(--shadow-bevel-lo); }
+.gds-shadow-contact { box-shadow: var(--shadow-contact); }
+.gds-shadow-lift { box-shadow: var(--shadow-lift); }
+.gds-shadow-lift-deep { box-shadow: var(--shadow-lift-deep); }
+.gds-shadow-heat-inner { box-shadow: var(--shadow-heat-inner); }
+.gds-shadow-heat-outer { box-shadow: var(--shadow-heat-outer); }

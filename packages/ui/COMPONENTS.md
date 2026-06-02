@@ -26,6 +26,8 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | Checkbox | `checkbox.tsx` | none formally; checked/indeterminate states | ✅ | |
 | RadioGroup / RadioGroupItem | `radio-group.tsx` | container `grid gap-2` | ✅ | vertical + horizontal orientation variants |
 | Switch | `switch.tsx` | none — w-11 h-6 thumb-translate | ✅ | |
+| Field (+ Label/Description/Trailing) | `field.tsx` | `layout` (option/setting) · slots: Field.Label / Field.Description / Field.Trailing | ⏳ | Inline composition for a bare control + caption. Auto-wires `id` + `aria-describedby` (clones the control child). `setting` = text-left, control-right row. Keeps Checkbox/Radio/Switch primitives bare — they never grow a `description` prop. |
+| RadioCard / CheckboxCard / SwitchCard | `selection-card.tsx` | `label`, `description`, `aside`, `hideIndicator`, `indicatorPosition` (leading/trailing) + native control props | ⏳ | Selectable cards where the WHOLE surface is the control — focus / hover / checked on the parent. Share one `.gds-selection-card` look (token-driven via `--gds-selection-card-*`); dot/check/switch glyph differs by type by design. RadioCard goes in a RadioGroup. Static content only — never nest interactive controls (plain Card + Field for that). |
 | Slider | `slider.tsx` | none — track h-2 thumb 20×20 | ✅ | |
 | Toggle | `toggle.tsx` | `variant` (default/outline), `size` (default/sm/lg) | ⚠️ | Figma covers default size only |
 | ToggleGroup / ToggleGroupItem | `toggle-group.tsx` | inherits Toggle variants | ✅ | type=single/multiple |
@@ -77,6 +79,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | Calendar | `calendar.tsx` | day-grid w/ data-state-* attrs | ✅ | single + range modes |
 | DatePicker / DateRangePicker | `date-picker.tsx` | composes Button + Popover + Calendar | ✅ | closed + open states |
 | Avatar (+ Image/Fallback) | `avatar.tsx` | h-10 w-10 default; sizes via className | ✅ | sm/md/lg/xl in Figma (Figma-side convention) |
+| Logo | `logo.tsx` | `sources` (square/horizontal/icon × light/dark/mono), `lockup`, `mode`, `mono`, `size`, `label`, `href` | ⏳ | Brand mark; artwork supplied by consumer. Picks the right lockup/appearance for toolbars, sidenavs, footers. |
 
 ## Composition blocks (higher-order)
 

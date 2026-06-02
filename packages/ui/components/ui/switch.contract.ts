@@ -9,10 +9,10 @@ import { contract } from "@gradeui/contracts";
 
 export const SwitchContract = contract({
   name: "Switch",
-  description: "Instant on/off setting (\"Enable notifications\", \"Dark mode\"). Commits on toggle — no submit button needed. For selecting-from-a-list use Checkbox.",
+  description: "Instant on/off setting (\"Enable notifications\", \"Dark mode\"). Commits on toggle — no submit button needed. For selecting-from-a-list use Checkbox. For a settings row (label + description on the left, Switch on the right) use Field layout=\"setting\". For a prominent on/off presented as a whole selectable card, use SwitchCard.",
   import: "@gradeui/ui",
   aliases: ["toggle","switch","on/off switch","ios toggle","toggle switch","switch control","react native switch"],
-  composesWith: ["Label (via htmlFor)","Card (settings rows)"],
+  composesWith: ["Label (via htmlFor)","Field (layout=\"setting\" settings row)","SwitchCard (whole-card toggle)","Card (settings rows)"],
   props: {
   "checked": {
       schema: z.boolean().optional(),

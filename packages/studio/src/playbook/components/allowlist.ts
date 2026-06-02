@@ -67,6 +67,9 @@ export const ALLOWED_COMPONENTS = [
   // Drops naturally inside <AppShellHeader> for window chrome.
   "Toolbar",
   "ToolbarSlot",
+  // Brand — the Logo mark (square/horizontal/icon × light/dark/mono),
+  // artwork supplied by the consumer. Lands in headers, sidenavs, footers.
+  "Logo",
   // Core primitives
   "Button",
   "Card",
@@ -152,6 +155,27 @@ export const ALLOWED_COMPONENTS = [
   // Form controls
   "Checkbox",
   "Switch",
+  // RadioGroup wraps RadioCard / RadioGroupItem for single-select.
+  "RadioGroup",
+  "RadioGroupItem",
+  // Field — inline composition: a bare control (Checkbox/RadioGroupItem/
+  // Switch) + Field.Label + Field.Description (+ Field.Trailing). Wires
+  // id / aria automatically. `layout="setting"` for the text-left,
+  // control-right settings row.
+  "Field",
+  "FieldLabel",
+  "FieldDescription",
+  "FieldTrailing",
+  // Selection cards — the WHOLE card is the control (focus + checked state
+  // on the parent surface). RadioCard goes inside a RadioGroup; CheckboxCard
+  // and SwitchCard stand alone. Pass `label` + `description` (+ `aside` for a
+  // Badge); `hideIndicator` / `indicatorPosition` to tune the glyph. THE
+  // ANSWER for shipping-option / plan-picker / settings-toggle cards — don't
+  // hand-roll a Card with a Radio floating in the corner. Static content
+  // only inside (no nested Slider/Input/Button).
+  "RadioCard",
+  "CheckboxCard",
+  "SwitchCard",
   "Select",
   "SelectTrigger",
   "SelectContent",

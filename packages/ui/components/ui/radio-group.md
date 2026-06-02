@@ -12,8 +12,8 @@ props:
   - RadioGroupItem: value: string — what the group emits when this item is picked
   - RadioGroupItem: id?: string — pair with a <Label htmlFor> for click-on-label
   - RadioGroupItem: disabled?: boolean
-when_to_use: A small set of mutually-exclusive options where the user needs to SEE all of them at once — pricing tiers (3-4 options), shipping speed, payment method radio cards. For 5+ options use Select. For a segmented control as part of a toolbar use ToggleGroup. For yes/no use Switch.
-composes_with: [Label (paired with each item via htmlFor), Stack (vertical list), Card (radio card pattern)]
+when_to_use: A small set of mutually-exclusive options where the user needs to SEE all of them at once — pricing tiers (3-4 options), shipping speed, payment method radio cards. When each option should be a whole clickable card (label + description, selected state on the card), use RadioCard inside the RadioGroup instead of a Card with a radio in the corner. For a plain label + description row, wrap RadioGroupItem in Field. For 5+ options use Select. For a segmented control as part of a toolbar use ToggleGroup. For yes/no use Switch.
+composes_with: [Label (paired with each item via htmlFor), Field (label + description row), RadioCard (whole-card selectable option), Stack (vertical list)]
 aliases: [radio group, radio buttons, single-choice, pricing options, payment method, radio buttons, radio control, single-select]
 ---
 

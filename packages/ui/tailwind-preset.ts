@@ -17,6 +17,31 @@ import type { Config } from "tailwindcss";
  */
 const preset: Partial<Config> = {
   darkMode: ["class"],
+  // Presence elevation utilities are a public, user-typed API (Studio output,
+  // consumer screens), not just internal component classes. Tailwind's JIT
+  // only emits a utility when it sees the literal class in a scanned file, so
+  // `shadow-elevation-3` typed in generated UI produced no CSS. Safelisting
+  // forces them into every build. (The `.gds-elevation-*` plain classes in
+  // globals.css are the JIT-proof primary path; this keeps the documented
+  // Tailwind names working too.)
+  safelist: [
+    "shadow-elevation-0",
+    "shadow-elevation-1",
+    "shadow-elevation-2",
+    "shadow-elevation-3",
+    "shadow-elevation-4",
+    "shadow-elevation-5",
+    "shadow-raised",
+    "shadow-hot",
+    "shadow-pressed",
+    "shadow-bevel-hi",
+    "shadow-bevel-lo",
+    "shadow-contact",
+    "shadow-lift",
+    "shadow-lift-deep",
+    "shadow-heat-inner",
+    "shadow-heat-outer",
+  ],
   theme: {
     extend: {
       colors: {

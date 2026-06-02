@@ -22,6 +22,7 @@ import { CardContract } from "../components/ui/card.contract";
 import { CarouselContract } from "../components/ui/carousel.contract";
 import { ChartContract } from "../components/ui/chart.contract";
 import { CheckboxContract } from "../components/ui/checkbox.contract";
+import { CheckboxCardContract } from "../components/ui/checkbox-card.contract";
 import { CodeContract } from "../components/ui/code.contract";
 import { CollapsibleContract } from "../components/ui/collapsible.contract";
 import { CommandContract } from "../components/ui/command.contract";
@@ -29,18 +30,21 @@ import { ComposerContract } from "../components/ui/composer.contract";
 import { DatePickerContract } from "../components/ui/date-picker.contract";
 import { DialogContract } from "../components/ui/dialog.contract";
 import { DropdownMenuContract } from "../components/ui/dropdown-menu.contract";
+import { FieldContract } from "../components/ui/field.contract";
 import { FillPickerContract } from "../components/ui/fill-picker.contract";
 import { FlexContract } from "../components/ui/flex.contract";
 import { GridContract } from "../components/ui/grid.contract";
 import { HoverCardContract } from "../components/ui/hover-card.contract";
 import { InputContract } from "../components/ui/input.contract";
 import { LabelContract } from "../components/ui/label.contract";
+import { LogoContract } from "../components/ui/logo.contract";
 import { MapContract } from "../components/ui/map.contract";
 import { MediaSurfaceContract } from "../components/ui/media-surface.contract";
 import { MessageContract } from "../components/ui/message.contract";
 import { MultiSelectContract } from "../components/ui/multi-select.contract";
 import { PopoverContract } from "../components/ui/popover.contract";
 import { ProgressContract } from "../components/ui/progress.contract";
+import { RadioCardContract } from "../components/ui/radio-card.contract";
 import { RadioGroupContract } from "../components/ui/radio-group.contract";
 import { ResizableContract } from "../components/ui/resizable.contract";
 import { RivePlayerContract } from "../components/ui/rive-player.contract";
@@ -58,6 +62,7 @@ import { SliderContract } from "../components/ui/slider.contract";
 import { SortableContract } from "../components/ui/sortable.contract";
 import { StackContract } from "../components/ui/stack.contract";
 import { SwitchContract } from "../components/ui/switch.contract";
+import { SwitchCardContract } from "../components/ui/switch-card.contract";
 import { TableContract } from "../components/ui/table.contract";
 import { TabsContract } from "../components/ui/tabs.contract";
 import { TextareaContract } from "../components/ui/textarea.contract";
@@ -86,6 +91,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Carousel: CarouselContract,
   Chart: ChartContract,
   Checkbox: CheckboxContract,
+  CheckboxCard: CheckboxCardContract,
   Code: CodeContract,
   Collapsible: CollapsibleContract,
   Command: CommandContract,
@@ -93,18 +99,21 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   DatePicker: DatePickerContract,
   Dialog: DialogContract,
   DropdownMenu: DropdownMenuContract,
+  Field: FieldContract,
   FillPicker: FillPickerContract,
   Flex: FlexContract,
   Grid: GridContract,
   HoverCard: HoverCardContract,
   Input: InputContract,
   Label: LabelContract,
+  Logo: LogoContract,
   Map: MapContract,
   MediaSurface: MediaSurfaceContract,
   Message: MessageContract,
   MultiSelect: MultiSelectContract,
   Popover: PopoverContract,
   Progress: ProgressContract,
+  RadioCard: RadioCardContract,
   RadioGroup: RadioGroupContract,
   Resizable: ResizableContract,
   RivePlayer: RivePlayerContract,
@@ -122,6 +131,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Sortable: SortableContract,
   Stack: StackContract,
   Switch: SwitchContract,
+  SwitchCard: SwitchCardContract,
   Table: TableContract,
   Tabs: TabsContract,
   Textarea: TextareaContract,

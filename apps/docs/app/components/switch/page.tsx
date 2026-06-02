@@ -4,6 +4,7 @@ import { SidecarBlock } from "@/components/sidecar-block";
 import { InstallBlock } from "@/components/install-block";
 
 import { Switch } from "@/components/ui/switch";
+import { SwitchCard } from "@/components/ui/selection-card";
 import { Label } from "@/components/ui/label";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
@@ -140,6 +141,45 @@ export default function SwitchPage() {
             <Switch id="auto-sync" />
           </div>
         </ComponentPreview>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
+          Card variant
+        </h2>
+        <p className="leading-7 text-muted-foreground">
+          SwitchCard presents an on/off setting as a whole selectable card.
+          The entire card is the switch, so the toggled state lives on the
+          card surface. For a compact settings row (label left, small Switch
+          right) reach for <code className="bg-muted px-1 py-0.5 rounded text-sm">Field layout=&quot;setting&quot;</code>{" "}
+          instead. SwitchCard is for the heavier, card-sized toggle.
+        </p>
+        <ComponentPreview
+          code={`<div className="grid gap-3">
+  <SwitchCard
+    label="Auto-renew"
+    description="Renew this plan automatically each month"
+    defaultChecked
+  />
+  <SwitchCard
+    label="Usage emails"
+    description="A monthly summary of your usage"
+  />
+</div>`}
+        >
+          <div className="grid gap-3">
+            <SwitchCard
+              label="Auto-renew"
+              description="Renew this plan automatically each month"
+              defaultChecked
+            />
+            <SwitchCard
+              label="Usage emails"
+              description="A monthly summary of your usage"
+            />
+          </div>
+        </ComponentPreview>
+        <SidecarBlock slug="switch-card" title="SwitchCard sidecar" />
       </div>
 
       <div className="space-y-4">

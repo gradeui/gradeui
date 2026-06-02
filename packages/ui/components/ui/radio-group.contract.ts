@@ -9,11 +9,11 @@ import { contract } from "@gradeui/contracts";
 
 export const RadioGroupContract = contract({
   name: "RadioGroup",
-  description: "A small set of mutually-exclusive options where the user needs to SEE all of them at once — pricing tiers (3-4 options), shipping speed, payment method radio cards. For 5+ options use Select. For a segmented control as part of a toolbar use ToggleGroup. For yes/no use Switch.",
+  description: "A small set of mutually-exclusive options where the user needs to SEE all of them at once — pricing tiers (3-4 options), shipping speed, payment method radio cards. When each option should be a whole clickable card (label + description, selected state on the card), use RadioCard inside the RadioGroup instead of a Card with a radio in the corner. For a plain label + description row, wrap RadioGroupItem in Field. For 5+ options use Select. For a segmented control as part of a toolbar use ToggleGroup. For yes/no use Switch.",
   import: "@gradeui/ui",
   aliases: ["radio group","radio buttons","single-choice","pricing options","payment method","radio buttons","radio control","single-select"],
   subcomponents: ["RadioGroupItem"],
-  composesWith: ["Label (paired with each item via htmlFor)","Stack (vertical list)","Card (radio card pattern)"],
+  composesWith: ["Label (paired with each item via htmlFor)","Field (label + description row)","RadioCard (whole-card selectable option)","Stack (vertical list)"],
   props: {
   "value": {
       schema: z.string().optional(),
