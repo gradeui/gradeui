@@ -54,6 +54,17 @@ const PHONE_SNIPPET = `<!-- Phone-shaped frame — swap the ratio to suit the sc
   ></iframe>
 </div>`;
 
+const FIXED_RES_SNIPPET = `<!-- Fixed-resolution: render at 1280px wide, scale to fill the box -->
+<div style="position: relative; aspect-ratio: 16 / 10; width: 100%;">
+  <iframe
+    src="https://gradeui.com/e/YOUR_TOKEN?w=1280"
+    style="position: absolute; inset: 0; width: 100%; height: 100%; border: 0;"
+    sandbox="allow-scripts"
+    loading="lazy"
+    title="Grade screen"
+  ></iframe>
+</div>`;
+
 export default function StudioEmbedPage() {
   return (
     <div className="space-y-10">
@@ -167,24 +178,48 @@ export default function StudioEmbedPage() {
           Sizing
         </h2>
         <p className="leading-7">
-          You control the shape from the host page through the wrapper&apos;s{" "}
-          <Tok>aspect-ratio</Tok>. The screen itself renders responsive and
-          fills whatever box it is given.
+          There are two ways to size an embed. They behave differently, so pick
+          the one that matches what you are showing.
         </p>
-        <div className="space-y-2 leading-7 text-muted-foreground">
-          <p>
-            <strong>Wide / hero:</strong> use a landscape ratio like{" "}
-            <Tok>16 / 10</Tok> or <Tok>16 / 9</Tok> (the snippet above).
-          </p>
-          <p>
-            <strong>Phone:</strong> use a tall ratio and cap the width.
-          </p>
-        </div>
-        <CodeBlock>{PHONE_SNIPPET}</CodeBlock>
+
+        <h3 className="text-lg font-semibold">Responsive (default)</h3>
         <p className="leading-7 text-muted-foreground">
-          Tip: because breakpoints evaluate against the iframe&apos;s width, a
-          narrow box shows the screen&apos;s mobile layout and a wide box shows
-          its desktop layout, automatically.
+          With no extra parameters the screen renders responsive and fills
+          whatever box you give it. You control the shape from the host page
+          through the wrapper&apos;s <Tok>aspect-ratio</Tok>. Because
+          breakpoints evaluate against the iframe&apos;s own width, a narrow box
+          shows the screen&apos;s mobile layout and a wide box shows its desktop
+          layout, automatically. Use a landscape ratio like <Tok>16 / 10</Tok>{" "}
+          for a hero, or a tall ratio with a capped width for a phone:
+        </p>
+        <CodeBlock>{PHONE_SNIPPET}</CodeBlock>
+
+        <h3 className="text-lg font-semibold">
+          Fixed resolution (scales to fit)
+        </h3>
+        <p className="leading-7 text-muted-foreground">
+          Add <Tok>?w=&lt;width&gt;</Tok> and the screen renders at that virtual
+          width and is scaled to fill the box, rather than reflowing.
+          Breakpoints fire at the fixed width, so you get a faithful,
+          proportionally-shrunk render: a real desktop layout miniaturised, not
+          a mobile reflow. Width is the only knob you need; it pins the
+          breakpoints and the screen fills whatever box you give it. This is the
+          same model the Studio grid thumbnails use; the grid renders at{" "}
+          <Tok>1280</Tok> wide.
+        </p>
+        <CodeBlock>{FIXED_RES_SNIPPET}</CodeBlock>
+        <p className="leading-7 text-muted-foreground">
+          Optionally add <Tok>&amp;h=&lt;height&gt;</Tok> for an exact
+          contain-fit artboard: the screen renders at a fixed{" "}
+          <Tok>w</Tok>×<Tok>h</Tok>, centred and letterboxed inside the box.
+          Use this when you want a precise thumbnail with no cropping; match the
+          wrapper&apos;s <Tok>aspect-ratio</Tok> to your <Tok>w</Tok>/
+          <Tok>h</Tok> and it fills edge to edge.
+        </p>
+        <p className="leading-7 text-muted-foreground">
+          Rule of thumb: reach for fixed resolution when you want the screen to
+          look like a shrunken desktop (a thumbnail or showcase tile), and
+          responsive when you want it to genuinely adapt to the space.
         </p>
       </section>
 

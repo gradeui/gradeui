@@ -32,10 +32,26 @@ interface ShareLinkRow {
 
 export default async function EmbedPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { token } = await params;
+
+  // Optional fixed-resolution sizing. `?w=1280` renders the screen at that
+  // virtual width (breakpoints fire at 1280) and scales it to fill the box;
+  // adding `&h=800` switches to an exact contain-fit artboard. Width alone
+  // is enough — no `w` means the embed renders responsive (reflows to the
+  // iframe width). Values must be positive finite numbers.
+  const sp = await searchParams;
+  const toDim = (v: string | string[] | undefined): number | undefined => {
+    const n = Number(Array.isArray(v) ? v[0] : v);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  };
+  const renderWidth = toDim(sp.w);
+  const renderHeight = toDim(sp.h);
+
   const supabase = getServiceSupabase();
   if (!supabase) notFound();
 
@@ -103,6 +119,8 @@ export default async function EmbedPage({
       appSource={appSource}
       themeDraftJson={themeDraftJson}
       mode={share.color_mode}
+      renderWidth={renderWidth}
+      renderHeight={renderHeight}
     />
   );
 }
