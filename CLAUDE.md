@@ -185,6 +185,12 @@ These docs are the source of truth for where Studio is going. Read them before r
 
 - **[`STUDIO-EMBED.md`](./STUDIO-EMBED.md)** — **`grade-embed`**: live, isolated Grade renders embeddable anywhere (personal site, blog, Webflow). Fast Frame minus editing chrome — reuses `FastIframeHost`, the share-link record, and the share view's viewport/Fit-scale math. Two modes (React `<GradeEmbed>` + hosted `embed.gradeui.com/e/<id>`), point-at-share-id payload, and the non-trivial sizing story (aspect-ratio + device-frame done; cross-origin auto-height is the new bit). Same kernel-extraction workstream. E0–E4 rollout.
 
+- **[`STUDIO-CAPTURE.md`](./STUDIO-CAPTURE.md)** — One **capture primitive**, three consumers: grid posters (the memory-ceiling fix when a project has many screens), static HTML export, and the live embed. Capture = rendered DOM + theme var block + media map; a promote-on-view / demote-to-poster grid policy; an export packaging pass. C0–C4 rollout.
+
+- **[`STUDIO-PERSISTENCE.md`](./STUDIO-PERSISTENCE.md)** — When and how Studio **saves** without hammering Supabase. Dirty-tracking via a content signature (only write when content actually changed, so loading a project never re-saves over a newer edit — the bug that was silently eating manual edits), debounce + flush-on-leave, a granular `saveScreen`, and the "surface every write error, never swallow it" rule. P0–P4.
+
+- **[`STUDIO-DIRECTOR.md`](./STUDIO-DIRECTOR.md)** — **Record → payload → replay**: turn a live screen into a directed product demo. A JSON timeline (camera / cursor / interaction / caption / audio / video tracks) replayed over the live transcluded canvas with auto-zoom, a focus spotlight, a synthetic cursor, captions, and (later) voiceover + webcam. Live-first (editable, embeddable, pin-to-revision for a point-in-time demo), video-on-demand via Playwright. The camera timeline (`useCameraTimeline` / `ZoomPan` in the embed) is track one, shipped; the `camera-tour` playground scaffold is a working showcase. D0–D5.
+
 These are siblings: learning is *what the system learns and generates*; chat is *how it presents that*; themes is *the unit people remix and share*; storage is *the user's own bytes that make a prototype theirs*; audit is *the trail of who did what across all of it*; fills is *how a frame gets painted*; embed is *how a finished render leaves Grade for the open web*. They cross-reference for individual features.
 
 ## See also

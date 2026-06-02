@@ -490,6 +490,13 @@ export {
   type LogoSize,
 } from "../components/ui/logo";
 
+// Direction — wrap any content in a directed camera (zoom/pan/spotlight tour).
+export {
+  ScreenAnimator,
+  type ScreenAnimatorProps,
+  type ScreenAnimatorShot,
+} from "../components/ui/screen-animator";
+
 export { ThreeScene, type ThreeSceneProps } from "../components/ui/three-scene";
 export { ShaderControls, type ShaderControlsProps } from "../components/ui/shader-controls";
 export {

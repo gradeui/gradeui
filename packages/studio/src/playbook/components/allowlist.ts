@@ -70,6 +70,9 @@ export const ALLOWED_COMPONENTS = [
   // Brand — the Logo mark (square/horizontal/icon × light/dark/mono),
   // artwork supplied by the consumer. Lands in headers, sidenavs, footers.
   "Logo",
+  // Direction — wrap content in a directed camera (zoom/pan/spotlight tour
+  // with play/pause). The "live demo director" primitive.
+  "ScreenAnimator",
   // Core primitives
   "Button",
   "Card",

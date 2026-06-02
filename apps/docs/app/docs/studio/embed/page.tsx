@@ -223,6 +223,69 @@ export default function StudioEmbedPage() {
         </p>
       </section>
 
+      {/* Zoom & focus */}
+      <section className="space-y-4">
+        <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
+          Zoom and focus
+        </h2>
+        <p className="leading-7">
+          To spotlight a detail rather than show the whole screen, add{" "}
+          <Tok>?zoom=</Tok> and an optional focal point. <Tok>zoom</Tok>{" "}
+          magnifies the screen ( <Tok>2</Tok> = 2×), and <Tok>cx</Tok>/
+          <Tok>cy</Tok> set the point to centre in the box, as fractions of the
+          screen ( <Tok>0</Tok> = left/top, <Tok>0.5</Tok> = centre,{" "}
+          <Tok>1</Tok> = right/bottom). The host box then crops to that window.
+        </p>
+        <CodeBlock>{`<!-- Zoom 2x, focused a third of the way down, centred horizontally -->
+<div style="position: relative; aspect-ratio: 16 / 10; width: 100%;">
+  <iframe
+    src="https://gradeui.com/e/YOUR_TOKEN?zoom=2&cx=0.5&cy=0.33"
+    style="position: absolute; inset: 0; width: 100%; height: 100%; border: 0;"
+    sandbox="allow-scripts"
+    loading="lazy"
+    title="Grade screen"
+  ></iframe>
+</div>`}</CodeBlock>
+        <p className="leading-7 text-muted-foreground">
+          The screen stays live and interactive under the zoom, this is a real
+          magnified view, not an image crop. Combine with the sizing params,
+          e.g. a fixed-resolution desktop render zoomed into its header:{" "}
+          <Tok>?w=1280&amp;zoom=2.5&amp;cy=0</Tok>.
+        </p>
+      </section>
+
+      {/* Camera */}
+      <section className="space-y-4">
+        <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
+          Camera (chainable zoom)
+        </h2>
+        <p className="leading-7">
+          A single <Tok>zoom</Tok> is one camera position. Add{" "}
+          <Tok>?camera=</Tok> to chain several into a moving shot list: the
+          camera holds on a shot, glides to the next, and loops, like an
+          auto-zoom product tour. Each shot is{" "}
+          <Tok>zoom,cx,cy,hold,trans</Tok> (hold and trans in seconds; cx, cy,
+          hold, trans are optional), shots separated by <Tok>;</Tok>. It's
+          meant to be hand-writable:
+        </p>
+        <CodeBlock>{`<!-- Overview → push into a detail → pull back, looping -->
+<iframe
+  src="https://gradeui.com/e/YOUR_TOKEN?camera=1,0.5,0.5,2 ; 2.4,0.3,0.25,3 ; 1,0.5,0.5,2"
+  ...
+></iframe>
+
+<!-- reads as: full view hold 2s, glide to 2.4× on (0.3, 0.25) hold 3s,
+     glide back to full hold 2s, repeat -->`}</CodeBlock>
+        <p className="leading-7 text-muted-foreground">
+          A play/pause control appears when there's more than one shot. The
+          camera is motion, so it honours the viewer's reduced-motion preference
+          (and <Tok>?motion=off</Tok>): under either it settles on the first
+          shot and doesn&apos;t move. The screen stays live and interactive
+          throughout, this is a directed view of a real running screen, not a
+          video.
+        </p>
+      </section>
+
       {/* Theme */}
       <section className="space-y-4">
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">

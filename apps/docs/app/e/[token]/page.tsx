@@ -14,7 +14,40 @@
 
 import { notFound } from "next/navigation";
 import { getServiceSupabase } from "@/lib/supabase/service";
-import { EmbedScreen } from "@/components/studio/embed-screen";
+import { EmbedScreen, type CameraShot } from "@/components/studio/embed-screen";
+
+/**
+ * Parse the human-readable `camera` param into a shot list. Shots are
+ * separated by `;`; each is `zoom,cx,cy,hold,trans` where hold/trans are in
+ * SECONDS and cx/cy/hold/trans are optional. Whitespace is tolerated.
+ *
+ *   camera=1 ; 2,0.3,0.2,2.5 ; 1,0.5,0.5,1.5
+ *   → full view (hold 2s default), glide to 2× on (0.3,0.2) hold 2.5s,
+ *     glide back to full, loop.
+ */
+function parseCameraParam(raw: string | undefined): CameraShot[] | undefined {
+  if (!raw) return undefined;
+  const n = (v: string | undefined, d: number): number => {
+    const x = Number((v ?? "").trim());
+    return Number.isFinite(x) ? x : d;
+  };
+  const clamp01 = (x: number): number => Math.min(1, Math.max(0, x));
+  const shots = raw
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => {
+      const p = s.split(",");
+      return {
+        zoom: Math.max(0.01, n(p[0], 1)),
+        cx: clamp01(n(p[1], 0.5)),
+        cy: clamp01(n(p[2], 0.5)),
+        holdMs: Math.max(0, n(p[3], 2)) * 1000,
+        transMs: Math.max(0, n(p[4], 0.8)) * 1000,
+      };
+    });
+  return shots.length > 0 ? shots : undefined;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +92,24 @@ export default async function EmbedPage({
   const motionRaw = Array.isArray(sp.motion) ? sp.motion[0] : sp.motion;
   const motion =
     motionRaw === "off" ? false : motionRaw === "on" ? true : undefined;
+
+  // Optional zoom + focal point: ?zoom=2&cx=0.5&cy=0.3 magnifies the screen
+  // and centres that point (fractions of the screen) in the box — so you can
+  // spotlight a detail and let the host box crop to it. Defaults: no zoom,
+  // centred.
+  const num = (
+    v: string | string[] | undefined,
+    fallback: number,
+  ): number => {
+    const n = Number(Array.isArray(v) ? v[0] : v);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  const zoom = num(sp.zoom, 1);
+  const focusX = num(sp.cx, 0.5);
+  const focusY = num(sp.cy, 0.5);
+  const camera = parseCameraParam(
+    Array.isArray(sp.camera) ? sp.camera[0] : sp.camera,
+  );
 
   const supabase = getServiceSupabase();
   if (!supabase) notFound();
@@ -130,6 +181,10 @@ export default async function EmbedPage({
       renderWidth={renderWidth}
       renderHeight={renderHeight}
       motion={motion}
+      zoom={zoom}
+      focusX={focusX}
+      focusY={focusY}
+      camera={camera}
     />
   );
 }

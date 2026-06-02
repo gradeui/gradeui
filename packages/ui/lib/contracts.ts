@@ -49,6 +49,7 @@ import { RadioGroupContract } from "../components/ui/radio-group.contract";
 import { ResizableContract } from "../components/ui/resizable.contract";
 import { RivePlayerContract } from "../components/ui/rive-player.contract";
 import { RowContract } from "../components/ui/row.contract";
+import { ScreenAnimatorContract } from "../components/ui/screen-animator.contract";
 import { ScrollAreaContract } from "../components/ui/scroll-area.contract";
 import { SectionBlockContract } from "../components/ui/section-block.contract";
 import { SelectContract } from "../components/ui/select.contract";
@@ -118,6 +119,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Resizable: ResizableContract,
   RivePlayer: RivePlayerContract,
   Row: RowContract,
+  ScreenAnimator: ScreenAnimatorContract,
   ScrollArea: ScrollAreaContract,
   SectionBlock: SectionBlockContract,
   Select: SelectContract,
