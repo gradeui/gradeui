@@ -600,9 +600,25 @@ export default function StudioPage() {
   // records the baseline without writing. `saveTimer` debounces the write;
   // `flushFn` holds the latest "save now if dirty" closure for unmount /
   // tab-hide.
-  const lastSavedSigRef = useRef<string | null>(null);
+  // `lastSavedStructSig` covers the COARSE, multi-row shape: which
+  // screens exist + their order, active screen pointer, message counts,
+  // notes, theme draft. A change here routes to the whole-project
+  // `saveProject`. `lastSavedBodyById` covers each screen's editable
+  // BODY (name / status / appSource) — a change to one screen routes to a
+  // single-row `saveScreen(projectId, design)` so a padding tweak writes
+  // one row, not a 5-table rewrite (STUDIO-PERSISTENCE.md, P1). Both are
+  // reset on load/switch so the first settle records the baseline without
+  // writing.
+  const lastSavedStructSigRef = useRef<string | null>(null);
+  const lastSavedBodyByIdRef = useRef<Record<string, string>>({});
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushSaveRef = useRef<() => void>(() => {});
+  // Drives the saved/saving/error chip in the canvas toolbar. A failed
+  // write parks on "error" until the next success — never silent (P4).
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const savedFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cross-project metadata for the Projects menu — design list
   // (names only, not appSource) plus per-design turn + revision
@@ -770,7 +786,8 @@ export default function StudioPage() {
     // Loaded a fresh project state — make the autosave re-baseline on its
     // next run (record the loaded sig, write nothing) so we never re-save
     // what we just read over a newer edit.
-    lastSavedSigRef.current = null;
+    lastSavedStructSigRef.current = null;
+    lastSavedBodyByIdRef.current = {};
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
@@ -814,12 +831,22 @@ export default function StudioPage() {
     if (!project) return;
 
     const themeDraftJson = themeDraftJsonByProject[activeProjectId];
-    // Content signature of everything we persist. Only a real change to a
-    // screen / message / note / theme moves it — so loading a project, or a
-    // re-render with no content change, produces an identical sig and writes
-    // nothing.
-    const sig = JSON.stringify({
-      d: designs.map((d) => [d.id, d.name, d.status ?? "", d.appSource ?? ""]),
+
+    // Two-tier dirty tracking (STUDIO-PERSISTENCE.md, P1 + P2):
+    //
+    //   structSig — the COARSE shape that a single-row write can't
+    //   express: which screens exist + their order, the active-screen
+    //   pointer, per-screen message counts, notes, and the theme draft.
+    //   A change here routes to the whole-project `saveProject`.
+    //
+    //   bodyById — each screen's editable BODY (name / status /
+    //   appSource). A change to ONE screen routes to a single-row
+    //   `saveScreen(projectId, design)`. This is the common path: a
+    //   padding tweak, a code-editor change, a chat regeneration — all
+    //   mutate one screen's appSource and now cost one row upsert, not a
+    //   five-table project rewrite.
+    const structSig = JSON.stringify({
+      d: designs.map((d) => d.id), // membership + order only
       a: activeId,
       m: Object.keys(messagesByDesign)
         .sort()
@@ -827,62 +854,119 @@ export default function StudioPage() {
       n: notesByDesign,
       t: themeDraftJson ?? "",
     });
+    const bodyById: Record<string, string> = {};
+    for (const d of designs) {
+      bodyById[d.id] = JSON.stringify([
+        d.name,
+        d.status ?? "",
+        d.appSource ?? "",
+      ]);
+    }
 
-    // Rebuild the "save now if dirty" closure off the latest state each
-    // render so the flush listeners (unmount / tab-hide) write the newest.
+    const flashSaved = () => {
+      setSaveStatus("saved");
+      if (savedFlashTimerRef.current) clearTimeout(savedFlashTimerRef.current);
+      savedFlashTimerRef.current = setTimeout(() => {
+        // Only fade the "saved" flash — never stomp a later "saving" /
+        // "error" the next edit may have set in the meantime.
+        setSaveStatus((s) => (s === "saved" ? "idle" : s));
+      }, 1500);
+    };
+
+    // The actual write. `silent` (flush-on-leave) skips the status
+    // setters so we don't touch React state from an unmounting tree.
+    const doSave = (opts?: { silent?: boolean }) => {
+      const silent = opts?.silent ?? false;
+      const structDirty = structSig !== lastSavedStructSigRef.current;
+      const dirtyBodies = designs.filter(
+        (d) => bodyById[d.id] !== lastSavedBodyByIdRef.current[d.id],
+      );
+      if (!structDirty && dirtyBodies.length === 0) return;
+
+      if (!silent) setSaveStatus("saving");
+
+      // Structural change → whole-project write. It re-upserts every
+      // screen row too, so a successful saveProject also clears the body
+      // dirty flags for ALL screens.
+      const work: Promise<unknown> = structDirty
+        ? storage
+            .saveProject({
+              project,
+              designs,
+              activeDesignId: activeId,
+              messagesByDesign,
+              notesByDesign,
+              themeDraftJson,
+            })
+            .then(() => {
+              lastSavedStructSigRef.current = structSig;
+              lastSavedBodyByIdRef.current = { ...bodyById };
+            })
+        : // Body-only change(s) → one row per dirty screen. Usually just
+          // the active screen; the filter keeps it correct if more than
+          // one drifted (e.g. an undo across screens).
+          Promise.all(
+            dirtyBodies.map((d) =>
+              storage
+                .saveScreen(activeProjectId, d, designs.indexOf(d))
+                .then(() => {
+                  lastSavedBodyByIdRef.current = {
+                    ...lastSavedBodyByIdRef.current,
+                    [d.id]: bodyById[d.id],
+                  };
+                }),
+            ),
+          );
+
+      void work
+        .then(() => {
+          if (!silent) flashSaved();
+        })
+        .catch((err) => {
+          // SURFACE the failure — the old code swallowed this, which is
+          // exactly how manual edits vanished without a trace. Park the
+          // chip on "error" (it stays until the next success) and log the
+          // real Supabase error. The dirty refs are NOT advanced, so the
+          // next edit retries this write.
+          // eslint-disable-next-line no-console
+          console.error("[studio] save failed:", err);
+          if (!silent) setSaveStatus("error");
+        });
+    };
+
+    // Rebuild the flush closure off the latest state each render so the
+    // unmount / tab-hide listeners write the newest values.
     flushSaveRef.current = () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
       }
-      if (lastSavedSigRef.current === null || sig === lastSavedSigRef.current) {
-        return;
-      }
-      void storage
-        .saveProject({
-          project,
-          designs,
-          activeDesignId: activeId,
-          messagesByDesign,
-          notesByDesign,
-          themeDraftJson,
-        })
-        .then(() => {
-          lastSavedSigRef.current = sig;
-        })
-        .catch(() => {});
+      if (lastSavedStructSigRef.current === null) return;
+      doSave({ silent: true });
     };
 
-    // First settle after a load/switch records the baseline WITHOUT writing.
-    // The loaded state is already durable; re-saving it is exactly what was
-    // overwriting newer edits with the just-read snapshot.
-    if (lastSavedSigRef.current === null) {
-      lastSavedSigRef.current = sig;
+    // First settle after a load/switch records the baseline WITHOUT
+    // writing. The loaded state is already durable; re-saving it is what
+    // was overwriting newer edits with the just-read snapshot.
+    if (lastSavedStructSigRef.current === null) {
+      lastSavedStructSigRef.current = structSig;
+      lastSavedBodyByIdRef.current = { ...bodyById };
       return;
     }
-    // Nothing changed since the last successful save → no write (no hammer).
-    if (sig === lastSavedSigRef.current) return;
+
+    // Nothing drifted since the last successful write → no hammer.
+    const anyDirty =
+      structSig !== lastSavedStructSigRef.current ||
+      designs.some(
+        (d) => bodyById[d.id] !== lastSavedBodyByIdRef.current[d.id],
+      );
+    if (!anyDirty) return;
 
     // Debounced write — a burst of edits collapses into one save.
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
-      void storage
-        .saveProject({
-          project,
-          designs,
-          activeDesignId: activeId,
-          messagesByDesign,
-          notesByDesign,
-          themeDraftJson,
-        })
-        .then(() => {
-          lastSavedSigRef.current = sig;
-        })
-        .catch((err) => {
-          // eslint-disable-next-line no-console
-          console.warn("[studio] saveProject failed:", err);
-        });
+      doSave();
     }, 1500); // ~1.5s trailing debounce
   }, [
     activeProjectId,
@@ -2286,6 +2370,7 @@ export default function StudioPage() {
                 projectName={
                   projects.find((p) => p.id === activeProjectId)?.name
                 }
+                saveStatus={saveStatus}
                 commentThreads={commentThreads}
                 onCommentPinClick={(threadId) => {
                   // Click a pin → make sure the right panel is
@@ -2803,6 +2888,7 @@ function StudioThemedCanvas({
   zoom,
   onZoomChange,
   projectName,
+  saveStatus,
   commentThreads,
   onCommentPinClick,
   getCommentUser,
@@ -2839,6 +2925,7 @@ function StudioThemedCanvas({
   zoom: "fit" | "all";
   onZoomChange: (zoom: "fit" | "all") => void;
   projectName?: string;
+  saveStatus?: "idle" | "saving" | "saved" | "error";
   commentThreads?: CommentThreadWithMessages[];
   onCommentPinClick?: (threadId: string) => void;
   getCommentUser?: (id: string) => StoredUser | undefined;
@@ -2881,6 +2968,7 @@ function StudioThemedCanvas({
       zoom={zoom}
       onZoomChange={onZoomChange}
       projectName={projectName}
+      saveStatus={saveStatus}
       commentThreads={commentThreads}
       onCommentPinClick={onCommentPinClick}
       getCommentUser={getCommentUser}

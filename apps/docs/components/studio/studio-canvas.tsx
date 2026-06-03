@@ -280,6 +280,10 @@ interface StudioCanvasProps {
   // Studio hierarchy. Optional — embed consumers without project
   // semantics fall back to the previous "All screens" wording.
   projectName?: string;
+  /** Persistence status for the active screen — drives the subtle
+   *  saved/saving/error chip in the canvas toolbar so a failed write is
+   *  never silent. `idle` renders nothing. See STUDIO-PERSISTENCE.md (P4). */
+  saveStatus?: "idle" | "saving" | "saved" | "error";
   className?: string;
 }
 
@@ -319,6 +323,7 @@ export function StudioCanvas({
   zoom: controlledZoom,
   onZoomChange,
   projectName,
+  saveStatus = "idle",
   commentThreads,
   activeCommentThreadId,
   onCommentPinClick,
@@ -1288,6 +1293,29 @@ export function StudioCanvas({
               title={fillError}
             >
               Fill failed
+            </span>
+          )}
+          {/* Persistence status — saving / saved / error. Sits with the
+              other live chips. `idle` and the brief "saved" flash keep
+              the chrome calm; an error stays put (and red) until the
+              next successful write so a silent data-loss can't happen. */}
+          {saveStatus === "saving" && (
+            <span className="flex items-center gap-1 text-[10px] text-muted-foreground tabular-nums">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Saving
+            </span>
+          )}
+          {saveStatus === "saved" && (
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              Saved
+            </span>
+          )}
+          {saveStatus === "error" && (
+            <span
+              className="text-[10px] text-destructive tabular-nums"
+              title="Your last change could not be saved to the server. It is still on screen but not yet durable — keep this tab open; the next edit will retry."
+            >
+              Save failed — not saved
             </span>
           )}
           </div>

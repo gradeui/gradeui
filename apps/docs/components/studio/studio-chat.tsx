@@ -484,18 +484,67 @@ export function StudioChat({
   // in handleSend's "new" intent branch still runs — that's the one
   // legitimate path where the chat decides the preview should clear, and
   // it's user-triggered rather than effect-driven.
+  // Has this chat instance settled once since (re)mount? StudioChat is
+  // keyed `chat-${activeId}` and only mounts in screen view, so leaving to
+  // the grid unmounts it and re-entering remounts it fresh. The id of the
+  // last assistant message we've ALREADY applied to the preview — so a
+  // re-render / re-hydration of the same message doesn't re-emit.
+  const hydratedRef = useRef(false);
+  const lastEmittedAssistantIdRef = useRef<string | null>(null);
+  // Read currentCode through a ref so a manual edit (which changes
+  // currentCode) doesn't re-run this effect — it's only consulted on the
+  // first settle after mount.
+  const currentCodeRef = useRef(currentCode);
+  useEffect(() => {
+    currentCodeRef.current = currentCode;
+  }, [currentCode]);
+
   useEffect(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
       if (msg.role !== "assistant") continue;
       const text = textFromParts(msg.parts as any);
       const code = latestJsxBlock(text, { sealedOnly: isStreaming });
-      // While streaming, don't clobber a previously-good preview just
-      // because the current block hasn't sealed yet — let the old render
-      // stay up until the new sealed block overwrites it.
-      if (code || !isStreaming) onLatestCode(code);
+
+      // Live generation — always flow sealed blocks through so the
+      // preview updates as the model streams. Don't clobber a good
+      // preview with an unsealed block (let the old render stay up).
+      if (isStreaming) {
+        if (code) onLatestCode(code);
+        lastEmittedAssistantIdRef.current = msg.id;
+        hydratedRef.current = true;
+        return;
+      }
+
+      // FIRST settle after (re)mount. This assistant message is already
+      // baked into the durable `currentCode` (appSource) — PLUS any manual
+      // text / padding / code edits the user layered on top of it. Record
+      // it as the baseline and DO NOT emit: re-deriving the preview from
+      // chat here is exactly what wiped manual edits when the user left the
+      // screen and came back (the chat remounts and replays its last
+      // message over the durable source). Only fall back to chat when there
+      // is no durable source to show (recover an empty preview).
+      if (!hydratedRef.current) {
+        hydratedRef.current = true;
+        lastEmittedAssistantIdRef.current = msg.id;
+        const durable = currentCodeRef.current;
+        if (!durable || durable.trim() === "") onLatestCode(code);
+        return;
+      }
+
+      // Post-hydration: only a genuinely NEW assistant message (a fresh
+      // generation) replaces the source. A re-render of the same last
+      // message is a no-op, so manual edits survive.
+      if (msg.id !== lastEmittedAssistantIdRef.current) {
+        onLatestCode(code);
+        lastEmittedAssistantIdRef.current = msg.id;
+      }
       return;
     }
+    // No assistant message at all (fresh design, user-only history) —
+    // mark hydrated so the first real generation isn't mistaken for a
+    // mount-time replay.
+    hydratedRef.current = true;
   }, [messages, onLatestCode, isStreaming]);
 
   // The composer owns its own auto-grow + Enter-to-send. Studio used
