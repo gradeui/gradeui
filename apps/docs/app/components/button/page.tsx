@@ -15,7 +15,7 @@ const buttonProps = [
   },
   {
     name: "size",
-    type: '"default" | "sm" | "lg" | "icon"',
+    type: '"2xs" | "default" | "sm" | "lg" | "icon"',
     default: '"default"',
     description: "The size of the button.",
   },
@@ -169,11 +169,13 @@ export default function ButtonPage() {
 
         <h4 className="text-base font-medium">All sizes</h4>
         <ComponentPreview
-          code={`<Button variant="raised" size="sm">Small</Button>
+          code={`<Button variant="raised" size="2xs">2x Small</Button>
+<Button variant="raised" size="sm">Small</Button>
 <Button variant="raised" size="default">Default</Button>
 <Button variant="raised" size="lg">Large</Button>`}
         >
           <div className="flex items-center gap-3">
+            <Button variant="raised" size="2xs">2x Small</Button>
             <Button variant="raised" size="sm">Small</Button>
             <Button variant="raised" size="default">Default</Button>
             <Button variant="raised" size="lg">Large</Button>
@@ -187,11 +189,13 @@ export default function ButtonPage() {
           Sizes
         </h2>
         <ComponentPreview
-          code={`<Button size="sm">Small</Button>
+          code={`<Button size="2xs">2x Small</Button>
+<Button size="sm">Small</Button>
 <Button size="default">Default</Button>
 <Button size="lg">Large</Button>`}
         >
           <div className="flex items-center gap-4">
+            <Button size="2xs">2x Small</Button>
             <Button size="sm">Small</Button>
             <Button size="default">Default</Button>
             <Button size="lg">Large</Button>

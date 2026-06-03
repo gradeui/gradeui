@@ -113,7 +113,7 @@ const tabsTriggerVariants = cva(
           "rounded-none bg-transparent border-b-2 border-transparent -mb-px hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary",
       },
       size: {
-        sm: "text-[11px] gap-1 [&_svg]:size-3",
+        sm: "text-2xs gap-1 [&_svg]:size-3",
         md: "text-xs gap-1.5 [&_svg]:size-3.5",
         lg: "text-sm gap-2 [&_svg]:size-4",
       },

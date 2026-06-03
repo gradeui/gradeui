@@ -16,10 +16,10 @@ const inputProps = [
   },
   {
     name: "size",
-    type: '"default" | "sm" | "xs"',
+    type: '"default" | "sm" | "xs" | "2xs"',
     default: '"default"',
     description:
-      "Control density. default = h-9 (forms); sm = h-8 and xs = h-7 for dense tool panels (the Studio inspector).",
+      "Control density. default = h-9 (forms); sm = h-8, xs = h-7 and 2xs = h-6 for dense tool panels (the Studio inspector).",
   },
   {
     name: "startSlot",
@@ -112,12 +112,14 @@ export default function InputPage() {
   <Input size="default" placeholder="Default (h-9)" />
   <Input size="sm" placeholder="Small (h-8)" />
   <Input size="xs" placeholder="Extra small (h-7)" />
+  <Input size="2xs" placeholder="2x extra small (h-6)" />
 </div>`}
         >
           <div className="grid gap-2 w-full max-w-sm">
             <Input size="default" placeholder="Default (h-9)" />
             <Input size="sm" placeholder="Small (h-8)" />
             <Input size="xs" placeholder="Extra small (h-7)" />
+            <Input size="2xs" placeholder="2x extra small (h-6)" />
           </div>
         </ComponentPreview>
 

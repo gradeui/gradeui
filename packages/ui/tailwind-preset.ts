@@ -44,6 +44,13 @@ const preset: Partial<Config> = {
   ],
   theme: {
     extend: {
+      // Type scale — extends Tailwind's defaults. `2xs` is the dense
+      // tool-panel step below `xs` (12px), used by the Studio inspector
+      // and other Figma-density surfaces. Named so component `size`
+      // variants can map cleanly: 2xs→text-2xs, xs→text-xs, sm→text-sm.
+      fontSize: {
+        "2xs": ["0.6875rem", { lineHeight: "1rem" }], // 11px
+      },
       colors: {
         // Grade brand palette — values live in styles/globals.css as --gds-* vars.
         // TODO: rename --gds-* → --grade-* in a follow-up pass.

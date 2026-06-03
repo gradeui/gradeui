@@ -1119,10 +1119,101 @@ export function setShadow(
 ): string {
   const stripped = (className ?? "")
     .replace(/(^|\s)shadow(?:-(?:none|sm|md|lg|xl|2xl|inner))?(?=\s|$)/g, " ")
+    // Picking a token clears any custom (arbitrary) shadow — the two
+    // modes are mutually exclusive.
+    .replace(/(^|\s)shadow-\[[^\]]+\](?=\s|$)/g, " ")
     .replace(/\s+/g, " ")
     .trim();
   if (value === null) return stripped;
   const token = value === "" ? "shadow" : `shadow-${value}`;
+  return stripped ? `${stripped} ${token}` : token;
+}
+
+// ─── Custom (raw) shadow — the ADVANCED escape hatch ─────────────────
+//
+// The token control above (`shadow-md` …) is the default. When a
+// designer needs an exact offset/blur/spread/colour they drop into this
+// raw mode, which writes a single arbitrary Tailwind class:
+//
+//   shadow-[<x>px_<y>px_<blur>px_<spread>px_rgba(r,g,b,a)]
+//
+// Tailwind needs underscores where CSS uses spaces. Setting a custom
+// shadow strips any keyword `shadow-*` (and `setShadow` strips this), so
+// a frame is never on both at once — the same token-vs-raw contract we
+// want every style section to share.
+
+export interface CustomShadow {
+  x: number;
+  y: number;
+  blur: number;
+  spread: number;
+  /** 6-digit hex WITHOUT leading "#" (e.g. "000000"). */
+  hex: string;
+  /** 0–100. */
+  opacity: number;
+}
+
+export const DEFAULT_CUSTOM_SHADOW: CustomShadow = {
+  x: 0,
+  y: 3,
+  blur: 3,
+  spread: 0,
+  hex: "000000",
+  opacity: 20,
+};
+
+const SHADOW_CUSTOM_RE = /(^|\s)shadow-\[([^\]]+)\](?=\s|$)/g;
+
+/** Parse a custom `shadow-[…]` arbitrary class, or null when none is
+ *  present (incl. when only a keyword `shadow-*` token is set). */
+export function parseShadowCustom(
+  className: string | null | undefined,
+): CustomShadow | null {
+  if (!className) return null;
+  let inner: string | null = null;
+  SHADOW_CUSTOM_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = SHADOW_CUSTOM_RE.exec(className)) !== null) inner = m[2];
+  if (inner === null) return null;
+  const parts = inner.split("_");
+  const nums = parts.slice(0, 4).map((p) => parseInt(p, 10));
+  const colorTok = parts.slice(4).join("_"); // rgba(r,g,b,a)
+  let hex = "000000";
+  let opacity = 100;
+  const rgba = /rgba?\(([^)]+)\)/.exec(colorTok);
+  if (rgba) {
+    const c = rgba[1].split(",").map((s) => s.trim());
+    const [r, g, b] = [c[0], c[1], c[2]].map((v) => parseInt(v, 10));
+    if ([r, g, b].every((v) => Number.isFinite(v))) {
+      hex = [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+    }
+    if (c[3] !== undefined) {
+      const a = parseFloat(c[3]);
+      if (Number.isFinite(a)) opacity = Math.round(a * 100);
+    }
+  }
+  const [x, y, blur, spread] = nums.map((n) => (Number.isFinite(n) ? n : 0));
+  return { x, y, blur, spread, hex, opacity };
+}
+
+/** Write (or clear, with null) a custom shadow. Strips BOTH keyword and
+ *  arbitrary shadow tokens first so the modes stay mutually exclusive. */
+export function setShadowCustom(
+  className: string | null | undefined,
+  value: CustomShadow | null,
+): string {
+  const stripped = (className ?? "")
+    .replace(/(^|\s)shadow(?:-(?:none|sm|md|lg|xl|2xl|inner))?(?=\s|$)/g, " ")
+    .replace(SHADOW_CUSTOM_RE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (value === null) return stripped;
+  const h = value.hex.replace(/^#/, "").padStart(6, "0").slice(0, 6);
+  const r = parseInt(h.slice(0, 2), 16) || 0;
+  const g = parseInt(h.slice(2, 4), 16) || 0;
+  const b = parseInt(h.slice(4, 6), 16) || 0;
+  const a = Math.max(0, Math.min(100, value.opacity)) / 100;
+  const token = `shadow-[${value.x}px_${value.y}px_${value.blur}px_${value.spread}px_rgba(${r},${g},${b},${a})]`;
   return stripped ? `${stripped} ${token}` : token;
 }
 

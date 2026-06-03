@@ -14,8 +14,10 @@ const labelVariants = cva(
       // together. `xs` is the dense tool-panel label (the inspector).
       size: {
         default: "text-sm",
-        sm: "text-xs",
-        xs: "text-[11px]",
+        sm: "text-sm",
+        xs: "text-xs",
+        // 2xs (11px) — dense tool-panel labels (the Studio inspector).
+        "2xs": "text-2xs",
       },
     },
     defaultVariants: { size: "default" },

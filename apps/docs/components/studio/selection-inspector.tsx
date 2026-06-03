@@ -53,6 +53,8 @@ import {
   PanelTop,
   Plus,
   Settings2,
+  Grip,
+  Square,
 } from "lucide-react";
 import {
   getComponentContract,
@@ -80,6 +82,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  TokenField,
+  ColorOpacityRow,
+  CompactNumberField,
+  type TokenOption,
+} from "./token-field";
 import type {
   SelectionChainSegment,
   StudioSelection,
@@ -146,6 +154,9 @@ import {
   SHADOW_SCALE,
   parseShadow,
   setShadow,
+  parseShadowCustom,
+  setShadowCustom,
+  DEFAULT_CUSTOM_SHADOW,
   BLEND_MODES,
   parseBlend,
   setBlend,
@@ -166,6 +177,7 @@ import {
   type BorderStyle,
   type BorderColorToken,
   type ShadowValue,
+  type CustomShadow,
 } from "@/lib/tailwind-classes";
 import {
   getSpacingCapabilities,
@@ -563,7 +575,7 @@ export function SelectionInspector({
   };
 
   const headerBadge = (
-    <span className="font-mono text-[11px] text-primary">
+    <span className="font-mono text-2xs text-primary">
       &lt;{componentName}&gt;
     </span>
   );
@@ -716,7 +728,7 @@ export function SelectionInspector({
       )}
 
       {!componentPresent && appSource && (
-        <div className="mx-3 my-2.5 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[11px] text-amber-700 dark:text-amber-300">
+        <div className="mx-3 my-2.5 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-2xs text-amber-700 dark:text-amber-300">
           <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
           <span>
             <code className="font-mono">&lt;{componentName}&gt;</code> isn&rsquo;t
@@ -727,7 +739,7 @@ export function SelectionInspector({
       )}
 
       {error && (
-        <div className="mx-3 my-2.5 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive-soft p-2 text-[11px] text-destructive-deep">
+        <div className="mx-3 my-2.5 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive-soft p-2 text-2xs text-destructive-deep">
           <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
           <span>
             Couldn&rsquo;t load settings: {error}. Use the chat to edit this
@@ -737,7 +749,7 @@ export function SelectionInspector({
       )}
 
       {effectiveManifest && settableProps.length === 0 && !error && !contract?.actions && (
-        <p className="px-3 py-2.5 text-[11px] text-muted-foreground">
+        <p className="px-3 py-2.5 text-2xs text-muted-foreground">
           No quick controls for this component. Use the chat to edit it.
         </p>
       )}
@@ -827,6 +839,7 @@ export function SelectionInspector({
               settableProps.map((p) => p.name.toLowerCase()),
             ),
             onChangeClassName: applyClassName,
+            computedStyle: selection?.computedStyle,
           };
           return (
             <>
@@ -886,6 +899,7 @@ export function SelectionInspector({
           manifestPropNames={
             new Set(settableProps.map((p) => p.name.toLowerCase()))
           }
+          computedStyle={selection?.computedStyle}
           onChangeClassName={(next) => {
             if (!appSource) return;
             const target = componentName ?? selection?.tag;
@@ -915,6 +929,7 @@ export function SelectionInspector({
           manifestPropNames={
             new Set(settableProps.map((p) => p.name.toLowerCase()))
           }
+          computedStyle={selection?.computedStyle}
           onChangeClassName={(next) => applyClassName(next, "Set shadow")}
         />
       )}
@@ -1005,7 +1020,7 @@ export function SelectionInspector({
               type="button"
               onClick={onRequestUndock}
               title="Return to chat column and show the theme builder here again"
-              className="ml-auto flex items-center gap-1 rounded-md border border-border bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              className="ml-auto flex items-center gap-1 rounded-md border border-border bg-background px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <PanelRightClose className="h-3 w-3" />
               Undock
@@ -1051,7 +1066,7 @@ export function SelectionInspector({
           <span className="font-medium">Settings</span>
           {headerBadge}
           {settableProps.length > 0 && (
-            <span className="ml-1 rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
+            <span className="ml-1 rounded-full bg-muted px-1.5 text-2xs text-muted-foreground">
               {settableProps.length}
             </span>
           )}
@@ -1063,7 +1078,7 @@ export function SelectionInspector({
           <button
             type="button"
             onClick={onRequestDock}
-            className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+            className="text-2xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
             title="Move settings to the side panel for more room"
           >
             Dock →
@@ -1248,7 +1263,7 @@ function AssetSlotPicker({
         ) : (
           <span className="flex flex-col items-center gap-1 text-muted-foreground/60">
             <ImageIcon className="h-5 w-5" />
-            <span className="text-[11px]">No image</span>
+            <span className="text-2xs">No image</span>
           </span>
         )}
       </button>
@@ -1266,7 +1281,7 @@ function AssetSlotPicker({
             type="button"
             onClick={() => writeSrc(null, "Clear image")}
             disabled={disabled}
-            className="text-[11px] text-muted-foreground transition hover:text-foreground"
+            className="text-2xs text-muted-foreground transition hover:text-foreground"
           >
             Remove
           </button>
@@ -1381,7 +1396,7 @@ function LayerNameRow({
       <Input
         id="layer-name"
         ref={inputRef}
-        size="xs"
+        size="2xs"
         value={liveValue}
         placeholder={componentName}
         onChange={(e) => setDraft(e.currentTarget.value)}
@@ -1478,7 +1493,7 @@ function SelectionBreadcrumb({
   return (
     <nav
       aria-label="Selection breadcrumb"
-      className="flex items-center gap-0.5 flex-wrap text-[10px] text-muted-foreground"
+      className="flex items-center gap-0.5 flex-wrap text-2xs text-muted-foreground"
     >
       {leadingAncestor && (
         <>
@@ -1535,7 +1550,7 @@ function BreadcrumbButton({
       onClick={onClick}
       title={title}
       className={cn(
-        "rounded px-1.5 py-0.5 font-mono text-[10px]",
+        "rounded px-1.5 py-0.5 font-mono text-2xs",
         "text-muted-foreground hover:text-foreground",
         "hover:bg-muted transition-colors",
       )}
@@ -1681,7 +1696,7 @@ function TextEditRow({
       <Input
         id="text-content"
         ref={inputRef}
-        size="xs"
+        size="2xs"
         value={liveValue}
         onChange={(e) => {
           const next = e.currentTarget.value;
@@ -1782,7 +1797,7 @@ function CollapsibleSection({
             !open && "-rotate-90",
           )}
         />
-        <span className="text-[13px] font-medium text-foreground">{title}</span>
+        <span className="text-xs font-medium text-foreground">{title}</span>
         {hint ? <span className="ml-auto pl-2">{hint}</span> : null}
       </button>
       {open && <div className="space-y-2 px-3 pb-3">{children}</div>}
@@ -1804,6 +1819,7 @@ function AddableSection({
   onAdd,
   addLabel,
   headerExtra,
+  emptyHint,
   children,
 }: {
   title: string;
@@ -1811,6 +1827,11 @@ function AddableSection({
   onAdd: () => void;
   addLabel?: string;
   headerExtra?: React.ReactNode;
+  /** Muted caption shown under the header while empty — used to surface a
+   *  component-baked default ("Default · Set by component") so an unset
+   *  section doesn't read as "nothing here" when the component supplies
+   *  the value itself. */
+  emptyHint?: string | null;
   children?: React.ReactNode;
 }) {
   return (
@@ -1818,12 +1839,12 @@ function AddableSection({
       <div
         className={cn(
           "flex items-center gap-1.5 px-3 pt-2.5",
-          !empty && children ? "pb-1.5" : "pb-2.5",
+          (!empty && children) || (empty && emptyHint) ? "pb-1.5" : "pb-2.5",
         )}
       >
         <span
           className={cn(
-            "text-[13px] font-medium",
+            "text-xs font-medium",
             empty ? "text-muted-foreground" : "text-foreground",
           )}
         >
@@ -1842,6 +1863,11 @@ function AddableSection({
           </button>
         </div>
       </div>
+      {empty && emptyHint ? (
+        <div className="px-3 pb-2.5">
+          <DefaultCaption value={emptyHint} />
+        </div>
+      ) : null}
       {!empty && children ? (
         <div className="space-y-2 px-3 pb-3">{children}</div>
       ) : null}
@@ -1983,7 +2009,7 @@ function LayoutGroup({
       hint={
         anyOverride ? (
           <span
-            className="text-[11px] text-warning-deep leading-none"
+            className="text-2xs text-warning-deep leading-none"
             title="Structured values below override the component's theme defaults. Resetting them all to None restores theme behavior."
           >
             Overrides theme defaults
@@ -2053,6 +2079,45 @@ interface StyleGroupProps {
   disabled?: boolean;
   manifestPropNames?: Set<string>;
   onChangeClassName: (nextClassName: string) => void;
+  /** Effective computed style of the selected element (from the selection
+   *  payload). Lets a group show the component-baked default (e.g. a
+   *  Card's `rounded-xl` / `shadow`) when the JSX className carries no
+   *  explicit token, instead of reading as "none". */
+  computedStyle?: StudioSelection["computedStyle"];
+}
+
+/** Format a computed value for the muted "Default ·" caption — drops the
+ *  noise (a `0px` radius / `none` shadow / `0px` border means "nothing
+ *  baked in", so there's nothing to show). Returns null when there's no
+ *  meaningful default to surface. */
+function defaultHint(
+  kind: "radius" | "shadow" | "border",
+  cs: StudioSelection["computedStyle"] | undefined,
+): string | null {
+  if (!cs) return null;
+  if (kind === "radius") {
+    const r = cs.radius?.trim();
+    if (!r || /^0px(\s+0px)*$/.test(r)) return null;
+    return r;
+  }
+  if (kind === "shadow") {
+    const s = cs.boxShadow?.trim();
+    if (!s || s === "none") return null;
+    return "Set by component";
+  }
+  // border
+  const b = cs.border?.trim();
+  if (!b || b.startsWith("0px")) return null;
+  return b;
+}
+
+/** The muted caption itself — one consistent treatment across groups. */
+function DefaultCaption({ value }: { value: string }) {
+  return (
+    <p className="px-0.5 text-2xs text-muted-foreground/70">
+      Default · <span className="font-mono">{value}</span>
+    </p>
+  );
 }
 
 /** Read the live className off the selected node. */
@@ -2110,10 +2175,10 @@ function TypographyGroup({
             }
             disabled={disabled}
           >
-            <SelectTrigger id="type-font-size" size="xs" className="w-full">
+            <SelectTrigger id="type-font-size" size="2xs" className="w-full">
               <SelectValue placeholder="Inherit" />
             </SelectTrigger>
-            <SelectContent size="xs">
+            <SelectContent size="2xs">
               <SelectItem value="inherit">Inherit</SelectItem>
               {FONT_SIZE_SCALE.map((s) => (
                 <SelectItem key={s} value={s}>
@@ -2141,10 +2206,10 @@ function TypographyGroup({
             }
             disabled={disabled}
           >
-            <SelectTrigger id="type-font-weight" size="xs" className="w-full">
+            <SelectTrigger id="type-font-weight" size="2xs" className="w-full">
               <SelectValue placeholder="Inherit" />
             </SelectTrigger>
-            <SelectContent size="xs">
+            <SelectContent size="2xs">
               <SelectItem value="inherit">Inherit</SelectItem>
               {FONT_WEIGHT_SCALE.map((w) => (
                 <SelectItem key={w} value={w}>
@@ -2201,10 +2266,10 @@ function BlendingGroup({
             onValueChange={(v) => onChangeClassName(setBlend(cn0, v as BlendMode))}
             disabled={disabled}
           >
-            <SelectTrigger id="blending-mode" size="xs" className="w-full">
+            <SelectTrigger id="blending-mode" size="2xs" className="w-full">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent size="xs">
+            <SelectContent size="2xs">
               {BLEND_MODES.map((m) => (
                 <SelectItem key={m} value={m}>
                   {m}
@@ -2240,10 +2305,10 @@ function RadiusSelect({
       }
       disabled={disabled}
     >
-      <SelectTrigger id={id} size="xs" className="w-full">
+      <SelectTrigger id={id} size="2xs" className="w-full">
         <SelectValue placeholder="None" />
       </SelectTrigger>
-      <SelectContent size="xs">
+      <SelectContent size="2xs">
         <SelectItem value="none-set">None</SelectItem>
         {RADIUS_SCALE.map((r) => (
           <SelectItem key={r || "default"} value={r === "" ? "default" : r}>
@@ -2270,6 +2335,7 @@ function RadiusGroup({
   disabled,
   manifestPropNames,
   onChangeClassName,
+  computedStyle,
 }: StyleGroupProps) {
   const caps = getSpacingCapabilities({ tag, componentName });
   const corners = parseRadiusCorners(
@@ -2280,6 +2346,12 @@ function RadiusGroup({
 
   if (!caps.radius || ownsAny(manifestPropNames, ["rounded", "radius"]))
     return null;
+
+  // No explicit rounded-* token in the JSX → show the component's baked-in
+  // radius (read off the live element) so the control doesn't read as "none".
+  const radiusHint = !hasAnyCorner(corners)
+    ? defaultHint("radius", computedStyle)
+    : null;
 
   const cn0 = readClassName(source, componentName, sourceId);
   const mode: "all" | "corners" = userMode ?? (uniform ? "all" : "corners");
@@ -2315,6 +2387,7 @@ function RadiusGroup({
             {mode === "all" ? <Maximize2 /> : <Minimize2 />}
           </button>
         </div>
+        {radiusHint && <DefaultCaption value={radiusHint} />}
         {mode === "all" ? (
           <RadiusSelect
             id="radius-all"
@@ -2361,6 +2434,7 @@ function ShadowGroup({
   disabled,
   manifestPropNames,
   onChangeClassName,
+  computedStyle,
 }: StyleGroupProps) {
   const caps = getSpacingCapabilities({ tag, componentName });
   if (!caps.shadow || ownsAny(manifestPropNames, ["shadow", "elevation"]))
@@ -2368,58 +2442,105 @@ function ShadowGroup({
 
   const cn0 = readClassName(source, componentName, sourceId);
   const shadow = parseShadow(cn0);
-  const empty = shadow === null;
+  const custom = parseShadowCustom(cn0);
+  const empty = shadow === null && custom === null;
+  // Bound = on a theme elevation token; detached = a raw custom shadow.
+  const bound = custom === null;
+  const c = custom ?? DEFAULT_CUSTOM_SHADOW;
+  const writeCustom = (next: CustomShadow) =>
+    onChangeClassName(setShadowCustom(cn0, next));
+
+  // Elevation token registry — the theme's shadow scale.
+  const tokens: TokenOption[] = SHADOW_SCALE.map((s) => ({
+    value: s === "" ? "__default" : s,
+    label: s === "none" ? "shadow-none" : s === "" ? "shadow" : `shadow-${s}`,
+  }));
+  const tokenValue =
+    shadow === null ? null : shadow === "" ? "__default" : shadow;
 
   return (
     <AddableSection
       title="Shadow"
       empty={empty}
       addLabel="Add shadow"
+      emptyHint={empty ? defaultHint("shadow", computedStyle) : undefined}
       onAdd={() => onChangeClassName(setShadow(cn0, "md"))}
-    >
-      <div className="flex items-end gap-1.5">
-        <div className="flex-1 space-y-1">
-          <Label htmlFor="shadow-value" className={FIELD_LABEL}>
-            Elevation
-          </Label>
-          <Select
-            value={shadow === null ? "none-set" : shadow === "" ? "default" : shadow}
-            onValueChange={(next) => {
-              const v: ShadowValue | null =
-                next === "none-set"
-                  ? null
-                  : next === "default"
-                    ? ""
-                    : (next as ShadowValue);
-              onChangeClassName(setShadow(cn0, v));
-            }}
+      headerExtra={
+        !empty ? (
+          <EntryIconButton
+            label="Remove shadow"
             disabled={disabled}
+            onClick={() => onChangeClassName(setShadow(cn0, null))}
           >
-            <SelectTrigger id="shadow-value" size="xs" className="w-full">
-              <SelectValue placeholder="None" />
-            </SelectTrigger>
-            <SelectContent size="xs">
-              <SelectItem value="none-set">None</SelectItem>
-              {SHADOW_SCALE.map((s) => (
-                <SelectItem key={s || "default"} value={s === "" ? "default" : s}>
-                  {s === "none"
-                    ? "shadow-none"
-                    : s === ""
-                      ? "shadow"
-                      : `shadow-${s}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <EntryIconButton
-          label="Remove shadow"
-          disabled={disabled}
-          onClick={() => onChangeClassName(setShadow(cn0, null))}
-        >
-          <Minus />
-        </EntryIconButton>
-      </div>
+            <Minus />
+          </EntryIconButton>
+        ) : null
+      }
+    >
+      <TokenField
+        kind="shadow"
+        label="Elevation"
+        bound={bound}
+        token={tokenValue}
+        tokens={tokens}
+        placeholder="None"
+        disabled={disabled}
+        onPickToken={(t) =>
+          onChangeClassName(
+            setShadow(
+              cn0,
+              t === null ? null : t === "__default" ? "" : (t as ShadowValue),
+            ),
+          )
+        }
+        onDetach={() => writeCustom(DEFAULT_CUSTOM_SHADOW)}
+        onRebind={() => onChangeClassName(setShadow(cn0, "md"))}
+        renderRaw={() => (
+          <div className="space-y-1.5">
+            {/* Compound row — X / Y / blur / spread inline, icon-prefixed
+                (Paper-style). Blur + spread use placeholder glyphs (Grip /
+                Square); swap in custom blur/spread icons here if you make
+                them. */}
+            <div className="flex items-center gap-1">
+              <CompactNumberField
+                ariaLabel="Shadow X offset"
+                icon={<span className="text-2xs">X</span>}
+                value={c.x}
+                disabled={disabled}
+                onCommit={(v) => writeCustom({ ...c, x: v })}
+              />
+              <CompactNumberField
+                ariaLabel="Shadow Y offset"
+                icon={<span className="text-2xs">Y</span>}
+                value={c.y}
+                disabled={disabled}
+                onCommit={(v) => writeCustom({ ...c, y: v })}
+              />
+              <CompactNumberField
+                ariaLabel="Shadow blur"
+                icon={<Grip />}
+                value={c.blur}
+                min={0}
+                disabled={disabled}
+                onCommit={(v) => writeCustom({ ...c, blur: v })}
+              />
+              <CompactNumberField
+                ariaLabel="Shadow spread"
+                icon={<Square />}
+                value={c.spread}
+                disabled={disabled}
+                onCommit={(v) => writeCustom({ ...c, spread: v })}
+              />
+            </div>
+            <ColorOpacityRow
+              hex={c.hex}
+              opacity={c.opacity}
+              disabled={disabled}
+              onChange={(hex, opacity) => writeCustom({ ...c, hex, opacity })}
+            />
+          </div>
+        )}
+      />
     </AddableSection>
   );
 }
@@ -2430,7 +2551,7 @@ function ShadowGroup({
 // tier — small + muted + regular weight. The prominent tier is the
 // CollapsibleSection header (text-sm, foreground). Keeping the two
 // deliberately distinct is the hierarchy Figma/Paper use.
-const FIELD_LABEL = "text-[11px] font-normal text-muted-foreground";
+const FIELD_LABEL = "text-2xs font-normal text-muted-foreground";
 
 // Static swatch classes for the fill colour tokens. Literal strings so
 // Tailwind's JIT keeps them in the build (no interpolation).
@@ -2497,10 +2618,10 @@ function FillGroup({
             }
             disabled={disabled}
           >
-            <SelectTrigger id="fill-color" size="xs" className="w-full">
+            <SelectTrigger id="fill-color" size="2xs" className="w-full">
               <SelectValue placeholder="None" />
             </SelectTrigger>
-            <SelectContent size="xs">
+            <SelectContent size="2xs">
               <SelectItem value="none">None</SelectItem>
               {FILL_COLOR_TOKENS.map((c) => (
                 <SelectItem key={c} value={c}>
@@ -2578,6 +2699,7 @@ function BorderGroup({
   disabled,
   manifestPropNames,
   onChangeClassName,
+  computedStyle,
 }: StyleGroupProps) {
   const caps = getSpacingCapabilities({ tag, componentName });
   const contractOwnsBorder = ownsAny(manifestPropNames, [
@@ -2642,6 +2764,9 @@ function BorderGroup({
       title="Border"
       empty={entries.length === 0}
       addLabel="Add border"
+      emptyHint={
+        entries.length === 0 ? defaultHint("border", computedStyle) : undefined
+      }
       onAdd={addEntry}
     >
       {entries.map((entry) => (
@@ -2660,10 +2785,10 @@ function BorderGroup({
                 onValueChange={(v) => patchEntry(entry.id, { width: Number(v) })}
                 disabled={disabled}
               >
-                <SelectTrigger size="xs" className="w-full">
+                <SelectTrigger size="2xs" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent size="xs">
+                <SelectContent size="2xs">
                   {BORDER_WIDTH_SCALE.filter((w) => w > 0).map((w) => (
                     <SelectItem key={w} value={String(w)}>
                       {w}px
@@ -2679,10 +2804,10 @@ function BorderGroup({
                 onValueChange={(v) => patchEntry(entry.id, { side: v as BorderSide })}
                 disabled={disabled}
               >
-                <SelectTrigger size="xs" className="w-full">
+                <SelectTrigger size="2xs" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent size="xs">
+                <SelectContent size="2xs">
                   {BORDER_SIDES.map((s) => (
                     <SelectItem key={s} value={s}>
                       {BORDER_SIDE_LABELS[s]}
@@ -2715,10 +2840,10 @@ function BorderGroup({
             }
             disabled={disabled}
           >
-            <SelectTrigger size="xs" className="w-full">
+            <SelectTrigger size="2xs" className="w-full">
               <SelectValue placeholder="Default" />
             </SelectTrigger>
-            <SelectContent size="xs">
+            <SelectContent size="2xs">
               <SelectItem value="default">Default colour</SelectItem>
               {BORDER_COLOR_TOKENS.map((c) => (
                 <SelectItem key={c} value={c}>
@@ -2747,10 +2872,10 @@ function BorderGroup({
             onValueChange={(v) => commit(entries, v as BorderStyle)}
             disabled={disabled}
           >
-            <SelectTrigger id="border-style" size="xs" className="w-full">
+            <SelectTrigger id="border-style" size="2xs" className="w-full">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent size="xs">
+            <SelectContent size="2xs">
               {BORDER_STYLE_SCALE.map((s) => (
                 <SelectItem key={s} value={s}>
                   {s}
@@ -2799,7 +2924,7 @@ function ClassNameOverride({
     <CollapsibleSection title="className override" defaultOpen={false}>
       <Input
         id="classname-override"
-        size="xs"
+        size="2xs"
         value={liveValue}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
@@ -2812,7 +2937,7 @@ function ClassNameOverride({
         disabled={disabled}
         className="font-mono"
       />
-      <p className="text-[10px] text-muted-foreground leading-snug">
+      <p className="text-2xs text-muted-foreground leading-snug">
         Edit the full className verbatim. Anything the structured
         controls above don't recognise (responsive variants, hover
         states, arbitrary values) is preserved here.
@@ -2868,10 +2993,10 @@ function NumericSelectRow({
         }
         disabled={disabled}
       >
-        <SelectTrigger id={id} size="xs" className="w-full">
+        <SelectTrigger id={id} size="2xs" className="w-full">
           <SelectValue placeholder={noneLabel} />
         </SelectTrigger>
-        <SelectContent size="xs">
+        <SelectContent size="2xs">
           <SelectItem value="none">{noneLabel}</SelectItem>
           {scale.map((n) => (
             <SelectItem key={n} value={String(n)}>
@@ -3098,7 +3223,7 @@ function SideInput({
     <Input
       id={id}
       ref={inputRef}
-      size="xs"
+      size="2xs"
       type="text"
       inputMode="decimal"
       aria-label={ariaLabel}
@@ -3191,7 +3316,7 @@ function PropControl({
           <SelectTrigger className="h-7 text-xs">
             <SelectValue placeholder={prop.defaultValue ?? "(default)"} />
           </SelectTrigger>
-          <SelectContent size="xs">
+          <SelectContent size="2xs">
             {values.map((v) => (
               <SelectItem
                 key={String(v)}
@@ -3223,6 +3348,7 @@ function PropControl({
     return (
       <PropRow prop={prop}>
         <Switch
+          size="2xs"
           checked={checked}
           onCheckedChange={(next) => onChange(prop.name, next)}
           disabled={disabled}
@@ -3326,10 +3452,10 @@ function LiveInput({
       <Input
         ref={inputRef}
         type={type}
-        // size="xs" gives a clean text-xs; relying on a `text-xs`
+        // size="2xs" gives a clean text-xs; relying on a `text-xs`
         // className override didn't beat the default size's `md:text-sm`
         // at desktop widths, which made the src/url field render oversized.
-        size="xs"
+        size="2xs"
         className={cn(type === "text" && "font-mono")}
         value={draft}
         placeholder={prop.defaultValue ?? ""}
@@ -3471,7 +3597,7 @@ function ActionsRow({
       {!hideHeader && (
         // Sentence case, no uppercase — matches the rest of the
         // inspector group headers. House style.
-        <span className="text-[11px] font-medium text-muted-foreground">
+        <span className="text-2xs font-medium text-muted-foreground">
           Actions
         </span>
       )}

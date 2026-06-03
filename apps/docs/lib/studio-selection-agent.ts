@@ -94,6 +94,28 @@ export type SelectionPayload = {
    *  the same component appears multiple times in source (`.map()`
    *  loops). Undefined when the click landed on a non-DS element. */
   sourceId?: string;
+  /** The element's EFFECTIVE computed style for the properties the
+   *  inspector's style groups care about. Read off the live DOM node so
+   *  the inspector can show a baked-in default (e.g. a Card's `rounded-xl`
+   *  / `shadow` that live in the component, not the JSX className) instead
+   *  of a blank control. Display-only — the groups still write explicit
+   *  Tailwind tokens on change. */
+  computedStyle?: ComputedStyleHint;
+};
+
+/** Effective computed values for the style properties the inspector
+ *  surfaces. Concise, human-readable strings (not a full CSSStyleDeclaration)
+ *  so they can ride along in the postMessage payload cheaply. */
+export type ComputedStyleHint = {
+  /** Border-radius: a single value (`"12px"`) when uniform, else the four
+   *  corners (`"12px 12px 8px 8px"`, TL TR BR BL). `"0px"` means none. */
+  radius?: string;
+  /** Box-shadow as computed (`"none"` when unset, else the resolved rgba
+   *  shadow string). */
+  boxShadow?: string;
+  /** Border shorthand for the top edge (`"1px solid rgb(229 231 235)"`);
+   *  width `"0px"` means no border. */
+  border?: string;
 };
 
 export interface InstallSelectionAgentOptions {
@@ -448,6 +470,29 @@ export function installStudioSelectionAgent(
       node = node.parentElement;
     }
 
+    // Effective computed style for the inspector's style groups. Read off
+    // the LIVE element so component-baked defaults (a Card's `rounded-xl`
+    // / `shadow` that live inside the component, not the JSX) show up as
+    // the current value instead of a blank control. Wrapped in try/catch —
+    // getComputedStyle can throw on detached nodes mid-reflow.
+    let computedStyle: ComputedStyleHint | undefined;
+    try {
+      const view = el.ownerDocument?.defaultView;
+      if (view && el instanceof view.HTMLElement) {
+        const cs = view.getComputedStyle(el);
+        const tl = cs.borderTopLeftRadius;
+        const tr = cs.borderTopRightRadius;
+        const br = cs.borderBottomRightRadius;
+        const bl = cs.borderBottomLeftRadius;
+        const radius =
+          tl === tr && tr === br && br === bl ? tl : `${tl} ${tr} ${br} ${bl}`;
+        const border = `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`;
+        computedStyle = { radius, boxShadow: cs.boxShadow, border };
+      }
+    } catch {
+      /* detached node — leave computedStyle undefined */
+    }
+
     return {
       tag: el.tagName ? el.tagName.toLowerCase() : "",
       text,
@@ -465,6 +510,7 @@ export function installStudioSelectionAgent(
       sourceId,
       mediaAlt,
       chain,
+      computedStyle,
     };
   }
 
@@ -805,13 +851,50 @@ export function installStudioSelectionAgent(
     if (e.target === lastHovered) hideOverlay(hoverOverlay);
   }
 
+  // Interactive widgets (Radix Select / Dropdown / Popover, native
+  // <select>, links, buttons grabbing focus) activate on POINTERDOWN /
+  // MOUSEDOWN — which fire BEFORE `click`. If we only intercept click,
+  // the menu has already opened by the time we preventDefault, so the
+  // user can never grab the component to edit it (it just goes active).
+  //
+  // The fix: in select mode, swallow pointerdown + mousedown in the
+  // CAPTURE phase. A capture listener on the root runs before any
+  // listener the component attached deeper in the tree, so
+  // `stopImmediatePropagation()` here means Radix's own handler never
+  // sees the event and the widget never opens. `preventDefault()` also
+  // blocks focus-stealing, which is what let inputs hijack the pick.
+  // Selection itself still happens on `click` (which fires regardless —
+  // preventing a pointerdown's default does not cancel the click).
+  function onSuppressActivation(e: Event) {
+    const raw = e.target as Element | null;
+    if (isIgnored(raw)) return;
+    const target = resolveSelectionTarget(raw);
+    if (!target || isIgnored(target)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+
+  // Keyboard activation (Space / Enter on a focused trigger) is the other
+  // way a widget opens. Swallow those too while select mode is armed.
+  function onSuppressKeyActivation(e: KeyboardEvent) {
+    if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+    const raw = e.target as Element | null;
+    if (isIgnored(raw)) return;
+    const target = resolveSelectionTarget(raw);
+    if (!target || isIgnored(target)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+
   function onClick(e: MouseEvent) {
     const raw = e.target as Element | null;
     if (isIgnored(raw)) return;
     const target = resolveSelectionTarget(raw);
     if (!target || isIgnored(target)) return;
     e.preventDefault();
-    e.stopPropagation();
+    // stopImmediatePropagation (not just stopPropagation) so any click
+    // handler the component registered on itself can't fire either.
+    e.stopImmediatePropagation();
     selectedElement = target;
     // Capture the sourceId so we can re-resolve the element after
     // re-renders. Reads it off the resolved target (which is the
@@ -913,6 +996,24 @@ export function installStudioSelectionAgent(
     onClick as EventListener,
     true
   );
+  // Swallow the activating events BEFORE the widget sees them (capture
+  // phase). pointerdown is what Radix triggers open on; mousedown is the
+  // native-widget + focus path. keydown covers Space/Enter activation.
+  listenerTarget.addEventListener(
+    "pointerdown",
+    onSuppressActivation as EventListener,
+    true
+  );
+  listenerTarget.addEventListener(
+    "mousedown",
+    onSuppressActivation as EventListener,
+    true
+  );
+  listenerTarget.addEventListener(
+    "keydown",
+    onSuppressKeyActivation as EventListener,
+    true
+  );
 
   function teardown() {
     listenerTarget.removeEventListener(
@@ -928,6 +1029,21 @@ export function installStudioSelectionAgent(
     listenerTarget.removeEventListener(
       "click",
       onClick as EventListener,
+      true
+    );
+    listenerTarget.removeEventListener(
+      "pointerdown",
+      onSuppressActivation as EventListener,
+      true
+    );
+    listenerTarget.removeEventListener(
+      "mousedown",
+      onSuppressActivation as EventListener,
+      true
+    );
+    listenerTarget.removeEventListener(
+      "keydown",
+      onSuppressKeyActivation as EventListener,
       true
     );
     window.removeEventListener("scroll", repositionSelection, true);

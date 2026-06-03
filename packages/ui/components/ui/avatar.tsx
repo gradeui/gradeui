@@ -30,6 +30,8 @@ const avatarSizes = cva(
   {
     variants: {
       size: {
+        // 2xs (20px) — densest tool-panel avatar / inline mention
+        "2xs": "h-5 w-5",
         // xs (24px) — chat message avatars, dense comment threads
         xs: "h-6 w-6",
         // sm (28px) — comments, tag chips, secondary surfaces

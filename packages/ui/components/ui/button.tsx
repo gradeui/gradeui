@@ -49,16 +49,17 @@ const buttonVariants = cva(
         raised: "gds-button-raised",
       },
       size: {
-        // xs: h-6 (24px) — Figma-density for tool panels (the Studio
-        // inspector), matches `<TabsList size="sm">`-era 24px controls.
-        xs: "h-6 gap-1 px-2 text-[11px] [&_svg]:size-3",
-        sm: "h-7 gap-1.5 px-2.5 text-xs [&_svg]:size-3.5",
-        md: "h-8 gap-1.5 px-3 text-xs [&_svg]:size-3.5",
+        // 2xs: h-6 (24px) — densest tool-panel button (the Studio inspector).
+        "2xs": "h-6 gap-1 px-1.5 text-2xs [&_svg]:size-3",
+        // xs: h-6 (24px) — Figma-density for tool panels.
+        xs: "h-6 gap-1 px-2 text-xs [&_svg]:size-3",
+        sm: "h-7 gap-1.5 px-2.5 text-sm [&_svg]:size-3.5",
+        md: "h-8 gap-1.5 px-3 text-base [&_svg]:size-4",
         // Alias for md — back-compat with usages that predate the
         // t-shirt rename. Same classes as md verbatim.
-        default: "h-8 gap-1.5 px-3 text-xs [&_svg]:size-3.5",
-        lg: "h-10 gap-2 px-4 text-sm [&_svg]:size-4",
-        icon: "h-8 w-8 [&_svg]:size-3.5",
+        default: "h-8 gap-1.5 px-3 text-base [&_svg]:size-4",
+        lg: "h-10 gap-2 px-4 text-lg [&_svg]:size-5",
+        icon: "h-8 w-8 [&_svg]:size-4",
       },
     },
     defaultVariants: {

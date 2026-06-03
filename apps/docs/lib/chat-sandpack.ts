@@ -79,6 +79,19 @@ export interface StudioSelection {
    *  at the layout shell (any `data-gds-part="app-shell-*"`) so it
    *  doesn't include Studio chrome. */
   chain?: SelectionChainSegment[];
+  /** Effective computed style for the selected element, read off the
+   *  live DOM node by the selection agent. Lets the inspector's style
+   *  groups show a component-baked default (e.g. a Card's `rounded-xl` /
+   *  `shadow`) as the current value instead of a blank control. Display-
+   *  only — the groups still write explicit Tailwind tokens on change. */
+  computedStyle?: {
+    /** Border-radius — single value when uniform, else four corners. */
+    radius?: string;
+    /** Box-shadow as computed (`"none"` when unset). */
+    boxShadow?: string;
+    /** Top-edge border shorthand; width `"0px"` means no border. */
+    border?: string;
+  };
 }
 
 /** One step in the ancestor chain. The inspector renders these as

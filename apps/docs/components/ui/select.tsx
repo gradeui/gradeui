@@ -20,7 +20,7 @@ const SelectValue = SelectPrimitive.Value;
  * flows through the Radix portal (it follows the React tree, not the
  * DOM), so items styled this way work even though the menu is portaled.
  */
-type SelectMenuSize = "default" | "sm" | "xs";
+type SelectMenuSize = "default" | "sm" | "xs" | "2xs";
 const SelectMenuSizeContext = React.createContext<SelectMenuSize>("default");
 
 /**
@@ -36,9 +36,10 @@ const selectTriggerVariants = cva(
     variants: {
       size: {
         default: "h-10 px-3 py-2 text-sm",
-        sm: "h-8 px-2 py-1 text-xs",
+        sm: "h-8 px-2 py-1 text-sm",
         // Figma-density — tool panels (the Studio inspector).
         xs: "h-7 px-2 py-0 text-xs",
+        "2xs": "h-6 px-2 py-0 text-2xs",
       },
     },
     defaultVariants: { size: "default" },
@@ -162,8 +163,9 @@ const selectItemVariants = cva(
     variants: {
       size: {
         default: "py-1.5 pl-8 pr-2 text-sm",
-        sm: "py-1 pl-7 pr-2 text-xs",
+        sm: "py-1 pl-7 pr-2 text-sm",
         xs: "py-1 pl-6 pr-2 text-xs",
+        "2xs": "py-0.5 pl-6 pr-2 text-2xs",
       },
     },
     defaultVariants: { size: "default" },
@@ -172,8 +174,13 @@ const selectItemVariants = cva(
 
 const SelectItem = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
->(({ className, children, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & {
+    /** Optional right-aligned secondary text (e.g. a token's resolved
+     *  value). Rendered in the menu row only — NOT inside ItemText, so
+     *  it never mirrors into the trigger via SelectValue. */
+    hint?: React.ReactNode;
+  }
+>(({ className, children, hint, ...props }, ref) => {
   const size = React.useContext(SelectMenuSizeContext);
   const compact = size !== "default";
   return (
@@ -193,6 +200,11 @@ const SelectItem = React.forwardRef<
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      {hint != null ? (
+        <span className="ml-auto pl-3 tabular-nums text-muted-foreground/60">
+          {hint}
+        </span>
+      ) : null}
     </SelectPrimitive.Item>
   );
 });

@@ -39,6 +39,12 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Type scale — `2xs` (11px) is the dense tool-panel step below
+      // `xs` (12px). Mirrors packages/ui/tailwind-preset.ts so the
+      // docs app (which doesn't consume the preset) has the same token.
+      fontSize: {
+        "2xs": ["0.6875rem", { lineHeight: "1rem" }], // 11px
+      },
       colors: {
         // RDS Brand Colors
         rds: {

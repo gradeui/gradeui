@@ -72,6 +72,9 @@ export default function TogglePage() {
           Sizes
         </h2>
         <div className="flex items-center gap-2">
+          <Toggle size="2xs" aria-label="2x small">
+            <Bold className="h-3 w-3" />
+          </Toggle>
           <Toggle size="sm" aria-label="Small">
             <Bold className="h-3 w-3" />
           </Toggle>
