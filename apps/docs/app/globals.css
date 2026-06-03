@@ -1,6 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* v4 engine, v3 config — the existing tailwind.config.ts (theme.extend
+   colours, the text-2xs token, radius, plugins, content globs) is loaded
+   via @config so nothing in the token/theme model changes in this step.
+   The raw-triplet → native @theme colour migration is the next pass. */
+@config "../tailwind.config.ts";
 
 /* ============================================
    RAMP DESIGN SYSTEM - DESIGN TOKENS

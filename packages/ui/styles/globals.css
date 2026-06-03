@@ -1,6 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* v4 engine, v3 config — tailwind.config.ts (presets → tailwind-preset.ts:
+   colours, text-2xs, radius, plugins, content) loads via @config so the
+   built dist/styles.css is unchanged in this step. The preset → native
+   @theme rework lands with the colour-model migration. */
+@config "../tailwind.config.ts";
+
+/* Elevation/presence shadow utilities are typed at runtime (Studio output,
+   generated screens), so the scanner never sees them in source. v4's
+   `@source inline(...)` force-emits them — this replaces the JS `safelist`
+   that v4 removed. */
+@source inline("shadow-{elevation-0,elevation-1,elevation-2,elevation-3,elevation-4,elevation-5,raised,hot,pressed,bevel-hi,bevel-lo,contact,lift,lift-deep,heat-inner,heat-outer}");
 
 /* ============================================
    RAMP DESIGN SYSTEM - DESIGN TOKENS

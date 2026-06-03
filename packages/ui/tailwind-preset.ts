@@ -16,32 +16,17 @@ import type { Config } from "tailwindcss";
  * pending) takes effect without a rebuild.
  */
 const preset: Partial<Config> = {
-  darkMode: ["class"],
-  // Presence elevation utilities are a public, user-typed API (Studio output,
-  // consumer screens), not just internal component classes. Tailwind's JIT
-  // only emits a utility when it sees the literal class in a scanned file, so
-  // `shadow-elevation-3` typed in generated UI produced no CSS. Safelisting
-  // forces them into every build. (The `.gds-elevation-*` plain classes in
-  // globals.css are the JIT-proof primary path; this keeps the documented
-  // Tailwind names working too.)
-  safelist: [
-    "shadow-elevation-0",
-    "shadow-elevation-1",
-    "shadow-elevation-2",
-    "shadow-elevation-3",
-    "shadow-elevation-4",
-    "shadow-elevation-5",
-    "shadow-raised",
-    "shadow-hot",
-    "shadow-pressed",
-    "shadow-bevel-hi",
-    "shadow-bevel-lo",
-    "shadow-contact",
-    "shadow-lift",
-    "shadow-lift-deep",
-    "shadow-heat-inner",
-    "shadow-heat-outer",
-  ],
+  // v4's Config type drops the one-element `["class"]` tuple; the bare
+  // string form is valid on both v3 and v4 and means the same thing
+  // (toggle dark mode via a `.dark` class on an ancestor).
+  darkMode: "class",
+  // The presence/elevation shadow utilities (shadow-elevation-*,
+  // shadow-raised, shadow-hot, …) are a public, user-typed API (Studio
+  // output, consumer screens), so the scanner never sees them in source.
+  // They used to be safelisted here, but v4 removed `safelist` from the
+  // JS config — they're now force-emitted via `@source inline(...)` in
+  // styles/globals.css. (The `.gds-elevation-*` plain classes in
+  // globals.css remain the JIT-proof primary path.)
   theme: {
     extend: {
       // Type scale — extends Tailwind's defaults. `2xs` is the dense
