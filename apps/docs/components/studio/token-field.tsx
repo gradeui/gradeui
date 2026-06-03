@@ -269,7 +269,10 @@ export function TokenField({
               <SelectValue placeholder={placeholder} />
             )}
           </SelectTrigger>
-          <SelectContent size={size}>
+          {/* item-aligned (macOS-style): the menu opens with the
+              checked row over the trigger — neighbouring values are a
+              one-notch mouse move, not a travel down a popover. */}
+          <SelectContent size={size} position="item-aligned">
             <SelectItem value="__none" hint={placeholderHint}>
               {/* The "default / unset" choice reads muted — it isn't a
                   token, just the inherited default (e.g. 100% opacity,

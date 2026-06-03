@@ -104,6 +104,7 @@ import {
   getAreaTokens,
   RADIUS_PX,
   FONT_SIZE_PX,
+  FONT_WEIGHT_NUMBER,
 } from "@/lib/token-registry";
 import type {
   SelectionChainSegment,
@@ -2668,10 +2669,12 @@ function TypographyGroup({
             <SelectTrigger id="type-font-weight" size="2xs" className="w-full">
               <SelectValue placeholder="Inherit" />
             </SelectTrigger>
-            <SelectContent size="2xs">
+            <SelectContent size="2xs" position="item-aligned">
               <SelectItem value="inherit">Inherit</SelectItem>
+              {/* Numeric weight as the row hint — designers think in
+                  500/600, and the keyword names hide that mapping. */}
               {FONT_WEIGHT_SCALE.map((w) => (
-                <SelectItem key={w} value={w}>
+                <SelectItem key={w} value={w} hint={FONT_WEIGHT_NUMBER[w]}>
                   font-{w}
                 </SelectItem>
               ))}
@@ -2815,10 +2818,13 @@ function BlendingGroup({
             >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent size="2xs">
+            <SelectContent size="2xs" position="item-aligned">
+              {/* Designer-cased ("Soft light", not "soft-light") — the
+                  kebab value still lands in the class; only the label
+                  de-devs. */}
               {BLEND_MODES.map((m) => (
                 <SelectItem key={m} value={m}>
-                  {m}
+                  {m.charAt(0).toUpperCase() + m.slice(1).replace(/-/g, " ")}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -2854,7 +2860,7 @@ function RadiusSelect({
       <SelectTrigger id={id} size="2xs" className="w-full">
         <SelectValue placeholder="None" />
       </SelectTrigger>
-      <SelectContent size="2xs">
+      <SelectContent size="2xs" position="item-aligned">
         <SelectItem value="none-set">None</SelectItem>
         {RADIUS_SCALE.map((r) => (
           <SelectItem key={r || "default"} value={r === "" ? "default" : r}>
@@ -3645,7 +3651,7 @@ function BorderGroup({
                 <SelectTrigger size="2xs" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent size="2xs">
+                <SelectContent size="2xs" position="item-aligned">
                   {BORDER_WIDTH_SCALE.filter((w) => w > 0).map((w) => (
                     <SelectItem key={w} value={String(w)}>
                       {w}px
@@ -3664,7 +3670,7 @@ function BorderGroup({
                 <SelectTrigger size="2xs" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent size="2xs">
+                <SelectContent size="2xs" position="item-aligned">
                   {BORDER_SIDES.map((s) => (
                     <SelectItem key={s} value={s}>
                       {BORDER_SIDE_LABELS[s]}
@@ -3700,7 +3706,7 @@ function BorderGroup({
             <SelectTrigger size="2xs" className="w-full">
               <SelectValue placeholder="Default" />
             </SelectTrigger>
-            <SelectContent size="2xs">
+            <SelectContent size="2xs" position="item-aligned">
               <SelectItem value="default">Default colour</SelectItem>
               {BORDER_COLOR_TOKENS.map((c) => (
                 <SelectItem key={c} value={c}>
@@ -3732,10 +3738,12 @@ function BorderGroup({
             <SelectTrigger id="border-style" size="2xs" className="w-full">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent size="2xs">
+            <SelectContent size="2xs" position="item-aligned">
+              {/* Designer-cased label; the lowercase value still lands
+                  in the border-* class (same dressing as blend mode). */}
               {BORDER_STYLE_SCALE.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {s}
+                  {s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, " ")}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -3853,7 +3861,7 @@ function NumericSelectRow({
         <SelectTrigger id={id} size="2xs" className="w-full">
           <SelectValue placeholder={noneLabel} />
         </SelectTrigger>
-        <SelectContent size="2xs">
+        <SelectContent size="2xs" position="item-aligned">
           <SelectItem value="none">{noneLabel}</SelectItem>
           {scale.map((n) => (
             <SelectItem key={n} value={String(n)}>
@@ -4391,7 +4399,7 @@ function PropControl({
           >
             <SelectValue placeholder="—" />
           </SelectTrigger>
-          <SelectContent size="2xs">
+          <SelectContent size="2xs" position="item-aligned">
             {values.map((v) => (
               <SelectItem
                 key={String(v)}

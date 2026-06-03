@@ -66,6 +66,20 @@ export const RADIUS_PX: Record<string, string> = {
   full: "9999px",
 };
 
+/** Numeric readout for the font-weight keyword scale — designers think
+ *  in 500/600, and the keyword names hide that mapping. */
+export const FONT_WEIGHT_NUMBER: Record<string, string> = {
+  thin: "100",
+  extralight: "200",
+  light: "300",
+  normal: "400",
+  medium: "500",
+  semibold: "600",
+  bold: "700",
+  extrabold: "800",
+  black: "900",
+};
+
 /** Resolved readout for the font-size keyword scale — px-suffixed,
  *  same designer-first convention as RADIUS_PX. */
 export const FONT_SIZE_PX: Record<string, string> = {
