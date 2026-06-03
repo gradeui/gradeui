@@ -31,7 +31,11 @@ const SelectMenuSizeContext = React.createContext<SelectMenuSize>("default");
  * existing call site.
  */
 const selectTriggerVariants = cva(
-  "flex w-full items-center justify-between rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+  // data-[placeholder] (not placeholder:) — Radix renders the Select
+  // placeholder as a span flagged with that attribute; the input-style
+  // pseudo-element selector never matches, so ghost values rendered
+  // through the placeholder were showing full-strength.
+  "flex w-full items-center justify-between rounded-md border border-input bg-background ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
   {
     variants: {
       size: {
@@ -54,24 +58,49 @@ const SelectTrigger = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & {
     size?: SelectTriggerSize;
+    /** Adornment rendered inside the trigger on the leading edge — a
+     *  property glyph, a unit. Mirrors Input's startSlot. Grouped with
+     *  the value in a div (NOT a bare span: the trigger's
+     *  `[&>span]:line-clamp-1` would stack a span's children
+     *  vertically). */
+    startSlot?: React.ReactNode;
+    /** Hide the dropdown chevron — Figma-style token fields keep the
+     *  right edge for their own affordances (detach/attach). */
+    chevron?: boolean;
   }
->(({ className, children, size = "default", ...props }, ref) => (
+>(
+  (
+    { className, children, size = "default", startSlot, chevron = true, ...props },
+    ref,
+  ) => (
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(selectTriggerVariants({ size }), className)}
     {...props}
   >
-    {children}
-    <SelectPrimitive.Icon asChild>
-      <ChevronDown
-        className={cn(
-          "opacity-50",
-          size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"
-        )}
-      />
-    </SelectPrimitive.Icon>
+    {startSlot ? (
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 [&>span]:truncate">
+        <span className="pointer-events-none flex shrink-0 items-center text-muted-foreground/70 [&_svg]:size-3">
+          {startSlot}
+        </span>
+        {children}
+      </div>
+    ) : (
+      children
+    )}
+    {chevron ? (
+      <SelectPrimitive.Icon asChild>
+        <ChevronDown
+          className={cn(
+            "opacity-50",
+            size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"
+          )}
+        />
+      </SelectPrimitive.Icon>
+    ) : null}
   </SelectPrimitive.Trigger>
-));
+  ),
+);
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
 
 const SelectScrollUpButton = React.forwardRef<
@@ -186,7 +215,7 @@ const SelectItem = React.forwardRef<
   return (
     <SelectPrimitive.Item
       ref={ref}
-      className={cn(selectItemVariants({ size }), className)}
+      className={cn("group", selectItemVariants({ size }), className)}
       {...props}
     >
       <span
@@ -201,7 +230,9 @@ const SelectItem = React.forwardRef<
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
       {hint != null ? (
-        <span className="ml-auto pl-3 tabular-nums text-muted-foreground/60">
+        // Brightens on the highlighted row — muted-on-accent was
+        // unreadable under the hover/focus background.
+        <span className="ml-auto pl-3 tabular-nums text-muted-foreground/60 group-focus:text-accent-foreground/80 group-data-[highlighted]:text-accent-foreground/80">
           {hint}
         </span>
       ) : null}

@@ -14,6 +14,7 @@ export const AccordionContract = contract({
   aliases: ["accordion","faq","expand","collapse list","disclosure list","disclosure group","outline group","expandable list","sectionlist"],
   subcomponents: ["AccordionItem","AccordionTrigger","AccordionContent"],
   composesWith: ["Card (as a faq inside a card body)","Section primitives"],
+  styleDefaults: {"AccordionItem":"border-b","AccordionTrigger":"flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180","AccordionContent":"pb-4 pt-0"},
   props: {
   "type": {
       schema: z.enum(["single", "multiple"]),

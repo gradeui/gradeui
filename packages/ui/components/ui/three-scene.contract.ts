@@ -13,6 +13,7 @@ export const ThreeSceneContract = contract({
   import: "@gradeui/ui",
   aliases: ["three","threejs","webgl","shader","scene","3d","generative","hero background","fragment shader","glsl"],
   composesWith: ["MediaSurface (internal)","foreground content stacked above with `position: absolute/relative z-10`"],
+  styleDefaults: {"ThreeScene":"absolute inset-0 flex items-end justify-end p-2"},
   props: {
   "preset": {
       schema: z.enum(["mesh", "waves", "space", "plasma", "voronoi", "synthwave"]).optional(),

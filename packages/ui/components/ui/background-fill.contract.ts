@@ -13,6 +13,7 @@ export const BackgroundFillContract = contract({
   import: "@gradeui/ui",
   aliases: ["background","fill","frame fill","backdrop","surface fill","background image","background video","background gradient","background shader","texture","paint"],
   composesWith: ["AppShell","Card","Stack","Row","Grid (any relative container)","ThreeScene (shader fill)","MediaSurface"],
+  styleDefaults: {"BackgroundFill":"absolute inset-0 h-full w-full"},
   props: {
   "type": {
       schema: z.enum(["none", "solid", "gradient", "image", "video", "shader"]),

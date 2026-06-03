@@ -14,6 +14,7 @@ export const AvatarContract = contract({
   aliases: ["profile picture","user image","account image","avatar","person glyph","user avatar","profile image","react native avatar"],
   subcomponents: ["AvatarImage","AvatarFallback"],
   composesWith: ["Card (in CardHeader)","Table cells","Badge (placed next to for status)","Skeleton (loading state)"],
+  styleDefaults: {"AvatarImage":"aspect-square h-full w-full"},
   props: {
   "className": {
       schema: z.unknown().optional(),

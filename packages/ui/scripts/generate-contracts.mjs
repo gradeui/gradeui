@@ -365,7 +365,129 @@ function parsePropSignature(line) {
 
 // ─── Contract emitter ────────────────────────────────────────────────
 
-function emitContract(componentName, fm, propLines) {
+// ─── Style-defaults extraction ───────────────────────────────────────
+//
+// Parse the component .tsx SOURCE for each exported part's baked-in
+// Tailwind classes:
+//   - plain components: the first string literal inside `cn("…", …)`
+//   - cva components: the cva base string + the defaultVariants
+//     resolution (base + variants[axis][defaultVariants[axis]] per axis)
+// The result ships on the contract as `styleDefaults` so the Studio
+// inspector can show REAL default chips (CardContent → "p-6 pt-0")
+// instead of pretending unset means zero. Static + best-effort: when a
+// shape doesn't match, we emit nothing for that part rather than guess.
+
+function sliceBalanced(src, openIdx, open, close) {
+  let depth = 0;
+  let inString = null;
+  let escaped = false;
+  for (let i = openIdx; i < src.length; i++) {
+    const ch = src[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (inString) {
+      if (ch === "\\") escaped = true;
+      else if (ch === inString) inString = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      inString = ch;
+      continue;
+    }
+    if (ch === open) depth++;
+    else if (ch === close) {
+      depth--;
+      if (depth === 0) return src.slice(openIdx + 1, i);
+    }
+  }
+  return null;
+}
+
+function firstStringLiteral(src) {
+  const m = /"((?:[^"\\]|\\.)*)"/.exec(src);
+  return m ? m[1] : null;
+}
+
+function escapeForRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function resolveCva(callBody) {
+  // callBody = the inside of cva( … ): `"base", { variants, defaultVariants }`
+  const base = firstStringLiteral(callBody) ?? "";
+  const out = [base];
+  const defaults = {};
+  const dvIdx = callBody.indexOf("defaultVariants");
+  if (dvIdx === -1) return { classes: out.join(" ").trim(), defaults };
+  const dvOpen = callBody.indexOf("{", dvIdx);
+  if (dvOpen === -1) return { classes: out.join(" ").trim(), defaults };
+  const dvBody = sliceBalanced(callBody, dvOpen, "{", "}") ?? "";
+  const pairs = [
+    ...dvBody.matchAll(/(["']?)([\w-]+)\1\s*:\s*["']([\w-]+)["']/g),
+  ].map((m) => [m[2], m[3]]);
+  for (const [axis, key] of pairs) defaults[axis] = key;
+  const vIdx = callBody.indexOf("variants");
+  if (vIdx === -1 || pairs.length === 0)
+    return { classes: out.join(" ").trim(), defaults };
+  const vOpen = callBody.indexOf("{", vIdx);
+  const vBody = vOpen === -1 ? "" : (sliceBalanced(callBody, vOpen, "{", "}") ?? "");
+  for (const [axis, key] of pairs) {
+    const axisM = new RegExp(`(["']?)${escapeForRegex(axis)}\\1\\s*:\\s*\\{`).exec(vBody);
+    if (!axisM) continue;
+    const axisOpen = vBody.indexOf("{", axisM.index);
+    if (axisOpen === -1) continue;
+    const axisBody = sliceBalanced(vBody, axisOpen, "{", "}") ?? "";
+    const valM = new RegExp(
+      `(["']?)${escapeForRegex(key)}\\1\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`,
+    ).exec(axisBody);
+    if (valM) out.push(valM[2]);
+  }
+  return { classes: out.join(" ").trim(), defaults };
+}
+
+function extractStyleDefaults(tsxSource) {
+  // cva assignments: varName → { classes (default resolution), defaults }.
+  const cvaByVar = {};
+  const cvaRe = /const\s+(\w+)\s*=\s*cva\s*\(/g;
+  let m;
+  while ((m = cvaRe.exec(tsxSource)) !== null) {
+    const openParen = tsxSource.indexOf("(", m.index + m[0].length - 1);
+    const body = sliceBalanced(tsxSource, openParen, "(", ")");
+    if (body) cvaByVar[m[1]] = resolveCva(body);
+  }
+  // PascalCase declaration blocks (components only — cva vars are
+  // camelCase and `function main` etc. are lowercase).
+  const declRe = /(?:^|\n)(?:export\s+)?(?:const|function)\s+([A-Z]\w*)/g;
+  const decls = [];
+  while ((m = declRe.exec(tsxSource)) !== null) {
+    decls.push({ name: m[1], start: m.index });
+  }
+  const out = {};
+  const variantDefaultsByName = {};
+  for (let i = 0; i < decls.length; i++) {
+    const { name, start } = decls[i];
+    const end = i + 1 < decls.length ? decls[i + 1].start : tsxSource.length;
+    const block = tsxSource.slice(start, end);
+    // cva-backed component (cn(buttonVariants({…}), className))?
+    const ref = /(\w+Variants)\s*\(/.exec(block);
+    if (ref && cvaByVar[ref[1]]) {
+      const resolved = cvaByVar[ref[1]];
+      if (resolved.classes.trim()) out[name] = resolved.classes;
+      if (Object.keys(resolved.defaults).length) {
+        variantDefaultsByName[name] = resolved.defaults;
+      }
+      continue;
+    }
+    // Plain cn("literal", …).
+    const cnM = /\bcn\(\s*\n?\s*"((?:[^"\\]|\\.)*)"/.exec(block);
+    if (cnM && cnM[1].trim()) out[name] = cnM[1];
+  }
+  return { styleDefaults: out, variantDefaultsByName };
+}
+
+function emitContract(componentName, fm, propLines, styleDefaults, variantDefaults) {
   const parsed = propLines.map(parsePropSignature).filter(Boolean);
   // Dedup by name — when the .md namespaces props by subcomponent
   // (`Accordion: value`, `AccordionItem: value`), the parser flattens
@@ -411,6 +533,20 @@ function emitContract(componentName, fm, propLines) {
       ? `  props: {},\n`
       : `  props: {\n${propEntries.join(",\n")},\n  },\n`;
 
+  // Baked-in classes per exported part, extracted from the .tsx source.
+  const styleDefaultsBlock =
+    styleDefaults && Object.keys(styleDefaults).length
+      ? `  styleDefaults: ${JSON.stringify(styleDefaults)},\n`
+      : "";
+
+  // The primary cva's defaultVariants ({ variant: "default", size: "md" })
+  // so the inspector can ghost the REAL resolved value on unset enum
+  // props instead of "(default)".
+  const variantDefaultsBlock =
+    variantDefaults && Object.keys(variantDefaults).length
+      ? `  variantDefaults: ${JSON.stringify(variantDefaults)},\n`
+      : "";
+
   return `// AUTO-GENERATED by scripts/generate-contracts.mjs from the .md sidecar.
 // Hand edits will be overwritten on the next run. To customise this
 // component's contract (add actions, structured props, custom control
@@ -424,7 +560,7 @@ export const ${componentName}Contract = contract({
   name: ${JSON.stringify(componentName)},
   description: ${description},
   import: ${JSON.stringify(importPath)},
-${aliases.length ? `  aliases: ${JSON.stringify(aliases)},\n` : ""}${subcomponents.length ? `  subcomponents: ${JSON.stringify(subcomponents)},\n` : ""}${composesWith.length ? `  composesWith: ${JSON.stringify(composesWith)},\n` : ""}${propsBlock}});
+${aliases.length ? `  aliases: ${JSON.stringify(aliases)},\n` : ""}${subcomponents.length ? `  subcomponents: ${JSON.stringify(subcomponents)},\n` : ""}${composesWith.length ? `  composesWith: ${JSON.stringify(composesWith)},\n` : ""}${styleDefaultsBlock}${variantDefaultsBlock}${propsBlock}});
 `;
 }
 
@@ -491,7 +627,20 @@ function main() {
       continue;
     }
 
-    const contractCode = emitContract(componentName, fm, propLines);
+    const tsxPath = join(COMPONENTS_DIR, `${base}.tsx`);
+    const extracted = existsSync(tsxPath)
+      ? extractStyleDefaults(readFileSync(tsxPath, "utf8"))
+      : { styleDefaults: {}, variantDefaultsByName: {} };
+    // The contract's variantDefaults belong to the ROOT component — the
+    // one whose name matches the contract. Sub-part cvas (if any) are
+    // not surfaced here.
+    const contractCode = emitContract(
+      componentName,
+      fm,
+      propLines,
+      extracted.styleDefaults,
+      extracted.variantDefaultsByName[componentName],
+    );
     writeFileSync(contractPath, contractCode, "utf8");
     generated.push(componentName);
   }

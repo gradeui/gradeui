@@ -13,6 +13,7 @@ export const SeparatorContract = contract({
   import: "@gradeui/ui",
   aliases: ["divider","rule","hr","line","horizontal rule"],
   composesWith: ["Card (between CardHeader/Content/Footer)","navigation menus","any vertical stacks"],
+  styleDefaults: {"Separator":"shrink-0 bg-border"},
   props: {
   "orientation": {
       schema: z.enum(["horizontal", "vertical"]).optional(),

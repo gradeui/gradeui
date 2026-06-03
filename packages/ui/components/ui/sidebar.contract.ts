@@ -14,6 +14,7 @@ export const SidebarContract = contract({
   aliases: ["sidebar","side menu","sidemenu","navigation sidebar","app sidebar","side nav","side nav rail","master pane","sidebarmenu","navigation rail","react native drawer"],
   subcomponents: ["SidebarHeader","SidebarContent","SidebarFooter","SidebarSection","SidebarItem"],
   composesWith: ["AppShell (inside AppShellNav)","Avatar (in Footer)","Tooltip (auto-wrapped on collapsed items)","Button (asChild for custom routing)"],
+  styleDefaults: {"Sidebar":"relative flex h-full flex-col bg-card text-card-foreground","SidebarHeader":"flex shrink-0 items-center border-b border-border","SidebarContent":"flex-1 overflow-y-auto overflow-x-hidden","SidebarFooter":"shrink-0 border-t border-border","SidebarSection":"px-[var(--gds-sidebar-section-px,0.5rem)] space-y-[var(--gds-sidebar-section-gap,0.125rem)]","SidebarItem":"group flex items-center gap-2.5 rounded-md transition-colors","SidebarTreeItem":"group flex w-full items-center gap-1.5 rounded-md py-1 text-sm font-medium transition-colors"},
   props: {
   "collapsed": {
       schema: z.boolean().optional(),

@@ -545,6 +545,147 @@ export function updateComponentProp(
   return replaceAttrs(source, tag, newAttrs);
 }
 
+// ─── Inline style (expression attr) ──────────────────────────────────
+//
+// Detached / "custom" inspector values (an exact radius px, a raw
+// box-shadow) must render in Fast Frame — the DEFAULT renderer — whose
+// stylesheet is compiled at build time: a runtime-minted arbitrary
+// Tailwind class (`rounded-[10px]`) produces no CSS there. Inline
+// `style` needs no compiler, so it's the carrier for every detached
+// value; bound values stay token classes and the inspector keeps the
+// two mutually exclusive.
+//
+// v1 scope: the style attribute is treated as a SIMPLE object literal
+// of string-literal values — `style={{ borderRadius: "10px" }}` — which
+// is the only shape this module ever writes. If an existing style attr
+// carries anything more exotic (spreads, variables, ternaries), both
+// functions bail rather than risk corrupting user code: read returns
+// null, write returns the source unchanged.
+
+const STYLE_PAIR_RE =
+  /([A-Za-z_$][\w$]*)\s*:\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/g;
+
+/** Parse a simple object-literal style expression (raw including the
+ *  outer JSX braces) into key→value pairs. Null when too complex. */
+function parseStyleObject(raw: string): Record<string, string> | null {
+  const inner = raw.trim().replace(/^\{/, "").replace(/\}$/, "").trim();
+  if (inner === "") return {};
+  if (!inner.startsWith("{") || !inner.endsWith("}")) return null;
+  const body = inner.slice(1, -1);
+  const out: Record<string, string> = {};
+  let leftover = body;
+  STYLE_PAIR_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = STYLE_PAIR_RE.exec(body)) !== null) {
+    out[m[1]] = (m[2] ?? m[3] ?? "").replace(/\\(.)/g, "$1");
+    leftover = leftover.replace(m[0], "");
+  }
+  // Anything beyond commas/whitespace means syntax we can't faithfully
+  // rebuild — refuse rather than corrupt.
+  if (/[^\s,]/.test(leftover)) return null;
+  return out;
+}
+
+function serializeStyleObject(styles: Record<string, string>): string {
+  const entries = Object.entries(styles).map(
+    ([k, v]) => `${k}: "${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`,
+  );
+  return `{{ ${entries.join(", ")} }}`;
+}
+
+/** Read the inline `style` object on the targeted JSX node. `{}` when no
+ *  style attr is present; null when one is present but too complex. */
+export function readInlineStyle(
+  source: string,
+  componentName: string,
+  sourceId?: string,
+): Record<string, string> | null {
+  const read = readComponentProp(source, componentName, "style", sourceId);
+  if (read === undefined) return {};
+  if (read.kind !== "expression") return null;
+  return parseStyleObject(read.raw);
+}
+
+/** Merge `styles` into the targeted node's inline `style` attr (null
+ *  values delete keys). Creates the attr when absent, removes it when
+ *  the merged object is empty, and bails (source unchanged) when an
+ *  existing style expression is too complex to round-trip. */
+export function setInlineStyle(
+  source: string,
+  componentName: string,
+  styles: Record<string, string | null>,
+  sourceId?: string,
+): string {
+  const ensured = sourceId ? injectSourceIds(source) : source;
+  const tag = sourceId
+    ? findComponentOpenTagBySourceId(ensured, sourceId) ??
+      findComponentOpenTag(ensured, componentName)
+    : findComponentOpenTag(ensured, componentName);
+  if (!tag) return source;
+  source = ensured;
+
+  let pos = 0;
+  let existing: AttrSlice | null = null;
+  while (pos < tag.attrs.length) {
+    const attr = parseNextAttr(tag.attrs, pos);
+    if (!attr) break;
+    if (attr.name === "style") {
+      existing = attr;
+      break;
+    }
+    pos = attr.end;
+  }
+
+  let current: Record<string, string> = {};
+  if (existing) {
+    if (existing.kind !== "expression") return source; // style="…" — not ours
+    const parsed = parseStyleObject(
+      tag.attrs.slice(existing.valueStart, existing.valueEnd),
+    );
+    if (parsed === null) return source; // too complex — refuse to corrupt
+    current = parsed;
+  }
+
+  const merged: Record<string, string> = { ...current };
+  for (const [k, v] of Object.entries(styles)) {
+    if (v === null) delete merged[k];
+    else merged[k] = v;
+  }
+
+  // Empty → remove the attr entirely (mirrors updateComponentProp).
+  if (Object.keys(merged).length === 0) {
+    if (!existing) return source;
+    let removeFrom = existing.start;
+    let removeTo = existing.end;
+    if (removeFrom > 0 && /\s/.test(tag.attrs[removeFrom - 1])) {
+      removeFrom--;
+    } else if (removeTo < tag.attrs.length && /\s/.test(tag.attrs[removeTo])) {
+      removeTo++;
+    }
+    return replaceAttrs(
+      source,
+      tag,
+      tag.attrs.slice(0, removeFrom) + tag.attrs.slice(removeTo),
+    );
+  }
+
+  const newAttrText = `style=${serializeStyleObject(merged)}`;
+  if (existing) {
+    return replaceAttrs(
+      source,
+      tag,
+      tag.attrs.slice(0, existing.start) +
+        newAttrText +
+        tag.attrs.slice(existing.end),
+    );
+  }
+  let newAttrs2: string;
+  if (tag.attrs.length === 0) newAttrs2 = newAttrText;
+  else if (/\s$/.test(tag.attrs)) newAttrs2 = tag.attrs + newAttrText;
+  else newAttrs2 = tag.attrs + " " + newAttrText;
+  return replaceAttrs(source, tag, newAttrs2);
+}
+
 /**
  * Read the current value of `propName` on the first `<ComponentName>` in
  * `source`, returning `undefined` when the attr isn't present. The return

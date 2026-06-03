@@ -13,6 +13,8 @@ export const AppShellContract = contract({
   import: "@gradeui/ui",
   subcomponents: ["AppShellHeader","AppShellNav","AppShellAside","AppShellMain","AppShellFooter"],
   composesWith: ["Stack","Row","Card","Button","Separator","Sidebar","Toolbar","any page content"],
+  styleDefaults: {"AppShell":"gds-app-shell min-h-screen w-full bg-background text-foreground grid","AppShellHeader":"gds-app-shell-header","AppShellNav":"gds-app-shell-nav border-b bg-background","AppShellAside":"gds-app-shell-aside min-w-0 border-r bg-background","AppShellMain":"gds-app-shell-main min-w-0 w-full","AppShellFooter":"gds-app-shell-footer border-t bg-background"},
+  variantDefaults: {"nav":"none"},
   props: {
   "nav": {
       schema: z.enum(["none", "top", "side", "three-pane"]).optional(),

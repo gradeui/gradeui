@@ -13,6 +13,7 @@ export const FillPickerContract = contract({
   import: "@gradeui/ui",
   aliases: ["fill picker","paint picker","background picker","fill chooser","fill popover"],
   composesWith: ["BackgroundFill (renders the FillValue)","Popover (host it in a popover)","ShaderPresetPicker (the shader tab)","the inspector Fill section"],
+  styleDefaults: {"Swatch":"h-7 w-7 rounded-md border border-border/60 transition-shadow","FillPicker":"flex flex-col gap-3"},
   props: {
   "value": {
       schema: z.unknown(),

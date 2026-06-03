@@ -13,6 +13,7 @@ export const VideoPlayerContract = contract({
   import: "@gradeui/ui",
   aliases: ["video","mp4","movie","webm","clip","video view","av player","react native video","video element"],
   composesWith: ["MediaSurface (internal)","Card (wrap for thumbnail grids)"],
+  styleDefaults: {"VideoPlayer":"w-full h-full"},
   props: {
   "src": {
       schema: z.string(),

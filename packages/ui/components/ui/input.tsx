@@ -24,9 +24,11 @@ const inputVariants = cva(
         sm: "h-8 pl-2 pr-2 py-1 text-sm file:text-xs",
         // Figma-density — for tool panels (the Studio inspector) where
         // many controls stack in a narrow column and 28px rows matter.
-        xs: "h-7 pl-2 pr-2 py-0 text-xs file:text-xs",
+        // shadow-none so they sit flush with SelectTrigger (no drop
+        // shadow) — every field in a dense panel should read identically.
+        xs: "h-7 pl-2 pr-2 py-0 text-xs file:text-xs shadow-none",
         // 2xs: h-6 (24px) — densest tool-panel input.
-        "2xs": "h-6 pl-2 pr-2 py-0 text-2xs file:text-2xs",
+        "2xs": "h-6 pl-2 pr-2 py-0 text-2xs file:text-2xs shadow-none",
       },
     },
     defaultVariants: { size: "default" },

@@ -14,6 +14,7 @@ export const CardContract = contract({
   aliases: ["card","group box","groupbox","panel","tile","surface","glass card","frosted card","floating panel","hero card","ai suggestion card","dashboard tile","settings panel"],
   subcomponents: ["CardHeader","CardTitle","CardDescription","CardContent","CardFooter"],
   composesWith: ["Button (in CardFooter)","Badge","Separator","Avatar","Code","MediaSurface","any form controls"],
+  styleDefaults: {"Card":"gds-card rounded-xl border text-card-foreground shadow","CardHeader":"flex flex-col space-y-1.5 p-6","CardTitle":"font-semibold leading-none tracking-tight","CardDescription":"text-sm text-muted-foreground","CardContent":"p-6 pt-0","CardFooter":"flex items-center p-6 pt-0"},
   props: {
   "surface": {
       schema: z.enum(["solid", "translucent", "glass", "glass-strong"]).optional(),

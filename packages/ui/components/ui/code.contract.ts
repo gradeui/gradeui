@@ -13,6 +13,7 @@ export const CodeContract = contract({
   import: "@gradeui/ui",
   aliases: ["code block","code","code snippet","code surface","syntax highlighted code","diff hero","diff view","diff block","changelog code","before after code","scroll-triggered code","typewriter code"],
   composesWith: ["SectionBlock","Card","Tabs (for multi-file examples)","Carousel (slide-to-slide code progression)"],
+  styleDefaults: {"Code":"gds-code relative w-full overflow-hidden"},
   props: {
   "source": {
       schema: z.string(),

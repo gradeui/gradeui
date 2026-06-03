@@ -13,6 +13,8 @@ export const BannerContract = contract({
   import: "@gradeui/ui",
   aliases: ["banner","notification banner","system banner","header banner","announcement bar","top bar","status bar","promo banner","incident banner","draft banner","first run banner","glass banner","sticky banner"],
   composesWith: ["AppShellHeader (most common host — banner sits ABOVE the header content)","Button (in the action slot)","Link (inside the content)","Lucide icons (in the icon slot)"],
+  styleDefaults: {"Banner":"relative flex items-center gap-3 px-4 py-2.5 text-sm leading-relaxed border-b bg-muted text-foreground border-border [&>svg]:text-muted-foreground justify-between"},
+  variantDefaults: {"variant":"default","align":"between"},
   props: {
   "variant": {
       schema: z.enum(["default", "info", "success", "warning", "destructive", "announcement"]).optional(),

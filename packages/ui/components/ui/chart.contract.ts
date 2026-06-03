@@ -14,6 +14,7 @@ export const ChartContract = contract({
   aliases: ["chart","charts","graph","bar chart","line chart","area chart","recharts","analytics chart","swift chart","swiftui chart","victory chart","victory native"],
   subcomponents: ["ChartTooltip","ChartTooltipContent","ChartLegend","ChartLegendContent","ChartStyle"],
   composesWith: ["Card (chart-in-a-card pattern)","Tabs (multi-metric switcher)","Recharts components (Bar","Line","Area","Pie","Radar from \"recharts\")"],
+  styleDefaults: {"ChartContainer":"flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none","ChartTooltipContent":"font-medium","ChartLegendContent":"flex items-center justify-center gap-4"},
   props: {
   "config": {
       schema: z.unknown(),

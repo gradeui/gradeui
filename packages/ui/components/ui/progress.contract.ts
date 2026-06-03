@@ -13,6 +13,7 @@ export const ProgressContract = contract({
   import: "@gradeui/ui",
   aliases: ["progress","progress view","progress indicator","progress bar","determinate progress","loading bar","completion bar"],
   composesWith: ["Card (as a section)","Badge (showing % next to it)","Label (describing what's loading)"],
+  styleDefaults: {"Progress":"relative h-4 w-full overflow-hidden rounded-full bg-secondary"},
   props: {
   "value": {
       schema: z.number().optional(),

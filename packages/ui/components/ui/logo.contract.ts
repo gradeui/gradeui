@@ -13,6 +13,7 @@ export const LogoContract = contract({
   import: "@gradeui/ui",
   aliases: ["logo","brand","brandmark","wordmark","lockup","brand logo","app logo","logotype"],
   composesWith: ["AppShell","AppShellHeader","Sidebar","SidebarHeader","Row","Stack"],
+  styleDefaults: {"Logo":"gds-logo inline-flex shrink-0 select-none items-center","LogoPlaceholder":"inline-flex h-full items-center gap-1.5 rounded-md border border-dashed px-2 text-xs font-medium"},
   props: {
   "sources": {
       schema: z.unknown(),

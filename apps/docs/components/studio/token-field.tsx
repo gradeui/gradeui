@@ -22,8 +22,22 @@
  */
 
 import * as React from "react";
-import { Hexagon, Link2, Link2Off } from "lucide-react";
+import { Hexagon, Link2Off } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -33,7 +47,29 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 
-const FIELD_LABEL = "text-2xs font-normal text-muted-foreground";
+const FIELD_LABEL = "text-2xs font-medium text-foreground/80";
+
+/**
+ * IconTip — a styled tooltip for icon-only affordances (the native
+ * `title` attr is too quiet for a design tool). Self-provides the Radix
+ * provider so it works anywhere in the tree.
+ */
+export function IconTip({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactElement;
+}) {
+  return (
+    <TooltipProvider delayDuration={250}>
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent className="px-2 py-1 text-2xs">{label}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 type ControlSize = "2xs" | "xs" | "sm";
 
@@ -67,8 +103,35 @@ export interface TokenFieldProps {
   onDetach: () => void;
   /** Detached → bound (re-bind to a token). */
   onRebind: () => void;
-  /** Raw editor, rendered when detached. */
-  renderRaw?: () => React.ReactNode;
+  /** Raw editor, rendered when detached. Receives the ATTACH affordance
+   *  (hexagon button) to host INSIDE its input (endSlot, next to the
+   *  unit) so field bounds stay identical bound↔detached — no layout
+   *  jump. */
+  renderRaw?: (attach: React.ReactNode) => React.ReactNode;
+  /** Extra affordance(s) rendered in the label row, left of the
+   *  detach/rebind toggle (e.g. Radius' per-corner mode toggle). */
+  labelExtra?: React.ReactNode;
+  /** Muted caption rendered INLINE next to the label ("Default · 6px")
+   *  — saves the vertical line a below-field caption costs. */
+  labelCaption?: React.ReactNode;
+  /** Property glyph rendered at the left edge of the bound trigger
+   *  (Paper/Figma's per-property icons — opacity checker, droplet…).
+   *  Pass a span with a `title` for its tooltip. */
+  triggerIcon?: React.ReactNode;
+  /** The current raw value while detached ("19px", "1.5rem", "37") —
+   *  drives the attach menu's "Closest match" suggestion. */
+  currentRaw?: string;
+  /** The element's baked-in DEFAULT shown while unset — rendered as a
+   *  DULLED grey token chip (derived classname + resolved value, e.g.
+   *  "pt-6 · 24") so it's clear the value is applied without being
+   *  authored here. Falls back to `placeholder` text when absent. */
+  ghostToken?: { label: string; hint?: string };
+  /** Unit rendered in the SUFFIX SLOT at the field's right edge while
+   *  unset/ghost ("px", "%") — never concatenated with the number. */
+  unitSuffix?: string;
+  /** Resolved-value hint for the "unset" menu row ("0px") — every other
+   *  row carries one, so a blank first row reads broken. */
+  placeholderHint?: string;
 }
 
 export function TokenField({
@@ -84,67 +147,259 @@ export function TokenField({
   onDetach,
   onRebind,
   renderRaw,
+  labelExtra,
+  labelCaption,
+  triggerIcon,
+  currentRaw,
+  ghostToken,
+  unitSuffix,
+  placeholderHint,
 }: TokenFieldProps) {
+  // Suffix shows only for PLAIN ghost numbers ("0"). Token explainers
+  // (ghost chips, menu rows) keep the unit WITH the number — "pt-6 ·24px"
+  // explains the token; a bare field value defers its unit to the edge.
+  const showSuffix =
+    token == null &&
+    !!unitSuffix &&
+    ghostToken == null &&
+    /^\d/.test(placeholder);
+  // "Closest match" for the attach menu — normalise the raw value to
+  // px-ish (rem/em ≈ ×16; %/vh/etc. aren't comparable) and find the
+  // token whose resolved readout is nearest.
+  const rawForMatch = (() => {
+    if (currentRaw == null) return NaN;
+    const m = /^\s*(-?\d*\.?\d+)\s*([a-z%]*)\s*$/i.exec(currentRaw);
+    if (!m) return NaN;
+    const n = Number(m[1]);
+    if (!Number.isFinite(n)) return NaN;
+    const u = m[2].toLowerCase();
+    if (u === "" || u === "px") return n;
+    if (u === "rem" || u === "em") return n * 16;
+    return NaN;
+  })();
+  // Resolved value for the BOUND chip's "· 12px" explainer — same
+  // registry hint the menu rows carry.
+  const boundHint =
+    token != null ? tokens.find((t) => t.value === token)?.hint : undefined;
+  const closest = Number.isFinite(rawForMatch)
+    ? tokens.reduce<{ t: TokenOption; d: number } | null>((best, t) => {
+        const n = parseFloat(t.hint ?? "");
+        if (!Number.isFinite(n)) return best;
+        const d = Math.abs(n - rawForMatch);
+        return best === null || d < best.d ? { t, d } : best;
+      }, null)
+    : null;
   return (
     <div className="space-y-1">
       {label ? (
-        <div className="flex items-center justify-between">
-          <span className={FIELD_LABEL}>{label}</span>
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => (bound ? onDetach() : onRebind())}
-            title={
-              bound
-                ? `Detach ${kind} — use a custom value`
-                : `Bind ${kind} to a token`
-            }
-            aria-pressed={!bound}
-            className={cn(
-              "inline-flex h-4 w-4 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-3",
-              !bound && "text-warning-deep",
-            )}
-          >
-            {bound ? <Link2 /> : <Link2Off />}
-          </button>
+        // min-h-4 + leading-none keep label rows the same height whether
+        // or not they carry extras — sibling fields stay aligned.
+        <div className="flex min-h-4 items-center justify-between gap-2">
+          <span className="flex min-w-0 items-baseline gap-2">
+            <span className={cn(FIELD_LABEL, "shrink-0 leading-none")}>
+              {label}
+            </span>
+            {labelCaption}
+          </span>
+          {/* Both link affordances live INSIDE the field (Figma) — the
+              label row only carries section-specific extras. */}
+          {labelExtra ? (
+            <span className="flex shrink-0 items-center gap-1">
+              {labelExtra}
+            </span>
+          ) : null}
         </div>
       ) : null}
 
       {bound ? (
+        <div className="relative">
         <Select
           value={token == null ? "__none" : token}
           onValueChange={(v) => onPickToken(v === "__none" ? null : v)}
           disabled={disabled}
         >
-          <SelectTrigger size={size} className="w-full">
+          <SelectTrigger
+            size={size}
+            // No chevron (Figma fields don't carry one) — the right edge
+            // belongs to the detach affordance when a token is bound, or
+            // to the unit suffix while unset/ghost.
+            className={cn("w-full", (token != null || showSuffix) && "pr-7")}
+            startSlot={triggerIcon}
+            chevron={false}
+          >
             {/* The selected item's ItemText (glyph + label) mirrors here
-                via SelectValue — the bound glyph shows for free, no extra
-                trigger markup (which previously double-rendered + wrapped). */}
-            <SelectValue placeholder={placeholder} />
+                via SelectValue — the bound glyph shows for free; the
+                property glyph rides SelectTrigger's startSlot. A picked
+                token renders inside a CHIP so it reads as a bound
+                variable, Figma-style (a div, not a span — the trigger's
+                [&>span]:line-clamp-1 would stack a span vertically). */}
+            {token != null ? (
+              // Chip tint rides --studio-accent (theme-independent
+              // editing chrome, same var as the canvas selection chip) —
+              // subtle, but unmistakably "this is a token", not neutral.
+              // Carries the same "· value" explainer as the ghost chip
+              // (token explainers keep the unit WITH the number). Tight
+              // gap-0.5 so the interpunct hugs the label.
+              <div className="flex min-w-0 items-center gap-0.5 rounded-[4px] border border-[oklch(var(--studio-accent,_0.62_0.18_264)/0.25)] bg-[oklch(var(--studio-accent,_0.62_0.18_264)/0.08)] px-1 [&>span]:truncate">
+                <SelectValue placeholder={placeholder} />
+                {boundHint ? (
+                  // Same accent family as the chip surround, dialled
+                  // down. 0.5: the border's 0.25 works for a 1px line
+                  // but thin glyphs vanish at that alpha.
+                  <span className="shrink-0 text-[oklch(var(--studio-accent,_0.62_0.18_264)/0.5)]">
+                    · {boundHint}
+                  </span>
+                ) : null}
+              </div>
+            ) : ghostToken ? (
+              // Dulled token chip — the baked-in DEFAULT (grey, not
+              // accent): the classname is visibly applied, just not
+              // authored on this node. Tight gap; px-suffixed value.
+              <div className="flex min-w-0 items-center gap-0.5 rounded-[4px] border border-border/60 bg-muted/50 px-1 text-muted-foreground">
+                <span className="truncate">{ghostToken.label}</span>
+                {ghostToken.hint ? (
+                  <span className="shrink-0 text-muted-foreground/60">
+                    {/* Interpunct convention: "label · value", one space
+                        each side — identical to the Default captions. */}
+                    · {ghostToken.hint}
+                  </span>
+                ) : null}
+              </div>
+            ) : (
+              <SelectValue placeholder={placeholder} />
+            )}
           </SelectTrigger>
           <SelectContent size={size}>
-            <SelectItem value="__none">{placeholder}</SelectItem>
+            <SelectItem value="__none" hint={placeholderHint}>
+              {/* The "default / unset" choice reads muted — it isn't a
+                  token, just the inherited default (e.g. 100% opacity,
+                  Inherit). Mirrors muted into the trigger too, so an
+                  unbound field shows a greyed default value. Brightens
+                  on the highlighted row (muted-on-accent is unreadable);
+                  the trigger has no highlight, so it stays grey there. */}
+              <span className="text-muted-foreground group-focus:text-accent-foreground group-data-[highlighted]:text-accent-foreground">
+                {placeholder}
+              </span>
+            </SelectItem>
             {tokens.map((t) => (
               <SelectItem key={t.value} value={t.value} hint={t.hint}>
                 <span className="flex items-center gap-1.5">
-                  {/* Bound-to-a-token glyph — Figma's variable indicator. */}
-                  {t.preview ?? (
-                    <Hexagon
-                      className="size-3 shrink-0 text-muted-foreground/60"
-                      aria-hidden
-                    />
-                  )}
+                  {/* No token glyph — the CHIP border in the field does
+                      the "this is a token" signalling (the glyph also
+                      forced truncation). Colour swatches still render. */}
+                  {t.preview}
                   <span className="truncate">{t.label}</span>
                 </span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {/* Detach — INSIDE the field, Figma's "Detach variable". Only
+            rendered when a token is actually bound (an unset field has
+            nothing to detach). Absolutely positioned because a button
+            can't nest inside the trigger button. */}
+        {token != null ? (
+          <IconTip label={`Detach ${kind} — use a custom value`}>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onDetach}
+              aria-label={`Detach ${kind}`}
+              className="absolute right-1.5 top-1/2 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-3"
+            >
+              <Link2Off />
+            </button>
+          </IconTip>
+        ) : null}
+        {/* Unit suffix — the SUFFIX SLOT, never glued to the number. */}
+        {showSuffix ? (
+          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-2xs text-muted-foreground/60">
+            {unitSuffix}
+          </span>
+        ) : null}
+        </div>
       ) : (
-        renderRaw?.()
+        (renderRaw?.(
+          /* Attach — hosted INSIDE the raw input (endSlot) so fields
+             don't resize across bind/detach. Opens a DISMISSABLE scoped
+             token menu (Figma's apply-variable popover) — it never
+             writes by itself; only picking an item binds. "Closest
+             match" to the typed raw value leads the list. */
+          <DropdownMenu>
+            <IconTip label={`Attach ${kind} to a token`}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  aria-label={`Attach ${kind} to a token`}
+                  className="pointer-events-auto inline-flex h-4 w-4 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-3"
+                >
+                  <Hexagon />
+                </button>
+              </DropdownMenuTrigger>
+            </IconTip>
+            <DropdownMenuContent align="end" className="min-w-[11rem]">
+              {closest ? (
+                <>
+                  <DropdownMenuLabel className="text-2xs font-normal text-muted-foreground">
+                    Closest match
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    className="group gap-1.5 text-xs"
+                    onSelect={() => onPickToken(closest.t.value)}
+                  >
+                    {closest.t.preview}
+                    <span className="truncate">{closest.t.label}</span>
+                    {closest.t.hint ? (
+                      <span className="ml-auto pl-3 tabular-nums text-muted-foreground/60 group-focus:text-accent-foreground/80">
+                        {closest.t.hint}
+                      </span>
+                    ) : null}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              ) : null}
+              {tokens.map((t) => (
+                <DropdownMenuItem
+                  key={t.value}
+                  className="group gap-1.5 text-xs"
+                  onSelect={() => onPickToken(t.value)}
+                >
+                  {t.preview}
+                  <span className="truncate">{t.label}</span>
+                  {t.hint ? (
+                    <span className="ml-auto pl-3 tabular-nums text-muted-foreground/60 group-focus:text-accent-foreground/80">
+                      {t.hint}
+                    </span>
+                  ) : null}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>,
+        ) ?? null)
       )}
     </div>
   );
+}
+
+/**
+ * evalMath — evaluate a numeric input that may contain simple maths
+ * ("16/2", "4*4+2"). Strictly digits, decimal points, + - * / ( ) and
+ * whitespace — anything else rejects, so the Function() below can never
+ * see arbitrary code. Returns null on failure (callers fall back to the
+ * previous value, per the Figma behaviour).
+ */
+export function evalMath(expr: string): number | null {
+  const cleaned = expr.trim();
+  if (cleaned === "") return null;
+  if (!/^[\d.+\-*/()\s]+$/.test(cleaned)) return null;
+  try {
+    // eslint-disable-next-line no-new-func
+    const n = new Function(`"use strict"; return (${cleaned});`)() as unknown;
+    return typeof n === "number" && Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -208,6 +463,7 @@ export function CompactNumberField({
   disabled,
   ariaLabel,
   onCommit,
+  endExtra,
 }: {
   icon?: React.ReactNode;
   value: number;
@@ -215,33 +471,203 @@ export function CompactNumberField({
   disabled?: boolean;
   ariaLabel?: string;
   onCommit: (v: number) => void;
+  /** Extra affordance rendered inside the field's trailing edge (the
+   *  TokenField attach button). */
+  endExtra?: React.ReactNode;
 }) {
   const [draft, setDraft] = React.useState(String(value));
   React.useEffect(() => {
     setDraft(String(value));
   }, [value]);
   const commit = () => {
-    let n = parseInt(draft, 10);
-    if (!Number.isFinite(n)) n = value;
+    // Plain number first; then maths ("16/2"); invalid → previous value.
+    const direct = /^\s*-?\d+(?:\.\d+)?\s*$/.test(draft)
+      ? Number(draft)
+      : null;
+    let n = direct ?? evalMath(draft) ?? value;
+    n = Math.round(n);
     if (min !== undefined) n = Math.max(min, n);
+    setDraft(String(n));
     onCommit(n);
   };
   return (
     // Slotted Input renders a w-full wrapper; size via this container so
-    // the four fields share the row equally.
+    // the four fields share the row equally. type="text" (not number) so
+    // maths characters are typable.
     <div className="min-w-0 flex-1">
       <Input
         size="2xs"
-        type="number"
+        type="text"
+        inputMode="decimal"
         aria-label={ariaLabel}
         title={ariaLabel}
         value={draft}
         disabled={disabled}
         startSlot={icon}
+        className={endExtra ? "pr-7" : undefined}
+        endSlot={endExtra}
         onChange={(e) => setDraft(e.currentTarget.value)}
         onBlur={commit}
         onKeyDown={(e) => {
-          if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+          if (e.key === "Enter") {
+            (e.currentTarget as HTMLInputElement).blur();
+            return;
+          }
+          // Figma physics: ↑/↓ nudge by 1 (⇧ = 10), committing live.
+          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            e.preventDefault();
+            const direct = /^\s*-?\d+(?:\.\d+)?\s*$/.test(draft)
+              ? Number(draft)
+              : null;
+            const base = direct ?? evalMath(draft) ?? value;
+            const delta =
+              (e.shiftKey ? 10 : 1) * (e.key === "ArrowUp" ? 1 : -1);
+            let next = Math.round(base + delta);
+            if (min !== undefined) next = Math.max(min, next);
+            setDraft(String(next));
+            onCommit(next);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+/** CSS length units accepted by CompactDimensionField's freeform input. */
+const CSS_LENGTH_UNITS: string[] = [
+  "px",
+  "%",
+  "rem",
+  "em",
+  "vh",
+  "vw",
+  "vmin",
+  "vmax",
+  "ch",
+  "svh",
+  "svw",
+  "dvh",
+  "dvw",
+  "lvh",
+  "lvw",
+  "pt",
+];
+
+/**
+ * CompactDimensionField — a freeform CSS-length field for detached
+ * values. Type `19` and the active unit applies (px by default, shown
+ * as the suffix); type `4rem` / `50vh` / `33%` and the unit switches
+ * live. Commits the full CSS string ("19px", "4rem") on blur / Enter;
+ * invalid input reverts.
+ */
+export function CompactDimensionField({
+  icon,
+  value,
+  disabled,
+  ariaLabel,
+  onCommit,
+  endExtra,
+}: {
+  icon?: React.ReactNode;
+  /** Full CSS length string, e.g. "19px", "4rem", "50vh". */
+  value: string;
+  disabled?: boolean;
+  ariaLabel?: string;
+  onCommit: (v: string) => void;
+  /** Extra affordance rendered inside the field after the unit (the
+   *  TokenField attach button). */
+  endExtra?: React.ReactNode;
+}) {
+  const parse = (raw: string): { n: number; unit: string } | null => {
+    const m = /^\s*(-?\d*\.?\d+)\s*([a-z%]*)\s*$/i.exec(raw);
+    if (!m) return null;
+    const n = Number(m[1]);
+    if (!Number.isFinite(n)) return null;
+    const unit = (m[2] || "px").toLowerCase();
+    if (!CSS_LENGTH_UNITS.includes(unit)) return null;
+    return { n, unit };
+  };
+  const initial = parse(value) ?? { n: 0, unit: "px" };
+  const [draft, setDraft] = React.useState(String(initial.n));
+  const [unit, setUnit] = React.useState(initial.unit);
+  React.useEffect(() => {
+    const p = parse(value) ?? { n: 0, unit: "px" };
+    setDraft(String(p.n));
+    setUnit(p.unit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  const commit = () => {
+    let p = parse(draft);
+    if (!p) {
+      // Maths fallback — "16/2", "4*4+2", optional trailing unit
+      // ("100/3px"). Failure reverts to the previous value below.
+      const m = /^(.*?)([a-z%]+)?\s*$/i.exec(draft.trim());
+      const n = evalMath(m?.[1] ?? "");
+      const unitPart = (m?.[2] ?? "").toLowerCase();
+      if (
+        n !== null &&
+        (unitPart === "" || CSS_LENGTH_UNITS.includes(unitPart))
+      ) {
+        p = { n: Math.round(n * 100) / 100, unit: unitPart || unit };
+      }
+    }
+    if (!p) {
+      const r = parse(value) ?? { n: 0, unit: "px" };
+      setDraft(String(r.n));
+      setUnit(r.unit);
+      return;
+    }
+    // A bare number/expression keeps the active unit; an explicit unit
+    // switches it.
+    const u = /[a-z%]/i.test(draft) ? p.unit : unit;
+    setUnit(u);
+    setDraft(String(p.n));
+    onCommit(`${p.n}${u}`);
+  };
+  return (
+    <div className="min-w-0 flex-1">
+      <Input
+        size="2xs"
+        type="text"
+        inputMode="decimal"
+        aria-label={ariaLabel}
+        title={ariaLabel}
+        value={draft}
+        disabled={disabled}
+        startSlot={icon}
+        className={endExtra ? "pr-10" : undefined}
+        endSlot={
+          <span className="flex items-center gap-1">
+            <span className="text-2xs">{unit}</span>
+            {endExtra}
+          </span>
+        }
+        onChange={(e) => {
+          const next = e.currentTarget.value;
+          setDraft(next);
+          // Live unit preview while typing one ("4re…" → "4rem").
+          const p = parse(next);
+          if (p && /[a-z%]/i.test(next)) setUnit(p.unit);
+        }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            (e.currentTarget as HTMLInputElement).blur();
+            return;
+          }
+          // Figma physics: ↑/↓ nudge by 1 (⇧ = 10), committing live.
+          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            e.preventDefault();
+            const p = parse(draft);
+            const base = p?.n ?? evalMath(draft) ?? parse(value)?.n ?? 0;
+            const delta =
+              (e.shiftKey ? 10 : 1) * (e.key === "ArrowUp" ? 1 : -1);
+            const next = Math.round((base + delta) * 100) / 100;
+            const u = p && /[a-z%]/i.test(draft) ? p.unit : unit;
+            setDraft(String(next));
+            setUnit(u);
+            onCommit(`${next}${u}`);
+          }
         }}
       />
     </div>
@@ -258,11 +684,15 @@ export function ColorOpacityRow({
   opacity,
   disabled,
   onChange,
+  endExtra,
 }: {
   hex: string;
   opacity: number;
   disabled?: boolean;
   onChange: (hex: string, opacity: number) => void;
+  /** Extra affordance hosted inside the opacity field after the "%"
+   *  (the TokenField attach button). */
+  endExtra?: React.ReactNode;
 }) {
   const [hexDraft, setHexDraft] = React.useState(hex);
   const [opDraft, setOpDraft] = React.useState(String(opacity));
@@ -303,13 +733,19 @@ export function ColorOpacityRow({
           }}
         />
       </div>
-      <div className="w-16 shrink-0">
+      <div className={endExtra ? "w-24 shrink-0" : "w-16 shrink-0"}>
         <Input
           size="2xs"
           type="number"
           value={opDraft}
           disabled={disabled}
-          endSlot={<span className="text-muted-foreground">%</span>}
+          className={endExtra ? "pr-10" : undefined}
+          endSlot={
+            <span className="flex items-center gap-1">
+              <span className="text-muted-foreground">%</span>
+              {endExtra}
+            </span>
+          }
           onChange={(e) => setOpDraft(e.currentTarget.value)}
           onBlur={commitOp}
           onKeyDown={(e) => {

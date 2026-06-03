@@ -13,6 +13,7 @@ export const ScreenAnimatorContract = contract({
   import: "@gradeui/ui",
   aliases: ["screen animator","camera","camera tour","director","demo","product demo","zoom pan","spotlight","ken burns","presenter"],
   composesWith: ["AppShell","ThreeScene","Card","Grid","the whole component set (it wraps a screen)"],
+  styleDefaults: {"ScreenAnimator":"gds-screen-animator"},
   props: {
   "shots": {
       schema: z.unknown().optional(),

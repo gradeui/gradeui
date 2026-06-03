@@ -13,6 +13,7 @@ export const ShaderPresetPreviewContract = contract({
   import: "@gradeui/ui",
   aliases: ["shader preview","preset preview","shader card"],
   composesWith: ["ThreeScene (internal)","ShaderPresetPicker (wraps this)"],
+  styleDefaults: {"ShaderPresetPreview":"group cursor-pointer flex flex-col gap-2"},
   props: {
   "preset": {
       schema: z.string(),

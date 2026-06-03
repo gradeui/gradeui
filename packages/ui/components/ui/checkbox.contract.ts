@@ -13,6 +13,7 @@ export const CheckboxContract = contract({
   import: "@gradeui/ui",
   aliases: ["checkbox","tickbox","tick box","check","multi-select item"],
   composesWith: ["Label (via htmlFor)","Field (label + description row)","CheckboxCard (whole-card selectable option)","Card","Form rows","Table (for row selection)"],
+  styleDefaults: {"Checkbox":"flex items-center justify-center text-current"},
   props: {
   "checked": {
       schema: z.boolean().optional(),

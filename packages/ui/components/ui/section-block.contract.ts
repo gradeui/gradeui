@@ -13,6 +13,8 @@ export const SectionBlockContract = contract({
   import: "@gradeui/ui",
   aliases: ["section","section block","hero section","marketing section","page section","content section","container section","feature section","hero","page hero","marketing hero","glass section","gradient section","mesh hero"],
   composesWith: ["Card (the most common child — especially with surface=\"glass\")","Grid (feature rows)","Stack (hero column)","MediaSurface (hero imagery)","Code (developer hero)","Carousel (logo strips)"],
+  styleDefaults: {"SectionBlock":"relative w-full py-16 md:py-24 bg-transparent"},
+  variantDefaults: {"padding":"lg","background":"transparent"},
   props: {
   "padding": {
       schema: z.enum(["none", "sm", "md", "lg", "xl"]).optional(),

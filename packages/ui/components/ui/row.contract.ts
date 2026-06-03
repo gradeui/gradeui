@@ -13,6 +13,8 @@ export const RowContract = contract({
   import: "@gradeui/ui",
   aliases: ["row","hstack","horizontal","inline","horizontal layout","hstack","h-stack","horizontal stack","lazyhstack"],
   composesWith: ["Button","Input","NavItem","Stack (can wrap a Row)","any content component"],
+  styleDefaults: {"Row":"gds-row flex flex-row gap-4 items-center justify-start"},
+  variantDefaults: {"gap":"md","align":"center","justify":"start"},
   props: {
   "gap": {
       schema: z.enum(["none", "xs", "sm", "md", "lg", "xl", "2xl"]).optional(),

@@ -116,6 +116,22 @@ export type ComputedStyleHint = {
   /** Border shorthand for the top edge (`"1px solid rgb(229 231 235)"`);
    *  width `"0px"` means no border. */
   border?: string;
+  /** Per-side effective paddings/margins (`"24px"`). These carry the
+   *  TRUE rendered value even when it comes from a component's baked-in
+   *  classes (CardContent's p-6) — the inspector ghosts them so unset
+   *  fields stop lying with "0". */
+  paddingTop?: string;
+  paddingRight?: string;
+  paddingBottom?: string;
+  paddingLeft?: string;
+  marginTop?: string;
+  marginRight?: string;
+  marginBottom?: string;
+  marginLeft?: string;
+  /** Computed flex/grid gap (`"16px"`, or `"normal"` when unset). */
+  gap?: string;
+  /** Computed font size (`"16px"`). */
+  fontSize?: string;
 };
 
 export interface InstallSelectionAgentOptions {
@@ -487,7 +503,21 @@ export function installStudioSelectionAgent(
         const radius =
           tl === tr && tr === br && br === bl ? tl : `${tl} ${tr} ${br} ${bl}`;
         const border = `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`;
-        computedStyle = { radius, boxShadow: cs.boxShadow, border };
+        computedStyle = {
+          radius,
+          boxShadow: cs.boxShadow,
+          border,
+          paddingTop: cs.paddingTop,
+          paddingRight: cs.paddingRight,
+          paddingBottom: cs.paddingBottom,
+          paddingLeft: cs.paddingLeft,
+          marginTop: cs.marginTop,
+          marginRight: cs.marginRight,
+          marginBottom: cs.marginBottom,
+          marginLeft: cs.marginLeft,
+          gap: cs.columnGap,
+          fontSize: cs.fontSize,
+        };
       }
     } catch {
       /* detached node — leave computedStyle undefined */

@@ -13,6 +13,7 @@ export const AiChatComposerContract = contract({
   import: "@gradeui/ui",
   aliases: ["chat composer","chat input","prompt composer","message input"],
   composesWith: ["AIChat (uses this internally)","Card (host above)","ScrollArea (place messages above)"],
+  styleDefaults: {"AIChatComposer":"w-full"},
   props: {
   "value": {
       schema: z.string(),

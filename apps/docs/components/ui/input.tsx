@@ -22,10 +22,12 @@ const inputVariants = cva(
       size: {
         default: "h-9 pl-3 pr-3 py-1 text-base file:text-sm md:text-sm",
         sm: "h-8 pl-2 pr-2 py-1 text-sm file:text-xs",
-        // Figma-density — tool panels (the Studio inspector).
-        xs: "h-7 pl-2 pr-2 py-0 text-xs file:text-xs",
+        // Figma-density — tool panels (the Studio inspector). shadow-none
+        // so they sit flush with SelectTrigger (no drop shadow) — every
+        // field in a dense panel should read identically.
+        xs: "h-7 pl-2 pr-2 py-0 text-xs file:text-xs shadow-none",
         // 2xs: h-6 (24px) — densest tool-panel input.
-        "2xs": "h-6 pl-2 pr-2 py-0 text-2xs file:text-2xs",
+        "2xs": "h-6 pl-2 pr-2 py-0 text-2xs file:text-2xs shadow-none",
       },
     },
     defaultVariants: { size: "default" },

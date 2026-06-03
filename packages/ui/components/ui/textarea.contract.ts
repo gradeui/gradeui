@@ -13,6 +13,8 @@ export const TextareaContract = contract({
   import: "@gradeui/ui",
   aliases: ["text area","multiline","comment box","message field","text editor","multi-line text","multiline input","multiline text field","comments box","multiline textinput"],
   composesWith: ["Label","Form","Card (in CardContent)"],
+  styleDefaults: {"Textarea":"flex w-full rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px] px-3 py-2 text-sm"},
+  variantDefaults: {"size":"default"},
   props: {
   "size": {
       schema: z.enum(["default", "sm", "xs"]).optional(),

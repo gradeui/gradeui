@@ -14,6 +14,7 @@ export const SheetContract = contract({
   aliases: ["sheet","drawer","side panel","slide-in","nav drawer","mobile drawer","slide-over","action sheet","modal sheet","bottom sheet","side sheet","react native modal sheet","bottom-sheet","ios action sheet","inspector panel","glass sheet","frosted drawer"],
   subcomponents: ["SheetTrigger","SheetContent","SheetHeader","SheetTitle","SheetDescription","SheetFooter","SheetClose"],
   composesWith: ["Form controls (an inline edit sheet)","Button (trigger + close)","AppShellNav (mobile-only swap)","Code (changelog drawers)","MediaSurface (image-detail sheets)"],
+  styleDefaults: {"SheetOverlay":"fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0","SheetContent":"fixed z-50 gap-4 p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500 inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm","SheetHeader":"flex flex-col space-y-2 text-center sm:text-left","SheetFooter":"flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2","SheetTitle":"text-lg font-semibold text-foreground","SheetDescription":"text-sm text-muted-foreground"},
   props: {
   "open": {
       schema: z.unknown().optional(),

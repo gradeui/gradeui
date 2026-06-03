@@ -41,7 +41,9 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Maximize,
   Maximize2,
+  Minimize,
   Minimize2,
   Minus,
   MoveHorizontal,
@@ -55,9 +57,14 @@ import {
   Settings2,
   Grip,
   Square,
+  Scan,
+  Blend,
+  Droplet,
+  RotateCcw,
 } from "lucide-react";
 import {
   getComponentContract,
+  listContractedComponents,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -86,8 +93,18 @@ import {
   TokenField,
   ColorOpacityRow,
   CompactNumberField,
+  CompactDimensionField,
+  IconTip,
+  evalMath,
   type TokenOption,
 } from "./token-field";
+// Scoped token lists per property area (Figma's "variables scoped to
+// corner radius" model). Tailwind-backed today, backend-agnostic shape.
+import {
+  getAreaTokens,
+  RADIUS_PX,
+  FONT_SIZE_PX,
+} from "@/lib/token-registry";
 import type {
   SelectionChainSegment,
   StudioSelection,
@@ -101,6 +118,8 @@ import {
   readComponentProp,
   updateComponentProp,
   updateElementText,
+  readInlineStyle,
+  setInlineStyle,
   type PropValue,
 } from "@/lib/studio-source-mutator";
 import {
@@ -111,9 +130,7 @@ import {
 import {
   FONT_SIZE_SCALE,
   FONT_WEIGHT_SCALE,
-  GAP_SCALE,
   GRID_COLS_SCALE,
-  OPACITY_SCALE,
   RADIUS_SCALE,
   parseFontSize,
   parseFontWeight,
@@ -151,16 +168,16 @@ import {
   parseBorderList,
   serializeBorderList,
   parseBorderStyle,
-  SHADOW_SCALE,
   parseShadow,
   setShadow,
-  parseShadowCustom,
-  setShadowCustom,
   DEFAULT_CUSTOM_SHADOW,
+  customShadowToCss,
+  cssToCustomShadow,
+  hexOpacityToCssColor,
+  cssColorToHexOpacity,
   BLEND_MODES,
   parseBlend,
   setBlend,
-  FILL_COLOR_TOKENS,
   parseFill,
   setFill,
   type FillColorToken,
@@ -792,6 +809,134 @@ export function SelectionInspector({
             const perItem =
               (design === "content" || design === "structured") &&
               Boolean(selection?.instanceId);
+            // A contract "shortcut" gap resolves to the SAME TokenField
+            // as every other property — the contract's enum values ARE
+            // the scoped tokens; detaching writes a raw CSS gap inline
+            // (renders in Fast Frame) and clears the prop.
+            if (
+              prop.name.toLowerCase() === "gap" &&
+              prop.kind === "enum" &&
+              selection?.sourceId &&
+              appSource
+            ) {
+              const targetName = componentName ?? selection.tag;
+              const read = readComponentProp(
+                appSource,
+                targetName,
+                "gap",
+                selection.sourceId,
+              );
+              const currentStr =
+                read?.kind === "string"
+                  ? read.value
+                  : read?.kind === "expression"
+                    ? stripExprQuotes(read.raw)
+                    : undefined;
+              const inlineGap =
+                readInlineStyle(appSource, targetName, selection.sourceId)?.[
+                  "gap"
+                ] ?? null;
+              const gapTokens: TokenOption[] = (prop.enum ?? []).map((v) => ({
+                value: String(v),
+                label: String(v),
+              }));
+              const applyBoth = (
+                mutate: (src: string) => string,
+                lbl: string,
+              ) => {
+                const next = mutate(appSource);
+                if (next !== appSource) onSourceChange(next, lbl);
+              };
+              return (
+                <TokenField
+                  key={`${prop.name}::tokenfield`}
+                  kind="gap"
+                  label="Gap"
+                  bound={inlineGap === null}
+                  token={currentStr ?? null}
+                  tokens={gapTokens}
+                  placeholder="Default"
+                  disabled={!componentPresent}
+                  onPickToken={(t) =>
+                    applyBoth((src) => {
+                      const s1 = updateComponentProp(
+                        src,
+                        targetName,
+                        "gap",
+                        t,
+                        selection.sourceId,
+                      );
+                      return setInlineStyle(
+                        s1,
+                        targetName,
+                        { gap: null },
+                        selection.sourceId,
+                      );
+                    }, "Set gap")
+                  }
+                  currentRaw={inlineGap ?? undefined}
+                  onDetach={() =>
+                    applyBoth((src) => {
+                      const s1 = updateComponentProp(
+                        src,
+                        targetName,
+                        "gap",
+                        null,
+                        selection.sourceId,
+                      );
+                      return setInlineStyle(
+                        s1,
+                        targetName,
+                        { gap: "16px" },
+                        selection.sourceId,
+                      );
+                    }, "Set custom gap")
+                  }
+                  onRebind={() =>
+                    applyBoth((src) => {
+                      const s1 = updateComponentProp(
+                        src,
+                        targetName,
+                        "gap",
+                        prop.defaultValue ?? prop.enum?.[0] ?? null,
+                        selection.sourceId,
+                      );
+                      return setInlineStyle(
+                        s1,
+                        targetName,
+                        { gap: null },
+                        selection.sourceId,
+                      );
+                    }, "Re-bind gap to token")
+                  }
+                  renderRaw={(attach) => (
+                    <CompactDimensionField
+                      ariaLabel="Gap"
+                      value={inlineGap ?? "16px"}
+                      endExtra={attach}
+                      disabled={!componentPresent}
+                      onCommit={(v) =>
+                        applyBoth((src) => {
+                          const s1 = updateComponentProp(
+                            src,
+                            targetName,
+                            "gap",
+                            null,
+                            selection.sourceId,
+                          );
+                          return setInlineStyle(
+                            s1,
+                            targetName,
+                            { gap: v },
+                            selection.sourceId,
+                          );
+                        }, "Set custom gap")
+                      }
+                    />
+                  )}
+                />
+              );
+            }
             return (
               <PropControl
                 key={`${prop.name}::${perItem ? selection?.instanceId : `src#${selection?.sourceId ?? "?"}`}`}
@@ -818,6 +963,15 @@ export function SelectionInspector({
               onSourceChange(updated, `Set className`);
             }
           }}
+          onApplySource={(mutate, label) => {
+            if (appSource == null) return;
+            const next = mutate(appSource);
+            if (next !== appSource) onSourceChange(next, label);
+          }}
+          computedStyle={selection?.computedStyle}
+          defaultClasses={getContractDefaultClasses(
+            componentName ?? selection.tag,
+          )}
         />
       )}
 
@@ -839,7 +993,15 @@ export function SelectionInspector({
               settableProps.map((p) => p.name.toLowerCase()),
             ),
             onChangeClassName: applyClassName,
+            onApplySource: (mutate, label) => {
+              if (appSource == null) return;
+              const next = mutate(appSource);
+              if (next !== appSource) onSourceChange(next, label);
+            },
             computedStyle: selection?.computedStyle,
+            defaultClasses: getContractDefaultClasses(
+              componentName ?? selection.tag,
+            ),
           };
           return (
             <>
@@ -879,6 +1041,11 @@ export function SelectionInspector({
             if (updated !== appSource) {
               onSourceChange(updated, `Set fill`);
             }
+          }}
+          onApplySource={(mutate, label) => {
+            if (appSource == null) return;
+            const next = mutate(appSource);
+            if (next !== appSource) onSourceChange(next, label);
           }}
         />
       )}
@@ -931,6 +1098,11 @@ export function SelectionInspector({
           }
           computedStyle={selection?.computedStyle}
           onChangeClassName={(next) => applyClassName(next, "Set shadow")}
+          onApplySource={(mutate, label) => {
+            if (appSource == null) return;
+            const next = mutate(appSource);
+            if (next !== appSource) onSourceChange(next, label);
+          }}
         />
       )}
 
@@ -1838,19 +2010,22 @@ function AddableSection({
     <section className="border-t border-border/60 first:border-t-0">
       <div
         className={cn(
-          "flex items-center gap-1.5 px-3 pt-2.5",
-          (!empty && children) || (empty && emptyHint) ? "pb-1.5" : "pb-2.5",
+          "flex items-center gap-2 px-3 pt-2.5",
+          !empty && children ? "pb-1.5" : "pb-2.5",
         )}
       >
         <span
           className={cn(
-            "text-xs font-medium",
+            "shrink-0 text-xs font-medium",
             empty ? "text-muted-foreground" : "text-foreground",
           )}
         >
           {title}
         </span>
-        <div className="ml-auto flex items-center gap-0.5">
+        {/* Inline next to the title — a below-the-row caption costs a
+            whole line in an otherwise-collapsed section. */}
+        {empty && emptyHint ? <DefaultCaption value={emptyHint} /> : null}
+        <div className="ml-auto flex shrink-0 items-center gap-0.5">
           {headerExtra}
           <button
             type="button"
@@ -1863,11 +2038,6 @@ function AddableSection({
           </button>
         </div>
       </div>
-      {empty && emptyHint ? (
-        <div className="px-3 pb-2.5">
-          <DefaultCaption value={emptyHint} />
-        </div>
-      ) : null}
       {!empty && children ? (
         <div className="space-y-2 px-3 pb-3">{children}</div>
       ) : null}
@@ -1921,6 +2091,9 @@ function LayoutGroup({
   disabled,
   manifestPropNames,
   onChangeClassName,
+  onApplySource,
+  computedStyle,
+  defaultClasses,
   leadingRows,
 }: {
   source: string | null;
@@ -1940,6 +2113,16 @@ function LayoutGroup({
   /** Receives the new className string; the parent splices it into
    *  the JSX via `updateComponentProp(..., "className", next, sourceId)`. */
   onChangeClassName: (nextClassName: string) => void;
+  /** One-undo-step source transform for TokenField writes (className +
+   *  inline style together) — see StyleGroupProps.onApplySource. */
+  onApplySource?: (mutate: (src: string) => string, label: string) => void;
+  /** Live computed style of the selected element — ghosts the TRUE
+   *  effective values (a CardContent's baked p-6 → "24") into unset
+   *  spacing fields instead of a lying "0". */
+  computedStyle?: StudioSelection["computedStyle"];
+  /** Contract-shipped baked classes (styleDefaults) — parsed for REAL
+   *  default chips on unset fields. */
+  defaultClasses?: string | null;
   /** Contract layout props (gap / align / justify …) rendered by the
    *  parent. They sit at the TOP of the Layout section, above the
    *  Tailwind padding/margin rows. Passed in (rather than the parent
@@ -1986,15 +2169,99 @@ function LayoutGroup({
   const marginSides = parseMarginSides(currentClassName);
   const gap = parseGap(currentClassName);
   const gridCols = parseGridCols(currentClassName);
+  // Detached gap rides the inline `style` attr (Fast Frame — the default
+  // renderer — can't render runtime-minted arbitrary classes).
+  const inlineStyles = source
+    ? readInlineStyle(source, componentName, sourceId)
+    : {};
+  // Full CSS length string ("13px", "1rem") — freeform units.
+  const customGapDim = inlineStyles?.["gap"] ?? null;
+  // Contract-shipped baked defaults, parsed once for ghost chips —
+  // REAL classes from the component source (Grid's gap-4, a Card
+  // part's p-6), never reverse-derived from computed px.
+  const defaultPaddingSides = parsePaddingSides(defaultClasses ?? null);
+  const defaultMarginSides = parseMarginSides(defaultClasses ?? null);
+  const defaultGap = parseGap(defaultClasses ?? null);
+  const writeGapToken = (v: number | null, label = "Set gap") =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const nextCn = setGap(cnNow, v);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(src2, componentName, { gap: null }, sourceId);
+    }, label);
+  const writeGapDim = (dim: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const strippedCn = setGap(cnNow, null);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        strippedCn === "" ? null : strippedCn,
+        sourceId,
+      );
+      return setInlineStyle(src2, componentName, { gap: dim }, sourceId);
+    }, "Set custom gap");
 
   // True when ANY structured control in this group has captured a
-  // token — drives the small "Overrides theme defaults" hint next
-  // to the group title.
+  // token OR a detached inline value — drives the "Custom" badge +
+  // reset affordance next to the group title.
+  const anyInlineLayout = [
+    "paddingTop",
+    "paddingRight",
+    "paddingBottom",
+    "paddingLeft",
+    "marginTop",
+    "marginRight",
+    "marginBottom",
+    "marginLeft",
+    "gap",
+  ].some((k) => inlineStyles?.[k] != null);
   const anyOverride =
     hasAnySide(paddingSides) ||
     hasAnySide(marginSides) ||
     gap !== null ||
-    gridCols !== null;
+    gridCols !== null ||
+    anyInlineLayout;
+  // Reset — strip every layout token AND inline value in one undo step,
+  // restoring the component/theme defaults.
+  const resetLayout = () =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      let cn1 = setPaddingSides(cnNow, { t: null, r: null, b: null, l: null });
+      cn1 = setMarginSides(cn1, { t: null, r: null, b: null, l: null });
+      cn1 = setGap(cn1, null);
+      cn1 = setGridCols(cn1, null);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        cn1 === "" ? null : cn1,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        {
+          paddingTop: null,
+          paddingRight: null,
+          paddingBottom: null,
+          paddingLeft: null,
+          marginTop: null,
+          marginRight: null,
+          marginBottom: null,
+          marginLeft: null,
+          gap: null,
+        },
+        sourceId,
+      );
+    }, "Reset layout to defaults");
 
   // Self-hide when nothing applies — neither contract leading rows
   // (gap/align/justify from the parent) nor any Tailwind row.
@@ -2008,11 +2275,26 @@ function LayoutGroup({
       title="Layout"
       hint={
         anyOverride ? (
-          <span
-            className="text-2xs text-warning-deep leading-none"
-            title="Structured values below override the component's theme defaults. Resetting them all to None restores theme behavior."
-          >
-            Overrides theme defaults
+          <span className="flex items-center gap-1">
+            {/* Badge (token-lozenge styling, warning tone) instead of a
+                sentence — plus a one-click reset back to defaults. */}
+            <span className="rounded-[4px] border border-warning-deep/30 bg-warning-soft px-1 text-2xs leading-4 text-warning-deep">
+              Custom
+            </span>
+            <IconTip label="Reset to defaults — clears this section's overrides">
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resetLayout();
+                }}
+                aria-label="Reset layout to defaults"
+                className="inline-flex h-4 w-4 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-3"
+              >
+                <RotateCcw />
+              </button>
+            </IconTip>
           </span>
         ) : null
       }
@@ -2023,34 +2305,85 @@ function LayoutGroup({
         <PerSideRow
           id="spacing-padding"
           label="Padding"
+          area="padding"
           value={paddingSides}
+          source={source}
+          componentName={componentName}
+          sourceId={sourceId}
           disabled={disabled}
-          onValueChange={(next) =>
-            onChangeClassName(setPaddingSides(currentClassName, next))
-          }
+          onApplySource={onApplySource}
+          defaultValue={defaultPaddingSides}
+          computedSides={{
+            t: computedStyle?.paddingTop,
+            r: computedStyle?.paddingRight,
+            b: computedStyle?.paddingBottom,
+            l: computedStyle?.paddingLeft,
+          }}
         />
       )}
       {showMargin && (
         <PerSideRow
           id="spacing-margin"
           label="Margin"
+          area="margin"
           value={marginSides}
+          source={source}
+          componentName={componentName}
+          sourceId={sourceId}
           disabled={disabled}
-          onValueChange={(next) =>
-            onChangeClassName(setMarginSides(currentClassName, next))
-          }
+          onApplySource={onApplySource}
+          defaultValue={defaultMarginSides}
+          computedSides={{
+            t: computedStyle?.marginTop,
+            r: computedStyle?.marginRight,
+            b: computedStyle?.marginBottom,
+            l: computedStyle?.marginLeft,
+          }}
         />
       )}
       {showGap && (
-        <NumericSelectRow
-          id="spacing-gap"
+        <TokenField
+          kind="gap"
           label="Gap"
-          tokenPrefix="gap"
-          scale={GAP_SCALE}
-          value={gap}
+          labelCaption={(() => {
+            if (gap !== null || customGapDim !== null) return undefined;
+            const g = computedStyle?.gap;
+            if (!g || g === "normal" || parseFloat(g) === 0) return undefined;
+            return <DefaultCaption value={g} />;
+          })()}
+          bound={customGapDim === null}
+          token={gap === null ? null : String(gap)}
+          tokens={getAreaTokens("gap").map((t) => ({
+            value: t.value,
+            label: t.label,
+            hint: t.hint,
+          }))}
+          ghostToken={
+            gap === null && customGapDim === null && defaultGap !== null
+              ? { label: `gap-${defaultGap}`, hint: `${defaultGap * 4}px` }
+              : undefined
+          }
+          placeholder="0"
+          placeholderHint="0px"
+          unitSuffix="px"
           disabled={disabled}
-          unit={(n) => `${n * 4}px`}
-          onValueChange={(v) => onChangeClassName(setGap(currentClassName, v))}
+          onPickToken={(t) =>
+            writeGapToken(t === null ? null : Number(t))
+          }
+          currentRaw={customGapDim ?? undefined}
+          onDetach={() => writeGapDim(`${gap !== null ? gap * 4 : 12}px`)}
+          onRebind={() => writeGapToken(4, "Re-bind gap to token")}
+          renderRaw={(attach) => (
+            <div className="flex items-center gap-1">
+              <CompactDimensionField
+                ariaLabel="Gap"
+                value={customGapDim ?? "12px"}
+                disabled={disabled}
+                onCommit={(v) => writeGapDim(v)}
+                endExtra={attach}
+              />
+            </div>
+          )}
         />
       )}
       {showGridCols && (
@@ -2079,11 +2412,21 @@ interface StyleGroupProps {
   disabled?: boolean;
   manifestPropNames?: Set<string>;
   onChangeClassName: (nextClassName: string) => void;
+  /** Apply an arbitrary source transformation in ONE undo step — used by
+   *  TokenField sections to write className (token) + inline style
+   *  (detached) together. Detached values ride inline style because
+   *  Fast Frame — the DEFAULT renderer — compiles CSS at build time and
+   *  can't see runtime-minted arbitrary classes. */
+  onApplySource?: (mutate: (src: string) => string, label: string) => void;
   /** Effective computed style of the selected element (from the selection
    *  payload). Lets a group show the component-baked default (e.g. a
    *  Card's `rounded-xl` / `shadow`) when the JSX className carries no
    *  explicit token, instead of reading as "none". */
   computedStyle?: StudioSelection["computedStyle"];
+  /** The component's baked-in classes from its CONTRACT (styleDefaults,
+   *  extracted from source at generation time). Parsed with the same
+   *  Tailwind parsers to ghost REAL default chips on unset fields. */
+  defaultClasses?: string | null;
 }
 
 /** Format a computed value for the muted "Default ·" caption — drops the
@@ -2111,12 +2454,14 @@ function defaultHint(
   return b;
 }
 
-/** The muted caption itself — one consistent treatment across groups. */
+/** The muted caption itself — one consistent treatment across groups.
+ *  Inline (a span) so it sits NEXT TO the field label rather than
+ *  costing a line below the field. Debug aid; slated for removal. */
 function DefaultCaption({ value }: { value: string }) {
   return (
-    <p className="px-0.5 text-2xs text-muted-foreground/70">
+    <span className="min-w-0 truncate text-2xs font-normal leading-none text-muted-foreground/70">
       Default · <span className="font-mono">{value}</span>
-    </p>
+    </span>
   );
 }
 
@@ -2129,6 +2474,60 @@ function readClassName(
   if (!source) return null;
   const read = readComponentProp(source, componentName, "className", sourceId);
   return read?.kind === "string" ? read.value : null;
+}
+
+// ─── Contract style defaults ─────────────────────────────────────────
+// Baked-in classes per component/part ("CardContent" → "p-6 pt-0"),
+// shipped on contracts by generate-contracts.mjs. Lazily indexed across
+// every contract so PART names resolve through their family contract
+// (CardContent lives on the Card contract's styleDefaults map). These
+// are REAL classes from the component source — legitimate to render as
+// (dulled) token chips, unlike values reverse-derived from computed px.
+let contractDefaultsIndex: Record<string, string> | null = null;
+function getContractDefaultClasses(
+  name: string | null | undefined,
+): string | null {
+  if (!name) return null;
+  if (contractDefaultsIndex === null) {
+    contractDefaultsIndex = {};
+    for (const n of listContractedComponents()) {
+      // Cast: dist types may predate the styleDefaults field until the
+      // package is rebuilt; the data rides through regardless.
+      const c = getComponentContract(n) as {
+        styleDefaults?: Record<string, string>;
+      } | null;
+      if (!c?.styleDefaults) continue;
+      for (const [part, classes] of Object.entries(c.styleDefaults)) {
+        contractDefaultsIndex[part] = classes;
+      }
+    }
+  }
+  return contractDefaultsIndex[name] ?? null;
+}
+
+/** The contract's extracted cva defaultVariants for a component
+ *  ({ variant: "default", size: "md" }). Lets unset enum props ghost
+ *  the REAL resolved value ("md") instead of a meaningless "(default)". */
+function getContractVariantDefault(
+  componentName: string | null | undefined,
+  propName: string,
+): string | null {
+  if (!componentName) return null;
+  // Cast: dist types may predate the variantDefaults field until the
+  // package is rebuilt; the data rides through regardless.
+  const c = getComponentContract(componentName) as {
+    variantDefaults?: Record<string, string>;
+  } | null;
+  return c?.variantDefaults?.[propName] ?? null;
+}
+
+/** "24px" → "24" for ghost placeholders (bare-number convention).
+ *  Non-px values (normal, auto, %) → undefined so callers fall back. */
+function pxGhost(v?: string): string | undefined {
+  if (!v) return undefined;
+  const m = /^(-?\d*\.?\d+)px$/.exec(v.trim());
+  if (!m) return undefined;
+  return String(Math.round(parseFloat(m[1]) * 100) / 100);
 }
 
 const ownsAny = (names: Set<string> | undefined, aliases: string[]) =>
@@ -2146,6 +2545,9 @@ function TypographyGroup({
   disabled,
   manifestPropNames,
   onChangeClassName,
+  onApplySource,
+  computedStyle,
+  defaultClasses,
 }: StyleGroupProps) {
   const caps = getSpacingCapabilities({ tag, componentName });
   const showFontSize =
@@ -2158,36 +2560,93 @@ function TypographyGroup({
   const cn0 = readClassName(source, componentName, sourceId);
   const fontSize = parseFontSize(cn0);
   const fontWeight = parseFontWeight(cn0);
+  // Detached font size rides inline style (Fast Frame — see ShadowGroup).
+  const inline = source
+    ? readInlineStyle(source, componentName, sourceId)
+    : {};
+  const customFontSize = inline?.["fontSize"] ?? null;
+  const seedFont = `${FONT_SIZE_PX[fontSize ?? "base"] ?? "16"}px`;
+  // Contract-shipped baked size (CardDescription's text-sm) → dulled chip.
+  const defaultFontSize = parseFontSize(defaultClasses ?? null);
+  const writeSizeToken = (v: FontSizeValue | null, lbl: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const nextCn = setFontSize(cnNow, v);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(src2, componentName, { fontSize: null }, sourceId);
+    }, lbl);
+  const writeSizeDim = (dimV: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const strippedCn = setFontSize(cnNow, null);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        strippedCn === "" ? null : strippedCn,
+        sourceId,
+      );
+      return setInlineStyle(src2, componentName, { fontSize: dimV }, sourceId);
+    }, "Set custom font size");
 
   return (
     <CollapsibleSection title="Typography">
       {showFontSize && (
-        <div className="space-y-1">
-          <Label htmlFor="type-font-size" className={FIELD_LABEL}>
-            Font size
-          </Label>
-          <Select
-            value={fontSize ?? "inherit"}
-            onValueChange={(next) =>
-              onChangeClassName(
-                setFontSize(cn0, next === "inherit" ? null : (next as FontSizeValue)),
-              )
-            }
-            disabled={disabled}
-          >
-            <SelectTrigger id="type-font-size" size="2xs" className="w-full">
-              <SelectValue placeholder="Inherit" />
-            </SelectTrigger>
-            <SelectContent size="2xs">
-              <SelectItem value="inherit">Inherit</SelectItem>
-              {FONT_SIZE_SCALE.map((s) => (
-                <SelectItem key={s} value={s}>
-                  text-{s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <TokenField
+          kind="font size"
+          label="Font size"
+          labelCaption={
+            fontSize === null &&
+            customFontSize === null &&
+            computedStyle?.fontSize ? (
+              <DefaultCaption value={computedStyle.fontSize} />
+            ) : undefined
+          }
+          bound={customFontSize === null}
+          token={fontSize ?? null}
+          tokens={getAreaTokens("fontSize").map((t) => ({
+            value: t.value,
+            label: t.label,
+            hint: t.hint,
+          }))}
+          ghostToken={
+            fontSize === null &&
+            customFontSize === null &&
+            defaultFontSize !== null
+              ? {
+                  label: `text-${defaultFontSize}`,
+                  hint: FONT_SIZE_PX[defaultFontSize],
+                }
+              : undefined
+          }
+          placeholder="Inherit"
+          unitSuffix="px"
+          disabled={disabled}
+          onPickToken={(t) =>
+            writeSizeToken(
+              t === null ? null : (t as FontSizeValue),
+              "Set font size",
+            )
+          }
+          currentRaw={customFontSize ?? undefined}
+          onDetach={() => writeSizeDim(seedFont)}
+          onRebind={() => writeSizeToken("base", "Re-bind font size to token")}
+          renderRaw={(attach) => (
+            <CompactDimensionField
+              ariaLabel="Font size"
+              value={customFontSize ?? seedFont}
+              disabled={disabled}
+              onCommit={(v) => writeSizeDim(v)}
+              endExtra={attach}
+            />
+          )}
+        />
       )}
       {showFontWeight && (
         <div className="space-y-1">
@@ -2236,6 +2695,7 @@ function BlendingGroup({
   disabled,
   manifestPropNames,
   onChangeClassName,
+  onApplySource,
 }: StyleGroupProps) {
   const caps = getSpacingCapabilities({ tag, componentName });
   if (!caps.opacity || ownsAny(manifestPropNames, ["opacity"])) return null;
@@ -2243,30 +2703,116 @@ function BlendingGroup({
   const cn0 = readClassName(source, componentName, sourceId);
   const opacity = parseOpacity(cn0);
   const blend = parseBlend(cn0);
+  // Detached opacity rides the inline `style` attr (Fast Frame — see
+  // ShadowGroup). Stored as a 0–1 CSS value; surfaced as 0–100 %.
+  const inline = source
+    ? readInlineStyle(source, componentName, sourceId)
+    : {};
+  const customRaw = inline?.["opacity"];
+  const customParsed = customRaw ? Math.round(parseFloat(customRaw) * 100) : NaN;
+  const customPct = Number.isFinite(customParsed) ? customParsed : null;
+  const bound = customPct === null;
+
+  const writeToken = (v: number | null, label: string) =>
+    onApplySource?.((src) => {
+      const cn = readClassName(src, componentName, sourceId);
+      const nextCn = setOpacity(cn, v);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(src2, componentName, { opacity: null }, sourceId);
+    }, label);
+  const writeCustomPct = (pct: number) =>
+    onApplySource?.((src) => {
+      const cn = readClassName(src, componentName, sourceId);
+      const strippedCn = setOpacity(cn, null);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        strippedCn === "" ? null : strippedCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        { opacity: String(Math.max(0, Math.min(100, pct)) / 100) },
+        sourceId,
+      );
+    }, "Set custom opacity");
 
   return (
     <CollapsibleSection title="Blending">
       <div className="grid grid-cols-2 gap-1.5">
-        <NumericSelectRow
-          id="blending-opacity"
+        <TokenField
+          kind="opacity"
           label="Opacity"
-          tokenPrefix="opacity"
-          scale={OPACITY_SCALE}
-          value={opacity}
+          triggerIcon={
+            <IconTip label="Opacity">
+              <span className="flex items-center">
+                <Blend aria-hidden />
+              </span>
+            </IconTip>
+          }
+          bound={bound}
+          token={opacity === null ? null : String(opacity)}
+          tokens={getAreaTokens("opacity").map((t) => ({
+            value: t.value,
+            label: t.label,
+            hint: t.hint,
+          }))}
+          placeholder="100"
+          unitSuffix="%"
           disabled={disabled}
-          noneLabel="100%"
-          onValueChange={(v) => onChangeClassName(setOpacity(cn0, v))}
+          onPickToken={(t) =>
+            writeToken(t === null ? null : Number(t), "Set opacity")
+          }
+          currentRaw={customPct != null ? String(customPct) : undefined}
+          onDetach={() => writeCustomPct(opacity ?? 100)}
+          onRebind={() => writeToken(null, "Re-bind opacity to token")}
+          renderRaw={(attach) => (
+            <div className="flex items-center gap-1">
+              <CompactNumberField
+                ariaLabel="Opacity percent"
+                icon={<span className="text-2xs">%</span>}
+                value={customPct ?? 100}
+                min={0}
+                disabled={disabled}
+                onCommit={(v) => writeCustomPct(v)}
+                endExtra={attach}
+              />
+            </div>
+          )}
         />
         <div className="min-w-0 space-y-1">
-          <Label htmlFor="blending-mode" className={FIELD_LABEL}>
-            Blend mode
-          </Label>
+          {/* min-h-4 + leading-none mirrors TokenField's label row so the
+              two Blending columns align. */}
+          <div className="flex min-h-4 items-center">
+            <Label
+              htmlFor="blending-mode"
+              className={cn(FIELD_LABEL, "leading-none")}
+            >
+              Blend mode
+            </Label>
+          </div>
           <Select
             value={blend}
             onValueChange={(v) => onChangeClassName(setBlend(cn0, v as BlendMode))}
             disabled={disabled}
           >
-            <SelectTrigger id="blending-mode" size="2xs" className="w-full">
+            <SelectTrigger
+              id="blending-mode"
+              size="2xs"
+              className="w-full"
+              title="Blend mode"
+              // Paint-drop stand-in for per-mode glyphs (Paper has one
+              // icon per blend mode — swap in a set later if wanted).
+              startSlot={<Droplet aria-hidden />}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent size="2xs">
@@ -2334,68 +2880,265 @@ function RadiusGroup({
   sourceId,
   disabled,
   manifestPropNames,
-  onChangeClassName,
+  onApplySource,
   computedStyle,
+  defaultClasses,
 }: StyleGroupProps) {
   const caps = getSpacingCapabilities({ tag, componentName });
-  const corners = parseRadiusCorners(
-    readClassName(source, componentName, sourceId),
-  );
+  const cn0 = readClassName(source, componentName, sourceId);
+  const corners = parseRadiusCorners(cn0);
+  // Detached radius rides the inline `style` attr — Fast Frame (the
+  // default renderer) can't render runtime-minted arbitrary classes.
+  const inline = source
+    ? readInlineStyle(source, componentName, sourceId)
+    : {};
+  // Full CSS length string ("19px", "4rem", "50%") — freeform units.
+  const customDim = inline?.["borderRadius"] ?? null;
   const uniform = cornersUniform(corners) || !hasAnyCorner(corners);
   const [userMode, setUserMode] = useState<"all" | "corners" | null>(null);
 
   if (!caps.radius || ownsAny(manifestPropNames, ["rounded", "radius"]))
     return null;
 
+  // Bound = on the keyword token scale; detached = a custom CSS length.
+  const bound = customDim === null;
+  // A custom radius is all-corners by definition — force combined mode
+  // while detached (the per-corner selects only speak tokens). While
+  // corners DIFFER, per-corner mode is forced and the collapse toggle
+  // disabled: a combined field can't truthfully show mixed values, and
+  // collapsing anyway would either lie or wipe them (Paper does the
+  // wipe — destructive). Make the corners equal and the toggle unlocks.
+  const mode: "all" | "corners" = !bound
+    ? "all"
+    : uniform
+      ? (userMode ?? "all")
+      : "corners";
+
   // No explicit rounded-* token in the JSX → show the component's baked-in
   // radius (read off the live element) so the control doesn't read as "none".
-  const radiusHint = !hasAnyCorner(corners)
-    ? defaultHint("radius", computedStyle)
-    : null;
+  const radiusHint =
+    bound && !hasAnyCorner(corners)
+      ? defaultHint("radius", computedStyle)
+      : null;
 
-  const cn0 = readClassName(source, componentName, sourceId);
-  const mode: "all" | "corners" = userMode ?? (uniform ? "all" : "corners");
-
+  // Inline-style keys for per-corner detached values.
+  const CORNER_STYLE_KEYS: Record<keyof CornerValues, string> = {
+    tl: "borderTopLeftRadius",
+    tr: "borderTopRightRadius",
+    br: "borderBottomRightRadius",
+    bl: "borderBottomLeftRadius",
+  };
+  // Bind ALL corners: write token classes, clear every inline radius —
+  // one undo step, never both carriers at once.
+  const writeCorners = (next: CornerValues, label: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const nextCn = setRadiusCorners(cnNow, next);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        {
+          borderRadius: null,
+          borderTopLeftRadius: null,
+          borderTopRightRadius: null,
+          borderBottomRightRadius: null,
+          borderBottomLeftRadius: null,
+        },
+        sourceId,
+      );
+    }, label);
   const setAll = (v: RadiusValue | null) =>
-    onChangeClassName(setRadiusCorners(cn0, { tl: v, tr: v, br: v, bl: v }));
+    writeCorners({ tl: v, tr: v, br: v, bl: v }, "Set corner radius");
+  // Bind ONE corner: token class for that corner, clearing only ITS
+  // inline value (sibling corners may stay detached).
   const setCorner = (corner: keyof CornerValues, v: RadiusValue | null) =>
-    onChangeClassName(setRadiusCorners(cn0, { ...corners, [corner]: v }));
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const nextCn = setRadiusCorners(cnNow, { ...corners, [corner]: v });
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        { borderRadius: null, [CORNER_STYLE_KEYS[corner]]: null },
+        sourceId,
+      );
+    }, "Set corner radius");
+  // Detach ONE corner to a raw CSS length.
+  const writeCornerDim = (corner: keyof CornerValues, dim: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const nextCn = setRadiusCorners(cnNow, { ...corners, [corner]: null });
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        { borderRadius: null, [CORNER_STYLE_KEYS[corner]]: dim },
+        sourceId,
+      );
+    }, "Set custom corner radius");
+  // Detach: strip radius tokens from className, write a raw CSS length.
+  const writeCustomDim = (dim: string) =>
+    onApplySource?.((src) => {
+      const cn = readClassName(src, componentName, sourceId);
+      const strippedCn = setRadiusCorners(cn, {
+        tl: null,
+        tr: null,
+        br: null,
+        bl: null,
+      });
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        strippedCn === "" ? null : strippedCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        { borderRadius: dim },
+        sourceId,
+      );
+    }, "Set custom radius");
 
   // Combined value = the shared corner value when uniform, else null.
   const combined = uniform && hasAnyCorner(corners) ? corners.tl : null;
 
+  // Radius tokens — scoped from the registry (Figma's "variables scoped
+  // to corner radius"), with the resolved px readout per row.
+  const tokens: TokenOption[] = getAreaTokens("radius").map((t) => ({
+    value: t.value === "" ? "__default" : t.value,
+    label: t.label,
+    hint: t.hint,
+  }));
+  const tokenValue =
+    combined === null ? null : combined === "" ? "__default" : combined;
+
+  // Seed the detached value from the bound token's resolved value (or 8px).
+  const seedPx =
+    combined !== null ? parseInt(RADIUS_PX[combined] ?? "8", 10) || 8 : 8;
+  const seedDim = `${seedPx}px`;
+  // Contract-shipped baked radius (Card's rounded-xl) → dulled chip.
+  const defaultRadius = parseRadius(defaultClasses ?? null);
+
+  const modeToggle = (
+    <IconTip
+      label={
+        !bound
+          ? "Custom radius applies to all corners — re-bind to a token to edit corners individually"
+          : !uniform
+            ? "Corners differ — make them equal to set all corners together"
+            : mode === "all"
+              ? "Edit each corner"
+              : "Set all corners together"
+      }
+    >
+      {/* Ghost (no border/bg) — expand toggles read as quiet chrome. */}
+      <button
+        type="button"
+        onClick={() => setUserMode(mode === "all" ? "corners" : "all")}
+        disabled={disabled || !bound || !uniform}
+        aria-label={
+          mode === "all" ? "Edit each corner" : "Set all corners together"
+        }
+        className={cn(
+          "inline-flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-3",
+          mode === "corners" && "bg-muted text-foreground",
+        )}
+      >
+        {/* Maximize/Minimize (the FOUR-CORNERS glyphs) — radius is about
+            corners, where the diagonal-arrow Maximize2 reads as resize. */}
+        {mode === "all" ? <Maximize /> : <Minimize />}
+      </button>
+    </IconTip>
+  );
+
   return (
     <CollapsibleSection title="Radius">
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label className={FIELD_LABEL}>Corner radius</Label>
-          <button
-            type="button"
-            onClick={() => setUserMode(mode === "all" ? "corners" : "all")}
-            disabled={disabled}
-            aria-label={
-              mode === "all" ? "Edit each corner" : "Set all corners together"
-            }
-            title={
-              mode === "all" ? "Edit each corner" : "Set all corners together"
-            }
-            className={cn(
-              "inline-flex h-5 w-5 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-3",
-              mode === "corners" && "bg-muted text-foreground",
-            )}
-          >
-            {mode === "all" ? <Maximize2 /> : <Minimize2 />}
-          </button>
-        </div>
-        {radiusHint && <DefaultCaption value={radiusHint} />}
         {mode === "all" ? (
-          <RadiusSelect
-            id="radius-all"
-            value={combined}
-            disabled={disabled}
-            onValueChange={setAll}
-          />
+          <>
+            <TokenField
+              kind="radius"
+              label="Corner radius"
+              labelExtra={modeToggle}
+              labelCaption={
+                radiusHint ? <DefaultCaption value={radiusHint} /> : undefined
+              }
+              bound={bound}
+              token={tokenValue}
+              tokens={tokens}
+              // Ghost-zero convention (same as spacing): unset shows a
+              // greyed 0 with the unit in the suffix slot, not "None".
+              placeholder="0"
+              placeholderHint="0px"
+              disabled={disabled}
+              onPickToken={(t) =>
+                setAll(
+                  t === null
+                    ? null
+                    : t === "__default"
+                      ? ""
+                      : (t as RadiusValue),
+                )
+              }
+              ghostToken={
+                combined === null &&
+                customDim === null &&
+                !hasAnyCorner(corners) &&
+                defaultRadius !== null
+                  ? {
+                      label:
+                        defaultRadius === ""
+                          ? "rounded"
+                          : `rounded-${defaultRadius}`,
+                      hint: RADIUS_PX[defaultRadius],
+                    }
+                  : undefined
+              }
+              unitSuffix="px"
+              currentRaw={customDim ?? undefined}
+              onDetach={() => writeCustomDim(seedDim)}
+              onRebind={() => setAll("md")}
+              renderRaw={(attach) => (
+                <div className="flex items-center gap-1">
+                  <CompactDimensionField
+                    ariaLabel="Corner radius"
+                    icon={<Scan />}
+                    value={customDim ?? seedDim}
+                    disabled={disabled}
+                    onCommit={(v) => writeCustomDim(v)}
+                    endExtra={attach}
+                  />
+                </div>
+              )}
+            />
+          </>
         ) : (
+          <>
+          <div className="flex items-center justify-between">
+            <Label className={FIELD_LABEL}>Corner radius</Label>
+            {modeToggle}
+          </div>
           <div className="grid grid-cols-2 gap-1.5">
             {(
               [
@@ -2404,17 +3147,59 @@ function RadiusGroup({
                 ["bl", "Bottom left"],
                 ["br", "Bottom right"],
               ] as [keyof CornerValues, string][]
-            ).map(([corner, label]) => (
-              <div key={corner} className="space-y-1">
-                <Label className={FIELD_LABEL}>{label}</Label>
-                <RadiusSelect
-                  value={corners[corner]}
+            ).map(([corner, label]) => {
+              // Same Field component as everywhere else — each corner is
+              // individually bindable/detachable (Figma's per-field
+              // variable model).
+              const cornerDim = inline?.[CORNER_STYLE_KEYS[corner]] ?? null;
+              const cornerToken =
+                corners[corner] === null
+                  ? null
+                  : corners[corner] === ""
+                    ? "__default"
+                    : corners[corner];
+              return (
+                <TokenField
+                  key={corner}
+                  kind="radius"
+                  label={label}
+                  bound={cornerDim === null}
+                  token={cornerToken}
+                  tokens={tokens}
+                  placeholder="0"
+                  placeholderHint="0px"
+                  unitSuffix="px"
                   disabled={disabled}
-                  onValueChange={(v) => setCorner(corner, v)}
+                  onPickToken={(t) =>
+                    setCorner(
+                      corner,
+                      t === null
+                        ? null
+                        : t === "__default"
+                          ? ""
+                          : (t as RadiusValue),
+                    )
+                  }
+                  currentRaw={cornerDim ?? undefined}
+                  onDetach={() => writeCornerDim(corner, seedDim)}
+                  onRebind={() => setCorner(corner, "md")}
+                  renderRaw={(attach) => (
+                    <div className="flex items-center gap-1">
+                      <CompactDimensionField
+                        ariaLabel={`${label} radius`}
+                        icon={<Scan />}
+                        value={cornerDim ?? seedDim}
+                        disabled={disabled}
+                        onCommit={(v) => writeCornerDim(corner, v)}
+                        endExtra={attach}
+                      />
+                    </div>
+                  )}
                 />
-              </div>
-            ))}
+              );
+            })}
           </div>
+          </>
         )}
       </div>
     </CollapsibleSection>
@@ -2433,7 +3218,7 @@ function ShadowGroup({
   sourceId,
   disabled,
   manifestPropNames,
-  onChangeClassName,
+  onApplySource,
   computedStyle,
 }: StyleGroupProps) {
   const caps = getSpacingCapabilities({ tag, componentName });
@@ -2442,18 +3227,57 @@ function ShadowGroup({
 
   const cn0 = readClassName(source, componentName, sourceId);
   const shadow = parseShadow(cn0);
-  const custom = parseShadowCustom(cn0);
+  // Detached values ride the inline `style` attr — the only carrier that
+  // renders in Fast Frame (the DEFAULT renderer), whose stylesheet is
+  // precompiled: runtime-minted arbitrary classes produce no CSS there.
+  const inline = source
+    ? readInlineStyle(source, componentName, sourceId)
+    : {};
+  const custom = cssToCustomShadow(inline?.["boxShadow"]);
   const empty = shadow === null && custom === null;
   // Bound = on a theme elevation token; detached = a raw custom shadow.
   const bound = custom === null;
   const c = custom ?? DEFAULT_CUSTOM_SHADOW;
+  // Detach: strip any shadow token from className, write the raw value
+  // as inline style — one undo step, never both carriers at once.
   const writeCustom = (next: CustomShadow) =>
-    onChangeClassName(setShadowCustom(cn0, next));
+    onApplySource?.((src) => {
+      const cn = readClassName(src, componentName, sourceId);
+      const strippedCn = setShadow(cn, null);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        strippedCn === "" ? null : strippedCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        { boxShadow: customShadowToCss(next) },
+        sourceId,
+      );
+    }, "Set custom shadow");
+  // Bind: write the token class, clear any inline boxShadow.
+  const writeToken = (v: ShadowValue | null, label: string) =>
+    onApplySource?.((src) => {
+      const cn = readClassName(src, componentName, sourceId);
+      const nextCn = setShadow(cn, v);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(src2, componentName, { boxShadow: null }, sourceId);
+    }, label);
 
-  // Elevation token registry — the theme's shadow scale.
-  const tokens: TokenOption[] = SHADOW_SCALE.map((s) => ({
-    value: s === "" ? "__default" : s,
-    label: s === "none" ? "shadow-none" : s === "" ? "shadow" : `shadow-${s}`,
+  // Elevation tokens — scoped from the registry (Tailwind-backed today).
+  const tokens: TokenOption[] = getAreaTokens("shadow").map((t) => ({
+    value: t.value === "" ? "__default" : t.value,
+    label: t.label,
+    hint: t.hint,
   }));
   const tokenValue =
     shadow === null ? null : shadow === "" ? "__default" : shadow;
@@ -2464,13 +3288,13 @@ function ShadowGroup({
       empty={empty}
       addLabel="Add shadow"
       emptyHint={empty ? defaultHint("shadow", computedStyle) : undefined}
-      onAdd={() => onChangeClassName(setShadow(cn0, "md"))}
+      onAdd={() => writeToken("md", "Add shadow")}
       headerExtra={
         !empty ? (
           <EntryIconButton
             label="Remove shadow"
             disabled={disabled}
-            onClick={() => onChangeClassName(setShadow(cn0, null))}
+            onClick={() => writeToken(null, "Remove shadow")}
           >
             <Minus />
           </EntryIconButton>
@@ -2486,16 +3310,14 @@ function ShadowGroup({
         placeholder="None"
         disabled={disabled}
         onPickToken={(t) =>
-          onChangeClassName(
-            setShadow(
-              cn0,
-              t === null ? null : t === "__default" ? "" : (t as ShadowValue),
-            ),
+          writeToken(
+            t === null ? null : t === "__default" ? "" : (t as ShadowValue),
+            "Set shadow",
           )
         }
         onDetach={() => writeCustom(DEFAULT_CUSTOM_SHADOW)}
-        onRebind={() => onChangeClassName(setShadow(cn0, "md"))}
-        renderRaw={() => (
+        onRebind={() => writeToken("md", "Re-bind shadow to token")}
+        renderRaw={(attach) => (
           <div className="space-y-1.5">
             {/* Compound row — X / Y / blur / spread inline, icon-prefixed
                 (Paper-style). Blur + spread use placeholder glyphs (Grip /
@@ -2531,6 +3353,7 @@ function ShadowGroup({
                 disabled={disabled}
                 onCommit={(v) => writeCustom({ ...c, spread: v })}
               />
+              {attach}
             </div>
             <ColorOpacityRow
               hex={c.hex}
@@ -2551,20 +3374,10 @@ function ShadowGroup({
 // tier — small + muted + regular weight. The prominent tier is the
 // CollapsibleSection header (text-sm, foreground). Keeping the two
 // deliberately distinct is the hierarchy Figma/Paper use.
-const FIELD_LABEL = "text-2xs font-normal text-muted-foreground";
+const FIELD_LABEL = "text-2xs font-medium text-foreground/80";
 
-// Static swatch classes for the fill colour tokens. Literal strings so
-// Tailwind's JIT keeps them in the build (no interpolation).
-const FILL_SWATCH: Record<FillColorToken, string> = {
-  background: "bg-background",
-  card: "bg-card",
-  muted: "bg-muted",
-  secondary: "bg-secondary",
-  accent: "bg-accent",
-  primary: "bg-primary",
-  destructive: "bg-destructive",
-  transparent: "bg-transparent",
-};
+// Fill swatch classes moved to lib/token-registry (the scoped fill
+// tokens carry their own swatchClass).
 
 /**
  * FillGroup — background colour as a theme token (`bg-card`, `bg-muted`,
@@ -2580,7 +3393,7 @@ function FillGroup({
   sourceId,
   disabled,
   manifestPropNames,
-  onChangeClassName,
+  onApplySource,
 }: StyleGroupProps) {
   const caps = getSpacingCapabilities({ tag, componentName });
   // `surface` included so Card (whose contract owns its fill via the
@@ -2593,60 +3406,112 @@ function FillGroup({
   ]);
   const cn0 = readClassName(source, componentName, sourceId);
   const fill = parseFill(cn0);
+  // Detached fill rides the inline `style` attr (Fast Frame — see
+  // ShadowGroup): backgroundColor as #hex or rgba() when translucent.
+  const inline = source
+    ? readInlineStyle(source, componentName, sourceId)
+    : {};
+  const custom = cssColorToHexOpacity(inline?.["backgroundColor"]);
 
   if (!caps.fill || contractOwnsFill) return null;
+
+  const bound = custom === null;
+  const empty = fill === null && custom === null;
+  const c = custom ?? { hex: "ffffff", opacity: 100 };
+
+  const writeToken = (v: FillColorToken | null, label: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const nextCn = setFill(cnNow, v);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        { backgroundColor: null },
+        sourceId,
+      );
+    }, label);
+  const writeCustom = (hex: string, opacity: number) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const strippedCn = setFill(cnNow, null);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        strippedCn === "" ? null : strippedCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        { backgroundColor: hexOpacityToCssColor(hex, opacity) },
+        sourceId,
+      );
+    }, "Set custom fill");
+
+  // Fill tokens — scoped from the registry, theme swatch chip per row.
+  const tokens: TokenOption[] = getAreaTokens("fill").map((t) => ({
+    value: t.value,
+    label: t.label,
+    preview: (
+      <span
+        className={cn(
+          "inline-block h-3 w-3 shrink-0 rounded-[3px] border border-border/60",
+          t.swatchClass,
+        )}
+      />
+    ),
+  }));
 
   return (
     <AddableSection
       title="Fill"
-      empty={fill === null}
+      empty={empty}
       addLabel="Add fill"
       // Default to the surface token so the added fill is visible.
-      onAdd={() => onChangeClassName(setFill(cn0, "card"))}
-    >
-      <div className="flex items-end gap-1.5">
-        <div className="flex-1 space-y-1">
-          <Label htmlFor="fill-color" className={FIELD_LABEL}>
-            Colour
-          </Label>
-          <Select
-            value={fill ?? "none"}
-            onValueChange={(v) =>
-              onChangeClassName(
-                setFill(cn0, v === "none" ? null : (v as FillColorToken)),
-              )
-            }
+      onAdd={() => writeToken("card", "Add fill")}
+      headerExtra={
+        !empty ? (
+          <EntryIconButton
+            label="Remove fill"
             disabled={disabled}
+            onClick={() => writeToken(null, "Remove fill")}
           >
-            <SelectTrigger id="fill-color" size="2xs" className="w-full">
-              <SelectValue placeholder="None" />
-            </SelectTrigger>
-            <SelectContent size="2xs">
-              <SelectItem value="none">None</SelectItem>
-              {FILL_COLOR_TOKENS.map((c) => (
-                <SelectItem key={c} value={c}>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span
-                      className={cn(
-                        "inline-block h-3 w-3 rounded-[3px] border border-border/60",
-                        FILL_SWATCH[c],
-                      )}
-                    />
-                    {c}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <EntryIconButton
-          label="Remove fill"
-          disabled={disabled}
-          onClick={() => onChangeClassName(setFill(cn0, null))}
-        >
-          <Minus />
-        </EntryIconButton>
-      </div>
+            <Minus />
+          </EntryIconButton>
+        ) : null
+      }
+    >
+      <TokenField
+        kind="fill"
+        label="Colour"
+        bound={bound}
+        token={fill}
+        tokens={tokens}
+        placeholder="None"
+        disabled={disabled}
+        onPickToken={(t) =>
+          writeToken(t as FillColorToken | null, "Set fill")
+        }
+        onDetach={() => writeCustom(c.hex, c.opacity)}
+        onRebind={() => writeToken("card", "Re-bind fill to token")}
+        renderRaw={(attach) => (
+          <ColorOpacityRow
+            hex={c.hex}
+            opacity={c.opacity}
+            disabled={disabled}
+            onChange={(hex, opacity) => writeCustom(hex, opacity)}
+            endExtra={attach}
+          />
+        )}
+      />
     </AddableSection>
   );
 }
@@ -2665,16 +3530,8 @@ const BORDER_SWATCH: Record<BorderColorToken, string> = {
 // Default px for each Tailwind radius token (theme default scale). Used
 // to show the rendered pixels alongside the token (rounded-lg · 8px).
 // `full` is omitted (it's a 9999px pill, not a meaningful px value).
-const RADIUS_PX: Record<string, string> = {
-  none: "0",
-  sm: "2px",
-  "": "4px",
-  md: "6px",
-  lg: "8px",
-  xl: "12px",
-  "2xl": "16px",
-  "3xl": "24px",
-};
+// RADIUS_PX moved to lib/token-registry — single source for the scoped
+// radius tokens + their resolved readouts (imported above).
 
 type UiBorderEntry = BorderEntry & { id: number; visible: boolean };
 
@@ -2921,7 +3778,7 @@ function ClassNameOverride({
   return (
     // Advanced escape hatch — collapsed by default so it doesn't add
     // noise to the common path.
-    <CollapsibleSection title="className override" defaultOpen={false}>
+    <CollapsibleSection title="Class names" defaultOpen={false}>
       <Input
         id="classname-override"
         size="2xs"
@@ -2938,9 +3795,9 @@ function ClassNameOverride({
         className="font-mono"
       />
       <p className="text-2xs text-muted-foreground leading-snug">
-        Edit the full className verbatim. Anything the structured
-        controls above don't recognise (responsive variants, hover
-        states, arbitrary values) is preserved here.
+        The element's classes, verbatim. Anything the controls above
+        don't recognise (responsive variants, hover states, arbitrary
+        values) is kept here.
       </p>
     </CollapsibleSection>
   );
@@ -3033,116 +3890,278 @@ function NumericSelectRow({
  * flip either way; the override sticks for the selection's lifetime.
  */
 function PerSideRow({
-  id,
+  id: _id,
   label,
+  area,
   value,
+  source,
+  componentName,
+  sourceId,
   disabled,
-  onValueChange,
+  onApplySource,
+  defaultValue,
+  computedSides,
 }: {
   id: string;
   label: string;
+  /** Which spacing family this row edits — drives the token prefix
+   *  (p/m), the registry scope, and the per-side inline-style keys. */
+  area: "padding" | "margin";
+  /** Parsed side tokens (Tailwind spacing steps) from the className. */
   value: SideValues;
+  source: string | null;
+  componentName: string;
+  sourceId?: string;
   disabled?: boolean;
-  onValueChange: (next: SideValues) => void;
+  onApplySource?: (mutate: (src: string) => string, label: string) => void;
+  /** Contract-shipped baked side tokens (parsed from styleDefaults) —
+   *  REAL classes from the component source, ghosted as dulled chips. */
+  defaultValue?: SideValues;
+  /** Live computed per-side values ("24px") — drives the Default
+   *  caption so a component's baked-in padding reads true. */
+  computedSides?: Partial<Record<"t" | "r" | "b" | "l", string>>;
 }) {
-  // Sides collapse to an x/y pair only when opposite sides match.
-  const axisRepresentable = value.l === value.r && value.t === value.b;
+  const prefix = area === "padding" ? "p" : "m";
+  const setter = area === "padding" ? setPaddingSides : setMarginSides;
+  const STYLE_KEYS: Record<"t" | "r" | "b" | "l", string> = {
+    t: `${area}Top`,
+    r: `${area}Right`,
+    b: `${area}Bottom`,
+    l: `${area}Left`,
+  };
+  // Detached (raw CSS length) values ride inline style per side — the
+  // only carrier Fast Frame renders.
+  const inline = source
+    ? readInlineStyle(source, componentName, sourceId)
+    : {};
+  const dim = (s: "t" | "r" | "b" | "l") => inline?.[STYLE_KEYS[s]] ?? null;
+
+  // Sides collapse to an x/y pair only when opposite sides match —
+  // bound tokens AND detached values both. When NOTHING is authored,
+  // the contract defaults drive the picture too: CardFooter's `p-6
+  // pt-0` is not axis-symmetric, so the row opens per-side rather than
+  // showing a lying `py-0` chip.
+  const nothingAuthored =
+    value.t === null &&
+    value.r === null &&
+    value.b === null &&
+    value.l === null &&
+    dim("t") === null &&
+    dim("r") === null &&
+    dim("b") === null &&
+    dim("l") === null;
+  const defaultsAxisSymmetric =
+    !defaultValue ||
+    ((defaultValue.l ?? null) === (defaultValue.r ?? null) &&
+      (defaultValue.t ?? null) === (defaultValue.b ?? null));
+  const axisRepresentable =
+    value.l === value.r &&
+    value.t === value.b &&
+    dim("l") === dim("r") &&
+    dim("t") === dim("b") &&
+    (!nothingAuthored || defaultsAxisSymmetric);
   const [userMode, setUserMode] = useState<"axes" | "sides" | null>(null);
   const mode: "axes" | "sides" =
     userMode ?? (axisRepresentable ? "axes" : "sides");
 
-  const setSide = (side: keyof SideValues, next: number | null) =>
-    onValueChange({ ...value, [side]: next });
-  const setAxis = (axis: "x" | "y", next: number | null) =>
-    axis === "x"
-      ? onValueChange({ ...value, l: next, r: next })
-      : onValueChange({ ...value, t: next, b: next });
+  // Bind side(s) to a token (clearing their inline values) / detach
+  // side(s) to a raw CSS length (clearing their tokens) — one undo step.
+  const writeTokens = (
+    next: SideValues,
+    clearSides: ("t" | "r" | "b" | "l")[],
+    lbl: string,
+  ) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const nextCn = setter(cnNow, next);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        Object.fromEntries(clearSides.map((s) => [STYLE_KEYS[s], null])),
+        sourceId,
+      );
+    }, lbl);
+  const writeDims = (
+    sides: ("t" | "r" | "b" | "l")[],
+    cssDim: string,
+    lbl: string,
+  ) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const cleared: SideValues = { ...value };
+      for (const s of sides) cleared[s] = null;
+      const nextCn = setter(cnNow, cleared);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        Object.fromEntries(sides.map((s) => [STYLE_KEYS[s], cssDim])),
+        sourceId,
+      );
+    }, lbl);
+
+  // One TokenField per side/axis — the SAME Field component as every
+  // other property: bound chip, in-field detach/attach, freeform units.
+  const field = (
+    sides: ("t" | "r" | "b" | "l")[],
+    suffix: string,
+    icon: React.ReactNode,
+    aria: string,
+  ) => {
+    const tokenStep = value[sides[0]];
+    const sideDim = dim(sides[0]);
+    // Multi-side (axis) fields only ghost a default when BOTH covered
+    // sides agree — never average or pick one.
+    const defSteps = sides.map((s) => defaultValue?.[s] ?? null);
+    const defStep = defSteps.every((d) => d === defSteps[0])
+      ? defSteps[0]
+      : null;
+    const tokens: TokenOption[] = getAreaTokens(area).map((t) => ({
+      value: t.value,
+      label: `${prefix}${suffix}-${t.value}`,
+      hint: t.hint,
+    }));
+    const seed = `${(tokenStep ?? 0) * 4}px`;
+    return (
+      <TokenField
+        kind={area}
+        bound={sideDim === null}
+        token={tokenStep === null ? null : String(tokenStep)}
+        tokens={tokens}
+        // Unset shows the CONTRACT-shipped baked default as a dulled
+        // chip when one exists (REAL classes from the component source —
+        // CardContent's p-6), else a plain greyed "0". Never derived
+        // from computed px: no fabricated tokens.
+        ghostToken={
+          tokenStep === null && sideDim === null && defStep != null
+            ? {
+                label: `${prefix}${suffix}-${defStep}`,
+                // Token explainer — unit stays WITH the number.
+                hint: `${defStep * 4}px`,
+              }
+            : undefined
+        }
+        placeholder="0"
+        placeholderHint="0px"
+        unitSuffix="px"
+        disabled={disabled}
+        triggerIcon={
+          <IconTip label={aria}>
+            <span className="flex items-center">{icon}</span>
+          </IconTip>
+        }
+        onPickToken={(t) => {
+          const v = t === null ? null : Number(t);
+          const next = { ...value };
+          for (const s of sides) next[s] = v;
+          writeTokens(next, sides, `Set ${label.toLowerCase()}`);
+        }}
+        currentRaw={sideDim ?? undefined}
+        onDetach={() =>
+          writeDims(sides, sideDim ?? seed, `Set custom ${label.toLowerCase()}`)
+        }
+        onRebind={() => {
+          const next = { ...value };
+          for (const s of sides) next[s] = 4;
+          writeTokens(next, sides, `Re-bind ${label.toLowerCase()} to token`);
+        }}
+        renderRaw={(attach) => (
+          <CompactDimensionField
+            ariaLabel={aria}
+            icon={icon}
+            value={sideDim ?? seed}
+            disabled={disabled}
+            onCommit={(v) =>
+              writeDims(sides, v, `Set custom ${label.toLowerCase()}`)
+            }
+            endExtra={attach}
+          />
+        )}
+      />
+    );
+  };
+
+  // Nothing authored → surface the component's baked default as a
+  // display-only caption (same pattern as Radius/Border/Shadow). This
+  // is the truthful answer for cva-styled components (Button, Card
+  // parts) whose screen JSX carries no className at all.
+  // (`nothingAuthored` is computed above, where the mode calc needs it.)
+  const defaultCaption = (() => {
+    if (!nothingAuthored || !computedSides) return null;
+    const { t, r, b, l } = computedSides;
+    if (!t || !r || !b || !l) return null;
+    if ([t, r, b, l].every((v) => parseFloat(v) === 0)) return null;
+    // CSS-shorthand style: one value when uniform, two when axis-
+    // symmetric, else all four (T R B L).
+    if (t === r && r === b && b === l) return t;
+    if (t === b && l === r) return `${t} ${r}`;
+    return `${t} ${r} ${b} ${l}`;
+  })();
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <Label className={FIELD_LABEL}>{label}</Label>
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-baseline gap-2">
+          <Label className={cn(FIELD_LABEL, "shrink-0")}>{label}</Label>
+          {defaultCaption ? <DefaultCaption value={defaultCaption} /> : null}
+        </span>
         {/* Mode toggle — Paper's little expand glyph. Maximize2 when
             combined (offers "break out into 4 sides"); Minimize2 when
             individual (offers "collapse to H/V"). Tinted when in the
             individual state so the panel reads its current mode at a
             glance. */}
-        <button
-          type="button"
-          onClick={() => setUserMode(mode === "axes" ? "sides" : "axes")}
-          disabled={disabled}
-          aria-label={
-            mode === "axes"
-              ? "Edit each side individually"
-              : "Collapse to horizontal and vertical"
-          }
-          title={
+        <IconTip
+          label={
             mode === "axes"
               ? "Edit each side individually"
               : "Collapse to horizontal / vertical"
           }
-          className={cn(
-            "inline-flex h-5 w-5 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-3",
-            mode === "sides" && "bg-muted text-foreground",
-          )}
         >
-          {mode === "axes" ? <Maximize2 /> : <Minimize2 />}
-        </button>
+          {/* Ghost — expand toggles read as quiet chrome. */}
+          <button
+            type="button"
+            onClick={() => setUserMode(mode === "axes" ? "sides" : "axes")}
+            disabled={disabled}
+            aria-label={
+              mode === "axes"
+                ? "Edit each side individually"
+                : "Collapse to horizontal and vertical"
+            }
+            className={cn(
+              "inline-flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 [&_svg]:size-3",
+              mode === "sides" && "bg-muted text-foreground",
+            )}
+          >
+            {mode === "axes" ? <Maximize2 /> : <Minimize2 />}
+          </button>
+        </IconTip>
       </div>
       {mode === "axes" ? (
         <div className="grid grid-cols-2 gap-1.5">
-          <SideInput
-            id={`${id}-x`}
-            icon={<MoveHorizontal />}
-            ariaLabel={`${label} horizontal`}
-            value={value.l}
-            disabled={disabled}
-            onCommit={(v) => setAxis("x", v)}
-          />
-          <SideInput
-            id={`${id}-y`}
-            icon={<MoveVertical />}
-            ariaLabel={`${label} vertical`}
-            value={value.t}
-            disabled={disabled}
-            onCommit={(v) => setAxis("y", v)}
-          />
+          {field(["l", "r"], "x", <MoveHorizontal />, `${label} horizontal`)}
+          {field(["t", "b"], "y", <MoveVertical />, `${label} vertical`)}
         </div>
       ) : (
-        // All four edges in a single tight row (4×1, not a 2×2 grid).
-        <div className="grid grid-cols-4 gap-1">
-          <SideInput
-            id={`${id}-t`}
-            icon={<PanelTop />}
-            ariaLabel={`${label} top`}
-            value={value.t}
-            disabled={disabled}
-            onCommit={(v) => setSide("t", v)}
-          />
-          <SideInput
-            id={`${id}-r`}
-            icon={<PanelRight />}
-            ariaLabel={`${label} right`}
-            value={value.r}
-            disabled={disabled}
-            onCommit={(v) => setSide("r", v)}
-          />
-          <SideInput
-            id={`${id}-b`}
-            icon={<PanelBottom />}
-            ariaLabel={`${label} bottom`}
-            value={value.b}
-            disabled={disabled}
-            onCommit={(v) => setSide("b", v)}
-          />
-          <SideInput
-            id={`${id}-l`}
-            icon={<PanelLeft />}
-            ariaLabel={`${label} left`}
-            value={value.l}
-            disabled={disabled}
-            onCommit={(v) => setSide("l", v)}
-          />
+        // 2×2 — TokenFields carry a chip + detach affordance, too wide
+        // for the old 4-up row.
+        <div className="grid grid-cols-2 gap-1.5">
+          {field(["t"], "t", <PanelTop />, `${label} top`)}
+          {field(["r"], "r", <PanelRight />, `${label} right`)}
+          {field(["b"], "b", <PanelBottom />, `${label} bottom`)}
+          {field(["l"], "l", <PanelLeft />, `${label} left`)}
         </div>
       )}
     </div>
@@ -3195,17 +4214,23 @@ function SideInput({
     [],
   );
 
-  const commit = (raw: string) => {
+  const commit = (raw: string): boolean => {
     const trimmed = raw.trim().replace(/px$/i, "").trim();
     if (trimmed === "") {
       onCommit(null);
-      return;
+      return true;
     }
-    const px = Number(trimmed);
-    if (!Number.isFinite(px) || px < 0) return;
+    // Plain number first; then maths ("16/2", "4*4+2").
+    let px = /^-?\d*\.?\d+$/.test(trimmed) ? Number(trimmed) : NaN;
+    if (!Number.isFinite(px)) {
+      const evaluated = evalMath(trimmed);
+      px = evaluated === null ? NaN : evaluated;
+    }
+    if (!Number.isFinite(px) || px < 0) return false;
     // px → step, snapped to the nearest 0.5 (Tailwind's finest grain).
     const step = Math.round((px / 4) * 2) / 2;
     onCommit(step);
+    return true;
   };
   const schedule = (raw: string) => {
     if (timer.current !== null) window.clearTimeout(timer.current);
@@ -3229,7 +4254,13 @@ function SideInput({
       aria-label={ariaLabel}
       title={ariaLabel}
       value={draft}
-      placeholder="–"
+      // Ghost "0" for UNSET (placeholder styling = muted), not a dash.
+      // The set/unset record lives in the JSX: no token = unset (the
+      // component's own default applies), an explicit `p-0` = solid 0.
+      // Clearing the field returns to unset. When ComputedStyleHint
+      // grows per-side paddings, this ghost should show the TRUE
+      // effective value instead of a blind 0.
+      placeholder="0"
       disabled={disabled}
       className="tabular-nums"
       onChange={(e) => {
@@ -3241,12 +4272,40 @@ function SideInput({
           window.clearTimeout(timer.current);
           timer.current = null;
         }
-        commit(e.currentTarget.value);
+        // Failed input (bad maths, negative) reverts to the previous
+        // value rather than lingering as garbage.
+        if (!commit(e.currentTarget.value)) {
+          setDraft(value === null ? "" : String(stepToPx(value)));
+        }
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
           inputRef.current?.blur();
+          return;
+        }
+        // ↑/↓ nudge by one spacing step (4px; ⇧ = 10 steps), committing
+        // live. Steps (not raw px) so the snap never fights the arrows.
+        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+          e.preventDefault();
+          const t = draft.trim().replace(/px$/i, "").trim();
+          const parsed =
+            t === ""
+              ? null
+              : /^-?\d*\.?\d+$/.test(t)
+                ? Number(t)
+                : evalMath(t);
+          const curPx =
+            parsed !== null && Number.isFinite(parsed)
+              ? (parsed as number)
+              : value === null
+                ? 0
+                : stepToPx(value);
+          const delta =
+            (e.shiftKey ? 40 : 4) * (e.key === "ArrowUp" ? 1 : -1);
+          const nextPx = Math.max(0, curPx + delta);
+          setDraft(String(nextPx));
+          commit(String(nextPx));
         }
       }}
       startSlot={
@@ -3303,18 +4362,34 @@ function PropControl({
     // Radix Select does NOT accept "" as a value for the controlled `value`
     // prop — it throws at runtime. Use `undefined` to mean "no selection"
     // and let the placeholder show.
+    //
+    // Unset → resolve the REAL default: the sidecar's declared default
+    // if present, else the cva defaultVariants shipped on the contract
+    // (Button size → "md"). The Select's value falls back to it so the
+    // open menu shows the effective choice checked (standard menu
+    // behaviour); the trigger renders it muted so set vs unset still
+    // reads at a glance, same as the spacing ghost-zeros. Radix only
+    // fires onValueChange on an actual change, so re-picking the
+    // default while unset writes nothing — the prop stays unauthored.
+    const resolvedDefault =
+      prop.defaultValue ??
+      getContractVariantDefault(componentName, prop.name) ??
+      undefined;
     return (
       <PropRow prop={prop}>
         <Select
-          value={currentStr ?? undefined}
+          value={currentStr ?? resolvedDefault}
           onValueChange={(v) => {
             const match = values.find((val) => String(val) === v);
             onChange(prop.name, match ?? null);
           }}
           disabled={disabled}
         >
-          <SelectTrigger className="h-7 text-xs">
-            <SelectValue placeholder={prop.defaultValue ?? "(default)"} />
+          <SelectTrigger
+            size="2xs"
+            className={cn("w-full", !currentStr && "text-muted-foreground")}
+          >
+            <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent size="2xs">
             {values.map((v) => (

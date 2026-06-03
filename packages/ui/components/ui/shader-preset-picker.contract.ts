@@ -13,6 +13,7 @@ export const ShaderPresetPickerContract = contract({
   import: "@gradeui/ui",
   aliases: ["shader picker","preset picker","shader gallery","preset gallery"],
   composesWith: ["ShaderPresetPreview (internal)","ThreeScene (the typical downstream consumer)"],
+  styleDefaults: {"ShaderPresetPicker":"grid grid-cols-2 gap-3"},
   props: {
   "value": {
       schema: z.string().optional(),

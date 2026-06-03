@@ -12,6 +12,7 @@ export const MessageContract = contract({
   description: "The canonical \"avatar + author + timestamp + body\" row. THE PRIMITIVE\nfor any chat surface, comment thread, post-reply, activity log, or\nnotification feed that follows the people-and-text shape.\n\nCONCRETE TEST — if you find yourself composing an `<Avatar>` followed\nby a `<Row>` of author name + timestamp, with a `<p>` or `<span>`\nbody below, STOP. That is `<Message>`. Reach for it directly.\n\nSlack-style channel feed, Discord messages, Teams chat, Linear /\nGitHub / Jira comments, Reddit replies, Twitter/X posts in a thread,\nNotion comment sidebars, in-app activity logs, notification rows —\nevery one of these IS `<Message>`. Do not roll the layout inline.\n\nFor non-people activity (system events, log lines, status pings) use\nCallout or a plain Row instead — Message implies a human author.",
   import: "@gradeui/ui",
   composesWith: ["Avatar (in the avatar slot — pair with AvatarFallback tone=\"...\" for stable per-author colour)","Badge (in the badge slot for role / OP / bot tags)","Button (in actions","typically size=\"icon\" + variant=\"ghost\")","Stack (host multiple Messages in a thread)","Card (wrap a Stack of Messages for a comment-thread block)"],
+  styleDefaults: {"Message":"flex items-start"},
   props: {
   "author": {
       schema: z.string(),

@@ -13,6 +13,7 @@ export const FieldContract = contract({
   import: "@gradeui/ui",
   aliases: ["field","form field","control row","label and description","two line checkbox","option row","setting row","toggle row"],
   composesWith: ["Checkbox","RadioGroup","RadioGroupItem","Switch","Badge (inside Field.Trailing)"],
+  styleDefaults: {"FieldLabel":"text-sm font-medium leading-none text-foreground cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70","FieldDescription":"text-sm text-muted-foreground","FieldTrailing":"flex shrink-0 items-center gap-2","FieldRoot":"flex gap-3"},
   props: {
   "layout": {
       schema: z.enum(["option", "setting"]).optional(),

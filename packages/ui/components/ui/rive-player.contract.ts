@@ -13,6 +13,7 @@ export const RivePlayerContract = contract({
   import: "@gradeui/ui",
   aliases: ["rive","riv","animation","animated","lottie"],
   composesWith: ["MediaSurface (internal)","Card","any container"],
+  styleDefaults: {"RiveInner":"absolute inset-0 flex items-end justify-end p-2"},
   props: {
   "src": {
       schema: z.string(),

@@ -14,6 +14,7 @@ export const SortableContract = contract({
   aliases: ["sortable","reorder","drag and drop","dnd","draggable list","sortable list","kanban","drag to reorder","drag-drop","dragdroplist","drag handle","react native draggable flatlist"],
   subcomponents: ["Sortable.Item","Sortable.Handle"],
   composesWith: ["Stack (vertical lists)","Row (horizontal strips)","Grid (2D card walls)","Card (typical item content)","Button (as Sortable.Handle asChild)"],
+  styleDefaults: {"SortableHandle":"cursor-grab touch-none select-none"},
   props: {
   "values": {
       schema: z.unknown(),

@@ -13,6 +13,8 @@ export const LabelContract = contract({
   import: "@gradeui/ui",
   aliases: ["label","form label","field label","caption"],
   composesWith: ["Input","Textarea","Checkbox","Switch","RadioGroup","Select"],
+  styleDefaults: {"Label":"font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm"},
+  variantDefaults: {"size":"default"},
   props: {
   "htmlFor": {
       schema: z.string().optional(),

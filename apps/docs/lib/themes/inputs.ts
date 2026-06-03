@@ -73,10 +73,12 @@ export const studioInput: ThemeInput = {
   // strength (muted would scale it down by 0.6).
   intensity: "default",
   typography: {
-    // IBM Plex Mono across the board — borrowed from the Forest Terminal
-    // theme. Studio now reads as a monospace, terminal-flavoured chrome.
+    // Inter for body — dense panels (the Studio inspector especially)
+    // were hard to read in all-mono. Display keeps IBM Plex Mono for
+    // the terminal-flavoured headings; mono stays for code and value
+    // chips.
     display: "ibmPlexMono",
-    body: "ibmPlexMono",
+    body: "inter",
     mono: "ibmPlexMono",
     scale: "default",
     headingWeight: 600,

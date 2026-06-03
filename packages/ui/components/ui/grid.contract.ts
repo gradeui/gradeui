@@ -13,6 +13,8 @@ export const GridContract = contract({
   import: "@gradeui/ui",
   aliases: ["grid","tiles","cards grid","stat grid","columns","feature grid","grid view","lazy v grid","lazyvgrid","lazy h grid","lazyhgrid","tile grid","masonry"],
   composesWith: ["Card","Stack (inside each cell)","Row","Button","any content component"],
+  styleDefaults: {"Grid":"gds-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-stretch"},
+  variantDefaults: {"cols":"3","gap":"md","align":"stretch"},
   props: {
   "cols": {
       schema: z.enum(["1", "2", "3", "4", "5", "6", "12"]).optional(),

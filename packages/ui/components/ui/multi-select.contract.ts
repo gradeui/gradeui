@@ -12,6 +12,7 @@ export const MultiSelectContract = contract({
   description: "Picking multiple items from a finite list — tag selectors, filter chips,\n\"share with N people\", multi-region settings.\n\n**This is the answer for ANY \"removable-chips-inside-an-input\" pattern.**\nMultiSelect's trigger renders the current selection as Badges with X\nicons (the \"chip-in-trigger\" / \"chip-in-input\" shape), opens a Popover\nwith a searchable Command list, and supports \"+N more\" collapse past\n`maxCount`. Reach for it for:\n  - Linear-style filter bars (assignee, label, project chips inside one trigger)\n  - Slack channel pickers (selected channels as removable chips)\n  - Notion relation properties (related-page chips)\n  - GitHub label / assignee pickers\n  - tag / category / mention pickers anywhere\nDon't invent a `<ChipInput>` or `<TagInput>` for these — MultiSelect\nalready covers the trigger-with-badges shape.\n\nUse `<Select>` instead for SINGLE selection. Use `<Command>` directly\n(no MultiSelect wrapper) when the option set is unbounded or async\n(users to @-mention, email recipients, search-as-you-type API results).",
   import: "@gradeui/ui",
   composesWith: ["Popover","Command","Badge","Checkbox-style row indicator","Separator"],
+  styleDefaults: {"MultiSelect":"mr-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border border-primary"},
   props: {
   "options": {
       schema: z.unknown(),

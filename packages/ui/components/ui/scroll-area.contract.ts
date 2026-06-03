@@ -14,6 +14,7 @@ export const ScrollAreaContract = contract({
   aliases: ["scroll area","scroll container","custom scrollbar","sidebar scroll","panel scroll","scroll view","scrollview","react native scrollview"],
   subcomponents: ["ScrollBar"],
   composesWith: ["Card (long card body)","AppShellNav (long sidebar)","Sheet (long modal body)","Table (sticky-header scrolling list)"],
+  styleDefaults: {"ScrollArea":"relative overflow-hidden","ScrollBar":"flex touch-none select-none transition-colors"},
   props: {
   "type": {
       schema: z.enum(["auto", "always", "scroll", "hover"]).optional(),

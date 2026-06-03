@@ -13,6 +13,7 @@ export const ToolbarContract = contract({
   import: "@gradeui/ui",
   subcomponents: ["ToolbarSlot"],
   composesWith: ["Button","Avatar","Input","Logo","Badge","AppShellHeader","Card","Row","Stack"],
+  styleDefaults: {"ToolbarSlot":"flex items-center min-w-0"},
   props: {
   "leading": {
       schema: z.unknown().optional(),

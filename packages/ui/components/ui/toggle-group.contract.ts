@@ -14,6 +14,8 @@ export const ToggleGroupContract = contract({
   aliases: ["toggle group","segmented control","segmented buttons","button group","pill group","view selector","segmented picker","segmentedcontrolios","segmented buttons group","rn segmented control"],
   subcomponents: ["ToggleGroupItem"],
   composesWith: ["Card (header controls)","Row","AppShellHeader chrome","settings panels"],
+  styleDefaults: {"ToggleGroup":"inline-flex items-center justify-center rounded-lg bg-muted text-muted-foreground h-8 p-0.5","ToggleGroupItem":"inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 data-[state=on]:bg-background data-[state=on]:text-foreground h-7 px-2 text-xs gap-1.5 [&_svg]:size-3.5"},
+  variantDefaults: {"size":"md"},
   props: {
   "type": {
       schema: z.enum(["single", "multiple"]),

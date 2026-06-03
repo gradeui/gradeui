@@ -14,6 +14,7 @@ export const CalloutContract = contract({
   aliases: ["callout","banner","notice","inline alert","in-app notification","status banner","info banner","info callout","warning callout","success callout"],
   subcomponents: ["CalloutTitle","CalloutDescription"],
   composesWith: ["lucide-react icons as first child","Button (inside CalloutDescription)","Card (as a section callout)"],
+  styleDefaults: {"CalloutTitle":"mb-1 font-medium leading-none tracking-tight","CalloutDescription":"text-sm [&_p]:leading-relaxed"},
   props: {
   "variant": {
       schema: z.enum(["default", "destructive", "success", "warning", "info"]).optional(),

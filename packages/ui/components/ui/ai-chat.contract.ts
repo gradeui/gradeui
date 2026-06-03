@@ -13,6 +13,7 @@ export const AiChatContract = contract({
   import: "@gradeui/ui",
   aliases: ["ai chat","chat panel","chat block","llm chat","assistant panel","copilot chat","ai assistant"],
   composesWith: ["Card (host in a sidebar panel)","Sheet (mobile drawer)","Stack (place above other content)","AIChatComposer (internal composer; slot to override)"],
+  styleDefaults: {"MessageActions":"inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px]","ThinkingDisclosure":"w-3.5 h-3.5 text-gds-gray-500 dark:text-gds-gray-400 transition-transform shrink-0","StepsDisclosure":"w-3.5 h-3.5 text-gds-gray-500 dark:text-gds-gray-400 transition-transform shrink-0","AIChat":"flex flex-col overflow-hidden"},
   props: {
   "messages": {
       schema: z.unknown().optional(),

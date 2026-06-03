@@ -209,6 +209,20 @@ export interface ComponentContract<P extends Record<string, PropContract> = Reco
   /** Subcomponents the consumer imports alongside (`AvatarImage`,
    *  `DialogTrigger`). The model needs these in the same import line. */
   subcomponents?: string[];
+  /** The component's own baked-in Tailwind classes, extracted from its
+   *  SOURCE at generation time — keyed by exported part name ("Card",
+   *  "CardHeader", "CardContent", "Button"). For cva-styled components
+   *  the value is the base + defaultVariants resolution. The Studio
+   *  inspector parses these with its Tailwind parsers to show REAL
+   *  default chips ("p-6 · 24") on unset fields — the truth an element
+   *  has before anything is authored on it. Derived; never hand-edit. */
+  styleDefaults?: Record<string, string>;
+  /** The primary cva's defaultVariants, extracted from source — which
+   *  variant each axis resolves to when the prop is omitted
+   *  ({ variant: "default", size: "md" }). The inspector ghosts these
+   *  as the unset value of enum props instead of a meaningless
+   *  "(default)". Derived; never hand-edit. */
+  variantDefaults?: Record<string, string>;
   /** The prop map. Generic so `z.infer<typeof Contract.props.foo.schema>`
    *  preserves narrow types per-prop. */
   props: P;

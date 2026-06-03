@@ -32,9 +32,16 @@
 /** Numeric Tailwind scales we surface in the inspector. Subset of
  *  the full scale — picked for the values designers reach for most
  *  often. The control also offers `null` (none / unset) as a strip. */
-export const PADDING_SCALE = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16] as const;
+// Half-steps included — Tailwind's fine grain (p-0.5 = 2px, p-1.5 = 6px)
+// matters for closest-match suggestions and for round-tripping the
+// per-side inputs' snap (which already lands on halves).
+export const PADDING_SCALE = [
+  0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 8, 10, 12, 16,
+] as const;
 export const MARGIN_SCALE = PADDING_SCALE;
-export const GAP_SCALE = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12] as const;
+export const GAP_SCALE = [
+  0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 8, 10, 12,
+] as const;
 export const GRID_COLS_SCALE = [1, 2, 3, 4, 5, 6, 8, 12] as const;
 
 /** Tailwind's opacity scale runs 0..100. We expose the design-tool
@@ -514,6 +521,9 @@ export function setRadiusCorners(
 ): string {
   const stripped = (className ?? "")
     .replace(RADIUS_CORNER_STRIP_RE, " ")
+    // Picking tokens clears any custom (arbitrary) radius — the two
+    // modes are mutually exclusive.
+    .replace(/(^|\s)rounded-\[[^\]]+\](?=\s|$)/g, " ")
     .replace(/\s+/g, " ")
     .trim();
   const { tl, tr, br, bl } = corners;
@@ -549,6 +559,46 @@ export function cornersUniform(c: CornerValues): boolean {
   return tl === tr && tr === br && br === bl;
 }
 
+// ─── Custom (raw) radius — the detached escape hatch ─────────────────
+//
+// Bound mode writes the keyword scale (`rounded-md`, per-corner tokens);
+// detaching writes a single arbitrary `rounded-[Npx]` (all corners).
+// Each setter strips the other family so a node is never on both.
+
+const RADIUS_CUSTOM_RE = /(^|\s)rounded-\[(\d+(?:\.\d+)?)px\](?=\s|$)/g;
+
+/** Parse a custom `rounded-[Npx]` arbitrary class → px, or null. */
+export function parseRadiusCustom(
+  className: string | null | undefined,
+): number | null {
+  if (!className) return null;
+  let last: number | null = null;
+  RADIUS_CUSTOM_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = RADIUS_CUSTOM_RE.exec(className)) !== null) {
+    const n = Number(m[2]);
+    if (Number.isFinite(n)) last = n;
+  }
+  return last;
+}
+
+/** Write (or clear, with null) a custom px radius. Strips BOTH keyword
+ *  (incl. per-corner) and arbitrary radius tokens first — the modes are
+ *  mutually exclusive. */
+export function setRadiusCustom(
+  className: string | null | undefined,
+  px: number | null,
+): string {
+  const stripped = (className ?? "")
+    .replace(RADIUS_CORNER_STRIP_RE, " ")
+    .replace(RADIUS_CUSTOM_RE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (px === null) return stripped;
+  const token = `rounded-[${px}px]`;
+  return stripped ? `${stripped} ${token}` : token;
+}
+
 // ─── Font size ───────────────────────────────────────────────────────
 //
 // Tailwind sizes are keyword tokens (`text-xs`, `text-sm`, `text-base`,
@@ -563,6 +613,7 @@ export function cornersUniform(c: CornerValues): boolean {
 // them later if real designs reach for them.
 
 export const FONT_SIZE_SCALE = [
+  "2xs",
   "xs",
   "sm",
   "base",
@@ -576,7 +627,7 @@ export const FONT_SIZE_SCALE = [
 export type FontSizeValue = (typeof FONT_SIZE_SCALE)[number];
 
 const FONT_SIZE_RE =
-  /(^|\s)text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)(?=\s|$)/g;
+  /(^|\s)text-(2xs|xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)(?=\s|$)/g;
 
 export function parseFontSize(
   className: string | null | undefined,
@@ -597,7 +648,7 @@ export function setFontSize(
 ): string {
   const stripped = (className ?? "")
     .replace(
-      /(^|\s)text-(?:xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)(?=\s|$)/g,
+      /(^|\s)text-(?:2xs|xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)(?=\s|$)/g,
       " ",
     )
     .replace(/\s+/g, " ")
@@ -1194,6 +1245,76 @@ export function parseShadowCustom(
   }
   const [x, y, blur, spread] = nums.map((n) => (Number.isFinite(n) ? n : 0));
   return { x, y, blur, spread, hex, opacity };
+}
+
+/** CustomShadow → a CSS box-shadow value for inline style — the carrier
+ *  for detached shadows (renders in Fast Frame; arbitrary classes don't). */
+export function customShadowToCss(value: CustomShadow): string {
+  const h = value.hex.replace(/^#/, "").padStart(6, "0").slice(0, 6);
+  const r = parseInt(h.slice(0, 2), 16) || 0;
+  const g = parseInt(h.slice(2, 4), 16) || 0;
+  const b = parseInt(h.slice(4, 6), 16) || 0;
+  const a = Math.max(0, Math.min(100, value.opacity)) / 100;
+  return `${value.x}px ${value.y}px ${value.blur}px ${value.spread}px rgba(${r},${g},${b},${a})`;
+}
+
+/** Parse a simple single CSS box-shadow back into CustomShadow. Null for
+ *  multi-shadow / keyword / unparsable values. */
+export function cssToCustomShadow(
+  css: string | undefined | null,
+): CustomShadow | null {
+  if (!css) return null;
+  const m =
+    /^(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+rgba?\(([^)]+)\)$/.exec(
+      css.trim(),
+    );
+  if (!m) return null;
+  const [, x, y, blur, spread, color] = m;
+  const c = color.split(",").map((s) => s.trim());
+  const [r, g, b] = [c[0], c[1], c[2]].map((v) => parseInt(v, 10));
+  let hex = "000000";
+  if ([r, g, b].every((v) => Number.isFinite(v))) {
+    hex = [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+  }
+  const a = c[3] !== undefined ? parseFloat(c[3]) : 1;
+  return {
+    x: Number(x),
+    y: Number(y),
+    blur: Number(blur),
+    spread: Number(spread),
+    hex,
+    opacity: Math.round((Number.isFinite(a) ? a : 1) * 100),
+  };
+}
+
+/** hex + 0–100 opacity → a CSS colour for inline style ("#rrggbb" at
+ *  full opacity, rgba(...) otherwise). The detached-fill carrier. */
+export function hexOpacityToCssColor(hex: string, opacity: number): string {
+  const h = hex.replace(/^#/, "").padStart(6, "0").slice(0, 6);
+  const o = Math.max(0, Math.min(100, opacity));
+  if (o >= 100) return `#${h}`;
+  const r = parseInt(h.slice(0, 2), 16) || 0;
+  const g = parseInt(h.slice(2, 4), 16) || 0;
+  const b = parseInt(h.slice(4, 6), 16) || 0;
+  return `rgba(${r},${g},${b},${o / 100})`;
+}
+
+/** Parse "#rrggbb" / rgb() / rgba() back into hex + 0–100 opacity. */
+export function cssColorToHexOpacity(
+  css: string | undefined | null,
+): { hex: string; opacity: number } | null {
+  if (!css) return null;
+  const v = css.trim();
+  const hexM = /^#([0-9a-fA-F]{6})$/.exec(v);
+  if (hexM) return { hex: hexM[1].toLowerCase(), opacity: 100 };
+  const m = /^rgba?\(([^)]+)\)$/.exec(v);
+  if (!m) return null;
+  const c = m[1].split(",").map((s) => s.trim());
+  const [r, g, b] = [c[0], c[1], c[2]].map((x) => parseInt(x, 10));
+  if (![r, g, b].every((x) => Number.isFinite(x))) return null;
+  const hex = [r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  const a = c[3] !== undefined ? parseFloat(c[3]) : 1;
+  return { hex, opacity: Math.round((Number.isFinite(a) ? a : 1) * 100) };
 }
 
 /** Write (or clear, with null) a custom shadow. Strips BOTH keyword and

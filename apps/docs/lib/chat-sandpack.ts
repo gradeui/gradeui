@@ -91,6 +91,22 @@ export interface StudioSelection {
     boxShadow?: string;
     /** Top-edge border shorthand; width `"0px"` means no border. */
     border?: string;
+    /** Per-side effective paddings/margins ("24px") — carry the TRUE
+     *  rendered value even when it comes from a component's baked-in
+     *  classes (CardContent's p-6), so the inspector ghosts reality
+     *  instead of "0". Keep in sync with the agent's ComputedStyleHint. */
+    paddingTop?: string;
+    paddingRight?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    marginTop?: string;
+    marginRight?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    /** Computed flex/grid gap ("16px", "normal" when unset). */
+    gap?: string;
+    /** Computed font size ("16px"). */
+    fontSize?: string;
   };
 }
 

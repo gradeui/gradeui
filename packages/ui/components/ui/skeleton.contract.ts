@@ -13,6 +13,7 @@ export const SkeletonContract = contract({
   import: "@gradeui/ui",
   aliases: ["placeholder","shimmer","loader","loading state","redacted","redacted placeholder","shimmer placeholder","content placeholder","lottie placeholder"],
   composesWith: ["Card","Avatar (inside a Skeleton for avatar loading)","any layout"],
+  styleDefaults: {"Skeleton":"animate-pulse rounded-md bg-muted"},
   props: {
   "className": {
       schema: z.string().optional(),

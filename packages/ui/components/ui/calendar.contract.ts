@@ -14,6 +14,7 @@ export const CalendarContract = contract({
   aliases: ["calendar","date grid","month view","scheduler grid","calendar view","multidate picker","react native calendars"],
   subcomponents: ["CalendarDayButton"],
   composesWith: ["Popover (DatePicker composes them)","Card (inline scheduling card)","Dialog (full-screen mobile date pick)"],
+  styleDefaults: {"Calendar":"bg-background group/calendar p-3 [--cell-size:2rem] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent"},
   props: {
   "mode": {
       schema: z.enum(["single", "multiple", "range"]).optional(),
