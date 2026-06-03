@@ -254,9 +254,12 @@ export function TokenField({
             ) : ghostToken ? (
               // Dulled token chip — the baked-in DEFAULT (grey, not
               // accent): the classname is visibly applied, just not
-              // authored on this node. Tight gap; px-suffixed value.
-              <div className="flex min-w-0 items-center gap-0.5 rounded-[4px] border border-border/60 bg-muted/50 px-1 text-muted-foreground">
-                <span className="truncate">{ghostToken.label}</span>
+              // authored on this node. The label rides SelectValue
+              // (mirroring the __none item) — item-aligned positioning
+              // NEEDS a SelectValue node in the trigger to measure
+              // against; a chip that draws its own text kills the menu.
+              <div className="flex min-w-0 items-center gap-0.5 rounded-[4px] border border-border/60 bg-muted/50 px-1 text-muted-foreground [&>span]:truncate">
+                <SelectValue placeholder={placeholder} />
                 {ghostToken.hint ? (
                   <span className="shrink-0 text-muted-foreground/60">
                     {/* Interpunct convention: "label · value", one space
@@ -273,15 +276,20 @@ export function TokenField({
               checked row over the trigger — neighbouring values are a
               one-notch mouse move, not a travel down a popover. */}
           <SelectContent size={size} position="item-aligned">
-            <SelectItem value="__none" hint={placeholderHint}>
+            <SelectItem
+              value="__none"
+              hint={ghostToken?.hint ?? placeholderHint}
+            >
               {/* The "default / unset" choice reads muted — it isn't a
-                  token, just the inherited default (e.g. 100% opacity,
-                  Inherit). Mirrors muted into the trigger too, so an
-                  unbound field shows a greyed default value. Brightens
-                  on the highlighted row (muted-on-accent is unreadable);
-                  the trigger has no highlight, so it stays grey there. */}
+                  token, just the inherited default. When a contract
+                  default exists, this row reads ITS label ("pt-6") so
+                  the ghost chip mirrors it via SelectValue (the trigger
+                  needs a SelectValue node for item-aligned to work).
+                  Brightens on the highlighted row (muted-on-accent is
+                  unreadable); the trigger has no highlight, so it stays
+                  grey there. */}
               <span className="text-muted-foreground group-focus:text-accent-foreground group-data-[highlighted]:text-accent-foreground">
-                {placeholder}
+                {ghostToken?.label ?? placeholder}
               </span>
             </SelectItem>
             {tokens.map((t) => (
@@ -440,6 +448,8 @@ export function RawNumberField({
       <Input
         size="2xs"
         type="number"
+        autoComplete="off"
+        spellCheck={false}
         value={draft}
         disabled={disabled}
         startSlot={icon}
@@ -502,6 +512,8 @@ export function CompactNumberField({
         size="2xs"
         type="text"
         inputMode="decimal"
+        autoComplete="off"
+        spellCheck={false}
         aria-label={ariaLabel}
         title={ariaLabel}
         value={draft}
@@ -633,6 +645,8 @@ export function CompactDimensionField({
         size="2xs"
         type="text"
         inputMode="decimal"
+        autoComplete="off"
+        spellCheck={false}
         aria-label={ariaLabel}
         title={ariaLabel}
         value={draft}
@@ -725,6 +739,8 @@ export function ColorOpacityRow({
       <div className="min-w-0 flex-1">
         <Input
           size="2xs"
+          autoComplete="off"
+          spellCheck={false}
           className="font-mono uppercase"
           value={hexDraft}
           disabled={disabled}
@@ -740,6 +756,8 @@ export function ColorOpacityRow({
         <Input
           size="2xs"
           type="number"
+          autoComplete="off"
+          spellCheck={false}
           value={opDraft}
           disabled={disabled}
           className={endExtra ? "pr-10" : undefined}

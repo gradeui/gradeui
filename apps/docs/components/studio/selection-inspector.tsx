@@ -1570,6 +1570,8 @@ function LayerNameRow({
         id="layer-name"
         ref={inputRef}
         size="2xs"
+        autoComplete="off"
+        spellCheck={false}
         value={liveValue}
         placeholder={componentName}
         onChange={(e) => setDraft(e.currentTarget.value)}
@@ -1870,6 +1872,8 @@ function TextEditRow({
         id="text-content"
         ref={inputRef}
         size="2xs"
+        autoComplete="off"
+        spellCheck={false}
         value={liveValue}
         onChange={(e) => {
           const next = e.currentTarget.value;
@@ -3790,6 +3794,8 @@ function ClassNameOverride({
       <Input
         id="classname-override"
         size="2xs"
+        autoComplete="off"
+        spellCheck={false}
         value={liveValue}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
@@ -4259,6 +4265,8 @@ function SideInput({
       size="2xs"
       type="text"
       inputMode="decimal"
+      autoComplete="off"
+      spellCheck={false}
       aria-label={ariaLabel}
       title={ariaLabel}
       value={draft}
@@ -4535,6 +4543,8 @@ function LiveInput({
       <Input
         ref={inputRef}
         type={type}
+        autoComplete="off"
+        spellCheck={false}
         // size="2xs" gives a clean text-xs; relying on a `text-xs`
         // className override didn't beat the default size's `md:text-sm`
         // at desktop widths, which made the src/url field render oversized.
