@@ -58,6 +58,7 @@ import { toast } from "sonner";
 import { themeToCSSVars } from "@/lib/themes/apply";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { ViewportWidth } from "@/components/studio/sandpack-frame";
+import { ARTBOARD_DEVICE_SIZES } from "@/components/studio/use-artboard-zoom";
 
 // URL of the sandbox Next route. Route is defined at
 // apps/docs/app/fast-sandbox/page.tsx.
@@ -133,6 +134,13 @@ interface FastIframeHostProps {
    *  and the parent's zoom transform natively. The share view uses this;
    *  studio keeps the parent overlay for now. */
   inlineComments?: boolean;
+  /** Reports the rendered page's content height (document scrollHeight,
+   *  px). Same-origin iframe, so the parent polls contentDocument
+   *  directly — the same mechanism CanvasCommentPinsOverlay uses for
+   *  pin rects. Drives the responsive content-height artboard (see the
+   *  whole-page Fit in FocusedFastMount). Only polled while the prop is
+   *  set; only fires on change. */
+  onContentHeight?: (h: number) => void;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -155,6 +163,7 @@ export function FastIframeHost({
   getCommentUser,
   commentsVisible = true,
   inlineComments = false,
+  onContentHeight,
   className,
   style,
 }: FastIframeHostProps) {
@@ -226,6 +235,39 @@ export function FastIframeHost({
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, []);
+
+  // Content-height reporting — poll the same-origin contentDocument's
+  // scrollHeight (the pins overlay's proven pattern; reflows from
+  // streaming source, font/image loads, and accordion-style interactions
+  // have no direct observation hook). Callback rides a ref so prop
+  // identity churn doesn't restart the interval; the effect is gated on
+  // a boolean so polling only runs for consumers that asked.
+  const onContentHeightRef = useRef(onContentHeight);
+  useEffect(() => {
+    onContentHeightRef.current = onContentHeight;
+  }, [onContentHeight]);
+  const wantContentHeight = Boolean(onContentHeight);
+  useEffect(() => {
+    if (!wantContentHeight) return;
+    let last = 0;
+    const read = () => {
+      const iframe = iframeRef.current;
+      let doc: Document | null = null;
+      try {
+        doc = iframe?.contentDocument ?? null;
+      } catch {
+        doc = null;
+      }
+      const h = doc?.documentElement?.scrollHeight ?? 0;
+      if (h > 0 && h !== last) {
+        last = h;
+        onContentHeightRef.current?.(h);
+      }
+    };
+    read();
+    const id = window.setInterval(read, 300);
+    return () => window.clearInterval(id);
+  }, [wantContentHeight, ready]);
 
   // Post-to-sandbox helper. No-ops if the iframe isn't loaded yet —
   // the effects below only fire once `ready` flips true, so we're
@@ -421,18 +463,28 @@ interface FocusedFastMountProps {
    *  hook for role/tier gating (some users view-only) — pass
    *  `user_can_edit_project` here once that's wired. */
   canEditSource?: boolean;
+  /** The scale to apply to the artboard — `effectiveZoom` from
+   *  useArtboardZoom, owned by StudioCanvas (the zoom dropdown lives in
+   *  the toolbar there). Defaults to 1 (embed-style callers that don't
+   *  wire zoom get the old behaviour). */
+  zoom?: number;
+  /** True while Fit mode drives `zoom` — purely presentational here
+   *  (the canvas annotation reads "Fit" instead of a percentage). */
+  fitMode?: boolean;
+  /** Measurement ref from useArtboardZoom. Attached to the scrollable
+   *  canvas area so Fit can compute its scale against the real column
+   *  size. Optional for callers without zoom wiring. */
+  zoomCanvasRef?: (el: HTMLElement | null) => void;
+  /** The RESOLVED artboard from useArtboardZoom (`deviceSize` on the
+   *  hook result) — device presets AND the responsive content-height
+   *  artboard both arrive through here, so the mount renders whatever
+   *  the fit math was computed against. Falls back to the static
+   *  preset map when omitted. */
+  artboardSize?: { w: number; h: number };
+  /** Forwarded to FastIframeHost — see the prop there. The canvas
+   *  passes it in responsive mode only. */
+  onContentHeight?: (h: number) => void;
 }
-
-// Pixel widths for the viewport artboard. Duplicated from sandpack-frame
-// — small enough that duplication beats threading a shared map.
-const FAST_VIEWPORT_WIDTHS: Record<
-  Exclude<ViewportWidth, "responsive">,
-  number
-> = {
-  mobile: 390,
-  tablet: 768,
-  desktop: 1024,
-};
 
 export function FocusedFastMount({
   appSource,
@@ -455,6 +507,11 @@ export function FocusedFastMount({
   getCommentUser,
   onSourceEdit,
   canEditSource = true,
+  zoom = 1,
+  fitMode = false,
+  zoomCanvasRef,
+  artboardSize,
+  onContentHeight,
 }: FocusedFastMountProps) {
   // Memoize the prepared source for the Code view so we don't re-run
   // prepareAppSource on every render purely to display the text.
@@ -575,69 +632,162 @@ export function FocusedFastMount({
     );
   }
 
-  // Preview view — scope by viewport-width artboard to match Sandpack's
-  // behaviour: "responsive" fills the column; presets float a width-
-  // constrained frame on a dot-grid backdrop so the preview reads like
-  // a device sitting on a design surface.
+  // Preview view — the same artboard treatment as the share view
+  // (shared-screen.tsx): "responsive" fills the column and zoom scales
+  // it from the centre; device presets frame a real w×h artboard on a
+  // dot-grid canvas, scaled by `zoom` (Fit by default, so nothing ever
+  // overflows a laptop / iPad column). Fit math lives in
+  // useArtboardZoom up in StudioCanvas; this component just applies
+  // the scale.
   const isResponsive = viewportWidth === "responsive";
-  const maxWidthPx = isResponsive
-    ? undefined
-    : FAST_VIEWPORT_WIDTHS[viewportWidth];
+  // Prefer the resolved artboard from the hook (device presets and the
+  // responsive content-height artboard both come through it); fall back
+  // to the static preset map for callers without zoom wiring. Responsive
+  // WITHOUT a content artboard = the page fits the column → plain fill.
+  const device =
+    artboardSize ??
+    (isResponsive ? undefined : ARTBOARD_DEVICE_SIZES[viewportWidth]);
+
+  // Overshoot-and-settle transition on DELIBERATE zoom picks only
+  // (same curve as the share view; snapping back to 100% gets a
+  // subtler one). In Fit mode the scale is recomputed continuously
+  // while the browser resizes — animating those recalcs makes the
+  // artboard spring-chase the window ("bouncing"), so Fit tracks
+  // instantly instead.
+  const zoomTransition = fitMode
+    ? "box-shadow 220ms ease"
+    : `transform 340ms ${
+        zoom === 1
+          ? "cubic-bezier(0.33, 1.08, 0.68, 1)"
+          : "cubic-bezier(0.33, 1.25, 0.68, 1)"
+      }, box-shadow 220ms ease`;
+
+  const host = canRender ? (
+    <FastIframeHost
+      key={replayKey}
+      appSource={appSource}
+      theme={theme}
+      mode={mode}
+      selectMode={selectMode}
+      onSelect={onSelect}
+      onClearSelection={onClearSelection}
+      onSelectModeChange={onSelectModeChange}
+      fidelity={fidelity}
+      mediaUrls={mediaUrls}
+      mediaOverrides={mediaOverrides}
+      commentThreads={commentThreads}
+      activeCommentThreadId={activeCommentThreadId}
+      onCommentPinClick={onCommentPinClick}
+      getCommentUser={getCommentUser}
+      onContentHeight={onContentHeight}
+      className={cn(
+        "block",
+        // Edge treatment when framed as a device, or sitting "in
+        // space" (zoomed out). Radius + shadow come from the
+        // --gds-artboard-* tokens (globals.css) — the standard
+        // artboard look, tweakable in one place.
+        device || zoom < 1 ? "ring-1 ring-border/40" : undefined,
+        !device && "h-full w-full",
+      )}
+      style={
+        device
+          ? {
+              width: device.w,
+              height: device.h,
+              // Origin top-left so the sized wrapper below exactly
+              // bounds the visual — no phantom scroll area from
+              // unscaled layout space.
+              transform: `scale(${zoom})`,
+              transformOrigin: "top left",
+              transition: zoomTransition,
+              borderRadius: "var(--gds-artboard-radius)",
+              boxShadow: "var(--gds-artboard-shadow)",
+            }
+          : {
+              transform: `scale(${zoom})`,
+              transformOrigin: "center center",
+              transition: zoomTransition,
+              borderRadius: zoom < 1 ? "var(--gds-artboard-radius)" : undefined,
+              boxShadow: zoom < 1 ? "var(--gds-artboard-shadow)" : undefined,
+            }
+      }
+    />
+  ) : null;
 
   return (
     <div
+      // Measured by useArtboardZoom (Fit needs the live column size).
+      // MUST be the stable outer wrapper, NOT the overflow:auto
+      // scroller below — measuring the scroller couples fit to
+      // scrollbar appearance and oscillates (see the matching note in
+      // use-artboard-zoom.ts).
+      ref={zoomCanvasRef}
+      className="relative h-full w-full overflow-hidden"
+    >
+    <div
+      data-lenis-prevent
+      className="h-full w-full"
       style={{
-        display: "flex",
-        height: "100%",
-        width: "100%",
-        justifyContent: "center",
-        alignItems: "stretch",
-        backgroundColor: isResponsive ? undefined : "var(--muted)",
-        backgroundImage: isResponsive
-          ? undefined
-          : "radial-gradient(circle, currentColor 1px, transparent 1px)",
-        backgroundSize: isResponsive ? undefined : "16px 16px",
-        color: isResponsive
-          ? undefined
-          : "color-mix(in oklab, var(--muted-foreground) 45%, transparent)",
-        padding: isResponsive ? 0 : "1rem",
+        // Fit mode guarantees the artboard fits — no scrollbars by
+        // definition. Allowing overflow:auto there lets a sub-pixel
+        // rounding overflow toggle the vertical scrollbar during
+        // scale recalcs, which steals ~15px of width and shifts the
+        // centred artboard sideways every tick (the horizontal
+        // "jiggle"). stable both-edges keeps centring symmetric in
+        // the manual-zoom modes where scrolling is legitimate.
+        overflow: fitMode ? "hidden" : "auto",
+        scrollbarGutter: fitMode ? undefined : "stable both-edges",
+        overscrollBehavior: "contain",
+        // Canvas treatment whenever an artboard is framed — device
+        // preset OR the responsive content-height artboard.
+        backgroundColor: device ? "var(--gds-artboard-canvas-bg)" : undefined,
+        backgroundImage:
+          !device && zoom === 1
+            ? undefined
+            : "radial-gradient(circle, var(--gds-artboard-canvas-dot) 1px, transparent 1.6px)",
+        backgroundSize: "16px 16px",
       }}
     >
-      <div
-        style={{
-          height: "100%",
-          width: "100%",
-          display: "flex",
-          border: isResponsive ? 0 : "1px solid var(--border)",
-          borderRadius: isResponsive ? 0 : "0.5rem",
-          overflow: isResponsive ? undefined : "hidden",
-          boxShadow: isResponsive
-            ? undefined
-            : "0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06)",
-          background: "var(--background)",
-          maxWidth: maxWidthPx,
-        }}
-      >
-        {canRender ? (
-          <FastIframeHost
-            key={replayKey}
-            appSource={appSource}
-            theme={theme}
-            mode={mode}
-            selectMode={selectMode}
-            onSelect={onSelect}
-            onClearSelection={onClearSelection}
-            onSelectModeChange={onSelectModeChange}
-            fidelity={fidelity}
-            mediaUrls={mediaUrls}
-            mediaOverrides={mediaOverrides}
-            commentThreads={commentThreads}
-            activeCommentThreadId={activeCommentThreadId}
-            onCommentPinClick={onCommentPinClick}
-            getCommentUser={getCommentUser}
-          />
-        ) : null}
-      </div>
+      {/* Annotation — appears on zoom-out, labelling the scale the
+          artboard is sitting at (share-view parity). */}
+      {zoom < 1 && (
+        <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2">
+          <span className="inline-flex items-center rounded-full border border-border/60 bg-background/70 px-2.5 py-0.5 text-[11px] tabular-nums text-muted-foreground shadow-sm backdrop-blur-md">
+            {fitMode ? "Fit" : `${Math.round(zoom * 100)}%`}
+          </span>
+        </div>
+      )}
+
+      {device ? (
+        // Top-aligned + padded so a tall artboard at 100% scrolls
+        // naturally from the top rather than being clipped by vertical
+        // centring; a fitted artboard just sits centred near the top.
+        <div className="flex min-h-full w-full items-start justify-center p-8">
+          {/* Sized to the SCALED artboard. transform doesn't affect
+              layout, so without this the layout box would stay at the
+              unscaled w×h and leave phantom scroll space below a
+              fitted artboard. */}
+          <div
+            className="shrink-0"
+            style={{
+              width: device.w * zoom,
+              height: device.h * zoom,
+              // Match the transform's animation exactly — a wrapper
+              // easing differently from the iframe's scale reads as
+              // wobble. None in Fit mode (instant tracking), the same
+              // duration/curve as zoomTransition otherwise.
+              transition: fitMode
+                ? undefined
+                : "width 340ms ease, height 340ms ease",
+            }}
+          >
+            {host}
+          </div>
+        </div>
+      ) : (
+        <div className="flex h-full w-full">{host}</div>
+      )}
+    </div>
     </div>
   );
 }

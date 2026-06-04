@@ -29,6 +29,22 @@
   --studio-glow: 0.66 0.18 258;
 
   /* ----------------------------------------
+     Artboard canvas — the standard backdrop for
+     any surface that frames a rendered screen as
+     an artboard (focused canvas; share view +
+     embed can adopt the same tokens). Derived
+     from theme vars via color-mix so they track
+     light/dark and the active design theme.
+     ---------------------------------------- */
+  /* Darker than --muted so the artboard pops off the canvas. */
+  --gds-artboard-canvas-bg: color-mix(in oklab, var(--muted) 86%, var(--foreground));
+  --gds-artboard-canvas-dot: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+  /* Square for now — revisit when the real layout lands from Figma. */
+  --gds-artboard-radius: 0px;
+  /* Quiet lift, not a hero shadow. */
+  --gds-artboard-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 20px -6px rgb(0 0 0 / 0.16);
+
+  /* ----------------------------------------
      Brand Colors - Neon Green (Primary)
      The signature RDS green
      ---------------------------------------- */

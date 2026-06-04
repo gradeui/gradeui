@@ -35,6 +35,8 @@ import * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  Check,
+  ChevronDown,
   Code2,
   Copy,
   Crosshair,
@@ -108,6 +110,11 @@ import {
   FocusedFastMount,
   TileFastMount,
 } from "@/components/studio/fast-frame";
+import {
+  ARTBOARD_DEVICE_SIZES,
+  ZOOM_LEVELS as ARTBOARD_ZOOM_LEVELS,
+  useArtboardZoom,
+} from "@/components/studio/use-artboard-zoom";
 
 /**
  * Minimal App module used to prewarm Sandpack when we don't yet have real
@@ -415,6 +422,53 @@ export function StudioCanvas({
   // full 1280 virtual width regardless.
   const [viewportWidth, setViewportWidth] =
     useState<ViewportWidth>("responsive");
+
+  // Artboard zoom — the share view's Fit/zoom treatment, applied to the
+  // focused Fast Frame. Device presets become real w×h artboards on the
+  // dot grid; Fit (the default) computes the largest scale that keeps
+  // the whole artboard inside the column, so nothing overflows on a
+  // laptop or iPad. NOTE: kept un-destructured — this component already
+  // has a `zoom` ("fit"|"all" view mode) and the two must not collide.
+  //
+  // Responsive mode is content-dependent: the focused iframe reports
+  // its rendered scrollHeight (same-origin read in FastIframeHost).
+  // A page meaningfully taller than the column becomes a full-height
+  // artboard — Fit then frames the ENTIRE scrolling page in the
+  // canvas; 100% scrolls it in the canvas scroller. A page that fits
+  // the column keeps the plain fill (app-shell screens are unaffected).
+  const [responsiveContentH, setResponsiveContentH] = useState<number | null>(
+    null,
+  );
+  // Stale heights must not leak across screens or viewport flips — a
+  // min-h-screen page measured at a previous height can't shrink its
+  // own scrollHeight, so re-probe from the fill state instead.
+  useEffect(() => {
+    setResponsiveContentH(null);
+  }, [focusedId, viewportWidth]);
+  const resolveArtboardSize = useCallback(
+    (canvas: { w: number; h: number }) => {
+      if (viewportWidth !== "responsive")
+        return ARTBOARD_DEVICE_SIZES[viewportWidth];
+      if (
+        responsiveContentH !== null &&
+        canvas.w > 0 &&
+        canvas.h > 0 &&
+        // Meaningfully taller than the column — sub-pixel / rounding
+        // differences shouldn't flip the layout mode.
+        responsiveContentH > canvas.h + 8
+      ) {
+        // Width: the column minus the p-8 frame padding, so 100% lays
+        // the page out at (roughly) the width it fills today.
+        return { w: Math.max(320, canvas.w - 64), h: responsiveContentH };
+      }
+      return undefined;
+    },
+    [viewportWidth, responsiveContentH],
+  );
+  const artboard = useArtboardZoom({
+    deviceSize: resolveArtboardSize,
+    defaultFit: true,
+  });
 
   // Replay counter — bumping it re-keys the focused iframe so every
   // inView reveal + mount animation runs again. The control lives in
@@ -1054,6 +1108,57 @@ export function StudioCanvas({
   // and the overlay logic share the same rule.
   const isFit = zoom === "fit";
 
+  // Artboard-zoom keyboard shortcuts — same vocabulary as the share
+  // view (0 = fit, 1–4 = 100/90/75/50, −/= step). Only live while the
+  // focused preview is on screen; guarded against inputs AND
+  // contenteditable (CodeMirror in the Code view) so typing digits in
+  // chat or source never rescales the artboard.
+  const artboardRef = useRef(artboard);
+  useEffect(() => {
+    artboardRef.current = artboard;
+  }, [artboard]);
+  useEffect(() => {
+    if (!isFit || view !== "preview") return;
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        if (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+        if (target.isContentEditable) return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const a = artboardRef.current;
+      switch (e.key) {
+        case "0":
+          a.fit();
+          break;
+        case "1":
+          a.pickZoom(1);
+          break;
+        case "2":
+          a.pickZoom(0.9);
+          break;
+        case "3":
+          a.pickZoom(0.75);
+          break;
+        case "4":
+          a.pickZoom(0.5);
+          break;
+        case "-":
+        case "_":
+          a.stepZoom(-1);
+          break;
+        case "=":
+        case "+":
+          a.stepZoom(1);
+          break;
+        default:
+          break;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isFit, view]);
+
   // canRender still gates whether the focused frame shows iframe vs the
   // overlay (same heuristic as StudioPreview). Only meaningful in fit
   // mode; tiles have their own per-design version below.
@@ -1450,13 +1555,13 @@ export function StudioCanvas({
                 }}
                 aria-label="Viewport width"
               >
-                <ToggleGroupItem value="mobile" tooltip="Mobile — 390px">
+                <ToggleGroupItem value="mobile" tooltip="Mobile — 390×844">
                   <Smartphone />
                 </ToggleGroupItem>
-                <ToggleGroupItem value="tablet" tooltip="Tablet — 768px">
+                <ToggleGroupItem value="tablet" tooltip="Tablet — 768×1024">
                   <Tablet />
                 </ToggleGroupItem>
-                <ToggleGroupItem value="desktop" tooltip="Desktop — 1024px">
+                <ToggleGroupItem value="desktop" tooltip="Desktop — 1440×900">
                   <Monitor />
                 </ToggleGroupItem>
                 <ToggleGroupItem
@@ -1466,6 +1571,53 @@ export function StudioCanvas({
                   <MoveHorizontal />
                 </ToggleGroupItem>
               </ToggleGroup>
+              {/* Zoom — the share view's treatment ported to the canvas.
+                  Fit (default) frames the whole artboard in the column;
+                  discrete levels are down-only. Keyboard: 0 = fit,
+                  1–4 = levels, − / = step. Preview-only — Code and
+                  Timeline have nothing to scale. */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    title="Zoom (0 = fit, 1–4 = levels)"
+                    disabled={view !== "preview"}
+                    className={cn(
+                      "h-7 inline-flex items-center gap-1 rounded-md px-2 text-xs tabular-nums transition-colors",
+                      "text-muted-foreground hover:text-foreground hover:bg-muted",
+                      "disabled:opacity-40 disabled:pointer-events-none"
+                    )}
+                  >
+                    {artboard.fitMode
+                      ? "Fit"
+                      : `${Math.round(artboard.effectiveZoom * 100)}%`}
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[6rem]">
+                  <DropdownMenuItem
+                    onClick={artboard.fit}
+                    className="gap-2 tabular-nums"
+                  >
+                    <span className="flex-1">Fit</span>
+                    {artboard.fitMode && (
+                      <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                    )}
+                  </DropdownMenuItem>
+                  {ARTBOARD_ZOOM_LEVELS.map((z) => (
+                    <DropdownMenuItem
+                      key={z}
+                      onClick={() => artboard.pickZoom(z)}
+                      className="gap-2 tabular-nums"
+                    >
+                      <span className="flex-1">{Math.round(z * 100)}%</span>
+                      {!artboard.fitMode && z === artboard.zoom && (
+                        <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               {/* Fidelity toggle removed — wireframe/full has no
                   product surface yet; fidelity is pinned to "full"
                   via the constant near the top of this component. */}
@@ -1796,6 +1948,13 @@ export function StudioCanvas({
         mediaOverrides={focusedOverrides}
         hidden={!isFit}
         rendererMode={rendererMode}
+        artboardZoom={artboard.effectiveZoom}
+        artboardFitMode={artboard.fitMode}
+        artboardCanvasRef={artboard.canvasRef}
+        artboardSize={artboard.deviceSize}
+        onContentHeight={
+          viewportWidth === "responsive" ? setResponsiveContentH : undefined
+        }
       />
       {/* Timeline dock — a flex child at the bottom of app-main, so the
           preview (flex-1, above) shrinks to make room. Placeholder for now;
@@ -1918,6 +2077,21 @@ interface FocusedFrameProps {
    *  the mount below always uses FocusedSandpackMount. See TODO(#5)
    *  inside this component for the swap point. */
   rendererMode?: "sandpack" | "fast";
+  /** Artboard zoom (effective scale) from useArtboardZoom up in
+   *  StudioCanvas — the toolbar's zoom dropdown owns the state; the
+   *  Fast mount just applies the transform. Fast renderer only. */
+  artboardZoom?: number;
+  /** True while Fit drives artboardZoom (annotation reads "Fit"). */
+  artboardFitMode?: boolean;
+  /** Measurement ref — attached to the Fast mount's scrollable canvas
+   *  area so Fit computes against the real column size. */
+  artboardCanvasRef?: (el: HTMLElement | null) => void;
+  /** The resolved artboard the fit math ran against (device preset or
+   *  the responsive content-height artboard). */
+  artboardSize?: { w: number; h: number };
+  /** Content-height reports from the focused iframe (responsive mode
+   *  only — undefined disables the same-origin polling entirely). */
+  onContentHeight?: (h: number) => void;
 }
 
 /**
@@ -1951,6 +2125,11 @@ function FocusedFrame({
   mediaOverrides,
   hidden = false,
   rendererMode = "sandpack",
+  artboardZoom = 1,
+  artboardFitMode = false,
+  artboardCanvasRef,
+  artboardSize,
+  onContentHeight,
 }: FocusedFrameProps) {
   // Iframe-side capture is on whenever EITHER toolbar mode is on.
   // The page-side handler routes to the right consumer based on
@@ -2149,6 +2328,11 @@ function FocusedFrame({
           onCommentPinClick={onCommentPinClick}
           getCommentUser={getCommentUser}
           onSourceEdit={onSourceMutation}
+          zoom={artboardZoom}
+          fitMode={artboardFitMode}
+          zoomCanvasRef={artboardCanvasRef}
+          artboardSize={artboardSize}
+          onContentHeight={onContentHeight}
         />
       ) : (
         <FocusedSandpackMount

@@ -57,29 +57,19 @@ import {
 } from "@/lib/themes";
 import type { ThemeInput, GeneratedTheme } from "@/lib/themes";
 import { cn } from "@/lib/utils";
+import {
+  ARTBOARD_DEVICE_SIZES,
+  ZOOM_LEVELS,
+  useArtboardZoom,
+} from "@/components/studio/use-artboard-zoom";
 
-/** Discrete zoom levels — down-only (never past 100%, where scaling up
- *  just looks broken). "Fit" is reserved for when the iframe reports its
- *  content height. Index 0 = most zoomed-in (100%). */
-const ZOOM_LEVELS = [1, 0.9, 0.75, 0.5];
-
-/** Device presets for the share. `responsive` fills the canvas (the
- *  original behaviour); the rest frame the screen at a fixed artboard
- *  with an EXPLICIT width AND height so it reads as a real device sitting
- *  on the canvas — not a full-height strip. Widths match Studio's
- *  viewport vocabulary (mobile/tablet 390/768); heights are the common
- *  logical sizes (iPhone 14/15 ≈ 844, iPad ≈ 1024, desktop window 900).
- *  Portrait only for now — an orientation switch (swap w/h) lands later.
- *  Part of the share contract: the creator's pick is persisted on the
- *  link. */
-const DEVICE_SIZES: Record<
-  Exclude<ShareViewport, "responsive">,
-  { w: number; h: number }
-> = {
-  mobile: { w: 390, h: 844 },
-  tablet: { w: 768, h: 1024 },
-  desktop: { w: 1440, h: 900 },
-};
+/** Zoom levels + device artboards now live in use-artboard-zoom.ts —
+ *  the single implementation shared with the focused canvas (which
+ *  ported this view's treatment). `responsive` still fills the canvas;
+ *  device presets frame a fixed w×h artboard. Portrait only for now —
+ *  an orientation switch (swap w/h) lands later. Part of the share
+ *  contract: the creator's pick is persisted on the link. */
+const DEVICE_SIZES = ARTBOARD_DEVICE_SIZES;
 const DEVICE_OPTIONS: {
   id: ShareViewport;
   label: string;
@@ -155,55 +145,57 @@ export function SharedScreen({
   // reduced-motion, reduce-only); false = force still. Forwarded to
   // FastIframeHost as the `motion` prop → grade:set-motion.
   const [motionOn, setMotionOn] = React.useState(true);
-  // Manual zoom level (one of ZOOM_LEVELS). `fitMode` overrides it with a
-  // computed scale that fits the artboard in the visible canvas — see
-  // `fitZoom` below. Picking a discrete level drops fit; picking Fit
-  // re-enables it.
-  const [zoom, setZoom] = React.useState(1);
-  const [fitMode, setFitMode] = React.useState(false);
   const [viewport, setViewport] = React.useState<ShareViewport>(
     initialViewport,
   );
   const isFixedDevice = viewport !== "responsive";
-  const deviceSize = isFixedDevice ? DEVICE_SIZES[viewport] : undefined;
   const activeDevice =
     DEVICE_OPTIONS.find((d) => d.id === viewport) ?? DEVICE_OPTIONS[0];
 
-  // Measure the canvas area so Fit can compute a scale. ResizeObserver
-  // keeps it live as the window resizes / chrome toggles.
-  const screenRef = React.useRef<HTMLDivElement>(null);
-  const [canvasSize, setCanvasSize] = React.useState({ w: 0, h: 0 });
+  // Responsive content-height artboard — identical behaviour to the
+  // focused canvas: the same-origin iframe reports its rendered
+  // scrollHeight; a page meaningfully taller than the viewer's window
+  // becomes a full-height artboard, so Fit frames the ENTIRE scrolling
+  // page. Pages that fit keep the plain fill. Stale heights reset on
+  // viewport flips (min-h-screen pages can't shrink their own
+  // scrollHeight — re-probe from the fill state instead).
+  const [contentH, setContentH] = React.useState<number | null>(null);
   React.useEffect(() => {
-    const el = screenRef.current;
-    if (!el) return;
-    const measure = () =>
-      setCanvasSize({ w: el.clientWidth, h: el.clientHeight });
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+    setContentH(null);
+  }, [viewport]);
+  const resolveDeviceSize = React.useCallback(
+    (canvas: { w: number; h: number }) => {
+      if (viewport !== "responsive") return DEVICE_SIZES[viewport];
+      if (
+        contentH !== null &&
+        canvas.w > 0 &&
+        canvas.h > 0 &&
+        contentH > canvas.h + 8
+      ) {
+        return { w: Math.max(320, canvas.w - 64), h: contentH };
+      }
+      return undefined;
+    },
+    [viewport, contentH],
+  );
 
-  // Fit scale — largest scale (never above 1) that keeps the whole
-  // artboard inside the padded canvas. Responsive has no fixed artboard,
-  // so Fit just means 100%. The 64px accounts for the p-8 frame padding.
-  const fitZoom = React.useMemo(() => {
-    if (!deviceSize || canvasSize.w === 0 || canvasSize.h === 0) return 1;
-    const pad = 64;
-    const s = Math.min(
-      (canvasSize.w - pad) / deviceSize.w,
-      (canvasSize.h - pad) / deviceSize.h,
-    );
-    return Math.min(1, Math.max(0.1, s));
-  }, [deviceSize, canvasSize]);
-
-  // The scale actually applied to the artboard.
-  const effectiveZoom = fitMode ? fitZoom : zoom;
-  // Pick a discrete level — always drops Fit mode.
-  const pickZoom = React.useCallback((z: number) => {
-    setFitMode(false);
-    setZoom(z);
-  }, []);
+  // Zoom + Fit — the shared artboard-zoom implementation (also drives
+  // the focused canvas). Owns canvas measurement, the fit math, and
+  // the pick/step/fit gestures. The share opens at 100% (defaultFit
+  // false) — the creator framed the screen; honour it.
+  const {
+    canvasRef: screenRef,
+    deviceSize,
+    zoom,
+    fitMode,
+    effectiveZoom,
+    pickZoom,
+    stepZoom,
+    fit,
+  } = useArtboardZoom({ deviceSize: resolveDeviceSize });
+  // True whenever an artboard is framed — a fixed device preset OR the
+  // responsive content-height artboard. Drives the card layout below.
+  const framed = Boolean(deviceSize);
 
   // Comments — pins shown by default when the screen has any. Reading is
   // open to anyone with the link; replying requires a signed-in viewer.
@@ -264,22 +256,7 @@ export function SharedScreen({
   //   C        toggle comments
   //   M        toggle motion (animate / hold still)
   React.useEffect(() => {
-    const stepZoom = (dir: number) => {
-      setFitMode(false);
-      setZoom((z) => {
-        const i = ZOOM_LEVELS.indexOf(z);
-        if (i === -1) return z;
-        const next = Math.min(
-          ZOOM_LEVELS.length - 1,
-          Math.max(0, i - dir), // dir +1 = zoom in (toward index 0)
-        );
-        return ZOOM_LEVELS[next];
-      });
-    };
-    const jump = (z: number) => {
-      setFitMode(false);
-      setZoom(z);
-    };
+    const jump = pickZoom;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
@@ -298,7 +275,7 @@ export function SharedScreen({
           setMotionOn((v) => !v);
           break;
         case "0":
-          setFitMode(true);
+          fit();
           break;
         case "1":
           jump(1);
@@ -326,7 +303,8 @@ export function SharedScreen({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    // pickZoom / stepZoom / fit are stable useCallbacks from the hook.
+  }, [pickZoom, stepZoom, fit]);
 
   const iconBtn =
     "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground";
@@ -497,7 +475,7 @@ export function SharedScreen({
                     fills); shown always for muscle-memory but it just maps
                     to 100% in responsive. */}
                 <DropdownMenuItem
-                  onClick={() => setFitMode(true)}
+                  onClick={fit}
                   className="gap-2 tabular-nums"
                 >
                   <span className="flex-1">Fit</span>
@@ -580,9 +558,22 @@ export function SharedScreen({
           studio-style dot grid shows on zoom-out so the screen reads as
           sitting in a constrained canvas; zoom scales from the centre. ── */}
       <div
+        // Measured wrapper — stable (overflow hidden), so Fit never
+        // couples to scrollbar appearance on the scroller below
+        // (that feedback loop oscillates; see use-artboard-zoom.ts).
         ref={screenRef}
-        className="relative min-h-0 flex-1 overflow-auto bg-muted/15"
+        className="relative min-h-0 flex-1 overflow-hidden"
+      >
+      <div
+        className="h-full w-full bg-muted/15"
         style={{
+          // Fit guarantees the artboard fits — overflow:hidden there so
+          // a sub-pixel rounding overflow can't toggle the scrollbar and
+          // shift the centred artboard sideways (the jiggle the canvas
+          // had). stable both-edges keeps centring symmetric in the
+          // manual-zoom modes where scrolling is legitimate.
+          overflow: fitMode ? "hidden" : "auto",
+          scrollbarGutter: fitMode ? undefined : "stable both-edges",
           backgroundImage:
             "radial-gradient(circle, color-mix(in oklab, var(--foreground) 22%, transparent) 1px, transparent 1.6px)",
           backgroundSize: "16px 16px",
@@ -611,12 +602,13 @@ export function SharedScreen({
         {/* The zoom transform + device width go on the IFRAME itself.
             Inline comments (pins injected into the iframe's own DOM) mean
             there are no parent-realm fixed pins for a transformed ancestor
-            to scale — so we're free to wrap + centre the artboard. For a
-            fixed device the iframe is constrained to the preset width and
-            centred on the dot grid as a card; responsive fills as before. */}
+            to scale — so we're free to wrap + centre the artboard. `framed`
+            covers a fixed device preset AND the responsive content-height
+            artboard; plain responsive (page fits the window) fills as
+            before. */}
         <div
           className={cn(
-            isFixedDevice
+            framed
               ? // Top-aligned + padded so a tall device (e.g. mobile 844)
                 // scrolls naturally from the top rather than being clipped
                 // by vertical centring; short devices just sit near the top.
@@ -641,33 +633,43 @@ export function SharedScreen({
             onCommentPinClick={(id) =>
               setActiveThreadId((cur) => (cur === id ? null : id))
             }
+            // Responsive only — feeds the content-height artboard above.
+            onContentHeight={
+              viewport === "responsive" ? setContentH : undefined
+            }
             className={cn(
               "block",
-              isFixedDevice ? "shrink-0" : "h-full w-full",
-              // Card treatment when framed as a device, or sitting "in
-              // space" (zoomed out).
-              (isFixedDevice || effectiveZoom < 1) &&
+              framed ? "shrink-0" : "h-full w-full",
+              // Card treatment when framed as an artboard, or sitting
+              // "in space" (zoomed out).
+              (framed || effectiveZoom < 1) &&
                 "rounded-xl ring-1 ring-border/40",
             )}
             style={{
               width: deviceSize?.w,
               height: deviceSize?.h,
               transform: `scale(${effectiveZoom})`,
-              transformOrigin: isFixedDevice ? "top center" : "center center",
-              // Gentle overshoot-and-settle on zoom change; snapping back to
-              // 100% gets an even subtler curve.
-              transition: `transform 340ms ${
-                effectiveZoom === 1
-                  ? "cubic-bezier(0.33, 1.08, 0.68, 1)"
-                  : "cubic-bezier(0.33, 1.25, 0.68, 1)"
-              }, box-shadow 220ms ease`,
+              transformOrigin: framed ? "top center" : "center center",
+              // Gentle overshoot-and-settle on DELIBERATE zoom picks;
+              // snapping back to 100% gets an even subtler curve. Fit
+              // recomputes continuously during a browser resize —
+              // animating those makes the artboard spring-chase the
+              // window, so Fit tracks instantly.
+              transition: fitMode
+                ? "box-shadow 220ms ease"
+                : `transform 340ms ${
+                    effectiveZoom === 1
+                      ? "cubic-bezier(0.33, 1.08, 0.68, 1)"
+                      : "cubic-bezier(0.33, 1.25, 0.68, 1)"
+                  }, box-shadow 220ms ease`,
               boxShadow:
-                isFixedDevice || effectiveZoom < 1
+                framed || effectiveZoom < 1
                   ? "0 25px 50px -12px rgb(0 0 0 / 0.35)"
                   : undefined,
             }}
           />
         </div>
+      </div>
       </div>
 
       {/* Comment thread popover — opens when a pin is clicked. Read for
