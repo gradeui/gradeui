@@ -525,13 +525,29 @@ export function AIChat({
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Auto-scroll to bottom only when new messages are added (not on mount)
+  // Auto-scroll: follow NEW messages and STREAMED growth of the last
+  // message (content + thinking lengthen on every chunk without the
+  // message count changing — the old count-only check left the chat
+  // stuck at the top during a streamed turn). Pinned-to-bottom only:
+  // once the user scrolls up to read history, we stop following.
+  // Streaming growth scrolls with `auto` (instant) — smooth-scrolling
+  // 20×/sec lags behind the content; new messages keep the smooth glide.
+  const lastMsg = messages[messages.length - 1];
+  const lastContentSig = lastMsg
+    ? lastMsg.content.length + (lastMsg.thinking?.length ?? 0)
+    : 0;
+  const prevContentSigRef = useRef(lastContentSig);
   useEffect(() => {
-    if (messages.length > prevMessagesLengthRef.current && !isScrolledUp) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const grewCount = messages.length > prevMessagesLengthRef.current;
+    const grewContent = lastContentSig > prevContentSigRef.current;
+    if (!isScrolledUp && (grewCount || grewContent)) {
+      chatEndRef.current?.scrollIntoView({
+        behavior: grewCount ? "smooth" : "auto",
+      });
     }
     prevMessagesLengthRef.current = messages.length;
-  }, [messages, isScrolledUp]);
+    prevContentSigRef.current = lastContentSig;
+  }, [messages, lastContentSig, isScrolledUp]);
 
   return (
     <div

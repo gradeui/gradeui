@@ -872,6 +872,10 @@ export function StudioChat({
     //  - the disclaimer + char counter via composerBelowSlot
     <AIChat
       title="Ask Grade AI"
+      // Frameless — Studio's shell owns the panel surface now (flat
+      // full-height column, rail-to-canvas). The bg/border/rounded
+      // card chrome would double up against it.
+      bare
       headerTokens={sessionTokens}
       messages={chatMessages}
       isLoading={showLoadingIndicator}

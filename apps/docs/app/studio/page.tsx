@@ -49,7 +49,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UIMessage } from "ai";
 import * as React from "react";
 import {
-  ChevronDown,
   LogOut,
   Loader2,
   Settings as SettingsIcon,
@@ -60,7 +59,6 @@ import {
 import { cn } from "@/lib/utils";
 import {
   AppShell,
-  AppShellHeader,
   AppShellMain,
   Avatar,
   AvatarFallback,
@@ -90,6 +88,7 @@ import {
   type RendererMode,
 } from "@/components/studio/studio-settings";
 import { useGradeTheme } from "@/components/grade-theme-provider";
+import { GradeMark } from "@/components/grade-mark";
 import {
   ThemeBuilderProvider,
   useGeneratedTheme,
@@ -2100,6 +2099,9 @@ export default function StudioPage() {
 
   const rightTabsPane = (
     <StudioRightTabs
+      // Flat full-height column — the page shell owns the surface;
+      // the card border/rounding would double up against the canvas's.
+      className="border-0 rounded-none bg-transparent"
       appSource={activeDesign.appSource}
       selection={selectionByDesign[activeId] ?? null}
       onSourceChange={handleSourceMutation}
@@ -2291,59 +2293,33 @@ export default function StudioPage() {
           rather than the marketing-flavoured `min-h-screen` default
           AppShell ships with. */}
       <AppShell nav="none" className="h-screen min-h-0 overflow-hidden">
-        <AppShellHeader className="border-b bg-muted/30 shrink-0">
-          {/* Full-bleed — no max-width wrapper. Studio is a tool, not
-              a marketing page, so the chrome stretches edge-to-edge.
-              The header is deliberately near-empty — product title +
-              Settings gear. Every chrome control that used to live up
-              here (model picker, theme switcher, light/dark mode, dev
-              toggles) now lives inside the <StudioSettings> Sheet
-              that the gear opens. Eventually the gear migrates out of
-              the header entirely into a left app rail. */}
-          <div className="px-4 md:px-6 py-2.5 flex items-center justify-between gap-4">
-            <div className="min-w-0 flex items-center gap-3">
-              <h1 className="text-base font-semibold leading-tight">
-                Grade Studio
-              </h1>
-              {/* Transient streaming indicator — only renders while
-                  the active design is mid-turn. Counts up live (every
-                  100ms) so the user has a quick read on how long the
-                  turn is taking; the final per-message duration sits
-                  in the chat message itself. */}
-              {activeStreaming && (
-                <span
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums"
-                  aria-live="polite"
-                >
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>
-                    Generating… {(liveElapsedMs / 1000).toFixed(1)}s
-                  </span>
-                </span>
-              )}
-            </div>
-            <TopBarRight
+        {/* The old AppShellHeader ("Grade Studio" title bar) is gone —
+            its contents (settings gear, account menu, super-admin
+            shield, streaming indicator) live in the left app rail.
+            The canvas keeps its own toolbar + breadcrumb in the
+            central column; the side panels run full height. */}
+        <AppShellMain className="min-h-0 overflow-hidden p-0">
+          {/* Body row — app rail | chat | canvas | detail. Side panes
+              use flex-basis from CSS vars so a downstream theme can
+              tweak widths without touching this file. Toggle closes a
+              pane by animating basis → 0 + adding `hidden` on the
+              inner div so its content is fully removed from layout
+              (otherwise padding/border would still occupy ~1px). The
+              canvas's own card border is the only separator between
+              the columns — the side panels are deliberately flat. */}
+          <div className="flex h-full min-h-0">
+            <StudioRail
+              streaming={activeStreaming}
+              elapsedMs={liveElapsedMs}
               users={allUsers}
               orgs={allOrgs}
               orgMemberships={orgMemberships}
               onOpenSettings={() => setSettingsOpen(true)}
               onOpenSuperAdmin={() => setSuperAdminOpen(true)}
             />
-          </div>
-        </AppShellHeader>
-
-        <AppShellMain className="min-h-0 overflow-hidden p-3 md:p-4">
-          {/* Body row — three siblings (chat | canvas | settings) on
-              desktop, canvas-only on mobile. Side panes use flex-basis
-              from CSS vars so a downstream theme can tweak widths
-              without touching this file. Toggle closes a pane by
-              animating basis → 0 + adding `hidden` on the inner div
-              so its content is fully removed from layout (otherwise
-              padding/border would still occupy ~1px). */}
-          <div className="flex h-full min-h-0 gap-3 md:gap-4">
             {!isMobile && (
               <div
-                className="min-w-0 shrink-0 overflow-hidden transition-[flex-basis] duration-150 ease-out"
+                className="min-w-0 shrink-0 overflow-hidden transition-[flex-basis] duration-150 ease-out bg-muted/30"
                 style={inlineLeftStyle}
                 aria-hidden={!leftPanelOpen}
               >
@@ -2408,7 +2384,7 @@ export default function StudioPage() {
             </div>
             {!isMobile && (
               <div
-                className="min-w-0 shrink-0 overflow-hidden transition-[flex-basis] duration-150 ease-out"
+                className="min-w-0 shrink-0 overflow-hidden transition-[flex-basis] duration-150 ease-out bg-muted/30"
                 style={inlineRightStyle}
                 aria-hidden={!rightPanelOpen}
               >
@@ -2611,13 +2587,25 @@ function CommentsTabHost({
  *   - User avatar + display name
  *   - Settings gear
  */
-function TopBarRight({
+/**
+ * StudioRail — the slim app rail down the left edge. Replaces the old
+ * top header: Grade mark at the top (links home), a transient
+ * generating spinner, and the chrome actions (impersonation indicator,
+ * super-admin shield, settings gear, account menu) stacked at the
+ * bottom. Everything is icon-sized with a title tooltip; the account
+ * dropdown opens to the right of the rail.
+ */
+function StudioRail({
+  streaming,
+  elapsedMs,
   users,
   orgs,
   orgMemberships,
   onOpenSettings,
   onOpenSuperAdmin,
 }: {
+  streaming: boolean;
+  elapsedMs: number;
   users: StoredUser[];
   orgs: Organisation[];
   orgMemberships: OrgMembership[];
@@ -2659,20 +2647,44 @@ function TopBarRight({
   }, [orgs, orgMemberships, realUser.id]);
 
   return (
-    <div className="flex items-center gap-2">
+    <aside
+      className="flex h-full w-12 shrink-0 flex-col items-center gap-2 border-r border-border/60 bg-muted/30 py-3"
+      aria-label="Studio rail"
+    >
+      {/* Brand mark — links back to the docs home. */}
+      <a
+        href="/"
+        title="gradeui.com"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground hover:bg-muted transition-colors"
+      >
+        <GradeMark className="h-5 w-5" label="Grade" />
+      </a>
+
+      <div className="flex-1" />
+
+      {/* Transient generating indicator — spinner only (the rail is
+          48px wide); the elapsed time rides the tooltip. The chat's
+          loading dots + per-turn duration carry the detail. */}
+      {streaming && (
+        <span
+          className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground"
+          title={`Generating… ${(elapsedMs / 1000).toFixed(1)}s`}
+          aria-live="polite"
+          aria-label="Generating"
+        >
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </span>
+      )}
+
       {isImpersonating && (
         <button
           type="button"
           onClick={stopImpersonation}
-          className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/15 transition-colors"
-          title="Stop impersonating (resets to your real identity)"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
+          title={`Impersonating ${user.name}${org ? ` · ${org.name}` : ""} — click to stop`}
+          aria-label="Stop impersonating"
         >
-          <ShieldCheck className="h-3 w-3" aria-hidden />
-          <span className="truncate max-w-[14rem]">
-            Impersonating {user.name}
-            {org ? ` · ${org.name}` : ""}
-          </span>
-          <X className="h-3 w-3" aria-hidden />
+          <ShieldCheck className="h-4 w-4" aria-hidden />
         </button>
       )}
       {user.superAdmin && (
@@ -2682,8 +2694,8 @@ function TopBarRight({
           aria-label="Open super admin"
           title="Super admin (⌘⇧⌥A)"
           className={cn(
-            "h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors",
-            "[&_svg]:size-3.5 [&_svg]:shrink-0",
+            "h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors",
+            "[&_svg]:size-4 [&_svg]:shrink-0",
             "text-muted-foreground hover:text-foreground hover:bg-muted",
           )}
         >
@@ -2691,20 +2703,21 @@ function TopBarRight({
         </button>
       )}
 
-      {/* User trigger — Avatar + identity → opens the account menu.
-          The whole pill is one clickable target with hover + focus
-          states so it reads as a button (per pattern the
-          Linear/Notion/Figma "click your avatar" surface follows). */}
+      <StudioSettingsTrigger onClick={onOpenSettings} />
+
+      {/* Account menu — avatar-only trigger; the menu opens to the
+          right of the rail and carries the identity block, org
+          switcher, and sign-out. */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
             aria-label="Open account menu"
+            title={`${user.name}${org ? ` · ${org.name}` : ""}`}
             className={cn(
-              "flex items-center gap-2 rounded-md px-1.5 py-1 text-xs transition-colors",
-              "hover:bg-muted focus-visible:bg-muted",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-              "data-[state=open]:bg-muted",
+              "inline-flex rounded-full transition-shadow",
+              "hover:ring-2 hover:ring-ring/40 focus-visible:ring-2 focus-visible:ring-ring",
+              "focus-visible:outline-none data-[state=open]:ring-2 data-[state=open]:ring-ring/60",
             )}
           >
             <Avatar className="h-7 w-7">
@@ -2715,21 +2728,9 @@ function TopBarRight({
                 {initials || "?"}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden sm:flex flex-col leading-tight text-left">
-              <span className="font-medium text-foreground truncate max-w-[10rem]">
-                {user.name}
-              </span>
-              <span className="text-[10px] text-muted-foreground truncate max-w-[10rem]">
-                {org?.name ?? "no org"}
-              </span>
-            </span>
-            <ChevronDown
-              className="h-3 w-3 text-muted-foreground shrink-0"
-              aria-hidden
-            />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent side="right" align="end" className="w-64">
           {/* Identity block — read-only header showing who's
               currently effective. When impersonating, a Badge
               flags the override so the developer can't miss it. */}
@@ -2852,9 +2853,7 @@ function TopBarRight({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <StudioSettingsTrigger onClick={onOpenSettings} />
-    </div>
+    </aside>
   );
 }
 
