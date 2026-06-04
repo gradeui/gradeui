@@ -101,6 +101,7 @@ import {
 } from "@/lib/themes";
 import { cloneInput } from "@/lib/studio-state";
 import {
+  stripSourceIds,
   type StudioSelection,
 } from "@/lib/chat-sandpack";
 import { buildSystemPrompt } from "@gradeui/studio/playbook";
@@ -1540,7 +1541,14 @@ export default function StudioPage() {
   );
 
   const handleLatestCode = useCallback(
-    (code: string | null) => {
+    (rawCode: string | null) => {
+      // Write-boundary scrub: `data-gds-source-id` is a compile-time
+      // runtime artifact (injectSourceIds re-mints it per render) and
+      // must never persist in appSource — the model copies the ids
+      // back from context, renumbers them on edit turns (shearing the
+      // SEARCH anchors), and they bloat every request. Legacy screens
+      // self-clean on their next chat write.
+      const code = rawCode ? stripSourceIds(rawCode) : rawCode;
       // Scope the update to whichever design produced the code. The chat
       // component fires this on every `setMessages` including the
       // post-switch hydration — we write through either way; it's idempotent

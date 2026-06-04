@@ -188,8 +188,11 @@ export function findComponentOpenTagBySourceId(
   // source-ids on both PascalCase DS components AND lowercase HTML
   // tags (so raw <div className="…">s can be edited via the
   // inspector's Spacing controls), and this lookup has to walk the
-  // same surface to find them.
-  const tagPattern = /<([A-Za-z][A-Za-z0-9_]*)(?=[\s/>])/g;
+  // same surface to find them. Dotted member-expression tags
+  // (<motion.h1>, <Sortable.Item>) included — keep in sync with
+  // injectSourceIds' pattern in chat-sandpack.ts.
+  const tagPattern =
+    /<([A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*)(?=[\s/>])/g;
   const len = source.length;
   let match: RegExpExecArray | null;
 

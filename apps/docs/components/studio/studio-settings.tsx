@@ -234,7 +234,7 @@ export function StudioSettings({
             <ToggleField
               id="settings-stream-response-text"
               label="Stream response text"
-              hint="When off (the default), the chat holds the response until the preview is ready and reveals it in one snap — feels more coherent. Turn on to watch tokens stream into the chat AND the preview draw the app live as the code arrives (speculative renders; the final result still snaps in at the end)."
+              hint="When off (the default), the chat holds the response until the preview is ready and reveals it in one snap — feels more coherent. Turn on to watch tokens stream into the chat AND, on fresh builds, the preview draw the app live as the code arrives. Iterations on an existing screen always hold the current render and snap when the edit completes."
               checked={streamResponseText}
               onCheckedChange={onStreamResponseTextChange}
             />

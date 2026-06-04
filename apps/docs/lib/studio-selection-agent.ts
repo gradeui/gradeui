@@ -132,6 +132,12 @@ export type ComputedStyleHint = {
   gap?: string;
   /** Computed font size (`"16px"`). */
   fontSize?: string;
+  /** Computed line height (`"24px"`, or `"normal"`). */
+  lineHeight?: string;
+  /** Computed letter spacing (`"0.5px"`, or `"normal"`). */
+  letterSpacing?: string;
+  /** Computed text-align (`"left"`, `"center"`, `"start"`, …). */
+  textAlign?: string;
 };
 
 export interface InstallSelectionAgentOptions {
@@ -517,6 +523,9 @@ export function installStudioSelectionAgent(
           marginLeft: cs.marginLeft,
           gap: cs.columnGap,
           fontSize: cs.fontSize,
+          lineHeight: cs.lineHeight,
+          letterSpacing: cs.letterSpacing,
+          textAlign: cs.textAlign,
         };
       }
     } catch {

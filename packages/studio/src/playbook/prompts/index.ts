@@ -6,4 +6,4 @@
  * shapes what the model reads per turn.
  */
 
-export { buildSystemPrompt } from "./system";
+export { buildSystemPrompt, EDIT_MODE_PROMPT } from "./system";

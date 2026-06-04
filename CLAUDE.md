@@ -193,6 +193,8 @@ These docs are the source of truth for where Studio is going. Read them before r
 
 - **[`STUDIO-DIRECTOR.md`](./STUDIO-DIRECTOR.md)** — **Record → payload → replay**: turn a live screen into a directed product demo. A JSON timeline (camera / cursor / interaction / caption / audio / video tracks) replayed over the live transcluded canvas with auto-zoom, a focus spotlight, a synthetic cursor, captions, and (later) voiceover + webcam. Live-first (editable, embeddable, pin-to-revision for a point-in-time demo), video-on-demand via Playwright. The camera timeline (`useCameraTimeline` / `ZoomPan` in the embed) is track one, shipped; the `camera-tour` playground scaffold is a working showcase. D0–D5.
 
+- **[`STUDIO-EDITS.md`](./STUDIO-EDITS.md)** — **Streamed AI edits (true diffs)**: iteration turns emit anchored `jsx-edit` SEARCH/REPLACE blocks instead of regenerating the full component — output tokens shrink from O(page) to O(change), each block applies the moment it seals, and the double-buffered preview morphs near-instantly. Covers the wire contract, the three-tier apply engine (`studio-edit-blocks.ts`), the three-lane draft gate (fresh-build partials / applied-edit drafts / hold-and-snap), failure chips with retry-as-regen, and the full-fence escape hatch. X0–X4 rollout.
+
 These are siblings: learning is *what the system learns and generates*; chat is *how it presents that*; themes is *the unit people remix and share*; storage is *the user's own bytes that make a prototype theirs*; audit is *the trail of who did what across all of it*; fills is *how a frame gets painted*; embed is *how a finished render leaves Grade for the open web*. They cross-reference for individual features.
 
 ## See also

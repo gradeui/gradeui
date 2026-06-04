@@ -265,6 +265,25 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
     const resolvedPostRef = React.useRef(resolvedPost);
     resolvedPostRef.current = resolvedPost;
 
+    // Palette identity guard — consumers (and especially model-generated
+    // JSX) pass `palette={{ … }}` INLINE, a fresh object on every parent
+    // render. With the raw object in the build effect's dep list, every
+    // re-render of the host app remounted the ENTIRE WebGL pipeline
+    // (renderer dispose + recreate = a visible black flash). A page with
+    // a 3s setInterval flashed all of its shader fills every 3 seconds.
+    // Key the effect on the palette's VALUE (serialized) and read the
+    // live object through a ref; real palette changes still remount.
+    // Same treatment for onShaderError — an inline callback identity
+    // must not churn WebGL either.
+    const paletteRef = React.useRef(palette);
+    paletteRef.current = palette;
+    const paletteSig = React.useMemo(
+      () => JSON.stringify(palette ?? null),
+      [palette],
+    );
+    const onShaderErrorRef = React.useRef(onShaderError);
+    onShaderErrorRef.current = onShaderError;
+
     React.useEffect(() => {
       const host = hostRef.current;
       if (!host || !resolvedFactory) return;
@@ -275,7 +294,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       // Resolve palette CSS expressions (var(), oklch(), lab(), hex, rgb(),
       // named colours) into THREE-parseable rgb() strings via a DOM probe.
       // Done AFTER host is in the document so custom properties resolve.
-      const livePalette = resolvePalette(palette, host);
+      const livePalette = resolvePalette(paletteRef.current, host);
 
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -305,7 +324,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
         });
       } catch (err) {
         if (err instanceof ShaderCompileError) {
-          onShaderError?.(err);
+          onShaderErrorRef.current?.(err);
           handle = sceneRegistry.space({
             renderer,
             width,
@@ -387,7 +406,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       // without remounting WebGL.
       const themeObserver = new MutationObserver(() => {
         if (!hostRef.current) return;
-        const next = resolvePalette(palette, hostRef.current);
+        const next = resolvePalette(paletteRef.current, hostRef.current);
         renderer.setClearColor(new THREE.Color(next.background), 1);
         handle.setPalette?.(next);
       });
@@ -454,17 +473,18 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
         }
         liveRef.current = null;
       };
-      // Factory/palette/post-preset changes remount the whole thing (simpler than
-      // rebuilding in place, and palette changes are rare enough that it's fine).
+      // Factory/palette-VALUE/post-preset changes remount the whole thing
+      // (simpler than rebuilding in place, and real palette changes are
+      // rare enough that it's fine). Identity-only churn must NOT remount
+      // — see the paletteSig/onShaderErrorRef guard above the effect.
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       resolvedFactory,
-      palette,
+      paletteSig,
       autoPlay,
       reduced,
       pauseOffscreen,
       maxDpr,
-      onShaderError,
     ]);
 
     const liveRef = React.useRef<{

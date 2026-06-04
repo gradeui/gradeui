@@ -4,7 +4,7 @@ import: "@gradeui/ui"
 props:
   - type: "none" | "solid" | "gradient" | "image" | "video" | "shader" — which paint to render (required)
   - color?: string — solid fill; a token name (`primary`, `card`, `muted`, `accent`, `secondary`, `destructive`, `background`, `transparent`) or any CSS colour
-  - gradient?: { from?; via?; to?; angle? } — gradient stops (token names or CSS colours) + angle in degrees (default 135)
+  - gradient?: { from?; via?; to?; angle?; shape?; at?; size? } — stops are token names or CSS colours. shape: "linear" (default, uses `angle`, default 135°) | "radial" (uses `at` — CSS position like "top" / "30% 20%", default "center" — and optional `size` like "45rem 50rem", default farthest-corner)
   - src?: string — image or video URL
   - fit?: "cover" | "contain" | "fill" | "none" — object-fit for image/video (default "cover")
   - position?: string — CSS object/background position (default "center")
@@ -54,10 +54,23 @@ notes: |
   ### Type cheat-sheet
 
     - solid    — `color` (token or CSS colour). Cheapest.
-    - gradient — `gradient={{ from, via?, to, angle }}`. Tokens get wrapped in oklch() automatically.
+    - gradient — `gradient={{ from, via?, to, angle }}` for linear;
+                 `gradient={{ shape: "radial", at: "top", from, to }}` for a radial
+                 glow/wash. Tokens get wrapped in oklch() automatically.
     - image    — `src` + `fit` / `position`; set `repeat` (+ `tileSize`) for a tiled texture.
     - video    — `src` (autoplays muted + looped + inline).
     - shader   — `preset` OR `fragmentShader`, + `palette` / `postPreset`. Delegates to ThreeScene.
+
+  Anti-patterns to avoid:
+
+  - DO NOT build gradients with arbitrary-value Tailwind classes —
+    `bg-[radial-gradient(45rem_50rem_at_top,theme(colors.indigo.50),white)]`
+    renders NOTHING in the Studio preview (no runtime Tailwind compiler) and
+    `theme(colors.*)` colours ignore the active Grade theme. Use
+    `type="gradient"` with token stops instead — themeable, and it always renders.
+  - DO NOT hand-roll `style={{ backgroundImage: "linear-gradient(…)" }}` on the
+    frame itself when a BackgroundFill child does the same job — the fill layer
+    keeps the paint selectable/editable as a Fill in Studio's inspector.
 
   `opacity` + `blendMode` apply to every type — the same two controls as
   the inspector's Blending section, so a loud shader/image can be dialled
@@ -90,6 +103,19 @@ notes: |
   <BackgroundFill type="gradient" gradient={{ from: "primary", to: "accent", angle: 120 }} opacity={0.18} />
   <CardContent className="relative z-10">…</CardContent>
 </Card>
+```
+
+```jsx
+// Radial glow from the top of a hero — the token-true version of the
+// classic `radial-gradient(45rem 50rem at top, indigo-50, white)` wash.
+<section className="relative overflow-hidden">
+  <BackgroundFill
+    type="gradient"
+    gradient={{ shape: "radial", at: "top", size: "45rem 50rem", from: "primary", to: "background" }}
+    opacity={0.2}
+  />
+  <div className="relative z-10 py-24 text-center">…hero content…</div>
+</section>
 ```
 
 ```jsx

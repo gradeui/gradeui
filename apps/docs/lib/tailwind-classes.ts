@@ -721,6 +721,273 @@ export function setFontWeight(
   return stripped ? `${stripped} ${token}` : token;
 }
 
+// ─── Line height ─────────────────────────────────────────────────────
+//
+// Keyword ladder only (`leading-none` … `leading-loose`) — the values
+// designers actually reach for. Numeric (`leading-7`) and arbitrary
+// (`leading-[1.15]`) variants are recognised by the SETTER's strip
+// pass (so picking a keyword always wins) but not surfaced as tokens.
+
+export const LINE_HEIGHT_SCALE = [
+  "none",
+  "tight",
+  "snug",
+  "normal",
+  "relaxed",
+  "loose",
+] as const;
+export type LineHeightValue = (typeof LINE_HEIGHT_SCALE)[number];
+
+/** Unitless multiplier each keyword resolves to — dropdown hints. */
+export const LINE_HEIGHT_HINT: Record<LineHeightValue, string> = {
+  none: "1",
+  tight: "1.25",
+  snug: "1.375",
+  normal: "1.5",
+  relaxed: "1.625",
+  loose: "2",
+};
+
+const LINE_HEIGHT_RE =
+  /(^|\s)leading-(none|tight|snug|normal|relaxed|loose)(?=\s|$)/g;
+
+export function parseLineHeight(
+  className: string | null | undefined,
+): LineHeightValue | null {
+  if (!className) return null;
+  let last: LineHeightValue | null = null;
+  LINE_HEIGHT_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = LINE_HEIGHT_RE.exec(className)) !== null) {
+    last = match[2] as LineHeightValue;
+  }
+  return last;
+}
+
+export function setLineHeight(
+  className: string | null | undefined,
+  value: LineHeightValue | null,
+): string {
+  const stripped = (className ?? "")
+    .replace(
+      // Strip the WHOLE family — keywords, numerics, arbitrary — so
+      // the structured control is authoritative.
+      /(^|\s)leading-(?:none|tight|snug|normal|relaxed|loose|\d+(?:\.\d+)?|\[[^\]]+\])(?=\s|$)/g,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  if (value === null) return stripped;
+  const token = `leading-${value}`;
+  return stripped ? `${stripped} ${token}` : token;
+}
+
+// ─── Letter spacing ──────────────────────────────────────────────────
+//
+// Tailwind's tracking ladder. Same last-match / strip-family contract
+// as the rest of the typography tokens.
+
+export const TRACKING_SCALE = [
+  "tighter",
+  "tight",
+  "normal",
+  "wide",
+  "wider",
+  "widest",
+] as const;
+export type TrackingValue = (typeof TRACKING_SCALE)[number];
+
+/** Em value each keyword resolves to — dropdown hints. */
+export const TRACKING_HINT: Record<TrackingValue, string> = {
+  tighter: "-0.05em",
+  tight: "-0.025em",
+  normal: "0em",
+  wide: "0.025em",
+  wider: "0.05em",
+  widest: "0.1em",
+};
+
+const TRACKING_RE =
+  /(^|\s)tracking-(tighter|tight|normal|wide|wider|widest)(?=\s|$)/g;
+
+export function parseTracking(
+  className: string | null | undefined,
+): TrackingValue | null {
+  if (!className) return null;
+  let last: TrackingValue | null = null;
+  TRACKING_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = TRACKING_RE.exec(className)) !== null) {
+    last = match[2] as TrackingValue;
+  }
+  return last;
+}
+
+export function setTracking(
+  className: string | null | undefined,
+  value: TrackingValue | null,
+): string {
+  const stripped = (className ?? "")
+    .replace(
+      /(^|\s)tracking-(?:tighter|tight|normal|wide|wider|widest|\[[^\]]+\])(?=\s|$)/g,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  if (value === null) return stripped;
+  const token = `tracking-${value}`;
+  return stripped ? `${stripped} ${token}` : token;
+}
+
+// ─── Text align ──────────────────────────────────────────────────────
+//
+// `text-*` is the busiest prefix in Tailwind (size, colour, wrap,
+// balance, alignment all share it) — exact-list matching only, same
+// defensive posture as FONT_SIZE_RE. We expose the four staples;
+// `text-start` / `text-end` are recognised by the setter's strip so a
+// picked value always wins over model-emitted logical alignment.
+
+export const TEXT_ALIGN_SCALE = [
+  "left",
+  "center",
+  "right",
+  "justify",
+] as const;
+export type TextAlignValue = (typeof TEXT_ALIGN_SCALE)[number];
+
+const TEXT_ALIGN_RE = /(^|\s)text-(left|center|right|justify)(?=\s|$)/g;
+
+export function parseTextAlign(
+  className: string | null | undefined,
+): TextAlignValue | null {
+  if (!className) return null;
+  let last: TextAlignValue | null = null;
+  TEXT_ALIGN_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = TEXT_ALIGN_RE.exec(className)) !== null) {
+    last = match[2] as TextAlignValue;
+  }
+  return last;
+}
+
+export function setTextAlign(
+  className: string | null | undefined,
+  value: TextAlignValue | null,
+): string {
+  const stripped = (className ?? "")
+    .replace(
+      /(^|\s)text-(?:left|center|right|justify|start|end)(?=\s|$)/g,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  if (value === null) return stripped;
+  const token = `text-${value}`;
+  return stripped ? `${stripped} ${token}` : token;
+}
+
+// ─── Responsive (breakpoint) overrides ───────────────────────────────
+//
+// Generated heroes lean hard on `text-5xl md:text-8xl`-style ladders.
+// The base parsers above deliberately ignore prefixed classes, which
+// made the inspector silently lie: the field showed `text-5xl`, the
+// desktop preview rendered `md:text-8xl`, and edits "did nothing".
+// These helpers give the inspector breakpoint awareness: parse the
+// overrides for a badge, and read/write a single breakpoint's token
+// for the per-breakpoint editor popover.
+//
+// `bodyPattern` is the family's class body (see FAMILY_BODY) — the
+// same exact-list discipline as the base parsers, shared so the badge
+// and the editor can't drift.
+
+export const RESPONSIVE_BREAKPOINTS = ["sm", "md", "lg", "xl", "2xl"] as const;
+export type ResponsiveBp = (typeof RESPONSIVE_BREAKPOINTS)[number];
+/** Breakpoints the inspector's editor popover offers. Kept to the
+ *  three staples — every minted class must be safelisted in
+ *  globals.css, and sm/md/lg cover real design work. xl/2xl overrides
+ *  the model emits still surface in the badge (read-only). */
+export const EDITABLE_BREAKPOINTS = ["sm", "md", "lg"] as const;
+
+export interface BreakpointOverride {
+  bp: ResponsiveBp;
+  /** The full prefixed class, e.g. "md:text-8xl". */
+  cls: string;
+}
+
+/** Family class-body patterns (no prefix, no capture groups). Font
+ *  size includes the display sizes (6xl–9xl) — the badge must SEE
+ *  them even though the base editing scale stops at 5xl. */
+export const FAMILY_BODY = {
+  fontSize:
+    "text-(?:2xs|xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)",
+  fontWeight:
+    "font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)",
+  lineHeight: "leading-(?:none|tight|snug|normal|relaxed|loose|\\d+(?:\\.\\d+)?)",
+  tracking: "tracking-(?:tighter|tight|normal|wide|wider|widest)",
+  textAlign: "text-(?:left|center|right|justify|start|end)",
+} as const;
+export type FamilyBodyKey = keyof typeof FAMILY_BODY;
+
+/** Every breakpoint override of a family present on the className,
+ *  in source order. */
+export function parseBreakpointOverrides(
+  className: string | null | undefined,
+  bodyPattern: string,
+): BreakpointOverride[] {
+  if (!className) return [];
+  const re = new RegExp(
+    `(^|\\s)(sm|md|lg|xl|2xl):(${bodyPattern})(?=\\s|$)`,
+    "g",
+  );
+  const out: BreakpointOverride[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(className)) !== null) {
+    out.push({
+      bp: match[2] as ResponsiveBp,
+      cls: `${match[2]}:${match[3]}`,
+    });
+  }
+  return out;
+}
+
+/** The UNPREFIXED class a specific breakpoint binds for a family
+ *  ("text-8xl" for `md:` when md:text-8xl is present), or null. Last
+ *  match wins, mirroring the base parsers. */
+export function parseBreakpointToken(
+  className: string | null | undefined,
+  bp: ResponsiveBp,
+  bodyPattern: string,
+): string | null {
+  if (!className) return null;
+  const re = new RegExp(`(^|\\s)${bp}:(${bodyPattern})(?=\\s|$)`, "g");
+  let last: string | null = null;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(className)) !== null) {
+    last = match[2];
+  }
+  return last;
+}
+
+/** Write (or clear, with null) one breakpoint's token for a family.
+ *  Strips every existing `bp:` class in the family first, so the
+ *  structured control stays authoritative. `tokenClass` is the
+ *  UNPREFIXED class ("text-8xl"). */
+export function setBreakpointToken(
+  className: string | null | undefined,
+  bp: ResponsiveBp,
+  bodyPattern: string,
+  tokenClass: string | null,
+): string {
+  const re = new RegExp(`(^|\\s)${bp}:(?:${bodyPattern})(?=\\s|$)`, "g");
+  const stripped = (className ?? "")
+    .replace(re, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (tokenClass === null) return stripped;
+  const cls = `${bp}:${tokenClass}`;
+  return stripped ? `${stripped} ${cls}` : cls;
+}
+
 // ─── Opacity ─────────────────────────────────────────────────────────
 //
 // Tailwind exposes `opacity-N` where N ∈ 0..100. We expose the staples

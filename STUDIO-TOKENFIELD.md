@@ -128,6 +128,41 @@ area, add its scale to that block** or its classes will silently not render
 - **Tooltips:** icon-only affordances use `IconTip` (styled, arrowed) — not
   the native `title`.
 
+## Responsive overrides (typography v1)
+
+Generated screens lean on `text-5xl md:text-8xl`-style ladders. The base
+parsers deliberately ignore prefixed classes, which used to make the
+inspector lie: the field showed the base token while the preview rendered
+the `md:` override, so edits "did nothing".
+
+The model is **explicit, per-property** — deliberately NOT Webflow's
+canvas-context model (where the active viewport silently decides which
+breakpoint you edit; it routinely catches people out):
+
+- Every typography control carries a `BreakpointOverridesEditor` in its
+  label row. Overrides present → amber breakpoint badges (`md` `lg`);
+  none → a ghost `+`. The tooltip spells out the contract: "set by CSS
+  override — the field below edits the base value".
+- Clicking opens a popover with one row per **editable breakpoint**
+  (`EDITABLE_BREAKPOINTS` = sm/md/lg) and a scoped token picker; "—"
+  clears the override. Tailwind is mobile-first, so a breakpoint value
+  applies from that width UP; the base field is everything below.
+- The size picker includes the display sizes (6xl–9xl) via
+  `FONT_SIZE_OVERRIDE_SCALE` — hero ladders are the main use.
+- xl/2xl overrides the model emits surface read-only (pointer at the
+  Class-names row / chat). Every mintable class is safelisted in
+  `globals.css` (`{sm:,md:,lg:}` blocks) — extending
+  `EDITABLE_BREAKPOINTS` REQUIRES extending that block.
+- Machinery: `FAMILY_BODY` patterns + `parseBreakpointOverrides` /
+  `parseBreakpointToken` / `setBreakpointToken` in
+  `lib/tailwind-classes.ts` — exact-list bodies shared between badge and
+  editor so they can't drift.
+
+Out of scope for v1 (revisit if demand): a viewport-aware mode where the
+canvas viewport highlights which override currently wins in the preview;
+responsive overrides for non-typography areas (spacing is the likely
+next ask — the machinery is family-generic on purpose).
+
 ## Still open (tracked)
 
 - Contracts shipping derived style defaults (real grey default chips).

@@ -208,6 +208,11 @@ interface ChatRequestBody {
    *  the user didn't use the Select tool for this turn — the model is then
    *  expected to interpret the prompt against the whole component, as before. */
   selection?: RequestSelection | null;
+  /** True on iteration turns — the client appended the EDIT MODE
+   *  stanza and expects SEARCH/REPLACE blocks (STUDIO-EDITS.md). Used
+   *  server-side to cap output tokens: a healthy edit turn is tiny, so
+   *  the ceiling only ever bites runaway repetition loops. */
+  editMode?: boolean;
   /** Mirrors the "Show thinking" toggle in the Studio settings sheet.
    *  When true we ask the provider to EMIT reasoning (Gemini thought
    *  summaries via `includeThoughts`, Claude extended thinking). Off by
@@ -351,6 +356,7 @@ export async function POST(req: Request) {
     includeComponentRefs = true,
     selection,
     requestReasoning = false,
+    editMode = false,
   } = body;
 
   if (!messages || !Array.isArray(messages)) {
@@ -400,7 +406,45 @@ export async function POST(req: Request) {
           p?.type === "text" || p?.type === "file"
       ),
     })) as UIMessage[];
-    const modelMessages = await convertToModelMessages(sanitized);
+
+    // History compaction — the input-token fix for long sessions.
+    //
+    // Every iteration turn inlines the FULL current component into the
+    // user message, and every assistant build turn emits the FULL
+    // component back. useChat replays the whole history per request, so
+    // by turn N the prompt carries ~2N stale copies of the page and
+    // input grows quadratically (real sessions were hitting 750k
+    // cumulative tokens). All of those copies are SUPERSEDED: the only
+    // source that matters is the one riding the LATEST user message.
+    //
+    // So: keep the last message intact, and in every earlier message
+    // collapse large fenced code blocks to a short marker. Small fences
+    // survive the size threshold — notably jsx-edit blocks from prior
+    // edit turns, which are cheap and genuinely useful context ("what
+    // did I just change"). Prose is never touched, so conversational
+    // continuity is preserved.
+    const FENCE_KEEP_CHARS = 400;
+    const compactFences = (text: string): string =>
+      text.replace(/```[^\n]*\n[\s\S]*?(?:```|$)/g, (fence) =>
+        fence.length <= FENCE_KEEP_CHARS
+          ? fence
+          : "[earlier code omitted — the latest user message carries the current component]"
+      );
+    const lastIdx = sanitized.length - 1;
+    const compacted = sanitized.map((m, i) => {
+      if (i === lastIdx) return m;
+      return {
+        ...m,
+        parts: (m.parts ?? []).map((p) =>
+          (p as { type?: string }).type === "text" &&
+          typeof (p as { text?: string }).text === "string"
+            ? { ...p, text: compactFences((p as { text: string }).text) }
+            : p
+        ),
+      };
+    }) as UIMessage[];
+
+    const modelMessages = await convertToModelMessages(compacted);
 
     // Build the component-reference block LAZILY from the current
     // conversation. We pull every message's text (the user's ask PLUS any
@@ -455,6 +499,14 @@ export async function POST(req: Request) {
     // on, so default turns pay zero extra tokens. See reasoningOptions().
     const reasoning = requestReasoning ? reasoningOptions(provider) : {};
 
+    // Output ceiling. Reasoning's explicit budget wins (Anthropic
+    // needs max > thinking budget); otherwise edit turns get a tight
+    // cap — a healthy edit response is a few hundred tokens, so 8192
+    // exists purely to bound model repetition loops (the same runaway
+    // the client-side block dedupe + cap contain visually).
+    const maxOutputTokens =
+      reasoning.maxOutputTokens ?? (editMode ? 8192 : undefined);
+
     const result = streamText({
       model: buildModel(provider, model, apiKey),
       system: finalSystem,
@@ -462,9 +514,7 @@ export async function POST(req: Request) {
       ...(reasoning.providerOptions
         ? { providerOptions: reasoning.providerOptions }
         : {}),
-      ...(reasoning.maxOutputTokens
-        ? { maxOutputTokens: reasoning.maxOutputTokens }
-        : {}),
+      ...(maxOutputTokens ? { maxOutputTokens } : {}),
       // QA pass — once the model finishes streaming, parse the emitted
       // JSX block out of the response and validate every <Component>
       // against the live contract registry. We log violations server-

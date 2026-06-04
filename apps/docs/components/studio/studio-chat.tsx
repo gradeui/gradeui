@@ -18,14 +18,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, MousePointerClick } from "lucide-react";
+import { X, MousePointerClick } from "lucide-react";
+import { GradeMark } from "@/components/grade-mark";
 import { cn } from "@/lib/utils";
 import type { ChatSettings } from "@/components/ai-elements/provider-picker";
 import { STUDIO_TEMPLATES, type StudioTemplate } from "@/lib/studio-templates";
 import { humanizeChatError } from "@/lib/chat-error";
-import type { StudioSelection } from "@/lib/chat-sandpack";
+import { stripSourceIds, type StudioSelection } from "@/lib/chat-sandpack";
+import { transform as sucraseTransform } from "sucrase";
 import { useRotatingPhrase } from "@/lib/studio-loading-phrases";
 import { completePartialJsx } from "@/lib/studio-stream-draft";
+import {
+  extractEditBlocks,
+  applyEditTurn,
+} from "@/lib/studio-edit-blocks";
+import { EDIT_MODE_PROMPT } from "@gradeui/studio/playbook";
 import { SelectionInspector } from "@/components/studio/selection-inspector";
 import { SelectionChip } from "@/components/studio/selection-chip";
 import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
@@ -250,9 +257,13 @@ function latestJsxBlock(
   text: string,
   opts: { sealedOnly: boolean } = { sealedOnly: true }
 ): string | null {
+  // (?!-) keeps ```jsx-edit fences (STUDIO-EDITS blocks) out of this
+  // matcher — without it, "jsx-edit" parses as tag "jsx" with "-edit"
+  // leaking into the capture, and an edit turn would feed SEARCH/REPLACE
+  // markers to the compiler as app source.
   const fence = opts.sealedOnly
-    ? /```(?:jsx|tsx)\s*\n?([\s\S]*?)```/g
-    : /```(?:jsx|tsx)\s*\n?([\s\S]*?)(?:```|$)/g;
+    ? /```(?:jsx|tsx)(?!-)\s*\n?([\s\S]*?)```/g
+    : /```(?:jsx|tsx)(?!-)\s*\n?([\s\S]*?)(?:```|$)/g;
   let match: RegExpExecArray | null;
   let latest: string | null = null;
   while ((match = fence.exec(text)) !== null) {
@@ -289,6 +300,29 @@ function fileToDataUrl(file: File): Promise<string> {
 
 function stripCodeBlocks(text: string): string {
   return text.replace(/```[\s\S]*?(?:```|$)/g, "").trim();
+}
+
+/**
+ * Syntax gate for edit-turn folds. A mis-anchored apply (model
+ * renumbered attributes, paraphrased an edge line, etc.) can produce
+ * structurally invalid JSX — committing that corrupts the durable
+ * source and strands the preview on the failure panel. Run the same
+ * sucrase transform Fast Frame compiles with; if it throws, the fold
+ * is rejected and the turn is surfaced as failed (retry-as-regen chip)
+ * instead of committed.
+ */
+function compilesCleanly(src: string): boolean {
+  try {
+    sucraseTransform(src, {
+      transforms: ["jsx", "typescript", "imports"],
+      jsxRuntime: "automatic",
+      production: true,
+      filePath: "/App.tsx",
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function StudioChat({
@@ -370,6 +404,11 @@ export function StudioChat({
   settingsRef.current = { settings, systemPrompt, showThinking };
   const selectionRef = useRef<StudioSelection | null>(selection);
   selectionRef.current = selection;
+  // One-shot escape hatch: the edit-failure chip's "Retry as full
+  // regenerate" sets this so the NEXT send skips edit mode (no
+  // EDIT_MODE_PROMPT stanza → the model regenerates the whole
+  // component). Consumed at request time.
+  const forceFullRegenOnceRef = useRef(false);
 
   const transportRef = useRef<DefaultChatTransport<UIMessage>>(undefined);
   if (!transportRef.current) {
@@ -381,6 +420,19 @@ export function StudioChat({
           systemPrompt: sp,
           showThinking: thinkingOn,
         } = settingsRef.current;
+        // EDIT MODE — iteration turns (current code on screen) switch
+        // the model from full regeneration to anchored SEARCH/REPLACE
+        // edit blocks (STUDIO-EDITS.md). Output shrinks from O(page)
+        // to O(change). The retry-as-regen chip can force one full
+        // regeneration via forceFullRegenOnceRef.
+        const editMode =
+          Boolean(
+            currentCodeRef.current && currentCodeRef.current.trim() !== ""
+          ) && !forceFullRegenOnceRef.current;
+        forceFullRegenOnceRef.current = false;
+        const finalSystemPrompt = editMode
+          ? `${sp}\n\n${EDIT_MODE_PROMPT}`
+          : sp;
         return {
           body: {
             id,
@@ -390,7 +442,10 @@ export function StudioChat({
             provider: s.provider,
             model: s.model,
             apiKey: s.apiKey || undefined,
-            systemPrompt: sp,
+            systemPrompt: finalSystemPrompt,
+            // Server-side observability hook (STUDIO-EDITS X2) — the
+            // route ignores it today.
+            editMode,
             // Mirror the user's toggle through to the server. When false, the
             // chat route skips the component-reference block entirely —
             // saving tokens at the cost of the model occasionally guessing
@@ -464,11 +519,39 @@ export function StudioChat({
   // Must live below the useChat call — depends on `isStreaming` and
   // `messages` from there.
   const wasStreamingRef = useRef(isStreaming);
+  // Did the CURRENT turn start with code already on screen? Drafts
+  // (speculative live renders) are only worth it on a FRESH build —
+  // an iteration regenerates the whole component, so live-drawing it
+  // would visibly collapse the finished page to a half-page draft and
+  // rebuild it top-down for one small change. Iteration turns hold the
+  // existing render and snap when the sealed fence lands. Defaults to
+  // true (= no drafts) so a remount mid-stream errs on the calm side;
+  // the rising edge below stamps the real answer per turn.
+  const turnStartedWithCodeRef = useRef(true);
+  // Snapshot of the source at the moment the turn began — edit blocks
+  // anchor against THIS, not against whatever intermediate state the
+  // streaming applies produced, so block 3 always folds onto the same
+  // document blocks 1–2 did (and a user's mid-turn Code-view edit
+  // can't shear the anchors).
+  const turnBaseSourceRef = useRef<string | null>(null);
+  // How many sealed edit blocks this turn has already live-applied —
+  // lets the streaming effect fold only when a NEW block seals.
+  const appliedEditCountRef = useRef(0);
   useEffect(() => {
     const wasStreaming = wasStreamingRef.current;
     wasStreamingRef.current = isStreaming;
     if (!wasStreaming && isStreaming) {
       turnStartRef.current = Date.now();
+      turnStartedWithCodeRef.current = Boolean(
+        currentCodeRef.current && currentCodeRef.current.trim() !== ""
+      );
+      // Strip runtime source-id artifacts from the anchor base — the
+      // model's context is stripped the same way at send time, so the
+      // anchors line up even when a legacy screen still carries ids.
+      turnBaseSourceRef.current = currentCodeRef.current
+        ? stripSourceIds(currentCodeRef.current)
+        : null;
+      appliedEditCountRef.current = 0;
       return;
     }
     if (wasStreaming && !isStreaming && turnStartRef.current !== null) {
@@ -547,11 +630,33 @@ export function StudioChat({
     onDraftCodeRef.current = onDraftCode;
   }, [onDraftCode]);
   const draftActiveRef = useRef(false);
-  const emitDraft = (draft: string | null) => {
+  // Time-gate draft emission. The useChat throttle already caps UI
+  // updates at ~20/s, but every draft is a full sandbox compile +
+  // remount — at 20/s that's churn for no visual gain. 4/s reads
+  // just as live and quarters the work (the double-buffered swap in
+  // the sandbox hides the remounts either way).
+  const lastDraftEmitAtRef = useRef(0);
+  const emitDraft = (draft: string | null, opts?: { force?: boolean }) => {
     if (draft === null && !draftActiveRef.current) return;
+    if (draft !== null && !opts?.force) {
+      const now = Date.now();
+      if (now - lastDraftEmitAtRef.current < 250) return;
+      lastDraftEmitAtRef.current = now;
+    }
     draftActiveRef.current = draft !== null;
     onDraftCodeRef.current?.(draft);
   };
+
+  // Per-message edit-turn outcomes — drives the "⚡ N edits" /
+  // "N of M edits applied" chip on the assistant message (and the
+  // retry-as-regen affordance when some blocks missed their anchors).
+  const [editResultsByMessageId, setEditResultsByMessageId] = useState<
+    Record<string, { applied: number; failed: number }>
+  >({});
+  // Which assistant message's edit turn has been durably committed —
+  // the settle path must fold exactly once per turn (re-renders and
+  // remount hydrations must not re-apply).
+  const settledEditMsgIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -559,6 +664,73 @@ export function StudioChat({
       if (msg.role !== "assistant") continue;
       const text = textFromParts(msg.parts as any);
       const code = latestJsxBlock(text, { sealedOnly: isStreaming });
+
+      // ── Edit turns (STUDIO-EDITS) ─────────────────────────────────
+      // The model answered with anchored SEARCH/REPLACE blocks instead
+      // of a full fence. Streaming: each block live-applies the moment
+      // it seals, morphing the preview through the draft lane (the
+      // double-buffered swap repaints only the changed pixels because
+      // the rest of the source is byte-identical). Settle: one durable
+      // fold from the turn's base source → one undo snapshot, one
+      // persistence write, plus the per-turn chip data.
+      const editScan = extractEditBlocks(text, { sealedOnly: true });
+      if (editScan.sawEditFence && !code) {
+        const base = turnBaseSourceRef.current ?? currentCodeRef.current;
+        if (isStreaming) {
+          if (
+            base &&
+            !holdResponseUntilReady &&
+            editScan.blocks.length > appliedEditCountRef.current
+          ) {
+            appliedEditCountRef.current = editScan.blocks.length;
+            const folded = applyEditTurn(base, editScan.blocks);
+            // Blocks seal rarely (once per edit, not per token) —
+            // bypass the draft time-gate so each lands instantly.
+            // Syntax-gated: a mis-anchored fold must never reach the
+            // preview, even speculatively.
+            if (folded.applied.length > 0 && compilesCleanly(folded.next))
+              emitDraft(folded.next, { force: true });
+          }
+          lastEmittedAssistantIdRef.current = msg.id;
+          hydratedRef.current = true;
+          return;
+        }
+        // Settled edit turn.
+        emitDraft(null);
+        if (!hydratedRef.current) {
+          // Remount hydration — the fold is already baked into the
+          // durable source; never re-apply.
+          hydratedRef.current = true;
+          lastEmittedAssistantIdRef.current = msg.id;
+          settledEditMsgIdRef.current = msg.id;
+          return;
+        }
+        if (settledEditMsgIdRef.current !== msg.id) {
+          settledEditMsgIdRef.current = msg.id;
+          lastEmittedAssistantIdRef.current = msg.id;
+          if (base) {
+            const folded = applyEditTurn(base, editScan.blocks);
+            // Syntax gate — the fold only commits if the RESULT
+            // compiles. A mis-anchored apply that produces broken JSX
+            // is treated as a wholly failed turn (chip + retry) and
+            // the previous source stays untouched. This is what keeps
+            // a bad edit from corrupting the durable appSource.
+            const sound =
+              folded.applied.length > 0 && compilesCleanly(folded.next);
+            if (sound) onLatestCode(folded.next);
+            setEditResultsByMessageId((prev) => ({
+              ...prev,
+              [msg.id]: sound
+                ? {
+                    applied: folded.applied.length,
+                    failed: folded.failed.length,
+                  }
+                : { applied: 0, failed: editScan.blocks.length },
+            }));
+          }
+        }
+        return;
+      }
 
       // Live generation — always flow sealed blocks through so the
       // preview updates as the model streams. Don't clobber a good
@@ -568,7 +740,15 @@ export function StudioChat({
           // A sealed fence supersedes any outstanding draft.
           emitDraft(null);
           onLatestCode(code);
-        } else if (!holdResponseUntilReady) {
+        } else if (
+          !holdResponseUntilReady &&
+          // Fresh builds only. Full-regen iterations would live-draw a
+          // collapse of the finished page to a half-page partial for
+          // one small change — those turns keep the current render up
+          // and snap on the sealed fence. (Edit turns get their own
+          // live lane above.)
+          !turnStartedWithCodeRef.current
+        ) {
           // Speculative live render — auto-close the still-open fence
           // and let Fast Frame attempt a silent compile, so the app
           // draws top-down as tokens arrive. Gated on the same toggle
@@ -665,12 +845,17 @@ export function StudioChat({
     // a prior assistant turn, they're all things-to-iterate-on from the
     // model's perspective. Blank tabs send the prompt as-is so the model
     // treats it as the component brief.
+    // stripSourceIds: the inlined context must never carry the runtime
+    // `data-gds-source-id` attributes — the model copies them back into
+    // its output (polluting the stored source), renumbers them on edit
+    // turns (shearing SEARCH anchors), and they cost ~10 tokens per
+    // node, every turn, for nothing.
     const outgoing = currentCode
       ? [
           "Here is the current component. Modify it based on the request below.",
           "",
           "```jsx",
-          currentCode.trim(),
+          stripSourceIds(currentCode).trim(),
           "```",
           "",
           selPrefix + "Request: " + text,
@@ -742,6 +927,28 @@ export function StudioChat({
   // - When an assistant turn produced a jsx/tsx block we surface a
   //   "Rendered in preview →" action chip. It's a passive indicator
   //   today (no onClick), but the slot is in place for future wiring.
+  // Re-send the user's last request with edit mode forced OFF — the
+  // failure chip's escape hatch when blocks miss their anchors. Reads
+  // the clean request text back out of the last user turn (preamble
+  // stripped) and routes it through handleSend so the current source
+  // rides along as usual. Plain function (not memoized) so it always
+  // closes over the freshest handleSend/messages.
+  const retryAsFullRegen = () => {
+    if (isStreaming) return;
+    for (let i = (messages as UIMessage[]).length - 1; i >= 0; i--) {
+      if (messages[i].role !== "user") continue;
+      const raw = textFromParts(
+        messages[i].parts as { type: string; text?: string }[]
+      );
+      const request = displayUserText(raw);
+      if (request) {
+        forceFullRegenOnceRef.current = true;
+        void handleSend(request);
+      }
+      return;
+    }
+  };
+
   const chatMessages = useMemo<ChatMessage[]>(() => {
     // Find the index of the newest assistant message — needed so we
     // can identify the one that's currently streaming (last assistant
@@ -791,10 +998,37 @@ export function StudioChat({
       const content = isAssistant ? stripCodeBlocks(raw) : displayUserText(raw);
       const usage = isAssistant ? usageFromMetadata(m.metadata) : null;
       const refsInfo = isAssistant ? refsFromMetadata(m.metadata) : null;
-      // (The "Rendered in preview →" action chip was removed — it
-      // restated the tool's whole purpose. `latestJsxBlock` is still
-      // imported because the parent page consumes it for the preview
-      // update, not for any chip.)
+      // Edit-turn chip — "⚡ 3 edits applied" (or the honest partial
+      // "2 of 3 edits applied" + a retry-as-regen escape hatch when
+      // blocks missed their anchors). Only present on edit turns.
+      const editInfo = isAssistant
+        ? editResultsByMessageId[m.id]
+        : undefined;
+      const editActions =
+        editInfo !== undefined
+          ? [
+              {
+                id: "edits-applied",
+                label:
+                  editInfo.failed > 0
+                    ? `⚡ ${editInfo.applied} of ${
+                        editInfo.applied + editInfo.failed
+                      } edits applied`
+                    : `⚡ ${editInfo.applied} ${
+                        editInfo.applied === 1 ? "edit" : "edits"
+                      } applied`,
+              },
+              ...(editInfo.failed > 0
+                ? [
+                    {
+                      id: "retry-full-regen",
+                      label: "Retry as full regenerate",
+                      onClick: retryAsFullRegen,
+                    },
+                  ]
+                : []),
+            ]
+          : undefined;
 
       return {
         id: m.id,
@@ -820,34 +1054,25 @@ export function StudioChat({
         // the comma list.
         refs:
           refsInfo && refsInfo.refsIncluded ? refsInfo.refs : undefined,
+        actions: editActions,
         duration: durationsByMessageId[m.id],
       };
       }
     );
     return mapped.filter((m): m is ChatMessage => m !== null);
-  }, [messages, durationsByMessageId, isStreaming, holdResponseUntilReady]);
+    // retryAsFullRegen is deliberately not a dep — it's a fresh
+    // closure each render; the memo re-evaluates on `messages` anyway.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    messages,
+    durationsByMessageId,
+    isStreaming,
+    holdResponseUntilReady,
+    editResultsByMessageId,
+  ]);
 
-  // Header token total — sums input + output + total across every
-  // assistant turn. Falls back to `input + output` when a provider
-  // didn't return a `totalTokens` value. Hidden in the header when
-  // no assistant turn has reported usage yet.
-  const sessionTokens = useMemo<number | undefined>(() => {
-    let inp = 0;
-    let out = 0;
-    let total = 0;
-    let seen = false;
-    for (const m of messages as UIMessage[]) {
-      if (m.role !== "assistant") continue;
-      const u = usageFromMetadata(m.metadata);
-      if (!u) continue;
-      seen = true;
-      if (typeof u.inputTokens === "number") inp += u.inputTokens;
-      if (typeof u.outputTokens === "number") out += u.outputTokens;
-      if (typeof u.totalTokens === "number") total += u.totalTokens;
-    }
-    if (!seen) return undefined;
-    return total || inp + out;
-  }, [messages]);
+  // (The header session-token total went away with the chat header —
+  // per-message usage strips carry the numbers now.)
 
   // Show the loading-dots indicator for the WHOLE stream, not just
   // pre-first-token. The dots render below the most recent message,
@@ -871,12 +1096,12 @@ export function StudioChat({
     //  - the composer itself (with maxLength + paste + Stop) via composerSlot
     //  - the disclaimer + char counter via composerBelowSlot
     <AIChat
-      title="Ask Grade AI"
-      // Frameless — Studio's shell owns the panel surface now (flat
-      // full-height column, rail-to-canvas). The bg/border/rounded
-      // card chrome would double up against it.
+      // Headerless + frameless — Studio's shell owns the panel surface
+      // (flat full-height column, rail-to-canvas) and the rail already
+      // brands the app, so the "Ask Grade AI" strip was dead weight.
+      // Session token totals live in the per-message usage strips.
+      title={null}
       bare
-      headerTokens={sessionTokens}
       messages={chatMessages}
       isLoading={showLoadingIndicator}
       thinkingPhrase={`${phrase}…`}
@@ -1064,9 +1289,7 @@ function EmptyState({
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col items-start py-2"
       >
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center mb-2.5 shadow">
-          <Sparkles className="h-4 w-4 text-primary-foreground" />
-        </div>
+        <GradeMark className="h-7 w-7 text-foreground mb-2.5" />
         <h3 className="text-sm font-semibold text-foreground mb-0.5">
           Design it, then theme it
         </h3>

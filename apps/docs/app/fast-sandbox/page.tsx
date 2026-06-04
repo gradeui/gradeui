@@ -401,19 +401,63 @@ class RenderErrorBoundary extends React.Component<
 
 export default function FastSandboxPage() {
   const rootElRef = useRef<HTMLDivElement | null>(null);
-  const reactRootRef = useRef<Root | null>(null);
   const agentTeardownRef = useRef<SelectionAgentHandle | null>(null);
 
   useEffect(() => {
     if (!rootElRef.current) return;
-    reactRootRef.current = createRoot(rootElRef.current);
+    const host = rootElRef.current;
 
-    // Per-compile sequence (keys each RenderErrorBoundary so every
-    // attempt starts un-tripped) + the last draft component that
-    // rendered without throwing (the boundary's fallback while
-    // streaming). Closure state — lives exactly as long as the root.
+    // ── Double-buffered rendering ─────────────────────────────────────
+    //
+    // Every compile produces a BRAND NEW component type (new Function),
+    // so React can never reconcile across compiles — each render is a
+    // full unmount + remount. With a single root that meant a visible
+    // blank-then-repaint on every streamed draft (~the flicker). Two
+    // sibling containers with their own React roots fix it: the new
+    // tree is committed into the HIDDEN buffer with flushSync, then the
+    // buffers swap visibility synchronously — both happen before the
+    // browser paints, so the screen goes straight from old frame to new
+    // frame with no blank in between. The retired buffer is cleared
+    // asynchronously (it's invisible) so document-wide queries — the
+    // selection agent, Fill collection, comment-pin anchors — only ever
+    // see one copy of the app.
+    //
+    // display:none (not visibility) on the back buffer so it
+    // contributes ZERO height — document.scrollHeight always reflects
+    // the visible frame, which the parent polls for the responsive
+    // content-height artboard. Mid-remount transients used to bounce
+    // that measurement around (fill ↔ framed mode oscillation); with
+    // the buffer swap the height only changes when a frame actually
+    // lands.
+    const makeBuffer = () => {
+      const el = document.createElement("div");
+      el.style.display = "none";
+      host.appendChild(el);
+      return { el, root: createRoot(el) };
+    };
+    const buffers = [makeBuffer(), makeBuffer()];
+    let active = 0;
+    buffers[active].el.style.display = "";
+
+    /** Commit `node` into the back buffer (synchronously), then flip
+     *  the buffers before paint and retire the old front. */
+    const commitAndSwap = (node: React.ReactNode) => {
+      const back = buffers[1 - active];
+      flushSync(() => {
+        back.root.render(node);
+      });
+      const oldFront = buffers[active];
+      active = 1 - active;
+      back.el.style.display = "";
+      oldFront.el.style.display = "none";
+      // Clear the retired tree off the sync path — it's invisible, and
+      // dropping it keeps duplicate data-gds-* nodes out of the DOM.
+      oldFront.root.render(null);
+    };
+
+    // Per-compile sequence — keys each RenderErrorBoundary so every
+    // attempt starts un-tripped. Closure state, lives with the roots.
     let renderSeq = 0;
-    let lastGoodDraft: React.ComponentType | null = null;
 
     async function renderCompiled(
       source: string,
@@ -425,13 +469,6 @@ export default function FastSandboxPage() {
       // they land in CDN_CACHE marked with __cdn_error__ so the synchronous
       // resolveImport path can surface a clean error to the user.
       await preResolveUnknownImports(source);
-      // Sealed (non-speculative) compile — disarm the stream-in
-      // treatment before committing, whatever the outcome: the final
-      // render (or its failure panel) lands crisp and component
-      // transitions return to their own definitions.
-      if (!speculative) {
-        document.documentElement.removeAttribute("data-gds-streaming");
-      }
       const { Component, error } = compile(source);
       if (error) {
         // Speculative drafts fail SILENTLY — they're auto-closed partial
@@ -439,11 +476,7 @@ export default function FastSandboxPage() {
         // Keep the previous good render on screen; the next tick (or the
         // final sealed fence) supersedes this draft anyway.
         if (speculative) return;
-        // flushSync forces React to commit the render synchronously so
-        // the next line runs only after the DOM is updated.
-        flushSync(() => {
-          reactRootRef.current?.render(<FailurePanel error={error} />);
-        });
+        commitAndSwap(<FailurePanel error={error} />);
         // Also bubble up so the parent can mirror the failure state in
         // its own error surfaces if it wants to (e.g. header badge).
         window.parent.postMessage(
@@ -454,29 +487,21 @@ export default function FastSandboxPage() {
       }
       if (!Component) return;
       renderSeq += 1;
+
       if (speculative) {
-        // Stream-in treatment: while drafts are compiling, the
-        // `data-gds-streaming` attribute arms the @starting-style
-        // fade/rise in the DS stylesheet, so each element ENTERING the
-        // DOM animates in as the model draws it. Stamped lazily here
-        // (on the first draft that actually compiles) rather than at
-        // stream start, so pre-existing content doesn't re-transition.
-        document.documentElement.setAttribute("data-gds-streaming", "");
-        // Draft render. Runtime throws don't propagate through
-        // flushSync (React routes them to onUncaughtError and unmounts
-        // the root) — the boundary is what actually contains them: a
-        // throwing draft falls back to the LAST GOOD draft component,
-        // so the live preview never blanks mid-stream. componentDidCatch
-        // runs inside the flushSync commit, so `failed` is accurate
-        // immediately after.
-        const LastGood = lastGoodDraft;
+        // Draft render into the back buffer. Runtime throws don't
+        // propagate through flushSync (React routes them to
+        // onUncaughtError) — the boundary contains them. On failure we
+        // simply DON'T swap: the front buffer (last good frame) stays
+        // on screen and the retired half-tree is cleared invisibly.
         let failed = false;
+        const back = buffers[1 - active];
         flushSync(() => {
-          reactRootRef.current?.render(
+          back.root.render(
             <PreviewWrap>
               <RenderErrorBoundary
                 key={renderSeq}
-                fallback={() => (LastGood ? <LastGood /> : null)}
+                fallback={() => null}
                 onError={() => {
                   failed = true;
                 }}
@@ -486,17 +511,23 @@ export default function FastSandboxPage() {
             </PreviewWrap>
           );
         });
-        if (!failed) lastGoodDraft = Component;
+        if (failed) {
+          back.root.render(null);
+          return;
+        }
+        // Healthy draft — flip before paint (no blank frame).
+        const oldFront = buffers[active];
+        active = 1 - active;
+        back.el.style.display = "";
+        oldFront.el.style.display = "none";
+        oldFront.root.render(null);
         return;
       }
-      // flushSync guarantees the DOM is fully updated before we send
-      // the `grade:fast-compiled` signal back. Studio's Fill flow
-      // listens for this signal to know that newly-stamped
-      // data-gds-instance-id attributes (added by the self-heal pass)
-      // are present in the DOM before it starts collecting items.
-      // Without flushSync, React would commit asynchronously and the
-      // parent would race the DOM update — the old arbitrary-timeout
-      // approach was a fix for that race.
+
+      // Sealed render. commitAndSwap's flushSync guarantees the DOM is
+      // fully updated before we send the `grade:fast-compiled` signal
+      // back — Studio's Fill flow relies on that ordering to collect
+      // newly-stamped data-gds-instance-id attributes.
       //
       // The boundary turns a RUNTIME render error in the final source
       // into the FailurePanel + a grade:fast-error post, instead of the
@@ -504,29 +535,27 @@ export default function FastSandboxPage() {
       // iframe). Compile errors are still caught above; this is the
       // throws-while-rendering case (bad props, undefined lookups).
       let sealedFailed = false;
-      flushSync(() => {
-        reactRootRef.current?.render(
-          <PreviewWrap>
-            <RenderErrorBoundary
-              key={renderSeq}
-              fallback={(err) => <FailurePanel error={err} />}
-              onError={(err) => {
-                sealedFailed = true;
-                window.parent.postMessage(
-                  {
-                    type: "grade:fast-error",
-                    message: err.message,
-                    requestId,
-                  },
-                  "*"
-                );
-              }}
-            >
-              <Component />
-            </RenderErrorBoundary>
-          </PreviewWrap>
-        );
-      });
+      commitAndSwap(
+        <PreviewWrap>
+          <RenderErrorBoundary
+            key={renderSeq}
+            fallback={(err) => <FailurePanel error={err} />}
+            onError={(err) => {
+              sealedFailed = true;
+              window.parent.postMessage(
+                {
+                  type: "grade:fast-error",
+                  message: err.message,
+                  requestId,
+                },
+                "*"
+              );
+            }}
+          >
+            <Component />
+          </RenderErrorBoundary>
+        </PreviewWrap>
+      );
       // Don't ack a failed render — the Fill flow must not start
       // collecting against the failure panel's DOM.
       if (!sealedFailed) {
@@ -535,12 +564,18 @@ export default function FastSandboxPage() {
           "*"
         );
       }
-      // A new sealed render resets the draft baseline for the next turn.
-      lastGoodDraft = null;
     }
 
     function applyTheme(vars: Record<string, string>, mode: "light" | "dark") {
       const root = document.documentElement;
+      // No-op guard — the parent re-posts the theme on unrelated
+      // re-renders (object identity churn). Re-applying identical vars
+      // fires dozens of attribute mutations on <html>, and ThreeScene's
+      // MutationObserver (class/style/data-gds-theme) re-resolves its
+      // palette on EVERY one — wasted forced style recalcs at best,
+      // shader colour pops at worst. Identical push → skip entirely.
+      const sig = String(hash(JSON.stringify({ vars, mode })));
+      if (root.dataset.gdsTheme === sig) return;
       for (const [key, value] of Object.entries(vars)) {
         root.style.setProperty(key, value);
       }
@@ -550,7 +585,7 @@ export default function FastSandboxPage() {
       // the serialized vars so a MutationObserver downstream can tell
       // the theme changed even when individual var values move without
       // crossing a light/dark boundary.
-      root.dataset.gdsTheme = String(hash(JSON.stringify({ vars, mode })));
+      root.dataset.gdsTheme = sig;
     }
 
     function handleMessage(event: MessageEvent) {
@@ -1045,8 +1080,10 @@ export default function FastSandboxPage() {
       pinHost = null;
       agentTeardownRef.current?.teardown();
       agentTeardownRef.current = null;
-      reactRootRef.current?.unmount();
-      reactRootRef.current = null;
+      for (const b of buffers) {
+        b.root.unmount();
+        b.el.remove();
+      }
     };
   }, []);
 

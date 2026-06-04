@@ -87,8 +87,20 @@ export interface BackgroundFillProps {
   color?: string;
 
   // ── gradient ───────────────────────────────────────────────────────
-  /** Gradient stops — token names or CSS colours. */
-  gradient?: { from?: string; via?: string; to?: string; angle?: number };
+  /** Gradient stops — token names or CSS colours. `shape: "radial"`
+   *  swaps the linear paint for a radial wash (the classic "soft glow
+   *  behind the hero"); `at` positions its centre, `size` fixes the
+   *  ellipse (e.g. "45rem 50rem" — defaults to farthest-corner).
+   *  `angle` is linear-only; `at`/`size` are radial-only. */
+  gradient?: {
+    from?: string;
+    via?: string;
+    to?: string;
+    angle?: number;
+    shape?: "linear" | "radial";
+    at?: string;
+    size?: string;
+  };
 
   // ── image / video ──────────────────────────────────────────────────
   /** Image or video URL. */
@@ -162,13 +174,21 @@ export const BackgroundFill = React.forwardRef<
     if (type === "solid") {
       layerStyle.background = resolveColor(color) ?? "oklch(var(--background))";
     } else if (type === "gradient") {
-      const angle = gradient?.angle ?? 135;
       const stops = [
         resolveColor(gradient?.from) ?? "oklch(var(--primary))",
         resolveColor(gradient?.via),
         resolveColor(gradient?.to) ?? "oklch(var(--accent))",
       ].filter(Boolean) as string[];
-      layerStyle.backgroundImage = `linear-gradient(${angle}deg, ${stops.join(", ")})`;
+      if (gradient?.shape === "radial") {
+        // radial-gradient([size ]at position, stops). Size omitted →
+        // farthest-corner, the CSS default — fills the frame softly.
+        const at = gradient.at ?? "center";
+        const size = gradient.size ? `${gradient.size} ` : "";
+        layerStyle.backgroundImage = `radial-gradient(${size}at ${at}, ${stops.join(", ")})`;
+      } else {
+        const angle = gradient?.angle ?? 135;
+        layerStyle.backgroundImage = `linear-gradient(${angle}deg, ${stops.join(", ")})`;
+      }
     } else if (type === "image") {
       if (repeat && src) {
         layerStyle.backgroundImage = `url(${src})`;

@@ -424,4 +424,17 @@ export const ALLOWED_EXTERNAL_IMPORTS = [
  * gap. If a non-layout component needs similar treatment, consider
  * fixing its aliases first.
  */
-export const PINNED_COMPONENTS = ["AppShell", "Stack", "Row", "Grid", "Flex"] as const;
+export const PINNED_COMPONENTS = [
+  "AppShell",
+  "Stack",
+  "Row",
+  "Grid",
+  "Flex",
+  // The one non-layout pin: MediaSurface is the canonical image slot
+  // for EVERY design with imagery (heroes, products, posters,
+  // thumbnails), but prompts say "landing page" / "shop", never
+  // "media surface" — retrieval misses it and the model reaches for
+  // bare gradient divs or <img> with invented URLs instead of
+  // placeholders the Fill / generation pipeline can later populate.
+  "MediaSurface",
+] as const;

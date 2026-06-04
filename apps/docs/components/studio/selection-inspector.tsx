@@ -120,8 +120,14 @@ import {
   getAreaTokens,
   RADIUS_PX,
   FONT_SIZE_PX,
+  FONT_SIZE_OVERRIDE_SCALE,
   FONT_WEIGHT_NUMBER,
 } from "@/lib/token-registry";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type {
   SelectionChainSegment,
   StudioSelection,
@@ -149,8 +155,22 @@ import {
   FONT_WEIGHT_SCALE,
   GRID_COLS_SCALE,
   RADIUS_SCALE,
+  LINE_HEIGHT_SCALE,
+  LINE_HEIGHT_HINT,
+  TRACKING_SCALE,
+  TRACKING_HINT,
+  TEXT_ALIGN_SCALE,
+  FAMILY_BODY,
+  EDITABLE_BREAKPOINTS,
+  parseBreakpointOverrides,
+  parseBreakpointToken,
+  setBreakpointToken,
+  type ResponsiveBp,
   parseFontSize,
   parseFontWeight,
+  parseLineHeight,
+  parseTracking,
+  parseTextAlign,
   parseGap,
   parseGridCols,
   parseMargin,
@@ -161,6 +181,9 @@ import {
   parseRadius,
   setFontSize,
   setFontWeight,
+  setLineHeight,
+  setTracking,
+  setTextAlign,
   setGap,
   setGridCols,
   setMarginSides,
@@ -202,6 +225,9 @@ import {
   type BlendMode,
   type FontSizeValue,
   type FontWeightValue,
+  type LineHeightValue,
+  type TrackingValue,
+  type TextAlignValue,
   type RadiusValue,
   type SideValues,
   type CornerValues,
@@ -1791,18 +1817,20 @@ function TextEditRow({
   onChange: (nextText: string) => void;
 }) {
   const editable = isElementTextEditable(source, sourceId);
-  // Read the verbatim children string. `findElementChildren` returns
-  // it including any surrounding whitespace — trim for the input so
-  // newlines/leading-spaces in the source don't show as awkward
-  // caret artifacts. The whitespace is restored at commit time by
-  // `updateElementText` writing the user's new value verbatim, which
-  // is the right call: if the source had `<h1>Hello</h1>` we put
-  // `Hello` in the input and write `Hello`/whatever-the-user-types
-  // back without sneaking in newlines.
+  // Read the children string NORMALISED — collapse runs of whitespace
+  // to single spaces and trim. The source carries JSX formatting
+  // (indentation + newlines around the text node) that the browser
+  // collapses at render time anyway; showing it raw made the input
+  // look padded/centred with phantom leading space. Commit writes the
+  // user's (single-line) value verbatim, so an untouched field never
+  // rewrites the source, and an edited one flattens the text node to
+  // one line — which is what the user typed.
   const currentText = useMemo(() => {
     if (!editable) return "";
     const children = findElementChildren(source, sourceId);
-    return children ? children.value : "";
+    return children
+      ? children.value.replace(/\s+/g, " ").trim()
+      : "";
   }, [editable, source, sourceId]);
 
   const [draft, setDraft] = useState<string | null>(null);
@@ -2554,9 +2582,176 @@ function pxGhost(v?: string): string | undefined {
 const ownsAny = (names: Set<string> | undefined, aliases: string[]) =>
   aliases.some((a) => names?.has(a) ?? false);
 
+/** One pickable class in a breakpoint-override row. */
+interface BpOption {
+  /** Unprefixed class written into the override ("text-8xl"). */
+  cls: string;
+  label: string;
+  hint?: string;
+}
+
 /**
- * TypographyGroup — font size + weight. Text intrinsics only (the
- * capability layer keeps these off containers).
+ * BreakpointOverridesEditor — the per-property responsive editor.
+ *
+ * Sits in a field's label row. Collapsed: breakpoint badges (`md`,
+ * `lg`) when overrides exist — the signal that the base field below
+ * is NOT the whole story (the value is overridden by a CSS class at
+ * that breakpoint) — or a ghost `+` when none do. Open: one row per
+ * editable breakpoint (sm/md/lg) with a scoped token picker; "—"
+ * clears the override.
+ *
+ * Deliberately EXPLICIT rather than Webflow's canvas-context model
+ * (where the active viewport silently decides which breakpoint you're
+ * editing — a model that routinely catches people out): here the
+ * override lives on the property, you can see it at a glance, and you
+ * change it on purpose. Tailwind is mobile-first, so a breakpoint
+ * value applies from that width UP; the base field is everything
+ * below the smallest authored override.
+ *
+ * xl/2xl overrides the model may emit aren't editable here (every
+ * mintable class must be safelisted) — they surface read-only with a
+ * pointer at the Class-names row / chat.
+ */
+function BreakpointOverridesEditor({
+  property,
+  body,
+  options,
+  className0,
+  baseCls,
+  disabled,
+  onChangeClassName,
+}: {
+  /** Human name for tooltips ("font size"). */
+  property: string;
+  /** FAMILY_BODY.* pattern for this property. */
+  body: string;
+  options: BpOption[];
+  className0: string | null;
+  /** The BASE (unprefixed) class currently authored, e.g. "text-3xl" —
+   *  anchors the cascade readout: a breakpoint row without its own
+   *  override shows "Inherit · <whatever wins below it>". Null when the
+   *  base field is unset (element/theme default applies). */
+  baseCls?: string | null;
+  disabled?: boolean;
+  onChangeClassName: (next: string) => void;
+}) {
+  const overrides = parseBreakpointOverrides(className0, body);
+  const byBp = new Map<ResponsiveBp, string>();
+  for (const o of overrides) byBp.set(o.bp, o.cls); // last wins per bp
+  const editableSet = new Set<string>(EDITABLE_BREAKPOINTS);
+  const readOnly = [...byBp.entries()].filter(([bp]) => !editableSet.has(bp));
+
+  // The class that WINS at a breakpoint when it has no override of its
+  // own — mobile-first cascade: nearest authored breakpoint below it,
+  // else the base class. Drives the "Inherit · text-3xl" row labels
+  // (the answer to "is sm: the default?" — no, the base field is; sm
+  // inherits it until overridden).
+  const authoredAt = (bp: ResponsiveBp) =>
+    parseBreakpointToken(className0, bp, body);
+  const inheritedFor = (bp: ResponsiveBp): string | null => {
+    const order = EDITABLE_BREAKPOINTS as readonly ResponsiveBp[];
+    for (let i = order.indexOf(bp) - 1; i >= 0; i--) {
+      const below = authoredAt(order[i]);
+      if (below) return below;
+    }
+    return baseCls ?? null;
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label={`Responsive overrides for ${property}`}
+          title={
+            byBp.size > 0
+              ? `Set by CSS override${byBp.size > 1 ? "s" : ""}: ${[...byBp.values()].join(", ")} — the field below edits the base value. Click to edit.`
+              : `Add a responsive override (sm / md / lg) for ${property}`
+          }
+          className={cn(
+            "inline-flex h-4 items-center gap-0.5 rounded-[3px] px-1 transition-colors",
+            "focus:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+            byBp.size > 0
+              ? "border border-warning-deep/30 bg-warning-soft font-mono text-[9px] leading-none text-warning-deep hover:brightness-95"
+              : "text-muted-foreground/50 hover:bg-muted hover:text-foreground [&_svg]:size-2.5",
+            disabled && "pointer-events-none opacity-50",
+          )}
+        >
+          {byBp.size > 0 ? (
+            [...byBp.keys()].map((bp) => <span key={bp}>{bp}</span>)
+          ) : (
+            <Plus />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 space-y-2 p-2.5">
+        <p className="text-2xs leading-snug text-muted-foreground">
+          Responsive {property} — each value applies from that breakpoint
+          up. The field below stays the base (mobile-first) value.
+        </p>
+        {EDITABLE_BREAKPOINTS.map((bp) => {
+          const current = authoredAt(bp);
+          const inherited = inheritedFor(bp);
+          return (
+            <div key={bp} className="flex items-center gap-2">
+              <span className="w-8 shrink-0 font-mono text-2xs text-muted-foreground">
+                {bp}:
+              </span>
+              <Select
+                value={current ?? "none"}
+                onValueChange={(next) =>
+                  onChangeClassName(
+                    setBreakpointToken(
+                      className0,
+                      bp,
+                      body,
+                      next === "none" ? null : next,
+                    ),
+                  )
+                }
+                disabled={disabled}
+              >
+                <SelectTrigger size="2xs" className="w-full">
+                  <SelectValue placeholder="Inherit" />
+                </SelectTrigger>
+                <SelectContent size="2xs" position="item-aligned">
+                  {/* The cascade made legible: an un-overridden
+                      breakpoint inherits the nearest value below it
+                      (ultimately the base field). */}
+                  <SelectItem value="none">
+                    {inherited ? `Inherit · ${inherited}` : "Inherit"}
+                  </SelectItem>
+                  {options.map((o) => (
+                    <SelectItem key={o.cls} value={o.cls} hint={o.hint}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          );
+        })}
+        {readOnly.length > 0 && (
+          <p className="text-2xs leading-snug text-muted-foreground">
+            Also set: {readOnly.map(([, cls]) => cls).join(", ")} — edit via
+            the Class names row or chat.
+          </p>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/**
+ * TypographyGroup — font size, weight, line-height, letter-spacing,
+ * and text alignment. Text intrinsics only (the capability layer
+ * keeps these off containers). The three newer controls share the
+ * fontSize capability gate — anything that can carry a size can carry
+ * the rest of the type stack. Every control carries a
+ * BreakpointOverridesEditor in its label row, so `md:text-8xl`-style
+ * overrides are visible and editable instead of silently shadowing
+ * the base field.
  */
 function TypographyGroup({
   source,
@@ -2576,15 +2771,169 @@ function TypographyGroup({
   const showFontWeight =
     caps.fontWeight &&
     !ownsAny(manifestPropNames, ["weight", "fontweight", "font-weight"]);
-  if (!showFontSize && !showFontWeight) return null;
+  const showLineHeight =
+    caps.fontSize &&
+    !ownsAny(manifestPropNames, ["lineheight", "line-height", "leading"]);
+  const showTracking =
+    caps.fontSize &&
+    !ownsAny(manifestPropNames, [
+      "letterspacing",
+      "letter-spacing",
+      "tracking",
+    ]);
+  const showAlign =
+    caps.fontSize &&
+    !ownsAny(manifestPropNames, ["align", "textalign", "text-align"]);
+  if (
+    !showFontSize &&
+    !showFontWeight &&
+    !showLineHeight &&
+    !showTracking &&
+    !showAlign
+  )
+    return null;
 
   const cn0 = readClassName(source, componentName, sourceId);
   const fontSize = parseFontSize(cn0);
   const fontWeight = parseFontWeight(cn0);
-  // Detached font size rides inline style (Fast Frame — see ShadowGroup).
+  const lineHeight = parseLineHeight(cn0);
+  const tracking = parseTracking(cn0);
+  const textAlign = parseTextAlign(cn0);
+
+  // Per-property responsive editors — shared wiring, one per control.
+  // The size picker includes the display sizes (6xl–9xl): hero ladders
+  // like `md:text-8xl` are the main reason overrides exist. `baseCls`
+  // anchors each popover's "Inherit · <cls>" cascade readout.
+  const bpEditor = (
+    property: string,
+    body: string,
+    options: BpOption[],
+    baseCls: string | null,
+  ) => (
+    <BreakpointOverridesEditor
+      property={property}
+      body={body}
+      options={options}
+      className0={cn0}
+      baseCls={baseCls}
+      disabled={disabled}
+      onChangeClassName={onChangeClassName}
+    />
+  );
+  const sizeBpOptions: BpOption[] = FONT_SIZE_OVERRIDE_SCALE.map((s) => ({
+    cls: `text-${s}`,
+    label: `text-${s}`,
+    hint: FONT_SIZE_PX[s],
+  }));
+  const weightBpOptions: BpOption[] = FONT_WEIGHT_SCALE.map((w) => ({
+    cls: `font-${w}`,
+    label: `font-${w}`,
+    hint: FONT_WEIGHT_NUMBER[w],
+  }));
+  const leadingBpOptions: BpOption[] = LINE_HEIGHT_SCALE.map((v) => ({
+    cls: `leading-${v}`,
+    label: `leading-${v}`,
+    hint: LINE_HEIGHT_HINT[v],
+  }));
+  const trackingBpOptions: BpOption[] = TRACKING_SCALE.map((v) => ({
+    cls: `tracking-${v}`,
+    label: `tracking-${v}`,
+    hint: TRACKING_HINT[v],
+  }));
+  const alignBpOptions: BpOption[] = TEXT_ALIGN_SCALE.map((v) => ({
+    cls: `text-${v}`,
+    label: `text-${v}`,
+  }));
+
+  // Detached (inline-style) values for the rest of the type stack —
+  // same Fast Frame rule as font size: raw values ride `style`,
+  // tokens ride classes. Detach seeds prefer the live computed value
+  // ("normal" is useless as a seed — fall back to the token's hint).
   const inline = source
     ? readInlineStyle(source, componentName, sourceId)
     : {};
+  const customLineHeight = inline?.["lineHeight"] ?? null;
+  const customTracking = inline?.["letterSpacing"] ?? null;
+  const seedLeading =
+    computedStyle?.lineHeight && computedStyle.lineHeight !== "normal"
+      ? computedStyle.lineHeight
+      : LINE_HEIGHT_HINT[lineHeight ?? "normal"];
+  const seedTracking =
+    computedStyle?.letterSpacing && computedStyle.letterSpacing !== "normal"
+      ? computedStyle.letterSpacing
+      : TRACKING_HINT[tracking ?? "normal"];
+  // Contract-shipped defaults (CardTitle's leading-none, tracking-tight)
+  // → dulled ghost chips, same as font size.
+  const defaultWeight = parseFontWeight(defaultClasses ?? null);
+  const defaultLineHeight = parseLineHeight(defaultClasses ?? null);
+  const defaultTracking = parseTracking(defaultClasses ?? null);
+  const defaultAlign = parseTextAlign(defaultClasses ?? null);
+
+  const writeLeadingToken = (v: LineHeightValue | null, lbl: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const nextCn = setLineHeight(cnNow, v);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(src2, componentName, { lineHeight: null }, sourceId);
+    }, lbl);
+  const writeLeadingDim = (dimV: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const strippedCn = setLineHeight(cnNow, null);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        strippedCn === "" ? null : strippedCn,
+        sourceId,
+      );
+      return setInlineStyle(src2, componentName, { lineHeight: dimV }, sourceId);
+    }, "Set custom line height");
+  const writeTrackingToken = (v: TrackingValue | null, lbl: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const nextCn = setTracking(cnNow, v);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        { letterSpacing: null },
+        sourceId,
+      );
+    }, lbl);
+  const writeTrackingDim = (dimV: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const strippedCn = setTracking(cnNow, null);
+      const src2 = updateComponentProp(
+        src,
+        componentName,
+        "className",
+        strippedCn === "" ? null : strippedCn,
+        sourceId,
+      );
+      return setInlineStyle(
+        src2,
+        componentName,
+        { letterSpacing: dimV },
+        sourceId,
+      );
+    }, "Set custom letter spacing");
+  // Detached font size rides inline style (Fast Frame — see ShadowGroup);
+  // `inline` itself is read once above, alongside the line-height /
+  // letter-spacing customs.
   const customFontSize = inline?.["fontSize"] ?? null;
   const seedFont = `${FONT_SIZE_PX[fontSize ?? "base"] ?? "16"}px`;
   // Contract-shipped baked size (CardDescription's text-sm) → dulled chip.
@@ -2622,6 +2971,12 @@ function TypographyGroup({
         <TokenField
           kind="font size"
           label="Font size"
+          labelExtra={bpEditor(
+            "font size",
+            FAMILY_BODY.fontSize,
+            sizeBpOptions,
+            fontSize ? `text-${fontSize}` : null,
+          )}
           labelCaption={
             fontSize === null &&
             customFontSize === null &&
@@ -2670,37 +3025,189 @@ function TypographyGroup({
         />
       )}
       {showFontWeight && (
-        <div className="space-y-1">
-          <Label htmlFor="type-font-weight" className={FIELD_LABEL}>
-            Font weight
-          </Label>
-          <Select
-            value={fontWeight ?? "inherit"}
-            onValueChange={(next) =>
-              onChangeClassName(
-                setFontWeight(
-                  cn0,
-                  next === "inherit" ? null : (next as FontWeightValue),
-                ),
-              )
-            }
-            disabled={disabled}
-          >
-            <SelectTrigger id="type-font-weight" size="2xs" className="w-full">
-              <SelectValue placeholder="Inherit" />
-            </SelectTrigger>
-            <SelectContent size="2xs" position="item-aligned">
-              <SelectItem value="inherit">Inherit</SelectItem>
-              {/* Numeric weight as the row hint — designers think in
-                  500/600, and the keyword names hide that mapping. */}
-              {FONT_WEIGHT_SCALE.map((w) => (
-                <SelectItem key={w} value={w} hint={FONT_WEIGHT_NUMBER[w]}>
-                  font-{w}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        // Token-only TokenField — weight has no meaningful raw value
+        // worth a detach lane (the keyword ladder IS the scale).
+        <TokenField
+          kind="font weight"
+          label="Font weight"
+          labelExtra={bpEditor(
+            "font weight",
+            FAMILY_BODY.fontWeight,
+            weightBpOptions,
+            fontWeight ? `font-${fontWeight}` : null,
+          )}
+          bound
+          token={fontWeight ?? null}
+          tokens={FONT_WEIGHT_SCALE.map((w) => ({
+            value: w,
+            label: `font-${w}`,
+            hint: FONT_WEIGHT_NUMBER[w],
+          }))}
+          ghostToken={
+            fontWeight === null && defaultWeight !== null
+              ? {
+                  label: `font-${defaultWeight}`,
+                  hint: FONT_WEIGHT_NUMBER[defaultWeight],
+                }
+              : undefined
+          }
+          placeholder="Inherit"
+          disabled={disabled}
+          onPickToken={(t) =>
+            onChangeClassName(
+              setFontWeight(cn0, t === null ? null : (t as FontWeightValue)),
+            )
+          }
+        />
+      )}
+      {showLineHeight && (
+        <TokenField
+          kind="line height"
+          label="Line height"
+          labelExtra={bpEditor(
+            "line height",
+            FAMILY_BODY.lineHeight,
+            leadingBpOptions,
+            lineHeight ? `leading-${lineHeight}` : null,
+          )}
+          labelCaption={
+            lineHeight === null &&
+            customLineHeight === null &&
+            computedStyle?.lineHeight &&
+            computedStyle.lineHeight !== "normal" ? (
+              <DefaultCaption value={computedStyle.lineHeight} />
+            ) : undefined
+          }
+          bound={customLineHeight === null}
+          token={lineHeight ?? null}
+          tokens={getAreaTokens("lineHeight").map((t) => ({
+            value: t.value,
+            label: t.label,
+            hint: t.hint,
+          }))}
+          ghostToken={
+            lineHeight === null &&
+            customLineHeight === null &&
+            defaultLineHeight !== null
+              ? {
+                  label: `leading-${defaultLineHeight}`,
+                  hint: LINE_HEIGHT_HINT[defaultLineHeight],
+                }
+              : undefined
+          }
+          placeholder="Inherit"
+          disabled={disabled}
+          onPickToken={(t) =>
+            writeLeadingToken(
+              t === null ? null : (t as LineHeightValue),
+              "Set line height",
+            )
+          }
+          currentRaw={customLineHeight ?? undefined}
+          onDetach={() => writeLeadingDim(seedLeading)}
+          onRebind={() =>
+            writeLeadingToken("normal", "Re-bind line height to token")
+          }
+          renderRaw={(attach) => (
+            <CompactDimensionField
+              ariaLabel="Line height"
+              value={customLineHeight ?? seedLeading}
+              disabled={disabled}
+              onCommit={(v) => writeLeadingDim(v)}
+              endExtra={attach}
+            />
+          )}
+        />
+      )}
+      {showTracking && (
+        <TokenField
+          kind="letter spacing"
+          label="Letter spacing"
+          labelExtra={bpEditor(
+            "letter spacing",
+            FAMILY_BODY.tracking,
+            trackingBpOptions,
+            tracking ? `tracking-${tracking}` : null,
+          )}
+          labelCaption={
+            tracking === null &&
+            customTracking === null &&
+            computedStyle?.letterSpacing &&
+            computedStyle.letterSpacing !== "normal" ? (
+              <DefaultCaption value={computedStyle.letterSpacing} />
+            ) : undefined
+          }
+          bound={customTracking === null}
+          token={tracking ?? null}
+          tokens={getAreaTokens("tracking").map((t) => ({
+            value: t.value,
+            label: t.label,
+            hint: t.hint,
+          }))}
+          ghostToken={
+            tracking === null &&
+            customTracking === null &&
+            defaultTracking !== null
+              ? {
+                  label: `tracking-${defaultTracking}`,
+                  hint: TRACKING_HINT[defaultTracking],
+                }
+              : undefined
+          }
+          placeholder="Inherit"
+          disabled={disabled}
+          onPickToken={(t) =>
+            writeTrackingToken(
+              t === null ? null : (t as TrackingValue),
+              "Set letter spacing",
+            )
+          }
+          currentRaw={customTracking ?? undefined}
+          onDetach={() => writeTrackingDim(seedTracking)}
+          onRebind={() =>
+            writeTrackingToken("normal", "Re-bind letter spacing to token")
+          }
+          renderRaw={(attach) => (
+            <CompactDimensionField
+              ariaLabel="Letter spacing"
+              value={customTracking ?? seedTracking}
+              disabled={disabled}
+              onCommit={(v) => writeTrackingDim(v)}
+              endExtra={attach}
+            />
+          )}
+        />
+      )}
+      {showAlign && (
+        // Token-only — a "raw" alignment has no meaning.
+        <TokenField
+          kind="text alignment"
+          label="Align"
+          labelExtra={bpEditor(
+            "alignment",
+            FAMILY_BODY.textAlign,
+            alignBpOptions,
+            textAlign ? `text-${textAlign}` : null,
+          )}
+          bound
+          token={textAlign ?? null}
+          tokens={getAreaTokens("textAlign").map((t) => ({
+            value: t.value,
+            label: t.label,
+          }))}
+          ghostToken={
+            textAlign === null && defaultAlign !== null
+              ? { label: `text-${defaultAlign}` }
+              : undefined
+          }
+          placeholder="Inherit"
+          disabled={disabled}
+          onPickToken={(t) =>
+            onChangeClassName(
+              setTextAlign(cn0, t === null ? null : (t as TextAlignValue)),
+            )
+          }
+        />
       )}
     </CollapsibleSection>
   );

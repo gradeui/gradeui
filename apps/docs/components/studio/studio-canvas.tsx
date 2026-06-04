@@ -60,7 +60,7 @@ import {
   Share2,
   UserPlus,
   Smartphone,
-  Sparkles,
+  LayoutTemplate,
   Tablet,
   Trash2,
   Undo2,
@@ -97,6 +97,8 @@ import type { GeneratedTheme } from "@/lib/themes";
 import type { Design } from "@/lib/studio-designs";
 import type { CommentThreadWithMessages } from "@/lib/studio-storage";
 import { DesignBreadcrumb } from "@/components/studio/design-breadcrumb";
+import { GradeMark } from "@/components/grade-mark";
+import { REFERENCE_LAYOUTS } from "@gradeui/studio/playbook";
 import { CanvasPathBar } from "@/components/studio/canvas-path-bar";
 import { SelectionChip } from "@/components/studio/selection-chip";
 import { StarterPicker } from "@/components/studio/starter-picker";
@@ -487,12 +489,58 @@ export function StudioCanvas({
   const [responsiveContentH, setResponsiveContentH] = useState<number | null>(
     null,
   );
-  // Stale heights must not leak across screens or viewport flips — a
-  // min-h-screen page measured at a previous height can't shrink its
-  // own scrollHeight, so re-probe from the fill state instead.
+  // ── Measure-then-freeze ───────────────────────────────────────────
+  //
+  // Content height MUST only ever be measured while the iframe sits at
+  // the COLUMN viewport (fill state). Viewport-relative pages — a
+  // `min-h-screen` hero with sections below — are self-extending:
+  // frame the page at its measured height and the hero grows with the
+  // new viewport, so the next measurement is bigger, the artboard
+  // grows, Fit zooms out… forever (the "keeps zooming out" loop).
+  // There is no fixed point for such pages, so continuous tracking is
+  // unsound by construction.
+  //
+  // The rule that makes it sound, with no timers: accept reports only
+  // while the artboard hasn't ENGAGED. Pre-engagement the iframe is
+  // always at the column viewport (fill), so every sample is safe;
+  // the report that crosses the engagement threshold applies ONCE and
+  // freezes the channel until the next reset trigger (screen switch,
+  // viewport flip, stream settle). While a stream runs we hold fill
+  // outright — the draft renderer remounts content constantly and the
+  // transient heights are meaningless.
+  const respHFrozenRef = useRef(false);
+  const isStreamingRef = useRef(isStreaming);
   useEffect(() => {
+    isStreamingRef.current = isStreaming;
+  }, [isStreaming]);
+  // Reset triggers: screen switch + viewport flip re-open measurement
+  // from the fill state (the original stale-height guards).
+  useEffect(() => {
+    respHFrozenRef.current = false;
     setResponsiveContentH(null);
   }, [focusedId, viewportWidth]);
+  // Stream edges: hold fill during the stream; re-measure the final
+  // page once it settles.
+  const streamWasActiveRef = useRef(false);
+  useEffect(() => {
+    const was = streamWasActiveRef.current;
+    streamWasActiveRef.current = isStreaming;
+    if (was !== isStreaming) {
+      respHFrozenRef.current = false;
+      setResponsiveContentH(null);
+    }
+  }, [isStreaming]);
+  const handleContentHeight = useCallback((h: number) => {
+    if (respHFrozenRef.current || isStreamingRef.current) return;
+    setResponsiveContentH(h);
+    // Crossing the engagement threshold (mirrors resolveArtboardSize's
+    // canvas.h + 8 gate) means the NEXT report would be measured at a
+    // content-sized viewport — freeze before the loop can start.
+    const canvasH = artboardRef.current?.canvasSize.h ?? 0;
+    if (canvasH > 0 && h > canvasH + 8) {
+      respHFrozenRef.current = true;
+    }
+  }, []);
   const resolveArtboardSize = useCallback(
     (canvas: { w: number; h: number }) => {
       if (viewportWidth !== "responsive")
@@ -1889,7 +1937,7 @@ export function StudioCanvas({
                     : "Design cap reached"
                 }
               >
-                <Sparkles className="h-3 w-3" />
+                <LayoutTemplate className="h-3 w-3" />
                 Starters
               </button>
               {onDuplicateDesign && (
@@ -2010,7 +2058,7 @@ export function StudioCanvas({
         artboardCanvasRef={artboard.canvasRef}
         artboardSize={artboard.deviceSize}
         onContentHeight={
-          viewportWidth === "responsive" ? setResponsiveContentH : undefined
+          viewportWidth === "responsive" ? handleContentHeight : undefined
         }
       />
       {/* Timeline dock — a flex child at the bottom of app-main, so the
@@ -2411,7 +2459,19 @@ function FocusedFrame({
 
       {!canRender && (
         <div className="absolute inset-0 bg-background z-10">
-          {isStreaming ? <GeneratingPreview /> : <EmptyPreview />}
+          {isStreaming ? (
+            <GeneratingPreview />
+          ) : (
+            <EmptyPreview
+              theme={theme}
+              mode={mode}
+              onPickStarter={
+                onSourceMutation
+                  ? (scaffold) => onSourceMutation(scaffold, "Starter")
+                  : undefined
+              }
+            />
+          )}
         </div>
       )}
 
@@ -2902,7 +2962,7 @@ function ScreenTile({
         {!canRender && (
           <div className="absolute inset-0 bg-background/95 flex items-center justify-center z-30">
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <Sparkles className="h-3 w-3" />
+              <LayoutTemplate className="h-3 w-3" />
               Empty screen
             </div>
           </div>
@@ -2920,20 +2980,242 @@ function ScreenTile({
 // ./sandpack-frame so they travel with the code that can actually throw
 // a bundler error.
 
-function EmptyPreview() {
+/**
+ * Starter categories for the empty-canvas grid. Keyword-matched against
+ * each reference layout's retrieval tags so new layouts sort themselves
+ * without touching this list; anything unmatched lands in "Apps".
+ */
+const STARTER_CATEGORIES: {
+  id: string;
+  label: string;
+  keywords: string[];
+}[] = [
+  {
+    id: "apps",
+    label: "Apps & tools",
+    keywords: [
+      "saas",
+      "issue",
+      "kanban",
+      "board",
+      "docs",
+      "workspace",
+      "editor",
+      "settings",
+      "admin",
+      "notion",
+      "linear",
+      "project",
+      "tracker",
+    ],
+  },
+  {
+    id: "data",
+    label: "Data",
+    keywords: ["table", "data", "filters", "dashboard", "analytics", "grid"],
+  },
+  {
+    id: "commerce",
+    label: "Commerce",
+    keywords: [
+      "ecommerce",
+      "shop",
+      "product",
+      "listing",
+      "real estate",
+      "stays",
+      "store",
+      "marketplace",
+      "pricing",
+    ],
+  },
+  {
+    id: "media",
+    label: "Media",
+    keywords: ["music", "player", "streaming", "tv", "video", "movies"],
+  },
+  {
+    id: "delight",
+    label: "Delight",
+    keywords: ["confetti", "celebration", "animation", "fun", "reward"],
+  },
+];
+
+function starterCategoryFor(tags: readonly string[]): string {
+  for (const cat of STARTER_CATEGORIES) {
+    if (tags.some((t) => cat.keywords.some((k) => t.includes(k)))) {
+      return cat.id;
+    }
+  }
+  return "apps";
+}
+
+/**
+ * One live starter preview — the layout's scaffold rendered in a real
+ * Fast Frame at the 1280×800 virtual viewport, CSS-scaled into the
+ * tile (the same trick the All-view ScreenTile uses). Clicking seeds
+ * the focused screen with the scaffold.
+ */
+function StarterTile({
+  label,
+  description,
+  scaffold,
+  theme,
+  mode,
+  onPick,
+}: {
+  label: string;
+  description: string;
+  scaffold: string;
+  theme: GeneratedTheme;
+  mode: "light" | "dark";
+  onPick: () => void;
+}) {
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(0.25);
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        if (w > 0) setScale(w / TILE_VIRTUAL_WIDTH);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
-    <div className="h-full flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
-      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/70 to-primary/30 flex items-center justify-center mb-4 shadow-md">
-        <Sparkles className="h-7 w-7 text-primary-foreground" />
+    <button
+      type="button"
+      onClick={onPick}
+      title={description}
+      className={cn(
+        "group text-left rounded-lg border border-border bg-background overflow-hidden",
+        "hover:border-primary/50 hover:shadow-md transition-all",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      )}
+    >
+      <div
+        ref={bodyRef}
+        className="relative w-full overflow-hidden bg-background"
+        style={{
+          aspectRatio: `${TILE_VIRTUAL_WIDTH} / ${TILE_VIRTUAL_HEIGHT}`,
+        }}
+      >
+        <div
+          className="absolute top-0 left-0 origin-top-left pointer-events-none"
+          style={{
+            width: TILE_VIRTUAL_WIDTH,
+            height: TILE_VIRTUAL_HEIGHT,
+            transform: `scale(${scale})`,
+          }}
+        >
+          <TileFastMount appSource={scaffold} theme={theme} mode={mode} />
+        </div>
+        {/* Interaction shield — the tile is a picture, not a working
+            UI; clicks fall through to the button. */}
+        <div className="absolute inset-0" aria-hidden />
       </div>
-      <h3 className="text-base font-semibold text-foreground mb-1">
-        Describe a UI on the left
-      </h3>
-      <p className="text-sm max-w-sm">
-        Ask the assistant for a component — a login form, a pricing card,
-        a settings panel — and the result renders here, wearing whatever
-        theme you&rsquo;re building on the right.
-      </p>
+      <div className="px-3 py-2 border-t border-border/60">
+        <div className="text-xs font-medium text-foreground">{label}</div>
+        <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">
+          {description}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+/**
+ * Empty-canvas state — "describe a UI on the left" plus the reference
+ * layouts as LIVE Fast Frame tiles in a category-filtered grid. Picking
+ * one seeds the focused screen instantly (same `onSourceMutation` path
+ * as the chat / StarterPicker — undo + persistence come for free).
+ */
+function EmptyPreview({
+  theme,
+  mode,
+  onPickStarter,
+}: {
+  theme: GeneratedTheme;
+  mode: "light" | "dark";
+  onPickStarter?: (scaffold: string, layoutId: string) => void;
+}) {
+  const [category, setCategory] = useState<string>("all");
+
+  // Categorise once — REFERENCE_LAYOUTS is static.
+  const categorised = useMemo(
+    () =>
+      REFERENCE_LAYOUTS.map((layout) => ({
+        layout,
+        category: starterCategoryFor(layout.tags),
+      })),
+    [],
+  );
+  // Only offer chips for categories that actually have layouts.
+  const presentCategories = useMemo(
+    () =>
+      STARTER_CATEGORIES.filter((c) =>
+        categorised.some((e) => e.category === c.id),
+      ),
+    [categorised],
+  );
+  const visible =
+    category === "all"
+      ? categorised
+      : categorised.filter((e) => e.category === category);
+
+  return (
+    <div className="h-full overflow-y-auto" data-lenis-prevent>
+      <div className="mx-auto max-w-5xl px-6 py-10 md:px-10">
+        <div className="flex flex-col items-center text-center">
+          <GradeMark className="h-9 w-9 text-foreground mb-4" />
+          <h3 className="text-base font-semibold text-foreground mb-1">
+            Describe a UI on the left
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            …or seed this screen from a starter below, then iterate on it
+            in the chat.
+          </p>
+        </div>
+
+        {/* Category chips */}
+        <div className="mt-6 mb-5 flex flex-wrap items-center justify-center gap-1.5">
+          {[{ id: "all", label: "All" }, ...presentCategories].map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setCategory(c.id)}
+              aria-pressed={category === c.id}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs transition-colors",
+                category === c.id
+                  ? "bg-foreground text-background"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Live starter grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {visible.map(({ layout }) => (
+            <StarterTile
+              key={layout.id}
+              label={layout.label}
+              description={layout.description}
+              scaffold={layout.scaffold}
+              theme={theme}
+              mode={mode}
+              onPick={() => onPickStarter?.(layout.scaffold, layout.id)}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

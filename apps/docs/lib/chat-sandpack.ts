@@ -107,6 +107,12 @@ export interface StudioSelection {
     gap?: string;
     /** Computed font size ("16px"). */
     fontSize?: string;
+    /** Computed line height ("24px", or "normal"). */
+    lineHeight?: string;
+    /** Computed letter spacing ("0.5px", or "normal"). */
+    letterSpacing?: string;
+    /** Computed text-align ("left", "center", "start", …). */
+    textAlign?: string;
   };
 }
 
@@ -435,6 +441,24 @@ export function prepareAppSource(code: string): string {
  *   - PascalCase only — `<div>` and friends are skipped, which is
  *     what we want (the inspector only operates on DS components).
  */
+/**
+ * Strip every `data-gds-source-id` attribute from a source string.
+ *
+ * Source ids are a PURE RUNTIME artifact — `injectSourceIds` mints them
+ * at compile time so the selection agent can map clicked DOM back to
+ * JSX. They must never live in the DURABLE appSource: once they leak
+ * (the model copies them from inlined context and then RENUMBERS them
+ * on the next turn), edit-block anchors shear, the inspector's
+ * sibling-overlay queries mismatch, and every turn wastes ~10 tokens
+ * per node re-transmitting them. Callers scrub at the write boundary
+ * (page-level appSource writes) and the send boundary (code inlined
+ * into the model's context). NOTE: `data-gds-instance-id` (the Fill
+ * flow's persisted ids) is deliberately NOT touched.
+ */
+export function stripSourceIds(source: string): string {
+  return source.replace(/\s+data-gds-source-id="[^"]*"/g, "");
+}
+
 export function injectSourceIds(source: string): string {
   // Match every JSX/HTML opening tag — both PascalCase DS components
   // (<Stack>, <Card>) AND lowercase HTML tags (<div>, <section>).
@@ -446,7 +470,14 @@ export function injectSourceIds(source: string): string {
   // The `[A-Za-z]` first-char filter intentionally excludes `<!`
   // (HTML comments, doctypes) and the angle-brackets-in-string
   // false-positives the rest of the mutator stack tolerates.
-  const tagPattern = /<([A-Za-z][A-Za-z0-9_]*)(?=[\s/>])/g;
+  //
+  // Dotted member-expression tags — <motion.h1>, <Sortable.Item>,
+  // <Tabs.Trigger> — are first-class: without the `(?:\.…)*` arm the
+  // lookahead failed on the "." and the tag was silently skipped, so
+  // motion.* elements never got a source-id and the visual editor
+  // couldn't select or edit them at all.
+  const tagPattern =
+    /<([A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*)(?=[\s/>])/g;
   const pieces: string[] = [];
   let pos = 0;
   let counter = 0;

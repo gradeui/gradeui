@@ -28,7 +28,7 @@ export const BackgroundFillContract = contract({
   "gradient": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "gradient stops (token names or CSS colours) + angle in degrees (default 135)",
+      description: "stops are token names or CSS colours. shape: \"linear\" (default, uses `angle`, default 135°) | \"radial\" (uses `at` — CSS position like \"top\" / \"30% 20%\", default \"center\" — and optional `size` like \"45rem 50rem\", default farthest-corner)",
   },
   "src": {
       schema: z.string().optional(),

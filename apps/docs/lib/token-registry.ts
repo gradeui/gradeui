@@ -25,6 +25,11 @@ import {
   MARGIN_SCALE,
   FILL_COLOR_TOKENS,
   FONT_SIZE_SCALE,
+  LINE_HEIGHT_SCALE,
+  LINE_HEIGHT_HINT,
+  TRACKING_SCALE,
+  TRACKING_HINT,
+  TEXT_ALIGN_SCALE,
 } from "@/lib/tailwind-classes";
 
 export type TokenArea =
@@ -35,7 +40,10 @@ export type TokenArea =
   | "gap"
   | "padding"
   | "margin"
-  | "fontSize";
+  | "fontSize"
+  | "lineHeight"
+  | "tracking"
+  | "textAlign";
 
 export interface RegistryToken {
   /** Canonical token key ("" = the scale's unsuffixed default token). */
@@ -93,7 +101,23 @@ export const FONT_SIZE_PX: Record<string, string> = {
   "3xl": "30px",
   "4xl": "36px",
   "5xl": "48px",
+  // Display sizes — not in the base editing scale (FONT_SIZE_SCALE)
+  // but offered by the responsive-override editor, where md:text-8xl
+  // hero ladders are the whole point.
+  "6xl": "60px",
+  "7xl": "72px",
+  "8xl": "96px",
+  "9xl": "128px",
 };
+
+/** The override editor's size scale — base scale plus display sizes. */
+export const FONT_SIZE_OVERRIDE_SCALE = [
+  ...FONT_SIZE_SCALE,
+  "6xl",
+  "7xl",
+  "8xl",
+  "9xl",
+] as const;
 
 /** Theme colour swatch classes for the fill area. Literal strings so
  *  Tailwind's scanner keeps them in the build. */
@@ -160,6 +184,23 @@ export function getAreaTokens(area: TokenArea): RegistryToken[] {
         value: s,
         label: `text-${s}`,
         hint: FONT_SIZE_PX[s],
+      }));
+    case "lineHeight":
+      return LINE_HEIGHT_SCALE.map((v) => ({
+        value: v,
+        label: `leading-${v}`,
+        hint: LINE_HEIGHT_HINT[v],
+      }));
+    case "tracking":
+      return TRACKING_SCALE.map((v) => ({
+        value: v,
+        label: `tracking-${v}`,
+        hint: TRACKING_HINT[v],
+      }));
+    case "textAlign":
+      return TEXT_ALIGN_SCALE.map((v) => ({
+        value: v,
+        label: `text-${v}`,
       }));
   }
 }

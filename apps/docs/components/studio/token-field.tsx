@@ -99,10 +99,13 @@ export interface TokenFieldProps {
   /** Pick a token (null clears to "None") — only used while bound. */
   onPickToken: (token: string | null) => void;
   /** Bound → detached. The caller seeds the raw value from whatever was
-   *  resolved (token value / computed style / a sane default). */
-  onDetach: () => void;
+   *  resolved (token value / computed style / a sane default). OPTIONAL —
+   *  omit (with onRebind/renderRaw) for a TOKEN-ONLY field (e.g. text
+   *  alignment, where a "raw" value has no meaning): the detach
+   *  affordance simply doesn't render. */
+  onDetach?: () => void;
   /** Detached → bound (re-bind to a token). */
-  onRebind: () => void;
+  onRebind?: () => void;
   /** Raw editor, rendered when detached. Receives the ATTACH affordance
    *  (hexagon button) to host INSIDE its input (endSlot, next to the
    *  unit) so field bounds stay identical bound↔detached — no layout
@@ -309,7 +312,7 @@ export function TokenField({
             rendered when a token is actually bound (an unset field has
             nothing to detach). Absolutely positioned because a button
             can't nest inside the trigger button. */}
-        {token != null ? (
+        {token != null && onDetach ? (
           <IconTip label={`Detach ${kind} — use a custom value`}>
             <button
               type="button"

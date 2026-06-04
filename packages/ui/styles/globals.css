@@ -40,6 +40,34 @@
 @source inline("ring{,-0,-1,-2,-4,-8}");
 @source inline("ring-inset");
 @source inline("ring-{border,foreground,primary,muted-foreground,destructive,ring}");
+/* Typography family — the inspector's TypographyGroup mints these at
+   runtime (line-height, letter-spacing, text-align). Same force-emit
+   rationale as the border/blend families above. */
+@source inline("leading-{none,tight,snug,normal,relaxed,loose}");
+@source inline("tracking-{tighter,tight,normal,wide,wider,widest}");
+@source inline("text-{left,center,right,justify}");
+/* Display sizes + responsive variants — generated heroes lean on
+   `text-6xl`/`md:text-8xl`-style ladders that never appear in scanned
+   source, so the responsive variants silently no-oped in Fast Frame.
+   sm/md/lg cover BOTH model output and everything the inspector's
+   BreakpointOverridesEditor can mint (size, weight, line-height,
+   tracking, align — keep in sync with EDITABLE_BREAKPOINTS). */
+@source inline("{,sm:,md:,lg:}text-{6xl,7xl,8xl,9xl}");
+@source inline("{sm:,md:,lg:}text-{2xs,xs,sm,base,lg,xl,2xl,3xl,4xl,5xl}");
+@source inline("{sm:,md:,lg:}font-{thin,extralight,light,normal,medium,semibold,bold,extrabold,black}");
+@source inline("{sm:,md:,lg:}leading-{none,tight,snug,normal,relaxed,loose}");
+@source inline("{sm:,md:,lg:}tracking-{tighter,tight,normal,wide,wider,widest}");
+@source inline("{sm:,md:,lg:}text-{left,center,right,justify}");
+/* Gradient-text + gradient-stop recipe — `bg-clip-text text-transparent
+   bg-gradient-to-b from-foreground to-foreground/75` is the canonical
+   generated-hero headline. All of it is runtime-typed (model output),
+   none of it appears in scanned source. Stops cover the semantic tokens
+   at full strength plus a sensible opacity ladder. */
+@source inline("bg-clip-text");
+@source inline("text-transparent");
+@source inline("bg-gradient-to-{t,tr,r,br,b,bl,l,tl}");
+@source inline("{from,via,to}-{background,foreground,card,card-foreground,muted,muted-foreground,primary,primary-foreground,secondary,accent,destructive,border,transparent,white,black}");
+@source inline("{from,via,to}-{background,foreground,muted,primary,secondary,accent,white,black}/{10,20,25,30,40,50,60,70,75,80,90}");
 
 /* ============================================
    RAMP DESIGN SYSTEM - DESIGN TOKENS
@@ -1289,10 +1317,15 @@
 /* ============================================
    STREAM-IN — data-gds-streaming on <html>
    ============================================
-   Live-draw treatment for Studio's speculative streaming renders. The
-   Fast Frame sandbox stamps `data-gds-streaming` on <html> while
-   mid-stream drafts are compiling and removes it when the sealed
-   source lands (grade:fast-compile without `speculative`).
+   Live-draw treatment for streaming renders: while the attribute is
+   stamped on <html>, every element ENTERING the DOM fades + rises in.
+
+   CURRENTLY DORMANT — the Fast Frame sandbox no longer stamps the
+   attribute. Speculative drafts moved to double-buffered full
+   remounts (every compile re-inserts EVERY element, so this rule made
+   the whole frame pulse on each draft tick rather than easing in just
+   the new content). Kept because the treatment is right for a future
+   diff-aware renderer that only inserts the appended elements.
 
    While stamped, every element ENTERING the DOM fades + rises in.
    Implemented with @starting-style + transition rather than a

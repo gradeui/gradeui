@@ -116,8 +116,11 @@ interface AIChatProps {
   onSendMessage?: (message: string, attachments?: ChatAttachment[]) => void;
   isLoading?: boolean;
   placeholder?: string;
-  /** Header title (default "AI Assistant"). */
-  title?: string;
+  /** Header title (default "AI Assistant"). Pass `null` to drop the
+   *  header row entirely (hosts whose shell already names the panel —
+   *  Studio's chat column does this). The header also disappears when
+   *  title is null/empty and no headerTokens/headerEnd are supplied. */
+  title?: string | null;
   /** Optional icon rendered before the title (e.g. <Sparkles/>). */
   titleIcon?: React.ReactNode;
   /** Optional session-level token total shown on the right of the
@@ -558,31 +561,34 @@ export function AIChat({
         className
       )}
     >
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gds-gray-200 dark:border-[#252525]"
-      >
-        <span className="text-sm font-medium text-gds-gray-900 dark:text-white flex items-center gap-1.5 min-w-0">
-          {titleIcon}
-          <span className="truncate">{title}</span>
-        </span>
-        {(headerTokens !== undefined || headerEnd) && (
-          <div className="flex items-center gap-2 shrink-0">
-            {headerTokens !== undefined && (
-              <span
-                className="flex items-center gap-1 text-[11px] text-gds-gray-500 dark:text-gds-gray-400"
-                title={`Session total: ${formatThousands(headerTokens)} tokens`}
-              >
-                <Gauge className="w-3 h-3" />
-                {formatThousands(headerTokens)} tokens
-              </span>
-            )}
-            {headerEnd}
-          </div>
-        )}
-      </motion.div>
+      {/* Header — skipped entirely when there's nothing to show
+          (title nulled out by the host, no tokens, no end slot). */}
+      {(title || titleIcon || headerTokens !== undefined || headerEnd) && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gds-gray-200 dark:border-[#252525]"
+        >
+          <span className="text-sm font-medium text-gds-gray-900 dark:text-white flex items-center gap-1.5 min-w-0">
+            {titleIcon}
+            <span className="truncate">{title}</span>
+          </span>
+          {(headerTokens !== undefined || headerEnd) && (
+            <div className="flex items-center gap-2 shrink-0">
+              {headerTokens !== undefined && (
+                <span
+                  className="flex items-center gap-1 text-[11px] text-gds-gray-500 dark:text-gds-gray-400"
+                  title={`Session total: ${formatThousands(headerTokens)} tokens`}
+                >
+                  <Gauge className="w-3 h-3" />
+                  {formatThousands(headerTokens)} tokens
+                </span>
+              )}
+              {headerEnd}
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* Messages Area */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative" data-lenis-prevent>
