@@ -71,6 +71,13 @@ const SANDBOX_URL = "/fast-sandbox";
 
 interface FastIframeHostProps {
   appSource: string | null;
+  /** Mid-stream speculative draft — auto-closed partial JSX from
+   *  `lib/studio-stream-draft.ts`, present only while the chat is
+   *  streaming with "Stream response text" on. Compiled with
+   *  `speculative: true` so failures are silent (the sandbox keeps the
+   *  last good render); the final sealed fence lands via `appSource`
+   *  through the normal loud compile path. */
+  draftSource?: string | null;
   theme: GeneratedTheme;
   mode: "light" | "dark";
   selectMode?: boolean;
@@ -147,6 +154,7 @@ interface FastIframeHostProps {
 
 export function FastIframeHost({
   appSource,
+  draftSource = null,
   theme,
   mode,
   selectMode = false,
@@ -294,6 +302,29 @@ export function FastIframeHost({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, preparedSource]);
 
+  // Speculative draft compiles — best-effort renders of the partial
+  // source while the model streams. Declared AFTER the appSource effect
+  // on purpose: in the commit where the stream settles (draft → null,
+  // appSource → final) only the final compile fires, so a stale draft
+  // can never paint over the sealed result.
+  const preparedDraft = useMemo(() => {
+    if (!draftSource) return null;
+    try {
+      return prepareAppSource(draftSource);
+    } catch {
+      return null; // mangled draft — skip this tick
+    }
+  }, [draftSource]);
+  useEffect(() => {
+    if (!ready || !preparedDraft) return;
+    postToSandbox({
+      type: "grade:fast-compile",
+      source: preparedDraft,
+      speculative: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, preparedDraft]);
+
   // Theme updates. Serialize the var map once and push it over.
   useEffect(() => {
     if (!ready) return;
@@ -427,6 +458,8 @@ export function FastIframeHost({
 
 interface FocusedFastMountProps {
   appSource: string | null;
+  /** Speculative mid-stream draft — see FastIframeHost.draftSource. */
+  draftSource?: string | null;
   theme: GeneratedTheme;
   mode: "light" | "dark";
   view: "preview" | "code";
@@ -488,6 +521,7 @@ interface FocusedFastMountProps {
 
 export function FocusedFastMount({
   appSource,
+  draftSource = null,
   theme,
   mode,
   view,
@@ -666,6 +700,7 @@ export function FocusedFastMount({
     <FastIframeHost
       key={replayKey}
       appSource={appSource}
+      draftSource={draftSource}
       theme={theme}
       mode={mode}
       selectMode={selectMode}

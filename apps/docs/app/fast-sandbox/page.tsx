@@ -24,7 +24,12 @@
  * Parent ↔ sandbox protocol (postMessage):
  *
  *   Parent → sandbox
- *     { type: "grade:fast-compile",  source }        — compile + render
+ *     { type: "grade:fast-compile",  source, speculative? } — compile + render.
+ *       `speculative: true` marks a mid-stream draft (auto-closed partial
+ *       JSX from studio-stream-draft.ts): failures are SILENT — no
+ *       FailurePanel, no grade:fast-error — the previous render stays up
+ *       and the next stream tick retries. Successes render but skip the
+ *       grade:fast-compiled ack (the Fill flow must never await a draft).
  *     { type: "grade:fast-theme",    vars, mode }    — apply CSS vars
  *     { type: "grade:select-mode",   enabled }       — toggle agent
  *     { type: "grade:clear-selection" }              — hide overlay
@@ -357,6 +362,41 @@ function FailurePanel({ error }: { error: Error }) {
   );
 }
 
+// ─── Render error boundary ────────────────────────────────────────────
+//
+// CRITICAL piece of the sandbox's resilience story. A RUNTIME error
+// thrown while a compiled snippet renders (e.g. a component fed a
+// truncated/missing prop) does NOT throw through `flushSync` — React
+// routes it to the root's onUncaughtError and, with no boundary in the
+// way, UNMOUNTS THE ENTIRE ROOT. That's how a single bad generation
+// used to leave a dead white iframe. The boundary contains the blast:
+//   - sealed renders fall back to the FailurePanel (and the caller is
+//     told via `onError`, so it can post grade:fast-error upward);
+//   - speculative drafts fall back to the LAST GOOD draft component,
+//     so a mid-stream wobble never blanks the live preview.
+// Keyed per compile (renderSeq) so each attempt gets a fresh boundary.
+
+class RenderErrorBoundary extends React.Component<
+  {
+    fallback: (error: Error) => React.ReactNode;
+    onError?: (error: Error) => void;
+    children: React.ReactNode;
+  },
+  { error: Error | null }
+> {
+  state: { error: Error | null } = { error: null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error) {
+    this.props.onError?.(error);
+  }
+  render() {
+    if (this.state.error) return this.props.fallback(this.state.error);
+    return this.props.children;
+  }
+}
+
 // ─── The sandbox page ─────────────────────────────────────────────────
 
 export default function FastSandboxPage() {
@@ -368,14 +408,37 @@ export default function FastSandboxPage() {
     if (!rootElRef.current) return;
     reactRootRef.current = createRoot(rootElRef.current);
 
-    async function renderCompiled(source: string, requestId?: string) {
+    // Per-compile sequence (keys each RenderErrorBoundary so every
+    // attempt starts un-tripped) + the last draft component that
+    // rendered without throwing (the boundary's fallback while
+    // streaming). Closure state — lives exactly as long as the root.
+    let renderSeq = 0;
+    let lastGoodDraft: React.ComponentType | null = null;
+
+    async function renderCompiled(
+      source: string,
+      requestId?: string,
+      speculative = false
+    ) {
       // Tier-2 fallback: pre-resolve any unknown import specifiers via
       // esm.sh BEFORE sucrase + require() run. Failures don't throw —
       // they land in CDN_CACHE marked with __cdn_error__ so the synchronous
       // resolveImport path can surface a clean error to the user.
       await preResolveUnknownImports(source);
+      // Sealed (non-speculative) compile — disarm the stream-in
+      // treatment before committing, whatever the outcome: the final
+      // render (or its failure panel) lands crisp and component
+      // transitions return to their own definitions.
+      if (!speculative) {
+        document.documentElement.removeAttribute("data-gds-streaming");
+      }
       const { Component, error } = compile(source);
       if (error) {
+        // Speculative drafts fail SILENTLY — they're auto-closed partial
+        // JSX from a live stream, so a decent fraction won't compile.
+        // Keep the previous good render on screen; the next tick (or the
+        // final sealed fence) supersedes this draft anyway.
+        if (speculative) return;
         // flushSync forces React to commit the render synchronously so
         // the next line runs only after the DOM is updated.
         flushSync(() => {
@@ -390,6 +453,42 @@ export default function FastSandboxPage() {
         return;
       }
       if (!Component) return;
+      renderSeq += 1;
+      if (speculative) {
+        // Stream-in treatment: while drafts are compiling, the
+        // `data-gds-streaming` attribute arms the @starting-style
+        // fade/rise in the DS stylesheet, so each element ENTERING the
+        // DOM animates in as the model draws it. Stamped lazily here
+        // (on the first draft that actually compiles) rather than at
+        // stream start, so pre-existing content doesn't re-transition.
+        document.documentElement.setAttribute("data-gds-streaming", "");
+        // Draft render. Runtime throws don't propagate through
+        // flushSync (React routes them to onUncaughtError and unmounts
+        // the root) — the boundary is what actually contains them: a
+        // throwing draft falls back to the LAST GOOD draft component,
+        // so the live preview never blanks mid-stream. componentDidCatch
+        // runs inside the flushSync commit, so `failed` is accurate
+        // immediately after.
+        const LastGood = lastGoodDraft;
+        let failed = false;
+        flushSync(() => {
+          reactRootRef.current?.render(
+            <PreviewWrap>
+              <RenderErrorBoundary
+                key={renderSeq}
+                fallback={() => (LastGood ? <LastGood /> : null)}
+                onError={() => {
+                  failed = true;
+                }}
+              >
+                <Component />
+              </RenderErrorBoundary>
+            </PreviewWrap>
+          );
+        });
+        if (!failed) lastGoodDraft = Component;
+        return;
+      }
       // flushSync guarantees the DOM is fully updated before we send
       // the `grade:fast-compiled` signal back. Studio's Fill flow
       // listens for this signal to know that newly-stamped
@@ -398,17 +497,46 @@ export default function FastSandboxPage() {
       // Without flushSync, React would commit asynchronously and the
       // parent would race the DOM update — the old arbitrary-timeout
       // approach was a fix for that race.
+      //
+      // The boundary turns a RUNTIME render error in the final source
+      // into the FailurePanel + a grade:fast-error post, instead of the
+      // pre-boundary behaviour (React unmounts the root → dead white
+      // iframe). Compile errors are still caught above; this is the
+      // throws-while-rendering case (bad props, undefined lookups).
+      let sealedFailed = false;
       flushSync(() => {
         reactRootRef.current?.render(
           <PreviewWrap>
-            <Component />
+            <RenderErrorBoundary
+              key={renderSeq}
+              fallback={(err) => <FailurePanel error={err} />}
+              onError={(err) => {
+                sealedFailed = true;
+                window.parent.postMessage(
+                  {
+                    type: "grade:fast-error",
+                    message: err.message,
+                    requestId,
+                  },
+                  "*"
+                );
+              }}
+            >
+              <Component />
+            </RenderErrorBoundary>
           </PreviewWrap>
         );
       });
-      window.parent.postMessage(
-        { type: "grade:fast-compiled", requestId },
-        "*"
-      );
+      // Don't ack a failed render — the Fill flow must not start
+      // collecting against the failure panel's DOM.
+      if (!sealedFailed) {
+        window.parent.postMessage(
+          { type: "grade:fast-compiled", requestId },
+          "*"
+        );
+      }
+      // A new sealed render resets the draft baseline for the next turn.
+      lastGoodDraft = null;
     }
 
     function applyTheme(vars: Record<string, string>, mode: "light" | "dark") {
@@ -435,7 +563,9 @@ export default function FastSandboxPage() {
           const source = data.source;
           const requestId =
             typeof data.requestId === "string" ? data.requestId : undefined;
-          if (typeof source === "string") renderCompiled(source, requestId);
+          const speculative = data.speculative === true;
+          if (typeof source === "string")
+            renderCompiled(source, requestId, speculative);
           break;
         }
         case "grade:fast-theme": {

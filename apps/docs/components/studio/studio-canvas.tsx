@@ -159,6 +159,12 @@ interface StudioCanvasProps {
    *  design. Drives the header spinner + the full-column placeholder in
    *  fit mode. */
   isStreaming?: boolean;
+  /** Speculative mid-stream draft of the focused design's source —
+   *  auto-closed partial JSX emitted while the model streams (only when
+   *  "Stream response text" is on). Compiled silently in Fast Frame so
+   *  the app draws top-down as tokens arrive; the sealed fence lands
+   *  through the normal appSource channel when the stream settles. */
+  draftSource?: string | null;
   /** Current in-iframe element selection for the focused design.
    *  Selection is fit-only — in all mode we suppress the select button
    *  and clear any dangling highlight. */
@@ -303,6 +309,7 @@ export function StudioCanvas({
   view,
   onViewChange,
   isStreaming = false,
+  draftSource = null,
   selection = null,
   onSelect,
   onClearSelection,
@@ -423,21 +430,40 @@ export function StudioCanvas({
   // pattern as studio:left-panel-open) so a refresh keeps the choice —
   // deliberately NOT in the URL, which stays reserved for shareable
   // identity (project/screen), not per-person workspace prefs.
-  const [viewportWidth, setViewportWidth] = useState<ViewportWidth>(() => {
-    if (typeof window === "undefined") return "responsive";
+  // SSR-deterministic default; the stored choice is restored in a
+  // one-shot effect AFTER mount. Reading localStorage in the useState
+  // initializer here caused a hydration mismatch (server rendered the
+  // "responsive" artboard styles, client first-rendered the stored
+  // device preset) that regenerated the whole tree client-side. Same
+  // hydrate-after-mount pattern as studio:left-panel-open.
+  const [viewportWidth, setViewportWidth] =
+    useState<ViewportWidth>("responsive");
+  const viewportHydratedRef = useRef(false);
+  useEffect(() => {
+    if (viewportHydratedRef.current) return;
+    viewportHydratedRef.current = true;
     try {
       const stored = window.localStorage.getItem("studio:viewport-width");
-      return stored === "mobile" ||
+      if (
+        stored === "mobile" ||
         stored === "tablet" ||
         stored === "desktop" ||
         stored === "responsive"
-        ? stored
-        : "responsive";
+      ) {
+        setViewportWidth(stored);
+      }
     } catch {
-      return "responsive";
+      // storage unavailable — keep the responsive default
     }
-  });
+  }, []);
+  // Persist on change — skip the first commit so the default never
+  // clobbers a stored choice before the restore effect re-renders.
+  const viewportPersistArmedRef = useRef(false);
   useEffect(() => {
+    if (!viewportPersistArmedRef.current) {
+      viewportPersistArmedRef.current = true;
+      return;
+    }
     try {
       window.localStorage.setItem("studio:viewport-width", viewportWidth);
     } catch {
@@ -1189,8 +1215,12 @@ export function StudioCanvas({
   // overlay (same heuristic as StudioPreview). Only meaningful in fit
   // mode; tiles have their own per-design version below.
   const focusedCanRender =
-    Boolean(focusedAppSource) &&
-    (isStreaming || looksComplete(focusedAppSource || ""));
+    (Boolean(focusedAppSource) &&
+      (isStreaming || looksComplete(focusedAppSource || ""))) ||
+    // A speculative draft means the stream is mid-flight and Fast Frame
+    // has (or is about to have) something to draw — drop the overlay so
+    // the user can watch the app build.
+    Boolean(draftSource && isStreaming);
 
   // ─── npm export (fit mode only) ─────────────────────────────────────
   const [exportingNpm, setExportingNpm] = useState(false);
@@ -1937,6 +1967,7 @@ export function StudioCanvas({
           don't pay the boot cost until the user actually opens it. */}
       <FocusedFrame
         appSource={focusedAppSource}
+        draftSource={draftSource}
         onSourceMutation={onSourceMutation}
         theme={theme}
         mode={mode}
@@ -2032,6 +2063,10 @@ export function StudioCanvas({
 
 interface FocusedFrameProps {
   appSource: string | null;
+  /** Speculative mid-stream draft — see StudioCanvasProps.draftSource.
+   *  Fast renderer only; the Sandpack parity mount ignores it (its
+   *  bundler round-trip is far too slow for per-chunk compiles). */
+  draftSource?: string | null;
   /** Source write-back (chat/Fill/editor). Forwarded to FocusedFastMount
    *  as onSourceEdit so the Code view's editor can mutate the source. */
   onSourceMutation?: (next: string, label?: string) => void;
@@ -2128,6 +2163,7 @@ interface FocusedFrameProps {
  */
 function FocusedFrame({
   appSource,
+  draftSource = null,
   onSourceMutation,
   theme,
   mode,
@@ -2162,7 +2198,8 @@ function FocusedFrame({
   // which mode triggered it.
   const captureOn = selectMode || commentMode;
   const canRender =
-    Boolean(appSource) && (isStreaming || looksComplete(appSource || ""));
+    (Boolean(appSource) && (isStreaming || looksComplete(appSource || ""))) ||
+    Boolean(draftSource && isStreaming);
 
   const preparedSource = useMemo(
     () => (appSource ? prepareAppSource(appSource) : PLAYGROUND_PLACEHOLDER_APP),
@@ -2336,6 +2373,7 @@ function FocusedFrame({
       {rendererMode === "fast" ? (
         <FocusedFastMount
           appSource={appSource}
+          draftSource={draftSource}
           theme={theme}
           mode={mode}
           view={view}

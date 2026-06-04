@@ -44,8 +44,11 @@ export interface LogoSources {
 
 export interface LogoProps
   extends Omit<React.HTMLAttributes<HTMLElement>, "children"> {
-  /** The brand artwork. Supply only the slots you have. */
-  sources: LogoSources;
+  /** The brand artwork. Supply only the slots you have. Optional — with
+   *  no artwork at all the neutral placeholder renders, which keeps
+   *  layout intact (and keeps a model-emitted bare `<Logo />` from
+   *  crashing a Studio preview). */
+  sources?: LogoSources;
   /** Which lockup to show. Falls back to another lockup if this one is
    *  empty. Default `"horizontal"`. */
   lockup?: LogoLockup;
@@ -110,7 +113,7 @@ function resolveArtwork(
 
 export const Logo = React.forwardRef<HTMLElement, LogoProps>(function Logo(
   {
-    sources,
+    sources = {},
     lockup = "horizontal",
     mode = "light",
     mono = false,

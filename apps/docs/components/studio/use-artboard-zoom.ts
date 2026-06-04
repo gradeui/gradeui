@@ -94,26 +94,40 @@ export function useArtboardZoom({
    *  open at their own defaults, never another surface's leftovers. */
   persistKey?: string;
 } = {}): ArtboardZoom {
-  const [zoom, setZoom] = React.useState(() => {
-    if (!persistKey || typeof window === "undefined") return 1;
+  // SSR-deterministic defaults; the persisted values are restored in a
+  // one-shot effect AFTER mount. Reading localStorage inside the
+  // useState initializer (the previous shape) made the client's first
+  // render diverge from the server HTML whenever a stored zoom/fit
+  // differed from the default — a hydration mismatch that regenerated
+  // the whole tree client-side (and, as a side effect, tripped React
+  // 19's "script tag while rendering" warning on the layout's
+  // pre-hydration <Script>). Same hydrate-after-mount pattern as the
+  // page's panel-visibility state.
+  const [zoom, setZoom] = React.useState(1);
+  const [fitMode, setFitMode] = React.useState(defaultFit);
+  const restoredRef = React.useRef(false);
+  React.useEffect(() => {
+    if (restoredRef.current || !persistKey) return;
+    restoredRef.current = true;
     try {
       const z = Number(window.localStorage.getItem(`${persistKey}:zoom`));
-      return ZOOM_LEVELS.includes(z) ? z : 1;
-    } catch {
-      return 1;
-    }
-  });
-  const [fitMode, setFitMode] = React.useState(() => {
-    if (!persistKey || typeof window === "undefined") return defaultFit;
-    try {
+      if (ZOOM_LEVELS.includes(z)) setZoom(z);
       const f = window.localStorage.getItem(`${persistKey}:fit`);
-      return f === null ? defaultFit : f === "true";
+      if (f !== null) setFitMode(f === "true");
     } catch {
-      return defaultFit;
+      // storage unavailable — keep defaults
     }
-  });
+  }, [persistKey]);
+  // Persist on change — skip the very first commit so the defaults
+  // never clobber stored values before the restore effect's setState
+  // has re-rendered.
+  const persistArmedRef = React.useRef(false);
   React.useEffect(() => {
     if (!persistKey) return;
+    if (!persistArmedRef.current) {
+      persistArmedRef.current = true;
+      return;
+    }
     try {
       window.localStorage.setItem(`${persistKey}:zoom`, String(zoom));
       window.localStorage.setItem(`${persistKey}:fit`, String(fitMode));

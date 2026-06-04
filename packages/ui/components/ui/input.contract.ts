@@ -13,8 +13,7 @@ export const InputContract = contract({
   import: "@gradeui/ui",
   aliases: ["text field","textbox","textfield","form field","text input","secure field","search field","url field","number field","textinput","text input field","react native textinput","unit input","input with icon"],
   composesWith: ["Label","Form","Card (in CardContent)","Button (form submit)"],
-  styleDefaults: {"Input":"flex w-full rounded-md border border-input bg-transparent shadow-sm transition-colors file:border-0 file:bg-transparent file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 h-9 pl-3 pr-3 py-1 text-base file:text-sm md:text-sm"},
-  variantDefaults: {"size":"default"},
+  styleDefaults: {"Input":"pointer-events-none absolute inset-y-0 left-0 flex items-center text-muted-foreground [&_svg]:size-3.5"},
   props: {
   "type": {
       schema: z.string().optional(),

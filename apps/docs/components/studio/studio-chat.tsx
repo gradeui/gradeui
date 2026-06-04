@@ -25,6 +25,7 @@ import { STUDIO_TEMPLATES, type StudioTemplate } from "@/lib/studio-templates";
 import { humanizeChatError } from "@/lib/chat-error";
 import type { StudioSelection } from "@/lib/chat-sandpack";
 import { useRotatingPhrase } from "@/lib/studio-loading-phrases";
+import { completePartialJsx } from "@/lib/studio-stream-draft";
 import { SelectionInspector } from "@/components/studio/selection-inspector";
 import { SelectionChip } from "@/components/studio/selection-chip";
 import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
@@ -96,6 +97,14 @@ interface StudioChatProps {
   /** Called every time we parse a sealed ```jsx block out of the latest
    *  assistant message. The preview column wires this to its Sandpack. */
   onLatestCode: (code: string | null) => void;
+  /** Speculative live-preview channel. While a response streams (and
+   *  `holdResponseUntilReady` is off), fires with an auto-closed draft
+   *  of the still-open ```jsx fence so the preview can attempt a silent
+   *  compile and draw the app as tokens arrive. Fires with `null` once
+   *  the stream settles (the sealed source then arrives via
+   *  `onLatestCode`). Never feeds undo history or persistence — drafts
+   *  are render-only. */
+  onDraftCode?: (code: string | null) => void;
   /** The JSX currently rendered in the middle preview. Used by the
    *  "iterate" intent so the model can modify it in place. */
   currentCode: string | null;
@@ -149,6 +158,25 @@ function textFromParts(parts: { type: string; text?: string }[] | undefined): st
     .filter((p) => p.type === "text" && typeof p.text === "string")
     .map((p) => p.text as string)
     .join("");
+}
+
+/**
+ * Pull the model's reasoning ("thinking") out of a UIMessage's parts.
+ * Reasoning parts stream in as `{ type: "reasoning", text }` when the
+ * server enables emission (Gemini `includeThoughts`, Claude extended
+ * thinking) or when the model emits it unconditionally (gpt-oss,
+ * DeepSeek R1). Joined with blank lines — Gemini ships summaries as
+ * multiple parts. Empty string when the turn carried no reasoning.
+ */
+function reasoningFromParts(
+  parts: { type: string; text?: string }[] | undefined
+): string {
+  if (!parts) return "";
+  return parts
+    .filter((p) => p.type === "reasoning" && typeof p.text === "string")
+    .map((p) => (p.text as string).trim())
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 /**
@@ -272,6 +300,7 @@ export function StudioChat({
   onMessagesChange,
   onStreamingChange,
   onLatestCode,
+  onDraftCode,
   currentCode,
   selection = null,
   onClearSelection,
@@ -337,8 +366,8 @@ export function StudioChat({
   // outgoing body at request time. Keeping it out of the transport closure
   // (same reason as settings above — the transport captures once at mount)
   // means flipping selections doesn't re-seat the `Chat` instance.
-  const settingsRef = useRef({ settings, systemPrompt });
-  settingsRef.current = { settings, systemPrompt };
+  const settingsRef = useRef({ settings, systemPrompt, showThinking });
+  settingsRef.current = { settings, systemPrompt, showThinking };
   const selectionRef = useRef<StudioSelection | null>(selection);
   selectionRef.current = selection;
 
@@ -347,7 +376,11 @@ export function StudioChat({
     transportRef.current = new DefaultChatTransport<UIMessage>({
       api: "/api/chat",
       prepareSendMessagesRequest: ({ id, messages, trigger, messageId }) => {
-        const { settings: s, systemPrompt: sp } = settingsRef.current;
+        const {
+          settings: s,
+          systemPrompt: sp,
+          showThinking: thinkingOn,
+        } = settingsRef.current;
         return {
           body: {
             id,
@@ -367,6 +400,11 @@ export function StudioChat({
             // server stitches this into a system-prompt stanza so the model
             // knows what to modify. Null when nothing is selected.
             selection: selectionRef.current,
+            // Ask the provider to EMIT reasoning only while the user's
+            // "Show thinking" toggle is on — Anthropic bills thinking
+            // tokens, so off must mean off. Gemini free tier supports
+            // this (thought summaries via includeThoughts).
+            requestReasoning: thinkingOn,
           },
         };
       },
@@ -499,6 +537,22 @@ export function StudioChat({
     currentCodeRef.current = currentCode;
   }, [currentCode]);
 
+  // Speculative-draft channel. Callback rides a ref (parent identity
+  // churn shouldn't re-run the big effect below); `draftActiveRef`
+  // guards the clear so we only emit `null` when a draft was actually
+  // outstanding — otherwise every post-stream settle render would
+  // setState the parent with a fresh map for no reason.
+  const onDraftCodeRef = useRef(onDraftCode);
+  useEffect(() => {
+    onDraftCodeRef.current = onDraftCode;
+  }, [onDraftCode]);
+  const draftActiveRef = useRef(false);
+  const emitDraft = (draft: string | null) => {
+    if (draft === null && !draftActiveRef.current) return;
+    draftActiveRef.current = draft !== null;
+    onDraftCodeRef.current?.(draft);
+  };
+
   useEffect(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
@@ -510,11 +564,28 @@ export function StudioChat({
       // preview updates as the model streams. Don't clobber a good
       // preview with an unsealed block (let the old render stay up).
       if (isStreaming) {
-        if (code) onLatestCode(code);
+        if (code) {
+          // A sealed fence supersedes any outstanding draft.
+          emitDraft(null);
+          onLatestCode(code);
+        } else if (!holdResponseUntilReady) {
+          // Speculative live render — auto-close the still-open fence
+          // and let Fast Frame attempt a silent compile, so the app
+          // draws top-down as tokens arrive. Gated on the same toggle
+          // as text streaming ("Stream response text"): hold-mode users
+          // keep the one-snap reveal.
+          const partial = latestJsxBlock(text, { sealedOnly: false });
+          const draft = partial ? completePartialJsx(partial) : null;
+          if (draft) emitDraft(draft);
+        }
         lastEmittedAssistantIdRef.current = msg.id;
         hydratedRef.current = true;
         return;
       }
+
+      // Stream settled — retire any outstanding draft; the sealed
+      // source takes over through onLatestCode below.
+      emitDraft(null);
 
       // FIRST settle after (re)mount. This assistant message is already
       // baked into the durable `currentCode` (appSource) — PLUS any manual
@@ -545,7 +616,9 @@ export function StudioChat({
     // mark hydrated so the first real generation isn't mistaken for a
     // mount-time replay.
     hydratedRef.current = true;
-  }, [messages, onLatestCode, isStreaming]);
+    // emitDraft is stable by construction (refs only); deliberately not a dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, onLatestCode, isStreaming, holdResponseUntilReady]);
 
   // The composer owns its own auto-grow + Enter-to-send. Studio used
   // to manage both inline; both moved when we extracted AIChatComposer.
@@ -689,13 +762,32 @@ export function StudioChat({
       const isAssistant = m.role === "assistant";
       const isInProgress =
         isAssistant && idx === lastAssistantIdx && isStreaming;
+      const thinking = isAssistant
+        ? reasoningFromParts(m.parts as { type: string; text?: string }[])
+        : "";
       // Hold the in-progress assistant turn until the stream
       // completes — the chat then snaps to the final response in
       // sync with the preview update, instead of streaming raw
       // tokens past the user. Loading dots below the list +
       // topbar live-elapsed counter keep "something's happening"
       // legible during the wait.
-      if (isInProgress && holdResponseUntilReady) return null;
+      //
+      // EXCEPTION: reasoning. Thoughts are the "what's happening"
+      // signal — holding them defeats their purpose. When the
+      // in-progress turn carries thinking, emit a thinking-only
+      // message (no prose, no meta) so the disclosure streams live;
+      // the full response replaces it under the same id on settle.
+      if (isInProgress && holdResponseUntilReady) {
+        if (!thinking) return null;
+        return {
+          id: m.id,
+          role: "assistant",
+          content: "",
+          thinking,
+          thinkingStreaming: true,
+          timestamp: new Date(),
+        };
+      }
       const content = isAssistant ? stripCodeBlocks(raw) : displayUserText(raw);
       const usage = isAssistant ? usageFromMetadata(m.metadata) : null;
       const refsInfo = isAssistant ? refsFromMetadata(m.metadata) : null;
@@ -708,6 +800,12 @@ export function StudioChat({
         id: m.id,
         role: m.role === "user" ? "user" : "assistant",
         content,
+        // Model-emitted reasoning. AIChat renders the "Thoughts"
+        // disclosure when `showThinking` is on — auto-expanded and
+        // streaming live while the turn is in progress, collapsed
+        // once it settles.
+        thinking: thinking || undefined,
+        thinkingStreaming: isInProgress || undefined,
         timestamp: new Date(),
         usage: usage
           ? {

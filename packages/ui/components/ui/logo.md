@@ -3,9 +3,11 @@ name: Logo
 import: "@gradeui/ui"
 subcomponents: []
 props:
-  - sources: LogoSources (required) — artwork keyed by lockup then appearance:
+  - sources?: LogoSources — artwork keyed by lockup then appearance:
       { square?: { light?, dark?, mono? }, horizontal?: {...}, icon?: {...} }.
-      Each slot is any node (inline <svg>, <img>, component).
+      Each slot is any node (inline <svg>, <img>, component). Omit entirely
+      and a neutral "Logo" placeholder renders (use this in prototypes
+      before real artwork exists).
   - lockup?: "square" | "horizontal" | "icon" (default "horizontal")
   - mode?: "light" | "dark" (default "light") — the background the logo sits on
   - mono?: boolean (default false) — use the single-colour artwork (inherits currentColor)

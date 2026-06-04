@@ -1287,6 +1287,53 @@
 }
 
 /* ============================================
+   STREAM-IN — data-gds-streaming on <html>
+   ============================================
+   Live-draw treatment for Studio's speculative streaming renders. The
+   Fast Frame sandbox stamps `data-gds-streaming` on <html> while
+   mid-stream drafts are compiling and removes it when the sealed
+   source lands (grade:fast-compile without `speculative`).
+
+   While stamped, every element ENTERING the DOM fades + rises in.
+   Implemented with @starting-style + transition rather than a
+   keyframe animation on purpose:
+     - `@starting-style` only fires on first render of an element, so
+       React-preserved nodes don't re-animate on every draft compile —
+       only the newly streamed-in elements move.
+     - It composes via `transition`, leaving each component's own
+       `animation` (pulse, spin, aura) untouched. The universal
+       transition does temporarily override component transitions while
+       streaming, which is acceptable: the screen is read-only while it
+       draws.
+   Tunable via the --gds-stream-in-* tokens. Respects both the OS
+   reduced-motion preference and the manual data-motion="off" toggle
+   (the broad reset above zeroes transition-duration). */
+:root {
+  --gds-stream-in-duration: 240ms;
+  --gds-stream-in-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --gds-stream-in-rise: 6px;
+}
+
+html[data-gds-streaming] body * {
+  transition:
+    opacity var(--gds-stream-in-duration) var(--gds-stream-in-ease),
+    translate var(--gds-stream-in-duration) var(--gds-stream-in-ease);
+}
+
+html[data-gds-streaming] body * {
+  @starting-style {
+    opacity: 0;
+    translate: 0 var(--gds-stream-in-rise);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-gds-streaming] body * {
+    transition: none;
+  }
+}
+
+/* ============================================
    TYPOGRAPHY UTILITIES
    ============================================ */
 

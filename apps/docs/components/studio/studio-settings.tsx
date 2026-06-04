@@ -33,13 +33,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ProviderPicker } from "@/components/ai-elements/provider-picker";
 import { GradeThemeSwitcher } from "@/components/grade-theme-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -49,9 +42,11 @@ import type { ChatSettings } from "@/components/ai-elements/provider-picker";
 // Public API
 
 /**
- * Session-only dev toggles. Defined here (previously in
- * `studio-settings-popover.tsx`, now deleted) so this file is the
- * single home for everything the settings sheet controls.
+ * Renderer mode for the Studio preview. The settings sheet no longer
+ * exposes a control for this (the Developer section was removed —
+ * Fast Frame is the renderer; Sandpack remains reachable
+ * programmatically as a parity check). The type stays here because
+ * StudioCanvas / SandpackFrame still key off it.
  */
 export type RendererMode = "fast" | "sandpack";
 export type UserTier = "free" | "pro" | "enterprise";
@@ -64,13 +59,6 @@ export interface StudioSettingsProps {
   // expects, so the topbar move-over is a literal forward.
   settings: ChatSettings;
   onSettingsChange: (update: Partial<ChatSettings>) => void;
-
-  // Developer — session-only dev toggles. Previously inside the
-  // gear popover; the popover goes away with this sheet.
-  rendererMode: RendererMode;
-  onRendererModeChange: (mode: RendererMode) => void;
-  userTier: UserTier;
-  onUserTierChange: (tier: UserTier) => void;
 
   // AI Chat — new section. These toggles flow down to <AIChat>
   // via <StudioChat>. Defaults are owned by the parent so a refresh
@@ -138,10 +126,6 @@ export function StudioSettings({
   onOpenChange,
   settings,
   onSettingsChange,
-  rendererMode,
-  onRendererModeChange,
-  userTier,
-  onUserTierChange,
   showUsage,
   onShowUsageChange,
   showRefs,
@@ -174,7 +158,13 @@ export function StudioSettings({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-8">
+        {/* data-lenis-prevent: the docs site runs Lenis smooth-scroll
+            globally, which swallows wheel events on nested scrollers
+            unless they opt out. Same pattern as selection-inspector. */}
+        <div
+          className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-8"
+          data-lenis-prevent
+        >
           <Section
             title="Model & provider"
             description="Choose which model handles chat turns and (optionally) drop in your own API key."
@@ -223,7 +213,7 @@ export function StudioSettings({
             <ToggleField
               id="settings-show-thinking"
               label="Show thinking"
-              hint="When the model emits reasoning (Claude with extended thinking, o-series, DeepSeek R1, etc.), render a collapsible 'Thoughts' panel above the assistant prose. Off-emission models simply won't show a panel."
+              hint="Asks the model to emit reasoning (Gemini thought summaries — works on the free tier; Claude extended thinking — costs extra output tokens) and renders it as a collapsible 'Thoughts' panel above the assistant prose. Models that can't emit reasoning simply won't show a panel."
               checked={showThinking}
               onCheckedChange={onShowThinkingChange}
             />
@@ -244,7 +234,7 @@ export function StudioSettings({
             <ToggleField
               id="settings-stream-response-text"
               label="Stream response text"
-              hint="When off (the default), the chat holds the response until the preview is ready and reveals it in one snap — feels more coherent. Turn on to see tokens stream in as they arrive."
+              hint="When off (the default), the chat holds the response until the preview is ready and reveals it in one snap — feels more coherent. Turn on to watch tokens stream into the chat AND the preview draw the app live as the code arrives (speculative renders; the final result still snaps in at the end)."
               checked={streamResponseText}
               onCheckedChange={onStreamResponseTextChange}
             />
@@ -254,37 +244,6 @@ export function StudioSettings({
               hint="When off, assistant text sits on the chat surface with no background or padding — Claude.ai-style."
               checked={assistantBubble}
               onCheckedChange={onAssistantBubbleChange}
-            />
-          </Section>
-
-          <Section
-            title="Developer"
-            description="Session-only toggles. Useful while we're rolling out replacements; not persisted."
-          >
-            <SelectField
-              id="settings-renderer"
-              label="Renderer"
-              hint="Fast = same-document compile. Sandpack = legacy iframe + bundler."
-              value={rendererMode}
-              onValueChange={(v) =>
-                onRendererModeChange(v as RendererMode)
-              }
-              options={[
-                { value: "fast", label: "Fast (default)" },
-                { value: "sandpack", label: "Sandpack (legacy)" },
-              ]}
-            />
-            <SelectField
-              id="settings-tier"
-              label="User tier"
-              hint="Gates the visibility of pro / per-client components. No consumer yet — the toggle's wired so gating can land without UI churn."
-              value={userTier}
-              onValueChange={(v) => onUserTierChange(v as UserTier)}
-              options={[
-                { value: "free", label: "Free" },
-                { value: "pro", label: "Pro" },
-                { value: "enterprise", label: "Enterprise" },
-              ]}
             />
           </Section>
         </div>
@@ -372,41 +331,3 @@ function ToggleField({
   );
 }
 
-function SelectField({
-  id,
-  label,
-  hint,
-  value,
-  onValueChange,
-  options,
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  value: string;
-  onValueChange: (next: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-sm font-medium">
-        {label}
-      </Label>
-      <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger id={id} className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {hint && (
-        <p className="text-xs text-muted-foreground leading-snug">{hint}</p>
-      )}
-    </div>
-  );
-}

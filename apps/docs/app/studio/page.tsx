@@ -88,7 +88,6 @@ import {
   StudioSettings,
   StudioSettingsTrigger,
   type RendererMode,
-  type UserTier,
 } from "@/components/studio/studio-settings";
 import { useGradeTheme } from "@/components/grade-theme-provider";
 import {
@@ -284,6 +283,16 @@ export default function StudioPage() {
   // tabs could also grow a pulsing dot later if it ever becomes useful.
   const [streamingByDesign, setStreamingByDesign] = useState<
     Record<string, boolean>
+  >({});
+
+  // Speculative mid-stream drafts, per design. Render-only — never
+  // persisted, never in undo history. StudioChat emits an auto-closed
+  // partial of the still-open ```jsx fence while streaming (when the
+  // "Stream response text" toggle is on); Fast Frame compiles it
+  // silently so the app draws as tokens arrive. Cleared (null) when
+  // the stream settles and the sealed source lands via appSource.
+  const [draftByDesign, setDraftByDesign] = useState<
+    Record<string, string | null>
   >({});
 
   // Per-design preview selection — the element the user picked via the
@@ -1318,21 +1327,10 @@ export default function StudioPage() {
 
   const [view, setView] = useState<"preview" | "code" | "timeline">("preview");
 
-  // Dev toggles in the header chrome. Scaffolding for the upcoming
-  // renderer split + tier gating — surfaced now so the controls exist
-  // before the features they drive.
-  //
-  // rendererMode: currently forwarded to StudioCanvas but only acted on
-  // once the fast renderer lands (step 5 of the renderer rollout). Until
-  // then both values render Sandpack — the toggle is visible but
-  // effectively a no-op. Default stays "sandpack" to preserve today's
-  // behavior; it flips to "fast" the day FocusedFastMount ships.
-  //
-  // userTier: placeholder for visibility-gated UI. No consumer yet —
-  // when pro/enterprise-only chrome lands (e.g. exporting to a per-
-  // client starter, hiding the npm path for free), read this state.
-  const [rendererMode, setRendererMode] = useState<RendererMode>("fast");
-  const [userTier, setUserTier] = useState<UserTier>("free");
+  // Renderer for the preview. The settings-sheet control was removed
+  // (Fast Frame won the rollout); the constant stays so StudioCanvas
+  // can still flip to Sandpack programmatically for parity checks.
+  const rendererMode: RendererMode = "fast";
 
   // Settings sheet — controlled. Default closed; the topbar gear opens
   // it. State lives here (not in StudioSettings) so the same sheet
@@ -1527,6 +1525,20 @@ export default function StudioPage() {
     }, 100);
     return () => window.clearInterval(id);
   }, [streamStartedAt]);
+
+  // Speculative-draft write-through. Same-value guard keeps the
+  // repeated `null` clears from minting fresh map objects (and
+  // re-rendering the canvas) on every post-stream settle.
+  const handleDraftCode = useCallback(
+    (code: string | null) => {
+      setDraftByDesign((prev) =>
+        (prev[activeId] ?? null) === code
+          ? prev
+          : { ...prev, [activeId]: code },
+      );
+    },
+    [activeId],
+  );
 
   const handleLatestCode = useCallback(
     (code: string | null) => {
@@ -1897,6 +1909,11 @@ export default function StudioPage() {
         const { [id]: _drop, ...rest } = s;
         return rest;
       });
+      setDraftByDesign((m) => {
+        if (!(id in m)) return m;
+        const { [id]: _drop, ...rest } = m;
+        return rest;
+      });
       setSelectionByDesign((m) => {
         if (!(id in m)) return m;
         const { [id]: _drop, ...rest } = m;
@@ -2060,6 +2077,7 @@ export default function StudioPage() {
       onMessagesChange={handleMessagesChange}
       onStreamingChange={handleStreamingChange}
       onLatestCode={handleLatestCode}
+      onDraftCode={handleDraftCode}
       currentCode={activeDesign.appSource}
       selection={selectionByDesign[activeId] ?? null}
       onClearSelection={handleClearSelection}
@@ -2342,6 +2360,7 @@ export default function StudioPage() {
                 view={view}
                 onViewChange={setView}
                 isStreaming={Boolean(streamingByDesign[activeId])}
+                draftSource={draftByDesign[activeId] ?? null}
                 selection={selectionByDesign[activeId] ?? null}
                 onSelect={handleSelect}
                 onClearSelection={handleClearSelection}
@@ -2444,10 +2463,6 @@ export default function StudioPage() {
         onOpenChange={setSettingsOpen}
         settings={settings}
         onSettingsChange={updateSettings}
-        rendererMode={rendererMode}
-        onRendererModeChange={setRendererMode}
-        userTier={userTier}
-        onUserTierChange={setUserTier}
         showUsage={showUsage}
         onShowUsageChange={setShowUsage}
         showRefs={showRefs}
@@ -2862,6 +2877,7 @@ function StudioThemedCanvas({
   view,
   onViewChange,
   isStreaming,
+  draftSource,
   selection,
   onSelect,
   onClearSelection,
@@ -2899,6 +2915,9 @@ function StudioThemedCanvas({
   view: "preview" | "code" | "timeline";
   onViewChange: (v: "preview" | "code" | "timeline") => void;
   isStreaming: boolean;
+  /** Speculative mid-stream draft for the focused design — see
+   *  StudioCanvasProps.draftSource. */
+  draftSource?: string | null;
   selection: StudioSelection | null;
   onSelect: (selection: StudioSelection) => void;
   onClearSelection: () => void;
@@ -2942,6 +2961,7 @@ function StudioThemedCanvas({
       view={view}
       onViewChange={onViewChange}
       isStreaming={isStreaming}
+      draftSource={draftSource}
       selection={selection}
       onSelect={onSelect}
       onClearSelection={onClearSelection}

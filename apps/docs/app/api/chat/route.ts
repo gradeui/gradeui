@@ -27,7 +27,12 @@
  *     streaming + tool-calling for free.
  */
 
-import { streamText, convertToModelMessages, type UIMessage } from "ai";
+import {
+  streamText,
+  convertToModelMessages,
+  type UIMessage,
+  type JSONValue,
+} from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -203,6 +208,54 @@ interface ChatRequestBody {
    *  the user didn't use the Select tool for this turn — the model is then
    *  expected to interpret the prompt against the whole component, as before. */
   selection?: RequestSelection | null;
+  /** Mirrors the "Show thinking" toggle in the Studio settings sheet.
+   *  When true we ask the provider to EMIT reasoning (Gemini thought
+   *  summaries via `includeThoughts`, Claude extended thinking). Off by
+   *  default because reasoning costs extra output tokens on Anthropic.
+   *  Models that emit reasoning unconditionally (Groq's gpt-oss,
+   *  DeepSeek R1 via OpenRouter) stream it regardless of this flag —
+   *  the client just won't render it while the toggle is off. */
+  requestReasoning?: boolean;
+}
+
+/**
+ * Provider-specific options that switch reasoning emission ON for the
+ * current call. Only Google + Anthropic need explicit opt-in:
+ *
+ * - Google: Gemini 2.5/3.5 models think internally by default but only
+ *   return thought SUMMARIES when `includeThoughts` is set. Works on the
+ *   free tier; summaries are not billed as extra output.
+ * - Anthropic: extended thinking must be enabled with a token budget.
+ *   `maxOutputTokens` is raised alongside so the budget can't eat the
+ *   whole completion (the API rejects budgets >= max_tokens).
+ * - OpenAI: the catalog only lists 4o/4.1-family models (no o-series),
+ *   so there's nothing to enable.
+ * - Groq / OpenRouter / Cerebras: reasoning models on those endpoints
+ *   emit reasoning deltas on their own; no opt-in exists.
+ */
+function reasoningOptions(provider: ProviderId): {
+  providerOptions?: Record<string, Record<string, JSONValue>>;
+  maxOutputTokens?: number;
+} {
+  switch (provider) {
+    case "google":
+      return {
+        providerOptions: {
+          google: { thinkingConfig: { includeThoughts: true } },
+        },
+      };
+    case "anthropic":
+      return {
+        providerOptions: {
+          anthropic: {
+            thinking: { type: "enabled", budgetTokens: 8000 },
+          },
+        },
+        maxOutputTokens: 32000,
+      };
+    default:
+      return {};
+  }
 }
 
 function resolveApiKey(provider: ProviderId, override?: string): string | undefined {
@@ -297,6 +350,7 @@ export async function POST(req: Request) {
     systemPrompt,
     includeComponentRefs = true,
     selection,
+    requestReasoning = false,
   } = body;
 
   if (!messages || !Array.isArray(messages)) {
@@ -397,10 +451,20 @@ export async function POST(req: Request) {
     );
     const finalSystem = parts.length > 0 ? parts.join("\n\n") : undefined;
 
+    // Reasoning opt-in — only when the user's "Show thinking" toggle is
+    // on, so default turns pay zero extra tokens. See reasoningOptions().
+    const reasoning = requestReasoning ? reasoningOptions(provider) : {};
+
     const result = streamText({
       model: buildModel(provider, model, apiKey),
       system: finalSystem,
       messages: modelMessages,
+      ...(reasoning.providerOptions
+        ? { providerOptions: reasoning.providerOptions }
+        : {}),
+      ...(reasoning.maxOutputTokens
+        ? { maxOutputTokens: reasoning.maxOutputTokens }
+        : {}),
       // QA pass — once the model finishes streaming, parse the emitted
       // JSX block out of the response and validate every <Component>
       // against the live contract registry. We log violations server-
@@ -432,6 +496,11 @@ export async function POST(req: Request) {
     // render a transparency chip next to the token badge.
     // See the TokenBadge + RefsChip readers in studio-chat.tsx for consumption.
     return result.toUIMessageStreamResponse({
+      // Explicit (not relying on SDK defaults): forward reasoning parts
+      // to the client as `reasoning` UIMessage parts. studio-chat.tsx
+      // maps them into ChatMessage.thinking; AIChat renders the
+      // collapsible "Thoughts" disclosure when `showThinking` is on.
+      sendReasoning: true,
       messageMetadata: ({ part }) => {
         if (part.type === "finish") {
           return {

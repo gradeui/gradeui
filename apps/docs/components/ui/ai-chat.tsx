@@ -74,10 +74,16 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   /** Optional model-emitted reasoning ("thinking") content. Rendered
-   *  in a collapsed disclosure above the assistant prose when
-   *  `showThinking` is true on the parent <AIChat>. Markdown is
-   *  not parsed — thinking renders as plain text. */
+   *  in a disclosure above the assistant prose when `showThinking` is
+   *  true on the parent <AIChat>. Parsed as markdown — providers emit
+   *  structured summaries (Gemini bolds section headings, Claude
+   *  paragraphs its reasoning). */
   thinking?: string;
+  /** True while this message's reasoning is still streaming in. The
+   *  disclosure auto-expands so thoughts read live as they arrive,
+   *  then auto-collapses when the host flips it back to false (unless
+   *  the user toggled it manually — their choice wins). */
+  thinkingStreaming?: boolean;
   /** Optional pipeline-step timeline. Rendered above the assistant
    *  prose when `showSteps` is true on the parent <AIChat>.
    *  Collapsed view shows the current running step (or final summary);
@@ -310,24 +316,44 @@ function StepIcon({ status }: { status: ChatMessageStepStatus }) {
 
 /**
  * Collapsible "Thoughts" panel — shown above the assistant prose
- * when a message carries `thinking`. Collapsed by default; the
- * label stays a single line so a busy chat doesn't get pushed
- * around by long reasoning trails. Thinking content renders as
- * plain text (not markdown) — the model emits stream-of-thought,
- * not structured prose.
+ * when a message carries `thinking`.
+ *
+ * Streaming behaviour: while `streaming` is true the panel is
+ * auto-expanded so reasoning reads live as it arrives, and the label
+ * reads "Thinking…". When the host flips `streaming` back to false the
+ * panel auto-collapses to its one-line "Thoughts" summary — unless the
+ * user toggled it manually mid-stream, in which case their choice
+ * sticks. Content is parsed as markdown (providers emit structured
+ * summaries — bold headings, paragraphs), rendered at disclosure scale.
  */
-function ThinkingDisclosure({ thinking }: { thinking: string }) {
-  const [expanded, setExpanded] = useState(false);
+function ThinkingDisclosure({
+  thinking,
+  streaming = false,
+}: {
+  thinking: string;
+  streaming?: boolean;
+}) {
+  // null = user hasn't touched it → follow `streaming`. A manual
+  // toggle pins the user's choice for the rest of the message's life.
+  const [userToggled, setUserToggled] = useState<boolean | null>(null);
+  const expanded = userToggled ?? streaming;
   return (
     <div className="rounded-md border border-gds-gray-200 dark:border-[#252525] bg-gds-gray-50 dark:bg-[#141414] overflow-hidden">
       <button
         type="button"
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => setUserToggled(!expanded)}
         aria-expanded={expanded}
         className="flex w-full items-center gap-2 px-2.5 py-1.5 text-[11px] text-gds-gray-700 dark:text-gds-gray-300 hover:bg-gds-gray-100 dark:hover:bg-[#1a1a1a] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
       >
-        <Brain className="w-3.5 h-3.5 text-gds-gray-500 dark:text-gds-gray-400 shrink-0" />
-        <span className="flex-1 text-left font-medium">Thoughts</span>
+        <Brain
+          className={cn(
+            "w-3.5 h-3.5 text-gds-gray-500 dark:text-gds-gray-400 shrink-0",
+            streaming && "animate-pulse text-primary"
+          )}
+        />
+        <span className="flex-1 text-left font-medium">
+          {streaming ? "Thinking…" : "Thoughts"}
+        </span>
         <ChevronDown
           className={cn(
             "w-3.5 h-3.5 text-gds-gray-500 dark:text-gds-gray-400 transition-transform shrink-0",
@@ -336,8 +362,8 @@ function ThinkingDisclosure({ thinking }: { thinking: string }) {
         />
       </button>
       {expanded && (
-        <div className="px-3 py-2 border-t border-gds-gray-200 dark:border-[#252525] text-[11px] text-gds-gray-600 dark:text-gds-gray-400 whitespace-pre-wrap leading-relaxed">
-          {thinking}
+        <div className="px-3 py-2 border-t border-gds-gray-200 dark:border-[#252525] text-[11px] text-gds-gray-600 dark:text-gds-gray-400 leading-relaxed prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:text-gds-gray-700 dark:[&_strong]:text-gds-gray-300 [&_*]:text-[11px]">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{thinking}</ReactMarkdown>
         </div>
       )}
     </div>
@@ -657,7 +683,10 @@ export function AIChat({
                         <StepsDisclosure steps={message.steps!} />
                       )}
                       {hasThinking && (
-                        <ThinkingDisclosure thinking={message.thinking!} />
+                        <ThinkingDisclosure
+                          thinking={message.thinking!}
+                          streaming={message.thinkingStreaming}
+                        />
                       )}
                       {message.content && (
                         // `text-sm` to match the user bubble; tight
