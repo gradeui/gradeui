@@ -1,6 +1,6 @@
 {
   "name": "@gradeui/contracts",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Grade Design System — machine-readable component contracts. Each @gradeui/ui component co-locates a Zod-based contract describing its props, design taxonomy, and panel control hints. The Studio settings panel, the playbook (model-facing prompt), and runtime prop validation all read from these contracts so the design surface, the prompt surface, and the type surface can't drift.",
   "private": true,
   "license": "UNLICENSED",

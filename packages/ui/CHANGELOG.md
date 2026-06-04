@@ -1,5 +1,91 @@
 # @gradeui/ui
 
+## 2.0.0
+
+### Major Changes
+
+- 0686676: Tailwind v4 migration + the canonical control size scale.
+
+  **Breaking — Tailwind v4.** The package now builds its stylesheet with Tailwind v4 (`@import "tailwindcss"` + `@config`; CLI moved to `@tailwindcss/cli`). `dist/styles.css` is v4-generated. The legacy `safelist` moved to `@source inline(...)` in `styles/globals.css`; `darkMode` is the string `"class"` form. Consumers extending `tailwind-preset.ts` must be on Tailwind v4.
+
+  **Breaking — size scale.** Component `size` variants now map name→text consistently (`2xs→text-2xs`, `xs→text-xs`, `sm→text-sm`, `md→text-base`, `lg→text-lg`) across input, textarea, select, label, toggle, button, avatar. A new `2xs` tier (h-6 / 24px, `text-2xs` = 11px token) lands across the form-control family, plus sized `Switch` variants (`default`/`sm`/`xs`/`2xs`) and a `2xs` avatar. `sm` controls render 14px text (was 12px); `md`/`default` buttons render `text-base` (was `text-xs`). Arbitrary `text-[11px]`-style values are gone from the library.
+
+  **Added.** `SelectItem` gains a `hint` prop — right-aligned secondary text in the menu row that does not mirror into the trigger (used for token→resolved-value readouts).
+
+### Minor Changes
+
+- a9a5569: Add `--gds-canvas-fill` — the standard backdrop behind a screen when it doesn't fill its frame.
+
+  One token for every "canvas" surface: the letterbox bars in an embed/share, and the stage a `<ScreenAnimator>` reveals when it flies in or pulls below 1× zoom. Deep near-black by default; set it to `transparent` to let the host page show through, or any colour to rebrand it in one place. `ScreenAnimator`'s default `stage` now reads `var(--gds-canvas-fill, …)`, falling back to the previous dark gradient where the token isn't loaded.
+
+- a9a5569: Pause autoplay when nobody's watching — a demo is a movie, it stops when you look away.
+
+  - New `usePageActive()` hook (lib/motion): `true` only when the tab is visible AND (for a top-level document) the window is focused. Inside an iframe it falls back to visibility, which correctly tracks the top tab.
+  - `useScriptedDemo` (so `DemoStage`, `Composer`, `Code`) and `ScreenAnimator` now pause their loops when the page is hidden/unfocused, or when the element is scrolled out of view. A paused run is fully torn down (timers cleared) and replays/resumes when the page is active again. This kills the runaway `setTimeout`/`rAF` storm that piled up when many looping demos sat on one page or in a background tab.
+  - New `maxLoops` option/prop on both: cap the loop cycles, then settle and stop instead of spinning forever. Default `Infinity` (unchanged); grid/embed surfaces set a small number.
+  - `ScreenAnimator` now shows a centred **replay** button when the tour ends (the way a finished video does), and its play control restarts from the top once finished. The corner transport stays play / pause / restart.
+
+  Note: an offscreen iframe can't see its parent's scroll, so the in-view half only applies to non-iframed players; pausing an offscreen _grid_ iframe (and freeing its memory) is the parent's job via the poster/promote policy in STUDIO-CAPTURE.md.
+
+- 89cc7b1: Add `ScreenAnimator` — wrap any screen in a directed camera.
+
+  Give it a list of `shots` (a zoom + focal point + dwell + caption) and it tours them over the live, still-interactive content: flies in from offscreen, eases between shots, pulses a synthetic cursor, captions each beat, settles back to the start, exits, and loops, with a play / pause / restart transport. Opt in to a focus spotlight (`spotlight`) to dim the edges when it pushes in.
+
+  - `shots`, `autoplay`, `loop`, `controls`, `cursor`, `enter`, and `spotlight` (the edge vignette, off by default — opt in).
+  - `stage` (CSS background) and `backdrop` (a live layer behind the screen — image, gradient, or a `<ThreeScene>` shader).
+  - Honours reduced motion (settles on the starter frame, no movement).
+
+  It's the reusable form of the embed's camera and the `camera-tour` showcase, the live, editable, re-renderable answer to a screen-recording. See `STUDIO-DIRECTOR.md`.
+
+- 399f8ec: Component + stylesheet improvements from the Studio editing push:
+
+  - **BackgroundFill**: `type="gradient"` now supports radial gradients —
+    `gradient={{ shape: "radial", at: "top", size: "45rem 50rem", from, via?, to }}`
+    (linear stays the default). The token-true replacement for arbitrary
+    `bg-[radial-gradient(…)]` classes, which don't compile in Studio's preview.
+  - **Logo**: `sources` is now optional — a bare `<Logo />` renders the neutral
+    placeholder instead of crashing (`resolveArtwork` read from `undefined`).
+  - **ThreeScene**: WebGL no longer remounts when the `palette` prop changes
+    identity but not value (inline `palette={{…}}` objects re-created every
+    parent render were tearing down and re-initialising the renderer — visible
+    flash every state tick on shader-heavy pages). The build effect is keyed on
+    the palette's serialized value; `onShaderError` rides a ref.
+  - **AIChat**: reasoning ("thinking") parts render as markdown and stream live
+    (`thinkingStreaming` auto-expands the disclosure); `title={null}` drops the
+    header row; auto-scroll follows streamed content growth, not just new
+    messages.
+  - **Stylesheet safelist**: gradient-text recipe (`bg-clip-text`,
+    `text-transparent`, `bg-gradient-to-*`, `from/via/to-*` semantic stops with
+    opacity ladder), display sizes (`text-6xl`–`9xl`), responsive `sm:/md:/lg:`
+    variants for the typography families (size, weight, `leading-*`,
+    `tracking-*`, alignment) — all previously silently absent from the compiled
+    CSS when emitted at runtime.
+  - **MediaSurface / BackgroundFill sidecars**: imagery + gradient guidance for
+    the Studio model (placeholders over invented URLs, fills over arbitrary
+    classes).
+
+- 0686676: Inspector-parity polish across the contract pipeline and panel chrome.
+
+  **@gradeui/contracts** — new optional `variantDefaults` field on
+  `ComponentContract`: the primary cva's `defaultVariants` extracted from
+  component source (`{ variant: "default", size: "md" }`). Lets consumers
+  (the Studio inspector) show the REAL resolved value for an unset enum
+  prop instead of a meaningless "(default)". Additive; existing contracts
+  are unaffected.
+
+  **@gradeui/ui**
+
+  - `generate:contracts` now emits `variantDefaults` per component
+    (resolved from the cva referenced by the root part); all generated
+    contracts regenerated.
+  - `Input`: the dense panel sizes (`xs`, `2xs`) drop the base
+    `shadow-sm` (`shadow-none`) so they sit flush with `SelectTrigger` in
+    tool panels. `default`/`sm` keep their shadow.
+  - `Select`: trigger placeholder muting fixed — `placeholder:` is the
+    input pseudo-element and never matched Radix's placeholder span; now
+    `data-[placeholder]:text-muted-foreground`, so placeholder/ghost
+    values actually render muted.
+
 ## 1.3.0
 
 ### Minor Changes
