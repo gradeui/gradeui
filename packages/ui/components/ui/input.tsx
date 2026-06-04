@@ -27,8 +27,10 @@ const inputVariants = cva(
         // shadow-none so they sit flush with SelectTrigger (no drop
         // shadow) — every field in a dense panel should read identically.
         xs: "h-7 pl-2 pr-2 py-0 text-xs file:text-xs shadow-none",
-        // 2xs: h-6 (24px) — densest tool-panel input.
-        "2xs": "h-6 pl-2 pr-2 py-0 text-2xs file:text-2xs shadow-none",
+        // 2xs: h-6 (24px) — densest tool-panel input. rounded-lg + the
+        // tighter leading edge mirror SelectTrigger's 2xs so mixed
+        // field rows read identically.
+        "2xs": "h-6 rounded-lg pl-1.5 pr-2 py-0 text-2xs file:text-2xs shadow-none",
       },
     },
     defaultVariants: { size: "default" },
@@ -60,7 +62,7 @@ const SLOT_PADDING: Record<
   default: { startPad: "pl-9", endPad: "pr-9", startInset: "pl-3", endInset: "pr-3" },
   sm: { startPad: "pl-7", endPad: "pr-6", startInset: "pl-2", endInset: "pr-2" },
   xs: { startPad: "pl-6", endPad: "pr-5", startInset: "pl-2", endInset: "pr-2" },
-  "2xs": { startPad: "pl-6", endPad: "pr-5", startInset: "pl-2", endInset: "pr-2" },
+  "2xs": { startPad: "pl-6", endPad: "pr-5", startInset: "pl-1.5", endInset: "pr-2" },
 };
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(

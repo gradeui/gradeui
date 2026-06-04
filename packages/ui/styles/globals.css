@@ -29,6 +29,17 @@
 @source inline("grid-cols-{1,2,3,4,5,6,8,12}");
 @source inline("shadow{,-none,-sm,-md,-lg,-xl,-2xl,-inner}");
 @source inline("bg-{background,card,muted,secondary,accent,primary,destructive,transparent}");
+/* Border family — the inspector's BorderGroup mints every one of these at
+   runtime (side-aware widths, styles, colours, and ring-based inside/outside
+   positions). Without the force-emit, anything the scanner hasn't seen in
+   source (border-4, border-t-8, ring-inset…) silently renders as no CSS in
+   Fast Frame — the ">2px borders don't work" bug. */
+@source inline("border{,-t,-r,-b,-l,-x,-y}{,-0,-2,-4,-8}");
+@source inline("border-{solid,dashed,dotted,double}");
+@source inline("border{,-t,-r,-b,-l}-{border,foreground,primary,muted-foreground,destructive,ring}");
+@source inline("ring{,-0,-1,-2,-4,-8}");
+@source inline("ring-inset");
+@source inline("ring-{border,foreground,primary,muted-foreground,destructive,ring}");
 
 /* ============================================
    RAMP DESIGN SYSTEM - DESIGN TOKENS

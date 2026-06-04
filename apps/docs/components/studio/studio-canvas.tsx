@@ -419,9 +419,31 @@ export function StudioCanvas({
   // the pre-picker behavior (no width constraint). Canvas-level state
   // so flipping fit → all → fit preserves the user's width choice, and
   // so the tiles ("all" view) aren't constrained by it — tiles want the
-  // full 1280 virtual width regardless.
-  const [viewportWidth, setViewportWidth] =
-    useState<ViewportWidth>("responsive");
+  // full 1280 virtual width regardless. Persisted to localStorage (same
+  // pattern as studio:left-panel-open) so a refresh keeps the choice —
+  // deliberately NOT in the URL, which stays reserved for shareable
+  // identity (project/screen), not per-person workspace prefs.
+  const [viewportWidth, setViewportWidth] = useState<ViewportWidth>(() => {
+    if (typeof window === "undefined") return "responsive";
+    try {
+      const stored = window.localStorage.getItem("studio:viewport-width");
+      return stored === "mobile" ||
+        stored === "tablet" ||
+        stored === "desktop" ||
+        stored === "responsive"
+        ? stored
+        : "responsive";
+    } catch {
+      return "responsive";
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("studio:viewport-width", viewportWidth);
+    } catch {
+      // storage unavailable (private mode etc.) — viewport just won't stick
+    }
+  }, [viewportWidth]);
 
   // Artboard zoom — the share view's Fit/zoom treatment, applied to the
   // focused Fast Frame. Device presets become real w×h artboards on the
@@ -468,6 +490,10 @@ export function StudioCanvas({
   const artboard = useArtboardZoom({
     deviceSize: resolveArtboardSize,
     defaultFit: true,
+    // Sticky across refreshes (workspace pref, like the viewport toggle
+    // above). Share view + embeds don't pass a key — they keep their
+    // own defaults.
+    persistKey: "studio:artboard",
   });
 
   // Replay counter — bumping it re-keys the focused iframe so every

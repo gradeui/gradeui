@@ -73,6 +73,7 @@ export function useArtboardZoom({
   deviceSize,
   defaultFit = false,
   pad = 64,
+  persistKey,
 }: {
   /** The artboard's fixed size. Omit for responsive (Fit = 100%).
    *  Can be a function of the live canvas size — used for the
@@ -87,9 +88,39 @@ export function useArtboardZoom({
   defaultFit?: boolean;
   /** Breathing room around the fitted artboard, in px (both axes). */
   pad?: number;
+  /** localStorage prefix (e.g. "studio:artboard") — when set, zoom +
+   *  fit survive a refresh. OPT-IN on purpose: the Studio canvas wants
+   *  sticky workspace prefs; the share view and embeds must always
+   *  open at their own defaults, never another surface's leftovers. */
+  persistKey?: string;
 } = {}): ArtboardZoom {
-  const [zoom, setZoom] = React.useState(1);
-  const [fitMode, setFitMode] = React.useState(defaultFit);
+  const [zoom, setZoom] = React.useState(() => {
+    if (!persistKey || typeof window === "undefined") return 1;
+    try {
+      const z = Number(window.localStorage.getItem(`${persistKey}:zoom`));
+      return ZOOM_LEVELS.includes(z) ? z : 1;
+    } catch {
+      return 1;
+    }
+  });
+  const [fitMode, setFitMode] = React.useState(() => {
+    if (!persistKey || typeof window === "undefined") return defaultFit;
+    try {
+      const f = window.localStorage.getItem(`${persistKey}:fit`);
+      return f === null ? defaultFit : f === "true";
+    } catch {
+      return defaultFit;
+    }
+  });
+  React.useEffect(() => {
+    if (!persistKey) return;
+    try {
+      window.localStorage.setItem(`${persistKey}:zoom`, String(zoom));
+      window.localStorage.setItem(`${persistKey}:fit`, String(fitMode));
+    } catch {
+      // storage unavailable — zoom just won't stick across refreshes
+    }
+  }, [persistKey, zoom, fitMode]);
 
   // Measure the canvas area so Fit can compute a scale. Callback-ref +
   // element state (rather than a RefObject) so measurement starts even

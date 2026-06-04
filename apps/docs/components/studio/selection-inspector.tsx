@@ -46,22 +46,38 @@ import {
   Minimize,
   Minimize2,
   Minus,
-  MoveHorizontal,
-  MoveVertical,
-  PanelBottom,
-  PanelLeft,
-  PanelRight,
   PanelRightClose,
-  PanelTop,
   Plus,
   Settings2,
   Grip,
   Square,
-  Scan,
-  Blend,
-  Droplet,
   RotateCcw,
 } from "lucide-react";
+import {
+  PaddingTop,
+  PaddingBottom,
+  PaddingLeft,
+  PaddingRight,
+  PaddingVertical,
+  PaddingHorizontal,
+  MarginTop,
+  MarginBottom,
+  MarginLeft,
+  MarginRight,
+  MarginVertical,
+  MarginHorizontal,
+  BorderStrokeTop,
+  BorderStrokeBottom,
+  BorderStrokeLeft,
+  BorderStrokeRight,
+  BorderRadius,
+  BorderRadiusTopLeft,
+  BorderRadiusTopRight,
+  BorderRadiusBottomLeft,
+  BorderRadiusBottomRight,
+  Opacity as OpacityIcon,
+  BlendMode as BlendModeIcon,
+} from "@/components/icons";
 import {
   getComponentContract,
   listContractedComponents,
@@ -2761,7 +2777,7 @@ function BlendingGroup({
           triggerIcon={
             <IconTip label="Opacity">
               <span className="flex items-center">
-                <Blend aria-hidden />
+                <OpacityIcon aria-hidden />
               </span>
             </IconTip>
           }
@@ -2816,9 +2832,9 @@ function BlendingGroup({
               size="2xs"
               className="w-full"
               title="Blend mode"
-              // Paint-drop stand-in for per-mode glyphs (Paper has one
-              // icon per blend mode — swap in a set later if wanted).
-              startSlot={<Droplet aria-hidden />}
+              // Grade's blend-mode glyph (the industry-standard droplet;
+              // Paper has one icon per mode — swap in a set if wanted).
+              startSlot={<BlendModeIcon aria-hidden />}
             >
               <SelectValue />
             </SelectTrigger>
@@ -2883,6 +2899,14 @@ function RadiusSelect({
  * per-corner exposes TL / TR / BL / BR individually. Auto-opens
  * per-corner when the parsed corners aren't uniform.
  */
+/** Per-corner radius glyphs — Grade's corner-sweep icons. */
+const CORNER_RADIUS_ICONS = {
+  tl: <BorderRadiusTopLeft />,
+  tr: <BorderRadiusTopRight />,
+  bl: <BorderRadiusBottomLeft />,
+  br: <BorderRadiusBottomRight />,
+} as const;
+
 function RadiusGroup({
   source,
   componentName,
@@ -3133,7 +3157,7 @@ function RadiusGroup({
                 <div className="flex items-center gap-1">
                   <CompactDimensionField
                     ariaLabel="Corner radius"
-                    icon={<Scan />}
+                    icon={<BorderRadius />}
                     value={customDim ?? seedDim}
                     disabled={disabled}
                     onCommit={(v) => writeCustomDim(v)}
@@ -3168,14 +3192,36 @@ function RadiusGroup({
                   : corners[corner] === ""
                     ? "__default"
                     : corners[corner];
+              // Corner-specific labels (`rounded-tl-lg`, not `rounded-lg`)
+              // — the chip must show the class that setRadiusCorners
+              // actually writes, mirroring margin's per-side labels
+              // (`mt-1.5`, not `m-1.5`).
+              const cornerTokens: TokenOption[] = getAreaTokens("radius").map(
+                (t) => ({
+                  value: t.value === "" ? "__default" : t.value,
+                  label:
+                    t.value === ""
+                      ? `rounded-${corner}`
+                      : `rounded-${corner}-${t.value}`,
+                  hint: t.hint,
+                }),
+              );
               return (
                 <TokenField
                   key={corner}
                   kind="radius"
-                  label={label}
+                  // No text label — the corner glyph carries the meaning
+                  // (the IconTip supplies the name for hover + a11y).
+                  triggerIcon={
+                    <IconTip label={`${label} radius`}>
+                      <span className="flex items-center">
+                        {CORNER_RADIUS_ICONS[corner]}
+                      </span>
+                    </IconTip>
+                  }
                   bound={cornerDim === null}
                   token={cornerToken}
-                  tokens={tokens}
+                  tokens={cornerTokens}
                   placeholder="0"
                   placeholderHint="0px"
                   unitSuffix="px"
@@ -3197,7 +3243,7 @@ function RadiusGroup({
                     <div className="flex items-center gap-1">
                       <CompactDimensionField
                         ariaLabel={`${label} radius`}
-                        icon={<Scan />}
+                        icon={CORNER_RADIUS_ICONS[corner]}
                         value={cornerDim ?? seedDim}
                         disabled={disabled}
                         onCommit={(v) => writeCornerDim(corner, v)}
@@ -3558,6 +3604,15 @@ type UiBorderEntry = BorderEntry & { id: number; visible: boolean };
  * selection (component state), not across reloads — only visible
  * entries serialise into the className.
  */
+/** Border-side glyphs — Grade's border-stroke icons (Square for all). */
+const BORDER_SIDE_ICONS: Record<BorderSide, React.ReactNode> = {
+  all: <Square aria-hidden />,
+  t: <BorderStrokeTop aria-hidden />,
+  r: <BorderStrokeRight aria-hidden />,
+  b: <BorderStrokeBottom aria-hidden />,
+  l: <BorderStrokeLeft aria-hidden />,
+};
+
 function BorderGroup({
   source,
   componentName,
@@ -3671,7 +3726,11 @@ function BorderGroup({
                 onValueChange={(v) => patchEntry(entry.id, { side: v as BorderSide })}
                 disabled={disabled}
               >
-                <SelectTrigger size="2xs" className="w-full">
+                <SelectTrigger
+                  size="2xs"
+                  className="w-full"
+                  startSlot={BORDER_SIDE_ICONS[entry.side]}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent size="2xs" position="item-aligned">
@@ -4165,17 +4224,47 @@ function PerSideRow({
       </div>
       {mode === "axes" ? (
         <div className="grid grid-cols-2 gap-1.5">
-          {field(["l", "r"], "x", <MoveHorizontal />, `${label} horizontal`)}
-          {field(["t", "b"], "y", <MoveVertical />, `${label} vertical`)}
+          {field(
+            ["l", "r"],
+            "x",
+            area === "padding" ? <PaddingHorizontal /> : <MarginHorizontal />,
+            `${label} horizontal`,
+          )}
+          {field(
+            ["t", "b"],
+            "y",
+            area === "padding" ? <PaddingVertical /> : <MarginVertical />,
+            `${label} vertical`,
+          )}
         </div>
       ) : (
         // 2×2 — TokenFields carry a chip + detach affordance, too wide
         // for the old 4-up row.
         <div className="grid grid-cols-2 gap-1.5">
-          {field(["t"], "t", <PanelTop />, `${label} top`)}
-          {field(["r"], "r", <PanelRight />, `${label} right`)}
-          {field(["b"], "b", <PanelBottom />, `${label} bottom`)}
-          {field(["l"], "l", <PanelLeft />, `${label} left`)}
+          {field(
+            ["t"],
+            "t",
+            area === "padding" ? <PaddingTop /> : <MarginTop />,
+            `${label} top`,
+          )}
+          {field(
+            ["r"],
+            "r",
+            area === "padding" ? <PaddingRight /> : <MarginRight />,
+            `${label} right`,
+          )}
+          {field(
+            ["b"],
+            "b",
+            area === "padding" ? <PaddingBottom /> : <MarginBottom />,
+            `${label} bottom`,
+          )}
+          {field(
+            ["l"],
+            "l",
+            area === "padding" ? <PaddingLeft /> : <MarginLeft />,
+            `${label} left`,
+          )}
         </div>
       )}
     </div>
@@ -4325,7 +4414,7 @@ function SideInput({
         }
       }}
       startSlot={
-        <span aria-hidden className="inline-flex [&_svg]:size-3">
+        <span aria-hidden className="inline-flex [&_svg]:size-4">
           {icon}
         </span>
       }

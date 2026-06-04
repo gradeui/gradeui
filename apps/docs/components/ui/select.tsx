@@ -43,7 +43,10 @@ const selectTriggerVariants = cva(
         sm: "h-8 px-2 py-1 text-sm",
         // Figma-density — tool panels (the Studio inspector).
         xs: "h-7 px-2 py-0 text-xs",
-        "2xs": "h-6 px-2 py-0 text-2xs",
+        // rounded-lg (a step up from the base rounded-md) + tighter
+        // leading edge — at h-6 the md radius reads boxy and the 8px
+        // inset pushed the property glyph too far in.
+        "2xs": "h-6 rounded-lg pl-1.5 pr-2 py-0 text-2xs",
       },
     },
     defaultVariants: { size: "default" },
@@ -80,7 +83,7 @@ const SelectTrigger = React.forwardRef<
   >
     {startSlot ? (
       <div className="flex min-w-0 flex-1 items-center gap-1.5 [&>span]:truncate">
-        <span className="pointer-events-none flex shrink-0 items-center text-muted-foreground/70 [&_svg]:size-3">
+        <span className="pointer-events-none flex shrink-0 items-center text-muted-foreground/70 [&_svg]:size-4">
           {startSlot}
         </span>
         {children}
