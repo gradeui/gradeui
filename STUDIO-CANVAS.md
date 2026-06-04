@@ -133,6 +133,12 @@ becomes worthwhile around the same time.
 
 ## The sandbox origin (security prerequisite)
 
+> Actionable as a single work item:
+> [SECURITY-SANDBOX-SPLIT.md](./SECURITY-SANDBOX-SPLIT.md) — full
+> checklist (Vercel/domain steps, file-by-file hardening list,
+> acceptance criteria). The decision landed on `sandbox.gradeui.com`
+> via host-routed middleware, env-driven with same-origin dev fallback.
+
 The moment canvas content (or shares, or community remixes) can carry
 *someone else's* generated code, the same-origin `/fast-sandbox` iframe
 becomes a stored-XSS vector: same-origin iframes can reach
