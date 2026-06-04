@@ -13,9 +13,36 @@ import { notFound } from "next/navigation";
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { SharedScreen } from "@/components/studio/shared-screen";
 import type { CommentThreadWithMessages } from "@/lib/studio-storage";
+import { SHARE_VIEWPORT_PRESETS } from "@/lib/studio-storage";
 import type { User } from "@/lib/studio-users";
 
 export const dynamic = "force-dynamic";
+
+/** Tab title: "Screen — Project · Grade". Light second query — the
+ *  page itself re-validates the token; this only names the tab. */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+  const supabase = getServiceSupabase();
+  if (!supabase) return { title: "Shared screen · Grade" };
+  const { data: link } = await supabase
+    .from("share_links")
+    .select("project_id, design_id, revoked")
+    .eq("token", token)
+    .maybeSingle();
+  if (!link || link.revoked || !link.design_id)
+    return { title: "Shared screen · Grade" };
+  const [{ data: design }, { data: project }] = await Promise.all([
+    supabase.from("designs").select("name").eq("id", link.design_id).maybeSingle(),
+    supabase.from("projects").select("name").eq("id", link.project_id).maybeSingle(),
+  ]);
+  const screen = (design as { name: string } | null)?.name ?? "Screen";
+  const proj = (project as { name: string } | null)?.name ?? "Grade";
+  return { title: `${screen} — ${proj} · Grade` };
+}
 
 interface ThreadRow {
   id: string;
@@ -56,7 +83,11 @@ interface ShareLinkRow {
   revision_id: string | null;
   mode: "view" | "comment";
   color_mode: "light" | "dark";
-  viewport: "responsive" | "mobile" | "tablet" | "desktop";
+  /** Spec-model viewport doc — see migration 0017. */
+  viewports: {
+    initialId?: string;
+    specs?: import("@/lib/studio-storage").ShareViewportSpec[];
+  } | null;
   revoked: boolean;
   expires_at: number | null;
 }
@@ -72,7 +103,7 @@ export default async function SharePage({
 
   const { data: link } = await supabase
     .from("share_links")
-    .select("token, project_id, design_id, revision_id, mode, color_mode, viewport, revoked, expires_at")
+    .select("token, project_id, design_id, revision_id, mode, color_mode, viewports, revoked, expires_at")
     .eq("token", token)
     .maybeSingle();
 
@@ -225,12 +256,26 @@ export default async function SharePage({
     }
   }
 
+  // Viewport set — the share's spec doc (migration 0017). The column
+  // is NOT NULL with a preset default, so the fallbacks here only
+  // catch hand-edited rows. The initial id is clamped into the set so
+  // a stale doc can't open a viewport the creator locked out.
+  const docSpecs = share.viewports?.specs;
+  const viewportSpecs =
+    docSpecs && docSpecs.length > 0 ? docSpecs : SHARE_VIEWPORT_PRESETS;
+  const storedInitial = share.viewports?.initialId;
+  const initialViewportId =
+    storedInitial && viewportSpecs.some((s) => s.id === storedInitial)
+      ? storedInitial
+      : viewportSpecs[0].id;
+
   return (
     <SharedScreen
       appSource={appSource}
       themeDraftJson={projectRow?.theme_draft_json ?? null}
       mode={share.color_mode}
-      viewport={share.viewport ?? "responsive"}
+      viewportSpecs={viewportSpecs}
+      initialViewportId={initialViewportId}
       screenName={screenName}
       projectName={projectRow?.name ?? "Untitled project"}
       canComment={share.mode === "comment"}

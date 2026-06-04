@@ -56,6 +56,10 @@ export {
   createMusicBrainzProvider,
   createPollinationsUrlProvider,
   createPicsumProvider,
+  createGenerativeProvider,
+  isGenerativeFillConfigured,
+  promptForSource,
+  type GenerativeSourceOptions,
   type SourceKind,
   type SourceDescriptor,
   type SourceResolution,
@@ -72,36 +76,47 @@ let cachedProvider: MediaProvider | null = null;
  *
  * Selection order:
  *   1. `MEDIA_PROVIDER=gemini` env var → Gemini Flash Image (requires key)
- *   2. `MEDIA_PROVIDER=pollinations` env var → Pollinations (keyless)
- *   3. Default: **Pollinations** — keyless, free, always works
+ *   2. `MEDIA_PROVIDER=pollinations` env var → Pollinations (explicit opt-in)
+ *   3. Gemini key present (`GEMINI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY`)
+ *      → Gemini Flash Image
+ *   4. Last resort: Pollinations
  *
- * Pollinations is the default because it has no setup tax: no key, no
- * billing, no Google account region lockouts. Quality is more variable than
- * Gemini's Nano Banana but the package works out of the box, which is
- * worth more than peak quality during iteration.
- *
- * Switch to Gemini once you've got a working AI Studio key + free-tier-eligible
- * project: set `MEDIA_PROVIDER=gemini` plus either `GEMINI_API_KEY` or
- * `GOOGLE_GENERATIVE_AI_API_KEY`.
+ * Pollinations used to be the default because it was keyless and free, but
+ * since the May 2026 x402 paywall an unauthenticated call returns 402 JSON
+ * instead of an image — "works out of the box" is no longer true. Gemini
+ * now wins whenever a key is available; Pollinations remains only as the
+ * explicit opt-in (paid account) and the no-key last resort, so the
+ * package still constructs without configuration even though that path
+ * will fail at generation time.
  */
 function getDefaultProvider(): MediaProvider {
   if (cachedProvider) return cachedProvider;
 
   const explicit = process.env.MEDIA_PROVIDER;
+  const geminiKey =
+    process.env.GEMINI_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
   if (explicit === "gemini") {
-    const apiKey =
-      process.env.GEMINI_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    if (!apiKey) {
+    if (!geminiKey) {
       throw new Error(
-        "[@gradeui/media] MEDIA_PROVIDER=gemini but no key set. Set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY, or unset MEDIA_PROVIDER to fall back to Pollinations.",
+        "[@gradeui/media] MEDIA_PROVIDER=gemini but no key set. Set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY, or unset MEDIA_PROVIDER.",
       );
     }
-    cachedProvider = createGeminiProvider({ apiKey });
+    cachedProvider = createGeminiProvider({ apiKey: geminiKey });
     return cachedProvider;
   }
 
-  // Default and explicit "pollinations" both land here.
+  if (explicit === "pollinations") {
+    cachedProvider = createPollinationsProvider();
+    return cachedProvider;
+  }
+
+  // No explicit choice — prefer Gemini when a key is available.
+  if (geminiKey) {
+    cachedProvider = createGeminiProvider({ apiKey: geminiKey });
+    return cachedProvider;
+  }
+
   cachedProvider = createPollinationsProvider();
   return cachedProvider;
 }

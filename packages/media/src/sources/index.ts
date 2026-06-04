@@ -27,6 +27,12 @@ export { createOpenLibraryProvider } from "./openlibrary";
 export { createPollinationsUrlProvider } from "./pollinations-url";
 export { createPicsumProvider } from "./picsum";
 export {
+  createGenerativeProvider,
+  isGenerativeFillConfigured,
+  promptForSource,
+  type GenerativeSourceOptions,
+} from "./generative";
+export {
   resolveMediaSource,
   resolveMediaSources,
   buildDefaultRouter,

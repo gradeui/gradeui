@@ -64,6 +64,14 @@ import {
   AvatarFallback,
   AvatarImage,
   Badge,
+  Button,
+  CheckboxCard,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -125,6 +133,8 @@ import {
   type Project,
   type ProjectSnapshot,
   type ShareViewport,
+  type ShareViewportSpec,
+  SHARE_VIEWPORT_PRESETS,
   type Team,
   type User as StoredUser,
 } from "@/lib/studio-storage";
@@ -462,28 +472,85 @@ export default function StudioPage() {
     [storage, activeProjectId, activeId, commentAuthorId, refreshCommentThreads],
   );
 
-  // Mint a public share link for a screen and copy /s/<token> to the
-  // clipboard. Cloud-only — the local adapter throws a clear message.
-  const handleShareScreen = useCallback(
-    async (designId: string, viewport?: ShareViewport) => {
-      if (!activeProjectId) return;
-      try {
-        const link = await storage.createShareLink({
-          projectId: activeProjectId,
-          designId,
-          colorMode: chromeIsDark ? "dark" : "light",
-          viewport: viewport ?? "responsive",
-        });
-        const url = `${window.location.origin}/s/${link.token}`;
-        await navigator.clipboard.writeText(url);
-        toast.success("Share link copied", { description: url });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        toast.error("Couldn't create share link", { description: message });
-      }
-    },
-    [storage, activeProjectId, chromeIsDark],
+  // Share a screen — opens the share-options dialog (viewport specs)
+  // instead of minting immediately. The dialog's Create button calls
+  // confirmShareScreen below, which mints the link and copies
+  // /s/<token>. Cloud-only — the local adapter throws a clear message
+  // at create time.
+  //
+  // `pendingShare.specs` are the viewport rows the share will EXPOSE:
+  // the four presets plus any custom sizes the creator adds (named,
+  // arbitrary W×H, orientation). The viewport the creator is on can't
+  // be toggled off (a share must open on something they were looking
+  // at). Per-share THEME assignment will slot into this same dialog
+  // (see STUDIO-THEMES.md).
+  type ShareSpecRow = ShareViewportSpec & { enabled: boolean };
+  const [pendingShare, setPendingShare] = useState<{
+    designId: string;
+    initialId: string;
+    specs: ShareSpecRow[];
+  } | null>(null);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [customDraft, setCustomDraft] = useState({ label: "", w: "", h: "" });
+  // The minted link, kept on screen so the creator can copy it again.
+  // `stale` flips when options change AFTER minting — the footer then
+  // offers Regenerate (which revokes the old token and mints a fresh
+  // one, so a locked-down link can't be widened after the fact).
+  const [createdShare, setCreatedShare] = useState<{
+    token: string;
+    url: string;
+    stale: boolean;
+  } | null>(null);
+  const markShareStale = useCallback(
+    () => setCreatedShare((c) => (c && !c.stale ? { ...c, stale: true } : c)),
+    [],
   );
+  const handleShareScreen = useCallback(
+    (designId: string, viewport?: ShareViewport) => {
+      if (!activeProjectId) return;
+      setCustomDraft({ label: "", w: "", h: "" });
+      setCreatedShare(null);
+      setPendingShare({
+        designId,
+        initialId: viewport ?? "responsive",
+        specs: SHARE_VIEWPORT_PRESETS.map((s) => ({ ...s, enabled: true })),
+      });
+    },
+    [activeProjectId],
+  );
+  const confirmShareScreen = useCallback(async () => {
+    if (!pendingShare || !activeProjectId) return;
+    setShareBusy(true);
+    try {
+      // Regenerating? Kill the old link first — otherwise a recipient
+      // keeps the wider/older viewport set forever.
+      if (createdShare) {
+        try {
+          await storage.revokeShareLink(createdShare.token);
+        } catch {
+          /* best-effort — a dangling revoked-anyway link is harmless */
+        }
+      }
+      const specs = pendingShare.specs
+        .filter((s) => s.enabled)
+        .map(({ enabled: _enabled, ...spec }) => spec);
+      const link = await storage.createShareLink({
+        projectId: activeProjectId,
+        designId: pendingShare.designId,
+        colorMode: chromeIsDark ? "dark" : "light",
+        viewports: { initialId: pendingShare.initialId, specs },
+      });
+      const url = `${window.location.origin}/s/${link.token}`;
+      await navigator.clipboard.writeText(url);
+      setCreatedShare({ token: link.token, url, stale: false });
+      toast.success("Share link copied", { description: url });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Couldn't create share link", { description: message });
+    } finally {
+      setShareBusy(false);
+    }
+  }, [pendingShare, storage, activeProjectId, chromeIsDark, createdShare]);
 
   // Invite someone to the active project. POSTs to /api/invitations,
   // which creates the invite event + emails a tokenised /accept-invite
@@ -1428,6 +1495,28 @@ export default function StudioPage() {
         return;
       }
 
+      // § — Figma-style "hide UI": toggles BOTH side panels at once.
+      // One unmodified key (top-left on ISO/UK keyboards, where Figma
+      // puts backtick) so flipping between full-canvas and full-chrome
+      // is a single tap. Both-open or split states collapse to
+      // both-closed; both-closed restores both.
+      if (e.key === "§") {
+        const target = e.target as HTMLElement | null;
+        if (target) {
+          const tag = target.tagName;
+          const editable =
+            tag === "INPUT" ||
+            tag === "TEXTAREA" ||
+            target.isContentEditable;
+          if (editable) return;
+        }
+        e.preventDefault();
+        const anyOpen = leftPanelOpen || rightPanelOpen;
+        setLeftPanelOpen(!anyOpen);
+        setRightPanelOpen(!anyOpen);
+        return;
+      }
+
       // ⌘\ / ⌘⇧\ — panel toggles.
       if (e.key !== "\\") return;
       if (!(e.metaKey || e.ctrlKey)) return;
@@ -1449,7 +1538,23 @@ export default function StudioPage() {
     }
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [toggleLeftPanel, toggleRightPanel]);
+  }, [toggleLeftPanel, toggleRightPanel, leftPanelOpen, rightPanelOpen]);
+
+  // Browser pinch-zoom guard — a trackpad pinch arrives as ctrl+wheel,
+  // and anywhere we don't handle it (chat, panels, toolbars) the
+  // browser zooms the ENTIRE app. Studio is a canvas tool: pinch means
+  // "zoom the canvas", never "zoom the chrome" (same policy as Figma).
+  // The canvas + sandbox handlers run on their own elements first and
+  // do their zoom; this window-level catch-all only suppresses the
+  // browser default everywhere else. Non-passive on purpose. Keyboard
+  // page-zoom (⌘+/⌘−) still works for accessibility.
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) e.preventDefault();
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => window.removeEventListener("wheel", onWheel);
+  }, []);
 
   // Canvas zoom — lifted out of StudioCanvas so the page can route
   // the left panel based on view: "fit" → StudioChat for the focused
@@ -1741,6 +1846,24 @@ export default function StudioPage() {
       setComposerOpenTrigger((n) => n + 1);
     },
     [activeId],
+  );
+
+  // Canvas-mode choice handler. Fires the moment the user CHOOSES a
+  // toolbar mode (before any pick lands) so the right panel keeps up:
+  // choosing Comment jumps to the Comments tab, choosing Select jumps
+  // back to Layout (where the docked settings panel lives). Leaving a
+  // mode (null) doesn't switch — the user may still be reading the
+  // panel they landed on.
+  const handleCanvasModeChange = useCallback(
+    (mode: "select" | "comment" | null) => {
+      if (mode === "comment") {
+        setRightTab("comments");
+        setRightPanelOpen(true);
+      } else if (mode === "select") {
+        setRightTab("layout");
+      }
+    },
+    [],
   );
 
   // Cmd/Ctrl+Shift+Up — "select parent". Walks one step up the chain
@@ -2294,6 +2417,263 @@ export default function StudioPage() {
           onConfirm={confirmDelete}
         />
       )}
+      {/* Share-options dialog — viewport-lock toggles for the link
+          about to be minted. Each row enables/disables one device
+          option in the recipient's share toolbar; the viewport the
+          creator is currently on stays locked on (the share has to
+          open on something). Theme assignment joins this dialog when
+          per-share themes land (STUDIO-THEMES.md). */}
+      {pendingShare && (
+        <Dialog
+          open
+          onOpenChange={(o) => {
+            if (!o && !shareBusy) setPendingShare(null);
+          }}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Share screen</DialogTitle>
+              <DialogDescription>
+                Choose which viewports the link exposes. Anything off is
+                hidden from the recipient&apos;s device menu — useful when a
+                viewport isn&apos;t designed yet.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-1.5">
+              {pendingShare.specs.map((s) => {
+                const isInitial = pendingShare.initialId === s.id;
+                const fixed = !s.responsive && s.w && s.h;
+                const landscape = s.orientation === "landscape";
+                const dims = fixed
+                  ? landscape
+                    ? `${s.h}×${s.w}`
+                    : `${s.w}×${s.h}`
+                  : "fills the window";
+                return (
+                  <div key={s.id} className="flex items-center gap-1.5">
+                    {/* DS CheckboxCard — whole card toggles, big hit
+                        target. The orientation flip sits OUTSIDE the
+                        card (cards must not nest interactive
+                        controls). */}
+                    <CheckboxCard
+                      className="min-w-0 flex-1"
+                      checked={s.enabled}
+                      disabled={isInitial}
+                      onCheckedChange={(next: boolean) => {
+                        markShareStale();
+                        setPendingShare((cur) =>
+                          cur
+                            ? {
+                                ...cur,
+                                specs: cur.specs.map((row) =>
+                                  row.id === s.id
+                                    ? { ...row, enabled: next }
+                                    : row,
+                                ),
+                              }
+                            : cur,
+                        );
+                      }}
+                      label={
+                        isInitial ? `${s.label} · opens here` : s.label
+                      }
+                      aside={
+                        <span className="text-[11px] tabular-nums text-muted-foreground">
+                          {dims}
+                        </span>
+                      }
+                    />
+                    {fixed && (
+                      <button
+                        type="button"
+                        title={
+                          landscape
+                            ? "Landscape — click for portrait"
+                            : "Portrait — click for landscape"
+                        }
+                        aria-label="Flip orientation"
+                        onClick={() => {
+                          markShareStale();
+                          setPendingShare((cur) =>
+                            cur
+                              ? {
+                                  ...cur,
+                                  specs: cur.specs.map((row) =>
+                                    row.id === s.id
+                                      ? {
+                                          ...row,
+                                          orientation: landscape
+                                            ? "portrait"
+                                            : "landscape",
+                                        }
+                                      : row,
+                                  ),
+                                }
+                              : cur,
+                          );
+                        }}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground"
+                      >
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "block rounded-[3px] border-[1.5px] border-current",
+                            landscape ? "h-2.5 w-3.5" : "h-3.5 w-2.5",
+                          )}
+                        />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Custom size — name + W×H appends another spec row.
+                  The model carries any number of these; orientation
+                  flips on the row once added. */}
+              <div className="mt-1 flex min-w-0 items-center gap-1.5">
+                <input
+                  type="text"
+                  value={customDraft.label}
+                  onChange={(e) =>
+                    setCustomDraft((d) => ({ ...d, label: e.target.value }))
+                  }
+                  placeholder="Custom (e.g. Kiosk)"
+                  // size={1} + min-w-0: text inputs default to a ~20ch
+                  // intrinsic width that flex refuses to shrink below.
+                  size={1}
+                  className="h-8 min-w-0 flex-1 rounded-md border border-border/60 bg-transparent px-2 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:border-foreground/30"
+                />
+                <input
+                  type="number"
+                  value={customDraft.w}
+                  onChange={(e) =>
+                    setCustomDraft((d) => ({ ...d, w: e.target.value }))
+                  }
+                  placeholder="W"
+                  min={120}
+                  // min-w-0 + shrink-0: number inputs have a LARGE
+                  // intrinsic min-width (spin buttons + ~size chars);
+                  // without min-w-0 the flex item refuses to shrink to
+                  // w-16, blowing the row — and the whole dialog grid
+                  // column — past the card edge (the overflow bug).
+                  className="h-8 w-16 min-w-0 shrink-0 rounded-md border border-border/60 bg-transparent px-2 text-xs tabular-nums text-foreground outline-none placeholder:text-muted-foreground focus:border-foreground/30"
+                />
+                <span className="shrink-0 text-xs text-muted-foreground">×</span>
+                <input
+                  type="number"
+                  value={customDraft.h}
+                  onChange={(e) =>
+                    setCustomDraft((d) => ({ ...d, h: e.target.value }))
+                  }
+                  placeholder="H"
+                  min={120}
+                  className="h-8 w-16 min-w-0 shrink-0 rounded-md border border-border/60 bg-transparent px-2 text-xs tabular-nums text-foreground outline-none placeholder:text-muted-foreground focus:border-foreground/30"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  disabled={
+                    !(Number(customDraft.w) >= 120) ||
+                    !(Number(customDraft.h) >= 120)
+                  }
+                  onClick={() => {
+                    const w = Math.round(Number(customDraft.w));
+                    const h = Math.round(Number(customDraft.h));
+                    if (!(w >= 120) || !(h >= 120)) return;
+                    markShareStale();
+                    setPendingShare((cur) => {
+                      if (!cur) return cur;
+                      const n =
+                        cur.specs.filter((row) =>
+                          row.id.startsWith("custom-"),
+                        ).length + 1;
+                      return {
+                        ...cur,
+                        specs: [
+                          ...cur.specs,
+                          {
+                            id: `custom-${n}`,
+                            label:
+                              customDraft.label.trim() || `Custom ${w}×${h}`,
+                            w,
+                            h,
+                            enabled: true,
+                          },
+                        ],
+                      };
+                    });
+                    setCustomDraft({ label: "", w: "", h: "" });
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+            {/* The minted link — shown in place so it can be re-copied,
+                with a stale warning once options diverge from what the
+                link was minted with. */}
+            {createdShare && (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <input
+                    readOnly
+                    value={createdShare.url}
+                    onFocus={(e) => e.currentTarget.select()}
+                    size={1}
+                    className={cn(
+                      "h-8 min-w-0 flex-1 rounded-md border border-border/60 bg-muted/30 px-2 text-xs text-foreground outline-none",
+                      createdShare.stale && "opacity-50 line-through",
+                    )}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    disabled={createdShare.stale}
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(createdShare.url);
+                      toast.success("Share link copied");
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+                {createdShare.stale && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Options changed since this link was created — regenerate
+                    to apply them (the old link is revoked).
+                  </p>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button
+                variant="ghost"
+                disabled={shareBusy}
+                onClick={() => setPendingShare(null)}
+              >
+                {createdShare && !createdShare.stale ? "Done" : "Cancel"}
+              </Button>
+              <Button
+                onClick={confirmShareScreen}
+                disabled={shareBusy || (createdShare !== null && !createdShare.stale)}
+              >
+                {shareBusy ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {createdShare ? "Regenerating…" : "Creating…"}
+                  </>
+                ) : createdShare ? (
+                  createdShare.stale ? "Regenerate link" : "Link created"
+                ) : (
+                  "Create link"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
       {/* AppShell takes over from the hand-rolled flex column.
           `nav="none"` gives us Header + Main + (unused) Footer stacked
           vertically — exactly the Studio shape. Studio is a tool that
@@ -2314,7 +2694,12 @@ export default function StudioPage() {
               inner div so its content is fully removed from layout
               (otherwise padding/border would still occupy ~1px). The
               canvas's own card border is the only separator between
-              the columns — the side panels are deliberately flat. */}
+              the columns — the side panels are deliberately flat.
+              Panel toggles are INSTANT (no flex-basis transition):
+              the 150ms ease looked nice in isolation, but the chat
+              column reflows during the tween — bubbles shrink and
+              slide on every toggle. A hard cut is calmer and matches
+              Figma's hide-UI behaviour. */}
           <div className="flex h-full min-h-0">
             <StudioRail
               streaming={activeStreaming}
@@ -2327,7 +2712,7 @@ export default function StudioPage() {
             />
             {!isMobile && (
               <div
-                className="min-w-0 shrink-0 overflow-hidden transition-[flex-basis] duration-150 ease-out bg-muted/30"
+                className="min-w-0 shrink-0 overflow-hidden bg-muted/30"
                 style={inlineLeftStyle}
                 aria-hidden={!leftPanelOpen}
               >
@@ -2349,6 +2734,7 @@ export default function StudioPage() {
                 onSelect={handleSelect}
                 onClearSelection={handleClearSelection}
                 onCommentSelect={handleCommentSelect}
+                onCanvasModeChange={handleCanvasModeChange}
                 onAddDesign={handleAddDesign}
                 onCloseDesign={handleCloseDesign}
                 onRenameDesign={handleRenameDesign}
@@ -2392,7 +2778,7 @@ export default function StudioPage() {
             </div>
             {!isMobile && (
               <div
-                className="min-w-0 shrink-0 overflow-hidden transition-[flex-basis] duration-150 ease-out bg-muted/30"
+                className="min-w-0 shrink-0 overflow-hidden bg-muted/30"
                 style={inlineRightStyle}
                 aria-hidden={!rightPanelOpen}
               >
@@ -2915,6 +3301,7 @@ function StudioThemedCanvas({
   commentThreads,
   onCommentPinClick,
   getCommentUser,
+  onCanvasModeChange,
 }: {
   designs: Design[];
   focusedId: string;
@@ -2955,6 +3342,10 @@ function StudioThemedCanvas({
   commentThreads?: CommentThreadWithMessages[];
   onCommentPinClick?: (threadId: string) => void;
   getCommentUser?: (id: string) => StoredUser | undefined;
+  /** Forwarded to StudioCanvas — fires when the user chooses a canvas
+   *  mode (select/comment/null) so the page can auto-switch the right
+   *  panel tab. */
+  onCanvasModeChange?: (mode: "select" | "comment" | null) => void;
 }) {
   const theme: GeneratedTheme = useGeneratedTheme();
   const [mode] = useThemeBuilderMode();
@@ -2999,6 +3390,7 @@ function StudioThemedCanvas({
       commentThreads={commentThreads}
       onCommentPinClick={onCommentPinClick}
       getCommentUser={getCommentUser}
+      onCanvasModeChange={onCanvasModeChange}
     />
   );
 }

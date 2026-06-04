@@ -36,12 +36,14 @@ export type {
   ScreenRevision,
   ShareLink,
   ShareViewport,
+  ShareViewportSpec,
   StudioEvent,
   StudioStorage,
   Subject,
   Team,
   User,
 } from "./types";
+export { SHARE_VIEWPORT_PRESETS, shareViewportSize } from "./types";
 
 interface CacheEntry {
   /** "local" or the signed-in user id. Lets us invalidate when the

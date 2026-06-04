@@ -198,11 +198,55 @@ export interface StudioEvent {
 /** A public, obfuscated share link to a screen. `token` is the
  *  capability key that goes in the /s/<token> URL. `revisionId` pins a
  *  specific snapshot; undefined = always the latest (live). */
-/** Device preset a share renders in. `responsive` fills the canvas
- *  (the original behaviour); the others frame the screen at a fixed
- *  artboard width. Shared with Studio's ViewportWidth vocabulary so the
- *  two surfaces stay in lockstep. */
+/** The canvas's viewport vocabulary — also the ids of the four preset
+ *  specs, so mapping the canvas's current viewport onto a share's
+ *  initial spec is identity. (Share rows themselves store full
+ *  `ShareViewportSpec[]` docs — migration 0017.) */
 export type ShareViewport = "responsive" | "mobile" | "tablet" | "desktop";
+
+/**
+ * One viewport a share exposes — the future-proof shape: named,
+ * arbitrarily sized, orientable, and a share carries as MANY of these
+ * as the creator wants. The four classic presets are just well-known
+ * specs (see SHARE_VIEWPORT_PRESETS).
+ *
+ *   - `responsive: true` → fills the window; w/h/orientation ignored.
+ *   - `orientation: "landscape"` renders h×w (the stored w/h stay
+ *     portrait-normal so flipping is lossless).
+ */
+export interface ShareViewportSpec {
+  /** Stable key within the share — preset id ("mobile") or a minted
+   *  id for custom sizes ("custom-1"). */
+  id: string;
+  /** Display name — "Mobile", "iPhone 15 Pro", "Kiosk portrait"… */
+  label: string;
+  /** Fill-the-window mode (the classic "responsive"). */
+  responsive?: boolean;
+  /** Portrait-normal dimensions for fixed viewports. */
+  w?: number;
+  h?: number;
+  orientation?: "portrait" | "landscape";
+}
+
+/** The classic four, as specs. Single source for the share dialog's
+ *  default toggle rows and for upgrading legacy enum rows. */
+export const SHARE_VIEWPORT_PRESETS: ShareViewportSpec[] = [
+  { id: "responsive", label: "Responsive", responsive: true },
+  { id: "mobile", label: "Mobile", w: 390, h: 844 },
+  { id: "tablet", label: "Tablet", w: 768, h: 1024 },
+  { id: "desktop", label: "Desktop", w: 1440, h: 900 },
+];
+
+/** Rendered size of a spec — applies the orientation flip. Returns
+ *  undefined for responsive (no fixed artboard). */
+export function shareViewportSize(
+  spec: ShareViewportSpec,
+): { w: number; h: number } | undefined {
+  if (spec.responsive || !spec.w || !spec.h) return undefined;
+  return spec.orientation === "landscape"
+    ? { w: spec.h, h: spec.w }
+    : { w: spec.w, h: spec.h };
+}
 
 export interface ShareLink {
   token: string;
@@ -213,9 +257,15 @@ export interface ShareLink {
   /** Light/dark the screen renders in — captured from the creator so
    *  the share matches what they were viewing. */
   colorMode: "light" | "dark";
-  /** Device preset captured at share time — part of the share
-   *  contract. Defaults to "responsive" (fill). */
-  viewport: ShareViewport;
+  /** The viewport set this share EXPOSES (named / arbitrary W×H /
+   *  orientation / any count), ordered as the share dialog listed
+   *  them. The recipient's device menu is exactly this set — lets the
+   *  creator lock a share to the viewports the screen actually
+   *  supports (no mobile design yet → no Mobile option). Per-share
+   *  theme assignment will follow the same pattern (STUDIO-THEMES.md). */
+  viewports: ShareViewportSpec[];
+  /** Which spec the share opens on (`viewports[i].id`). */
+  initialViewportId: string;
   createdBy?: string;
   revoked: boolean;
   expiresAt?: number;
@@ -351,7 +401,10 @@ export interface StudioStorage {
     designId: string;
     mode?: "view" | "comment";
     colorMode?: "light" | "dark";
-    viewport?: ShareViewport;
+    /** Viewport set + which one the share opens on. Defaults to the
+     *  four presets opening on "responsive". The adapter clamps the
+     *  initial id into the set. */
+    viewports?: { initialId: string; specs: ShareViewportSpec[] };
     revisionId?: string;
   }): Promise<ShareLink>;
 

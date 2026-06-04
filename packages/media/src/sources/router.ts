@@ -47,6 +47,10 @@ import { createOpenLibraryProvider } from "./openlibrary";
 import { createIgdbProvider } from "./igdb";
 import { createPollinationsUrlProvider } from "./pollinations-url";
 import { createPicsumProvider } from "./picsum";
+import {
+  createGenerativeProvider,
+  isGenerativeFillConfigured,
+} from "./generative";
 import type {
   SourceDescriptor,
   SourceProvider,
@@ -159,6 +163,13 @@ async function routerResolve(
  * longer in the default chain. Override by passing your own
  * `SourceRouter` to `resolveMediaSource(s)` if you have a paid
  * Pollinations key or a different generator.
+ *
+ * The prompt-aware slot is now the **generative provider** (Gemini
+ * Flash Image via `generateImage()` — content-hash cached, processed,
+ * stored). It joins the chain for poster/portrait/landscape/product/
+ * food/generic ahead of Picsum whenever a Gemini key is configured
+ * (see `isGenerativeFillConfigured`), and soft-misses to Picsum on any
+ * failure. Set `MEDIA_FILL_GENERATE=off` to keep Fill keyless.
  */
 export function buildDefaultRouter(): SourceRouter {
   const providers: SourceProvider[] = [
@@ -166,6 +177,7 @@ export function buildDefaultRouter(): SourceRouter {
     createTmdbProvider(),
     createIgdbProvider(),
     createOpenLibraryProvider(),
+    ...(isGenerativeFillConfigured() ? [createGenerativeProvider()] : []),
     createPicsumProvider(),
   ];
   return {

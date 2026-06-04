@@ -1258,8 +1258,57 @@ function findComponentOwner(el: Element | null): Element | null {
       } catch {
         /* old browsers — no-op */
       }
+    } else if (data.type === "grade:set-media-pending") {
+      // Fill-in-flight signal — mirrors the Fast sandbox handler (kept
+      // in sync per the two-agent rule in STUDIO.md). The canvas posts
+      // the full list of sourceKeys it's about to resolve, then an
+      // empty list when done. Replace semantics; MediaSurface's
+      // useFillPending hook re-reads on the event and shimmers its
+      // placeholder while its key is pending.
+      const keys = Array.isArray(data.pending)
+        ? data.pending.filter(function (k: unknown) { return typeof k === "string"; })
+        : [];
+      const wp = window as unknown as { __gradeMediaPending?: Record<string, true> };
+      const next: Record<string, true> = {};
+      keys.forEach(function (k: string) { next[k] = true; });
+      wp.__gradeMediaPending = next;
+      try {
+        window.dispatchEvent(new Event("grade:media-pending-updated"));
+      } catch {
+        /* old browsers — no-op */
+      }
     }
   });
+
+  // Pinch / ctrl+wheel forwarding — mirrors the Fast sandbox handler
+  // (two-agent rule in STUDIO.md). Trackpad pinches arrive as wheel
+  // events with ctrlKey: true; the parent's artboard zoom can't see
+  // gestures that start over this iframe, so forward the delta as
+  // grade:zoom-gesture. preventDefault stops the browser's own
+  // page-zoom; plain scrolling is untouched.
+  window.addEventListener(
+    "wheel",
+    function (e: WheelEvent) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      try {
+        // clientX/Y are iframe-local CSS px — the parent converts them
+        // through the iframe's scale to anchor zoom at the pointer.
+        window.parent.postMessage(
+          {
+            type: "grade:zoom-gesture",
+            deltaY: e.deltaY,
+            clientX: e.clientX,
+            clientY: e.clientY,
+          },
+          "*"
+        );
+      } catch {
+        /* parent gone — drop */
+      }
+    },
+    { passive: false }
+  );
 
   // Ping parent once now and again on DOM ready. The parent may have
   // mounted its listener already (first ping wins), or we may have

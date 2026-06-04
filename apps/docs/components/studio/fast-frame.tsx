@@ -39,7 +39,7 @@
  */
 
 import * as React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   prepareAppSource,
@@ -58,7 +58,11 @@ import { toast } from "sonner";
 import { themeToCSSVars } from "@/lib/themes/apply";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { ViewportWidth } from "@/components/studio/sandpack-frame";
-import { ARTBOARD_DEVICE_SIZES } from "@/components/studio/use-artboard-zoom";
+import {
+  ARTBOARD_DEVICE_SIZES,
+  ZOOM_MAX,
+  ZOOM_MIN,
+} from "@/components/studio/use-artboard-zoom";
 
 // URL of the sandbox Next route. Route is defined at
 // apps/docs/app/fast-sandbox/page.tsx.
@@ -141,6 +145,11 @@ interface FastIframeHostProps {
    *  and the parent's zoom transform natively. The share view uses this;
    *  studio keeps the parent overlay for now. */
   inlineComments?: boolean;
+  /** Fires when the user clicks the FailurePanel's "try the slower
+   *  renderer" small print inside the iframe
+   *  (`grade:fast-try-sandpack`). The canvas flips the focused frame
+   *  to the Sandpack parity mount. */
+  onTrySandpack?: () => void;
   /** Reports the rendered page's content height (document scrollHeight,
    *  px). Same-origin iframe, so the parent polls contentDocument
    *  directly — the same mechanism CanvasCommentPinsOverlay uses for
@@ -171,6 +180,7 @@ export function FastIframeHost({
   getCommentUser,
   commentsVisible = true,
   inlineComments = false,
+  onTrySandpack,
   onContentHeight,
   className,
   style,
@@ -185,12 +195,14 @@ export function FastIframeHost({
   const onClearSelectionRef = useRef(onClearSelection);
   const onSelectModeChangeRef = useRef(onSelectModeChange);
   const onCommentPinClickRef = useRef(onCommentPinClick);
+  const onTrySandpackRef = useRef(onTrySandpack);
   useEffect(() => {
     onSelectRef.current = onSelect;
     onClearSelectionRef.current = onClearSelection;
     onSelectModeChangeRef.current = onSelectModeChange;
     onCommentPinClickRef.current = onCommentPinClick;
-  }, [onSelect, onClearSelection, onSelectModeChange, onCommentPinClick]);
+    onTrySandpackRef.current = onTrySandpack;
+  }, [onSelect, onClearSelection, onSelectModeChange, onCommentPinClick, onTrySandpack]);
 
   // Listen for sandbox → parent messages. Guard on source so multiple
   // Fast iframes (one focused + N tiles in All mode) don't cross-talk.
@@ -223,6 +235,11 @@ export function FastIframeHost({
           // hid its own ring; bubble the clear up so the canvas can
           // drop the right-panel chip in sync.
           onClearSelectionRef.current?.();
+          break;
+        case "grade:fast-try-sandpack":
+          // FailurePanel small print — the user wants the parity
+          // renderer for this screen. The canvas owns the flip.
+          onTrySandpackRef.current?.();
           break;
         case "grade:comment-pin-click": {
           // Inline-comments mode — a pin rendered INSIDE the iframe was
@@ -504,6 +521,20 @@ interface FocusedFastMountProps {
   /** True while Fit mode drives `zoom` — purely presentational here
    *  (the canvas annotation reads "Fit" instead of a percentage). */
   fitMode?: boolean;
+  /** True while a continuous zoom gesture (pinch / ctrl+wheel / slider
+   *  drag) is in flight — from useArtboardZoom. Drops the deliberate-
+   *  pick transform transition (which otherwise re-eases toward the
+   *  transform origin on every tick — the sideways "swoop" on device
+   *  artboards) and raises the interaction-blocking overlay so the
+   *  live app can't be clicked/scrolled mid-gesture. */
+  gesturing?: boolean;
+  /** Canvas interaction mode. "interact" (default): the screen is
+   *  live; hold Space (or middle-mouse drag) to pan. "design": the
+   *  overlay stays up — plain drag pans, pinch zooms, the screen is
+   *  a non-interactive artboard. Owned by the canvas toolbar. (Named
+   *  interactionMode because studio-canvas already has a `canvasMode`
+   *  — the select/comment picker.) */
+  interactionMode?: "interact" | "design";
   /** Measurement ref from useArtboardZoom. Attached to the scrollable
    *  canvas area so Fit can compute its scale against the real column
    *  size. Optional for callers without zoom wiring. */
@@ -517,6 +548,16 @@ interface FocusedFastMountProps {
   /** Forwarded to FastIframeHost — see the prop there. The canvas
    *  passes it in responsive mode only. */
   onContentHeight?: (h: number) => void;
+  /** Forwarded to FastIframeHost — FailurePanel's "try Sandpack". */
+  onTrySandpack?: () => void;
+  /** `useArtboardZoom.zoomBy` from the owning canvas. When present,
+   *  this mount owns pinch / ctrl+wheel itself (both the parent-side
+   *  wheel listener and the sandbox's `grade:zoom-gesture` forwarding)
+   *  so it can ANCHOR the zoom at the pointer: the camera is counter-
+   *  translated each tick to keep the artboard point under the cursor
+   *  fixed — the Figma feel. Callers passing this must NOT also wire
+   *  useZoomGestures for the same surface (double-zoom). */
+  onZoomBy?: (factor: number) => void;
 }
 
 export function FocusedFastMount({
@@ -543,10 +584,24 @@ export function FocusedFastMount({
   canEditSource = true,
   zoom = 1,
   fitMode = false,
+  gesturing = false,
+  interactionMode = "interact",
   zoomCanvasRef,
   artboardSize,
   onContentHeight,
+  onTrySandpack,
+  onZoomBy,
 }: FocusedFastMountProps) {
+  // Resolved artboard — needed by the camera/anchored-zoom hooks below
+  // as well as the preview render. Device presets and the responsive
+  // content-height artboard both arrive via `artboardSize`; static
+  // preset map is the fallback for callers without zoom wiring.
+  // Responsive WITHOUT a content artboard = page fits the column →
+  // plain fill, no camera.
+  const isResponsive = viewportWidth === "responsive";
+  const device =
+    artboardSize ??
+    (isResponsive ? undefined : ARTBOARD_DEVICE_SIZES[viewportWidth]);
   // Memoize the prepared source for the Code view so we don't re-run
   // prepareAppSource on every render purely to display the text.
   const preparedForCodeView = useMemo(
@@ -560,6 +615,446 @@ export function FocusedFastMount({
   const [sourceMode, setSourceMode] = useState<"view" | "edit">("view");
   const effectiveSourceMode =
     sourceMode === "edit" && canEditSource && onSourceEdit ? "edit" : "view";
+
+  // ─── Camera (pan) + gesture overlay state ────────────────────────────
+  // (Hooks live above the code-view early return — rules of hooks.)
+  //
+  // The artboard's position is a CAMERA: `translate(pan) · scale(zoom)`.
+  // The first cut panned by writing the scroller's scrollLeft/Top, which
+  // was dead on arrival twice over — Fit mode has no scroll range at
+  // all, and a centred flex layout puts half the overflow past the
+  // unreachable left/top edge. A translate-based camera has neither
+  // problem, and it gives the canvas a real (bounded) coordinate
+  // system: pan is clamped to the artboard overflow plus a fixed slack,
+  // so it stays a finite canvas — you can nudge the artboard around,
+  // not lose it in infinite space. Pan resets when Fit re-frames.
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const panRef = useRef<{
+    id: number;
+    x: number;
+    y: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const [panning, setPanning] = useState(false);
+
+  // Space-hold quick-pan (Interact mode only — Design pans on plain
+  // drag). Window-level so it works regardless of focus position;
+  // guarded against typing surfaces. Released on blur so cmd-tabbing
+  // away never wedges the overlay on.
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  useEffect(() => {
+    if (interactionMode !== "interact" || view !== "preview") {
+      setSpaceHeld(false);
+      return;
+    }
+    const down = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || e.repeat) return;
+      const t = e.target as HTMLElement | null;
+      if (t) {
+        if (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+        if (t.isContentEditable) return;
+      }
+      e.preventDefault(); // stop page-scroll-on-space
+      setSpaceHeld(true);
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.code === "Space") setSpaceHeld(false);
+    };
+    const blur = () => setSpaceHeld(false);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
+    };
+  }, [interactionMode, view]);
+
+  // Pan is available whenever the overlay shows a hand. (overlayOn is
+  // derived below the camera session — it also covers gesture flags.)
+  const panEnabled = interactionMode === "design" || spaceHeld;
+
+  // Clamp the camera with the Figma rule: the artboard can be pushed
+  // almost entirely off-canvas, as long as at least PAN_KEEP_VISIBLE px
+  // of it stays on screen on each axis — so you can park it in a
+  // corner, but never lose it. (The earlier overflow+slack box was much
+  // tighter, which is why pinching near the edges kept hitting the
+  // wall.) Measured against the container the camera lives in (the
+  // same element the fit math measures).
+  const PAN_KEEP_VISIBLE = 48;
+  const clampPan = useCallback(
+    (p: { x: number; y: number }, zoomOverride?: number) => {
+      const el = containerRef.current;
+      const z = zoomOverride ?? zoom;
+      const scaledW = (artboardSize?.w ?? 0) * z;
+      const scaledH = (artboardSize?.h ?? 0) * z;
+      const cw = el?.clientWidth ?? 0;
+      const ch = el?.clientHeight ?? 0;
+      // |pan| ≤ (artboard + canvas)/2 − keep-visible: at the limit the
+      // artboard's trailing edge sits keep-visible px inside the
+      // opposite canvas edge.
+      const maxX = Math.max(0, (scaledW + cw) / 2 - PAN_KEEP_VISIBLE);
+      const maxY = Math.max(0, (scaledH + ch) / 2 - PAN_KEEP_VISIBLE);
+      return {
+        x: Math.min(maxX, Math.max(-maxX, p.x)),
+        y: Math.min(maxY, Math.max(-maxY, p.y)),
+      };
+    },
+    [artboardSize?.w, artboardSize?.h, zoom],
+  );
+
+  // Fit re-frames the artboard — the camera comes home with it.
+  useEffect(() => {
+    if (fitMode) setPan({ x: 0, y: 0 });
+  }, [fitMode]);
+  // Re-clamp when zoom/artboard changes shrink the legal pan range
+  // (zooming out with the artboard flung to a corner would otherwise
+  // strand it past the new bounds). Returns the SAME reference when
+  // already in bounds — without that bail this effect re-rendered the
+  // whole canvas a second time on every zoom change (it reads
+  // clientWidth too, forcing layout), which was a real chunk of the
+  // pinch slowness.
+  useEffect(() => {
+    setPan((p) => {
+      const c = clampPan(p);
+      return c.x === p.x && c.y === p.y ? p : c;
+    });
+  }, [clampPan]);
+
+  // ─── Imperative camera session (the perf-critical path) ─────────────
+  //
+  // Pinch and drag do NOT go through React per frame. The zoom state
+  // lives at the top of StudioCanvas, so a setState per tick re-renders
+  // the entire canvas tree (brutal in dev builds) and the wrapper's
+  // width/height changes force layout — that's the "very slow pinch".
+  //
+  // Instead, a gesture opens a SESSION: we snapshot the camera (zoom,
+  // pan, wrapper rect), then write `translate(...) scale(k)` straight
+  // onto the wrapper element each frame — compositor-only work, no
+  // React, no layout. The content rasters at its starting scale and
+  // momentarily softens at high k (exactly what Figma does), then the
+  // session COMMITS once on settle (pinch: 180ms idle; drag: pointer
+  // up): one setPan + one zoomBy, one React render, crisp re-raster.
+  //
+  // Anchoring (zoom-to-cursor) falls out cleanly: with transform-origin
+  // pinned to the wrapper's top-left, the visual origin is
+  // O = rect0 + d, and keeping pointer P fixed under a factor f is
+  //     d += (O − P)·(f − 1).
+  //
+  // All functions are latest-render closures stored in refs so the
+  // once-attached listeners (wheel, message, timers) never go stale.
+  const cameraRef = useRef<HTMLDivElement | null>(null);
+  interface CameraSession {
+    baseZoom: number;
+    basePan: { x: number; y: number };
+    /** Wrapper's viewport top-left at session start (pre-gesture). */
+    rect0: { x: number; y: number };
+    /** Accumulated extra scale on top of baseZoom. */
+    k: number;
+    /** Accumulated visual translation on top of basePan. */
+    d: { x: number; y: number };
+    el: HTMLElement;
+    idleTimer: number | null;
+  }
+  const sessionRef = useRef<CameraSession | null>(null);
+  const [imperativeGesturing, setImperativeGesturing] = useState(false);
+
+  const applySession = (s: CameraSession) => {
+    s.el.style.transition = "none";
+    s.el.style.transformOrigin = "0 0";
+    s.el.style.transform = `translate(${s.basePan.x + s.d.x}px, ${
+      s.basePan.y + s.d.y
+    }px) scale(${s.k})`;
+  };
+
+  const ensureSessionRef = useRef<() => CameraSession | null>(() => null);
+  ensureSessionRef.current = () => {
+    if (sessionRef.current) return sessionRef.current;
+    const el = cameraRef.current;
+    if (!el || !device) return null;
+    const rect = el.getBoundingClientRect();
+    sessionRef.current = {
+      baseZoom: zoom,
+      basePan: { ...pan },
+      rect0: { x: rect.left, y: rect.top },
+      k: 1,
+      d: { x: 0, y: 0 },
+      el,
+      idleTimer: null,
+    };
+    setImperativeGesturing(true);
+    return sessionRef.current;
+  };
+
+  // Session-space clamp. The clampPan bounds are defined on the
+  // COMMITTED pan space (centred layout at the final zoom), which
+  // differs from the session's `d` space by the centering shift
+  // w·z0·(k−1)/2 (the layout origin moves as the wrapper resizes on
+  // commit). Every in-session mutation clamps through this SAME
+  // mapping the commit uses, so the commit's clamp is a guaranteed
+  // no-op — the settle frame is pixel-identical to the last gesture
+  // frame (this was the "slight adjustment on release" jank: pinch
+  // didn't clamp at all, then the commit snapped the camera back into
+  // bounds).
+  const centeringShift = (s: CameraSession, k: number) => ({
+    x: ((device?.w ?? 0) * s.baseZoom * (k - 1)) / 2,
+    y: ((device?.h ?? 0) * s.baseZoom * (k - 1)) / 2,
+  });
+  const clampSessionD = (
+    s: CameraSession,
+    d: { x: number; y: number },
+    k: number,
+  ) => {
+    const shift = centeringShift(s, k);
+    const committed = clampPan(
+      { x: s.basePan.x + d.x + shift.x, y: s.basePan.y + d.y + shift.y },
+      s.baseZoom * k,
+    );
+    return {
+      x: committed.x - shift.x - s.basePan.x,
+      y: committed.y - shift.y - s.basePan.y,
+    };
+  };
+
+  const commitSessionRef = useRef<() => void>(() => {});
+  commitSessionRef.current = () => {
+    const s = sessionRef.current;
+    if (!s) return;
+    sessionRef.current = null;
+    if (s.idleTimer !== null) window.clearTimeout(s.idleTimer);
+    const z2 = s.baseZoom * s.k;
+    // Same mapping as clampSessionD — in-session clamping guarantees
+    // this clamp changes nothing; it stays only as a safety net. We
+    // deliberately do NOT clear the inline styles — React's render
+    // overwrites transform/transition in the same commit, so clearing
+    // first would flash one unstyled frame.
+    const shift = centeringShift(s, s.k);
+    const finalPan = clampPan(
+      {
+        x: s.basePan.x + s.d.x + shift.x,
+        y: s.basePan.y + s.d.y + shift.y,
+      },
+      z2,
+    );
+    setPan(finalPan);
+    if (s.k !== 1 && onZoomBy) onZoomBy(s.k);
+    setImperativeGesturing(false);
+  };
+
+  /** One pinch step inside the session. factor multiplies the current
+   *  visual scale; anchor (when present) stays fixed under the cursor. */
+  const pinchSessionRef = useRef<
+    (factor: number, anchor: { kind: "client" | "iframe"; x: number; y: number } | null) => void
+  >(() => {});
+  pinchSessionRef.current = (factor, anchor) => {
+    if (!onZoomBy) return;
+    const s = ensureSessionRef.current();
+    if (!s) {
+      // No camera (responsive fill) — plain zoom, still one state
+      // update per frame via the rAF queue.
+      onZoomBy(factor);
+      return;
+    }
+    const cur = s.baseZoom * s.k;
+    const target = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, cur * factor));
+    const f = target / cur;
+    if (f !== 1 && anchor) {
+      const O = { x: s.rect0.x + s.d.x, y: s.rect0.y + s.d.y };
+      // Iframe-forwarded anchors are iframe-local CSS px; the iframe's
+      // visual scale is the session's CURRENT scale.
+      const P =
+        anchor.kind === "client"
+          ? { x: anchor.x, y: anchor.y }
+          : { x: O.x + anchor.x * cur, y: O.y + anchor.y * cur };
+      s.d = {
+        x: s.d.x + (O.x - P.x) * (f - 1),
+        y: s.d.y + (O.y - P.y) * (f - 1),
+      };
+    }
+    s.k *= f;
+    // Clamp IN-SESSION through the same mapping the commit uses — the
+    // live gesture hits exactly the wall the commit would enforce, so
+    // releasing at the bounds never snaps (the "jank near the edges").
+    s.d = clampSessionD(s, s.d, s.k);
+    applySession(s);
+    // Settle heuristic — wheel pinches have no end event.
+    if (s.idleTimer !== null) window.clearTimeout(s.idleTimer);
+    s.idleTimer = window.setTimeout(() => commitSessionRef.current(), 180);
+  };
+
+  // Wheel-pan goes through the session too (no React per tick).
+  const panSessionByRef = useRef<(dx: number, dy: number) => void>(() => {});
+  panSessionByRef.current = (dx, dy) => {
+    const s = ensureSessionRef.current();
+    if (!s) return;
+    s.d = clampSessionD(s, { x: s.d.x + dx, y: s.d.y + dy }, s.k);
+    applySession(s);
+    if (s.idleTimer !== null) window.clearTimeout(s.idleTimer);
+    s.idleTimer = window.setTimeout(() => commitSessionRef.current(), 180);
+  };
+
+  // Re-assert the session's inline transform after ANY React render —
+  // unrelated state changes (panning cursor, fill chips, streaming)
+  // re-apply the style prop and would otherwise snap the wrapper back
+  // to the stale React camera mid-gesture.
+  useEffect(() => {
+    const s = sessionRef.current;
+    if (s) applySession(s);
+  });
+  useEffect(
+    () => () => {
+      const s = sessionRef.current;
+      if (s?.idleTimer != null) window.clearTimeout(s.idleTimer);
+      sessionRef.current = null;
+    },
+    [],
+  );
+
+  // Drag-pan — same session, explicit lifecycle (pointer up commits).
+  const beginPan = (e: React.PointerEvent<HTMLElement>) => {
+    const s = ensureSessionRef.current();
+    if (!s) return;
+    if (s.idleTimer !== null) {
+      window.clearTimeout(s.idleTimer);
+      s.idleTimer = null;
+    }
+    panRef.current = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      startX: s.d.x,
+      startY: s.d.y,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setPanning(true);
+  };
+  const movePan = (e: React.PointerEvent<HTMLElement>) => {
+    const p = panRef.current;
+    const s = sessionRef.current;
+    if (!p || !s || e.pointerId !== p.id) return;
+    s.d = clampSessionD(
+      s,
+      {
+        x: p.startX + (e.clientX - p.x),
+        y: p.startY + (e.clientY - p.y),
+      },
+      s.k,
+    );
+    applySession(s);
+  };
+  const endPan = (e: React.PointerEvent<HTMLElement>) => {
+    if (panRef.current?.id !== e.pointerId) return;
+    panRef.current = null;
+    setPanning(false);
+    commitSessionRef.current();
+  };
+
+  // The overlay shows for hand-pan modes AND while any gesture (React
+  // `gesturing` flag or an open imperative session) is in flight, so a
+  // pinch never clicks/hovers the live app.
+  const overlayOn = panEnabled || gesturing || imperativeGesturing;
+
+  // Gesture coalescing — trackpads emit wheel at 120Hz+, and applying
+  // every tick means a forced layout (getBoundingClientRect) plus a
+  // whole-canvas React re-render PER EVENT, which is what makes pinch
+  // feel treacly. Instead: multiply the factors together, keep the
+  // freshest anchor, and apply ONCE per animation frame. Zoom factors
+  // compose multiplicatively so this is lossless — the result after a
+  // frame's worth of ticks is identical, just computed once.
+  const gestureAccRef = useRef<{
+    factor: number;
+    anchor: { kind: "client" | "iframe"; x: number; y: number } | null;
+    raf: number | null;
+  }>({ factor: 1, anchor: null, raf: null });
+  const queueGesture = useCallback(
+    (
+      factor: number,
+      anchor: { kind: "client" | "iframe"; x: number; y: number } | null,
+    ) => {
+      const acc = gestureAccRef.current;
+      acc.factor *= factor;
+      if (anchor) acc.anchor = anchor;
+      if (acc.raf !== null) return;
+      acc.raf = requestAnimationFrame(() => {
+        const f = acc.factor;
+        const a = acc.anchor;
+        acc.factor = 1;
+        acc.anchor = null;
+        acc.raf = null;
+        if (f !== 1) pinchSessionRef.current(f, a);
+      });
+    },
+    [],
+  );
+  useEffect(
+    () => () => {
+      if (gestureAccRef.current.raf !== null)
+        cancelAnimationFrame(gestureAccRef.current.raf);
+    },
+    [],
+  );
+
+  // Parent-side pinch / ctrl+wheel — anywhere over the canvas area
+  // (padding, dot grid, the artboard frame). Non-passive so
+  // preventDefault can stop the browser's own page zoom.
+  //
+  // MUST be attached to the OUTER wrapper (the overlay's ancestor),
+  // not the inner container. The gesture overlay mounts as the inner
+  // container's SIBLING the moment a gesture starts — with the
+  // listener on the inner container, every wheel event after the
+  // first tick hit the overlay, bubbled PAST the container, and died
+  // at the page-level pinch guard. Net effect: roughly one zoom tick
+  // per settle window — the "very slow zoom" bug. The element arrives
+  // via state (not a plain ref) so this effect re-runs when the
+  // preview tree actually mounts.
+  const [outerEl, setOuterEl] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!onZoomBy || view !== "preview" || !outerEl) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      queueGesture(Math.exp(-e.deltaY * 0.01), {
+        kind: "client",
+        x: e.clientX,
+        y: e.clientY,
+      });
+    };
+    outerEl.addEventListener("wheel", onWheel, { passive: false });
+    return () => outerEl.removeEventListener("wheel", onWheel);
+  }, [onZoomBy, view, queueGesture, outerEl]);
+
+  // Iframe-side pinch — the sandbox agent forwards ctrl+wheel as
+  // `grade:zoom-gesture` with the pointer's iframe-local coords. Only
+  // the FOCUSED frame's gestures count (grid tiles run the same
+  // agent); source-check against this mount's iframe.
+  useEffect(() => {
+    if (!onZoomBy || view !== "preview") return;
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data as {
+        type?: string;
+        deltaY?: number;
+        clientX?: number;
+        clientY?: number;
+      } | null;
+      if (!data || data.type !== "grade:zoom-gesture") return;
+      if (typeof data.deltaY !== "number") return;
+      const container = document.querySelector<HTMLElement>(
+        "[data-grade-focused-frame]",
+      );
+      const win = container?.querySelector("iframe")?.contentWindow;
+      if (!win || e.source !== win) return;
+      const anchor =
+        typeof data.clientX === "number" && typeof data.clientY === "number"
+          ? { kind: "iframe" as const, x: data.clientX, y: data.clientY }
+          : null;
+      queueGesture(Math.exp(-data.deltaY * 0.01), anchor);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [onZoomBy, view, queueGesture]);
 
   if (view === "code") {
     // GradePayloadPanel wraps the Code view with a JSX|JSON segmented
@@ -672,29 +1167,27 @@ export function FocusedFastMount({
   // dot-grid canvas, scaled by `zoom` (Fit by default, so nothing ever
   // overflows a laptop / iPad column). Fit math lives in
   // useArtboardZoom up in StudioCanvas; this component just applies
-  // the scale.
-  const isResponsive = viewportWidth === "responsive";
-  // Prefer the resolved artboard from the hook (device presets and the
-  // responsive content-height artboard both come through it); fall back
-  // to the static preset map for callers without zoom wiring. Responsive
-  // WITHOUT a content artboard = the page fits the column → plain fill.
-  const device =
-    artboardSize ??
-    (isResponsive ? undefined : ARTBOARD_DEVICE_SIZES[viewportWidth]);
+  // the scale. (`device` itself is computed up in the hooks section —
+  // the anchored-zoom handler needs it.)
 
   // Overshoot-and-settle transition on DELIBERATE zoom picks only
   // (same curve as the share view; snapping back to 100% gets a
   // subtler one). In Fit mode the scale is recomputed continuously
   // while the browser resizes — animating those recalcs makes the
   // artboard spring-chase the window ("bouncing"), so Fit tracks
-  // instantly instead.
-  const zoomTransition = fitMode
-    ? "box-shadow 220ms ease"
-    : `transform 340ms ${
-        zoom === 1
-          ? "cubic-bezier(0.33, 1.08, 0.68, 1)"
-          : "cubic-bezier(0.33, 1.25, 0.68, 1)"
-      }, box-shadow 220ms ease`;
+  // instantly instead. Same rule during a continuous GESTURE
+  // (pinch / slider drag): each tick is a new transform target, and
+  // easing toward a moving target from a corner/edge transform origin
+  // reads as a sideways "swoop" — gestures track raw, the overshoot
+  // is reserved for single deliberate picks.
+  const zoomTransition =
+    fitMode || gesturing
+      ? "box-shadow 220ms ease"
+      : `transform 340ms ${
+          zoom === 1
+            ? "cubic-bezier(0.33, 1.08, 0.68, 1)"
+            : "cubic-bezier(0.33, 1.25, 0.68, 1)"
+        }, box-shadow 220ms ease`;
 
   const host = canRender ? (
     <FastIframeHost
@@ -715,6 +1208,7 @@ export function FocusedFastMount({
       onCommentPinClick={onCommentPinClick}
       getCommentUser={getCommentUser}
       onContentHeight={onContentHeight}
+      onTrySandpack={onTrySandpack}
       className={cn(
         "block",
         // Edge treatment when framed as a device, or sitting "in
@@ -755,23 +1249,37 @@ export function FocusedFastMount({
       // MUST be the stable outer wrapper, NOT the overflow:auto
       // scroller below — measuring the scroller couples fit to
       // scrollbar appearance and oscillates (see the matching note in
-      // use-artboard-zoom.ts).
-      ref={zoomCanvasRef}
+      // use-artboard-zoom.ts). Also the pinch listener's home (via
+      // setOuterEl) — it must sit ABOVE the gesture overlay in the
+      // tree; see the wheel-listener effect.
+      ref={(el) => {
+        setOuterEl(el);
+        zoomCanvasRef?.(el);
+      }}
       className="relative h-full w-full overflow-hidden"
     >
     <div
+      ref={containerRef}
       data-lenis-prevent
       className="h-full w-full"
+      onWheel={(e) => {
+        // Wheel = camera pan whenever an artboard is framed. ctrl/meta
+        // wheel is the pinch path (handled by the session listeners);
+        // non-framed responsive fill has no camera — the app inside the
+        // iframe owns scrolling there. Goes through the imperative
+        // session: DOM-direct, no React per tick.
+        if (!device) return;
+        if (e.ctrlKey || e.metaKey) return;
+        panSessionByRef.current(-e.deltaX, -e.deltaY);
+      }}
       style={{
-        // Fit mode guarantees the artboard fits — no scrollbars by
-        // definition. Allowing overflow:auto there lets a sub-pixel
-        // rounding overflow toggle the vertical scrollbar during
-        // scale recalcs, which steals ~15px of width and shifts the
-        // centred artboard sideways every tick (the horizontal
-        // "jiggle"). stable both-edges keeps centring symmetric in
-        // the manual-zoom modes where scrolling is legitimate.
-        overflow: fitMode ? "hidden" : "auto",
-        scrollbarGutter: fitMode ? undefined : "stable both-edges",
+        // The artboard is positioned by the translate camera, not by
+        // scrolling — overflow stays hidden whenever a device artboard
+        // is framed (no scrollbars, no unreachable centred overflow;
+        // the old scroll-based pan couldn't reach the left/top half).
+        // Non-framed responsive fill keeps the legacy behaviour.
+        overflow: device || fitMode ? "hidden" : "auto",
+        scrollbarGutter: device || fitMode ? undefined : "stable both-edges",
         overscrollBehavior: "contain",
         // Canvas treatment whenever an artboard is framed — device
         // preset OR the responsive content-height artboard.
@@ -794,35 +1302,102 @@ export function FocusedFastMount({
       )}
 
       {device ? (
-        // Top-aligned + padded so a tall artboard at 100% scrolls
-        // naturally from the top rather than being clipped by vertical
-        // centring; a fitted artboard just sits centred near the top.
-        <div className="flex min-h-full w-full items-start justify-center p-8">
+        // Centred on BOTH axes — the camera's home (pan 0,0) is the
+        // true centre of the canvas. The old top-aligned layout existed
+        // for native scrolling, which the translate camera replaced;
+        // h-full (not min-h-full) keeps the flex box pinned to the
+        // canvas so an oversized artboard overflows symmetrically —
+        // the same maths as justify-center on x, which is what lets
+        // centeringShift treat both axes uniformly.
+        <div
+          className="flex h-full w-full items-center justify-center p-8"
+          // Middle-mouse drag pans even in Interact mode without the
+          // overlay — it only works while the pointer is over canvas
+          // chrome (the iframe swallows it elsewhere), but it's free.
+          onPointerDown={(e) => {
+            if (e.button !== 1) return;
+            e.preventDefault();
+            beginPan(e);
+          }}
+          onPointerMove={movePan}
+          onPointerUp={endPan}
+          onPointerCancel={endPan}
+        >
           {/* Sized to the SCALED artboard. transform doesn't affect
               layout, so without this the layout box would stay at the
               unscaled w×h and leave phantom scroll space below a
               fitted artboard. */}
           <div
-            className="shrink-0"
+            ref={cameraRef}
+            className="relative shrink-0"
             style={{
               width: device.w * zoom,
               height: device.h * zoom,
+              // The CAMERA — drag/wheel pan moves this translate;
+              // (0,0) is the flex-centred home position, bounds come
+              // from clampPan. Lives on the sized wrapper so the
+              // iframe's own scale transform stays untouched.
+              transform: `translate(${pan.x}px, ${pan.y}px)`,
               // Match the transform's animation exactly — a wrapper
               // easing differently from the iframe's scale reads as
-              // wobble. None in Fit mode (instant tracking), the same
-              // duration/curve as zoomTransition otherwise.
-              transition: fitMode
-                ? undefined
-                : "width 340ms ease, height 340ms ease",
+              // wobble. None in Fit mode (instant tracking), during a
+              // zoom gesture, or while panning (1:1 drag tracking);
+              // the same duration/curve as zoomTransition otherwise.
+              transition:
+                fitMode || gesturing || panning
+                  ? undefined
+                  : "width 340ms ease, height 340ms ease, transform 340ms ease",
             }}
           >
             {host}
+            {/* Pixel grid removed (2026-06-04) while pinch perf is
+                being tuned — it was a per-frame repaint suspect and
+                wasn't visible enough to earn its keep. Reintroduce as
+                a session-aware overlay (sized once per commit, not per
+                gesture frame) if pixel inspection comes back. */}
           </div>
         </div>
       ) : (
-        <div className="flex h-full w-full">{host}</div>
+        <div className="relative flex h-full w-full">{host}</div>
       )}
     </div>
+
+    {/* Gesture / pan overlay — sits over the scroller (and therefore
+        the live iframe). Three reasons to be up:
+          1. Design mode      → hand cursor, plain drag pans.
+          2. Space held       → same, temporarily (Interact quick-pan).
+          3. Zoom gesture     → transparent pointer shield only, so a
+             pinch never clicks/hovers/scrolls the app mid-zoom. It
+             drops ~180ms after the last tick and the screen is live
+             again.
+        While up, ctrl/meta+wheel bubbles to the OUTER wrapper where
+        the session's pinch listener lives (the overlay is its
+        descendant, so no events are lost — see the wheel-listener
+        effect), and plain wheel feeds the camera pan. */}
+    {view === "preview" && overlayOn && (
+      <div
+        data-gds-part="canvas-gesture-overlay"
+        className="absolute inset-0 z-30"
+        style={{
+          cursor: panEnabled ? (panning ? "grabbing" : "grab") : undefined,
+          touchAction: "none",
+        }}
+        onPointerDown={(e) => {
+          if (!panEnabled) return;
+          if (e.button !== 0 && e.button !== 1) return;
+          e.preventDefault();
+          beginPan(e);
+        }}
+        onPointerMove={movePan}
+        onPointerUp={endPan}
+        onPointerCancel={endPan}
+        onWheel={(e) => {
+          if (e.ctrlKey || e.metaKey) return; // pinch — handled upstream
+          if (!device) return; // no camera without a framed artboard
+          panSessionByRef.current(-e.deltaX, -e.deltaY);
+        }}
+      />
+    )}
     </div>
   );
 }

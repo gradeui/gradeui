@@ -70,9 +70,11 @@ import type {
   ProjectSnapshot,
   ScreenRevision,
   ShareLink,
+  ShareViewportSpec,
   StudioEvent,
   StudioStorage,
 } from "./types";
+import { SHARE_VIEWPORT_PRESETS } from "./types";
 
 /** Public bucket holding user assets (migration 0014). Public so the
  *  permanent getPublicUrl works in screens + shares without signing. */
@@ -330,13 +332,24 @@ interface ShareLinkRow {
   revision_id: string | null;
   mode: "view" | "comment";
   color_mode: "light" | "dark";
-  viewport: "responsive" | "mobile" | "tablet" | "desktop";
+  /** Spec-model viewport doc — see migration 0017 + ShareViewportSpec. */
+  viewports: { initialId?: string; specs?: ShareViewportSpec[] } | null;
   created_by: string | null;
   revoked: boolean;
   expires_at: number | null;
   created_at: number;
 }
 function rowToShareLink(r: ShareLinkRow): ShareLink {
+  // The column is NOT NULL with a preset default, so a missing/empty
+  // doc only happens on hand-edited rows — fall back to the presets.
+  const docSpecs = r.viewports?.specs;
+  const viewports =
+    docSpecs && docSpecs.length > 0 ? docSpecs : SHARE_VIEWPORT_PRESETS;
+  const initialViewportId =
+    r.viewports?.initialId &&
+    viewports.some((s) => s.id === r.viewports?.initialId)
+      ? r.viewports.initialId
+      : viewports[0].id;
   return {
     token: r.token,
     projectId: r.project_id,
@@ -344,7 +357,8 @@ function rowToShareLink(r: ShareLinkRow): ShareLink {
     revisionId: r.revision_id ?? undefined,
     mode: r.mode,
     colorMode: r.color_mode,
-    viewport: r.viewport ?? "responsive",
+    viewports,
+    initialViewportId,
     createdBy: r.created_by ?? undefined,
     revoked: r.revoked,
     expiresAt: r.expires_at ?? undefined,
@@ -353,7 +367,7 @@ function rowToShareLink(r: ShareLinkRow): ShareLink {
 }
 
 const SHARE_LINK_COLS =
-  "token, project_id, design_id, revision_id, mode, color_mode, viewport, created_by, revoked, expires_at, created_at";
+  "token, project_id, design_id, revision_id, mode, color_mode, viewports, created_by, revoked, expires_at, created_at";
 
 interface NoteRow {
   project_id: string;
@@ -912,10 +926,22 @@ export class SupabaseStudioStorage implements StudioStorage {
     designId: string;
     mode?: "view" | "comment";
     colorMode?: "light" | "dark";
-    viewport?: "responsive" | "mobile" | "tablet" | "desktop";
+    viewports?: { initialId: string; specs: ShareViewportSpec[] };
     revisionId?: string;
   }): Promise<ShareLink> {
     const { data: userData } = await this.supabase.auth.getUser();
+
+    // Invariants: never empty (default = the four presets), initial
+    // always a member (clamp to the first spec — the caller's set is
+    // the truth, the initial is just where the share opens).
+    let doc =
+      input.viewports && input.viewports.specs.length > 0
+        ? input.viewports
+        : { initialId: "responsive", specs: SHARE_VIEWPORT_PRESETS };
+    if (!doc.specs.some((s) => s.id === doc.initialId)) {
+      doc = { ...doc, initialId: doc.specs[0].id };
+    }
+
     const { data, error } = await this.supabase
       .from("share_links")
       .insert({
@@ -923,7 +949,7 @@ export class SupabaseStudioStorage implements StudioStorage {
         design_id: input.designId,
         mode: input.mode ?? "view",
         color_mode: input.colorMode ?? "light",
-        viewport: input.viewport ?? "responsive",
+        viewports: doc,
         revision_id: input.revisionId ?? null,
         created_by: userData.user?.id ?? null,
       })

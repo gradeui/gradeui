@@ -30,9 +30,21 @@
  */
 
 import * as React from "react";
-import { Layers, MessageSquare, Palette, Sun, Moon } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Layers,
+  MessageSquare,
+  Palette,
+  Sun,
+  Moon,
+} from "lucide-react";
 
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Tabs,
   TabsContent,
   TabsList,
@@ -44,6 +56,8 @@ import {
 import type { StudioSelection } from "@/lib/chat-sandpack";
 import type { DesignStatus } from "@/lib/studio-designs";
 import { cn } from "@/lib/utils";
+import { useMaybeGradeTheme } from "@/components/grade-theme-provider";
+import { cloneInput } from "@/lib/studio-state";
 import {
   Section,
   Label,
@@ -51,8 +65,10 @@ import {
   HueRow,
   FontRow,
   useThemeBuilder,
+  useMaybeThemeBuilder,
 } from "@/components/theme-builder";
 import {
+  type GeneratedTheme,
   type ThemeInput,
   type ColorIntensity,
   type RadiusStyle,
@@ -68,13 +84,27 @@ import { ThemePickerSection } from "./theme-picker-section";
 
 export type TabId = "layout" | "theme" | "comments";
 
+/**
+ * INTERIM: the full Theme tab (picker list + builder controls) is
+ * hidden — the experience isn't demo-quality yet (see "Theme selector
+ * — interim state" in STUDIO.md). In its place, a compact dropdown
+ * (same treatment as the share view's theme menu in shared-screen.tsx)
+ * sits at the top of the panel. Flip this flag to bring the full tab
+ * back while it's being redesigned.
+ */
+const SHOW_THEME_TAB = false;
+
 // SVG sizing is owned by the package — TabsTrigger applies
 // `[&_svg]:size-3.5` to all icon children. No per-call sizes here.
-const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+const ALL_TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "layout", label: "Layout", icon: <Layers /> },
   { id: "theme", label: "Theme", icon: <Palette /> },
   { id: "comments", label: "Comments", icon: <MessageSquare /> },
 ];
+
+const TABS = SHOW_THEME_TAB
+  ? ALL_TABS
+  : ALL_TABS.filter((t) => t.id !== "theme");
 
 export interface StudioRightTabsProps {
   appSource: string | null;
@@ -151,7 +181,11 @@ export function StudioRightTabs({
           inside the card edge. `w-full` on the list + `flex-1` on
           each trigger spreads them across the column rather than
           letting the pill auto-size to its content. */}
-      <div className="p-2 shrink-0">
+      <div className="p-2 shrink-0 space-y-2">
+        {/* INTERIM theme selector — the share view's compact dropdown,
+            sitting above the tabs while the full Theme tab is hidden.
+            See the SHOW_THEME_TAB note above. */}
+        {!SHOW_THEME_TAB && <ThemeDropdown />}
         <TabsList className="w-full">
           {TABS.map((t) => (
             <TabsTrigger key={t.id} value={t.id} className="flex-1">
@@ -183,12 +217,14 @@ export function StudioRightTabs({
           onStatusChange={onStatusChange ?? (() => {})}
         />
       </TabsContent>
-      <TabsContent
-        value="theme"
-        className="flex-1 min-h-0 overflow-hidden"
-      >
-        <ThemeTabContent />
-      </TabsContent>
+      {SHOW_THEME_TAB && (
+        <TabsContent
+          value="theme"
+          className="flex-1 min-h-0 overflow-hidden"
+        >
+          <ThemeTabContent />
+        </TabsContent>
+      )}
       <TabsContent
         value="comments"
         className="flex-1 min-h-0 overflow-hidden"
@@ -196,6 +232,88 @@ export function StudioRightTabs({
         {commentsContent}
       </TabsContent>
     </Tabs>
+  );
+}
+
+/** Mini swatch for the theme dropdown — same treatment as the share
+ *  view's menu (shared-screen.tsx): BRAND colours only (primary +
+ *  accent), no neutral stop, which made every chip read muted. */
+function ThemeSwatch({ theme }: { theme: GeneratedTheme }) {
+  return (
+    <span
+      className="flex h-4 shrink-0 items-center overflow-hidden rounded-sm border border-border/60"
+      aria-hidden
+    >
+      <span
+        className="h-full w-2.5"
+        style={{ background: `oklch(${theme.ramps.primary[600]})` }}
+      />
+      <span
+        className="h-full w-2.5"
+        style={{ background: `oklch(${theme.ramps.accent[500]})` }}
+      />
+    </span>
+  );
+}
+
+/**
+ * ThemeDropdown — the INTERIM screen-theme selector. A direct port of
+ * the share view's compact theme menu, wired to the page-level
+ * ThemeBuilderProvider the same way ThemePickerSection is: picking a
+ * theme rebases the builder draft, so only the previewed screens
+ * re-skin — the docs chrome stays put.
+ *
+ * Renders nothing if either provider is missing — safe in any host.
+ * This replaces the hidden Theme tab until the theme experience gets
+ * its proper design pass (see SHOW_THEME_TAB above + STUDIO.md).
+ */
+function ThemeDropdown() {
+  const grade = useMaybeGradeTheme();
+  const builder = useMaybeThemeBuilder();
+
+  if (!grade || !builder) return null;
+
+  const { themes } = grade;
+  const activeBaselineId = builder.input.id;
+  const activeTheme =
+    themes.find((t) => t.id === activeBaselineId) ?? themes[0];
+  if (!activeTheme) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          title="Screen theme — applies to screens, not the docs chrome"
+          className="flex h-7 w-full items-center gap-1.5 rounded-md border border-border/60 px-2 text-xs text-foreground transition hover:bg-foreground/10"
+        >
+          <Palette className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <ThemeSwatch theme={activeTheme} />
+          <span className="flex-1 min-w-0 truncate text-left">
+            {activeTheme.name}
+          </span>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="z-[80] max-h-[60vh] w-52 overflow-y-auto"
+      >
+        {themes.map((t) => (
+          <DropdownMenuItem
+            key={t.id}
+            onClick={() => builder.rebase(cloneInput(t.input))}
+            className="gap-2"
+          >
+            <ThemeSwatch theme={t} />
+            <span className="flex-1 truncate">{t.name}</span>
+            {t.id === activeBaselineId && (
+              <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

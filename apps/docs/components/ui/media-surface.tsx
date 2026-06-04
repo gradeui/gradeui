@@ -286,6 +286,11 @@ declare global {
   interface Window {
     __gradeMediaUrls?: MediaUrlMap;
     __gradeMediaOverrides?: MediaOverrideMap;
+    /** Source-keys with a Fill request currently in flight. Stamped by
+     *  the sandbox agent on `grade:set-media-pending`; drives the
+     *  placeholder's Presence shimmer (gds-aura-shimmer) so slots read
+     *  as "being generated" rather than inert while the resolver works. */
+    __gradeMediaPending?: Record<string, true>;
   }
 }
 function useResolvedSrc(source: MediaSource | undefined): string | undefined {
@@ -307,6 +312,32 @@ function useResolvedSrc(source: MediaSource | undefined): string | undefined {
   }, [version]);
   if (!key || typeof window === "undefined") return undefined;
   return window.__gradeMediaUrls?.[key];
+}
+
+/**
+ * Fill-in-flight flag for this surface's sourceKey. Mirrors the
+ * useResolvedSrc plumbing: the canvas posts `grade:set-media-pending`
+ * into the iframe before it hits `/api/media/resolve-batch`, the
+ * sandbox agent stamps `window.__gradeMediaPending` and dispatches
+ * `grade:media-pending-updated`, and this hook re-renders the surface.
+ * The canvas clears the map (posts `pending: []` replace) in its
+ * `finally` block, so an error never strands a slot mid-shimmer.
+ */
+function useFillPending(source: MediaSource | undefined): boolean {
+  const key = sourceKeyFor(source);
+  const [version, setVersion] = React.useState(0);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => setVersion((n) => n + 1);
+    window.addEventListener("grade:media-pending-updated", handler);
+    return () =>
+      window.removeEventListener("grade:media-pending-updated", handler);
+  }, []);
+  React.useEffect(() => {
+    // see useResolvedSrc — same dep-array trick to keep StrictMode quiet.
+  }, [version]);
+  if (!key || typeof window === "undefined") return false;
+  return Boolean(window.__gradeMediaPending?.[key]);
 }
 
 /**
@@ -581,6 +612,13 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
     }, [candidateSrc]);
     const effectiveSrc = imgErrored ? undefined : candidateSrc;
 
+    // Fill-in-flight → Presence shimmer on the placeholder. Only while a
+    // resolve is actually pending AND the slot is still unfilled — once
+    // the URL lands in the JSX (or via the legacy URL map) the image
+    // layer covers the placeholder and the sweep stops being visible,
+    // and the canvas clears the pending map anyway.
+    const fillPending = useFillPending(source) && !effectiveSrc;
+
     return (
       <div
         ref={innerRef}
@@ -625,10 +663,29 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
           <div
             data-gds-part="media-surface-placeholder"
             data-tier={tier}
-            className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 pointer-events-none px-3 text-center"
+            data-fill-pending={fillPending || undefined}
+            className={cn(
+              "absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 pointer-events-none px-3 text-center",
+              // Presence shimmer (diagonal sweep) while a Fill request is
+              // in flight for this slot's sourceKey — "generation in
+              // progress" is exactly what the aura system's shimmer is
+              // for. Tightened timing vs. the ambient default so it reads
+              // as active work, not decoration.
+              fillPending && "gds-aura-shimmer",
+            )}
             style={{
+              // `gds-aura-shimmer` sets `position: relative`; this layer
+              // must stay absolutely positioned regardless of stylesheet
+              // order, so pin it inline.
+              position: "absolute",
               background: "var(--gds-media-placeholder-bg)",
               color: "var(--gds-media-placeholder-fg)",
+              ...(fillPending
+                ? ({
+                    "--aura-shimmer-duration": "1400ms",
+                    "--aura-shimmer-delay-between": "400ms",
+                  } as React.CSSProperties)
+                : null),
             }}
             aria-hidden
           >

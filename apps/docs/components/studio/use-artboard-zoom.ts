@@ -8,24 +8,54 @@
  * of a third hand-rolled copy.
  *
  * Vocabulary (matches the share view):
- *   - Discrete zoom levels are down-only — never past 100%, where
- *     scaling up just looks broken.
+ *   - Freeform zoom is continuous on a 10%–400% range; the +/− steppers
+ *     and the slider move in 10% increments, pinch (zoomBy) is
+ *     continuous.
  *   - "Fit" is a computed scale (never above 1) that keeps the whole
  *     artboard inside the padded canvas. Responsive has no fixed
  *     artboard, so Fit just means 100%.
- *   - Picking a discrete level drops Fit; picking Fit re-enables it.
+ *   - Any manual zoom gesture (pick / step / zoomBy) drops Fit;
+ *     picking Fit re-enables it. Fit vs freeform is therefore a real
+ *     mode toggle, not just a preset.
  *
  * The hook owns: zoom + fitMode state, canvas measurement (live via
- * ResizeObserver), the fit math, and the three mutation gestures
- * (pickZoom / stepZoom / fit). Consumers own their own DOM + keyboard
- * wiring — attach `canvasRef` to the scrollable canvas area and apply
- * `effectiveZoom` as a CSS transform on the artboard.
+ * ResizeObserver), the fit math, and the mutation gestures
+ * (pickZoom / stepZoom / zoomBy / fit). Consumers own their own DOM +
+ * keyboard wiring — attach `canvasRef` to the scrollable canvas area
+ * and apply `effectiveZoom` as a CSS transform on the artboard. The
+ * <ZoomControl> chrome component (zoom-control.tsx) is the shared UI
+ * over this hook; `useZoomGestures` wires ctrl+wheel / trackpad pinch.
  */
 
 import * as React from "react";
 
-/** Discrete zoom levels. Index 0 = most zoomed-in (100%). */
+/** Continuous zoom range + the stepper/slider increment. The ceiling
+ *  is deliberately deep (5000%) — pixel-inspection territory; the
+ *  pixel-grid overlay kicks in at ZOOM_PIXEL_GRID and steps go coarse
+ *  (multiplicative) above ZOOM_COARSE so ± stays useful up there. */
+export const ZOOM_MIN = 0.1;
+export const ZOOM_MAX = 50;
+export const ZOOM_STEP = 0.1;
+/** Above this, ± steps multiply by 1.25 instead of adding 10% — an
+ *  additive 10% is imperceptible at 2000%. */
+export const ZOOM_COARSE = 4;
+/** Zoom at which the artboard shows the device-pixel grid overlay. */
+export const ZOOM_PIXEL_GRID = 4;
+
+/** Legacy discrete levels — kept for the keyboard shortcuts (1–4) and
+ *  any UI that still presents presets. These are just convenient points
+ *  on the continuous range now. Index 0 = 100%. */
 export const ZOOM_LEVELS = [1, 0.9, 0.75, 0.5];
+
+function clampZoom(z: number): number {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+}
+
+/** Snap to the 10% grid — keeps stepper/slider values tidy after a
+ *  continuous pinch leaves zoom at e.g. 0.6321. */
+function snapZoom(z: number): number {
+  return clampZoom(Math.round(z / ZOOM_STEP) * ZOOM_STEP);
+}
 
 /**
  * Device artboards — explicit width AND height so a preset reads as a
@@ -47,24 +77,45 @@ export interface ArtboardZoom {
   /** Attach to the scrollable canvas area the artboard sits in. The
    *  hook measures it (live, via ResizeObserver) to compute Fit. */
   canvasRef: (el: HTMLElement | null) => void;
+  /** The element canvasRef is currently attached to — exposed so
+   *  consumers can hang gesture listeners (useZoomGestures) on the
+   *  same surface the fit math measures. */
+  canvasEl: HTMLElement | null;
   /** Live canvas measurement (the element canvasRef is attached to). */
   canvasSize: { w: number; h: number };
   /** The resolved artboard size — the input value, or the result of
    *  calling the input function with the live canvas size. Undefined =
    *  no fixed artboard (responsive fill). */
   deviceSize: { w: number; h: number } | undefined;
-  /** The manually-picked discrete level (one of ZOOM_LEVELS). */
+  /** The manually-picked zoom (clamped to ZOOM_MIN..ZOOM_MAX). */
   zoom: number;
-  /** True while Fit overrides the discrete level. */
+  /** True while Fit overrides the freeform zoom. */
   fitMode: boolean;
   /** The computed fit scale (1 when there's no fixed artboard). */
   fitZoom: number;
   /** The scale to actually apply to the artboard. */
   effectiveZoom: number;
-  /** Pick a discrete level — always drops Fit mode. */
-  pickZoom: (z: number) => void;
-  /** Step through ZOOM_LEVELS. dir +1 = zoom in (toward 100%). */
+  /** Pick a zoom value — always drops Fit mode. Clamped. Pass
+   *  `{ gesture: true }` for continuous inputs (the slider drag) so
+   *  the pick rides the gesture path: no per-tick transition, overlay
+   *  up. Single deliberate picks omit it and keep the overshoot. */
+  pickZoom: (z: number, opts?: { gesture?: boolean }) => void;
+  /** Step ±10% (snapped to the grid). dir +1 = zoom in. Drops Fit —
+   *  stepping FROM fit starts at the current fit scale, so the first
+   *  press nudges what you're looking at rather than jumping to a
+   *  stale freeform value. */
   stepZoom: (dir: number) => void;
+  /** Multiply the current effective zoom — continuous, for pinch /
+   *  ctrl+wheel. Drops Fit (seeded from the fit scale, same as
+   *  stepZoom). No grid snapping; the UI snaps on its own gestures. */
+  zoomBy: (factor: number) => void;
+  /** True while a continuous gesture (zoomBy) is in flight — flips
+   *  back ~180ms after the last tick. Consumers use it to (a) drop
+   *  the deliberate-pick transform transition, which otherwise
+   *  re-eases toward the transform origin on every wheel tick (the
+   *  "sideways swoop"), and (b) raise an interaction-blocking overlay
+   *  over the live preview so a pinch never clicks/scrolls the app. */
+  gesturing: boolean;
   /** Enable Fit mode. */
   fit: () => void;
 }
@@ -111,7 +162,7 @@ export function useArtboardZoom({
     restoredRef.current = true;
     try {
       const z = Number(window.localStorage.getItem(`${persistKey}:zoom`));
-      if (ZOOM_LEVELS.includes(z)) setZoom(z);
+      if (Number.isFinite(z) && z >= ZOOM_MIN && z <= ZOOM_MAX) setZoom(z);
       const f = window.localStorage.getItem(`${persistKey}:fit`);
       if (f !== null) setFitMode(f === "true");
     } catch {
@@ -187,28 +238,78 @@ export function useArtboardZoom({
 
   const effectiveZoom = fitMode ? fitZoom : zoom;
 
-  const pickZoom = React.useCallback((z: number) => {
-    setFitMode(false);
-    setZoom(z);
+  // Mirror the live effective zoom into a ref so stepZoom/zoomBy can
+  // seed from "what the user is currently looking at" (which is the
+  // FIT scale while fitMode is on) without re-creating their callbacks
+  // every time the fit math changes.
+  const effectiveZoomRef = React.useRef(effectiveZoom);
+  React.useEffect(() => {
+    effectiveZoomRef.current = effectiveZoom;
+  }, [effectiveZoom]);
+
+  // Gesture-in-flight flag — see the ArtboardZoom doc. Timer-decayed
+  // rather than event-paired because wheel-based pinches have no "end"
+  // event; 180ms of silence is the conventional settle heuristic.
+  const [gesturing, setGesturing] = React.useState(false);
+  const gestureTimerRef = React.useRef<number | null>(null);
+  const markGesture = React.useCallback(() => {
+    setGesturing(true);
+    if (gestureTimerRef.current !== null)
+      window.clearTimeout(gestureTimerRef.current);
+    gestureTimerRef.current = window.setTimeout(
+      () => setGesturing(false),
+      180,
+    );
   }, []);
+  React.useEffect(
+    () => () => {
+      if (gestureTimerRef.current !== null)
+        window.clearTimeout(gestureTimerRef.current);
+    },
+    [],
+  );
+
+  const pickZoom = React.useCallback(
+    (z: number, opts?: { gesture?: boolean }) => {
+      setFitMode(false);
+      setZoom(clampZoom(z));
+      if (opts?.gesture) markGesture();
+    },
+    [markGesture],
+  );
 
   const stepZoom = React.useCallback((dir: number) => {
     setFitMode(false);
-    setZoom((z) => {
-      const i = ZOOM_LEVELS.indexOf(z);
-      if (i === -1) return z;
-      const next = Math.min(
-        ZOOM_LEVELS.length - 1,
-        Math.max(0, i - dir), // dir +1 = zoom in (toward index 0)
-      );
-      return ZOOM_LEVELS[next];
+    // Seed from the effective zoom (fit scale included). Below the
+    // coarse threshold: snap to the 10% grid, step ±10% — from a
+    // fitted 63%: snap → 60%, then +1 → 70%, −1 → 50%. Above it the
+    // step turns multiplicative (×1.25 / ÷1.25, snapped to 25%-ish
+    // values) so ± stays meaningful in pixel-inspection territory.
+    setZoom(() => {
+      const cur = effectiveZoomRef.current;
+      if (cur < ZOOM_COARSE || (dir < 0 && cur <= ZOOM_COARSE)) {
+        return snapZoom(snapZoom(cur) + dir * ZOOM_STEP);
+      }
+      const next = cur * (dir > 0 ? 1.25 : 1 / 1.25);
+      return clampZoom(Math.max(ZOOM_COARSE, Math.round(next * 4) / 4));
     });
   }, []);
+
+  const zoomBy = React.useCallback(
+    (factor: number) => {
+      if (!Number.isFinite(factor) || factor <= 0) return;
+      setFitMode(false);
+      setZoom(() => clampZoom(effectiveZoomRef.current * factor));
+      markGesture();
+    },
+    [markGesture],
+  );
 
   const fit = React.useCallback(() => setFitMode(true), []);
 
   return {
     canvasRef,
+    canvasEl,
     canvasSize,
     deviceSize: resolvedDeviceSize,
     zoom,
@@ -217,6 +318,59 @@ export function useArtboardZoom({
     effectiveZoom,
     pickZoom,
     stepZoom,
+    zoomBy,
+    gesturing,
     fit,
   };
+}
+
+/**
+ * useZoomGestures — wires trackpad pinch / ctrl+wheel (and Safari's
+ * proprietary `gesturechange`) on a target element into an ArtboardZoom.
+ *
+ * Browsers report a macOS trackpad pinch as a `wheel` event with
+ * `ctrlKey: true` (a de-facto standard across Chrome/Firefox/Edge), so
+ * one listener covers both "pinch on trackpad" and "ctrl/cmd + scroll
+ * wheel". `preventDefault` stops the browser's own page-zoom from
+ * firing — which is why the listener is attached non-passive.
+ *
+ * Scope note: events only reach the parent document while the pointer
+ * is over parent-owned chrome (canvas padding, toolbars, the artboard
+ * frame). Over the preview IFRAME the events land in the iframe's
+ * document — the sandbox agent forwards ctrl+wheel out via the
+ * `grade:zoom-gesture` postMessage, which consumers feed into the same
+ * `zoomBy`. See studio-canvas / shared-screen wiring.
+ */
+export function useZoomGestures(
+  el: HTMLElement | null,
+  zoomBy: (factor: number) => void,
+) {
+  React.useEffect(() => {
+    if (!el) return;
+    // Coalesce to one application per animation frame — trackpads fire
+    // wheel at 120Hz+, and a state update per tick re-renders the whole
+    // consumer tree per event (the "treacly pinch"). Factors compose
+    // multiplicatively, so accumulating then applying once is lossless.
+    let acc = 1;
+    let raf: number | null = null;
+    const flush = () => {
+      raf = null;
+      const f = acc;
+      acc = 1;
+      if (f !== 1) zoomBy(f);
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      // Exponential mapping keeps pinch speed perceptually uniform
+      // across zoom levels; 0.01 is the conventional sensitivity.
+      acc *= Math.exp(-e.deltaY * 0.01);
+      if (raf === null) raf = requestAnimationFrame(flush);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      if (raf !== null) cancelAnimationFrame(raf);
+    };
+  }, [el, zoomBy]);
 }

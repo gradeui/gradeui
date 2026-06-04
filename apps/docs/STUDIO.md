@@ -211,6 +211,8 @@ Protocols currently handled in **both** places (keep them in sync):
 - `grade:set-motion` (global motion toggle — stamps `data-motion="off"` on `<html>`; lib/motion)
 - `grade:collect-media-sources` / `grade:media-sources` (Fill-images flow request/response)
 - `grade:set-media-urls` (Fill-images URL-map push back into the iframe)
+- `grade:set-media-pending` (Fill-in-flight sourceKey set — replace semantics; drives MediaSurface's placeholder shimmer via `window.__gradeMediaPending` + the `grade:media-pending-updated` event)
+- `grade:zoom-gesture` (sandbox → parent: trackpad pinch / ctrl+wheel forwarded as `{ deltaY, clientX, clientY }` — pointer coords are iframe-local CSS px so the parent can anchor the zoom at the cursor. Handled by `FocusedFastMount` (which counter-translates its camera, then calls `useArtboardZoom.zoomBy`) and by the share view (centred zoom, no camera))
 
 Protocols Fast Frame uniquely owns (don't mirror to Sandpack):
 - `grade:fast-ready` (iframe-bundle-loaded ping)
@@ -337,6 +339,20 @@ The dock **populates from the focused screen's source** — `extractCameraShots(
 Two views of the same data, toggled in the header: **Events** (foci-and-noodles — each shot a focus node, transitions as connectors) and **Timeline** (clips on a time ruler, sized to duration). Both are read-only today.
 
 Design model + roadmap live in [`STUDIO-DIRECTOR.md`](../../STUDIO-DIRECTOR.md) (foci-and-noodles, event-anchored camera, props-in-source ringfencing, the per-screen vs FlowCanvas scales). Next slices: parse `DemoStage` `SCRIPT` reveals into a second track, a scrub playhead that seeks the live preview, and per-event editing (or prompt-to-edit).
+
+## Theme selector — interim state (REVISIT)
+
+The right panel's full **Theme tab** (picker list + builder controls — mode, hues, typography, shape, components) is **hidden behind a flag** as of June 2026: `SHOW_THEME_TAB` in `apps/docs/components/studio/studio-right-tabs.tsx`. The experience wasn't demo-quality — visually rough and not quite working — so it's parked rather than shown.
+
+What's in its place: a compact **theme dropdown at the top of the right panel** (`ThemeDropdown` in the same file), a direct port of the share view's theme menu (`shared-screen.tsx` — swatch + name + chevron, brand-colours-only swatch). It rebases the page-level `ThemeBuilderProvider` draft exactly like `ThemePickerSection` did, so picking a theme re-skins the previewed screens only, never the docs chrome.
+
+**This is a stopgap.** The theme selector needs a proper design pass:
+
+- Decide what the full theme-editing surface should be (the hidden tab's builder controls are all still wired and working — it's the presentation that's wrong, not the plumbing).
+- The dropdown only switches between registered themes; it exposes none of the builder (hues, type, shape, density). Fine for demos, not for actual theming work.
+- When the redesign lands, either flip `SHOW_THEME_TAB` back on with the new tab content, or replace the tab model entirely. `ThemeTabContent` + `ThemePickerSection` are kept intact in the codebase for that moment.
+- **Picking a theme wipes builder undo/redo** — by design: the pick goes through `builder.rebase(...)`, which sets a new history anchor (dirty dot / reset / undo are all defined relative to the picked theme, so the pick is a baseline change, not an edit). Harmless today because the builder controls are hidden so nothing creates history — but when they come back, guard the picker: disable it (or confirm-before-switch) while the builder is dirty, so a theme pick can't silently torch edits. Note the share view (`shared-screen.tsx`) doesn't have this problem because its picker is pure view state (`setActiveThemeId`) — there's no draft to lose. Alternative for the redesign: model the pick as a full-input history entry so undo survives theme switches, at the cost of re-anchoring logic for dirty/reset.
+- The broader theme contract/remix/community direction lives in [`STUDIO-THEMES.md`](../../STUDIO-THEMES.md) — the redesigned selector should be planned against that doc's `ThemeInput` model.
 
 ## Future work / known limits
 

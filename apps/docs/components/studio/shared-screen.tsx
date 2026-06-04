@@ -42,9 +42,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type {
   CommentThreadWithMessages,
-  ShareViewport,
+  ShareViewportSpec,
 } from "@/lib/studio-storage";
-import { getStudioStorage } from "@/lib/studio-storage";
+import {
+  getStudioStorage,
+  SHARE_VIEWPORT_PRESETS,
+  shareViewportSize,
+} from "@/lib/studio-storage";
 import type { User } from "@/lib/studio-users";
 import { useSupabaseAuth } from "@/components/supabase-provider";
 import { toast } from "sonner";
@@ -58,28 +62,29 @@ import {
 import type { ThemeInput, GeneratedTheme } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 import {
-  ARTBOARD_DEVICE_SIZES,
-  ZOOM_LEVELS,
   useArtboardZoom,
+  ZOOM_MAX,
+  ZOOM_MIN,
 } from "@/components/studio/use-artboard-zoom";
+import { ZoomControl } from "@/components/studio/zoom-control";
 
-/** Zoom levels + device artboards now live in use-artboard-zoom.ts —
- *  the single implementation shared with the focused canvas (which
- *  ported this view's treatment). `responsive` still fills the canvas;
- *  device presets frame a fixed w×h artboard. Portrait only for now —
- *  an orientation switch (swap w/h) lands later. Part of the share
- *  contract: the creator's pick is persisted on the link. */
-const DEVICE_SIZES = ARTBOARD_DEVICE_SIZES;
-const DEVICE_OPTIONS: {
-  id: ShareViewport;
-  label: string;
-  icon: typeof Maximize;
-}[] = [
-  { id: "responsive", label: "Responsive", icon: Maximize },
-  { id: "mobile", label: "Mobile", icon: Smartphone },
-  { id: "tablet", label: "Tablet", icon: Tablet },
-  { id: "desktop", label: "Desktop", icon: Monitor },
-];
+/** Viewports are SPECS now (named, arbitrary W×H, orientation, any
+ *  count) — see ShareViewportSpec in lib/studio-storage. The classic
+ *  four presets are just the default spec set; icons are picked by
+ *  width heuristic so custom sizes get a sensible glyph too. */
+function iconForSpec(spec: ShareViewportSpec): typeof Maximize {
+  if (spec.responsive) return Maximize;
+  const size = shareViewportSize(spec);
+  if (!size) return Maximize;
+  const portraitW = Math.min(size.w, size.h);
+  if (portraitW < 600) return Smartphone;
+  if (portraitW < 1100) return Tablet;
+  return Monitor;
+}
+function specDims(spec: ShareViewportSpec): string | null {
+  const size = shareViewportSize(spec);
+  return size ? `${size.w}×${size.h}` : null;
+}
 
 /** Mini swatch for the theme menu. Shows the BRAND colours (primary +
  *  accent) and skips the neutral stop — including grey made every chip
@@ -100,7 +105,8 @@ export function SharedScreen({
   appSource,
   themeDraftJson,
   mode: initialMode = "light",
-  viewport: initialViewport = "responsive",
+  viewportSpecs,
+  initialViewportId,
   screenName = "Screen",
   projectName = "Untitled project",
   canComment = false,
@@ -110,7 +116,13 @@ export function SharedScreen({
   appSource: string | null;
   themeDraftJson: string | null;
   mode?: "light" | "dark";
-  viewport?: ShareViewport;
+  /** The viewports this share EXPOSES, in menu order — the creator's
+   *  toggles (named / arbitrary W×H / orientation / any count). A
+   *  single entry collapses the device menu to a locked badge.
+   *  Omitted/empty = the classic four presets. */
+  viewportSpecs?: ShareViewportSpec[];
+  /** Which spec the share opens on. Clamped into the set. */
+  initialViewportId?: string;
   screenName?: string;
   projectName?: string;
   canComment?: boolean;
@@ -145,12 +157,31 @@ export function SharedScreen({
   // reduced-motion, reduce-only); false = force still. Forwarded to
   // FastIframeHost as the `motion` prop → grade:set-motion.
   const [motionOn, setMotionOn] = React.useState(true);
-  const [viewport, setViewport] = React.useState<ShareViewport>(
-    initialViewport,
+  // Viewport set — the creator's specs, in their order. Defaults to
+  // the classic presets for legacy callers. The initial id arrives
+  // pre-clamped from the route, but clamp again so a direct consumer
+  // can't drift out of set.
+  const specs = React.useMemo<ShareViewportSpec[]>(
+    () =>
+      viewportSpecs && viewportSpecs.length > 0
+        ? viewportSpecs
+        : SHARE_VIEWPORT_PRESETS,
+    [viewportSpecs],
   );
-  const isFixedDevice = viewport !== "responsive";
-  const activeDevice =
-    DEVICE_OPTIONS.find((d) => d.id === viewport) ?? DEVICE_OPTIONS[0];
+  const [viewportId, setViewportId] = React.useState<string>(() =>
+    specs.some((s) => s.id === initialViewportId)
+      ? (initialViewportId as string)
+      : specs[0].id,
+  );
+  const activeSpec = specs.find((s) => s.id === viewportId) ?? specs[0];
+  // Memoized — resolveDeviceSize keys on it, and a fresh object every
+  // render would churn the artboard-zoom fit memo for nothing.
+  const activeSize = React.useMemo(
+    () => shareViewportSize(activeSpec),
+    [activeSpec],
+  );
+  const isFixedDevice = Boolean(activeSize);
+  const ActiveIcon = iconForSpec(activeSpec);
 
   // Responsive content-height artboard — identical behaviour to the
   // focused canvas: the same-origin iframe reports its rendered
@@ -162,10 +193,10 @@ export function SharedScreen({
   const [contentH, setContentH] = React.useState<number | null>(null);
   React.useEffect(() => {
     setContentH(null);
-  }, [viewport]);
+  }, [viewportId]);
   const resolveDeviceSize = React.useCallback(
     (canvas: { w: number; h: number }) => {
-      if (viewport !== "responsive") return DEVICE_SIZES[viewport];
+      if (activeSize) return activeSize;
       if (
         contentH !== null &&
         canvas.w > 0 &&
@@ -176,26 +207,322 @@ export function SharedScreen({
       }
       return undefined;
     },
-    [viewport, contentH],
+    [activeSize, contentH],
   );
 
   // Zoom + Fit — the shared artboard-zoom implementation (also drives
   // the focused canvas). Owns canvas measurement, the fit math, and
   // the pick/step/fit gestures. The share opens at 100% (defaultFit
   // false) — the creator framed the screen; honour it.
+  const artboard = useArtboardZoom({ deviceSize: resolveDeviceSize });
   const {
     canvasRef: screenRef,
+    canvasEl,
     deviceSize,
-    zoom,
     fitMode,
     effectiveZoom,
     pickZoom,
     stepZoom,
+    zoomBy,
     fit,
-  } = useArtboardZoom({ deviceSize: resolveDeviceSize });
+  } = artboard;
   // True whenever an artboard is framed — a fixed device preset OR the
   // responsive content-height artboard. Drives the card layout below.
   const framed = Boolean(deviceSize);
+
+  // ─── Imperative camera session — SAME pattern as the focused canvas
+  // (FocusedFastMount). Pinch/pan write a translate+scale straight to
+  // the camera wrapper each frame (compositor-only, anchored at the
+  // pointer) and commit ONE pan+zoom state update on settle. See
+  // fast-frame.tsx for the annotated original; this is the share-view
+  // port (no drag/modes — viewers pinch and wheel-pan only).
+  // TODO: extract into a shared useArtboardCamera hook once both
+  // implementations have soaked.
+  const [pan, setPan] = React.useState({ x: 0, y: 0 });
+  const cameraRef = React.useRef<HTMLDivElement | null>(null);
+  const [imperativeGesturing, setImperativeGesturing] = React.useState(false);
+  interface ShareCameraSession {
+    baseZoom: number;
+    basePan: { x: number; y: number };
+    rect0: { x: number; y: number };
+    k: number;
+    d: { x: number; y: number };
+    el: HTMLElement;
+    idleTimer: number | null;
+  }
+  const sessionRef = React.useRef<ShareCameraSession | null>(null);
+
+  const PAN_KEEP_VISIBLE = 48;
+  const clampPan = React.useCallback(
+    (p: { x: number; y: number }, zoomOverride?: number) => {
+      const z = zoomOverride ?? effectiveZoom;
+      const scaledW = (deviceSize?.w ?? 0) * z;
+      const scaledH = (deviceSize?.h ?? 0) * z;
+      const cw = canvasEl?.clientWidth ?? 0;
+      const ch = canvasEl?.clientHeight ?? 0;
+      const maxX = Math.max(0, (scaledW + cw) / 2 - PAN_KEEP_VISIBLE);
+      const maxY = Math.max(0, (scaledH + ch) / 2 - PAN_KEEP_VISIBLE);
+      return {
+        x: Math.min(maxX, Math.max(-maxX, p.x)),
+        y: Math.min(maxY, Math.max(-maxY, p.y)),
+      };
+    },
+    [deviceSize?.w, deviceSize?.h, effectiveZoom, canvasEl],
+  );
+  React.useEffect(() => {
+    if (fitMode) setPan({ x: 0, y: 0 });
+  }, [fitMode]);
+  React.useEffect(() => {
+    setPan({ x: 0, y: 0 });
+  }, [viewportId]);
+
+  const applySession = (s: ShareCameraSession) => {
+    s.el.style.transition = "none";
+    s.el.style.transformOrigin = "0 0";
+    s.el.style.transform = `translate(${s.basePan.x + s.d.x}px, ${
+      s.basePan.y + s.d.y
+    }px) scale(${s.k})`;
+  };
+  const centeringShift = (s: ShareCameraSession, k: number) => ({
+    x: ((deviceSize?.w ?? 0) * s.baseZoom * (k - 1)) / 2,
+    y: ((deviceSize?.h ?? 0) * s.baseZoom * (k - 1)) / 2,
+  });
+  const clampSessionD = (
+    s: ShareCameraSession,
+    d: { x: number; y: number },
+    k: number,
+  ) => {
+    const shift = centeringShift(s, k);
+    const committed = clampPan(
+      { x: s.basePan.x + d.x + shift.x, y: s.basePan.y + d.y + shift.y },
+      s.baseZoom * k,
+    );
+    return {
+      x: committed.x - shift.x - s.basePan.x,
+      y: committed.y - shift.y - s.basePan.y,
+    };
+  };
+
+  const ensureSessionRef = React.useRef<() => ShareCameraSession | null>(
+    () => null,
+  );
+  ensureSessionRef.current = () => {
+    if (sessionRef.current) return sessionRef.current;
+    const el = cameraRef.current;
+    if (!el || !framed) return null;
+    const rect = el.getBoundingClientRect();
+    sessionRef.current = {
+      baseZoom: effectiveZoom,
+      basePan: { ...pan },
+      rect0: { x: rect.left, y: rect.top },
+      k: 1,
+      d: { x: 0, y: 0 },
+      el,
+      idleTimer: null,
+    };
+    setImperativeGesturing(true);
+    return sessionRef.current;
+  };
+  const commitSessionRef = React.useRef<() => void>(() => {});
+  commitSessionRef.current = () => {
+    const s = sessionRef.current;
+    if (!s) return;
+    sessionRef.current = null;
+    if (s.idleTimer !== null) window.clearTimeout(s.idleTimer);
+    const shift = centeringShift(s, s.k);
+    setPan(
+      clampPan(
+        { x: s.basePan.x + s.d.x + shift.x, y: s.basePan.y + s.d.y + shift.y },
+        s.baseZoom * s.k,
+      ),
+    );
+    if (s.k !== 1) zoomBy(s.k);
+    setImperativeGesturing(false);
+  };
+  const pinchSessionRef = React.useRef<
+    (factor: number, anchor: { kind: "client" | "iframe"; x: number; y: number } | null) => void
+  >(() => {});
+  pinchSessionRef.current = (factor, anchor) => {
+    const s = ensureSessionRef.current();
+    if (!s) {
+      zoomBy(factor); // responsive fill — no camera
+      return;
+    }
+    const cur = s.baseZoom * s.k;
+    const target = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, cur * factor));
+    const f = target / cur;
+    if (f !== 1 && anchor) {
+      const O = { x: s.rect0.x + s.d.x, y: s.rect0.y + s.d.y };
+      const P =
+        anchor.kind === "client"
+          ? { x: anchor.x, y: anchor.y }
+          : { x: O.x + anchor.x * cur, y: O.y + anchor.y * cur };
+      s.d = {
+        x: s.d.x + (O.x - P.x) * (f - 1),
+        y: s.d.y + (O.y - P.y) * (f - 1),
+      };
+    }
+    s.k *= f;
+    s.d = clampSessionD(s, s.d, s.k);
+    applySession(s);
+    if (s.idleTimer !== null) window.clearTimeout(s.idleTimer);
+    s.idleTimer = window.setTimeout(() => commitSessionRef.current(), 180);
+  };
+  const panSessionByRef = React.useRef<(dx: number, dy: number) => void>(
+    () => {},
+  );
+  panSessionByRef.current = (dx, dy) => {
+    const s = ensureSessionRef.current();
+    if (!s) return;
+    s.d = clampSessionD(s, { x: s.d.x + dx, y: s.d.y + dy }, s.k);
+    applySession(s);
+    if (s.idleTimer !== null) window.clearTimeout(s.idleTimer);
+    s.idleTimer = window.setTimeout(() => commitSessionRef.current(), 180);
+  };
+  // Re-assert mid-session inline styles after unrelated re-renders.
+  React.useEffect(() => {
+    const s = sessionRef.current;
+    if (s) applySession(s);
+  });
+
+  // Space-hold quick-pan — same vocabulary as the canvas's Interact
+  // mode: hold Space for the grab hand, drag to pan, release to hand
+  // the prototype back. Middle-mouse drag works without Space.
+  const [spaceHeld, setSpaceHeld] = React.useState(false);
+  React.useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || e.repeat) return;
+      const t = e.target as HTMLElement | null;
+      if (t) {
+        if (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+        if (t.isContentEditable) return;
+      }
+      e.preventDefault();
+      setSpaceHeld(true);
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.code === "Space") setSpaceHeld(false);
+    };
+    const blur = () => setSpaceHeld(false);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
+    };
+  }, []);
+
+  // Drag-pan through the session (pointer up commits).
+  const dragRef = React.useRef<{
+    id: number;
+    x: number;
+    y: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const [panning, setPanning] = React.useState(false);
+  const beginPan = (e: React.PointerEvent<HTMLElement>) => {
+    const s = ensureSessionRef.current();
+    if (!s) return;
+    if (s.idleTimer !== null) {
+      window.clearTimeout(s.idleTimer);
+      s.idleTimer = null;
+    }
+    dragRef.current = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      startX: s.d.x,
+      startY: s.d.y,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setPanning(true);
+  };
+  const movePan = (e: React.PointerEvent<HTMLElement>) => {
+    const p = dragRef.current;
+    const s = sessionRef.current;
+    if (!p || !s || e.pointerId !== p.id) return;
+    s.d = clampSessionD(
+      s,
+      { x: p.startX + (e.clientX - p.x), y: p.startY + (e.clientY - p.y) },
+      s.k,
+    );
+    applySession(s);
+  };
+  const endPan = (e: React.PointerEvent<HTMLElement>) => {
+    if (dragRef.current?.id !== e.pointerId) return;
+    dragRef.current = null;
+    setPanning(false);
+    commitSessionRef.current();
+  };
+
+  // rAF-coalesced gesture queue feeding the session — wheel events at
+  // 120Hz+, applied once per frame.
+  const gestureAccRef = React.useRef<{
+    factor: number;
+    anchor: { kind: "client" | "iframe"; x: number; y: number } | null;
+    raf: number | null;
+  }>({ factor: 1, anchor: null, raf: null });
+  const queueGesture = React.useCallback(
+    (
+      factor: number,
+      anchor: { kind: "client" | "iframe"; x: number; y: number } | null,
+    ) => {
+      const acc = gestureAccRef.current;
+      acc.factor *= factor;
+      if (anchor) acc.anchor = anchor;
+      if (acc.raf !== null) return;
+      acc.raf = requestAnimationFrame(() => {
+        const f = acc.factor;
+        const a = acc.anchor;
+        acc.factor = 1;
+        acc.anchor = null;
+        acc.raf = null;
+        if (f !== 1) pinchSessionRef.current(f, a);
+      });
+    },
+    [],
+  );
+
+  // Pinch over the chrome / canvas area — canvasEl is the overlay's
+  // ancestor, so no events are lost while the pointer shield is up.
+  React.useEffect(() => {
+    if (!canvasEl) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      queueGesture(Math.exp(-e.deltaY * 0.01), {
+        kind: "client",
+        x: e.clientX,
+        y: e.clientY,
+      });
+    };
+    canvasEl.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvasEl.removeEventListener("wheel", onWheel);
+  }, [canvasEl, queueGesture]);
+  // Pinch over the live iframe — the sandbox forwards ctrl+wheel with
+  // iframe-local pointer coords.
+  React.useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data as {
+        type?: string;
+        deltaY?: number;
+        clientX?: number;
+        clientY?: number;
+      } | null;
+      if (!data || data.type !== "grade:zoom-gesture") return;
+      if (typeof data.deltaY !== "number") return;
+      const anchor =
+        typeof data.clientX === "number" && typeof data.clientY === "number"
+          ? { kind: "iframe" as const, x: data.clientX, y: data.clientY }
+          : null;
+      queueGesture(Math.exp(-data.deltaY * 0.01), anchor);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [queueGesture]);
 
   // Comments — pins shown by default when the screen has any. Reading is
   // open to anyone with the link; replying requires a signed-in viewer.
@@ -324,15 +651,17 @@ export function SharedScreen({
           + translucency. ── */}
       {chromeVisible ? (
         <header className="relative z-[70] m-2 flex h-11 shrink-0 items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/70 px-3 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-background/55">
-          {/* Brand + name */}
+          {/* Brand + project / screen breadcrumb — both always visible
+              (the project name was sm-hidden and easy to miss). */}
           <div className="flex min-w-0 items-center gap-2.5">
             <GradeLogo size={20} className="shrink-0 text-foreground" />
-            <div className="flex min-w-0 items-baseline gap-2">
+            <div className="flex min-w-0 items-baseline gap-1.5">
+              <span className="truncate text-xs text-muted-foreground">
+                {projectName}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground/60">/</span>
               <span className="truncate text-sm font-medium text-foreground">
                 {screenName}
-              </span>
-              <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-                {projectName}
               </span>
             </div>
           </div>
@@ -363,7 +692,10 @@ export function SharedScreen({
                   <DropdownMenuItem
                     key={t.id}
                     onClick={() => setActiveThemeId(t.id)}
-                    className="gap-2"
+                    // Neutral hover — the default focus:bg-accent picks up
+                    // the PROJECT THEME's accent (olive, anything), which
+                    // looks broken on the glass chrome.
+                    className="gap-2 focus:bg-foreground/10 focus:text-foreground"
                   >
                     <ThemeSwatch theme={t} />
                     <span className="flex-1 truncate">{t.name}</span>
@@ -407,8 +739,22 @@ export function SharedScreen({
               </button>
             </div>
 
-            {/* Device — fixed-size presets on a glass menu. Part of the
-                share contract: the creator's pick travels on the link. */}
+            {/* Device — the share's viewport SPECS on a glass menu.
+                Part of the share contract: the creator's set travels
+                on the link (named entries, arbitrary W×H, orientation).
+                A single spec collapses the menu to a locked badge —
+                nothing to pick. */}
+            {specs.length === 1 ? (
+              <span
+                title="Device (locked by the share)"
+                className="hidden h-7 items-center gap-1.5 rounded-md border border-border/60 px-2 text-xs text-foreground sm:flex"
+              >
+                <ActiveIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="hidden max-w-[8rem] truncate md:inline">
+                  {activeSpec.label}
+                </span>
+              </span>
+            ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -416,9 +762,9 @@ export function SharedScreen({
                   title="Device"
                   className="hidden h-7 items-center gap-1.5 rounded-md border border-border/60 px-2 text-xs text-foreground transition hover:bg-foreground/10 sm:flex"
                 >
-                  <activeDevice.icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="hidden max-w-[6rem] truncate md:inline">
-                    {activeDevice.label}
+                  <ActiveIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="hidden max-w-[8rem] truncate md:inline">
+                    {activeSpec.label}
                   </span>
                   <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
@@ -427,76 +773,38 @@ export function SharedScreen({
                 align="end"
                 className="z-[80] min-w-[10rem] border-border/60 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/65"
               >
-                {DEVICE_OPTIONS.map((d) => (
-                  <DropdownMenuItem
-                    key={d.id}
-                    onClick={() => setViewport(d.id)}
-                    className="gap-2"
-                  >
-                    <d.icon className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="flex-1 truncate">{d.label}</span>
-                    {d.id !== "responsive" && (
-                      <span className="text-[11px] tabular-nums text-muted-foreground">
-                        {(() => {
-                          const s =
-                            DEVICE_SIZES[
-                              d.id as Exclude<ShareViewport, "responsive">
-                            ];
-                          return `${s.w}×${s.h}`;
-                        })()}
-                      </span>
-                    )}
-                    {d.id === viewport && (
-                      <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                    )}
-                  </DropdownMenuItem>
-                ))}
+                {specs.map((s) => {
+                  const Icon = iconForSpec(s);
+                  const dims = specDims(s);
+                  return (
+                    <DropdownMenuItem
+                      key={s.id}
+                      onClick={() => setViewportId(s.id)}
+                      // Neutral hover — see the theme menu note.
+                      className="gap-2 focus:bg-foreground/10 focus:text-foreground"
+                    >
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="flex-1 truncate">{s.label}</span>
+                      {dims && (
+                        <span className="text-[11px] tabular-nums text-muted-foreground">
+                          {dims}
+                        </span>
+                      )}
+                      {s.id === viewportId && (
+                        <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })}
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
 
-            {/* Zoom — discrete down-levels on a glass menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  title="Zoom"
-                  className="hidden h-7 items-center gap-1 rounded-md border border-border/60 px-2 text-xs tabular-nums text-foreground transition hover:bg-foreground/10 sm:flex"
-                >
-                  {fitMode ? "Fit" : `${Math.round(effectiveZoom * 100)}%`}
-                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="z-[80] min-w-[6rem] border-border/60 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/65"
-              >
-                {/* Fit — computed scale that frames the whole artboard.
-                    Only meaningful with a fixed device (responsive already
-                    fills); shown always for muscle-memory but it just maps
-                    to 100% in responsive. */}
-                <DropdownMenuItem
-                  onClick={fit}
-                  className="gap-2 tabular-nums"
-                >
-                  <span className="flex-1">Fit</span>
-                  {fitMode && (
-                    <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  )}
-                </DropdownMenuItem>
-                {ZOOM_LEVELS.map((z) => (
-                  <DropdownMenuItem
-                    key={z}
-                    onClick={() => pickZoom(z)}
-                    className="gap-2 tabular-nums"
-                  >
-                    <span className="flex-1">{Math.round(z * 100)}%</span>
-                    {!fitMode && z === zoom && (
-                      <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                    )}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Zoom — the shared ZoomControl (Fit/Free toggle, ±10%
+                steppers, 10–400% slider, percent readout). Same chrome
+                as the focused canvas; pinch/ctrl+wheel feed the same
+                hook via useZoomGestures above. */}
+            <ZoomControl artboard={artboard} className="hidden sm:flex" />
 
             {/* Motion — pause/resume animation (shaders, ThreeScene, CSS).
                 Mirrors ThreeScene's own play/pause vocabulary. Reduce-only:
@@ -566,24 +874,47 @@ export function SharedScreen({
       >
       <div
         className="h-full w-full bg-muted/15"
+        onWheel={(e) => {
+          // Plain wheel = camera pan when framed (same as the canvas);
+          // pinch goes through the session listeners above. Over the
+          // live iframe the app keeps its own scrolling.
+          if (!framed) return;
+          if (e.ctrlKey || e.metaKey) return;
+          panSessionByRef.current(-e.deltaX, -e.deltaY);
+        }}
+        // Middle-mouse drag pans without Space — only catches over
+        // canvas chrome (the iframe swallows it elsewhere), same as
+        // the focused canvas.
+        onPointerDown={(e) => {
+          if (e.button !== 1) return;
+          e.preventDefault();
+          beginPan(e);
+        }}
+        onPointerMove={movePan}
+        onPointerUp={endPan}
+        onPointerCancel={endPan}
         style={{
-          // Fit guarantees the artboard fits — overflow:hidden there so
-          // a sub-pixel rounding overflow can't toggle the scrollbar and
-          // shift the centred artboard sideways (the jiggle the canvas
-          // had). stable both-edges keeps centring symmetric in the
-          // manual-zoom modes where scrolling is legitimate.
-          overflow: fitMode ? "hidden" : "auto",
-          scrollbarGutter: fitMode ? undefined : "stable both-edges",
+          // Framed artboards are positioned by the translate camera —
+          // no scrolling. Plain responsive fill keeps the old auto.
+          overflow: framed || fitMode ? "hidden" : "auto",
+          scrollbarGutter: framed || fitMode ? undefined : "stable both-edges",
+          overscrollBehavior: "contain",
           backgroundImage:
             "radial-gradient(circle, color-mix(in oklab, var(--foreground) 22%, transparent) 1px, transparent 1.6px)",
           backgroundSize: "16px 16px",
         }}
       >
-        <div className="absolute inset-0 z-0 flex items-center justify-center">
-          <p className="animate-pulse text-sm text-muted-foreground">
-            Loading preview…
-          </p>
-        </div>
+        {/* Pre-content hint only — once a source exists the artboard
+            paints over the centre, and on zoom-out this would peek out
+            from behind the shrunken artboard forever (the "Loading
+            preview… on the canvas" bug). */}
+        {!appSource && (
+          <div className="absolute inset-0 z-0 flex items-center justify-center">
+            <p className="animate-pulse text-sm text-muted-foreground">
+              Loading preview…
+            </p>
+          </div>
+        )}
 
         {/* Annotation — appears on zoom-out, labelling the screen as it
             sits in space. */}
@@ -609,13 +940,34 @@ export function SharedScreen({
         <div
           className={cn(
             framed
-              ? // Top-aligned + padded so a tall device (e.g. mobile 844)
-                // scrolls naturally from the top rather than being clipped
-                // by vertical centring; short devices just sit near the top.
-                "flex min-h-full w-full justify-center items-start p-8"
+              ? // Centred BOTH axes — camera home (pan 0,0) is the canvas
+                // centre, mirroring the focused canvas.
+                "flex h-full w-full items-center justify-center p-8"
               : "h-full w-full",
           )}
         >
+          {/* Camera wrapper — sized to the SCALED artboard and moved by
+              the translate camera when framed (sessions write inline
+              styles here directly); a plain fill div otherwise. One
+              element either way, so the iframe never remounts when
+              flipping responsive ↔ device. */}
+          <div
+            ref={cameraRef}
+            className={framed ? "relative shrink-0" : "h-full w-full"}
+            style={
+              framed && deviceSize
+                ? {
+                    width: deviceSize.w * effectiveZoom,
+                    height: deviceSize.h * effectiveZoom,
+                    transform: `translate(${pan.x}px, ${pan.y}px)`,
+                    transition:
+                      fitMode || artboard.gesturing || imperativeGesturing
+                        ? undefined
+                        : "width 340ms ease, height 340ms ease, transform 340ms ease",
+                  }
+                : undefined
+            }
+          >
           <FastIframeHost
             appSource={appSource}
             theme={activeTheme}
@@ -634,9 +986,7 @@ export function SharedScreen({
               setActiveThreadId((cur) => (cur === id ? null : id))
             }
             // Responsive only — feeds the content-height artboard above.
-            onContentHeight={
-              viewport === "responsive" ? setContentH : undefined
-            }
+            onContentHeight={activeSpec.responsive ? setContentH : undefined}
             className={cn(
               "block",
               framed ? "shrink-0" : "h-full w-full",
@@ -649,26 +999,65 @@ export function SharedScreen({
               width: deviceSize?.w,
               height: deviceSize?.h,
               transform: `scale(${effectiveZoom})`,
-              transformOrigin: framed ? "top center" : "center center",
+              // Top-LEFT origin when framed so the sized camera wrapper
+              // exactly bounds the visual (and the session's anchor
+              // math holds); centre origin for the responsive fill.
+              transformOrigin: framed ? "top left" : "center center",
               // Gentle overshoot-and-settle on DELIBERATE zoom picks;
               // snapping back to 100% gets an even subtler curve. Fit
               // recomputes continuously during a browser resize —
               // animating those makes the artboard spring-chase the
-              // window, so Fit tracks instantly.
-              transition: fitMode
-                ? "box-shadow 220ms ease"
-                : `transform 340ms ${
-                    effectiveZoom === 1
-                      ? "cubic-bezier(0.33, 1.08, 0.68, 1)"
-                      : "cubic-bezier(0.33, 1.25, 0.68, 1)"
-                  }, box-shadow 220ms ease`,
+              // window, so Fit tracks instantly. Same for continuous
+              // GESTURES (pinch / slider drag / session commits):
+              // gestures track raw.
+              transition:
+                fitMode || artboard.gesturing || imperativeGesturing
+                  ? "box-shadow 220ms ease"
+                  : `transform 340ms ${
+                      effectiveZoom === 1
+                        ? "cubic-bezier(0.33, 1.08, 0.68, 1)"
+                        : "cubic-bezier(0.33, 1.25, 0.68, 1)"
+                    }, box-shadow 220ms ease`,
               boxShadow:
                 framed || effectiveZoom < 1
                   ? "0 25px 50px -12px rgb(0 0 0 / 0.35)"
                   : undefined,
             }}
           />
+          </div>
         </div>
+
+        {/* Gesture / pan overlay — up while a zoom gesture settles
+            (transparent pointer shield) or while Space is held (grab
+            hand, drag pans — canvas Interact-mode vocabulary).
+            ctrl/meta+wheel bubbles to the canvas wrapper (the
+            session's listener home) so the pinch continues while the
+            shield is up; plain wheel pans via the handler on the
+            scroller this overlay covers. */}
+        {(artboard.gesturing || imperativeGesturing || spaceHeld) && (
+          <div
+            data-gds-part="share-gesture-overlay"
+            className="absolute inset-0 z-[60]"
+            style={{
+              touchAction: "none",
+              cursor: spaceHeld ? (panning ? "grabbing" : "grab") : undefined,
+            }}
+            onPointerDown={(e) => {
+              if (!spaceHeld && e.button !== 1) return;
+              if (e.button !== 0 && e.button !== 1) return;
+              e.preventDefault();
+              beginPan(e);
+            }}
+            onPointerMove={movePan}
+            onPointerUp={endPan}
+            onPointerCancel={endPan}
+            onWheel={(e) => {
+              if (e.ctrlKey || e.metaKey) return; // pinch — handled upstream
+              if (!framed) return;
+              panSessionByRef.current(-e.deltaX, -e.deltaY);
+            }}
+          />
+        )}
       </div>
       </div>
 

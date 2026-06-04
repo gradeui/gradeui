@@ -43,12 +43,14 @@ import {
   ExternalLink,
   Eye,
   Film,
+  Hand,
   Image as ImageIcon,
   Loader2,
   Maximize2,
   MessageSquare,
   Monitor,
   MoreHorizontal,
+  MousePointer2,
   MousePointerClick,
   MoveHorizontal,
   Package,
@@ -114,9 +116,9 @@ import {
 } from "@/components/studio/fast-frame";
 import {
   ARTBOARD_DEVICE_SIZES,
-  ZOOM_LEVELS as ARTBOARD_ZOOM_LEVELS,
   useArtboardZoom,
 } from "@/components/studio/use-artboard-zoom";
+import { ZoomControl } from "@/components/studio/zoom-control";
 
 /**
  * Minimal App module used to prewarm Sandpack when we don't yet have real
@@ -183,6 +185,11 @@ interface StudioCanvasProps {
    *  picked element; consumers can also listen if they want to
    *  surface the pick elsewhere (e.g. flip a side panel). */
   onCommentSelect?: (selection: StudioSelection) => void;
+  /** Fires whenever the canvas mode changes — "select", "comment", or
+   *  null (interactive). Lets the page auto-switch the right panel to
+   *  the matching tab the moment the user CHOOSES a mode, not only
+   *  after the first pick lands. */
+  onCanvasModeChange?: (mode: "select" | "comment" | null) => void;
   /** Fires when the user posts a comment via the inline overlay.
    *  Consumer creates the thread + comment via the storage adapter
    *  and returns once persisted; the overlay closes on resolve. */
@@ -316,6 +323,7 @@ export function StudioCanvas({
   onSelect,
   onClearSelection,
   onCommentSelect,
+  onCanvasModeChange,
   onCommentSubmit,
   currentUserForComment,
   onAddDesign,
@@ -420,9 +428,17 @@ export function StudioCanvas({
   // Toggling a mode is "click the active button to leave the mode,
   // click another to switch". Pulled out so the toolbar buttons
   // can call it without duplicating the if-equal-then-null logic.
-  const toggleCanvasMode = useCallback((next: Exclude<CanvasMode, null>) => {
-    setCanvasMode((cur) => (cur === next ? null : next));
-  }, []);
+  // The resolved mode is reported upstream via onCanvasModeChange so
+  // the page can auto-switch the right panel (Comments ↔ Layout) the
+  // moment a mode is chosen.
+  const toggleCanvasMode = useCallback(
+    (next: Exclude<CanvasMode, null>) => {
+      const resolved = canvasMode === next ? null : next;
+      setCanvasMode(resolved);
+      onCanvasModeChange?.(resolved);
+    },
+    [canvasMode, onCanvasModeChange],
+  );
 
   // Viewport width for the focused frame. Default "responsive" matches
   // the pre-picker behavior (no width constraint). Canvas-level state
@@ -569,6 +585,23 @@ export function StudioCanvas({
     // own defaults.
     persistKey: "studio:artboard",
   });
+  // Canvas INTERACTION mode — distinct from `canvasMode` above (the
+  // select/comment picker). "interact" (default): the screen is a
+  // live prototype, Space-hold / middle-mouse pans. "design": the
+  // screen is a non-interactive artboard — plain drag pans, pinch
+  // zooms, the gesture overlay stays up (FocusedFastMount owns the
+  // overlay + pan mechanics; this is just the mode switch). Keyboard:
+  // V = interact, H = design (Figma muscle memory).
+  const [interactionMode, setInteractionMode] = useState<
+    "interact" | "design"
+  >("interact");
+  // Pinch / ctrl+wheel is owned by FocusedFastMount (via the onZoomBy
+  // prop) rather than wired here with useZoomGestures — the mount owns
+  // the camera (pan), so it can ANCHOR each zoom tick at the pointer
+  // (Figma's zoom-to-cursor) before calling artboard.zoomBy. It also
+  // handles the sandbox's `grade:zoom-gesture` forwarding, including
+  // the focused-frame source check. Don't add a second wheel listener
+  // here — that's a double-zoom.
 
   // Replay counter — bumping it re-keys the focused iframe so every
   // inView reveal + mount animation runs again. The control lives in
@@ -951,6 +984,8 @@ export function StudioCanvas({
 
         setFilling(true);
         setFillError(null);
+        // Shimmer the slot's placeholder while the resolve is in flight.
+        postMediaPendingToFocusedIframe([key]);
         try {
           const res = await fetch("/api/media/resolve-batch", {
             method: "POST",
@@ -1024,6 +1059,8 @@ export function StudioCanvas({
           setFillError(err instanceof Error ? err.message : String(err));
         } finally {
           setFilling(false);
+          // Clear regardless of outcome — never strand a shimmering slot.
+          postMediaPendingToFocusedIframe([]);
         }
       }
     }
@@ -1251,6 +1288,16 @@ export function StudioCanvas({
         case "+":
           a.stepZoom(1);
           break;
+        // Canvas interaction mode — Figma vocabulary. V = pointer
+        // (interact), H = hand (design / pan).
+        case "v":
+        case "V":
+          setInteractionMode("interact");
+          break;
+        case "h":
+        case "H":
+          setInteractionMode("design");
+          break;
         default:
           break;
       }
@@ -1318,6 +1365,12 @@ export function StudioCanvas({
         setFillReport({ filled: 0, skipped: 0 });
         return;
       }
+      // Shimmer every collected slot's placeholder while the batch
+      // resolves — with a generative provider in the chain this can take
+      // seconds per image, and an inert placeholder reads as broken.
+      postMediaPendingToFocusedIframe(
+        items.map((it) => clientSideSourceKey(it.source)),
+      );
       const res = await fetch("/api/media/resolve-batch", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -1383,6 +1436,8 @@ export function StudioCanvas({
       setFillError(err instanceof Error ? err.message : String(err));
     } finally {
       setFilling(false);
+      // Clear regardless of outcome — never strand a shimmering slot.
+      postMediaPendingToFocusedIframe([]);
     }
   };
 
@@ -1675,53 +1730,56 @@ export function StudioCanvas({
                   <MoveHorizontal />
                 </ToggleGroupItem>
               </ToggleGroup>
-              {/* Zoom — the share view's treatment ported to the canvas.
-                  Fit (default) frames the whole artboard in the column;
-                  discrete levels are down-only. Keyboard: 0 = fit,
-                  1–4 = levels, − / = step. Preview-only — Code and
+              {/* Zoom — the shared ZoomControl (Fit/Free toggle, ±10%
+                  steppers, 10–400% slider, readout). Same component the
+                  share view's toolbar renders; pinch/ctrl+wheel feed
+                  the same hook via useZoomGestures (wired near the
+                  artboard hook above). Keyboard: 0 = fit, 1–4 = legacy
+                  levels, − / = step ±10%. Preview-only — Code and
                   Timeline have nothing to scale. */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+              {/* Canvas mode — pointer (Interact, V) vs hand (Design, H).
+                  Interact keeps the prototype live (Space-hold to pan);
+                  Design turns the screen into a non-interactive artboard
+                  where plain drag pans and pinch zooms. */}
+              {view === "preview" && (
+                <div
+                  role="group"
+                  aria-label="Canvas mode"
+                  className="flex items-center gap-0.5 rounded-md bg-foreground/5 p-0.5"
+                >
                   <button
                     type="button"
-                    title="Zoom (0 = fit, 1–4 = levels)"
-                    disabled={view !== "preview"}
+                    onClick={() => setInteractionMode("interact")}
+                    aria-pressed={interactionMode === "interact"}
+                    title="Interact — live prototype (V). Hold Space to pan."
                     className={cn(
-                      "h-7 inline-flex items-center gap-1 rounded-md px-2 text-xs tabular-nums transition-colors",
-                      "text-muted-foreground hover:text-foreground hover:bg-muted",
-                      "disabled:opacity-40 disabled:pointer-events-none"
+                      "flex h-5 w-6 items-center justify-center rounded-[5px] transition",
+                      interactionMode === "interact"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {artboard.fitMode
-                      ? "Fit"
-                      : `${Math.round(artboard.effectiveZoom * 100)}%`}
-                    <ChevronDown className="h-3.5 w-3.5" />
+                    <MousePointer2 className="h-3.5 w-3.5" />
                   </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[6rem]">
-                  <DropdownMenuItem
-                    onClick={artboard.fit}
-                    className="gap-2 tabular-nums"
-                  >
-                    <span className="flex-1">Fit</span>
-                    {artboard.fitMode && (
-                      <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <button
+                    type="button"
+                    onClick={() => setInteractionMode("design")}
+                    aria-pressed={interactionMode === "design"}
+                    title="Design — pan & zoom the artboard (H)"
+                    className={cn(
+                      "flex h-5 w-6 items-center justify-center rounded-[5px] transition",
+                      interactionMode === "design"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
                     )}
-                  </DropdownMenuItem>
-                  {ARTBOARD_ZOOM_LEVELS.map((z) => (
-                    <DropdownMenuItem
-                      key={z}
-                      onClick={() => artboard.pickZoom(z)}
-                      className="gap-2 tabular-nums"
-                    >
-                      <span className="flex-1">{Math.round(z * 100)}%</span>
-                      {!artboard.fitMode && z === artboard.zoom && (
-                        <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  >
+                    <Hand className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+              {view === "preview" && (
+                <ZoomControl artboard={artboard} compact />
+              )}
               {/* Fidelity toggle removed — wireframe/full has no
                   product surface yet; fidelity is pinned to "full"
                   via the constant near the top of this component. */}
@@ -2035,8 +2093,13 @@ export function StudioCanvas({
           // authority on its own state). Frame asking to disable
           // only clears canvasMode when select was the active
           // mode — leaves comment mode alone.
-          if (next) setCanvasMode("select");
-          else if (canvasMode === "select") setCanvasMode(null);
+          if (next) {
+            setCanvasMode("select");
+            onCanvasModeChange?.("select");
+          } else if (canvasMode === "select") {
+            setCanvasMode(null);
+            onCanvasModeChange?.(null);
+          }
         }}
         commentMode={commentMode}
         onCommentSelect={onCommentSelect}
@@ -2055,8 +2118,11 @@ export function StudioCanvas({
         rendererMode={rendererMode}
         artboardZoom={artboard.effectiveZoom}
         artboardFitMode={artboard.fitMode}
+        artboardGesturing={artboard.gesturing}
         artboardCanvasRef={artboard.canvasRef}
         artboardSize={artboard.deviceSize}
+        onArtboardZoomBy={artboard.zoomBy}
+        interactionMode={interactionMode}
         onContentHeight={
           viewportWidth === "responsive" ? handleContentHeight : undefined
         }
@@ -2192,12 +2258,22 @@ interface FocusedFrameProps {
   artboardZoom?: number;
   /** True while Fit drives artboardZoom (annotation reads "Fit"). */
   artboardFitMode?: boolean;
+  /** True while a continuous zoom gesture is in flight — forwarded to
+   *  the Fast mount (drops the pick transition + raises the pointer
+   *  shield). */
+  artboardGesturing?: boolean;
+  /** Canvas interaction mode (toolbar toggle / V·H keys) — forwarded
+   *  to the Fast mount, which owns the overlay + pan mechanics. */
+  interactionMode?: "interact" | "design";
   /** Measurement ref — attached to the Fast mount's scrollable canvas
    *  area so Fit computes against the real column size. */
   artboardCanvasRef?: (el: HTMLElement | null) => void;
   /** The resolved artboard the fit math ran against (device preset or
    *  the responsive content-height artboard). */
   artboardSize?: { w: number; h: number };
+  /** `useArtboardZoom.zoomBy` — forwarded to the Fast mount, which
+   *  owns pinch/ctrl+wheel so it can anchor zoom at the pointer. */
+  onArtboardZoomBy?: (factor: number) => void;
   /** Content-height reports from the focused iframe (responsive mode
    *  only — undefined disables the same-origin polling entirely). */
   onContentHeight?: (h: number) => void;
@@ -2237,8 +2313,11 @@ function FocusedFrame({
   rendererMode = "sandpack",
   artboardZoom = 1,
   artboardFitMode = false,
+  artboardGesturing = false,
   artboardCanvasRef,
   artboardSize,
+  onArtboardZoomBy,
+  interactionMode = "interact",
   onContentHeight,
 }: FocusedFrameProps) {
   // Iframe-side capture is on whenever EITHER toolbar mode is on.
@@ -2248,6 +2327,19 @@ function FocusedFrame({
   const canRender =
     (Boolean(appSource) && (isStreaming || looksComplete(appSource || ""))) ||
     Boolean(draftSource && isStreaming);
+
+  // Per-screen Sandpack escape hatch — the FailurePanel's "try the
+  // slower renderer" small print flips THIS frame to the parity mount.
+  // Self-resetting: any source change (a chat fix, an undo) flips back
+  // to Fast — the user asked for Sandpack to diagnose ONE broken
+  // render, not as a sticky preference. Parity caveat applies:
+  // Sandpack consumes @gradeui/ui from npm, so unpublished components
+  // are missing there (the publish-lag gotcha in STUDIO.md).
+  const [forcedSandpack, setForcedSandpack] = useState(false);
+  useEffect(() => {
+    setForcedSandpack(false);
+  }, [appSource]);
+  const effectiveRendererMode = forcedSandpack ? "sandpack" : rendererMode;
 
   const preparedSource = useMemo(
     () => (appSource ? prepareAppSource(appSource) : PLAYGROUND_PLACEHOLDER_APP),
@@ -2418,7 +2510,7 @@ function FocusedFrame({
         hidden && "hidden"
       )}
     >
-      {rendererMode === "fast" ? (
+      {effectiveRendererMode === "fast" ? (
         <FocusedFastMount
           appSource={appSource}
           draftSource={draftSource}
@@ -2442,19 +2534,41 @@ function FocusedFrame({
           onSourceEdit={onSourceMutation}
           zoom={artboardZoom}
           fitMode={artboardFitMode}
+          gesturing={artboardGesturing}
+          interactionMode={interactionMode}
           zoomCanvasRef={artboardCanvasRef}
           artboardSize={artboardSize}
+          onZoomBy={onArtboardZoomBy}
           onContentHeight={onContentHeight}
+          onTrySandpack={() => setForcedSandpack(true)}
         />
       ) : (
-        <FocusedSandpackMount
-          sandpackFiles={sandpackFiles}
-          preparedSource={preparedSource}
-          mode={mode}
-          view={view}
-          canRender={canRender}
-          viewportWidth={viewportWidth}
-        />
+        <>
+          <FocusedSandpackMount
+            sandpackFiles={sandpackFiles}
+            preparedSource={preparedSource}
+            mode={mode}
+            view={view}
+            canRender={canRender}
+            viewportWidth={viewportWidth}
+          />
+          {/* Escape-hatch chrome — only when the user forced Sandpack
+              from the FailurePanel. One pill back to the default
+              renderer (a source change also auto-reverts). */}
+          {forcedSandpack && (
+            <button
+              type="button"
+              onClick={() => setForcedSandpack(false)}
+              className={cn(
+                "absolute right-3 top-3 z-30 rounded-full border border-border",
+                "bg-background/90 px-3 py-1 text-xs text-muted-foreground shadow-sm",
+                "backdrop-blur transition-colors hover:text-foreground"
+              )}
+            >
+              Sandpack (parity) · Back to fast renderer
+            </button>
+          )}
+        </>
       )}
 
       {!canRender && (
@@ -2482,7 +2596,9 @@ function FocusedFrame({
           no reason. */}
       <PreviewLoadingDialog
         open={
-          rendererMode === "sandpack" && bundling && Boolean(appSource)
+          effectiveRendererMode === "sandpack" &&
+          bundling &&
+          Boolean(appSource)
         }
       />
     </div>
@@ -2546,6 +2662,34 @@ function PreviewLoadingDialog({ open }: { open: boolean }) {
  * packages/ui/components/ui/media-surface.tsx (`sourceKeyFor`) for
  * the in-iframe lookup; same rule applies.
  */
+/**
+ * Post the fill-in-flight key set into the focused preview iframe.
+ *
+ * Module-level (not a useCallback) because the per-slot
+ * `grade:component-action` listener is installed in a mount-once effect
+ * that would otherwise close over a stale callback. Replace semantics —
+ * always ships the FULL current pending set; callers post `[]` in their
+ * `finally` so an error never strands a slot mid-shimmer. The sandbox
+ * agent (both renderers — see STUDIO.md's two-agent rule) stamps
+ * `window.__gradeMediaPending` and dispatches
+ * `grade:media-pending-updated`; MediaSurface runs the Presence shimmer
+ * over its placeholder while its sourceKey is in the set.
+ */
+function postMediaPendingToFocusedIframe(keys: string[]): void {
+  const container = document.querySelector<HTMLElement>(
+    "[data-grade-focused-frame]",
+  );
+  const iframe = container?.querySelector("iframe");
+  try {
+    iframe?.contentWindow?.postMessage(
+      { type: "grade:set-media-pending", pending: keys },
+      "*",
+    );
+  } catch {
+    /* iframe gone — drop */
+  }
+}
+
 function clientSideSourceKey(source: { kind: string; [key: string]: unknown }): string {
   const s = source as Record<string, unknown>;
   switch (source.kind) {

@@ -281,6 +281,67 @@ async function preResolveUnknownImports(source: string): Promise<void> {
   );
 }
 
+// ─── Import self-heal ─────────────────────────────────────────────────
+//
+// Models — ESPECIALLY on edit turns — use a new icon in a REPLACE block
+// without extending the import line ("ExternalLink is not defined" at
+// runtime, caught by the boundary but still a broken screen). The
+// parent-side `autoImportGradeComponents` heals DS components against
+// the allowlist, but deliberately won't invent imports for names it
+// can't verify. HERE we can verify: the full lucide namespace is
+// already in memory. Any used-but-unimported, not-locally-defined
+// PascalCase tag that's a real lucide export gets merged into (or
+// added as) the lucide-react import before compile. Sandpack (parity
+// renderer) doesn't get this heal — acceptable, it's not the default.
+
+function healMissingLucideImports(source: string): string {
+  const used = new Set<string>();
+  const tagRx = /<([A-Z][A-Za-z0-9_]*)(?=[\s/>])/g;
+  let m: RegExpExecArray | null;
+  while ((m = tagRx.exec(source)) !== null) used.add(m[1]);
+  if (used.size === 0) return source;
+
+  // Anything already in scope: named imports (any module, alias-aware)
+  // + local component definitions.
+  const resolved = new Set<string>();
+  const importRx = /import\s*\{\s*([^}]+?)\s*\}\s*from\s*["'][^"']+["'];?/g;
+  while ((m = importRx.exec(source)) !== null) {
+    for (const raw of m[1].split(",")) {
+      const name = raw.trim().replace(/^.*\s+as\s+/, "").trim();
+      if (name) resolved.add(name);
+    }
+  }
+  const defRx = /(?:function|const|let|class)\s+([A-Z][A-Za-z0-9_]*)/g;
+  while ((m = defRx.exec(source)) !== null) resolved.add(m[1]);
+
+  const missing = [...used]
+    .filter((name) => !resolved.has(name))
+    .filter((name) => {
+      const exp = (LucideReact as Record<string, unknown>)[name];
+      return typeof exp === "function" || typeof exp === "object";
+    })
+    .sort();
+  if (missing.length === 0) return source;
+
+  const lucideImportRx =
+    /import\s*\{\s*([^}]+?)\s*\}\s*from\s*["']lucide-react["'];?/;
+  const existing = source.match(lucideImportRx);
+  if (existing) {
+    const names = new Set(
+      existing[1]
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    );
+    for (const name of missing) names.add(name);
+    return source.replace(
+      lucideImportRx,
+      `import { ${[...names].join(", ")} } from "lucide-react";`
+    );
+  }
+  return `import { ${missing.join(", ")} } from "lucide-react";\n${source}`;
+}
+
 // ─── Compile ──────────────────────────────────────────────────────────
 
 interface CompileResult {
@@ -339,24 +400,63 @@ function PreviewWrap({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Runtime error panel ──────────────────────────────────────────────
+//
+// The friendly face of a broken screen. Generated code WILL throw —
+// the design goal is that the user never sees a raw stack or the
+// Next.js dev overlay for it (see the error-containment block in the
+// page effect). Human-first copy, the recovery actions that actually
+// exist (chat fix / toolbar Undo), and the technical detail tucked
+// behind a disclosure for whoever wants it.
 
 function FailurePanel({ error }: { error: Error }) {
+  const detail = error.message.replace(/^\/?App\.tsx:\s*/, "");
   return (
-    <div className="h-full overflow-auto p-6 text-sm">
-      <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive-soft p-4 text-destructive-deep">
-        <div className="flex-1 min-w-0 space-y-2">
-          <div className="font-medium leading-tight">
-            Fast renderer couldn&rsquo;t run the snippet
-          </div>
-          <pre className="text-xs whitespace-pre-wrap break-words font-mono opacity-90 bg-background/40 border border-border rounded px-2 py-1.5">
-            {error.message.replace(/^\/?App\.tsx:\s*/, "")}
-          </pre>
-          <p className="text-xs opacity-80">
-            Try the chat&rsquo;s &ldquo;fix the syntax&rdquo; prompt, or
-            flip Dev &rarr; Sandpack in the Studio header to load it
-            through the full bundler (slower, more forgiving).
+    <div className="flex h-full min-h-[60vh] items-center justify-center bg-background p-8">
+      <div className="w-full max-w-md space-y-4 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+          <LucideReact.Wrench
+            className="h-5 w-5 text-muted-foreground"
+            aria-hidden
+          />
+        </div>
+        <div className="space-y-1.5">
+          <h2 className="text-base font-semibold text-foreground">
+            This screen hit a snag
+          </h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            The generated code couldn&rsquo;t run. Ask the chat to fix it
+            (&ldquo;fix the error on this screen&rdquo;), or press{" "}
+            <span className="font-medium text-foreground">Undo</span> in
+            the toolbar to roll back to the last working version.
           </p>
         </div>
+        <details className="group mx-auto max-w-sm text-left">
+          <summary className="cursor-pointer select-none text-center text-xs text-muted-foreground/70 transition-colors hover:text-foreground">
+            Show technical details
+          </summary>
+          <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+            {detail}
+          </pre>
+        </details>
+        {/* Small print — the parity-renderer escape hatch. Only helps
+            when the failure is SPECIFIC to the fast renderer (a package
+            esm.sh can't transform, a resolution quirk): genuinely broken
+            code fails in any bundler, and Sandpack consumes @gradeui/ui
+            from npm, so unpublished components are missing there. The
+            parent owns the actual switch (grade:fast-try-sandpack). */}
+        <button
+          type="button"
+          onClick={() =>
+            window.parent.postMessage(
+              { type: "grade:fast-try-sandpack" },
+              "*"
+            )
+          }
+          className="mx-auto block text-[11px] text-muted-foreground/60 underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+        >
+          Still stuck? Try the slower renderer (Sandpack) — helps when the
+          error is specific to the fast renderer.
+        </button>
       </div>
     </div>
   );
@@ -429,11 +529,35 @@ export default function FastSandboxPage() {
     // that measurement around (fill ↔ framed mode oscillation); with
     // the buffer swap the height only changes when a frame actually
     // lands.
+    // ── Error containment vs the Next dev overlay ─────────────────────
+    //
+    // React 19 reports boundary-caught errors through console.error,
+    // and Next's dev overlay treats every console.error as a modal-
+    // worthy event — so a HANDLED generated-code error (boundary →
+    // FailurePanel) still summoned the full red Next overlay inside
+    // the preview. The createRoot error callbacks below replace that
+    // default reporting with a quiet console.warn: the user sees OUR
+    // panel, the engineer still sees the detail in the console, and
+    // the overlay stays out of it. Genuine sandbox-page bugs (not
+    // generated code) keep the loud path — see the window-level
+    // interceptor's stack heuristic in the page effect.
+    const quietReport =
+      (label: string) =>
+      (error: unknown) =>
+        // eslint-disable-next-line no-console
+        console.warn(`[fast-sandbox] ${label}:`, error);
     const makeBuffer = () => {
       const el = document.createElement("div");
       el.style.display = "none";
       host.appendChild(el);
-      return { el, root: createRoot(el) };
+      return {
+        el,
+        root: createRoot(el, {
+          onCaughtError: quietReport("contained by boundary"),
+          onUncaughtError: quietReport("uncaught in generated tree"),
+          onRecoverableError: quietReport("recovered"),
+        }),
+      };
     };
     const buffers = [makeBuffer(), makeBuffer()];
     let active = 0;
@@ -518,6 +642,59 @@ export default function FastSandboxPage() {
       }
     };
 
+    // ── Event-handler + promise error interception ───────────────────
+    //
+    // Error boundaries can't catch throws from EVENT HANDLERS or
+    // unhandled promise rejections — those bubble to window and, in
+    // dev, summon the full Next error overlay over the preview. For
+    // errors whose stack points at the COMPILED SNIPPET (the
+    // `eval at compile` frames are unmistakable), mark the event
+    // handled, drop a small self-dismissing chip into the preview so
+    // the user knows their click did something wrong, and leave a
+    // console.warn breadcrumb. Errors from the sandbox page itself
+    // don't match the heuristic and stay loud — we want the overlay
+    // for OUR bugs.
+    let errorChipEl: HTMLDivElement | null = null;
+    let errorChipTimer = 0;
+    const showRuntimeErrorChip = (message: string) => {
+      if (!errorChipEl) {
+        errorChipEl = document.createElement("div");
+        errorChipEl.setAttribute("data-gds-part", "runtime-error-chip");
+        errorChipEl.style.cssText =
+          "position:fixed;left:12px;bottom:12px;z-index:2147483000;" +
+          "max-width:380px;padding:8px 12px;border-radius:10px;" +
+          "background:rgb(23 23 23 / 0.92);color:#fff;" +
+          "font:500 12px/1.45 ui-sans-serif,system-ui;" +
+          "box-shadow:0 4px 18px rgb(0 0 0 / 0.35);" +
+          "pointer-events:none;transition:opacity .3s;";
+        document.body.appendChild(errorChipEl);
+      }
+      errorChipEl.textContent = `⚠ Something in this screen threw — "${message}". Ask the chat to fix it.`;
+      errorChipEl.style.opacity = "1";
+      window.clearTimeout(errorChipTimer);
+      errorChipTimer = window.setTimeout(() => {
+        if (errorChipEl) errorChipEl.style.opacity = "0";
+      }, 6000);
+    };
+    const isFromGeneratedCode = (err: unknown): boolean =>
+      err instanceof Error && /eval at compile/.test(err.stack ?? "");
+    const onWindowError = (e: ErrorEvent) => {
+      if (!isFromGeneratedCode(e.error)) return;
+      e.preventDefault();
+      quietReport("event-handler error")(e.error);
+      showRuntimeErrorChip(e.error?.message ?? "unknown error");
+    };
+    const onRejection = (e: PromiseRejectionEvent) => {
+      if (!isFromGeneratedCode(e.reason)) return;
+      e.preventDefault();
+      quietReport("unhandled rejection")(e.reason);
+      showRuntimeErrorChip(
+        e.reason instanceof Error ? e.reason.message : String(e.reason)
+      );
+    };
+    window.addEventListener("error", onWindowError);
+    window.addEventListener("unhandledrejection", onRejection);
+
     // Per-compile sequence — keys each RenderErrorBoundary so every
     // attempt starts un-tripped. Closure state, lives with the roots.
     let renderSeq = 0;
@@ -531,6 +708,10 @@ export default function FastSandboxPage() {
       // esm.sh BEFORE sucrase + require() run. Failures don't throw —
       // they land in CDN_CACHE marked with __cdn_error__ so the synchronous
       // resolveImport path can surface a clean error to the user.
+      // Self-heal missing lucide imports before anything else — see
+      // healMissingLucideImports. Fixes both fresh model output and
+      // edit-turn folds that changed JSX without touching imports.
+      source = healMissingLucideImports(source);
       await preResolveUnknownImports(source);
       const { Component, error } = compile(source);
       if (error) {
@@ -921,6 +1102,34 @@ export default function FastSandboxPage() {
           }
           break;
         }
+        case "grade:set-media-pending": {
+          // Fill-in-flight signal. The canvas posts the list of
+          // sourceKeys it's about to resolve BEFORE hitting
+          // /api/media/resolve-batch, and posts an empty list in its
+          // `finally`. Replace semantics (like set-media-overrides) —
+          // the canvas always ships the full current pending set, so a
+          // cleared fill never strands keys. MediaSurface's
+          // `useFillPending` hook re-reads on the event and runs the
+          // Presence shimmer over its placeholder while its key is in
+          // the set.
+          const keys = Array.isArray(data.pending)
+            ? (data.pending as unknown[]).filter(
+                (k): k is string => typeof k === "string",
+              )
+            : [];
+          const w = window as unknown as {
+            __gradeMediaPending?: Record<string, true>;
+          };
+          w.__gradeMediaPending = Object.fromEntries(
+            keys.map((k) => [k, true as const]),
+          );
+          try {
+            window.dispatchEvent(new Event("grade:media-pending-updated"));
+          } catch {
+            /* no-op for old browsers */
+          }
+          break;
+        }
         case "grade:set-media-overrides": {
           // Same protocol as set-media-urls but for per-instance prop
           // overrides. Canvas keeps `sourceKey → Partial<MediaSurfaceProps>`
@@ -1063,6 +1272,36 @@ export default function FastSandboxPage() {
 
     window.addEventListener("message", handleMessage);
 
+    // Pinch / ctrl+wheel forwarding — browsers report a trackpad pinch
+    // as a `wheel` event with `ctrlKey: true`. The parent's artboard
+    // zoom can't see gestures that start over THIS document (the
+    // iframe swallows them), so forward the delta out as
+    // `grade:zoom-gesture` and let the canvas / share view feed it into
+    // `useArtboardZoom.zoomBy`. preventDefault stops the browser's own
+    // page-zoom inside the iframe. Plain scrolling (no ctrl/meta) is
+    // untouched. Mirrored in the Sandpack agent (two-agent rule).
+    const onPinchWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      try {
+        // clientX/Y are iframe-local CSS px — the parent converts them
+        // through the iframe's scale to anchor the zoom at the pointer
+        // (Figma's zoom-to-cursor; see FocusedFastMount).
+        window.parent.postMessage(
+          {
+            type: "grade:zoom-gesture",
+            deltaY: e.deltaY,
+            clientX: e.clientX,
+            clientY: e.clientY,
+          },
+          "*",
+        );
+      } catch {
+        /* parent gone — drop */
+      }
+    };
+    window.addEventListener("wheel", onPinchWheel, { passive: false });
+
     // Standalone-preview handoff. If the page was opened directly
     // (not as an iframe child) with a hash like `#screen=<key>`, we
     // read the screen's payload from localStorage under that key
@@ -1140,6 +1379,7 @@ export default function FastSandboxPage() {
 
     return () => {
       window.removeEventListener("message", handleMessage);
+      window.removeEventListener("wheel", onPinchWheel);
       if (onStorage) window.removeEventListener("storage", onStorage);
       window.removeEventListener("resize", renderPins);
       window.clearInterval(pinPoll);
@@ -1147,6 +1387,11 @@ export default function FastSandboxPage() {
       pinHost = null;
       agentTeardownRef.current?.teardown();
       agentTeardownRef.current = null;
+      window.removeEventListener("error", onWindowError);
+      window.removeEventListener("unhandledrejection", onRejection);
+      window.clearTimeout(errorChipTimer);
+      errorChipEl?.remove();
+      errorChipEl = null;
       for (const b of buffers) {
         b.root.unmount();
         b.el.remove();
