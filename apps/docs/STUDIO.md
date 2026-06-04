@@ -3,6 +3,8 @@
 Studio is the AI-driven page composer that lives at `gradeui.com/studio`. It lets you describe a UI in natural language, watch the model emit a JSX app block, and preview it live inside a Sandpack iframe. This doc is the map for anyone editing Studio internals.
 
 > **Sibling doc:** [STUDIO-SHELL.md](./STUDIO-SHELL.md) covers the chrome — layout (AppShell + body + Sheet), the data model (Project / Team / Org / User), the `StudioStorage` adapter + migration chain, permission resolver, URL history, impersonation / super-admin, and the Studio settings backend selector. This file (STUDIO.md) is about the *model* side: allow-list, Sandpack shims, selection bus, system prompt. If you're working on UI structure, identity, or persistence, go there first.
+>
+> **Canvas direction:** [`STUDIO-CANVAS.md`](../../STUDIO-CANVAS.md) (repo root) is the design doc for where the canvas goes next — the freeform object layer (screens / images / media placeholders / notes as a scene graph on the existing camera), AI placement via chat tool-calls, the live-frame/poster economics, bounded↔infinite bounds, and the **sandbox origin split** (the security prerequisite before any other-people's-code surface ships). If a task touches multi-object canvas work, camera-adjacent features, or sandbox isolation, read it first.
 
 ## File layout
 

@@ -195,6 +195,8 @@ These docs are the source of truth for where Studio is going. Read them before r
 
 - **[`STUDIO-EDITS.md`](./STUDIO-EDITS.md)** — **Streamed AI edits (true diffs)**: iteration turns emit anchored `jsx-edit` SEARCH/REPLACE blocks instead of regenerating the full component — output tokens shrink from O(page) to O(change), each block applies the moment it seals, and the double-buffered preview morphs near-instantly. Covers the wire contract, the three-tier apply engine (`studio-edit-blocks.ts`), the three-lane draft gate (fresh-build partials / applied-edit drafts / hold-and-snap), failure chips with retry-as-regen, and the full-fence escape hatch. X0–X4 rollout.
 
+- **[`STUDIO-CANVAS.md`](./STUDIO-CANVAS.md)** — The **freeform AI canvas**: from "a camera pointed at one screen" to a scene graph of many objects (screens / images / media placeholders / notes) placed freeform on the existing pointer-anchored camera. Covers the `canvas_objects` model, the three render tiers (plain DOM / STUDIO-CAPTURE posters / promoted live iframes), AI placement via a `placeObjects` chat tool with camera framing, paste/drop, bounded↔infinite bounds, and the **sandbox origin split** — the security prerequisite (same-origin iframes are not a boundary) that must land before any other-people's-code surface ships. K0–K5 rollout.
+
 These are siblings: learning is *what the system learns and generates*; chat is *how it presents that*; themes is *the unit people remix and share*; storage is *the user's own bytes that make a prototype theirs*; audit is *the trail of who did what across all of it*; fills is *how a frame gets painted*; embed is *how a finished render leaves Grade for the open web*. They cross-reference for individual features.
 
 ## See also
