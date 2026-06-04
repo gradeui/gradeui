@@ -440,19 +440,82 @@ export default function FastSandboxPage() {
     buffers[active].el.style.display = "";
 
     /** Commit `node` into the back buffer (synchronously), then flip
-     *  the buffers before paint and retire the old front. */
-    const commitAndSwap = (node: React.ReactNode) => {
+     *  the buffers before paint and retire the old front.
+     *
+     *  `flashChanges` (STUDIO-EDITS X4 — "show me what the AI touched"):
+     *  before retiring the old frame, diff the two buffers by
+     *  `data-gds-source-id` and stamp `data-gds-flash` on every node
+     *  whose content changed — the DS stylesheet pulses them with a
+     *  short outline+wash animation. Source-id numbering is stable in
+     *  document order, so for the common edit-turn shape (props/text
+     *  changed in place) the diff is exact; insertions shift later ids
+     *  and over-flash slightly, which reads as "this area changed" —
+     *  fine. A REWRITE (>40% of nodes differ, or node counts diverge
+     *  wildly) skips the flash entirely: that's a new page, not an
+     *  edit, and a full-screen pulse is noise. */
+    const commitAndSwap = (
+      node: React.ReactNode,
+      opts?: { flashChanges?: boolean }
+    ) => {
       const back = buffers[1 - active];
+      const oldFront = buffers[active];
+      // Snapshot the OLD frame's per-node content before anything moves.
+      let oldById: Map<string, string> | null = null;
+      if (opts?.flashChanges) {
+        oldById = new Map();
+        for (const el of oldFront.el.querySelectorAll(
+          "[data-gds-source-id]"
+        )) {
+          oldById.set(
+            el.getAttribute("data-gds-source-id")!,
+            (el as HTMLElement).outerHTML
+          );
+        }
+      }
       flushSync(() => {
         back.root.render(node);
       });
-      const oldFront = buffers[active];
       active = 1 - active;
       back.el.style.display = "";
       oldFront.el.style.display = "none";
       // Clear the retired tree off the sync path — it's invisible, and
       // dropping it keeps duplicate data-gds-* nodes out of the DOM.
       oldFront.root.render(null);
+
+      if (oldById && oldById.size > 0) {
+        const newNodes = back.el.querySelectorAll("[data-gds-source-id]");
+        const changed: HTMLElement[] = [];
+        for (const el of newNodes) {
+          const id = el.getAttribute("data-gds-source-id")!;
+          const prev = oldById.get(id);
+          if (prev !== undefined && prev !== (el as HTMLElement).outerHTML) {
+            changed.push(el as HTMLElement);
+          }
+        }
+        // Rewrite heuristic — a page-wide change isn't an "edit".
+        const total = newNodes.length || 1;
+        if (changed.length > 0 && changed.length / total <= 0.4) {
+          // INNERMOST changed nodes only: a changed <Button> also makes
+          // every ancestor's outerHTML differ — flashing the chain
+          // would pulse half the page for one prop. Keep a node only
+          // when it contains no OTHER changed node (i.e. it IS the leaf
+          // of the change).
+          const innermost = changed.filter(
+            (el) => !changed.some((other) => other !== el && el.contains(other))
+          );
+          for (const el of innermost) {
+            el.removeAttribute("data-gds-flash"); // restart if mid-pulse
+            // Force a style flush so re-adding retriggers the animation.
+            void el.offsetWidth;
+            el.setAttribute("data-gds-flash", "");
+            el.addEventListener(
+              "animationend",
+              () => el.removeAttribute("data-gds-flash"),
+              { once: true }
+            );
+          }
+        }
+      }
     };
 
     // Per-compile sequence — keys each RenderErrorBoundary so every
@@ -536,6 +599,9 @@ export default function FastSandboxPage() {
       // throws-while-rendering case (bad props, undefined lookups).
       let sealedFailed = false;
       commitAndSwap(
+        // Flash the changed nodes — sealed renders only (speculative
+        // drafts land 4×/sec; pulsing per tick would be noise, and the
+        // settle commit re-renders the same content anyway).
         <PreviewWrap>
           <RenderErrorBoundary
             key={renderSeq}
@@ -554,7 +620,8 @@ export default function FastSandboxPage() {
           >
             <Component />
           </RenderErrorBoundary>
-        </PreviewWrap>
+        </PreviewWrap>,
+        { flashChanges: true }
       );
       // Don't ack a failed render — the Fill flow must not start
       // collecting against the failure panel's DOM.

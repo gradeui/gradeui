@@ -1045,6 +1045,7 @@ export function SelectionInspector({
             defaultClasses: getContractDefaultClasses(
               componentName ?? selection.tag,
             ),
+            viewportPx: selection?.viewportPx,
           };
           return (
             <>
@@ -2476,6 +2477,9 @@ interface StyleGroupProps {
    *  extracted from source at generation time). Parsed with the same
    *  Tailwind parsers to ghost REAL default chips on unset fields. */
   defaultClasses?: string | null;
+  /** Preview viewport width at click time (selection payload) — the
+   *  responsive editor marks the breakpoint that currently wins. */
+  viewportPx?: number;
 }
 
 /** Format a computed value for the muted "Default ·" caption — drops the
@@ -2612,12 +2616,18 @@ interface BpOption {
  * mintable class must be safelisted) — they surface read-only with a
  * pointer at the Class-names row / chat.
  */
+/** Tailwind min-widths for the editable breakpoints — shown in the
+ *  row labels and used to mark which breakpoint the preview's current
+ *  viewport is actually applying. */
+const BP_MIN_PX: Record<string, number> = { sm: 640, md: 768, lg: 1024 };
+
 function BreakpointOverridesEditor({
   property,
   body,
   options,
   className0,
   baseCls,
+  viewportPx,
   disabled,
   onChangeClassName,
 }: {
@@ -2632,6 +2642,9 @@ function BreakpointOverridesEditor({
    *  override shows "Inherit · <whatever wins below it>". Null when the
    *  base field is unset (element/theme default applies). */
   baseCls?: string | null;
+  /** Preview viewport width at selection time — marks the "Current"
+   *  breakpoint. Undefined (older selections) → no marker. */
+  viewportPx?: number;
   disabled?: boolean;
   onChangeClassName: (next: string) => void;
 }) {
@@ -2656,6 +2669,23 @@ function BreakpointOverridesEditor({
     }
     return baseCls ?? null;
   };
+
+  // Which row is the preview ACTUALLY applying right now? The largest
+  // breakpoint whose min-width fits the captured viewport; below sm,
+  // the base row is current. Undefined viewport → no marker at all.
+  const currentBp: ResponsiveBp | "base" | null =
+    viewportPx === undefined
+      ? null
+      : ([...EDITABLE_BREAKPOINTS]
+          .reverse()
+          .find((bp) => viewportPx >= BP_MIN_PX[bp]) as
+          | ResponsiveBp
+          | undefined) ?? "base";
+  const currentBadge = (
+    <span className="rounded-[3px] bg-primary/15 px-1 py-px font-mono text-[9px] leading-none text-primary">
+      Current
+    </span>
+  );
 
   return (
     <Popover>
@@ -2685,19 +2715,37 @@ function BreakpointOverridesEditor({
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64 space-y-2 p-2.5">
+      <PopoverContent align="end" className="w-64 space-y-2.5 p-2.5">
         <p className="text-2xs leading-snug text-muted-foreground">
           Responsive {property} — each value applies from that breakpoint
-          up. The field below stays the base (mobile-first) value.
+          up (mobile-first).
         </p>
+        {/* Base row — read-only anchor: this IS the main field below,
+            shown here so the cascade has its starting point and the
+            "Current" marker has somewhere to land below 640px. */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <Label className={FIELD_LABEL}>Base · below 640px</Label>
+            {currentBp === "base" && currentBadge}
+          </div>
+          <div className="rounded-md border border-border/60 bg-muted/40 px-2 py-1 font-mono text-2xs text-muted-foreground">
+            {baseCls ?? "Inherit"}
+          </div>
+        </div>
         {EDITABLE_BREAKPOINTS.map((bp) => {
           const current = authoredAt(bp);
           const inherited = inheritedFor(bp);
           return (
-            <div key={bp} className="flex items-center gap-2">
-              <span className="w-8 shrink-0 font-mono text-2xs text-muted-foreground">
-                {bp}:
-              </span>
+            <div key={bp} className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <Label
+                  htmlFor={`bp-${property.replace(/\s+/g, "-")}-${bp}`}
+                  className={FIELD_LABEL}
+                >
+                  {bp} · {BP_MIN_PX[bp]}px+
+                </Label>
+                {currentBp === bp && currentBadge}
+              </div>
               <Select
                 value={current ?? "none"}
                 onValueChange={(next) =>
@@ -2712,7 +2760,11 @@ function BreakpointOverridesEditor({
                 }
                 disabled={disabled}
               >
-                <SelectTrigger size="2xs" className="w-full">
+                <SelectTrigger
+                  id={`bp-${property.replace(/\s+/g, "-")}-${bp}`}
+                  size="2xs"
+                  className="w-full"
+                >
                   <SelectValue placeholder="Inherit" />
                 </SelectTrigger>
                 <SelectContent size="2xs" position="item-aligned">
@@ -2764,6 +2816,7 @@ function TypographyGroup({
   onApplySource,
   computedStyle,
   defaultClasses,
+  viewportPx,
 }: StyleGroupProps) {
   const caps = getSpacingCapabilities({ tag, componentName });
   const showFontSize =
@@ -2816,6 +2869,7 @@ function TypographyGroup({
       options={options}
       className0={cn0}
       baseCls={baseCls}
+      viewportPx={viewportPx}
       disabled={disabled}
       onChangeClassName={onChangeClassName}
     />

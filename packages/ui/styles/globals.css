@@ -1367,6 +1367,50 @@ html[data-gds-streaming] body * {
 }
 
 /* ============================================
+   EDIT FLASH — data-gds-flash on changed nodes
+   ============================================
+   "Show me what the AI touched": when an edit turn (or any sealed
+   re-render) commits, the Fast Frame sandbox diffs the old and new
+   frames by data-gds-source-id and stamps `data-gds-flash` on the
+   innermost changed nodes. One short pulse — outline ring + a faint
+   primary wash — then the attribute is removed on animationend so the
+   next edit re-triggers cleanly. Tunable via the --gds-edit-flash-*
+   tokens. Honours reduced motion + the manual data-motion="off" toggle
+   (the broad animation reset above zeroes it). */
+:root {
+  --gds-edit-flash-duration: 900ms;
+  --gds-edit-flash-color: var(--primary);
+}
+
+[data-gds-flash] {
+  animation: gds-edit-flash var(--gds-edit-flash-duration) ease-out;
+}
+
+@keyframes gds-edit-flash {
+  0% {
+    outline: 2px solid oklch(var(--gds-edit-flash-color) / 0.9);
+    outline-offset: 2px;
+    background-color: oklch(var(--gds-edit-flash-color) / 0.1);
+  }
+  60% {
+    outline: 2px solid oklch(var(--gds-edit-flash-color) / 0.45);
+    outline-offset: 2px;
+    background-color: oklch(var(--gds-edit-flash-color) / 0.04);
+  }
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-gds-flash] {
+    animation: none;
+  }
+}
+
+/* ============================================
    TYPOGRAPHY UTILITIES
    ============================================ */
 

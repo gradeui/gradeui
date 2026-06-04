@@ -237,26 +237,40 @@ In the existing streaming effect in `studio-chat.tsx` (the one that owns
 
 ## Rollout
 
-- **X0 — protocol + parser + settle-apply.** EDIT MODE stanza (gated on
-  `editMode`), `studio-edit-blocks.ts` with unit tests over the apply
-  tiers, settle-time fold → `onLatestCode`, full-fence fallback, failure
-  chip with retry-as-regen. No streaming apply yet — turns are already
-  10–30× faster because output is tiny.
-- **X1 — streaming per-block apply.** Sealed blocks morph the preview
-  live via the draft channel; the three-lane draft gate. The "fairly
-  instant" milestone.
-- **X2 — server QA + telemetry.** Route-side fold + `validateJsx` on the
-  result; log apply-tier hit rates and block failure rates per
-  provider/model (Gemini vs Claude vs gpt-oss will differ — this data
-  decides whether tier-3 anchor-trimming earns its keep or a prompt fix
-  is cheaper). Feeds the STUDIO-LEARNING gaps log.
+- **X0 — protocol + parser + settle-apply.** ✅ BUILT. EDIT MODE stanza
+  (gated on `editMode`), `studio-edit-blocks.ts` (sanity-tested over the
+  apply tiers), settle-time fold → `onLatestCode`, full-fence fallback,
+  failure chip with retry-as-regen. Hardening added along the way:
+  block dedupe + 24-block cap (model repetition loops), 8192
+  output-token ceiling on edit turns, a sucrase SYNTAX GATE on every
+  fold (a mis-anchored apply can never commit broken JSX), and
+  source-id scrubbing at the send/write boundaries (runtime
+  `data-gds-source-id` attributes were polluting anchors).
+- **X1 — streaming per-block apply.** ✅ BUILT. Sealed blocks morph the
+  preview live via the draft channel (syntax-gated, throttle-bypassed);
+  the three-lane draft gate.
+- **X2 — server QA + telemetry.** ✅ BUILT. Route-side fold +
+  `validateJsx` on the result; one grep-shaped log line per edit turn:
+  `[chat/qa:edits] provider=… model=… blocks=… applied=… failed=…
+  reasons=… tiers=1:…,2:…,3:… | <validator>`, plus
+  `mode=full-fence-fallback` tracking for models that ignore EDIT MODE.
+  Tier hit-rates decide whether tier-3 anchor-trimming earns its keep
+  or a prompt fix is cheaper. Event-table feed for the STUDIO-LEARNING
+  gaps log still pending (no events substrate yet — see STUDIO-AUDIT).
 - **X3 — tool-call transport.** When STUDIO-CHAT Phase C lands the AI SDK
   tool protocol, move blocks from fences to a `str_replace` tool; the
   parser's extraction layer swaps, apply engine untouched. Streaming
   apply maps to streamed tool-call deltas.
-- **X4 — morph polish.** Diff the pre/post source to identify the changed
-  region, map it to `data-gds-source-id`s, and re-arm the (currently
-  dormant) `data-gds-streaming` entrance treatment for JUST those nodes —
-  the edited card eases in while the rest of the page sits perfectly
-  still. Also the hook for a "flash the changed element" affordance that
-  shows the user what the AI touched.
+- **X4 — morph polish.** ✅ BUILT (the flash half). On every sealed
+  commit the sandbox diffs old vs new frame by `data-gds-source-id`
+  (numbering is document-order-stable, so in-place edits diff exactly),
+  keeps the INNERMOST changed nodes (ancestors' outerHTML differs too —
+  flashing the chain would pulse half the page), and stamps
+  `data-gds-flash` — a one-shot outline + primary wash pulse
+  (`--gds-edit-flash-*` tokens in globals.css, reduced-motion aware,
+  attr removed on animationend). Rewrites skip it (>40% of nodes
+  changed = a new page, not an edit); speculative drafts skip it (4/sec
+  pulsing is noise). Bonus: prop-panel and TokenField commits get the
+  flash for free — every committed change shows what it touched. The
+  changed-nodes-only entrance-transition re-arm stays parked until a
+  diff-aware renderer exists.

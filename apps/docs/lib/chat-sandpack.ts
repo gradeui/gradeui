@@ -114,6 +114,9 @@ export interface StudioSelection {
     /** Computed text-align ("left", "center", "start", …). */
     textAlign?: string;
   };
+  /** Preview viewport width (iframe innerWidth) at click time — drives
+   *  the responsive editor's "Current" breakpoint marker. */
+  viewportPx?: number;
 }
 
 /** One step in the ancestor chain. The inspector renders these as

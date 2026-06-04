@@ -101,6 +101,12 @@ export type SelectionPayload = {
    *  of a blank control. Display-only — the groups still write explicit
    *  Tailwind tokens on change. */
   computedStyle?: ComputedStyleHint;
+  /** The PREVIEW's viewport width (the iframe's window.innerWidth) at
+   *  click time — the inspector's responsive editor uses it to mark
+   *  which breakpoint is currently winning ("Current"). Captured at
+   *  selection, so a device-preset flip after selecting goes stale
+   *  until the next pick. */
+  viewportPx?: number;
 };
 
 /** Effective computed values for the style properties the inspector
@@ -550,6 +556,7 @@ export function installStudioSelectionAgent(
       mediaAlt,
       chain,
       computedStyle,
+      viewportPx: el.ownerDocument?.defaultView?.innerWidth,
     };
   }
 

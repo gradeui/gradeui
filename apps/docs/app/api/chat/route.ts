@@ -49,6 +49,10 @@ import {
   extractFencedJsxBlock,
 } from "@/lib/qa/validate-jsx";
 import {
+  extractEditBlocks,
+  applyEditTurn,
+} from "@/lib/studio-edit-blocks";
+import {
   renderComponentRefsBlock,
   relevantComponentNames,
   ALLOWED_COMPONENTS,
@@ -71,6 +75,31 @@ const ALLOWED_COMPONENT_SET = new Set<string>(
  * assistant's prior turns contain the existing component source, whose
  * imports tell us which refs to surface on the next iteration.
  */
+/**
+ * The component source the client inlined into the LAST user turn
+ * ("Here is the current component. Modify it…"). Edit-turn QA folds
+ * the model's blocks against this — the same base the client anchors
+ * against, since both sides see the source-id-stripped text.
+ */
+function lastInlinedSource(messages: UIMessage[]): string | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== "user") continue;
+    const text = (m.parts ?? [])
+      .filter(
+        (p): p is { type: "text"; text: string } =>
+          (p as { type?: string }).type === "text" &&
+          typeof (p as { text?: string }).text === "string"
+      )
+      .map((p) => p.text)
+      .join("\n");
+    // (?!-) keeps jsx-edit fences out, mirroring the client's parser.
+    const m2 = text.match(/```(?:jsx|tsx)(?!-)\s*\n([\s\S]*?)\n```/);
+    return m2 ? m2[1] : null;
+  }
+  return null;
+}
+
 function textFromMessages(messages: UIMessage[]): string {
   const chunks: string[] = [];
   for (const m of messages) {
@@ -524,6 +553,56 @@ export async function POST(req: Request) {
       // these back to the chat UI is a follow-up; the logging gives us
       // the data to know whether the validator is worth wiring further.
       onFinish: ({ text }) => {
+        // ── Edit-turn QA + telemetry (STUDIO-EDITS X2) ──────────────
+        // Server-side mirror of the client's fold: extract blocks,
+        // apply against the source the user turn inlined, validate the
+        // RESULT. Logging-only (client stays authoritative for apply).
+        // The line is grep-shaped: tier hit-rates and failure reasons
+        // per provider/model decide whether tier-3 anchor-trimming
+        // earns its keep or a prompt fix is cheaper, and the
+        // full-fence-fallback rate shows which models ignore EDIT MODE.
+        if (editMode) {
+          const tag = `provider=${provider} model=${model}`;
+          const scan = extractEditBlocks(text, { sealedOnly: true });
+          if (scan.sawEditFence) {
+            const base = lastInlinedSource(messages);
+            if (!base) {
+              // eslint-disable-next-line no-console
+              console.log(`[chat/qa:edits] ${tag} mode=edit no-base-source`);
+              return;
+            }
+            const folded = applyEditTurn(base, scan.blocks);
+            const tiers = { 1: 0, 2: 0, 3: 0 } as Record<1 | 2 | 3, number>;
+            for (const a of folded.applied) tiers[a.tier]++;
+            const reasons = folded.failed.map((f) => f.reason).join(",");
+            const validator =
+              folded.applied.length > 0
+                ? formatViolations(
+                    validateJsx(folded.next, {
+                      contracts: COMPONENT_CONTRACTS,
+                    })
+                  )
+                : "skipped (nothing applied)";
+            // eslint-disable-next-line no-console
+            console.log(
+              `[chat/qa:edits] ${tag} mode=edit blocks=${scan.blocks.length} ` +
+                `applied=${folded.applied.length} failed=${folded.failed.length}` +
+                `${reasons ? ` reasons=${reasons}` : ""} ` +
+                `tiers=1:${tiers[1]},2:${tiers[2]},3:${tiers[3]} | ${validator}`
+            );
+            return;
+          }
+          // Edit mode but the model used the full-fence escape hatch
+          // (or produced no code) — track the fallback rate, then let
+          // the standard full-fence validation below run on it.
+          // eslint-disable-next-line no-console
+          console.log(
+            `[chat/qa:edits] ${tag} mode=${
+              extractFencedJsxBlock(text) ? "full-fence-fallback" : "no-code"
+            }`
+          );
+        }
+
         const jsx = extractFencedJsxBlock(text);
         if (!jsx) return;
         const validation = validateJsx(jsx, {

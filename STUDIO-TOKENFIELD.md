@@ -158,10 +158,20 @@ breakpoint you edit; it routinely catches people out):
   `lib/tailwind-classes.ts` — exact-list bodies shared between badge and
   editor so they can't drift.
 
-Out of scope for v1 (revisit if demand): a viewport-aware mode where the
-canvas viewport highlights which override currently wins in the preview;
-responsive overrides for non-typography areas (spacing is the likely
-next ask — the machinery is family-generic on purpose).
+The popover is cascade-literate: a read-only **Base** row anchors the
+ladder ("Base · below 640px" + the authored base class), each breakpoint
+row is labelled with its min-width ("md · 768px+"), un-overridden rows
+read "Inherit · <whatever wins below>", and a **Current** badge marks
+the row the preview is actually applying. "Current" comes from
+`viewportPx` on the selection payload — the iframe's `innerWidth`
+captured at click time (a viewport flip after selecting goes stale until
+the next pick; acceptable, and the natural upgrade is re-reporting on
+`grade:` viewport pushes).
+
+Out of scope for v1 (revisit if demand): responsive overrides for
+non-typography areas (spacing is the likely next ask — the machinery is
+family-generic on purpose); live re-capture of `viewportPx` on viewport
+flips.
 
 ## Still open (tracked)
 
