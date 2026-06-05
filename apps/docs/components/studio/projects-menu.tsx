@@ -3,11 +3,14 @@
 /**
  * ProjectsMenu — left-panel content when the canvas is in "All screens" mode.
  *
- * Replaces StudioChat in the left column when the user is at the grid
- * view (no focused screen). The chat is screen-scoped — it makes no
- * sense without a target — so we use that real estate for project
- * navigation instead. Click a screen here to enter Fit mode on it
- * (which swaps the panel back to Chat for that screen).
+ * Structure (June 2026 restructure):
+ *   - Header = the PROJECT SWITCHER: active project name + a dropdown
+ *     of all projects (names only — descriptions live in settings) +
+ *     "New project". The settings cog targets the active project.
+ *   - Body = the active project's SECTIONS as the primary nav:
+ *     Screens / Flows (soon) / Motion Studio / Styles / Assets.
+ *   - Assets is its own panel page (back-arrow returns to the nav),
+ *     not an always-on tail below the list.
  *
  * Built on @gradeui/ui's Sidebar compound:
  *   - SidebarHeader: Studio brand + Beta badge.
@@ -32,16 +35,24 @@
 
 import * as React from "react";
 import {
+  Check,
+  ChevronsUpDown,
   Clapperboard,
   Folder,
   GitBranch,
+  Images,
   Monitor,
   Palette,
   Plus,
   Settings,
 } from "lucide-react";
 import {
-  Badge,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -57,8 +68,14 @@ import { ProjectSettingsSheet } from "@/components/studio/project-settings-sheet
 /** The active project's nav sections. "motions" renders as "Motion
  *  Studio" (the id stays stable for storage/URLs); "flows" is reserved
  *  (FlowCanvas, D8) and renders disabled; "styles" routes to the theme
- *  panel. */
-export type ProjectSection = "screens" | "flows" | "motions" | "styles";
+ *  panel; "assets" takes over the CANVAS with the full-screen asset
+ *  library. */
+export type ProjectSection =
+  | "screens"
+  | "flows"
+  | "motions"
+  | "styles"
+  | "assets";
 
 /** Ambient counts the menu shows next to each project + screen.
  *  Owned by the page; the menu just reads. */
@@ -107,9 +124,9 @@ interface ProjectsMenuProps {
   ) => void;
   /** Optional — delete a project (surfaced inside the settings sheet). */
   onDeleteProject?: (id: string) => void;
-  /** Optional content rendered below the project sections — the asset
-   *  browser lives here so the user's library sits in the left panel
-   *  alongside their projects. */
+  /** @deprecated Assets render as a full-screen canvas page now (the
+   *  Assets nav row drives `onSelectSection("assets")`); this slot is
+   *  no longer rendered. Kept so older callers don't break. */
   assetsSlot?: React.ReactNode;
   /** Which section of the ACTIVE project the canvas is showing.
    *  Undefined → "screens". */
@@ -138,7 +155,7 @@ export function ProjectsMenu({
   onRenameProject,
   onUpdateProject,
   onDeleteProject,
-  assetsSlot,
+  assetsSlot: _assetsSlot,
   activeSection = "screens",
   onSelectSection,
   onAddMotion,
@@ -183,67 +200,93 @@ export function ProjectsMenu({
 
   const canDelete = projects.length > 1 && !!onDeleteProject;
 
-  const renderSettingsButton = (project: Project) => (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        setSettingsTarget(project);
+  const activeProject =
+    projects.find((p) => p.id === activeProjectId) ?? null;
+  const allDesigns = summaries[activeProjectId]?.designs ?? [];
+  const screenCount = allDesigns.filter(
+    (d) => (d.kind ?? "screen") === "screen",
+  ).length;
+  const motionCount = allDesigns.filter((d) => d.kind === "motion").length;
+
+  const projectRow = (project: Project) => (
+    <DropdownMenuItem
+      key={project.id}
+      onSelect={() => {
+        if (project.id !== activeProjectId) onSelectProject(project.id);
       }}
-      aria-label={`Settings for ${project.name}`}
-      title="Project settings"
-      className="h-6 w-6 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors [&_svg]:size-3.5"
     >
-      <Settings />
-    </button>
+      <Folder className="h-3.5 w-3.5 text-muted-foreground" />
+      <span className="min-w-0 flex-1 truncate">{project.name}</span>
+      {project.id === activeProjectId && (
+        <Check className="h-3.5 w-3.5 text-primary" />
+      )}
+    </DropdownMenuItem>
   );
 
-  // One project → a flat switcher row. Screens are NOT nested here any
-  // more — the screen grid (middle) + the project home (right) are the
-  // canonical "pick a screen" surfaces; this list is purely for
-  // switching between projects. Clicking selects the project (and lands
-  // on its home); the cog opens settings.
-  const renderProjectRow = (project: Project) => {
-    const isActive = project.id === activeProjectId;
-    const allDesigns = summaries[project.id]?.designs ?? [];
-    const screenCount = allDesigns.filter(
-      (d) => (d.kind ?? "screen") === "screen",
-    ).length;
-    const motionCount = allDesigns.filter((d) => d.kind === "motion").length;
-    const counts =
-      motionCount > 0
-        ? `${screenCount} ${screenCount === 1 ? "screen" : "screens"} · ${motionCount} ${motionCount === 1 ? "motion" : "motions"}`
-        : `${screenCount} ${screenCount === 1 ? "screen" : "screens"}`;
-    const description = project.description?.trim() || counts;
+  return (
+    <Sidebar
+      variant="panel"
+      collapsible={false}
+      aria-label="Studio"
+      className="h-full"
+    >
+      {/* Header — the PROJECT SWITCHER. The active project is the
+          working context, so it owns the header; everything below is
+          inside it. (The old "Studio · Beta" brand row is gone — the
+          rail already brands the app.) */}
+      <SidebarHeader className="flex items-center gap-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted transition-colors"
+            >
+              <Folder className="h-4 w-4 shrink-0 text-foreground" />
+              <span className="min-w-0 truncate text-sm font-semibold text-foreground">
+                {activeProject?.name ?? "Project"}
+              </span>
+              <ChevronsUpDown className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64">
+            {ownedProjects.map(projectRow)}
+            {sharedProjects.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Shared with you
+                </DropdownMenuLabel>
+                {sharedProjects.map(projectRow)}
+              </>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => onCreateProject()}>
+              <Plus className="h-3.5 w-3.5" />
+              New project
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {activeProject && (
+          <button
+            type="button"
+            onClick={() => setSettingsTarget(activeProject)}
+            aria-label={`Settings for ${activeProject.name}`}
+            title="Project settings"
+            className="h-6 w-6 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors [&_svg]:size-3.5"
+          >
+            <Settings />
+          </button>
+        )}
+      </SidebarHeader>
 
-    return (
-      // Settings cog is a sibling (not nested in the row button — that'd
-      // be invalid HTML), absolutely positioned + hover-revealed.
-      <div key={project.id} className="group/proj relative">
-        <SidebarItem
-          asButton
-          active={isActive}
-          icon={<Folder />}
-          description={description}
-          onClick={() => onSelectProject(project.id)}
-        >
-          <span className="min-w-0 flex-1 truncate pr-7">{project.name}</span>
-        </SidebarItem>
-        <span className="absolute right-1.5 top-1.5 opacity-0 transition-opacity group-hover/proj:opacity-100">
-          {renderSettingsButton(project)}
-        </span>
-
-        {/* The active project's sections: Screens / Flows (tbd) /
-            Motions / Styles. Only under the active project — switching
-            projects lands on Screens. */}
-        {isActive && onSelectSection && (
-          <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-border/60 pl-2">
+      <SidebarContent>
+        <SidebarSection>
+            {/* The active project's sections — the primary nav. */}
             <SidebarItem
               asButton
-              size="sm"
-              active={activeSection === "screens"}
+              active={activeSection === "screens" && !!onSelectSection}
               icon={<Monitor />}
-              onClick={() => onSelectSection("screens")}
+              onClick={() => onSelectSection?.("screens")}
             >
               <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
                 <span className="truncate">Screens</span>
@@ -254,7 +297,6 @@ export function ProjectsMenu({
             </SidebarItem>
             <SidebarItem
               asButton
-              size="sm"
               icon={<GitBranch />}
               className="pointer-events-none opacity-50"
               aria-disabled
@@ -267,10 +309,9 @@ export function ProjectsMenu({
             <div className="group/motions relative">
               <SidebarItem
                 asButton
-                size="sm"
                 active={activeSection === "motions"}
                 icon={<Clapperboard />}
-                onClick={() => onSelectSection("motions")}
+                onClick={() => onSelectSection?.("motions")}
               >
                 <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
                   <span className="truncate">Motion Studio</span>
@@ -296,69 +337,22 @@ export function ProjectsMenu({
             </div>
             <SidebarItem
               asButton
-              size="sm"
               active={activeSection === "styles"}
               icon={<Palette />}
-              onClick={() => onSelectSection("styles")}
+              onClick={() => onSelectSection?.("styles")}
             >
               Styles
             </SidebarItem>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <Sidebar
-      variant="panel"
-      collapsible={false}
-      aria-label="Studio"
-      className="h-full"
-    >
-      {/* Header — Studio brand + Beta badge. */}
-      <SidebarHeader className="flex items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">
-            Studio
-          </span>
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-            Beta
-          </Badge>
-        </span>
-      </SidebarHeader>
-
-      <SidebarContent>
-        <SidebarSection
-          title="Projects"
-          trailing={
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCreateProject();
-              }}
-              aria-label="New project"
-              title="New project"
-              className="h-6 w-6 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors [&_svg]:size-3.5"
+            {/* Assets — a full-screen CANVAS page, not a panel tail. */}
+            <SidebarItem
+              asButton
+              active={activeSection === "assets"}
+              icon={<Images />}
+              onClick={() => onSelectSection?.("assets")}
             >
-              <Plus />
-            </button>
-          }
-        >
-          {ownedProjects.map(renderProjectRow)}
-        </SidebarSection>
-
-        {/* Guest grants — projects another user shared with me. Only
-            shows when there are any, so solo / local users never see an
-            empty section. */}
-        {sharedProjects.length > 0 && (
-          <SidebarSection title="Shared with you">
-            {sharedProjects.map(renderProjectRow)}
+              Assets
+            </SidebarItem>
           </SidebarSection>
-        )}
-
-        {assetsSlot}
       </SidebarContent>
 
       <SidebarFooter className="text-[10px] text-muted-foreground">

@@ -771,7 +771,11 @@ export default function StudioPage() {
       // ?section=motions|styles — restore the left-nav section on
       // refresh ("screens" is the unwritten default).
       const urlSection = urlParams?.get("section");
-      if (urlSection === "motions" || urlSection === "styles") {
+      if (
+        urlSection === "motions" ||
+        urlSection === "styles" ||
+        urlSection === "assets"
+      ) {
         setProjectSection(urlSection);
       }
       const targetId =
@@ -2253,6 +2257,8 @@ export default function StudioPage() {
         return;
       }
       if (section === "flows") return;
+      // screens / motions filter the grid; assets takes over the canvas
+      // with the full-screen library. All of them live at the "all" zoom.
       setProjectSection(section);
       setZoom("all");
     },
@@ -2290,7 +2296,6 @@ export default function StudioPage() {
       onUpdateProject={handleUpdateProject}
       onRenameProject={handleRenameProject}
       onDeleteProject={handleDeleteProject}
-      assetsSlot={<AssetBrowser />}
       activeSection={projectSection}
       onSelectSection={handleSelectSection}
       onAddMotion={handleAddMotion}
@@ -2819,7 +2824,30 @@ export default function StudioPage() {
                 </div>
               </div>
             )}
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 relative">
+              {/* Assets page — takes over the canvas full-screen when the
+                  Assets section is active. The canvas stays MOUNTED (just
+                  hidden) so tiles/iframes don't reboot on the way back. */}
+              {projectSection === "assets" && zoom === "all" && (
+                <div className="absolute inset-0 z-10 overflow-y-auto bg-muted/20 p-8">
+                  <div className="mx-auto max-w-5xl">
+                    <h2 className="text-lg font-semibold text-foreground">
+                      Assets
+                    </h2>
+                    <p className="mb-6 mt-1 text-sm text-muted-foreground">
+                      Your project&apos;s media, fonts, and documents — used
+                      by screens and Motions across this project.
+                    </p>
+                    <AssetBrowser />
+                  </div>
+                </div>
+              )}
+              <div
+                className={cn(
+                  "h-full",
+                  projectSection === "assets" && zoom === "all" && "invisible",
+                )}
+              >
               <StudioThemedCanvas
                 designs={visibleDesigns}
                 focusedId={activeId}
@@ -2835,14 +2863,21 @@ export default function StudioPage() {
                 onCanvasModeChange={handleCanvasModeChange}
                 onAddDesign={handleAddDesign}
                 gridAddTile={
-                  projectSection === "motions"
-                    ? {
-                        title: "New Motion",
-                        description:
-                          "A directed sequence of scenes — title cards, screens with cameras, video. Starts from a starter you can reshape.",
-                        onClick: handleAddMotion,
-                      }
-                    : undefined
+                  atCap
+                    ? undefined
+                    : projectSection === "motions"
+                      ? {
+                          title: "New Motion",
+                          description:
+                            "A directed sequence of scenes — title cards, screens with cameras, video. Starts from a starter you can reshape.",
+                          onClick: handleAddMotion,
+                        }
+                      : {
+                          title: "New screen",
+                          description:
+                            "Start blank and describe it in chat — or use Starters in the toolbar for reference layouts.",
+                          onClick: () => handleAddDesign(),
+                        }
                 }
                 onCloseDesign={handleCloseDesign}
                 onRenameDesign={handleRenameDesign}
@@ -2886,6 +2921,7 @@ export default function StudioPage() {
                 }}
                 getCommentUser={(id) => allUsers.find((u) => u.id === id)}
               />
+              </div>
             </div>
             {!isMobile && (
               <div
