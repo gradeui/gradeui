@@ -507,12 +507,17 @@ export {
   MotionScene,
   MotionScreen,
   MotionText,
+  MotionOverlay,
   useMotionScene,
   type MotionProps,
   type MotionSceneProps,
   type MotionScreenProps,
+  type MotionScreenAnimate,
+  type MotionSceneTransition,
   type MotionTextProps,
   type MotionTextTemplate,
+  type MotionOverlayProps,
+  type MotionOverlayZone,
   type MotionSceneRegistration,
 } from "../components/ui/motion";
 

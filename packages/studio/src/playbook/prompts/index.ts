@@ -7,3 +7,4 @@
  */
 
 export { buildSystemPrompt, EDIT_MODE_PROMPT } from "./system";
+export { MOTION_GUIDE } from "./motion-guide";

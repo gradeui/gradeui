@@ -80,7 +80,7 @@ export default function App() {
         @keyframes gdsFxRise     { from { opacity: 0; transform: translateY(30px) scale(0.96) } to { opacity: 1; transform: translateY(0) scale(1) } }
         @keyframes gdsFxGlassIn  { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
       `}</style>
-      <Motion>
+      <Motion aspect="16/9">
         {/* 1 — RACK FOCUS: giant type sharp behind a blurred screen, then
             the focus pulls and they swap. Two layers, two blur tracks. */}
         <MotionScene label="Rack focus" durationMs={8000}>

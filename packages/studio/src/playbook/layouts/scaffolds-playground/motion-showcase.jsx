@@ -91,7 +91,7 @@ function MobileScreen() {
 export default function App() {
   return (
     <div style={{ position: "relative", height: "100vh" }}>
-      <Motion>
+      <Motion aspect="16/9">
         {/* 1 — cold open on the dark stage */}
         <MotionScene label="Hook">
           <MotionText template="title" heading="Every day —" text="millions of people open a dashboard that wastes their time." />

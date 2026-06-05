@@ -14,7 +14,7 @@ export const MotionContract = contract({
   aliases: ["motion","grade motion","scenes","sequence","demo reel","product video","launch video","title card","lower third","section break","multi-scene","storyboard"],
   subcomponents: ["MotionScene","MotionScreen","MotionText"],
   composesWith: ["ScreenAnimator","ThreeScene","VideoPlayer","AppShell","the whole component set (scenes hold screens)"],
-  styleDefaults: {"MotionScreen":"gds-motion-screen","MotionText":"gds-motion-text","MotionSceneImpl":"gds-motion-scene","Motion":"gds-motion"},
+  styleDefaults: {"MotionScreen":"gds-motion-screen","MotionText":"gds-motion-text","MotionOverlay":"gds-motion-overlay","MotionSceneImpl":"gds-motion-scene","Motion":"gds-motion"},
   props: {
   "view": {
       schema: z.enum(["play", "strip"]).optional(),

@@ -114,7 +114,7 @@ function TextMask({ text, children }) {
 export default function App() {
   return (
     <div style={{ position: "relative", height: "100vh" }}>
-      <Motion>
+      <Motion aspect="16/9">
         {/* 1 — massive text in difference blend CRAWLING over a live screen */}
         <MotionScene label="Crawl" durationMs={9000}>
           <MotionScreen shots={[{ zoom: 1.1, cx: 0.5, cy: 0.45, hold: 8200 }]} cursor={false} enter={false}>

@@ -10,6 +10,7 @@ import {
   MotionScene,
   MotionScreen,
   MotionText,
+  MotionOverlay,
   ThreeScene,
   Avatar,
   AvatarFallback,
@@ -73,6 +74,37 @@ function Layer({ z = 0, children, style }) {
     <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: z, ...style }}>
       {children}
     </div>
+  );
+}
+
+// Live wall clock for the broadcast layer — real time, ticking every
+// second. Deliberately NOT tied to the playback clock: pause the film
+// and the clock keeps going, which is better proof than any video.
+function WallClock() {
+  const [now, setNow] = React.useState(() => new Date());
+  React.useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+  return (
+    <span
+      style={{
+        padding: "5px 10px",
+        borderRadius: 8,
+        background: "rgba(15,15,20,0.55)",
+        backdropFilter: "blur(10px)",
+        border: "1px solid rgba(255,255,255,0.16)",
+        color: "#fff",
+        fontSize: 13,
+        fontWeight: 700,
+        fontVariantNumeric: "tabular-nums",
+      }}
+    >
+      {hh}:{mm}:{ss}
+    </span>
   );
 }
 
@@ -275,13 +307,49 @@ export default function App() {
         @keyframes gdsWildPulse  { 0%, 100% { opacity: 1 } 50% { opacity: 0.35 } }
       `}</style>
       {/* The shader runs under the WHOLE film — scenes without an opaque
-          fill float on it. (Valid presets: mesh, plasma, space,
-          synthwave, voronoi, waves.) */}
+          fill float on it. `undertones` is the calm, mouse-reactive wash
+          (move the cursor during playback — the film notices). Other
+          presets: mesh, plasma, space, synthwave, voronoi, waves,
+          flowing-dots. */}
       <Motion
+        aspect="16/9"
         backdrop={
-          <ThreeScene preset="plasma" aspect="auto" className="h-full w-full" />
+          <ThreeScene preset="undertones" aspect="auto" className="h-full w-full" />
         }
       >
+        {/* ── THE BROADCAST LAYER — film-level, above every scene ── */}
+        {/* Network bug: the logo a TV channel never takes off screen. */}
+        <MotionOverlay zone="top-right">
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "5px 11px",
+              borderRadius: 8,
+              background: "rgba(15,15,20,0.55)",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(255,255,255,0.16)",
+              color: "#fff",
+              fontSize: 12.5,
+              fontWeight: 800,
+              letterSpacing: "0.06em",
+            }}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: "oklch(var(--primary, 0.45 0.18 264))" }} />
+            GRADE
+          </span>
+        </MotionOverlay>
+        {/* Live wall clock — keeps ticking when you pause the film. */}
+        <MotionOverlay zone="top-left">
+          <WallClock />
+        </MotionOverlay>
+        {/* TV-style broadcast band — scoped to the chat scene only
+            (fromScene/toScene: overlays are a second timeline). */}
+        <MotionOverlay zone="lower-third" fromScene={3} toScene={3}>
+          <MotionText template="broadcast" heading="Ada Lovelace" text="Live · Head of Product" />
+        </MotionOverlay>
+
         {/* 1 — blur-in cold open, straight onto the shader */}
         <MotionScene label="Open" durationMs={4600}>
           <div style={{ textAlign: "center", color: "#fff", animation: "gdsWildBlurIn 1500ms cubic-bezier(0.22,1,0.36,1) both" }}>
@@ -310,10 +378,11 @@ export default function App() {
           </Layer>
         </MotionScene>
 
-        {/* 3 — shader through the mask */}
+        {/* 3 — flowing dots, visible only THROUGH the giant text. Move
+            the mouse: the dots inside the letters swell toward it. */}
         <MotionScene label="Mask" durationMs={6000} fill="#050507">
           <TextMask text="WILD">
-            <ThreeScene preset="synthwave" aspect="auto" className="h-full w-full" />
+            <ThreeScene preset="flowing-dots" aspect="auto" className="h-full w-full" />
           </TextMask>
         </MotionScene>
 

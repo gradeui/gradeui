@@ -246,6 +246,11 @@ export interface MotionScreenProps {
   cursor?: boolean;
   /** Fly in from offscreen when the scene starts. Default true. */
   enter?: boolean;
+  /** Animate the FRAME in place within the scene — independent of (and
+   *  composable with) the camera inside it. "rise" / "tilt-settle" are
+   *  entrances; "float" / "drift" are ambient loops. Default "none".
+   *  Pair with enter={false} when using an entrance here. */
+  animate?: MotionScreenAnimate;
   /** Provenance — the Studio screen this was copied from. Ignored at
    *  render; read by tooling (the dock, future live-reference scenes). */
   screenId?: string;
@@ -261,6 +266,7 @@ export function MotionScreen({
   spotlight = false,
   cursor = true,
   enter = true,
+  animate = "none",
   screenId: _screenId,
   className,
   style,
@@ -312,6 +318,9 @@ export function MotionScreen({
         background: "var(--gds-background, #fff)",
         boxShadow:
           "0 18px 60px rgba(0,0,0,0.38), 0 2px 10px rgba(0,0,0,0.22)",
+        ...(playing && SCREEN_ANIMATE[animate]
+          ? { animation: SCREEN_ANIMATE[animate]! }
+          : {}),
         ...style,
       }}
     >
@@ -339,12 +348,23 @@ export function MotionScreen({
 
 // ─── MotionText — Motion Templates (pre-directed text animations) ───────
 
-export type MotionTextTemplate = "title" | "lower-third" | "section-break";
+export type MotionTextTemplate =
+  | "title"
+  | "lower-third"
+  | "section-break"
+  | "broadcast"
+  | "ticker"
+  | "stat"
+  | "quote";
 
 const TEMPLATE_DURATION: Record<MotionTextTemplate, number> = {
   title: 3800,
   "lower-third": 3200,
   "section-break": 4200,
+  broadcast: 4200,
+  ticker: 6000,
+  stat: 4200,
+  quote: 5200,
 };
 
 export interface MotionTextProps {
@@ -418,10 +438,21 @@ export function MotionText({
       data-gds-part="motion-text"
       className={cn("gds-motion-text", className)}
       style={{
-        position: template === "lower-third" ? "absolute" : "relative",
+        position:
+          template === "lower-third" ||
+          template === "broadcast" ||
+          template === "ticker"
+            ? "absolute"
+            : "relative",
         ...(template === "lower-third"
           ? { left: "6%", bottom: "9%" }
-          : { textAlign: "center", maxWidth: "72%" }),
+          : template === "broadcast"
+            ? { left: 0, right: 0, bottom: "6%" }
+            : template === "ticker"
+              ? { left: 0, right: 0, bottom: 0 }
+              : template === "quote"
+                ? { textAlign: "center", maxWidth: "64%" }
+                : { textAlign: "center", maxWidth: "72%" }),
         color,
         pointerEvents: "none",
         ...style,
@@ -431,6 +462,9 @@ export function MotionText({
         @keyframes gdsMotionFadeUp { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: translateY(0) } }
         @keyframes gdsMotionSlideIn { from { opacity: 0; transform: translateX(-28px) } to { opacity: 1; transform: translateX(0) } }
         @keyframes gdsMotionPush { from { opacity: 0; transform: scale(1.05) } to { opacity: 1; transform: scale(1) } }
+        @keyframes gdsMotionMarquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+        @keyframes gdsMotionStatSlam { 0% { opacity: 0; transform: scale(2.2) } 60% { opacity: 1; transform: scale(0.96) } 80% { transform: scale(1.02) } 100% { opacity: 1; transform: scale(1) } }
+        @keyframes gdsMotionQuoteMark { from { opacity: 0; transform: translateY(10px) scale(0.9) } to { opacity: 0.14; transform: translateY(0) scale(1) } }
       `}</style>
 
       {template === "title" && (
@@ -481,6 +515,44 @@ export function MotionText({
         </div>
       )}
 
+      {template === "broadcast" && (
+        // The TV one — a full-width band that sits OVER the screen the
+        // way news graphics do. Brand-blue by default (primary token);
+        // a thin lighter strap on top carries the secondary line.
+        <div style={{ overflow: "hidden", ...anim("gdsMotionSlideIn", 600) }}>
+          {text && (
+            <div
+              style={{
+                display: "inline-block",
+                marginLeft: "6%",
+                padding: "5px 14px",
+                fontSize: 12.5,
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                color: "#fff",
+                background:
+                  "oklch(var(--primary, 0.45 0.18 264) / 0.85)",
+              }}
+            >
+              {text}
+            </div>
+          )}
+          <div
+            style={{
+              padding: "12px 6% 14px",
+              background:
+                "linear-gradient(90deg, oklch(var(--primary, 0.45 0.18 264)) 0%, oklch(var(--primary, 0.45 0.18 264) / 0.92) 70%, oklch(var(--primary, 0.45 0.18 264) / 0) 100%)",
+              color: "#fff",
+            }}
+          >
+            <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.01em" }}>
+              {heading}
+            </span>
+          </div>
+        </div>
+      )}
+
       {template === "section-break" && (
         <div
           style={{
@@ -494,22 +566,329 @@ export function MotionText({
           {heading}
         </div>
       )}
+
+      {template === "ticker" && (
+        // The news ticker — a thin dark-glass bar pinned to the very
+        // bottom; the heading is an uppercase label chip, the text scrolls
+        // as a seamless marquee (the line is duplicated so -50% loops).
+        <div
+          style={{
+            display: "flex",
+            alignItems: "stretch",
+            background:
+              tone === "dark" ? "rgba(255,255,255,0.78)" : "rgba(15,15,17,0.62)",
+            backdropFilter: "blur(10px)",
+            overflow: "hidden",
+            ...anim("gdsMotionFadeUp", 500),
+          }}
+        >
+          <span
+            style={{
+              flex: "0 0 auto",
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "7px 14px",
+              fontSize: 11.5,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#fff",
+              background: "oklch(var(--primary, 0.45 0.18 264))",
+            }}
+          >
+            {heading}
+          </span>
+          {text && (
+            <div
+              style={{
+                flex: "1 1 0%",
+                minWidth: 0,
+                display: "flex",
+                alignItems: "center",
+                overflow: "hidden",
+                maskImage:
+                  "linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%)",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  whiteSpace: "nowrap",
+                  fontSize: 13,
+                  ...(animate
+                    ? {
+                        animation: "gdsMotionMarquee 24000ms linear infinite",
+                        animationPlayState: playState,
+                      }
+                    : {}),
+                }}
+              >
+                {/* Two copies = a seamless -50% loop. */}
+                <span style={{ padding: "0 0 0 16px" }}>{text} · </span>
+                <span style={{ padding: "0 0 0 4px" }}>{text} · </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {template === "stat" && (
+        // The oversized statistic — the number slams in (scale 2.2 →
+        // overshoot → settle), the label fades up beneath it.
+        <>
+          <div
+            style={{
+              fontSize: "clamp(48px, 16vw, 180px)",
+              fontWeight: 900,
+              letterSpacing: "-0.04em",
+              lineHeight: 1,
+              ...anim("gdsMotionStatSlam", 800),
+            }}
+          >
+            {heading}
+          </div>
+          {text && (
+            <div
+              style={{
+                marginTop: 16,
+                fontSize: "clamp(14px, 1.8vw, 20px)",
+                opacity: 0.72,
+                ...anim("gdsMotionFadeUp", 700, 420),
+              }}
+            >
+              {text}
+            </div>
+          )}
+        </>
+      )}
+
+      {template === "quote" && (
+        // The editorial pull-quote — an oversized low-opacity opening
+        // mark floats behind the quote; the attribution follows, staggered.
+        <div style={{ position: "relative" }}>
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              top: "-0.45em",
+              left: "-0.18em",
+              fontSize: "clamp(80px, 12vw, 160px)",
+              fontWeight: 800,
+              lineHeight: 1,
+              opacity: animate ? undefined : 0.14,
+              pointerEvents: "none",
+              ...anim("gdsMotionQuoteMark", 900),
+            }}
+          >
+            &ldquo;
+          </span>
+          <div
+            style={{
+              position: "relative",
+              fontSize: "clamp(22px, 3.6vw, 44px)",
+              fontWeight: 600,
+              letterSpacing: "-0.015em",
+              lineHeight: 1.25,
+              ...anim("gdsMotionFadeUp", 700),
+            }}
+          >
+            {heading}
+          </div>
+          {text && (
+            <div
+              style={{
+                marginTop: 18,
+                fontSize: "clamp(13px, 1.6vw, 17px)",
+                opacity: 0.65,
+                ...anim("gdsMotionFadeUp", 700, 240),
+              }}
+            >
+              &mdash; {text}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MotionOverlay — the broadcast layer ────────────────────────────────
+// Persistent on-screen graphics that belong to the FILM, not a scene:
+// a network-bug logo, a live clock, a ticker, a video layer. Declared as
+// a direct child of <Motion> (a peer of scenes); renders above every
+// scene for the whole runtime, in a standard anchor zone. Ignored by the
+// strip view (it's film chrome, not a scene).
+
+export type MotionOverlayZone =
+  | "top-left"
+  | "top"
+  | "top-right"
+  | "center"
+  | "bottom-left"
+  | "bottom"
+  | "bottom-right"
+  | "lower-third";
+
+const OVERLAY_ZONE: Record<MotionOverlayZone, React.CSSProperties> = {
+  "top-left": { top: 18, left: 20 },
+  top: { top: 18, left: 0, right: 0, display: "grid", placeItems: "center" },
+  "top-right": { top: 18, right: 20 },
+  center: { inset: 0, display: "grid", placeItems: "center" },
+  "bottom-left": { bottom: 18, left: 20 },
+  bottom: { bottom: 18, left: 0, right: 0, display: "grid", placeItems: "center" },
+  "bottom-right": { bottom: 52, right: 20 }, // clears the transport
+  "lower-third": { left: "6%", right: "6%", bottom: "8%" },
+};
+
+export interface MotionOverlayProps {
+  /** Anchor zone. Default "top-right" (the classic network-bug corner). */
+  zone?: MotionOverlayZone;
+  /** Visible from this scene index (inclusive). Default 0 — overlays are
+   *  a second TIMELINE: always-on is just the full-range case. */
+  fromScene?: number;
+  /** Visible through this scene index (inclusive). Default: the end. */
+  toScene?: number;
+  /** Re-enable pointer events for interactive overlays. Default false. */
+  interactive?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+  children: React.ReactNode;
+}
+
+export function MotionOverlay({
+  zone = "top-right",
+  fromScene: _fromScene,
+  toScene: _toScene,
+  interactive = false,
+  className,
+  style,
+  children,
+}: MotionOverlayProps) {
+  return (
+    <div
+      data-gds-part="motion-overlay"
+      className={cn("gds-motion-overlay", className)}
+      style={{
+        position: "absolute",
+        zIndex: 20,
+        pointerEvents: interactive ? "auto" : "none",
+        ...OVERLAY_ZONE[zone],
+        ...style,
+      }}
+    >
+      {children}
     </div>
   );
 }
 
 // ─── MotionScene — one stage moment ─────────────────────────────────────
 
+/** How a scene ARRIVES on the stage. Entrance-only by design — the
+ *  outgoing scene cuts; the incoming one performs. (True cross-fades
+ *  need both scenes mounted; that rides the seekable-clock work.) */
+export type MotionSceneTransition =
+  | "fade"
+  | "slide-up"
+  | "slide-down"
+  | "slide-left"
+  | "slide-right"
+  | "pop"
+  | "zoom"
+  | "wipe-circle"
+  | "none";
+
+/** Per-transition default timing (ms) — override per scene with
+ *  `transitionMs`. Also the OVERLAP window the outgoing scene stays
+ *  visible underneath. */
+export const SCENE_TRANSITION_DEFAULT_MS: Record<MotionSceneTransition, number> = {
+  fade: 420,
+  "slide-up": 520,
+  "slide-down": 520,
+  "slide-left": 520,
+  "slide-right": 520,
+  pop: 420,
+  zoom: 650,
+  "wipe-circle": 750,
+  none: 0,
+};
+
+function sceneTransitionAnim(
+  t: MotionSceneTransition,
+  ms: number,
+): string | null {
+  switch (t) {
+    case "fade":
+      return `gdsMotionSceneIn ${ms}ms ease both`;
+    case "slide-up":
+      return `gdsMotionSceneUp ${ms}ms cubic-bezier(0.22, 1, 0.36, 1) both`;
+    case "slide-down":
+      return `gdsMotionSceneDown ${ms}ms cubic-bezier(0.22, 1, 0.36, 1) both`;
+    case "slide-left":
+      return `gdsMotionSceneLeft ${ms}ms cubic-bezier(0.22, 1, 0.36, 1) both`;
+    case "slide-right":
+      return `gdsMotionSceneRight ${ms}ms cubic-bezier(0.22, 1, 0.36, 1) both`;
+    case "pop":
+      return `gdsMotionScenePop ${ms}ms cubic-bezier(0.34, 1.56, 0.64, 1) both`;
+    case "zoom":
+      return `gdsMotionSceneZoom ${ms}ms cubic-bezier(0.22, 1, 0.36, 1) both`;
+    case "wipe-circle":
+      return `gdsMotionSceneWipe ${ms}ms cubic-bezier(0.65, 0, 0.35, 1) both`;
+    case "none":
+      return null;
+  }
+}
+
+const SCENE_TRANSITION_KEYFRAMES = `
+@keyframes gdsMotionSceneIn    { from { opacity: 0 } to { opacity: 1 } }
+@keyframes gdsMotionSceneUp    { from { opacity: 0; transform: translateY(7%) }  to { opacity: 1; transform: translateY(0) } }
+@keyframes gdsMotionSceneDown  { from { opacity: 0; transform: translateY(-7%) } to { opacity: 1; transform: translateY(0) } }
+@keyframes gdsMotionSceneLeft  { from { opacity: 0; transform: translateX(7%) }  to { opacity: 1; transform: translateX(0) } }
+@keyframes gdsMotionSceneRight { from { opacity: 0; transform: translateX(-7%) } to { opacity: 1; transform: translateX(0) } }
+@keyframes gdsMotionScenePop   { from { opacity: 0; transform: scale(0.9) }      to { opacity: 1; transform: scale(1) } }
+@keyframes gdsMotionSceneZoom  { from { opacity: 0; transform: scale(1.1) }      to { opacity: 1; transform: scale(1) } }
+@keyframes gdsMotionSceneWipe  { from { clip-path: circle(0% at 50% 50%) }       to { clip-path: circle(141% at 50% 50%) } }
+@keyframes gdsMotionScreenRise  { from { opacity: 0; transform: translateY(7%) scale(0.97) } to { opacity: 1; transform: translateY(0) scale(1) } }
+@keyframes gdsMotionScreenFloat { from { transform: translateY(-1.2%) } to { transform: translateY(1.2%) } }
+@keyframes gdsMotionScreenTilt  { from { transform: perspective(1100px) rotateX(12deg) rotateY(-16deg) } to { transform: perspective(1100px) rotateX(0deg) rotateY(0deg) } }
+@keyframes gdsMotionScreenDrift { from { transform: translateX(-1.5%) } to { transform: translateX(1.5%) } }
+`;
+
+/** In-place frame animation for MotionScreen — the screen performs
+ *  WITHIN the scene (independent of the camera inside it, composable
+ *  with it). "rise" and "tilt-settle" are entrances; "float" and
+ *  "drift" are ambient loops. */
+export type MotionScreenAnimate =
+  | "rise"
+  | "float"
+  | "tilt-settle"
+  | "drift"
+  | "none";
+
+const SCREEN_ANIMATE: Record<MotionScreenAnimate, string | null> = {
+  rise: "gdsMotionScreenRise 900ms cubic-bezier(0.22, 1, 0.36, 1) both",
+  float: "gdsMotionScreenFloat 6s ease-in-out infinite alternate",
+  "tilt-settle": "gdsMotionScreenTilt 1800ms cubic-bezier(0.22, 1, 0.36, 1) both",
+  drift: "gdsMotionScreenDrift 9s ease-in-out infinite alternate",
+  none: null,
+};
+
 export interface MotionSceneProps {
   /** Shown in the strip view + read by the timeline dock. */
   label?: string;
-  /** Fallback clock when the scene has no timed children (ms). Default 4000. */
+  /** Minimum runtime (ms); the whole clock when nothing inside keeps
+   *  time. Default 4000 for untimed scenes. */
   durationMs?: number;
   /** Scene background painted over the shared stage for this moment only
    *  (a CSS background — the white title card, a brand fill). */
   fill?: string;
-  /** How the scene arrives. Default "fade". */
-  transition?: "fade" | "none";
+  /** How the scene arrives: fade · slide-up/down/left/right · pop ·
+   *  zoom · wipe-circle (a mask wipe) · none. Default "fade". The
+   *  OUTGOING scene stays visible underneath for the transition window,
+   *  so slides/wipes reveal it rather than the stage. */
+  transition?: MotionSceneTransition;
+  /** Transition timing override (ms). Defaults per transition — see
+   *  SCENE_TRANSITION_DEFAULT_MS. */
+  transitionMs?: number;
   className?: string;
   style?: React.CSSProperties;
   children: React.ReactNode;
@@ -530,6 +909,7 @@ function MotionSceneImpl({
   durationMs,
   fill,
   transition = "fade",
+  transitionMs,
   className,
   style,
   children,
@@ -542,10 +922,14 @@ function MotionSceneImpl({
   // Timed children register on mount (their effects run before ours, so by
   // the time the scene's own effect looks, the count is settled). The scene
   // advances when all registered children are done — or, with none, after
-  // `durationMs`.
+  // `durationMs`. AND: an EXPLICIT `durationMs` is a MINIMUM runtime —
+  // a scene with a 3s caption and `durationMs={16000}` runs the full 16s
+  // (a lower-third finishing early must not cut a long visual mid-flight).
+  const explicitDur = durationMs != null;
   const totalRef = React.useRef(0);
   const doneRef = React.useRef(0);
   const endedRef = React.useRef(false);
+  const minDoneRef = React.useRef(!explicitDur);
   const endNow = React.useCallback(() => {
     if (endedRef.current) return;
     endedRef.current = true;
@@ -553,11 +937,11 @@ function MotionSceneImpl({
   }, [onSceneEnd]);
   const endTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const check = React.useCallback(() => {
-    if (totalRef.current > 0 && doneRef.current >= totalRef.current) {
-      // A breath after the last child settles, then cut.
-      if (!endTimer.current)
-        endTimer.current = setTimeout(endNow, ADVANCE_BEAT_MS);
-    }
+    if (!minDoneRef.current) return; // the duration floor hasn't elapsed
+    if (totalRef.current > 0 && doneRef.current < totalRef.current) return;
+    // A breath after the last child settles, then cut.
+    if (!endTimer.current)
+      endTimer.current = setTimeout(endNow, ADVANCE_BEAT_MS);
   }, [endNow]);
   const register = React.useCallback((): MotionSceneRegistration => {
     totalRef.current += 1;
@@ -577,24 +961,31 @@ function MotionSceneImpl({
     };
   }, [check]);
 
-  // Untimed fallback clock (pause-aware).
+  // The duration clock (pause-aware). Runs as the ONLY clock for scenes
+  // with no timed children, and as the MINIMUM-runtime floor when an
+  // explicit `durationMs` coexists with timed children.
   const remainRef = React.useRef(durationMs ?? UNTIMED_FALLBACK_MS);
   React.useEffect(() => {
     if (!playing) return;
     remainRef.current = durationMs ?? UNTIMED_FALLBACK_MS;
     endedRef.current = false;
+    minDoneRef.current = !explicitDur;
     return () => {
       if (endTimer.current) {
         clearTimeout(endTimer.current);
         endTimer.current = null;
       }
     };
-  }, [playing, durationMs]);
+  }, [playing, durationMs, explicitDur]);
   React.useEffect(() => {
     if (!playing || paused) return;
-    if (totalRef.current > 0) return; // timed children own the clock
+    // Without an explicit duration, timed children own the clock.
+    if (!explicitDur && totalRef.current > 0) return;
     const started = Date.now();
-    const t = setTimeout(endNow, remainRef.current);
+    const t = setTimeout(() => {
+      minDoneRef.current = true;
+      check();
+    }, remainRef.current);
     return () => {
       clearTimeout(t);
       remainRef.current = Math.max(
@@ -602,7 +993,7 @@ function MotionSceneImpl({
         remainRef.current - (Date.now() - started),
       );
     };
-  }, [playing, paused, endNow]);
+  }, [playing, paused, explicitDur, check]);
 
   const ctx = React.useMemo<SceneCtxValue>(
     () => ({ mode, active, paused, register }),
@@ -618,13 +1009,18 @@ function MotionSceneImpl({
           position: "absolute",
           inset: 0,
           background: fill,
-          ...(playing && transition === "fade"
-            ? { animation: "gdsMotionSceneIn 420ms ease both" }
+          ...(playing
+            ? (() => {
+                const ms =
+                  transitionMs ?? SCENE_TRANSITION_DEFAULT_MS[transition];
+                const a = sceneTransitionAnim(transition, ms);
+                return a ? { animation: a } : {};
+              })()
             : {}),
           ...style,
         }}
       >
-        <style>{`@keyframes gdsMotionSceneIn { from { opacity: 0 } to { opacity: 1 } }`}</style>
+        <style>{SCENE_TRANSITION_KEYFRAMES}</style>
         <div
           style={{
             position: "absolute",
@@ -733,10 +1129,19 @@ function RestartIcon() {
   );
 }
 
+function isOverlayElement(
+  child: React.ReactNode,
+): child is React.ReactElement<MotionOverlayProps> {
+  return React.isValidElement(child) && child.type === MotionOverlay;
+}
+
 function isMotionScene(
   child: React.ReactNode,
 ): child is React.ReactElement<MotionSceneProps> {
-  return React.isValidElement(child);
+  // Permissive on purpose (any element that isn't film chrome is a
+  // scene) — matches how the strip/play views have always treated
+  // children.
+  return React.isValidElement(child) && child.type !== MotionOverlay;
 }
 
 export function Motion({
@@ -752,7 +1157,9 @@ export function Motion({
   children,
 }: MotionProps) {
   const reduced = useReducedMotion();
-  const scenes = React.Children.toArray(children).filter(isMotionScene);
+  const kids = React.Children.toArray(children);
+  const scenes = kids.filter(isMotionScene);
+  const overlays = kids.filter(isOverlayElement);
   const count = scenes.length;
   const ratio = aspect !== "auto" ? parseAspect(aspect) : null;
   const cardAspect = ratio ? aspect : "16 / 9";
@@ -765,6 +1172,31 @@ export function Motion({
   const [done, setDone] = React.useState(false);
   // Remount the active scene per activation so its clocks start fresh.
   const [runId, setRunId] = React.useState(0);
+  // ── Transition overlap ──
+  // The OUTGOING scene stays mounted as a static layer UNDER the incoming
+  // one for the incoming scene's transition window — so a slide reveals
+  // the previous scene, a wipe cuts through it, a fade dissolves over it,
+  // instead of flashing the bare stage. Cleared on a timer.
+  const [outgoing, setOutgoing] = React.useState<number | null>(null);
+  const prevIdxRef = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    const prev = prevIdxRef.current;
+    prevIdxRef.current = idx;
+    if (prev === null || prev === idx) return;
+    const incoming = scenes[idx];
+    if (!incoming) return;
+    const t = (incoming.props.transition ?? "fade") as MotionSceneTransition;
+    const overlapMs =
+      incoming.props.transitionMs ?? SCENE_TRANSITION_DEFAULT_MS[t] ?? 0;
+    if (overlapMs <= 0) {
+      setOutgoing(null);
+      return;
+    }
+    setOutgoing(prev);
+    const timer = setTimeout(() => setOutgoing(null), overlapMs + 60);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, runId]);
   // Host-driven view override (the dock's Play/Arrange toggle posts
   // "set-view" over the control channel) — beats the `view` prop without
   // a source mutation. Reduced motion still forces the strip.
@@ -1014,6 +1446,24 @@ export function Motion({
         </div>
       )}
 
+      {/* The outgoing scene, frozen UNDER the incoming one during the
+          transition window (active=false → no clocks, posters not
+          players). Rendered first in DOM = beneath. */}
+      {outgoing !== null && outgoing !== idx && scenes[outgoing] && (
+        <SceneBoundary key={`out:${outgoing}`} label={scenes[outgoing].props.label}>
+          <MotionSceneImpl
+            {...scenes[outgoing].props}
+            transition="none"
+            internal={{
+              active: false,
+              paused: true,
+              mode: "play",
+              onSceneEnd: () => {},
+            }}
+          />
+        </SceneBoundary>
+      )}
+
       {active && (
         <SceneBoundary
           key={`${idx}:${runId}`}
@@ -1026,6 +1476,16 @@ export function Motion({
           />
         </SceneBoundary>
       )}
+
+      {/* The broadcast layer — film-level overlays (network bug, live
+          clock, ticker, persistent video). A second timeline: each
+          overlay shows for its fromScene..toScene range (default: the
+          whole film). Rendered above scenes, below the transport. */}
+      {overlays.filter((o) => {
+        const from = o.props.fromScene ?? 0;
+        const to = o.props.toScene ?? Infinity;
+        return idx >= from && idx <= to;
+      })}
 
       {/* Transport — play/pause, restart, and the scene dots (random access:
           a motion is slides that play themselves). */}

@@ -36,7 +36,14 @@
  */
 
 import { useState } from "react";
-import { FileText, LayoutGrid, Sparkles, FlaskConical, ExternalLink } from "lucide-react";
+import {
+  Clapperboard,
+  FileText,
+  LayoutGrid,
+  Sparkles,
+  FlaskConical,
+  ExternalLink,
+} from "lucide-react";
 import {
   REFERENCE_LAYOUTS,
   type ReferenceLayout,
@@ -104,13 +111,23 @@ interface StarterPickerProps {
   }) => void;
 }
 
-type Tab = "layouts" | "playground" | "paste";
+type Tab = "layouts" | "motion" | "playground" | "paste";
 
 // Stable picker order; iterating PLAYGROUND_SCAFFOLDS once at module
 // load so reorders happen deterministically (by id) and the result
 // survives HMR cleanly.
-const PLAYGROUND_LIST: PlaygroundScaffold[] = Object.values(PLAYGROUND_SCAFFOLDS).sort(
+const ALL_SCAFFOLDS: PlaygroundScaffold[] = Object.values(PLAYGROUND_SCAFFOLDS).sort(
   (a, b) => a.id.localeCompare(b.id),
+);
+// Motion reels get their own tab — and ONLY motion reels live there.
+// Detection matches the page-level kind inference: a scaffold whose
+// source renders a <Motion> is a Motion starter, and it's filtered OUT
+// of the general playground list so it never double-lists.
+const MOTION_LIST: PlaygroundScaffold[] = ALL_SCAFFOLDS.filter((e) =>
+  /<Motion[\s>]/.test(e.scaffold),
+);
+const PLAYGROUND_LIST: PlaygroundScaffold[] = ALL_SCAFFOLDS.filter(
+  (e) => !/<Motion[\s>]/.test(e.scaffold),
 );
 
 export function StarterPicker({
@@ -163,10 +180,11 @@ export function StarterPicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* Wider than the default Dialog max-w-lg — the layouts grid
-          wants room to show three thumbnails per row without
-          squashing. */}
-      <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden">
+      {/* Wider than the default Dialog max-w-lg — the grids want room.
+          flex-col + max-h so the GRID is the scroll region (the old
+          inner max-h could exceed the dialog and clip — the "doesn't
+          scroll properly" bug). */}
+      <DialogContent className="max-w-5xl p-0 gap-0 overflow-hidden flex flex-col max-h-[85vh]">
         <DialogHeader className="px-6 pt-6 pb-3 border-b border-border">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" aria-hidden />
@@ -193,6 +211,18 @@ export function StarterPicker({
             icon={<LayoutGrid className="h-3.5 w-3.5" />}
             label="Starter templates"
           />
+          {/* Motion reels — scene-sequence starters ONLY (anything whose
+              source renders <Motion>). Spawning one lands in Motion
+              Studio via the page's kind inference. */}
+          {MOTION_LIST.length > 0 && (
+            <TabButton
+              active={tab === "motion"}
+              onClick={() => setTab("motion")}
+              icon={<Clapperboard className="h-3.5 w-3.5" />}
+              label="Motion"
+              badge={MOTION_LIST.length}
+            />
+          )}
           {/* Playground tab — siloed dev-only set of scaffolds living
               in apps/docs/playground-scaffolds/. Not shipped via
               REFERENCE_LAYOUTS, not retrieved by the model. Surfaced
@@ -214,6 +244,7 @@ export function StarterPicker({
         </div>
 
         {tab === "layouts" && <LayoutsGrid onPick={handlePickLayout} />}
+        {tab === "motion" && <MotionGrid onPick={handlePickPlayground} />}
         {tab === "playground" && <PlaygroundGrid onPick={handlePickPlayground} />}
         {tab === "paste" && <PasteCodeForm onSubmit={handleSubmitPaste} />}
       </DialogContent>
@@ -269,7 +300,7 @@ function TabButton({
 
 function LayoutsGrid({ onPick }: { onPick: (l: ReferenceLayout) => void }) {
   return (
-    <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
+    <div className="px-6 py-5 min-h-0 flex-1 overflow-y-auto">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {REFERENCE_LAYOUTS.map((layout) => (
           <LayoutCard key={layout.id} layout={layout} onPick={() => onPick(layout)} />
@@ -311,13 +342,71 @@ function LayoutCard({
 }
 
 // ────────────────────────────────────────────────────────────────────
+// Motion grid — scene-sequence reels only
+// ────────────────────────────────────────────────────────────────────
+
+function MotionGrid({ onPick }: { onPick: (e: PlaygroundScaffold) => void }) {
+  return (
+    <div className="px-6 py-5 min-h-0 flex-1 overflow-y-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {MOTION_LIST.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            onClick={() => onPick(entry)}
+            className={cn(
+              "group flex flex-col rounded-lg border border-border bg-card overflow-hidden text-left",
+              "hover:border-primary/60 hover:shadow-sm transition-all",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+            )}
+          >
+            {/* Dark stage placeholder — reads as "a film", not a screen.
+                Live scene-strip previews ride the capture/poster work
+                (STUDIO-CAPTURE); a poster drops in here when it lands. */}
+            <div
+              className="relative aspect-video w-full"
+              style={{
+                background:
+                  "radial-gradient(circle at 50% 38%, #1b1b22, #0b0b0e)",
+              }}
+            >
+              <div className="absolute top-2 left-2">
+                <Badge variant="secondary" className="text-[10px] font-medium gap-1">
+                  <Clapperboard className="h-2.5 w-2.5" />
+                  MOTION
+                </Badge>
+              </div>
+              <div className="absolute inset-0 grid place-items-center">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white/80 transition-colors group-hover:bg-white/20">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+            <div className="flex-1 px-3 py-2.5 border-t border-border">
+              <div className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
+                {entry.label}
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">
+                {entry.description}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
 // Playground grid — dev-only siloed scaffolds
 // ────────────────────────────────────────────────────────────────────
 
 function PlaygroundGrid({ onPick }: { onPick: (e: PlaygroundScaffold) => void }) {
   if (PLAYGROUND_LIST.length === 0) {
     return (
-      <div className="px-6 py-10 max-h-[60vh] overflow-y-auto">
+      <div className="px-6 py-10 min-h-0 flex-1 overflow-y-auto">
         <div className="flex flex-col items-center text-center gap-3 py-12">
           <FlaskConical className="h-8 w-8 text-muted-foreground/40" />
           <h3 className="text-sm font-medium">No playground scaffolds yet</h3>
@@ -333,7 +422,7 @@ function PlaygroundGrid({ onPick }: { onPick: (e: PlaygroundScaffold) => void })
     );
   }
   return (
-    <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
+    <div className="px-6 py-5 min-h-0 flex-1 overflow-y-auto">
       {/* Banner — make it visually obvious these aren't shipped starters */}
       <div className="mb-4 rounded-md border border-warning/30 bg-warning-soft/40 px-3 py-2">
         <div className="flex items-center gap-1.5 text-xs text-warning-deep">

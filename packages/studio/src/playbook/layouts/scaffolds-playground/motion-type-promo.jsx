@@ -84,7 +84,7 @@ export default function App() {
         @keyframes gdsTypeSlam    { 0% { opacity: 0; transform: scale(2.6) } 60% { opacity: 1; transform: scale(0.96) } 100% { transform: scale(1) } }
         @keyframes gdsTypePop     { from { opacity: 0; transform: scale(0.7) } to { opacity: 1; transform: scale(1) } }
       `}</style>
-      <Motion>
+      <Motion aspect="16/9">
         {/* 1 — word-by-word manifesto open */}
         <MotionScene label="Open" durationMs={5200}>
           <StaggerLine words="Stop shipping screenshots." />

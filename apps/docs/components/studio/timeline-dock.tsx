@@ -90,6 +90,8 @@ export interface TimelineMotionScene {
   durationMs: number;
   /** Content summary, e.g. "2 screens · text". */
   summary: string;
+  /** The scene's entrance transition ("fade" default). */
+  transition: string;
 }
 
 const MOTION_ENTER_MS = 1500;
@@ -135,6 +137,7 @@ export function extractMotionScenes(
     const openTag = part.slice(0, part.indexOf(">") + 1);
     const lm = openTag.match(/label\s*=\s*["'{`]+([^"'`}]*)["'`}]/);
     const dm = openTag.match(/durationMs\s*=\s*\{?\s*([0-9.]+)/);
+    const tm = openTag.match(/transition\s*=\s*["']([a-z-]+)["']/);
 
     const screens = part.match(/<MotionScreen\b/g)?.length ?? 0;
     const texts = part.match(/<MotionText\b/g)?.length ?? 0;
@@ -157,11 +160,13 @@ export function extractMotionScenes(
     for (let k = textWithTemplate; k < texts; k++)
       timed.push(TEXT_TEMPLATE_MS.title);
 
+    // An explicit durationMs is a MINIMUM runtime (the floor); timed
+    // children can extend past it. True duration = max of both.
+    const fromChildren =
+      timed.length > 0 ? Math.max(...timed) + MOTION_BEAT_MS : 0;
     const durationMs = dm
-      ? Number(dm[1])
-      : timed.length > 0
-        ? Math.max(...timed) + MOTION_BEAT_MS
-        : MOTION_UNTIMED_MS;
+      ? Math.max(Number(dm[1]), fromChildren)
+      : fromChildren || MOTION_UNTIMED_MS;
 
     const bits: string[] = [];
     if (screens > 0) bits.push(screens === 1 ? "1 screen" : `${screens} screens`);
@@ -172,6 +177,7 @@ export function extractMotionScenes(
       label: lm ? lm[1] : null,
       durationMs,
       summary: bits.join(" · ") || "empty",
+      transition: tm ? tm[1] : "fade",
     };
   });
 }
@@ -311,7 +317,7 @@ function SceneSpine({
                 <path d="M2 13 C 26 13, 46 13, 70 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" />
                 <path d="M64 8 L72 13 L64 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span className="text-[9px] text-muted-foreground">fade</span>
+              <span className="text-[9px] text-muted-foreground">{s.transition}</span>
             </div>
           )}
           <button
@@ -343,16 +349,43 @@ function SceneSpine({
 }
 
 /** Scene lanes — Motion scenes as clips on the time ruler. Clips are
- *  tappable (seek); the playhead sits at the active scene's start. */
+ *  tappable (seek), the ruler is drag-scrubbable (scene-snap), and the
+ *  playhead travels through each scene at its estimated duration,
+ *  pausing with playback. Frame-accurate scrub arrives with the
+ *  seekable clock (STUDIO-DIRECTOR D4/M2). */
 function SceneLanes({
   scenes,
   activeScene,
+  paused = false,
   onSeek,
 }: {
   scenes: TimelineMotionScene[];
   activeScene?: number;
+  paused?: boolean;
   onSeek?: (i: number) => void;
 }) {
+  const laneRef = React.useRef<HTMLDivElement>(null);
+  const dragSeek = React.useCallback(
+    (clientX: number) => {
+      const el = laneRef.current;
+      if (!el || !onSeek || scenes.length === 0) return;
+      const r = el.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+      let t = 0;
+      const total = scenes.reduce((a, s) => a + s.durationMs, 0) || 1;
+      const target = ratio * total;
+      for (let i = 0; i < scenes.length; i++) {
+        t += scenes[i].durationMs;
+        if (target < t) {
+          onSeek(i);
+          return;
+        }
+      }
+      onSeek(scenes.length - 1);
+    },
+    [onSeek, scenes],
+  );
+  const draggingRef = React.useRef(false);
   const { clips, totalMs } = React.useMemo(() => {
     let t = 0;
     const cs: Clip[] = scenes.map((s, i) => {
@@ -382,7 +415,23 @@ function SceneLanes({
           Add track
         </div>
       </div>
-      <div className="relative min-w-0 flex-1">
+      <div
+        ref={laneRef}
+        className="relative min-w-0 flex-1"
+        // Drag-to-scrub anywhere on the ruler/lanes (scene-snap).
+        onPointerDown={(e) => {
+          draggingRef.current = true;
+          (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+          dragSeek(e.clientX);
+        }}
+        onPointerMove={(e) => {
+          if (draggingRef.current) dragSeek(e.clientX);
+        }}
+        onPointerUp={() => {
+          draggingRef.current = false;
+        }}
+        style={{ cursor: "ew-resize", touchAction: "none" }}
+      >
         <div className="relative h-7 border-b border-border/40 text-[9px] text-muted-foreground">
           {Array.from({ length: seconds + 1 }).map((_, s) => (
             <span
@@ -421,15 +470,31 @@ function SceneLanes({
         <div className="flex h-8 items-center px-3">
           <div className="h-5 w-full rounded border border-dashed border-border/60" />
         </div>
-        {/* Playhead — parked at the active scene's start (scene-level
-            scrub today; continuous time scrub arrives with the seekable
-            clock, STUDIO-DIRECTOR D4/M2). */}
-        <div
-          className="pointer-events-none absolute bottom-0 top-0 w-px bg-primary/70 transition-[left] duration-300"
-          style={{
-            left: `${((clips[activeScene ?? 0]?.startMs ?? 0) / totalMs) * 100}%`,
-          }}
-        />
+        {/* Playhead — travels through the active scene over its
+            estimated duration, pausing with playback (animation-play-
+            state). Keyed per scene so it restarts at each boundary.
+            Estimated, not sample-accurate — the seekable clock makes it
+            exact later. */}
+        <style>{`@keyframes gdsDockHead { from { left: var(--ph-from) } to { left: var(--ph-to) } }`}</style>
+        {(() => {
+          const i = Math.max(0, Math.min(activeScene ?? 0, clips.length - 1));
+          const c = clips[i];
+          if (!c) return null;
+          return (
+            <div
+              key={i}
+              className="pointer-events-none absolute bottom-0 top-0 w-px bg-primary"
+              style={{
+                ["--ph-from" as string]: `${(c.startMs / totalMs) * 100}%`,
+                ["--ph-to" as string]: `${((c.startMs + c.durMs) / totalMs) * 100}%`,
+                animation: `gdsDockHead ${c.durMs}ms linear both`,
+                animationPlayState: paused ? "paused" : "running",
+              }}
+            >
+              <span className="absolute -left-[3px] -top-0.5 h-2 w-[7px] rounded-sm bg-primary" />
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -712,6 +777,7 @@ export function TimelineDock({
             <SceneLanes
               scenes={scenes}
               activeScene={motionState?.scene}
+              paused={motionState?.paused ?? false}
               onSeek={seekScene}
             />
           )

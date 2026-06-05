@@ -32,7 +32,7 @@ import {
   extractEditBlocks,
   applyEditTurn,
 } from "@/lib/studio-edit-blocks";
-import { EDIT_MODE_PROMPT } from "@gradeui/studio/playbook";
+import { EDIT_MODE_PROMPT, MOTION_GUIDE } from "@gradeui/studio/playbook";
 import { SelectionInspector } from "@/components/studio/selection-inspector";
 import { SelectionChip } from "@/components/studio/selection-chip";
 import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
@@ -430,9 +430,20 @@ export function StudioChat({
             currentCodeRef.current && currentCodeRef.current.trim() !== ""
           ) && !forceFullRegenOnceRef.current;
         forceFullRegenOnceRef.current = false;
-        const finalSystemPrompt = editMode
-          ? `${sp}\n\n${EDIT_MODE_PROMPT}`
-          : sp;
+        // MOTION GUIDE — same conditional-stanza pattern as edit mode,
+        // keyed on content instead of turn shape: when the design on
+        // screen is a Grade Motion (the source contains "<Motion"), the
+        // model gets the Motion authoring guardrails (scene grammar,
+        // the camera-belongs-to-the-screen rule, the completion
+        // contract, pacing). New Motions are seeded with the Motion
+        // starter, so fresh-build turns on a Motion design qualify too.
+        // Ordinary screen turns never pay the tokens.
+        const motionMode = Boolean(
+          currentCodeRef.current && currentCodeRef.current.includes("<Motion")
+        );
+        let finalSystemPrompt = sp;
+        if (motionMode) finalSystemPrompt += `\n\n${MOTION_GUIDE}`;
+        if (editMode) finalSystemPrompt += `\n\n${EDIT_MODE_PROMPT}`;
         return {
           body: {
             id,
@@ -1116,6 +1127,13 @@ export function StudioChat({
       emptyStateSlot={
         messages.length === 0 && !currentCode ? (
           <EmptyState templates={templates} onPick={handlePickTemplate} />
+        ) : messages.length === 0 && currentCode?.includes("<Motion") ? (
+          // Motion-aware hints — a fresh Motion has code (the starter)
+          // but no conversation; teach the moves instead of the blank
+          // "how can I help".
+          <MotionHints
+            onPick={(prompt) => handlePickTemplate({ prompt } as StudioTemplate)}
+          />
         ) : null
       }
       errorSlot={
@@ -1322,6 +1340,82 @@ function EmptyState({
               </button>
             );
           })}
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+/**
+ * Motion-aware empty state — prompt chips that teach the Motion moves.
+ * Shown when the focused design is a Motion with no chat history yet.
+ * Chips PREFILL the composer (same pattern as starter templates) so the
+ * user can tweak the wording before sending.
+ */
+const MOTION_HINTS: { label: string; prompt: string }[] = [
+  {
+    label: "Add a stat scene",
+    prompt:
+      'Add a scene after the opening with a stat template — heading "4.2×", text "faster to ship".',
+  },
+  {
+    label: "Slow mask wipe",
+    prompt:
+      "Make the closing scene arrive with a slow circular wipe (transition wipe-circle, about 1200ms).",
+  },
+  {
+    label: "Film-level ticker",
+    prompt:
+      'Add a film-level ticker along the bottom that runs across every scene: "Grade Motion — live, themeable, yours".',
+  },
+  {
+    label: "Broadcast lower-third",
+    prompt:
+      "Add a TV-style broadcast lower-third to the demo scene with my name and role.",
+  },
+  {
+    label: "Mobile + desktop duo",
+    prompt:
+      "Add a scene showing the same product on a mobile and a desktop screen side by side, each with its own camera tour.",
+  },
+  {
+    label: "Retheme the fills",
+    prompt:
+      "Recolour the scene fills to use my theme tokens (primary/background gradients) so the film re-themes with the project.",
+  },
+];
+
+function MotionHints({ onPick }: { onPick: (prompt: string) => void }) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-start py-2"
+      >
+        <GradeMark className="h-7 w-7 text-foreground mb-2.5" />
+        <h3 className="text-sm font-semibold text-foreground mb-0.5">
+          Direct it
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          This is a Motion — ask for scenes, cuts, cameras, and overlays.
+        </p>
+        <div className="grid grid-cols-2 gap-1.5 w-full">
+          {MOTION_HINTS.map((h) => (
+            <button
+              key={h.label}
+              type="button"
+              onClick={() => onPick(h.prompt)}
+              title={h.prompt}
+              className={cn(
+                "rounded-md border border-border bg-card px-2.5 py-2",
+                "text-left text-xs font-medium text-foreground",
+                "hover:border-primary/40 hover:bg-muted transition-colors",
+              )}
+            >
+              {h.label}
+            </button>
+          ))}
         </div>
       </motion.div>
     </AnimatePresence>

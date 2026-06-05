@@ -83,6 +83,10 @@ export const ALLOWED_COMPONENTS = [
   "MotionScene",
   "MotionScreen",
   "MotionText",
+  // The broadcast layer — film-level persistent overlays (network-bug
+  // logo, live clock, ticker) in standard anchor zones, with optional
+  // fromScene/toScene ranges. A peer of MotionScene inside <Motion>.
+  "MotionOverlay",
   // Core primitives
   "Button",
   "Card",
