@@ -498,6 +498,24 @@ export {
   type ScreenAnimatorShot,
 } from "../components/ui/screen-animator";
 
+// Grade Motion — a directed sequence of scenes on one persistent stage
+// (text → demo → video → text). Scenes hold arbitrary JSX; screens get
+// their own per-screen camera via MotionScreen; MotionText carries the
+// Motion Templates. See STUDIO-DIRECTOR.md ("Grade Motion").
+export {
+  Motion,
+  MotionScene,
+  MotionScreen,
+  MotionText,
+  useMotionScene,
+  type MotionProps,
+  type MotionSceneProps,
+  type MotionScreenProps,
+  type MotionTextProps,
+  type MotionTextTemplate,
+  type MotionSceneRegistration,
+} from "../components/ui/motion";
+
 export { ThreeScene, type ThreeSceneProps } from "../components/ui/three-scene";
 export { ShaderControls, type ShaderControlsProps } from "../components/ui/shader-controls";
 export {

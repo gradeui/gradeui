@@ -47,6 +47,12 @@ export interface ScreenAnimatorProps {
   maxLoops?: number;
   /** Show the play / pause / restart transport. Default true. */
   controls?: boolean;
+  /** Controlled pause override — a sequencer (e.g. `<Motion>`) holds the
+   *  transport. Leave undefined for self-managed playback. */
+  paused?: boolean;
+  /** Fires once when the tour runs to its end and stops (loop cap reached,
+   *  or `loop=false`). The hook a sequencer advances on. */
+  onEnded?: () => void;
   /** Dim the edges when pushed in (focus vignette). Default false — opt in. */
   spotlight?: boolean;
   /** Render the synthetic cursor pulse on detail shots. Default true. */
@@ -156,6 +162,8 @@ export function ScreenAnimator({
   loop = true,
   maxLoops = Infinity,
   controls = true,
+  paused,
+  onEnded,
   spotlight = false,
   cursor = true,
   enter = true,
@@ -224,6 +232,24 @@ export function ScreenAnimator({
     setI(0);
     setPlaying(true);
   }, []);
+
+  // Controlled pause — a sequencer (Motion) holds the transport. Only
+  // engages when the prop is provided; otherwise playback is self-managed.
+  React.useEffect(() => {
+    if (paused === undefined) return;
+    if (paused) setPlaying(false);
+    else if (!finished) setPlaying(true);
+  }, [paused, finished]);
+
+  // Fire onEnded exactly once per run-to-completion (effect, not state
+  // updater, so StrictMode's double-invoke can't double-fire it).
+  const onEndedRef = React.useRef(onEnded);
+  React.useEffect(() => {
+    onEndedRef.current = onEnded;
+  });
+  React.useEffect(() => {
+    if (finished) onEndedRef.current?.();
+  }, [finished]);
   React.useEffect(() => {
     // Don't advance when reduced, paused, or unwatched (tab hidden / offscreen).
     if (reduced || !playing || !active || frames.length <= 1) return;

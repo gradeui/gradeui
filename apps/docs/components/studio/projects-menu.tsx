@@ -31,7 +31,15 @@
  */
 
 import * as React from "react";
-import { Folder, Plus, Settings } from "lucide-react";
+import {
+  Clapperboard,
+  Folder,
+  GitBranch,
+  Monitor,
+  Palette,
+  Plus,
+  Settings,
+} from "lucide-react";
 import {
   Badge,
   Sidebar,
@@ -43,12 +51,19 @@ import {
 } from "@gradeui/ui";
 
 import type { Project, Team } from "@/lib/studio-storage";
+import type { DesignKind } from "@/lib/studio-designs";
 import { ProjectSettingsSheet } from "@/components/studio/project-settings-sheet";
+
+/** The active project's nav sections. "motions" renders as "Motion
+ *  Studio" (the id stays stable for storage/URLs); "flows" is reserved
+ *  (FlowCanvas, D8) and renders disabled; "styles" routes to the theme
+ *  panel. */
+export type ProjectSection = "screens" | "flows" | "motions" | "styles";
 
 /** Ambient counts the menu shows next to each project + screen.
  *  Owned by the page; the menu just reads. */
 export interface ProjectsMenuSummary {
-  designs: { id: string; name: string }[];
+  designs: { id: string; name: string; kind?: DesignKind }[];
   /** User-message count per design id. */
   turnsByDesign: Record<string, number>;
   /** Undo-history snapshot count per design id. */
@@ -96,6 +111,16 @@ interface ProjectsMenuProps {
    *  browser lives here so the user's library sits in the left panel
    *  alongside their projects. */
   assetsSlot?: React.ReactNode;
+  /** Which section of the ACTIVE project the canvas is showing.
+   *  Undefined → "screens". */
+  activeSection?: ProjectSection;
+  /** Switch the active project's section (Screens / Motions / Styles —
+   *  Flows is disabled until FlowCanvas lands). When omitted, the
+   *  section rows don't render at all (back-compat). */
+  onSelectSection?: (section: ProjectSection) => void;
+  /** Create a new Motion in the active project (the + on the Motions
+   *  row). */
+  onAddMotion?: () => void;
 }
 
 /** "4 turns · 12 revisions". ALWAYS renders both counts even when
@@ -114,6 +139,9 @@ export function ProjectsMenu({
   onUpdateProject,
   onDeleteProject,
   assetsSlot,
+  activeSection = "screens",
+  onSelectSection,
+  onAddMotion,
 }: ProjectsMenuProps) {
   // The settings sheet target — null when closed; project ref when
   // open. Tracking by Project (rather than id + a separate boolean)
@@ -177,10 +205,16 @@ export function ProjectsMenu({
   // on its home); the cog opens settings.
   const renderProjectRow = (project: Project) => {
     const isActive = project.id === activeProjectId;
-    const count = summaries[project.id]?.designs.length ?? 0;
-    const description =
-      project.description?.trim() ||
-      (count === 1 ? "1 screen" : `${count} screens`);
+    const allDesigns = summaries[project.id]?.designs ?? [];
+    const screenCount = allDesigns.filter(
+      (d) => (d.kind ?? "screen") === "screen",
+    ).length;
+    const motionCount = allDesigns.filter((d) => d.kind === "motion").length;
+    const counts =
+      motionCount > 0
+        ? `${screenCount} ${screenCount === 1 ? "screen" : "screens"} · ${motionCount} ${motionCount === 1 ? "motion" : "motions"}`
+        : `${screenCount} ${screenCount === 1 ? "screen" : "screens"}`;
+    const description = project.description?.trim() || counts;
 
     return (
       // Settings cog is a sibling (not nested in the row button — that'd
@@ -198,6 +232,79 @@ export function ProjectsMenu({
         <span className="absolute right-1.5 top-1.5 opacity-0 transition-opacity group-hover/proj:opacity-100">
           {renderSettingsButton(project)}
         </span>
+
+        {/* The active project's sections: Screens / Flows (tbd) /
+            Motions / Styles. Only under the active project — switching
+            projects lands on Screens. */}
+        {isActive && onSelectSection && (
+          <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-border/60 pl-2">
+            <SidebarItem
+              asButton
+              size="sm"
+              active={activeSection === "screens"}
+              icon={<Monitor />}
+              onClick={() => onSelectSection("screens")}
+            >
+              <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                <span className="truncate">Screens</span>
+                <span className="text-[10px] tabular-nums text-muted-foreground">
+                  {screenCount}
+                </span>
+              </span>
+            </SidebarItem>
+            <SidebarItem
+              asButton
+              size="sm"
+              icon={<GitBranch />}
+              className="pointer-events-none opacity-50"
+              aria-disabled
+            >
+              <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                <span className="truncate">Flows</span>
+                <span className="text-[10px] text-muted-foreground">soon</span>
+              </span>
+            </SidebarItem>
+            <div className="group/motions relative">
+              <SidebarItem
+                asButton
+                size="sm"
+                active={activeSection === "motions"}
+                icon={<Clapperboard />}
+                onClick={() => onSelectSection("motions")}
+              >
+                <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                  <span className="truncate">Motion Studio</span>
+                  <span className="pr-5 text-[10px] tabular-nums text-muted-foreground">
+                    {motionCount}
+                  </span>
+                </span>
+              </SidebarItem>
+              {onAddMotion && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddMotion();
+                  }}
+                  aria-label="New motion"
+                  title="New motion"
+                  className="absolute right-1 top-1/2 h-5 w-5 -translate-y-1/2 inline-flex items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover/motions:opacity-100 [&_svg]:size-3"
+                >
+                  <Plus />
+                </button>
+              )}
+            </div>
+            <SidebarItem
+              asButton
+              size="sm"
+              active={activeSection === "styles"}
+              icon={<Palette />}
+              onClick={() => onSelectSection("styles")}
+            >
+              Styles
+            </SidebarItem>
+          </div>
+        )}
       </div>
     );
   };

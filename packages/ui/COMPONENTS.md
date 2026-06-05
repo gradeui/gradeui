@@ -110,6 +110,8 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | ShaderPresetPicker / ShaderPresetPreview | `shader-preset-*.tsx` | runtime-only | ❌ | excluded |
 | AiChat | `ai-chat.tsx` | message stream | 🔁 | deferred — large compound component |
 | Chart | `chart.tsx` | recharts wrapper | 🔁 | deferred |
+| ScreenAnimator | `screen-animator.tsx` | `shots` (zoom/cx/cy/hold/trans/label), `loop`, `maxLoops`, `spotlight`, `cursor`, `paused`, `onEnded`, `stage`, `backdrop` | ❌ | runtime-only — the directed-camera primitive (see STUDIO-DIRECTOR.md) |
+| Motion (+ MotionScene / MotionScreen / MotionText) | `motion.tsx` | `view` (play/strip), `aspect` (16/9 · 9/16 · 1/1 · auto), `stage`, `loop`, `controls` · Scene: `label`, `durationMs`, `fill`, `transition` · Screen: `device`, `shots` (own camera), `screenId` · Text: `template` (title/lower-third/section-break), `heading`, `text`, `tone` | ❌ | runtime-only — Grade Motion: directed scene sequences (text → demo → video). Completion contract: scene advances when all timed children finish. See STUDIO-DIRECTOR.md "Grade Motion" |
 
 ## Iconography
 

@@ -32,9 +32,25 @@
  */
 export type DesignStatus = "draft" | "in_progress" | "in_review" | "done";
 
+/**
+ * What a design slot IS. A project holds more than screens (the nav
+ * sections are Screens / Flows (tbd) / Motions / Styles), but the slots
+ * share one storage shape — a named JSX source blob with revisions, chat,
+ * shares. `kind` is the lens:
+ *   - "screen" (default, and what undefined normalises to for every
+ *     pre-existing record) — a single page/view.
+ *   - "motion" — a Grade Motion: a <Motion> of scenes (see
+ *     STUDIO-DIRECTOR.md "Grade Motion"). Same blob, same channels; the
+ *     canvas and the timeline dock just read it differently.
+ * Flows will join this union when FlowCanvas lands (D8).
+ */
+export type DesignKind = "screen" | "motion";
+
 export interface Design {
   id: string;
   name: string;
+  /** See DesignKind. Optional — undefined means "screen" (legacy). */
+  kind?: DesignKind;
   /** The last sealed JSX block from the assistant for this design. */
   appSource: string | null;
   /** When this design was first created, in epoch ms. Set once at
@@ -78,16 +94,70 @@ function nextId(): string {
  *
  *  Client-only — `nextId()` is not SSR-safe. See `initialDesigns()` for the
  *  SSR-safe seed. */
-export function createDesign(index: number, name?: string): Design {
+export function createDesign(
+  index: number,
+  name?: string,
+  kind: DesignKind = "screen",
+): Design {
   const now = Date.now();
   return {
     id: nextId(),
-    name: name ?? `Screen ${index + 1}`,
+    name: name ?? (kind === "motion" ? `Motion ${index + 1}` : `Screen ${index + 1}`),
+    kind,
     appSource: null,
     createdAt: now,
     updatedAt: now,
     status: "draft",
   };
+}
+
+/** Normalise the optional kind — undefined is a legacy screen. */
+export function designKind(d: Pick<Design, "kind">): DesignKind {
+  return d.kind ?? "screen";
+}
+
+/**
+ * Starter source for a fresh Motion — the text → demo → text grammar with
+ * placeholder scenes, so the strip/timeline read immediately and the user
+ * (or the agent) replaces the placeholders with real screens.
+ */
+export function starterMotionSource(): string {
+  // NOTE the positioned full-height wrapper: <Motion> (like ScreenAnimator)
+  // is `position: absolute; inset: 0` and needs a positioned ancestor —
+  // without it the stage escapes the screen container and paints behind it.
+  return `function App() {
+  return (
+    <div style={{ position: "relative", height: "100vh" }}>
+    <Motion>
+      <MotionScene label="Hook">
+        <MotionText
+          template="title"
+          heading="Your product, directed"
+          text="Replace me — this is a Motion Template"
+        />
+      </MotionScene>
+      <MotionScene label="Demo">
+        <MotionScreen
+          shots={[
+            { zoom: 1, cx: 0.5, cy: 0.5, hold: 2400, label: "Overview" },
+            { zoom: 2, cx: 0.3, cy: 0.3, hold: 2600, label: "The detail that matters" },
+          ]}
+        >
+          <div style={{ padding: 48 }}>
+            <h1 style={{ fontSize: 32, fontWeight: 700 }}>A screen goes here</h1>
+            <p style={{ marginTop: 12, opacity: 0.7 }}>
+              Copy a screen in, or ask for one.
+            </p>
+          </div>
+        </MotionScreen>
+      </MotionScene>
+      <MotionScene label="Close">
+        <MotionText template="section-break" heading="Ship it" />
+      </MotionScene>
+    </Motion>
+    </div>
+  );
+}`;
 }
 
 /** Human-readable label for a DesignStatus. Sentence case, no Jira. */

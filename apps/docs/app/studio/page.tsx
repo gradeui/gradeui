@@ -115,8 +115,11 @@ import {
 import { buildSystemPrompt } from "@gradeui/studio/playbook";
 import {
   createDesign,
+  designKind,
   initialDesigns,
+  starterMotionSource,
   type Design,
+  type DesignKind,
 } from "@/lib/studio-designs";
 import {
   useUndoHistory,
@@ -138,7 +141,10 @@ import {
   type Team,
   type User as StoredUser,
 } from "@/lib/studio-storage";
-import { ProjectsMenu } from "@/components/studio/projects-menu";
+import {
+  ProjectsMenu,
+  type ProjectSection,
+} from "@/components/studio/projects-menu";
 import { AssetBrowser } from "@/components/studio/asset-browser";
 import { ProjectHome } from "@/components/studio/project-home";
 import { NewProjectDialog } from "@/components/studio/new-project-dialog";
@@ -209,6 +215,15 @@ export default function StudioPage() {
   // param all follow this. Bootstrap flips it to "fit" only when the URL
   // carries a ?screen.
   const [zoom, setZoom] = useState<"fit" | "all">("all");
+
+  // Which section of the active project the grid is showing — the left
+  // nav's Screens / Flows (tbd) / Motions / Styles rows. Filters the
+  // "all" grid by design kind; "styles" routes to the theme tab and
+  // leaves the grid on screens. Resets on project switch (effect below,
+  // keyed on activeProjectId).
+  const [projectSection, setProjectSection] = useState<ProjectSection>(
+    "screens",
+  );
 
   // Per-design undo / redo for `appSource` (JSX). The hook is
   // self-persisting via localStorage keyed by `designId`, and reseeds
@@ -706,7 +721,7 @@ export default function StudioPage() {
   //      designs / messagesByDesign so the user sees fresh counts
   //      as soon as a turn lands or a screen is added.
   type ProjectSummary = {
-    designs: { id: string; name: string }[];
+    designs: { id: string; name: string; kind?: DesignKind }[];
     /** User-message count per design id. */
     turnsByDesign: Record<string, number>;
     /** Undo-history snapshot count per design id. */
@@ -753,6 +768,12 @@ export default function StudioPage() {
           : null;
       const urlProject = urlParams?.get("project");
       const urlScreen = urlParams?.get("screen");
+      // ?section=motions|styles — restore the left-nav section on
+      // refresh ("screens" is the unwritten default).
+      const urlSection = urlParams?.get("section");
+      if (urlSection === "motions" || urlSection === "styles") {
+        setProjectSection(urlSection);
+      }
       const targetId =
         (urlProject && list.some((p) => p.id === urlProject) && urlProject) ||
         (stored && list.some((p) => p.id === stored) && stored) ||
@@ -886,7 +907,11 @@ export default function StudioPage() {
         revisionsByDesign[d.id] = readRevisionCount(d.id);
       }
       return {
-        designs: snap.designs.map((d) => ({ id: d.id, name: d.name })),
+        designs: snap.designs.map((d) => ({
+          id: d.id,
+          name: d.name,
+          kind: d.kind,
+        })),
         turnsByDesign,
         revisionsByDesign,
       };
@@ -1092,7 +1117,9 @@ export default function StudioPage() {
     setProjectSummaries((cur) => ({
       ...cur,
       [activeProjectId]: {
-        designs: designs.map((d) => ({ id: d.id, name: d.name })),
+        // Carry `kind` — the nav's Motion Studio count reads it. (Same
+        // shape as computeSummary; keep the two in lockstep.)
+        designs: designs.map((d) => ({ id: d.id, name: d.name, kind: d.kind })),
         turnsByDesign,
         revisionsByDesign,
       },
@@ -1130,6 +1157,15 @@ export default function StudioPage() {
     } else {
       url.searchParams.delete("screen");
     }
+    // The section param tracks the left nav's project section. "screens"
+    // is the default and stays unwritten, so existing URLs don't churn;
+    // ?section=motions (Motion Studio) and ?section=styles survive a
+    // refresh.
+    if (projectSection !== "screens") {
+      url.searchParams.set("section", projectSection);
+    } else {
+      url.searchParams.delete("section");
+    }
     const target = url.pathname + url.search;
     const current = window.location.pathname + window.location.search;
     if (current === target) {
@@ -1142,7 +1178,7 @@ export default function StudioPage() {
     } else {
       window.history.pushState({}, "", target);
     }
-  }, [activeProjectId, loadedProjectId, activeId, zoom]);
+  }, [activeProjectId, loadedProjectId, activeId, zoom, projectSection]);
 
   // popstate listener — when the user hits back/forward, read the
   // URL params and sync state. We compare against the live state
@@ -1189,6 +1225,9 @@ export default function StudioPage() {
       await storage.setActiveProjectId(id);
       applySnapshot(snap);
       setLoadedProjectId(id);
+      // Switching projects lands back on Screens — sections are a lens
+      // on the project you switched INTO, not sticky workspace state.
+      setProjectSection("screens");
       // Switching a project lands on its home — not whatever focus state
       // the previous project was in. (The URL-sync effect then drops the
       // ?screen param to match.)
@@ -1917,7 +1956,7 @@ export default function StudioPage() {
   // parallel, so we cap the count rather than let the user degrade their
   // own session. Empirically 8 is the point where boot latency of a
   // cold "All" flip starts to feel laggy on a mid-range laptop.
-  const MAX_DESIGNS = 8;
+  const MAX_DESIGNS = 20;
   const atCap = designs.length >= MAX_DESIGNS;
 
   // Add a blank design and focus it. Previously this called setActiveId
@@ -1936,9 +1975,22 @@ export default function StudioPage() {
   // no args still works — so the DesignTabs "+ New" button stays
   // one-click frictionless.
   const handleAddDesign = useCallback(
-    (seed?: { source: string; name?: string }) => {
+    (seed?: { source?: string; name?: string; kind?: DesignKind }) => {
       if (designs.length >= MAX_DESIGNS) return;
-      const fresh = createDesign(designs.length, seed?.name);
+      // Infer kind from the seed when not given explicitly — a starter
+      // whose source is a <Motion> reel (e.g. the motion-showcase
+      // playground scaffold) lands in Motion Studio, not Screens.
+      const kind =
+        seed?.kind ??
+        (seed?.source && /<Motion[\s>]/.test(seed.source)
+          ? ("motion" as const)
+          : undefined);
+      // Motions number among themselves ("Motion 2"), not among all slots.
+      const kindCount =
+        kind === "motion"
+          ? designs.filter((d) => designKind(d) === "motion").length
+          : designs.length;
+      const fresh = createDesign(kindCount, seed?.name, kind);
       const next: Design = seed?.source
         ? { ...fresh, appSource: seed.source }
         : fresh;
@@ -1957,8 +2009,18 @@ export default function StudioPage() {
           });
       }
     },
-    [designs.length, activeProjectId, storage]
+    [designs, activeProjectId, storage]
   );
+
+  // New Motion — a Design with kind "motion", seeded with the starter
+  // sequence (title → screen-with-camera → section break) so the play
+  // view and the timeline dock read immediately. See STUDIO-DIRECTOR.md
+  // ("Grade Motion").
+  const handleAddMotion = useCallback(() => {
+    handleAddDesign({ source: starterMotionSource(), kind: "motion" });
+    // Land in the Motions section so the new Motion is visible in the grid.
+    setProjectSection("motions");
+  }, [handleAddDesign]);
 
   // Clone an existing design's JSX into a fresh slot. Copies the
   // appSource but NOT the chat history — for a wizard/flow-step
@@ -2178,6 +2240,39 @@ export default function StudioPage() {
   // ThemeBuilderProvider) preserve the conversation, notes, and
   // theme draft across the remount.
   //
+  // Section routing for the left nav's Screens / Flows / Motions /
+  // Styles rows. Screens + Motions filter the "all" grid by design
+  // kind; Styles routes to the theme tab in the right panel; Flows is
+  // disabled until FlowCanvas (D8).
+  const handleSelectSection = useCallback(
+    (section: ProjectSection) => {
+      if (section === "styles") {
+        setRightTab("theme");
+        setRightPanelOpen(true);
+        setProjectSection("styles");
+        return;
+      }
+      if (section === "flows") return;
+      setProjectSection(section);
+      setZoom("all");
+    },
+    [],
+  );
+
+  // (Section reset on project switch lives in handleSwitchProject — an
+  // effect keyed on activeProjectId would also fire at bootstrap and
+  // clobber a ?section= read from the URL.)
+
+  // What the "all" grid shows — designs filtered by the active section's
+  // kind. Fit mode always sees the full list (the focused design might
+  // be either kind), and "styles" leaves the grid on screens.
+  const visibleDesigns = useMemo(() => {
+    if (zoom !== "all") return designs;
+    if (projectSection === "motions")
+      return designs.filter((d) => designKind(d) === "motion");
+    return designs.filter((d) => designKind(d) === "screen");
+  }, [designs, zoom, projectSection]);
+
   // The left pane is context-aware: ProjectsMenu when the canvas is
   // in "all screens" mode (chat is screen-scoped — it makes no sense
   // at the grid view); StudioChat when zoomed into a focused screen.
@@ -2196,6 +2291,9 @@ export default function StudioPage() {
       onRenameProject={handleRenameProject}
       onDeleteProject={handleDeleteProject}
       assetsSlot={<AssetBrowser />}
+      activeSection={projectSection}
+      onSelectSection={handleSelectSection}
+      onAddMotion={handleAddMotion}
     />
   ) : (
     <StudioChat
@@ -2723,7 +2821,7 @@ export default function StudioPage() {
             )}
             <div className="min-w-0 flex-1">
               <StudioThemedCanvas
-                designs={designs}
+                designs={visibleDesigns}
                 focusedId={activeId}
                 onFocus={setActiveId}
                 view={view}
@@ -2736,6 +2834,16 @@ export default function StudioPage() {
                 onCommentSelect={handleCommentSelect}
                 onCanvasModeChange={handleCanvasModeChange}
                 onAddDesign={handleAddDesign}
+                gridAddTile={
+                  projectSection === "motions"
+                    ? {
+                        title: "New Motion",
+                        description:
+                          "A directed sequence of scenes — title cards, screens with cameras, video. Starts from a starter you can reshape.",
+                        onClick: handleAddMotion,
+                      }
+                    : undefined
+                }
                 onCloseDesign={handleCloseDesign}
                 onRenameDesign={handleRenameDesign}
                 onDuplicateDesign={handleDuplicateDesign}
@@ -2758,6 +2866,9 @@ export default function StudioPage() {
                 onZoomChange={setZoom}
                 projectName={
                   projects.find((p) => p.id === activeProjectId)?.name
+                }
+                sectionLabel={
+                  projectSection === "motions" ? "Motion Studio" : "All screens"
                 }
                 saveStatus={saveStatus}
                 commentThreads={commentThreads}
@@ -3276,6 +3387,7 @@ function StudioThemedCanvas({
   onClearSelection,
   onCommentSelect,
   onAddDesign,
+  gridAddTile,
   onCloseDesign,
   onRenameDesign,
   onDuplicateDesign,
@@ -3297,6 +3409,7 @@ function StudioThemedCanvas({
   zoom,
   onZoomChange,
   projectName,
+  sectionLabel,
   saveStatus,
   commentThreads,
   onCommentPinClick,
@@ -3317,6 +3430,9 @@ function StudioThemedCanvas({
   onClearSelection: () => void;
   onCommentSelect?: (selection: StudioSelection) => void;
   onAddDesign: (seed?: { source: string; name?: string }) => void;
+  /** Dashed create-tile for the All grid (Motion Studio's landing/new
+   *  affordance). Forwarded to StudioCanvas → TileGrid. */
+  gridAddTile?: { title: string; description: string; onClick: () => void };
   onCloseDesign: (id: string) => void;
   onRenameDesign: (id: string, name: string) => void;
   onDuplicateDesign?: (id: string) => void;
@@ -3338,6 +3454,8 @@ function StudioThemedCanvas({
   zoom: "fit" | "all";
   onZoomChange: (zoom: "fit" | "all") => void;
   projectName?: string;
+  /** Grid-mode crumb label ("All screens" / "Motion Studio"). */
+  sectionLabel?: string;
   saveStatus?: "idle" | "saving" | "saved" | "error";
   commentThreads?: CommentThreadWithMessages[];
   onCommentPinClick?: (threadId: string) => void;
@@ -3365,6 +3483,7 @@ function StudioThemedCanvas({
       onClearSelection={onClearSelection}
       onCommentSelect={onCommentSelect}
       onAddDesign={onAddDesign}
+      gridAddTile={gridAddTile}
       onCloseDesign={onCloseDesign}
       onRenameDesign={onRenameDesign}
       onDuplicateDesign={onDuplicateDesign}
@@ -3386,6 +3505,7 @@ function StudioThemedCanvas({
       zoom={zoom}
       onZoomChange={onZoomChange}
       projectName={projectName}
+      sectionLabel={sectionLabel}
       saveStatus={saveStatus}
       commentThreads={commentThreads}
       onCommentPinClick={onCommentPinClick}

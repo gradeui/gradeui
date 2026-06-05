@@ -73,6 +73,16 @@ export const ALLOWED_COMPONENTS = [
   // Direction — wrap content in a directed camera (zoom/pan/spotlight tour
   // with play/pause). The "live demo director" primitive.
   "ScreenAnimator",
+  // Grade Motion — a directed sequence of scenes on one persistent stage
+  // (text → demo → video → text). A scene holds ANY JSX; each MotionScreen
+  // inside a scene has its OWN camera (shots) — two side by side shows
+  // mobile + desktop. MotionText carries the templated text animations
+  // (title / lower-third / section-break). The camera belongs to the
+  // screen, never the scene.
+  "Motion",
+  "MotionScene",
+  "MotionScreen",
+  "MotionText",
   // Core primitives
   "Button",
   "Card",

@@ -41,6 +41,7 @@ import { LogoContract } from "../components/ui/logo.contract";
 import { MapContract } from "../components/ui/map.contract";
 import { MediaSurfaceContract } from "../components/ui/media-surface.contract";
 import { MessageContract } from "../components/ui/message.contract";
+import { MotionContract } from "../components/ui/motion.contract";
 import { MultiSelectContract } from "../components/ui/multi-select.contract";
 import { PopoverContract } from "../components/ui/popover.contract";
 import { ProgressContract } from "../components/ui/progress.contract";
@@ -111,6 +112,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Map: MapContract,
   MediaSurface: MediaSurfaceContract,
   Message: MessageContract,
+  Motion: MotionContract,
   MultiSelect: MultiSelectContract,
   Popover: PopoverContract,
   Progress: ProgressContract,

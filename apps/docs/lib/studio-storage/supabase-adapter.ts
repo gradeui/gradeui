@@ -45,7 +45,11 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { UIMessage } from "ai";
-import type { Design, DesignStatus } from "@/lib/studio-designs";
+import type {
+  Design,
+  DesignKind,
+  DesignStatus,
+} from "@/lib/studio-designs";
 import {
   type Comment,
   type CommentThread,
@@ -251,10 +255,16 @@ const PROJECT_FULL_COLS =
 // ─── Screen / message / note rows ─────────────────────────────────
 
 /** JSONB `state` column on a design row — everything about a screen
- *  that isn't its name / position / timestamps. */
+ *  that isn't its name / position / timestamps. JSONB means new fields
+ *  (like `kind`, added for Grade Motion) need no SQL migration — but
+ *  they DO need mapping in rowToDesign / designToRow below, or they
+ *  silently drop on a cloud round-trip. */
 interface DesignState {
   appSource?: string | null;
   status?: DesignStatus | null;
+  /** "screen" (default when absent — every pre-Motion row) | "motion".
+   *  See DesignKind in lib/studio-designs.ts. */
+  kind?: DesignKind | null;
 }
 
 interface DesignRow {
@@ -273,6 +283,7 @@ function rowToDesign(r: DesignRow): Design {
     name: r.name,
     appSource: r.state?.appSource ?? null,
     status: r.state?.status ?? undefined,
+    kind: r.state?.kind ?? undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -288,7 +299,11 @@ function designToRow(
     id: d.id,
     project_id: projectId,
     name: d.name,
-    state: { appSource: d.appSource ?? null, status: d.status ?? null },
+    state: {
+      appSource: d.appSource ?? null,
+      status: d.status ?? null,
+      kind: d.kind ?? null,
+    },
     position,
     created_at: d.createdAt ?? now,
     updated_at: d.updatedAt ?? now,

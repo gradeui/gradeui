@@ -182,6 +182,117 @@ Screen transitions are navigations between isolated embeds (the link model), so 
 
 This is the convergence point: a multi-screen **share** is a FlowCanvas; a multi-screen **embed** is a FlowCanvas, chrome-free. Share, embed, and director all become "frames on a canvas + the shared kernel + a camera + overlays."
 
+(The *watchable* sibling of this — a directed, non-interactive sequence of scenes — is **Grade Motion**, next section. Motion ships first; FlowCanvas inherits its scene vocabulary.)
+
+## Grade Motion — the Motions section (scenes on a shared stage)
+
+FlowCanvas (above) is the *prototype* answer to multi-screen — linked live frames you can take over. **Grade Motion is the *cinematic* answer**: a directed sequence of scenes you watch, like a product launch video that happens to be alive. It lands first because it's nearly all composition of things that already exist. In the project nav it's a first-class section branded **Motion Studio**: a project holds **Screens, Flows (tbd — FlowCanvas when it lands), Motion Studio, and Styles**. (Internally the section id and design `kind` stay `motions`/`motion` — branding can move; storage keys shouldn't.)
+
+### What a Motion is
+
+A Motion is a **sequence of scenes on one persistent stage**. The grammar to hit is the one every modern product demo uses: *text → demo → video → text, any order, any mix, with transitions*. So a scene is **not** a kind — it's a **stage moment** that holds arbitrary content, and each content type brings its own behaviour:
+
+- **Screens** — `MotionScreen`, a framed screen *inside* a scene, each with its **own** camera (`shots` — `ScreenAnimator` applied per-screen, not per-scene). A scene can hold several: mobile + desktop of the same flow side by side, a before/after pair. This is the demotion that makes the model extensible: the camera is a property of a screen, the scene is just the moment that contains it.
+- **Text** — `MotionText`, the templated text animations (**Motion Templates**: title, lower-third, section-break, growing library). A text-only scene is a title card; a `MotionText` next to a screen is a caption.
+- **Video / anything else** — drop a `<video>`, an image, any JSX into the scene. Content that can't time itself rides the scene's `durationMs`.
+
+**The completion contract (what makes it robust):** a scene advances when **all its timed children have finished** — a screen's camera tour ending, a text template's run completing — or after `durationMs` when nothing in it keeps time. Timed children register with the scene; static content doesn't. New content types plug in by registering, nothing else changes.
+
+Each scene is its own JSX node in the blob, so it's **independently editable** — select it, regenerate it, reorder it — without touching its neighbours. Scene-level `transition` (fade/none today, more later) handles the cut; screens keep their fly-in/out choreography within it.
+
+The stage inverts ownership relative to a standalone `ScreenAnimator`: the **Motion owns the stage** (one continuous backdrop across the whole sequence), scenes enter and exit on it. That's what makes a cut between a dashboard, a title card, and a settings screen read as one film rather than three widgets.
+
+### Where a Motion lives — a source blob, like everything else
+
+A Motion is **JSX source in a Design-shaped record** (`kind: "motion"`), not a parallel JSON store:
+
+```jsx
+<Motion stage="...">
+  <MotionScene label="Hook">
+    <MotionText template="title" heading="Meet the new pipeline" />
+  </MotionScene>
+  <MotionScene label="Dashboard — both viewports">
+    <MotionScreen device="mobile" shots={[...]}>{/* screen, copied in */}</MotionScreen>
+    <MotionScreen shots={[...]}>{/* desktop copy */}</MotionScreen>
+  </MotionScene>
+  <MotionScene label="Clip" durationMs={6000}>
+    <video src="..." autoPlay muted />
+  </MotionScene>
+</Motion>
+```
+
+Why source wins (same reasoning as shots-as-props, one level up): it renders without an interpreter, it round-trips through the existing source-mutation channel, it gets revisions / shares / persistence / the agent for free, and it's **exactly the shape the AI already authors** — "make me a motion of these three screens with a title card between" is a generation target, not a new protocol. The dock reads it the way it reads shots today (extract/replace on the blob).
+
+**Scene content is copied in, not referenced (v1).** A screen scene snapshots the screen's JSX at insert time — same semantics as duplicating a screen. That keeps a Motion a single self-contained blob the existing renderer runs as-is, and it's honest about pinning: a Motion is usually *meant* to be stable while the screen evolves. Live-by-reference scenes (edit the screen, the Motion updates) are a later phase that rides the transclusion/capture work — and that's the seam where Motion and FlowCanvas converge.
+
+### The editor — the strip and the timeline
+
+Two views of the same blob, matching the rest of Studio:
+
+- **Scene strip (the canvas).** Scenes laid left-to-right, each a labelled card: screen scenes show the screen small on its stage, text scenes show the card. This is the "see it all connected" view — arrangement, not playback. Reorder = move a scene node in source. The strip is just the `<Motion>` component rendering in `view="strip"`, so the editor view is itself the live render, not a parallel preview.
+- **Timeline (the dock).** The existing TimelineDock grows a **scene lane**: clips sized to each scene's real duration (computed from shots' hold+trans, or the text template's length), with the focused scene's camera shots in the lane below. Two nested timelines, as designed — flow above, shot within.
+
+Playback is the same component in `view="play"`: one stage, scenes run in order, each handing off on end (`ScreenAnimator` grows an `onEnded`; `MotionText` templates have fixed durations).
+
+### Motion Templates
+
+Text scenes ship with a small curated set of pre-directed animations — start with three: **title** (fade-up headline + sub), **lower-third** (caption slides in from the edge), **section-break** (full-bleed statement, slow push). A template is just a `MotionText` variant: props in, keyframes inside the component, honours reduced motion. The library grows the way component starters do, and community templates eventually ride the same tiers as themes (STUDIO-THEMES).
+
+### Rollout
+
+- **M0 — Components.** `Motion` / `MotionScene` / `MotionScreen` / `MotionText` in `@gradeui/ui`; `paused` + `onEnded` on `ScreenAnimator`; the scene completion contract; strip + play views; 3 text templates.
+- **M1 — Project sections.** Left nav: Screens / Flows (tbd) / **Motion Studio** / Styles (the section is branded "Motion Studio"; the section id and `kind` stay `motion`/`motions` for storage stability). Motions are Designs with `kind: "motion"`; New Motion seeds a starter sequence. Motion Studio's grid shows Motions as tiles exactly like Screens' grid — same TileGrid, filtered by kind.
+- **M2 — Dock scene lane.** Extract/replace scenes on the Motion blob; clips sized to duration; click a scene to focus its shots. **Adding scenes must be one gesture:** an "Add scene" action in the dock (append to source via the mutation channel — lands first), and a dashed empty add-card at the end of the strip itself (needs a `grade:add-scene` postMessage from the iframe — the polish pass). Also kills the dead-end empty state: "no camera" becomes *actions* — wrap this screen in `ScreenAnimator`, or add it to a Motion. When branching (M5) lands, the strip's linear arrows become real connective cues — the EventSpine foci-and-noodles idiom at scene scale, drawing any-scene→any-scene links.
+- **M3 — AI authoring + mood direction.** The model emits/edits a whole `<Motion>` from a brief (the DA path applied to the Motion blob). Templates make text scenes cheap to generate well. The signature interaction is **emotional motion, not tap-tap edit**: "make it moody — slow fades, ken burns" or "youthful, poppy" compiles to concrete shot grammar (trans/hold lengths, easing choice, zoom amplitude, template selection, stage fill) — the same trick as STUDIO-LEARNING's display axes, so it can also surface as **mood sliders** (pace / energy / warmth) that drive the identical mapping deterministically. The editing hierarchy is: mood (AI or sliders) → point-and-click on the strip/dock → field-level tweak as the escape hatch. That last tier is nearly free: scene props are plain JSX props, so the **TokenField inspector + the auto-generated contracts** (`MotionContract`, `MotionSceneContract`, …) make the right panel a scene object-editor with no new machinery (STUDIO-TOKENFIELD's registry seam). Storage needs nothing: a Motion IS a Design — revisions, persistence, shares, comments all apply as-is. Which restates the end-state below: a website with timestamps on every screen, just a different way to look at it.
+- **M4 — Live scenes + A/V.** Reference-not-copy screen scenes (transclusion via the capture/embed kernel), voiceover/webcam tracks from D3, export via D7. Convergence with FlowCanvas: a Motion with take-over is a guided flow.
+- **M5 — Branching.** Scenes are already addressable (the transport dots are random access — a Motion is *slides that play themselves*). Branching makes the jump authorable from inside a scene: a hotspot/choice routes to scene X vs scene Y, turning the linear strip into a graph — infinite combinations from one scene set. This is the moment Motion and FlowCanvas become the same object viewed from two ends (a Motion is a directed walk through a flow graph; a FlowCanvas is the graph itself), so it should land as a shared primitive, not two.
+- **M6 — Stickers + the audience layer.** `MotionSticker` template library (author-side overlays, themeable JSX). Time-anchored reactions + comments on the share view's scrubber (viewer-side) — the comment substrate with `t` as the anchor.
+- **M7 — Free transforms + the WebGL track.** Two upgrades to what a scene can *look like*. (a) **Per-child transforms**: scene children get `x / y / scale / rotate` (the centered-flex layout is just the v1 default), so screens, text, and stickers place freely and the transform values become animatable — the same fields the inspector's TokenField editing already knows how to drive. (b) **WebGL scenes**: `ThreeScene` already backdrops the stage; the new experiment is **HTML-as-texture** (Chrome's element-capture path, behind beta flags today) — render the live screen into a WebGL scene and glitch / distortion / shader transitions run over *real interactive content*, not a screenshot. Worth a spike early because it's also the most spectacular possible scene transition, and nobody else can do it on live UI.
+
+### Why Motion exists (the product claim)
+
+The point is **making demo videos of any product, fast** — and beating the wave of AI-generated demo videos on the three things a rendered mp4 can never do: it's **interactive** (a viewer can grab the wheel), **themeable** (same Motion, dark mode, another brand), and **editable** (tweak one scene, swap one screen, re-cut a caption — no re-render, no re-shoot). The whole live-payload argument at the top of this doc, productised.
+
+**The economic unlock — personalised Motion at scale.** A real benchmark: a finance company once paid an animator + illustrator north of £100k for *one* animated customer statement. Because a Motion is live JSX, personalisation is just **data flowing into props** — `Hi {name}`, their figures, their plan, their theme — so the per-recipient cost is a database row and a share link, not a render farm. One Motion template + a recipient record = an animated statement, a renewal summary, an onboarding walkthrough, a year-in-review ("Wrapped") — each unique to the viewer, each still interactive and on-brand. mp4 generators must re-render per person; Grade re-binds. This is the same data channel the AI-brief path already uses ("I've attached extra data to include"), pointed at a recipient instead of a prompt. Audio slots in the same way: AI-generated music + voiceover (and later talking heads — D3's webcam track, or generated) are per-recipient assets on the timeline, synced the same as any other clip. Beat-synced music (every cut on a beat, silence as design — the thing motion.so's best work leans on) becomes a `music` track with beat markers that scene transitions snap to.
+
+**Prior art — motion.so (Mosaic's "Motion").** The closest existing product: prompt → rendered motion-graphics video, with a template library and an MCP/API. Three patterns worth adopting: (1) their **beat-sheet brief format** (timestamped scenes + style directives + a "non-negotiables" list) maps 1:1 onto `MotionScene`s and should be the input shape the `motion-author` skill accepts; (2) **prompt-on-tile** — Motion Studio tiles should surface the brief that generated each Motion (already in `messagesByDesign`); (3) their **category taxonomy** (Launch & Promo / Typography / Charts & Data / Logo & SVG / …) seeds the template library's shape. The structural difference stands: their output is an mp4; ours is live.
+
+Two more content layers ride the same model for free:
+
+- **Stickers** — the influencer grammar (badges, arrows, emphasis blobs, animated doodads). A sticker is just another scene child — a `MotionSticker` template library exactly like `MotionText`'s, and because stickers are JSX they're themeable too. Author-side overlay.
+- **Reactions + comments on the timeline** — the *audience* layer. A reaction (🌈 at 0:12) is a comment whose anchor is a **time `t`** instead of a DOM element — the third anchor type after element (comment pins) and region (camera). Rides the existing share surface + comments substrate; renders as a Soundcloud-style density strip on the scrubber. This is M6, and it's what makes a shared Motion a *social* object rather than a file.
+
+### It's also the slide creator everyone wanted
+
+A Motion in Arrange view is a slide sorter; in Play view it's the presentation; scene dots are slide navigation; `MotionText` templates are slide layouts; a theme is the deck template. The missing piece is **speaker advance** — an `advance="click"` mode where scenes wait for the presenter instead of the clock (one prop on `Motion`, M2-sized). That makes Grade Motion a Pitch/Keynote alternative where every slide can contain a *live product screen with a directed camera* — the slide creator everyone wanted and nobody shipped.
+
+### Composition combos (work today) + generative video (next)
+
+Because scenes hold arbitrary JSX, the rich combinations are *composition, not features*: a **shader behind the whole film** (`<Motion backdrop={<ThreeScene preset="aurora"/>}>`); a **text scene over a shader or video** (a `<BackgroundFill type="shader"|"video">` child next to the `<MotionText>` in the same scene); a shader-filled title card cutting to a screen scene cutting to a full-bleed clip. The starter and the `motion-author` skill should showcase these combos so people discover them. The intuitiveness work is making each combo *one obvious move* in the editor (a Fill control on the scene — the existing FillPicker pointed at a scene — rather than hand-written JSX). **Generative video** then slots in as a fill type: a scene whose video child is generated on demand — and combined with personalised Motion above, sections of a demo can be *generated per recipient before sending*. Customised video on demand: the advertiser's dream, and structurally it's just one more timed child that registers with its scene.
+
+### Presets + the authoring skill (how agents get good at this)
+
+Two force-multipliers that should grow alongside the components, not after:
+
+- **Transform/transition presets.** A named vocabulary — `ken-burns`, `slow-fade`, `push`, `pop`, `drift`, `glitch` (WebGL, M7) — covering scene transitions, per-child entrance animations, and camera styles. Presets are what the mood mapping compiles to, what the AI emits (a name, not twelve numbers), what the strip/dock surfaces as one-click choices, and what a human overrides field-by-field when they want to. Same pattern as `MotionText` templates: props in, keyframes inside, reduced-motion honoured. The preset registry is the seam.
+- **A `motion-author` skill.** The `playground-scaffold` skill proved the pattern: capture the exact workflow (scene grammar, the completion contract, the camera-belongs-to-the-screen rule, preset + template vocabulary, the starter shapes) in a skill so any agent produces correct Motion JSX first try instead of inferring it from component source. Write it as soon as the components stabilise; it's also the substrate the M3 mood prompts stand on.
+
+### The end state — it's a multipage app, exploded
+
+The framing that ties Motion, FlowCanvas, and shipping together: **each scene is just JSX, and the strip is the exploded view of a multipage app.** One set of scenes, three lenses:
+
+- walked by a **camera** on a clock → a Motion (the demo film);
+- walked by **clicks** → a flow / prototype (FlowCanvas);
+- walked by **routes** → a multipage app or website (the shipped thing).
+
+The lens is presentation; the scenes are the asset. That's why scenes must stay plain JSX nodes in one source blob — anything more exotic (a bespoke scene format, a parallel store) would fork the asset per lens and kill the convergence. Build scenes once; demo them, prototype them, ship them.
+
+The mechanism is three separable problems, two of which already have answers in this codebase:
+
+1. **Combine multiple JSX.** Compose-time stitching: each screen blob becomes a module, the Motion/flow imports them — the exact trick the Sandpack path's `componentFiles` virtual filesystem already does for components. v1 copies content in (one self-contained blob); the stitched form is the M4 live-reference upgrade, and it's a compose-pipeline change, not a renderer change.
+2. **Route them.** Scene addressability — already shipped in the transport (a dot is random access; a scene id is a route). Branching (M5) and the route lens are this same address space exposed to clicks and URLs.
+3. **Animate between them.** Scene transitions today (fade + the screens' own fly-in/out); the upgrade path is shared-element moves (FLIP, or the View Transitions API the browser now gives us for free) so an element that exists in both scenes travels the cut — the same family as inter-viewport zooming (D6).
+
 ## Rollout
 
 - **D0 — Payload schema.** Define the JSON tracks (camera is already track one). The contract everything else targets.

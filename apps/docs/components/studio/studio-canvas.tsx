@@ -226,6 +226,10 @@ interface StudioCanvasProps {
    *  the new design's appSource — used by the StarterPicker when the
    *  user picks a reference layout or pastes JSX. */
   onAddDesign: (seed?: { source: string; name?: string }) => void;
+  /** Optional trailing create-tile for the All grid (dashed "add one"
+   *  tile — Motion Studio's landing/new affordance). Forwarded to
+   *  TileGrid. */
+  gridAddTile?: { title: string; description: string; onClick: () => void };
   /** Close a specific design. Parent may ignore the call if it would
    *  remove the last remaining screen. */
   onCloseDesign: (id: string) => void;
@@ -302,6 +306,10 @@ interface StudioCanvasProps {
   // Studio hierarchy. Optional — embed consumers without project
   // semantics fall back to the previous "All screens" wording.
   projectName?: string;
+  /** Label for the grid-mode crumb — which SECTION of the project the
+   *  grid is showing ("All screens" default, "Motion Studio" when the
+   *  left nav's Motions section is active). */
+  sectionLabel?: string;
   /** Persistence status for the active screen — drives the subtle
    *  saved/saving/error chip in the canvas toolbar so a failed write is
    *  never silent. `idle` renders nothing. See STUDIO-PERSISTENCE.md (P4). */
@@ -327,6 +335,7 @@ export function StudioCanvas({
   onCommentSubmit,
   currentUserForComment,
   onAddDesign,
+  gridAddTile,
   onCloseDesign,
   onRenameDesign,
   onDuplicateDesign,
@@ -347,6 +356,7 @@ export function StudioCanvas({
   zoom: controlledZoom,
   onZoomChange,
   projectName,
+  sectionLabel,
   saveStatus = "idle",
   commentThreads,
   activeCommentThreadId,
@@ -1518,7 +1528,7 @@ export function StudioCanvas({
                 </>
               )}
               <span className="font-medium text-foreground">
-                All screens
+                {sectionLabel ?? "All screens"}
               </span>
               {designs.length > 1 && (
                 <span className="text-muted-foreground">
@@ -2132,7 +2142,10 @@ export function StudioCanvas({
           the real thing gets camera + element tracks with draggable scrub
           handles. Only in Fit view (the grid has no single screen to direct). */}
       {view === "timeline" && isFit && (
-        <TimelineDock appSource={focusedAppSource} />
+        <TimelineDock
+          appSource={focusedAppSource}
+          onSourceMutation={onSourceMutation}
+        />
       )}
       {hasEnteredAll && (
         <TileGrid
@@ -2156,6 +2169,7 @@ export function StudioCanvas({
           mediaOverridesByDesign={mediaOverridesByDesign}
           hidden={isFit}
           rendererMode={rendererMode}
+          addTile={gridAddTile}
         />
       )}
 
@@ -2751,6 +2765,11 @@ interface TileGridProps {
   /** Forwarded to each ScreenTile so tiles pick the same renderer as
    *  the focused frame. Defaults to "sandpack" for backwards compat. */
   rendererMode?: "sandpack" | "fast";
+  /** Optional trailing create-tile (a dashed empty tile, the obvious
+   *  "add one" affordance). Renders after the design tiles — and IS the
+   *  landing state when the grid is empty (Motion Studio with no
+   *  motions yet). */
+  addTile?: { title: string; description: string; onClick: () => void };
 }
 
 /**
@@ -2773,6 +2792,7 @@ function TileGrid({
   mediaOverridesByDesign,
   hidden = false,
   rendererMode = "sandpack",
+  addTile,
 }: TileGridProps) {
   const canClose = designs.length > 1;
   return (
@@ -2828,6 +2848,25 @@ function TileGrid({
             rendererMode={rendererMode}
           />
         ))}
+
+        {/* The dashed create-tile. Same footprint as a ScreenTile so the
+            grid reads uniformly; when there are no tiles at all it IS
+            the landing state. */}
+        {addTile && (
+          <button
+            type="button"
+            onClick={addTile.onClick}
+            className="flex min-h-[260px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/70 bg-background/40 text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-background [&_svg]:size-5">
+              <Plus />
+            </span>
+            <span className="text-sm font-medium">{addTile.title}</span>
+            <span className="max-w-[260px] text-center text-xs text-muted-foreground">
+              {addTile.description}
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );
