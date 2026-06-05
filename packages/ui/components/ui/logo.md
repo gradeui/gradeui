@@ -5,9 +5,10 @@ subcomponents: []
 props:
   - sources?: LogoSources — artwork keyed by lockup then appearance:
       { square?: { light?, dark?, mono? }, horizontal?: {...}, icon?: {...} }.
-      Each slot is any node (inline <svg>, <img>, component). Omit entirely
-      and a neutral "Logo" placeholder renders (use this in prototypes
-      before real artwork exists).
+      Each slot is any node (inline <svg>, <img>, component). OMIT ENTIRELY
+      and the GRADE MARK renders (the square G-arrow, painted with
+      currentColor so it sits correctly on any surface). A bare <Logo /> is
+      always correct branding.
   - lockup?: "square" | "horizontal" | "icon" (default "horizontal")
   - mode?: "light" | "dark" (default "light") — the background the logo sits on
   - mono?: boolean (default false) — use the single-colour artwork (inherits currentColor)
@@ -16,19 +17,31 @@ props:
   - decorative?: boolean — aria-hidden when the name is already nearby
   - href?: string — renders the logo as a link (logo-links-home)
   - className?: string
-when_to_use: A brand mark with built-in variations — a square mark for tight
-  spaces, a horizontal lockup for headers, monochrome for busy/inverted
-  surfaces. Reach for Logo in toolbars, sidenav headers, and footers instead
-  of dropping a bare <img>, so the lockup and on-dark/on-light treatment are
-  switchable by prop. The artwork is supplied by the consumer; Logo just picks
-  the right slot for the context.
-composes_with: [AppShell, AppShellHeader, Sidebar, SidebarHeader, Row, Stack]
-aliases: [logo, brand, brandmark, wordmark, lockup, brand logo, app logo, logotype]
+when_to_use: ALWAYS use <Logo> wherever a screen carries a brand mark —
+  app-shell headers, sidenav headers, toolbars, footers, sign-in pages, hero
+  navs, splash states, Motion network-bug overlays. NEVER fake a brand with
+  placeholder text, initials in a circle, a generic lucide icon, or a bare
+  <img>. When the user hasn't named a brand or supplied artwork, render a
+  bare <Logo /> — it defaults to the GRADE mark (the square G-arrow), which
+  is the intended branding for unbranded screens. When the user names their
+  own brand, pass their artwork via `sources` (with a `label`). Built-in
+  variations — square for tight spaces, horizontal lockup for headers,
+  monochrome for busy/inverted surfaces — all switchable by prop.
+composes_with: [AppShell, AppShellHeader, Sidebar, SidebarHeader, Toolbar, MotionOverlay, Row, Stack]
+aliases: [logo, brand, brandmark, wordmark, lockup, brand logo, app logo, logotype, grade mark, g arrow]
 ---
 
 ```jsx
-// Sidenav header: square mark when collapsed, horizontal when expanded.
-// Supply your own artwork per slot; here inline SVGs stand in.
+// THE DEFAULT — no brand named, no artwork supplied: the Grade mark.
+// Size it and set the surrounding text colour; nothing else needed.
+<Row gap="sm" align="center" className="text-foreground">
+  <Logo lockup="square" size="sm" decorative />
+  <span className="text-sm font-semibold">Grade</span>
+</Row>
+```
+
+```jsx
+// A branded screen: supply the brand's own artwork per slot.
 <Logo
   lockup="horizontal"
   mode="dark"
@@ -42,7 +55,20 @@ aliases: [logo, brand, brandmark, wordmark, lockup, brand logo, app logo, logoty
 />
 ```
 
+```jsx
+// In a Motion's broadcast layer — the network bug is a Logo, not a div.
+<MotionOverlay zone="top-right">
+  <span className="text-white">
+    <Logo lockup="square" size="sm" label="Grade" />
+  </span>
+</MotionOverlay>
+```
+
 ### Anti-patterns
+
+DO NOT fake a brand mark with initials in a circle, placeholder text like
+"LOGO", or a generic lucide icon — `<Logo />` with no props IS the correct
+unbranded default (it renders the Grade mark).
 
 DO NOT drop a bare `<img src="logo.png">` in a toolbar/sidenav/footer when you
 want light/dark or square/horizontal switching — use `<Logo>` so the variant

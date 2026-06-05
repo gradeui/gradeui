@@ -1,8 +1,38 @@
 "use client";
 
 import * as React from "react";
-import { Film, Plus } from "lucide-react";
+import {
+  Copy,
+  Download,
+  Film,
+  MoreHorizontal,
+  Pause,
+  Pencil,
+  Play,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@gradeui/ui";
 import { cn } from "@/lib/utils";
+import {
+  duplicateScene,
+  removeScene,
+  setSceneProp,
+} from "@/lib/motion-source";
+import {
+  TimelineBars,
+  type TimelineBarClip,
+} from "@/components/studio/timeline-bars";
 
 /**
  * TimelineDock — the docked panel under the Studio preview (the "Timeline" view
@@ -292,14 +322,89 @@ function EventSpine({ shots }: { shots: TimelineCameraShot[] }) {
  * by transition noodles ("fade →"). Sequence view, not exact timing.
  * Cards are tappable: click seeks the film to that scene.
  */
+const SCENE_TRANSITIONS = [
+  "fade",
+  "slide-up",
+  "slide-down",
+  "slide-left",
+  "slide-right",
+  "pop",
+  "zoom",
+  "wipe-circle",
+  "none",
+] as const;
+
+type SceneAction =
+  | { kind: "rename" }
+  | { kind: "duplicate" }
+  | { kind: "delete" }
+  | { kind: "transition"; value: string };
+
+/** The chip's ⋯ menu — rename / duplicate / delete / transition. */
+function SceneChipMenu({
+  scene,
+  onAction,
+}: {
+  scene: TimelineMotionScene;
+  onAction: (action: SceneAction) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Scene actions"
+          className="absolute right-1 top-1 h-5 w-5 inline-flex items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover/chip:opacity-100 data-[state=open]:opacity-100 [&_svg]:size-3"
+        >
+          <MoreHorizontal />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-44">
+        <DropdownMenuItem onSelect={() => onAction({ kind: "rename" })}>
+          <Pencil className="h-3.5 w-3.5" />
+          Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onAction({ kind: "duplicate" })}>
+          <Copy className="h-3.5 w-3.5" />
+          Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          Arrives with
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={scene.transition}
+          onValueChange={(value) => onAction({ kind: "transition", value })}
+        >
+          {SCENE_TRANSITIONS.map((t) => (
+            <DropdownMenuRadioItem key={t} value={t}>
+              {t}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={() => onAction({ kind: "delete" })}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Delete scene
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function SceneSpine({
   scenes,
   activeScene,
   onSeek,
+  onAction,
 }: {
   scenes: TimelineMotionScene[];
   activeScene?: number;
   onSeek?: (i: number) => void;
+  onAction?: (i: number, action: SceneAction) => void;
 }) {
   if (scenes.length === 0)
     return (
@@ -320,87 +425,82 @@ function SceneSpine({
               <span className="text-[9px] text-muted-foreground">{s.transition}</span>
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => onSeek?.(i)}
-            title={`Play from ${s.label ?? `scene ${i + 1}`}`}
-            className={cn(
-              "flex shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-3 py-2 text-left transition-colors",
-              i === activeScene
-                ? "border-primary bg-primary/20"
-                : "border-primary/40 bg-primary/10 hover:bg-primary/15",
+          <div className="group/chip relative shrink-0" style={{ width: 132 }}>
+            <button
+              type="button"
+              onClick={() => onSeek?.(i)}
+              title={`Play from ${s.label ?? `scene ${i + 1}`}`}
+              className={cn(
+                "flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-3 py-2 text-left transition-colors",
+                i === activeScene
+                  ? "border-primary bg-primary/20"
+                  : "border-primary/40 bg-primary/10 hover:bg-primary/15",
+              )}
+            >
+              <span className="max-w-full truncate text-[11px] font-medium text-foreground">
+                {s.label ?? `Scene ${i + 1}`}
+              </span>
+              <span className="max-w-full truncate text-[10px] text-muted-foreground">
+                {s.summary}
+              </span>
+              <span className="text-[10px] tabular-nums text-primary/80">
+                {(s.durationMs / 1000).toFixed(1)}s
+              </span>
+            </button>
+            {onAction && (
+              <SceneChipMenu scene={s} onAction={(a) => onAction(i, a)} />
             )}
-            style={{ width: 132 }}
-          >
-            <span className="max-w-full truncate text-[11px] font-medium text-foreground">
-              {s.label ?? `Scene ${i + 1}`}
-            </span>
-            <span className="max-w-full truncate text-[10px] text-muted-foreground">
-              {s.summary}
-            </span>
-            <span className="text-[10px] tabular-nums text-primary/80">
-              {(s.durationMs / 1000).toFixed(1)}s
-            </span>
-          </button>
+          </div>
         </React.Fragment>
       ))}
     </div>
   );
 }
 
-/** Scene lanes — Motion scenes as clips on the time ruler. Clips are
- *  tappable (seek), the ruler is drag-scrubbable (scene-snap), and the
- *  playhead travels through each scene at its estimated duration,
- *  pausing with playback. Frame-accurate scrub arrives with the
- *  seekable clock (STUDIO-DIRECTOR D4/M2). */
+/** Scene lanes — Motion scenes as clips on the time ruler, rendered by
+ *  the reusable <TimelineBars> primitive (timeline-bars.tsx — the
+ *  hand-editable home of the ruler/clips/playhead/scrub UI). This
+ *  wrapper just maps scenes → clips and adds the dock's track gutter. */
 function SceneLanes({
   scenes,
   activeScene,
   paused = false,
   onSeek,
+  clockTimeMs,
+  clockDurations,
+  onScrub,
 }: {
   scenes: TimelineMotionScene[];
   activeScene?: number;
   paused?: boolean;
   onSeek?: (i: number) => void;
+  /** CLOCK MODE: the film's exact master time + per-scene durations
+   *  (broadcast by the Motion) — clips and playhead become exact and
+   *  drags scrub continuously. */
+  clockTimeMs?: number;
+  clockDurations?: number[];
+  onScrub?: (ms: number) => void;
 }) {
-  const laneRef = React.useRef<HTMLDivElement>(null);
-  const dragSeek = React.useCallback(
-    (clientX: number) => {
-      const el = laneRef.current;
-      if (!el || !onSeek || scenes.length === 0) return;
-      const r = el.getBoundingClientRect();
-      const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-      let t = 0;
-      const total = scenes.reduce((a, s) => a + s.durationMs, 0) || 1;
-      const target = ratio * total;
-      for (let i = 0; i < scenes.length; i++) {
-        t += scenes[i].durationMs;
-        if (target < t) {
-          onSeek(i);
-          return;
-        }
-      }
-      onSeek(scenes.length - 1);
-    },
-    [onSeek, scenes],
-  );
-  const draggingRef = React.useRef(false);
-  const { clips, totalMs } = React.useMemo(() => {
+  const clips: TimelineBarClip[] = React.useMemo(() => {
+    // Prefer the film's OWN durations (the clock's schedule) over the
+    // dock's regex estimates whenever they're available and aligned.
+    const exact =
+      clockDurations && clockDurations.length === scenes.length
+        ? clockDurations
+        : null;
     let t = 0;
-    const cs: Clip[] = scenes.map((s, i) => {
-      const clip: Clip = {
+    return scenes.map((s, i) => {
+      const dur = exact ? exact[i] : s.durationMs;
+      const clip: TimelineBarClip = {
         startMs: t,
-        durMs: s.durationMs,
+        durMs: dur,
         label: s.label ?? `Scene ${i + 1}`,
-        zoom: 1,
+        title: `${s.label ?? `Scene ${i + 1}`} — ${(dur / 1000).toFixed(1)}s. Drag to scrub.`,
       };
-      t += s.durationMs;
+      t += dur;
       return clip;
     });
-    return { clips: cs, totalMs: Math.max(t, 1000) };
-  }, [scenes]);
-  const seconds = Math.max(1, Math.ceil(totalMs / 1000));
+  }, [scenes, clockDurations]);
 
   return (
     <div className="flex h-full min-h-0">
@@ -415,87 +515,14 @@ function SceneLanes({
           Add track
         </div>
       </div>
-      <div
-        ref={laneRef}
-        className="relative min-w-0 flex-1"
-        // Drag-to-scrub anywhere on the ruler/lanes (scene-snap).
-        onPointerDown={(e) => {
-          draggingRef.current = true;
-          (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-          dragSeek(e.clientX);
-        }}
-        onPointerMove={(e) => {
-          if (draggingRef.current) dragSeek(e.clientX);
-        }}
-        onPointerUp={() => {
-          draggingRef.current = false;
-        }}
-        style={{ cursor: "ew-resize", touchAction: "none" }}
-      >
-        <div className="relative h-7 border-b border-border/40 text-[9px] text-muted-foreground">
-          {Array.from({ length: seconds + 1 }).map((_, s) => (
-            <span
-              key={s}
-              className="absolute bottom-0.5 pl-1"
-              style={{ left: `${((s * 1000) / totalMs) * 100}%` }}
-            >
-              {s}s
-            </span>
-          ))}
-        </div>
-        <div className="relative h-10 border-b border-border/30">
-          {clips.map((c, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => onSeek?.(i)}
-              title={`${c.label} — ${(c.durMs / 1000).toFixed(1)}s. Click to play from here.`}
-              className={cn(
-                "absolute top-2 flex h-6 cursor-pointer items-center justify-center overflow-hidden rounded-md border text-[10px] text-primary/80 transition-colors",
-                i === activeScene
-                  ? "border-primary bg-primary/25"
-                  : "border-primary/40 bg-primary/15 hover:bg-primary/20",
-              )}
-              style={{
-                left: `${(c.startMs / totalMs) * 100}%`,
-                width: `calc(${(c.durMs / totalMs) * 100}% - 2px)`,
-              }}
-            >
-              <span className="absolute left-0 top-0 h-full w-1.5 rounded-l-md bg-primary/50" />
-              <span className="truncate px-2">{c.label}</span>
-              <span className="absolute right-0 top-0 h-full w-1.5 rounded-r-md bg-primary/50" />
-            </button>
-          ))}
-        </div>
-        <div className="flex h-8 items-center px-3">
-          <div className="h-5 w-full rounded border border-dashed border-border/60" />
-        </div>
-        {/* Playhead — travels through the active scene over its
-            estimated duration, pausing with playback (animation-play-
-            state). Keyed per scene so it restarts at each boundary.
-            Estimated, not sample-accurate — the seekable clock makes it
-            exact later. */}
-        <style>{`@keyframes gdsDockHead { from { left: var(--ph-from) } to { left: var(--ph-to) } }`}</style>
-        {(() => {
-          const i = Math.max(0, Math.min(activeScene ?? 0, clips.length - 1));
-          const c = clips[i];
-          if (!c) return null;
-          return (
-            <div
-              key={i}
-              className="pointer-events-none absolute bottom-0 top-0 w-px bg-primary"
-              style={{
-                ["--ph-from" as string]: `${(c.startMs / totalMs) * 100}%`,
-                ["--ph-to" as string]: `${((c.startMs + c.durMs) / totalMs) * 100}%`,
-                animation: `gdsDockHead ${c.durMs}ms linear both`,
-                animationPlayState: paused ? "paused" : "running",
-              }}
-            >
-              <span className="absolute -left-[3px] -top-0.5 h-2 w-[7px] rounded-sm bg-primary" />
-            </div>
-          );
-        })()}
-      </div>
+      <TimelineBars
+        clips={clips}
+        activeIndex={activeScene}
+        paused={paused}
+        onSelect={onSeek}
+        playheadMs={clockTimeMs}
+        onScrub={onScrub}
+      />
     </div>
   );
 }
@@ -596,12 +623,16 @@ function TimelineLanes({
 export function TimelineDock({
   appSource,
   onSourceMutation,
+  designId,
 }: {
   appSource: string | null;
   /** The source-mutation channel (same one the inspector uses). Enables
    *  the dock's write affordances — today, the one-gesture "Add scene"
    *  on Motion designs. */
   onSourceMutation?: (next: string, label?: string) => void;
+  /** Focused design id — stamped into export filenames so every video
+   *  maps back to its live, editable Motion (provenance v1). */
+  designId?: string;
 }) {
   const shots = React.useMemo(() => extractCameraShots(appSource), [appSource]);
   const motion = React.useMemo(() => isMotionSource(appSource), [appSource]);
@@ -617,6 +648,54 @@ export function TimelineDock({
     if (next) onSourceMutation(next, "Add scene");
   }, [appSource, onSourceMutation, scenes.length]);
 
+  // ── Per-scene editor actions (the chips' context menu) ──
+  // All of these are one-line calls into lib/motion-source — the
+  // tested scene-surgery kit — written back through the same mutation
+  // channel as everything else (undo-able, revisioned).
+  const handleSceneAction = React.useCallback(
+    (
+      i: number,
+      action:
+        | { kind: "rename" }
+        | { kind: "duplicate" }
+        | { kind: "delete" }
+        | { kind: "transition"; value: string },
+    ) => {
+      if (!appSource || !onSourceMutation) return;
+      switch (action.kind) {
+        case "rename": {
+          const current = scenes[i]?.label ?? "";
+          const name = window.prompt("Scene name", current);
+          if (name === null) return;
+          const next = setSceneProp(appSource, i, "label", name.trim() || null);
+          if (next) onSourceMutation(next, "Rename scene");
+          return;
+        }
+        case "duplicate": {
+          const next = duplicateScene(appSource, i);
+          if (next) onSourceMutation(next, "Duplicate scene");
+          return;
+        }
+        case "delete": {
+          const next = removeScene(appSource, i);
+          if (next) onSourceMutation(next, "Delete scene");
+          return;
+        }
+        case "transition": {
+          const next = setSceneProp(
+            appSource,
+            i,
+            "transition",
+            action.value === "fade" ? null : action.value,
+          );
+          if (next) onSourceMutation(next, "Change transition");
+          return;
+        }
+      }
+    },
+    [appSource, onSourceMutation, scenes],
+  );
+
   // ── Motion playback state + control (the scrub channel) ──
   // The <Motion> component inside the iframe broadcasts
   // `grade:motion-state` and obeys `grade:motion-control` (see
@@ -628,18 +707,81 @@ export function TimelineDock({
     done: boolean;
     view?: string;
   } | null>(null);
+  // THE CLOCK feed — the film broadcasts its master time (~every 150ms
+  // while playing); the playhead renders this exact number.
+  const [clock, setClock] = React.useState<{
+    timeMs: number;
+    totalMs: number;
+    durations: number[];
+  } | null>(null);
+  // Live mirror for closures that outlive a render (the export HUD).
+  const clockRef = React.useRef(clock);
+  clockRef.current = clock;
+  // THE FOCUSED FILM'S IFRAME — the dock's single source + single target.
+  //
+  // The canvas can hold MANY design iframes, and several can be Motions
+  // playing their own clocks simultaneously. Listening to every window
+  // message made the dock's state a mix of every film on the canvas: the
+  // scene lozenges lit up like a pinball machine (each film's state
+  // alternating), the snap-back restore compared one film's clock against
+  // another's and yanked playback around boundaries, and broadcast
+  // controls seeked EVERY film at once. Scope everything to the focused
+  // frame via the canvas's `data-grade-focused-frame` contract (the same
+  // one the path bar + selection inspector rely on).
+  const focusedMotionIframe = React.useCallback(():
+    | HTMLIFrameElement
+    | null => {
+    const container = document.querySelector<HTMLElement>(
+      "[data-grade-focused-frame]",
+    );
+    const framed = container?.querySelector("iframe");
+    if (framed) return framed as HTMLIFrameElement;
+    // No focused-frame wrapper (non-canvas hosts): fall back to the only
+    // iframe present, never to "the first of many".
+    const all = document.querySelectorAll("iframe");
+    return all.length === 1 ? (all[0] as HTMLIFrameElement) : null;
+  }, []);
+  const findMotionIframe = focusedMotionIframe;
   React.useEffect(() => {
     if (!motion) return;
     const onMsg = (e: MessageEvent) => {
       const d = e.data as
-        | { type?: string; scene?: number; paused?: boolean; done?: boolean; view?: string }
+        | {
+            type?: string;
+            scene?: number;
+            paused?: boolean;
+            done?: boolean;
+            view?: string;
+            timeMs?: number;
+            totalMs?: number;
+            durations?: number[];
+          }
         | null;
+      if (
+        d?.type === "grade:motion-state" ||
+        d?.type === "grade:motion-time"
+      ) {
+        // ONLY the focused film feeds the dock. Other Motion tiles on the
+        // canvas broadcast too — their clocks are noise here.
+        const win = focusedMotionIframe()?.contentWindow;
+        if (win && e.source !== win) return;
+      }
       if (d?.type === "grade:motion-state" && typeof d.scene === "number") {
         setMotionState({
           scene: d.scene,
           paused: !!d.paused,
           done: !!d.done,
           view: d.view,
+        });
+      } else if (
+        d?.type === "grade:motion-time" &&
+        typeof d.timeMs === "number" &&
+        typeof d.totalMs === "number"
+      ) {
+        setClock({
+          timeMs: d.timeMs,
+          totalMs: d.totalMs,
+          durations: d.durations ?? [],
         });
       }
     };
@@ -648,19 +790,254 @@ export function TimelineDock({
   }, [motion]);
   const postControl = React.useCallback(
     (payload: Record<string, unknown>) => {
-      document.querySelectorAll("iframe").forEach((el) => {
+      // Control ONLY the focused film — broadcasting seeked/paused every
+      // Motion tile on the canvas at once (and restarted them on export).
+      const focused = focusedMotionIframe();
+      const targets = focused
+        ? [focused]
+        : Array.from(document.querySelectorAll("iframe"));
+      targets.forEach((el) => {
         (el as HTMLIFrameElement).contentWindow?.postMessage(
           { type: "grade:motion-control", ...payload },
           "*",
         );
       });
     },
-    [],
+    [focusedMotionIframe],
   );
   const seekScene = React.useCallback(
-    (i: number) => postControl({ scene: i }),
+    (i: number) => {
+      userSeekAtRef.current = Date.now();
+      postControl({ scene: i });
+      // Also tell PARENT-side surfaces (the scene inspector panel) that
+      // the user explicitly picked this scene — playback state alone
+      // can't distinguish a seek from a natural advance.
+      window.postMessage({ type: "grade:motion-select", scene: i }, "*");
+    },
     [postControl],
   );
+
+  // Continuous scrub, rAF-COALESCED: pointer moves can fire far faster
+  // than frames; we keep only the latest position and post at most one
+  // seek per animation frame (pause once at drag start, not per move).
+  const scrubPendingRef = React.useRef<number | null>(null);
+  const scrubRafRef = React.useRef(0);
+  const scrubPausedRef = React.useRef(false);
+  const scrubTo = React.useCallback(
+    (ms: number) => {
+      userSeekAtRef.current = Date.now();
+      scrubPendingRef.current = ms;
+      if (!scrubPausedRef.current) {
+        scrubPausedRef.current = true;
+        postControl({ action: "pause" });
+        // Re-arm the once-per-drag pause after the drag settles.
+        setTimeout(() => {
+          scrubPausedRef.current = false;
+        }, 600);
+      }
+      if (scrubRafRef.current) return;
+      scrubRafRef.current = requestAnimationFrame(() => {
+        scrubRafRef.current = 0;
+        const pending = scrubPendingRef.current;
+        if (pending !== null) {
+          scrubPendingRef.current = null;
+          postControl({ action: "seek", ms: pending });
+        }
+      });
+    },
+    [postControl],
+  );
+
+  // ── D7 v2 — EXPORT TO VIDEO, deterministic (server render) ──
+  // The browser-capture path is GONE (real-time MediaRecorder dropped
+  // frames AND returned zero bytes on this machine — never smooth, never
+  // reliable). Instead we POST the film's source + the LIVE theme to
+  // /api/motion/render, which drives the headless Playwright/ffmpeg
+  // pipeline (scripts/render-motion.mjs): every frame is seeked exactly
+  // and waited on until painted, so output is locked to a perfect fps no
+  // matter how heavy the shaders. Returns a finished mp4 to download.
+  const [exporting, setExporting] = React.useState(false);
+  const [exportMsg, setExportMsg] = React.useState<string | null>(null);
+  // 0–1 across the render; null = indeterminate (compiling / encoding).
+  const [exportPct, setExportPct] = React.useState<number | null>(null);
+
+  // Pull the theme vars off the LIVE focused iframe so the headless render
+  // matches exactly what's on screen (fast-frame applies them as inline
+  // custom properties on :root). Returns only --tokens.
+  const readLiveTheme = React.useCallback(() => {
+    const doc = focusedMotionIframe()?.contentDocument;
+    const root = doc?.documentElement;
+    if (!root) return null;
+    const vars: Record<string, string> = {};
+    const s = root.style;
+    for (let i = 0; i < s.length; i++) {
+      const prop = s.item(i);
+      if (prop.startsWith("--")) vars[prop] = s.getPropertyValue(prop).trim();
+    }
+    const mode = root.getAttribute("data-mode") === "dark" ? "dark" : "light";
+    return Object.keys(vars).length ? { vars, mode } : null;
+  }, [focusedMotionIframe]);
+
+  const handleExport = React.useCallback(
+    async (opts?: { res?: number; poster?: boolean }) => {
+      if (exporting || !appSource) return;
+      setExporting(true);
+      setExportPct(null);
+      setExportMsg("Starting render…");
+      try {
+        const res = await fetch("/api/motion/render", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source: appSource,
+            theme: readLiveTheme(),
+            fps: 30,
+            res: opts?.res ?? 1,
+            poster: opts?.poster ?? false,
+            width: opts?.poster ? 1200 : undefined, // og-sized poster
+            designId,
+          }),
+        });
+        if (!res.ok || !res.body) {
+          const { error } = await res
+            .json()
+            .catch(() => ({ error: `Render failed (${res.status}).` }));
+          setExportMsg(error || `Render failed (${res.status}).`);
+          return;
+        }
+
+        // Read the NDJSON progress stream. The render runs on the SERVER,
+        // headless — this tab can be left or backgrounded; it's just
+        // listening. Each line is a progress/done/error event.
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = "";
+        let finished = false;
+        while (!finished) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let nl: number;
+          while ((nl = buf.indexOf("\n")) !== -1) {
+            const line = buf.slice(0, nl).trim();
+            buf = buf.slice(nl + 1);
+            if (!line) continue;
+            let ev: {
+              type: string;
+              phase?: string;
+              frame?: number;
+              total?: number;
+              message?: string;
+              detail?: string;
+              name?: string;
+              contentType?: string;
+              file?: string;
+            };
+            try {
+              ev = JSON.parse(line);
+            } catch {
+              continue;
+            }
+            if (ev.type === "progress") {
+              if (ev.phase === "install") {
+                setExportPct(null);
+                setExportMsg(
+                  ev.message ||
+                    "First render — installing the renderer (one time)…",
+                );
+              } else if (ev.phase === "compile") {
+                setExportPct(null);
+                setExportMsg("Compiling film…");
+              } else if (ev.phase === "encode") {
+                setExportPct(null);
+                setExportMsg("Encoding video…");
+              } else if (
+                ev.phase === "step" &&
+                ev.total &&
+                ev.frame !== undefined
+              ) {
+                const p = Math.min(1, ev.frame / ev.total);
+                setExportPct(p);
+                setExportMsg(
+                  `Rendering frame ${ev.frame}/${ev.total} — you can leave this tab`,
+                );
+              }
+            } else if (ev.type === "done" && ev.file) {
+              const bin = atob(ev.file);
+              const arr = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+              const blob = new Blob([arr], {
+                type: ev.contentType || "video/mp4",
+              });
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download =
+                ev.name ?? `grade-motion_${designId ?? "film"}.mp4`;
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setExportPct(1);
+              setExportMsg("Saved ✓");
+              finished = true;
+              setTimeout(() => setExportMsg(null), 4000);
+            } else if (ev.type === "error") {
+              setExportMsg(ev.message || "Render failed.");
+              finished = true;
+            }
+          }
+        }
+      } catch (e) {
+        setExportMsg(`Render error: ${(e as Error).message}`);
+      } finally {
+        setExporting(false);
+        setExportPct(null);
+      }
+    },
+    [exporting, appSource, designId, readLiveTheme],
+  );
+
+  // ── Position restore across recompiles ──
+  // Every source mutation (inspector field, fill swatch, chat edit)
+  // recompiles the source IN PLACE — no reload, no fast-ready — and the
+  // remounted Motion restarts at t=0. Detection: we timestamp every
+  // appSource change; when the film's clock SNAPS BACK to ~0 shortly
+  // after an edit (having been further along), we re-seek to the last
+  // good time and PAUSE — you're editing, the frame must hold still.
+  const lastGoodTimeRef = React.useRef(0);
+  const editAtRef = React.useRef(0);
+  const restoringRef = React.useRef(false);
+  const firstSourceRef = React.useRef(true);
+  // A USER seek toward the start is indistinguishable from a post-edit
+  // reset by clock value alone — so every user-initiated transport
+  // gesture stamps this, and snap-back detection stands down around it.
+  const userSeekAtRef = React.useRef(0);
+  React.useEffect(() => {
+    if (firstSourceRef.current) {
+      firstSourceRef.current = false;
+      return;
+    }
+    editAtRef.current = Date.now();
+  }, [appSource]);
+  React.useEffect(() => {
+    if (!clock || restoringRef.current) return;
+    const t = clock.timeMs;
+    const snapBack =
+      t < 500 &&
+      lastGoodTimeRef.current > 1500 &&
+      Date.now() - editAtRef.current < 5000 &&
+      // …but never fight a user's own scrub/seek/restart.
+      Date.now() - userSeekAtRef.current > 1500;
+    if (snapBack) {
+      restoringRef.current = true;
+      const target = lastGoodTimeRef.current;
+      postControl({ action: "pause" });
+      setTimeout(() => postControl({ action: "seek", ms: target }), 80);
+      setTimeout(() => {
+        restoringRef.current = false;
+      }, 900);
+      return;
+    }
+    if (t > 800) lastGoodTimeRef.current = t;
+  }, [clock, postControl]);
   // Spacebar = play/pause while the dock is up (standard scrubber key).
   // Guarded against typing surfaces so the chat composer stays usable.
   React.useEffect(() => {
@@ -707,9 +1084,45 @@ export function TimelineDock({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Play ↔ Arrange — flips the canvas between the film and the
-              scenes-in-a-row strip (no source mutation; a control
-              message the <Motion> obeys). Motion designs only. */}
+          {/* THE TRANSPORT — the editor's real play/pause/restart,
+              state-synced with the film via grade:motion-state. (The
+              view toggle below is deliberately labelled Film/Arrange so
+              "Play" only ever means playback.) */}
+          {motion && (
+            <div className="flex items-center gap-0.5 rounded-md border border-border/70 p-0.5">
+              <button
+                type="button"
+                onClick={() =>
+                  postControl({
+                    action: motionState?.paused || motionState?.done ? "play" : "pause",
+                  })
+                }
+                aria-label={
+                  motionState?.paused || motionState?.done ? "Play" : "Pause"
+                }
+                title="Play / pause (Space)"
+                className="inline-flex h-5 w-6 items-center justify-center rounded text-foreground hover:bg-muted [&_svg]:size-3"
+              >
+                {motionState?.paused || motionState?.done ? <Play /> : <Pause />}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  userSeekAtRef.current = Date.now();
+                  postControl({ action: "restart" });
+                }}
+                aria-label="Restart"
+                title="Restart from scene 1"
+                className="inline-flex h-5 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-3"
+              >
+                <RotateCcw />
+              </button>
+            </div>
+          )}
+
+          {/* Film ↔ Arrange — flips the CANVAS VIEW between the playing
+              film and the scenes-in-a-row strip (no source mutation; a
+              control message the <Motion> obeys). */}
           {motion && (
             <div className="flex items-center gap-0.5 rounded-md border border-border/70 p-0.5 text-[10px]">
               {(["play", "strip"] as const).map((v) => (
@@ -724,10 +1137,67 @@ export function TimelineDock({
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {v === "play" ? "Play" : "Arrange"}
+                  {v === "play" ? "Film" : "Arrange"}
                 </button>
               ))}
             </div>
+          )}
+
+          {/* D7 v2 — deterministic server render. Posts source + live
+              theme to /api/motion/render (Playwright frame-steps + ffmpeg
+              encodes), returns a perfect locked-fps mp4. No tab capture. */}
+          {motion && (
+            <>
+              <button
+                type="button"
+                onClick={() => handleExport({ res: 1 })}
+                disabled={exporting}
+                title="Render to video — deterministic, headless, perfect framerate (renders on this machine, free)"
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-md border border-border/70 px-2 py-0.5 text-[10px] transition-colors",
+                  exporting
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Download className="h-3 w-3" />
+                {exporting ? "Rendering…" : "Render video"}
+              </button>
+              {(exporting || exportMsg) && (
+                <div className="flex items-center gap-1.5">
+                  {exporting && (
+                    <span className="relative h-1 w-24 overflow-hidden rounded-full bg-muted">
+                      {exportPct === null ? (
+                        // Indeterminate (compile/encode) — a sliding sliver.
+                        <span className="gds-export-indeterminate absolute inset-y-0 w-1/3 rounded-full bg-primary" />
+                      ) : (
+                        <span
+                          className="absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-150"
+                          style={{ width: `${Math.round(exportPct * 100)}%` }}
+                        />
+                      )}
+                    </span>
+                  )}
+                  {exporting && exportPct !== null && (
+                    <span className="tabular-nums text-[10px] text-primary">
+                      {Math.round(exportPct * 100)}%
+                    </span>
+                  )}
+                  {exportMsg && (
+                    <span
+                      className="max-w-[260px] truncate text-[10px] text-muted-foreground"
+                      title={exportMsg}
+                    >
+                      {exportMsg}
+                    </span>
+                  )}
+                </div>
+              )}
+              <style>{`
+                @keyframes gdsExportSlide { 0% { left: -33% } 100% { left: 100% } }
+                .gds-export-indeterminate { animation: gdsExportSlide 1.1s ease-in-out infinite; }
+              `}</style>
+            </>
           )}
 
           {/* One-gesture scene add — Motion designs only. */}
@@ -772,6 +1242,7 @@ export function TimelineDock({
               scenes={scenes}
               activeScene={motionState?.scene}
               onSeek={seekScene}
+              onAction={onSourceMutation ? handleSceneAction : undefined}
             />
           ) : (
             <SceneLanes
@@ -779,6 +1250,9 @@ export function TimelineDock({
               activeScene={motionState?.scene}
               paused={motionState?.paused ?? false}
               onSeek={seekScene}
+              clockTimeMs={clock?.timeMs}
+              clockDurations={clock?.durations}
+              onScrub={scrubTo}
             />
           )
         ) : mode === "events" ? (

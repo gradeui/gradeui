@@ -91,6 +91,16 @@ export function themeToCSSVars(
     "--chart-4": theme.chart[4],
     "--chart-5": theme.chart[5],
 
+    // --- Brand pops — 8 vivid, saturated accents (--brand-1 … --brand-8).
+    // Backgrounds, themes, and primaries are often deliberately muted; these
+    // are the LOUD slots an interface reaches for when it needs to pop —
+    // shader fills, highlights, gradient stops, scene fills. Auto-derived
+    // here from the chart hues (tonally cohesive) plus vivid stops of the
+    // primary/accent ramps, so every theme ships a usable set; a project's
+    // Branding panel can override any slot (STUDIO-BRANDING.md). OKLCH
+    // triplets — compose as `oklch(var(--brand-N))`.
+    ...brandPops(theme),
+
     // --- Typography ---
     "--font-sans": theme.typography.fontSans,
     "--font-mono": theme.typography.fontMono,
@@ -138,6 +148,35 @@ export function themeToCSSVars(
     "--gds-border-width": theme.effects.borderWidth,
   };
   return vars;
+}
+
+/**
+ * The 8 brand-pop slots. Vivid by construction: the chart palette (5 hues,
+ * already saturated mid-lightness) seeds 1–5; 6–8 pull the brightest stops
+ * of the primary/accent ramps. Every value is an OKLCH triplet so it
+ * composes via `oklch(var(--brand-N))`. A theme always has all 8; a
+ * project's Branding panel later overrides individual slots.
+ */
+function brandPops(theme: GeneratedTheme): Record<string, string> {
+  const c = theme.chart;
+  const p = theme.ramps.primary;
+  const a = theme.ramps.accent;
+  const slots: string[] = [
+    c[1],
+    c[2],
+    c[3],
+    c[4],
+    c[5],
+    // Vivid ramp stops — 400/500 read as the "loud" version of the brand.
+    p[400] ?? p[500],
+    a[400] ?? a[500],
+    p[600] ?? p[500],
+  ];
+  const out: Record<string, string> = {};
+  slots.forEach((v, i) => {
+    out[`--brand-${i + 1}`] = v;
+  });
+  return out;
 }
 
 function flattenRamp(

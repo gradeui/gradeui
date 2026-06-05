@@ -126,7 +126,7 @@ export default function App() {
         {/* 2 — the shader exists only INSIDE the giant text */}
         <MotionScene label="Mask" durationMs={7000} fill="#050507">
           <TextMask text="GRADE">
-            <BackgroundFill type="shader" preset="mesh" />
+            <BackgroundFill type="shader" preset="mesh" tone="dark" />
           </TextMask>
         </MotionScene>
 

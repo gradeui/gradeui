@@ -70,6 +70,11 @@ export const ALLOWED_COMPONENTS = [
   // Brand — the Logo mark (square/horizontal/icon × light/dark/mono),
   // artwork supplied by the consumer. Lands in headers, sidenavs, footers.
   "Logo",
+  // THE indeterminate loader — the Grade mark with a shimmer sweep. Use
+  // for every "working, unknown duration" state instead of a hand-rolled
+  // spinner (fetching, AI in flight, media warming). size sm/md/lg/xl,
+  // optional showLabel caption. Determinate progress → Progress instead.
+  "GradeLoader",
   // Direction — wrap content in a directed camera (zoom/pan/spotlight tour
   // with play/pause). The "live demo director" primitive.
   "ScreenAnimator",

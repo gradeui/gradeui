@@ -152,7 +152,7 @@ export default function App() {
 
         {/* 7 — shader interstitial (a fill, not a node) */}
         <MotionScene label="Interstitial">
-          <BackgroundFill type="shader" preset="mesh" opacity={0.85} />
+          <BackgroundFill type="shader" preset="mesh" tone="dark" opacity={0.85} />
           <MotionText className="relative z-10" template="section-break" heading="Built on Grade." />
         </MotionScene>
 

@@ -2145,6 +2145,7 @@ export function StudioCanvas({
         <TimelineDock
           appSource={focusedAppSource}
           onSourceMutation={onSourceMutation}
+          designId={focusedId}
         />
       )}
       {hasEnteredAll && (

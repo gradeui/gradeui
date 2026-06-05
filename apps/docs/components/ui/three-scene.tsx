@@ -38,12 +38,35 @@ import {
   ShaderCompileError,
 } from "@/lib/three/custom-fragment";
 
-/** Theme-friendly default palette. Consumers override per-tile if they want. */
+/**
+ * Theme-friendly default palette — reads the BRAND POP slots
+ * (`--brand-1..3`, vivid by construction) rather than primary/secondary,
+ * which themes often deliberately mute. This is why an unconfigured shader
+ * now pops AND tracks the project's brand: the pops are theme-derived (and
+ * Branding-overridable, STUDIO-BRANDING.md). The hex fallbacks in the
+ * var() cover the no-theme case. Consumers can still pass an explicit
+ * `palette` per tile. */
 const DEFAULT_PALETTE: Palette = {
-  primary: "#ff5fb9",
-  secondary: "#9fe8ff",
-  accent: "#ffc857",
-  background: "#0a0a14",
+  primary: "oklch(var(--brand-1, 0.62 0.20 20))",
+  secondary: "oklch(var(--brand-2, 0.70 0.16 200))",
+  accent: "oklch(var(--brand-3, 0.78 0.17 90))",
+  background: "oklch(var(--background, 0.12 0.01 265))",
+};
+
+/**
+ * Tone — pin the shader's canvas independently of the page theme.
+ *
+ * `"auto"` (default) follows `--background`, so a shader on a page
+ * re-tints with light/dark mode. But a film frame or a hero with white
+ * type wants a STABLE ground: in light mode `--background` is near-white
+ * and every wash goes pastel under it. `tone="dark"` / `tone="light"`
+ * pins just the background uniform (brand pops still flow through), and
+ * an explicit `palette.background` always wins over both.
+ */
+export type SceneTone = "auto" | "dark" | "light";
+const TONE_BACKGROUNDS: Record<Exclude<SceneTone, "auto">, string> = {
+  dark: "oklch(0.13 0.015 265)",
+  light: "oklch(0.97 0.005 265)",
 };
 
 // Shadcn / gradeui store their design tokens as bare channel triplets so the
@@ -177,6 +200,9 @@ export interface ThreeSceneProps
   postPreset?: string | PostPreset;
   /** Palette overrides. Unset slots fall back to `DEFAULT_PALETTE`. */
   palette?: Partial<Palette>;
+  /** Pin the canvas tone regardless of page theme (see `SceneTone`).
+   *  An explicit `palette.background` wins over this. */
+  tone?: SceneTone;
   /**
    * Custom scene factory. Takes precedence over `preset` and `fragmentShader`.
    * Use for bespoke three.js scenes that don't fit a preset or fullscreen quad.
@@ -203,6 +229,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       onShaderError,
       postPreset,
       palette: paletteProp,
+      tone = "auto",
       createScene: createSceneProp,
       controls = false,
       autoPlay = true,
@@ -225,11 +252,15 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
     const [ready, setReady] = React.useState(false);
     const reduced = usePrefersReducedMotion();
 
-    // Merge palette prop with defaults
-    const palette = React.useMemo<Palette>(
-      () => ({ ...DEFAULT_PALETTE, ...paletteProp }),
-      [paletteProp],
-    );
+    // Merge palette prop with defaults. Tone pins the background slot
+    // unless the consumer set palette.background explicitly.
+    const palette = React.useMemo<Palette>(() => {
+      const merged = { ...DEFAULT_PALETTE, ...paletteProp };
+      if (tone !== "auto" && !paletteProp?.background) {
+        merged.background = TONE_BACKGROUNDS[tone];
+      }
+      return merged;
+    }, [paletteProp, tone]);
 
     // Resolve scene factory.
     //   1. Explicit createScene wins (power-user escape hatch).
@@ -294,6 +325,8 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       // Resolve palette CSS expressions (var(), oklch(), lab(), hex, rgb(),
       // named colours) into THREE-parseable rgb() strings via a DOM probe.
       // Done AFTER host is in the document so custom properties resolve.
+      // Read via ref — the effect is keyed on paletteSig (value), not the
+      // object identity. See the guard above the effect.
       const livePalette = resolvePalette(paletteRef.current, host);
 
       const renderer = new THREE.WebGLRenderer({

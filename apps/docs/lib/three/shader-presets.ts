@@ -16,7 +16,13 @@ import { spaceScene } from "./scenes/space";
 import { plasmaScene } from "./scenes/plasma";
 import { voronoiScene } from "./scenes/voronoi";
 import { synthwaveScene } from "./scenes/synthwave";
-import { meshScene, wavesScene } from "./scenes/fragment-scenes";
+import {
+  meshScene,
+  wavesScene,
+  undertonesScene,
+  flowingDotsScene,
+  grainScene,
+} from "./scenes/fragment-scenes";
 
 export const sceneRegistry: Record<string, SceneFactory> = {
   space: spaceScene,
@@ -25,6 +31,9 @@ export const sceneRegistry: Record<string, SceneFactory> = {
   synthwave: synthwaveScene,
   mesh: meshScene,
   waves: wavesScene,
+  undertones: undertonesScene,
+  "flowing-dots": flowingDotsScene,
+  grain: grainScene,
   // Further candidates: icosa, oscilloscope, retro-sunset, sdf
 };
 
@@ -45,6 +54,33 @@ export const shaderPresets: ShaderPreset[] = [
       "Flowing banded ribbons that ripple across the surface. Clean motion for headers and hero backdrops.",
     tags: ["waves", "motion", "abstract", "hero"],
     scene: "waves",
+    defaultPostPreset: "none",
+  },
+  {
+    id: "undertones",
+    label: "Undertones",
+    description:
+      "Soft low-saturation tonal washes drifting like weather — the field bends gently toward the cursor and a faint light follows it. The calm, expensive-feeling backdrop.",
+    tags: ["gradient", "soft", "subtle", "mouse", "hero", "background", "calm"],
+    scene: "undertones",
+    defaultPostPreset: "none",
+  },
+  {
+    id: "flowing-dots",
+    label: "Flowing dots",
+    description:
+      "A dot-matrix grid where waves of dots swell and tint as a flow field passes through — and swell toward the cursor. Playful, technical, great behind type.",
+    tags: ["dots", "grid", "halftone", "mouse", "motion", "background", "playful"],
+    scene: "flowing-dots",
+    defaultPostPreset: "none",
+  },
+  {
+    id: "grain",
+    label: "Grain",
+    description:
+      "A glacial tonal wash under heavy animated film grain — fine print grain plus a coarser fleck, with a gentle vignette. The editorial, print-feeling backdrop; lovely in light AND dark tones.",
+    tags: ["grain", "film", "texture", "editorial", "print", "subtle", "hero", "background"],
+    scene: "grain",
     defaultPostPreset: "none",
   },
   {

@@ -140,7 +140,11 @@ export const Logo = React.forwardRef<HTMLElement, LogoProps>(function Logo(
         : { role: "img", "aria-label": label }
       : {};
 
-  const body = artwork ?? <LogoPlaceholder label={label} mono={mono} />;
+  // No artwork supplied → THE GRADE MARK. The default brand of every
+  // unbranded screen is Grade: a bare `<Logo />` renders the square
+  // G-arrow (currentColor, so it sits correctly on any surface), not a
+  // placeholder. Supplying `sources` replaces it wholesale.
+  const body = artwork ?? <GradeDefaultMark label={label} />;
 
   // The wrapper sets the height; intrinsic artwork (svg/img) scales to it and
   // keeps its own aspect ratio. data-gds-part lets Studio target it.
@@ -182,29 +186,22 @@ export const Logo = React.forwardRef<HTMLElement, LogoProps>(function Logo(
   });
 });
 
-/** Neutral fallback shown when no artwork is supplied for the requested
- *  slot — keeps layout intact in Studio before the user wires real art. */
-function LogoPlaceholder({
-  label,
-  mono,
-}: {
-  label?: string;
-  mono?: boolean;
-}) {
+/** The default artwork — Grade's square "G-arrow" mark. Paints with
+ *  `currentColor` so it inherits the surrounding text colour and works
+ *  on light, dark, and mono contexts alike. This is what a bare
+ *  `<Logo />` renders: unbranded screens carry the Grade brand. */
+function GradeDefaultMark({ label }: { label?: string }) {
   return (
-    <span
-      className={cn(
-        "inline-flex h-full items-center gap-1.5 rounded-md border border-dashed px-2 text-xs font-medium",
-        mono
-          ? "border-current/40 text-current"
-          : "border-border bg-muted text-muted-foreground",
-      )}
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...(label ? {} : { "aria-hidden": true })}
     >
-      <span
-        aria-hidden
-        className="inline-block h-3.5 w-3.5 rounded-[3px] bg-current opacity-60"
+      <path
+        d="M28 0L32 4V10L26 4H6L4 6V26L6 28H16L26 18V24L18 32H4L0 28V4L4 0H28ZM32 32H28V18H16V14H32V32Z"
+        fill="currentColor"
       />
-      {label ?? "Logo"}
-    </span>
+    </svg>
   );
 }

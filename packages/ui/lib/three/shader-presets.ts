@@ -21,6 +21,7 @@ import {
   wavesScene,
   undertonesScene,
   flowingDotsScene,
+  grainScene,
 } from "./scenes/fragment-scenes";
 
 export const sceneRegistry: Record<string, SceneFactory> = {
@@ -32,6 +33,7 @@ export const sceneRegistry: Record<string, SceneFactory> = {
   waves: wavesScene,
   undertones: undertonesScene,
   "flowing-dots": flowingDotsScene,
+  grain: grainScene,
   // Further candidates: icosa, oscilloscope, retro-sunset, sdf
 };
 
@@ -70,6 +72,15 @@ export const shaderPresets: ShaderPreset[] = [
       "A dot-matrix grid where waves of dots swell and tint as a flow field passes through — and swell toward the cursor. Playful, technical, great behind type.",
     tags: ["dots", "grid", "halftone", "mouse", "motion", "background", "playful"],
     scene: "flowing-dots",
+    defaultPostPreset: "none",
+  },
+  {
+    id: "grain",
+    label: "Grain",
+    description:
+      "A glacial tonal wash under heavy animated film grain — fine print grain plus a coarser fleck, with a gentle vignette. The editorial, print-feeling backdrop; lovely in light AND dark tones.",
+    tags: ["grain", "film", "texture", "editorial", "print", "subtle", "hero", "background"],
+    scene: "grain",
     defaultPostPreset: "none",
   },
   {

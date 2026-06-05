@@ -33,6 +33,7 @@ TRANSITIONS
 TEXT — MOTION TEMPLATES
 - <MotionText template="..."> templates: "title" (fade-up headline + sub — the opener), "lower-third" (caption sliding in from the edge — pairs WITH a screen in the same scene), "section-break" (full-bleed statement, slow push — chapter marker), "broadcast" (TV-style full-width brand band over the screen). Also available: "ticker", "stat", "quote".
 - tone?: "light" | "dark" — match the tone to the scene fill so text stays legible.
+- lift?: "shadow" | "scrim" — lifts the type off busy or pale backdrops (shader washes, photos, video). Use "shadow" over any shader/image fill; "scrim" when contrast is still marginal. Skip it on flat solid fills.
 
 OVERLAYS — THE BROADCAST LAYER
 - <MotionOverlay> is a PEER of MotionScene inside <Motion> — a film-level layer rendering above every scene: network-bug logo, live wall clock, ticker, persistent badge.
@@ -41,7 +42,8 @@ OVERLAYS — THE BROADCAST LAYER
 
 FILLS & STAGES
 - A scene's fill prop takes any CSS background. PREFER theme tokens so the film re-themes — e.g. fill="linear-gradient(160deg, oklch(var(--primary)) 0%, oklch(var(--primary) / 0.4) 100%)" — never hard-coded brand hexes.
-- For animated shader fills, put a <BackgroundFill type="shader" preset="undertones" /> (or "flowing-dots", "mesh", "waves", "space", "plasma", "voronoi", "synthwave") as a scene child behind the content. If you reach for a raw <ThreeScene> instead, ALWAYS give it aspect="auto" className="h-full w-full".
+- For animated shader fills, put a <BackgroundFill type="shader" preset="undertones" /> (or "grain", "flowing-dots", "mesh", "waves", "space", "plasma", "voronoi", "synthwave") as a scene child behind the content. If you reach for a raw <ThreeScene> instead, ALWAYS give it aspect="auto" className="h-full w-full".
+- TONE: shader colours ride the brand pops, but the CANVAS follows the page's light/dark mode by default — in light mode washes go pale. Pin it with tone="dark" (or tone="light") on BackgroundFill/ThreeScene whenever the scene's text colour is fixed (white type → tone="dark"). Pale/light washes are a legitimate look — pair them with tone="light" + MotionText tone="dark", or lift="shadow".
 - Do NOT copy shader source code or use Pro-gated shaders — reference presets by name only.
 
 PACING — DIRECT IT LIKE A FILM

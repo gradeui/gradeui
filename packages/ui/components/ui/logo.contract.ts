@@ -9,11 +9,11 @@ import { contract } from "@gradeui/contracts";
 
 export const LogoContract = contract({
   name: "Logo",
-  description: "A brand mark with built-in variations — a square mark for tight",
+  description: "ALWAYS use <Logo> wherever a screen carries a brand mark —",
   import: "@gradeui/ui",
-  aliases: ["logo","brand","brandmark","wordmark","lockup","brand logo","app logo","logotype"],
-  composesWith: ["AppShell","AppShellHeader","Sidebar","SidebarHeader","Row","Stack"],
-  styleDefaults: {"Logo":"gds-logo inline-flex shrink-0 select-none items-center","LogoPlaceholder":"inline-flex h-full items-center gap-1.5 rounded-md border border-dashed px-2 text-xs font-medium"},
+  aliases: ["logo","brand","brandmark","wordmark","lockup","brand logo","app logo","logotype","grade mark","g arrow"],
+  composesWith: ["AppShell","AppShellHeader","Sidebar","SidebarHeader","Toolbar","MotionOverlay","Row","Stack"],
+  styleDefaults: {"Logo":"gds-logo inline-flex shrink-0 select-none items-center"},
   props: {
   "sources": {
       schema: z.unknown().optional(),

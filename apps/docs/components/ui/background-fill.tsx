@@ -30,7 +30,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { ThreeScene } from "./three-scene";
+import { ThreeScene, type SceneTone } from "./three-scene";
 import type { Palette, PostPreset } from "@/lib/three/types";
 import type { MediaRadius } from "./media-surface";
 
@@ -121,6 +121,11 @@ export interface BackgroundFillProps {
   fragmentShader?: string;
   /** Palette overrides for the shader. */
   palette?: Partial<Palette>;
+  /** Pin the shader's canvas tone — "dark" | "light" | "auto" (default).
+   *  Film frames and heroes with fixed-colour type should pin their tone
+   *  rather than inherit the page's light/dark mode (in light mode the
+   *  theme background washes every shader pastel). See ThreeScene. */
+  tone?: SceneTone;
   /** Post-FX preset id or live PostPreset object. */
   postPreset?: string | PostPreset;
 
@@ -152,6 +157,7 @@ export const BackgroundFill = React.forwardRef<
       preset,
       fragmentShader,
       palette,
+      tone,
       postPreset,
       opacity,
       blendMode,
@@ -232,6 +238,7 @@ export const BackgroundFill = React.forwardRef<
           preset={preset}
           fragmentShader={fragmentShader}
           palette={palette}
+          tone={tone}
           postPreset={postPreset}
           aspect="auto"
           radius="none"

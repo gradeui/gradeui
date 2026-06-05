@@ -88,8 +88,45 @@ The lean kernel is what grid tiles, static export capture, and the embed all con
 - **C3 — Live embed.** Per `STUDIO-EMBED.md` E0–E2 on top of the same kernel: React `<GradeEmbed>` + hosted `/e/<id>` route + "Embed" action in the share UI. The "embed a demo anywhere" goal lands here.
 - **C4 — Clean-render export source.** Graduate export from the runtime grab to a dedicated instrument-free compile (SSR or an export-mode sandbox pass) for crisp, deterministic output.
 
+## Consumer 4 — rendered posters & preview loops (server-stored)
+
+The Motion render pipeline (`scripts/render-motion.mjs`, STUDIO-DIRECTOR D7)
+is the same instrument for stored thumbnails — a poster or a short loop is
+just the render with three dials: a single frame, a duration cap, a width
+override. So a screen's tile artwork isn't a separate capture system; it's
+a small render.
+
+**Three stored assets per screen/Motion, all tiny:**
+
+| Asset | Pass | Size | Bytes |
+|---|---|---|---|
+| Poster | `--poster --width 640` (one frame → WebP q80) | 640px | ~40–70 KB |
+| Preview loop | `--seconds 3 --width 480 --fps 24` (→ vp9 WebM) | 480px | ~150–300 KB |
+| Super-pixel | `--seconds 2 --width 240 --fps 20` | 240px | ~30–60 KB |
+
+The 240px super-pixel is a *placeholder*: scaled up with a blur (the
+blur-up trick), its low resolution becomes the loading aesthetic — instant
+perceived load, then the crisp poster or the live frame snaps in. Static
+screens get only a poster; Motions add the loop (an animated thumbnail /
+loading screen). Per asset well under ~400 KB, so even thousands of
+screens is a few hundred MB.
+
+**Storage = last-one-wins, no versioning.** Key by the object, not the
+render: `renders/<screenId>/{poster.webp,preview.webm,final.mp4}`. Each new
+render UPSERTS those stable keys, so the previous artefacts are gone the
+instant the new ones land — discard-on-new for free, no cleanup job. RLS
+mirrors `project_access` (the STUDIO-STORAGE policy shape). The full
+delivery `final.mp4` is the only large object and the same rule applies:
+we keep the latest, not a history.
+
+This pairs with C1's grid posters (the in-memory demote-to-poster policy):
+C1 is the *live-session* memory fix; this is the *persisted* artwork the
+grid (and shares, and og:images) loads before anything renders.
+
 ## See also
 
+- [`STUDIO-DIRECTOR.md`](./STUDIO-DIRECTOR.md) — D7 render pipeline; posters/loops are passes of it. Hosted (gradeui.com) render is D7 v3.
+- [`STUDIO-STORAGE.md`](./STUDIO-STORAGE.md) — the bucket + RLS these stored renders sit in (last-one-wins keying).
 - [`STUDIO-EMBED.md`](./STUDIO-EMBED.md) — the live embed (consumer 3), kernel extraction, sandbox security posture.
 - [`apps/docs/STUDIO.md`](./apps/docs/STUDIO.md) — two-renderer model + the `grade:*` bus (add `grade:capture` / `grade:captured` there when C0 lands).
 - `apps/docs/components/studio/fast-frame.tsx` — `FastIframeHost`, the kernel to split.

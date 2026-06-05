@@ -80,14 +80,14 @@ export const undertonesScene = buildFragmentShaderScene(/* glsl */ `
     float n2 = uFbm(p * 1.4 - vec2(t * 0.8, t * 0.4) + 3.7);
     float diag = uv.x * 0.55 + uv.y * 0.45;
 
-    // Low mix weights are the genre — washes, not blobs.
+    // Washes, not blobs — but the brand pops carry enough weight to read.
     vec3 col = uBackground;
-    col = mix(col, uPrimary,   smoothstep(0.25, 0.95, n1) * 0.34);
-    col = mix(col, uSecondary, smoothstep(0.35, 1.00, n2) * 0.26);
-    col = mix(col, uAccent,    smoothstep(0.55, 1.00, n1 * n2 + diag * 0.2) * 0.18);
+    col = mix(col, uPrimary,   smoothstep(0.18, 0.92, n1) * 0.62);
+    col = mix(col, uSecondary, smoothstep(0.28, 1.00, n2) * 0.50);
+    col = mix(col, uAccent,    smoothstep(0.45, 1.00, n1 * n2 + diag * 0.2) * 0.38);
 
-    // …and a soft light follows it.
-    col += (uPrimary - uBackground) * 0.10 * exp(-md * 3.0);
+    // …and a soft light follows the cursor, in brand.
+    col += (uPrimary - uBackground) * 0.22 * exp(-md * 3.0);
 
     // Fine grain to kill banding.
     col += (uNoise(uv * 900.0) - 0.5) * 0.012;
@@ -140,7 +140,52 @@ export const flowingDotsScene = buildFragmentShaderScene(/* glsl */ `
     vec3 dotCol = mix(uPrimary, uAccent, smoothstep(0.3, 0.9, flow2));
     dotCol = mix(dotCol, uSecondary, swell * 0.6);
 
-    vec3 col = mix(uBackground, dotCol, dot_ * (0.55 + 0.45 * flow));
+    // Dots read at near-full brand saturation (the grid was too dim).
+    vec3 col = mix(uBackground, dotCol, dot_ * (0.78 + 0.22 * flow));
+    gl_FragColor = vec4(col, 1.0);
+  }
+`);
+
+/** Grain — a barely-moving tonal wash under HEAVY animated film grain.
+ *  The wash is quiet on purpose (the grain is the texture); brand colours
+ *  arrive as broad diagonal tints. Reads beautifully in light AND dark
+ *  tones — the editorial/print-feeling backdrop. */
+export const grainScene = buildFragmentShaderScene(/* glsl */ `
+  float gHash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float gNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = gHash(i);
+    float b = gHash(i + vec2(1.0, 0.0));
+    float c = gHash(i + vec2(0.0, 1.0));
+    float d = gHash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  }
+  void main() {
+    vec2 uv = vUv;
+    float t = uTime * 0.04; // glacial — the grain carries the motion
+
+    // Broad diagonal wash — two slow tints crossing the frame.
+    float w1 = gNoise(uv * 1.2 + vec2(t, -t * 0.7));
+    float w2 = gNoise(uv * 0.9 - vec2(t * 0.6, t * 0.3) + 5.1);
+    vec3 col = uBackground;
+    col = mix(col, uPrimary, smoothstep(0.30, 1.00, w1 + (uv.x + uv.y) * 0.15) * 0.40);
+    col = mix(col, uAccent,  smoothstep(0.45, 1.00, w2) * 0.25);
+
+    // THE GRAIN — animated per-frame (time-salted hash), two scales:
+    // fine print grain + a coarser fleck that catches the eye.
+    float salt = fract(uTime * 7.0);
+    float fine   = gHash(uv * uResolution.xy * 0.9 + salt * 113.0) - 0.5;
+    float coarse = gHash(floor(uv * uResolution.xy * 0.22) + salt * 71.0) - 0.5;
+    col += fine * 0.085 + coarse * 0.045;
+
+    // Gentle vignette keeps edges from going flat.
+    float vig = smoothstep(1.25, 0.45, length(uv - 0.5) * 1.6);
+    col *= 0.92 + 0.08 * vig;
+
     gl_FragColor = vec4(col, 1.0);
   }
 `);

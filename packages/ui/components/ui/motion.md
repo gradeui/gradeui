@@ -24,7 +24,9 @@ props:
       transitionMs? (timing override; each transition has a sensible
       default), children (ANY JSX)."
   - "MotionScreen: device? ('desktop' | 'mobile'), shots? (its OWN ScreenAnimator
-      camera), virtualWidth?, spotlight?, cursor?, enter?, animate? ('rise' |
+      camera), virtualWidth?, spotlight?, cursor?, enter? (default FALSE —
+      the offscreen fly-in reads badly inside a small frame; use scene
+      transition / animate for entrances), animate? ('rise' |
       'tilt-settle' — entrances; 'float' | 'drift' — ambient loops; 'none'
       default — animates the FRAME in place within the scene, composable with
       the camera inside; pair entrances with enter={false}), screenId?

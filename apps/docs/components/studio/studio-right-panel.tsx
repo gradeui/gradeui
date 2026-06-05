@@ -35,8 +35,10 @@ import {
 } from "@/lib/studio-right-panel-stage";
 
 import { LayoutStartersPanel } from "./layout-starters-panel";
+import { MotionScenePanel } from "./motion-scene-panel";
 import { SelectionInspector } from "./selection-inspector";
 import { StageBScreenInfo } from "./stage-b-screen-info";
+import { isMotionSource } from "./timeline-dock";
 
 export interface StudioRightPanelProps {
   /** Active design's JSX source. Drives the Stage A/B fork. */
@@ -78,6 +80,23 @@ export function StudioRightPanel({
   onStatusChange,
   className,
 }: StudioRightPanelProps) {
+  // Motion designs get the SCENE INSPECTOR instead of the stage
+  // machine — a Motion's blob is `<Motion>` of `<MotionScene>`s, so
+  // the component/layout inspector has nothing useful to hang controls
+  // on, and the unit the user edits is the SCENE. Same write channel
+  // (`onSourceChange` is the page's handleSourceMutation, which also
+  // accepts an undo label), same collapsible-section idiom as the
+  // selection inspector.
+  if (isMotionSource(appSource)) {
+    return (
+      <MotionScenePanel
+        appSource={appSource}
+        onSourceMutation={onSourceChange}
+        className={className}
+      />
+    );
+  }
+
   const stage: RightPanelStage = resolveRightPanelStage({
     appSource,
     selection,

@@ -200,7 +200,7 @@ export default function App() {
 
         {/* 3 — KEYNOTE LEAN: screen leaning back with a floor reflection */}
         <MotionScene label="Lean" durationMs={7000} fill="#07070a">
-          <BackgroundFill type="shader" preset="flowing-dots" opacity={0.22} />
+          <BackgroundFill type="shader" preset="flowing-dots" tone="dark" opacity={0.22} />
           <div aria-hidden style={{ position: "absolute", inset: 0, perspective: "1200px", display: "grid", placeItems: "center", transformStyle: "preserve-3d" }}>
             <div style={{ width: "64%" }}>
               <div
@@ -258,7 +258,7 @@ export default function App() {
 
         {/* 5 — PHONE FLOAT: a tilted phone rights itself to camera */}
         <MotionScene label="Phone" durationMs={7000} fill="radial-gradient(circle at 40% 60%, #1d1a4b, #07070a 75%)">
-          <BackgroundFill type="shader" preset="undertones" opacity={0.4} />
+          <BackgroundFill type="shader" preset="undertones" tone="dark" opacity={0.4} />
           <div aria-hidden style={{ position: "absolute", inset: 0, perspective: "1000px", display: "grid", placeItems: "center" }}>
             <div
               style={{
@@ -284,7 +284,7 @@ export default function App() {
             jump. A recording of this would be three renders stitched;
             this is one layout re-laying-out. */}
         <MotionScene label="Morph" durationMs={16000} fill="#07070a">
-          <BackgroundFill type="shader" preset="undertones" opacity={0.5} />
+          <BackgroundFill type="shader" preset="undertones" tone="dark" opacity={0.5} />
           <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", zIndex: 1 }}>
             <div style={{ animation: "gdsHeroMorphZoom 14s both" }}>
               <div

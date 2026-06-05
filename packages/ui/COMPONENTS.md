@@ -80,6 +80,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | DatePicker / DateRangePicker | `date-picker.tsx` | composes Button + Popover + Calendar | ✅ | closed + open states |
 | Avatar (+ Image/Fallback) | `avatar.tsx` | h-10 w-10 default; sizes via className | ✅ | sm/md/lg/xl in Figma (Figma-side convention) |
 | Logo | `logo.tsx` | `sources` (square/horizontal/icon × light/dark/mono), `lockup`, `mode`, `mono`, `size`, `label`, `href` | ⏳ | Brand mark; artwork supplied by consumer. Picks the right lockup/appearance for toolbars, sidenavs, footers. |
+| GradeLoader | `grade-loader.tsx` | `size` (sm/md/lg/xl/px), `label`, `showLabel` | ⏳ | THE branded indeterminate loader — G-arrow mark + brand-pop shimmer sweep; reduced-motion pulse; role="status". |
 
 ## Composition blocks (higher-order)
 

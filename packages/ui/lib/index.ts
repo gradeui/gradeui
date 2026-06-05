@@ -491,6 +491,13 @@ export {
   type LogoSize,
 } from "../components/ui/logo";
 
+// GradeLoader — THE branded indeterminate loader (G-arrow mark + shimmer).
+export {
+  GradeLoader,
+  type GradeLoaderProps,
+  type GradeLoaderSize,
+} from "../components/ui/grade-loader";
+
 // Direction — wrap any content in a directed camera (zoom/pan/spotlight tour).
 export {
   ScreenAnimator,

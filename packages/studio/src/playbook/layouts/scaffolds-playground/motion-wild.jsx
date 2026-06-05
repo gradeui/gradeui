@@ -314,7 +314,7 @@ export default function App() {
       <Motion
         aspect="16/9"
         backdrop={
-          <ThreeScene preset="undertones" aspect="auto" className="h-full w-full" />
+          <ThreeScene preset="undertones" tone="dark" aspect="auto" className="h-full w-full" />
         }
       >
         {/* ── THE BROADCAST LAYER — film-level, above every scene ── */}
@@ -382,7 +382,7 @@ export default function App() {
             the mouse: the dots inside the letters swell toward it. */}
         <MotionScene label="Mask" durationMs={6000} fill="#050507">
           <TextMask text="WILD">
-            <ThreeScene preset="flowing-dots" aspect="auto" className="h-full w-full" />
+            <ThreeScene preset="flowing-dots" tone="dark" aspect="auto" className="h-full w-full" />
           </TextMask>
         </MotionScene>
 
