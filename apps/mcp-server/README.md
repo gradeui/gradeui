@@ -19,6 +19,7 @@ The token saving comes from the **client** (Claude Desktop / Claude Code) being 
 |---|---|---|
 | `list_projects` | — | Your projects (id + name) to target |
 | `create_project` | `name` | Make a new empty project |
+| `list_screens` | `projectId` | A project's live screens (id, name, position) |
 | `create_screen` | `projectId`, `brief` | Returns the Grade context to author a screen from; the host then writes the JSX |
 | `get_screen` | `projectId`, `screenId` | Returns a screen's current JSX + the refs it implies, to iterate on |
 | `save_screen` | `projectId`, `jsx`, `name?`, `screenId?`, `makeActive?` | Validates, then writes the JSX into the project |

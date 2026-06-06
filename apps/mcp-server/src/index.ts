@@ -128,6 +128,32 @@ async function main() {
     },
   );
 
+  // ── list_screens ─────────────────────────────────────────────────────
+  server.registerTool(
+    "list_screens",
+    {
+      title: "List a project's screens",
+      description:
+        "List the live screens in a project (id, name, position) so you can pick one to get_screen / save_screen / preview_screen.",
+      inputSchema: {
+        projectId: z.string().describe("Project id (from list_projects)"),
+      },
+    },
+    async ({ projectId }) => {
+      await assertProject(sb, env.ownerUserId, projectId);
+      const screens = await listScreens(sb, projectId);
+      if (screens.length === 0) {
+        return text(
+          `Project ${projectId} has no screens yet. Use create_screen → save_screen to add one.`,
+        );
+      }
+      const lines = screens.map(
+        (s) => `${s.position}. ${s.name} — id: ${s.id}`,
+      );
+      return text(`Screens in project ${projectId}:\n${lines.join("\n")}`);
+    },
+  );
+
   // ── create_screen ────────────────────────────────────────────────────
   server.registerTool(
     "create_screen",
