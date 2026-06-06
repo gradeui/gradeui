@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Changesets (keep .changeset/ but not the generated md)
 # (nothing to ignore here yet)
+
+# Local MCP config — holds the Supabase service-role secret
+.mcp.json

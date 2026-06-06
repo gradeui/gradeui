@@ -135,6 +135,14 @@ All Grade runtime tokens live under the `gds-*` / `--gds-*` / `grade-*` prefixes
 
 The May 2026 rename pass cleared the last of the legacy `ramp-*` / `--rds-*` / `rds-*` / `data-ramp-theme` references in a single sweep — no user-data migration was needed because the library had no external installs yet. The script that ran is checked in at `scripts/rename-rds-to-gds.py` and documents every pattern it touched; reach for that file as a model if you ever need another monorepo-wide rename.
 
+## Screen persistence — the load-bearing fact
+
+A Studio screen persists as **raw JSX source** — a plain string at `designs.state.appSource` in Supabase. The `designs` table IS the screen table (one row per screen, ordered by `position`, scoped to a project via `project_id`); `projects.active_design_id` soft-points at the current screen. That `appSource` string is exactly what the model emits and exactly what the preview renders. There is **no intermediate IR or payload** on the read or write path — do not look for one.
+
+`packages/walker` (JSX ↔ payload) is **NOT** on the persistence path. It was an unfinished "send to Figma" experiment that converts JSX into a Figma-plugin payload in memory only; nothing reads or writes walker output to the database. Don't reach for it when saving or loading screens — round-tripping a screen is just reading and writing the raw JSX in `state.appSource`.
+
+Anything that writes a screen — the autosave adapter at `apps/docs/lib/studio-storage/supabase-adapter.ts`, or any future MCP server — sets `designs.state.appSource` to the raw JSX. See `STUDIO-PERSISTENCE.md` for the dirty-tracking / debounce / save detail.
+
 ## Versioning & publishing
 
 Releases are driven by [Changesets](https://github.com/changesets/changesets):

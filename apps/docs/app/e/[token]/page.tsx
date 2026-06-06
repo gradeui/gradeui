@@ -58,7 +58,6 @@ interface ShareLinkRow {
   revision_id: string | null;
   mode: "view" | "comment";
   color_mode: "light" | "dark";
-  viewport: "responsive" | "mobile" | "tablet" | "desktop";
   revoked: boolean;
   expires_at: number | null;
 }
@@ -114,13 +113,24 @@ export default async function EmbedPage({
   const supabase = getServiceSupabase();
   if (!supabase) notFound();
 
-  const { data: link } = await supabase
+  // NOTE: select stays in lockstep with the live schema — migration 0017
+  // dropped the singular `viewport` column (the embed sizes via ?w/?h
+  // instead, and the spec-model `viewports` doc is a share-view concern).
+  // Selecting a dropped column errors, and a swallowed error here reads
+  // as "no such share" → 404 for every embed. That exact bug shipped
+  // June 2026 (caught by the MCP preview_screen loop); surface the error
+  // so the next schema drift is a log line, not a silent global 404.
+  const { data: link, error: linkError } = await supabase
     .from("share_links")
     .select(
-      "token, project_id, design_id, revision_id, mode, color_mode, viewport, revoked, expires_at",
+      "token, project_id, design_id, revision_id, mode, color_mode, revoked, expires_at",
     )
     .eq("token", token)
     .maybeSingle();
+  if (linkError) {
+    // eslint-disable-next-line no-console
+    console.error("[embed] share_links lookup failed:", linkError.message);
+  }
 
   const share = link as ShareLinkRow | null;
   if (!share || share.revoked) notFound();

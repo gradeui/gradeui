@@ -256,7 +256,7 @@ function getRefs(): ComponentRef[] {
  * default imports / relative paths. Giving them the full statement
  * removes that failure mode.
  */
-function formatRef(ref: ComponentRef): string {
+function formatRef(ref: ComponentRef, style: "full" | "compact" = "full"): string {
   const lines: string[] = [];
   const names = [ref.name, ...(ref.subcomponents ?? [])].join(", ");
   const header = ref.import
@@ -279,6 +279,13 @@ function formatRef(ref: ComponentRef): string {
     lines.push(`  Composes with: ${ref.composes_with.join(", ")}`);
   }
   if (ref.when_to_use) lines.push(`  When: ${ref.when_to_use}`);
+  // Compact mode stops here — the API surface (import, variants, sizes,
+  // props, composes, when) is the part the contract validator enforces;
+  // the notes + worked-example body below are idiom guidance. Transport-
+  // budgeted surfaces (MCP tool results) drop them when the full block
+  // would exceed the host's result-size limit, and lean on the
+  // validation gate to catch idiom misses.
+  if (style === "compact") return lines.join("\n");
   // Notes are emitted last because they're the richest content and we want
   // the model to see the terse header first. Each line is indented to stay
   // visually grouped under the component header.
@@ -329,9 +336,18 @@ function formatRef(ref: ComponentRef): string {
  */
 export function renderComponentRefsBlock(options?: {
   onlyFor?: readonly string[];
+  /** "full" (default) includes each ref's notes + worked example +
+   *  anti-patterns body. "compact" emits only the API header lines
+   *  (import, variants, sizes, props, composes, when) — built for
+   *  transport-budgeted surfaces (MCP tool results) where the full
+   *  block can exceed the host's result-size limit. The contract
+   *  surface survives; idiom misses are caught downstream by
+   *  validateAgainstContract. */
+  style?: "full" | "compact";
 }): string {
   const refs = getRefs();
   if (!refs.length) return "";
+  const style = options?.style ?? "full";
   const filter = options?.onlyFor?.length
     ? new Set(options.onlyFor.map((n) => n.toLowerCase()))
     : null;
@@ -340,10 +356,19 @@ export function renderComponentRefsBlock(options?: {
     : refs;
   if (!picked.length) return "";
 
-  const body = picked.map(formatRef).join("\n\n");
+  const body = picked.map((r) => formatRef(r, style)).join("\n\n");
+  const intro =
+    style === "compact"
+      ? [
+          "COMPONENT REFERENCE (compact) — API shapes for the components in play.",
+          "Use ONLY the variants/sizes/props listed per component. Compound components compose via their Sub-exports (e.g. <Avatar><AvatarFallback>AL</AvatarFallback></Avatar>).",
+        ]
+      : [
+          "COMPONENT REFERENCE — API shapes + canonical examples + anti-patterns for the components in play.",
+          "Read the example block under each component before emitting JSX for that component — it shows the composition (compound subcomponent ordering, required wrappers, prop spelling) that this DS actually expects. Anti-patterns lines marked `DO NOT` are hard rules.",
+        ];
   return [
-    "COMPONENT REFERENCE — API shapes + canonical examples + anti-patterns for the components in play.",
-    "Read the example block under each component before emitting JSX for that component — it shows the composition (compound subcomponent ordering, required wrappers, prop spelling) that this DS actually expects. Anti-patterns lines marked `DO NOT` are hard rules.",
+    ...intro,
     "",
     body,
     "",

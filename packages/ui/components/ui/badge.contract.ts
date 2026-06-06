@@ -17,7 +17,7 @@ export const BadgeContract = contract({
   variantDefaults: {"variant":"default","rounded":"default"},
   props: {
   "variant": {
-      schema: z.enum(["see list above"]).optional(),
+      schema: z.enum(["default", "secondary", "destructive", "outline", "highlight", "success", "warning", "info", "success-soft", "warning-soft", "destructive-soft", "info-soft", "highlight-soft", "success-outline", "warning-outline", "destructive-outline", "info-outline"]).optional(),
       design: "knob",
   },
   "rounded": {

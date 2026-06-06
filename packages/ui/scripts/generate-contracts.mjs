@@ -489,6 +489,33 @@ function extractStyleDefaults(tsxSource) {
 
 function emitContract(componentName, fm, propLines, styleDefaults, variantDefaults) {
   const parsed = propLines.map(parsePropSignature).filter(Boolean);
+
+  // Resolve "(see list above)" / "(see above)" enum references against the
+  // frontmatter lists. Sidecar authors write `variant? (see list above)` to
+  // avoid duplicating the `variants:` line — the parens-enum branch used to
+  // take that literally and emit z.enum(["see list above"]), which made
+  // EVERY legitimate value a contract violation (caught live by the MCP
+  // save gate on Badge, June 2026). `size` props resolve against `sizes:`,
+  // everything else against `variants:`. No matching list → fall back to
+  // z.unknown() rather than ship a bogus enum.
+  const LIST_REF_RE = /^see (?:the )?(?:list )?above$/i;
+  for (const p of parsed) {
+    if (
+      p.kind === "enum" &&
+      Array.isArray(p.enum) &&
+      p.enum.length === 1 &&
+      LIST_REF_RE.test(p.enum[0])
+    ) {
+      const source =
+        p.name === "size" && Array.isArray(fm.sizes) ? fm.sizes : fm.variants;
+      if (Array.isArray(source) && source.length > 0) {
+        p.enum = source.map((v) => String(v));
+      } else {
+        p.kind = "unknown";
+        p.enum = undefined;
+      }
+    }
+  }
   // Dedup by name — when the .md namespaces props by subcomponent
   // (`Accordion: value`, `AccordionItem: value`), the parser flattens
   // the prefix away, and identical short names collide. First entry

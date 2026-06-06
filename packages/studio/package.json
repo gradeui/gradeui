@@ -11,6 +11,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./playbook": "./src/playbook/index.ts",
+    "./core": "./src/core/index.ts",
     "./package.json": "./package.json"
   },
   "files": [
@@ -26,7 +27,12 @@
     "lint": "echo \"(no lint configured for @gradeui/studio yet)\"",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@gradeui/contracts": "workspace:*",
+    "typescript": "^5.6.3",
+    "zod": "^3.23.0"
+  },
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "@types/node": "^20"
   }
 }

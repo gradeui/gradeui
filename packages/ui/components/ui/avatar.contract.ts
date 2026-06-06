@@ -13,21 +13,27 @@ export const AvatarContract = contract({
   import: "@gradeui/ui",
   aliases: ["profile picture","user image","account image","avatar","person glyph","user avatar","profile image","react native avatar"],
   subcomponents: ["AvatarImage","AvatarFallback"],
-  composesWith: ["Card (in CardHeader)","Table cells","Badge (placed next to for status)","Skeleton (loading state)"],
+  composesWith: ["Card (in CardHeader)","Table cells","Badge (placed next to for status)","Skeleton (loading state)","Message (in the avatar slot)"],
   styleDefaults: {"AvatarImage":"aspect-square h-full w-full"},
   props: {
-  "className": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
-      description: "set size via utilities (default h-10 w-10)",
+  "size": {
+      schema: z.enum(["2xs", "xs", "sm", "md", "lg", "xl"]).optional(),
+      design: "knob",
+      description: "t-shirt scale, 20px → 80px; default md (40px). xs for chat message rows, sm for comments/dense threads, lg/xl for profile headers. Prefer this over h-*/w-* className utilities.",
   },
   "src": {
       schema: z.unknown(),
       design: "plumbing",
   },
-  "initials": {
+  "tone": {
+      schema: z.enum(["muted", "primary", "violet", "amber", "emerald", "sky", "rose", "plum", "lime"]).optional(),
+      design: "knob",
+      description: "tinted bg/text pair. Reach for explicit tones when each author needs a stable colour mapping (chat avatars, comment threads, member lists); default muted.",
+  },
+  "children": {
       schema: z.unknown(),
       design: "plumbing",
+      description: "initials (or a small icon), rendered while the image loads or when it fails",
   },
   },
 });

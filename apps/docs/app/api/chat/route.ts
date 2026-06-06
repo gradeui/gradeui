@@ -52,22 +52,12 @@ import {
   extractEditBlocks,
   applyEditTurn,
 } from "@/lib/studio-edit-blocks";
-import {
-  renderComponentRefsBlock,
-  relevantComponentNames,
-  ALLOWED_COMPONENTS,
-  PINNED_COMPONENTS,
-} from "@gradeui/studio/playbook";
-
-// Fast-path membership check to filter ref matches down to the Studio-exposed
-// allowlist. We build this once at module load because the allowlist is
-// static. Example: rive-player.md has aliases like "animation"/"lottie", so a
-// prompt mentioning "animation" would otherwise pull in RivePlayer's ref — but
-// RivePlayer is deliberately NOT in ALLOWED_COMPONENTS right now, so we don't
-// want to hint at a component the model can't actually emit.
-const ALLOWED_COMPONENT_SET = new Set<string>(
-  ALLOWED_COMPONENTS.map((n) => n.toLowerCase())
-);
+// Screen-context stitching lives in the shared core now — base rules +
+// retrieval-narrowed refs + targeted-edit selection. This route is the
+// product-runtime ADAPTER over the same `createScreenContext` the MCP
+// server uses, so the demo surface can't quietly drift from what ships.
+// (See grade-local-testing-and-eval.md and @gradeui/studio/core.)
+import { createScreenContext } from "@gradeui/studio/core";
 
 /**
  * Pull text out of a UIMessage's parts array. Mirrors the small helper in
@@ -112,57 +102,9 @@ function textFromMessages(messages: UIMessage[]): string {
   return chunks.join("\n");
 }
 
-/**
- * Build the "TARGETED EDIT" system-prompt stanza for a user-picked element.
- *
- * Why a dedicated block and not just concatenation into the user turn:
- *   - The user's visible message already shows a short marker (e.g.
- *     `Selection: <button> "Sign in"`) — we don't need to repeat that
- *     machinery in-thread.
- *   - Putting the outerHTML in the SYSTEM slot means it doesn't get
- *     replayed on every follow-up turn — each request only sees the
- *     selection that matters *for this send*. Cleaner history, smaller
- *     downstream prompts.
- *   - The stanza speaks in imperatives the model will actually obey
- *     ("locate the element below in the current JSX"). Burying the same
- *     info in a user message produces fuzzier results in practice.
- */
-function renderSelectionBlock(sel: RequestSelection | null | undefined): string {
-  if (!sel || typeof sel !== "object") return "";
-  const tag = (sel.tag || "").toString().slice(0, 30);
-  const text = (sel.text || "").toString().slice(0, 120);
-  const outer = (sel.outerHTML || "").toString().slice(0, 500);
-  const componentName = (sel.componentName || "").toString().slice(0, 60);
-  const part = (sel.part || "").toString().slice(0, 60);
-  if (!tag && !outer && !componentName) return "";
-
-  // When the selection resolved to a DS component boundary, lead with the
-  // component identifier — that's the most actionable hint we can give the
-  // model ("edit <ThreeScene>") and it maps 1:1 to a JSX node in the
-  // generated source. The raw tag/outerHTML still rides along as extra
-  // context but the model has been seen to ignore the component name when
-  // it's buried below 500 chars of inner HTML, so we hoist it to the top.
-  const header = componentName
-    ? `TARGETED EDIT — the user is pointing at a <${componentName}> component in the current preview.`
-    : "TARGETED EDIT — the user is pointing at a specific element in the current preview.";
-
-  const instruction = componentName
-    ? `Interpret the user's request AS AN EDIT TO THE <${componentName}> INSTANCE above. Find the matching <${componentName} ... /> JSX node in the current code and modify its props (or children) in place. Do not rewrite unrelated components in the composition. Still follow the OUTPUT RULES — regenerate the full component inside a single \`\`\`jsx fence; the targeted change is WHAT to modify, not HOW to format the response.`
-    : "Interpret the user's request AS AN EDIT TO THIS ELEMENT specifically. Locate it inside the current JSX (by tag, text content, classes, and surrounding context) and modify it in place. Do not rewrite unrelated parts of the component. Still follow the OUTPUT RULES — regenerate the full component inside a single ```jsx fence; the targeted change is WHAT to modify, not HOW to format the response.";
-
-  return [
-    header,
-    componentName ? `Component: <${componentName}>` : null,
-    part ? `data-gds-part: "${part}"` : null,
-    `Element tag: <${tag}>`,
-    text ? `Element text: "${text}"` : null,
-    outer ? `Element outerHTML (truncated):\n\`\`\`html\n${outer}\n\`\`\`` : null,
-    "",
-    instruction,
-  ]
-    .filter((l): l is string => l !== null)
-    .join("\n");
-}
+// The "TARGETED EDIT" stanza (renderSelectionBlock) and the whole
+// base-rules + refs + selection stitch now live in `@gradeui/studio/core`
+// behind `createScreenContext`. The route just passes the selection in.
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -475,54 +417,29 @@ export async function POST(req: Request) {
 
     const modelMessages = await convertToModelMessages(compacted);
 
-    // Build the component-reference block LAZILY from the current
-    // conversation. We pull every message's text (the user's ask PLUS any
-    // assistant-emitted code with its imports) and ask the refs loader
-    // which components are actually in play. Unmentioned components pay
-    // zero tokens — the first turn of a fresh "make me a login form" chat
-    // will ship no refs at all; a follow-up "add a dialog" only brings in
-    // Dialog's ref. Compare with the old behaviour that unconditionally
-    // glued all ~2k tokens of refs onto every request.
+    // Stitch the per-request screen-generation context via the shared core.
+    // `createScreenContext` pulls every message's text (the user's ask PLUS
+    // any assistant-emitted code with its imports), asks the refs loader
+    // which components are in play, narrows to the allowlist, pins the
+    // layout primitives, and folds in the targeted-edit selection stanza —
+    // all the stitching that used to live inline here. Unmentioned
+    // components still pay zero tokens. The client already appended the
+    // EDIT MODE stanza to `systemPrompt` on iteration turns, so we pass it
+    // straight through as the base (editMode left default-false to avoid
+    // doubling).
     //
-    // `relevant` is the canonical set of component names whose .md frontmatter
-    // contributed to the system prompt for THIS request — we stamp it onto
-    // the response metadata below so the chat UI can show "3 refs loaded:
-    // Button, Dialog, Input" alongside each assistant turn. That makes the
-    // token-vs-quality trade-off visible without needing server logs.
-    const relevant = includeComponentRefs
-      ? Array.from(
-          new Set([
-            // Pin layout primitives up front. Order matters for the refs
-            // block — the model reads top-down, so the structural choices
-            // (Stack/Row/Grid/Flex) arrive before any component-specific
-            // ref the retriever pulled in.
-            ...PINNED_COMPONENTS.filter((n) =>
-              ALLOWED_COMPONENT_SET.has(n.toLowerCase())
-            ),
-            ...relevantComponentNames(textFromMessages(messages)).filter((n) =>
-              ALLOWED_COMPONENT_SET.has(n.toLowerCase())
-            ),
-          ])
-        )
-      : [];
-    const refsBlock =
-      relevant.length > 0
-        ? renderComponentRefsBlock({ onlyFor: relevant })
-        : "";
-
-    // Targeted-edit stanza — appended to the system prompt when the user
-    // used the Select tool in the preview. We paste the picked element's
-    // outerHTML verbatim so the model has something concrete to locate in
-    // the current JSX and modify, rather than having to guess which div
-    // the user meant. The "regenerate the FULL component" rule from the
-    // base system prompt still stands (this is v1 — full regen, not a
-    // diff); the stanza just narrows the model's attention.
-    const selectionBlock = renderSelectionBlock(selection);
-
-    const parts = [systemPrompt, refsBlock, selectionBlock].filter(
-      (s): s is string => Boolean(s && s.trim())
+    // `relevant` is the canonical set of component names whose .md
+    // frontmatter contributed to THIS request — stamped onto the response
+    // metadata below so the chat UI can show "3 refs loaded: Button,
+    // Dialog, Input", making the token-vs-quality trade-off visible.
+    const { system: finalSystem, refs: relevant } = createScreenContext(
+      textFromMessages(messages),
+      {
+        basePrompt: systemPrompt,
+        selection,
+        includeComponentRefs,
+      }
     );
-    const finalSystem = parts.length > 0 ? parts.join("\n\n") : undefined;
 
     // Reasoning opt-in — only when the user's "Show thinking" toggle is
     // on, so default turns pay zero extra tokens. See reasoningOptions().
