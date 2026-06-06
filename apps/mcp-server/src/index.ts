@@ -48,6 +48,10 @@ import {
   screenshotEmbed,
   savePreviewPng,
 } from "./preview.js";
+import {
+  PREVIEW_RESOURCE_URI,
+  PREVIEW_TEMPLATE_HTML,
+} from "./ui-template.js";
 
 /** Where the live site (and its /e/<token> embed route) is served from.
  *  Override with GRADE_SITE_URL for local dev (http://localhost:3000). */
@@ -91,6 +95,40 @@ async function main() {
     name: "gradeui-screens",
     version: "0.1.0",
   });
+
+  // ── MCP App view (SEP-1865) ──────────────────────────────────────────
+  // One static template, registered once — hosts may prefetch/cache it,
+  // so it carries no per-call data. preview_screen links to it via
+  // _meta.ui.resourceUri; the screenshot travels in structuredContent.
+  // Hosts without Apps support ignore all of this and fall back to the
+  // plain content[]. NOTE: as of June 2026 Claude hosts don't render
+  // third-party MCP Apps (anthropics/claude-ai-mcp#165, #236) — this is
+  // forward wiring; verify with apps/mcp-server/view-harness.html.
+  server.registerResource(
+    "gradeui-preview-view",
+    PREVIEW_RESOURCE_URI,
+    {
+      description: "Inline preview panel for Grade screens (MCP App view)",
+      mimeType: "text/html;profile=mcp-app",
+    },
+    async () => ({
+      contents: [
+        {
+          uri: PREVIEW_RESOURCE_URI,
+          mimeType: "text/html;profile=mcp-app",
+          text: PREVIEW_TEMPLATE_HTML,
+          // No csp block: the panel only needs img-src data:, which the
+          // spec's mandatory default CSP already allows. Zero external
+          // domain declarations = no host trust warnings.
+          _meta: {
+            ui: {
+              prefersBorder: false,
+            },
+          },
+        },
+      ],
+    }),
+  );
 
   // ── list_projects ────────────────────────────────────────────────────
   server.registerTool(
@@ -307,7 +345,10 @@ async function main() {
     {
       title: "Preview a Grade screen (real render)",
       description:
-        "Render a saved screen through the live embed route (gradeui.com/e/<token>) and return an actual screenshot PNG plus the embed URL. Use after save_screen to SEE the real render and iterate. Mints a read-only share link for the screen if none exists.",
+        "Render a saved screen through the live embed route (gradeui.com/e/<token>) and return an actual screenshot PNG plus the embed URL. Use after save_screen to SEE the real render and iterate. Mints a read-only share link for the screen if none exists. In hosts that support MCP Apps, also renders an inline preview panel with a live-embed toggle.",
+      _meta: {
+        ui: { resourceUri: PREVIEW_RESOURCE_URI },
+      },
       inputSchema: {
         projectId: z.string().describe("Project id"),
         screenId: z.string().describe("Screen (design) id, e.g. from save_screen"),
@@ -343,6 +384,19 @@ async function main() {
       );
       const url = embedUrl(SITE_URL, share.token, w);
       const shot = await screenshotEmbed(url, w, h);
+      // MCP Apps capability gate (SEP-1865). structuredContent carries the
+      // multi-MB data-URI for the app iframe — but hosts WITHOUT apps
+      // support may dump structuredContent into the visible tool result,
+      // flooding the model's context (observed in Cowork, June 2026: the
+      // base64 blob blew the host's 25k-token result cap). Only attach it
+      // when the client negotiated the ui extension.
+      const clientCaps = server.server.getClientCapabilities() as
+        | { extensions?: Record<string, unknown> }
+        | undefined;
+      const uiSupported = Boolean(
+        clientCaps?.extensions?.["io.modelcontextprotocol/ui"],
+      );
+
       // Persist alongside the image content — hosts differ in whether they
       // show MCP images to the human, but every host's agent can open,
       // present, or link a file path. Best-effort: a failed write must not
@@ -369,9 +423,25 @@ async function main() {
               `Live render of "${screen.name}" (${screenId}) at ${w}×${h}.\n` +
               (savedPath ? `Saved PNG: ${savedPath}\n` : "") +
               `Embed URL (read-only${share.created ? ", newly minted" : ""}): ${url}\n` +
-              `This is the REAL render — same route any embed uses. SHOW THE HUMAN the saved PNG (present/attach the file) — image tool-results may be visible only to you. Iterate with get_screen → save_screen, then preview again.`,
+              `This is the REAL render — same route any embed uses. If the host rendered an inline preview panel (MCP App), the human can already see it; otherwise SHOW THE HUMAN the saved PNG (present/attach the file) or give them the embed URL as a clickable link. Iterate with get_screen → save_screen, then preview again.`,
           },
         ],
+        // Forwarded verbatim to the app iframe (ui/notifications/tool-result)
+        // and NOT added to model context in apps-capable hosts — the
+        // data-URI is token-free there. Omitted entirely elsewhere (see
+        // capability gate above).
+        ...(uiSupported
+          ? {
+              structuredContent: {
+                name: screen.name,
+                screenId,
+                width: w,
+                height: h,
+                embedUrl: url,
+                imageDataUri: `data:image/png;base64,${shot.base64}`,
+              },
+            }
+          : {}),
       };
     },
   );
