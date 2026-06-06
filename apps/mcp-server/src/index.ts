@@ -42,7 +42,12 @@ import {
   listScreens,
   saveScreen,
 } from "./designs.js";
-import { ensureShareLink, embedUrl, screenshotEmbed } from "./preview.js";
+import {
+  ensureShareLink,
+  embedUrl,
+  screenshotEmbed,
+  savePreviewPng,
+} from "./preview.js";
 
 /** Where the live site (and its /e/<token> embed route) is served from.
  *  Override with GRADE_SITE_URL for local dev (http://localhost:3000). */
@@ -312,6 +317,19 @@ async function main() {
       );
       const url = embedUrl(SITE_URL, share.token, w);
       const shot = await screenshotEmbed(url, w, h);
+      // Persist alongside the image content — hosts differ in whether they
+      // show MCP images to the human, but every host's agent can open,
+      // present, or link a file path. Best-effort: a failed write must not
+      // sink a successful screenshot.
+      let savedPath: string | null = null;
+      try {
+        savedPath = await savePreviewPng(screen.name, screenId, shot.base64);
+      } catch (err) {
+        console.error(
+          "gradeui-mcp: preview file write failed:",
+          err instanceof Error ? err.message : err,
+        );
+      }
       return {
         content: [
           {
@@ -323,8 +341,9 @@ async function main() {
             type: "text" as const,
             text:
               `Live render of "${screen.name}" (${screenId}) at ${w}×${h}.\n` +
+              (savedPath ? `Saved PNG: ${savedPath}\n` : "") +
               `Embed URL (read-only${share.created ? ", newly minted" : ""}): ${url}\n` +
-              `This is the REAL render — same route any embed uses. Iterate with get_screen → save_screen, then preview again.`,
+              `This is the REAL render — same route any embed uses. SHOW THE HUMAN the saved PNG (present/attach the file) — image tool-results may be visible only to you. Iterate with get_screen → save_screen, then preview again.`,
           },
         ],
       };

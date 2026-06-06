@@ -21,6 +21,9 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const nowMs = () => Date.now();
 
@@ -89,6 +92,35 @@ export interface ScreenshotResult {
   base64: string;
   width: number;
   height: number;
+}
+
+/**
+ * Persist a preview PNG to disk and return its absolute path.
+ *
+ * Why a file as well as MCP image content: hosts vary in whether they
+ * surface image tool-results to the HUMAN (Claude's desktop app shows
+ * them to the model only). The file is the lowest-common-denominator
+ * hand-off — any host/agent can open, present, or link it.
+ *
+ * Location: `apps/mcp-server/previews/` resolved relative to THIS module
+ * (stable however the host spawns the process — cwd is never trusted).
+ * Override with GRADE_PREVIEW_DIR. The directory is gitignored.
+ */
+export async function savePreviewPng(
+  name: string,
+  screenId: string,
+  base64: string,
+): Promise<string> {
+  const dir =
+    process.env.GRADE_PREVIEW_DIR ??
+    // dist/index.js (bundled) → ../previews ⇒ apps/mcp-server/previews
+    join(dirname(fileURLToPath(import.meta.url)), "..", "previews");
+  await mkdir(dir, { recursive: true });
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "screen";
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  const file = join(dir, `${slug}-${screenId}-${stamp}.png`);
+  await writeFile(file, Buffer.from(base64, "base64"));
+  return file;
 }
 
 /**
