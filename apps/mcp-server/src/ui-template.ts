@@ -2,7 +2,7 @@
  * The MCP App view for preview_screen — a single static HTML template
  * (SEP-1865, "MCP Apps", 2026-01-26).
  *
- * Registered once at ui://gradeui-screens/preview and linked to the tool
+ * Registered once at ui://gradeui-mcp/preview and linked to the tool
  * via _meta.ui.resourceUri. Hosts may PREFETCH AND CACHE this resource, so
  * it must contain NO per-call data — the screenshot arrives per call via
  * the tool result's structuredContent (which the host forwards to the
@@ -14,12 +14,15 @@
  *   → ui/notifications/tool-result. We also emit ui/notifications/size-changed
  *   so the host sizes the iframe to the image.
  *
- * CSP: the default policy already allows img-src data: — the PNG needs no
- * declarations at all, which keeps this app maximally plain/trustable
- * (no external-domain warnings from the host).
+ * CSP: img-src data: is allowed by the default policy (the PNG needs no
+ * declarations). The "Live" toggle nests the real gradeui.com/e/<token>
+ * embed iframe — that needs frameDomains declared on the resource _meta,
+ * and only works in hosts that permit nested frames. Claude DESKTOP
+ * explicitly does not — so the view sniffs `hostInfo.name` from the
+ * ui/initialize result and hides the Live button on desktop hosts.
  */
 
-export const PREVIEW_RESOURCE_URI = "ui://gradeui-screens/preview";
+export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview";
 
 export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
 <html>
@@ -54,6 +57,8 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     background: light-dark(#fff, #111);
   }
   .stage img { display: block; width: 100%; height: auto; }
+  .stage iframe { display: block; width: 100%; border: 0; aspect-ratio: 16 / 10; }
+  button[data-on="true"] { background: light-dark(rgba(0,0,0,0.08), rgba(255,255,255,0.12)); }
   .empty { padding: 32px; text-align: center; font-size: 13px; opacity: 0.6; }
 </style>
 </head>
@@ -61,6 +66,7 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
 <div class="bar">
   <div><span class="name" id="name">Grade screen</span><span class="dim" id="dim"></span></div>
   <div class="actions">
+    <button id="live-btn" hidden>Live</button>
     <button id="open-btn" hidden>Open embed</button>
   </div>
 </div>
@@ -69,7 +75,7 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
 (function () {
   var nextId = 1;
   var pending = {};
-  var state = { embedUrl: null, imageDataUri: null };
+  var state = { embedUrl: null, imageDataUri: null, live: false, hostName: "" };
 
   function send(method, params) {
     var id = nextId++;
@@ -113,6 +119,25 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     stage.appendChild(img);
   }
 
+  function renderLive() {
+    var stage = document.getElementById("stage");
+    stage.innerHTML = "";
+    var f = document.createElement("iframe");
+    f.src = state.embedUrl;
+    f.setAttribute("sandbox", "allow-scripts");
+    f.title = "Live Grade screen";
+    f.onload = reportSize;
+    stage.appendChild(f);
+    setTimeout(reportSize, 300);
+  }
+
+  // Desktop hosts explicitly disallow nested iframes in app views — the
+  // host tells us who it is in the ui/initialize result (hostInfo.name),
+  // so the Live toggle only appears where it can actually work.
+  function liveAllowed() {
+    return state.hostName !== "" && !/desktop/i.test(state.hostName);
+  }
+
   function onResult(result) {
     var sc = result.structuredContent || {};
     state.imageDataUri = sc.imageDataUri || null;
@@ -120,12 +145,21 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     document.getElementById("name").textContent = sc.name || "Grade screen";
     document.getElementById("dim").textContent = sc.width && sc.height ? sc.width + "\\u00d7" + sc.height : "";
 
+    var liveBtn = document.getElementById("live-btn");
     var openBtn = document.getElementById("open-btn");
     if (state.embedUrl) {
       openBtn.hidden = false;
       openBtn.onclick = function () {
         send("ui/open-link", { url: state.embedUrl });
       };
+      if (liveAllowed()) {
+        liveBtn.hidden = false;
+        liveBtn.onclick = function () {
+          state.live = !state.live;
+          liveBtn.setAttribute("data-on", String(state.live));
+          if (state.live) renderLive(); else renderImage();
+        };
+      }
     }
     if (state.imageDataUri) renderImage();
     reportSize();
@@ -135,7 +169,9 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     protocolVersion: "2026-01-26",
     appInfo: { name: "gradeui-preview", version: "0.1.0" },
     appCapabilities: { availableDisplayModes: ["inline"] },
-  }).then(function () {
+  }).then(function (result) {
+    state.hostName =
+      (result && result.hostInfo && result.hostInfo.name) || "";
     notify("ui/notifications/initialized", {});
     reportSize();
   }).catch(function () { /* host without apps support never loads this */ });
