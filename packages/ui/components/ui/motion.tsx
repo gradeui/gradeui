@@ -1697,9 +1697,19 @@ export function Motion({
           // frames so React commit + browser paint are flushed before the
           // driver screenshots.
           seekMsRef.current(Math.max(0, ms));
-          requestAnimationFrame(() =>
-            requestAnimationFrame(() => resolve()),
-          );
+          let done = false;
+          const fin = () => {
+            if (done) return;
+            done = true;
+            resolve();
+          };
+          requestAnimationFrame(() => requestAnimationFrame(fin));
+          // SAFETY VALVE: if rAF is starved (a heavy shader stalling
+          // SwiftShader during headless render), the double-rAF above may
+          // never fire and the whole render would hang on this frame. A
+          // wall-clock fallback guarantees forward progress — the worst
+          // case is one slightly-less-settled frame, not a dead render.
+          setTimeout(fin, 4000);
         }),
     };
     return () => {

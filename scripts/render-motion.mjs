@@ -39,7 +39,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { readFileSync, mkdtempSync, rmSync } from "node:fs";
+import { readFileSync, mkdtempSync, rmSync, copyFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, basename, extname } from "node:path";
 import { createRequire } from "node:module";
@@ -164,10 +164,35 @@ if (poster) log(`   frame   @ ${posterAtMs}ms`);
 log(`   out     ${outPath}\n`);
 
 // ── drive ─────────────────────────────────────────────────────────────
+// GL backend — THE speed lever for shader films. `swiftshader` renders
+// WebGL on the CPU (safe everywhere, but slow → the shader-scene crawl).
+// `angle` uses the platform's real GPU (Metal on macOS, etc.) — what
+// production video-capture tools default to. Pick via --gl, default to
+// the GPU path; fall back to swiftshader if the GPU launch fails.
+const glBackend = arg("gl", "angle");
+function launchArgs(backend) {
+  if (backend === "swiftshader") return ["--use-gl=swiftshader"];
+  // GPU-accelerated headless. Metal-backed ANGLE on macOS, EGL elsewhere.
+  return [
+    "--use-gl=angle",
+    "--enable-gpu",
+    "--ignore-gpu-blocklist",
+    "--enable-webgl",
+    "--enable-accelerated-2d-canvas",
+  ];
+}
+
 const frameDir = mkdtempSync(join(tmpdir(), "grade-motion-"));
 let browser;
 try {
-  browser = await chromium.launch({ args: ["--use-gl=swiftshader"] });
+  try {
+    browser = await chromium.launch({ args: launchArgs(glBackend) });
+  } catch (e) {
+    if (glBackend !== "swiftshader") {
+      log(`   ⚠ GPU launch failed (${e.message.slice(0, 60)}) — falling back to CPU (swiftshader)`);
+      browser = await chromium.launch({ args: launchArgs("swiftshader") });
+    } else throw e;
+  }
   const page = await browser.newPage({
     viewport: { width: W, height: H },
     deviceScaleFactor: 1,
@@ -220,6 +245,32 @@ try {
   const film = page.locator('[data-gds-part="motion"]').first();
   await film.waitFor({ state: "visible", timeout: 10000 });
 
+  // Hide the Next.js dev indicator (the floating "N" badge). It's
+  // position:fixed bottom-right, so an element screenshot captures it
+  // where it overlaps the film corner. It only exists in dev — gone on
+  // the live server — but this keeps localhost captures clean too. The
+  // badge lives in a `nextjs-portal` custom element (+ older variants);
+  // hiding the host element covers them all.
+  await page
+    .addStyleTag({
+      content: `
+        nextjs-portal,
+        [data-nextjs-toast],
+        [data-next-badge-root],
+        [data-next-badge],
+        #__next-build-watcher,
+        #__next-prerender-indicator { display: none !important; }
+      `,
+    })
+    .catch(() => {});
+  await page
+    .evaluate(() => {
+      document
+        .querySelectorAll("nextjs-portal, [data-next-badge-root]")
+        .forEach((n) => n.remove());
+    })
+    .catch(() => {});
+
   // ── POSTER: one frame → webp, no ffmpeg sequence ──
   if (poster) {
     progress({ phase: "step", frame: 0, total: 1 });
@@ -242,12 +293,46 @@ try {
     log("→ stepping frames…");
     progress({ phase: "step", frame: 0, total: totalFrames });
     const t0 = Date.now();
+    // Per-frame hard ceiling: even with the kernel's own safety valve, a
+    // shader that wedges SwiftShader could stall a frame. Race each step
+    // so a bad frame is SKIPPED (the previous PNG stands in), not fatal —
+    // the render always completes.
+    let stalls = 0;
+    const withTimeout = (p, ms, label) =>
+      Promise.race([
+        p,
+        new Promise((_, rej) => setTimeout(() => rej(new Error(label)), ms)),
+      ]);
+    let lastGoodFrame = null;
     for (let f = 0; f < totalFrames; f++) {
       const ms = (f / fps) * 1000;
-      await page.evaluate((m) => window.__gradeMotion.renderFrame(m), ms);
-      await film.screenshot({
-        path: join(frameDir, `f${String(f).padStart(6, "0")}.png`),
-      });
+      // JPEG frames — much faster to capture AND encode than PNG, with no
+      // visible quality loss at q92 for video. (Independent of the GPU win.)
+      const framePath = join(frameDir, `f${String(f).padStart(6, "0")}.jpg`);
+      try {
+        await withTimeout(
+          page.evaluate((m) => window.__gradeMotion.renderFrame(m), ms),
+          8000,
+          "renderFrame timeout",
+        );
+        await withTimeout(
+          film.screenshot({ path: framePath, type: "jpeg", quality: 92 }),
+          8000,
+          "screenshot timeout",
+        );
+        lastGoodFrame = framePath;
+      } catch {
+        // Stalled frame — reuse the last good frame so the sequence stays
+        // contiguous (ffmpeg needs every f%06d.jpg to exist).
+        stalls++;
+        if (lastGoodFrame) {
+          copyFileSync(lastGoodFrame, framePath);
+        } else {
+          await film
+            .screenshot({ path: framePath, type: "jpeg", quality: 92 })
+            .catch(() => {});
+        }
+      }
       // Throttle progress to ~5/s so a long film doesn't spam the stream.
       if (f % Math.max(1, Math.round(fps / 5)) === 0 || f === totalFrames - 1) {
         progress({ phase: "step", frame: f + 1, total: totalFrames });
@@ -257,6 +342,7 @@ try {
         process.stdout.write(`\r   ${pct}%  (${f + 1}/${totalFrames})   `);
       }
     }
+    if (stalls) log(`\n   ⚠ ${stalls} frame(s) stalled and reused the prior frame`);
     log(`\n   stepped ${totalFrames} frames in ${((Date.now() - t0) / 1000).toFixed(1)}s\n`);
 
     log("→ assembling with ffmpeg…");
@@ -265,10 +351,10 @@ try {
     // for delivery. A capped --seconds render is a loop → webm.
     const isLoop = !!seconds;
     const args = isLoop
-      ? ["-y", "-framerate", String(fps), "-i", join(frameDir, "f%06d.png"),
+      ? ["-y", "-framerate", String(fps), "-i", join(frameDir, "f%06d.jpg"),
          "-c:v", "libvpx-vp9", "-pix_fmt", "yuv420p", "-crf", "32", "-b:v", "0",
          outPath.replace(/\.mp4$/, ".webm")]
-      : ["-y", "-framerate", String(fps), "-i", join(frameDir, "f%06d.png"),
+      : ["-y", "-framerate", String(fps), "-i", join(frameDir, "f%06d.jpg"),
          "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "17",
          "-preset", "slow", "-movflags", "+faststart", outPath];
     const finalOut = isLoop ? outPath.replace(/\.mp4$/, ".webm") : outPath;

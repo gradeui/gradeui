@@ -860,6 +860,26 @@ export function TimelineDock({
   const [exportMsg, setExportMsg] = React.useState<string | null>(null);
   // 0–1 across the render; null = indeterminate (compiling / encoding).
   const [exportPct, setExportPct] = React.useState<number | null>(null);
+  // Capture resolution tier — persisted. Lower = far fewer pixels for
+  // headless SwiftShader to shade, so shader-heavy films render MUCH
+  // faster. 0.5 ≈ 960×540 (fast test), 1 = 1080p (delivery), 2 = 4K.
+  const [exportRes, setExportRes] = React.useState<number>(1);
+  React.useEffect(() => {
+    const saved = Number(
+      typeof window !== "undefined"
+        ? window.localStorage.getItem("grade-export-res")
+        : null,
+    );
+    if (saved === 0.5 || saved === 1 || saved === 2) setExportRes(saved);
+  }, []);
+  const pickRes = React.useCallback((r: number) => {
+    setExportRes(r);
+    try {
+      window.localStorage.setItem("grade-export-res", String(r));
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   // Pull the theme vars off the LIVE focused iframe so the headless render
   // matches exactly what's on screen (fast-frame applies them as inline
@@ -1148,9 +1168,38 @@ export function TimelineDock({
               encodes), returns a perfect locked-fps mp4. No tab capture. */}
           {motion && (
             <>
+              {/* Capture resolution — lower = faster (fewer pixels for the
+                  headless CPU shader). Persisted across sessions. */}
+              <div
+                className="flex items-center gap-0.5 rounded-md border border-border/70 p-0.5 text-[10px]"
+                title="Capture resolution — lower renders faster (shaders run on CPU when headless)"
+              >
+                {(
+                  [
+                    [0.5, "540p"],
+                    [1, "1080p"],
+                    [2, "4K"],
+                  ] as const
+                ).map(([r, label]) => (
+                  <button
+                    key={r}
+                    type="button"
+                    disabled={exporting}
+                    onClick={() => pickRes(r)}
+                    className={cn(
+                      "rounded px-1.5 py-0.5 transition-colors disabled:opacity-50",
+                      exportRes === r
+                        ? "bg-muted font-medium text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
               <button
                 type="button"
-                onClick={() => handleExport({ res: 1 })}
+                onClick={() => handleExport({ res: exportRes })}
                 disabled={exporting}
                 title="Render to video — deterministic, headless, perfect framerate (renders on this machine, free)"
                 className={cn(
