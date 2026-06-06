@@ -80,9 +80,25 @@ Refs: github.com/vercel/mcp-handler · vercel.com/docs/mcp/deploy-mcp-servers-to
 - Endgame: `parity_audit` tool — walk Figma library (figma-console
   get_library_components), diff names+variants against COMPONENT_CONTRACTS,
   report both directions; screens cover the visual half
-- Known gaps from first audit: Button xs missing in code; Toggle/ToggleGroup
-  not in Studio allowlist; Input contract lacks placeholder; Tabs requires
-  controlled `value`
+- Known gaps from first audit: DECIDED — code adopts Figma's xs across the
+  scale (Button, TabsList, Select; Figma added xs to Tabs too). BIGGER
+  FINDING: Input never migrated to the unified t-shirt scale — it has its
+  own default(36)/sm(32)/xs(28); unify to xs(24)/sm(28)/md(32)/lg(40) with
+  default→md alias (touch packages/ui AND vendored apps/docs copies).
+  Toggle/ToggleGroup allowlist gap FIXED 2026-06-06. Input placeholder
+  modeled in sidecar+contract FIXED 2026-06-06. Tabs requires controlled
+  `value` (generation ergonomics — consider defaultValue).
+
+## Code → Figma (reverse direction): "send screen to Figma" via both MCPs
+- Read screen JSX (gradeui-mcp get_screen) → translate to a Figma build
+  plan → write with figma-console MCP: figma_instantiate_component +
+  figma_set_instance_properties for DS components (name+prop parity makes
+  this mechanical), figma_execute for auto-layout frames (Stack/Row/Grid →
+  layoutMode + t-shirt gap map) and text
+- Resurrects the abandoned `walker` goal with LLM-as-translator instead of
+  a deterministic parser; static snapshot of one state (no motion/JS)
+- Best as one-way export to a "From Grade" page — re-export replaces draft
+  (avoid two-way merge hell); parity screens are the ideal first test
 - Host quirk fix needed: Cowork advertises apps capability but doesn't render
   3p panels → add clientInfo sniff to the structuredContent gate (capability
   check alone insufficient)

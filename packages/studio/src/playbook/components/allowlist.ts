@@ -177,6 +177,13 @@ export const ALLOWED_COMPONENTS = [
   // Form controls
   "Checkbox",
   "Switch",
+  // Toggle — two-state pressable button; ToggleGroup is a row of them
+  // sharing a track (single or multiple select). In the lib + Figma since
+  // day one; surfaced via the June 2026 Figma parity audit as an
+  // allowlist gap (ship-checklist step 8 was missed).
+  "Toggle",
+  "ToggleGroup",
+  "ToggleGroupItem",
   // RadioGroup wraps RadioCard / RadioGroupItem for single-select.
   "RadioGroup",
   "RadioGroupItem",

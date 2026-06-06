@@ -19,10 +19,15 @@ export const InputContract = contract({
       schema: z.string().optional(),
       design: "content",
   },
+  "placeholder": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "hint text shown while the input is empty. Model it explicitly (not just a native passthrough) so generated screens carry placeholders and the validator accepts them.",
+  },
   "size": {
       schema: z.enum(["default", "sm", "xs"]).optional(),
       design: "knob",
-      description: "control density. `default` (h-9) for forms; `sm` (h-8) and `xs` (h-7) for dense tool panels like the inspector.",
+      description: "control density. `default` (h-9) for forms; `sm` (h-8) and `xs` (h-7) for dense tool panels like the inspector. NOTE: pre-unification scale — see Figma parity audit; due to migrate to the t-shirt scale (xs 24 | sm 28 | md 32 | lg 40, default→md).",
   },
   "startSlot": {
       schema: z.unknown().optional(),

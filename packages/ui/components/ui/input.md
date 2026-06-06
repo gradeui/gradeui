@@ -3,7 +3,8 @@ name: Input
 import: "@gradeui/ui"
 props:
   - type?: string (text | email | password | number | search | url | tel | date)
-  - size?: "default" | "sm" | "xs" — control density. `default` (h-9) for forms; `sm` (h-8) and `xs` (h-7) for dense tool panels like the inspector.
+  - placeholder?: string — hint text shown while the input is empty. Model it explicitly (not just a native passthrough) so generated screens carry placeholders and the validator accepts them.
+  - size?: "default" | "sm" | "xs" — control density. `default` (h-9) for forms; `sm` (h-8) and `xs` (h-7) for dense tool panels like the inspector. NOTE: pre-unification scale — see Figma parity audit; due to migrate to the t-shirt scale (xs 24 | sm 28 | md 32 | lg 40, default→md).
   - startSlot?: ReactNode — adornment rendered inside the leading edge (icon, prefix, currency symbol). Non-interactive by default so clicks focus the input.
   - endSlot?: ReactNode — adornment rendered inside the trailing edge (unit like "px", a clear button, a stepper). Same pointer rules as startSlot.
   - All native input HTML attrs (value, onChange, placeholder, disabled, required)
