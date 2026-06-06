@@ -103,7 +103,34 @@ Refs: github.com/vercel/mcp-handler · vercel.com/docs/mcp/deploy-mcp-servers-to
   3p panels → add clientInfo sniff to the structuredContent gate (capability
   check alone insufficient)
 
+## Studio feature: paste a Figma link → screen (no MCP needed)
+- NEEDS: Figma Personal Access Token (Account Settings → Security → PAT,
+  "File content: read" scope) as FIGMA_TOKEN env. Free. OAuth later for
+  user-owned files.
+- Endpoints: GET api.figma.com/v1/files/:fileKey/nodes?ids=:nodeId
+  (header X-Figma-Token) → node subtree JSON: INSTANCE.name +
+  componentProperties (variant props), frame layoutMode/itemSpacing/padding,
+  text content. Optional: GET /v1/images/:fileKey?ids=&format=png&scale=2
+  → rendered PNG URL to ALSO feed vision (structure + pixels together).
+- URL parse: /design/<fileKey>/...?node-id=40-770 → fileKey + nodeId
+  (dash→colon).
+- TRANSFORM (the real work, ~1 day): subtree → compact "FIGMA REFERENCE"
+  block (~1-2k tokens). Instances → Component(prop=value) lines validated
+  against COMPONENT_CONTRACTS inline (unknown name / illegal variant →
+  parity warning in the block). Auto-layout → Stack/Row + nearest t-shirt
+  gap. Image fills → MediaSurface slots.
+- PLACEMENT: packages/studio (contract-aware, model-facing) — NOT apps/docs.
+  Chat route injects like the selection block; the MCP server then gets a
+  create_screen_from_figma tool from the same function for free.
+- Screenshot-paste (vision) already works today as the pixel-tier fallback.
+
 ## Parked / later
+- Foreign-Figma mapping ("one-time deal"): fuzzy-match external file's
+  component names/variant props against COMPONENT_CONTRACTS, confirm
+  uncertain matches with user (elicitation/wizard), store map per file.
+  Graceful degradation already covers unmapped files (vision tier).
+  Business angle: client onboarding ramp — "map your Figma to Grade once,
+  your designs compile after."
 - A/B/C variation flow: `explorationGroup`/`variantLabel` keys in designs.state,
   promote/discard tools, vote via AskUserQuestion now, MCP App picker when #165 clears
 - set_theme / list_themes tools (read STUDIO-THEMES ThemeInput contract first)
