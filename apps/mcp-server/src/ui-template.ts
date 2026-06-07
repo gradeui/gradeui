@@ -22,7 +22,10 @@
  * ui/initialize result and hides the Live button on desktop hosts.
  */
 
-export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview";
+// Versioned URI: hosts may prefetch + cache ui:// resources indefinitely,
+// so shipping a changed template under the same URI can silently serve the
+// old panel. Bump the suffix whenever the template changes materially.
+export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview-v3";
 
 /**
  * Bake the Supabase Storage poster base URL into the template.
@@ -90,8 +93,19 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
   </div>
 </div>
 <div class="stage" id="stage"><div class="empty">Rendering…</div></div>
+<div id="status" style="font-size:11px;opacity:0.45;padding:6px 2px;font-family:ui-monospace,monospace;"></div>
 <script>
 (function () {
+  // Lifecycle trace rendered into the panel itself — the only console we
+  // have inside a host iframe we can't inspect. Reads like:
+  //   v3 js✓ · init✓:claude-web · recv:tool-input · poster✓
+  var dbg = ["v3", "js✓"];
+  function mark(s) {
+    dbg.push(s);
+    var el = document.getElementById("status");
+    if (el) el.textContent = dbg.join(" · ");
+  }
+
   var nextId = 1;
   var pending = {};
   var state = {
@@ -117,6 +131,7 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
       if (msg.error) p.reject(msg.error); else p.resolve(msg.result);
       return;
     }
+    if (msg.method) mark("recv:" + String(msg.method).replace("ui/notifications/", ""));
     if (msg.method === "ui/notifications/tool-result") {
       onResult(msg.params || {});
     } else if (msg.method === "ui/notifications/tool-input") {
@@ -151,7 +166,8 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
   // it ever arrives, overrides this.
   function onInput(params) {
     var args = params.arguments || params.input || params.toolInput || {};
-    if (!args.screenId || state.posterBase.indexOf("__") === 0) return;
+    if (!args.screenId) { mark("input:no-id"); return; }
+    if (state.posterBase.indexOf("__") === 0) { mark("no-base"); return; }
     state.args = args;
     state.posterTries = 0;
     tryPoster();
@@ -165,12 +181,14 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     var probe = new Image();
     probe.onload = function () {
       if (state.gotResult) return;
+      mark("poster✓");
       state.imageDataUri = src;
       renderImage();
       reportSize();
     };
     probe.onerror = function () {
       state.posterTries += 1;
+      mark("poster✗" + state.posterTries);
       if (state.posterTries < 12) setTimeout(tryPoster, 4000);
     };
     probe.src = src;
@@ -233,9 +251,12 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
   }).then(function (result) {
     state.hostName =
       (result && result.hostInfo && result.hostInfo.name) || "";
+    mark("init✓:" + (state.hostName || "?"));
     notify("ui/notifications/initialized", {});
     reportSize();
-  }).catch(function () { /* host without apps support never loads this */ });
+  }).catch(function (e) {
+    mark("init✗" + ((e && e.message) ? ":" + e.message : ""));
+  });
 
   if (window.ResizeObserver) {
     new ResizeObserver(reportSize).observe(document.documentElement);
