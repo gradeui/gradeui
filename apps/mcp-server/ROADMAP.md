@@ -1,5 +1,31 @@
 # gradeui-mcp roadmap
 
+## Host display matrix (hand-mapped 2026-06-07 — nowhere else documented)
+
+How each Anthropic host shows preview_screen's ImageContent + MCP App panel:
+
+| Host | image in chat | MCP App panel | notes |
+|---|---|---|---|
+| claude.ai web | expander only (collapsed) | ✅ RENDERS + feeds tool-input AND tool-result | panel is THE display; works with `?panel=1`/GRADE_MCP_APPS |
+| Claude Desktop (local stdio) | ✅ inline | ✅ renders (no nested iframes → Live toggle dead) | needs GRADE_MCP_APPS=1 in config env |
+| Claude Desktop (remote connector) | suppressed when panel attached | ❌ not rendered | use `&panel=0` connector URL |
+| Cowork | via file card / agent | ❌ (advertises capability, doesn't render) | clientInfo sniff strips structuredContent |
+| iOS/Android | links only | ❌ | `&panel=0` gives best chance |
+
+HARD-WON RULES:
+1. claude.ai caches connector TOOL LISTS account-wide — every schema/_meta
+   change needs Settings → Connectors → ⋮ → "Refresh tools list" + a FRESH
+   chat. Stale caches produced every false "broken host" signal today.
+2. Attaching _meta.ui (panel) SUPPRESSES normal image display on hosts
+   that don't render panels — worst of both. Hence the `?panel=` URL flag
+   (route serves both variants) and GRADE_MCP_APPS default.
+3. Version the panel resource URI (preview-v3) — hosts may cache ui://
+   resources; same-URI template changes serve stale.
+4. The panel self-loads posters from Storage via tool-input args (works
+   even if a host won't forward tool-result) — trace line under the stage
+   logs the lifecycle for debugging in hosts with no devtools access.
+5. Keep tool-result text TERSE; the image leads.
+
 Status: local stdio server fully working (7 tools: list_projects, create_project,
 list_screens, create_screen, get_screen, save_screen, preview_screen).
 MCP App panel built + spec-verified (test rig: view-harness.html).

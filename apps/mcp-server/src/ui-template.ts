@@ -25,7 +25,8 @@
 // Versioned URI: hosts may prefetch + cache ui:// resources indefinitely,
 // so shipping a changed template under the same URI can silently serve the
 // old panel. Bump the suffix whenever the template changes materially.
-export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview-v3";
+// v4: monotonic render gate (iOS race fix — see grade-preview-widget-fix.md).
+export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview-v4";
 
 /**
  * Bake the Supabase Storage poster base URL into the template.
@@ -99,18 +100,26 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
   // Lifecycle trace rendered into the panel itself — the only console we
   // have inside a host iframe we can't inspect. Reads like:
   //   v3 js✓ · init✓:claude-web · recv:tool-input · poster✓
-  var dbg = ["v3", "js✓"];
+  var dbg = ["v4", "js✓"];
   function mark(s) {
     dbg.push(s);
     var el = document.getElementById("status");
-    if (el) el.textContent = dbg.join(" · ");
+    // Cap the visible trace — iOS fires host-context-changed in bursts and
+    // an ever-growing line churns layout (reportSize loops).
+    if (el) el.textContent = dbg.slice(-14).join(" · ");
   }
 
   var nextId = 1;
   var pending = {};
+  // MONOTONIC render state (iOS race fix): "painted" only ever goes
+  // false -> true, and it is the ONLY gate on the poster path. The old
+  // "gotResult" flag let an early tool-result (which may carry no image --
+  // structuredContent is host-gated) permanently block the poster probe:
+  // whichever message lost the race left the panel on "Rendering..."
+  // forever. Nothing may ever move the panel backward from painted.
   var state = {
     embedUrl: null, imageDataUri: null, live: false, hostName: "",
-    posterBase: "__POSTER_BASE__", args: null, gotResult: false, posterTries: 0
+    posterBase: "__POSTER_BASE__", args: null, painted: false, posterTries: 0
   };
 
   function send(method, params) {
@@ -173,6 +182,8 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     img.onload = reportSize;
     img.src = state.imageDataUri;
     stage.appendChild(img);
+    // Forward-only: once anything has painted, "Rendering…" is unreachable.
+    state.painted = true;
   }
 
   // Self-serve fallback: some hosts render this panel but never forward
@@ -191,23 +202,38 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
   }
 
   function tryPoster() {
-    if (state.gotResult || !state.args) return;
+    // Gate on "painted" ONLY -- a tool-result without an image payload must
+    // never block the poster path (that race froze iOS on "Rendering...").
+    if (state.painted || !state.args) return;
     var mode = state.args.colorMode || "dark";
     var src = state.posterBase + "/" + state.args.screenId +
       "/latest-" + mode + ".png?v=" + Date.now();
     var probe = new Image();
+    var settled = false;
     probe.onload = function () {
-      if (state.gotResult) return;
+      settled = true;
+      if (state.painted) return;
       mark("poster✓");
       state.imageDataUri = src;
       renderImage();
       reportSize();
     };
     probe.onerror = function () {
+      settled = true;
       state.posterTries += 1;
       mark("poster✗" + state.posterTries);
       if (state.posterTries < 12) setTimeout(tryPoster, 4000);
     };
+    // Watchdog: iOS can leave an Image() probe in limbo during reflow /
+    // backgrounding — neither load nor error. Re-probe instead of sitting
+    // silently on "Rendering…".
+    setTimeout(function () {
+      if (!settled && !state.painted) {
+        state.posterTries += 1;
+        mark("poster⌛" + state.posterTries);
+        if (state.posterTries < 12) tryPoster();
+      }
+    }, 8000);
     probe.src = src;
   }
 
@@ -235,8 +261,16 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
 
   function onResult(result) {
     var sc = result.structuredContent || {};
-    state.gotResult = true;
-    state.imageDataUri = sc.imageDataUri || sc.previewUrl || state.imageDataUri;
+    // Authoritative when it carries pixels; harmless when it doesn't —
+    // a payload-less result (structuredContent is host-gated) must leave
+    // the poster path running, never block it.
+    var resultImg = sc.imageDataUri || sc.previewUrl || null;
+    if (resultImg) {
+      state.imageDataUri = resultImg;
+    } else {
+      mark("result:no-img");
+      if (!state.painted) setTimeout(tryPoster, 0);
+    }
     state.embedUrl = sc.embedUrl || null;
     document.getElementById("name").textContent = sc.name || "Grade screen";
     document.getElementById("dim").textContent = sc.width && sc.height ? sc.width + "\\u00d7" + sc.height : "";
