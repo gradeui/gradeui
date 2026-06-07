@@ -79,15 +79,26 @@ export async function screenshotEmbedServerless(
   }
 
   try {
-    // Mirrors screenshotEmbed in preview.ts — keep the two in step.
+    // Same shape as screenshotEmbed in preview.ts, tuned for a 2GB box:
+    // "domcontentloaded" instead of "networkidle" (waiting for idle keeps
+    // every in-flight resource buffered at once — the memory peak that was
+    // killing 1-vCPU/2GB functions) + a longer settle for hydration, and
+    // analytics/video requests aborted before they cost anything.
     const page = await browser.newPage({
       viewport: { width, height },
       deviceScaleFactor: 1,
       colorScheme: "dark",
     });
-    await page.goto(url, { waitUntil: "networkidle", timeout: 30_000 });
-    // EmbedScreen hydrates + applies the theme var block client-side.
-    await page.waitForTimeout(1500);
+    await page.route("**/*", (route) => {
+      const type = route.request().resourceType();
+      if (type === "media" || type === "websocket") return route.abort();
+      return route.continue();
+    });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    // EmbedScreen hydrates + applies the theme var block client-side —
+    // give it longer than the local engine since we no longer wait for
+    // network idle.
+    await page.waitForTimeout(3000);
     const buf = await page.screenshot({ type: "png" });
     return { base64: buf.toString("base64"), width, height };
   } finally {

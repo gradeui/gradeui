@@ -373,8 +373,11 @@ export function registerGradeTools(
             `No screen "${screenId}" in project ${projectId}. Save it first, or check list via get_screen.`,
           );
         }
-        const w = Math.min(Math.max(width ?? 1280, 320), 2560);
-        const h = Math.min(Math.max(height ?? 800, 320), 2560);
+        // Serverless runs in a 2GB box — default to a smaller canvas there
+        // (lower render + PNG-encode peak). Explicit width/height still wins.
+        const serverless = captureMode === "serverless";
+        const w = Math.min(Math.max(width ?? (serverless ? 1024 : 1280), 320), 2560);
+        const h = Math.min(Math.max(height ?? (serverless ? 640 : 800), 320), 2560);
         const share = await ensureShareLink(
           sb,
           projectId,

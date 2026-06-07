@@ -131,11 +131,14 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     setTimeout(reportSize, 300);
   }
 
-  // Desktop hosts explicitly disallow nested iframes in app views — the
-  // host tells us who it is in the ui/initialize result (hostInfo.name),
-  // so the Live toggle only appears where it can actually work.
+  // Desktop hosts explicitly disallow nested iframes in app views.
+  // BLOCKLIST, not allowlist: claude.ai web renders panels but may send no
+  // hostInfo.name in the ui/initialize result, so requiring a non-empty
+  // name hid the Live button on the one host that supports it. Unknown
+  // hosts get the button; worst case the nested frame is blocked by host
+  // CSP and the user toggles back to the PNG.
   function liveAllowed() {
-    return state.hostName !== "" && !/desktop/i.test(state.hostName);
+    return !/desktop/i.test(state.hostName);
   }
 
   function onResult(result) {
