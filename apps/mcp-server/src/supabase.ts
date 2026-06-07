@@ -47,6 +47,13 @@ export function readEnv(): McpEnv {
   return { url, serviceRoleKey, ownerUserId };
 }
 
+/** Lenient boolean env parse — "1", "true", "yes", "on" (any case,
+ *  surrounding whitespace tolerated). Strict `=== "1"` checks have already
+ *  cost one debugging session. */
+export function envFlag(value: string | undefined): boolean {
+  return /^\s*(1|true|yes|on)\s*$/i.test(value ?? "");
+}
+
 export function createServiceClient(env: McpEnv): SupabaseClient {
   return createClient(env.url, env.serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },

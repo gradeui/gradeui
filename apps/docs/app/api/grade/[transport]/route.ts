@@ -34,7 +34,11 @@
 
 import { createMcpHandler } from "mcp-handler";
 import { registerGradeTools } from "@gradeui/mcp-server/tools";
-import { createServiceClient, readEnv } from "@gradeui/mcp-server/supabase";
+import {
+  createServiceClient,
+  envFlag,
+  readEnv,
+} from "@gradeui/mcp-server/supabase";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -63,36 +67,57 @@ const serverInfo = {
   ],
 };
 
-const handler = createMcpHandler(
-  (server) => {
-    // Inside the init fn (per-connection), not module scope: a missing env
-    // var should fail the MCP request with a readable error, not the build.
-    const env = readEnv();
-    const sb = createServiceClient(env);
-    registerGradeTools(server, sb, env, {
-      siteUrl: SITE_URL,
-      // @sparticuz/chromium is a Linux binary — right for Vercel, dead on a
-      // Mac. When running this route locally (`pnpm dev`), set
-      // GRADE_MCP_CAPTURE=playwright in apps/docs/.env.local to use the
-      // repo's full Playwright instead.
-      capture:
-        (process.env.GRADE_MCP_CAPTURE as
-          | "playwright"
-          | "serverless"
-          | "none"
-          | undefined) ?? "serverless",
-      // MCP App panel stays OFF until claude.ai forwards tool results to
-      // 3p panels — attaching it suppresses the in-chat image display.
-      appPanel: process.env.GRADE_MCP_APPS === "1",
-    });
-  },
-  { serverInfo },
-  {
-    basePath: "/api/grade", // must match this file's directory
-    maxDuration: 60,
-    verboseLogs: process.env.NODE_ENV !== "production",
-  },
-);
+// Two handlers, one server: hosts differ in what they can DISPLAY. A tool
+// that carries panel metadata suppresses the host's normal image-in-chat
+// rendering — great on hosts that render panels (claude.ai web), a dead
+// loss on hosts that don't render REMOTE panels (Claude Desktop, mobile
+// apps). So the panel becomes a per-connector choice via the URL:
+//   ...?key=<secret>            → panel (default per GRADE_MCP_APPS env)
+//   ...?key=<secret>&panel=0    → plain results: image renders in chat
+//   ...?key=<secret>&panel=1    → force panel on
+// Desktop/phone register the &panel=0 URL as a second connector.
+const makeHandler = (appPanel: boolean) =>
+  createMcpHandler(
+    (server) => {
+      // Inside the init fn (per-connection), not module scope: a missing
+      // env var should fail the MCP request with a readable error, not the
+      // build.
+      const env = readEnv();
+      const sb = createServiceClient(env);
+      registerGradeTools(server, sb, env, {
+        siteUrl: SITE_URL,
+        // @sparticuz/chromium is a Linux binary — right for Vercel, dead
+        // on a Mac. When running this route locally (`pnpm dev`), set
+        // GRADE_MCP_CAPTURE=playwright in apps/docs/.env.local to use the
+        // repo's full Playwright instead.
+        capture:
+          (process.env.GRADE_MCP_CAPTURE as
+            | "playwright"
+            | "serverless"
+            | "none"
+            | undefined) ?? "serverless",
+        appPanel,
+      });
+    },
+    { serverInfo },
+    {
+      basePath: "/api/grade", // must match this file's directory
+      maxDuration: 60,
+      verboseLogs: process.env.NODE_ENV !== "production",
+    },
+  );
+
+const panelHandler = makeHandler(true);
+const plainHandler = makeHandler(false);
+
+function pickHandler(req: Request) {
+  const panelParam = new URL(req.url).searchParams.get("panel");
+  const appPanel =
+    panelParam === null
+      ? envFlag(process.env.GRADE_MCP_APPS)
+      : envFlag(panelParam);
+  return appPanel ? panelHandler : plainHandler;
+}
 
 /** Constant-time-ish comparison — avoids the classic early-exit timing
  *  leak without pulling in node:crypto (lengths still leak; acceptable for
@@ -127,6 +152,6 @@ function withKey(
   };
 }
 
-const guarded = withKey(handler);
+const guarded = withKey((req) => pickHandler(req)(req));
 
 export { guarded as GET, guarded as POST, guarded as DELETE };

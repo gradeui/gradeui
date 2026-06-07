@@ -21,7 +21,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { readEnv, createServiceClient } from "./supabase";
+import { readEnv, createServiceClient, envFlag } from "./supabase";
 import { registerGradeTools } from "./tools";
 
 async function main() {
@@ -59,7 +59,7 @@ async function main() {
     siteUrl: SITE_URL,
     // Panel opt-in (see GradeToolsOptions.appPanel — attaching it
     // suppresses hosts' normal image-in-chat display).
-    appPanel: process.env.GRADE_MCP_APPS === "1",
+    appPanel: envFlag(process.env.GRADE_MCP_APPS),
   });
 
   // Client sniffing — log who connected and what they negotiated, so host
