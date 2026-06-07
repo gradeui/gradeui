@@ -124,7 +124,13 @@ export function registerGradeTools(
           // disallows nested iframes — browser hosts get the live screen.
           _meta: {
             ui: {
-              csp: { frameDomains: ["https://gradeui.com"] },
+              csp: {
+                frameDomains: ["https://gradeui.com"],
+                // The poster self-load fetches PNGs from Supabase Storage;
+                // undeclared external origins are blocked by the host's
+                // panel CSP (only data: URIs pass by default).
+                resourceDomains: [env.url, "https://gradeui.com"],
+              },
               prefersBorder: false,
             },
           },
