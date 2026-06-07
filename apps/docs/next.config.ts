@@ -19,6 +19,16 @@ const nextConfig: NextConfig = {
     "playwright-core",
     "@sparticuz/chromium",
   ],
+  // The file tracer follows JS imports but not @sparticuz/chromium's
+  // brotli-compressed binary assets (bin/*.br), which it reads off disk at
+  // runtime — without this the deployed function dies with "input
+  // directory …/bin does not exist". Paths resolve from this app dir;
+  // node_modules lives two levels up at the workspace root.
+  outputFileTracingIncludes: {
+    "/api/grade/[transport]": [
+      "../../node_modules/.pnpm/@sparticuz+chromium@*/node_modules/@sparticuz/chromium/bin/**",
+    ],
+  },
   // Dev-only Next badge / build-activity indicator. Bottom-left (the
   // default) sits right on top of Studio's chat composer + canvas
   // toolbar, and it photobombs screen recordings. Bottom-right is the

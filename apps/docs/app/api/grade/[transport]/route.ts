@@ -52,7 +52,16 @@ const handler = createMcpHandler(
     const sb = createServiceClient(env);
     registerGradeTools(server, sb, env, {
       siteUrl: SITE_URL,
-      capture: "serverless",
+      // @sparticuz/chromium is a Linux binary — right for Vercel, dead on a
+      // Mac. When running this route locally (`pnpm dev`), set
+      // GRADE_MCP_CAPTURE=playwright in apps/docs/.env.local to use the
+      // repo's full Playwright instead.
+      capture:
+        (process.env.GRADE_MCP_CAPTURE as
+          | "playwright"
+          | "serverless"
+          | "none"
+          | undefined) ?? "serverless",
     });
   },
   {},
