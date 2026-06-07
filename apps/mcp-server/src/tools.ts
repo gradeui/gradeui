@@ -20,7 +20,7 @@ import {
   formatViolations,
 } from "@gradeui/studio/core";
 import { COMPONENT_CONTRACTS } from "@gradeui/ui/contracts";
-import type { McpEnv } from "./supabase.js";
+import type { McpEnv } from "./supabase";
 import {
   listProjects,
   createProject,
@@ -28,18 +28,18 @@ import {
   getScreen,
   listScreens,
   saveScreen,
-} from "./designs.js";
+} from "./designs";
 import {
   ensureShareLink,
   embedUrl,
   screenshotEmbed,
   savePreviewPng,
   uploadPreviewPng,
-} from "./preview.js";
+} from "./preview";
 import {
   PREVIEW_RESOURCE_URI,
   PREVIEW_TEMPLATE_HTML,
-} from "./ui-template.js";
+} from "./ui-template";
 
 export interface GradeToolsOptions {
   siteUrl: string;
@@ -385,7 +385,7 @@ export function registerGradeTools(
         const shot =
           captureMode === "serverless"
             ? await (
-                await import("./preview-serverless.js")
+                await import("./preview-serverless")
               ).screenshotEmbedServerless(url, w, h)
             : await screenshotEmbed(url, w, h);
         // MCP Apps capability gate (SEP-1865). structuredContent carries the

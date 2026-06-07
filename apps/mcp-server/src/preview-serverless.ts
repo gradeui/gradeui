@@ -24,7 +24,7 @@
  * binary in /tmp.
  */
 
-import type { ScreenshotResult } from "./preview.js";
+import type { ScreenshotResult } from "./preview";
 
 export async function screenshotEmbedServerless(
   url: string,

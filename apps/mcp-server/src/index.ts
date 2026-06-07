@@ -21,8 +21,8 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { readEnv, createServiceClient } from "./supabase.js";
-import { registerGradeTools } from "./tools.js";
+import { readEnv, createServiceClient } from "./supabase";
+import { registerGradeTools } from "./tools";
 
 async function main() {
   const env = readEnv();
