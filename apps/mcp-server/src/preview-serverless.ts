@@ -46,20 +46,23 @@ const PACK_URL =
 // shoulder-to-shoulder in 2GB.
 // Minimal structural type — playwright-core's Browser without importing
 // its types at module scope (the lib loads lazily).
+// Return types deliberately loose (Promise<unknown>): playwright's actual
+// signatures return richer objects (Disposable, Response) we don't consume,
+// and exact types would couple us to its version.
 interface PwPage {
-  route(glob: string, handler: (route: PwRoute) => unknown): Promise<void>;
+  route(glob: string, handler: (route: PwRoute) => unknown): Promise<unknown>;
   goto(url: string, opts: object): Promise<unknown>;
-  waitForTimeout(ms: number): Promise<void>;
+  waitForTimeout(ms: number): Promise<unknown>;
   screenshot(opts: { type: "png" }): Promise<Buffer>;
-  close(): Promise<void>;
+  close(): Promise<unknown>;
 }
 interface PwRoute {
   request(): { resourceType(): string };
-  abort(): Promise<void>;
-  continue(): Promise<void>;
+  abort(): Promise<unknown>;
+  continue(): Promise<unknown>;
 }
 interface PwBrowser {
-  close(): Promise<void>;
+  close(): Promise<unknown>;
   isConnected(): boolean;
   newPage(opts: object): Promise<PwPage>;
 }
