@@ -435,14 +435,16 @@ export function registerGradeTools(
           | { extensions?: Record<string, unknown> }
           | undefined;
         // ALSO sniff clientInfo: some hosts advertise the ui extension but
-        // never render third-party panels — they dump structuredContent into
-        // the visible result instead (observed twice in Cowork, June 2026,
-        // after the capability gate landed; Desktop has the same panel gap,
-        // anthropics/claude-ai-mcp#165/#236). Blocklist the known offenders.
+        // don't render panels — they dump structuredContent into the
+        // visible result instead (observed twice in Cowork, June 2026,
+        // after the capability gate landed). Claude DESKTOP is NOT listed:
+        // it renders panels and forwards tool-result correctly (verified
+        // 2026-06-06 — image + buttons displayed; only nested embed
+        // iframes are blocked there). This gate only matters when the
+        // panel is enabled (GRADE_MCP_APPS=1) — keep that flag unset in
+        // Cowork's config.
         const clientName = server.server.getClientVersion()?.name ?? "";
-        const knownNonRenderer = /cowork|desktop|claude[ _-]?code/i.test(
-          clientName,
-        );
+        const knownNonRenderer = /cowork|claude[ _-]?code/i.test(clientName);
         const uiSupported =
           Boolean(opts.appPanel) &&
           Boolean(clientCaps?.extensions?.["io.modelcontextprotocol/ui"]) &&
@@ -479,9 +481,13 @@ export function registerGradeTools(
             }
           }
         }
+        // Text stays TERSE on purpose: hosts treat image-led results as
+        // first-class (rendered in the chat flow); burying the image under
+        // paragraphs of agent guidance demotes the whole result to a
+        // collapsed expander (observed on claude.ai web, June 2026).
         const headline = stored
-          ? `Stored poster of "${screen.name}" (${screenId}), ${mode} mode — captured ${new Date(stored.capturedAt).toISOString()}, screen unchanged since. Pass refresh: true for a fresh render.\n`
-          : `Live render of "${screen.name}" (${screenId}) at ${w}×${h}, ${mode} mode.\n`;
+          ? `"${screen.name}" — stored poster (${mode}, captured ${new Date(stored.capturedAt).toISOString()}; refresh: true re-renders).`
+          : `"${screen.name}" — live render, ${w}×${h} ${mode}.`;
         return {
           content: [
             {
@@ -493,10 +499,9 @@ export function registerGradeTools(
               type: "text" as const,
               text:
                 headline +
-                (savedPath ? `Saved PNG: ${savedPath}\n` : "") +
-                (savedUrl ? `Poster PNG URL (public): ${savedUrl}\n` : "") +
-                `Embed URL (read-only${share.created ? ", newly minted" : ""}): ${url}\n` +
-                `This is the REAL render — same route any embed uses. If the host rendered an inline preview panel (MCP App), the human can already see it; otherwise SHOW THE HUMAN the render: present/attach the saved PNG file, or give them the poster PNG URL and the embed URL as clickable links. Iterate with get_screen → save_screen, then preview again.`,
+                (savedPath ? `\nFile: ${savedPath}` : "") +
+                (savedUrl ? `\nPoster: ${savedUrl}` : "") +
+                `\nLive embed: ${url}`,
             },
           ],
           // Forwarded verbatim to the app iframe (ui/notifications/tool-result)
