@@ -37,12 +37,36 @@ import type { PreviewColorMode, ScreenshotResult } from "./preview";
 const PACK_URL =
   "https://github.com/Sparticuz/chromium/releases/download/v147.0.0/chromium-v147.0.0-pack.x64.tar";
 
-export async function screenshotEmbedServerless(
-  url: string,
-  width: number,
-  height: number,
-  colorMode: PreviewColorMode = "dark",
-): Promise<ScreenshotResult> {
+// ONE browser per warm instance, ONE capture at a time. Fluid compute
+// routes CONCURRENT invocations into the same container — launching a
+// fresh ~300MB Chromium per call (×2 when calls overlap) is what drove
+// the box into ERR_INSUFFICIENT_RESOURCES, and each crash left the warm
+// instance more degraded. The singleton launches once and is recycled on
+// any capture failure; the queue serializes captures so two never run
+// shoulder-to-shoulder in 2GB.
+// Minimal structural type — playwright-core's Browser without importing
+// its types at module scope (the lib loads lazily).
+interface PwPage {
+  route(glob: string, handler: (route: PwRoute) => unknown): Promise<void>;
+  goto(url: string, opts: object): Promise<unknown>;
+  waitForTimeout(ms: number): Promise<void>;
+  screenshot(opts: { type: "png" }): Promise<Buffer>;
+  close(): Promise<void>;
+}
+interface PwRoute {
+  request(): { resourceType(): string };
+  abort(): Promise<void>;
+  continue(): Promise<void>;
+}
+interface PwBrowser {
+  close(): Promise<void>;
+  isConnected(): boolean;
+  newPage(opts: object): Promise<PwPage>;
+}
+let cachedBrowser: PwBrowser | null = null;
+let captureQueue: Promise<unknown> = Promise.resolve();
+
+async function getBrowser() {
   let pwChromium;
   let sparticuz;
   try {
@@ -58,13 +82,14 @@ export async function screenshotEmbedServerless(
     );
   }
 
-  let browser;
+  if (cachedBrowser && cachedBrowser.isConnected()) return cachedBrowser;
+  cachedBrowser = null;
   try {
-    browser = await pwChromium.launch({
+    cachedBrowser = await pwChromium.launch({
       // --disable-dev-shm-usage is NOT in sparticuz's list but is the
-      // canonical fix for net::ERR_INSUFFICIENT_RESOURCES on serverless:
-      // /dev/shm is tiny there, so Chromium must use /tmp for shared
-      // memory instead of failing allocations mid-pageload.
+      // canonical fix for shared-memory exhaustion on serverless: /dev/shm
+      // is tiny there, so Chromium must use /tmp instead of failing
+      // allocations mid-pageload.
       args: [...sparticuz.args, "--disable-dev-shm-usage"],
       executablePath: await sparticuz.executablePath(
         process.env.CHROMIUM_PACK_URL ?? PACK_URL,
@@ -78,14 +103,46 @@ export async function screenshotEmbedServerless(
       }`,
     );
   }
+  return cachedBrowser;
+}
 
+/** Drop the cached browser (after a failure) so the next call relaunches
+ *  clean instead of reusing a wedged instance. */
+async function recycleBrowser() {
+  const b = cachedBrowser;
+  cachedBrowser = null;
+  if (b) await b.close().catch(() => undefined);
+}
+
+export function screenshotEmbedServerless(
+  url: string,
+  width: number,
+  height: number,
+  colorMode: PreviewColorMode = "dark",
+): Promise<ScreenshotResult> {
+  const run = captureQueue.then(() =>
+    captureOnce(url, width, height, colorMode),
+  );
+  // Failures must not wedge the queue for the next caller.
+  captureQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function captureOnce(
+  url: string,
+  width: number,
+  height: number,
+  colorMode: PreviewColorMode,
+): Promise<ScreenshotResult> {
+  const browser = await getBrowser();
+  let page: PwPage | null = null;
   try {
     // Same shape as screenshotEmbed in preview.ts, tuned for a 2GB box:
     // "domcontentloaded" instead of "networkidle" (waiting for idle keeps
     // every in-flight resource buffered at once — the memory peak that was
     // killing 1-vCPU/2GB functions) + a longer settle for hydration, and
     // analytics/video requests aborted before they cost anything.
-    const page = await browser.newPage({
+    page = await browser.newPage({
       viewport: { width, height },
       deviceScaleFactor: 1,
       colorScheme: colorMode,
@@ -102,7 +159,12 @@ export async function screenshotEmbedServerless(
     await page.waitForTimeout(3000);
     const buf = await page.screenshot({ type: "png" });
     return { base64: buf.toString("base64"), width, height };
+  } catch (err) {
+    // A failed capture may have wedged the shared browser — recycle so the
+    // retry (and the next caller) gets a clean launch.
+    await recycleBrowser();
+    throw err;
   } finally {
-    await browser.close();
+    if (page) await page.close().catch(() => undefined);
   }
 }

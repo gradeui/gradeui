@@ -26,7 +26,9 @@
 // so shipping a changed template under the same URI can silently serve the
 // old panel. Bump the suffix whenever the template changes materially.
 // v4: monotonic render gate (iOS race fix — see grade-preview-widget-fix.md).
-export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview-v4";
+// v5: poster re-probe on tool-result — status is monotonic but CONTENT must
+//     refresh, or the early self-load leaves the panel one capture behind.
+export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview-v5";
 
 /**
  * Bake the Supabase Storage poster base URL into the template.
@@ -59,6 +61,15 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     color: var(--color-text-primary, light-dark(#171717, #fafafa));
     background: transparent;
   }
+  /* Hosts give the panel iframe no gutter — on phones the stage hits the
+     screen edge. Pad ourselves on narrow viewports (safe-area aware). */
+  @media (max-width: 520px) {
+    body {
+      padding: 0 max(10px, env(safe-area-inset-left))
+        calc(10px + env(safe-area-inset-bottom, 0px))
+        max(10px, env(safe-area-inset-right));
+    }
+  }
   .bar {
     display: flex; align-items: center; justify-content: space-between;
     gap: 8px; padding: 8px 2px 10px;
@@ -86,6 +97,7 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
 </style>
 </head>
 <body>
+<div id="root">
 <div class="bar">
   <div><span class="name" id="name">Grade screen</span><span class="dim" id="dim"></span></div>
   <div class="actions">
@@ -95,12 +107,13 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
 </div>
 <div class="stage" id="stage"><div class="empty">Rendering…</div></div>
 <div id="status" style="font-size:11px;opacity:0.45;padding:6px 2px;font-family:ui-monospace,monospace;"></div>
+</div>
 <script>
 (function () {
   // Lifecycle trace rendered into the panel itself — the only console we
   // have inside a host iframe we can't inspect. Reads like:
   //   v3 js✓ · init✓:claude-web · recv:tool-input · poster✓
-  var dbg = ["v4", "js✓"];
+  var dbg = ["v5", "js✓"];
   function mark(s) {
     dbg.push(s);
     var el = document.getElementById("status");
@@ -150,8 +163,8 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
         id: msg.id,
         result: {
           protocolVersion: "2026-01-26",
-          appInfo: { name: "gradeui-preview", version: "0.3.0" },
-          appCapabilities: { availableDisplayModes: ["inline"] },
+          appInfo: { name: "gradeui-preview", version: "0.5.0" },
+          appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] },
         },
       }, "*");
       mark("host-init✓");
@@ -168,9 +181,15 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
   });
 
   function reportSize() {
+    // Measure the CONTENT wrapper, never the document: scrollHeight is
+    // floored at the iframe's viewport height, so once the host grows the
+    // frame it can never shrink — every transient growth ratchets the gap
+    // bigger (observed on iOS). #root's rect is honest in both directions.
+    var root = document.getElementById("root");
+    var rect = root.getBoundingClientRect();
     notify("ui/notifications/size-changed", {
-      width: document.documentElement.scrollWidth,
-      height: document.documentElement.scrollHeight,
+      width: Math.ceil(rect.width),
+      height: Math.ceil(rect.height + rect.top),
     });
   }
 
@@ -198,7 +217,15 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     if (state.posterBase.indexOf("__") === 0) { mark("no-base"); return; }
     state.args = args;
     state.posterTries = 0;
-    tryPoster();
+    // Hosts REUSE one panel instance across calls (observed: claude-ios).
+    // A new tool-input means a new render cycle: if we've already painted
+    // a previous call's image, swap to the new target's poster now rather
+    // than waiting for (a possibly payload-less) tool-result.
+    if (state.painted) {
+      refreshPoster();
+    } else {
+      tryPoster();
+    }
   }
 
   function tryPoster() {
@@ -237,6 +264,27 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     probe.src = src;
   }
 
+  // Content refresh — NOT gated on painted. The self-load paints the
+  // PREVIOUS poster (it fires on tool-input, before a fresh capture
+  // exists); when tool-result arrives without an image payload
+  // (structuredContent is host-gated), the new capture has already been
+  // uploaded to the same poster path — re-probe with a fresh cache-buster
+  // and swap the pixels in place. Status stays forward-only.
+  function refreshPoster() {
+    if (!state.args) return;
+    var mode = state.args.colorMode || "dark";
+    var src = state.posterBase + "/" + state.args.screenId +
+      "/latest-" + mode + ".png?v=" + Date.now();
+    var probe = new Image();
+    probe.onload = function () {
+      state.imageDataUri = src;
+      renderImage();
+      reportSize();
+      mark("poster↻");
+    };
+    probe.src = src;
+  }
+
   function renderLive() {
     var stage = document.getElementById("stage");
     stage.innerHTML = "";
@@ -269,7 +317,15 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
       state.imageDataUri = resultImg;
     } else {
       mark("result:no-img");
-      if (!state.painted) setTimeout(tryPoster, 0);
+      // The capture (if one ran) finished before this result was sent —
+      // the fresh poster is already at the deterministic path. Re-probe
+      // whether or not we've painted: first paint if we lost the race,
+      // content upgrade if the self-load painted the previous capture.
+      if (state.painted) {
+        refreshPoster();
+      } else {
+        setTimeout(tryPoster, 0);
+      }
     }
     state.embedUrl = sc.embedUrl || null;
     document.getElementById("name").textContent = sc.name || "Grade screen";
@@ -298,7 +354,9 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
   send("ui/initialize", {
     protocolVersion: "2026-01-26",
     appInfo: { name: "gradeui-preview", version: "0.1.0" },
-    appCapabilities: { availableDisplayModes: ["inline"] },
+    // fullscreen: hosts that support it (spec display modes) get an
+    // expand affordance on the panel — tap to see the render full-screen.
+    appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] },
   }).then(function (result) {
     state.hostName =
       (result && result.hostInfo && result.hostInfo.name) || "";

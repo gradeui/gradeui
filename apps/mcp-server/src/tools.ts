@@ -418,13 +418,44 @@ export function registerGradeTools(
           ? null
           : await getStoredPreview(sb, screenId, mode, screen.updatedAt);
 
-        const shot = stored
-          ? { base64: stored.base64, width: w, height: h }
-          : serverless
+        // Live capture with one retry, then DECLARED degradation: the 2GB
+        // serverless box intermittently dies mid-pageload
+        // (ERR_INSUFFICIENT_RESOURCES). When that happens the app panel has
+        // already self-loaded the PREVIOUS poster — so a silent failure
+        // here reads to the human as "preview works but is one edit
+        // behind". Serving the stale poster while SAYING it's stale keeps
+        // the surface honest; throwing only when there's nothing at all.
+        const capture = async () =>
+          serverless
             ? await (
                 await import("./preview-serverless")
               ).screenshotEmbedServerless(url, w, h, mode)
             : await screenshotEmbed(url, w, h, mode);
+
+        let shot = stored
+          ? { base64: stored.base64, width: w, height: h }
+          : null;
+        let staleFallback: number | null = null;
+        let fallbackUrl: string | null = null;
+        let captureErr: unknown = null;
+        if (!shot) {
+          try {
+            shot = await capture();
+          } catch (err1) {
+            try {
+              shot = await capture();
+            } catch (err2) {
+              captureErr = err2;
+            }
+          }
+          if (!shot) {
+            const anyAge = await getStoredPreview(sb, screenId, mode, 0);
+            if (!anyAge) throw captureErr;
+            shot = { base64: anyAge.base64, width: w, height: h };
+            staleFallback = anyAge.capturedAt;
+            fallbackUrl = anyAge.url;
+          }
+        }
         // MCP Apps capability gate (SEP-1865). structuredContent carries the
         // multi-MB data-URI for the app iframe — but hosts WITHOUT apps
         // support may dump structuredContent into the visible tool result,
@@ -456,8 +487,10 @@ export function registerGradeTools(
         // on a workstation. Best-effort: a failed write must not sink a
         // successful screenshot.
         let savedPath: string | null = null;
-        let savedUrl: string | null = stored?.url ?? null;
-        if (!stored) {
+        let savedUrl: string | null = stored?.url ?? fallbackUrl ?? null;
+        // Never upload the stale-fallback base64 — that would bump the
+        // poster's timestamp and dress yesterday's pixels up as fresh.
+        if (!stored && !staleFallback) {
           try {
             savedUrl = await uploadPreviewPng(sb, screenId, mode, shot.base64);
           } catch (err) {
@@ -485,9 +518,11 @@ export function registerGradeTools(
         // first-class (rendered in the chat flow); burying the image under
         // paragraphs of agent guidance demotes the whole result to a
         // collapsed expander (observed on claude.ai web, June 2026).
-        const headline = stored
-          ? `"${screen.name}" — stored poster (${mode}, captured ${new Date(stored.capturedAt).toISOString()}; refresh: true re-renders).`
-          : `"${screen.name}" — live render, ${w}×${h} ${mode}.`;
+        const headline = staleFallback
+          ? `"${screen.name}" — WARNING: live capture failed twice (serverless resources); this is the PREVIOUS capture (${mode}, ${new Date(staleFallback).toISOString()}) and predates the latest save. TELL THE USER the preview is out of date; the embed URL below is live and current. Retry preview_screen shortly (refresh: true).`
+          : stored
+            ? `"${screen.name}" — stored poster (${mode}, captured ${new Date(stored.capturedAt).toISOString()}; refresh: true re-renders).`
+            : `"${screen.name}" — live render, ${w}×${h} ${mode}.`;
         return {
           content: [
             {
