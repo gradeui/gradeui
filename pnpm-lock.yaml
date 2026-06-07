@@ -412,7 +412,7 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.12.0
         version: 1.29.0(zod@3.25.76)
-      '@sparticuz/chromium':
+      '@sparticuz/chromium-min':
         specifier: 147.0.0
         version: 147.0.0
       '@supabase/supabase-js':
@@ -3027,8 +3027,8 @@ packages:
   '@selderee/plugin-htmlparser2@0.11.0':
     resolution: {integrity: sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==}
 
-  '@sparticuz/chromium@147.0.0':
-    resolution: {integrity: sha512-4ZKeAQQa8up2mt675qSitztLdbQrlf8BKdC5naeap+5Mv1OV1OlJdPoU+EJC/p5sQUJUQmN4r+q5+EhaaOUHpQ==}
+  '@sparticuz/chromium-min@147.0.0':
+    resolution: {integrity: sha512-NGmo7YpM7yihKSIXvOuqelLcoJFTsc1lAiWIqA2/5W/gWop5+ZDceflDdnaJYUjZOCUY3kTHDDakbNKb74km9A==}
     engines: {node: '>=20.11.0'}
 
   '@standard-schema/spec@1.1.0':
@@ -9720,7 +9720,7 @@ snapshots:
       domhandler: 5.0.3
       selderee: 0.11.0
 
-  '@sparticuz/chromium@147.0.0':
+  '@sparticuz/chromium-min@147.0.0':
     dependencies:
       follow-redirects: 1.16.0
       tar-fs: 3.1.2

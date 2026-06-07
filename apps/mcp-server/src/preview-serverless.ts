@@ -4,16 +4,23 @@
  *
  * Full Playwright can't run on serverless (no browser binaries, no
  * `playwright install`). This pairs `playwright-core` (driver only, no
- * downloads) with `@sparticuz/chromium` (a brotli-compressed Chromium that
- * self-extracts to /tmp on first launch — built exactly for AWS
- * Lambda/Vercel functions).
+ * downloads) with `@sparticuz/chromium-min`: at cold start it downloads
+ * the Chromium "pack" tar from PACK_URL into /tmp and extracts it. The
+ * -min variant (vs plain @sparticuz/chromium, which ships the binary
+ * inside the npm package) is deliberate: Vercel's file tracer doesn't ship
+ * the package's binary assets with the function (observed on first deploy:
+ * "input directory …/bin does not exist"), and outputFileTracingIncludes
+ * globs are fragile across pnpm layouts. A URL download is deterministic
+ * everywhere. Warm functions reuse the extracted /tmp copy.
  *
  * VERSION LOCKSTEP (important): playwright-core only speaks the protocol
  * of the Chromium it was built against. playwright-core 1.59.x expects
- * Chromium 147, so @sparticuz/chromium is pinned to 147.0.0 in
- * package.json. When bumping playwright, check
+ * Chromium 147, so @sparticuz/chromium-min AND the pack URL below are
+ * pinned to v147.0.0. When bumping playwright, check
  * `node_modules/playwright-core/browsers.json` for the new chromium
- * `browserVersion` and bump @sparticuz/chromium to the matching major.
+ * `browserVersion`, then bump the package version and this URL together.
+ * Override the URL (e.g. to self-host the pack on Supabase Storage) with
+ * CHROMIUM_PACK_URL.
  *
  * Everything is imported lazily so this module costs nothing on hosts that
  * never call preview_screen, and so the local stdio server (which uses the
@@ -26,6 +33,10 @@
 
 import type { ScreenshotResult } from "./preview";
 
+/** sha256 e2a58b0c… — the official v147.0.0 x64 pack (Vercel fns are x64). */
+const PACK_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v147.0.0/chromium-v147.0.0-pack.x64.tar";
+
 export async function screenshotEmbedServerless(
   url: string,
   width: number,
@@ -36,11 +47,11 @@ export async function screenshotEmbedServerless(
   try {
     [{ chromium: pwChromium }, { default: sparticuz }] = await Promise.all([
       import("playwright-core"),
-      import("@sparticuz/chromium"),
+      import("@sparticuz/chromium-min"),
     ]);
   } catch (err) {
     throw new Error(
-      `Serverless screenshot deps missing (playwright-core / @sparticuz/chromium — dependencies of @gradeui/mcp-server): ${
+      `Serverless screenshot deps missing (playwright-core / @sparticuz/chromium-min — dependencies of @gradeui/mcp-server): ${
         err instanceof Error ? err.message : String(err)
       }`,
     );
@@ -50,7 +61,9 @@ export async function screenshotEmbedServerless(
   try {
     browser = await pwChromium.launch({
       args: sparticuz.args,
-      executablePath: await sparticuz.executablePath(),
+      executablePath: await sparticuz.executablePath(
+        process.env.CHROMIUM_PACK_URL ?? PACK_URL,
+      ),
       headless: true,
     });
   } catch (err) {
