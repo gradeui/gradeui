@@ -24,6 +24,25 @@
 
 export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview";
 
+/**
+ * Bake the Supabase Storage poster base URL into the template.
+ *
+ * Why: claude.ai web (June 2026) renders the panel but does NOT forward
+ * ui/notifications/tool-result to it — observed live: stage stuck on
+ * "Rendering…" while the capture itself succeeded. The panel therefore
+ * can't rely on structuredContent. It CAN see tool-input (the call
+ * arguments: screenId + colorMode), and every capture is stored at a
+ * deterministic public path — so given the base URL it self-loads
+ * `<base>/<screenId>/latest-<mode>.png`, retrying while the capture is
+ * still in flight. tool-result, when a host does deliver it, still wins.
+ */
+export function buildPreviewTemplate(posterBaseUrl: string): string {
+  return PREVIEW_TEMPLATE_HTML.replace(
+    "__POSTER_BASE__",
+    posterBaseUrl.replace(/\/+$/, ""),
+  );
+}
+
 export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -75,7 +94,10 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
 (function () {
   var nextId = 1;
   var pending = {};
-  var state = { embedUrl: null, imageDataUri: null, live: false, hostName: "" };
+  var state = {
+    embedUrl: null, imageDataUri: null, live: false, hostName: "",
+    posterBase: "__POSTER_BASE__", args: null, gotResult: false, posterTries: 0
+  };
 
   function send(method, params) {
     var id = nextId++;
@@ -97,6 +119,8 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     }
     if (msg.method === "ui/notifications/tool-result") {
       onResult(msg.params || {});
+    } else if (msg.method === "ui/notifications/tool-input") {
+      onInput(msg.params || {});
     } else if (msg.method === "ui/resource-teardown" && msg.id != null) {
       window.parent.postMessage({ jsonrpc: "2.0", id: msg.id, result: {} }, "*");
     }
@@ -117,6 +141,39 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     img.onload = reportSize;
     img.src = state.imageDataUri;
     stage.appendChild(img);
+  }
+
+  // Self-serve fallback: some hosts render this panel but never forward
+  // ui/notifications/tool-result (observed: claude.ai web, June 2026).
+  // tool-input gives us the call args, and posters live at a deterministic
+  // public path — so load the poster directly, retrying while the capture
+  // (~10s on a cold function) is still in flight. A real tool-result, if
+  // it ever arrives, overrides this.
+  function onInput(params) {
+    var args = params.arguments || params.input || params.toolInput || {};
+    if (!args.screenId || state.posterBase.indexOf("__") === 0) return;
+    state.args = args;
+    state.posterTries = 0;
+    tryPoster();
+  }
+
+  function tryPoster() {
+    if (state.gotResult || !state.args) return;
+    var mode = state.args.colorMode || "dark";
+    var src = state.posterBase + "/" + state.args.screenId +
+      "/latest-" + mode + ".png?v=" + Date.now();
+    var probe = new Image();
+    probe.onload = function () {
+      if (state.gotResult) return;
+      state.imageDataUri = src;
+      renderImage();
+      reportSize();
+    };
+    probe.onerror = function () {
+      state.posterTries += 1;
+      if (state.posterTries < 12) setTimeout(tryPoster, 4000);
+    };
+    probe.src = src;
   }
 
   function renderLive() {
@@ -143,7 +200,8 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
 
   function onResult(result) {
     var sc = result.structuredContent || {};
-    state.imageDataUri = sc.imageDataUri || null;
+    state.gotResult = true;
+    state.imageDataUri = sc.imageDataUri || sc.previewUrl || state.imageDataUri;
     state.embedUrl = sc.embedUrl || null;
     document.getElementById("name").textContent = sc.name || "Grade screen";
     document.getElementById("dim").textContent = sc.width && sc.height ? sc.width + "\\u00d7" + sc.height : "";

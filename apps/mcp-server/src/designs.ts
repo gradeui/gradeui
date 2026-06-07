@@ -48,6 +48,8 @@ export interface ScreenRow {
   state: DesignState | null;
   position: number;
   createdAt: number;
+  /** Epoch ms of the last save — posters captured before this are stale. */
+  updatedAt: number;
 }
 
 export interface ScreenSummary {
@@ -154,7 +156,7 @@ export async function getScreen(
 ): Promise<ScreenRow | null> {
   const { data, error } = await sb
     .from("designs")
-    .select("id, name, state, position, created_at")
+    .select("id, name, state, position, created_at, updated_at")
     .eq("project_id", projectId)
     .eq("id", screenId)
     .is("deleted_at", null)
@@ -167,6 +169,7 @@ export async function getScreen(
     state: (data.state as DesignState | null) ?? null,
     position: data.position as number,
     createdAt: data.created_at as number,
+    updatedAt: (data.updated_at as number) ?? (data.created_at as number),
   };
 }
 

@@ -32,13 +32,14 @@ import {
 import {
   ensureShareLink,
   embedUrl,
+  getStoredPreview,
   screenshotEmbed,
   savePreviewPng,
   uploadPreviewPng,
 } from "./preview";
 import {
   PREVIEW_RESOURCE_URI,
-  PREVIEW_TEMPLATE_HTML,
+  buildPreviewTemplate,
 } from "./ui-template";
 
 export interface GradeToolsOptions {
@@ -110,7 +111,12 @@ export function registerGradeTools(
         {
           uri: PREVIEW_RESOURCE_URI,
           mimeType: "text/html;profile=mcp-app",
-          text: PREVIEW_TEMPLATE_HTML,
+          // Poster base baked in (server-static, not per-call): lets the
+          // panel self-load the stored poster from tool-input alone, for
+          // hosts that render panels but never forward tool-result.
+          text: buildPreviewTemplate(
+            `${env.url}/storage/v1/object/public/screen-previews`,
+          ),
           // img-src data: is covered by the spec's default CSP; the
           // frameDomains declaration is for the view's "Live" toggle, which
           // nests the real gradeui.com/e/<token> embed. The view hides that
@@ -344,7 +350,7 @@ export function registerGradeTools(
       {
         title: "Preview a Grade screen (real render)",
         description:
-          "Render a saved screen through the live embed route (gradeui.com/e/<token>) and return an actual screenshot PNG plus the embed URL. Use after save_screen to SEE the real render and iterate. Mints a read-only share link for the screen if none exists. In hosts that support MCP Apps, also renders an inline preview panel with a live-embed toggle.",
+          "Get a screenshot PNG of a saved screen (real render via the live embed route, gradeui.com/e/<token>) plus the embed URL. Use after save_screen to SEE the render and iterate. Every capture is stored as the screen's poster (one per color mode); if the screen hasn't changed since the last capture, that poster is returned instantly instead of re-rendering — pass refresh: true to force a fresh capture. Mints a read-only share link if none exists. In hosts that support MCP Apps, also renders an inline preview panel with a live-embed toggle.",
         _meta: {
           ui: { resourceUri: PREVIEW_RESOURCE_URI },
         },
@@ -354,18 +360,22 @@ export function registerGradeTools(
           width: z
             .number()
             .optional()
-            .describe("Virtual render width in px (default 1280)"),
+            .describe("Virtual render width in px (default 1280 local / 1024 hosted)"),
           height: z
             .number()
             .optional()
-            .describe("Viewport height in px (default 800)"),
+            .describe("Viewport height in px (default 800 local / 640 hosted)"),
           colorMode: z
             .enum(["light", "dark"])
             .optional()
-            .describe("Theme mode for a newly-minted share link (default dark)"),
+            .describe("Theme mode to render and which poster slot to use (default dark)"),
+          refresh: z
+            .boolean()
+            .optional()
+            .describe("Force a fresh capture even if a current poster exists"),
         },
       },
-      async ({ projectId, screenId, width, height, colorMode }) => {
+      async ({ projectId, screenId, width, height, colorMode, refresh }) => {
         await assertProject(sb, env.ownerUserId, projectId);
         const screen = await getScreen(sb, projectId, screenId);
         if (!screen) {
@@ -376,21 +386,27 @@ export function registerGradeTools(
         // Serverless runs in a 2GB box — default to a smaller canvas there
         // (lower render + PNG-encode peak). Explicit width/height still wins.
         const serverless = captureMode === "serverless";
+        const mode = colorMode ?? "dark";
         const w = Math.min(Math.max(width ?? (serverless ? 1024 : 1280), 320), 2560);
         const h = Math.min(Math.max(height ?? (serverless ? 640 : 800), 320), 2560);
-        const share = await ensureShareLink(
-          sb,
-          projectId,
-          screenId,
-          colorMode ?? "dark",
-        );
+        const share = await ensureShareLink(sb, projectId, screenId, mode);
         const url = embedUrl(opts.siteUrl, share.token, w);
-        const shot =
-          captureMode === "serverless"
+
+        // Poster reuse: if the stored capture postdates the screen's last
+        // save, serve it — zero Chromium, instant, and it means a poster
+        // captured on the desktop serves hosted/phone previews. refresh:
+        // true forces a live render.
+        const stored = refresh
+          ? null
+          : await getStoredPreview(sb, screenId, mode, screen.updatedAt);
+
+        const shot = stored
+          ? { base64: stored.base64, width: w, height: h }
+          : serverless
             ? await (
                 await import("./preview-serverless")
-              ).screenshotEmbedServerless(url, w, h)
-            : await screenshotEmbed(url, w, h);
+              ).screenshotEmbedServerless(url, w, h, mode)
+            : await screenshotEmbed(url, w, h, mode);
         // MCP Apps capability gate (SEP-1865). structuredContent carries the
         // multi-MB data-URI for the app iframe — but hosts WITHOUT apps
         // support may dump structuredContent into the visible tool result,
@@ -413,35 +429,40 @@ export function registerGradeTools(
           Boolean(clientCaps?.extensions?.["io.modelcontextprotocol/ui"]) &&
           !knownNonRenderer;
 
-        // Persist alongside the image content — hosts differ in whether they
-        // show MCP images to the human, but every host's agent can open,
-        // present, or link a file path or URL. Local → a PNG on disk;
-        // serverless → Supabase Storage (a hosted MCP has no reachable
-        // disk). Best-effort: a failed write must not sink a successful
-        // screenshot.
+        // Persist — every fresh capture becomes the screen's poster in
+        // Storage (latest-<mode>.png, BOTH engines, so desktop captures
+        // serve later hosted previews), plus a local PNG file when running
+        // on a workstation. Best-effort: a failed write must not sink a
+        // successful screenshot.
         let savedPath: string | null = null;
-        let savedUrl: string | null = null;
-        try {
-          if (captureMode === "serverless") {
-            savedUrl = await uploadPreviewPng(
-              sb,
-              screen.name,
-              screenId,
-              shot.base64,
-            );
-          } else {
-            savedPath = await savePreviewPng(
-              screen.name,
-              screenId,
-              shot.base64,
+        let savedUrl: string | null = stored?.url ?? null;
+        if (!stored) {
+          try {
+            savedUrl = await uploadPreviewPng(sb, screenId, mode, shot.base64);
+          } catch (err) {
+            console.error(
+              "gradeui-mcp: poster upload failed:",
+              err instanceof Error ? err.message : err,
             );
           }
-        } catch (err) {
-          console.error(
-            "gradeui-mcp: preview persist failed:",
-            err instanceof Error ? err.message : err,
-          );
+          if (!serverless) {
+            try {
+              savedPath = await savePreviewPng(
+                screen.name,
+                screenId,
+                shot.base64,
+              );
+            } catch (err) {
+              console.error(
+                "gradeui-mcp: preview file write failed:",
+                err instanceof Error ? err.message : err,
+              );
+            }
+          }
         }
+        const headline = stored
+          ? `Stored poster of "${screen.name}" (${screenId}), ${mode} mode — captured ${new Date(stored.capturedAt).toISOString()}, screen unchanged since. Pass refresh: true for a fresh render.\n`
+          : `Live render of "${screen.name}" (${screenId}) at ${w}×${h}, ${mode} mode.\n`;
         return {
           content: [
             {
@@ -452,11 +473,11 @@ export function registerGradeTools(
             {
               type: "text" as const,
               text:
-                `Live render of "${screen.name}" (${screenId}) at ${w}×${h}.\n` +
+                headline +
                 (savedPath ? `Saved PNG: ${savedPath}\n` : "") +
-                (savedUrl ? `Preview PNG URL (public): ${savedUrl}\n` : "") +
+                (savedUrl ? `Poster PNG URL (public): ${savedUrl}\n` : "") +
                 `Embed URL (read-only${share.created ? ", newly minted" : ""}): ${url}\n` +
-                `This is the REAL render — same route any embed uses. If the host rendered an inline preview panel (MCP App), the human can already see it; otherwise SHOW THE HUMAN the render: present/attach the saved PNG file, or give them the preview PNG URL and the embed URL as clickable links. Iterate with get_screen → save_screen, then preview again.`,
+                `This is the REAL render — same route any embed uses. If the host rendered an inline preview panel (MCP App), the human can already see it; otherwise SHOW THE HUMAN the render: present/attach the saved PNG file, or give them the poster PNG URL and the embed URL as clickable links. Iterate with get_screen → save_screen, then preview again.`,
             },
           ],
           // Forwarded verbatim to the app iframe (ui/notifications/tool-result)

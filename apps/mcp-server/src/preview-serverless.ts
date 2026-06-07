@@ -31,7 +31,7 @@
  * binary in /tmp.
  */
 
-import type { ScreenshotResult } from "./preview";
+import type { PreviewColorMode, ScreenshotResult } from "./preview";
 
 /** sha256 e2a58b0c… — the official v147.0.0 x64 pack (Vercel fns are x64). */
 const PACK_URL =
@@ -41,6 +41,7 @@ export async function screenshotEmbedServerless(
   url: string,
   width: number,
   height: number,
+  colorMode: PreviewColorMode = "dark",
 ): Promise<ScreenshotResult> {
   let pwChromium;
   let sparticuz;
@@ -87,7 +88,7 @@ export async function screenshotEmbedServerless(
     const page = await browser.newPage({
       viewport: { width, height },
       deviceScaleFactor: 1,
-      colorScheme: "dark",
+      colorScheme: colorMode,
     });
     await page.route("**/*", (route) => {
       const type = route.request().resourceType();

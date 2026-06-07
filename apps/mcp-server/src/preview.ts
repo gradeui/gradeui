@@ -130,21 +130,40 @@ export async function savePreviewPng(
 }
 
 /**
- * Persist a preview PNG to Supabase Storage and return its public URL —
- * the serverless counterpart of savePreviewPng (a hosted MCP has no disk
- * the user can reach). Bucket is created on first use (public, read-only
- * by URL: same trust model as the share token the screenshot came from —
- * unguessable path, read-only pixels).
+ * Persist a preview PNG to Supabase Storage and return its public URL.
+ *
+ * LATEST-ONLY, BY CONSTRUCTION: every capture of a screen overwrites the
+ * same deterministic path — `<screenId>/latest.png` — so the bucket holds
+ * exactly one poster per screen and anything (Studio sidebar thumbnails,
+ * share cards, the MCP app panel) can address it knowing only the
+ * screenId. No designs-table column needed, and designs.state stays
+ * untouched (it's dirty-tracked by Studio; writing metadata into it from
+ * here would fight the autosave). The returned URL carries a ?v=
+ * cache-buster because the underlying path is stable and CDN-cached.
+ *
+ * Bucket is created on first use (public, read-only by URL: same trust
+ * model as the share token the screenshot came from — unguessable id,
+ * read-only pixels).
  */
 const PREVIEW_BUCKET = "screen-previews";
 
+export type PreviewColorMode = "light" | "dark";
+
+/** Deterministic poster path for a screen — one per color mode. */
+export function previewStoragePath(
+  screenId: string,
+  colorMode: PreviewColorMode,
+): string {
+  return `${screenId}/latest-${colorMode}.png`;
+}
+
 export async function uploadPreviewPng(
   sb: SupabaseClient,
-  name: string,
   screenId: string,
+  colorMode: PreviewColorMode,
   base64: string,
 ): Promise<string> {
-  const path = `${screenId}/${previewFileName(name, screenId)}`;
+  const path = previewStoragePath(screenId, colorMode);
   const bytes = Buffer.from(base64, "base64");
   const doUpload = () =>
     sb.storage
@@ -163,7 +182,52 @@ export async function uploadPreviewPng(
   if (error) throw error;
 
   const { data } = sb.storage.from(PREVIEW_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  // Stable path + CDN caching = stale posters without a buster.
+  return `${data.publicUrl}?v=${Date.now()}`;
+}
+
+export interface StoredPreview {
+  base64: string;
+  url: string;
+  /** Epoch ms the poster was captured (storage object updated_at). */
+  capturedAt: number;
+}
+
+/**
+ * Fetch the stored poster for a screen+mode IF it postdates `sinceMs`
+ * (the screen's last save). Returns null when there's no poster, it's
+ * stale, or anything errors — callers fall through to a live capture.
+ * This is what makes preview cheap: a poster captured on the desktop
+ * serves phone/hosted previews with zero Chromium involvement.
+ */
+export async function getStoredPreview(
+  sb: SupabaseClient,
+  screenId: string,
+  colorMode: PreviewColorMode,
+  sinceMs: number,
+): Promise<StoredPreview | null> {
+  try {
+    const fileName = `latest-${colorMode}.png`;
+    const { data: objects, error: listErr } = await sb.storage
+      .from(PREVIEW_BUCKET)
+      .list(screenId, { search: fileName });
+    if (listErr) return null;
+    const obj = objects?.find((o) => o.name === fileName);
+    if (!obj?.updated_at) return null;
+    const capturedAt = new Date(obj.updated_at).getTime();
+    if (!Number.isFinite(capturedAt) || capturedAt < sinceMs) return null;
+
+    const path = previewStoragePath(screenId, colorMode);
+    const { data: blob, error: dlErr } = await sb.storage
+      .from(PREVIEW_BUCKET)
+      .download(path);
+    if (dlErr || !blob) return null;
+    const base64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+    const { data } = sb.storage.from(PREVIEW_BUCKET).getPublicUrl(path);
+    return { base64, url: `${data.publicUrl}?v=${capturedAt}`, capturedAt };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -175,6 +239,7 @@ export async function screenshotEmbed(
   url: string,
   width: number,
   height: number,
+  colorMode: PreviewColorMode = "dark",
 ): Promise<ScreenshotResult> {
   let chromium;
   try {
@@ -200,7 +265,7 @@ export async function screenshotEmbed(
     const page = await browser.newPage({
       viewport: { width, height },
       deviceScaleFactor: 1,
-      colorScheme: "dark",
+      colorScheme: colorMode,
     });
     await page.goto(url, { waitUntil: "networkidle", timeout: 30_000 });
     // EmbedScreen hydrates + applies the theme var block client-side.
