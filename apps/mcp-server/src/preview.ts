@@ -41,7 +41,7 @@ export async function ensureShareLink(
 ): Promise<EnsureShareResult> {
   const { data: existing, error: selErr } = await sb
     .from("share_links")
-    .select("token, revoked, expires_at, revision_id, mode")
+    .select("token, revoked, expires_at, revision_id, mode, color_mode")
     .eq("project_id", projectId)
     .eq("design_id", designId)
     .eq("mode", "view")
@@ -56,6 +56,17 @@ export async function ensureShareLink(
     existing &&
     (!existing.expires_at || (existing.expires_at as number) > nowMs());
   if (live) {
+    // The embed renders per the link's STORED color_mode — a link minted
+    // as light renders light no matter what the preview asked for. Align
+    // it on reuse, or dark-mode captures get silently stored as light
+    // pixels (and posters then cache the lie).
+    if ((existing.color_mode as string | null) !== colorMode) {
+      const { error: updErr } = await sb
+        .from("share_links")
+        .update({ color_mode: colorMode })
+        .eq("token", existing.token as string);
+      if (updErr) throw updErr;
+    }
     return { token: existing.token as string, created: false };
   }
 

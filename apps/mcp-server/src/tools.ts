@@ -53,6 +53,17 @@ export interface GradeToolsOptions {
    * - "none" — tool not registered.
    */
   capture?: "playwright" | "serverless" | "none";
+  /**
+   * Attach the MCP App panel (SEP-1865) to preview_screen. DEFAULT OFF:
+   * as of June 2026, claude.ai web renders 3p panels but feeds them
+   * nothing (toast: "There was a problem displaying content"), and
+   * attaching a panel SUPPRESSES the host's normal result display — so
+   * the plain image content block (which renders in chat exactly like
+   * e.g. Mobbin's MCP images) never shows. Enable via GRADE_MCP_APPS=1
+   * once hosts forward tool-result/tool-input properly; verify with
+   * view-harness.html meanwhile.
+   */
+  appPanel?: boolean;
 }
 
 /** Wrap a string into the MCP text-content envelope. */
@@ -99,7 +110,8 @@ export function registerGradeTools(
   // plain content[]. NOTE: as of June 2026 Claude hosts don't render
   // third-party MCP Apps (anthropics/claude-ai-mcp#165, #236) — this is
   // forward wiring; verify with apps/mcp-server/view-harness.html.
-  server.registerResource(
+  if (opts.appPanel)
+    server.registerResource(
     "gradeui-preview-view",
     PREVIEW_RESOURCE_URI,
     {
@@ -357,9 +369,9 @@ export function registerGradeTools(
         title: "Preview a Grade screen (real render)",
         description:
           "Get a screenshot PNG of a saved screen (real render via the live embed route, gradeui.com/e/<token>) plus the embed URL. Use after save_screen to SEE the render and iterate. Every capture is stored as the screen's poster (one per color mode); if the screen hasn't changed since the last capture, that poster is returned instantly instead of re-rendering — pass refresh: true to force a fresh capture. Mints a read-only share link if none exists. In hosts that support MCP Apps, also renders an inline preview panel with a live-embed toggle.",
-        _meta: {
-          ui: { resourceUri: PREVIEW_RESOURCE_URI },
-        },
+        ...(opts.appPanel
+          ? { _meta: { ui: { resourceUri: PREVIEW_RESOURCE_URI } } }
+          : {}),
         inputSchema: {
           projectId: z.string().describe("Project id"),
           screenId: z.string().describe("Screen (design) id, e.g. from save_screen"),
@@ -432,6 +444,7 @@ export function registerGradeTools(
           clientName,
         );
         const uiSupported =
+          Boolean(opts.appPanel) &&
           Boolean(clientCaps?.extensions?.["io.modelcontextprotocol/ui"]) &&
           !knownNonRenderer;
 

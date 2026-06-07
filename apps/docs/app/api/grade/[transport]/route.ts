@@ -81,6 +81,9 @@ const handler = createMcpHandler(
           | "serverless"
           | "none"
           | undefined) ?? "serverless",
+      // MCP App panel stays OFF until claude.ai forwards tool results to
+      // 3p panels — attaching it suppresses the in-chat image display.
+      appPanel: process.env.GRADE_MCP_APPS === "1",
     });
   },
   { serverInfo },

@@ -55,7 +55,12 @@ async function main() {
   };
   const server = new McpServer(serverInfo);
 
-  registerGradeTools(server, sb, env, { siteUrl: SITE_URL });
+  registerGradeTools(server, sb, env, {
+    siteUrl: SITE_URL,
+    // Panel opt-in (see GradeToolsOptions.appPanel — attaching it
+    // suppresses hosts' normal image-in-chat display).
+    appPanel: process.env.GRADE_MCP_APPS === "1",
+  });
 
   // Client sniffing — log who connected and what they negotiated, so host
   // experiments (e.g. toggling desktop permissions for MCP Apps) are

@@ -132,6 +132,23 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
       return;
     }
     if (msg.method) mark("recv:" + String(msg.method).replace("ui/notifications/", ""));
+    // Direction-agnostic handshake: we initiate ui/initialize, but if the
+    // HOST initiates instead (implementations differ), answer it rather
+    // than ignoring the request — otherwise neither side completes init.
+    if (msg.id != null && msg.method && /initiali[sz]e/i.test(String(msg.method))) {
+      window.parent.postMessage({
+        jsonrpc: "2.0",
+        id: msg.id,
+        result: {
+          protocolVersion: "2026-01-26",
+          appInfo: { name: "gradeui-preview", version: "0.3.0" },
+          appCapabilities: { availableDisplayModes: ["inline"] },
+        },
+      }, "*");
+      mark("host-init✓");
+      notify("ui/notifications/initialized", {});
+      return;
+    }
     if (msg.method === "ui/notifications/tool-result") {
       onResult(msg.params || {});
     } else if (msg.method === "ui/notifications/tool-input") {
