@@ -60,7 +60,11 @@ export async function screenshotEmbedServerless(
   let browser;
   try {
     browser = await pwChromium.launch({
-      args: sparticuz.args,
+      // --disable-dev-shm-usage is NOT in sparticuz's list but is the
+      // canonical fix for net::ERR_INSUFFICIENT_RESOURCES on serverless:
+      // /dev/shm is tiny there, so Chromium must use /tmp for shared
+      // memory instead of failing allocations mid-pageload.
+      args: [...sparticuz.args, "--disable-dev-shm-usage"],
       executablePath: await sparticuz.executablePath(
         process.env.CHROMIUM_PACK_URL ?? PACK_URL,
       ),
