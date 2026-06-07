@@ -94,6 +94,39 @@ There's **no login** — a local stdio server is just spawned as a child process
 
 Edit `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`) and add the same `mcpServers` block as the `.mcp.json` above, then restart Claude Desktop.
 
+## Hosted (claude.ai web / iPhone / iPad)
+
+The same tools run over Streamable HTTP from inside `apps/docs`, mounted at
+`apps/docs/app/api/grade/[transport]/route.ts` via Vercel's `mcp-handler`.
+`preview_screen` works there too: playwright-core + `@sparticuz/chromium`
+capture the same live embed, and the PNG is uploaded to the public
+`screen-previews` Supabase Storage bucket (auto-created on first use) — the
+tool returns the image plus its public URL, so the screenshot is viewable
+from any host, phone included.
+
+1. Set `GRADE_MCP_KEY` (e.g. `openssl rand -hex 32`) and
+   `GRADE_OWNER_USER_ID` in the Vercel project env. `SUPABASE_SERVICE_ROLE_KEY`
+   and `NEXT_PUBLIC_SUPABASE_URL` are already there.
+2. Deploy.
+3. claude.ai → **Settings → Connectors → Add custom connector** →
+   `https://gradeui.com/api/grade/mcp?key=<GRADE_MCP_KEY>`
+
+The key is a capability URL: wrong or missing key → 404. Treat the full URL
+as a secret; rotate by changing `GRADE_MCP_KEY`. Real OAuth is on the
+roadmap for the day anyone-but-you connects.
+
+Local smoke test (after `pnpm dev`, with the env vars in `apps/docs/.env.local`):
+
+```bash
+curl -s -X POST "http://localhost:3000/api/grade/mcp?key=$GRADE_MCP_KEY" \
+  -H "content-type: application/json" \
+  -H "accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}'
+```
+
+A JSON `serverInfo` response = the whole stack (route → auth → handler →
+tool registration → Supabase env) is wired.
+
 ## The loop
 
 1. *"List my Grade projects"* → `list_projects`

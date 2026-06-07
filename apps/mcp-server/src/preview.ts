@@ -106,6 +106,14 @@ export interface ScreenshotResult {
  * (stable however the host spawns the process — cwd is never trusted).
  * Override with GRADE_PREVIEW_DIR. The directory is gitignored.
  */
+export function previewFileName(name: string, screenId: string): string {
+  const slug =
+    name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") ||
+    "screen";
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  return `${slug}-${screenId}-${stamp}.png`;
+}
+
 export async function savePreviewPng(
   name: string,
   screenId: string,
@@ -116,11 +124,46 @@ export async function savePreviewPng(
     // dist/index.js (bundled) → ../previews ⇒ apps/mcp-server/previews
     join(dirname(fileURLToPath(import.meta.url)), "..", "previews");
   await mkdir(dir, { recursive: true });
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "screen";
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const file = join(dir, `${slug}-${screenId}-${stamp}.png`);
+  const file = join(dir, previewFileName(name, screenId));
   await writeFile(file, Buffer.from(base64, "base64"));
   return file;
+}
+
+/**
+ * Persist a preview PNG to Supabase Storage and return its public URL —
+ * the serverless counterpart of savePreviewPng (a hosted MCP has no disk
+ * the user can reach). Bucket is created on first use (public, read-only
+ * by URL: same trust model as the share token the screenshot came from —
+ * unguessable path, read-only pixels).
+ */
+const PREVIEW_BUCKET = "screen-previews";
+
+export async function uploadPreviewPng(
+  sb: SupabaseClient,
+  name: string,
+  screenId: string,
+  base64: string,
+): Promise<string> {
+  const path = `${screenId}/${previewFileName(name, screenId)}`;
+  const bytes = Buffer.from(base64, "base64");
+  const doUpload = () =>
+    sb.storage
+      .from(PREVIEW_BUCKET)
+      .upload(path, bytes, { contentType: "image/png", upsert: true });
+
+  let { error } = await doUpload();
+  if (error && /not.?found/i.test(error.message)) {
+    // First ever upload: bucket doesn't exist yet. Service role may create it.
+    const { error: mkErr } = await sb.storage.createBucket(PREVIEW_BUCKET, {
+      public: true,
+    });
+    if (mkErr && !/already exists/i.test(mkErr.message)) throw mkErr;
+    ({ error } = await doUpload());
+  }
+  if (error) throw error;
+
+  const { data } = sb.storage.from(PREVIEW_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }
 
 /**

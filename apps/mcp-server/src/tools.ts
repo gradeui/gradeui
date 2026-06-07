@@ -34,6 +34,7 @@ import {
   embedUrl,
   screenshotEmbed,
   savePreviewPng,
+  uploadPreviewPng,
 } from "./preview.js";
 import {
   PREVIEW_RESOURCE_URI,
@@ -42,8 +43,15 @@ import {
 
 export interface GradeToolsOptions {
   siteUrl: string;
-  /** register preview_screen (needs Playwright) — default true */
-  enablePreview?: boolean;
+  /**
+   * preview_screen capture engine:
+   * - "playwright" (default) — full Playwright, local workstation; PNG
+   *   saved to apps/mcp-server/previews/ for the host to present.
+   * - "serverless" — playwright-core + @sparticuz/chromium (Vercel/Lambda);
+   *   PNG uploaded to Supabase Storage, public URL returned.
+   * - "none" — tool not registered.
+   */
+  capture?: "playwright" | "serverless" | "none";
 }
 
 /** Wrap a string into the MCP text-content envelope. */
@@ -329,7 +337,8 @@ export function registerGradeTools(
   );
 
   // ── preview_screen ───────────────────────────────────────────────────
-  if (opts.enablePreview !== false) {
+  const captureMode = opts.capture ?? "playwright";
+  if (captureMode !== "none") {
     server.registerTool(
       "preview_screen",
       {
@@ -373,7 +382,12 @@ export function registerGradeTools(
           colorMode ?? "dark",
         );
         const url = embedUrl(opts.siteUrl, share.token, w);
-        const shot = await screenshotEmbed(url, w, h);
+        const shot =
+          captureMode === "serverless"
+            ? await (
+                await import("./preview-serverless.js")
+              ).screenshotEmbedServerless(url, w, h)
+            : await screenshotEmbed(url, w, h);
         // MCP Apps capability gate (SEP-1865). structuredContent carries the
         // multi-MB data-URI for the app iframe — but hosts WITHOUT apps
         // support may dump structuredContent into the visible tool result,
@@ -383,20 +397,45 @@ export function registerGradeTools(
         const clientCaps = server.server.getClientCapabilities() as
           | { extensions?: Record<string, unknown> }
           | undefined;
-        const uiSupported = Boolean(
-          clientCaps?.extensions?.["io.modelcontextprotocol/ui"],
+        // ALSO sniff clientInfo: some hosts advertise the ui extension but
+        // never render third-party panels — they dump structuredContent into
+        // the visible result instead (observed twice in Cowork, June 2026,
+        // after the capability gate landed; Desktop has the same panel gap,
+        // anthropics/claude-ai-mcp#165/#236). Blocklist the known offenders.
+        const clientName = server.server.getClientVersion()?.name ?? "";
+        const knownNonRenderer = /cowork|desktop|claude[ _-]?code/i.test(
+          clientName,
         );
+        const uiSupported =
+          Boolean(clientCaps?.extensions?.["io.modelcontextprotocol/ui"]) &&
+          !knownNonRenderer;
 
         // Persist alongside the image content — hosts differ in whether they
         // show MCP images to the human, but every host's agent can open,
-        // present, or link a file path. Best-effort: a failed write must not
-        // sink a successful screenshot.
+        // present, or link a file path or URL. Local → a PNG on disk;
+        // serverless → Supabase Storage (a hosted MCP has no reachable
+        // disk). Best-effort: a failed write must not sink a successful
+        // screenshot.
         let savedPath: string | null = null;
+        let savedUrl: string | null = null;
         try {
-          savedPath = await savePreviewPng(screen.name, screenId, shot.base64);
+          if (captureMode === "serverless") {
+            savedUrl = await uploadPreviewPng(
+              sb,
+              screen.name,
+              screenId,
+              shot.base64,
+            );
+          } else {
+            savedPath = await savePreviewPng(
+              screen.name,
+              screenId,
+              shot.base64,
+            );
+          }
         } catch (err) {
           console.error(
-            "gradeui-mcp: preview file write failed:",
+            "gradeui-mcp: preview persist failed:",
             err instanceof Error ? err.message : err,
           );
         }
@@ -412,8 +451,9 @@ export function registerGradeTools(
               text:
                 `Live render of "${screen.name}" (${screenId}) at ${w}×${h}.\n` +
                 (savedPath ? `Saved PNG: ${savedPath}\n` : "") +
+                (savedUrl ? `Preview PNG URL (public): ${savedUrl}\n` : "") +
                 `Embed URL (read-only${share.created ? ", newly minted" : ""}): ${url}\n` +
-                `This is the REAL render — same route any embed uses. If the host rendered an inline preview panel (MCP App), the human can already see it; otherwise SHOW THE HUMAN the saved PNG (present/attach the file) or give them the embed URL as a clickable link. Iterate with get_screen → save_screen, then preview again.`,
+                `This is the REAL render — same route any embed uses. If the host rendered an inline preview panel (MCP App), the human can already see it; otherwise SHOW THE HUMAN the render: present/attach the saved PNG file, or give them the preview PNG URL and the embed URL as clickable links. Iterate with get_screen → save_screen, then preview again.`,
             },
           ],
           // Forwarded verbatim to the app iframe (ui/notifications/tool-result)
@@ -428,6 +468,7 @@ export function registerGradeTools(
                   width: w,
                   height: h,
                   embedUrl: url,
+                  previewUrl: savedUrl ?? undefined,
                   imageDataUri: `data:image/png;base64,${shot.base64}`,
                 },
               }
