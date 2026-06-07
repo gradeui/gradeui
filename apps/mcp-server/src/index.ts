@@ -35,10 +35,25 @@ async function main() {
   // "gradeui-mcp", not "gradeui-screens" — the server's remit is the whole
   // design system (screens today; docs/search tools, themes, variations
   // next), so the name shouldn't paint us into a corner.
-  const server = new McpServer({
+  // icons/websiteUrl (MCP spec 2025-11-25): hosts that support server
+  // icons show the Grade mark instead of a letter avatar. Same asset as
+  // the site favicon (apps/docs/app/icon.svg → gradeui.com/icon.svg).
+  // Widened via a variable: older Implementation typings may not know
+  // `icons`, and width-subtyping skips excess-property checks.
+  const serverInfo = {
     name: "gradeui-mcp",
+    title: "GradeUI",
     version: "0.1.0",
-  });
+    websiteUrl: "https://gradeui.com",
+    icons: [
+      {
+        src: "https://gradeui.com/icon.svg",
+        mimeType: "image/svg+xml",
+        sizes: ["any"],
+      },
+    ],
+  };
+  const server = new McpServer(serverInfo);
 
   registerGradeTools(server, sb, env, { siteUrl: SITE_URL });
 

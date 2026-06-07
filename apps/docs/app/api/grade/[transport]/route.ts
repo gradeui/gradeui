@@ -44,6 +44,25 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
   "https://gradeui.com";
 
+// icons/websiteUrl (MCP spec 2025-11-25): hosts that support server icons
+// show the Grade mark instead of a letter avatar. Same asset as the site
+// favicon (app/icon.svg → gradeui.com/icon.svg). Widened via a variable:
+// mcp-handler types serverInfo as {name, version} only, and width-subtyping
+// skips excess-property checks — the extra fields ride through to the SDK.
+const serverInfo = {
+  name: "gradeui-mcp",
+  title: "GradeUI",
+  version: "0.1.0",
+  websiteUrl: "https://gradeui.com",
+  icons: [
+    {
+      src: "https://gradeui.com/icon.svg",
+      mimeType: "image/svg+xml",
+      sizes: ["any"],
+    },
+  ],
+};
+
 const handler = createMcpHandler(
   (server) => {
     // Inside the init fn (per-connection), not module scope: a missing env
@@ -64,7 +83,7 @@ const handler = createMcpHandler(
           | undefined) ?? "serverless",
     });
   },
-  {},
+  { serverInfo },
   {
     basePath: "/api/grade", // must match this file's directory
     maxDuration: 60,
