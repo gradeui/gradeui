@@ -28,7 +28,11 @@
 // v4: monotonic render gate (iOS race fix — see grade-preview-widget-fix.md).
 // v5: poster re-probe on tool-result — status is monotonic but CONTENT must
 //     refresh, or the early self-load leaves the panel one capture behind.
-export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview-v5";
+// v6: LIVE BY DEFAULT — when the host allows nested frames (claude.ai web),
+//     the panel now renders the real interactive screen (the /e/<token>
+//     embed) on tool-result instead of the PNG; the poster self-load is the
+//     instant placeholder, and a toggle drops back to the static image.
+export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview-v6";
 
 /**
  * Bake the Supabase Storage poster base URL into the template.
@@ -304,7 +308,12 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
   // hosts get the button; worst case the nested frame is blocked by host
   // CSP and the user toggles back to the PNG.
   function liveAllowed() {
-    return !/desktop/i.test(state.hostName);
+    // Attempt the live render on ALL hosts, Desktop included. The host's
+    // sandboxed panel iframe is the boundary; if a host genuinely refuses
+    // the nested frame it comes up blank and the "Static" toggle is the
+    // fallback. (Previously this blocked Desktop on the assumption it can't
+    // nest frames — testing whether that was a red herring.)
+    return true;
   }
 
   function onResult(result) {
@@ -335,16 +344,28 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     var openBtn = document.getElementById("open-btn");
     if (state.embedUrl) {
       openBtn.hidden = false;
+      openBtn.textContent = "Open in tab";
       openBtn.onclick = function () {
         send("ui/open-link", { url: state.embedUrl });
       };
       if (liveAllowed()) {
+        // LIVE BY DEFAULT: render the real interactive screen now. The
+        // button toggles back to the static capture — handy if a host's CSP
+        // blocks the nested frame and it comes up blank. The poster the
+        // self-load already painted is the instant placeholder under this.
         liveBtn.hidden = false;
+        state.live = true;
+        liveBtn.textContent = "Live";
+        liveBtn.setAttribute("data-on", "true");
         liveBtn.onclick = function () {
           state.live = !state.live;
           liveBtn.setAttribute("data-on", String(state.live));
+          liveBtn.textContent = state.live ? "Live" : "Static";
           if (state.live) renderLive(); else renderImage();
         };
+        renderLive();
+        reportSize();
+        return;
       }
     }
     if (state.imageDataUri) renderImage();

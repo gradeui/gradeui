@@ -37,10 +37,11 @@ import {
   savePreviewPng,
   uploadPreviewPng,
 } from "./preview";
+import { PREVIEW_VIEW_URI, PREVIEW_VIEW_HTML } from "./preview-view-html";
 import {
-  PREVIEW_RESOURCE_URI,
-  buildPreviewTemplate,
-} from "./ui-template";
+  INTERACTIVE_DEMO_URI,
+  INTERACTIVE_DEMO_HTML,
+} from "./interactive-demo";
 
 export interface GradeToolsOptions {
   siteUrl: string;
@@ -112,44 +113,77 @@ export function registerGradeTools(
   // forward wiring; verify with apps/mcp-server/view-harness.html.
   if (opts.appPanel)
     server.registerResource(
-    "gradeui-preview-view",
-    PREVIEW_RESOURCE_URI,
-    {
-      description: "Inline preview panel for Grade screens (MCP App view)",
-      mimeType: "text/html;profile=mcp-app",
-    },
-    async () => ({
-      contents: [
-        {
-          uri: PREVIEW_RESOURCE_URI,
-          mimeType: "text/html;profile=mcp-app",
-          // Poster base baked in (server-static, not per-call): lets the
-          // panel self-load the stored poster from tool-input alone, for
-          // hosts that render panels but never forward tool-result.
-          text: buildPreviewTemplate(
-            `${env.url}/storage/v1/object/public/screen-previews`,
-          ),
-          // img-src data: is covered by the spec's default CSP; the
-          // frameDomains declaration is for the view's "Live" toggle, which
-          // nests the real gradeui.com/e/<token> embed. The view hides that
-          // toggle on desktop hosts (hostInfo sniff) since Claude Desktop
-          // disallows nested iframes — browser hosts get the live screen.
-          _meta: {
-            ui: {
-              csp: {
-                frameDomains: ["https://gradeui.com"],
-                // The poster self-load fetches PNGs from Supabase Storage;
-                // undeclared external origins are blocked by the host's
-                // panel CSP (only data: URIs pass by default).
-                resourceDomains: [env.url, "https://gradeui.com"],
-              },
-              prefersBorder: false,
-            },
+      "gradeui-preview-view",
+      PREVIEW_VIEW_URI,
+      {
+        description:
+          "Inline interactive preview of a Grade screen (MCP App view)",
+        mimeType: "text/html;profile=mcp-app",
+      },
+      async () => ({
+        contents: [
+          {
+            uri: PREVIEW_VIEW_URI,
+            mimeType: "text/html;profile=mcp-app",
+            // Self-contained single-file bundle (React + the @gradeui/ui
+            // vocabulary + sucrase, all inlined) built from the ONE renderer
+            // (apps/docs/lib/studio-render-core + apps/docs/preview-view). It
+            // compiles the screen's JSX — delivered via tool-result — and
+            // renders it DIRECTLY in the host's sandboxed iframe: no nested
+            // frame, no runtime network. The spec's default CSP
+            // (script-src 'self' 'unsafe-inline'; connect-src 'none') is
+            // exactly what an inline single-file bundle needs, so no csp
+            // declaration is required.
+            text: PREVIEW_VIEW_HTML,
+            _meta: { ui: { prefersBorder: false } },
           },
-        },
-      ],
-    }),
-  );
+        ],
+      }),
+    );
+
+  // ── interactive_demo ─ minimal proof that MCP Apps interactivity works ─
+  // A dependency-free, self-contained interactive panel (button + text
+  // echo). Independent of the Grade renderer: if this renders + responds
+  // in a host but the full preview doesn't, the issue is the Grade bundle,
+  // not MCP Apps support. Gated on appPanel like the other UI resources.
+  if (opts.appPanel) {
+    server.registerResource(
+      "gradeui-interactive-demo",
+      INTERACTIVE_DEMO_URI,
+      {
+        description: "Minimal interactive MCP App (proof of interactivity)",
+        mimeType: "text/html;profile=mcp-app",
+      },
+      async () => ({
+        contents: [
+          {
+            uri: INTERACTIVE_DEMO_URI,
+            mimeType: "text/html;profile=mcp-app",
+            text: INTERACTIVE_DEMO_HTML,
+          },
+        ],
+      }),
+    );
+
+    server.registerTool(
+      "interactive_demo",
+      {
+        title: "Interactive MCP App check",
+        description:
+          "Render a tiny interactive UI inline to confirm MCP Apps interactivity works in this host: a click counter + a text echo. No Grade rendering — pure proof of the mechanism. Use this if you want to verify the host supports interactive MCP panels at all.",
+        _meta: { ui: { resourceUri: INTERACTIVE_DEMO_URI } },
+        inputSchema: {},
+      },
+      async () => ({
+        content: [
+          {
+            type: "text" as const,
+            text: "Interactive demo: click the button and type in the field. If the panel updates as you do, interactive MCP UI works in this host.",
+          },
+        ],
+      }),
+    );
+  }
 
   // ── list_projects ────────────────────────────────────────────────────
   server.registerTool(
@@ -360,17 +394,180 @@ export function registerGradeTools(
     },
   );
 
-  // ── preview_screen ───────────────────────────────────────────────────
+  // ── preview tools ─────────────────────────────────────────────────────
   const captureMode = opts.capture ?? "playwright";
   if (captureMode !== "none") {
+    // Shared capture: stored-poster reuse → live Playwright capture (one
+    // retry) → stale-poster fallback; every fresh capture becomes the
+    // screen's stored poster. Returns the PNG + the live embed URL +
+    // metadata, or an error string. Both preview_image (PNG only) and
+    // preview_screen (image + live panel) build their result from this, so
+    // the gnarly capture/fallback logic lives in exactly one place.
+    const captureScreenShot = async (a: {
+      projectId: string;
+      screenId: string;
+      width?: number;
+      height?: number;
+      colorMode?: "light" | "dark";
+      refresh?: boolean;
+    }) => {
+      const sls = captureMode === "serverless";
+      await assertProject(sb, env.ownerUserId, a.projectId);
+      const screen = await getScreen(sb, a.projectId, a.screenId);
+      if (!screen) {
+        return {
+          ok: false as const,
+          error: `No screen "${a.screenId}" in project ${a.projectId}. Save it first, or check list via get_screen.`,
+        };
+      }
+      const mode = a.colorMode ?? "dark";
+      const w = Math.min(Math.max(a.width ?? (sls ? 1024 : 1280), 320), 2560);
+      const h = Math.min(Math.max(a.height ?? (sls ? 640 : 800), 320), 2560);
+      const share = await ensureShareLink(sb, a.projectId, a.screenId, mode);
+      const url = embedUrl(opts.siteUrl, share.token, w);
+
+      const stored = a.refresh
+        ? null
+        : await getStoredPreview(sb, a.screenId, mode, screen.updatedAt);
+
+      const capture = async () =>
+        sls
+          ? await (
+              await import("./preview-serverless")
+            ).screenshotEmbedServerless(url, w, h, mode)
+          : await screenshotEmbed(url, w, h, mode);
+
+      let shot = stored ? { base64: stored.base64, width: w, height: h } : null;
+      let staleFallback: number | null = null;
+      let fallbackUrl: string | null = null;
+      let captureErr: unknown = null;
+      if (!shot) {
+        try {
+          shot = await capture();
+        } catch {
+          try {
+            shot = await capture();
+          } catch (e) {
+            captureErr = e;
+          }
+        }
+        if (!shot) {
+          const anyAge = await getStoredPreview(sb, a.screenId, mode, 0);
+          if (!anyAge) throw captureErr;
+          shot = { base64: anyAge.base64, width: w, height: h };
+          staleFallback = anyAge.capturedAt;
+          fallbackUrl = anyAge.url;
+        }
+      }
+
+      let savedPath: string | null = null;
+      let savedUrl: string | null = stored?.url ?? fallbackUrl ?? null;
+      if (!stored && !staleFallback) {
+        try {
+          savedUrl = await uploadPreviewPng(sb, a.screenId, mode, shot.base64);
+        } catch (err) {
+          console.error(
+            "gradeui-mcp: poster upload failed:",
+            err instanceof Error ? err.message : err,
+          );
+        }
+        if (!sls) {
+          try {
+            savedPath = await savePreviewPng(screen.name, a.screenId, shot.base64);
+          } catch (err) {
+            console.error(
+              "gradeui-mcp: preview file write failed:",
+              err instanceof Error ? err.message : err,
+            );
+          }
+        }
+      }
+
+      return {
+        ok: true as const,
+        screen,
+        shot,
+        url,
+        w,
+        h,
+        mode,
+        savedUrl,
+        savedPath,
+        staleFallback,
+        fromStored: Boolean(stored),
+      };
+    };
+
+    // ── preview_image ─ just the screenshot, no interactive panel ─────────
+    server.registerTool(
+      "preview_image",
+      {
+        title: "Preview a Grade screen as an image",
+        description:
+          "Render a saved screen (real render via the live embed route) and return JUST the screenshot PNG — no interactive panel. Use when you want a picture of the screen in the chat. Reuses the stored poster if the screen is unchanged; pass refresh: true to force a fresh capture. (For a live, interactive render, use preview_screen.)",
+        inputSchema: {
+          projectId: z.string().describe("Project id"),
+          screenId: z
+            .string()
+            .describe("Screen (design) id, e.g. from save_screen"),
+          width: z
+            .number()
+            .optional()
+            .describe("Virtual render width in px (default 1280 local / 1024 hosted)"),
+          height: z
+            .number()
+            .optional()
+            .describe("Viewport height in px (default 800 local / 640 hosted)"),
+          colorMode: z
+            .enum(["light", "dark"])
+            .optional()
+            .describe("Theme mode (default dark)"),
+          refresh: z
+            .boolean()
+            .optional()
+            .describe("Force a fresh capture even if a current poster exists"),
+        },
+      },
+      async ({ projectId, screenId, width, height, colorMode, refresh }) => {
+        const r = await captureScreenShot({
+          projectId,
+          screenId,
+          width,
+          height,
+          colorMode,
+          refresh,
+        });
+        if (!r.ok) return errorText(r.error);
+        const headline = r.staleFallback
+          ? `"${r.screen.name}" — WARNING: live capture failed; this is the PREVIOUS capture (${r.mode}, ${new Date(r.staleFallback).toISOString()}) and predates the latest save. Retry shortly (refresh: true).`
+          : r.fromStored
+            ? `"${r.screen.name}" — stored poster (${r.mode}; refresh: true re-renders).`
+            : `"${r.screen.name}" — live render, ${r.w}×${r.h} ${r.mode}.`;
+        return {
+          content: [
+            { type: "image" as const, data: r.shot.base64, mimeType: "image/png" },
+            {
+              type: "text" as const,
+              text:
+                headline +
+                (r.savedPath ? `\nFile: ${r.savedPath}` : "") +
+                (r.savedUrl ? `\nPoster: ${r.savedUrl}` : "") +
+                `\nLive embed: ${r.url}`,
+            },
+          ],
+        };
+      },
+    );
+
+    // ── preview_screen ───────────────────────────────────────────────────
     server.registerTool(
       "preview_screen",
       {
-        title: "Preview a Grade screen (real render)",
+        title: "Preview a Grade screen (live, interactive)",
         description:
-          "Get a screenshot PNG of a saved screen (real render via the live embed route, gradeui.com/e/<token>) plus the embed URL. Use after save_screen to SEE the render and iterate. Every capture is stored as the screen's poster (one per color mode); if the screen hasn't changed since the last capture, that poster is returned instantly instead of re-rendering — pass refresh: true to force a fresh capture. Mints a read-only share link if none exists. In hosts that support MCP Apps, also renders an inline preview panel with a live-embed toggle.",
+          "Show a saved screen as a LIVE, interactive render inline. On hosts that support MCP Apps (e.g. claude.ai web) this renders the real screen in an interactive panel; on other hosts it falls back to a screenshot PNG in chat plus the embed URL. Use after save_screen to SEE and interact with the render. Every capture is stored as the screen's poster; an unchanged screen reuses it instantly — pass refresh: true to force a fresh capture. Mints a read-only share link if none exists. For just a still picture, use preview_image.",
         ...(opts.appPanel
-          ? { _meta: { ui: { resourceUri: PREVIEW_RESOURCE_URI } } }
+          ? { _meta: { ui: { resourceUri: PREVIEW_VIEW_URI } } }
           : {}),
         inputSchema: {
           projectId: z.string().describe("Project id"),
@@ -539,10 +736,12 @@ export function registerGradeTools(
                 `\nLive embed: ${url}`,
             },
           ],
-          // Forwarded verbatim to the app iframe (ui/notifications/tool-result)
-          // and NOT added to model context in apps-capable hosts — the
-          // data-URI is token-free there. Omitted entirely elsewhere (see
-          // capability gate above).
+          // Forwarded to the inline View via ui/notifications/tool-result
+          // (NOT added to model context in apps-capable hosts). The View
+          // compiles `appSource` and renders it directly — so this carries
+          // the raw JSX (a few KB), not a multi-MB image. `embedUrl` rides
+          // along as an "open full" escape hatch. Omitted entirely on hosts
+          // without the ui extension (see capability gate above).
           ...(uiSupported
             ? {
                 structuredContent: {
@@ -550,9 +749,9 @@ export function registerGradeTools(
                   screenId,
                   width: w,
                   height: h,
+                  mode,
+                  appSource: screen.state?.appSource ?? "",
                   embedUrl: url,
-                  previewUrl: savedUrl ?? undefined,
-                  imageDataUri: `data:image/png;base64,${shot.base64}`,
                 },
               }
             : {}),

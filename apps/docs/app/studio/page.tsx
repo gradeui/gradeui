@@ -106,6 +106,7 @@ import {
   studioInput,
   type GeneratedTheme,
   type ThemeInput,
+  type ThemeVariant,
 } from "@/lib/themes";
 import { cloneInput } from "@/lib/studio-state";
 import {
@@ -411,6 +412,15 @@ export default function StudioPage() {
   // ThemeBuilderProvider; switching projects keys the provider on
   // activeProjectId so it remounts with the new initial.
   const [themeDraftJsonByProject, setThemeDraftJsonByProject] = useState<
+    Record<string, string>
+  >({});
+
+  // Per-project saved theme variants, serialised as a ThemeVariant[]
+  // JSON array (migration 0013). Loaded from snapshots on bootstrap,
+  // edited via the Styles tab, persisted on saveProject — the exact
+  // themeDraftJson path one tier up (a set of named themes rather than
+  // the single working draft). See STUDIO-THEMES.md T1.
+  const [themeVariantsJsonByProject, setThemeVariantsJsonByProject] = useState<
     Record<string, string>
   >({});
 
@@ -808,6 +818,12 @@ export default function StudioPage() {
           cur[targetId] === draft ? cur : { ...cur, [targetId]: draft },
         );
       }
+      if (snap.themeVariantsJson) {
+        const variants = snap.themeVariantsJson;
+        setThemeVariantsJsonByProject((cur) =>
+          cur[targetId] === variants ? cur : { ...cur, [targetId]: variants },
+        );
+      }
       setActiveProjectId(targetId);
       applySnapshot({ ...snap, activeDesignId: initialDesignId });
       setLoadedProjectId(targetId);
@@ -822,6 +838,7 @@ export default function StudioPage() {
       if (cancelled) return;
       const summaries: Record<string, ProjectSummary> = {};
       const themeDrafts: Record<string, string> = {};
+      const themeVariants: Record<string, string> = {};
       list.forEach((p, i) => {
         const s = allSnaps[i];
         if (s) {
@@ -831,10 +848,14 @@ export default function StudioPage() {
           // the ThemeBuilderProvider on its first mount; inactive
           // entries hang here until the user switches into them.
           if (s.themeDraftJson) themeDrafts[p.id] = s.themeDraftJson;
+          // Same for saved variants — the Styles tab reads the active
+          // project's entry; the rest hang here until switched into.
+          if (s.themeVariantsJson) themeVariants[p.id] = s.themeVariantsJson;
         }
       });
       setProjectSummaries(summaries);
       setThemeDraftJsonByProject(themeDrafts);
+      setThemeVariantsJsonByProject(themeVariants);
 
       // Teams + memberships + users + orgs + org memberships —
       // pulled in parallel so a slow read doesn't gate the first
@@ -936,6 +957,7 @@ export default function StudioPage() {
     if (!project) return;
 
     const themeDraftJson = themeDraftJsonByProject[activeProjectId];
+    const themeVariantsJson = themeVariantsJsonByProject[activeProjectId];
 
     // Two-tier dirty tracking (STUDIO-PERSISTENCE.md, P1 + P2):
     //
@@ -958,6 +980,7 @@ export default function StudioPage() {
         .map((k) => [k, messagesByDesign[k]?.length ?? 0]),
       n: notesByDesign,
       t: themeDraftJson ?? "",
+      v: themeVariantsJson ?? "",
     });
     const bodyById: Record<string, string> = {};
     for (const d of designs) {
@@ -1002,6 +1025,7 @@ export default function StudioPage() {
               messagesByDesign,
               notesByDesign,
               themeDraftJson,
+              themeVariantsJson,
             })
             .then(() => {
               lastSavedStructSigRef.current = structSig;
@@ -1082,6 +1106,7 @@ export default function StudioPage() {
     messagesByDesign,
     notesByDesign,
     themeDraftJsonByProject,
+    themeVariantsJsonByProject,
     storage,
   ]);
 
@@ -1865,7 +1890,7 @@ export default function StudioPage() {
   // auto-switch the user to the Comments tab when they pick an
   // element. Defaults to "layout" — the existing landing tab.
   const [rightTab, setRightTab] = useState<
-    "layout" | "theme" | "comments"
+    "layout" | "styles" | "theme" | "comments"
   >("layout");
 
   // A monotonic counter incremented every time a Comment-mode
@@ -2331,6 +2356,37 @@ export default function StudioPage() {
   // comment write actions on access list + ownership.
   const activeProject = projects.find((p) => p.id === activeProjectId);
 
+  // The active project's saved theme variants, parsed. ThemeVariant[] is
+  // plain JSON; a corrupt/missing entry yields an empty list so the
+  // Styles tab still renders. (STUDIO-THEMES.md T1.)
+  const projectThemeVariants: ThemeVariant[] = React.useMemo(() => {
+    const raw = activeProjectId
+      ? themeVariantsJsonByProject[activeProjectId]
+      : undefined;
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? (parsed as ThemeVariant[]) : [];
+    } catch {
+      return [];
+    }
+  }, [activeProjectId, themeVariantsJsonByProject]);
+
+  // Persist a new variant list for the active project. Serialises to the
+  // themeVariantsJson entry the save effect writes onto the project
+  // snapshot — mirrors handleThemeDraftChange one tier up.
+  const handleThemeVariantsChange = React.useCallback(
+    (next: ThemeVariant[]) => {
+      if (!activeProjectId) return;
+      const json = JSON.stringify(next);
+      setThemeVariantsJsonByProject((cur) => {
+        if (cur[activeProjectId] === json) return cur;
+        return { ...cur, [activeProjectId]: json };
+      });
+    },
+    [activeProjectId],
+  );
+
   const rightTabsPane = (
     <StudioRightTabs
       // Flat full-height column — the page shell owns the surface;
@@ -2354,6 +2410,8 @@ export default function StudioPage() {
       }
       tab={rightTab}
       onTabChange={setRightTab}
+      themeVariants={projectThemeVariants}
+      onThemeVariantsChange={handleThemeVariantsChange}
       commentsContent={
         <CommentsTabHost
           threads={commentThreads}
@@ -2838,7 +2896,7 @@ export default function StudioPage() {
                       Your project&apos;s media, fonts, and documents — used
                       by screens and Motions across this project.
                     </p>
-                    <AssetBrowser />
+                    <AssetBrowser projectId={activeProjectId} />
                   </div>
                 </div>
               )}

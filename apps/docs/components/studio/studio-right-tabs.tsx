@@ -31,13 +31,18 @@
 
 import * as React from "react";
 import {
+  Brush,
   Check,
   ChevronDown,
   Layers,
   MessageSquare,
   Palette,
+  Pencil,
+  Plus,
+  Share2,
   Sun,
   Moon,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -68,8 +73,10 @@ import {
   useMaybeThemeBuilder,
 } from "@/components/theme-builder";
 import {
+  generateTheme,
   type GeneratedTheme,
   type ThemeInput,
+  type ThemeVariant,
   type ColorIntensity,
   type RadiusStyle,
   type SpacingDensity,
@@ -82,7 +89,7 @@ import {
 import { StudioRightPanel } from "./studio-right-panel";
 import { ThemePickerSection } from "./theme-picker-section";
 
-export type TabId = "layout" | "theme" | "comments";
+export type TabId = "layout" | "styles" | "theme" | "comments";
 
 /**
  * INTERIM: the full Theme tab (picker list + builder controls) is
@@ -98,6 +105,10 @@ const SHOW_THEME_TAB = false;
 // `[&_svg]:size-3.5` to all icon children. No per-call sizes here.
 const ALL_TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "layout", label: "Layout", icon: <Layers /> },
+  // The Styles tab is the per-project theme variant authoring surface
+  // (STUDIO-THEMES.md Phase T1) — shown regardless of SHOW_THEME_TAB,
+  // which only gates the not-yet-demo-quality full builder controls.
+  { id: "styles", label: "Styles", icon: <Brush /> },
   { id: "theme", label: "Theme", icon: <Palette /> },
   { id: "comments", label: "Comments", icon: <MessageSquare /> },
 ];
@@ -132,6 +143,11 @@ export interface StudioRightTabsProps {
    *  parent. The right-tabs file doesn't know about storage or
    *  selection mutations; it just hosts the pane. */
   commentsContent?: React.ReactNode;
+  /** The active project's saved theme variants + a setter. Owned by the
+   *  page (persisted onto the project snapshot); the Styles tab reads
+   *  and edits them. Empty/no-op when there's no active project. */
+  themeVariants?: ThemeVariant[];
+  onThemeVariantsChange?: (next: ThemeVariant[]) => void;
   className?: string;
 }
 
@@ -150,6 +166,8 @@ export function StudioRightTabs({
   tab: controlledTab,
   onTabChange,
   commentsContent,
+  themeVariants,
+  onThemeVariantsChange,
   className,
 }: StudioRightTabsProps) {
   const [internalTab, setInternalTab] = React.useState<TabId>(defaultTab);
@@ -215,6 +233,15 @@ export function StudioRightTabs({
           revisions={revisions}
           projectName={projectName}
           onStatusChange={onStatusChange ?? (() => {})}
+        />
+      </TabsContent>
+      <TabsContent
+        value="styles"
+        className="flex-1 min-h-0 overflow-hidden"
+      >
+        <StylesTabContent
+          variants={themeVariants ?? []}
+          onVariantsChange={onThemeVariantsChange ?? (() => {})}
         />
       </TabsContent>
       {SHOW_THEME_TAB && (
@@ -326,6 +353,219 @@ function ThemeDropdown() {
  * Renders bare (no card chrome) — the parent TabsContent in this
  * file already provides the bordered container.
  */
+/**
+ * StylesTabContent — the per-project Styles tab: theme variant authoring
+ * (STUDIO-THEMES.md Phase T1). Save the current screen theme as a named
+ * variant, apply a saved variant back to the canvas (NON-DESTRUCTIVE —
+ * rebases the builder draft, identical to the theme dropdown above, so the
+ * preview re-skins without committing anything elsewhere), rename, delete,
+ * and flag which ones travel with a share (`includeInShare` → the curated
+ * share set, T2). Variants persist as ThemeInput JSON on the project
+ * (`theme_variants_json`, migration 0013); because `generateTheme` is
+ * deterministic, the stored input reproduces the exact theme forever.
+ *
+ * Set a base with the theme menu above the tabs, tweak, then save.
+ */
+function StylesTabContent({
+  variants,
+  onVariantsChange,
+}: {
+  variants: ThemeVariant[];
+  onVariantsChange: (next: ThemeVariant[]) => void;
+}) {
+  const builder = useMaybeThemeBuilder();
+  const [newName, setNewName] = React.useState("");
+
+  // No builder in scope (host without a ThemeBuilderProvider) — nothing to
+  // author against. Render nothing rather than a dead panel.
+  if (!builder) return null;
+
+  const saveCurrent = () => {
+    const name = newName.trim() || `Variant ${variants.length + 1}`;
+    const variant: ThemeVariant = {
+      id:
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `v-${Date.now()}`,
+      name,
+      input: cloneInput(builder.input),
+      includeInShare: false,
+      createdAt: Date.now(),
+    };
+    onVariantsChange([...variants, variant]);
+    setNewName("");
+  };
+
+  const apply = (v: ThemeVariant) => builder.rebase(cloneInput(v.input));
+  const remove = (id: string) =>
+    onVariantsChange(variants.filter((v) => v.id !== id));
+  const patchVariant = (id: string, patch: Partial<ThemeVariant>) =>
+    onVariantsChange(
+      variants.map((v) => (v.id === id ? { ...v, ...patch } : v)),
+    );
+
+  return (
+    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
+      <div className="space-y-1">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Theme variants
+        </h3>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Save the current screen theme as a named variant. Set a base with
+          the theme menu above, tweak it, then save. Applying a variant
+          re-skins the preview without overwriting your working draft.
+        </p>
+      </div>
+
+      {/* Save current as a variant */}
+      <div className="flex gap-1.5">
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") saveCurrent();
+          }}
+          placeholder={`Variant ${variants.length + 1}`}
+          aria-label="New variant name"
+          className="h-7 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+        <button
+          type="button"
+          onClick={saveCurrent}
+          title="Save the current theme as a variant"
+          className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition hover:opacity-90 [&_svg]:size-3.5"
+        >
+          <Plus /> Save
+        </button>
+      </div>
+
+      {/* Variant list */}
+      {variants.length === 0 ? (
+        <p className="rounded-md border border-dashed border-border px-2 py-6 text-center text-xs text-muted-foreground">
+          No variants yet. Save the current theme to start a set.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {variants.map((v) => (
+            <VariantRow
+              key={v.id}
+              variant={v}
+              onApply={() => apply(v)}
+              onRename={(name) => patchVariant(v.id, { name })}
+              onToggleShare={() =>
+                patchVariant(v.id, { includeInShare: !v.includeInShare })
+              }
+              onDelete={() => remove(v.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** One variant row — swatch + name (click to apply), with rename, a
+ *  share-set toggle, and delete. The swatch derives from the variant's
+ *  own ThemeInput via the deterministic generator. */
+function VariantRow({
+  variant,
+  onApply,
+  onRename,
+  onToggleShare,
+  onDelete,
+}: {
+  variant: ThemeVariant;
+  onApply: () => void;
+  onRename: (name: string) => void;
+  onToggleShare: () => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = React.useState(false);
+  const [name, setName] = React.useState(variant.name);
+  const generated = React.useMemo(
+    () => generateTheme(variant.input),
+    [variant.input],
+  );
+
+  React.useEffect(() => setName(variant.name), [variant.name]);
+
+  const commit = () => {
+    const next = name.trim();
+    if (next && next !== variant.name) onRename(next);
+    else setName(variant.name);
+    setEditing(false);
+  };
+
+  return (
+    <div className="group flex items-center gap-2 rounded-md border border-border px-2 py-1.5">
+      <ThemeSwatch theme={generated} />
+      {editing ? (
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") {
+              setName(variant.name);
+              setEditing(false);
+            }
+          }}
+          aria-label="Rename variant"
+          className="h-6 min-w-0 flex-1 rounded border border-input bg-background px-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={onApply}
+          title="Apply to preview"
+          className="min-w-0 flex-1 truncate text-left text-xs text-foreground transition hover:text-primary"
+        >
+          {variant.name}
+        </button>
+      )}
+
+      <div className="flex shrink-0 items-center gap-0.5">
+        <button
+          type="button"
+          onClick={onToggleShare}
+          aria-pressed={variant.includeInShare}
+          title={
+            variant.includeInShare
+              ? "In the share set — viewers can switch to it"
+              : "Add to the share set"
+          }
+          className={cn(
+            "inline-flex h-6 w-6 items-center justify-center rounded transition [&_svg]:size-3.5",
+            variant.includeInShare
+              ? "text-primary"
+              : "text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100",
+          )}
+        >
+          <Share2 />
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          title="Rename"
+          className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground opacity-0 transition hover:text-foreground group-hover:opacity-100 [&_svg]:size-3.5"
+        >
+          <Pencil />
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          title="Delete variant"
+          className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground opacity-0 transition hover:text-destructive group-hover:opacity-100 [&_svg]:size-3.5"
+        >
+          <Trash2 />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ThemeTabContent() {
   const { input, patch, mode, setMode } = useThemeBuilder();
 

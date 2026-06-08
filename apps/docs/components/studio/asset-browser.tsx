@@ -79,18 +79,51 @@ function readImageSize(
   });
 }
 
-export function AssetBrowser() {
+/** Asset visibility scope. "project" = assets tagged to the active
+ *  project; "all" = the user's whole personal library (reusable across
+ *  projects). When no project is active, only "all" is meaningful. */
+type AssetScope = "project" | "all";
+
+export function AssetBrowser({
+  projectId,
+}: {
+  /** The active project. When set, the browser defaults to showing this
+   *  project's tagged assets and tags new uploads to it; a toggle still
+   *  exposes the user's whole personal library. Null/undefined (no active
+   *  project) falls back to the personal library only. */
+  projectId?: string | null;
+} = {}) {
   const [type, setType] = React.useState<AssetType>("media");
+  // Default to the project's own assets when there is an active project;
+  // fall back to the personal library when there isn't one.
+  const [scope, setScope] = React.useState<AssetScope>(
+    projectId ? "project" : "all",
+  );
   const [assets, setAssets] = React.useState<Asset[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
   const [dragOver, setDragOver] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const load = React.useCallback(async (t: AssetType) => {
+  // If the active project changes (or first arrives), snap back to the
+  // project view so the library reads as "this project's" by default.
+  React.useEffect(() => {
+    setScope(projectId ? "project" : "all");
+  }, [projectId]);
+
+  // The project filter actually applied to a read/write. Only the
+  // "project" scope with a real id narrows; everything else is the
+  // whole personal library (RLS-scoped to the owner).
+  const scopedProjectId =
+    scope === "project" && projectId ? projectId : undefined;
+
+  const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const list = await getStudioStorage().listAssets({ type: t });
+      const list = await getStudioStorage().listAssets({
+        type,
+        projectId: scopedProjectId,
+      });
       setAssets(list);
     } catch (err) {
       // Local mode returns [] rather than throwing; a real error here is
@@ -102,11 +135,11 @@ export function AssetBrowser() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [type, scopedProjectId]);
 
   React.useEffect(() => {
-    load(type);
-  }, [type, load]);
+    load();
+  }, [load]);
 
   const uploadFiles = React.useCallback(
     async (files: FileList | File[]) => {
@@ -116,9 +149,18 @@ export function AssetBrowser() {
       try {
         for (const file of arr) {
           const { width, height } = await readImageSize(file);
-          await getStudioStorage().uploadAsset({ file, type, width, height });
+          // Tag the upload to the active project when the project view is
+          // showing, so drag/drop lands in "this project". Uploading from
+          // the personal-library view leaves it untagged (reusable).
+          await getStudioStorage().uploadAsset({
+            file,
+            type,
+            width,
+            height,
+            projectId: scopedProjectId,
+          });
         }
-        await load(type);
+        await load();
         // Trail entry — the page logs via grade:image-action (it has the
         // active project + screen context the browser doesn't).
         if (typeof window !== "undefined") {
@@ -141,7 +183,7 @@ export function AssetBrowser() {
         setUploading(false);
       }
     },
-    [type, load],
+    [type, scopedProjectId, load],
   );
 
   const handleDelete = React.useCallback(
@@ -154,10 +196,10 @@ export function AssetBrowser() {
         toast.error("Couldn't delete", {
           description: errMessage(err),
         });
-        load(type);
+        load();
       }
     },
-    [type, load],
+    [load],
   );
 
   const activeTab = TYPE_TABS.find((t) => t.id === type) ?? TYPE_TABS[0];
@@ -191,6 +233,29 @@ export function AssetBrowser() {
           }}
         />
       </div>
+
+      {/* Scope: this project vs the whole personal library. Only shown
+          when there's an active project to scope to. */}
+      {projectId && (
+        <div className="flex gap-1 rounded-md bg-muted/50 p-0.5">
+          {(["project", "all"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setScope(s)}
+              aria-pressed={scope === s}
+              className={cn(
+                "flex-1 rounded px-2 py-1 text-[11px] font-medium transition",
+                scope === s
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {s === "project" ? "This project" : "All assets"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Type tabs */}
       <div className="flex gap-1">
