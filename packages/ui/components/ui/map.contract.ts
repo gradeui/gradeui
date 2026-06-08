@@ -58,17 +58,42 @@ export const MapContract = contract({
   "tilerKey": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "string credential, MapLibre only. Only needed off `gradeui.com`/`localhost`; default key is referrer-locked.",
+      description: "MapLibre only (provider=\"maplibre\"). Optional everywhere: omit on `gradeui.com`/`localhost` and the referrer-locked demo key is used; set it only when embedding off-domain. The contract never requires it.",
   },
   "accessToken": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "string credential, Mapbox only.",
+      description: "Mapbox only. Pass it whenever provider=\"mapbox\" — the component itself enforces this at runtime (throws a clear `provider=\"mapbox\" requires an accessToken prop` error via onError if missing). It is OPTIONAL in the contract on purpose, so the validator never demands it from maplibre/google maps.",
   },
   "apiKey": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "string credential, Google only.",
+      description: "Google only. Pass it whenever provider=\"google\" — the component enforces it at runtime (throws `provider=\"google\" requires an apiKey prop` via onError if missing). OPTIONAL in the contract on purpose, so it's never demanded from maplibre/mapbox.",
+  },
+  "id": {
+      schema: z.unknown(),
+      design: "plumbing",
+      description: "string. Required. Stable marker id; pair with Map's `hoveredId` for list↔map hover sync.",
+  },
+  "at": {
+      schema: z.unknown(),
+      design: "plumbing",
+      description: "`[lng, lat]` tuple. Required. THE coordinate prop. ALWAYS lng first. The prop is literally named `at` — it is NOT `lngLat`, `coordinates`, `position`, `latLng`, `center`, or separate `lng`/`lat` props. Passing any other name leaves the marker coord `undefined`, and MapLibre throws on mount, crashing the WHOLE screen in every renderer. When in doubt, copy the `airbnb-listings` scaffold: `<MapMarker id={l.id} at={l.coords}>`.",
+  },
+  "anchor": {
+      schema: z.unknown(),
+      design: "plumbing",
+      description: "\"center\" | \"bottom\" (default \"bottom\", pin tip sits on the coord). Only these two values.",
+  },
+  "onClick": {
+      schema: z.unknown(),
+      design: "event",
+      description: "handler called with `({ id, coords, native })` on marker click.",
+  },
+  "children": {
+      schema: z.unknown(),
+      design: "plumbing",
+      description: "DOM rendered as the marker (Badge, Card, Avatar, or any element). Inherits `--gds-*` tokens.",
   },
   },
 });
