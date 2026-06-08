@@ -56,9 +56,30 @@ await esbuild.build({
   bundle: true,
   format: "iife",
   outfile: path.join(distDir, "bundle.js"),
-  alias: { "@": docs, react: reactDir, "react-dom": reactDomDir },
+  alias: {
+    "@": docs,
+    react: reactDir,
+    "react-dom": reactDomDir,
+    // The sandbox CSP blocks maplibre's Web Worker, so the View forces
+    // Grade's <Map> onto the worker-free Leaflet adapter. The maplibre /
+    // mapbox / google adapters are reachable but never called — alias their
+    // SDKs to an empty stub so ~800KB of dead code isn't bundled. (Can't use
+    // esbuild `external` here: a dynamic import() of an external isn't
+    // allowed in the single-file iife format.) Leaflet IS bundled.
+    "maplibre-gl": path.join(here, "empty-map-sdk.js"),
+    "mapbox-gl": path.join(here, "empty-map-sdk.js"),
+    "@googlemaps/js-api-loader": path.join(here, "empty-map-sdk.js"),
+  },
   jsx: "automatic",
-  loader: { ".css": "css" },
+  // Inline images (Leaflet's CSS references marker/layer PNGs) as data URIs
+  // so the bundle stays self-contained — no external image fetches, which
+  // the sandbox would block anyway.
+  loader: {
+    ".css": "css",
+    ".png": "dataurl",
+    ".svg": "dataurl",
+    ".gif": "dataurl",
+  },
   define: { "process.env.NODE_ENV": '"production"' },
   minify: true,
   logLevel: "warning",

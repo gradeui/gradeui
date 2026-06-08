@@ -42,6 +42,7 @@ import {
   INTERACTIVE_DEMO_URI,
   INTERACTIVE_DEMO_HTML,
 } from "./interactive-demo";
+import { PREVIEW_RESOURCE_URI, buildPreviewTemplate } from "./ui-template";
 
 export interface GradeToolsOptions {
   siteUrl: string;
@@ -135,7 +136,65 @@ export function registerGradeTools(
             // exactly what an inline single-file bundle needs, so no csp
             // declaration is required.
             text: PREVIEW_VIEW_HTML,
-            _meta: { ui: { prefersBorder: false } },
+            _meta: {
+              ui: {
+                // Screens with a <Map> render via the worker-free Leaflet
+                // adapter, which fetches CARTO raster basemap tiles (the
+                // Google-like look). The sandbox default blocks that
+                // (connect-src 'none', img-src 'self' data:), so the tile
+                // hosts (a–d.basemaps.cartocdn.com) must be declared or maps
+                // come up blank. Everything else stays offline.
+                csp: {
+                  connectDomains: [
+                    "https://a.basemaps.cartocdn.com",
+                    "https://b.basemaps.cartocdn.com",
+                    "https://c.basemaps.cartocdn.com",
+                    "https://d.basemaps.cartocdn.com",
+                  ],
+                  resourceDomains: [
+                    "https://a.basemaps.cartocdn.com",
+                    "https://b.basemaps.cartocdn.com",
+                    "https://c.basemaps.cartocdn.com",
+                    "https://d.basemaps.cartocdn.com",
+                  ],
+                },
+                prefersBorder: false,
+              },
+            },
+          },
+        ],
+      }),
+    );
+
+  // ── preview_image's image panel ─ the proven poster-in-a-panel ─────────
+  // Renders the screenshot INLINE as a panel. Hosts like Cowork render
+  // MCP App panels but NOT bare image content blocks, so an image-only
+  // tool result shows nothing inline there — this panel is how the picture
+  // appears. It self-loads the stored poster from tool-input (screenId +
+  // colorMode) at the deterministic Supabase path; resourceDomains lets the
+  // panel's <img> reach Supabase Storage (default img-src is 'self' data:).
+  if (opts.appPanel)
+    server.registerResource(
+      "gradeui-preview-image",
+      PREVIEW_RESOURCE_URI,
+      {
+        description: "Inline image preview of a Grade screen (poster panel)",
+        mimeType: "text/html;profile=mcp-app",
+      },
+      async () => ({
+        contents: [
+          {
+            uri: PREVIEW_RESOURCE_URI,
+            mimeType: "text/html;profile=mcp-app",
+            text: buildPreviewTemplate(
+              `${env.url}/storage/v1/object/public/screen-previews`,
+            ),
+            _meta: {
+              ui: {
+                csp: { resourceDomains: [env.url] },
+                prefersBorder: false,
+              },
+            },
           },
         ],
       }),
@@ -504,7 +563,10 @@ export function registerGradeTools(
       {
         title: "Preview a Grade screen as an image",
         description:
-          "Render a saved screen (real render via the live embed route) and return JUST the screenshot PNG — no interactive panel. Use when you want a picture of the screen in the chat. Reuses the stored poster if the screen is unchanged; pass refresh: true to force a fresh capture. (For a live, interactive render, use preview_screen.)",
+          "Render a saved screen (real render via the live embed route) and show the screenshot INLINE as an image panel. Ideal for screens the live renderer can't fully show — e.g. maps, which need network the sandbox blocks. Reuses the stored poster if the screen is unchanged; pass refresh: true to force a fresh capture. For a live, interactive render, use preview_screen.",
+        ...(opts.appPanel
+          ? { _meta: { ui: { resourceUri: PREVIEW_RESOURCE_URI } } }
+          : {}),
         inputSchema: {
           projectId: z.string().describe("Project id"),
           screenId: z

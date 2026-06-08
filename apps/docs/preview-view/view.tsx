@@ -25,6 +25,17 @@ import {
   FailurePanel,
   RenderErrorBoundary,
 } from "@/lib/studio-render-core";
+// Leaflet's CSS, bundled inline (the sandbox can't fetch it from a CDN).
+import "leaflet/dist/leaflet.css";
+
+// Force Grade's <Map> onto the worker-free Leaflet adapter in this View:
+// maplibre's Web Worker is blocked by the sandbox CSP, Leaflet's raster
+// tiles are not. (Studio/embed never set these, so they keep maplibre.)
+{
+  const g = globalThis as unknown as Record<string, unknown>;
+  g.__gradeMapProvider = "leaflet";
+  g.__gradeLeafletCssBundled = true;
+}
 
 // ─── Raw MCP Apps handshake (JSON-RPC over postMessage) ────────────────
 let nextId = 1;

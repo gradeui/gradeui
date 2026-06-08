@@ -14,16 +14,21 @@ import type {
   MarkerHandle,
 } from "./types";
 
-const ADAPTER_LOADERS: Record<
-  "maplibre" | "mapbox" | "google",
-  () => Promise<AdapterFactory>
-> = {
+type MapProvider = "maplibre" | "mapbox" | "google" | "leaflet";
+
+const ADAPTER_LOADERS: Record<MapProvider, () => Promise<AdapterFactory>> = {
   maplibre: () =>
     import("./adapters/maplibre").then((m) => m.createMaplibreAdapter),
   mapbox: () =>
     import("./adapters/mapbox").then((m) => m.createMapboxAdapter),
   google: () =>
     import("./adapters/google").then((m) => m.createGoogleAdapter),
+  // Worker-free raster adapter. Not selectable via the public `provider`
+  // prop (it's not in MapProps' union); reached only through the global
+  // override below, which the MCP preview View sets because the sandbox
+  // CSP blocks maplibre's worker.
+  leaflet: () =>
+    import("./adapters/leaflet").then((m) => m.createLeafletAdapter),
 };
 
 const MARKER_WARN_THRESHOLD = 500;
@@ -47,8 +52,16 @@ const Map = React.forwardRef<MapHandle, MapProps>(function Map(props, ref) {
 
   // Provider + provider-specific config (narrowed at the type level by MapProps,
   // erased here so the runtime can read them uniformly).
-  const provider =
-    (rest as { provider?: "maplibre" | "mapbox" | "google" }).provider ??
+  // MCP-specific override: the inline preview View can't run maplibre (its
+  // Web Worker is blocked by the sandbox's `default-src 'none'` CSP, which
+  // the MCP Apps CSP vocabulary can't open), so it sets this global to force
+  // the worker-free Leaflet adapter. Studio and the embed never set it, so
+  // they keep their declared provider. Generic seam, MCP-specific consumer.
+  const providerOverride = (globalThis as { __gradeMapProvider?: MapProvider })
+    .__gradeMapProvider;
+  const provider: MapProvider =
+    providerOverride ??
+    (rest as { provider?: MapProvider }).provider ??
     "maplibre";
   const styleUrl = (rest as { styleUrl?: string }).styleUrl;
   const tilerKey = (rest as { tilerKey?: string }).tilerKey;

@@ -55,6 +55,7 @@ const sharedOptions = {
     "maplibre-gl",
     "mapbox-gl",
     "@googlemaps/js-api-loader",
+    "leaflet",
   ],
   // Bundle @gradeui/contracts inline. The contracts package is
   // `"private": true` and never publishes to npm, so anything
@@ -93,6 +94,7 @@ export default defineConfig([
       "map/maplibre": "components/ui/map/adapters/maplibre.ts",
       "map/mapbox": "components/ui/map/adapters/mapbox.ts",
       "map/google": "components/ui/map/adapters/google.ts",
+      "map/leaflet": "components/ui/map/adapters/leaflet.ts",
     },
     async onSuccess() {
       const fs = await import("node:fs/promises");
@@ -105,6 +107,8 @@ export default defineConfig([
         "dist/map/mapbox.js",
         "dist/map/google.mjs",
         "dist/map/google.js",
+        "dist/map/leaflet.mjs",
+        "dist/map/leaflet.js",
       ];
       const DIRECTIVE = '"use client";\n';
       for (const file of CLIENT_FILES) {

@@ -310,3 +310,26 @@ Once Map lands:
 3. **Sub-path exports** → Yes. Each adapter is its own `tsup` entry; default `<Map>` import lazy-loads; sub-path imports preload a specific adapter.
 4. **`appearance="auto"` listener** → `useGradeTheme()`. Requires `<GradeThemeProvider>` for auto mode; documented in JSDoc.
 5. **Changeset plan** → Two. First changeset adds `Map` + `MapMarker` to `@gradeui/ui` (minor bump). Second changeset ships the `airbnb-listings` reference layout in `packages/studio` once the component is published and `consume-app` has smoke-tested it.
+
+---
+
+## Leaflet adapter — added 2026-06-08 (worker-free, for sandboxed hosts)
+
+A fourth adapter, `components/ui/map/adapters/leaflet.ts`, sits behind the same
+`AdapterInstance` interface as maplibre/mapbox/google. It exists for one
+environment: **strictly sandboxed iframes that block Web Workers** — chiefly the
+MCP App preview panel, whose CSP is `default-src 'none'` with no `worker-src`
+knob. maplibre/mapbox render in a `blob:` Web Worker and can't start there;
+Leaflet paints **raster** tiles as plain `<img>` on the main thread, so it runs.
+Keyless OSM raster tiles, no API key. "Dark" is a CSS filter on the tile pane.
+
+- **Not a public `provider`** — absent from the `MapProps` union. Reached only
+  via a global override, `globalThis.__gradeMapProvider = "leaflet"`, which
+  `map.tsx` honours over the prop. The sole consumer is the MCP preview View
+  (`apps/docs/preview-view`); Studio and the `/e` embed keep maplibre.
+- **External like the other SDKs** — in the tsup `external` list, shipped as its
+  own `map/leaflet` entry; consumers that want it install `leaflet` and bundle it.
+- **Same interface, same behaviour** — pins land at identical coords;
+  `flyTo`/`panTo`/`fitBounds` match. Only visuals differ (raster vs vector).
+- Full rationale + how to try Google/Mapbox in the panel later:
+  [`apps/mcp-server/MCP-MAPS.md`](../../apps/mcp-server/MCP-MAPS.md).
