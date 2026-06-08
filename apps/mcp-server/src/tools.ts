@@ -479,7 +479,7 @@ export function registerGradeTools(
           error: `No screen "${a.screenId}" in project ${a.projectId}. Save it first, or check list via get_screen.`,
         };
       }
-      const mode = a.colorMode ?? "dark";
+      const mode = a.colorMode ?? "light";
       const w = Math.min(Math.max(a.width ?? (sls ? 1024 : 1280), 320), 2560);
       const h = Math.min(Math.max(a.height ?? (sls ? 640 : 800), 320), 2560);
       const share = await ensureShareLink(sb, a.projectId, a.screenId, mode);
@@ -663,7 +663,7 @@ export function registerGradeTools(
         // Serverless runs in a 2GB box — default to a smaller canvas there
         // (lower render + PNG-encode peak). Explicit width/height still wins.
         const serverless = captureMode === "serverless";
-        const mode = colorMode ?? "dark";
+        const mode = colorMode ?? "light";
         const w = Math.min(Math.max(width ?? (serverless ? 1024 : 1280), 320), 2560);
         const h = Math.min(Math.max(height ?? (serverless ? 640 : 800), 320), 2560);
         const share = await ensureShareLink(sb, projectId, screenId, mode);

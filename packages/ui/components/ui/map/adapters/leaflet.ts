@@ -132,6 +132,19 @@ export const createLeafletAdapter: AdapterFactory = async (
   // Leaflet initialises synchronously — signal ready immediately.
   callbacks.onLoad();
 
+  // CRITICAL for sandboxed/absolute-inset containers (the MCP preview panel):
+  // the iframe is frequently sized AFTER the map mounts, so Leaflet's initial
+  // measurement is 0×0 and it renders NOTHING — no tiles, no markers. Re-measure
+  // on the next frames and whenever the container resizes.
+  const resizeObserver =
+    typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => map.invalidateSize(false))
+      : null;
+  resizeObserver?.observe(container);
+  requestAnimationFrame(() => map.invalidateSize(false));
+  window.setTimeout(() => map.invalidateSize(false), 200);
+  window.setTimeout(() => map.invalidateSize(false), 600);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markers = new globalThis.Map<string, { marker: any; handle: MarkerHandle }>();
 
@@ -244,6 +257,7 @@ export const createLeafletAdapter: AdapterFactory = async (
       return handle;
     },
     destroy: () => {
+      resizeObserver?.disconnect();
       markers.forEach(({ marker }) => map.removeLayer(marker));
       markers.clear();
       map.remove();
