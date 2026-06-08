@@ -12,8 +12,9 @@ props:
   - hoveredId — controlled string id, pairs with onHoveredIdChange. The matching MapMarker gets `data-gds-state="hovered"` automatically. This is how you build list ↔ map two-way sync.
   - interactive — false freezes pan/zoom, useful for static cards.
   - onLoad(handle) / onError(error) — handle exposes flyTo, panTo, fitBounds, getCenter, getZoom, getBounds, instance.
-  - tilerKey (maplibre) — only needed off `gradeui.com`/`localhost`. Default key is referrer-locked.
-  - accessToken (mapbox), apiKey (google) — required for those providers.
+  - tilerKey? — string credential, MapLibre only. Only needed off `gradeui.com`/`localhost`; default key is referrer-locked.
+  - accessToken? — string credential, Mapbox only.
+  - apiKey? — string credential, Google only.
 when_to_use: Any layout that needs a real map — listings (real estate, Airbnb-style), fleet/logistics dashboards, store locators, anywhere a user picks a location from a viewport. Reach for the controlled `hoveredId` prop when a sibling list and the map need to highlight each other.
 composes_with: [Card (as marker content), Badge, Avatar, Button, Row, Stack, Skeleton]
 ---

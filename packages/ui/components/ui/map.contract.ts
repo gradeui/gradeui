@@ -56,14 +56,19 @@ export const MapContract = contract({
       description: "handle exposes flyTo, panTo, fitBounds, getCenter, getZoom, getBounds, instance.",
   },
   "tilerKey": {
-      schema: z.enum(["maplibre"]),
-      design: "knob",
-      description: "only needed off `gradeui.com`/`localhost`. Default key is referrer-locked.",
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "string credential, MapLibre only. Only needed off `gradeui.com`/`localhost`; default key is referrer-locked.",
   },
   "accessToken": {
-      schema: z.enum(["mapbox), apiKey (google"]),
-      design: "knob",
-      description: "required for those providers.",
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "string credential, Mapbox only.",
+  },
+  "apiKey": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "string credential, Google only.",
   },
   },
 });
