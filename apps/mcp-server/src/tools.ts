@@ -782,6 +782,23 @@ export function registerGradeTools(
           : stored
             ? `"${screen.name}" — stored poster (${mode}, captured ${new Date(stored.capturedAt).toISOString()}; refresh: true re-renders).`
             : `"${screen.name}" — live render, ${w}×${h} ${mode}.`;
+
+        // Project theme — the inline View generates + applies this exactly
+        // like the share / embed routes (generateTheme → themeToCSSVars).
+        // Best-effort: a missing/failed theme just renders on default tokens.
+        let themeDraftJson: string | null = null;
+        try {
+          const { data: proj } = await sb
+            .from("projects")
+            .select("theme_draft_json")
+            .eq("id", projectId)
+            .maybeSingle();
+          themeDraftJson =
+            (proj as { theme_draft_json?: string | null } | null)
+              ?.theme_draft_json ?? null;
+        } catch {
+          /* theme is non-essential to the preview — ignore and use defaults */
+        }
         return {
           content: [
             {
@@ -814,6 +831,7 @@ export function registerGradeTools(
                   mode,
                   appSource: screen.state?.appSource ?? "",
                   embedUrl: url,
+                  themeDraftJson,
                 },
               }
             : {}),

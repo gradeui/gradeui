@@ -25,6 +25,9 @@ import {
   FailurePanel,
   RenderErrorBoundary,
 } from "@/lib/studio-render-core";
+import { GradeLogo } from "@/components/grade-logo";
+import { generateTheme, themeToCSSVars } from "@/lib/themes";
+import { Sun, Moon, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
 // Leaflet's CSS, bundled inline (the sandbox can't fetch it from a CDN).
 import "leaflet/dist/leaflet.css";
 
@@ -85,8 +88,18 @@ function applyThemeVars(vars: Record<string, string> | undefined): void {
 // Read host context (theme today; platform/viewport/locale available) from
 // either the initialize result or a host-context-changed notification.
 function applyHostContext(ctx: unknown): void {
+  if (ctx && typeof ctx === "object") {
+    // Host tells us the live display mode (inline / fullscreen); keep the
+    // header's expand/collapse icon in sync with whatever the host actually
+    // did — it may switch us without our asking.
+    const dm = (ctx as { displayMode?: "inline" | "fullscreen" }).displayMode;
+    if (dm === "inline" || dm === "fullscreen") pushDisplayMode?.(dm);
+  }
   if (ctx && typeof ctx === "object" && "theme" in ctx) {
-    applyMode((ctx as { theme?: "light" | "dark" }).theme);
+    const theme = (ctx as { theme?: "light" | "dark" }).theme;
+    applyMode(theme);
+    // Keep the header's light/dark toggle in sync with the host theme.
+    if (theme) pushMode?.(theme);
   }
 }
 
@@ -101,34 +114,320 @@ function reportSize(): void {
   if (height > 0) notify("ui/notifications/size-changed", { height, width });
 }
 
-function renderScreen(
-  appSource: string,
-  mode?: "light" | "dark",
-  themeVars?: Record<string, string>,
-): void {
-  applyMode(mode);
-  applyThemeVars(themeVars);
-  const src = healMissingLucideImports(appSource);
-  void preResolveUnknownImports(src).then(() => {
-    const { Component, error } = compile(src);
-    if (error || !Component) {
-      root.render(<FailurePanel error={error ?? new Error("No component")} />);
-      requestAnimationFrame(reportSize);
-      return;
-    }
-    const Compiled = Component;
-    root.render(
-      <RenderErrorBoundary fallback={(e) => <FailurePanel error={e} />}>
-        <PreviewWrap>
-          <Compiled />
-        </PreviewWrap>
-      </RenderErrorBoundary>,
-    );
-    requestAnimationFrame(reportSize);
-    window.setTimeout(reportSize, 200);
-    window.setTimeout(reportSize, 800);
+// ─── Preview chrome (header + 4:3 frame + debug footer) ────────────────
+//
+// The MCP panel wraps the rendered screen in a slim band of Grade chrome:
+// brand + light/dark + an "open full" link-out (the /e/ embed the tool
+// hands us in structuredContent), the screen locked to a 4:3 frame, and a
+// debug footer showing the live frame resolution. The screen still renders
+// DIRECTLY (no nested iframe) — this just frames it.
+
+type ScreenPayload = {
+  appSource: string;
+  embedUrl?: string | null;
+  mode?: "light" | "dark";
+  themeVars?: Record<string, string>;
+  /** The project's saved theme draft (ThemeInput JSON). Generated +
+   *  applied client-side, exactly like the share / embed views. */
+  themeDraftJson?: string | null;
+  name?: string;
+};
+
+// The postMessage handler lives outside React; the shell publishes its
+// setters here so a tool-result (or a host theme change) can drive it. A
+// payload that arrives before the shell's effect runs is buffered.
+let pushScreen: ((p: ScreenPayload) => void) | null = null;
+let pushMode: ((mode: "light" | "dark") => void) | null = null;
+let pushDisplayMode: ((mode: "inline" | "fullscreen") => void) | null = null;
+let pendingPayload: ScreenPayload | null = null;
+function deliverScreen(p: ScreenPayload): void {
+  if (pushScreen) pushScreen(p);
+  else pendingPayload = p;
+}
+
+// Links can't navigate from inside the sandboxed panel — ask the host.
+function openExternal(url: string): void {
+  send("ui/open-link", { url }).catch(() => {
+    /* host declined / no handler — nothing else we can do from here */
   });
 }
+
+// Ask the host to switch the panel between inline and fullscreen. We
+// declared both in `availableDisplayModes` at init, so a capable host
+// honours this; hosts without support reject and we leave the icon as-is
+// (no optimistic flip, so the control never lies about the real mode). The
+// host may also report the mode authoritatively via host-context.
+function requestDisplayMode(mode: "inline" | "fullscreen"): void {
+  send("ui/request-display-mode", { mode })
+    .then((result) => {
+      const applied =
+        (result &&
+          typeof result === "object" &&
+          (result as { mode?: "inline" | "fullscreen" }).mode) ||
+        mode;
+      if (applied === "inline" || applied === "fullscreen")
+        pushDisplayMode?.(applied);
+    })
+    .catch(() => {
+      /* host without display-mode support — leave the icon as-is */
+    });
+}
+
+function PreviewShell() {
+  const [payload, setPayload] = React.useState<ScreenPayload | null>(null);
+  const [mode, setMode] = React.useState<"light" | "dark">(() =>
+    document.documentElement.classList.contains("dark") ? "dark" : "light",
+  );
+  const [compiled, setCompiled] = React.useState<{
+    Component: React.ComponentType | null;
+    error: Error | null;
+  }>({ Component: null, error: null });
+  const [res, setRes] = React.useState<{ w: number; h: number } | null>(null);
+  const [displayMode, setDisplayMode] = React.useState<"inline" | "fullscreen">(
+    "inline",
+  );
+  const frameRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Publish the bridges; flush any payload that beat us to mount.
+  React.useEffect(() => {
+    const apply = (p: ScreenPayload) => {
+      applyMode(p.mode);
+      applyThemeVars(p.themeVars);
+      if (p.mode) setMode(p.mode);
+      setPayload(p);
+    };
+    pushScreen = apply;
+    pushMode = (m) => setMode(m);
+    pushDisplayMode = (m) => setDisplayMode(m);
+    if (pendingPayload) {
+      apply(pendingPayload);
+      pendingPayload = null;
+    }
+    return () => {
+      pushScreen = null;
+      pushMode = null;
+      pushDisplayMode = null;
+    };
+  }, []);
+
+  // Compile whenever the source changes (heal + esm pre-resolve first).
+  React.useEffect(() => {
+    if (!payload?.appSource) {
+      setCompiled({ Component: null, error: null });
+      return;
+    }
+    let cancelled = false;
+    const src = healMissingLucideImports(payload.appSource);
+    void preResolveUnknownImports(src).then(() => {
+      if (cancelled) return;
+      setCompiled(compile(src));
+      requestAnimationFrame(reportSize);
+      window.setTimeout(reportSize, 200);
+      window.setTimeout(reportSize, 800);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [payload?.appSource]);
+
+  // Toggling light/dark re-skins the rendered screen via the <html> class.
+  React.useEffect(() => {
+    applyMode(mode);
+    requestAnimationFrame(reportSize);
+  }, [mode]);
+
+  // Apply the PROJECT theme — same path the share / embed views use:
+  // generate the ramp set from the saved draft, convert to CSS vars for the
+  // active mode, and layer them onto :root. Recomputes on a mode toggle so
+  // the project's dark palette shows in dark mode too.
+  React.useEffect(() => {
+    const draft = payload?.themeDraftJson;
+    if (!draft) return;
+    try {
+      const theme = generateTheme(JSON.parse(draft));
+      applyThemeVars(themeToCSSVars(theme, mode));
+    } catch {
+      /* malformed draft — leave the default tokens in place */
+    }
+  }, [payload?.themeDraftJson, mode]);
+
+  // Live frame resolution for the footer + host panel sizing.
+  React.useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const measure = () => {
+      setRes({ w: Math.round(el.clientWidth), h: Math.round(el.clientHeight) });
+      reportSize();
+    };
+    measure();
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(measure)
+        : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, []);
+
+  const Compiled = compiled.Component;
+  const seg =
+    "inline-flex h-5 w-6 items-center justify-center rounded-sm transition";
+  const iconBtn =
+    "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground";
+
+  return (
+    <div
+      className={
+        "flex w-full flex-col bg-background" +
+        // Fullscreen fills the viewport so the stage can centre + letterbox
+        // a contained 4:3 frame; inline sizes to the frame's own height.
+        (displayMode === "fullscreen" ? " h-screen" : "") +
+        (mode === "dark" ? " dark" : "")
+      }
+      data-mode={mode}
+    >
+      {/* Header — brand + light/dark + open-full */}
+      <header className="flex h-10 shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background/80 px-3 backdrop-blur-md">
+        <div className="flex min-w-0 items-center gap-2">
+          <GradeLogo size={18} className="shrink-0 text-foreground" />
+          {payload?.name ? (
+            <span className="truncate text-sm font-medium text-foreground">
+              {payload.name}
+            </span>
+          ) : (
+            <span className="text-sm font-medium text-muted-foreground">
+              Preview
+            </span>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="flex items-center rounded-md border border-border/60 p-0.5">
+            <button
+              type="button"
+              onClick={() => setMode("light")}
+              aria-pressed={mode === "light"}
+              title="Light"
+              className={
+                seg +
+                (mode === "light"
+                  ? " bg-foreground/10 text-foreground"
+                  : " text-muted-foreground hover:text-foreground")
+              }
+            >
+              <Sun className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("dark")}
+              aria-pressed={mode === "dark"}
+              title="Dark"
+              className={
+                seg +
+                (mode === "dark"
+                  ? " bg-foreground/10 text-foreground"
+                  : " text-muted-foreground hover:text-foreground")
+              }
+            >
+              <Moon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              requestDisplayMode(
+                displayMode === "fullscreen" ? "inline" : "fullscreen",
+              )
+            }
+            aria-pressed={displayMode === "fullscreen"}
+            title={
+              displayMode === "fullscreen" ? "Exit full screen" : "Full screen"
+            }
+            aria-label={
+              displayMode === "fullscreen" ? "Exit full screen" : "Full screen"
+            }
+            className={iconBtn}
+          >
+            {displayMode === "fullscreen" ? (
+              <Minimize2 className="h-4 w-4" />
+            ) : (
+              <Maximize2 className="h-4 w-4" />
+            )}
+          </button>
+          {payload?.embedUrl ? (
+            <button
+              type="button"
+              onClick={() => openExternal(payload.embedUrl!)}
+              title="Open in new tab"
+              aria-label="Open in new tab"
+              className={iconBtn}
+            >
+              <ExternalLink className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
+      </header>
+
+      {/* Stage → 4:3 frame. The FRAME is a light surface (the screen's own
+          canvas), so a short screen reads as seamless background, never a
+          black void. In fullscreen the stage fills the viewport and centres
+          a height-contained 4:3 frame, with the dark canvas-fill as an
+          intentional letterbox surround; inline the frame is full-width. */}
+      <div
+        className={
+          displayMode === "fullscreen"
+            ? "relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-3"
+            : "relative w-full"
+        }
+        style={
+          displayMode === "fullscreen"
+            ? { background: "var(--gds-canvas-fill)" }
+            : undefined
+        }
+      >
+        <div
+          ref={frameRef}
+          className="relative overflow-hidden rounded-lg bg-background ring-1 ring-border/40"
+          style={
+            displayMode === "fullscreen"
+              ? {
+                  aspectRatio: "4 / 3",
+                  height: "100%",
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                }
+              : { aspectRatio: "4 / 3", width: "100%" }
+          }
+        >
+          <div className="absolute inset-0 overflow-auto">
+            {Compiled ? (
+              <RenderErrorBoundary fallback={(e) => <FailurePanel error={e} />}>
+                <PreviewWrap>
+                  <Compiled />
+                </PreviewWrap>
+              </RenderErrorBoundary>
+            ) : compiled.error ? (
+              <FailurePanel error={compiled.error} />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <p className="animate-pulse text-sm text-muted-foreground">
+                  Loading preview…
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Debug footer — live frame resolution. More grade chrome lands
+          here over time (this is the "controls/debug" shelf). */}
+      <footer className="flex h-7 shrink-0 items-center justify-between gap-3 border-t border-border/60 bg-background/80 px-3 font-mono text-[11px] text-muted-foreground backdrop-blur-md">
+        <span>Grade · MCP preview</span>
+        <span className="tabular-nums">{res ? `${res.w}×${res.h}` : "—"}</span>
+      </footer>
+    </div>
+  );
+}
+
+root.render(<PreviewShell />);
 
 window.addEventListener("message", (event: MessageEvent) => {
   const msg = (event.data ?? {}) as {
@@ -168,8 +467,19 @@ window.addEventListener("message", (event: MessageEvent) => {
       appSource?: string;
       mode?: "light" | "dark";
       themeVars?: Record<string, string>;
+      themeDraftJson?: string | null;
+      embedUrl?: string | null;
+      name?: string;
     };
-    if (sc.appSource) renderScreen(sc.appSource, sc.mode, sc.themeVars);
+    if (sc.appSource)
+      deliverScreen({
+        appSource: sc.appSource,
+        embedUrl: sc.embedUrl ?? null,
+        mode: sc.mode,
+        themeVars: sc.themeVars,
+        themeDraftJson: sc.themeDraftJson ?? null,
+        name: sc.name,
+      });
   } else if (msg.method && /host.?context/i.test(String(msg.method))) {
     applyHostContext(msg.params);
   } else if (msg.method === "ui/resource-teardown" && msg.id != null) {
@@ -200,7 +510,21 @@ window.addEventListener("resize", reportSize);
 // Test bridge (Playwright): __gradeRenderScreen(appSource, { mode?, theme?, themeVars? })
 (window as unknown as Record<string, unknown>).__gradeRenderScreen = (
   appSource: string,
-  opts?: { mode?: "light" | "dark"; theme?: "light" | "dark"; themeVars?: Record<string, string> },
+  opts?: {
+    mode?: "light" | "dark";
+    theme?: "light" | "dark";
+    themeVars?: Record<string, string>;
+    themeDraftJson?: string | null;
+    embedUrl?: string;
+    name?: string;
+  },
 ) => {
-  renderScreen(appSource, opts?.theme ?? opts?.mode, opts?.themeVars);
+  deliverScreen({
+    appSource,
+    mode: opts?.theme ?? opts?.mode,
+    themeVars: opts?.themeVars,
+    themeDraftJson: opts?.themeDraftJson ?? null,
+    embedUrl: opts?.embedUrl ?? null,
+    name: opts?.name,
+  });
 };

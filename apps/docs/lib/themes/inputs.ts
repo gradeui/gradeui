@@ -380,6 +380,67 @@ export const pastelDreamInput: ThemeInput = {
   components: { buttonShape: "pill", inputStyle: "outlined", cardStyle: "flat" },
 };
 
+/**
+ * Bright Green — derived from BrightLocal's design tokens
+ * (storybook.brightlocal.com → Tokens / Colors).
+ *
+ * BrightLocal's brand is a single vivid green: `primary` = green-400
+ * (#2ae855 → oklch ~L0.81 C0.24 H146) on green-tinted neutrals (their
+ * neutral ramp carries a subtle ~150° green cast — #f2f7f3 / #657568 /
+ * #111412 rather than pure grey). There's no second brand colour in their
+ * set — secondary/accent are neutral — so the `accent` token here rides on
+ * their cool info hue (cyan ~215°, #06b6d4 family) to give the theme a
+ * usable cool complement without inventing a clashing brand colour.
+ *
+ * Notes on fidelity: Grade's generator picks lightness per ramp step, so the
+ * primary *token* lands a touch deeper than BrightLocal's very-light green-400
+ * button — the hue/chroma/tint are matched, the exact step-lightness follows
+ * Grade's curve. Bump `intensity` / `chroma.primary` if you want it brighter.
+ */
+export const brightGreenInput: ThemeInput = {
+  id: "brightgreen",
+  name: "Bright Green",
+  description: "BrightLocal's vivid green on green-tinted neutrals, cyan accent.",
+  tagline: "Brand",
+  hues: {
+    // ~150° green-cast neutrals — matches BrightLocal's tinted greys.
+    neutral: 150,
+    // green-400 #2ae855 → oklch hue 146.
+    primary: 146,
+    // Cool complement from their info/cyan family (#06b6d4 → hue ~215).
+    accent: 215,
+  },
+  chroma: {
+    // Subtle tint only — their neutrals are barely green (C ~0.03 at mid).
+    neutral: 0.06,
+    // Push the green vivid — BrightLocal's green is high-chroma.
+    primary: 1.1,
+    accent: 0.85,
+  },
+  // Vibrant so the green reads bright, not muted.
+  intensity: "vibrant",
+  typography: {
+    // Clean modern SaaS register — crisp sans headings, readable body.
+    display: "geist",
+    body: "inter",
+    mono: "geistMono",
+    scale: "default",
+    headingWeight: 600,
+    headingTracking: "-0.01em",
+  },
+  spacing: { density: "default" },
+  radius: { style: "soft" },
+  effects: {
+    shadows: "subtle",
+    motionIntensity: 1,
+  },
+  components: {
+    buttonShape: "default",
+    inputStyle: "outlined",
+    cardStyle: "flat",
+  },
+};
+
 // Order matters — `defaultThemeId` in `index.ts` points at the first
 // entry. Studio leads because it's the chrome default; Calm + Energy
 // are the curated alternates; the 8 wild seeds follow as starting
@@ -388,6 +449,7 @@ export const BUILT_IN_INPUTS: ThemeInput[] = [
   studioInput,
   calmInput,
   energyInput,
+  brightGreenInput,
   neonBrutalistInput,
   sunsetVaporInput,
   forestTerminalInput,

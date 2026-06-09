@@ -52,17 +52,22 @@ const Map = React.forwardRef<MapHandle, MapProps>(function Map(props, ref) {
 
   // Provider + provider-specific config (narrowed at the type level by MapProps,
   // erased here so the runtime can read them uniformly).
-  // MCP-specific override: the inline preview View can't run maplibre (its
-  // Web Worker is blocked by the sandbox's `default-src 'none'` CSP, which
-  // the MCP Apps CSP vocabulary can't open), so it sets this global to force
-  // the worker-free Leaflet adapter. Studio and the embed never set it, so
-  // they keep their declared provider. Generic seam, MCP-specific consumer.
+  //
+  // Default is the worker-free **Leaflet** raster adapter. maplibre-gl does all
+  // its rendering in a Web Worker, which (a) the MCP App panel's `default-src
+  // 'none'` CSP blocks outright, and (b) silently fails to load in the
+  // production Next bundle on the share / embed / Studio surfaces (style loads,
+  // but the tile worker never runs → blank map, no markers). Leaflet paints
+  // raster `<img>` tiles on the main thread, so it renders everywhere. A screen
+  // can still opt into vector maps with `provider="maplibre"`, and the MCP View
+  // pins leaflet explicitly via the global override below (belt-and-braces, and
+  // it also bundles leaflet's CSS for the CSP-locked panel).
   const providerOverride = (globalThis as { __gradeMapProvider?: MapProvider })
     .__gradeMapProvider;
   const provider: MapProvider =
     providerOverride ??
     (rest as { provider?: MapProvider }).provider ??
-    "maplibre";
+    "leaflet";
   const styleUrl = (rest as { styleUrl?: string }).styleUrl;
   const tilerKey = (rest as { tilerKey?: string }).tilerKey;
   const accessToken = (rest as { accessToken?: string }).accessToken;
