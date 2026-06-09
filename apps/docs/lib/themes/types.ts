@@ -202,6 +202,7 @@ export const FONTS = {
   outfit: "var(--font-outfit), system-ui, sans-serif",
   plusJakarta: "var(--font-plus-jakarta), system-ui, sans-serif",
   spaceGrotesk: "var(--font-space-grotesk), system-ui, sans-serif",
+  poppins: "var(--font-poppins), system-ui, sans-serif",
   // Serif
   fraunces: "var(--font-fraunces), Georgia, serif",
   instrumentSerif: "var(--font-instrument-serif), Georgia, serif",
@@ -229,6 +230,7 @@ export const FONT_LABELS: Record<FontKey, string> = {
   outfit: "Outfit",
   plusJakarta: "Plus Jakarta Sans",
   spaceGrotesk: "Space Grotesk",
+  poppins: "Poppins",
   fraunces: "Fraunces",
   instrumentSerif: "Instrument Serif",
   sourceSerif: "Source Serif 4",
@@ -251,6 +253,7 @@ export const FONT_CATEGORY: Record<FontKey, "sans" | "serif" | "mono"> = {
   outfit: "sans",
   plusJakarta: "sans",
   spaceGrotesk: "sans",
+  poppins: "sans",
   fraunces: "serif",
   instrumentSerif: "serif",
   sourceSerif: "serif",

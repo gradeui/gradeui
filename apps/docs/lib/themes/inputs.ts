@@ -433,7 +433,8 @@ export const brightGreenInput: ThemeInput = {
   // inputs, badges); buttons go fully pill via `buttonShape` below.
   radius: { style: "round" },
   effects: {
-    shadows: "subtle",
+    // Client wants flat chrome — no drop shadows on buttons/badges/cards.
+    shadows: "none",
     motionIntensity: 1,
   },
   components: {
