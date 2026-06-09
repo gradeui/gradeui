@@ -577,10 +577,11 @@
      its frame: the letterbox bars in an embed/share, and the stage a
      `<ScreenAnimator>` reveals when it flies in or pulls below 1× zoom. One
      token so every "canvas" surface (embed, share, animator) matches and a
-     theme/brand can restyle it in one place. Deep near-black by default — a
-     neutral cinematic backdrop that flatters a screen sitting on top of it;
-     set it to `transparent` to let the host page show through. */
-  --gds-canvas-fill: #0b0b0e;
+     theme/brand can restyle it in one place. Mode-aware: a soft neutral in
+     light mode and a deep near-black in dark (see `.dark` below) — a neutral
+     cinematic backdrop that flatters a screen sitting on top of it in either
+     mode. Set it to `transparent` to let the host page show through. */
+  --gds-canvas-fill: #e8e8ec;
 
   /* Sidebar knobs — the width pair drives the collapsed/expanded animation
      on `<Sidebar>` (compound nav primitive). Header height + section
@@ -706,6 +707,11 @@
      the dark variants of --primary already carry the appropriate lift
      for a glow against the dark canvas. */
   --accent-glow: var(--primary);
+
+  /* Canvas fill — dark mode. Deep near-black cinematic backdrop (the light
+     default in :root is a soft neutral). One token, mode-scoped: letterbox
+     bars in embed/share/preview and the ScreenAnimator stage all match. */
+  --gds-canvas-fill: #0b0b0e;
 
   /* Alert surface pairs — dark-mode variant: tint sits just above the dark
      background without going gray; deep text stays bright and readable. */

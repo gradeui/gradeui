@@ -17,6 +17,7 @@ import {
   Lexend,
   Source_Serif_4,
   IBM_Plex_Mono,
+  Poppins,
 } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,12 @@ const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--fon
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree" });
+// Poppins is a static (non-variable) Google font, so weights are explicit.
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
+});
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 const lexend = Lexend({ subsets: ["latin"], variable: "--font-lexend" });
 
@@ -101,6 +108,7 @@ const FONT_VARS = [
   jetbrainsMono.variable,
   inter.variable,
   spaceGrotesk.variable,
+  poppins.variable,
   plusJakartaSans.variable,
   outfit.variable,
   manrope.variable,

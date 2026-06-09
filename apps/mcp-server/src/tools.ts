@@ -19,6 +19,11 @@ import {
   validateAgainstContract,
   formatViolations,
 } from "@gradeui/studio/core";
+import {
+  ALLOWED_COMPONENTS,
+  relevantComponentNames,
+  renderComponentRefsBlock,
+} from "@gradeui/studio/playbook";
 import { COMPONENT_CONTRACTS } from "@gradeui/ui/contracts";
 import type { McpEnv } from "./supabase";
 import {
@@ -303,6 +308,70 @@ export function registerGradeTools(
         (s) => `${s.position}. ${s.name} — id: ${s.id}`,
       );
       return text(`Screens in project ${projectId}:\n${lines.join("\n")}`);
+    },
+  );
+
+  // ── list_components ──────────────────────────────────────────────────
+  server.registerTool(
+    "list_components",
+    {
+      title: "List Grade components",
+      description:
+        'List the Grade Design System components you may use in screen JSX (the Studio allowlist) — the source of truth for what save_screen will accept. Call with NO arguments for the full name list. Pass `query` (a feature, component name, or alias — e.g. "chart", "map listings", "dropdown menu") to get the COMPACT API reference (import, variants, sizes, props, composes_with) for the matching components. Only emit components this tool returns; anything else fails the contract check on save.',
+      inputSchema: {
+        query: z
+          .string()
+          .optional()
+          .describe(
+            'Optional. A feature/component/alias to filter on (e.g. "chart", "map", "dropdown") — returns compact API refs for matches. Omit to list the whole allowlist.',
+          ),
+      },
+    },
+    async ({ query }) => {
+      const allowedList = [...ALLOWED_COMPONENTS];
+
+      // No query → the full allowlist as a plain name list.
+      if (!query || !query.trim()) {
+        return text(
+          [
+            `Grade components you may emit (${allowedList.length}) — the Studio allowlist:`,
+            "",
+            allowedList.map((n) => `- ${n}`).join("\n"),
+            "",
+            'Pass `query` (e.g. "chart", "map", "dropdown") to get the compact API reference (props/variants/composition) for specific components.',
+          ].join("\n"),
+        );
+      }
+
+      // Query → retrieval-matched names (the same matcher the generator
+      // uses: name + subcomponents + sidecar aliases) UNION direct
+      // name-substring hits, all filtered to the allowlist so we never
+      // hint at a component the model can't actually emit.
+      const q = query.trim().toLowerCase();
+      const allowed = new Set(allowedList.map((n) => n.toLowerCase()));
+      const refMatched = relevantComponentNames(query).filter((n) =>
+        allowed.has(n.toLowerCase()),
+      );
+      const nameMatched = allowedList.filter((n) =>
+        n.toLowerCase().includes(q),
+      );
+      const matched = Array.from(new Set([...refMatched, ...nameMatched]));
+
+      if (matched.length === 0) {
+        return text(
+          `No allowlisted components matched "${query}". Call list_components with no arguments to see the full list.`,
+        );
+      }
+
+      // Compact refs keep the result under the host's size limit; a
+      // matched component without an authored sidecar still surfaces by
+      // name so the caller knows it's available.
+      const block = renderComponentRefsBlock({
+        onlyFor: matched,
+        style: "compact",
+      });
+      const header = `Matched ${matched.length} component(s) for "${query}": ${matched.join(", ")}`;
+      return text(block ? `${header}\n\n${block}` : header);
     },
   );
 

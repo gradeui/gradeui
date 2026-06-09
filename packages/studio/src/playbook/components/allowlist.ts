@@ -320,6 +320,22 @@ export const ALLOWED_COMPONENTS = [
   //   - Sidecar at sidecars/map.md documents the API + anti-patterns.
   "Map",
   "MapMarker",
+  // Chart — the themed Recharts wrapper. ChartContainer threads the
+  // design-system tokens (via a ChartConfig `{ [key]: { label, color } }`)
+  // through Recharts' style props and supplies a styled tooltip + legend.
+  // BRING THE CHART SHAPE FROM `recharts` (Bar/BarChart, Line/LineChart,
+  // Area, Pie, Radar — already an ALLOWED_EXTERNAL_IMPORT) and nest it
+  // inside <ChartContainer>; the wrapper does not pick the shape for you.
+  // THE answer for reporting dashboards + analytics cards (revenue,
+  // posts/engagement, active users). Reference series colours in Recharts
+  // as `fill="var(--color-<key>)"` where <key> matches a ChartConfig key.
+  // For tiny non-interactive trend ornament, a bare inline SVG is lighter.
+  "ChartContainer",
+  "ChartTooltip",
+  "ChartTooltipContent",
+  "ChartLegend",
+  "ChartLegendContent",
+  "ChartStyle",
   // Carousel (shipped in @gradeui/ui@0.11.0)
   //   - Embla-backed slideshow with a compound API: Carousel + .Slide,
   //     .VideoSlide, .Dots, .Arrows. All sizing/colour driven by

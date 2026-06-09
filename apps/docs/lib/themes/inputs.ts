@@ -421,7 +421,7 @@ export const brightGreenInput: ThemeInput = {
   intensity: "vibrant",
   typography: {
     // Clean modern SaaS register — crisp sans headings, readable body.
-    display: "geist",
+    display: "poppins",
     body: "inter",
     mono: "geistMono",
     scale: "default",
@@ -429,13 +429,15 @@ export const brightGreenInput: ThemeInput = {
     headingTracking: "-0.01em",
   },
   spacing: { density: "default" },
-  radius: { style: "soft" },
+  // Rounded to match the client — `round` reads on every surface (cards,
+  // inputs, badges); buttons go fully pill via `buttonShape` below.
+  radius: { style: "round" },
   effects: {
     shadows: "subtle",
     motionIntensity: 1,
   },
   components: {
-    buttonShape: "default",
+    buttonShape: "pill",
     inputStyle: "outlined",
     cardStyle: "flat",
   },

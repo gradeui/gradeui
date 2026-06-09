@@ -388,6 +388,16 @@ export type { BreadcrumbMenuItem } from "../components/ui/breadcrumb";
 
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 
+export {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  ChartStyle,
+} from "../components/ui/chart";
+export type { ChartConfig } from "../components/ui/chart";
+
 export { Textarea } from "../components/ui/textarea";
 
 export { Toggle, toggleVariants } from "../components/ui/toggle";
