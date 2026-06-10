@@ -1,5 +1,52 @@
 # @gradeui/ui
 
+## 2.1.0
+
+### Minor Changes
+
+- 947ff22: Export the `Chart` family from the public barrel + make `--gds-canvas-fill` mode-aware.
+
+  - **`Chart` is now part of the public API.** `ChartContainer`, `ChartTooltip`, `ChartTooltipContent`, `ChartLegend`, `ChartLegendContent`, `ChartStyle` (and the `ChartConfig` type) are exported from `@gradeui/ui` — previously the component existed but was never re-exported from `lib/index.ts`, so `import { ChartContainer } from "@gradeui/ui"` failed. It's the themed Recharts wrapper: bring the chart shape (`Bar`/`Line`/`Area`/`Pie` from `recharts`) and nest it inside `<ChartContainer config={…}>`; the wrapper threads design-system tokens through Recharts and supplies a styled tooltip + legend. Reference series colours as `fill="var(--color-<key>)"`. (Also added to the Studio emission allowlist.)
+
+  - **`--gds-canvas-fill` is now mode-aware.** It was a fixed near-black (`#0b0b0e`) with no light variant, so the letterbox bars behind a contained screen (embed / share / fullscreen preview) and the `ScreenAnimator` stage stayed black in light mode. Now a soft neutral (`#e8e8ec`) in light and the near-black in dark — one token, mode-scoped. Override or set to `transparent` as before.
+
+- c2876ca: Add Grade Motion — `Motion` / `MotionScene` / `MotionScreen` / `MotionText`, a directed sequence of scenes on one persistent stage.
+
+  The grammar of a modern product demo: text → demo → video → text, any order, any mix. A `<Motion>` owns the stage and plays its `<MotionScene>`s in order; a scene is a stage _moment_ holding arbitrary JSX:
+
+  - `MotionScreen` — a framed screen (desktop / mobile device presets) with its **own** camera (`shots` — ScreenAnimator per-screen, not per-scene). Several can share a scene: mobile + desktop side by side.
+  - `MotionText` — the Motion Templates: `title`, `lower-third`, `section-break` (pre-directed text animations).
+  - Anything else — a `<video>`, an image, plain JSX. Untimed content rides the scene's `durationMs`.
+
+  The completion contract: a scene advances when all its _timed_ children finish (camera tours, text templates), or after `durationMs` when nothing keeps time. Timed children register with the scene via context; new content types plug in by registering.
+
+  Also:
+
+  - `view="strip"` — the arrangement view (scenes left-to-right as labelled cards) vs `view="play"` (the film). Reduced motion falls back to the strip.
+  - `aspect` — fixed artboard ("16/9", "9/16" for TikTok/Reels, "1/1"), letterboxed into the container; "auto" fills responsively.
+  - Transport with scene dots (random access — a Motion is slides that play themselves), loop cap, centred replay on end.
+  - `ScreenAnimator` grows `paused` (controlled pause for sequencers) and `onEnded` (fires once when a tour runs to its end).
+
+  See `STUDIO-DIRECTOR.md` ("Grade Motion") for the design doc and rollout.
+
+- 2845f87: The primitive token layer, the BYODS registry, and modular type scales.
+
+  **@gradeui/core — first real release.** No longer a placeholder. Ships the primitive token layer (layers 1–2 of the token model):
+
+  - `tokens.css` (import via `@gradeui/core/tokens.css`) — brand color ramps, neutral grays, semantic role aliases, spacing scale, border radii, font stacks + the new `--font-display` / `--font-body` slots, and the type scale. Authored source of truth.
+  - Typed data generated from the CSS (`GDS_COLOR_RAMPS`, `GDS_NEUTRALS`, `GDS_SEMANTIC_ALIASES`, `GDS_SPACING`, `GDS_RADIUS`, `GDS_FONT_FAMILIES`, `GDS_TYPE_SCALE`, `GDS_RAMP_NAMES`) via `scripts/generate-tokens.mjs`.
+  - Modular scales: `GDS_MODULAR_SCALES` (musical-interval ratios), `modularRamp`, `modularStep`, and `modularTypeSizes` — the middle-out (Utopia-model) ladder over Tailwind's size vocabulary (`GDS_TYPE_SIZE_NAMES`, base mid-ladder, reciprocal descent, floored).
+  - Semantic alias model: every alias is a ROLE pointing at a whole ramp. Added palette roles `--gds-primary` / `--gds-secondary` / `--gds-neutral`; removed `--gds-teal-semantic` (named a color, not a meaning) and `--gds-energy` (brand flavor, not a role).
+
+  **@gradeui/ui.** Now depends on `@gradeui/core`; `styles/globals.css` imports `@gradeui/core/tokens.css` instead of carrying the primitives inline (built `dist/styles.css` remains self-contained and is verified var-identical). Theme engine: `ThemeInput.typography.scale` accepts modular scale ids (`TypeScale = TypeScalePreset | ModularScaleId`) and generates the semantic ladder middle-out from the body size; legacy presets unchanged.
+
+  **@gradeui/studio.** New `registry` module (`@gradeui/studio/registry`): the `DesignSystemRegistry` contract for bring-your-own-design-system, with `GRADE_REGISTRY` as the default assembled from the playbook constants. `buildSystemPrompt()` takes an optional registry (component list, DS name, package specifier); output with the default registry is byte-identical to the previous prompt.
+
+### Patch Changes
+
+- Updated dependencies [2845f87]
+  - @gradeui/core@1.1.0
+
 ## 2.0.0
 
 ### Major Changes
