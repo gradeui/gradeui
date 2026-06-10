@@ -26,10 +26,34 @@ export const metadata: Metadata = {
   title: "Studio",
 };
 
+/**
+ * Pre-hydration panel-state restore (same pattern as
+ * GRADE_PRE_HYDRATION_SCRIPT in the root layout). The page persists the
+ * left/right panel visibility to localStorage but used to restore it in
+ * a post-mount effect — so every refresh painted default-open chrome,
+ * then snapped to the saved state once React hydrated (late, on a page
+ * this heavy). This inline script runs as soon as the HTML parses: it
+ * stamps `data-studio-left-closed` / `data-studio-right-closed` on
+ * <html>, and a matching rule in globals.css collapses the panes before
+ * first paint. The page's hydration effect then adopts the same values
+ * into React state and REMOVES the attributes, handing control back to
+ * the normal inline styles so user toggles never fight the CSS.
+ */
+const PANEL_PRE_HYDRATION = `(function(){try{
+  var d=document.documentElement;
+  if(localStorage.getItem("studio:left-panel-open")==="false")d.setAttribute("data-studio-left-closed","");
+  if(localStorage.getItem("studio:right-panel-open")==="false")d.setAttribute("data-studio-right-closed","");
+}catch(e){}})();`;
+
 export default function StudioLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <script dangerouslySetInnerHTML={{ __html: PANEL_PRE_HYDRATION }} />
+      {children}
+    </>
+  );
 }

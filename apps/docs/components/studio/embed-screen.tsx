@@ -350,6 +350,33 @@ export function EmbedScreen({
     return builtInThemes[defaultThemeId];
   }, [themeDraftJson]);
 
+  // Boot beacons — when the embed is itself FRAMED (an MCP App panel, a
+  // blog, the future grade-embed host page), post lifecycle milestones to
+  // the parent. postMessage crosses origins and sandboxes, so this is the
+  // one periscope into the embed when the surrounding host (e.g. a Claude
+  // MCP panel) gives us no DevTools. Fire-and-forget; "*" target is fine —
+  // the payload carries no data worth protecting.
+  React.useEffect(() => {
+    if (typeof window === "undefined" || window.parent === window) return;
+    const beacon = (stage: string) => {
+      try {
+        window.parent.postMessage({ type: "grade:embed-status", stage }, "*");
+      } catch {
+        /* parent gone — nothing to report to */
+      }
+    };
+    beacon("hydrated");
+    // "painted" ≈ two RAFs after mount — first real frame committed.
+    let raf1 = 0, raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => beacon("painted"));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, []);
+
   // Camera timeline. Reduced-motion or ?motion=off freezes it on the first
   // shot (it's motion, so it answers to the same control as everything else).
   // `paused` is the viewer's play/pause. When there's no timeline, the static

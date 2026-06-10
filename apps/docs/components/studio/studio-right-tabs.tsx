@@ -69,6 +69,7 @@ import {
   Segmented,
   HueRow,
   FontRow,
+  ThemeBuilderControls,
   useThemeBuilder,
   useMaybeThemeBuilder,
 } from "@/components/theme-builder";
@@ -107,10 +108,14 @@ const SHOW_THEME_TAB = false;
 // `[&_svg]:size-3.5` to all icon children. No per-call sizes here.
 const ALL_TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "layout", label: "Layout", icon: <Layers /> },
-  // The Styles tab is the per-project theme variant authoring surface
-  // (STUDIO-THEMES.md Phase T1) — shown regardless of SHOW_THEME_TAB,
-  // which only gates the not-yet-demo-quality full builder controls.
-  { id: "styles", label: "Styles", icon: <Brush /> },
+  // The Design System tab (id stays "styles" — it's persisted in tab
+  // state and threaded through hosts; renaming the id would be churn for
+  // zero benefit). This is where the project's design system lives: the
+  // at-will controls (hue / modular scale / density — the Phase B
+  // bindings) + theme variant authoring (STUDIO-THEMES.md Phase T1).
+  // Shown regardless of SHOW_THEME_TAB, which only gates the legacy
+  // full-builder Theme tab.
+  { id: "styles", label: "Design System", icon: <Brush /> },
   { id: "theme", label: "Theme", icon: <Palette /> },
   { id: "comments", label: "Comments", icon: <MessageSquare /> },
 ];
@@ -295,8 +300,12 @@ function ThemeSwatch({ theme }: { theme: GeneratedTheme }) {
  * Renders nothing if either provider is missing — safe in any host.
  * This replaces the hidden Theme tab until the theme experience gets
  * its proper design pass (see SHOW_THEME_TAB above + STUDIO.md).
+ *
+ * Exported: ProjectHome (the grid view's right pane) mounts the same
+ * dropdown so the project theme is pickable from the homepage too, not
+ * only once a screen is focused.
  */
-function ThemeDropdown() {
+export function ThemeDropdown() {
   const grade = useMaybeGradeTheme();
   const builder = useMaybeThemeBuilder();
 
@@ -408,14 +417,50 @@ function StylesTabContent({
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
+      {/* At-will controls (THEME-MIGRATION.md Phase B receipt surface) —
+          the heart of the Design System tab. Hue rows, modular Scale
+          select, Density segmented, radius, shadows — attached to the
+          ambient page-level ThemeBuilderProvider, so every tweak re-skins
+          the canvas live. Density now re-pitches --spacing (every padding
+          and gap on every screen) and a modular Scale re-pitches the whole
+          --text-* ladder, retroactively. Components section stays off —
+          that lives with the inspector. The D1 "magic bar" composes these
+          same controls over the canvas later. */}
+      <div className="rounded-md border border-border/60">
+        {/* Drift header — visible the moment any control departs from
+            the base theme. Freeform play needs a way home: Reset snaps
+            the draft back to the base (the history anchor), and the
+            per-control dots in the form show exactly which knobs moved. */}
+        {builder.isDirty && (
+          <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-studio-accent/5 px-3 py-1.5">
+            <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-studio-accent" />
+              Edited from base
+            </span>
+            <button
+              type="button"
+              onClick={builder.reset}
+              className="rounded px-1.5 py-0.5 text-[11px] font-medium text-studio-accent transition hover:bg-studio-accent/10"
+            >
+              Reset to base
+            </button>
+          </div>
+        )}
+        {/* Mode section ON — the provider's light/dark drives the SCREEN
+            preview vars (independent of the docs-site mode), and the tab
+            is its natural home. */}
+        <ThemeBuilderControls sections={{ components: false }} />
+      </div>
+
       <div className="space-y-1">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Theme variants
         </h3>
         <p className="text-xs leading-relaxed text-muted-foreground">
           Save the current screen theme as a named variant. Set a base with
-          the theme menu above, tweak it, then save. Applying a variant
-          re-skins the preview without overwriting your working draft.
+          the theme menu above, tweak it with the controls, then save.
+          Applying a variant re-skins the preview without overwriting your
+          working draft.
         </p>
       </div>
 

@@ -153,9 +153,15 @@ const FieldRoot = React.forwardRef<HTMLDivElement, FieldProps>(
           data-layout={layout}
           className={cn(
             "flex gap-3",
+            // Single-line option rows (no description) centre the
+            // control against the label; the top-aligned + mt-0.5
+            // treatment only earns its keep when a description makes
+            // the text block taller than the control.
             layout === "setting"
               ? "items-center justify-between"
-              : "items-start",
+              : description
+                ? "items-start"
+                : "items-center",
             className
           )}
           {...props}
@@ -170,7 +176,9 @@ const FieldRoot = React.forwardRef<HTMLDivElement, FieldProps>(
             </>
           ) : (
             <>
-              <div className="mt-0.5 shrink-0">{wiredControl}</div>
+              <div className={cn("shrink-0", description ? "mt-0.5" : undefined)}>
+                {wiredControl}
+              </div>
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 {label}
                 {description}

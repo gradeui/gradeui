@@ -19,8 +19,8 @@
  *
  *  If you change anything about how this barrel is shipped, also
  *  check `packages/ui/tsup.config.ts` — the two configs (client +
- *  server-safe) are deliberately split so the `contracts` and
- *  `tailwind-preset` subpaths stay importable from Server Components.
+ *  server-safe) are deliberately split so the `contracts` subpath
+ *  stays importable from Server Components.
  * ─────────────────────────────────────────────────────────────────────
  */
 

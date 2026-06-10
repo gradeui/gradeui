@@ -24,7 +24,7 @@ import { defineConfig, type Options } from "tsup";
  *  minification, so it survives untouched.
  *
  *  But banner applies to every entry in the config — and we don't want
- *  it on the server-safe entries (`contracts`, `tailwind-preset`).
+ *  it on the server-safe entries (`contracts`).
  *  Marking those `"use client"` would re-export them as client modules,
  *  which defeats the whole purpose of having `@gradeui/ui/contracts`
  *  as a Zod-only subpath consumable from Server Components, API routes,
@@ -134,14 +134,15 @@ export default defineConfig([
   // no DOM, no `"use client"`.
   //
   // - `contracts` → `@gradeui/ui/contracts` — typed component registry
-  // - `tailwind-preset` → `@gradeui/ui/tailwind-preset` — Tailwind
-  //    config that consumers extend in their own `tailwind.config.ts`
-  //    (which is loaded server-side at build time).
+  //
+  // (`tailwind-preset` was retired in the Tailwind v4 native-@theme
+  //  migration — THEME-MIGRATION.md Phase A. Consumers now get the full
+  //  theme from `@gradeui/ui/styles.css`; there is no JS config to
+  //  extend.)
   {
     ...sharedOptions,
     entry: {
       contracts: "lib/contracts.ts",
-      "tailwind-preset": "tailwind-preset.ts",
     },
   },
 ]);

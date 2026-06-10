@@ -5,9 +5,10 @@ import { RAMP_KEYS, type ModeName, type Ramp } from "./oklch";
  * Runtime theme application.
  *
  * Writes a GeneratedTheme to :root as CSS custom properties. The consuming
- * CSS (globals.css + tailwind.config.ts) wraps each var with
- *   oklch(var(--x) / <alpha-value>)
- * so Tailwind opacity shortcuts keep working.
+ * CSS (globals.css — the native @theme block) wraps each var with
+ *   oklch(var(--x))
+ * and Tailwind v4 derives opacity shortcuts via color-mix(), so
+ * bg-primary/50-style classes keep working.
  *
  * Apart from color tokens, this also writes:
  *   - Typography CSS vars (--font-sans, --font-display, --font-mono,
@@ -130,6 +131,13 @@ export function themeToCSSVars(
     // --- Spacing density multiplier (consumed via calc()) ---
     "--gds-density": String(theme.spacing.densityFactor),
 
+    // --- Spacing base (B1): Tailwind v4 derives EVERY spacing utility
+    // from this one variable (p-4 → calc(var(--spacing) * 4)), so the
+    // density control re-scales padding/gap/margin/size across every
+    // screen ever generated. Falls back to the v4 default for themes
+    // generated before the field existed.
+    "--spacing": theme.spacing.unit ?? "0.25rem",
+
     // --- Shadows ---
     "--gds-shadow-sm": theme.effects.shadows.sm,
     "--gds-shadow-md": theme.effects.shadows.md,
@@ -147,6 +155,40 @@ export function themeToCSSVars(
     // --- Borders ---
     "--gds-border-width": theme.effects.borderWidth,
   };
+
+  // --- Named type ladder (B2) — present only for modular scales. Writes
+  // --text-2xs … --text-7xl (+ per-step line-heights), re-pitching every
+  // text-* utility. Preset scales emit nothing here, leaving the static
+  // ladder in the stylesheet untouched.
+  if (theme.typography.namedScale) {
+    for (const [name, step] of Object.entries(theme.typography.namedScale)) {
+      vars[`--text-${name}`] = step.size;
+      vars[`--text-${name}--line-height`] = step.lineHeight;
+    }
+  }
+
+  // --- Role ramp families (B4) — every semantic alias as a whole ramp.
+  // primary/accent/neutral reuse the base ramps; statuses come from
+  // roleRamps. Consumed by the --color-<role>-<step> @theme entries in
+  // globals.css, so utilities like bg-success-100 / text-warning-800
+  // track the theme.
+  const families: Array<[string, Ramp | undefined]> = [
+    ["primary", theme.ramps.primary],
+    ["accent", theme.ramps.accent],
+    ["neutral", theme.ramps.neutral],
+    ["success", theme.roleRamps?.success],
+    ["warning", theme.roleRamps?.warning],
+    ["info", theme.roleRamps?.info],
+    ["highlight", theme.roleRamps?.highlight],
+    ["destructive", theme.roleRamps?.destructive],
+  ];
+  for (const [role, ramp] of families) {
+    if (!ramp) continue;
+    for (const step of RAMP_KEYS) {
+      vars[`--gds-${role}-${step}`] = ramp[step];
+    }
+  }
+
   return vars;
 }
 

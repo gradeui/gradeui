@@ -117,8 +117,117 @@ import {
 import {
   ARTBOARD_DEVICE_SIZES,
   useArtboardZoom,
+  type ArtboardZoom,
 } from "@/components/studio/use-artboard-zoom";
-import { ZoomControl } from "@/components/studio/zoom-control";
+
+/** Viewport dropdown options — same glyphs the old 4-icon ToggleGroup
+ *  used; collapsed into one menu to keep the canvas toolbar from
+ *  overflowing. */
+const VIEWPORT_OPTIONS: {
+  value: ViewportWidth;
+  label: string;
+  hint: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    value: "mobile",
+    label: "Mobile",
+    hint: "390×844",
+    icon: <Smartphone className="h-3.5 w-3.5 shrink-0" />,
+  },
+  {
+    value: "tablet",
+    label: "Tablet",
+    hint: "768×1024",
+    icon: <Tablet className="h-3.5 w-3.5 shrink-0" />,
+  },
+  {
+    value: "desktop",
+    label: "Desktop",
+    hint: "1440×900",
+    icon: <Monitor className="h-3.5 w-3.5 shrink-0" />,
+  },
+  {
+    value: "responsive",
+    label: "Responsive",
+    hint: "fills column",
+    icon: <MoveHorizontal className="h-3.5 w-3.5 shrink-0" />,
+  },
+];
+
+/** Zoom presets surfaced in the ZoomMenu. */
+const ZOOM_MENU_PRESETS = [0.5, 1, 2];
+
+/**
+ * ZoomMenu — the canvas toolbar's compact zoom surface: one tabular
+ * percent trigger opening Fit + presets + step actions. Replaces the
+ * inline ZoomControl row (Fit/Free segmented + steppers + readout),
+ * which was a major contributor to toolbar overflow. The share view
+ * keeps the full ZoomControl; both drive the same useArtboardZoom
+ * hook, and the keyboard map (0 = fit, − / = step) is untouched.
+ */
+function ZoomMenu({
+  artboard,
+}: {
+  artboard: Pick<
+    ArtboardZoom,
+    "fitMode" | "effectiveZoom" | "pickZoom" | "stepZoom" | "fit"
+  >;
+}) {
+  const pct = Math.round(artboard.effectiveZoom * 100);
+  const atPreset = (z: number) =>
+    !artboard.fitMode && pct === Math.round(z * 100);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Zoom"
+          title="Zoom"
+          className={cn(
+            "h-7 px-1.5 inline-flex items-center gap-0.5 rounded-md text-xs tabular-nums transition-colors",
+            "text-muted-foreground hover:text-foreground hover:bg-muted",
+          )}
+        >
+          {artboard.fitMode ? "Fit" : `${pct}%`}
+          <ChevronDown className="h-3 w-3 text-muted-foreground/70" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem
+          onClick={() => artboard.stepZoom(1)}
+          className="gap-2 text-xs"
+        >
+          <span className="flex-1">Zoom in</span>
+          <span className="text-2xs text-muted-foreground">=</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => artboard.stepZoom(-1)}
+          className="gap-2 text-xs"
+        >
+          <span className="flex-1">Zoom out</span>
+          <span className="text-2xs text-muted-foreground">−</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={artboard.fit} className="gap-2 text-xs">
+          <span className="flex-1">Fit</span>
+          <span className="text-2xs text-muted-foreground">0</span>
+          {artboard.fitMode && <Check className="h-3.5 w-3.5 shrink-0" />}
+        </DropdownMenuItem>
+        {ZOOM_MENU_PRESETS.map((z) => (
+          <DropdownMenuItem
+            key={z}
+            onClick={() => artboard.pickZoom(z)}
+            className="gap-2 text-xs tabular-nums"
+          >
+            <span className="flex-1">{Math.round(z * 100)}%</span>
+            {atPreset(z) && <Check className="h-3.5 w-3.5 shrink-0" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 /**
  * Minimal App module used to prewarm Sandpack when we don't yet have real
@@ -1705,41 +1814,46 @@ export function StudioCanvas({
               >
                 <RotateCcw />
               </button>
-              {/* Viewport width — icon-only with tooltips. Responsive
-                  picks up MoveHorizontal (←→) as its glyph since it
-                  conveys "stretches to fill the column" without
-                  needing a text label. */}
-              <ToggleGroup
-                type="single"
-                size="sm"
-                value={viewportWidth}
-                onValueChange={(v: string) => {
-                  if (
-                    v === "mobile" ||
-                    v === "tablet" ||
-                    v === "desktop" ||
-                    v === "responsive"
-                  )
-                    setViewportWidth(v);
-                }}
-                aria-label="Viewport width"
-              >
-                <ToggleGroupItem value="mobile" tooltip="Mobile — 390×844">
-                  <Smartphone />
-                </ToggleGroupItem>
-                <ToggleGroupItem value="tablet" tooltip="Tablet — 768×1024">
-                  <Tablet />
-                </ToggleGroupItem>
-                <ToggleGroupItem value="desktop" tooltip="Desktop — 1440×900">
-                  <Monitor />
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="responsive"
-                  tooltip="Responsive — fills the column"
-                >
-                  <MoveHorizontal />
-                </ToggleGroupItem>
-              </ToggleGroup>
+              {/* Viewport width — single dropdown (was a 4-icon
+                  ToggleGroup; the toolbar was overflowing). The trigger
+                  shows the active device's glyph; labels + sizes live
+                  in the menu. */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Viewport width"
+                    title="Viewport width"
+                    className={cn(
+                      "h-7 px-1.5 inline-flex items-center gap-0.5 rounded-md transition-colors",
+                      "[&_svg]:size-3.5 [&_svg]:shrink-0",
+                      "text-muted-foreground hover:text-foreground hover:bg-muted",
+                    )}
+                  >
+                    {VIEWPORT_OPTIONS.find((o) => o.value === viewportWidth)
+                      ?.icon ?? <Monitor />}
+                    <ChevronDown className="!size-3 text-muted-foreground/70" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-52">
+                  {VIEWPORT_OPTIONS.map((o) => (
+                    <DropdownMenuItem
+                      key={o.value}
+                      onClick={() => setViewportWidth(o.value)}
+                      className="gap-2 text-xs"
+                    >
+                      {o.icon}
+                      <span className="flex-1">{o.label}</span>
+                      <span className="text-2xs tabular-nums text-muted-foreground">
+                        {o.hint}
+                      </span>
+                      {viewportWidth === o.value && (
+                        <Check className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               {/* Zoom — the shared ZoomControl (Fit/Free toggle, ±10%
                   steppers, 10–400% slider, readout). Same component the
                   share view's toolbar renders; pinch/ctrl+wheel feed
@@ -1787,9 +1901,12 @@ export function StudioCanvas({
                   </button>
                 </div>
               )}
-              {view === "preview" && (
-                <ZoomControl artboard={artboard} compact />
-              )}
+              {/* Zoom — collapsed to a single percent dropdown (the
+                  Fit/Free segmented + steppers + readout overflowed the
+                  toolbar). The share view keeps the full ZoomControl;
+                  keyboard zoom (0 = fit, −/= step) still works — the
+                  menu is just the pointer surface for the same hook. */}
+              {view === "preview" && <ZoomMenu artboard={artboard} />}
               {/* Fidelity toggle removed — wireframe/full has no
                   product surface yet; fidelity is pinned to "full"
                   via the constant near the top of this component. */}

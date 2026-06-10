@@ -57,8 +57,9 @@
  *      layout silently falls back to the default (e.g. single-column
  *      grid). Use only built-in classes — `md:flex-row`, `md:w-1/3`,
  *      `md:col-span-2`. Verified the hard way during the airbnb-listings
- *      ship. (Eventual proper fix: extend packages/ui's tailwind.config.ts
- *      content scan to include this directory.)
+ *      ship. (Eventual proper fix: add an `@source` for this directory
+ *      in packages/ui/styles/globals.css — that's where source scanning
+ *      lives since the v4 native-@theme migration.)
  *   7. **No magic numbers anywhere** — neither in arbitrary Tailwind
  *      classes nor in inline `style={{ height: 600 }}` escapes. Magic
  *      pixel constants pin a layout to one viewport assumption and

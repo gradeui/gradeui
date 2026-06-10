@@ -1,11 +1,443 @@
 @import "tailwindcss";
 @import "@gradeui/core/tokens.css"; /* primitive ramps + semantic aliases + type scale (layers 1-2) */
 
-/* v4 engine, v3 config — the existing tailwind.config.ts (theme.extend
-   colours, the text-2xs token, radius, plugins, content globs) is loaded
-   via @config so nothing in the token/theme model changes in this step.
-   The raw-triplet → native @theme colour migration is the next pass. */
-@config "../tailwind.config.ts";
+/* v4 NATIVE THEME — the v3 config bridge (tailwind.config.ts) is retired
+   (THEME-MIGRATION.md Phase A, docs half). Everything the config defined
+   lives here as native @theme declarations, @source directives, the dark
+   @custom-variant, and @plugin. Mirrors the @theme block in
+   packages/ui/styles/globals.css (keep the shared families in lockstep);
+   docs-only deltas: + studio-accent, − selected/surface/elevation/blur
+   (those are ui-package families the docs config never carried). */
+
+/* Source scanning. v4 auto-detection covers the app's own tree; the
+   explicit local @source lines are kept for determinism (the postcss
+   plugin's auto-detect base can differ from the CLI's). Out-of-package
+   paths MUST be explicit. Paths are relative to this file. */
+@source "../pages/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../components/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../app/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../content/**/*.{js,ts,jsx,tsx,mdx}";
+/* Scan the workspace @gradeui/ui package so its component classes
+   (e.g. ToggleGroup's `data-[state=on]:bg-background`) get compiled into
+   the docs Tailwind output. Belt-and-braces: scan source for dev-mode
+   hot reloads, scan dist so the production build matches what runs in
+   the iframe. */
+@source "../../../packages/ui/components/**/*.{ts,tsx}";
+@source "../../../packages/ui/lib/**/*.{ts,tsx}";
+@source "../../../packages/ui/dist/index.{js,mjs}";
+/* Scan the @gradeui/studio playbook scaffolds so the Tailwind utilities
+   they use (pl-7, h-3.5, w-3.5, the chart spacing classes, the
+   data-table-filters layout chrome) actually generate CSS rules. */
+@source "../../../packages/studio/src/playbook/layouts/scaffolds/*.{jsx,tsx}";
+/* Playground scaffolds — arbitrary values (`h-[600px]`,
+   `md:grid-cols-[…]`) are the point here; screenshot-faithful
+   prototypes need exact pixel measurements during the first pass. */
+@source "../../../packages/studio/src/playbook/layouts/scaffolds-playground/*.{jsx,tsx}";
+@source "../../../packages/studio/src/playbook/templates/*.{ts,tsx}";
+
+/* v3 `darkMode: "class"` — same selector the @config compat layer
+   generated, so dark: variants are unchanged. */
+@custom-variant dark (&:is(.dark *));
+
+@plugin "tailwindcss-animate";
+
+/* The theme bridge. `inline` because every value references a runtime
+   CSS variable (the GradeThemeProvider contract) — utilities must carry
+   the var() reference itself. `reference` so nothing here is re-emitted
+   into :root (the runtime vars are authored in @gradeui/core/tokens.css
+   and the :root blocks below). Fonts are deliberately absent — the
+   runtime vars are literally named --font-sans / --font-mono, so
+   preflight's --default-font-family indirection lands on them without
+   any declaration (declaring them would be circular). */
+/* -- Type scale extension — `2xs` (11px), the dense tool-panel step.
+   Declared in a PLAIN @theme block (not inline/reference) so the utility
+   references var(--text-2xs) — that's what lets the theme generator
+   re-pitch the whole named ladder at runtime (Phase B2). -- */
+@theme {
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+}
+
+@theme inline reference {
+  /* -- Brand color ramps — values live in @gradeui/core as --gds-* vars. -- */
+  --color-rds-green: var(--gds-green);
+  --color-rds-green-50: var(--gds-green-50);
+  --color-rds-green-100: var(--gds-green-100);
+  --color-rds-green-200: var(--gds-green-200);
+  --color-rds-green-300: var(--gds-green-300);
+  --color-rds-green-400: var(--gds-green-400);
+  --color-rds-green-500: var(--gds-green-500);
+  --color-rds-green-600: var(--gds-green-600);
+  --color-rds-green-700: var(--gds-green-700);
+  --color-rds-green-800: var(--gds-green-800);
+  --color-rds-green-900: var(--gds-green-900);
+  --color-rds-green-950: var(--gds-green-950);
+  --color-rds-yellow: var(--gds-yellow);
+  --color-rds-yellow-50: var(--gds-yellow-50);
+  --color-rds-yellow-100: var(--gds-yellow-100);
+  --color-rds-yellow-200: var(--gds-yellow-200);
+  --color-rds-yellow-300: var(--gds-yellow-300);
+  --color-rds-yellow-400: var(--gds-yellow-400);
+  --color-rds-yellow-500: var(--gds-yellow-500);
+  --color-rds-yellow-600: var(--gds-yellow-600);
+  --color-rds-yellow-700: var(--gds-yellow-700);
+  --color-rds-yellow-800: var(--gds-yellow-800);
+  --color-rds-yellow-900: var(--gds-yellow-900);
+  --color-rds-orange: var(--gds-orange);
+  --color-rds-orange-50: var(--gds-orange-50);
+  --color-rds-orange-100: var(--gds-orange-100);
+  --color-rds-orange-200: var(--gds-orange-200);
+  --color-rds-orange-300: var(--gds-orange-300);
+  --color-rds-orange-400: var(--gds-orange-400);
+  --color-rds-orange-500: var(--gds-orange-500);
+  --color-rds-orange-600: var(--gds-orange-600);
+  --color-rds-orange-700: var(--gds-orange-700);
+  --color-rds-orange-800: var(--gds-orange-800);
+  --color-rds-orange-900: var(--gds-orange-900);
+  --color-rds-red: var(--gds-red);
+  --color-rds-red-50: var(--gds-red-50);
+  --color-rds-red-100: var(--gds-red-100);
+  --color-rds-red-200: var(--gds-red-200);
+  --color-rds-red-300: var(--gds-red-300);
+  --color-rds-red-400: var(--gds-red-400);
+  --color-rds-red-500: var(--gds-red-500);
+  --color-rds-red-600: var(--gds-red-600);
+  --color-rds-red-700: var(--gds-red-700);
+  --color-rds-red-800: var(--gds-red-800);
+  --color-rds-red-900: var(--gds-red-900);
+  --color-rds-teal: var(--gds-teal);
+  --color-rds-teal-50: var(--gds-teal-50);
+  --color-rds-teal-100: var(--gds-teal-100);
+  --color-rds-teal-200: var(--gds-teal-200);
+  --color-rds-teal-300: var(--gds-teal-300);
+  --color-rds-teal-400: var(--gds-teal-400);
+  --color-rds-teal-500: var(--gds-teal-500);
+  --color-rds-teal-600: var(--gds-teal-600);
+  --color-rds-teal-700: var(--gds-teal-700);
+  --color-rds-teal-800: var(--gds-teal-800);
+  --color-rds-teal-900: var(--gds-teal-900);
+  --color-rds-teal-950: var(--gds-teal-950);
+  --color-rds-navy: var(--gds-navy);
+  --color-rds-navy-50: var(--gds-navy-50);
+  --color-rds-navy-100: var(--gds-navy-100);
+  --color-rds-navy-200: var(--gds-navy-200);
+  --color-rds-navy-300: var(--gds-navy-300);
+  --color-rds-navy-400: var(--gds-navy-400);
+  --color-rds-navy-500: var(--gds-navy-500);
+  --color-rds-navy-600: var(--gds-navy-600);
+  --color-rds-navy-700: var(--gds-navy-700);
+  --color-rds-navy-800: var(--gds-navy-800);
+  --color-rds-navy-900: var(--gds-navy-900);
+  --color-rds-blue: var(--gds-blue);
+  --color-rds-blue-50: var(--gds-blue-50);
+  --color-rds-blue-100: var(--gds-blue-100);
+  --color-rds-blue-200: var(--gds-blue-200);
+  --color-rds-blue-300: var(--gds-blue-300);
+  --color-rds-blue-400: var(--gds-blue-400);
+  --color-rds-blue-500: var(--gds-blue-500);
+  --color-rds-blue-600: var(--gds-blue-600);
+  --color-rds-blue-700: var(--gds-blue-700);
+  --color-rds-blue-800: var(--gds-blue-800);
+  --color-rds-blue-900: var(--gds-blue-900);
+  --color-rds-gray-50: var(--gds-gray-50);
+  --color-rds-gray-100: var(--gds-gray-100);
+  --color-rds-gray-200: var(--gds-gray-200);
+  --color-rds-gray-300: var(--gds-gray-300);
+  --color-rds-gray-400: var(--gds-gray-400);
+  --color-rds-gray-500: var(--gds-gray-500);
+  --color-rds-gray-600: var(--gds-gray-600);
+  --color-rds-gray-700: var(--gds-gray-700);
+  --color-rds-gray-800: var(--gds-gray-800);
+  --color-rds-gray-900: var(--gds-gray-900);
+  --color-rds-gray-950: var(--gds-gray-950);
+  --color-rds-black: var(--gds-black);
+  --color-rds-white: var(--gds-white);
+
+  /* -- Semantic roles — runtime vars hold bare "L C H" OKLCH triplets,
+     wrapped with oklch() at use. Opacity shortcuts (bg-primary/50)
+     compile to color-mix() under v4 — visually identical to the old
+     <alpha-value> substitution. -- */
+  --color-border: oklch(var(--border));
+  --color-input: oklch(var(--input));
+  --color-ring: oklch(var(--ring));
+  --color-background: oklch(var(--background));
+  --color-foreground: oklch(var(--foreground));
+  --color-primary: oklch(var(--primary));
+  --color-primary-foreground: oklch(var(--primary-foreground));
+  /* Studio-only accent — preview selection ring, SelectionChip, any tool
+     affordance that should NOT shift with the active design theme. */
+  --color-studio-accent: oklch(var(--studio-accent));
+  --color-studio-accent-foreground: oklch(var(--studio-accent-foreground));
+  --color-secondary: oklch(var(--secondary));
+  --color-secondary-foreground: oklch(var(--secondary-foreground));
+  --color-destructive: oklch(var(--destructive));
+  --color-destructive-foreground: oklch(var(--destructive-foreground));
+  /* Alert surface pair — paler tinted bg + deeper on-surface text. */
+  --color-destructive-soft: oklch(var(--destructive-soft));
+  --color-destructive-deep: oklch(var(--destructive-deep));
+  --color-muted: oklch(var(--muted));
+  --color-muted-foreground: oklch(var(--muted-foreground));
+  --color-accent: oklch(var(--accent));
+  --color-accent-foreground: oklch(var(--accent-foreground));
+  --color-popover: oklch(var(--popover));
+  --color-popover-foreground: oklch(var(--popover-foreground));
+  --color-card: oklch(var(--card));
+  --color-card-foreground: oklch(var(--card-foreground));
+  /* Status colours — `-soft` / `-deep` siblings map to the tinted alert
+     surface + readable text tokens generated by the theme pipeline
+     (lib/themes/oklch.ts#deriveAlertPair). */
+  --color-success: oklch(var(--success));
+  --color-success-soft: oklch(var(--success-soft));
+  --color-success-deep: oklch(var(--success-deep));
+  --color-warning: oklch(var(--warning));
+  --color-warning-soft: oklch(var(--warning-soft));
+  --color-warning-deep: oklch(var(--warning-deep));
+  --color-info: oklch(var(--info));
+  --color-info-soft: oklch(var(--info-soft));
+  --color-info-deep: oklch(var(--info-deep));
+  --color-highlight: oklch(var(--highlight));
+  --color-highlight-soft: oklch(var(--highlight-soft));
+  --color-highlight-deep: oklch(var(--highlight-deep));
+  /* Chart series palette — derived from theme hues by the generator. */
+  --color-chart-1: oklch(var(--chart-1));
+  --color-chart-2: oklch(var(--chart-2));
+  --color-chart-3: oklch(var(--chart-3));
+  --color-chart-4: oklch(var(--chart-4));
+  --color-chart-5: oklch(var(--chart-5));
+
+  /* -- Role ramp families (THEME-MIGRATION.md B4) — mirrors the block in
+     packages/ui/styles/globals.css; keep in lockstep. Each step falls
+     back to the flat role triplet when no generated theme is active.
+     `neutral` deliberately absent (would shadow Tailwind's default
+     neutral palette). No @source safelist here — unlike the ui
+     stylesheet (which Fast Frame loads statically), the docs build
+     scans its own sources, so only steps actually used get emitted. -- */
+  --color-primary-50: oklch(var(--gds-primary-50, var(--primary)));
+  --color-primary-100: oklch(var(--gds-primary-100, var(--primary)));
+  --color-primary-200: oklch(var(--gds-primary-200, var(--primary)));
+  --color-primary-300: oklch(var(--gds-primary-300, var(--primary)));
+  --color-primary-400: oklch(var(--gds-primary-400, var(--primary)));
+  --color-primary-500: oklch(var(--gds-primary-500, var(--primary)));
+  --color-primary-600: oklch(var(--gds-primary-600, var(--primary)));
+  --color-primary-700: oklch(var(--gds-primary-700, var(--primary)));
+  --color-primary-800: oklch(var(--gds-primary-800, var(--primary)));
+  --color-primary-900: oklch(var(--gds-primary-900, var(--primary)));
+  --color-primary-950: oklch(var(--gds-primary-950, var(--primary)));
+  --color-accent-50: oklch(var(--gds-accent-50, var(--accent)));
+  --color-accent-100: oklch(var(--gds-accent-100, var(--accent)));
+  --color-accent-200: oklch(var(--gds-accent-200, var(--accent)));
+  --color-accent-300: oklch(var(--gds-accent-300, var(--accent)));
+  --color-accent-400: oklch(var(--gds-accent-400, var(--accent)));
+  --color-accent-500: oklch(var(--gds-accent-500, var(--accent)));
+  --color-accent-600: oklch(var(--gds-accent-600, var(--accent)));
+  --color-accent-700: oklch(var(--gds-accent-700, var(--accent)));
+  --color-accent-800: oklch(var(--gds-accent-800, var(--accent)));
+  --color-accent-900: oklch(var(--gds-accent-900, var(--accent)));
+  --color-accent-950: oklch(var(--gds-accent-950, var(--accent)));
+  --color-success-50: oklch(var(--gds-success-50, var(--success)));
+  --color-success-100: oklch(var(--gds-success-100, var(--success)));
+  --color-success-200: oklch(var(--gds-success-200, var(--success)));
+  --color-success-300: oklch(var(--gds-success-300, var(--success)));
+  --color-success-400: oklch(var(--gds-success-400, var(--success)));
+  --color-success-500: oklch(var(--gds-success-500, var(--success)));
+  --color-success-600: oklch(var(--gds-success-600, var(--success)));
+  --color-success-700: oklch(var(--gds-success-700, var(--success)));
+  --color-success-800: oklch(var(--gds-success-800, var(--success)));
+  --color-success-900: oklch(var(--gds-success-900, var(--success)));
+  --color-success-950: oklch(var(--gds-success-950, var(--success)));
+  --color-warning-50: oklch(var(--gds-warning-50, var(--warning)));
+  --color-warning-100: oklch(var(--gds-warning-100, var(--warning)));
+  --color-warning-200: oklch(var(--gds-warning-200, var(--warning)));
+  --color-warning-300: oklch(var(--gds-warning-300, var(--warning)));
+  --color-warning-400: oklch(var(--gds-warning-400, var(--warning)));
+  --color-warning-500: oklch(var(--gds-warning-500, var(--warning)));
+  --color-warning-600: oklch(var(--gds-warning-600, var(--warning)));
+  --color-warning-700: oklch(var(--gds-warning-700, var(--warning)));
+  --color-warning-800: oklch(var(--gds-warning-800, var(--warning)));
+  --color-warning-900: oklch(var(--gds-warning-900, var(--warning)));
+  --color-warning-950: oklch(var(--gds-warning-950, var(--warning)));
+  --color-info-50: oklch(var(--gds-info-50, var(--info)));
+  --color-info-100: oklch(var(--gds-info-100, var(--info)));
+  --color-info-200: oklch(var(--gds-info-200, var(--info)));
+  --color-info-300: oklch(var(--gds-info-300, var(--info)));
+  --color-info-400: oklch(var(--gds-info-400, var(--info)));
+  --color-info-500: oklch(var(--gds-info-500, var(--info)));
+  --color-info-600: oklch(var(--gds-info-600, var(--info)));
+  --color-info-700: oklch(var(--gds-info-700, var(--info)));
+  --color-info-800: oklch(var(--gds-info-800, var(--info)));
+  --color-info-900: oklch(var(--gds-info-900, var(--info)));
+  --color-info-950: oklch(var(--gds-info-950, var(--info)));
+  --color-highlight-50: oklch(var(--gds-highlight-50, var(--highlight)));
+  --color-highlight-100: oklch(var(--gds-highlight-100, var(--highlight)));
+  --color-highlight-200: oklch(var(--gds-highlight-200, var(--highlight)));
+  --color-highlight-300: oklch(var(--gds-highlight-300, var(--highlight)));
+  --color-highlight-400: oklch(var(--gds-highlight-400, var(--highlight)));
+  --color-highlight-500: oklch(var(--gds-highlight-500, var(--highlight)));
+  --color-highlight-600: oklch(var(--gds-highlight-600, var(--highlight)));
+  --color-highlight-700: oklch(var(--gds-highlight-700, var(--highlight)));
+  --color-highlight-800: oklch(var(--gds-highlight-800, var(--highlight)));
+  --color-highlight-900: oklch(var(--gds-highlight-900, var(--highlight)));
+  --color-highlight-950: oklch(var(--gds-highlight-950, var(--highlight)));
+  --color-destructive-50: oklch(var(--gds-destructive-50, var(--destructive)));
+  --color-destructive-100: oklch(var(--gds-destructive-100, var(--destructive)));
+  --color-destructive-200: oklch(var(--gds-destructive-200, var(--destructive)));
+  --color-destructive-300: oklch(var(--gds-destructive-300, var(--destructive)));
+  --color-destructive-400: oklch(var(--gds-destructive-400, var(--destructive)));
+  --color-destructive-500: oklch(var(--gds-destructive-500, var(--destructive)));
+  --color-destructive-600: oklch(var(--gds-destructive-600, var(--destructive)));
+  --color-destructive-700: oklch(var(--gds-destructive-700, var(--destructive)));
+  --color-destructive-800: oklch(var(--gds-destructive-800, var(--destructive)));
+  --color-destructive-900: oklch(var(--gds-destructive-900, var(--destructive)));
+  --color-destructive-950: oklch(var(--gds-destructive-950, var(--destructive)));
+
+  /* -- Radius — pinned to the theme's --radius base. -- */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* -- Motion -- */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-fade-out: fade-out 0.2s ease-in;
+  --animate-scale-in: scale-in 0.15s ease-out;
+  --animate-slide-in-from-top: slide-in-from-top 0.2s ease-out;
+  --animate-slide-in-from-bottom: slide-in-from-bottom 0.2s ease-out;
+  --animate-slide-in-from-left: slide-in-from-left 0.2s ease-out;
+  --animate-slide-in-from-right: slide-in-from-right 0.2s ease-out;
+  --animate-energy-pulse: energy-pulse 2s ease-in-out infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes slide-in-from-top {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slide-in-from-bottom {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slide-in-from-left {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes slide-in-from-right {
+    from {
+      opacity: 0;
+      transform: translateX(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes energy-pulse {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 oklch(var(--accent) / 0.4);
+    }
+    50% {
+      opacity: 0.8;
+      box-shadow: 0 0 0 8px oklch(var(--accent) / 0);
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+}
+
+/* Animate-in vocabulary (tailwindcss-animate enter/exit modifiers) +
+   easing — runtime-typed (generated screens compose `animate-in fade-in
+   slide-in-from-top`-style entrances), so the scanner never sees the
+   pieces in source. Until the v4 native-@theme migration these leaked
+   into the build by accident (the scanner picked them out of the old
+   tailwind.config.ts comment/value text); now force-emitted
+   deliberately. Mirrors the same block in packages/ui/styles/globals.css. */
+@source inline("fade-{in,out}");
+@source inline("slide-in-from-{top,bottom,left,right}");
+@source inline("ease-{in,out,in-out}");
+/* (One accidental class was deliberately NOT carried over: the old
+   config comment's literal `md:grid-cols-[…]` ellipsis compiled into a
+   garbage rule — `grid-template-columns: …` — that browsers dropped as
+   invalid. Removing it is zero visual change.) */
+
+/* ── Studio panel pre-hydration ─────────────────────────────────────
+   Pairs with the inline script in app/studio/layout.tsx: when a saved
+   panel state says "closed", the script stamps these attrs on <html>
+   BEFORE first paint and these rules collapse the panes — no
+   default-open flash while the (heavy) page hydrates. The page's
+   hydration effect removes the attrs once React state has adopted the
+   same values, so user toggles never fight these overrides.
+   !important deliberately outranks the panes' inline flexBasis. */
+html[data-studio-left-closed] [data-gds-part="studio-left-pane"],
+html[data-studio-right-closed] [data-gds-part="studio-right-pane"] {
+  flex-basis: 0 !important;
+}
 
 /* ============================================
    RAMP DESIGN SYSTEM - DESIGN TOKENS

@@ -131,6 +131,13 @@ type ScreenPayload = {
    *  applied client-side, exactly like the share / embed views. */
   themeDraftJson?: string | null;
   name?: string;
+  /** BARE mode (preview_screen_scaled v7): no header, no footer, no 4:3
+   *  frame — the screen renders edge-to-edge filling the viewport. Used
+   *  when this bundle runs as a GUEST inside another panel's Fit-scaled
+   *  srcdoc frame: the outer shell owns the chrome at 1:1 (otherwise the
+   *  chrome scales down with the screen — the "double chrome" bug) and
+   *  the host-fullscreen affordance moves to the shell. */
+  bare?: boolean;
 };
 
 // The postMessage handler lives outside React; the shell publishes its
@@ -274,19 +281,26 @@ function PreviewShell() {
   const iconBtn =
     "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground";
 
+  const bare = Boolean(payload?.bare);
+
   return (
     <div
       className={
         "flex w-full flex-col bg-background" +
         // Fullscreen fills the viewport so the stage can centre + letterbox
         // a contained 4:3 frame; inline sizes to the frame's own height.
-        (displayMode === "fullscreen" ? " h-screen" : "") +
+        // Bare mode always fills the viewport — the scaled srcdoc frame
+        // IS the virtual screen, edge to edge.
+        (displayMode === "fullscreen" || bare ? " h-screen" : "") +
         (mode === "dark" ? " dark" : "")
       }
       data-mode={mode}
+      data-bare={bare ? "" : undefined}
     >
-      {/* Header — brand + light/dark + open-full */}
-      <header className="flex h-10 shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background/80 px-3 backdrop-blur-md">
+      {/* Header — brand + light/dark + open-full. display:none in bare
+          mode — the outer shell owns chrome at 1:1 (v7, double-chrome
+          fix). */}
+      <header style={bare ? { display: "none" } : undefined} className="flex h-10 shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background/80 px-3 backdrop-blur-md">
         <div className="flex min-w-0 items-center gap-2">
           <GradeLogo size={18} className="shrink-0 text-foreground" />
           {payload?.name ? (
@@ -373,28 +387,38 @@ function PreviewShell() {
           intentional letterbox surround; inline the frame is full-width. */}
       <div
         className={
-          displayMode === "fullscreen"
-            ? "relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-3"
-            : "relative w-full"
+          bare
+            ? "relative min-h-0 flex-1"
+            : displayMode === "fullscreen"
+              ? "relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-3"
+              : "relative w-full"
         }
         style={
-          displayMode === "fullscreen"
+          !bare && displayMode === "fullscreen"
             ? { background: "var(--gds-canvas-fill)" }
             : undefined
         }
       >
         <div
           ref={frameRef}
-          className="relative overflow-hidden rounded-lg bg-background ring-1 ring-border/40"
+          className={
+            // Bare: no 4:3 lock, no ring, no radius — the screen IS the
+            // frame, edge to edge; the outer shell draws the border.
+            bare
+              ? "relative h-full w-full overflow-hidden bg-background"
+              : "relative overflow-hidden rounded-lg bg-background ring-1 ring-border/40"
+          }
           style={
-            displayMode === "fullscreen"
-              ? {
-                  aspectRatio: "4 / 3",
-                  height: "100%",
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                }
-              : { aspectRatio: "4 / 3", width: "100%" }
+            bare
+              ? undefined
+              : displayMode === "fullscreen"
+                ? {
+                    aspectRatio: "4 / 3",
+                    height: "100%",
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                  }
+                : { aspectRatio: "4 / 3", width: "100%" }
           }
         >
           <div className="absolute inset-0 overflow-auto">
@@ -418,8 +442,9 @@ function PreviewShell() {
       </div>
 
       {/* Debug footer — live frame resolution. More grade chrome lands
-          here over time (this is the "controls/debug" shelf). */}
-      <footer className="flex h-7 shrink-0 items-center justify-between gap-3 border-t border-border/60 bg-background/80 px-3 font-mono text-[11px] text-muted-foreground backdrop-blur-md">
+          here over time (this is the "controls/debug" shelf). Hidden in
+          bare mode — the shell's trace is the debug surface there. */}
+      <footer style={bare ? { display: "none" } : undefined} className="flex h-7 shrink-0 items-center justify-between gap-3 border-t border-border/60 bg-background/80 px-3 font-mono text-[11px] text-muted-foreground backdrop-blur-md">
         <span>Grade · MCP preview</span>
         <span className="tabular-nums">{res ? `${res.w}×${res.h}` : "—"}</span>
       </footer>
@@ -470,6 +495,7 @@ window.addEventListener("message", (event: MessageEvent) => {
       themeDraftJson?: string | null;
       embedUrl?: string | null;
       name?: string;
+      bare?: boolean;
     };
     if (sc.appSource)
       deliverScreen({
@@ -479,6 +505,9 @@ window.addEventListener("message", (event: MessageEvent) => {
         themeVars: sc.themeVars,
         themeDraftJson: sc.themeDraftJson ?? null,
         name: sc.name,
+        // v7 bare mode — this cherry-pick is exactly where the flag got
+        // dropped the first time; keep it in sync with ScreenPayload.
+        bare: Boolean(sc.bare),
       });
   } else if (msg.method && /host.?context/i.test(String(msg.method))) {
     applyHostContext(msg.params);

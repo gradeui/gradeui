@@ -42,7 +42,12 @@ import {
   type TypeScalePreset,
   type ModularScaleId,
 } from "./types";
-import { GDS_MODULAR_SCALES, modularTypeSizes } from "@gradeui/core";
+import {
+  GDS_MODULAR_SCALES,
+  GDS_TYPE_SIZE_NAMES,
+  modularTypeSizes,
+  type TypeSizeName,
+} from "@gradeui/core";
 
 const ALL_MODES: ModeName[] = ["superLight", "light", "dark", "superDark"];
 
@@ -304,6 +309,40 @@ const MODULAR_RATIOS = Object.fromEntries(
   GDS_MODULAR_SCALES.map((s) => [s.id, s.ratio])
 ) as Record<ModularScaleId, number>;
 
+/* ── Phase B guards (THEME-MIGRATION.md B5) ──────────────────────────
+   Floors and clamps so no ratio/density input can produce unreadable
+   text or collapsed spacing. The style-panel sliders should mirror
+   these bounds. */
+/** Smallest font size any generated step may resolve to (10px). */
+const MIN_TEXT_REM = 0.625;
+/** Modular ratios clamped to sane musical-interval territory. */
+const MODULAR_RATIO_MIN = 1.02;
+const MODULAR_RATIO_MAX = 1.8;
+
+const clamp = (n: number, lo: number, hi: number) =>
+  Math.min(hi, Math.max(lo, n));
+
+/**
+ * Per-step line-height curve for the generated named ladder — tighter as
+ * size grows. Values mirror the ratios of Tailwind v4's default ladder
+ * (and our --text-2xs token), so a generated scale keeps the same
+ * vertical rhythm character as the static one it replaces.
+ */
+const TYPE_LINE_HEIGHT_CURVE: Record<TypeSizeName, number> = {
+  "2xs": 1.455, // 1rem / 0.6875rem — the static token's ratio
+  xs: 1.333,
+  sm: 1.429,
+  base: 1.5,
+  lg: 1.556,
+  xl: 1.4,
+  "2xl": 1.333,
+  "3xl": 1.2,
+  "4xl": 1.111,
+  "5xl": 1,
+  "6xl": 1,
+  "7xl": 1,
+};
+
 /**
  * Resolve the semantic ladder for a TypeScale.
  *
@@ -324,7 +363,7 @@ function typeLadder(scale: TypeScale): Record<keyof typeof BASE_SCALE, number> {
       Object.entries(BASE_SCALE).map(([k, v]) => [k, v * mult])
     ) as Record<keyof typeof BASE_SCALE, number>;
   }
-  const sizes = modularTypeSizes(1, MODULAR_RATIOS[scale as ModularScaleId]);
+  const sizes = modularNamedSizes(scale as ModularScaleId);
   return {
     display: sizes["6xl"],
     h1: sizes["4xl"],
@@ -338,11 +377,37 @@ function typeLadder(scale: TypeScale): Record<keyof typeof BASE_SCALE, number> {
   };
 }
 
+/** The full named ladder for a modular id — ratio clamped, sizes floored. */
+function modularNamedSizes(id: ModularScaleId): Record<TypeSizeName, number> {
+  const ratio = clamp(MODULAR_RATIOS[id], MODULAR_RATIO_MIN, MODULAR_RATIO_MAX);
+  return modularTypeSizes(1, ratio, MIN_TEXT_REM);
+}
+
 function resolveTypography(
   input: ThemeInput["typography"]
 ): GeneratedTypography {
   const ladder = typeLadder(input.scale);
   const rem = (n: number) => `${n.toFixed(3)}rem`;
+
+  // Phase B (THEME-MIGRATION.md B2): a modular scale doesn't just move the
+  // semantic h1…body slots — it re-pitches Tailwind's whole named ladder.
+  // Emitting 2xs…7xl as --text-* lets every `text-xl`-style utility in
+  // every screen ever generated re-scale when the ratio changes. Presets
+  // deliberately emit NO named ladder (today's static values stay).
+  let namedScale: GeneratedTypography["namedScale"];
+  if (!(input.scale in SCALE_MULTIPLIER)) {
+    const sizes = modularNamedSizes(input.scale as ModularScaleId);
+    namedScale = Object.fromEntries(
+      GDS_TYPE_SIZE_NAMES.map((name) => [
+        name,
+        {
+          size: rem(sizes[name]),
+          lineHeight: String(TYPE_LINE_HEIGHT_CURVE[name]),
+        },
+      ])
+    );
+  }
+
   return {
     fontSans: FONTS[input.body],
     fontMono: FONTS[input.mono],
@@ -361,6 +426,7 @@ function resolveTypography(
       body: rem(ladder.body),
       bodySm: rem(ladder.bodySm),
     },
+    namedScale,
   };
 }
 
@@ -401,10 +467,24 @@ const DENSITY_FACTOR: Record<SpacingDensity, number> = {
   roomy: 1.2,
 };
 
+/** Tailwind v4's default `--spacing` base. Every padding/gap/margin/size
+ *  utility is calc(var(--spacing) * N), so re-pitching this one variable
+ *  re-scales spacing across every screen ever generated (Phase B1 — the
+ *  retroactive magic). */
+const SPACING_BASE_REM = 0.25;
+/** Guard (B5): never let the base collapse below half the default. */
+const MIN_SPACING_UNIT_REM = 0.125;
+
 function resolveSpacing(input: ThemeInput["spacing"]): GeneratedSpacing {
+  const factor = clamp(DENSITY_FACTOR[input.density], 0.6, 1.6);
+  const unitRem = Math.max(
+    MIN_SPACING_UNIT_REM,
+    Math.round(SPACING_BASE_REM * factor * 10000) / 10000
+  );
   return {
     baseUnit: "1rem",
     densityFactor: DENSITY_FACTOR[input.density],
+    unit: `${unitRem}rem`,
   };
 }
 
@@ -497,6 +577,25 @@ export function generateTheme(input: ThemeInput): GeneratedTheme {
     ALL_MODES.map((mode) => [mode, deriveColorsForMode(ramps, mode)])
   ) as Record<ModeName, GeneratedColorsMode>;
 
+  // 2b. Role ramp families (THEME-MIGRATION.md B4, June 10 decision):
+  // EVERY semantic alias points at a whole ramp — status displays many
+  // ways (soft 100 bg, solid 600 fill, 800 text), so `--gds-success` is a
+  // family, not a single value. Status ramps are seeded from the FIXED
+  // status hues (the light set is canonical; ramps are mode-agnostic by
+  // construction — the lightness curve is pinned). primary/accent/neutral
+  // families reuse the base ramps and are emitted alongside these in
+  // themeToCSSVars.
+  const statusHue = (t: OKLCHTriplet) =>
+    parseFloat(t.trim().split(/\s+/)[2] ?? "0");
+  const fixedLight = FIXED_SEMANTIC.light;
+  const roleRamps: GeneratedTheme["roleRamps"] = {
+    success: hueToRamp({ hue: statusHue(fixedLight.success) }),
+    warning: hueToRamp({ hue: statusHue(fixedLight.warning) }),
+    info: hueToRamp({ hue: statusHue(fixedLight.info) }),
+    highlight: hueToRamp({ hue: statusHue(fixedLight.highlight) }),
+    destructive: hueToRamp({ hue: statusHue(fixedLight.destructive) }),
+  };
+
   // 3. Resolve non-color config into concrete CSS values
   const typography = resolveTypography(input.typography);
   const radius = resolveRadius(input.radius);
@@ -517,6 +616,7 @@ export function generateTheme(input: ThemeInput): GeneratedTheme {
     tagline: input.tagline,
     input,
     ramps,
+    roleRamps,
     colors,
     chart,
     typography,

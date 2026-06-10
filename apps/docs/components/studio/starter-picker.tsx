@@ -184,7 +184,19 @@ export function StarterPicker({
           flex-col + max-h so the GRID is the scroll region (the old
           inner max-h could exceed the dialog and clip — the "doesn't
           scroll properly" bug). */}
-      <DialogContent className="max-w-5xl p-0 gap-0 overflow-hidden flex flex-col max-h-[85vh]">
+      {/* Sized to breathe: ~90vw capped at 80rem, content-tall capped at
+          85vh (size-to-content, never taller than the viewport — the grid
+          inside is the scroll region). Inline style on purpose: this is
+          structural chrome, and arbitrary classes here once shipped
+          uncompiled and let the dialog exceed the screen. */}
+      <DialogContent
+        className="p-0 gap-0 overflow-hidden flex flex-col"
+        style={{
+          width: "90vw",
+          maxWidth: "80rem",
+          maxHeight: "85vh",
+        }}
+      >
         <DialogHeader className="px-6 pt-6 pb-3 border-b border-border">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" aria-hidden />
@@ -300,7 +312,10 @@ function TabButton({
 
 function LayoutsGrid({ onPick }: { onPick: (l: ReferenceLayout) => void }) {
   return (
-    <div className="px-6 py-5 min-h-0 flex-1 overflow-y-auto">
+    // data-lenis-prevent: /studio is Lenis-smoothed — without it the
+    // page-level scroll hijack swallows wheel events and this inner
+    // region "doesn't scroll". Same treatment as ThemeBuilderControls.
+    <div className="px-6 py-5 min-h-0 flex-1 overflow-y-auto" data-lenis-prevent>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {REFERENCE_LAYOUTS.map((layout) => (
           <LayoutCard key={layout.id} layout={layout} onPick={() => onPick(layout)} />
@@ -347,7 +362,7 @@ function LayoutCard({
 
 function MotionGrid({ onPick }: { onPick: (e: PlaygroundScaffold) => void }) {
   return (
-    <div className="px-6 py-5 min-h-0 flex-1 overflow-y-auto">
+    <div className="px-6 py-5 min-h-0 flex-1 overflow-y-auto" data-lenis-prevent>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {MOTION_LIST.map((entry) => (
           <button
@@ -406,7 +421,7 @@ function MotionGrid({ onPick }: { onPick: (e: PlaygroundScaffold) => void }) {
 function PlaygroundGrid({ onPick }: { onPick: (e: PlaygroundScaffold) => void }) {
   if (PLAYGROUND_LIST.length === 0) {
     return (
-      <div className="px-6 py-10 min-h-0 flex-1 overflow-y-auto">
+      <div className="px-6 py-10 min-h-0 flex-1 overflow-y-auto" data-lenis-prevent>
         <div className="flex flex-col items-center text-center gap-3 py-12">
           <FlaskConical className="h-8 w-8 text-muted-foreground/40" />
           <h3 className="text-sm font-medium">No playground scaffolds yet</h3>
@@ -422,7 +437,7 @@ function PlaygroundGrid({ onPick }: { onPick: (e: PlaygroundScaffold) => void })
     );
   }
   return (
-    <div className="px-6 py-5 min-h-0 flex-1 overflow-y-auto">
+    <div className="px-6 py-5 min-h-0 flex-1 overflow-y-auto" data-lenis-prevent>
       {/* Banner — make it visually obvious these aren't shipped starters */}
       <div className="mb-4 rounded-md border border-warning/30 bg-warning-soft/40 px-3 py-2">
         <div className="flex items-center gap-1.5 text-xs text-warning-deep">
@@ -459,21 +474,20 @@ function PlaygroundCard({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
       )}
     >
-      {/* Gradient placeholder using the same hash as missing real thumbs.
-          Overlaid with a "PLAYGROUND" chip + the scaffold id so it's
-          obvious at a glance. */}
-      <div
-        className="relative aspect-[16/10] w-full"
-        style={{ background: fallbackGradient(entry.id) }}
-      >
+      {/* Real thumbnail when captured (capture-layout-thumbnails.mjs now
+          scans scaffolds-playground too → public/layout-thumbs/playground/),
+          same hash-gradient fallback otherwise. The "PLAYGROUND" chip
+          overlays either way so dev-only entries stay obvious. */}
+      <div className="relative">
+        <LayoutThumbnail
+          id={entry.id}
+          src={`/layout-thumbs/playground/${entry.id}.png`}
+        />
         <div className="absolute top-2 left-2">
           <Badge variant="secondary" className="text-[10px] font-medium gap-1">
             <FlaskConical className="h-2.5 w-2.5" />
             PLAYGROUND
           </Badge>
-        </div>
-        <div className="absolute bottom-2 right-2 text-[10px] font-mono text-foreground/60">
-          {entry.id}
         </div>
       </div>
       <div className="flex-1 px-3 py-2.5 border-t border-border">
@@ -522,9 +536,18 @@ function PlaygroundCard({
  * The wrapper holds a 16:10 aspect ratio — matches the virtual
  * viewport we capture at (1280×800), so the preview isn't distorted.
  */
-function LayoutThumbnail({ id }: { id: string }) {
+function LayoutThumbnail({
+  id,
+  src: srcProp,
+}: {
+  id: string;
+  /** Override the PNG location. Playground cards point this at
+   *  /layout-thumbs/playground/<id>.png (separate subdir so dev-only
+   *  captures never mix with the shipped curated set). */
+  src?: string;
+}) {
   const [errored, setErrored] = useState(false);
-  const src = `/layout-thumbs/${id}.png`;
+  const src = srcProp ?? `/layout-thumbs/${id}.png`;
   return (
     <div
       className="relative aspect-[16/10] w-full bg-muted overflow-hidden"

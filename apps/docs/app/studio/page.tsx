@@ -1502,6 +1502,13 @@ export default function StudioPage() {
     } catch {
       /* storage disabled — fall back to default-open */
     }
+    // Hand control back to React: the pre-hydration script in
+    // app/studio/layout.tsx stamped these attrs so CSS could collapse
+    // the panes BEFORE first paint (no default-open flash). Now that
+    // state carries the same values, drop the attrs so the CSS
+    // override can never fight a later user toggle.
+    document.documentElement.removeAttribute("data-studio-left-closed");
+    document.documentElement.removeAttribute("data-studio-right-closed");
   }, []);
   useEffect(() => {
     if (!panelHydratedRef.current) return;
@@ -2276,7 +2283,11 @@ export default function StudioPage() {
   const handleSelectSection = useCallback(
     (section: ProjectSection) => {
       if (section === "styles") {
-        setRightTab("theme");
+        // The right panel's Design System tab id is "styles" — the
+        // "theme" tab is the legacy full-builder hidden behind
+        // SHOW_THEME_TAB, so routing there showed nothing (the "Design
+        // System sidebar item does nothing" bug).
+        setRightTab("styles");
         setRightPanelOpen(true);
         setProjectSection("styles");
         return;
@@ -2873,6 +2884,7 @@ export default function StudioPage() {
             />
             {!isMobile && (
               <div
+                data-gds-part="studio-left-pane"
                 className="min-w-0 shrink-0 overflow-hidden bg-muted/30"
                 style={inlineLeftStyle}
                 aria-hidden={!leftPanelOpen}
@@ -2983,6 +2995,7 @@ export default function StudioPage() {
             </div>
             {!isMobile && (
               <div
+                data-gds-part="studio-right-pane"
                 className="min-w-0 shrink-0 overflow-hidden bg-muted/30"
                 style={inlineRightStyle}
                 aria-hidden={!rightPanelOpen}

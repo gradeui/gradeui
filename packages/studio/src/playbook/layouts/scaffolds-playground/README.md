@@ -83,8 +83,9 @@ prototypes, not training data for the model. Still:
 ### Arbitrary Tailwind values ARE allowed here
 
 Unlike the curated `scaffolds/` folder, this directory is scanned by
-both `apps/docs/tailwind.config.ts` AND `packages/ui/tailwind.config.ts`
-(which produces the `@gradeui/ui/styles.css` Fast Frame loads). So
+both `apps/docs/tailwind.config.ts` AND the `@source` directive in
+`packages/ui/styles/globals.css` (which produces the
+`@gradeui/ui/styles.css` Fast Frame loads). So
 classes like `h-[600px]`, `md:grid-cols-[minmax(0,440px)_1fr]`,
 `w-[440px]` etc. compile correctly and the rules show up at runtime.
 Screenshot-driven prototypes often need exact pixel measurements during

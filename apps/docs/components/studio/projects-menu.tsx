@@ -341,7 +341,10 @@ export function ProjectsMenu({
               icon={<Palette />}
               onClick={() => onSelectSection?.("styles")}
             >
-              Styles
+              {/* Label only — the section id stays "styles" (persisted in
+                  URLs/storage). Matches the right panel's renamed Design
+                  System tab. */}
+              Design System
             </SidebarItem>
             {/* Assets — a full-screen CANVAS page, not a panel tail. */}
             <SidebarItem

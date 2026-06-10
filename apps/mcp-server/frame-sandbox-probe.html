@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!--
+  frame-sandbox-probe — isolates the preview_screen_scaled blank-frame bug.
+
+  Hypothesis: MCP App panels run in a sandboxed iframe WITHOUT
+  allow-same-origin; sandbox flags INHERIT downward, so the nested embed
+  always boots with an opaque origin no matter what sandbox attribute the
+  panel puts on its child. If the embed's client boot touches
+  localStorage (theme pre-hydration, Supabase client), it throws
+  SecurityError and dies before first paint — blank frame, onload fired.
+
+  Usage (dev server running):
+    open apps/mcp-server/frame-sandbox-probe.html?embed=http://localhost:3000/e/<token>%3Fw=1280
+    (default below works too) — then open DevTools console.
+
+  Reading the result:
+    A (control, unsandboxed)        → should paint. If not, the embed
+                                      itself is broken; fix that first.
+    B (sandboxed parent, like host) → blank = hypothesis confirmed: the
+                                      console shows the SecurityError /
+                                      boot crash the panel can't show.
+                                      Fix = opaque-origin-proof /e route.
+    B paints                        → sandbox is fine; the host panel's
+                                      CSP (frame-src) is the wall instead.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>frame-sandbox-probe</title>
+<style>
+  body { font: 13px ui-monospace, monospace; margin: 16px; }
+  .case { margin-bottom: 24px; }
+  h2 { font-size: 13px; margin: 0 0 6px; }
+  iframe.outer, iframe.direct { width: 720px; height: 450px; border: 1px solid #999; display: block; }
+</style>
+</head>
+<body>
+<h1 style="font-size:14px">frame-sandbox-probe</h1>
+<div class="case">
+  <h2>A — control: embed framed directly (no sandboxed parent)</h2>
+  <iframe class="direct" id="direct"></iframe>
+</div>
+<div class="case">
+  <h2>B — embed nested inside a sandbox="allow-scripts" parent (host-panel conditions)</h2>
+  <iframe class="outer" id="outer" sandbox="allow-scripts"></iframe>
+</div>
+<script>
+  var params = new URLSearchParams(location.search);
+  var embed = params.get("embed") ||
+    "http://localhost:3000/e/cdfae523-9e53-46a9-aaa9-df5d3ed45a79?w=1280&motion=off";
+
+  // A — direct.
+  document.getElementById("direct").src = embed;
+
+  // B — replicate the host: a sandboxed panel document that nests the
+  // embed with the SAME attribute v2 of the template uses. If sandbox
+  // inheritance is the bug, the child's allow-same-origin is ignored
+  // (it can't exceed the parent) and the embed boots opaque-origin.
+  var inner =
+    '<!DOCTYPE html><body style="margin:0">' +
+    '<iframe src="' + embed.replace(/"/g, "&quot;") + '"' +
+    ' sandbox="allow-scripts allow-same-origin allow-forms"' +
+    ' style="width:100%;height:100vh;border:0"></iframe>' +
+    "</body>";
+  document.getElementById("outer").srcdoc = inner;
+</script>
+</body>
+</html>

@@ -16,6 +16,7 @@ import * as React from "react";
 import { Users, FileText, Activity, UserPlus, Clock } from "lucide-react";
 import { getStudioStorage } from "@/lib/studio-storage";
 import type { StudioEvent } from "@/lib/studio-storage";
+import { ThemeDropdown } from "@/components/studio/studio-right-tabs";
 
 interface ProjectHomeProps {
   projectId: string;
@@ -154,6 +155,14 @@ export function ProjectHome({
       <h2 className="truncate text-base font-semibold text-foreground">
         {projectName}
       </h2>
+
+      {/* Project theme — the same compact dropdown the focused view
+          shows above its tabs, so the theme is pickable from the
+          homepage without drilling into a screen. Renders nothing if
+          the page-level providers aren't in scope. */}
+      <div className="mt-2">
+        <ThemeDropdown />
+      </div>
 
       <SectionTitle>Overview</SectionTitle>
       <div className="rounded-lg border border-border/60 px-3 py-1.5">

@@ -33,7 +33,7 @@
  */
 
 import { use, useEffect, useMemo, useState } from "react";
-import { REFERENCE_LAYOUTS } from "@gradeui/studio/playbook";
+import { PLAYGROUND_SCAFFOLDS, REFERENCE_LAYOUTS } from "@gradeui/studio/playbook";
 
 import { TileFastMount } from "@/components/studio/fast-frame";
 import { useGradeTheme } from "@/components/grade-theme-provider";
@@ -54,8 +54,12 @@ export default function LayoutPreviewPage({
   const { theme, isDark } = useGradeTheme();
   const mode = isDark ? "dark" : "light";
 
+  // Curated reference layouts first; fall back to playground scaffolds so
+  // the thumbnail/responsive capture scripts can drive dev-only entries
+  // through the same chromeless surface. Both shapes carry the raw JSX
+  // at `.scaffold`.
   const layout = useMemo(
-    () => REFERENCE_LAYOUTS.find((l) => l.id === id),
+    () => REFERENCE_LAYOUTS.find((l) => l.id === id) ?? PLAYGROUND_SCAFFOLDS[id],
     [id]
   );
 

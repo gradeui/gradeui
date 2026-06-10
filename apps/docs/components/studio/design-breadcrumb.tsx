@@ -77,7 +77,10 @@ export function DesignBreadcrumb({
 
   return (
     <Breadcrumb className={className}>
-      <BreadcrumbList>
+      {/* gap-1 (down from the list default gap-1.5) — combined with the
+          crumbs' own click-target padding the default read as airy
+          dead space in the toolbar. */}
+      <BreadcrumbList className="gap-1">
         <BreadcrumbItem>
           <BreadcrumbLink onClick={onBack}>{parentLabel}</BreadcrumbLink>
         </BreadcrumbItem>
@@ -111,7 +114,7 @@ export function DesignBreadcrumb({
                 setEditing(true);
               }}
               title={breadcrumbTooltip(focused)}
-              className="cursor-text hover:bg-muted/60 rounded-md px-1.5 py-0.5"
+              className="cursor-text hover:bg-muted/60 rounded-md px-1 py-0.5"
             >
               {focused.name}
             </BreadcrumbPage>

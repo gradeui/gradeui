@@ -14,6 +14,5 @@ Visit http://localhost:3000 — you should see a card with three buttons and the
 ## What this validates
 
 - `@gradeui/ui` resolves from a workspace dependency
-- `@gradeui/ui/styles.css` ships the CSS token layer
-- `@gradeui/ui/tailwind-preset` wires up the Tailwind colour/animation config in a consumer's `tailwind.config.ts`
+- `@gradeui/ui/styles.css` is fully self-contained — tokens, the native Tailwind v4 `@theme` bridge, and every utility the components use (the `@gradeui/ui/tailwind-preset` export was retired in the v4 native-@theme migration; there is no JS config for consumers to extend)
 - Next.js `transpilePackages: ["@gradeui/ui"]` compiles the library source without a prebuilt `dist/`

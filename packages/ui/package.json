@@ -66,11 +66,6 @@
       "import": "./dist/contracts.mjs",
       "require": "./dist/contracts.js"
     },
-    "./tailwind-preset": {
-      "types": "./dist/tailwind-preset.d.ts",
-      "import": "./dist/tailwind-preset.mjs",
-      "require": "./dist/tailwind-preset.js"
-    },
     "./map/maplibre": {
       "types": "./dist/map/maplibre.d.ts",
       "import": "./dist/map/maplibre.mjs",

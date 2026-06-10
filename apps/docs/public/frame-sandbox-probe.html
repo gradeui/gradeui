@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<!--
+  frame-sandbox-probe v2 — instrumented. See apps/mcp-server copy for the
+  original rationale. This version writes a per-frame diagnostic readout
+  into the DOM (load/error events, contentDocument accessibility — i.e.
+  "still about:blank?" — and cross-origin-legal contentWindow.length, the
+  count of the embed's own inner frames).
+
+  Decoding the readout for a frame:
+    load✓ + doc:cross-origin + inner:1+  → embed document loaded AND its
+                                           inner Fast Frame mounted; if
+                                           still visually blank the inner
+                                           frame is the casualty.
+    load✓ + doc:cross-origin + inner:0   → embed HTML loaded but its
+                                           client boot never mounted the
+                                           Fast Frame (JS died / bailed).
+    load✓ + doc:about:blank              → the frame NEVER navigated —
+                                           request blocked before fetch.
+    error✓                               → network-level refusal.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>frame-sandbox-probe v2</title>
+<style>
+  body { font: 13px ui-monospace, monospace; margin: 16px; }
+  .case { margin-bottom: 24px; }
+  h2 { font-size: 13px; margin: 0 0 4px; }
+  .diag { color: #b00; margin: 4px 0 6px; min-height: 16px; }
+  iframe { width: 720px; height: 420px; border: 2px solid #d00; display: block; background: #eef; }
+</style>
+</head>
+<body>
+<h1 style="font-size:14px">frame-sandbox-probe v2</h1>
+<div class="case">
+  <h2>A — control: embed framed directly (no sandbox)</h2>
+  <div class="diag" id="diag-a">waiting…</div>
+  <iframe id="frame-a"></iframe>
+</div>
+<div class="case">
+  <h2>B — embed with sandbox="allow-scripts allow-same-origin" (v2 panel attrs)</h2>
+  <div class="diag" id="diag-b">waiting…</div>
+  <iframe id="frame-b" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+</div>
+<script>
+  var params = new URLSearchParams(location.search);
+  var embed = params.get("embed") ||
+    "https://gradeui.com/e/cdfae523-9e53-46a9-aaa9-df5d3ed45a79?w=1280&motion=off";
+
+  function instrument(id, diagId) {
+    var f = document.getElementById(id);
+    var out = document.getElementById(diagId);
+    var events = [];
+    function report() {
+      var docState, innerFrames;
+      try {
+        docState = f.contentDocument
+          ? "doc:" + (f.contentDocument.URL || "about:blank")
+          : "doc:cross-origin";
+      } catch (e) { docState = "doc:threw-" + e.name; }
+      try { innerFrames = "inner:" + f.contentWindow.length; }
+      catch (e) { innerFrames = "inner:threw-" + e.name; }
+      out.textContent = events.join(" ") + " · " + docState + " · " + innerFrames;
+    }
+    f.addEventListener("load", function () { events.push("load✓"); report(); });
+    f.addEventListener("error", function () { events.push("error✓"); report(); });
+    // Poll — the inner Fast Frame mounts asynchronously after hydration.
+    var n = 0;
+    var t = setInterval(function () { report(); if (++n > 15) clearInterval(t); }, 1000);
+    f.src = embed;
+  }
+
+  instrument("frame-a", "diag-a");
+  instrument("frame-b", "diag-b");
+
+  // C — THE PANEL CONDITION: parent frame sandboxed WITHOUT
+  // allow-same-origin (like the host's panel iframe), embed nested
+  // inside. Sandbox inherits, so the embed boots with an OPAQUE origin
+  // here exactly as it does in the MCP panel. Open DevTools: the
+  // uncaught error you see in this frame's console IS the panel bug.
+  var caseC = document.createElement("div");
+  caseC.className = "case";
+  caseC.innerHTML = '<h2>C — panel condition: sandboxed parent (no allow-same-origin) wrapping the embed</h2>' +
+    '<div class="diag">watch the DevTools console for this frame’s uncaught error</div>';
+  var outer = document.createElement("iframe");
+  outer.setAttribute("sandbox", "allow-scripts");
+  outer.srcdoc = '<!DOCTYPE html><body style="margin:0">' +
+    '<iframe src="' + embed.replace(/"/g, "&quot;") + '"' +
+    ' sandbox="allow-scripts allow-same-origin allow-forms"' +
+    ' style="width:100%;height:100vh;border:0"></iframe></body>';
+  caseC.appendChild(outer);
+  document.body.appendChild(caseC);
+
+  // Embed boot beacons (grade:embed-status) — same listener the MCP
+  // panel template (v3) carries. Beacons arrive from whichever frame
+  // posted them; we can't tell A from B here, so they're appended to
+  // a shared line. embed:hydrated → embed:painted = the embed's JS ran.
+  var beaconLine = document.createElement("div");
+  beaconLine.className = "diag";
+  beaconLine.textContent = "beacons: (none yet)";
+  document.body.appendChild(beaconLine);
+  var beacons = [];
+  window.addEventListener("message", function (event) {
+    var m = event.data || {};
+    if (m && m.type === "grade:embed-status" && m.stage) {
+      beacons.push("embed:" + m.stage);
+      beaconLine.textContent = "beacons: " + beacons.join(" · ");
+    }
+  });
+</script>
+</body>
+</html>

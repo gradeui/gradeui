@@ -707,9 +707,34 @@ export function FocusedFastMount({
   );
 
   // Fit re-frames the artboard — the camera comes home with it.
+  //
+  // Home is the CENTRE when the fitted artboard fully fits the canvas.
+  // When it still overflows vertically (a content-height artboard taller
+  // than the canvas even at the clamped fit scale), home is TOP-ANCHORED
+  // instead — a centred overflow clips the page heading off the top with
+  // no way to reach it. Wheel-pan stays live either way (clampPan
+  // already exposes the vertical range), so the rest of the page is
+  // reachable below.
+  //
+  // The non-framed responsive fill has no camera — there the scroller is
+  // the only navigation, so Fit anchors by scrolling the container to
+  // the top (it previously kept whatever scrollTop you entered Fit with,
+  // which read as "stuck mid-page, can't scroll up").
   useEffect(() => {
-    if (fitMode) setPan({ x: 0, y: 0 });
-  }, [fitMode]);
+    if (!fitMode) return;
+    const el = containerRef.current;
+    if (!device) {
+      el?.scrollTo({ top: 0, left: 0 });
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+    const ch = el?.clientHeight ?? 0;
+    const scaledH = (artboardSize?.h ?? 0) * zoom;
+    // +32 ≈ the p-8 frame padding — sit the artboard's top edge just
+    // inside the canvas rather than flush against it.
+    const topAnchorY = scaledH > ch ? (scaledH - ch) / 2 + 32 : 0;
+    setPan({ x: 0, y: topAnchorY });
+  }, [fitMode, device, artboardSize?.h, zoom]);
   // Re-clamp when zoom/artboard changes shrink the legal pan range
   // (zooming out with the artboard flung to a corner would otherwise
   // strand it past the new bounds). Returns the SAME reference when
@@ -1277,9 +1302,13 @@ export function FocusedFastMount({
         // scrolling — overflow stays hidden whenever a device artboard
         // is framed (no scrollbars, no unreachable centred overflow;
         // the old scroll-based pan couldn't reach the left/top half).
-        // Non-framed responsive fill keeps the legacy behaviour.
-        overflow: device || fitMode ? "hidden" : "auto",
-        scrollbarGutter: device || fitMode ? undefined : "stable both-edges",
+        // Non-framed responsive fill keeps the legacy scroller IN FIT
+        // TOO — it has no camera, so hiding overflow just froze the
+        // page at whatever scrollTop you entered Fit with ("can't
+        // scroll up in Fit mode"). Fit's anchoring is handled by the
+        // scroll-to-top in the fit-home effect instead.
+        overflow: device ? "hidden" : "auto",
+        scrollbarGutter: device ? undefined : "stable both-edges",
         overscrollBehavior: "contain",
         // Canvas treatment whenever an artboard is framed — device
         // preset OR the responsive content-height artboard.

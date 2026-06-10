@@ -48,6 +48,12 @@ import {
   INTERACTIVE_DEMO_HTML,
 } from "./interactive-demo";
 import { PREVIEW_RESOURCE_URI, buildPreviewTemplate } from "./ui-template";
+import {
+  PREVIEW_SCALED_URI,
+  PREVIEW_SCALED_HTML,
+  SRCDOC_PROBE_URI,
+  SRCDOC_PROBE_HTML,
+} from "./ui-scaled-template";
 
 export interface GradeToolsOptions {
   siteUrl: string;
@@ -246,6 +252,179 @@ export function registerGradeTools(
           },
         ],
       }),
+    );
+
+    // ── preview_screen_scaled ─ the canvas Fit view inside an MCP panel ──
+    // The payload-light sibling of preview_screen: NO Chromium, NO PNG, NO
+    // appSource — the result carries only the embed URL + virtual size
+    // (constant-size no matter how big the screen is; this is the fix for
+    // the "payload too large" failures the capture path can hit). The
+    // panel nests the live /e/<token> embed at a virtual width and
+    // transform-scales it to fit — gradeui.com interactivity, inside the
+    // host. Nested frames are the open question per host: the panel's
+    // status trace reports frame✓ / frame⌛ so a blocked host is a visible
+    // readout, not a silent blank.
+    server.registerResource(
+      "gradeui-preview-scaled",
+      PREVIEW_SCALED_URI,
+      {
+        description:
+          "Live Grade screen, Fit-scaled in a nested embed iframe (MCP App view)",
+        mimeType: "text/html;profile=mcp-app",
+      },
+      async () => ({
+        contents: [
+          {
+            uri: PREVIEW_SCALED_URI,
+            mimeType: "text/html;profile=mcp-app",
+            // v5: inject the self-contained renderer bundle into the
+            // shell. JSON.stringify makes it a valid JS string literal;
+            // escaping "<" keeps "</script>" inside the bundle from
+            // terminating the shell's own script block.
+            text: PREVIEW_SCALED_HTML.replace(
+              "__BUNDLE_JSON__",
+              () => JSON.stringify(PREVIEW_VIEW_HTML).replace(/</g, "\\u003c"),
+            ),
+            _meta: {
+              ui: {
+                // The nested embed needs the site origin allowed. Hosts
+                // that don't understand frameDomains ignore it (and may
+                // block the frame — the panel reports that honestly).
+                csp: {
+                  frameDomains: [opts.siteUrl],
+                  resourceDomains: [opts.siteUrl],
+                  connectDomains: [opts.siteUrl],
+                },
+                prefersBorder: false,
+              },
+            },
+          },
+        ],
+      }),
+    );
+
+    // ── srcdoc_probe ─ SCALED-PANEL-PLAN.md step 0 ───────────────────────
+    server.registerResource(
+      "gradeui-srcdoc-probe",
+      SRCDOC_PROBE_URI,
+      {
+        description:
+          "Probe: does this host allow srcdoc iframes in panels, at a real virtual viewport?",
+        mimeType: "text/html;profile=mcp-app",
+      },
+      async () => ({
+        contents: [
+          {
+            uri: SRCDOC_PROBE_URI,
+            mimeType: "text/html;profile=mcp-app",
+            text: SRCDOC_PROBE_HTML,
+          },
+        ],
+      }),
+    );
+    server.registerTool(
+      "srcdoc_probe",
+      {
+        title: "srcdoc viewport probe (MCP App capability check)",
+        description:
+          "Renders a 1280px-wide srcdoc iframe Fit-scaled in the panel. GREEN 'desktop ✓' = srcdoc frames work in this host AND act as a real virtual viewport (media queries match at 1280px) — the in-panel scaled renderer is viable. RED 'mobile ✗' = srcdoc allowed but viewport not honoured. Empty stage = host blocks srcdoc too.",
+        _meta: { ui: { resourceUri: SRCDOC_PROBE_URI } },
+        inputSchema: {},
+      },
+      async () => ({
+        content: [
+          {
+            type: "text" as const,
+            text: "srcdoc probe: green 'desktop ✓ 1280px viewport' in the panel means the v5 in-panel scaled renderer is fully viable in this host.",
+          },
+        ],
+      }),
+    );
+
+    server.registerTool(
+      "preview_screen_scaled",
+      {
+        title: "Preview a Grade screen (live, Fit-scaled, payload-light)",
+        description:
+          "Show a saved screen as a LIVE interactive render, scaled to fit the panel — the Studio canvas's Fit view inside the host. Unlike preview_screen this takes NO screenshot and returns NO source: the result carries only a share/embed URL (tiny, never hits payload limits) and the panel streams the real screen from the site in a nested iframe. Requires a host that allows nested frames in MCP App panels — the panel's status line reports frame✓ when it works. Mints a read-only share link if none exists. For a guaranteed-visible still image, use preview_image; for the capture-based flow, preview_screen.",
+        _meta: { ui: { resourceUri: PREVIEW_SCALED_URI } },
+        inputSchema: {
+          projectId: z.string().describe("Project id"),
+          screenId: z
+            .string()
+            .describe("Screen (design) id, e.g. from save_screen"),
+          width: z
+            .number()
+            .optional()
+            .describe(
+              "Virtual render width in px the screen lays out at before scaling (default 1280)",
+            ),
+          height: z
+            .number()
+            .optional()
+            .describe("Virtual viewport height in px (default 800)"),
+          colorMode: z
+            .enum(["light", "dark"])
+            .optional()
+            .describe("Theme mode for the embed (default light)"),
+        },
+      },
+      async ({ projectId, screenId, width, height, colorMode }) => {
+        await assertProject(sb, env.ownerUserId, projectId);
+        const screen = await getScreen(sb, projectId, screenId);
+        if (!screen) {
+          return errorText(
+            `No screen "${screenId}" in project ${projectId}. Save it first, or check list via get_screen.`,
+          );
+        }
+        const mode = colorMode ?? "light";
+        const w = Math.min(Math.max(width ?? 1280, 320), 2560);
+        const h = Math.min(Math.max(height ?? 800, 320), 2560);
+        const share = await ensureShareLink(sb, projectId, screenId, mode);
+        const url = embedUrl(opts.siteUrl, share.token, w);
+        // Project theme draft — the bundle renders with the project's
+        // theme, same as preview_screen.
+        let themeDraftJson: string | null = null;
+        try {
+          const { data: proj } = await sb
+            .from("projects")
+            .select("theme_draft_json")
+            .eq("id", projectId)
+            .maybeSingle();
+          themeDraftJson =
+            (proj as { theme_draft_json?: string | null } | null)
+              ?.theme_draft_json ?? null;
+        } catch {
+          /* theme draft optional — bundle falls back to the default */
+        }
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text:
+                `Live Fit-scaled preview of "${screen.name}" (${w}×${h} virtual, ${mode}) ` +
+                `rendered IN the panel (srcdoc, no capture). Embed: ${url}`,
+            },
+          ],
+          // v5: the JSX route — a few KB of source, never a megabyte of
+          // pixels. The shell proxies this into the srcdoc renderer.
+          structuredContent: {
+            name: screen.name,
+            screenId,
+            width: w,
+            height: h,
+            mode,
+            appSource: screen.state?.appSource ?? "",
+            embedUrl: url,
+            themeDraftJson,
+            // v7: the renderer bundle drops its own header/footer/4:3
+            // frame and renders edge-to-edge — the shell owns chrome at
+            // 1:1 (the double-chrome fix). Requires the preview-view
+            // bundle rebuilt with bare-mode support.
+            bare: true,
+          },
+        };
+      },
     );
   }
 

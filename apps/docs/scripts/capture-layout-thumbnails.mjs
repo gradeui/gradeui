@@ -62,7 +62,7 @@ const THUMB_DIR = resolve(__dirname, "..", "public", "layout-thumbs");
 // .jsx filename IS the registered id (that's how `requireScaffold(id)`
 // and the build-time generator hook up). So a directory read is the
 // authoritative list of ids.
-const SCAFFOLDS_DIR = resolve(
+const LAYOUTS_DIR = resolve(
   __dirname,
   "..",
   "..",
@@ -71,25 +71,42 @@ const SCAFFOLDS_DIR = resolve(
   "studio",
   "src",
   "playbook",
-  "layouts",
-  "scaffolds"
+  "layouts"
 );
+const SCAFFOLDS_DIR = resolve(LAYOUTS_DIR, "scaffolds");
+// Playground scaffolds get thumbnails too — the picker's Playground tab
+// looks for /layout-thumbs/playground/<id>.png (separate subdir so
+// dev-only captures never mix with the shipped curated set; the
+// /layout-preview/[id] route resolves playground ids as a fallback).
+const PLAYGROUND_DIR = resolve(LAYOUTS_DIR, "scaffolds-playground");
 
-async function loadLayoutIds() {
-  let entries;
-  try {
-    entries = await readdir(SCAFFOLDS_DIR);
-  } catch (err) {
-    console.error(
-      `✗ Could not read scaffolds directory at ${SCAFFOLDS_DIR}: ` +
-        (err instanceof Error ? err.message : String(err))
-    );
-    process.exit(1);
+/** @returns {Promise<{ id: string, kind: "curated" | "playground" }[]>} */
+async function loadLayoutEntries() {
+  /** @type {{ id: string, kind: "curated" | "playground" }[]} */
+  const out = [];
+  for (const [dir, kind] of [
+    [SCAFFOLDS_DIR, "curated"],
+    [PLAYGROUND_DIR, "playground"],
+  ]) {
+    let entries;
+    try {
+      entries = await readdir(dir);
+    } catch (err) {
+      // The curated dir is load-bearing; the playground dir is optional.
+      if (kind === "curated") {
+        console.error(
+          `✗ Could not read scaffolds directory at ${dir}: ` +
+            (err instanceof Error ? err.message : String(err))
+        );
+        process.exit(1);
+      }
+      continue;
+    }
+    for (const f of entries) {
+      if (f.endsWith(".jsx")) out.push({ id: f.replace(/\.jsx$/, ""), kind });
+    }
   }
-  return entries
-    .filter((f) => f.endsWith(".jsx"))
-    .map((f) => f.replace(/\.jsx$/, ""))
-    .sort();
+  return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 const BASE_URL = process.env.THUMB_BASE_URL ?? "http://localhost:3000";
@@ -124,14 +141,16 @@ try {
   process.exit(1);
 }
 
-const allIds = await loadLayoutIds();
-const layoutIds = ONLY_ID ? allIds.filter((id) => id === ONLY_ID) : allIds;
+const allEntries = await loadLayoutEntries();
+const layoutEntries = ONLY_ID
+  ? allEntries.filter((e) => e.id === ONLY_ID)
+  : allEntries;
 
-if (layoutIds.length === 0) {
+if (layoutEntries.length === 0) {
   if (ONLY_ID) {
     console.error(
       `✗ No layout matches THUMB_LAYOUT_ID=${ONLY_ID}. ` +
-        `Known ids: ${allIds.join(", ")}`
+        `Known ids: ${allEntries.map((e) => e.id).join(", ")}`
     );
   } else {
     console.error(
@@ -143,11 +162,12 @@ if (layoutIds.length === 0) {
 }
 
 console.log(
-  `Capturing ${layoutIds.length} thumbnail${layoutIds.length === 1 ? "" : "s"} ` +
+  `Capturing ${layoutEntries.length} thumbnail${layoutEntries.length === 1 ? "" : "s"} ` +
     `from ${BASE_URL} → ${THUMB_DIR}`
 );
 
 await mkdir(THUMB_DIR, { recursive: true });
+await mkdir(resolve(THUMB_DIR, "playground"), { recursive: true });
 
 const browser = await playwright.chromium.launch({ headless: true });
 
@@ -157,10 +177,13 @@ try {
     deviceScaleFactor: 2, // Retina-crisp thumbnails; ~2x PNG size but negligible.
   });
 
-  for (const layoutId of layoutIds) {
+  for (const { id: layoutId, kind } of layoutEntries) {
     const url = `${BASE_URL}/layout-preview/${layoutId}?snap=1`;
-    const outPath = resolve(THUMB_DIR, `${layoutId}.png`);
-    console.log(`  • ${layoutId} …`);
+    const outPath =
+      kind === "playground"
+        ? resolve(THUMB_DIR, "playground", `${layoutId}.png`)
+        : resolve(THUMB_DIR, `${layoutId}.png`);
+    console.log(`  • ${layoutId}${kind === "playground" ? " (playground)" : ""} …`);
     const page = await context.newPage();
     try {
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });

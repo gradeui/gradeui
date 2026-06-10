@@ -474,6 +474,14 @@ export interface GeneratedTypography {
     body: string;
     bodySm: string;
   };
+  /**
+   * The full named Tailwind ladder (2xs…7xl), present ONLY when
+   * `typography.scale` is a modular ratio id (THEME-MIGRATION.md B2).
+   * Emitted as `--text-<name>` / `--text-<name>--line-height` so every
+   * text-* utility re-pitches when the ratio changes. Presets leave this
+   * undefined — the static ladder in the stylesheet stays untouched.
+   */
+  namedScale?: Record<string, { size: string; lineHeight: string }>;
 }
 
 /** Concrete resolved CSS values for radius. */
@@ -491,6 +499,14 @@ export interface GeneratedRadius {
 export interface GeneratedSpacing {
   baseUnit: string;
   densityFactor: number;
+  /**
+   * The Tailwind v4 `--spacing` base unit (e.g. "0.2125rem" for tight,
+   * "0.25rem" for default, "0.3rem" for roomy). Every spacing utility is
+   * calc(var(--spacing) * N), so this single variable re-scales padding,
+   * gaps, margins and sizes across every generated screen — retroactively
+   * (THEME-MIGRATION.md B1).
+   */
+  unit: string;
 }
 
 /** Concrete resolved effects values. */
@@ -546,6 +562,22 @@ export interface GeneratedTheme {
     neutral: Ramp;
     primary: Ramp;
     accent: Ramp;
+  };
+
+  /**
+   * Role ramp families (THEME-MIGRATION.md B4) — every status alias is a
+   * whole ramp because status displays many ways (soft 100 bg, solid 600
+   * fill, 800 text). Seeded from the fixed status hues; emitted as
+   * `--gds-<role>-<step>` triplets alongside primary/accent/neutral
+   * (which reuse `ramps`). Optional so partially-constructed themes stay
+   * valid; generator output always includes it.
+   */
+  roleRamps?: {
+    success: Ramp;
+    warning: Ramp;
+    info: Ramp;
+    highlight: Ramp;
+    destructive: Ramp;
   };
 
   /** Semantic tokens for all four modes. */

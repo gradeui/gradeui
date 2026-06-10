@@ -129,7 +129,8 @@ Layout primitives (always prefer over raw flex/grid):
 ### 4. Tailwind discipline (looser here than in curated scaffolds)
 
 **Arbitrary Tailwind values ARE allowed in playground scaffolds.** Both
-`apps/docs/tailwind.config.ts` and `packages/ui/tailwind.config.ts` scan
+`apps/docs/tailwind.config.ts` and the `@source` directive in
+`packages/ui/styles/globals.css` scan
 `scaffolds-playground/`, so classes like `h-[600px]`,
 `md:grid-cols-[minmax(0,440px)_1fr]`, `w-[440px]` compile correctly. Use them
 freely when matching a screenshot — exact pixel measurements are part of the

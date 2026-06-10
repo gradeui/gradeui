@@ -177,16 +177,33 @@ const SelectContent = React.forwardRef<
 ));
 SelectContent.displayName = SelectPrimitive.Content.displayName;
 
+/** Group-heading classes per menu density. The compact sizes read as
+ *  quiet eyebrow labels (muted, smaller than the items) — a heading
+ *  LARGER than the options it introduces reads upside-down at tool-
+ *  panel density. Left padding matches the item text indent per size
+ *  so headings and option labels align. */
+const selectLabelSizeClasses: Record<SelectMenuSize, string> = {
+  default: "py-1.5 pl-8 pr-2 text-sm font-semibold",
+  sm: "py-1 pl-7 pr-2 text-xs font-semibold",
+  xs: "py-1 pl-6 pr-2 text-2xs font-medium text-muted-foreground uppercase tracking-wide",
+  "2xs": "py-0.5 pl-6 pr-2 text-2xs font-medium text-muted-foreground uppercase tracking-wide",
+};
+
 const SelectLabel = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
->(({ className, ...props }, ref) => (
-  <SelectPrimitive.Label
-    ref={ref}
-    className={cn("py-1.5 pl-8 pr-2 text-sm font-semibold", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  // Reads the menu density from SelectContent — same mechanism as
+  // SelectItem, so group headings scale with the menu they're in.
+  const size = React.useContext(SelectMenuSizeContext);
+  return (
+    <SelectPrimitive.Label
+      ref={ref}
+      className={cn(selectLabelSizeClasses[size], className)}
+      {...props}
+    />
+  );
+});
 SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
 const selectItemVariants = cva(

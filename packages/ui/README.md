@@ -27,22 +27,15 @@ export default function Example() {
 }
 ```
 
-### Tailwind preset
+### Styles
 
-If you're using Tailwind in your consuming app, extend the Grade preset so brand tokens and OKLCH semantic colors resolve correctly:
+Import the compiled stylesheet once (e.g. in your root layout). It is fully self-contained — design tokens, the native Tailwind v4 `@theme` bridge, and every utility the components use are baked in; there is no JS Tailwind config to extend (the old `@gradeui/ui/tailwind-preset` export was retired with the v4 native-@theme migration):
 
 ```ts
-// tailwind.config.ts
-import gradePreset from "@gradeui/ui/tailwind-preset";
-
-export default {
-  presets: [gradePreset],
-  content: [
-    "./app/**/*.{ts,tsx,mdx}",
-    "./node_modules/@gradeui/ui/dist/**/*.{js,mjs}",
-  ],
-};
+import "@gradeui/ui/styles.css";
 ```
+
+If your app runs its own Tailwind v4 build alongside Grade, add a `@source` for `node_modules/@gradeui/ui/dist` so your scan picks up the library's class names — the brand and semantic tokens themselves already ship in the stylesheet as CSS variables (`--gds-*`, OKLCH role triplets).
 
 ## Theme engine
 

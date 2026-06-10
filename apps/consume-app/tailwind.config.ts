@@ -1,16 +1,19 @@
 import type { Config } from "tailwindcss";
-import gradePreset from "@gradeui/ui/tailwind-preset";
 
+/**
+ * Minimal local config. `@gradeui/ui/tailwind-preset` was retired in the
+ * Tailwind v4 native-@theme migration (THEME-MIGRATION.md Phase A): the
+ * imported `@gradeui/ui/styles.css` is now fully self-contained — design
+ * tokens, the @theme bridge, and every utility the components use ship
+ * compiled in the stylesheet, so there is no JS preset to extend.
+ *
+ * This app intentionally keeps a Tailwind config around only so the
+ * postcss pipeline (postcss.config.mjs) keeps mirroring a typical
+ * consumer setup. Note app/globals.css has no @tailwind directives —
+ * all Grade styling arrives via the compiled stylesheet import.
+ */
 const config: Config = {
-  presets: [gradePreset],
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    // Include @gradeui/ui's compiled output so Tailwind generates classes used
-    // inside the library.
-    "../../packages/ui/components/**/*.{js,ts,jsx,tsx}",
-    "../../packages/ui/lib/**/*.{js,ts}",
-  ],
+  content: ["./app/**/*.{js,ts,jsx,tsx,mdx}"],
 };
 
 export default config;

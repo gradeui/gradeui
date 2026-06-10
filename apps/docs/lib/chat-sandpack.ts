@@ -779,6 +779,24 @@ export function buildPlaygroundIndexHtml(
     <title>Grade DS Chat Preview</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      // Role ramp families (THEME-MIGRATION.md B4) — numeric steps per
+      // themed role, mirroring the --color-<role>-<step> @theme entries
+      // in packages/ui/styles/globals.css (two-renderer rule: Fast Frame
+      // gets them from the built stylesheet; this config gives Sandpack
+      // the same vocabulary). Each step falls back to the flat role
+      // triplet when the generator hasn't written --gds-<role>-<step>.
+      // NOTE: plain string concat, not template literals — this script
+      // lives inside a TS template string in chat-sandpack.ts.
+      var __gdsFamily = function (role) {
+        var steps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+        var out = {};
+        for (var i = 0; i < steps.length; i++) {
+          out[steps[i]] =
+            "oklch(var(--gds-" + role + "-" + steps[i] +
+            ", var(--" + role + ")) / <alpha-value>)";
+        }
+        return out;
+      };
       tailwind.config = {
         darkMode: "class",
         theme: {
@@ -789,28 +807,28 @@ export function buildPlaygroundIndexHtml(
               ring: "oklch(var(--ring) / <alpha-value>)",
               background: "oklch(var(--background) / <alpha-value>)",
               foreground: "oklch(var(--foreground) / <alpha-value>)",
-              primary: {
+              primary: Object.assign({
                 DEFAULT: "oklch(var(--primary) / <alpha-value>)",
                 foreground: "oklch(var(--primary-foreground) / <alpha-value>)",
-              },
+              }, __gdsFamily("primary")),
               secondary: {
                 DEFAULT: "oklch(var(--secondary) / <alpha-value>)",
                 foreground: "oklch(var(--secondary-foreground) / <alpha-value>)",
               },
-              destructive: {
+              destructive: Object.assign({
                 DEFAULT: "oklch(var(--destructive) / <alpha-value>)",
                 foreground: "oklch(var(--destructive-foreground) / <alpha-value>)",
                 soft: "oklch(var(--destructive-soft) / <alpha-value>)",
                 deep: "oklch(var(--destructive-deep) / <alpha-value>)",
-              },
+              }, __gdsFamily("destructive")),
               muted: {
                 DEFAULT: "oklch(var(--muted) / <alpha-value>)",
                 foreground: "oklch(var(--muted-foreground) / <alpha-value>)",
               },
-              accent: {
+              accent: Object.assign({
                 DEFAULT: "oklch(var(--accent) / <alpha-value>)",
                 foreground: "oklch(var(--accent-foreground) / <alpha-value>)",
-              },
+              }, __gdsFamily("accent")),
               popover: {
                 DEFAULT: "oklch(var(--popover) / <alpha-value>)",
                 foreground: "oklch(var(--popover-foreground) / <alpha-value>)",
@@ -820,27 +838,30 @@ export function buildPlaygroundIndexHtml(
                 foreground: "oklch(var(--card-foreground) / <alpha-value>)",
               },
               // Status colors expose -soft (surface) + -deep (text/icon)
-              // siblings. Keep these in sync with tailwind-preset.ts.
-              success: {
+              // siblings AND numeric ramp steps. Keep these in sync with
+              // the @theme block in packages/ui/styles/globals.css
+              // (tailwind-preset.ts was retired in the v4 native-@theme
+              // migration).
+              success: Object.assign({
                 DEFAULT: "oklch(var(--success) / <alpha-value>)",
                 soft: "oklch(var(--success-soft) / <alpha-value>)",
                 deep: "oklch(var(--success-deep) / <alpha-value>)",
-              },
-              warning: {
+              }, __gdsFamily("success")),
+              warning: Object.assign({
                 DEFAULT: "oklch(var(--warning) / <alpha-value>)",
                 soft: "oklch(var(--warning-soft) / <alpha-value>)",
                 deep: "oklch(var(--warning-deep) / <alpha-value>)",
-              },
-              info: {
+              }, __gdsFamily("warning")),
+              info: Object.assign({
                 DEFAULT: "oklch(var(--info) / <alpha-value>)",
                 soft: "oklch(var(--info-soft) / <alpha-value>)",
                 deep: "oklch(var(--info-deep) / <alpha-value>)",
-              },
-              highlight: {
+              }, __gdsFamily("info")),
+              highlight: Object.assign({
                 DEFAULT: "oklch(var(--highlight) / <alpha-value>)",
                 soft: "oklch(var(--highlight-soft) / <alpha-value>)",
                 deep: "oklch(var(--highlight-deep) / <alpha-value>)",
-              },
+              }, __gdsFamily("highlight")),
             },
             borderRadius: {
               lg: "var(--radius)",

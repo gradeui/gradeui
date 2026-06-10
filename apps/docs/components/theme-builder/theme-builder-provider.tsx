@@ -85,6 +85,9 @@ export interface ThemeBuilderContextValue {
   canUndo: boolean;
   canRedo: boolean;
   isDirty: boolean;
+  /** The anchor input — what reset() snaps back to. Controls compare
+   *  against this to render their changed-from-base indicators. */
+  baseline: ThemeInput;
 
   /** Persist the current input. Semantics vary by bindTo — see provider
    *  docstring. Returns the id it persisted under (useful for the host
@@ -292,6 +295,7 @@ export function ThemeBuilderProvider({
       canUndo: history.canUndo,
       canRedo: history.canRedo,
       isDirty: history.isDirty,
+      baseline: history.baseline,
       save,
       exportMarkdown,
       bindTo,
@@ -305,6 +309,7 @@ export function ThemeBuilderProvider({
       history.canUndo,
       history.canRedo,
       history.isDirty,
+      history.baseline,
       generated,
       setInput,
       patch,

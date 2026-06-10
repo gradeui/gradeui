@@ -5,50 +5,93 @@
  * presentation pieces — no context coupling — so they can be reused by
  * any of the outer composites (Controls, a bespoke host form, etc.).
  *
- * Deliberately chunky because the builder's vibe is "dense admin panel"
- * not "marketing page". Keep spacing tight; keep labels uppercase; keep
- * font sizes small. Design tokens drive the colours so the panel picks
- * up whichever theme it's hosted under.
+ * Visual language MATCHES the selection inspector (the Layout tab):
+ * sentence-case text-2xs labels, collapsible chevron sections with
+ * edge-to-edge dividers, Select size="2xs" triggers. The two panels sit
+ * in the same tab strip — they must read as one tool, not two eras.
+ * Design tokens drive the colours so the panel picks up whichever theme
+ * it's hosted under.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { ChevronDown, RotateCcw } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   FONTS,
   FONT_LABELS,
   FONT_CATEGORY,
-  oklchToHex,
   type FontKey,
 } from "@/lib/themes";
-import { hueToRamp } from "@/lib/themes/oklch";
+import { hueToRamp, RAMP_KEYS } from "@/lib/themes/oklch";
 import { cn } from "@/lib/utils";
+
+/** Field label classes — keep in sync with FIELD_LABEL in
+ *  selection-inspector.tsx (the Layout tab). Sentence case, no
+ *  uppercase. */
+export const FIELD_LABEL = "text-2xs font-medium text-foreground/80";
 
 /* ──────────────────────────────────────────────────────────────────────
    Section
    ────────────────────────────────────────────────────────────────────── */
 
+/**
+ * Collapsible section — mirrors the selection inspector's
+ * CollapsibleSection (chevron toggle, sentence-case text-xs title,
+ * edge-to-edge top divider) so the Design System and Layout tabs read
+ * as one tool.
+ */
 export function Section({
   title,
   subtitle,
+  defaultOpen = true,
   children,
 }: {
   title: React.ReactNode;
   subtitle?: string;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-border last:border-b-0 px-3 py-3 space-y-3">
-      <div>
-        <h3 className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          {title}
-        </h3>
-        {subtitle && (
-          <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-            {subtitle}
-          </p>
+    <section className="border-t border-border/60 first:border-t-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className={cn(
+          "flex w-full items-center gap-1.5 px-3 pt-2.5 text-left",
+          open ? "pb-1.5" : "pb-2.5",
         )}
-      </div>
-      {children}
-    </div>
+      >
+        <ChevronDown
+          aria-hidden
+          className={cn(
+            "h-3 w-3 shrink-0 text-muted-foreground transition-transform",
+            !open && "-rotate-90",
+          )}
+        />
+        <span className="text-xs font-medium text-foreground">{title}</span>
+      </button>
+      {open && (
+        <div className="space-y-2 px-3 pb-3">
+          {subtitle && (
+            <p className="text-2xs leading-snug text-muted-foreground">
+              {subtitle}
+            </p>
+          )}
+          {children}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -56,10 +99,41 @@ export function Section({
    Label
    ────────────────────────────────────────────────────────────────────── */
 
-export function Label({ children }: { children: React.ReactNode }) {
+export function Label({
+  children,
+  changed,
+  onReset,
+}: {
+  children: React.ReactNode;
+  /** Render the changed-from-base dot. The Design System tab compares
+   *  the control's value against the provider's `baseline` and flips
+   *  this on, so the user can see exactly which knobs drifted. */
+  changed?: boolean;
+  /** Per-control reset — writes THIS field's baseline value back
+   *  (everything else keeps its edits). Rendered only while changed. */
+  onReset?: () => void;
+}) {
   return (
-    <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+    <div className={cn("flex items-center gap-1.5 mb-1", FIELD_LABEL)}>
       {children}
+      {changed && (
+        <span
+          className="h-1.5 w-1.5 rounded-full bg-studio-accent"
+          title="Changed from the base theme"
+          aria-label="Changed from the base theme"
+        />
+      )}
+      {changed && onReset && (
+        <button
+          type="button"
+          onClick={onReset}
+          title="Reset this control to the base theme"
+          aria-label="Reset this control to the base theme"
+          className="inline-flex h-4 w-4 items-center justify-center rounded text-muted-foreground/70 transition-colors hover:bg-foreground/10 hover:text-foreground"
+        >
+          <RotateCcw className="h-2.5 w-2.5" />
+        </button>
+      )}
     </div>
   );
 }
@@ -78,23 +152,37 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    // Canonical ToggleGroup at inspector density — pill-on-track
+    // treatment (muted track, active segment lifts to bg-background),
+    // the same vocabulary as TabsList and the canvas fidelity toggle.
+    <ToggleGroup
+      type="single"
+      size="2xs"
+      value={value}
+      onValueChange={(v: string) => {
+        // Radix emits "" when the active segment is clicked again —
+        // a segmented pick is always-one-selected, so ignore it.
+        if (v) onChange(v as T);
+      }}
+      className="w-full justify-start gap-0.5 rounded-md bg-foreground/5 p-0.5"
+    >
       {options.map((o) => (
-        <button
+        <ToggleGroupItem
           key={o.value}
-          type="button"
-          onClick={() => onChange(o.value)}
+          value={o.value}
           className={cn(
-            "rounded-md border px-2 py-1 text-[11px] transition-colors",
-            value === o.value
-              ? "border-primary bg-primary/10 text-foreground"
-              : "border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted"
+            // rounded-sm (not a hardcoded px radius) so the segment
+            // corners ride the Studio theme's --radius like every
+            // other control in the panel.
+            "h-5 flex-1 rounded-sm px-2 text-2xs font-medium",
+            "text-muted-foreground hover:text-foreground",
+            "data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm",
           )}
         >
           {o.label}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   );
 }
 
@@ -166,72 +254,98 @@ export function ModeButton({
 }
 
 /* ──────────────────────────────────────────────────────────────────────
-   Hue control — slider + live hex swatch
+   Hue control — the generated ramp as swatch blocks; slider on demand
    ────────────────────────────────────────────────────────────────────── */
 
+/**
+ * The row shows what the hue actually PRODUCES — the 11-step OKLCH ramp
+ * as swatch blocks — instead of a rainbow slider (which showed every
+ * colour except the ones you'd get). Clicking the strip (or the degree
+ * readout) reveals the hue slider for adjusting; the native slider is
+ * tinted to the ramp's 500 step via accent-color rather than custom
+ * thumb/track chrome.
+ *
+ * Swatches paint with `oklch(<triplet>)` directly — SSR-stable (no
+ * browser parsing involved), so the old hex round-trip is gone.
+ */
 export function HueRow({
   label,
   hue,
   chroma,
   onChange,
+  changed,
+  onReset,
 }: {
   label: string;
   hue: number;
   chroma: number;
   onChange: (hue: number) => void;
+  /** Changed-from-base dot — see Label. */
+  changed?: boolean;
+  /** Per-control reset — see Label. */
+  onReset?: () => void;
 }) {
-  // Resolve hue+chroma through the ramp generator so the swatch shows a
-  // believable "500-step" brand colour, not raw OKLCH edges.
-  //
-  // `oklchToHex` uses the browser's own parser (getComputedStyle on a
-  // throwaway span) so it returns "" during SSR. If we called it inline
-  // via useMemo, the server would emit the oklch() fallback while the
-  // first client render would emit a hex — a hydration mismatch. Instead
-  // we leave the state empty on first paint (matches SSR → both render the
-  // oklch fallback) and fill it in after mount, then recompute whenever
-  // hue/chroma change.
-  const [swatchHex, setSwatchHex] = useState<string>("");
-  useEffect(() => {
-    const ramp = hueToRamp({ hue, chromaScale: chroma });
-    setSwatchHex(oklchToHex(ramp[500]));
-  }, [hue, chroma]);
+  const [open, setOpen] = useState(false);
+  const ramp = hueToRamp({ hue, chromaScale: chroma });
 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <Label>{label}</Label>
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+        <Label changed={changed} onReset={onReset}>
+          {label}
+        </Label>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          title="Adjust hue"
+          className={cn(
+            "rounded px-1 text-2xs font-mono tabular-nums transition-colors",
+            open
+              ? "text-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {Math.round(hue)}°
+        </button>
+      </div>
+
+      {/* The ramp itself, 50 → 950. Click to adjust. */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        title={`${label} ramp — click to adjust hue`}
+        className={cn(
+          "flex h-6 w-full overflow-hidden rounded-md border border-border/60",
+          "transition-shadow hover:ring-2 hover:ring-ring/30",
+          open && "ring-2 ring-ring/40",
+        )}
+      >
+        {RAMP_KEYS.map((step) => (
           <span
-            className="h-3 w-3 rounded-sm border border-border"
-            style={{
-              background: swatchHex || `oklch(0.6 ${chroma * 0.17} ${hue})`,
-            }}
+            key={step}
+            className="h-full flex-1"
+            style={{ background: `oklch(${ramp[step]})` }}
             aria-hidden
           />
-          {Math.round(hue)}°
-        </div>
-      </div>
-      <input
-        type="range"
-        min={0}
-        max={360}
-        step={1}
-        value={hue}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-primary"
-        style={{
-          // Rainbow gradient so the slider reads like a colour wheel —
-          // matches what the control actually does.
-          background:
-            "linear-gradient(to right, " +
-            "oklch(0.7 0.17 0), oklch(0.7 0.17 60), oklch(0.7 0.17 120), " +
-            "oklch(0.7 0.17 180), oklch(0.7 0.17 240), oklch(0.7 0.17 300), " +
-            "oklch(0.7 0.17 360))",
-          borderRadius: 4,
-          height: 6,
-          appearance: "none",
-        }}
-      />
+        ))}
+      </button>
+
+      {open && (
+        <input
+          type="range"
+          min={0}
+          max={360}
+          step={1}
+          value={hue}
+          onChange={(e) => onChange(Number(e.target.value))}
+          aria-label={`${label} hue`}
+          className="w-full"
+          // Native slider, tinted to the ramp — no bespoke chrome.
+          style={{ accentColor: `oklch(${ramp[500]})` }}
+        />
+      )}
     </div>
   );
 }
@@ -245,11 +359,17 @@ export function FontRow({
   value,
   onChange,
   filter,
+  changed,
+  onReset,
 }: {
   label: string;
   value: FontKey;
   onChange: (v: FontKey) => void;
   filter: (cat: "sans" | "serif" | "mono") => boolean;
+  /** Changed-from-base dot — see Label. */
+  changed?: boolean;
+  /** Per-control reset — see Label. */
+  onReset?: () => void;
 }) {
   const keys = (Object.keys(FONTS) as FontKey[]).filter((k) =>
     filter(FONT_CATEGORY[k])
@@ -258,42 +378,33 @@ export function FontRow({
   const serif = keys.filter((k) => FONT_CATEGORY[k] === "serif");
   const mono = keys.filter((k) => FONT_CATEGORY[k] === "mono");
 
+  const group = (heading: string, items: FontKey[]) =>
+    items.length > 0 && (
+      <SelectGroup>
+        <SelectLabel>{heading}</SelectLabel>
+        {items.map((k) => (
+          <SelectItem key={k} value={k}>
+            {FONT_LABELS[k]}
+          </SelectItem>
+        ))}
+      </SelectGroup>
+    );
+
   return (
-    <div>
-      <Label>{label}</Label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as FontKey)}
-        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs"
-      >
-        {sans.length > 0 && (
-          <optgroup label="Sans">
-            {sans.map((k) => (
-              <option key={k} value={k}>
-                {FONT_LABELS[k]}
-              </option>
-            ))}
-          </optgroup>
-        )}
-        {serif.length > 0 && (
-          <optgroup label="Serif">
-            {serif.map((k) => (
-              <option key={k} value={k}>
-                {FONT_LABELS[k]}
-              </option>
-            ))}
-          </optgroup>
-        )}
-        {mono.length > 0 && (
-          <optgroup label="Mono">
-            {mono.map((k) => (
-              <option key={k} value={k}>
-                {FONT_LABELS[k]}
-              </option>
-            ))}
-          </optgroup>
-        )}
-      </select>
+    <div className="space-y-1">
+      <Label changed={changed} onReset={onReset}>{label}</Label>
+      {/* Canonical Select at inspector density (size="2xs") — matches
+          the Layout tab's NumericSelectRow triggers. */}
+      <Select value={value} onValueChange={(v) => onChange(v as FontKey)}>
+        <SelectTrigger size="2xs" className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent size="2xs">
+          {group("Sans", sans)}
+          {group("Serif", serif)}
+          {group("Mono", mono)}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

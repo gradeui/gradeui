@@ -45,6 +45,10 @@ export interface StudioHistory {
   /** True if the present input differs from the initial anchor. Cheap
    *  reference compare — we always push new objects so identity is stable. */
   isDirty: boolean;
+  /** The initial anchor itself — what reset() restores and isDirty
+   *  compares against. Exposed so UIs can mark WHICH fields drifted from
+   *  the base (the Design System tab's changed-dots). */
+  baseline: ThemeInput;
 }
 
 /**
@@ -130,6 +134,7 @@ export function useStudioHistory(initial: ThemeInput): StudioHistory {
       canUndo: state.cursor > 0,
       canRedo: state.cursor < state.stack.length - 1,
       isDirty: present !== state.initial,
+      baseline: state.initial,
     }),
     [present, set, update, undo, redo, reset, rebase, state.cursor, state.stack.length, state.initial]
   );

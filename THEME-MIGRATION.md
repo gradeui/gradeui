@@ -25,6 +25,8 @@ The single biggest unlock. Today both `packages/ui/styles/globals.css` and `apps
 
 **Effort:** one focused session for A1–A5 on packages/ui, a second for docs + verification. **Risk:** moderate; entirely contained by A6's zero-diff gate. **Rollback:** keep `@config` in the tree until A6 passes; reverting is one import line.
 
+> **Status (June 10, 2026): A1–A5 DONE for packages/ui.** The preset is now a `@theme inline reference` block in `styles/globals.css` (+ `@custom-variant dark`, `@plugin "tailwindcss-animate"`, one `@source` for scaffolds-playground); `tailwind.config.ts` / `tailwind-preset.ts` are deleted and the `./tailwind-preset` export removed (changeset: major). Gate receipt: rule-level diff of old vs new unminified output under Tailwind 4.3.0 — identical rule sets (2,512 = 2,512, 0 removed / 0 added); only deltas are v4 preflight's `--default-font-family` indirection (same computed values; runtime `--font-sans`/`--font-mono` are unlayered in core tokens.css and win). The diff tool is checked in at `scripts/css-rule-diff.mjs`. Two findings worth knowing: (1) `@config` compat does NOT disable v4 auto-detection — the old build was already scanning the whole package incl. `.md` sidecars, so native auto-detection reproduces it; (2) ten utilities (`fade-{in,out}`, `slide-in-from-*`, `ease-in`, `bg-surface-glass`, `h-[600px]`, `md:grid-cols-[minmax(0,440px)_1fr]`) only existed because the scanner read the preset's comment/value text — they're now deliberate `@source inline()` safelists. Still owed: the docs-app session (apps/docs still runs `@config` + its own config), A6 screenshot suite + /studio eyeball pass, A7, and a local `pnpm -F @gradeui/ui build` to refresh dist (the sandbox can't run native binaries).
+
 ## Phase B — Wire the ratios (the at-will switch)
 
 With native @theme, the theme generator gains reach into the utility layer.
@@ -36,6 +38,8 @@ With native @theme, the theme generator gains reach into the utility layer.
 - **B5. Guards.** Floors: min text size (0.625rem), min spacing base; clamp ratio inputs. The style panel sliders get the same bounds.
 
 **Effort:** one session. **Risk:** low after Phase A; visual change only when a user moves a control, which is the point.
+
+> **Status (June 10, 2026): B1–B5 DONE (engine + CSS).** `GeneratedSpacing.unit` → `--spacing` (B1, clamped/floored per B5); modular scales emit the full named `--text-*` ladder + per-step line-heights via `GeneratedTypography.namedScale`, presets emit nothing, `--text-2xs` moved to a plain `@theme` block so it's runtime-re-pitchable (B2); `GeneratedTheme.roleRamps` + `--gds-<role>-<step>` emission + `--color-<role>-<step>` @theme entries with flat-role fallbacks + safelists land `bg-success-100`-style utilities, `neutral` runtime-only to avoid shadowing Tailwind's palette (B4). Both lib/themes copies in lockstep; both renderers wired (B3): Fast Frame applies the full var map against the rebuilt ui stylesheet; Sandpack's CDN config gained the role families via `__gdsFamily()` — known limit: CDN v3 can't re-pitch `--spacing`/`--text-*`, Fast Frame renders all of it. Verified: tsc clean on both packages; node smoke test (tight density → 0.2125rem, perfect-fourth ladder monotonic with 0.625rem floor, all 8 families emit valid triplets, presets emit no ladder). NOT yet done: style-panel slider bounds (B5's UI half), and no visual pass — nothing has been rendered/tested in a browser this session.
 
 ## Phase C — Close the leaks (generated output never escapes the contracts)
 
