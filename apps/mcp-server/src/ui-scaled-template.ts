@@ -57,7 +57,7 @@
 //     forwards the host's tool-result down (appSource + themeDraftJson),
 //     and swallows the bundle's size-changed (the shell owns sizing).
 //     The bundle text is substituted at registration via __BUNDLE_JSON__.
-export const PREVIEW_SCALED_URI = "ui://gradeui-mcp/preview-scaled-v10";
+export const PREVIEW_SCALED_URI = "ui://gradeui-mcp/preview-scaled-v11";
 
 /**
  * srcdoc_probe — SCALED-PANEL-PLAN.md step 0. One question: does THIS
@@ -208,7 +208,7 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
   // Lifecycle trace — the only console we have inside a host's sandboxed
   // panel iframe. Reads like: v1 js✓ · init✓:cowork · recv:tool-result ·
   // frame✓ · fit:62%
-  var dbg = ["scaled-v10", "js✓"];
+  var dbg = ["scaled-v11", "js✓"];
   function mark(s) {
     dbg.push(s);
     var el = document.getElementById("status");
@@ -323,20 +323,27 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
   }
 
   /** The Fit maths: scale the virtual canvas to the stage's width,
-   *  set the stage's height from the scaled virtual height. */
+   *  set the stage's height from the scaled virtual height. CLAMPED at
+   *  100% — same as the canvas's fitZoom (Math.min(1, …)): a 390px
+   *  phone screen in a 940px panel renders at 1:1 and centres, never
+   *  magnified (the 188% blow-up bug, 2026-06-10). */
   function applyFit() {
     var stage = document.getElementById("stage");
     if (!state.frame) return;
     var w = stage.clientWidth;
     if (!w) return;
-    var scale = w / state.vw;
+    var scale = Math.min(1, w / state.vw);
     state.frame.style.width = state.vw + "px";
     state.frame.style.height = state.vh + "px";
     state.frame.style.transform = "scale(" + scale + ")";
+    // Centre when the (scaled) virtual width is narrower than the panel.
+    var scaledW = Math.round(state.vw * scale);
+    state.frame.style.left = Math.max(0, Math.round((w - scaledW) / 2)) + "px";
     stage.style.height = Math.round(state.vh * scale) + "px";
     var pct = Math.round(scale * 100);
     document.getElementById("dim").textContent =
-      "Fit \\u00b7 " + pct + "% of " + state.vw + "px";
+      (pct === 100 ? "1:1" : "Fit \\u00b7 " + pct + "%") +
+      " \\u00b7 " + state.vw + "\\u00d7" + state.vh;
     mark("fit:" + pct + "%");
     reportSize();
   }
