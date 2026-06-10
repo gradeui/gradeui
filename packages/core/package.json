@@ -1,6 +1,6 @@
 {
   "name": "@gradeui/core",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Grade Design System — foundations. Primitive design tokens (color ramps, neutrals, semantic aliases, spacing, radii, font stacks, type scale) as CSS (tokens.css) + typed data (GDS_* exports). Theme engine migration still pending — see README.",
   "license": "MIT",
   "author": "Grade",
