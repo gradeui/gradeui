@@ -28,6 +28,7 @@ const docsNav: NavSection[] = [
   {
     title: "Design Tokens",
     items: [
+      { title: "Core package", href: "/docs/tokens/core" },
       { title: "Colors", href: "/docs/tokens/colors" },
       { title: "Typography", href: "/docs/tokens/typography" },
       { title: "Spacing", href: "/docs/tokens/spacing" },

@@ -268,6 +268,23 @@ export const FONT_CATEGORY: Record<FontKey, "sans" | "serif" | "mono"> = {
 /** Type scale preset — controls how generous the size ladder is. */
 export type TypeScalePreset = "compact" | "default" | "spacious";
 
+/** Modular (musical-interval) scale ids — mirror GDS_MODULAR_SCALES in
+ *  @gradeui/core. Selecting one generates the type ladder middle-out from
+ *  the body size (Utopia model): up by the ratio, down by the reciprocal,
+ *  floored. */
+export type ModularScaleId =
+  | "minor-second"
+  | "major-second"
+  | "minor-third"
+  | "major-third"
+  | "perfect-fourth"
+  | "augmented-fourth"
+  | "perfect-fifth"
+  | "golden-ratio";
+
+/** What `typography.scale` accepts: a legacy flat preset or a modular ratio. */
+export type TypeScale = TypeScalePreset | ModularScaleId;
+
 /** Density preset — controls spacing tightness. */
 export type SpacingDensity = "tight" | "default" | "roomy";
 
@@ -358,7 +375,7 @@ export interface ThemeInput {
     display: FontKey;
     body: FontKey;
     mono: FontKey;
-    scale: TypeScalePreset;
+    scale: TypeScale;
     /** Override heading weight. Defaults to 600 for sans, 500 for serif. */
     headingWeight?: number;
     /** Override body weight. Defaults to 400. */

@@ -22,7 +22,9 @@ import {
   type InputStyle,
   type CardStyle,
   type ShadowIntensity,
+  type TypeScale,
 } from "@/lib/themes";
+import { GDS_MODULAR_SCALES } from "@gradeui/core";
 import { cn } from "@/lib/utils";
 import { useThemeBuilder } from "./theme-builder-provider";
 import {
@@ -187,6 +189,36 @@ export function ThemeBuilderControls({
             }
             filter={(cat) => cat === "mono"}
           />
+
+          {/* Type scale — legacy flat presets plus the modular (musical)
+              ratios. Modular ids generate the ladder middle-out from the
+              body size (Utopia model): up by the ratio, down by the
+              reciprocal, floored. See @gradeui/core GDS_MODULAR_SCALES. */}
+          <div>
+            <Label>Scale</Label>
+            <select
+              value={input.typography.scale}
+              onChange={(e) =>
+                patch((d) => {
+                  d.typography.scale = e.target.value as TypeScale;
+                })
+              }
+              className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+            >
+              <optgroup label="Presets">
+                <option value="compact">Compact</option>
+                <option value="default">Default</option>
+                <option value="spacious">Spacious</option>
+              </optgroup>
+              <optgroup label="Modular (musical)">
+                {GDS_MODULAR_SCALES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label} · {s.ratio}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
 
           <div className="pt-1">
             <Label>Heading weight</Label>

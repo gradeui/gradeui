@@ -99,6 +99,9 @@ importers:
       '@gradeui/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@gradeui/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@gradeui/mcp-server':
         specifier: workspace:*
         version: link:../mcp-server
@@ -574,6 +577,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.5)
+      '@gradeui/core':
+        specifier: workspace:*
+        version: link:../core
       '@lexical/code':
         specifier: ^0.45.0
         version: 0.45.0

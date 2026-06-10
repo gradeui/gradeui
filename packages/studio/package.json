@@ -12,6 +12,7 @@
     ".": "./src/index.ts",
     "./playbook": "./src/playbook/index.ts",
     "./core": "./src/core/index.ts",
+    "./registry": "./src/registry/index.ts",
     "./package.json": "./package.json"
   },
   "files": [

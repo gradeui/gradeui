@@ -49,6 +49,7 @@ import {
 } from "@/lib/studio-users";
 import { useMaybeThemeBuilder } from "@/components/theme-builder";
 import { ThemePickerSection } from "@/components/studio/theme-picker-section";
+import { ProjectVariablesPanel } from "@/components/style-panel/variables-panel";
 
 interface ProjectSettingsSheetProps {
   /** The project whose settings are being edited. When null the
@@ -277,6 +278,15 @@ export function ProjectSettingsSheet({
               base" + "discard my custom edits". */}
           <ProjectThemeSection />
 
+          <Separator />
+
+          {/* Variables — the project's EFFECTIVE token values: the
+              generated theme's primary/accent/neutral ramps (live as
+              the style panel edits) over the locked core primitives.
+              Read-only v1; ramp-step override editing lands here.
+              Public sibling at /variables shows core defaults only. */}
+          <ProjectVariablesSection />
+
           {canDelete && (
             <>
               <Separator />
@@ -354,6 +364,34 @@ export function ProjectSettingsSheet({
  *  The "deep editing" (sliders, typography, shape) lives in the
  *  right-panel Theme tab, not here, so the settings sheet stays
  *  scannable. */
+/** Project variables section — collapsed by default so the sheet stays
+ *  scannable; expands to the compact VariablesViewer with the project's
+ *  effective ramps first. */
+function ProjectVariablesSection() {
+  const builder = useMaybeThemeBuilder();
+  const [open, setOpen] = React.useState(false);
+  if (!builder) return null;
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">Variables</Label>
+        <Button variant="outline" size="sm" onClick={() => setOpen((o) => !o)}>
+          {open ? "Hide" : "Show"}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        The project's effective token values — theme ramps first, core
+        primitives below. Click any swatch to copy its variable.
+      </p>
+      {open ? (
+        <div className="max-h-[360px] overflow-y-auto pr-1" data-lenis-prevent>
+          <ProjectVariablesPanel />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function ProjectThemeSection() {
   const builder = useMaybeThemeBuilder();
   if (!builder) return null;

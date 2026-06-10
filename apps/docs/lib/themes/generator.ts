@@ -38,8 +38,11 @@ import {
   type ShadowIntensity,
   type SpacingDensity,
   type ThemeInput,
+  type TypeScale,
   type TypeScalePreset,
+  type ModularScaleId,
 } from "./types";
+import { GDS_MODULAR_SCALES, modularTypeSizes } from "@gradeui/core";
 
 const ALL_MODES: ModeName[] = ["superLight", "light", "dark", "superDark"];
 
@@ -296,11 +299,50 @@ const SCALE_MULTIPLIER: Record<TypeScalePreset, number> = {
   spacious: 1.18,
 };
 
+/** Ratio lookup for the modular scales (mirrors GDS_MODULAR_SCALES). */
+const MODULAR_RATIOS = Object.fromEntries(
+  GDS_MODULAR_SCALES.map((s) => [s.id, s.ratio])
+) as Record<ModularScaleId, number>;
+
+/**
+ * Resolve the semantic ladder for a TypeScale.
+ *
+ * Presets keep the legacy behaviour: a flat multiplier over the
+ * hand-tuned BASE_SCALE (zero visual change for existing themes).
+ *
+ * Modular ids generate MIDDLE-OUT (the Utopia model — utopia.fyi):
+ * body anchors step 0 of the named ladder (2xs…7xl, base mid-ladder),
+ * headings climb by the ratio, small text descends by the reciprocal
+ * with a floor. Semantic slots then map onto named steps: h5=lg, h4=xl,
+ * h3=2xl, h2=3xl, h1=4xl, display=6xl — so a ratio swap re-pitches the
+ * whole hierarchy in one move.
+ */
+function typeLadder(scale: TypeScale): Record<keyof typeof BASE_SCALE, number> {
+  if (scale in SCALE_MULTIPLIER) {
+    const mult = SCALE_MULTIPLIER[scale as TypeScalePreset];
+    return Object.fromEntries(
+      Object.entries(BASE_SCALE).map(([k, v]) => [k, v * mult])
+    ) as Record<keyof typeof BASE_SCALE, number>;
+  }
+  const sizes = modularTypeSizes(1, MODULAR_RATIOS[scale as ModularScaleId]);
+  return {
+    display: sizes["6xl"],
+    h1: sizes["4xl"],
+    h2: sizes["3xl"],
+    h3: sizes["2xl"],
+    h4: sizes.xl,
+    h5: sizes.lg,
+    h6: sizes.base,
+    body: sizes.base,
+    bodySm: sizes.sm,
+  };
+}
+
 function resolveTypography(
   input: ThemeInput["typography"]
 ): GeneratedTypography {
-  const mult = SCALE_MULTIPLIER[input.scale];
-  const rem = (n: number) => `${(n * mult).toFixed(3)}rem`;
+  const ladder = typeLadder(input.scale);
+  const rem = (n: number) => `${n.toFixed(3)}rem`;
   return {
     fontSans: FONTS[input.body],
     fontMono: FONTS[input.mono],
@@ -309,15 +351,15 @@ function resolveTypography(
     bodyWeight: input.bodyWeight ?? 400,
     headingTracking: input.headingTracking ?? "-0.01em",
     scale: {
-      display: rem(BASE_SCALE.display),
-      h1: rem(BASE_SCALE.h1),
-      h2: rem(BASE_SCALE.h2),
-      h3: rem(BASE_SCALE.h3),
-      h4: rem(BASE_SCALE.h4),
-      h5: rem(BASE_SCALE.h5),
-      h6: rem(BASE_SCALE.h6),
-      body: rem(BASE_SCALE.body),
-      bodySm: rem(BASE_SCALE.bodySm),
+      display: rem(ladder.display),
+      h1: rem(ladder.h1),
+      h2: rem(ladder.h2),
+      h3: rem(ladder.h3),
+      h4: rem(ladder.h4),
+      h5: rem(ladder.h5),
+      h6: rem(ladder.h6),
+      body: rem(ladder.body),
+      bodySm: rem(ladder.bodySm),
     },
   };
 }

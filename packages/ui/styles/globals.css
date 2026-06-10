@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@gradeui/core/tokens.css"; /* primitive ramps + semantic aliases + type scale (layers 1-2) */
 
 /* v4 engine, v3 config — tailwind.config.ts (presets → tailwind-preset.ts:
    colours, text-2xs, radius, plugins, content) loads via @config so the
@@ -70,172 +71,14 @@
 @source inline("{from,via,to}-{background,foreground,muted,primary,secondary,accent,white,black}/{10,20,25,30,40,50,60,70,75,80,90}");
 
 /* ============================================
-   RAMP DESIGN SYSTEM - DESIGN TOKENS
+   GRADE DESIGN SYSTEM - COMPONENT-LAYER TOKENS
    ============================================ */
 
 :root {
-  /* ----------------------------------------
-     Brand Colors - Neon Green (Primary)
-     The signature RDS green
-     ---------------------------------------- */
-  --gds-green: #00FF84;
-  --gds-green-50: #ecfff5;
-  --gds-green-100: #d1ffea;
-  --gds-green-200: #a6ffd6;
-  --gds-green-300: #6affbd;
-  --gds-green-400: #2bff9e;
-  --gds-green-500: #00FF84; /* Primary brand green */
-  --gds-green-600: #00cc6a;
-  --gds-green-700: #009950;
-  --gds-green-800: #007a40;
-  --gds-green-900: #006636;
-  --gds-green-950: #00331b;
-
-  /* ----------------------------------------
-     Brand Colors - Yellow (Energy/Accent)
-     ---------------------------------------- */
-  --gds-yellow: #FFD500;
-  --gds-yellow-50: #fffce8;
-  --gds-yellow-100: #fff8c2;
-  --gds-yellow-200: #fff089;
-  --gds-yellow-300: #ffe545;
-  --gds-yellow-400: #FFD500; /* Primary energy yellow */
-  --gds-yellow-500: #e6c000;
-  --gds-yellow-600: #cc9f00;
-  --gds-yellow-700: #a37700;
-  --gds-yellow-800: #865c00;
-  --gds-yellow-900: #704b00;
-
-  /* ----------------------------------------
-     Brand Colors - Orange (Warning)
-     ---------------------------------------- */
-  --gds-orange: #FF6B00;
-  --gds-orange-50: #fff5eb;
-  --gds-orange-100: #ffe6cc;
-  --gds-orange-200: #ffc999;
-  --gds-orange-300: #ffa866;
-  --gds-orange-400: #ff8533;
-  --gds-orange-500: #FF6B00; /* Primary orange */
-  --gds-orange-600: #cc5600;
-  --gds-orange-700: #994000;
-  --gds-orange-800: #662b00;
-  --gds-orange-900: #4d2000;
-
-  /* ----------------------------------------
-     Brand Colors - Red (Error/Destructive)
-     ---------------------------------------- */
-  --gds-red: #FF0D0D;
-  --gds-red-50: #fff0f0;
-  --gds-red-100: #ffd9d9;
-  --gds-red-200: #ffb3b3;
-  --gds-red-300: #ff8080;
-  --gds-red-400: #ff4d4d;
-  --gds-red-500: #FF0D0D; /* Primary red */
-  --gds-red-600: #cc0a0a;
-  --gds-red-700: #990808;
-  --gds-red-800: #660505;
-  --gds-red-900: #4d0404;
-
-  /* ----------------------------------------
-     Brand Colors - Teal (Energetic Teal)
-     Adjusted for light/dark mode
-     ---------------------------------------- */
-  --gds-teal: #0D7377;
-  --gds-teal-50: #ecfeff;
-  --gds-teal-100: #cffafe;
-  --gds-teal-200: #a5f3fc;
-  --gds-teal-300: #67e8f9;
-  --gds-teal-400: #22d3ee;
-  --gds-teal-500: #14b8a6;
-  --gds-teal-600: #0D7377; /* Primary energetic teal */
-  --gds-teal-700: #0a5c5f;
-  --gds-teal-800: #084547;
-  --gds-teal-900: #052e2f;
-  --gds-teal-950: #021717;
-
-  /* ----------------------------------------
-     Brand Colors - Navy (Deep Blue)
-     ---------------------------------------- */
-  --gds-navy: #1E3A5F;
-  --gds-navy-50: #f0f5fa;
-  --gds-navy-100: #d9e4f0;
-  --gds-navy-200: #b3c9e0;
-  --gds-navy-300: #8daed1;
-  --gds-navy-400: #5c8bc2;
-  --gds-navy-500: #3a6ca3;
-  --gds-navy-600: #1E3A5F; /* Primary navy */
-  --gds-navy-700: #182e4c;
-  --gds-navy-800: #122339;
-  --gds-navy-900: #0c1726;
-
-  /* ----------------------------------------
-     Brand Colors - Blue (Info)
-     ---------------------------------------- */
-  --gds-blue: #2196F3;
-  --gds-blue-50: #e8f4fd;
-  --gds-blue-100: #c5e3fa;
-  --gds-blue-200: #90c9f6;
-  --gds-blue-300: #5bb0f1;
-  --gds-blue-400: #2196F3; /* Primary blue */
-  --gds-blue-500: #1976d2;
-  --gds-blue-600: #1565c0;
-  --gds-blue-700: #0d47a1;
-  --gds-blue-800: #0a3880;
-  --gds-blue-900: #072960;
-
-  /* ----------------------------------------
-     Neutral Colors - Gray Scale (from Figma)
-     ---------------------------------------- */
-  --gds-black: #000000;
-  --gds-gray-950: #0a0a0a;
-  --gds-gray-900: #171717;
-  --gds-gray-800: #262626;
-  --gds-gray-700: #3d3d3d;
-  --gds-gray-600: #525252;
-  --gds-gray-500: #737373;
-  --gds-gray-400: #a3a3a3;
-  --gds-gray-300: #d4d4d4;
-  --gds-gray-200: #e5e5e5;
-  --gds-gray-100: #f1f1f1;
-  --gds-gray-50: #fafafa;
-  --gds-white: #ffffff;
-
-  /* ----------------------------------------
-     Semantic Colors (Light Mode)
-     ---------------------------------------- */
-  --gds-success: var(--gds-green-600);
-  --gds-warning: var(--gds-orange-500);
-  --gds-error: var(--gds-red-500);
-  --gds-info: var(--gds-blue-400);
-  --gds-energy: var(--gds-yellow-400);
-  --gds-teal-semantic: var(--gds-teal-700); /* Darker for light mode */
-
-  /* ----------------------------------------
-     Spacing Scale
-     ---------------------------------------- */
-  --gds-space-1: 0.25rem;  /* 4px */
-  --gds-space-2: 0.5rem;   /* 8px */
-  --gds-space-3: 0.75rem;  /* 12px */
-  --gds-space-4: 1rem;     /* 16px */
-  --gds-space-5: 1.25rem;  /* 20px */
-  --gds-space-6: 1.5rem;   /* 24px */
-  --gds-space-8: 2rem;     /* 32px */
-  --gds-space-10: 2.5rem;  /* 40px */
-  --gds-space-12: 3rem;    /* 48px */
-  --gds-space-16: 4rem;    /* 64px */
-  --gds-space-20: 5rem;    /* 80px */
-  --gds-space-24: 6rem;    /* 96px */
-
-  /* ----------------------------------------
-     Border Radius
-     ---------------------------------------- */
-  --gds-radius-sm: 0.25rem;   /* 4px */
-  --gds-radius-md: 0.5rem;    /* 8px */
-  --gds-radius-lg: 0.75rem;   /* 12px */
-  --gds-radius-xl: 1rem;      /* 16px */
-  --gds-radius-2xl: 1.5rem;   /* 24px */
-  --gds-radius-full: 9999px;
-
+  /* Brand color ramps, neutral grays, semantic aliases (--gds-success …),
+     spacing scale, and border radii moved to @gradeui/core — see the
+     `@import "@gradeui/core/tokens.css"` at the top of this file and
+     packages/core/styles/tokens.css. Component tokens stay below. */
   /* ============================================
      ELEVATION SYSTEM
      ============================================
@@ -424,70 +267,8 @@
   --aura-shimmer-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --aura-shimmer-delay-between: 1200ms;
 
-  /* ----------------------------------------
-     Typography - Font Families
-     ---------------------------------------- */
-  --font-sans: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-
-  /* ----------------------------------------
-     Typography - Type Scale
-     ---------------------------------------- */
-  /* Display - Hero text */
-  --text-display: 3.75rem;      /* 60px */
-  --text-display-line: 1.1;
-  --text-display-tracking: -0.02em;
-
-  /* H1 */
-  --text-h1: 2.5rem;            /* 40px */
-  --text-h1-line: 1.2;
-  --text-h1-tracking: -0.02em;
-
-  /* H2 */
-  --text-h2: 2rem;              /* 32px */
-  --text-h2-line: 1.25;
-  --text-h2-tracking: -0.01em;
-
-  /* H3 */
-  --text-h3: 1.5rem;            /* 24px */
-  --text-h3-line: 1.3;
-  --text-h3-tracking: -0.01em;
-
-  /* H4 */
-  --text-h4: 1.25rem;           /* 20px */
-  --text-h4-line: 1.4;
-  --text-h4-tracking: 0;
-
-  /* H5 */
-  --text-h5: 1.125rem;          /* 18px */
-  --text-h5-line: 1.4;
-  --text-h5-tracking: 0;
-
-  /* H6 */
-  --text-h6: 1rem;              /* 16px */
-  --text-h6-line: 1.5;
-  --text-h6-tracking: 0;
-
-  /* Body */
-  --text-body-lg: 1.125rem;     /* 18px */
-  --text-body: 1rem;            /* 16px */
-  --text-body-sm: 0.875rem;     /* 14px */
-  --text-body-line: 1.6;
-
-  /* Label */
-  --text-label-lg: 0.875rem;    /* 14px */
-  --text-label: 0.75rem;        /* 12px */
-  --text-label-line: 1.4;
-  --text-label-tracking: 0.01em;
-
-  /* Caption */
-  --text-caption: 0.75rem;      /* 12px */
-  --text-caption-line: 1.4;
-
-  /* Overline */
-  --text-overline: 0.75rem;     /* 12px */
-  --text-overline-tracking: 0.1em;
-
+  /* Font stacks (--font-sans / --font-mono) and the type scale
+     (--text-display … --text-overline-*) moved to @gradeui/core/tokens.css. */
   /* ----------------------------------------
      Animation
      ---------------------------------------- */

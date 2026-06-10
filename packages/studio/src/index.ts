@@ -14,3 +14,4 @@
  */
 
 export * from "./playbook";
+export * from "./registry";
