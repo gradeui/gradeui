@@ -188,7 +188,107 @@ function parseFrontmatter(raw) {
   return out;
 }
 
-function parsePropSignature(line) {
+// Split a sidecar prop line into individual prop signatures, honoring
+// paren/quote nesting. Sidecars routinely pack several props onto one
+// line in two shapes the one-prop-per-line parser silently mangled
+// (June 2026 — found via the MCP save gate rejecting REAL props):
+//
+//   1. Semicolon-separated full signatures:
+//        `DropdownMenuContent: align? "start" | "end"; side? "top"; sideOffset? number`
+//      → only the first signature parsed; the rest were swallowed
+//        into its tail.
+//   2. Bare comma lists:
+//        `DropdownMenu: open?, defaultOpen?, onOpenChange?, modal? (default true)`
+//      → only `open` survived; defaultOpen/onOpenChange/modal were
+//        DROPPED from the contract entirely, so the validator rejected
+//        props the component genuinely supports.
+//
+// Returns an array of `Prefix: signature` strings (prefix re-attached
+// so downstream prefix handling still works per segment).
+function splitPropLine(line) {
+  const raw = line.trim();
+  if (!raw) return [];
+  const subPrefix = raw.match(/^([A-Z][A-Za-z0-9]*)\s*:\s+(.+)$/);
+  const prefix =
+    subPrefix && !/^[A-Z][A-Za-z0-9]*\s*:\s+["'(]/.test(raw) ? subPrefix[1] : null;
+  const body = prefix ? subPrefix[2].trim() : raw;
+
+  // Top-level split on a separator char, protecting (), [], {}, quotes.
+  // `boundary` (optional) must match the TRIMMED start of the chunk
+  // following a separator for the split to count — this is how prose
+  // semicolons inside descriptions ("…; a brief description") are told
+  // apart from signature separators ("…; side? \"top\""): a signature
+  // starts `name?` or `name:`, prose doesn't.
+  const topSplit = (text, sep, boundary) => {
+    const parts = [];
+    let depth = 0;
+    let quote = null;
+    let cur = "";
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (quote) {
+        cur += ch;
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === "`") {
+        quote = ch;
+        cur += ch;
+        continue;
+      }
+      if (ch === "(" || ch === "[" || ch === "{") depth++;
+      else if (ch === ")" || ch === "]" || ch === "}") depth--;
+      if (
+        ch === sep &&
+        depth === 0 &&
+        (!boundary || boundary.test(text.slice(i + 1).trimStart()))
+      ) {
+        parts.push(cur);
+        cur = "";
+      } else {
+        cur += ch;
+      }
+    }
+    parts.push(cur);
+    return parts.map((s) => s.trim()).filter(Boolean);
+  };
+
+  // Pass 1 — semicolons separate full signatures, but only when the
+  // next chunk actually opens like one. `name?` is unambiguous; a bare
+  // `name:` is only a signature if a TYPE follows the colon (keyword,
+  // quote, paren, or a PascalCase type name) — otherwise it's prose
+  // like field.md's "…; setting: text leads, control pinned trailing",
+  // which must stay inside the previous prop's description.
+  const SIG_START =
+    /^[A-Za-z_$][A-Za-z0-9_$-]*\s*(\?|:\s*(string|number|boolean|bigint|symbol|object|unknown|any|never|void|\(|["'`]|[A-Z][A-Za-z0-9]*(\[\])?\b))/;
+  const semiParts = topSplit(body, ";", SIG_START);
+
+  // Pass 2 — within a segment, split on commas ONLY when every piece
+  // reads as a bare prop name (`name?`), optionally with a trailing
+  // `(default …)` or a simple one-word type. This deliberately does
+  // NOT split `value?: string | string[]` or `(a, b) => void` shapes.
+  const BARE = /^[A-Za-z_$][A-Za-z0-9_$-]*\??(\s*\(default[^)]*\))?(\s*:\s*[A-Za-z][A-Za-z0-9<>\[\]]*)?$/;
+  const segments = [];
+  for (const part of semiParts) {
+    // Keep any ` — description` on the LAST comma piece only; strip it
+    // for the bare-list test so described lines still qualify.
+    const emIdx = part.indexOf(" — ");
+    const testable = emIdx === -1 ? part : part.slice(0, emIdx);
+    const commaParts = topSplit(testable, ",");
+    if (commaParts.length > 1 && commaParts.every((p) => BARE.test(p))) {
+      const desc = emIdx === -1 ? "" : part.slice(emIdx);
+      commaParts.forEach((p, i) => {
+        segments.push(i === commaParts.length - 1 ? p + desc : p);
+      });
+    } else {
+      segments.push(part);
+    }
+  }
+
+  return segments.map((s) => (prefix ? `${prefix}: ${s}` : s));
+}
+
+function parsePropSignature(line, rootName) {
   let raw = line.trim();
   if (!raw) return null;
   if (/^all\s/i.test(raw)) return null;
@@ -200,11 +300,20 @@ function parsePropSignature(line) {
   // "Accordion: value" both parse with `name="Accordion"` and the
   // emitted object literal trips on duplicate keys. Pattern: starts
   // with PascalCase identifier, followed by `:`, followed by space.
+  //
+  // REQUIREDNESS RULE (June 2026): a prop that belongs to a
+  // SUB-component is forced optional in the flattened bag. The bag
+  // can't express per-sub-export requiredness, and leaking it made
+  // the validator demand TabsTrigger's required `value: string` on
+  // <Tabs> itself. Root-prefixed (or unprefixed) lines keep their
+  // declared requiredness — that's how <Code source> stays required.
+  let forceOptional = false;
   const subPrefix = raw.match(/^([A-Z][A-Za-z0-9]*)\s*:\s+(.+)$/);
   if (subPrefix && !/^[A-Z][A-Za-z0-9]*\s*:\s+["'(]/.test(raw)) {
     // Guard against false positives like an enum-shape value that
     // happens to start uppercase — but in practice enums start with
     // `(` or `"`. The negative lookahead above keeps us safe.
+    if (rootName && subPrefix[1] !== rootName) forceOptional = true;
     raw = subPrefix[2].trim();
   }
 
@@ -266,7 +375,7 @@ function parsePropSignature(line) {
     if (!bare) return null;
     return {
       name: bare[1],
-      optional: Boolean(bare[2]),
+      optional: Boolean(bare[2]) || forceOptional,
       kind: "unknown",
       defaultValue,
       description,
@@ -275,7 +384,7 @@ function parsePropSignature(line) {
   }
 
   const name = nameMatch[1];
-  const optional = Boolean(nameMatch[2]);
+  const optional = Boolean(nameMatch[2]) || forceOptional;
   const tail = (nameMatch[4] ?? "").trim();
 
   // Parens enum.
@@ -488,7 +597,10 @@ function extractStyleDefaults(tsxSource) {
 }
 
 function emitContract(componentName, fm, propLines, styleDefaults, variantDefaults) {
-  const parsed = propLines.map(parsePropSignature).filter(Boolean);
+  const parsed = propLines
+    .flatMap(splitPropLine)
+    .map((l) => parsePropSignature(l, componentName))
+    .filter(Boolean);
 
   // Resolve "(see list above)" / "(see above)" enum references against the
   // frontmatter lists. Sidecar authors write `variant? (see list above)` to

@@ -444,12 +444,67 @@ export const brightGreenInput: ThemeInput = {
   },
 };
 
+/**
+ * Grade Marketing — the theme for gradeui.com's own marketing surfaces
+ * (homepage, /waitlist, and any future landing pages).
+ *
+ * Same brand DNA as Studio (warm-paper neutral, blue primary, teal-cyan
+ * accent) but tuned for marketing rather than app chrome: roomy spacing
+ * density, a spacious type scale with bigger display sizes, and pill
+ * buttons. Marketing pages render it scoped via <MarketingLayout> (it
+ * does NOT take over :root), defaulting to dark mode.
+ */
+export const gradeMarketingInput: ThemeInput = {
+  id: "grade-marketing",
+  name: "Grade Marketing",
+  description: "Grade's own marketing skin — roomy, spacious type, dark-first.",
+  tagline: "Marketing",
+  hues: {
+    // Same warm-paper neutral + blue/teal brand pair as Studio so the
+    // marketing site and the app read as one product.
+    neutral: 85,
+    primary: 250.94,
+    accent: 214.94,
+  },
+  chroma: {
+    neutral: 0.1,
+    primary: 0.9,
+    accent: 0.64,
+  },
+  intensity: "default",
+  typography: {
+    // Display keeps the terminal-flavoured Plex Mono headings — that IS
+    // the Grade voice — but body goes Inter for long-form marketing copy.
+    display: "ibmPlexMono",
+    body: "inter",
+    mono: "ibmPlexMono",
+    // Spacious scale: marketing headlines want more air than app chrome.
+    scale: "spacious",
+    headingWeight: 600,
+    headingTracking: "-0.02em",
+  },
+  // The point of this template: more breathing room everywhere. Roomy
+  // density re-scales every Tailwind spacing utility via --spacing.
+  spacing: { density: "roomy" },
+  radius: { style: "soft" },
+  effects: {
+    shadows: "subtle",
+    motionIntensity: 1.25,
+  },
+  components: {
+    buttonShape: "pill",
+    inputStyle: "outlined",
+    cardStyle: "outlined",
+  },
+};
+
 // Order matters — `defaultThemeId` in `index.ts` points at the first
 // entry. Studio leads because it's the chrome default; Calm + Energy
 // are the curated alternates; the 8 wild seeds follow as starting
 // points for the theme creator.
 export const BUILT_IN_INPUTS: ThemeInput[] = [
   studioInput,
+  gradeMarketingInput,
   calmInput,
   energyInput,
   brightGreenInput,

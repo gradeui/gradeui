@@ -17,7 +17,7 @@ export const ChartContract = contract({
   styleDefaults: {"ChartContainer":"flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none","ChartTooltipContent":"font-medium","ChartLegendContent":"flex items-center justify-center gap-4"},
   props: {
   "config": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "`{ [seriesKey]: { label: string; color?: string; theme?: { light: string; dark: string } } }`; the keys here are the names you reference in your Recharts <Bar dataKey=\"…\" /> calls",
   },
@@ -27,18 +27,34 @@ export const ChartContract = contract({
       description: "used for the inlined <style> tag",
   },
   "children": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "typically a single Recharts ResponsiveContainer or chart",
   },
   "passes": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "pair with `content={<ChartTooltipContent />}`",
   },
   "indicator": {
       schema: z.enum(["dot", "line", "dashed"]).optional(),
       design: "knob",
+  },
+  "hideLabel": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "hideIndicator": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "nameKey": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "labelKey": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
   },
   "ChartLegend": {
       schema: z.unknown(),

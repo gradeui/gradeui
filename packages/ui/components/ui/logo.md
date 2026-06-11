@@ -3,12 +3,14 @@ name: Logo
 import: "@gradeui/ui"
 subcomponents: []
 props:
-  - sources?: LogoSources — artwork keyed by lockup then appearance:
-      { square?: { light?, dark?, mono? }, horizontal?: {...}, icon?: {...} }.
-      Each slot is any node (inline <svg>, <img>, component). OMIT ENTIRELY
-      and the GRADE MARK renders (the square G-arrow, painted with
-      currentColor so it sits correctly on any surface). A bare <Logo /> is
-      always correct branding.
+  - sources?: LogoSources — artwork keyed by lockup then appearance: { square?: { light?, dark?, mono? }, horizontal?: {...}, icon?: {...} }. Each slot is any node (inline <svg>, <img>, component). OMIT ENTIRELY and the GRADE MARK renders (the square G-arrow, painted with currentColor so it sits correctly on any surface). A bare <Logo /> is always correct branding.
+  - size? ("sm" | "md" | "lg" | "xl") — height of the mark: 20 / 28 / 40 / 56px (a raw pixel number also works). Width is intrinsic (square/icon 1:1, horizontal keeps its ratio). Default "md"; use "sm" in dense rails and toolbars.
+  - lockup? ("square" | "horizontal" | "icon") — which shape to show; falls back to the next-best available artwork. Default "horizontal".
+  - mode? ("light" | "dark") — the background the logo SITS ON, selecting light/dark artwork. Explicit, not theme-coupled. Default "light".
+  - mono?: boolean — render the single-colour treatment; inherits currentColor from the parent. Default false.
+  - label?: string — accessible name (aria-label + role="img"); pair with decorative when the brand name is already beside it.
+  - decorative?: boolean — aria-hidden, no role; use when text nearby names the brand.
+  - href?: string — renders the logo as a link (logo-links-home).
   - lockup?: "square" | "horizontal" | "icon" (default "horizontal")
   - mode?: "light" | "dark" (default "light") — the background the logo sits on
   - mono?: boolean (default false) — use the single-colour artwork (inherits currentColor)

@@ -20,6 +20,18 @@ export const TabsContract = contract({
       schema: z.unknown().optional(),
       design: "plumbing",
   },
+  "value": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "onValueChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+  },
+  "orientation": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
   "size": {
       schema: z.enum(["sm", "md", "lg, default md"]).optional(),
       design: "knob",
@@ -30,10 +42,10 @@ export const TabsContract = contract({
       design: "knob",
       description: "`pill` is the shadcn chip-on-muted look; `underlined` is the minimal text + bottom-border treatment (formerly the separate SimpleTabs component, collapsed into Tabs in May 2026). Cascades to triggers.",
   },
-  "value": {
-      schema: z.string(),
+  "tooltip": {
+      schema: z.string().optional(),
       design: "content",
-      description: "matches a TabsContent value; tooltip?: string — when set, wraps the trigger in the design-system Tooltip and auto-applies aria-label (useful for icon-only triggers); requires a TooltipProvider somewhere above the tabs",
+      description: "when set, wraps the trigger in the design-system Tooltip and auto-applies aria-label (useful for icon-only triggers); requires a TooltipProvider somewhere above the tabs",
   },
   },
 });

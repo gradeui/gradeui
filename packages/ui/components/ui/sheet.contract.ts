@@ -20,6 +20,18 @@ export const SheetContract = contract({
       schema: z.unknown().optional(),
       design: "plumbing",
   },
+  "defaultOpen": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "onOpenChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+  },
+  "modal": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
   "asChild": {
       schema: z.boolean().optional(),
       design: "plumbing",

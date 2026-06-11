@@ -41,14 +41,19 @@ export const SidebarContract = contract({
       description: "outer chrome treatment. `rail` (default) is the classic nav rail with a single right-border + tracked width via `--gds-sidebar-width`; drops cleanly into `<AppShellNav placement=\"side\">`. `panel` is a card-style floating sidebar with full border + rounded corners + parent-controlled width; use when the sidebar is one of several adjacent panes in a body row (e.g. Projects | Canvas | Settings). The compound children (Header/Content/Footer/Section/Item) are identical in both treatments.",
   },
   "any": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "brand / logo / org switcher; hides nothing when collapsed (centred)",
   },
   "title": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "group label; **uppercase tracking-wide muted** styling auto-applied (Notion / Linear / Slack-style \"GAMES\", \"FAVORITES\", \"WORKSPACE\" headers); hidden when sidebar is collapsed",
+      description: "group label, tracking-wide muted styling; hidden when sidebar is collapsed. CASE: static (non-collapsible) headers historically render UPPERCASE (Notion / Linear / Slack-style \"GAMES\", \"FAVORITES\"); collapsible headers render the authored case. Control it explicitly with titleTransform.",
+  },
+  "titleTransform": {
+      schema: z.enum(["uppercase", "none"]).optional(),
+      design: "knob",
+      description: "title casing for BOTH header variants. \"none\" renders the authored case (sentence-case headers like a \"Recents\" list); \"uppercase\" forces the shouty group label. Unset = the per-variant legacy default above.",
   },
   "icon": {
       schema: z.unknown().optional(),

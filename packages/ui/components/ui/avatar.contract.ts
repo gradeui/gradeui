@@ -22,7 +22,11 @@ export const AvatarContract = contract({
       description: "t-shirt scale, 20px → 80px; default md (40px). xs for chat message rows, sm for comments/dense threads, lg/xl for profile headers. Prefer this over h-*/w-* className utilities.",
   },
   "src": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "alt": {
+      schema: z.unknown().optional(),
       design: "plumbing",
   },
   "tone": {
@@ -31,7 +35,7 @@ export const AvatarContract = contract({
       description: "tinted bg/text pair. Reach for explicit tones when each author needs a stable colour mapping (chat avatars, comment threads, member lists); default muted.",
   },
   "children": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "initials (or a small icon), rendered while the image loads or when it fails",
   },

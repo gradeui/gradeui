@@ -30,7 +30,7 @@ export const CommandContract = contract({
       design: "content",
   },
   "children": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "wraps groups and empty state",
   },
@@ -47,8 +47,12 @@ export const CommandContract = contract({
       design: "knob",
   },
   "open": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
+  },
+  "onOpenChange": {
+      schema: z.unknown().optional(),
+      design: "event",
       description: "when you want the command palette mounted in a modal (cmd+k pattern)",
   },
   },

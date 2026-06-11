@@ -20,12 +20,44 @@ export const HoverCardContract = contract({
       schema: z.unknown().optional(),
       design: "plumbing",
   },
+  "defaultOpen": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "onOpenChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+  },
+  "openDelay": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "closeDelay": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
   "asChild": {
       schema: z.boolean().optional(),
       design: "plumbing",
       description: "usually a Link or Button",
   },
   "side": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "align": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "sideOffset": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "alignOffset": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "className": {
       schema: z.unknown().optional(),
       design: "plumbing",
   },

@@ -13,6 +13,7 @@ props:
   - DropdownMenuItem: onSelect?, disabled?, asChild?, inset?
   - DropdownMenuCheckboxItem / DropdownMenuRadioItem: checked? / value, onCheckedChange? / onValueChange? (radio is on the group)
   - DropdownMenuSub / DropdownMenuSubTrigger / DropdownMenuSubContent: nested menu — sub-trigger shows children, sub-content holds the deeper items
+  - DropdownMenuSub: open?, defaultOpen?, onOpenChange? — nested-menu open state (Radix passthrough); pass `open` to compose a pre-opened submenu in static screens and captures
   - DropdownMenuShortcut: children — right-aligned kbd hint
 when_to_use: A small action menu attached to a trigger — overflow "…" buttons on cards, user-avatar menus in headers, "Insert" menus in editors. For a full searchable list, use Command. For ONE primary action plus a secondary, use a Button next to a smaller ghost Button instead of a dropdown.
 composes_with: [Button (as trigger asChild), Avatar (user menu), Card (overflow on a tile), Tooltip (on the trigger)]

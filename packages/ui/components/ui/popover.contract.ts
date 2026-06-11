@@ -20,14 +20,46 @@ export const PopoverContract = contract({
       schema: z.unknown().optional(),
       design: "plumbing",
   },
+  "defaultOpen": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "onOpenChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+  },
+  "modal": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
   "asChild": {
       schema: z.boolean().optional(),
       design: "plumbing",
       description: "usually a Button",
   },
   "side": {
-      schema: z.enum(["top", "right", "bottom", "left", "start", "center", "end"]).optional(),
+      schema: z.enum(["top", "right", "bottom", "left"]).optional(),
       design: "knob",
+  },
+  "align": {
+      schema: z.enum(["start", "center", "end"]).optional(),
+      design: "knob",
+  },
+  "sideOffset": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "alignOffset": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "collisionPadding": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "className": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
   },
   "surface": {
       schema: z.enum(["solid", "translucent", "glass", "glass-strong"]).optional(),

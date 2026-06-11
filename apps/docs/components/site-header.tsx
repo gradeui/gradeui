@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
 import { SearchCommand, SearchTrigger } from "@/components/search-command";
 import { MobileNav } from "@/components/mobile-nav";
-import { GradeThemeSwitcher } from "@/components/grade-theme-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function SiteHeader() {
@@ -64,8 +63,10 @@ export function SiteHeader() {
           <div className="flex items-center gap-2">
             <SearchTrigger onClick={() => setSearchOpen(true)} />
 
+            {/* Theme switcher removed (June 2026) — the docs header keeps
+                only the binary light/dark toggle. Theme exploration lives
+                in Studio + the theme builder now. */}
             <div className="hidden md:flex items-center gap-2">
-              <GradeThemeSwitcher />
               <ThemeToggle />
             </div>
             <MobileNav />

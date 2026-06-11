@@ -71,27 +71,27 @@ export const MapContract = contract({
       description: "Google only. Pass it whenever provider=\"google\" — the component enforces it at runtime (throws `provider=\"google\" requires an apiKey prop` via onError if missing). OPTIONAL in the contract on purpose, so it's never demanded from maplibre/mapbox.",
   },
   "id": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "string. Required. Stable marker id; pair with Map's `hoveredId` for list↔map hover sync.",
   },
   "at": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "`[lng, lat]` tuple. Required. THE coordinate prop. ALWAYS lng first. The prop is literally named `at` — it is NOT `lngLat`, `coordinates`, `position`, `latLng`, `center`, or separate `lng`/`lat` props. Passing any other name leaves the marker coord `undefined`, and MapLibre throws on mount, crashing the WHOLE screen in every renderer. When in doubt, copy the `airbnb-listings` scaffold: `<MapMarker id={l.id} at={l.coords}>`.",
   },
   "anchor": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "\"center\" | \"bottom\" (default \"bottom\", pin tip sits on the coord). Only these two values.",
   },
   "onClick": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "event",
       description: "handler called with `({ id, coords, native })` on marker click.",
   },
   "children": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "DOM rendered as the marker (Badge, Card, Avatar, or any element). Inherits `--gds-*` tokens.",
   },

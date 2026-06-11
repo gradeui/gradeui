@@ -30,7 +30,7 @@ export const CollapsibleContract = contract({
       design: "event",
   },
   "children": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "the clickable header (often a Button asChild)",
   },

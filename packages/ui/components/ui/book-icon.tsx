@@ -1,3 +1,4 @@
+import * as React from "react";
 import { forwardRef, useImperativeHandle } from "react";
 import { AnimatedIconHandle, AnimatedIconProps } from "./types";
 import { motion, useAnimate } from "motion/react";

@@ -21,6 +21,16 @@ Next.js 16 docs site for gradeui, deployed to [gradeui.com](https://gradeui.com)
 
 When changing the selection protocol (`grade:*` postMessage types), update BOTH sides of the bus AND `STUDIO.md`. They drift fast.
 
+## Marketing pages (homepage, /waitlist, future landing pages)
+
+The marketing surfaces live here: `app/[locale]/page.tsx` (homepage), `app/waitlist/`, and `components/marketing/` (MarketingLayout, sections, GradeWordmark, WaitlistFlow). They render inside the scoped "Grade Marketing" theme (`lib/themes/inputs.ts` → `gradeMarketingInput`), dark only, one-pager funnelling to `/waitlist`.
+
+### Copy rules — non-negotiable
+
+- **NEVER use em dashes (—) or en dashes (–) in marketing copy.** Not in headlines, body copy, labels, FAQ answers, error messages, alt text, or aria labels. Rewrite around them: split into two sentences, use a comma, or use a colon. This applies to every user-visible string on a marketing surface.
+- Designer-first voice. No npm install commands, no API talk, no "technical installation" framing on marketing pages. That belongs in /docs.
+- Single CTA: "Join the waitlist". Don't add competing CTAs without being asked.
+
 ## Conventions
 
 - Sidecar docs are the source of truth for component prop manifests. If you compile them into JSON for the Studio agent or a settings panel, keep `components/ui/<name>.md` authoritative — don't duplicate.

@@ -18,7 +18,46 @@ export const LogoContract = contract({
   "sources": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "artwork keyed by lockup then appearance:",
+      description: "artwork keyed by lockup then appearance: { square?: { light?, dark?, mono? }, horizontal?: {...}, icon?: {...} }. Each slot is any node (inline <svg>, <img>, component). OMIT ENTIRELY and the GRADE MARK renders (the square G-arrow, painted with currentColor so it sits correctly on any surface). A bare <Logo /> is always correct branding.",
+  },
+  "size": {
+      schema: z.enum(["sm", "md", "lg", "xl"]).optional(),
+      design: "knob",
+      description: "height of the mark: 20 / 28 / 40 / 56px (a raw pixel number also works). Width is intrinsic (square/icon 1:1, horizontal keeps its ratio). Default \"md\"; use \"sm\" in dense rails and toolbars.",
+  },
+  "lockup": {
+      schema: z.enum(["square", "horizontal", "icon"]).optional(),
+      design: "knob",
+      description: "which shape to show; falls back to the next-best available artwork. Default \"horizontal\".",
+  },
+  "mode": {
+      schema: z.enum(["light", "dark"]).optional(),
+      design: "knob",
+      description: "the background the logo SITS ON, selecting light/dark artwork. Explicit, not theme-coupled. Default \"light\".",
+  },
+  "mono": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "render the single-colour treatment; inherits currentColor from the parent. Default false.",
+  },
+  "label": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "accessible name (aria-label + role=\"img\"); pair with decorative when the brand name is already beside it.",
+  },
+  "decorative": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "aria-hidden, no role; use when text nearby names the brand.",
+  },
+  "href": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "renders the logo as a link (logo-links-home).",
+  },
+  "className": {
+      schema: z.string().optional(),
+      design: "plumbing",
   },
   },
 });

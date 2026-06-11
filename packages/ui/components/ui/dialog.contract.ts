@@ -19,6 +19,10 @@ export const DialogContract = contract({
   "open": {
       schema: z.unknown().optional(),
       design: "plumbing",
+  },
+  "onOpenChange": {
+      schema: z.unknown().optional(),
+      design: "event",
       description: "Radix controlled/uncontrolled pattern",
   },
   "asChild": {
@@ -31,11 +35,11 @@ export const DialogContract = contract({
       description: "what the modal panel is *made of*. Defaults to `solid` (opaque `bg-background`). `glass` lets the page show through softly — pairs with rich backdrops or AI-suggestion modals.",
   },
   "accepts": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
   },
   "used": {
-      schema: z.unknown(),
+      schema: z.unknown().optional(),
       design: "plumbing",
   },
   },

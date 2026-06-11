@@ -43,7 +43,11 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-default select-none items-center gap-2 rounded-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:shrink-0",
+      // transition + accent-foreground pair MUST match DropdownMenuItem's
+      // hover treatment — SubTrigger previously set only the accent bg,
+      // leaving default (near-black) text on hover while sibling items
+      // flipped to accent-foreground (caught by Ali, 2026-06-11).
+      "flex cursor-default select-none items-center gap-2 rounded-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
       ddItemBase(size),
       size === "default" ? "[&_svg]:size-4" : "[&_svg]:size-3.5",
       inset && (size === "default" ? "pl-8" : "pl-7"),

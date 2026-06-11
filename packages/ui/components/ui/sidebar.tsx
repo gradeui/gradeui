@@ -319,6 +319,16 @@ export interface SidebarSectionProps
   collapsible?: boolean;
   /** Initial open state for collapsible sections. Default true. */
   defaultExpanded?: boolean;
+  /** Title casing. The component should not silently dictate case
+   *  (Ali, 2026-06-11) — but the HISTORIC defaults differ per variant
+   *  and existing surfaces depend on them, so when unset, legacy
+   *  behaviour is preserved exactly: static headers render UPPERCASE
+   *  (the Notion/Linear treatment), collapsible headers render the
+   *  authored case (a long-standing `normal-case` override). Set
+   *  explicitly to get the same treatment from both variants:
+   *  `"uppercase"` for the shouty group label, `"none"` for
+   *  sentence-case headers like a "Recents" list. */
+  titleTransform?: "uppercase" | "none";
 }
 
 const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
@@ -329,6 +339,7 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
       trailing,
       collapsible = true,
       defaultExpanded = true,
+      titleTransform,
       className,
       children,
       ...rest
@@ -387,7 +398,16 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
                 className="flex flex-1 items-center gap-2 text-left min-w-0"
               >
                 {icon}
-                <span className="flex-1 text-left normal-case truncate">{title}</span>
+                {/* Legacy: collapsible titles render authored case unless
+                    titleTransform asks for uppercase explicitly. */}
+                <span
+                  className={cn(
+                    "flex-1 text-left truncate",
+                    titleTransform === "uppercase" ? "uppercase" : "normal-case",
+                  )}
+                >
+                  {title}
+                </span>
                 {expanded ? (
                   <ChevronDown className="h-3 w-3 shrink-0" strokeWidth={1.5} />
                 ) : (
@@ -407,7 +427,10 @@ const SidebarSection = React.forwardRef<HTMLDivElement, SidebarSectionProps>(
           ) : (
             <div
               className={cn(
-                "flex items-center gap-2 px-2 py-1.5 text-xs font-medium uppercase tracking-wide",
+                "flex items-center gap-2 px-2 py-1.5 text-xs font-medium tracking-wide",
+                // Legacy default for static headers is uppercase; only an
+                // explicit titleTransform="none" renders authored case.
+                titleTransform === "none" ? "" : "uppercase",
                 "text-muted-foreground",
               )}
             >

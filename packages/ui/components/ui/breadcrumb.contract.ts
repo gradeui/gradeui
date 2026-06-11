@@ -34,7 +34,11 @@ export const BreadcrumbContract = contract({
   "href": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "renders as <a> when set, <button> when not; asChild? wraps a custom element",
+      description: "renders as <a> when set, <button> when not",
+  },
+  "asChild": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
   },
   "children": {
       schema: z.unknown().optional(),

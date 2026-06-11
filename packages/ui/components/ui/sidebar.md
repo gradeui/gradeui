@@ -11,7 +11,8 @@ props:
   - SidebarHeader: any children — brand / logo / org switcher; hides nothing when collapsed (centred)
   - SidebarContent: any children — scrollable body
   - SidebarFooter: any children — user block, settings link, pinned chrome
-  - SidebarSection: title?: ReactNode — group label; **uppercase tracking-wide muted** styling auto-applied (Notion / Linear / Slack-style "GAMES", "FAVORITES", "WORKSPACE" headers); hidden when sidebar is collapsed
+  - SidebarSection: title?: ReactNode — group label, tracking-wide muted styling; hidden when sidebar is collapsed. CASE: static (non-collapsible) headers historically render UPPERCASE (Notion / Linear / Slack-style "GAMES", "FAVORITES"); collapsible headers render the authored case. Control it explicitly with titleTransform.
+  - SidebarSection: titleTransform? ("uppercase" | "none") — title casing for BOTH header variants. "none" renders the authored case (sentence-case headers like a "Recents" list); "uppercase" forces the shouty group label. Unset = the per-variant legacy default above.
   - SidebarSection: icon?: ReactNode — optional icon beside the title
   - SidebarSection: trailing?: ReactNode — **action(s) on the right edge of the header** — the canonical "+" / "..." slot (Notion's "+ Add page" next to Pages, Linear's "+" next to Favorites, Slack's "+" next to Channels). Pointer events isolated so a Button here doesn't toggle collapse.
   - SidebarSection: collapsible?: boolean — title acts as expand/collapse trigger with a **chevron indicator** (default true). Set `false` for a static, non-clickable header.

@@ -19,6 +19,18 @@ export const SelectContract = contract({
   "value": {
       schema: z.unknown().optional(),
       design: "plumbing",
+  },
+  "onValueChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+  },
+  "defaultValue": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "disabled": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
       description: "Radix root",
   },
   "size": {

@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+
 import { Toaster as Sonner } from "sonner";
 import { useMaybeGradeTheme } from "@/components/grade-theme-provider";
 
