@@ -58,6 +58,17 @@ import {
 export interface GradeToolsOptions {
   siteUrl: string;
   /**
+   * Where Playwright CAPTURES screenshots from (posters, preview_image,
+   * preview_screen's PNG). Defaults to siteUrl. Exists because of the
+   * 2026-06-11 finding: pages served by `next dev` never mount React in
+   * HEADLESS browsers (any flavor — shell or full chromium; headed is
+   * fine), so when GRADE_SITE_URL points at localhost for the live panel
+   * iframes, captures must still run against the production deploy.
+   * NOTE: production renders with ITS deployed component library — local
+   * undeployed component changes won't show in posters until deployed.
+   */
+  captureSiteUrl?: string;
+  /**
    * preview_screen capture engine:
    * - "playwright" (default) — full Playwright, local workstation; PNG
    *   saved to apps/mcp-server/previews/ for the host to present.
@@ -732,6 +743,14 @@ export function registerGradeTools(
       const h = Math.min(Math.max(a.height ?? (sls ? 640 : 800), 320), 2560);
       const share = await ensureShareLink(sb, a.projectId, a.screenId, mode);
       const url = embedUrl(opts.siteUrl, share.token, w);
+      // Capture may target a different deploy than the user-facing embed
+      // link (GRADE_CAPTURE_URL) — same token, same data, both read the
+      // shared Supabase. `flat=1` = the capture-grade render: the screen
+      // DIRECTLY in the page (no FastIframeHost) with the
+      // data-grade-ready contract the capture waits on.
+      const captureUrl =
+        embedUrl(opts.captureSiteUrl ?? opts.siteUrl, share.token, w) +
+        "&flat=1";
 
       const stored = a.refresh
         ? null
@@ -741,8 +760,8 @@ export function registerGradeTools(
         sls
           ? await (
               await import("./preview-serverless")
-            ).screenshotEmbedServerless(url, w, h, mode)
-          : await screenshotEmbed(url, w, h, mode);
+            ).screenshotEmbedServerless(captureUrl, w, h, mode)
+          : await screenshotEmbed(captureUrl, w, h, mode);
 
       let shot = stored ? { base64: stored.base64, width: w, height: h } : null;
       let staleFallback: number | null = null;
@@ -751,11 +770,20 @@ export function registerGradeTools(
       if (!shot) {
         try {
           shot = await capture();
-        } catch {
-          try {
-            shot = await capture();
-          } catch (e) {
-            captureErr = e;
+        } catch (first) {
+          // Retry only for transient failures (launch hiccups, navigation
+          // timeouts). A "rendered no content" diagnostic is deterministic —
+          // retrying doubles the wall-clock for the same answer and blows
+          // the MCP request budget (the 2026-06-11 -32001 timeouts).
+          const msg = first instanceof Error ? first.message : String(first);
+          if (msg.includes("rendered no content")) {
+            captureErr = first;
+          } else {
+            try {
+              shot = await capture();
+            } catch (e) {
+              captureErr = e;
+            }
           }
         }
         if (!shot) {
@@ -801,6 +829,15 @@ export function registerGradeTools(
         savedUrl,
         savedPath,
         staleFallback,
+        // Why the live capture failed, when it did — surfaced in the
+        // headline so a stale-poster fallback can EXPLAIN itself instead
+        // of swallowing the diagnostics (preview.ts collects page errors
+        // precisely for this).
+        captureError: captureErr
+          ? captureErr instanceof Error
+            ? captureErr.message
+            : String(captureErr)
+          : null,
         fromStored: Boolean(stored),
       };
     };
@@ -849,7 +886,7 @@ export function registerGradeTools(
         });
         if (!r.ok) return errorText(r.error);
         const headline = r.staleFallback
-          ? `"${r.screen.name}" — WARNING: live capture failed; this is the PREVIOUS capture (${r.mode}, ${new Date(r.staleFallback).toISOString()}) and predates the latest save. Retry shortly (refresh: true).`
+          ? `"${r.screen.name}" — WARNING: live capture failed; this is the PREVIOUS capture (${r.mode}, ${new Date(r.staleFallback).toISOString()}) and predates the latest save. Retry shortly (refresh: true).${r.captureError ? `\nCapture failure detail: ${r.captureError}` : ""}`
           : r.fromStored
             ? `"${r.screen.name}" — stored poster (${r.mode}; refresh: true re-renders).`
             : `"${r.screen.name}" — live render, ${r.w}×${r.h} ${r.mode}.`;
@@ -916,6 +953,11 @@ export function registerGradeTools(
         const h = Math.min(Math.max(height ?? (serverless ? 640 : 800), 320), 2560);
         const share = await ensureShareLink(sb, projectId, screenId, mode);
         const url = embedUrl(opts.siteUrl, share.token, w);
+        // See captureScreenShot: capture may target a different deploy,
+        // and flat=1 is the capture-grade no-iframe render.
+        const captureUrl =
+          embedUrl(opts.captureSiteUrl ?? opts.siteUrl, share.token, w) +
+          "&flat=1";
 
         // Poster reuse: if the stored capture postdates the screen's last
         // save, serve it — zero Chromium, instant, and it means a poster
@@ -936,8 +978,8 @@ export function registerGradeTools(
           serverless
             ? await (
                 await import("./preview-serverless")
-              ).screenshotEmbedServerless(url, w, h, mode)
-            : await screenshotEmbed(url, w, h, mode);
+              ).screenshotEmbedServerless(captureUrl, w, h, mode)
+            : await screenshotEmbed(captureUrl, w, h, mode);
 
         let shot = stored
           ? { base64: stored.base64, width: w, height: h }

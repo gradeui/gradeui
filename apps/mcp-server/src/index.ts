@@ -55,8 +55,17 @@ async function main() {
   };
   const server = new McpServer(serverInfo);
 
+  /** Where Playwright captures from. Defaults to the site itself —
+   *  localhost captures WORK now that screenshotEmbed waits for the
+   *  screen iframe like capture-layout-thumbnails.mjs does (see the
+   *  2026-06-11 black-poster entry in SCALED-PANEL-PLAN.md). The
+   *  override remains for capturing a different deploy than the one
+   *  the panel iframes point at. */
+  const CAPTURE_URL = process.env.GRADE_CAPTURE_URL ?? SITE_URL;
+
   registerGradeTools(server, sb, env, {
     siteUrl: SITE_URL,
+    captureSiteUrl: CAPTURE_URL,
     // Panel opt-in (see GradeToolsOptions.appPanel — attaching it
     // suppresses hosts' normal image-in-chat display).
     appPanel: envFlag(process.env.GRADE_MCP_APPS),

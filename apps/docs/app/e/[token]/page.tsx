@@ -15,6 +15,7 @@
 import { notFound } from "next/navigation";
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { EmbedScreen, type CameraShot } from "@/components/studio/embed-screen";
+import { FlatScreen } from "@/components/studio/flat-screen";
 
 /**
  * Parse the human-readable `camera` param into a shot list. Shots are
@@ -91,6 +92,15 @@ export default async function EmbedPage({
   const motionRaw = Array.isArray(sp.motion) ? sp.motion[0] : sp.motion;
   const motion =
     motionRaw === "off" ? false : motionRaw === "on" ? true : undefined;
+
+  // ?flat=1 — the "live URL": the screen rendered DIRECTLY in the page,
+  // no FastIframeHost, no nested page boot. Breakpoints come from the
+  // real viewport (the capturer sets it; a browser window just is one).
+  // Exists for Playwright captures (posters, preview_image) — the
+  // iframe-nested render raced every capture heuristic we ever wrote;
+  // this one stamps `data-grade-ready` instead. See flat-screen.tsx.
+  const flatRaw = Array.isArray(sp.flat) ? sp.flat[0] : sp.flat;
+  const flat = flatRaw === "1" || flatRaw === "true";
 
   // Optional zoom + focal point: ?zoom=2&cx=0.5&cy=0.3 magnifies the screen
   // and centres that point (fractions of the screen) in the box — so you can
@@ -182,6 +192,20 @@ export default async function EmbedPage({
   const themeDraftJson =
     (project as { theme_draft_json: string | null } | null)?.theme_draft_json ??
     null;
+
+  // The "live URL" / capture variant — flat render, no iframe, explicit
+  // data-grade-ready contract. Zoom/camera don't apply: a capture wants
+  // the screen, not the presentation rig.
+  if (flat) {
+    return (
+      <FlatScreen
+        appSource={appSource}
+        themeDraftJson={themeDraftJson}
+        mode={share.color_mode}
+        motion={motion}
+      />
+    );
+  }
 
   return (
     <EmbedScreen

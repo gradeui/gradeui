@@ -262,14 +262,33 @@ export async function screenshotEmbed(
   }
 
   let browser;
+  let browserFlavor: string;
+  // channel: "chromium" = the FULL Chromium in its native headless mode.
+  // Playwright's bare `headless: true` runs the stripped "chromium
+  // headless shell" binary instead — and on the 2026-06-11 install that
+  // shell silently never mounted React on the embed page (no errors, no
+  // content, black posters), while full Chromium renders perfectly
+  // (diagnosed with scripts/capture-probe.mjs: shell vs full vs headed).
   try {
-    browser = await chromium.launch({ headless: true });
-  } catch (err) {
-    throw new Error(
-      `Could not launch Chromium — browser binaries may be missing. Run \`npx playwright install chromium\` in the gradeui repo. (${
-        err instanceof Error ? err.message : String(err)
-      })`,
-    );
+    browser = await chromium.launch({ headless: true, channel: "chromium" });
+    browserFlavor = "full-chromium";
+  } catch (channelErr) {
+    // Fall back to the shell rather than failing outright — but NAME the
+    // fallback and carry the reason, so a later no-content failure can
+    // say which binary it happened in (a silent fallback here cost a
+    // debugging round on 2026-06-11).
+    const why =
+      channelErr instanceof Error ? channelErr.message : String(channelErr);
+    browserFlavor = `headless-shell (channel "chromium" launch failed: ${why.slice(0, 160)})`;
+    try {
+      browser = await chromium.launch({ headless: true });
+    } catch (err) {
+      throw new Error(
+        `Could not launch Chromium — browser binaries may be missing. Run \`npx playwright install chromium\` in the gradeui repo. (${
+          err instanceof Error ? err.message : String(err)
+        })`,
+      );
+    }
   }
 
   try {
@@ -278,9 +297,76 @@ export async function screenshotEmbed(
       deviceScaleFactor: 1,
       colorScheme: colorMode,
     });
-    await page.goto(url, { waitUntil: "networkidle", timeout: 30_000 });
-    // EmbedScreen hydrates + applies the theme var block client-side.
-    await page.waitForTimeout(1500);
+    // Collect page-side failures so a blank render can EXPLAIN itself —
+    // headless-only breakage is invisible otherwise (the 2026-06-11 black
+    // poster rendered fine in a real browser).
+    const pageErrors: string[] = [];
+    page.on("pageerror", (e) => pageErrors.push(`pageerror: ${e.message}`));
+    page.on("console", (msg) => {
+      if (msg.type() === "error") pageErrors.push(`console: ${msg.text()}`);
+    });
+    page.on("requestfailed", (req) =>
+      pageErrors.push(
+        `requestfailed: ${req.failure()?.errorText ?? "?"} ${req.url().slice(0, 120)}`,
+      ),
+    );
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20_000 });
+    // THE /e/ PAGE RENDERS THE SCREEN INSIDE AN IFRAME (FastIframeHost →
+    // the fast-sandbox route). The outer body has NO visible text of its
+    // own — so readiness means "a same-origin iframe whose document has
+    // real height", exactly the wait capture-layout-thumbnails.mjs uses
+    // (the capture that has always worked, including against `next dev`).
+    // The old `networkidle + 1.5s` only ever worked because prod's
+    // prebuilt sandbox booted inside the grace window; dev compiles the
+    // sandbox route on demand and needs the real wait. (2026-06-11 —
+    // the "black poster" saga, all three layers of it.)
+    try {
+      await page.waitForFunction(
+        () => {
+          // PREFERRED: the explicit readiness contract. The flat capture
+          // page (/e/<token>?flat=1 → FlatScreen) stamps data-grade-ready
+          // "1" two RAFs after the compiled screen mounts, or "error"
+          // when compilation failed (the error panel is then the honest
+          // capture). No heuristics, no racing.
+          const stamped = document.querySelector("[data-grade-ready]");
+          if (stamped) {
+            const v = stamped.getAttribute("data-grade-ready");
+            return v === "1" || v === "error";
+          }
+          // FALLBACK (non-flat pages, older deploys): real visible text,
+          // searched recursively through same-origin iframes. Height is
+          // NOT enough — the fast-sandbox iframe's empty dark shell has
+          // height long before the screen compiles into it (that's how a
+          // "passing" wait still captured a black poster on 2026-06-11).
+          const hasText = (doc: Document): boolean => {
+            if ((doc.body?.innerText ?? "").trim().length > 0) return true;
+            for (const f of Array.from(doc.querySelectorAll("iframe"))) {
+              try {
+                const inner = (f as HTMLIFrameElement).contentDocument;
+                if (inner && hasText(inner)) return true;
+              } catch {
+                /* cross-origin frame — not ours */
+              }
+            }
+            return false;
+          };
+          return hasText(document);
+        },
+        undefined,
+        { timeout: 25_000, polling: 500 },
+      );
+    } catch {
+      const detail = pageErrors.length
+        ? `Page errors:\n${[...new Set(pageErrors)].slice(0, 10).join("\n")}`
+        : "No page errors captured.";
+      throw new Error(
+        `Embed page loaded but the screen iframe never rendered within 25s ` +
+          `(browser: ${browserFlavor}, ${browser.version()}). On a cold dev ` +
+          `server the sandbox route may still be compiling — retry once. ${detail}`,
+      );
+    }
+    // Settle: fonts, late images, theme-var application after first paint.
+    await page.waitForTimeout(800);
     const buf = await page.screenshot({ type: "png" });
     return { base64: buf.toString("base64"), width, height };
   } finally {

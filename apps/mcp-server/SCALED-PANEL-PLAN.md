@@ -116,6 +116,57 @@ panel; ~~dark-mode theme resolution bug~~ DIAGNOSED & FIXED 2026-06-11
 selectable trace text; consider retiring the v1–v4 nested-navigation
 path to a capability probe.
 
+## Black-poster capture bug — TRUE root cause (2026-06-11, afternoon)
+
+preview_image / capture returned solid-black PNGs (and CACHED them as
+posters). The investigation went through two WRONG theories before the
+right one — keep all three for the lesson:
+
+1. WRONG: "the headless shell binary doesn't mount React." Plausible
+   (full chromium's prod capture worked when the shell's didn't), and
+   `channel: "chromium"` is kept anyway — same binary headless as
+   headed is strictly saner. But it wasn't the cause.
+2. WRONG (mine): the first "no content" guard watched the OUTER page's
+   `body.innerText` — which on /e/ is ALWAYS empty, because…
+3. RIGHT: **the /e/ page renders the screen inside an IFRAME**
+   (EmbedScreen → FastIframeHost → the fast-sandbox route). Readiness
+   = "a same-origin iframe whose document has real height" — exactly
+   the wait capture-layout-thumbnails.mjs has used all along (which is
+   why thumbnail captures against `next dev` always worked). The old
+   `networkidle + 1.5s` in screenshotEmbed only ever passed because
+   PROD's prebuilt sandbox booted inside the grace window; `next dev`
+   compiles the sandbox route on demand and blew straight past it.
+   That's the entire localhost-vs-prod difference. Nothing was wrong
+   with headless, dev mode, motion=off, or A7.
+
+Fixes shipped (preview.ts/tools.ts/index.ts): iframe-aware readiness
+wait (25s, 500ms poll, falls back to outer-text for non-iframe pages);
+throws with collected page errors instead of capturing a void; no blind
+retry on deterministic failures; failure detail names the browser;
+`channel:"chromium"` with declared fallback; optional GRADE_CAPTURE_URL
+(defaults to GRADE_SITE_URL — localhost captures work again).
+`scripts/capture-probe.mjs` stays (shell/full/headed flavors, timed
+content probe, ancestor-chain analysis, runtime vitals).
+
+RESOLVED (same day): Ali's cut-through — "why not capture a page that
+isn't inside an iframe?" — became the architecture. `/e/<token>?flat=1`
+(FlatScreen) renders the screen DIRECTLY in the page (no FastIframeHost;
+the capturer's real viewport drives breakpoints) and stamps
+`data-grade-ready` ("1" two RAFs after mount, "error" if compile fails
+so broken screens capture as their error panel). screenshotEmbed waits
+on the CONTRACT, with the recursive iframe-text heuristic kept as
+fallback for non-flat URLs. Verified end-to-end against localhost dev:
+live dark capture, correct theme, poster overwritten. Candidate for a
+first-class `/live/<token>` route; the flat page is also the natural
+substrate for STUDIO-CAPTURE's primitive and grade-embed's static mode.
+
+Lessons: (1) a capture pipeline must never cache an image it can't
+prove has content; (2) when one capture path works and another doesn't,
+DIFF THE WAITS first; (3) "the page" may not be the document you're
+measuring — know where the pixels actually come from; (4) when the
+user says "surely it can't be this hard", consider that the
+architecture, not the debugging, is what's wrong.
+
 ## Dark-mode theme bug — root cause (2026-06-11)
 
 Symptom: MCP panel dark mode "defaults to a different theme" vs
