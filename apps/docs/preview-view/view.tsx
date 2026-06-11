@@ -26,7 +26,12 @@ import {
   RenderErrorBoundary,
 } from "@/lib/studio-render-core";
 import { GradeLogo } from "@/components/grade-logo";
-import { generateTheme, themeToCSSVars } from "@/lib/themes";
+import {
+  generateTheme,
+  themeToCSSVars,
+  builtInThemes,
+  defaultThemeId,
+} from "@/lib/themes";
 import { Sun, Moon, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
 // Leaflet's CSS, bundled inline (the sandbox can't fetch it from a CDN).
 import "leaflet/dist/leaflet.css";
@@ -77,8 +82,19 @@ function applyThemeVars(vars: Record<string, string> | undefined): void {
     el.id = "gds-theme-vars";
     document.head.appendChild(el);
   }
+  // `:root,.dark` — NOT just `:root`. The bundle's static CSS includes the
+  // @gradeui/ui globals copy, whose stale `.dark{--primary:…}` palette
+  // matches ANY element with the class — including PreviewShell's own
+  // wrapper div (which adds `dark` alongside the <html> class). A var
+  // redefined on a DESCENDANT beats an inherited :root value, so in dark
+  // mode every screen painted the ui copy's old salmon theme no matter
+  // what we injected at :root (the 2026-06-11 "pink progress bar" bug —
+  // proven live by flipping this selector in the rendered bundle).
+  // Emitting the same block under `.dark` wins the tie against the static
+  // rule (same specificity, this sheet is appended last). The site never
+  // hits this because it applies vars INLINE on the elements it themes.
   el.textContent =
-    ":root{" +
+    ":root,.dark{" +
     Object.entries(vars)
       .map(([k, v]) => `${k}:${v}`)
       .join(";") +
@@ -243,19 +259,31 @@ function PreviewShell() {
     requestAnimationFrame(reportSize);
   }, [mode]);
 
-  // Apply the PROJECT theme — same path the share / embed views use:
-  // generate the ramp set from the saved draft, convert to CSS vars for the
-  // active mode, and layer them onto :root. Recomputes on a mode toggle so
-  // the project's dark palette shows in dark mode too.
+  // Apply the PROJECT theme — same resolution as SharedScreen/EmbedScreen:
+  // parse the draft and generate the ramp set; on a missing OR malformed
+  // draft fall back to builtInThemes[defaultThemeId] — never to the
+  // bundle's baked-in CSS. Recomputes on a mode toggle so the project's
+  // dark palette shows in dark mode too.
+  //
+  // The fallback is the 2026-06-11 dark-mode-parity fix: the old code
+  // `if (!draft) return;` left a draft-less project on the HANDWRITTEN
+  // globals.css defaults, while every desktop surface (GradeThemeProvider,
+  // embed, share) explicitly applies the GENERATED default theme. The two
+  // look close in light and visibly different in dark — "MCP dark mode
+  // defaults to a different theme". Resolution must stay byte-identical
+  // to embed-screen.tsx's: draft → generateTheme, anything else →
+  // builtInThemes[defaultThemeId].
   React.useEffect(() => {
     const draft = payload?.themeDraftJson;
-    if (!draft) return;
-    try {
-      const theme = generateTheme(JSON.parse(draft));
-      applyThemeVars(themeToCSSVars(theme, mode));
-    } catch {
-      /* malformed draft — leave the default tokens in place */
+    let theme = builtInThemes[defaultThemeId];
+    if (draft) {
+      try {
+        theme = generateTheme(JSON.parse(draft));
+      } catch {
+        /* malformed draft — use the generated default, same as desktop */
+      }
     }
+    applyThemeVars(themeToCSSVars(theme, mode));
   }, [payload?.themeDraftJson, mode]);
 
   // Live frame resolution for the footer + host panel sizing.

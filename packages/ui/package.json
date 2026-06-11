@@ -61,6 +61,7 @@
     },
     "./package.json": "./package.json",
     "./styles.css": "./dist/styles.css",
+    "./styles/globals.css": "./styles/globals.css",
     "./contracts": {
       "types": "./dist/contracts.d.ts",
       "import": "./dist/contracts.mjs",
@@ -84,6 +85,7 @@
   },
   "files": [
     "dist",
+    "styles",
     "components/ui/*.md"
   ],
   "sideEffects": [

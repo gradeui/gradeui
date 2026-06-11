@@ -57,7 +57,13 @@
 //     forwards the host's tool-result down (appSource + themeDraftJson),
 //     and swallows the bundle's size-changed (the shell owns sizing).
 //     The bundle text is substituted at registration via __BUNDLE_JSON__.
-export const PREVIEW_SCALED_URI = "ui://gradeui-mcp/preview-scaled-v11";
+// v12: real lucide icons in the shell bar (Sun/Moon/Maximize2/Minimize2,
+//     path data copied VERBATIM from the installed lucide-react dist —
+//     not from memory; this version's Moon/Maximize2 differ from the
+//     classic paths). Chrome LEVEL is final per Ali's 2026-06-11 verdict
+//     (SCALED-PANEL-PLAN.md): slim bar stays, no Studio topbar takeover.
+//     ui-toolbar.ts (the unused interim lookalike) deleted the same day.
+export const PREVIEW_SCALED_URI = "ui://gradeui-mcp/preview-scaled-v12";
 
 /**
  * srcdoc_probe — SCALED-PANEL-PLAN.md step 0. One question: does THIS
@@ -151,10 +157,14 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
   .actions { display: flex; gap: 6px; }
   button {
     font: inherit; font-size: 12px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
     padding: 4px 10px; border-radius: 8px;
     border: 1px solid light-dark(rgba(0,0,0,0.15), rgba(255,255,255,0.18));
     background: transparent; color: inherit;
   }
+  /* Icon-only buttons (lucide SVGs) — squarer hit area than the text
+     "Open in tab" button, same height. */
+  #mode-btn, #fs-btn { padding: 4px 6px; }
   button:hover { background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.08)); }
   /* The Fit stage: a clipping viewport whose height is set from the
      virtual size × the computed scale; the iframe inside is laid out at
@@ -195,8 +205,10 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
     <span class="name" id="name">Grade screen</span><span class="dim" id="dim"></span>
   </div>
   <div class="actions">
-    <button id="mode-btn" title="Toggle light/dark" aria-label="Toggle light/dark" hidden>☾</button>
-    <button id="fs-btn" title="Toggle fullscreen" aria-label="Toggle fullscreen" hidden>⤢</button>
+    <!-- Icon content is injected by JS (ICONS map) — real lucide SVGs,
+         never unicode glyph stand-ins. -->
+    <button id="mode-btn" title="Toggle light/dark" aria-label="Toggle light/dark" hidden></button>
+    <button id="fs-btn" title="Toggle fullscreen" aria-label="Toggle fullscreen" hidden></button>
     <button id="open-btn" hidden>Open in tab</button>
   </div>
 </div>
@@ -208,7 +220,28 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
   // Lifecycle trace — the only console we have inside a host's sandboxed
   // panel iframe. Reads like: v1 js✓ · init✓:cowork · recv:tool-result ·
   // frame✓ · fit:62%
-  var dbg = ["scaled-v11", "js✓"];
+  var dbg = ["scaled-v12", "js✓"];
+
+  // ── lucide icons ────────────────────────────────────────────────────
+  // Path data copied VERBATIM from the installed lucide-react dist
+  // (node_modules/lucide-react/dist/esm/icons/{sun,moon,maximize-2,
+  // minimize-2}.js) — the same icons the real preview header renders.
+  // Do not hand-edit; re-copy from the package if lucide is upgraded.
+  // Sizes mirror the React header: 14px for sun/moon (h-3.5), 16px for
+  // the fullscreen pair (h-4).
+  function lucideSvg(size, inner) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size +
+      '" height="' + size + '" viewBox="0 0 24 24" fill="none"' +
+      ' stroke="currentColor" stroke-width="2" stroke-linecap="round"' +
+      ' stroke-linejoin="round" aria-hidden="true" style="display:block">' +
+      inner + "</svg>";
+  }
+  var ICONS = {
+    sun: lucideSvg(14, '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>'),
+    moon: lucideSvg(14, '<path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>'),
+    maximize2: lucideSvg(16, '<path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/>'),
+    minimize2: lucideSvg(16, '<path d="m14 10 7-7"/><path d="M20 10h-6V4"/><path d="m3 21 7-7"/><path d="M4 14h6v6"/>')
+  };
   function mark(s) {
     dbg.push(s);
     var el = document.getElementById("status");
@@ -289,7 +322,7 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
   // ui/request-display-mode, trust host-context-changed for the truth.
   function updateFsBtn() {
     var b = document.getElementById("fs-btn");
-    b.textContent = state.displayMode === "fullscreen" ? "\\u2924" : "\\u2922";
+    b.innerHTML = state.displayMode === "fullscreen" ? ICONS.minimize2 : ICONS.maximize2;
     b.title = state.displayMode === "fullscreen" ? "Exit fullscreen" : "Fullscreen";
   }
   function wireFullscreen() {
@@ -452,7 +485,8 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
     b.hidden = false;
     var apply = function () {
       var m = (state.resultParams.structuredContent || {}).mode || "light";
-      b.textContent = m === "dark" ? "\\u2600" : "\\u263e";
+      // Single toggle shows the mode you'd switch TO (sun while dark).
+      b.innerHTML = m === "dark" ? ICONS.sun : ICONS.moon;
       b.title = m === "dark" ? "Switch to light" : "Switch to dark";
     };
     apply();

@@ -1,3 +1,37 @@
+# VERDICT 2026-06-11 — the chrome LEVEL is final; v12 scope shrinks
+
+Ali, next morning, looking at the shipped v11: "this is probably the
+right level of chrome to be honest - this looks Good - it fits in with
+Claude Chat, rather than taking over." So:
+
+- The slim bar (logo + name + light/dark + fullscreen + open-in-tab)
+  is the APPROVED look. Do NOT replace it with the full Grade/Studio
+  topbar — an embedded panel should read as Claude chrome that happens
+  to be Grade's, not Grade's app taking over the conversation.
+- What the v9–v11 objection was actually about — TWO SOURCES OF TRUTH
+  (ui-toolbar.ts hand-approximating view.tsx's header) — still stands
+  as an engineering concern, not a visual one. If v12 ever happens,
+  its goal is "same look, one source": render the SAME slim header
+  from the real React bundle (virtualWidth mode) and retire the shell
+  copy. No visual change is the acceptance test.
+- The toolbar viewport selector idea survives (it fits in the slim
+  bar); CONTAIN-FIT survives. Both optional polish, not priority.
+- Until duplication actually bites (a header change made twice),
+  leave the shell alone. It works, he likes it, it's demo-ready.
+
+Refined same morning: "chromeless like this — but always lucide icons.
+I do still want parity across all headers, it's just I might actually
+design them myself." So the standing rules are:
+1. ICONS ARE NEVER APPROXIMATED — always real lucide path data, copied
+   from the installed lucide-react dist (this version's Moon/Maximize2
+   differ from the classic paths; copying from memory WILL be wrong).
+   Done in v12: shell ☾/⤢ glyphs → Sun/Moon/Maximize2/Minimize2.
+2. Header parity remains the goal, but the DESIGN of the headers is
+   Ali's — don't redesign them unprompted; engineering's job is one
+   source of truth + correct icons, ready for whatever he draws.
+3. ui-toolbar.ts deleted 2026-06-11 (imported by nothing — it was the
+   second source of truth this section exists to prevent).
+
 # THE REAL TOOLBAR — v12 direction (kill the approximation)
 
 Ali's verdict on the v9–v11 shell chrome: "we are approximating — which
@@ -21,6 +55,12 @@ and the Fit-scaling moves INSIDE the bundle's stage:
 - The scaled tool then points at the SAME resource as preview_screen
   (payload differs: virtualWidth set). The shell template and
   ui-toolbar.ts RETIRE. One panel app, one toolbar, zero duplication.
+- CONTAIN-FIT (nicety): the v11 fit is width-only with a 100% clamp —
+  a 390×844 phone at 1:1 makes a TALL panel on a laptop. The cleverer
+  version fits BOTH axes against the available height (contain, like
+  the canvas + the bundle's fullscreen letterbox): scale =
+  min(1, w/vw, availH/vh). Needs a sane availH source (host viewport
+  via host-context, or a max-height heuristic).
 - TOOLBAR VIEWPORT SELECTOR (this view only): with the source + theme
   already in-panel, switching device is purely client-side — the stage
   re-lays its inner srcdoc at the new virtual size (390/768/1280/
@@ -71,10 +111,55 @@ Two options, in preference order:
    more build plumbing.
 
 Polish queue: standard MCP-app header parity with preview_screen's
-panel; dark-mode theme resolution bug (embed defaults to wrong theme in
-dark — noted 2026-06-10); flip GRADE_SITE_URL back to production when
-deploying; selectable trace text; consider retiring the v1–v4 nested-
-navigation path to a capability probe.
+panel; ~~dark-mode theme resolution bug~~ DIAGNOSED & FIXED 2026-06-11
+(see below); flip GRADE_SITE_URL back to production when deploying;
+selectable trace text; consider retiring the v1–v4 nested-navigation
+path to a capability probe.
+
+## Dark-mode theme bug — root cause (2026-06-11)
+
+Symptom: MCP panel dark mode "defaults to a different theme" vs
+desktop. Root cause: view.tsx's theme effect was `if (!draft) return;`
+— a project with NO theme_draft_json (every project minted by the MCP
+create_project tool) fell through to the bundle's BAKED globals.css
+defaults, while every desktop surface (GradeThemeProvider, embed,
+share) explicitly applies builtInThemes[defaultThemeId] (the GENERATED
+Studio theme). And the baked defaults are STALE: the handwritten
+:root/.dark in apps/docs/app/globals.css still carry the OLD Studio
+near-black/near-white button "tokenOverride" values, removed from the
+generated theme when Studio got its blue primary + teal accent (see
+lib/themes/inputs.ts header). Proven numerically: generated dark
+--primary = 0.72 0.126 250.94 (blue) vs baked .dark --primary =
+0.955 0.0048 85 (near-white). Light diverges the same way (near-black
+vs blue) — dark is just where it was noticed.
+
+Fix: view.tsx now resolves EXACTLY like EmbedScreen — draft →
+generateTheme, missing or malformed → builtInThemes[defaultThemeId].
+Needs `pnpm -F @gradeui/docs build:preview-view` + mcp-server rebuild.
+
+SECOND root cause (2026-06-11, later that morning — the "pink progress
+bar"): even WITH a draft applied, dark mode painted the OLD pre-redesign
+Studio salmon (oklch .72 .105 20). Chain: the bundle concatenates BOTH
+globals copies (app + @gradeui/ui via studio-render-core's styles.css
+import); the ui copy still carries the old salmon/terracotta default
+palette; its `.dark{--primary:…}` rule matches ANY .dark element — and
+PreviewShell's wrapper div adds `dark` alongside <html> — so the var got
+redefined on a DESCENDANT, beating the :root-injected theme by
+proximity. Diagnosed by driving the bundle in Chrome (computed --primary
+on html = injected violet; on the button = salmon literal via the
+wrapper). Fix: applyThemeVars emits `:root,.dark{…}` so the injected
+sheet also wins on the wrapper (same specificity, later sheet). The
+deeper debt: packages/ui/styles/globals.css base palette is pre-redesign
+salmon — the A7 dedup/regeneration would kill this class of bug for
+good.
+
+Follow-ups for Ali (design-owner decisions, not made unilaterally):
+1. The handwritten :root/.dark blocks in app/globals.css are stale vs
+   the generated Studio theme — pre-hydration paint shows old
+   near-black buttons, then the provider swaps to blue. Regenerate the
+   static block from themeToCSSVars(builtInThemes.studio, mode)?
+2. studioInput.description still reads "near-black text and buttons"
+   (shows in the theme picker) — stale since the blue redesign.
 
 # preview_screen_scaled v5 — in-panel renderer + Fit (the post-`kids:0` plan)
 

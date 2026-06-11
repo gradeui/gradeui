@@ -753,37 +753,42 @@
   --gds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ----------------------------------------
-     Semantic Tokens (OKLCH) — CALM DEFAULTS.
+     Semantic Tokens (OKLCH) — STUDIO DEFAULTS.
      Values are bare "L C H" triplets, wrapped at call-time with
-     oklch(var(--x) / <alpha-value>) via tailwind.config.ts.
-     These defaults mirror the Calm built-in theme (warm neutrals,
-     terracotta primary, serif typography). The GradeThemeProvider
-     overrides them at runtime for theme switching.
+     oklch(var(--x)) via the @theme inline reference block above.
+     These defaults mirror the current Studio look (warm-cream
+     neutrals at hue 85, near-black primary, Inter/Geist type) and
+     are SYNCED FROM apps/docs/app/globals.css — the canonical copy —
+     by the A7.1 pass (2026-06-11; the previous values here were the
+     pre-redesign terracotta theme, which leaked into any surface that
+     loaded both stylesheets — the MCP panel "pink progress bar" bug).
+     If the docs palette changes, re-sync this block. The
+     GradeThemeProvider overrides all of it at runtime.
      ---------------------------------------- */
-  --background: 0.985 0.00225 40;          /* neutral 50 */
-  --foreground: 0.170 0.00600 40;          /* neutral 950 */
+  --background: 0.985 0.0018 85;          /* neutral 50 */
+  --foreground: 0.170 0.0048 85;          /* neutral 950 */
   --card: 1 0 0;                            /* pure white */
-  --card-foreground: 0.170 0.00600 40;
+  --card-foreground: 0.170 0.0048 85;
   --popover: 1 0 0;
-  --popover-foreground: 0.170 0.00600 40;
-  --primary: 0.610 0.128 20;                /* primary 500 — terracotta */
-  --primary-foreground: 0.985 0.0113 20;
-  --secondary: 0.955 0.006 40;              /* neutral 100 */
-  --secondary-foreground: 0.415 0.0225 40;  /* neutral 700 */
-  --muted: 0.955 0.006 40;
-  --muted-foreground: 0.610 0.0255 40;      /* neutral 500 */
-  --accent: 0.610 0.136 40;                 /* accent 500 — amber */
-  --accent-foreground: 0.985 0.012 40;
+  --popover-foreground: 0.170 0.0048 85;
+  --primary: 0.245 0.0096 85;                /* near-black — Studio buttons */
+  --primary-foreground: 0.985 0.0018 85;
+  --secondary: 0.955 0.0048 85;              /* neutral 100 */
+  --secondary-foreground: 0.415 0.0180 85;  /* neutral 700 */
+  --muted: 0.955 0.0048 85;
+  --muted-foreground: 0.610 0.0204 85;      /* neutral 500 */
+  --accent: 0.610 0.0306 85;                 /* warm cream accent */
+  --accent-foreground: 0.985 0.0027 85;
   --destructive: 0.560 0.220 27;
   --destructive-foreground: 0.990 0.005 27;
-  --border: 0.895 0.01125 40;               /* neutral 200 */
-  --input: 0.895 0.01125 40;
-  --ring: 0.610 0.128 20;
-  --radius: 0.875rem;                       /* Calm's round style base */
+  --border: 0.895 0.0090 85;               /* neutral 200 */
+  --input: 0.895 0.0090 85;
+  --ring: 0.415 0.0180 85;
+  --radius: 0.250rem;                       /* Studio's compact radius base */
 
-  /* Typography defaults — Calm uses Fraunces for both display and body. */
-  --font-sans: var(--font-fraunces), Georgia, serif;
-  --font-display: var(--font-fraunces), Georgia, serif;
+  /* Typography defaults — Inter body, Geist display (Studio). */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-geist), system-ui, -apple-system, sans-serif;
 
   /* Fixed semantic colors (not hue-derived, for accessibility consistency) */
   --success: 0.610 0.180 145;
@@ -922,27 +927,28 @@
 
 .dark {
   /* ----------------------------------------
-     Semantic Tokens — Calm dark mode defaults.
+     Semantic Tokens — Studio dark defaults (synced from
+     apps/docs/app/globals.css, A7.1 — see the :root note).
      ---------------------------------------- */
-  --background: 0.170 0.00600 40;
-  --foreground: 0.985 0.00225 40;
-  --card: 0.245 0.0120 40;                  /* neutral 900 */
-  --card-foreground: 0.985 0.00225 40;
-  --popover: 0.245 0.0120 40;
-  --popover-foreground: 0.985 0.00225 40;
-  --primary: 0.720 0.105 20;                /* primary 400 */
-  --primary-foreground: 0.170 0.030 20;
-  --secondary: 0.325 0.0180 40;             /* neutral 800 */
-  --secondary-foreground: 0.895 0.01125 40;
-  --muted: 0.325 0.0180 40;
-  --muted-foreground: 0.720 0.0210 40;
-  --accent: 0.720 0.112 40;
-  --accent-foreground: 0.170 0.032 40;
+  --background: 0.170 0.0048 85;
+  --foreground: 0.985 0.0018 85;
+  --card: 0.245 0.0096 85;                  /* neutral 900 */
+  --card-foreground: 0.985 0.0018 85;
+  --popover: 0.245 0.0096 85;
+  --popover-foreground: 0.985 0.0018 85;
+  --primary: 0.955 0.0048 85;                /* primary 400 */
+  --primary-foreground: 0.170 0.0048 85;
+  --secondary: 0.325 0.0144 85;             /* neutral 800 */
+  --secondary-foreground: 0.895 0.0090 85;
+  --muted: 0.325 0.0144 85;
+  --muted-foreground: 0.720 0.0168 85;
+  --accent: 0.720 0.0252 85;
+  --accent-foreground: 0.170 0.0072 85;
   --destructive: 0.680 0.220 27;
   --destructive-foreground: 0.990 0.005 27;
-  --border: 0.325 0.0180 40;
-  --input: 0.325 0.0180 40;
-  --ring: 0.720 0.105 20;
+  --border: 0.325 0.0144 85;
+  --input: 0.325 0.0144 85;
+  --ring: 0.820 0.0132 85;
 
   --success: 0.720 0.180 145;
   --warning: 0.800 0.180 60;
