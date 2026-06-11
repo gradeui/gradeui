@@ -12,7 +12,9 @@
 
 import { MarketingLayout } from "@/components/marketing/marketing-layout";
 import { HomeBackground } from "@/components/marketing/home-background";
-import { GradeWordmark } from "@/components/marketing/grade-wordmark";
+import { GradeWordmarkPen } from "@/components/marketing/grade-wordmark-pen";
+import { LiveEmbed } from "@/components/marketing/live-embed";
+import { BackgroundTweaker } from "@/components/marketing/background-tweaker";
 import {
   MarketingHero,
   ProductShowcase,
@@ -25,11 +27,16 @@ import {
 export default function Home() {
   return (
     <MarketingLayout>
+      {/* Live shader knobs — deliberately public. Everything is a knob;
+          that's the pitch. */}
+      <BackgroundTweaker />
+
       <MarketingHero
         title={
-          <GradeWordmark
+          <GradeWordmarkPen
             title="Grade"
-            className="w-full max-w-md md:max-w-2xl h-auto mx-auto"
+            animated
+            className="w-[70vw] max-w-3xl h-auto mx-auto"
           />
         }
         subtitle="Use the agent you prefer. In browser or MCP. Tweak, edit, all on your subscription. No more lock in. Free yourself."
@@ -55,11 +62,17 @@ export default function Home() {
         {/* Live render of the "Studio Showcase" screen (project: Grade
             Homepage) via the public embed route. Relative URL, so it
             resolves on localhost and gradeui.com alike. */}
-        <iframe
-          src="/e/998ad8b7-c056-40af-b328-ba46b4cba557?w=1280&motion=off"
+        {/* Eager on purpose: lazy-loading made the embed boot (page +
+            nested sandbox + compile) exactly as it scrolled into view,
+            which read as scroll jank. Paying that cost at page load is
+            invisible; paying it mid-scroll is not. */}
+        {/* Click-to-interact: the shield keeps wheel events on the page
+            (no Lenis dead zone over the frame); clicking hands control
+            to the live render, mousing away re-arms the shield. */}
+        <LiveEmbed
+          src="/e/998ad8b7-c056-40af-b328-ba46b4cba557?w=1280&h=720&mode=dark&motion=on"
           title="Grade Studio live render"
-          loading="lazy"
-          className="block w-full aspect-[16/9] border-0"
+          frameClassName="aspect-[16/9]"
         />
       </ProductShowcase>
 

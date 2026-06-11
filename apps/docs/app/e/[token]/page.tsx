@@ -93,6 +93,13 @@ export default async function EmbedPage({
   const motion =
     motionRaw === "off" ? false : motionRaw === "on" ? true : undefined;
 
+  // Optional color-mode override: ?mode=dark|light wins over the share
+  // link's stored color_mode. Lets one share link serve both a dark
+  // marketing page and a light docs page without minting twice.
+  const modeRaw = Array.isArray(sp.mode) ? sp.mode[0] : sp.mode;
+  const colorModeOverride =
+    modeRaw === "dark" || modeRaw === "light" ? modeRaw : undefined;
+
   // ?flat=1 — the "live URL": the screen rendered DIRECTLY in the page,
   // no FastIframeHost, no nested page boot. Breakpoints come from the
   // real viewport (the capturer sets it; a browser window just is one).
@@ -196,29 +203,49 @@ export default async function EmbedPage({
   // The "live URL" / capture variant — flat render, no iframe, explicit
   // data-grade-ready contract. Zoom/camera don't apply: a capture wants
   // the screen, not the presentation rig.
+  const resolvedMode = colorModeOverride ?? share.color_mode;
+  // Pre-paint backdrop: the document background is styled BEFORE any
+  // client JS runs, so a dark embed never flashes the default light
+  // body while the screen theme boots. color-scheme keeps scrollbars /
+  // form chrome in step. Rendered as a plain <style> tag because the
+  // embed route uses the bare layout (no providers, no theme script).
+  const backdrop = (
+    <style>{`html, body { background: ${
+      resolvedMode === "dark"
+        ? "oklch(0.16 0.01 250.94)"
+        : "oklch(0.985 0.0015 85)"
+    }; color-scheme: ${resolvedMode}; }`}</style>
+  );
+
   if (flat) {
     return (
-      <FlatScreen
-        appSource={appSource}
-        themeDraftJson={themeDraftJson}
-        mode={share.color_mode}
-        motion={motion}
-      />
+      <>
+        {backdrop}
+        <FlatScreen
+          appSource={appSource}
+          themeDraftJson={themeDraftJson}
+          mode={resolvedMode}
+          motion={motion}
+        />
+      </>
     );
   }
 
   return (
-    <EmbedScreen
-      appSource={appSource}
-      themeDraftJson={themeDraftJson}
-      mode={share.color_mode}
-      renderWidth={renderWidth}
-      renderHeight={renderHeight}
-      motion={motion}
-      zoom={zoom}
-      focusX={focusX}
-      focusY={focusY}
-      camera={camera}
-    />
+    <>
+      {backdrop}
+      <EmbedScreen
+        appSource={appSource}
+        themeDraftJson={themeDraftJson}
+        mode={resolvedMode}
+        renderWidth={renderWidth}
+        renderHeight={renderHeight}
+        motion={motion}
+        zoom={zoom}
+        focusX={focusX}
+        focusY={focusY}
+        camera={camera}
+      />
+    </>
   );
 }

@@ -836,11 +836,21 @@ export default function FastSandboxPage() {
       root.dataset.gdsTheme = sig;
     }
 
+    // Flips true on the first grade:* message we RECEIVE. In a host
+    // (iframe) context that means the parent's listener is alive and
+    // the ready re-announce loop below can stop. In a standalone tab
+    // our own fast-ready bounces back to us (window.parent === window),
+    // which also flips this — conveniently ending the loop immediately.
+    let hostContacted = false;
+
     function handleMessage(event: MessageEvent) {
       const data = event.data as
         | { type?: string; [key: string]: unknown }
         | null;
       if (!data || typeof data !== "object") return;
+      if (typeof data.type === "string" && data.type.startsWith("grade:")) {
+        hostContacted = true;
+      }
       switch (data.type) {
         case "grade:fast-compile": {
           const source = data.source;
@@ -1375,7 +1385,26 @@ export default function FastSandboxPage() {
     // compile/theme messages. Harmless on the standalone path —
     // `window.parent === window` when not iframed, so the message
     // just bounces to ourselves and the (absent) parent ignores it.
+    //
+    // RE-ANNOUNCE until the host makes contact. When this sandbox is
+    // nested two levels deep (marketing homepage iframe → /e embed →
+    // /fast-sandbox) the embed host can hydrate AFTER our boot ping;
+    // a single fast-ready then lands in a not-yet-listening window and
+    // the screen never commits (hit on the homepage embed, June 2026).
+    // The host's fast-ready handling is idempotent (it just sets a
+    // ready flag), so repeats are safe; the first message we receive
+    // stops the loop (standalone tabs stop instantly via their own
+    // bounced ping). Bounded as a belt-and-braces cap.
     window.parent.postMessage({ type: "grade:fast-ready" }, "*");
+    let announceTries = 0;
+    const announceTimer = window.setInterval(() => {
+      announceTries += 1;
+      if (hostContacted || announceTries > 40) {
+        window.clearInterval(announceTimer);
+        return;
+      }
+      window.parent.postMessage({ type: "grade:fast-ready" }, "*");
+    }, 400);
 
     return () => {
       window.removeEventListener("message", handleMessage);
@@ -1383,6 +1412,7 @@ export default function FastSandboxPage() {
       if (onStorage) window.removeEventListener("storage", onStorage);
       window.removeEventListener("resize", renderPins);
       window.clearInterval(pinPoll);
+      window.clearInterval(announceTimer);
       pinHost?.remove();
       pinHost = null;
       agentTeardownRef.current?.teardown();

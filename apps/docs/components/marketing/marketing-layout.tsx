@@ -32,7 +32,7 @@ import { builtInThemes, themeToCSSVars } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Toolbar } from "@/components/ui/toolbar";
-import { GradeWordmark } from "@/components/marketing/grade-wordmark";
+import { GradeWordmarkPen } from "@/components/marketing/grade-wordmark-pen";
 
 const MARKETING_THEME_ID = "grade-marketing";
 
@@ -49,7 +49,7 @@ function MarketingHeader() {
         className="pointer-events-auto w-full max-w-md rounded-full border border-border/60 bg-background/60 backdrop-blur-xl shadow-[var(--gds-shadow-lg)] pl-5 pr-2 py-1.5"
         leading={
           <Link href="/" aria-label="Grade — home" className="flex items-center">
-            <GradeWordmark className="h-4 w-auto" />
+            <GradeWordmarkPen className="h-4 w-auto" />
           </Link>
         }
         trailing={
@@ -68,7 +68,7 @@ function MarketingSiteFooter() {
   return (
     <footer className="border-t border-border/60">
       <div className="max-w-6xl mx-auto px-4 md:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
-        <GradeWordmark className="h-3.5 w-auto text-muted-foreground" title="" />
+        <GradeWordmarkPen className="h-3.5 w-auto text-muted-foreground" title="" />
 
         {/*
           Authorship — the rel="author" link backs up the JSON-LD Person

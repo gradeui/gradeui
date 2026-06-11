@@ -460,9 +460,10 @@ export const gradeMarketingInput: ThemeInput = {
   description: "Grade's own marketing skin — roomy, spacious type, dark-first.",
   tagline: "Marketing",
   hues: {
-    // Same warm-paper neutral + blue/teal brand pair as Studio so the
-    // marketing site and the app read as one product.
-    neutral: 85,
+    // Neutral tracks the PRIMARY hue (cool blue), not Studio's warm
+    // paper — dark marketing surfaces read as deep blue-blacks rather
+    // than browny greys, so the whole page sits in the brand's key.
+    neutral: 250.94,
     primary: 250.94,
     accent: 214.94,
   },
