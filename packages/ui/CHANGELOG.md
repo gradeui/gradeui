@@ -1,5 +1,56 @@
 # @gradeui/ui
 
+## 3.0.0
+
+### Major Changes
+
+- d09cf28: **Breaking — Tailwind v4 native `@theme` migration (THEME-MIGRATION.md Phase A).**
+
+  The v3 config bridge is gone. Everything `tailwind.config.ts` / `tailwind-preset.ts` defined (brand ramps, OKLCH semantic roles, `text-2xs`, radius, elevation shadow scale, surface colors, backdrop blurs, keyframes/animations, `darkMode: "class"`, content globs, tailwindcss-animate) now lives in `styles/globals.css` as native `@theme inline reference` declarations, `@source` directives, `@custom-variant dark`, and `@plugin "tailwindcss-animate"`.
+
+  - **Removed: the `@gradeui/ui/tailwind-preset` export.** There is no JS Tailwind config for consumers to extend anymore — `@gradeui/ui/styles.css` is fully self-contained (tokens + `@theme` bridge + all utilities the components use). Consumers running their own Tailwind v4 build should add an `@source` for `node_modules/@gradeui/ui/dist` instead.
+  - **`dist/styles.css` is unchanged at the rule level.** Verified by a selector→declarations structural diff of the old (`@config`) vs new (native `@theme`) unminified output under Tailwind 4.3.0: identical rule sets (2,512 = 2,512), zero rules added or removed. The only textual deltas are v4 preflight's font indirection (`var(--default-font-family, …)` instead of `var(--font-sans, …)`) and Tailwind's emitted default `--font-sans`/`--font-mono`/`--default-*-font-family` theme vars — all of which resolve to the same computed values because the runtime `--font-sans`/`--font-mono` are defined in the unlayered `:root` of `@gradeui/core/tokens.css`. Opacity shortcuts (`bg-primary/50`) compile to `color-mix()` instead of `<alpha-value>` substitution — same rendered color.
+  - Semantic role colors stay raw OKLCH triplets wrapped at use (`oklch(var(--primary))`) — the `GradeThemeProvider` / `applyThemeToRoot` runtime contract is untouched.
+
+  This is the prerequisite for Phase B (density → `--spacing`, modular type scales → `--text-*`): with the utility layer driven by native theme variables, the theme generator can re-pitch spacing and type across every screen ever generated.
+
+### Minor Changes
+
+- d09cf28: **Phase B — the at-will theming switch (THEME-MIGRATION.md B1–B5).** The theme generator now reaches into Tailwind's utility layer:
+
+  - **B1 Density → `--spacing`.** `GeneratedSpacing` gains `unit` — the Tailwind v4 spacing base derived from the density factor (tight 0.2125rem / default 0.25rem / roomy 0.3rem, floored at 0.125rem). `themeToCSSVars` emits it, so every `p-*`/`gap-*`/`m-*`/`size-*` in every screen ever generated re-scales when density changes — retroactively.
+  - **B2 Modular scale → `--text-*`.** When `typography.scale` is a modular ratio id, `GeneratedTypography.namedScale` carries the full 2xs…7xl ladder (middle-out from body, descending steps floored at 0.625rem) and is emitted as `--text-<step>` + `--text-<step>--line-height` (line-heights tighten as size grows, mirroring the default ladder's curve). Presets emit nothing — today's static values stand. `--text-2xs` moved from `@theme inline` to a plain `@theme` block so the utility references the variable (runtime-re-pitchable); computed default unchanged.
+  - **B4 Role ramp families.** Every semantic alias is now a whole ramp: `GeneratedTheme.roleRamps` carries success/warning/info/highlight/destructive ramps (seeded from the fixed status hues); `themeToCSSVars` emits `--gds-<role>-<step>` triplets for those plus primary/accent/neutral. New `--color-<role>-<step>` `@theme` entries (with flat-role fallbacks) + safelists make `bg-success-100` / `text-warning-800` / `border-primary-300`-style utilities real (+231 rules, purely additive). `neutral` ships as runtime vars only — `--color-neutral-*` would shadow Tailwind's default palette.
+  - **B5 Guards.** Min text size 0.625rem, min spacing base 0.125rem, modular ratios clamped to 1.02–1.8, density factor clamped to 0.6–1.6. Style-panel sliders should mirror these bounds.
+
+  Existing saved themes with non-default density will now actually re-scale spacing (previously only `--gds-density` moved). That's the feature. Known parity limit: the Sandpack check renderer (CDN Tailwind v3) gets the role-family colors via its config but cannot re-pitch `--spacing`/`--text-*` — Fast Frame is the live preview and renders all of it.
+
+- 0a090b5: Default palette refresh (THEME-MIGRATION A7.1): the base `:root`/`.dark`
+  semantic tokens in `styles/globals.css` now match the current Studio
+  design (warm-cream hue-85 neutrals, near-black primary, Inter/Geist
+  type, 0.25rem radius). They previously still carried the pre-redesign
+  terracotta theme (hue 20/40 palette, Fraunces serif, 0.875rem radius),
+  which changed the out-of-box look of the package AND leaked the old
+  colours into any surface that loaded both this stylesheet and the docs
+  one (the MCP preview panel's "pink progress bar"). 35 custom-property
+  values updated; rule set verified structurally identical via
+  scripts/css-rule-diff.mjs (0 added / 0 removed; only the two palette
+  rules changed). Apps applying a theme at runtime (GradeThemeProvider,
+  Studio, embeds) are unaffected — this changes only the un-themed
+  defaults.
+
+  New export (A7.2): `@gradeui/ui/styles/globals.css` — the raw Tailwind
+  v4 source stylesheet (@theme blocks, dark variant, plugin, palette,
+  component layer), for apps that compile Tailwind themselves and want
+  the design system as their base. `apps/docs` now consumes it this way
+  instead of maintaining a 1,700-line copy. The `styles/` directory is
+  now included in the published package.
+
+### Patch Changes
+
+- d09cf28: `Field` (option layout) now centres the control against a single-line label; the top-aligned `mt-0.5` treatment only applies when a `Field.Description` makes the text block taller than the control. Fixes the visibly skewed checkbox-with-label row.
+- d09cf28: `SelectLabel` now reads the menu density from `SelectContent` (the same context `SelectItem` uses). Compact menus (`size="xs"` / `"2xs"`) render group headings as quiet muted eyebrow labels aligned with the item text indent, instead of full-size semibold headings towering over 2xs options.
+
 ## 2.1.0
 
 ### Minor Changes
