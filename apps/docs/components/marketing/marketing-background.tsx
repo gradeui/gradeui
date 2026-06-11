@@ -14,7 +14,8 @@
  *   - the pointer carries an accent glow: moving the mouse spikes its
  *     strength (flashes), idling decays it away; the glow flickers
  *     through the same noise field so it feels like part of the cloth
- *   - a film-grain hash is added per fragment so nothing bands
+ *   - a fixed micro-dither is added per fragment so nothing bands
+ *     (the tunable grain knob was retired; halftone carries texture)
  *
  * Colours are read from the SCOPED theme vars at mount (--background /
  * --primary / --accent on the MarketingLayout wrapper), resolved to RGB
@@ -56,7 +57,8 @@ const FRAG = /* glsl */ `
   uniform float uSheen;     // oily sheen intensity
   uniform float uLift;      // accent additive lift in the disturbance
   uniform float uVein;      // accent vein intensity
-  uniform float uGrain;     // film grain amplitude
+  uniform float uHalftone;  // halftone mix 0..1 (0 = off)
+  uniform float uDotSize;   // halftone cell size in device px
 
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -133,14 +135,23 @@ const FRAG = /* glsl */ `
     col = mix(col, oil, infl * uSheen * smoothstep(0.35, 0.75, sheen));
     col += uAccent * infl * uLift * sheen;
 
-    // Post grain — proper visible film noise, not just anti-banding.
-    // Two animated hash taps at different scales approximate blue-ish
-    // noise; weighted toward the midtones so blacks stay clean.
-    float g1 = hash(gl_FragCoord.xy + fract(uTime) * 61.0);
-    float g2 = hash(gl_FragCoord.xy * 0.5 - fract(uTime * 1.7) * 47.0);
-    float grain = (g1 * 0.7 + g2 * 0.3 - 0.5);
-    float lum = dot(col, vec3(0.299, 0.587, 0.114));
-    col += grain * uGrain * (0.5 + smoothstep(0.0, 0.45, lum));
+    // Halftone — luminance-sized dots on a 35deg-rotated grid, mixed
+    // in by uHalftone. At 0 the branch contributes nothing; partial
+    // values read as a print-screen texture laid over the cloth.
+    if (uHalftone > 0.001) {
+      float hl = dot(col, vec3(0.299, 0.587, 0.114));
+      float ang = 0.6155;
+      mat2 rotg = mat2(cos(ang), -sin(ang), sin(ang), cos(ang));
+      vec2 cell = fract(rotg * gl_FragCoord.xy / max(uDotSize, 2.0)) - 0.5;
+      float rad = sqrt(max(hl, 0.0)) * 0.68;
+      float dotMask = smoothstep(rad, rad - 0.2, length(cell));
+      col = mix(col, col * dotMask * 1.3, uHalftone);
+    }
+
+    // Fixed micro-dither — the tunable grain was ditched (June 2026,
+    // halftone carries the texture now). 1.6% hash keeps the gradient
+    // from banding while staying invisible as texture.
+    col += (hash(gl_FragCoord.xy + fract(uTime) * 61.0) - 0.5) * 0.016;
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -166,8 +177,10 @@ export interface BackgroundTuning {
   lift: number;
   /** Accent vein intensity across the field. */
   vein: number;
-  /** Film grain amplitude. */
-  grain: number;
+  /** Halftone mix (0 = off, 1 = full print-dot treatment). */
+  halftone: number;
+  /** Halftone cell size in device pixels. */
+  dotSize: number;
 }
 
 export const DEFAULT_TUNING: BackgroundTuning = {
@@ -181,7 +194,10 @@ export const DEFAULT_TUNING: BackgroundTuning = {
   sheen: 0.25,
   lift: 0.025,
   vein: 0.18,
-  grain: 0.05,
+  // Shipped ON at a whisper — a print-screen texture you notice on the
+  // second look. The tweaker runs it 0..1.
+  halftone: 0.2,
+  dotSize: 7,
 };
 
 const tuning: BackgroundTuning = { ...DEFAULT_TUNING };
@@ -283,7 +299,8 @@ export function MarketingBackground() {
         uSheen: { value: tuning.sheen },
         uLift: { value: tuning.lift },
         uVein: { value: tuning.vein },
-        uGrain: { value: tuning.grain },
+        uHalftone: { value: tuning.halftone },
+        uDotSize: { value: tuning.dotSize },
       };
 
       const syncTuning = () => {
@@ -294,7 +311,8 @@ export function MarketingBackground() {
         uniforms.uSheen.value = tuning.sheen;
         uniforms.uLift.value = tuning.lift;
         uniforms.uVein.value = tuning.vein;
-        uniforms.uGrain.value = tuning.grain;
+        uniforms.uHalftone.value = tuning.halftone;
+        uniforms.uDotSize.value = tuning.dotSize;
       };
 
       const scene = new THREE.Scene();
