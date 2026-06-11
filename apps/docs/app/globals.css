@@ -116,3 +116,20 @@ html[data-studio-left-closed] [data-gds-part="studio-left-pane"],
 html[data-studio-right-closed] [data-gds-part="studio-right-pane"] {
   flex-basis: 0 !important;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Marketing CTA hover aura.
+   Gates the library's .gds-aura-gradient (rotating conic border
+   light, packages/ui globals) to HOVER only: the ::before layer
+   idles at opacity 0 and fades up on hover/focus. Stack as:
+     class="gds-aura-gradient gds-aura-hover"
+   Tint via --aura-color (marketing CTAs use the accent).
+   ───────────────────────────────────────────────────────────── */
+.gds-aura-hover::before {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.gds-aura-hover:hover::before,
+.gds-aura-hover:focus-visible::before {
+  opacity: 1;
+}

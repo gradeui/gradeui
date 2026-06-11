@@ -1,7 +1,11 @@
 "use client";
 
 /**
- * HomeBackground — the homepage hero's three.js mesh-gradient background.
+ * MarketingBackground — the marketing pages' three.js mesh-gradient background.
+ *
+ * Reusable on any marketing surface (homepage hero, /waitlist, future
+ * landing sections): it reads the SCOPED theme vars from its mount
+ * point and fills whatever relative parent it sits in.
  *
  * One fullscreen shader plane:
  *   - domain-warped fbm noise drives a slow "mesh gradient" blend from
@@ -170,9 +174,12 @@ export const DEFAULT_TUNING: BackgroundTuning = {
   speed: 0.045,
   scale: 1.7,
   falloff: 2.5,
-  push: 0.09,
-  sheen: 0.5,
-  lift: 0.06,
+  // Cursor response tuned WAY down (June 2026): the disturbance should
+  // be on the edge of perception, a faint shift in the cloth, not an
+  // obvious flashlight. Raise via the tweaker if a page wants drama.
+  push: 0.04,
+  sheen: 0.25,
+  lift: 0.025,
   vein: 0.18,
   grain: 0.05,
 };
@@ -213,7 +220,7 @@ function mixRGB(
   ];
 }
 
-export function HomeBackground() {
+export function MarketingBackground() {
   const mountRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -326,7 +333,9 @@ export function HomeBackground() {
         // Only react while the pointer is over (or near) the hero.
         if (x < -0.2 || x > 1.2 || y < -0.2 || y > 1.2) return;
         target.set(x, y);
-        energy = Math.min(1, energy + 0.12);
+        // Gentle injection: caps lower, builds slower. Vigorous
+        // mouse movement should murmur, not shout.
+        energy = Math.min(0.7, energy + 0.06);
       };
       window.addEventListener("pointermove", onPointerMove, { passive: true });
 

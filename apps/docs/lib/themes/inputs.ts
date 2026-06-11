@@ -494,7 +494,11 @@ export const gradeMarketingInput: ThemeInput = {
   },
   components: {
     buttonShape: "pill",
-    inputStyle: "outlined",
+    // Filled, not outlined: marketing pages sit on the live shader
+    // background, and transparent input bodies let the cloth show
+    // through the field — unreadable. Filled gives every input a
+    // solid theme surface with zero per-instance classes.
+    inputStyle: "filled",
     cardStyle: "outlined",
   },
 };

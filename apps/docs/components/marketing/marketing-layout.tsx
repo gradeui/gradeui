@@ -38,22 +38,37 @@ const MARKETING_THEME_ID = "grade-marketing";
 
 /* ─────────────────────────── Header ─────────────────────────── */
 
-function MarketingHeader() {
+function MarketingHeader({ visible = true }: { visible?: boolean }) {
   return (
-    <header className="fixed top-4 md:top-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
+    <header
+      className={cn(
+        "fixed top-4 md:top-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none",
+        "transition-all duration-500",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+      )}
+      aria-hidden={visible ? undefined : true}
+    >
       <Toolbar
         position="inline"
         variant="transparent"
         size="md"
         aria-label="Site"
-        className="pointer-events-auto w-full max-w-md rounded-full border border-border/60 bg-background/60 backdrop-blur-xl shadow-[var(--gds-shadow-lg)] pl-5 pr-2 py-1.5"
+        className={cn(
+          "w-full max-w-md rounded-full border border-border/60 bg-background/60 backdrop-blur-xl shadow-[var(--gds-shadow-lg)] pl-5 pr-2 py-1.5",
+          visible ? "pointer-events-auto" : "pointer-events-none"
+        )}
         leading={
           <Link href="/" aria-label="Grade — home" className="flex items-center">
             <GradeWordmarkPen className="h-4 w-auto" />
           </Link>
         }
         trailing={
-          <Button asChild size="sm" className="rounded-full">
+          <Button
+            asChild
+            size="sm"
+            className="rounded-full gds-aura-gradient gds-aura-hover"
+            style={{ "--aura-color": "var(--accent)" } as React.CSSProperties}
+          >
             <Link href="/waitlist">Join the waitlist</Link>
           </Button>
         }
@@ -102,9 +117,33 @@ export interface MarketingLayoutProps {
   children: React.ReactNode;
   /** Extra classes for the central content slot (<main>). */
   className?: string;
+  /**
+   * "always" (default) — lozenge header is always present.
+   * "after-scroll" — header stays hidden until the visitor scrolls
+   * past most of the first viewport. Used on the homepage, where the
+   * hero already shows the wordmark + waitlist CTA and a fixed header
+   * would double both.
+   */
+  headerMode?: "always" | "after-scroll";
 }
 
-export function MarketingLayout({ children, className }: MarketingLayoutProps) {
+export function MarketingLayout({
+  children,
+  className,
+  headerMode = "always",
+}: MarketingLayoutProps) {
+  const [scrolledPast, setScrolledPast] = React.useState(false);
+
+  React.useEffect(() => {
+    if (headerMode !== "after-scroll") return;
+    const threshold = () => window.innerHeight * 0.7;
+    const onScroll = () => setScrolledPast(window.scrollY > threshold());
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [headerMode]);
+
+  const headerVisible = headerMode === "always" || scrolledPast;
   const theme = builtInThemes[MARKETING_THEME_ID];
   // themeToCSSVars returns the exact { "--background": "…" } map React
   // needs; rendered inline (server included) so the subtree is themed
@@ -123,7 +162,7 @@ export function MarketingLayout({ children, className }: MarketingLayoutProps) {
       data-input-style={theme.components.inputStyle ?? "outlined"}
       data-card-style={theme.components.cardStyle ?? "flat"}
     >
-      <MarketingHeader />
+      <MarketingHeader visible={headerVisible} />
       <main className={cn("flex-1 flex flex-col", className)}>{children}</main>
       <MarketingSiteFooter />
     </div>

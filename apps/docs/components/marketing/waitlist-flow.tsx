@@ -112,15 +112,15 @@ export function WaitlistFlow() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-16 md:py-20">
+    <div className="w-full max-w-2xl mx-auto px-4 pt-28 pb-16 md:pt-32 md:pb-20">
       {/* Progress — three segments, current one lit. */}
       <div className="flex gap-3 mb-12" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={step + 1}>
         {[0, 1, 2].map((i) => (
           <div
             key={i}
             className={cn(
-              "h-1 flex-1 rounded-full transition-colors duration-300",
-              i <= step ? "bg-foreground" : "bg-border"
+              "h-1 flex-1 rounded-full bg-foreground transition-opacity duration-300",
+              i <= step ? "opacity-100" : "opacity-20"
             )}
           />
         ))}
@@ -143,44 +143,44 @@ export function WaitlistFlow() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6 mb-6">
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label htmlFor="wl-first">First name</Label>
               <Input
                 id="wl-first"
                 autoComplete="given-name"
-                placeholder="Yayoi"
+                placeholder="First name"
                 value={form.firstName}
                 onChange={(e) => set("firstName", e.target.value)}
-                className="h-12"
+                className="bg-card/70 backdrop-blur-md"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label htmlFor="wl-last">Last name</Label>
               <Input
                 id="wl-last"
                 autoComplete="family-name"
-                placeholder="Kusama"
+                placeholder="Last name"
                 value={form.lastName}
                 onChange={(e) => set("lastName", e.target.value)}
-                className="h-12"
+                className="bg-card/70 backdrop-blur-md"
               />
             </div>
           </div>
 
-          <div className="space-y-2 mb-6">
+          <div className="space-y-4 mb-6">
             <Label htmlFor="wl-email">Work email</Label>
             <Input
               id="wl-email"
               type="email"
               autoComplete="email"
-              placeholder="yayoi@infinityroominc.com"
+              placeholder="you@company.com"
               value={form.email}
               onChange={(e) => set("email", e.target.value)}
-              className="h-12"
+              className="bg-card/70 backdrop-blur-md"
             />
           </div>
 
-          <div className="space-y-2 mb-10">
+          <div className="space-y-4 mb-10">
             <Label htmlFor="wl-company">
               Company{" "}
               <span className="text-muted-foreground font-normal">(optional)</span>
@@ -188,10 +188,10 @@ export function WaitlistFlow() {
             <Input
               id="wl-company"
               autoComplete="organization"
-              placeholder="Infinity Room Inc."
+              placeholder="Your company"
               value={form.company}
               onChange={(e) => set("company", e.target.value)}
-              className="h-12"
+              className="bg-card/70 backdrop-blur-md"
             />
           </div>
 
@@ -294,7 +294,7 @@ export function WaitlistFlow() {
             ))}
           </div>
 
-          <div className="space-y-2 mb-10">
+          <div className="space-y-4 mb-10">
             <Label htmlFor="wl-notes">
               What would you make with Grade?{" "}
               <span className="text-muted-foreground font-normal">(optional)</span>
@@ -305,7 +305,7 @@ export function WaitlistFlow() {
               value={form.notes}
               onChange={(e) => set("notes", e.target.value)}
               placeholder="A theme for my portfolio, client prototypes, our product's design system…"
-              className="w-full rounded-[var(--gds-radius-lg)] border border-border bg-transparent px-4 py-3 text-base placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+              className="w-full rounded-[var(--gds-radius-lg)] border border-border bg-card/70 backdrop-blur-md px-4 py-3 text-base placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
             />
           </div>
 

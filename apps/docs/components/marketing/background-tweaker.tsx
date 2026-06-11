@@ -22,7 +22,7 @@ import {
   getBackgroundTuning,
   setBackgroundTuning,
   type BackgroundTuning,
-} from "@/components/marketing/home-background";
+} from "@/components/marketing/marketing-background";
 
 const KNOBS: Array<{
   key: keyof BackgroundTuning;

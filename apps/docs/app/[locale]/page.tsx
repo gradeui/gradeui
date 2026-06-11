@@ -11,7 +11,7 @@
  */
 
 import { MarketingLayout } from "@/components/marketing/marketing-layout";
-import { HomeBackground } from "@/components/marketing/home-background";
+import { MarketingBackground } from "@/components/marketing/marketing-background";
 import { GradeWordmarkPen } from "@/components/marketing/grade-wordmark-pen";
 import { LiveEmbed } from "@/components/marketing/live-embed";
 import { BackgroundTweaker } from "@/components/marketing/background-tweaker";
@@ -26,7 +26,7 @@ import {
 
 export default function Home() {
   return (
-    <MarketingLayout>
+    <MarketingLayout headerMode="after-scroll">
       {/* Live shader knobs — deliberately public. Everything is a knob;
           that's the pitch. */}
       <BackgroundTweaker />
@@ -41,7 +41,7 @@ export default function Home() {
         }
         subtitle="Use the agent you prefer. In browser or MCP. Tweak, edit, all on your subscription. No more lock in. Free yourself."
         primaryCta={{ label: "Join the waitlist", href: "/waitlist" }}
-        background={<HomeBackground />}
+        background={<MarketingBackground />}
       >
         {/* Above-the-fold maker line — backs up the JSON-LD Person node
             in the root layout and shows in any first-screen capture. */}
