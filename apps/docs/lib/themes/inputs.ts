@@ -465,7 +465,9 @@ export const gradeMarketingInput: ThemeInput = {
     // than browny greys, so the whole page sits in the brand's key.
     neutral: 250.94,
     primary: 250.94,
-    accent: 214.94,
+    // Magenta-violet accent (310 deg OKLCH) for glows, veins, and the
+    // shader's iridescence. Replaces the old teal-cyan 214.94.
+    accent: 310,
   },
   chroma: {
     neutral: 0.1,
@@ -487,13 +489,17 @@ export const gradeMarketingInput: ThemeInput = {
   // The point of this template: more breathing room everywhere. Roomy
   // density re-scales every Tailwind spacing utility via --spacing.
   spacing: { density: "roomy" },
-  radius: { style: "soft" },
+  // Round (not soft): soft's 6px base reads square at marketing button
+  // sizes. Round gives properly rounded corners without going pill.
+  radius: { style: "round" },
   effects: {
     shadows: "subtle",
     motionIntensity: 1.25,
   },
   components: {
-    buttonShape: "pill",
+    // Rounded, not pill (June 2026). Radius comes from the theme's
+    // soft radius style.
+    buttonShape: "default",
     // Filled, not outlined: marketing pages sit on the live shader
     // background, and transparent input bodies let the cloth show
     // through the field — unreadable. Filled gives every input a

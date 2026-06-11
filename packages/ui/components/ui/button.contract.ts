@@ -9,7 +9,7 @@ import { contract } from "@gradeui/contracts";
 
 export const ButtonContract = contract({
   name: "Button",
-  description: "Any clickable action. Use size=\"icon\" for square icon-only buttons, variant=\"link\" for inline links that should look like Button, variant=\"raised\" for high-commitment / weighty actions where the chrome can afford a tactile \"physical key\" treatment. A Button placed next to a TabsList of the same size lines up edge-to-edge without per-call overrides.",
+  description: "Any clickable action. Use size=\"icon\" for square icon-only buttons, variant=\"link\" for inline links that should look like Button, the `raised` prop for high-commitment / weighty actions where the chrome can afford a tactile \"physical key\" treatment (composes with any variant; variant=\"raised\" remains the neutral-key alias). A Button placed next to a TabsList of the same size lines up edge-to-edge without per-call overrides.",
   import: "@gradeui/ui",
   aliases: ["button","push button","plain button","bordered button","destructive button","capsule button","link button","action button","cta","raised button","pill button","key button"],
   composesWith: ["Dialog","DropdownMenu","Tooltip","Card (in CardFooter)","Row","Form controls"],
@@ -19,6 +19,12 @@ export const ButtonContract = contract({
   "variant": {
       schema: z.enum(["default", "destructive", "outline", "secondary", "ghost", "link", "raised"]).optional(),
       design: "knob",
+      description: "`raised` here is a back-compat alias (the raised TRAIT on a neutral key surface); prefer the `raised` prop",
+  },
+  "raised": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "presence TRAIT: tactile elevation (bevel + drop + hover glow + pressed sink) layered onto ANY variant — raised primary, raised outline, etc. Glow tone reads --btn-glow → --accent-glow → --selected-glow; override per-button via style={{ \"--btn-glow\": \"var(--warning)\" }}",
   },
   "size": {
       schema: z.enum(["sm", "md", "lg", "icon"]).optional(),

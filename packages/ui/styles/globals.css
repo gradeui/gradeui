@@ -1221,15 +1221,23 @@
      style overrides like `style={{ "--btn-glow": "var(--warning)" }}`. */
   --btn-glow: var(--accent-glow, var(--selected-glow));
 
-  background-color: oklch(var(--secondary));
-  color: oklch(var(--secondary-foreground));
-
   box-shadow: var(--elevation-3);
 
   transition:
     box-shadow var(--gds-transition-base) var(--gds-ease-out),
     transform var(--gds-transition-fast) var(--gds-ease-out),
     background-color var(--gds-transition-base) var(--gds-ease-out);
+}
+
+/* Surface for the STANDALONE raised look. June 2026: raised became a
+   TRAIT (the `raised` prop on Button adds .gds-button-raised only, so
+   elevation + glow compose with ANY colour variant — raised primary,
+   raised outline). This companion class supplies the classic neutral
+   "key" surface and is applied only by the variant="raised" alias,
+   which is kept for back-compat. */
+.gds-button-raised-surface {
+  background-color: oklch(var(--secondary));
+  color: oklch(var(--secondary-foreground));
 }
 
 .gds-button-raised:hover {

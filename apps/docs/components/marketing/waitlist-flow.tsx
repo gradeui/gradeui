@@ -195,7 +195,7 @@ export function WaitlistFlow() {
             />
           </div>
 
-          <Button type="submit" size="lg" className="w-full h-12" disabled={!step1Valid}>
+          <Button type="submit" size="lg" raised className="w-full h-12" disabled={!step1Valid}>
             Next: Team size
           </Button>
         </form>
@@ -222,10 +222,10 @@ export function WaitlistFlow() {
                 aria-checked={form.teamSize === size}
                 onClick={() => set("teamSize", size)}
                 className={cn(
-                  "h-14 rounded-[var(--gds-radius-lg)] border text-base transition-colors",
+                  "h-14 rounded-[var(--gds-radius-lg)] border text-base transition-colors backdrop-blur-md",
                   form.teamSize === size
-                    ? "border-foreground bg-foreground/5 text-foreground"
-                    : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                    ? "border-foreground bg-card/90 text-foreground"
+                    : "border-border bg-card/70 text-muted-foreground hover:border-foreground/40 hover:text-foreground"
                 )}
               >
                 {size}
@@ -247,6 +247,7 @@ export function WaitlistFlow() {
             <Button
               type="button"
               size="lg"
+              raised
               className="flex-1 h-12"
               disabled={!form.teamSize}
               onClick={() => setStep(2)}
@@ -283,10 +284,10 @@ export function WaitlistFlow() {
                 aria-checked={form.role === role}
                 onClick={() => set("role", role)}
                 className={cn(
-                  "h-11 px-5 rounded-full border text-sm transition-colors",
+                  "h-11 px-5 rounded-full border text-sm transition-colors backdrop-blur-md",
                   form.role === role
-                    ? "border-foreground bg-foreground/5 text-foreground"
-                    : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                    ? "border-foreground bg-card/90 text-foreground"
+                    : "border-border bg-card/70 text-muted-foreground hover:border-foreground/40 hover:text-foreground"
                 )}
               >
                 {role}
@@ -326,6 +327,7 @@ export function WaitlistFlow() {
             <Button
               type="submit"
               size="lg"
+              raised
               className="flex-1 h-12"
               disabled={!form.role || submitting}
             >

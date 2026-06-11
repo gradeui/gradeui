@@ -17,6 +17,7 @@ import * as React from "react";
 import { SlidersHorizontal, X, RotateCcw, Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   DEFAULT_TUNING,
   getBackgroundTuning,
@@ -83,50 +84,55 @@ export function BackgroundTweaker({ className }: { className?: string }) {
       ) : (
         <div className="w-64 rounded-[var(--gds-radius-xl)] border border-border/60 bg-background/70 backdrop-blur-xl shadow-[var(--gds-shadow-lg)] p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">
-              Background
-            </span>
+            <Label size="xs" className="text-muted-foreground">Background</Label>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={copy}
                 aria-label="Copy values"
-                className="h-7 w-7"
+                className="h-6 w-6"
               >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={reset}
                 aria-label="Reset to defaults"
-                className="h-7 w-7"
+                className="h-6 w-6"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <RotateCcw className="h-3 w-3" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setOpen(false)}
                 aria-label="Close tweaker"
-                className="h-7 w-7"
+                className="h-6 w-6"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3 w-3" />
               </Button>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-4">
             {KNOBS.map((knob) => (
-              <label key={knob.key} className="block">
-                <span className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-foreground/80">{knob.label}</span>
-                  <span className="font-mono text-muted-foreground">
+              <div key={knob.key}>
+                <span className="flex items-center justify-between mb-0.5">
+                  <Label
+                    htmlFor={`bg-knob-${knob.key}`}
+                    size="xs"
+                    className="text-foreground/80"
+                  >
+                    {knob.label}
+                  </Label>
+                  <span className="font-mono text-xs text-muted-foreground">
                     {values[knob.key].toFixed(3)}
                   </span>
                 </span>
                 <input
+                  id={`bg-knob-${knob.key}`}
                   type="range"
                   min={knob.min}
                   max={knob.max}
@@ -134,9 +140,8 @@ export function BackgroundTweaker({ className }: { className?: string }) {
                   value={values[knob.key]}
                   onChange={(e) => update(knob.key, Number(e.target.value))}
                   className="w-full h-1.5 cursor-pointer appearance-none rounded-full bg-border accent-[oklch(var(--accent))]"
-                  aria-label={knob.label}
                 />
-              </label>
+              </div>
             ))}
           </div>
         </div>

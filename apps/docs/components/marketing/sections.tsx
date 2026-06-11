@@ -92,15 +92,13 @@ export function MarketingHero({
         )}
 
         {(primaryCta || secondaryCta) && (
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
             {primaryCta && (
               <Button
                 size="lg"
                 asChild
-                // Library aura (rotating conic border light), gated to
-                // hover by .gds-aura-hover (app globals), accent-tinted.
-                className="gds-aura-gradient gds-aura-hover"
-                style={{ "--aura-color": "var(--accent)" } as React.CSSProperties}
+                raised
+                className="gds-icon-nudge"
               >
                 <Link href={primaryCta.href}>
                   {primaryCta.label}
@@ -294,12 +292,7 @@ export function ClosingCta({ title, cta, className }: ClosingCtaProps) {
         <h2 className="font-display text-4xl md:text-5xl tracking-[var(--font-heading-tracking)] text-balance [&_em]:italic [&_em]:font-normal">
           {title}
         </h2>
-        <Button
-          size="lg"
-          asChild
-          className="shrink-0 gds-aura-gradient gds-aura-hover"
-          style={{ "--aura-color": "var(--accent)" } as React.CSSProperties}
-        >
+        <Button size="lg" asChild raised className="shrink-0 gds-icon-nudge">
           <Link href={cta.href}>
             {cta.label}
             <ArrowRight className="ml-2 h-4 w-4" />

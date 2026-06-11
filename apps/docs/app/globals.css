@@ -133,3 +133,24 @@ html[data-studio-right-closed] [data-gds-part="studio-right-pane"] {
 .gds-aura-hover:focus-visible::before {
   opacity: 1;
 }
+
+/* Icon nudge on hover. Stopgap until Button grows a proper iconMotion
+   prop in @gradeui/ui: any svg inside the element slides right on
+   hover/focus. Pair with directional icons (ArrowRight). */
+.gds-icon-nudge svg {
+  transition: transform var(--gds-transition-base, 200ms) ease;
+}
+.gds-icon-nudge:hover svg,
+.gds-icon-nudge:focus-visible svg {
+  transform: translateX(3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .gds-icon-nudge:hover svg,
+  .gds-icon-nudge:focus-visible svg {
+    transform: none;
+  }
+}
+
+/* (Raised trait graduated into @gradeui/ui as the `raised` prop on
+   Button + .gds-button-raised in the package stylesheet, June 2026.) */
+

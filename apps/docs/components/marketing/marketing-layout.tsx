@@ -63,12 +63,7 @@ function MarketingHeader({ visible = true }: { visible?: boolean }) {
           </Link>
         }
         trailing={
-          <Button
-            asChild
-            size="sm"
-            className="rounded-full gds-aura-gradient gds-aura-hover"
-            style={{ "--aura-color": "var(--accent)" } as React.CSSProperties}
-          >
+          <Button asChild size="sm" raised>
             <Link href="/waitlist">Join the waitlist</Link>
           </Button>
         }
@@ -149,6 +144,11 @@ export function MarketingLayout({
   // needs; rendered inline (server included) so the subtree is themed
   // and dark from the very first byte of HTML.
   const vars = themeToCSSVars(theme, "dark") as React.CSSProperties;
+  // Glow assignment at THEME SCOPE: raised buttons read --btn-glow →
+  // --accent-glow → --selected-glow. Marketing points --accent-glow at
+  // the accent once, here, so every raised button on these pages glows
+  // accent with zero per-instance styles.
+  (vars as Record<string, string>)["--accent-glow"] = "var(--accent)";
 
   return (
     <div

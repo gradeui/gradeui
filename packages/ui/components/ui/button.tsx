@@ -46,7 +46,7 @@ const buttonVariants = cva(
         // or with `data-state="on"` / `aria-pressed="true"` for a held
         // selected look. Heavy lift lives in .gds-button-raised so the
         // multi-stop shadow stack stays readable.
-        raised: "gds-button-raised",
+        raised: "gds-button-raised gds-button-raised-surface",
       },
       size: {
         // 2xs: h-6 (24px) — densest tool-panel button (the Studio inspector).
@@ -73,10 +73,18 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  /** Presence TRAIT: tactile elevation (bevel + drop + hover glow +
+   *  pressed sink) layered onto WHATEVER variant the button wears —
+   *  a raised primary, raised outline, etc. Glow tone reads
+   *  --btn-glow → --accent-glow → --selected-glow; override
+   *  per-button via style={{ "--btn-glow": "var(--warning)" }}.
+   *  variant="raised" remains the neutral-key alias (trait +
+   *  secondary surface). */
+  raised?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, raised = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     return (
       <Comp
@@ -87,7 +95,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         // inner SVG instead, and the inspector can't load the Button
         // contract because there's no componentName to look up.
         data-gds-part="button"
-        className={cn("gds-button", buttonVariants({ variant, size, className }))}
+        className={cn("gds-button", buttonVariants({ variant, size }), raised && "gds-button-raised", className)}
         ref={ref}
         {...props}
       />

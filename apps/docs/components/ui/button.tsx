@@ -37,7 +37,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         // Tactile "physical key" treatment — see packages/ui Button for
         // the canonical comment. Heavy lift lives in .gds-button-raised.
-        raised: "gds-button-raised",
+        raised: "gds-button-raised gds-button-raised-surface",
       },
       size: {
         // 2xs: h-6 (24px) — densest tool-panel button (the Studio inspector).
@@ -62,14 +62,22 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  /** Presence TRAIT: tactile elevation (bevel + drop + hover glow +
+   *  pressed sink) layered onto WHATEVER variant the button wears —
+   *  a raised primary, raised outline, etc. Glow tone reads
+   *  --btn-glow → --accent-glow → --selected-glow; override
+   *  per-button via style={{ "--btn-glow": "var(--warning)" }}.
+   *  variant="raised" remains the neutral-key alias (trait +
+   *  secondary surface). */
+  raised?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, raised = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     return (
       <Comp
-        className={cn("gds-button", buttonVariants({ variant, size, className }))}
+        className={cn("gds-button", buttonVariants({ variant, size }), raised && "gds-button-raised", className)}
         ref={ref}
         {...props}
       />
