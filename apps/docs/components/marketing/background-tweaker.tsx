@@ -52,6 +52,44 @@ export function BackgroundTweaker({ className }: { className?: string }) {
   );
   const [copied, setCopied] = React.useState(false);
 
+  // Auto-dismiss on scroll, with tolerance: anchor the scroll position
+  // when the panel opens; a deliberate scroll past the threshold closes
+  // it (playing the exit spring). Small movements — trackpad drift,
+  // rubber-banding, nudging the page a few px — don't count.
+  React.useEffect(() => {
+    if (!open) return;
+    const anchor = window.scrollY;
+    const TOLERANCE_PX = 120;
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - anchor) > TOLERANCE_PX) setOpen(false);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [open]);
+
+  // Disappear when there's nothing left to influence: the whole widget
+  // (trigger included) fades out once the shader canvas scrolls out of
+  // view, and returns when it's back. A panel for an off-screen scene
+  // is just clutter.
+  const [hasTarget, setHasTarget] = React.useState(true);
+  React.useEffect(() => {
+    const canvas = document.getElementById("gds-home-canvas");
+    if (!canvas) {
+      setHasTarget(false);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        const visible = entry?.isIntersecting ?? false;
+        setHasTarget(visible);
+        if (!visible) setOpen(false);
+      },
+      { threshold: 0.05 },
+    );
+    io.observe(canvas);
+    return () => io.disconnect();
+  }, []);
+
   const update = (key: keyof BackgroundTuning, value: number) => {
     setValues((v) => ({ ...v, [key]: value }));
     setBackgroundTuning({ [key]: value });
@@ -117,7 +155,14 @@ export function BackgroundTweaker({ className }: { className?: string }) {
       };
 
   return (
-    <div className={cn("fixed top-4 md:top-6 right-4 md:right-6 z-50", className)}>
+    <div
+      className={cn(
+        "fixed top-4 md:top-6 right-4 md:right-6 z-50 transition-opacity duration-300",
+        hasTarget ? "opacity-100" : "opacity-0 pointer-events-none",
+        className,
+      )}
+      aria-hidden={hasTarget ? undefined : true}
+    >
       {/* No mode="wait": exit and enter run CONCURRENTLY (a true
           crossfade), so switching feels instant instead of paying both
           animations sequentially. Both children anchor absolute to the
