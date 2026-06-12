@@ -8,6 +8,7 @@ props:
   - loading?: boolean — renders the muted skeleton overlay
   - hint?: "album" | "portrait" | "landscape" | "poster" | "product" | "food" | "video" | "audio" | "embed" | "3d" | "generic" (default "generic") — picks the placeholder glyph + the default aspect + the future generation provider
   - alt?: string — becomes the eventual `<img alt>`; also drives the placeholder caption and small-tier initials
+  - instanceId?: string — stable per-instance id stamped as `data-gds-instance-id`. Use when rendering MediaSurfaces from a data array (`.map(item => <MediaSurface instanceId={item.id} …/>)`): it's how Studio's selection + Fill flows tell one card apart from its siblings and patch only that entry's data
   - source?: { kind, …per-kind fields } — structured metadata for the generation pipeline. Shapes per kind — album: { artist, title, year? } · poster: { title, year? } · portrait: { name?, role? } · landscape: { location?, mood? } · product: { name?, brand? } · food: { dish?, cuisine? } · generic: { prompt } · video/audio/embed/3d: no fields
   - src?: string — when set, renders an `<img>` filling the slot via object-cover; the wrapper keeps its chrome
   - glyph?: ReactNode — per-instance override of the hint-derived placeholder glyph (escape hatch for unusual slots)

@@ -1042,6 +1042,8 @@ function findComponentOwner(el: Element | null): Element | null {
   let enabled = false;
   let overlay: HTMLDivElement | null = null;
   let lastHovered: Element | null = null;
+  // Hover-measure inspector teardown (grade:set-inspect). Null = off.
+  let measureCleanup: (() => void) | null = null;
 
   function ensureOverlay(): HTMLDivElement {
     if (overlay) return overlay;
@@ -1222,13 +1224,91 @@ function findComponentOwner(el: Element | null): Element | null {
     } else if (data.type === "grade:clear-selection") {
       clear();
     } else if (data.type === "grade:set-fidelity") {
-      // Wireframe / full toggle. The CSS lives in playground-styles
-      // (look for [data-fidelity="wireframe"] rules) and reads this
-      // attribute off the root; flipping it is enough to hide the
-      // media-surface content layer and reveal the placeholders
-      // beneath. No re-bundle, no re-mount.
+      // Wireframe / full toggle. The CSS lives in the compiled
+      // @gradeui/ui stylesheet ("MediaSurface fidelity" rules in
+      // packages/ui/styles/globals.css) and reads this attribute off
+      // the root; flipping it cross-fades the media-surface content
+      // layer out and the placeholders back in. No re-bundle, no
+      // re-mount.
       const v = data.value === "wireframe" ? "wireframe" : "full";
       document.documentElement.dataset.fidelity = v;
+    } else if (data.type === "grade:set-inspect") {
+      // Hover-measure inspector — compact mirror of the Fast sandbox's
+      // installMeasureAgent (two-agent rule in STUDIO.md). Read-only:
+      // outline + part-name + virtual-px size on hover, no click
+      // capture, no parent round-trips.
+      if (data.enabled && !measureCleanup) {
+        const mHost = document.createElement("div");
+        mHost.setAttribute("data-gds-measure-overlay", "");
+        mHost.style.cssText =
+          "position:fixed;inset:0;pointer-events:none;z-index:2147483600;";
+        const mBox = document.createElement("div");
+        mBox.style.cssText =
+          "position:absolute;display:none;border:1px solid oklch(var(--selected));" +
+          "background:oklch(var(--selected) / 0.08);border-radius:2px;";
+        const mLabel = document.createElement("div");
+        mLabel.style.cssText =
+          "position:absolute;display:none;padding:2px 6px;border-radius:4px;" +
+          "background:oklch(var(--selected));color:oklch(var(--selected-foreground));" +
+          "font:600 11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;";
+        mHost.append(mBox, mLabel);
+        document.body.appendChild(mHost);
+        let mRaf = 0;
+        const mHide = () => {
+          mBox.style.display = "none";
+          mLabel.style.display = "none";
+        };
+        const mPascal = (kebab: string) =>
+          kebab
+            .split(/-+/)
+            .filter(Boolean)
+            .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+            .join("");
+        const mMove = (ev: MouseEvent) => {
+          cancelAnimationFrame(mRaf);
+          mRaf = requestAnimationFrame(() => {
+            const t = ev.target;
+            if (!(t instanceof Element) || mHost.contains(t) || t === document.body) {
+              mHide();
+              return;
+            }
+            const r = t.getBoundingClientRect();
+            if (r.width <= 0 || r.height <= 0) {
+              mHide();
+              return;
+            }
+            mBox.style.display = "block";
+            mBox.style.left = r.left + "px";
+            mBox.style.top = r.top + "px";
+            mBox.style.width = r.width + "px";
+            mBox.style.height = r.height + "px";
+            const part = t
+              .closest("[data-gds-part]")
+              ?.getAttribute("data-gds-part");
+            const name = part ? mPascal(part) : t.tagName.toLowerCase();
+            mLabel.textContent =
+              name + " · " + Math.round(r.width) + " × " + Math.round(r.height);
+            mLabel.style.display = "block";
+            mLabel.style.left = Math.max(2, r.left) + "px";
+            mLabel.style.top =
+              r.top >= 26
+                ? r.top - 24 + "px"
+                : Math.min(window.innerHeight - 24, r.bottom + 4) + "px";
+          });
+        };
+        const mLeave = () => mHide();
+        document.addEventListener("mousemove", mMove, true);
+        document.documentElement.addEventListener("mouseleave", mLeave, true);
+        measureCleanup = () => {
+          cancelAnimationFrame(mRaf);
+          document.removeEventListener("mousemove", mMove, true);
+          document.documentElement.removeEventListener("mouseleave", mLeave, true);
+          mHost.remove();
+        };
+      } else if (!data.enabled && measureCleanup) {
+        measureCleanup();
+        measureCleanup = null;
+      }
     } else if (data.type === "grade:set-motion") {
       // Global motion toggle (lib/motion). Stamp / remove data-motion on
       // <html>; the useReducedMotion hook + the [data-motion="off"] CSS

@@ -519,6 +519,10 @@ export default function FastSandboxPage() {
 
   const rootElRef = useRef<HTMLDivElement | null>(null);
   const agentTeardownRef = useRef<SelectionAgentHandle | null>(null);
+  // Hover-measure inspector (grade:set-inspect) — embed "show my
+  // workings" mode. Independent of the selection agent: read-only, no
+  // click capture, no parent round-trips. See installMeasureAgent below.
+  const measureTeardownRef = useRef<{ teardown: () => void } | null>(null);
 
   useEffect(() => {
     if (!rootElRef.current) return;
@@ -874,6 +878,96 @@ export default function FastSandboxPage() {
       root.dataset.gdsTheme = sig;
     }
 
+    /**
+     * Hover-measure inspector — the read-only "show my workings" overlay
+     * behind ?inspect on /e/ embeds (grade:set-inspect). Hovering any
+     * element outlines it and labels it with its rendered size in the
+     * screen's own virtual px (a parent ScaledRender transform doesn't
+     * skew the numbers — rects are measured inside this document).
+     *
+     * Deliberately NOT the selection agent: no click capture, no
+     * sourceId plumbing, no parent round-trips — a visitor-safe lens,
+     * not an editor. Colours ride the `--selected` token pair so the
+     * overlay rethemes with the screen. Mirrored (compact) in the
+     * Sandpack agent in chat-sandpack.ts per the two-agent rule.
+     */
+    function installMeasureAgent(): { teardown: () => void } {
+      const host = document.createElement("div");
+      host.setAttribute("data-gds-measure-overlay", "");
+      host.style.cssText =
+        "position:fixed;inset:0;pointer-events:none;z-index:2147483600;";
+      const box = document.createElement("div");
+      box.style.cssText =
+        "position:absolute;display:none;border:1px solid oklch(var(--selected));" +
+        "background:oklch(var(--selected) / 0.08);border-radius:2px;";
+      const label = document.createElement("div");
+      label.style.cssText =
+        "position:absolute;display:none;padding:2px 6px;border-radius:4px;" +
+        "background:oklch(var(--selected));color:oklch(var(--selected-foreground));" +
+        "font:600 11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;" +
+        "white-space:nowrap;";
+      host.append(box, label);
+      document.body.appendChild(host);
+
+      const kebabToPascal = (kebab: string) =>
+        kebab
+          .split(/-+/)
+          .filter(Boolean)
+          .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join("");
+
+      let raf = 0;
+      const hide = () => {
+        box.style.display = "none";
+        label.style.display = "none";
+      };
+      const onMove = (e: MouseEvent) => {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
+          const t = e.target;
+          if (!(t instanceof Element) || host.contains(t) || t === document.body) {
+            hide();
+            return;
+          }
+          const r = t.getBoundingClientRect();
+          if (r.width <= 0 || r.height <= 0) {
+            hide();
+            return;
+          }
+          box.style.display = "block";
+          box.style.left = `${r.left}px`;
+          box.style.top = `${r.top}px`;
+          box.style.width = `${r.width}px`;
+          box.style.height = `${r.height}px`;
+          // Prefer the DS part name (kebab→Pascal, same convention the
+          // path bar uses); fall back to the tag.
+          const part = t.closest("[data-gds-part]")?.getAttribute("data-gds-part");
+          const name = part ? kebabToPascal(part) : t.tagName.toLowerCase();
+          label.textContent = `${name} · ${Math.round(r.width)} × ${Math.round(r.height)}`;
+          label.style.display = "block";
+          // Above the box; flip below when there's no headroom.
+          label.style.left = `${Math.max(2, r.left)}px`;
+          label.style.top =
+            r.top >= 26 ? `${r.top - 24}px` : `${Math.min(window.innerHeight - 24, r.bottom + 4)}px`;
+        });
+      };
+      const onLeave = () => hide();
+      document.addEventListener("mousemove", onMove, true);
+      document.documentElement.addEventListener("mouseleave", onLeave, true);
+      return {
+        teardown() {
+          cancelAnimationFrame(raf);
+          document.removeEventListener("mousemove", onMove, true);
+          document.documentElement.removeEventListener(
+            "mouseleave",
+            onLeave,
+            true,
+          );
+          host.remove();
+        },
+      };
+    }
+
     // Flips true on the first grade:* message we RECEIVE. In a host
     // (iframe) context that means the parent's listener is alive and
     // the ready re-announce loop below can stop. In a standalone tab
@@ -1063,11 +1157,24 @@ export default function FastSandboxPage() {
         case "grade:set-fidelity": {
           // Wireframe / full toggle. Same protocol as the Sandpack agent
           // (see PLAYGROUND_SELECTION_AGENT_TSX in chat-sandpack.ts) —
-          // we stamp `data-fidelity` on the root and let CSS in the
-          // sandbox stylesheet hide the media-surface content layer
-          // for wireframe mode. No re-render needed.
+          // we stamp `data-fidelity` on the root; the "MediaSurface
+          // fidelity" rules in the design-system stylesheet cross-fade
+          // the content layer out and the placeholder back in. No
+          // re-render needed.
           const v = data.value === "wireframe" ? "wireframe" : "full";
           document.documentElement.dataset.fidelity = v;
+          break;
+        }
+        case "grade:set-inspect": {
+          // Hover-measure inspector on/off (embed ?inspect / the chip).
+          // Install/teardown mirrors the selection agent's pattern.
+          const enabled = Boolean(data.enabled);
+          if (enabled && !measureTeardownRef.current) {
+            measureTeardownRef.current = installMeasureAgent();
+          } else if (!enabled && measureTeardownRef.current) {
+            measureTeardownRef.current.teardown();
+            measureTeardownRef.current = null;
+          }
           break;
         }
         case "grade:set-motion": {
@@ -1499,15 +1606,17 @@ export default function FastSandboxPage() {
           compiled, shipping a broken-layout poster. */}
       {/* eslint-disable-next-line @next/next/no-sync-scripts */}
       <script src="/vendor/tailwindcss-browser-4.3.0.js" />
-      {/* Fidelity is a no-op on the render path now. With JSX-as-truth
-          MediaSurfaces render imagery whenever `src` is present in the
-          data array and fall back to the tiered placeholder otherwise
-          — the previous "wireframe hides filled imagery" rule fought
-          that model (the user filled the card, then a view toggle
-          pretended they hadn't). `data-fidelity` is still stamped on
-          <html> in case a future variant — e.g. desaturate filled
-          imagery in wireframe mode — wants to discriminate, but no
-          rule reads it today. */}
+      {/* Fidelity is live again (June 2026) — as a VIEW, not a render
+          path. JSX stays the truth: MediaSurfaces always render imagery
+          when `src` is present. But the placeholder layer stays mounted
+          beneath (visibility-hidden via `[data-filled]`), and the
+          "MediaSurface fidelity" rules in @gradeui/ui globals.css read
+          `data-fidelity="wireframe"` off <html> to cross-fade imagery
+          out and placeholders back in. Pure CSS, fully reversible, so
+          the old objection (a toggle pretending the user hadn't filled
+          the card) doesn't apply — nothing is unfilled, just viewed
+          structurally. Driven by Studio's overflow toggle and the
+          embed's ?fidelity / ?fidelitytoggle params. */}
       <div
         ref={rootElRef}
         id="root"

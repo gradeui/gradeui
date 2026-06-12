@@ -830,6 +830,24 @@
   --gds-media-placeholder-bg: oklch(var(--muted));
   --gds-media-placeholder-fg: oklch(var(--muted-foreground));
 
+  /* Fidelity fade — how long a MediaSurface takes to cross-fade between
+     full imagery and the wireframe placeholder when `data-fidelity`
+     flips on an ancestor (Studio's toggle, an embed's `fidelity`
+     parameter). One knob, read by the "MediaSurface fidelity" rules
+     further down. */
+  --gds-media-fidelity-fade: 280ms;
+
+  /* Transparency checkerboard — the standard alpha backdrop drawn behind
+     image previews (Studio's inspector image well; anywhere else that
+     needs to say "these pixels are transparent"). Consumed as
+     `repeating-conic-gradient(var(--gds-media-checker-color) 0% 25%,
+     transparent 0% 50%)` sized by the size token. Mode-aware for free:
+     the colour rides on --muted-foreground at low alpha, so it reads as
+     grey/white in light mode and grey/dark in dark without a `.dark`
+     override. */
+  --gds-media-checker-color: oklch(var(--muted-foreground) / 0.16);
+  --gds-media-checker-size: 14px;
+
   /* Canvas fill — the standard backdrop behind a screen when it doesn't fill
      its frame: the letterbox bars in an embed/share, and the stage a
      `<ScreenAnimator>` reveals when it flies in or pulls below 1× zoom. One
@@ -839,6 +857,18 @@
      cinematic backdrop that flatters a screen sitting on top of it in either
      mode. Set it to `transparent` to let the host page show through. */
   --gds-canvas-fill: #e8e8ec;
+
+  /* Map marker chrome — the baseline "lift" every MapMarker child gets
+     so pin labels never melt into the tiles (see the map-marker rule
+     near the fidelity block). Map tiles are EXTERNAL imagery — they
+     don't ride the theme's surface tokens — so marker content needs
+     its own guaranteed separation in both modes: a 1px border + a soft
+     ambient shadow. Light mode: a slightly-darker-than---border line
+     reads against pale tiles. Dark mode override below flips to a
+     light hairline (a dark border on dark tiles lifts nothing). */
+  --gds-map-marker-border: oklch(var(--border));
+  --gds-map-marker-shadow: 0 1px 3px oklch(0 0 0 / 0.22),
+    0 0 0 1px oklch(0 0 0 / 0.05);
 
   /* Sidebar knobs — the width pair drives the collapsed/expanded animation
      on `<Sidebar>` (compound nav primitive). Header height + section
@@ -970,6 +1000,14 @@
      default in :root is a soft neutral). One token, mode-scoped: letterbox
      bars in embed/share/preview and the ScreenAnimator stage all match. */
   --gds-canvas-fill: #0b0b0e;
+
+  /* Map marker chrome — dark mode: a light hairline + deeper shadow.
+     Dark-mode pin surfaces (bg-card etc.) sit on dark tiles, so the
+     border has to be the bright element; the alpha keeps it a lift,
+     not a frame. */
+  --gds-map-marker-border: oklch(1 0 0 / 0.3);
+  --gds-map-marker-shadow: 0 1px 3px oklch(0 0 0 / 0.5),
+    0 0 0 1px oklch(0 0 0 / 0.4);
 
   /* Alert surface pairs — dark-mode variant: tint sits just above the dark
      background without going gray; deep text stays bright and readable. */
@@ -1589,6 +1627,79 @@
   box-shadow:
     0 0 0 var(--aura-ring-spread) oklch(var(--aura-color) / calc(var(--aura-ring-alpha-max) * 0.6)),
     0 0 var(--aura-ring-blur) 0 oklch(var(--aura-color) / calc(var(--aura-ring-alpha-max) * 0.4));
+}
+
+/* ============================================
+   MEDIASURFACE FIDELITY — data-fidelity on any ancestor
+   ============================================
+   The pure-CSS half of MediaSurface's filled/wireframe model. The
+   component keeps its tiered placeholder MOUNTED beneath a filled
+   image and stamps `data-filled` on it; these rules decide what's
+   visible. Flipping `data-fidelity="wireframe"` on ANY ancestor
+   (Studio's iframe root, an embed wrapper, a docs demo) cross-fades
+   imagery out and the placeholder back in — no React, so the toggle
+   works in static embeds and respects the data-motion="off" reset
+   above (transition collapses to 0.01ms).
+
+   Default (full fidelity): a filled slot hides its placeholder with
+   `visibility: hidden` — NOT unmount — so transparent imagery (logos
+   on alpha) never shows the glyph/`--gds-media-placeholder-bg`
+   through its pixels, while the layer stays in the DOM for this very
+   toggle. The `visibility` transition is delayed by the fade length
+   (the standard fade-then-hide pattern) so the placeholder finishes
+   fading before it stops hit-testing/painting. */
+[data-gds-part="media-surface-placeholder"][data-filled] {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--gds-media-fidelity-fade, 280ms) ease,
+    visibility 0s linear var(--gds-media-fidelity-fade, 280ms);
+}
+[data-gds-part="media-surface-content"] {
+  transition: opacity var(--gds-media-fidelity-fade, 280ms) ease;
+}
+
+/* Wireframe: imagery fades out, placeholder fades back in. Content is
+   opacity-faded (not display-toggled) so the swap reads as a cross-fade;
+   pointer-events off so the invisible imagery can't intercept clicks. */
+[data-fidelity="wireframe"] [data-gds-part="media-surface-placeholder"][data-filled] {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s, 0s;
+}
+[data-fidelity="wireframe"] [data-gds-part="media-surface-content"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ============================================
+   MAP MARKER LIFT — every pin gets a border
+   ============================================
+   Map tiles are external imagery and don't follow the theme, so marker
+   content (Badge price pins, numbered markers, avatars) can melt into
+   them — illegible dark-on-dark pins were the symptom. Guarantee the
+   lift at the DS level: every DIRECT child of a MapMarker's content
+   wrapper gets a 1px border + ambient shadow from the mode-aware
+   `--gds-map-marker-*` pair (light hairline on dark tiles, dark line
+   on light). Being unlayered, this wins over a Badge's own
+   border-transparent utility — deliberate: the border is the floor,
+   not a suggestion. Backgrounds/text are NOT touched; content keeps
+   its own surface tokens. */
+[data-gds-part="map-marker-content"] > * {
+  border: 1px solid var(--gds-map-marker-border);
+  box-shadow: var(--gds-map-marker-shadow);
+}
+
+/* Vendor font reset — Leaflet (`.leaflet-container`) and MapLibre
+   (`.maplibregl-map`) both hard-set `font-family` on their map
+   containers, which beats inheritance and strands marker content on
+   the vendor stack ("pins don't carry the custom font" — they can,
+   the vendor CSS was just in the way). Re-assert the theme stack at
+   the marker-content boundary so Badges/Cards inside pins type-match
+   the rest of the screen, including custom uploaded faces riding
+   `--font-sans`. */
+[data-gds-part="map-marker-content"] {
+  font-family: var(--font-sans);
 }
 
 /* ============================================

@@ -560,14 +560,38 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
       return () => io.disconnect();
     }, [onVisibilityChange]);
 
-    // Size observer for the tiered placeholder. The placeholder is now
-    // ALWAYS rendered (behind any `src`/`children`) so that Studio's
-    // wireframe-mode CSS can hide the image layer and reveal the
-    // placeholder beneath without re-mounting the tree. The observer
-    // runs whenever there's a placeholder to size-tier — which is
-    // anything but `emptyState="none"` + no children. Custom `children`
-    // (escape hatch — caller fully owns the surface) still suppress
-    // the placeholder, since whatever they're rendering IS the content.
+    // Effective src — straight from the JSX, resolved BEFORE the
+    // placeholder gate below because the two are coupled: the
+    // placeholder only exists while the slot is unfilled. Track broken
+    // URLs so a 404/timeout doesn't leave the user staring at the
+    // browser's generic "broken image" icon — when `onError` fires we
+    // drop the src, the content layer unmounts, and the tiered
+    // placeholder re-renders, so the slot reads as "not yet filled"
+    // rather than "broken." Reset whenever the candidate src changes
+    // (a new URL is its own retry).
+    const candidateSrc = src;
+    const [imgErrored, setImgErrored] = React.useState(false);
+    React.useEffect(() => {
+      setImgErrored(false);
+    }, [candidateSrc]);
+    const effectiveSrc = imgErrored ? undefined : candidateSrc;
+
+    // Size observer for the tiered placeholder. The placeholder stays
+    // MOUNTED beneath a filled `src` image but is hidden via CSS —
+    // `[data-filled]` → `visibility: hidden` in styles/globals.css —
+    // rather than unmounted. Two reasons:
+    //   1. Transparent imagery: an always-*visible* placeholder leaked
+    //      its glyph + `--gds-media-placeholder-bg` through the alpha
+    //      pixels of transparent PNGs (logo slots). `visibility:
+    //      hidden` fixes that without losing the layer.
+    //   2. Wireframe mode: `[data-fidelity="wireframe"]` on any
+    //      ancestor (Studio iframe root, an embed wrapper) flips the
+    //      same pair of rules — content layer hidden, placeholder
+    //      re-revealed — with zero React involvement, so a fidelity
+    //      toggle works even in a static embed.
+    // Custom `children` (escape hatch — caller fully owns the surface)
+    // suppress the placeholder entirely: whatever they render IS the
+    // content.
     const hasPlaceholder = !children && emptyState !== "none";
     const [tier, setTier] = React.useState<PlaceholderTier>("md");
     React.useEffect(() => {
@@ -588,29 +612,16 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
     const useAutoPlaceholder =
       emptyState === "auto" || emptyState === "icon";
 
-    // Effective src — straight from the JSX. The DS stamps
-    // `data-media-source` as a JSON blob whenever a `source` is
-    // present so an external walker (Studio's selection-agent inside
-    // the Sandpack iframe) can collect runtime-evaluated sources, hand
-    // them to a resolver, and write the resulting URL back into the
-    // JSX. Once it's in the JSX it lives on `srcProp` and just renders
-    // — no parallel URL map, no override merge.
-    const candidateSrc = src;
+    // The DS stamps `data-media-source` as a JSON blob whenever a
+    // `source` is present so an external walker (Studio's selection-
+    // agent inside the Sandpack iframe) can collect runtime-evaluated
+    // sources, hand them to a resolver, and write the resulting URL
+    // back into the JSX. Once it's in the JSX it lives on `srcProp`
+    // and just renders — no parallel URL map, no override merge.
     const sourceJson = React.useMemo(
       () => (source ? JSON.stringify(source) : undefined),
       [source],
     );
-    // Track broken URLs so a 404/timeout doesn't leave the user staring
-    // at the browser's generic "broken image" icon. When `onError`
-    // fires we drop the src — the content layer unmounts and the
-    // tiered placeholder underneath shows through, so the slot reads
-    // as "not yet filled" rather than "broken." Reset whenever the
-    // candidate src changes (a new URL is its own retry).
-    const [imgErrored, setImgErrored] = React.useState(false);
-    React.useEffect(() => {
-      setImgErrored(false);
-    }, [candidateSrc]);
-    const effectiveSrc = imgErrored ? undefined : candidateSrc;
 
     // Fill-in-flight → Presence shimmer on the placeholder. Only while a
     // resolve is actually pending AND the slot is still unfilled — once
@@ -652,17 +663,21 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
         {...props}
       >
         {/* Tiered empty-state placeholder — rendered FIRST (lowest layer)
-            so it sits beneath any `src` image / `children` / `overlay`.
-            That ordering is what makes Studio's wireframe-mode toggle
-            possible: a single ancestor CSS rule can hide the `src`/content
-            layers and the placeholder beneath shows through — no React-side
-            state, no re-mount. Surface and icon colours come from the
-            `--gds-media-placeholder-*` token pair so they retheme with
-            the active mode. */}
+            beneath any `src` image / `children` / `overlay`. When the slot
+            is filled, `data-filled` is stamped and a stylesheet rule
+            (styles/globals.css, "MediaSurface fidelity") sets
+            `visibility: hidden` so images with alpha never show the
+            glyph/bg through their transparent pixels. Wireframe mode
+            (`[data-fidelity="wireframe"]` on an ancestor) reverses both
+            rules in pure CSS — content hidden, placeholder revealed — no
+            React state, no re-mount, works in static embeds. Surface and
+            icon colours come from the `--gds-media-placeholder-*` token
+            pair so they retheme with the active mode. */}
         {hasPlaceholder && (
           <div
             data-gds-part="media-surface-placeholder"
             data-tier={tier}
+            data-filled={effectiveSrc ? "" : undefined}
             data-fill-pending={fillPending || undefined}
             className={cn(
               "absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 pointer-events-none px-3 text-center",
@@ -732,13 +747,14 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
           </div>
         )}
 
-        {/* Image layer — sits above the placeholder. This is the target the
-            future generator patches into when filling slots. Both `src` and
-            `children` are wrapped together in `media-surface-content` so a
-            single CSS selector (used by Studio's wireframe mode) can hide
-            both at once and let the placeholder underneath show through.
-            `effectiveSrc` resolves explicit `src` first, then the runtime
-            URL map populated by Studio's "Fill images" flow. */}
+        {/* Image layer — the target the generator patches into when
+            filling slots. Both `src` and `children` are wrapped together
+            in `media-surface-content` so the wireframe rule in
+            globals.css can hide both with one selector and let the
+            placeholder underneath show through. In full fidelity a
+            transparent image sits directly on whatever's behind the
+            surface (the placeholder beneath is visibility-hidden), as a
+            plain <img> would. */}
         {(effectiveSrc || children) && (
           <div
             data-gds-part="media-surface-content"

@@ -67,6 +67,15 @@ export const createMapboxAdapter: AdapterFactory = async (
     interactive: opts.interactive,
   });
 
+  // Tools — shared vocabulary (types.ts); same shape as the maplibre
+  // adapter: zoom-only navigation control docked to the requested corner.
+  if (opts.tools === "zoom" || (opts.tools === "auto" && opts.interactive)) {
+    map.addControl(
+      new mapboxgl.NavigationControl({ showCompass: false }),
+      opts.toolsPosition,
+    );
+  }
+
   if (opts.bounds) {
     map.fitBounds([opts.bounds[0], opts.bounds[1]], { animate: false });
   }

@@ -52,7 +52,16 @@ Arbitrary JSX eval inside an iframe is fine *if sandboxed correctly*: `sandbox="
 
 ## What does NOT come along
 
-Selection agent, comment pins, code view, the walker payload panel, the inspector — all editing chrome. An embed is **read or tweak**, not edit. So the embed kernel is lighter than Fast Frame. "Tweak" = live controls baked into the embedded source (e.g. a `ShaderControls` panel), not Studio selection.
+Selection agent, comment pins, code view, the walker payload panel, the EDITING inspector — all editing chrome. An embed is **read or tweak**, not edit. So the embed kernel is lighter than Fast Frame. "Tweak" = live controls baked into the embedded source (e.g. a `ShaderControls` panel), not Studio selection.
+
+## Viewer modes — "show my workings" (shipped June 2026)
+
+Portfolio embeds want to demonstrate *process*, not just the finished render. Two read-only viewer modes shipped on `/e/<token>`, each as a param (pins the initial state) plus an optional corner chip (lets the visitor flip it):
+
+- **Fidelity** — `?fidelity=wireframe` + `?fidelitytoggle=1`. Cross-fades all MediaSurface imagery out and the tiered placeholders back in, live and reversible. Pure CSS inside the sandbox: `grade:set-fidelity` stamps `data-fidelity` on the iframe root; the "MediaSurface fidelity" rules in `packages/ui/styles/globals.css` do the fade (`--gds-media-fidelity-fade`). The same rules power Studio's overflow-menu "Wireframe mode" tick.
+- **Measure** — `?inspect=1` + `?inspecttoggle=1`. A hover inspector: outline + DS part name + rendered size in the screen's own virtual px (parent scale transforms don't skew the numbers). Deliberately NOT the selection agent — no click capture, no parent round-trips, visitor-safe. Protocol `grade:set-inspect`, handlers in both renderers per the two-agent rule.
+
+**Follow-up (logged, not built): scripted highlighter tour.** An animated, fake-cursor walkthrough — glide between elements, highlight each with its measurements, optionally synced to the camera timeline (`?camera=`) and captions. That's STUDIO-DIRECTOR territory: model it as a `highlight` track in the director timeline (sibling of camera/cursor/caption tracks) so a tour is just a directed demo with measurement callouts, embeddable like any other. The hover inspector's overlay (outline + label) is the render primitive the track would drive.
 
 ## Relationship to the extraction
 

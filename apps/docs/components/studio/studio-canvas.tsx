@@ -73,6 +73,7 @@ import {
   DialogContent,
   DialogTitle,
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -731,20 +732,16 @@ export function StudioCanvas({
   const [replayKey, setReplayKey] = useState(0);
   const replay = React.useCallback(() => setReplayKey((k) => k + 1), []);
 
-  // Fidelity — historically a wireframe vs full toggle, but the
-  // wireframe surface is no longer used in the canvas chrome (the
-  // toggle was removed; designs always render in "full" now). The
-  // constant + `setFidelity` no-op are kept so the postMessage
-  // contract with the iframe (`grade:set-fidelity`) and every
-  // downstream `fidelity={fidelity}` prop continue to compile and
-  // behave correctly. If the wireframe view returns, lift this back
-  // into useState + an explicit affordance.
+  // Fidelity — wireframe vs full. Removed from the chrome for a while
+  // (pinned to "full"); lifted back into state June 2026 when the
+  // wireframe view got a real product surface again: a ticked toggle in
+  // the overflow menu here, plus ?fidelity / ?fidelitytoggle on /e/
+  // embeds. The actual swap is the pure-CSS cross-fade in @gradeui/ui
+  // globals.css ("MediaSurface fidelity" rules), driven by the
+  // grade:set-fidelity push below. Fill-images still auto-flips back to
+  // "full" so a fresh fill is never invisible behind the wireframe view.
   type Fidelity = "wireframe" | "full";
-  const fidelity: Fidelity = "full";
-  const setFidelity = (_next: Fidelity) => {
-    // no-op — fidelity is pinned to "full" until the wireframe view
-    // gets a meaningful product surface again.
-  };
+  const [fidelity, setFidelity] = useState<Fidelity>("full");
 
   // Fill-images flow — POSTs the focused design's appSource to the
   // /api/media/resolve route, which walks for MediaSurfaces with static
@@ -2008,6 +2005,20 @@ export function StudioCanvas({
                     )}
                     {filling ? "Filling images…" : "Fill images"}
                   </DropdownMenuItem>
+                  {/* Wireframe — a VIEW toggle, not a render path: the
+                      JSX keeps its imagery; the sandbox cross-fades the
+                      MediaSurface content layer out and the tiered
+                      placeholders back in (data-fidelity + the
+                      "MediaSurface fidelity" CSS). Checkbox item so the
+                      active state reads as a tick. */}
+                  <DropdownMenuCheckboxItem
+                    checked={fidelity === "wireframe"}
+                    onCheckedChange={(on) =>
+                      setFidelity(on ? "wireframe" : "full")
+                    }
+                  >
+                    Wireframe mode
+                  </DropdownMenuCheckboxItem>
                   <DropdownMenuSeparator />
                   {onDuplicateDesign && (
                     <DropdownMenuItem

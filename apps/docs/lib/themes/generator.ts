@@ -224,7 +224,12 @@ function resolveToken(
 
 function deriveColorsForMode(
   ramps: { neutral: Ramp; primary: Ramp; accent: Ramp },
-  mode: ModeName
+  mode: ModeName,
+  /** Optional dedicated ring ramp (ThemeInput.ring). When present, the
+   *  ring token resolves from THIS ramp at the mode-tuned step instead
+   *  of the primary ramp — colour changes, per-mode contrast behaviour
+   *  doesn't. */
+  ringRamp?: Ramp
 ): GeneratedColorsMode {
   const map = MODE_TOKENS[mode];
   // Fixed semantic colors don't change with the brand hue — they use the
@@ -250,7 +255,10 @@ function deriveColorsForMode(
     accentForeground: resolveToken(map.accentForeground, ramps),
     border: resolveToken(map.border, ramps),
     input: resolveToken(map.input, ramps),
-    ring: resolveToken(map.ring, ramps),
+    ring:
+      ringRamp && map.ring.source !== "pure"
+        ? ringRamp[map.ring.step]
+        : resolveToken(map.ring, ramps),
     destructive: fixed.destructive,
     destructiveForeground: fixed.destructiveFg,
     success: fixed.success,
@@ -601,9 +609,21 @@ export function generateTheme(input: ThemeInput): GeneratedTheme {
     intensity
   );
 
+  // 1b. Optional dedicated focus-ring ramp (ThemeInput.ring). An explicit
+  // `hue` mints its own ramp at primary chroma; `source` re-points at an
+  // existing ramp; absent = the mode map's default (primary). The
+  // mode-tuned STEP always comes from MODE_TOKENS, so only the colour
+  // moves, never the per-mode contrast calibration.
+  const ringRamp =
+    input.ring?.hue != null
+      ? hueToRamp({ hue: input.ring.hue, chromaScale: primaryChroma })
+      : input.ring?.source && input.ring.source !== "primary"
+        ? ramps[input.ring.source]
+        : undefined;
+
   // 2. Derive semantic tokens for all four modes
   const colors = Object.fromEntries(
-    ALL_MODES.map((mode) => [mode, deriveColorsForMode(ramps, mode)])
+    ALL_MODES.map((mode) => [mode, deriveColorsForMode(ramps, mode, ringRamp)])
   ) as Record<ModeName, GeneratedColorsMode>;
 
   // 2b. Role ramp families (THEME-MIGRATION.md B4, June 10 decision):

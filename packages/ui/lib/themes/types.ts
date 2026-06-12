@@ -412,6 +412,22 @@ export interface ThemeInput {
   neutralPureGray?: boolean;
 
   /**
+   * Focus ring colour. By default the ring (`--ring`) rides the PRIMARY
+   * ramp at a mode-tuned step (500 light / 400 dark / 300 superDark).
+   * `source` re-points it at another ramp; `hue` (0–360) gives the ring
+   * its own dedicated ramp at primary chroma — for brands whose focus
+   * colour is deliberately independent of primary/accent (e.g. a blue
+   * a11y ring on a warm-toned brand). `hue` wins over `source` when both
+   * are set. The mode-tuned step is preserved either way, so contrast
+   * behaviour per mode doesn't change. Deterministic + portable like
+   * every other ThemeInput field.
+   */
+  ring?: {
+    source?: "primary" | "accent" | "neutral";
+    hue?: number;
+  };
+
+  /**
    * Global chroma intensity. Multiplies every ramp's chroma — a quick way to
    * flip the whole theme between muted / default / vibrant without touching
    * the per-ramp chroma values.

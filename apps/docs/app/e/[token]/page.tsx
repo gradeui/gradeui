@@ -144,6 +144,34 @@ export default async function EmbedPage({
           .filter(Boolean)
       : null;
 
+  // Render fidelity: ?fidelity=wireframe starts the embed with imagery
+  // cross-faded out and MediaSurface's tiered placeholders showing — the
+  // "structure, not pictures" view. ?fidelitytoggle=1 adds a corner chip
+  // so the visitor can flip sides themselves (the param above picks the
+  // starting side). The swap is pure CSS inside the sandbox (the
+  // "MediaSurface fidelity" rules in @gradeui/ui globals.css), so it
+  // costs nothing when unused.
+  const fidelityRaw = Array.isArray(sp.fidelity) ? sp.fidelity[0] : sp.fidelity;
+  const fidelity = fidelityRaw === "wireframe" ? "wireframe" : "full";
+  const fidelityToggleRaw = Array.isArray(sp.fidelitytoggle)
+    ? sp.fidelitytoggle[0]
+    : sp.fidelitytoggle;
+  const fidelityToggle =
+    fidelityToggleRaw === "1" || fidelityToggleRaw === "true";
+
+  // Hover-measure inspector: ?inspect=1 starts the embed with the
+  // read-only measure overlay on (hover any element → outline + part
+  // name + size in virtual px). ?inspecttoggle=1 adds the "Measure"
+  // chip so visitors can flip it themselves. The "show my workings"
+  // mode for portfolio embeds.
+  const inspectRaw = Array.isArray(sp.inspect) ? sp.inspect[0] : sp.inspect;
+  const inspect = inspectRaw === "1" || inspectRaw === "true";
+  const inspectToggleRaw = Array.isArray(sp.inspecttoggle)
+    ? sp.inspecttoggle[0]
+    : sp.inspecttoggle;
+  const inspectToggle =
+    inspectToggleRaw === "1" || inspectToggleRaw === "true";
+
   // Transparent embed: ?bg=transparent strips the page backdrop, the
   // letterbox fill, and the sandbox document's background, so the host
   // page shows through wherever the screen doesn't paint.
@@ -314,6 +342,10 @@ export default async function EmbedPage({
         tweakOpen={tweakOpen}
         shield={shield}
         transparent={transparent}
+        fidelity={fidelity}
+        fidelityToggle={fidelityToggle}
+        inspect={inspect}
+        inspectToggle={inspectToggle}
       />
     </>
   );

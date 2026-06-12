@@ -40,6 +40,8 @@ const Map = React.forwardRef<MapHandle, MapProps>(function Map(props, ref) {
     bounds,
     appearance = "auto",
     interactive = true,
+    tools = "auto",
+    toolsPosition = "top-left",
     hoveredId,
     onHoveredIdChange,
     onLoad,
@@ -101,7 +103,27 @@ const Map = React.forwardRef<MapHandle, MapProps>(function Map(props, ref) {
   });
 
   const themeCtx = useMaybeGradeTheme();
-  const isDark = themeCtx?.isDark ?? false;
+  // Provider-less hosts (the Fast Frame sandbox behind Studio previews and
+  // /e/ embeds, the flat capture page) have no GradeThemeProvider — but
+  // their renderer stamps `.dark` on <html> when the pushed theme is dark
+  // (applyTheme in fast-sandbox/page.tsx). Watch that class as the
+  // fallback signal so `appearance="auto"` maps restyle live when an
+  // embed's ?mode=dark / the EmbedTweaker's mode control flips the
+  // document — the adapter's setAppearance sync below picks the change
+  // up like any other isDark move. With a provider above us the context
+  // wins and the observer never attaches.
+  const hasThemeCtx = themeCtx !== null && themeCtx !== undefined;
+  const [rootDark, setRootDark] = React.useState(false);
+  React.useEffect(() => {
+    if (hasThemeCtx || typeof document === "undefined") return;
+    const root = document.documentElement;
+    const read = () => setRootDark(root.classList.contains("dark"));
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => mo.disconnect();
+  }, [hasThemeCtx]);
+  const isDark = themeCtx?.isDark ?? rootDark;
 
   const resolvedAppearance: "light" | "dark" | "satellite" =
     appearance === "auto" ? (isDark ? "dark" : "light") : appearance;
@@ -128,6 +150,8 @@ const Map = React.forwardRef<MapHandle, MapProps>(function Map(props, ref) {
             bounds,
             appearance: initialAppearance,
             interactive,
+            tools,
+            toolsPosition,
             styleUrl,
             tilerKey,
             accessToken,
@@ -177,9 +201,12 @@ const Map = React.forwardRef<MapHandle, MapProps>(function Map(props, ref) {
       markerRegistryRef.current.clear();
       lastHoveredRef.current = null;
     };
-    // Only re-init on provider/key/style changes — center/zoom/etc. are imperative.
+    // Only re-init on provider/key/style/tools changes — center/zoom/etc.
+    // are imperative. Tools re-init rather than mutate: control add/remove
+    // mid-flight differs per provider, and a tools change is a design-time
+    // decision (Studio settings panel), not a runtime hot path.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider, styleUrl, accessToken, apiKey, mapId, tilerKey]);
+  }, [provider, styleUrl, accessToken, apiKey, mapId, tilerKey, tools, toolsPosition]);
 
   // -------- imperative prop sync --------
   React.useEffect(() => {

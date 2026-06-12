@@ -9,6 +9,26 @@ export type Coords = [lng: number, lat: number];
 
 export type MapAppearance = "light" | "dark" | "satellite" | "auto";
 
+/**
+ * Which built-in map UI (zoom buttons today; compass/scale could join)
+ * renders on the map. `"auto"` (default) shows zoom buttons whenever the
+ * map is `interactive`; `"zoom"` forces them on regardless; `"none"`
+ * hides every tool. Attribution is NOT a tool — it's a license
+ * requirement and always renders.
+ */
+export type MapTools = "auto" | "zoom" | "none";
+
+/**
+ * Corner the tools dock to. One vocabulary across providers — each
+ * adapter maps it to its native enum (Leaflet `topleft`, MapLibre/Mapbox
+ * `top-left`, Google `ControlPosition.*`).
+ */
+export type MapToolsPosition =
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
+
 export type MapErrorCode =
   | "sdk-missing"
   | "api-key-missing"
@@ -59,6 +79,13 @@ type MapBaseProps = {
   appearance?: MapAppearance;
   /** Default `true`. `false` disables pan/zoom/rotate (static display). */
   interactive?: boolean;
+  /** Which built-in map UI shows. Default `"auto"` — zoom buttons follow
+   *  `interactive`. `"none"` for chrome-free maps (hero backdrops,
+   *  posters); attribution always stays (license). */
+  tools?: MapTools;
+  /** Corner the tools dock to. Default `"top-left"`. Handy when the
+   *  layout puts a search bar or legend over the default corner. */
+  toolsPosition?: MapToolsPosition;
   /** Controlled hovered marker id — pairs with `onHoveredIdChange` for list↔map sync. */
   hoveredId?: string | null;
   onHoveredIdChange?: (id: string | null) => void;
@@ -131,6 +158,8 @@ export type AdapterOpts = {
   bounds?: [Coords, Coords];
   appearance: "light" | "dark" | "satellite";
   interactive: boolean;
+  tools: MapTools;
+  toolsPosition: MapToolsPosition;
   styleUrl?: string;
   tilerKey?: string;
   accessToken?: string;

@@ -96,9 +96,18 @@ interface FastIframeHostProps {
    *  programmatic mode flips. */
   onSelectModeChange?: (next: boolean) => void;
   /** Wireframe / full toggle, posted to the iframe via
-   *  `grade:set-fidelity`. Defaults to "wireframe" so a fresh iframe
-   *  doesn't flash content before the parent's first push. */
+   *  `grade:set-fidelity` (re-posted on boot so re-mounted frames keep
+   *  the current side). The sandbox stamps `data-fidelity` on <html>;
+   *  the "MediaSurface fidelity" rules in @gradeui/ui globals.css do
+   *  the cross-fade. Undefined = never posted; the iframe renders full
+   *  fidelity (the CSS default). */
   fidelity?: "wireframe" | "full";
+  /** Hover-measure inspector, posted via `grade:set-inspect`. The
+   *  sandbox installs a read-only overlay: hovering any element outlines
+   *  it and labels it with its part name + rendered size in virtual px.
+   *  The embed's ?inspect / ?inspecttoggle params drive this; Studio
+   *  could too. Undefined = never posted (off). */
+  inspect?: boolean;
   /** Global motion toggle, posted to the iframe via `grade:set-motion`.
    *  `false` stamps `data-motion="off"` inside the sandbox so ThreeScene
    *  surfaces pause + CSS animation stills (lib/motion). `undefined` = don't
@@ -176,6 +185,7 @@ export function FastIframeHost({
   onClearSelection,
   onSelectModeChange,
   fidelity,
+  inspect,
   motion,
   mediaUrls,
   mediaOverrides,
@@ -380,6 +390,14 @@ export function FastIframeHost({
     postToSandbox({ type: "grade:set-fidelity", value: fidelity });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, fidelity]);
+
+  // Hover-measure inspector. Same boot-replay shape as fidelity — only
+  // posted when the prop is defined, so non-embed hosts never pay for it.
+  useEffect(() => {
+    if (!ready || inspect === undefined) return;
+    postToSandbox({ type: "grade:set-inspect", enabled: inspect });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, inspect]);
 
   // Motion toggle. Posted on change + on boot so a fresh iframe inherits the
   // parent's current setting. Only fires when `motion` is defined — leaving

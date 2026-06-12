@@ -85,6 +85,18 @@ export const createMaplibreAdapter: AdapterFactory = async (
     attributionControl: { compact: true },
   });
 
+  // Tools — shared vocabulary (types.ts). MapLibre had NO zoom buttons
+  // before this (scroll/pinch only); "auto"/"zoom" now adds the
+  // navigation control (zoom only, no compass — rotation isn't part of
+  // the Grade map contract) docked to the requested corner, which
+  // MapLibre takes verbatim.
+  if (opts.tools === "zoom" || (opts.tools === "auto" && opts.interactive)) {
+    map.addControl(
+      new maplibregl.NavigationControl({ showCompass: false }),
+      opts.toolsPosition,
+    );
+  }
+
   if (opts.bounds) {
     map.fitBounds([opts.bounds[0], opts.bounds[1]], { animate: false });
   }

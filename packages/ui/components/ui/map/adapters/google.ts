@@ -94,6 +94,20 @@ export const createGoogleAdapter: AdapterFactory = async (
 
   const isSat = opts.appearance === "satellite";
 
+  // Tools — shared vocabulary (types.ts). Google's default UI is loud
+  // (map-type switcher, street view, fullscreen), so the Grade contract
+  // disables ALL of it and adds back only the zoom control, docked via
+  // ControlPosition. This also makes Google match the other providers'
+  // quiet chrome instead of its own kitchen sink.
+  const showZoom =
+    opts.tools === "zoom" || (opts.tools === "auto" && opts.interactive);
+  const googleCorner: Record<string, google.maps.ControlPosition> = {
+    "top-left": google.maps.ControlPosition.LEFT_TOP,
+    "top-right": google.maps.ControlPosition.RIGHT_TOP,
+    "bottom-left": google.maps.ControlPosition.LEFT_BOTTOM,
+    "bottom-right": google.maps.ControlPosition.RIGHT_BOTTOM,
+  };
+
   const map = new google.maps.Map(container, {
     center: { lat: opts.center[1], lng: opts.center[0] },
     zoom: opts.zoom,
@@ -104,7 +118,11 @@ export const createGoogleAdapter: AdapterFactory = async (
     styles: isSat
       ? undefined
       : stylesFor(opts.appearance === "dark" ? "dark" : "light"),
-    disableDefaultUI: !opts.interactive,
+    disableDefaultUI: true,
+    zoomControl: showZoom,
+    zoomControlOptions: {
+      position: googleCorner[opts.toolsPosition],
+    },
     gestureHandling: opts.interactive ? "auto" : "none",
     keyboardShortcuts: opts.interactive,
   });
@@ -146,8 +164,11 @@ export const createGoogleAdapter: AdapterFactory = async (
       }
     },
     setInteractive: (enabled) => {
+      // disableDefaultUI stays true permanently (Grade owns the chrome);
+      // only the zoom control follows interactivity under tools="auto".
       map.setOptions({
-        disableDefaultUI: !enabled,
+        zoomControl:
+          opts.tools === "zoom" || (opts.tools === "auto" && enabled),
         gestureHandling: enabled ? "auto" : "none",
         keyboardShortcuts: enabled,
       });

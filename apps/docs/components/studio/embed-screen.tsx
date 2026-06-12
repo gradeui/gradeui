@@ -32,7 +32,7 @@
  */
 
 import * as React from "react";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Frame, Image as ImageIcon, Ruler } from "lucide-react";
 import { useReducedMotion } from "@gradeui/ui";
 import { FastIframeHost } from "@/components/studio/fast-frame";
 import { EmbedTweaker, type EmbedTweakControl } from "@/components/studio/embed-tweaker";
@@ -319,6 +319,10 @@ export function EmbedScreen({
   tweakOpen = false,
   shield = false,
   transparent = false,
+  fidelity = "full",
+  fidelityToggle = false,
+  inspect = false,
+  inspectToggle = false,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -363,6 +367,24 @@ export function EmbedScreen({
    *  letterbox fill, and the sandbox document paints nothing — the host
    *  page shows through wherever the screen doesn't paint. */
   transparent?: boolean;
+  /** Initial render fidelity (?fidelity=wireframe). "wireframe" stamps
+   *  `data-fidelity="wireframe"` inside the sandbox (via the existing
+   *  grade:set-fidelity push), cross-fading MediaSurface imagery out and
+   *  the tiered placeholders back in — the "show the structure, not the
+   *  pictures" view. Pure CSS inside the iframe; see the "MediaSurface
+   *  fidelity" rules in @gradeui/ui globals.css. */
+  fidelity?: "wireframe" | "full";
+  /** Viewer-facing fidelity toggle (?fidelitytoggle=1): a corner chip
+   *  that flips between full imagery and wireframe with the cross-fade.
+   *  `fidelity` sets which side it starts on. */
+  fidelityToggle?: boolean;
+  /** Start with the hover-measure inspector on (?inspect=1): hovering
+   *  any element outlines it with its part name + size in virtual px.
+   *  Read-only — no selection, nothing leaves the iframe. */
+  inspect?: boolean;
+  /** Viewer-facing inspector toggle (?inspecttoggle=1) — corner chip
+   *  next to the fidelity one. */
+  inspectToggle?: boolean;
 }) {
   // Project theme — same resolution as SharedScreen: parse the draft,
   // generate the ramp set, fall back to the default built-in on any
@@ -408,6 +430,17 @@ export function EmbedScreen({
   // In-embed click shield (?shield=1): guard interaction until the
   // visitor opts in; re-arm when the pointer leaves the frame.
   const [shieldDown, setShieldDown] = React.useState(false);
+
+  // Live fidelity — starts on the param's side, flipped by the viewer
+  // chip. Forwarded into FastIframeHost, which re-posts on iframe boot
+  // so a re-mounted frame keeps the current side.
+  const [liveFidelity, setLiveFidelity] = React.useState<"wireframe" | "full">(
+    fidelity,
+  );
+
+  // Live inspector state — same shape as fidelity: param picks the
+  // starting side, the chip flips it, FastIframeHost re-posts on boot.
+  const [liveInspect, setLiveInspect] = React.useState(inspect);
 
   // Wheel forwarding — when the embed is framed and the wheel event
   // isn't consumed by a scrollable element INSIDE the embed (the theme
@@ -494,6 +527,8 @@ export function EmbedScreen({
         theme={effTheme}
         mode={effMode}
         motion={motion}
+        fidelity={liveFidelity}
+        inspect={inspect || inspectToggle ? liveInspect : undefined}
         transparent={transparent}
         className="block h-full w-full"
       />
@@ -504,6 +539,8 @@ export function EmbedScreen({
       theme={effTheme}
       mode={effMode}
       motion={motion}
+      fidelity={liveFidelity}
+      inspect={inspect || inspectToggle ? liveInspect : undefined}
       transparent={transparent}
       className="block h-full w-full"
     />
@@ -544,6 +581,68 @@ export function EmbedScreen({
         >
           Click to interact
         </span>
+      )}
+
+      {/* Viewer mode chips (?fidelitytoggle=1 / ?inspecttoggle=1) — a
+          bottom-LEFT row, so it coexists with the shield pill / camera
+          transport on the right. Both are VIEW toggles delivered as
+          postMessages into the sandbox: fidelity is the pure-CSS
+          wireframe cross-fade (grade:set-fidelity → data-fidelity),
+          inspect is the read-only hover-measure overlay
+          (grade:set-inspect). */}
+      {(fidelityToggle || inspectToggle) && (
+        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2">
+          {fidelityToggle && (
+            <button
+              type="button"
+              onClick={() =>
+                setLiveFidelity((f) => (f === "full" ? "wireframe" : "full"))
+              }
+              aria-label={
+                liveFidelity === "full"
+                  ? "Show wireframe (hide imagery)"
+                  : "Show full imagery"
+              }
+              aria-pressed={liveFidelity === "wireframe"}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs backdrop-blur-md transition",
+                effMode === "dark"
+                  ? "border-white/20 bg-black/45 text-white/90 hover:bg-black/60"
+                  : "border-black/15 bg-white/70 text-neutral-900 hover:bg-white/90",
+              )}
+            >
+              {liveFidelity === "full" ? (
+                <Frame className="h-3.5 w-3.5" />
+              ) : (
+                <ImageIcon className="h-3.5 w-3.5" />
+              )}
+              {liveFidelity === "full" ? "Wireframe" : "Full"}
+            </button>
+          )}
+          {inspectToggle && (
+            <button
+              type="button"
+              onClick={() => setLiveInspect((v) => !v)}
+              aria-label={
+                liveInspect
+                  ? "Turn off measurements"
+                  : "Measure elements on hover"
+              }
+              aria-pressed={liveInspect}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs backdrop-blur-md transition",
+                effMode === "dark"
+                  ? "border-white/20 bg-black/45 text-white/90 hover:bg-black/60"
+                  : "border-black/15 bg-white/70 text-neutral-900 hover:bg-white/90",
+                liveInspect &&
+                  (effMode === "dark" ? "bg-black/70" : "bg-white"),
+              )}
+            >
+              <Ruler className="h-3.5 w-3.5" />
+              Measure
+            </button>
+          )}
+        </div>
       )}
 
       {tweak && tweak.length > 0 && (

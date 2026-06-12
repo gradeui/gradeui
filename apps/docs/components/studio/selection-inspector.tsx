@@ -1458,7 +1458,14 @@ function AssetSlotPicker({
   return (
     <div className="space-y-1.5">
       {/* Large, full-width preview — click it (or "Change image") to open
-          the picker. Reads as a proper image well, not a tiny chip. */}
+          the picker. Reads as a proper image well, not a tiny chip.
+          `object-contain` (not cover): the well's job is "what asset is
+          in this slot?", and cover crops a wide logo down to a few
+          letters. The canvas already shows the real cover-crop framing.
+          Behind the image, a checkerboard (the standard transparency
+          backdrop) so alpha regions read as transparent rather than
+          blending into the panel — token-driven via
+          `--gds-media-checker-*` with safe fallbacks. */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -1468,13 +1475,23 @@ function AssetSlotPicker({
           "group/img flex w-full items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40 transition hover:border-primary disabled:opacity-50",
           previewAspect,
         )}
+        style={
+          currentSrc
+            ? {
+                backgroundImage:
+                  "repeating-conic-gradient(var(--gds-media-checker-color, oklch(var(--muted-foreground) / 0.16)) 0% 25%, transparent 0% 50%)",
+                backgroundSize:
+                  "var(--gds-media-checker-size, 14px) var(--gds-media-checker-size, 14px)",
+              }
+            : undefined
+        }
       >
         {currentSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={currentSrc}
             alt=""
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         ) : (
           <span className="flex flex-col items-center gap-1 text-muted-foreground/60">

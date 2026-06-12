@@ -83,10 +83,23 @@ export const createLeafletAdapter: AdapterFactory = async (
   // Grade coords are [lng, lat]; Leaflet wants [lat, lng].
   const toLatLng = (c: Coords): [number, number] => [c[1], c[0]];
 
+  // Tools — one vocabulary across providers (see MapTools/MapToolsPosition
+  // in types.ts). "auto" follows `interactive`; the position maps to
+  // Leaflet's squashed corner names. Zoom is added as an explicit control
+  // (zoomControl: false at init) so it can dock to any corner.
+  const showZoom =
+    opts.tools === "zoom" || (opts.tools === "auto" && opts.interactive);
+  const leafletCorner: Record<string, string> = {
+    "top-left": "topleft",
+    "top-right": "topright",
+    "bottom-left": "bottomleft",
+    "bottom-right": "bottomright",
+  };
+
   const map = L.map(container, {
     center: toLatLng(opts.center),
     zoom: opts.zoom,
-    zoomControl: opts.interactive,
+    zoomControl: false,
     attributionControl: true,
     dragging: opts.interactive,
     scrollWheelZoom: opts.interactive,
@@ -95,6 +108,12 @@ export const createLeafletAdapter: AdapterFactory = async (
     keyboard: opts.interactive,
     touchZoom: opts.interactive,
   });
+
+  if (showZoom) {
+    L.control
+      .zoom({ position: leafletCorner[opts.toolsPosition] ?? "topleft" })
+      .addTo(map);
+  }
 
   // Appearance is a different tile STYLE (not a CSS filter), so switching it
   // swaps the layer. `{r}` is Leaflet's retina suffix; `detectRetina` fills it.

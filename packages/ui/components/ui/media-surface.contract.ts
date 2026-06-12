@@ -259,6 +259,15 @@ export const MediaSurfaceContract = contract({
       description:
         "When set, renders an `<img>` filling the slot via object-cover. The wrapper keeps its aspect/radius/border. Generators patch this prop; manual values always win.",
     },
+    instanceId: {
+      schema: z.string().optional(),
+      design: "content",
+      group: "image",
+      control: "text",
+      label: "Instance id",
+      description:
+        "Stable per-instance id stamped as `data-gds-instance-id`. Use when rendering MediaSurfaces from a data array (`.map(item => <MediaSurface instanceId={item.id} …/>)`) — it's how Studio's selection + Fill flows tell one card apart from its siblings and patch only that entry. Was missing from this hand-authored contract while the component documented it, which made save validation reject the documented pattern (June 2026).",
+    },
 
     // ── Structured — discriminated union with sub-form per kind ────
     source: {

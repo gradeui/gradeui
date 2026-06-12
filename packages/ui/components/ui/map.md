@@ -10,7 +10,10 @@ props:
   - Map: bounds — `[[swLng, swLat], [neLng, neLat]]`. When set, takes precedence over center+zoom.
   - Map: appearance — "light" | "dark" | "satellite" | "auto" (default "auto", follows GradeThemeProvider mode).
   - Map: hoveredId — controlled string id, pairs with onHoveredIdChange. The matching MapMarker gets `data-gds-state="hovered"` automatically. This is how you build list ↔ map two-way sync.
+  - Map: onHoveredIdChange — `(id: string | null) => void`. The other half of the controlled hover pair: fires when the pointer enters/leaves a marker so the sibling list can highlight in step. Without this entry in the contract, screens using the documented two-way sync fail save validation.
   - Map: interactive — false freezes pan/zoom, useful for static cards.
+  - Map: tools — "auto" (default, zoom buttons follow `interactive`) | "zoom" (force zoom buttons) | "none" (chrome-free map; attribution always stays — license). One vocabulary across all providers.
+  - Map: toolsPosition — "top-left" (default) | "top-right" | "bottom-left" | "bottom-right". Corner the tools dock to; use when a search bar or legend sits over the default corner.
   - Map: onLoad(handle) / onError(error) — handle exposes flyTo, panTo, fitBounds, getCenter, getZoom, getBounds, instance.
   - Map: tilerKey? — MapLibre only (provider="maplibre"). Optional everywhere: omit on `gradeui.com`/`localhost` and the referrer-locked demo key is used; set it only when embedding off-domain. The contract never requires it.
   - Map: accessToken? — Mapbox only. Pass it whenever provider="mapbox" — the component itself enforces this at runtime (throws a clear `provider="mapbox" requires an accessToken prop` error via onError if missing). It is OPTIONAL in the contract on purpose, so the validator never demands it from maplibre/google maps.

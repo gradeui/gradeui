@@ -45,10 +45,25 @@ export const MapContract = contract({
       design: "plumbing",
       description: "controlled string id, pairs with onHoveredIdChange. The matching MapMarker gets `data-gds-state=\"hovered\"` automatically. This is how you build list ↔ map two-way sync.",
   },
+  "onHoveredIdChange": {
+      schema: z.unknown(),
+      design: "event",
+      description: "`(id: string | null) => void`. The other half of the controlled hover pair: fires when the pointer enters/leaves a marker so the sibling list can highlight in step. Without this entry in the contract, screens using the documented two-way sync fail save validation.",
+  },
   "interactive": {
       schema: z.unknown(),
       design: "plumbing",
       description: "false freezes pan/zoom, useful for static cards.",
+  },
+  "tools": {
+      schema: z.unknown(),
+      design: "plumbing",
+      description: "\"auto\" (default, zoom buttons follow `interactive`) | \"zoom\" (force zoom buttons) | \"none\" (chrome-free map; attribution always stays — license). One vocabulary across all providers.",
+  },
+  "toolsPosition": {
+      schema: z.unknown(),
+      design: "plumbing",
+      description: "\"top-left\" (default) | \"top-right\" | \"bottom-left\" | \"bottom-right\". Corner the tools dock to; use when a search bar or legend sits over the default corner.",
   },
   "onLoad": {
       schema: z.unknown(),
