@@ -265,6 +265,68 @@ export const FONT_CATEGORY: Record<FontKey, "sans" | "serif" | "mono"> = {
   mono: "mono",
 };
 
+/* ──────────────────────────────────────────────────────────────────────
+   Custom fonts — uploaded typefaces a theme carries WITH it.
+
+   The FONTS registry above covers fonts resident in the app (next/font
+   loaders in layout.tsx). A CustomFontFace is the portable alternative:
+   the theme itself names a family and points at a permanent public URL
+   (the user-assets bucket, migration 0014), and every renderer — root
+   provider, theme-builder scope, Fast Frame sandbox, share view, embed —
+   injects the @font-face at apply time. Deterministic + portable per the
+   STUDIO-THEMES contract: a saved/shared/embedded ThemeInput reproduces
+   the exact face anywhere with no registry registration.
+   ────────────────────────────────────────────────────────────────────── */
+
+/** One uploaded font face a theme carries. Stored on
+ *  `ThemeInput.typography.customFonts` and emitted as an @font-face rule
+ *  by `fontFaceCSS` (apply.ts) wherever the theme is applied. */
+export interface CustomFontFace {
+  /** CSS font-family name, e.g. "Pebble Sans". Doubles as the display
+   *  label and as the reference target for `custom:<family>` selections. */
+  family: string;
+  /** Permanent public URL for the font file (user-assets bucket). Must be
+   *  publicly resolvable so cross-origin embeds can load it. */
+  url: string;
+  /** @font-face `format()` hint. Derived from the file extension. */
+  format?: "woff2" | "woff" | "truetype" | "opentype";
+  /** font-weight descriptor: "400", "700", or a variable range "100 900". */
+  weight?: string;
+  /** font-stretch descriptor range, e.g. "75% 125%" for a wdth axis.
+   *  Defaults to a generous "50% 200%" (browsers clamp to the font's
+   *  real range) so width-variable fonts respond to font-stretch. */
+  stretch?: string;
+  style?: "normal" | "italic";
+  /** Drives the generic fallback stack appended after the family. */
+  category?: "sans" | "serif" | "mono";
+  /** Provenance: the `assets` row this face came from (optional — a theme
+   *  must stay renderable even if the library row is gone). */
+  assetId?: string;
+}
+
+/** Prefix marking a typography selection as one of the theme's own
+ *  customFonts rather than a FONTS registry key. */
+export const CUSTOM_FONT_PREFIX = "custom:" as const;
+
+/** What `typography.display/body/mono` accept: a registry key, or a
+ *  reference to an entry in `typography.customFonts` ("custom:<family>"). */
+export type FontSelection = FontKey | `custom:${string}`;
+
+/** The family name inside a "custom:<family>" selection, or null when the
+ *  selection is a plain registry FontKey. */
+export function customFontFamily(sel: string): string | null {
+  return sel.startsWith(CUSTOM_FONT_PREFIX)
+    ? sel.slice(CUSTOM_FONT_PREFIX.length)
+    : null;
+}
+
+/** Generic fallback stacks appended after a custom family. */
+export const CUSTOM_FONT_FALLBACK: Record<"sans" | "serif" | "mono", string> = {
+  sans: "system-ui, sans-serif",
+  serif: "Georgia, serif",
+  mono: "ui-monospace, monospace",
+};
+
 /** Type scale preset — controls how generous the size ladder is. */
 export type TypeScalePreset = "compact" | "default" | "spacious";
 
@@ -357,9 +419,9 @@ export interface ThemeInput {
   intensity?: ColorIntensity;
 
   typography: {
-    display: FontKey;
-    body: FontKey;
-    mono: FontKey;
+    display: FontSelection;
+    body: FontSelection;
+    mono: FontSelection;
     scale: TypeScale;
     /** Override heading weight. Defaults to 600 for sans, 500 for serif. */
     headingWeight?: number;
@@ -367,6 +429,18 @@ export interface ThemeInput {
     bodyWeight?: number;
     /** Letter-spacing applied to headings. Default "-0.01em". */
     headingTracking?: string;
+    /** CSS font-stretch for body text (spans, paragraphs, component
+     *  text — it inherits everywhere). Meaningful for fonts with a
+     *  wdth axis, e.g. "90%" = TT Commons' Compact cut. Default
+     *  "normal". Fonts without the axis ignore it. */
+    bodyStretch?: string;
+    /** CSS font-stretch for display/heading text. Defaults to
+     *  bodyStretch so one knob re-cuts the whole theme. */
+    displayStretch?: string;
+    /** Uploaded faces this theme carries. A `custom:<family>` selection
+     *  above must have a matching entry here; unreferenced entries are
+     *  harmless (kept so switching back is instant). */
+    customFonts?: CustomFontFace[];
   };
 
   spacing: {
@@ -444,9 +518,17 @@ export interface GeneratedTypography {
   fontSans: string;
   fontMono: string;
   fontDisplay: string;
+  /** Custom @font-face sources carried through from the input. Whoever
+   *  applies the theme (apply.ts, Fast Frame, Sandpack, embed) is
+   *  responsible for injecting these — the font-family vars above already
+   *  reference the family names. Absent/empty for registry-only themes. */
+  fontFaces?: CustomFontFace[];
   headingWeight: number;
   bodyWeight: number;
   headingTracking: string;
+  /** Resolved CSS font-stretch values ("normal" when unset). */
+  bodyStretch: string;
+  displayStretch: string;
   /** Explicit font-size for each step in the scale. */
   scale: {
     display: string;

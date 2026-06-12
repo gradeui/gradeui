@@ -55,7 +55,7 @@ import {
   STUDIO_UNWRAP_TYPES,
 } from "@/lib/studio-walker-register";
 import { toast } from "sonner";
-import { themeToCSSVars } from "@/lib/themes/apply";
+import { themeToCSSVars, fontFaceCSS } from "@/lib/themes/apply";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { ViewportWidth } from "@/components/studio/sandpack-frame";
 import {
@@ -348,11 +348,20 @@ export function FastIframeHost({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, preparedDraft]);
 
-  // Theme updates. Serialize the var map once and push it over.
+  // Theme updates. Serialize the var map once and push it over. Custom
+  // uploaded faces ride along as a ready-made @font-face CSS string —
+  // the sandbox can't resolve a "custom:" family from vars alone (the
+  // face lives in the theme, not the registry), so the host pays the
+  // serialization and the sandbox just upserts a <style> tag.
   useEffect(() => {
     if (!ready) return;
     const vars = themeToCSSVars(theme, mode);
-    postToSandbox({ type: "grade:fast-theme", vars, mode });
+    postToSandbox({
+      type: "grade:fast-theme",
+      vars,
+      mode,
+      fontFaces: fontFaceCSS(theme.typography.fontFaces),
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, theme, mode]);
 

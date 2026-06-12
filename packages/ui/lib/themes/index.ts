@@ -17,7 +17,13 @@ import type { GeneratedTheme, ThemeInput } from "./types";
 // Public re-exports
 export * from "./types";
 export { generateTheme } from "./generator";
-export { themeToCSSVars, applyThemeToRoot } from "./apply";
+export {
+  themeToCSSVars,
+  applyThemeToRoot,
+  fontFaceCSS,
+  injectFontFaces,
+  FONT_FACE_STYLE_ID,
+} from "./apply";
 export type { ModeName } from "./oklch";
 export { BUILT_IN_INPUTS, calmInput, energyInput } from "./inputs";
 export { generateThemeMarkdown, downloadThemeMarkdown } from "./export-md";

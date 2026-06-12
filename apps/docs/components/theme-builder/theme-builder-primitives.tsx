@@ -29,7 +29,11 @@ import {
   FONTS,
   FONT_LABELS,
   FONT_CATEGORY,
+  CUSTOM_FONT_PREFIX,
+  customFontFamily,
+  type CustomFontFace,
   type FontKey,
+  type FontSelection,
 } from "@/lib/themes";
 import { hueToRamp, RAMP_KEYS } from "@/lib/themes/oklch";
 import { cn } from "@/lib/utils";
@@ -359,13 +363,19 @@ export function FontRow({
   value,
   onChange,
   filter,
+  customFonts,
   changed,
   onReset,
 }: {
   label: string;
-  value: FontKey;
-  onChange: (v: FontKey) => void;
+  value: FontSelection;
+  onChange: (v: FontSelection) => void;
   filter: (cat: "sans" | "serif" | "mono") => boolean;
+  /** Uploaded faces offered alongside the registry — the theme's own
+   *  customFonts merged with the user's font asset library. Rendered as a
+   *  "Your fonts" group whose values are `custom:<family>` selections.
+   *  Filtered by the same category predicate as registry fonts. */
+  customFonts?: CustomFontFace[];
   /** Changed-from-base dot — see Label. */
   changed?: boolean;
   /** Per-control reset — see Label. */
@@ -377,6 +387,16 @@ export function FontRow({
   const sans = keys.filter((k) => FONT_CATEGORY[k] === "sans");
   const serif = keys.filter((k) => FONT_CATEGORY[k] === "serif");
   const mono = keys.filter((k) => FONT_CATEGORY[k] === "mono");
+  const custom = (customFonts ?? []).filter((f) =>
+    filter(f.category ?? "sans")
+  );
+
+  // A selection naming a face that's gone from both the theme and the
+  // library would render an empty trigger — surface it as a raw item so
+  // the user can see (and move off) the dangling value.
+  const valueFamily = customFontFamily(value);
+  const valueIsOrphan =
+    valueFamily !== null && !custom.some((f) => f.family === valueFamily);
 
   const group = (heading: string, items: FontKey[]) =>
     items.length > 0 && (
@@ -395,11 +415,30 @@ export function FontRow({
       <Label changed={changed} onReset={onReset}>{label}</Label>
       {/* Canonical Select at inspector density (size="2xs") — matches
           the Layout tab's NumericSelectRow triggers. */}
-      <Select value={value} onValueChange={(v) => onChange(v as FontKey)}>
+      <Select
+        value={value}
+        onValueChange={(v) => onChange(v as FontSelection)}
+      >
         <SelectTrigger size="2xs" className="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent size="2xs">
+          {(custom.length > 0 || valueIsOrphan) && (
+            <SelectGroup>
+              <SelectLabel>Your fonts</SelectLabel>
+              {custom.map((f) => (
+                <SelectItem
+                  key={f.family}
+                  value={`${CUSTOM_FONT_PREFIX}${f.family}`}
+                >
+                  {f.family}
+                </SelectItem>
+              ))}
+              {valueIsOrphan && (
+                <SelectItem value={value}>{valueFamily} (missing)</SelectItem>
+              )}
+            </SelectGroup>
+          )}
           {group("Sans", sans)}
           {group("Serif", serif)}
           {group("Mono", mono)}

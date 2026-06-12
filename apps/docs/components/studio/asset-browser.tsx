@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { getStudioStorage } from "@/lib/studio-storage";
 import type { Asset, AssetType } from "@/lib/studio-storage";
+import { assetToFontFace } from "@/lib/custom-fonts";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -316,6 +317,58 @@ export function AssetBrowser({
   );
 }
 
+/**
+ * Live type specimen for a font asset. Loads the face via the FontFace
+ * API (document.fonts is page-global, so a loaded family is reusable —
+ * the theme builder's "Your fonts" preview gets it for free) and renders
+ * an "Ag" in the actual typeface. Falls back to the Type glyph while
+ * loading or if the binary can't be parsed.
+ */
+function FontSpecimen({ asset }: { asset: Asset }) {
+  const face = React.useMemo(() => assetToFontFace(asset), [asset]);
+  const [loaded, setLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!face) return;
+    let alive = true;
+    // Already registered (re-mount, or the theme loaded it)? Skip the fetch.
+    if (document.fonts.check(`12px "${face.family}"`)) {
+      setLoaded(true);
+      return;
+    }
+    const ff = new FontFace(face.family, `url("${face.url}")`);
+    ff.load()
+      .then(() => {
+        document.fonts.add(ff);
+        if (alive) setLoaded(true);
+      })
+      .catch(() => {
+        /* unparseable binary — keep the glyph fallback */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [face]);
+
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-1 p-1 text-center">
+      {loaded && face ? (
+        <span
+          className="text-xl leading-none text-foreground"
+          style={{ fontFamily: `"${face.family}"` }}
+        >
+          Ag
+        </span>
+      ) : (
+        <Type className="h-4 w-4 text-muted-foreground" />
+      )}
+      <span className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">
+        {face?.family ?? asset.name}
+      </span>
+    </div>
+  );
+}
+
 function AssetTile({
   asset,
   onDelete,
@@ -336,13 +389,11 @@ function AssetTile({
           alt={asset.name}
           className="h-full w-full object-contain p-1"
         />
+      ) : asset.type === "font" ? (
+        <FontSpecimen asset={asset} />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1 p-1 text-center">
-          {asset.type === "font" ? (
-            <Type className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          )}
+          <FileText className="h-4 w-4 text-muted-foreground" />
           <span className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">
             {asset.name}
           </span>

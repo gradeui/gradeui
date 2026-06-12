@@ -33,7 +33,14 @@ export function applyBuiltInThemeOverrides(theme: GeneratedTheme): GeneratedThem
 // Public re-exports
 export * from "./types";
 export { generateTheme } from "./generator";
-export { themeToCSSVars, applyThemeToRoot, applyThemeToElement } from "./apply";
+export {
+  themeToCSSVars,
+  applyThemeToRoot,
+  applyThemeToElement,
+  fontFaceCSS,
+  injectFontFaces,
+  FONT_FACE_STYLE_ID,
+} from "./apply";
 export type { ModeName } from "./oklch";
 export { BUILT_IN_INPUTS, studioInput, calmInput, energyInput } from "./inputs";
 export { generateThemeMarkdown, downloadThemeMarkdown } from "./export-md";

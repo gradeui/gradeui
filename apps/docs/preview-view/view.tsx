@@ -29,6 +29,7 @@ import { GradeLogo } from "@/components/grade-logo";
 import {
   generateTheme,
   themeToCSSVars,
+  injectFontFaces,
   builtInThemes,
   defaultThemeId,
 } from "@/lib/themes";
@@ -284,6 +285,9 @@ function PreviewShell() {
       }
     }
     applyThemeVars(themeToCSSVars(theme, mode));
+    // Custom uploaded faces — same contract as every other surface: the
+    // vars name the family, the @font-face tag materialises it.
+    injectFontFaces(theme.typography.fontFaces);
   }, [payload?.themeDraftJson, mode]);
 
   // Live frame resolution for the footer + host panel sizing.

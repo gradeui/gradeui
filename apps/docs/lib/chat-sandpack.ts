@@ -10,7 +10,7 @@
  * chat preview stays in sync.
  */
 
-import { themeToCSSVars, type GeneratedTheme } from "@/lib/themes";
+import { themeToCSSVars, fontFaceCSS, type GeneratedTheme } from "@/lib/themes";
 import { injectMediaSourceAttrs } from "@/lib/media-fill";
 import { ALLOWED_COMPONENTS } from "@gradeui/studio/playbook";
 
@@ -752,7 +752,11 @@ export function buildPlaygroundIndexHtml(
   lightVars: string,
   darkVars: string,
   mode: "light" | "dark",
-  components: { buttonShape: string; inputStyle: string; cardStyle: string }
+  components: { buttonShape: string; inputStyle: string; cardStyle: string },
+  /** Pre-serialized @font-face CSS for the theme's custom uploaded fonts
+   *  (fontFaceCSS in lib/themes/apply.ts). Two-renderer rule: Fast Frame
+   *  gets these over grade:fast-theme; Sandpack bakes them in here. */
+  fontFaces = ""
 ): string {
   // NOTE on mode class + data-* attrs: we used to stamp them directly on
   // the <html> tag here (e.g. `class="dark" data-button-shape="rounded"`).
@@ -873,6 +877,7 @@ export function buildPlaygroundIndexHtml(
       }
     </script>
     <style>
+${fontFaces}
       :root {
 ${PLAYGROUND_FONT_VARS}
 ${lightVars}
@@ -885,6 +890,7 @@ ${darkVars}
         background-color: oklch(var(--background));
         color: oklch(var(--foreground));
         font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+        font-stretch: var(--font-body-stretch, normal);
         margin: 0;
       }
       /* Form controls don't inherit font-family from body by default — every
@@ -903,6 +909,7 @@ ${darkVars}
       }
       h1, h2, h3, h4 {
         font-family: var(--font-display, var(--font-sans));
+        font-stretch: var(--font-display-stretch, var(--font-body-stretch, normal));
         font-weight: var(--font-heading-weight, 600);
         letter-spacing: var(--font-heading-tracking, -0.01em);
       }
@@ -1350,8 +1357,13 @@ function findComponentOwner(el: Element | null): Element | null {
 export {};
 `;
 
-export function buildPlaygroundStylesCss(lightVars: string, darkVars: string): string {
-  return `:root {
+export function buildPlaygroundStylesCss(
+  lightVars: string,
+  darkVars: string,
+  fontFaces = ""
+): string {
+  return `${fontFaces}
+:root {
 ${PLAYGROUND_FONT_VARS}
 ${lightVars}
 }
@@ -1369,6 +1381,7 @@ body {
   background-color: oklch(var(--background));
   color: oklch(var(--foreground));
   font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  font-stretch: var(--font-body-stretch, normal);
   margin: 0;
 }
 
@@ -2544,7 +2557,14 @@ export function buildSandpackFiles({
 }: BuildSandpackFilesArgs): Record<string, string> {
   const lightVars = formatThemeVars(theme, "light");
   const darkVars = formatThemeVars(theme, "dark");
-  const themeSignature = themeVarsSignature(lightVars, darkVars);
+  // Custom uploaded faces ride into both the boot HTML (first paint) and
+  // styles.css (hot-reload path). Folding them into the signature means a
+  // face swap alone still re-pitches the preview.
+  const fontFaces = fontFaceCSS(theme.typography.fontFaces);
+  const themeSignature = themeVarsSignature(
+    lightVars,
+    darkVars + "\n" + fontFaces
+  );
   const components = {
     buttonShape: theme.components.buttonShape ?? "default",
     inputStyle: theme.components.inputStyle ?? "outlined",
@@ -2573,7 +2593,7 @@ export function buildSandpackFiles({
   // in the Sandpack file map here.
   return {
     "/App.tsx": prepared,
-    "/public/index.html": buildPlaygroundIndexHtml(lightVars, darkVars, mode, components),
+    "/public/index.html": buildPlaygroundIndexHtml(lightVars, darkVars, mode, components, fontFaces),
     // Entry module is static across theme tweaks (see PLAYGROUND_INDEX_TSX)
     // so Sandpack never has to reload the iframe. The mode + component
     // option values live in /theme-options.tsx instead — a component
@@ -2585,7 +2605,7 @@ export function buildSandpackFiles({
     // comment above PLAYGROUND_SELECTION_AGENT_TSX for why.
     "/selection-agent.ts": PLAYGROUND_SELECTION_AGENT_TSX,
     "/theme-options.tsx": buildPlaygroundThemeOptionsTsx(mode, components, themeSignature),
-    "/styles.css": buildPlaygroundStylesCss(lightVars, darkVars),
+    "/styles.css": buildPlaygroundStylesCss(lightVars, darkVars, fontFaces),
     ...(extraFiles ?? {}),
   };
 }

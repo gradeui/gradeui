@@ -1,4 +1,8 @@
-import type { GeneratedColorsMode, GeneratedTheme } from "./types";
+import type {
+  CustomFontFace,
+  GeneratedColorsMode,
+  GeneratedTheme,
+} from "./types";
 import { RAMP_KEYS, type ModeName, type Ramp } from "./oklch";
 
 /**
@@ -109,6 +113,12 @@ export function themeToCSSVars(
     "--font-heading-weight": String(theme.typography.headingWeight),
     "--font-body-weight": String(theme.typography.bodyWeight),
     "--font-heading-tracking": theme.typography.headingTracking,
+    // Variable-font width cut (wdth axis). Consumed by globals.css on
+    // body (inherits into every span/component) and h1–h4. Per-element
+    // utilities (font-stretch-[75%]) still override — classes beat
+    // inherited values.
+    "--font-body-stretch": theme.typography.bodyStretch ?? "normal",
+    "--font-display-stretch": theme.typography.displayStretch ?? "normal",
     "--text-display": theme.typography.scale.display,
     "--text-h1": theme.typography.scale.h1,
     "--text-h2": theme.typography.scale.h2,
@@ -232,6 +242,75 @@ function flattenRamp(
   return out;
 }
 
+/* ──────────────────────────────────────────────────────────────────────
+   Custom font faces — the @font-face side of CustomFontFace.
+
+   themeToCSSVars already emits font-family vars that NAME a custom
+   family; these helpers materialise the face itself. Every surface that
+   applies a theme to a document must also inject this CSS, or a custom
+   family silently falls back.
+   ────────────────────────────────────────────────────────────────────── */
+
+/** id of the <style> tag `injectFontFaces` manages per document. */
+export const FONT_FACE_STYLE_ID = "gds-theme-fonts";
+
+/** @font-face rules for a theme's custom faces. Empty string when the
+ *  theme carries none (registry-only themes — the common case). */
+export function fontFaceCSS(
+  faces: CustomFontFace[] | undefined | null
+): string {
+  if (!faces || faces.length === 0) return "";
+  return faces
+    .map((f) => {
+      const src = f.format
+        ? `url("${f.url}") format("${f.format}")`
+        : `url("${f.url}")`;
+      return [
+        "@font-face {",
+        `  font-family: "${f.family.replace(/"/g, "")}";`,
+        `  src: ${src};`,
+        `  font-weight: ${f.weight ?? "100 900"};`,
+        // Generous default range so a variable font's wdth axis is
+        // reachable via font-stretch utilities (font-stretch-[90%]).
+        // Browsers clamp to the font's real fvar range, and fonts with
+        // no wdth axis simply ignore it — safe either way. Without a
+        // declared range some browsers pin the axis at 100%.
+        `  font-stretch: ${f.stretch ?? "50% 200%"};`,
+        `  font-style: ${f.style ?? "normal"};`,
+        "  font-display: swap;",
+        "}",
+      ].join("\n");
+    })
+    .join("\n");
+}
+
+/**
+ * Upsert the theme's @font-face rules into a document's <head> via a
+ * single managed <style id="gds-theme-fonts"> tag. Idempotent and
+ * cheap to call on every theme apply: same CSS → no DOM write; a theme
+ * with no custom faces removes the tag.
+ */
+export function injectFontFaces(
+  faces: CustomFontFace[] | undefined | null,
+  doc: Document = typeof document === "undefined"
+    ? (undefined as unknown as Document)
+    : document
+): void {
+  if (!doc) return;
+  const css = fontFaceCSS(faces);
+  let tag = doc.getElementById(FONT_FACE_STYLE_ID) as HTMLStyleElement | null;
+  if (!css) {
+    tag?.remove();
+    return;
+  }
+  if (!tag) {
+    tag = doc.createElement("style");
+    tag.id = FONT_FACE_STYLE_ID;
+    doc.head.appendChild(tag);
+  }
+  if (tag.textContent !== css) tag.textContent = css;
+}
+
 /**
  * Apply a theme to the document root. Writes every CSS variable produced by
  * themeToCSSVars and sets a set of data attributes that component-shape
@@ -248,6 +327,10 @@ export function applyThemeToRoot(theme: GeneratedTheme, mode: ModeName): void {
   for (const [key, value] of Object.entries(vars)) {
     root.style.setProperty(key, value);
   }
+
+  // Custom uploaded faces — without this the family vars above name a
+  // font the document has never loaded.
+  injectFontFaces(theme.typography.fontFaces, document);
 
   // Metadata attributes — components key styles off these.
   // Fall back to sensible defaults if a field is missing (shouldn't happen

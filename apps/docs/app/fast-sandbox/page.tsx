@@ -30,7 +30,9 @@
  *       FailurePanel, no grade:fast-error — the previous render stays up
  *       and the next stream tick retries. Successes render but skip the
  *       grade:fast-compiled ack (the Fill flow must never await a draft).
- *     { type: "grade:fast-theme",    vars, mode }    — apply CSS vars
+ *     { type: "grade:fast-theme",    vars, mode, fontFaces? } — apply CSS
+ *       vars; `fontFaces` is pre-serialized @font-face CSS for the
+ *       theme's custom uploaded fonts, upserted as <style #gds-theme-fonts>
  *     { type: "grade:select-mode",   enabled }       — toggle agent
  *     { type: "grade:clear-selection" }              — hide overlay
  *
@@ -829,7 +831,11 @@ export default function FastSandboxPage() {
       }
     }
 
-    function applyTheme(vars: Record<string, string>, mode: "light" | "dark") {
+    function applyTheme(
+      vars: Record<string, string>,
+      mode: "light" | "dark",
+      fontFaces?: string
+    ) {
       const root = document.documentElement;
       // No-op guard — the parent re-posts the theme on unrelated
       // re-renders (object identity churn). Re-applying identical vars
@@ -837,8 +843,25 @@ export default function FastSandboxPage() {
       // MutationObserver (class/style/data-gds-theme) re-resolves its
       // palette on EVERY one — wasted forced style recalcs at best,
       // shader colour pops at worst. Identical push → skip entirely.
-      const sig = String(hash(JSON.stringify({ vars, mode })));
+      const sig = String(hash(JSON.stringify({ vars, mode, fontFaces })));
       if (root.dataset.gdsTheme === sig) return;
+      // Custom uploaded faces — the host serialized the @font-face CSS
+      // (see fast-frame.tsx); upsert it into a single managed tag so a
+      // theme switch replaces rather than accumulates. Empty → remove.
+      {
+        const tagId = "gds-theme-fonts";
+        let tag = document.getElementById(tagId) as HTMLStyleElement | null;
+        if (fontFaces) {
+          if (!tag) {
+            tag = document.createElement("style");
+            tag.id = tagId;
+            document.head.appendChild(tag);
+          }
+          if (tag.textContent !== fontFaces) tag.textContent = fontFaces;
+        } else {
+          tag?.remove();
+        }
+      }
       for (const [key, value] of Object.entries(vars)) {
         root.style.setProperty(key, value);
       }
@@ -879,7 +902,9 @@ export default function FastSandboxPage() {
         case "grade:fast-theme": {
           const vars = data.vars as Record<string, string> | undefined;
           const mode = data.mode as "light" | "dark" | undefined;
-          if (vars && mode) applyTheme(vars, mode);
+          const fontFaces =
+            typeof data.fontFaces === "string" ? data.fontFaces : undefined;
+          if (vars && mode) applyTheme(vars, mode, fontFaces);
           break;
         }
         case "grade:select-mode": {
@@ -1446,6 +1471,34 @@ export default function FastSandboxPage() {
 
   return (
     <>
+      {/* ── Runtime Tailwind JIT ───────────────────────────────────────
+          The bundled @gradeui/ui stylesheet is PRECOMPILED — it only
+          contains classes the build saw. Anything an agent invents at
+          runtime (bottom-[100px], md:w-[450px], group-hover variants)
+          silently no-ops without this. The vendored v4 browser build
+          (public/vendor/, same version as the repo's tailwindcss)
+          watches the DOM and compiles missing classes on the fly, so
+          generated screens "just work" with the FULL Tailwind language
+          in Studio, share views, and embeds alike.
+
+          The text/tailwindcss block imports theme + utilities but NOT
+          preflight — the precompiled stylesheet already shipped the
+          reset, and a second copy at the end of <head> would re-reset
+          component styles. Theme vars applied by grade:fast-theme are
+          inline on <html>, so they keep winning over the default theme
+          layer this emits. */}
+      <style
+        type="text/tailwindcss"
+        suppressHydrationWarning
+      >{`@layer theme, utilities; @import "tailwindcss/theme" layer(theme); @import "tailwindcss/utilities" layer(utilities);`}</style>
+      {/* Plain script tag (NOT next/script) on purpose: it lands in the
+          SSR HTML and executes during document parse, so the compiler's
+          MutationObserver is armed before React renders the screen.
+          next/script's afterInteractive raced Playwright captures —
+          the poster screenshot could fire before arbitrary classes
+          compiled, shipping a broken-layout poster. */}
+      {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+      <script src="/vendor/tailwindcss-browser-4.3.0.js" />
       {/* Fidelity is a no-op on the render path now. With JSX-as-truth
           MediaSurfaces render imagery whenever `src` is present in the
           data array and fall back to the tiered placeholder otherwise

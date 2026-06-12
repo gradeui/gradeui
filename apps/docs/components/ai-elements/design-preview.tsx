@@ -31,6 +31,7 @@ import {
   prepareAppSource,
 } from "@/lib/chat-sandpack";
 import { downloadStandaloneHtml } from "@/lib/chat-export";
+import { fontFaceCSS } from "@/lib/themes";
 
 interface DesignPreviewProps {
   /** Raw JSX string the model emitted. Should be a full component body. */
@@ -50,10 +51,11 @@ export function DesignPreview({ code, streaming, className }: DesignPreviewProps
   // emit a standalone HTML file. Compute them here; buildSandpackFiles
   // will recompute them internally for the iframe, which is fine — both
   // calls go through the same formatter and memo keys.
-  const { lightVars, darkVars } = useMemo(
+  const { lightVars, darkVars, fontFaces } = useMemo(
     () => ({
       lightVars: formatThemeVars(activeTheme, "light"),
       darkVars: formatThemeVars(activeTheme, "dark"),
+      fontFaces: fontFaceCSS(activeTheme.typography.fontFaces),
     }),
     [activeTheme]
   );
@@ -132,6 +134,7 @@ export function DesignPreview({ code, streaming, className }: DesignPreviewProps
                     appSource,
                     lightVars,
                     darkVars,
+                    fontFaces,
                     mode,
                     filename: "ramp-design",
                   })

@@ -25,6 +25,11 @@ interface ExportArgs {
   /** Light/dark CSS custom-property blocks (sans selectors). */
   lightVars: string;
   darkVars: string;
+  /** Pre-serialized @font-face CSS for the theme's custom uploaded fonts
+   *  (fontFaceCSS in lib/themes/apply.ts). The faces point at permanent
+   *  public bucket URLs, so the downloaded file renders them anywhere
+   *  with network access. */
+  fontFaces?: string;
   /** Mode to boot the page in. */
   mode: "light" | "dark";
   /** File name hint. Without extension — we append .html. */
@@ -93,10 +98,11 @@ export function buildStandaloneHtml({
   appSource,
   lightVars,
   darkVars,
+  fontFaces,
   mode,
   filename = "ramp-design",
 }: ExportArgs): string {
-  const stylesCss = buildPlaygroundStylesCss(lightVars, darkVars);
+  const stylesCss = buildPlaygroundStylesCss(lightVars, darkVars, fontFaces);
 
   // Build data: URLs for each of the component files so the user's code
   // `import { Button } from "./components/ui/button"` resolves without

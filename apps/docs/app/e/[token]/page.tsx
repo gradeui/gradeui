@@ -273,6 +273,18 @@ export default async function EmbedPage({
     return (
       <>
         {backdrop}
+        {/* Runtime Tailwind JIT — keeps the CAPTURE renderer's CSS
+            vocabulary identical to the live sandbox. FlatScreen renders
+            against the app's precompiled stylesheet, so without this an
+            arbitrary class (bottom-[100px]) paints in the live embed but
+            silently no-ops in every poster/screenshot — the renderers
+            disagree and the posters lie. Same vendored build + same
+            theme/utilities (no preflight) block as fast-sandbox. */}
+        <style
+          type="text/tailwindcss"
+        >{`@layer theme, utilities; @import "tailwindcss/theme" layer(theme); @import "tailwindcss/utilities" layer(utilities);`}</style>
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src="/vendor/tailwindcss-browser-4.3.0.js" />
         <FlatScreen
           appSource={appSource}
           themeDraftJson={themeDraftJson}

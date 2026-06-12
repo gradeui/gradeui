@@ -24,9 +24,12 @@ import {
   type RampKey,
 } from "./oklch";
 import {
+  CUSTOM_FONT_FALLBACK,
+  customFontFamily,
   FONTS,
   type ChartPalette,
   type ColorIntensity,
+  type CustomFontFace,
   type FontKey,
   type GeneratedColorsMode,
   type GeneratedEffects,
@@ -383,6 +386,24 @@ function modularNamedSizes(id: ModularScaleId): Record<TypeSizeName, number> {
   return modularTypeSizes(1, ratio, MIN_TEXT_REM);
 }
 
+/** Resolve a font selection to a concrete font-family string. Registry
+ *  keys go through FONTS; "custom:<family>" selections resolve to the
+ *  quoted family + a generic fallback stack (the matching CustomFontFace
+ *  is injected as @font-face at apply time). A custom selection with no
+ *  matching face still resolves — the fallback stack renders until the
+ *  face exists, and a theme never hard-fails on a missing font. */
+function resolveFontFamily(
+  sel: ThemeInput["typography"]["display"],
+  faces: CustomFontFace[] | undefined,
+  fallbackCategory: "sans" | "serif" | "mono"
+): string {
+  const family = customFontFamily(sel);
+  if (family === null) return FONTS[sel as FontKey] ?? FONTS.system;
+  const face = faces?.find((f) => f.family === family);
+  const category = face?.category ?? fallbackCategory;
+  return `"${family}", ${CUSTOM_FONT_FALLBACK[category]}`;
+}
+
 function resolveTypography(
   input: ThemeInput["typography"]
 ): GeneratedTypography {
@@ -409,12 +430,20 @@ function resolveTypography(
   }
 
   return {
-    fontSans: FONTS[input.body],
-    fontMono: FONTS[input.mono],
-    fontDisplay: FONTS[input.display],
+    fontSans: resolveFontFamily(input.body, input.customFonts, "sans"),
+    fontMono: resolveFontFamily(input.mono, input.customFonts, "mono"),
+    fontDisplay: resolveFontFamily(input.display, input.customFonts, "sans"),
+    // Carry every face the theme owns (not just referenced ones) so
+    // switching display↔body↔mono between custom faces never races a
+    // network load that apply-time injection already paid for.
+    fontFaces: input.customFonts,
     headingWeight: input.headingWeight ?? 600,
     bodyWeight: input.bodyWeight ?? 400,
     headingTracking: input.headingTracking ?? "-0.01em",
+    bodyStretch: input.bodyStretch ?? "normal",
+    // Display inherits the body cut unless told otherwise — one knob
+    // re-cuts the whole theme, same pattern as fontDisplay→fontSans.
+    displayStretch: input.displayStretch ?? input.bodyStretch ?? "normal",
     scale: {
       display: rem(ladder.display),
       h1: rem(ladder.h1),

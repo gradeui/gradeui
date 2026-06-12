@@ -1091,6 +1091,10 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     font-size: var(--text-body);
     line-height: var(--text-body-line);
+    /* Theme-driven width cut (variable-font wdth axis). Inherits into
+       every span/component, so a theme set to e.g. 90% re-cuts ALL text;
+       per-element font-stretch-[…] utilities still override. */
+    font-stretch: var(--font-body-stretch, normal);
   }
 
   /* Theme-driven heading font.
@@ -1102,6 +1106,7 @@
     font-family: var(--font-display, var(--font-sans));
     font-weight: var(--font-heading-weight, 600);
     letter-spacing: var(--font-heading-tracking, -0.01em);
+    font-stretch: var(--font-display-stretch, var(--font-body-stretch, normal));
   }
 
   /* Link styles */

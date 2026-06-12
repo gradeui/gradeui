@@ -143,7 +143,7 @@ The `project_id` FK stays `on delete set null` as a safety net for any delete pa
 
 **This is not a DAM.** No versioning of an asset's bytes, no folders, no approval workflows. It's "the user's images, scoped to a project, pickable in a slot." Scope creep here is easy and unnecessary.
 
-**Fonts are a future bridge to themes.** A custom uploaded typeface is an asset *and* a theme input. When S4 opens `kind: "font"`, it connects to the `ThemeInput.typography` contract in STUDIO-THEMES — the musical type scale rides on whatever font the theme names, including an uploaded one. Noted so neither doc bakes itself into a corner.
+**Fonts bridge to themes — BUILT (June 2026).** A custom uploaded typeface is an asset *and* a theme input. The S4 font slice landed ahead of the rest of S4: a `type: 'font'` asset (the upload tab + bucket already existed) becomes a `CustomFontFace` on `ThemeInput.typography.customFonts` via `assetToFontFace` in `apps/docs/lib/custom-fonts.ts` (family/format/weight derived from the filename; the `enrichment` JSONB can override once binary name-table parsing lands). The theme builder's font pickers list the user's font library under "Your fonts"; selecting one copies the face onto the theme, so the theme stays renderable if the asset row is later deleted. The musical type scale rides on whatever font the theme names — including an uploaded variable font (weight `100 900`). Rendering/injection detail lives in STUDIO-THEMES ("Custom fonts travel inside the contract").
 
 ## See also
 

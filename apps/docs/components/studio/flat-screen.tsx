@@ -36,7 +36,13 @@ import {
   PreviewWrap,
   RenderErrorBoundary,
 } from "@/lib/studio-render-core";
-import { generateTheme, themeToCSSVars, builtInThemes, defaultThemeId } from "@/lib/themes";
+import {
+  generateTheme,
+  themeToCSSVars,
+  injectFontFaces,
+  builtInThemes,
+  defaultThemeId,
+} from "@/lib/themes";
 import type { GeneratedTheme, ThemeInput } from "@/lib/themes";
 
 export function FlatScreen({
@@ -67,6 +73,12 @@ export function FlatScreen({
     () => themeToCSSVars(theme, mode) as React.CSSProperties,
     [theme, mode],
   );
+
+  // Custom uploaded faces — vars name the family; the face itself needs
+  // a document-level @font-face (inline style can't carry one).
+  React.useEffect(() => {
+    injectFontFaces(theme.typography.fontFaces);
+  }, [theme]);
 
   const [compiled, setCompiled] = React.useState<{
     Component: React.ComponentType | null;

@@ -12,10 +12,14 @@
  * goes missing depending on where the builder is hosted.
  */
 
+import * as React from "react";
 import { Sun, Moon } from "lucide-react";
 import {
+  customFontFamily,
   type ThemeInput,
   type ColorIntensity,
+  type CustomFontFace,
+  type FontSelection,
   type RadiusStyle,
   type SpacingDensity,
   type ButtonShape,
@@ -24,6 +28,8 @@ import {
   type ShadowIntensity,
   type TypeScale,
 } from "@/lib/themes";
+import { getStudioStorage } from "@/lib/studio-storage";
+import { assetToFontFace } from "@/lib/custom-fonts";
 import { GDS_MODULAR_SCALES } from "@gradeui/core";
 import { cn } from "@/lib/utils";
 import {
@@ -90,6 +96,56 @@ export function ThemeBuilderControls({
   const resetField =
     (apply: (draft: ThemeInput, base: ThemeInput) => void) => () =>
       patch((d) => apply(d, baseline));
+
+  // ── Custom fonts ────────────────────────────────────────────────────
+  // The user's uploaded font assets (migration 0014, type 'font'),
+  // offered in the pickers alongside the registry. Cloud-only: local
+  // mode returns [] and the group simply doesn't render. Theme-owned
+  // faces are merged in first so a face already saved on the theme stays
+  // selectable even after its library asset is deleted.
+  const [libraryFonts, setLibraryFonts] = React.useState<CustomFontFace[]>([]);
+  React.useEffect(() => {
+    let alive = true;
+    getStudioStorage()
+      .listAssets({ type: "font" })
+      .then((assets) => {
+        if (!alive) return;
+        setLibraryFonts(
+          assets
+            .map(assetToFontFace)
+            .filter((f): f is CustomFontFace => f !== null)
+        );
+      })
+      .catch(() => {
+        // Asset library unavailable (local mode / signed out) — registry
+        // fonts still work, so stay quiet.
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const customFonts = React.useMemo(() => {
+    const own = input.typography.customFonts ?? [];
+    const seen = new Set(own.map((f) => f.family));
+    return [...own, ...libraryFonts.filter((f) => !seen.has(f.family))];
+  }, [input.typography.customFonts, libraryFonts]);
+
+  // Selecting a custom face copies it ONTO the draft — the theme must
+  // carry its own faces (deterministic + portable; STUDIO-THEMES) rather
+  // than depend on the picker's library being around at render time.
+  const setFont =
+    (slot: "display" | "body" | "mono") => (v: FontSelection) =>
+      patch((d) => {
+        d.typography[slot] = v;
+        const family = customFontFamily(v);
+        if (!family) return;
+        const face = customFonts.find((f) => f.family === family);
+        const have = d.typography.customFonts ?? [];
+        if (face && !have.some((f) => f.family === family)) {
+          d.typography.customFonts = [...have, face];
+        }
+      });
 
   return (
     <div
@@ -212,11 +268,8 @@ export function ThemeBuilderControls({
             onReset={resetField((d, b) => {
               d.typography.display = b.typography.display;
             })}
-            onChange={(v) =>
-              patch((d) => {
-                d.typography.display = v;
-              })
-            }
+            onChange={setFont("display")}
+            customFonts={customFonts}
             filter={(cat) => cat !== "mono"}
           />
           <FontRow
@@ -226,11 +279,8 @@ export function ThemeBuilderControls({
             onReset={resetField((d, b) => {
               d.typography.body = b.typography.body;
             })}
-            onChange={(v) =>
-              patch((d) => {
-                d.typography.body = v;
-              })
-            }
+            onChange={setFont("body")}
+            customFonts={customFonts}
             filter={(cat) => cat !== "mono"}
           />
           <FontRow
@@ -240,13 +290,45 @@ export function ThemeBuilderControls({
             onReset={resetField((d, b) => {
               d.typography.mono = b.typography.mono;
             })}
-            onChange={(v) =>
-              patch((d) => {
-                d.typography.mono = v;
-              })
-            }
+            onChange={setFont("mono")}
+            customFonts={customFonts}
             filter={(cat) => cat === "mono"}
           />
+
+          {/* Width — the variable-font wdth cut, applied theme-wide
+              (body inherits into every span/component; display follows
+              body unless split later). Only does anything for fonts
+              carrying a width axis; static fonts ignore it. Per-element
+              font-stretch-[…] utilities still override. */}
+          <div className="space-y-1">
+            <Label
+              changed={changed((i) => i.typography.bodyStretch ?? "normal")}
+              onReset={resetField((d, b) => {
+                d.typography.bodyStretch = b.typography.bodyStretch;
+              })}
+            >
+              Width
+            </Label>
+            <Select
+              value={input.typography.bodyStretch ?? "normal"}
+              onValueChange={(v) =>
+                patch((d) => {
+                  d.typography.bodyStretch = v === "normal" ? undefined : v;
+                })
+              }
+            >
+              <SelectTrigger size="2xs" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent size="2xs">
+                <SelectItem value="75%">Condensed (75%)</SelectItem>
+                <SelectItem value="90%">Compact (90%)</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="112.5%">Wide (112.5%)</SelectItem>
+                <SelectItem value="125%">Extended (125%)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Type scale — legacy flat presets plus the modular (musical)
               ratios. Modular ids generate the ladder middle-out from the

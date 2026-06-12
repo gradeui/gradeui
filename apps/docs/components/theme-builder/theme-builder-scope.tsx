@@ -30,7 +30,7 @@
  */
 
 import * as React from "react";
-import { themeToCSSVars } from "@/lib/themes";
+import { themeToCSSVars, injectFontFaces } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 import { useThemeBuilder } from "./theme-builder-provider";
 
@@ -52,6 +52,16 @@ export function ThemeBuilderScope({
   style,
 }: ThemeBuilderScopeProps) {
   const { generated, mode, bindTo } = useThemeBuilder();
+
+  // Custom uploaded faces — @font-face can't live in inline style, so
+  // scoped previews upsert the document-level tag. Faces are keyed by
+  // family name, so this can't restyle anything outside the scope: only
+  // elements whose font-family var names the custom family resolve it.
+  const fontFaces = generated.typography.fontFaces;
+  React.useEffect(() => {
+    if (bindTo !== "scoped") return;
+    injectFontFaces(fontFaces);
+  }, [bindTo, fontFaces]);
 
   // In site + draft modes, short-circuit — the wrapper is transparent. No
   // style merging, no extra DOM cost. Still renders children so it can

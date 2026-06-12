@@ -32,6 +32,8 @@ Two properties make `ThemeInput` the right contract:
 
 Everything below is a place to *put* a `ThemeInput`, plus the metadata that place needs. The contract itself never forks.
 
+**Custom fonts travel inside the contract** (built June 2026). `typography.display/body/mono` accept either a `FONTS` registry key or a `custom:<family>` reference into `typography.customFonts: CustomFontFace[]` — family name, permanent public asset URL (STUDIO-STORAGE bucket), format/weight/style. The generator resolves selections to family stacks and carries the faces on `GeneratedTypography.fontFaces`; every applying surface (root provider, builder scope, Fast Frame via `grade:fast-theme`, Sandpack, share, embed, exports) injects the `@font-face` via `fontFaceCSS()`/`injectFontFaces()` in `lib/themes/apply.ts`. Because the URL is public and permanent, both deterministic and portable hold: the same JSON renders the same face on any surface, including cross-origin embeds. (Trade-off accepted: a theme shared publicly exposes its font URL — same posture as image assets.)
+
 ### Metadata the contract grows for community
 
 A bare `ThemeInput` is enough for private use. To travel publicly it needs an envelope — kept *around* the input, not baked into it, so the input stays a pure render unit:

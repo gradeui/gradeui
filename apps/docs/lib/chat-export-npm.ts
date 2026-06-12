@@ -28,7 +28,7 @@ import {
   formatThemeVars,
   prepareAppSource,
 } from "./chat-sandpack";
-import { applyBuiltInThemeOverrides } from "./themes";
+import { applyBuiltInThemeOverrides, fontFaceCSS } from "./themes";
 import type { GeneratedTheme } from "./themes";
 
 /** Current published version of @gradeui/ui. Bump when we pin to a newer
@@ -90,6 +90,10 @@ export function buildNpmSandboxFiles(params: {
 
   const lightVars = formatThemeVars(themed, "light");
   const darkVars = formatThemeVars(themed, "dark");
+  // Custom uploaded faces — the public bucket URL is permanent, so the
+  // exported sandbox loads the font over the network exactly like the
+  // in-app preview does. No bytes to bundle.
+  const fontFaces = fontFaceCSS(themed.typography.fontFaces);
 
   // CRA-style project — minimum surface area, works out of the box on
   // CodeSandbox's default `react-ts` sandbox runtime.
@@ -209,6 +213,7 @@ export function buildNpmSandboxFiles(params: {
       };
     </script>
     <style>
+${fontFaces}
       :root {
 ${PLAYGROUND_FONT_VARS}
 ${lightVars}
