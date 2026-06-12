@@ -1,22 +1,23 @@
 "use client";
 
 /**
- * LiveEmbed — an iframe with the map-embed interaction pattern.
+ * LiveEmbed — a host frame for Grade embeds (/e/<token>).
  *
- * Problem: an interactive iframe swallows wheel events, so smooth
- * scrolling (Lenis) goes dead the moment the cursor crosses it — the
- * scroll hitch around the homepage showcase. pointer-events-none fixes
- * the scroll but kills the demo.
+ * Deliberately thin: the iframe plus two host-side niceties.
  *
- * This does both: a transparent shield sits over the iframe so wheel
- * events reach the page and scrolling stays smooth. CLICKING the shield
- * removes it (the iframe becomes fully interactive); moving the cursor
- * off the frame re-arms it. A quiet hint chip appears on hover so the
- * affordance is discoverable.
+ *   - color-scheme on the iframe element, so the browser paints the
+ *     pre-render canvas dark instead of flashing white in dark pages.
+ *   - a wheel replayer: the embed forwards wheel deltas nothing inside
+ *     it consumed (grade:embed-wheel), and this component replays them
+ *     as page scrolls, so the cursor passing over the frame never
+ *     creates a scroll dead zone.
+ *
+ * The click-to-interact shield that used to live here moved INTO the
+ * embed itself (?shield=1 on the embed URL) so every host gets it
+ * without host-side code.
  */
 
 import * as React from "react";
-import { MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface LiveEmbedProps {
@@ -29,8 +30,6 @@ export interface LiveEmbedProps {
   /** Classes for the iframe itself (sizing/aspect). */
   frameClassName?: string;
   className?: string;
-  /** Hint chip label. */
-  hint?: string;
 }
 
 export function LiveEmbed({
@@ -39,42 +38,28 @@ export function LiveEmbed({
   colorScheme = "dark",
   frameClassName,
   className,
-  hint = "Click to interact",
 }: LiveEmbedProps) {
-  const [driving, setDriving] = React.useState(false);
+  // Replay the embed's forwarded wheel deltas as page scrolls. The
+  // embed posts grade:embed-wheel only for deltas nothing inside it
+  // consumed (its own scrollable panels keep their scroll).
+  React.useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data as { type?: string; deltaY?: number; deltaX?: number };
+      if (!d || d.type !== "grade:embed-wheel") return;
+      window.scrollBy({ top: d.deltaY ?? 0, left: d.deltaX ?? 0 });
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
   return (
-    <div
-      className={cn("group relative", className)}
-      onMouseLeave={() => setDriving(false)}
-    >
+    <div className={cn("relative", className)}>
       <iframe
         src={src}
         title={title}
         className={cn("block w-full border-0 bg-background", frameClassName)}
         style={{ colorScheme }}
       />
-
-      {!driving && (
-        <button
-          type="button"
-          aria-label={`Interact with ${title}`}
-          onClick={() => setDriving(true)}
-          className="absolute inset-0 z-10 cursor-pointer appearance-none border-0 bg-transparent p-0"
-        />
-      )}
-
-      {/* Hover hint — fades out once driving. */}
-      <span
-        aria-hidden="true"
-        className={cn(
-          "pointer-events-none absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur transition-opacity duration-300",
-          driving ? "opacity-0" : "opacity-0 group-hover:opacity-100",
-        )}
-      >
-        <MousePointerClick className="h-3.5 w-3.5" />
-        {hint}
-      </span>
     </div>
   );
 }

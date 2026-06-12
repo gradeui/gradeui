@@ -316,6 +316,8 @@ export function EmbedScreen({
   camera,
   tweak,
   tweakThemes,
+  tweakOpen = false,
+  shield = false,
   transparent = false,
 }: {
   appSource: string | null;
@@ -350,6 +352,13 @@ export function EmbedScreen({
   tweak?: EmbedTweakControl[] | null;
   /** Curated theme ids for the tweaker's picker (?themes=). */
   tweakThemes?: string[] | null;
+  /** Start the theme playground open (?tweakopen=1). */
+  tweakOpen?: boolean;
+  /** Click-to-interact shield (?shield=1), rendered INSIDE the embed so
+   *  every host gets it for free. Clicks are guarded until the visitor
+   *  opts in; moving the pointer off the frame re-arms it. Page scroll
+   *  over the frame keeps working via the wheel forwarder. */
+  shield?: boolean;
   /** Transparent embed (?bg=transparent): no page background, no
    *  letterbox fill, and the sandbox document paints nothing — the host
    *  page shows through wherever the screen doesn't paint. */
@@ -395,6 +404,37 @@ export function EmbedScreen({
     },
     [],
   );
+
+  // In-embed click shield (?shield=1): guard interaction until the
+  // visitor opts in; re-arm when the pointer leaves the frame.
+  const [shieldDown, setShieldDown] = React.useState(false);
+
+  // Wheel forwarding — when the embed is framed and the wheel event
+  // isn't consumed by a scrollable element INSIDE the embed (the theme
+  // sheet's list, say), post the delta to the parent so hovering the
+  // embed never creates a page-scroll dead zone. The host opts in by
+  // listening for grade:embed-wheel (LiveEmbed does when shieldless).
+  const onWheelForward = React.useCallback((e: React.WheelEvent) => {
+    if (typeof window === "undefined" || window.parent === window) return;
+    // Walk up from the target: if anything scrollable can consume this
+    // delta, let it (the sheet's theme list must keep its own scroll).
+    let el = e.target as HTMLElement | null;
+    while (el && el !== e.currentTarget) {
+      if (el.scrollHeight > el.clientHeight + 1) {
+        const oy = getComputedStyle(el).overflowY;
+        if (oy === "auto" || oy === "scroll") return;
+      }
+      el = el.parentElement;
+    }
+    try {
+      window.parent.postMessage(
+        { type: "grade:embed-wheel", deltaY: e.deltaY, deltaX: e.deltaX },
+        "*",
+      );
+    } catch {
+      /* parent gone */
+    }
+  }, []);
 
   // Boot beacons — when the embed is itself FRAMED (an MCP App panel, a
   // blog, the future grade-embed host page), post lifecycle milestones to
@@ -477,10 +517,34 @@ export function EmbedScreen({
         effMode === "dark" && "dark",
       )}
       data-mode={effMode}
+      onWheel={onWheelForward}
+      onPointerLeave={shield ? () => setShieldDown(false) : undefined}
     >
       <ZoomPan zoom={eff.zoom} focusX={eff.cx} focusY={eff.cy}>
         {content}
       </ZoomPan>
+
+      {shield && !shieldDown && (
+        <button
+          type="button"
+          aria-label="Click to interact with this render"
+          onClick={() => setShieldDown(true)}
+          className="absolute inset-0 z-30 cursor-pointer appearance-none border-0 bg-transparent p-0"
+        />
+      )}
+      {shield && !shieldDown && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute bottom-3 right-3 z-40 rounded-full border px-3 py-1.5 text-xs backdrop-blur-md",
+            effMode === "dark"
+              ? "border-white/20 bg-black/45 text-white/90"
+              : "border-black/15 bg-white/70 text-neutral-900",
+          )}
+        >
+          Click to interact
+        </span>
+      )}
 
       {tweak && tweak.length > 0 && (
         <EmbedTweaker
@@ -488,6 +552,7 @@ export function EmbedScreen({
           baseMode={mode}
           allow={tweak}
           themeIds={tweakThemes}
+          defaultOpen={tweakOpen}
           onChange={onTweak}
         />
       )}

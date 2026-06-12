@@ -117,6 +117,21 @@ export default async function EmbedPage({
             )
         : null;
 
+  // Start the playground OPEN: ?tweakopen=1. An already-open panel is
+  // a louder invitation than a corner button (it still closes and
+  // reopens normally). Only meaningful alongside ?tweak=.
+  const tweakOpenRaw = Array.isArray(sp.tweakopen)
+    ? sp.tweakopen[0]
+    : sp.tweakopen;
+  const tweakOpen = tweakOpenRaw === "1" || tweakOpenRaw === "true";
+
+  // Click-to-interact shield: ?shield=1 guards clicks until the
+  // visitor opts in, rendered inside the embed so every host gets it
+  // without any host-side code. Page scroll over the frame still works
+  // (the embed forwards unconsumed wheel deltas to its parent).
+  const shieldRaw = Array.isArray(sp.shield) ? sp.shield[0] : sp.shield;
+  const shield = shieldRaw === "1" || shieldRaw === "true";
+
   // Curated theme set for the playground's picker: ?themes=calm,candy-pop
   // limits the choices to a deliberate, contrasting selection. Unknown
   // ids are dropped client-side.
@@ -284,6 +299,8 @@ export default async function EmbedPage({
         camera={camera}
         tweak={tweak}
         tweakThemes={tweakThemes}
+        tweakOpen={tweakOpen}
+        shield={shield}
         transparent={transparent}
       />
     </>

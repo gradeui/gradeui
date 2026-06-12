@@ -66,11 +66,12 @@ export default function Home() {
             nested sandbox + compile) exactly as it scrolled into view,
             which read as scroll jank. Paying that cost at page load is
             invisible; paying it mid-scroll is not. */}
-        {/* Click-to-interact: the shield keeps wheel events on the page
-            (no Lenis dead zone over the frame); clicking hands control
-            to the live render, mousing away re-arms the shield. */}
+        {/* Immediately interactive: no shield here (the specimen doesn't
+            scroll), and the embed forwards unconsumed wheel deltas which
+            LiveEmbed replays as page scroll. Hosts that want the
+            click-to-interact guard add ?shield=1 to the embed URL. */}
         <LiveEmbed
-          src="/e/998ad8b7-c056-40af-b328-ba46b4cba557?w=1280&h=720&mode=dark&motion=on&tweak=1&themes=calm,neon-brutalist,candy-pop,forest-terminal"
+          src="/e/998ad8b7-c056-40af-b328-ba46b4cba557?w=1280&h=720&mode=dark&motion=on&tweak=1&themes=calm,neon-brutalist,candy-pop,forest-terminal&tweakopen=1"
           title="Grade Studio live render"
           frameClassName="aspect-[16/9]"
         />

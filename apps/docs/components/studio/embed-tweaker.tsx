@@ -87,6 +87,10 @@ export interface EmbedTweakerProps {
    *  far apart on different axes (type, spacing, shape, colour) shows
    *  the system better than the full catalogue. */
   themeIds?: string[] | null;
+  /** Start with the sheet OPEN (?tweakopen=1). The screen paints
+   *  first, then the sheet glides in after a short beat — an open
+   *  invitation reads better than a small corner button. */
+  defaultOpen?: boolean;
   /** Fires with a freshly generated theme + mode on every change. */
   onChange: (theme: GeneratedTheme, mode: "light" | "dark") => void;
 }
@@ -96,6 +100,7 @@ export function EmbedTweaker({
   baseMode,
   allow,
   themeIds,
+  defaultOpen = false,
   onChange,
 }: EmbedTweakerProps) {
   // Curated subset when ?themes= is present; unknown ids drop silently.
@@ -108,6 +113,20 @@ export function EmbedTweaker({
   );
   const reducedMotion = useReducedMotion();
   const [open, setOpen] = React.useState(false);
+
+  // Staged entrance for ?tweakopen=1: give the screen a beat to paint,
+  // then slide the sheet in. Reduced motion opens immediately (the
+  // delay exists for choreography, not function).
+  React.useEffect(() => {
+    if (!defaultOpen) return;
+    if (reducedMotion) {
+      setOpen(true);
+      return;
+    }
+    const t = window.setTimeout(() => setOpen(true), 700);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultOpen]);
   // "project" = the screen's own theme; otherwise a built-in id.
   const [themeId, setThemeId] = React.useState<string>("project");
   const [hue, setHue] = React.useState<number | null>(null);
@@ -278,7 +297,7 @@ export function EmbedTweaker({
                     }}
                     className={rowClass(themeId === "project")}
                   >
-                    Original
+                    Grade
                     <ThemeSwatch theme={projectTheme} mode={mode} />
                   </button>
                   {themeList.map((t) => (
