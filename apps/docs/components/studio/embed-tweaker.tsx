@@ -163,6 +163,9 @@ export function EmbedTweaker({
       ? baseInput
       : builtInThemes[themeId]?.input ?? baseInput;
   const effDensity = density ?? activeInput.spacing.density ?? "default";
+  // Same treatment for hue: the slider parks at the active theme's own
+  // primary hue until the user drags it, and snaps when themes switch.
+  const effHue = hue ?? activeInput.hues.primary;
 
   // The sheet honours the playground's CURRENT mode: light glass over a
   // light render, dark glass over a dark one. All hardcoded — the embed
@@ -308,7 +311,7 @@ export function EmbedTweaker({
                 <span className={cn("flex items-center justify-between text-[11px] mb-1 leading-none", subtle)}>
                   Primary hue
                   <span className={cn("font-mono", light ? "text-black/70" : "text-white/70")}>
-                    {hue != null ? `${Math.round(hue)}°` : "theme"}
+                    {Math.round(effHue)}°
                   </span>
                 </span>
                 <input
@@ -316,7 +319,7 @@ export function EmbedTweaker({
                   min={0}
                   max={360}
                   step={1}
-                  value={hue ?? 250}
+                  value={effHue}
                   onChange={(e) => {
                     const v = Number(e.target.value);
                     setHue(v);
