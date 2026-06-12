@@ -157,6 +157,11 @@ interface FastIframeHostProps {
    *  whole-page Fit in FocusedFastMount). Only polled while the prop is
    *  set; only fires on change. */
   onContentHeight?: (h: number) => void;
+  /** Transparent sandbox document — the iframe page paints NO
+   *  background, so the host shows through wherever the screen doesn't
+   *  paint. Carried as ?transparent=1 on the sandbox URL (read at boot
+   *  in app/fast-sandbox/page.tsx). Used by transparent embeds. */
+  transparent?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -182,6 +187,7 @@ export function FastIframeHost({
   inlineComments = false,
   onTrySandpack,
   onContentHeight,
+  transparent = false,
   className,
   style,
 }: FastIframeHostProps) {
@@ -442,7 +448,7 @@ export function FastIframeHost({
     <>
       <iframe
         ref={iframeRef}
-        src={SANDBOX_URL}
+        src={transparent ? `${SANDBOX_URL}?transparent=1` : SANDBOX_URL}
         title="Grade Studio preview"
         // sandbox attribute left off deliberately — the iframe is same-
         // origin (our own Next route) and we trust what we serve there.
@@ -450,7 +456,10 @@ export function FastIframeHost({
         // access to iframe.contentDocument which we don't need here
         // (all interop is via postMessage) but would break debugging.
         className={cn("block w-full h-full bg-background", className)}
-        style={{ border: 0, ...style }}
+        // color-scheme tells the browser what to paint BEFORE the sandbox
+        // document renders — without it, a loading iframe flashes white
+        // inside dark hosts (the embed, dark Studio canvases).
+        style={{ border: 0, colorScheme: mode, ...style }}
       />
       {/* Comment pins overlay — positioned fixed against viewport
           coords by querying the iframe's contentDocument for each

@@ -500,6 +500,21 @@ class RenderErrorBoundary extends React.Component<
 // ─── The sandbox page ─────────────────────────────────────────────────
 
 export default function FastSandboxPage() {
+  // Transparent embeds (?transparent=1 on the sandbox URL): strip every
+  // document-level background so the embedding host shows through
+  // wherever the rendered screen doesn't paint. Inline styles outrank
+  // the root layout's bg-background class.
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get("transparent") === "1") {
+        document.documentElement.style.background = "transparent";
+        document.body.style.background = "transparent";
+      }
+    } catch {
+      /* no window / malformed URL — leave backgrounds alone */
+    }
+  }, []);
+
   const rootElRef = useRef<HTMLDivElement | null>(null);
   const agentTeardownRef = useRef<SelectionAgentHandle | null>(null);
 

@@ -52,6 +52,15 @@ const sheetVariants = cva(
 export interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
     VariantProps<typeof sheetVariants> {
+  /** Extra classes for the backdrop overlay. e.g. `bg-transparent`
+   *  keeps click-outside-to-close while removing the dimming — useful
+   *  when the whole point is watching the page behind the sheet
+   *  change (the embed theme playground). */
+  overlayClassName?: string;
+  /** Extra classes for the built-in close button — reposition it or
+   *  restyle it as a full icon button (the default is a bare X at
+   *  right-4 top-4 with an opacity hover). */
+  closeClassName?: string;
   /**
    * What the sheet panel is *made of*. `solid` is the default opaque
    * `bg-background`. `glass` lets the page show through with a 14px
@@ -64,9 +73,9 @@ export interface SheetContentProps
 const SheetContent = React.forwardRef<
   React.ComponentRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", surface = "solid", className, children, ...props }, ref) => (
+>(({ side = "right", surface = "solid", className, overlayClassName, closeClassName, children, ...props }, ref) => (
   <SheetPortal>
-    <SheetOverlay />
+    <SheetOverlay className={overlayClassName} />
     <SheetPrimitive.Content
       ref={ref}
       data-surface={surface}
@@ -79,7 +88,12 @@ const SheetContent = React.forwardRef<
       {...props}
     >
       {children}
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+      <SheetPrimitive.Close
+        className={cn(
+          "absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary",
+          closeClassName
+        )}
+      >
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </SheetPrimitive.Close>

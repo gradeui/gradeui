@@ -35,6 +35,7 @@ import * as React from "react";
 import { Play, Pause } from "lucide-react";
 import { useReducedMotion } from "@gradeui/ui";
 import { FastIframeHost } from "@/components/studio/fast-frame";
+import { EmbedTweaker, type EmbedTweakControl } from "@/components/studio/embed-tweaker";
 import {
   generateTheme,
   builtInThemes,
@@ -65,10 +66,12 @@ import { cn } from "@/lib/utils";
 function ScaledRender({
   width,
   height,
+  transparent = false,
   children,
 }: {
   width: number;
   height?: number;
+  transparent?: boolean;
   children: React.ReactNode;
 }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -117,7 +120,9 @@ function ScaledRender({
       // The canvas behind the screen — only visible as letterbox bars in
       // contain-fit. Reads the DS canvas-fill token so embed/share/animator
       // all match; a theme can restyle it in one place.
-      style={{ background: "var(--gds-canvas-fill)" }}
+      style={{
+        background: transparent ? "transparent" : "var(--gds-canvas-fill)",
+      }}
     >
       <div
         style={{
@@ -309,6 +314,9 @@ export function EmbedScreen({
   focusX = 0.5,
   focusY = 0.5,
   camera,
+  tweak,
+  tweakThemes,
+  transparent = false,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -335,6 +343,17 @@ export function EmbedScreen({
    *  (chainable zoom). When set, it drives the transform instead of the
    *  static zoom/focus. 2+ shots show a play/pause transport. */
   camera?: CameraShot[];
+  /** Embed-local theme playground (?tweak= on the embed URL). Lists the
+   *  controls to expose; null/empty = no overlay. Changes regenerate a
+   *  theme client-side and flow through the normal grade:fast-theme
+   *  push — nothing persists. */
+  tweak?: EmbedTweakControl[] | null;
+  /** Curated theme ids for the tweaker's picker (?themes=). */
+  tweakThemes?: string[] | null;
+  /** Transparent embed (?bg=transparent): no page background, no
+   *  letterbox fill, and the sandbox document paints nothing — the host
+   *  page shows through wherever the screen doesn't paint. */
+  transparent?: boolean;
 }) {
   // Project theme — same resolution as SharedScreen: parse the draft,
   // generate the ramp set, fall back to the default built-in on any
@@ -349,6 +368,33 @@ export function EmbedScreen({
     }
     return builtInThemes[defaultThemeId];
   }, [themeDraftJson]);
+
+  // The screen's own ThemeInput — the EmbedTweaker's "Original" anchor.
+  const baseInput = React.useMemo<ThemeInput>(() => {
+    if (themeDraftJson) {
+      try {
+        return JSON.parse(themeDraftJson) as ThemeInput;
+      } catch {
+        /* fall through */
+      }
+    }
+    return builtInThemes[defaultThemeId].input;
+  }, [themeDraftJson]);
+
+  // Embed-local overrides from the tweaker. Null = render the screen's
+  // own theme/mode. FastIframeHost re-pushes grade:fast-theme whenever
+  // these change, so edits re-theme the live render instantly.
+  const [liveTheme, setLiveTheme] = React.useState<GeneratedTheme | null>(null);
+  const [liveMode, setLiveMode] = React.useState<"light" | "dark" | null>(null);
+  const effTheme = liveTheme ?? theme;
+  const effMode = liveMode ?? mode;
+  const onTweak = React.useCallback(
+    (t: GeneratedTheme, m: "light" | "dark") => {
+      setLiveTheme(t);
+      setLiveMode(m);
+    },
+    [],
+  );
 
   // Boot beacons — when the embed is itself FRAMED (an MCP App panel, a
   // blog, the future grade-embed host page), post lifecycle milestones to
@@ -394,6 +440,7 @@ export function EmbedScreen({
 
   const content = fixed ? (
     <ScaledRender
+      transparent={transparent}
       width={renderWidth!}
       height={
         typeof renderHeight === "number" && renderHeight > 0
@@ -404,18 +451,20 @@ export function EmbedScreen({
       {/* The ScaledRender box owns the pixel size; the iframe fills it. */}
       <FastIframeHost
         appSource={appSource}
-        theme={theme}
-        mode={mode}
+        theme={effTheme}
+        mode={effMode}
         motion={motion}
+        transparent={transparent}
         className="block h-full w-full"
       />
     </ScaledRender>
   ) : (
     <FastIframeHost
       appSource={appSource}
-      theme={theme}
-      mode={mode}
+      theme={effTheme}
+      mode={effMode}
       motion={motion}
+      transparent={transparent}
       className="block h-full w-full"
     />
   );
@@ -423,14 +472,25 @@ export function EmbedScreen({
   return (
     <div
       className={cn(
-        "relative h-screen w-screen overflow-hidden bg-background",
-        mode === "dark" && "dark",
+        "relative h-screen w-screen overflow-hidden",
+        transparent ? "bg-transparent" : "bg-background",
+        effMode === "dark" && "dark",
       )}
-      data-mode={mode}
+      data-mode={effMode}
     >
       <ZoomPan zoom={eff.zoom} focusX={eff.cx} focusY={eff.cy}>
         {content}
       </ZoomPan>
+
+      {tweak && tweak.length > 0 && (
+        <EmbedTweaker
+          baseInput={baseInput}
+          baseMode={mode}
+          allow={tweak}
+          themeIds={tweakThemes}
+          onChange={onTweak}
+        />
+      )}
 
       {showTransport && (
         <button

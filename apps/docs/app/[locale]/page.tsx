@@ -70,7 +70,7 @@ export default function Home() {
             (no Lenis dead zone over the frame); clicking hands control
             to the live render, mousing away re-arms the shield. */}
         <LiveEmbed
-          src="/e/998ad8b7-c056-40af-b328-ba46b4cba557?w=1280&h=720&mode=dark&motion=on"
+          src="/e/998ad8b7-c056-40af-b328-ba46b4cba557?w=1280&h=720&mode=dark&motion=on&tweak=1&themes=calm,neon-brutalist,candy-pop,forest-terminal"
           title="Grade Studio live render"
           frameClassName="aspect-[16/9]"
         />

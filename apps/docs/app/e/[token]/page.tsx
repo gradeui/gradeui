@@ -100,6 +100,41 @@ export default async function EmbedPage({
   const colorModeOverride =
     modeRaw === "dark" || modeRaw === "light" ? modeRaw : undefined;
 
+  // Embed-local theme playground: ?tweak=1 exposes every control,
+  // ?tweak=theme,mode a subset. Renders a small settings overlay (see
+  // EmbedTweaker); all changes stay inside the embed.
+  const tweakRaw = Array.isArray(sp.tweak) ? sp.tweak[0] : sp.tweak;
+  const TWEAKS = ["theme", "hue", "density", "mode"] as const;
+  const tweak =
+    tweakRaw === "1" || tweakRaw === "all"
+      ? [...TWEAKS]
+      : typeof tweakRaw === "string" && tweakRaw.length > 0
+        ? tweakRaw
+            .split(",")
+            .map((t) => t.trim())
+            .filter((t): t is (typeof TWEAKS)[number] =>
+              (TWEAKS as readonly string[]).includes(t),
+            )
+        : null;
+
+  // Curated theme set for the playground's picker: ?themes=calm,candy-pop
+  // limits the choices to a deliberate, contrasting selection. Unknown
+  // ids are dropped client-side.
+  const themesRaw = Array.isArray(sp.themes) ? sp.themes[0] : sp.themes;
+  const tweakThemes =
+    typeof themesRaw === "string" && themesRaw.length > 0
+      ? themesRaw
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : null;
+
+  // Transparent embed: ?bg=transparent strips the page backdrop, the
+  // letterbox fill, and the sandbox document's background, so the host
+  // page shows through wherever the screen doesn't paint.
+  const bgRaw = Array.isArray(sp.bg) ? sp.bg[0] : sp.bg;
+  const transparent = bgRaw === "transparent";
+
   // ?flat=1 — the "live URL": the screen rendered DIRECTLY in the page,
   // no FastIframeHost, no nested page boot. Breakpoints come from the
   // real viewport (the capturer sets it; a browser window just is one).
@@ -211,9 +246,11 @@ export default async function EmbedPage({
   // embed route uses the bare layout (no providers, no theme script).
   const backdrop = (
     <style>{`html, body { background: ${
-      resolvedMode === "dark"
-        ? "oklch(0.16 0.01 250.94)"
-        : "oklch(0.985 0.0015 85)"
+      transparent
+        ? "transparent"
+        : resolvedMode === "dark"
+          ? "oklch(0.16 0.01 250.94)"
+          : "oklch(0.985 0.0015 85)"
     }; color-scheme: ${resolvedMode}; }`}</style>
   );
 
@@ -245,6 +282,9 @@ export default async function EmbedPage({
         focusX={focusX}
         focusY={focusY}
         camera={camera}
+        tweak={tweak}
+        tweakThemes={tweakThemes}
+        transparent={transparent}
       />
     </>
   );

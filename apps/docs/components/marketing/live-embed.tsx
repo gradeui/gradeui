@@ -22,6 +22,10 @@ import { cn } from "@/lib/utils";
 export interface LiveEmbedProps {
   src: string;
   title: string;
+  /** Paints the iframe's pre-render canvas (color-scheme) so a loading
+   *  embed never flashes white inside a dark page. Default dark — the
+   *  marketing surface is dark-only. */
+  colorScheme?: "light" | "dark";
   /** Classes for the iframe itself (sizing/aspect). */
   frameClassName?: string;
   className?: string;
@@ -32,6 +36,7 @@ export interface LiveEmbedProps {
 export function LiveEmbed({
   src,
   title,
+  colorScheme = "dark",
   frameClassName,
   className,
   hint = "Click to interact",
@@ -47,6 +52,7 @@ export function LiveEmbed({
         src={src}
         title={title}
         className={cn("block w-full border-0 bg-background", frameClassName)}
+        style={{ colorScheme }}
       />
 
       {!driving && (

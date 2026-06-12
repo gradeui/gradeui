@@ -154,3 +154,27 @@ html[data-studio-right-closed] [data-gds-part="studio-right-pane"] {
 /* (Raised trait graduated into @gradeui/ui as the `raised` prop on
    Button + .gds-button-raised in the package stylesheet, June 2026.) */
 
+
+/* ─────────────────────────────────────────────────────────────
+   Tweak-panel scale context.
+   Dense floating control panels (EmbedTweaker, BackgroundTweaker —
+   the proto-ControlPanel) run 11-12px type and h-6 controls, so DS
+   pieces dropped inside must compact to match. Selection cards are
+   token-driven, so this is just a scoped re-tune — no component
+   changes. Graduates into ControlPanel when that component lands.
+   ───────────────────────────────────────────────────────────── */
+.gds-tweak-panel {
+  --gds-selection-card-padding: 0.5rem 0.625rem;
+  --gds-selection-card-gap: 0.5rem;
+}
+.gds-tweak-panel .gds-selection-card__title {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+.gds-tweak-panel .gds-selection-card__desc {
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+.gds-tweak-panel .gds-selection-indicator {
+  transform: scale(0.8);
+}
