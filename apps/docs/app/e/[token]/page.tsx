@@ -52,6 +52,33 @@ function parseCameraParam(raw: string | undefined): CameraShot[] | undefined {
 
 export const dynamic = "force-dynamic";
 
+/** Tab title — kept in lockstep with the share view (/s/<token>):
+ *  "Screen — Project · Grade". Light second query; the page itself
+ *  re-validates the token, this only names the tab. */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+  const supabase = getServiceSupabase();
+  if (!supabase) return { title: "Shared screen · Grade" };
+  const { data: link } = await supabase
+    .from("share_links")
+    .select("project_id, design_id, revoked")
+    .eq("token", token)
+    .maybeSingle();
+  if (!link || link.revoked || !link.design_id)
+    return { title: "Shared screen · Grade" };
+  const [{ data: design }, { data: project }] = await Promise.all([
+    supabase.from("designs").select("name").eq("id", link.design_id).maybeSingle(),
+    supabase.from("projects").select("name").eq("id", link.project_id).maybeSingle(),
+  ]);
+  const screen = (design as { name: string } | null)?.name ?? "Screen";
+  const proj = (project as { name: string } | null)?.name ?? "Grade";
+  return { title: `${screen} — ${proj} · Grade` };
+}
+
 interface ShareLinkRow {
   token: string;
   project_id: string;
