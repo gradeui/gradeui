@@ -219,6 +219,50 @@ export interface ThreeSceneProps
    * hover" thumbnails. Reduced-motion still forces paused.
    */
   play?: boolean;
+  /**
+   * Release the WebGL context entirely while the scene is scrolled out of
+   * view (and rebuild it when it returns), instead of merely pausing the
+   * render loop. A live `WebGLRenderer` holds a real GL context for its
+   * whole lifetime, and browsers cap simultaneous contexts (~16 Chrome,
+   * ~8 Safari) — so a gallery of many `ThreeScene`s blows the budget and
+   * the browser silently evicts the OLDEST (those cards go blank with a
+   * "Context Lost" log). Galleries / thumbnail grids should set this so
+   * only the on-screen scenes (plus a small rootMargin pre-warm) hold a
+   * context. Default `false` — single hero shaders keep their context.
+   */
+  releaseOffscreen?: boolean;
+}
+
+// ── Global WebGL context budget ────────────────────────────────────────
+// Browsers hard-cap the number of simultaneously-live WebGL contexts (~16
+// Chrome, ~8 Safari) and, when exceeded, silently evict the OLDEST context
+// (logging "THREE.WebGLRenderer: Context Lost") — which on a gallery page
+// blanks whatever rendered first. A single page can stack several shader
+// galleries whose on-screen cards together breach that cap (e.g. two preset
+// pickers, each a full grid that fits in the viewport at once).
+//
+// So we run our own budget. Scenes with `releaseOffscreen` register when
+// they enter the viewport; we grant a live context to the N most-recently-
+// seen and deny the rest. Eviction is therefore deterministic — the least-
+// recently-visible scene loses its context, never the card the user just
+// scrolled to — and the live total never reaches the browser's hard limit,
+// so the ungraceful browser-side eviction never fires. Kept comfortably
+// under the Chrome cap to leave room for non-gallery scenes on the page.
+const MAX_LIVE_CONTEXTS = 12;
+type BudgetEntry = { touched: number; setGranted: (g: boolean) => void };
+const budgetEntries = new Set<BudgetEntry>();
+let budgetSeq = 0;
+function enforceBudget() {
+  const sorted = [...budgetEntries].sort((a, b) => b.touched - a.touched);
+  sorted.forEach((e, i) => e.setGranted(i < MAX_LIVE_CONTEXTS));
+}
+function budgetAcquire(e: BudgetEntry) {
+  e.touched = ++budgetSeq;
+  budgetEntries.add(e);
+  enforceBudget();
+}
+function budgetRelease(e: BudgetEntry) {
+  if (budgetEntries.delete(e)) enforceBudget();
 }
 
 export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
@@ -235,6 +279,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       autoPlay = true,
       play,
       pauseOffscreen = true,
+      releaseOffscreen = false,
       aspect = "video",
       radius = "lg",
       border = false,
@@ -251,6 +296,60 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
     const [playing, setPlaying] = React.useState(play ?? autoPlay);
     const [ready, setReady] = React.useState(false);
     const reduced = usePrefersReducedMotion();
+
+    // Context-budget gate. When `releaseOffscreen` is on, the WebGL context
+    // is only built while the host is on-screen (plus a rootMargin pre-warm
+    // so it's ready just before it scrolls into view). Default `true` so a
+    // scene with the gate OFF behaves exactly as before. See the build
+    // effect below and the `releaseOffscreen` prop doc.
+    const [inView, setInView] = React.useState(!releaseOffscreen);
+    // Budget grant — see the global context budget above. A scene only holds
+    // a GL context when it's both in view AND granted by the budget. Scenes
+    // without `releaseOffscreen` are always granted (they don't participate).
+    const [granted, setGranted] = React.useState(!releaseOffscreen);
+    const budgetRef = React.useRef<BudgetEntry | null>(null);
+    React.useEffect(() => {
+      if (!releaseOffscreen) {
+        setGranted(true);
+        return;
+      }
+      const entry: BudgetEntry = { touched: 0, setGranted };
+      budgetRef.current = entry;
+      return () => {
+        budgetRelease(entry);
+        budgetRef.current = null;
+      };
+    }, [releaseOffscreen]);
+    // Acquire/release the budget slot as the scene enters/leaves the viewport.
+    React.useEffect(() => {
+      if (!releaseOffscreen) return;
+      const entry = budgetRef.current;
+      if (!entry) return;
+      if (inView) budgetAcquire(entry);
+      else budgetRelease(entry);
+    }, [inView, releaseOffscreen]);
+
+    React.useEffect(() => {
+      if (!releaseOffscreen) {
+        setInView(true);
+        return;
+      }
+      const host = hostRef.current;
+      if (!host) return;
+      const io = new IntersectionObserver(
+        ([entry]) => setInView(entry.isIntersecting),
+        // No pre-warm margin: only scenes actually in the viewport hold a
+        // GL context. A page can stack several galleries (e.g. two pickers),
+        // and a pre-warm band lets the tail of one plus the head of the next
+        // both stay live at the scroll boundary — enough to breach the
+        // browser's simultaneous-context cap. Bounding the live set to what's
+        // truly visible keeps it comfortably under the cap at any scroll
+        // position. The mount-on-enter paint lands within a frame or two.
+        { rootMargin: "0px", threshold: 0 },
+      );
+      io.observe(host);
+      return () => io.disconnect();
+    }, [releaseOffscreen]);
 
     // Merge palette prop with defaults. Tone pins the background slot
     // unless the consumer set palette.background explicitly.
@@ -318,6 +417,14 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
     React.useEffect(() => {
       const host = hostRef.current;
       if (!host || !resolvedFactory) return;
+      // Context budget: when releaseOffscreen is on, don't hold a GL context
+      // while scrolled away — the cleanup below disposes it, and re-entering
+      // the viewport re-runs this effect to rebuild. Keeps a many-scene
+      // gallery under the browser's simultaneous-context cap.
+      if (releaseOffscreen && (!inView || !granted)) {
+        setReady(false);
+        return;
+      }
 
       const width = host.clientWidth || 1;
       const height = host.clientHeight || 1;
@@ -517,6 +624,9 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
       autoPlay,
       reduced,
       pauseOffscreen,
+      releaseOffscreen,
+      inView,
+      granted,
       maxDpr,
     ]);
 

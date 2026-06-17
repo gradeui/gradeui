@@ -15,6 +15,7 @@ import { MarketingBackground } from "@/components/marketing/marketing-background
 import { GradeWordmarkPen } from "@/components/marketing/grade-wordmark-pen";
 import { LiveEmbed } from "@/components/marketing/live-embed";
 import { BackgroundTweaker } from "@/components/marketing/background-tweaker";
+import { ShaderCapture } from "@/components/marketing/shader-capture";
 import {
   MarketingHero,
   ProductShowcase,
@@ -75,6 +76,13 @@ export default function Home() {
           title="Grade Studio live render"
           frameClassName="aspect-[16/9]"
         />
+      </ProductShowcase>
+
+      {/* Shaders, composable. The captured frame is an image base; Grade's
+          effect layers (gradient map, dots/halftone, dither) treat it live.
+          Evolving showcase — grows as the layer system lands. */}
+      <ProductShowcase label="Shaders — composable layers on anything, even your own snapshot">
+        <ShaderCapture />
       </ProductShowcase>
 
       <FeatureGrid

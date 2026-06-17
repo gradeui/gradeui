@@ -14,6 +14,11 @@ const toggleVariants = cva(
         default: "bg-transparent",
         outline:
           "border border-input bg-transparent shadow-sm hover:bg-accent hover:text-accent-foreground",
+        // segmented — the quiet iOS-style selector for dense panels. Items
+        // sit in a muted track (added by ToggleGroup variant="segmented");
+        // the selected item is a soft raised pill, NOT the loud accent fill.
+        segmented:
+          "rounded-md bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm",
       },
       size: {
         default: "h-9 px-2 min-w-9",

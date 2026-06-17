@@ -26,6 +26,12 @@ export type NumberControl = {
   default: number;
   /** Display unit appended in the readout (e.g. "px", "°", "%"). */
   unit?: string;
+  /** Readout normalisation. "percent" shows the value as 0–100% of its
+   *  [min,max] range (the slider still drives the real value) — for the
+   *  abstract 0.3753-style knobs where a percentage reads far clearer.
+   *  Omit for the raw number. A panel-level `format` setting can opt every
+   *  eligible slider into percent without per-control flags. */
+  display?: "percent";
 };
 
 export type ColorControl = {

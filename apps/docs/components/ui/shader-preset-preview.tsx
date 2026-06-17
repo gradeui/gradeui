@@ -93,6 +93,14 @@ export const ShaderPresetPreview = React.forwardRef<
             play={animate}
             controls={false}
             pauseOffscreen
+            // A gallery page can mount dozens of thumbnails; a live
+            // WebGLRenderer holds a GL context for its whole lifetime and
+            // browsers cap simultaneous contexts (~16 Chrome, ~8 Safari),
+            // silently evicting the OLDEST when exceeded (those cards blank
+            // with a "Context Lost" log). Thumbnails therefore RELEASE their
+            // context while scrolled out of view — only the on-screen cards
+            // (plus a small pre-warm margin) hold one. See ThreeScene.
+            releaseOffscreen
             poster={entry?.poster}
             maxDpr={1} // thumbnails — keep GPU work low
           />

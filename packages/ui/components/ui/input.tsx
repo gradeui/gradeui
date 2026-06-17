@@ -16,31 +16,40 @@ import { cn } from "@/lib/utils";
  * rationale.
  */
 const inputVariants = cva(
-  "flex w-full rounded-md border border-input bg-transparent shadow-sm transition-colors file:border-0 file:bg-transparent file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+  "flex w-full rounded-md bg-transparent shadow-sm transition-colors file:border-0 file:bg-transparent file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       size: {
         default: "h-9 pl-3 pr-3 py-1 text-base file:text-sm md:text-sm",
         sm: "h-8 pl-2 pr-2 py-1 text-sm file:text-xs",
-        // Figma-density — for tool panels (the Studio inspector) where
-        // many controls stack in a narrow column and 28px rows matter.
-        // shadow-none so they sit flush with SelectTrigger (no drop
-        // shadow) — every field in a dense panel should read identically.
+        // Figma-density — tool panels (the Studio inspector). shadow-none
+        // so they sit flush with SelectTrigger (no drop shadow) — every
+        // field in a dense panel should read identically.
         xs: "h-7 pl-2 pr-2 py-0 text-xs file:text-xs shadow-none",
         // 2xs: h-6 (24px) — densest tool-panel input. rounded-lg + the
         // tighter leading edge mirror SelectTrigger's 2xs so mixed
         // field rows read identically.
         "2xs": "h-6 rounded-lg pl-1.5 pr-2 py-0 text-2xs file:text-2xs shadow-none",
       },
+      // `ghost` is the borderless inline-edit field — a value that reads as
+      // plain text until focused (inspector readouts, the path bar). No
+      // border, no shadow; the focus ring still confirms edit mode.
+      variant: {
+        default: "border border-input",
+        ghost: "border border-transparent bg-transparent shadow-none",
+      },
     },
-    defaultVariants: { size: "default" },
+    defaultVariants: { size: "default", variant: "default" },
   }
 );
 
 type InputSize = NonNullable<VariantProps<typeof inputVariants>["size"]>;
 
+type InputVariant = NonNullable<VariantProps<typeof inputVariants>["variant"]>;
+
 type InputProps = Omit<React.ComponentProps<"input">, "size"> & {
   size?: InputSize;
+  variant?: InputVariant;
   /** Adornment rendered inside the field on the leading edge — an icon,
    *  a unit, a prefix. Non-interactive by default (clicks pass through
    *  to focus the input); pass an element with its own pointer-events
@@ -66,12 +75,12 @@ const SLOT_PADDING: Record<
 };
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, size = "default", startSlot, endSlot, ...props }, ref) => {
+  ({ className, type, size = "default", variant = "default", startSlot, endSlot, ...props }, ref) => {
     if (!startSlot && !endSlot) {
       return (
         <input
           type={type}
-          className={cn(inputVariants({ size }), className)}
+          className={cn(inputVariants({ size, variant }), className)}
           ref={ref}
           {...props}
         />
@@ -94,7 +103,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           type={type}
           ref={ref}
           className={cn(
-            inputVariants({ size }),
+            inputVariants({ size, variant }),
             startSlot && pad.startPad,
             endSlot && pad.endPad,
             className,

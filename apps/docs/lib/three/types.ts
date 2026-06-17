@@ -36,6 +36,11 @@ export interface SceneHandle {
   resize?: (width: number, height: number) => void;
   /** Called when palette changes at runtime. */
   setPalette?: (palette: Palette) => void;
+  /** Called when contract-driven params change at runtime (no remount).
+   *  Values are pre-resolved by the host: colours as THREE-parseable
+   *  strings (rgb()/hex), colour lists as string[], numbers/bools/selects
+   *  as their raw DemoState values. Keyed by ControlSpec.key. */
+  setParams?: (params: Record<string, number | string | boolean | string[]>) => void;
   /** Release GPU + CPU resources. */
   dispose?: () => void;
 }

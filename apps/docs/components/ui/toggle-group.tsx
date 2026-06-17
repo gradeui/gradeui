@@ -26,7 +26,13 @@ const ToggleGroup = React.forwardRef<
 >(({ className, variant, size, children, ...props }, ref) => (
   <ToggleGroupPrimitive.Root
     ref={ref}
-    className={cn("flex items-center justify-center gap-1", className)}
+    className={cn(
+      "flex items-center justify-center gap-1",
+      // segmented — the items sit in a single muted track, no gaps, so it
+      // reads as one control rather than separate toggle buttons.
+      variant === "segmented" && "inline-flex gap-0 rounded-lg bg-muted/70 p-0.5",
+      className,
+    )}
     {...props}
   >
     <ToggleGroupContext.Provider value={{ variant, size }}>

@@ -19,6 +19,8 @@ import { SlidersHorizontal, X, RotateCcw, Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ShaderControls } from "@/components/ui/shader-controls";
+import type { ControlSpec, DemoState } from "@/lib/three/schema";
 import {
   DEFAULT_TUNING,
   getBackgroundTuning,
@@ -26,22 +28,19 @@ import {
   type BackgroundTuning,
 } from "@/components/marketing/marketing-background";
 
-const KNOBS: Array<{
-  key: keyof BackgroundTuning;
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-}> = [
-  { key: "speed", label: "Drift", min: 0, max: 0.15, step: 0.005 },
-  { key: "scale", label: "Zoom", min: 0.8, max: 3.5, step: 0.05 },
-  { key: "falloff", label: "Touch size", min: 0.5, max: 10, step: 0.25 },
-  { key: "push", label: "Push", min: 0, max: 0.4, step: 0.01 },
-  { key: "sheen", label: "Sheen", min: 0, max: 1, step: 0.05 },
-  { key: "lift", label: "Accent lift", min: 0, max: 0.3, step: 0.01 },
-  { key: "vein", label: "Veins", min: 0, max: 0.5, step: 0.01 },
-  { key: "halftone", label: "Halftone", min: 0, max: 1, step: 0.05 },
-  { key: "dotSize", label: "Dot size", min: 3, max: 24, step: 0.5 },
+// The knobs as a Grade control contract — rendered by the same ShaderControls
+// component as the shader showcase and the docs, so the homepage tweaker reads
+// identically. (Was bespoke native range inputs.)
+const TWEAK_CONTROLS: ControlSpec[] = [
+  { type: "slider", key: "speed", label: "Drift", min: 0, max: 0.15, step: 0.005, default: DEFAULT_TUNING.speed },
+  { type: "slider", key: "scale", label: "Zoom", min: 0.8, max: 3.5, step: 0.05, default: DEFAULT_TUNING.scale },
+  { type: "slider", key: "falloff", label: "Touch size", min: 0.5, max: 10, step: 0.25, default: DEFAULT_TUNING.falloff },
+  { type: "slider", key: "push", label: "Push", min: 0, max: 0.4, step: 0.01, default: DEFAULT_TUNING.push },
+  { type: "slider", key: "sheen", label: "Sheen", min: 0, max: 1, step: 0.05, default: DEFAULT_TUNING.sheen },
+  { type: "slider", key: "lift", label: "Accent lift", min: 0, max: 0.3, step: 0.01, default: DEFAULT_TUNING.lift },
+  { type: "slider", key: "vein", label: "Veins", min: 0, max: 0.5, step: 0.01, default: DEFAULT_TUNING.vein },
+  { type: "slider", key: "halftone", label: "Halftone", min: 0, max: 1, step: 0.05, default: DEFAULT_TUNING.halftone },
+  { type: "slider", key: "dotSize", label: "Dot size", min: 3, max: 24, step: 0.5, default: DEFAULT_TUNING.dotSize },
 ];
 
 export function BackgroundTweaker({ className }: { className?: string }) {
@@ -135,25 +134,6 @@ export function BackgroundTweaker({ className }: { className?: string }) {
         transition: { type: "spring" as const, stiffness: 550, damping: 30 },
       };
 
-  // Knob rows cascade in as the panel opens — 25ms apart, each on a
-  // quick spring. Disabled under reduced motion (rows just appear).
-  const listVariants = {
-    hidden: {},
-    show: reducedMotion
-      ? {}
-      : { transition: { staggerChildren: 0.025, delayChildren: 0.04 } },
-  };
-  const rowVariants = reducedMotion
-    ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } }
-    : {
-        hidden: { opacity: 0, y: -6 },
-        show: {
-          opacity: 1,
-          y: 0,
-          transition: { type: "spring" as const, stiffness: 600, damping: 34 },
-        },
-      };
-
   return (
     <div
       className={cn(
@@ -219,39 +199,15 @@ export function BackgroundTweaker({ className }: { className?: string }) {
             </div>
           </div>
 
-          <motion.div
-            className="flex flex-col gap-3"
-            variants={listVariants}
-            initial="hidden"
-            animate="show"
-          >
-            {KNOBS.map((knob) => (
-              <motion.div key={knob.key} variants={rowVariants}>
-                <span className="flex items-center justify-between leading-none mb-1">
-                  <Label
-                    htmlFor={`bg-knob-${knob.key}`}
-                    size="xs"
-                    className="text-foreground/80"
-                  >
-                    {knob.label}
-                  </Label>
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {values[knob.key].toFixed(3)}
-                  </span>
-                </span>
-                <input
-                  id={`bg-knob-${knob.key}`}
-                  type="range"
-                  min={knob.min}
-                  max={knob.max}
-                  step={knob.step}
-                  value={values[knob.key]}
-                  onChange={(e) => update(knob.key, Number(e.target.value))}
-                  className="block w-full h-1.5 cursor-pointer appearance-none rounded-full bg-border accent-[oklch(var(--accent))]"
-                />
-              </motion.div>
-            ))}
-          </motion.div>
+          <ShaderControls
+            controls={TWEAK_CONTROLS}
+            state={values as unknown as DemoState}
+            labelPosition="above"
+            format="percent"
+            onChange={(k, v) =>
+              update(k as keyof BackgroundTuning, Number(v))
+            }
+          />
         </motion.div>
       )}
       </AnimatePresence>

@@ -12,6 +12,53 @@
 
 import * as THREE from "three";
 import type { SceneFactory, SceneHandle, Palette } from "./types";
+import type { ControlSpec } from "./schema";
+
+/** Uniform name for a contract param key: `coolTone` → `uCoolTone`. The
+ *  shader author references these directly (e.g. `uRefraction`, `uRamp`). */
+export function paramUniformName(key: string): string {
+  return "u" + key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+/** Max swatches a colour-list param declares as a fixed-size GLSL array. */
+const COLOR_LIST_CAP = 8;
+
+/** GLSL uniform declarations generated from a control contract. Appended to
+ *  FRAGMENT_HEADER so the author can read each param as a typed uniform:
+ *    slider / toggle / select / segmented → `uniform float u<Key>;`
+ *    color                                → `uniform vec3  u<Key>;`
+ *    colorList                            → `uniform vec3  u<Key>[N];`
+ *                                            `uniform int   u<Key>Count;`
+ */
+function paramUniformDeclarations(controls: readonly ControlSpec[]): string {
+  const lines: string[] = [];
+  for (const c of controls) {
+    if (c.type === "divider") continue;
+    const u = paramUniformName(c.key);
+    if (c.type === "color") lines.push(`uniform vec3 ${u};`);
+    else if (c.type === "colorList") {
+      const n = Math.min(c.max ?? c.default.length, COLOR_LIST_CAP);
+      lines.push(`uniform vec3 ${u}[${n}];`, `uniform int ${u}Count;`);
+    } else {
+      // slider / toggle / select / segmented all ride a float uniform.
+      lines.push(`uniform float ${u};`);
+    }
+  }
+  return lines.join("\n  ");
+}
+
+/** Safe THREE.Color from a string — falls back to mid-grey on a value
+ *  THREE can't parse (e.g. an unresolved oklch()/var()). Hosts resolve
+ *  colours to rgb() before calling setParams, so this is just a guard. */
+function safeColor(value: string): THREE.Color {
+  const c = new THREE.Color();
+  try {
+    c.set(value);
+  } catch {
+    c.setRGB(0.5, 0.5, 0.5);
+  }
+  return c;
+}
 
 /**
  * Auto-injected prelude — defines every uniform and varying the user's
@@ -81,9 +128,18 @@ function precompileFragment(renderer: THREE.WebGLRenderer, source: string): void
  * the GLSL doesn't compile. ThreeScene catches this and falls back to
  * `preset="space"` so the UI stays populated.
  */
-export function buildFragmentShaderScene(userFragment: string): SceneFactory {
+export function buildFragmentShaderScene(
+  userFragment: string,
+  /** Optional param contract — each non-divider control becomes a uniform
+   *  the shader can read (see paramUniformName) and `setParams` can drive
+   *  live without a remount. */
+  controls?: readonly ControlSpec[],
+): SceneFactory {
   return ({ renderer, width, height, palette }) => {
-    const combined = `${FRAGMENT_HEADER}\n${userFragment}`;
+    const paramDecls = controls?.length
+      ? paramUniformDeclarations(controls)
+      : "";
+    const combined = `${FRAGMENT_HEADER}\n  ${paramDecls}\n${userFragment}`;
 
     // Surfaces compile errors up to the caller with the GL info log attached.
     precompileFragment(renderer, combined);
@@ -100,6 +156,39 @@ export function buildFragmentShaderScene(userFragment: string): SceneFactory {
       uAccent: { value: new THREE.Color(palette.accent) },
       uBackground: { value: new THREE.Color(palette.background) },
     };
+
+    // Seed param uniforms from the contract defaults so the shader compiles
+    // and paints sensibly before the host pushes resolved values via
+    // setParams (which runs immediately after build).
+    if (controls?.length) {
+      for (const c of controls) {
+        if (c.type === "divider") continue;
+        const u = paramUniformName(c.key);
+        if (c.type === "color") {
+          uniforms[u] = { value: safeColor(c.default) };
+        } else if (c.type === "colorList") {
+          const n = Math.min(c.max ?? c.default.length, COLOR_LIST_CAP);
+          const arr = Array.from({ length: n }, (_, i) =>
+            safeColor(c.default[Math.min(i, c.default.length - 1)] ?? "#888"),
+          );
+          uniforms[u] = { value: arr };
+          uniforms[`${u}Count`] = { value: Math.min(c.default.length, n) };
+        } else if (c.type === "select" || c.type === "segmented") {
+          const idx = c.options.findIndex((o) => o.value === c.default);
+          uniforms[u] = { value: Math.max(0, idx) };
+        } else if (c.type === "toggle") {
+          uniforms[u] = { value: c.default ? 1 : 0 };
+        } else {
+          uniforms[u] = { value: c.default };
+        }
+      }
+    }
+
+    // Index the controls by key so setParams knows each param's type.
+    const controlByKey = new Map<string, ControlSpec>();
+    for (const c of controls ?? []) {
+      if (c.type !== "divider") controlByKey.set(c.key, c);
+    }
 
     const material = new THREE.ShaderMaterial({
       uniforms,
@@ -130,6 +219,34 @@ export function buildFragmentShaderScene(userFragment: string): SceneFactory {
       },
       setMouse: (x, y) => {
         (uniforms.uMouse.value as THREE.Vector2).set(x, y);
+      },
+      setParams: (params) => {
+        for (const [key, raw] of Object.entries(params)) {
+          const c = controlByKey.get(key);
+          if (!c) continue;
+          const u = paramUniformName(key);
+          const uni = uniforms[u];
+          if (!uni) continue;
+          if (c.type === "color") {
+            (uni.value as THREE.Color).set(String(raw));
+          } else if (c.type === "colorList") {
+            const list = Array.isArray(raw) ? (raw as string[]) : [];
+            const arr = uni.value as THREE.Color[];
+            for (let i = 0; i < arr.length; i++) {
+              const v = list[Math.min(i, list.length - 1)];
+              if (v) arr[i].set(v);
+            }
+            const countUni = uniforms[`${u}Count`];
+            if (countUni) countUni.value = Math.min(list.length, arr.length);
+          } else if (c.type === "select" || c.type === "segmented") {
+            const idx = c.options.findIndex((o) => o.value === raw);
+            uni.value = Math.max(0, idx);
+          } else if (c.type === "toggle") {
+            uni.value = raw ? 1 : 0;
+          } else {
+            uni.value = Number(raw);
+          }
+        }
       },
       dispose: () => {
         geometry.dispose();
