@@ -1,5 +1,79 @@
 # @gradeui/ui
 
+## 3.1.0
+
+### Minor Changes
+
+- 3787357: Custom uploaded fonts in themes. `ThemeInput.typography` now accepts
+  `custom:<family>` selections backed by a `customFonts: CustomFontFace[]`
+  list the theme carries with it — family name, permanent public URL,
+  format/weight/style descriptors. The generator resolves the selections to
+  concrete font-family stacks and passes the faces through as
+  `GeneratedTypography.fontFaces`; new `fontFaceCSS()` / `injectFontFaces()`
+  helpers (exported from the themes barrel) materialise the `@font-face`
+  rules wherever the theme is applied, and `applyThemeToRoot` injects them
+  automatically. Registry-only themes are unaffected.
+
+  Variable-font width support: `CustomFontFace.stretch` (default "50% 200%")
+  keeps the wdth axis reachable, and `typography.bodyStretch` /
+  `displayStretch` set a theme-wide font-stretch consumed by globals.css on
+  `body` and `h1–h4` via `--font-body-stretch` / `--font-display-stretch` —
+  per-element `font-stretch-[…]` utilities still override.
+
+- 197dea2: Embed viewer modes, map polish, and theme ring control.
+
+  - **MediaSurface fidelity model**: the tiered placeholder stays mounted beneath a filled slot but is now hidden via CSS (`[data-filled]` → `visibility: hidden`), so transparent imagery no longer shows the glyph/`--gds-media-placeholder-bg` through its alpha pixels. Wireframe mode is back as a pure-CSS view: `data-fidelity="wireframe"` on any ancestor cross-fades imagery out and placeholders in (`--gds-media-fidelity-fade`, default 280ms).
+  - **Map `tools` / `toolsPosition` props**: `"auto" | "zoom" | "none"` and a four-corner dock position, one vocabulary across leaflet/maplibre/mapbox/google adapters. Google's default UI is now fully disabled with only the zoom control added back.
+  - **Map `appearance="auto"` in provider-less hosts**: falls back to watching the root `.dark` class when no `GradeThemeProvider` is mounted, so embeds and sandboxed previews restyle tiles live on mode flips.
+  - **Map marker lift**: every `MapMarker` child gets a 1px border + ambient shadow from the mode-aware `--gds-map-marker-*` token pair (light hairline on dark tiles), and marker content re-asserts `--font-sans` over Leaflet/MapLibre's container font-family so pins carry custom faces.
+  - **Transparency checkerboard tokens**: `--gds-media-checker-color` / `--gds-media-checker-size` for alpha backdrops (used by Studio's inspector image well).
+  - **`ThemeInput.ring`**: optional focus-ring colour — `{ source: "primary" | "accent" | "neutral" }` or `{ hue: number }` (mints a dedicated ramp at primary chroma). The mode-tuned step is preserved, so per-mode contrast behaviour is unchanged.
+  - **Contracts**: `Map.onHoveredIdChange` and `MediaSurface.instanceId` added to sidecars/contracts so the documented patterns pass save validation.
+
+- 1317ff8: Component + contract fixes from the Cowork-replica exercise (2026-06-11):
+
+  - **DropdownMenuSubTrigger hover**: now applies `focus:text-accent-foreground`
+    / `data-[state=open]:text-accent-foreground` + `transition-colors`,
+    matching DropdownMenuItem — previously only the accent background was set,
+    leaving default-colour text on hover.
+  - **SidebarSection `titleTransform`** ("uppercase" | "none"): explicit
+    control over title casing for both header variants. Unset preserves the
+    per-variant legacy defaults exactly (static headers uppercase, collapsible
+    headers authored-case).
+  - **Contracts generator**: multi-prop sidecar lines now parse fully —
+    semicolon-separated signatures and bare comma lists (`open?, defaultOpen?,
+onOpenChange?, modal?`) previously kept only the first prop, so the save
+    gate rejected props the components genuinely support. Prose semicolons in
+    descriptions are no longer mistaken for separators. Sub-component props
+    are forced optional in the flattened bag (requiredness no longer leaks —
+    TabsTrigger's required `value` was being demanded on `<Tabs>` itself).
+    Net effect: 27 real props restored across 17 component contracts, zero
+    new requirements.
+  - **Sidecars**: logo.md now documents the full existing Logo API
+    (size/lockup/mode/mono/label/decorative/href — the component had outgrown
+    its docs); dropdown-menu.md documents DropdownMenuSub open/defaultOpen/
+    onOpenChange (Radix passthrough, useful for composing pre-opened menus in
+    static screens); sidebar.md describes the real per-variant title casing
+    instead of claiming unconditional uppercase.
+
+- 498c64a: Add `Swatch` and `SwatchGroup`. `Swatch` is a single colour chip that binds
+  to a live theme token (`token="brand-3"` → `oklch(var(--brand-3))`,
+  re-voicing on theme change) or a raw `color`. Sizes are the t-shirt scale
+  (xs–xl); `shape` is square / rounded (rides `--radius`) / circle. A
+  transparency checkerboard sits behind the fill and a foreground-based border
+  is drawn on top (`rounded-[inherit]`) so the edge reads on any surface and
+  survives an opaque fill. `onSelect` makes it a pickable `<button>`
+  (`selected` draws the shared selection ring); `onColorChange` makes it an
+  editable colour well that hosts a native `<input type="color">` behind the
+  chip — the OS picker stays native, the presentation stays the DS chip.
+  `SwatchGroup` arranges a set as a spaced `row` or an overlapping `stack` and
+  cascades `size`/`shape` to its children.
+
+  Louder brand pops: `--brand-1…8` are now a vivid spectrum fanned from the
+  theme's primary and accent hues (high OKLCH chroma, bright lightness) instead
+  of being seeded from the muted, data-viz-tuned chart palette. They still
+  track the theme, so switching theme or dragging hue re-voices them.
+
 ## 3.0.0
 
 ### Major Changes
