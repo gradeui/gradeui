@@ -52,12 +52,23 @@ export function LiveEmbed({
     return () => window.removeEventListener("message", onMessage);
   }, []);
 
+  // The iframe paints white until the embed's first frame lands, which flashes
+  // on a dark page. Hold it at opacity 0 over a matching dark wrapper, then
+  // fade it in on `load` (fires after the embed's first paint), so the seam is
+  // invisible. color-scheme keeps the pre-load canvas dark as a belt-and-braces.
+  const [loaded, setLoaded] = React.useState(false);
+
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative bg-background", className)}>
       <iframe
         src={src}
         title={title}
-        className={cn("block w-full border-0 bg-background", frameClassName)}
+        onLoad={() => setLoaded(true)}
+        className={cn(
+          "block w-full border-0 bg-background transition-opacity duration-500 ease-out",
+          loaded ? "opacity-100" : "opacity-0",
+          frameClassName,
+        )}
         style={{ colorScheme }}
       />
     </div>

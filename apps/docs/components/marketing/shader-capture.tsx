@@ -18,6 +18,7 @@
 
 import * as React from "react";
 import * as THREE from "three";
+import { Download } from "lucide-react";
 import { EffectComposer, RenderPass, EffectPass } from "postprocessing";
 import {
   effectLayerRegistry,
@@ -95,10 +96,16 @@ export function ShaderCapture({
   const [numberFormat, setNumberFormat] = React.useState<"raw" | "percent">(
     "percent",
   );
-  const [hasCamera, setHasCamera] = React.useState(false);
-  const [captured, setCaptured] = React.useState(false);
+  // idle = test pattern, camera not yet requested (no permission prompt on
+  // load); live = webcam preview; captured = frozen still. The camera is
+  // only requested when the user clicks, never before.
+  const [phase, setPhase] = React.useState<"idle" | "live" | "captured">(
+    "idle",
+  );
+  const requestCameraRef = React.useRef<(() => void) | null>(null);
   const captureFnRef = React.useRef<(() => void) | null>(null);
   const retakeFnRef = React.useRef<(() => void) | null>(null);
+  const downloadRef = React.useRef<(() => void) | null>(null);
 
   // Keep the layer opacities in step with `active` without rebuilding.
   React.useEffect(() => {
@@ -114,7 +121,13 @@ export function ShaderCapture({
     let disposed = false;
     let raf = 0;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: false,
+      alpha: false,
+      // Keep the drawing buffer so the composited result (layers baked in)
+      // can be read to a PNG for download.
+      preserveDrawingBuffer: true,
+    });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     const size = () => ({
       w: mount.clientWidth || 1,
@@ -183,41 +196,55 @@ export function ShaderCapture({
     };
     frame();
 
-    // Try the webcam. On success swap in a mirrored video texture; on
-    // failure the test pattern stays (so the layers still demo).
+    // The camera is requested ONLY when the user clicks (requestCameraRef),
+    // never on mount — so no permission prompt appears unexpectedly. Until
+    // then the test pattern stands in.
     const video = document.createElement("video");
     video.muted = true;
     video.playsInline = true;
     videoRef.current = video;
-    navigator.mediaDevices
-      ?.getUserMedia({ video: { facingMode: "user" }, audio: false })
-      .then((stream) => {
-        if (disposed) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        video.srcObject = stream;
-        void video.play();
-        const vt = new THREE.VideoTexture(video);
-        vt.colorSpace = THREE.SRGBColorSpace;
-        // Mirror for a selfie view.
-        vt.wrapS = THREE.RepeatWrapping;
-        vt.repeat.x = -1;
-        vt.offset.x = 1;
-        texture.dispose();
-        texture = vt;
-        material.map = vt;
-        material.needsUpdate = true;
-        setHasCamera(true);
-      })
-      .catch(() => {
-        /* no camera — keep the test pattern */
-      });
+
+    const goLive = () => {
+      const vt = new THREE.VideoTexture(video);
+      vt.colorSpace = THREE.SRGBColorSpace;
+      // Mirror for a selfie view.
+      vt.wrapS = THREE.RepeatWrapping;
+      vt.repeat.x = -1;
+      vt.offset.x = 1;
+      texture.dispose();
+      texture = vt;
+      material.map = vt;
+      material.needsUpdate = true;
+    };
+
+    requestCameraRef.current = () => {
+      // Already have a stream (e.g. retake after capture) — just go live.
+      if (video.srcObject) {
+        goLive();
+        setPhase("live");
+        return;
+      }
+      navigator.mediaDevices
+        ?.getUserMedia({ video: { facingMode: "user" }, audio: false })
+        .then((stream) => {
+          if (disposed) {
+            stream.getTracks().forEach((t) => t.stop());
+            return;
+          }
+          video.srcObject = stream;
+          void video.play();
+          goLive();
+          setPhase("live");
+        })
+        .catch(() => {
+          /* denied — stay on the test pattern */
+        });
+    };
 
     // Freeze the current frame into a still on capture; restore live on retake.
     captureFnRef.current = () => {
       if (!(texture instanceof THREE.VideoTexture)) {
-        setCaptured(true);
+        setPhase("captured");
         return;
       }
       const still = document.createElement("canvas");
@@ -234,21 +261,25 @@ export function ShaderCapture({
       texture = ct;
       material.map = ct;
       material.needsUpdate = true;
-      setCaptured(true);
+      setPhase("captured");
     };
     retakeFnRef.current = () => {
-      if (videoRef.current) {
-        const vt = new THREE.VideoTexture(videoRef.current);
-        vt.colorSpace = THREE.SRGBColorSpace;
-        vt.wrapS = THREE.RepeatWrapping;
-        vt.repeat.x = -1;
-        vt.offset.x = 1;
-        texture.dispose();
-        texture = vt;
-        material.map = vt;
-        material.needsUpdate = true;
+      goLive();
+      setPhase("live");
+    };
+    // Read the composited canvas (layers baked in) to a PNG download.
+    downloadRef.current = () => {
+      try {
+        const url = renderer.domElement.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "grade-shader.png";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch {
+        /* toDataURL can throw on a tainted canvas — no-op */
       }
-      setCaptured(false);
     };
 
     return () => {
@@ -281,21 +312,40 @@ export function ShaderCapture({
             translucent fill so it stays legible over any shot. */}
         <button
           type="button"
-          onClick={() =>
-            captured ? retakeFnRef.current?.() : captureFnRef.current?.()
-          }
+          onClick={() => {
+            if (phase === "idle") requestCameraRef.current?.();
+            else if (phase === "live") captureFnRef.current?.();
+            else retakeFnRef.current?.();
+          }}
           className="group absolute right-8 top-1/2 flex h-40 w-40 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-white/10 text-sm font-semibold text-white shadow-lg ring-1 ring-black/10 transition hover:border-white/90 hover:bg-white/20"
           style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
         >
           <span className="drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
-            {captured ? "Retake" : "Click to capture"}
+            {phase === "idle"
+              ? "Click to capture"
+              : phase === "live"
+                ? "Capture"
+                : "Retake"}
           </span>
         </button>
 
-        {!hasCamera && (
+        {phase === "idle" && (
           <div className="absolute left-4 top-4 rounded-md bg-black/45 px-2 py-1 text-[11px] text-white/80 backdrop-blur-sm">
-            Demo pattern, allow camera to use your own shot
+            Demo pattern · click to use your camera
           </div>
+        )}
+
+        {/* Download — only after a shot is taken; saves the composited PNG. */}
+        {phase === "captured" && (
+          <button
+            type="button"
+            onClick={() => downloadRef.current?.()}
+            aria-label="Download image"
+            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/40 bg-white/10 text-white shadow-lg transition hover:border-white/90 hover:bg-white/20 [&_svg]:size-4"
+            style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+          >
+            <Download />
+          </button>
         )}
 
         {/* Lower third — caption / branding over the shot, with a scrim so
