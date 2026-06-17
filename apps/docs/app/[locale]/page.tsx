@@ -146,7 +146,7 @@ export function BrandPops() {
         label="Pocket Films, live embedded from Grade"
       >
         <LiveEmbed
-          src="/e/dc108b3d-2023-47b5-898d-f21933fb42e6?w=1280&h=720&mode=light&motion=on&shield=1"
+          src="/e/dc108b3d-2023-47b5-898d-f21933fb42e6?w=1280&h=800&mode=light&motion=on&pad=24&radius=8&bg=%233f3f46&viewports=desktop,tablet,mobile&viewportsauto=1&shield=1"
           title="Pocket Films live render"
           colorScheme="light"
           frameClassName="aspect-[16/9]"

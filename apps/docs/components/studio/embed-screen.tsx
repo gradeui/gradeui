@@ -67,11 +67,24 @@ function ScaledRender({
   width,
   height,
   transparent = false,
+  pad = 0,
+  radius = 0,
+  canvasColor,
+  animate = false,
   children,
 }: {
   width: number;
   height?: number;
   transparent?: boolean;
+  /** Inset (px) between the canvas edge and the screen, so the screen floats
+   *  with margin inside the canvas fill. Most meaningful in contain-fit. */
+  pad?: number;
+  /** Corner radius (px, in screen space) applied to the rendered viewport. */
+  radius?: number;
+  /** Override the canvas / letterbox fill colour (else the DS token). */
+  canvasColor?: string;
+  /** Smoothly tween size/scale changes (used by the viewport switcher). */
+  animate?: boolean;
   children: React.ReactNode;
 }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -83,8 +96,10 @@ function ScaledRender({
     const el = containerRef.current;
     if (!el) return;
     const measure = () => {
-      const cw = el.clientWidth;
-      const ch = el.clientHeight;
+      // Subtract the padding so the fit happens inside the inset, leaving
+      // `pad` of canvas fill showing around the screen.
+      const cw = Math.max(0, el.clientWidth - pad * 2);
+      const ch = Math.max(0, el.clientHeight - pad * 2);
       if (height) {
         // Contain-fit into a fixed width×height artboard.
         const scale = Math.min(cw / width, ch / height);
@@ -95,7 +110,7 @@ function ScaledRender({
         });
       } else {
         // Width-fit: scale by width, derive the virtual height so the
-        // scaled box exactly fills the container height.
+        // scaled box exactly fills the (padded) container height.
         const scale = cw / width;
         const ok = Number.isFinite(scale) && scale > 0;
         setBox({ w: width, h: ok ? ch / scale : ch, scale: ok ? scale : 1 });
@@ -105,7 +120,7 @@ function ScaledRender({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [width, height]);
+  }, [width, height, pad]);
 
   // Contain-fit centres + letterboxes; width-fit fills from the top-left.
   const centered = typeof height === "number" && height > 0;
@@ -117,11 +132,15 @@ function ScaledRender({
         "absolute inset-0 overflow-hidden",
         centered && "flex items-center justify-center",
       )}
-      // The canvas behind the screen — only visible as letterbox bars in
-      // contain-fit. Reads the DS canvas-fill token so embed/share/animator
-      // all match; a theme can restyle it in one place.
+      // The canvas behind the screen — visible as letterbox bars in
+      // contain-fit and as the `pad` inset around the screen. Defaults to the
+      // DS canvas-fill token so embed/share/animator match; `canvasColor`
+      // (?bg=<colour>) overrides it.
       style={{
-        background: transparent ? "transparent" : "var(--gds-canvas-fill)",
+        background: transparent
+          ? "transparent"
+          : (canvasColor ?? "var(--gds-canvas-fill)"),
+        padding: pad || undefined,
       }}
     >
       <div
@@ -131,6 +150,16 @@ function ScaledRender({
           transform: `scale(${box.scale})`,
           transformOrigin: centered ? "center" : "top left",
           flexShrink: 0,
+          // Radius is in screen px; divide by the scale so it renders at the
+          // requested size after the box is scaled down to fit.
+          borderRadius: radius ? radius / (box.scale || 1) : undefined,
+          overflow: radius ? "hidden" : undefined,
+          // Tween size + scale so a viewport switch glides rather than snaps.
+          // A soft ease-in-out (slow-in, slow-out) reads as a deliberate
+          // "device morph" rather than a snap.
+          transition: animate
+            ? "width 640ms cubic-bezier(0.65, 0, 0.35, 1), height 640ms cubic-bezier(0.65, 0, 0.35, 1), transform 640ms cubic-bezier(0.65, 0, 0.35, 1)"
+            : undefined,
         }}
       >
         {children}
@@ -216,6 +245,16 @@ function easeInOutCubic(t: number): number {
  * doesn't animate. `paused` halts in place (the position is held; resuming
  * continues from the current shot). Returns null when there's no timeline.
  */
+/** One option in the viewport switcher (?viewports=). A virtual width
+ *  (pins breakpoints) and an optional height (for a contain-fit device
+ *  artboard). */
+export interface ViewportOption {
+  id: string;
+  label: string;
+  w: number;
+  h?: number;
+}
+
 function useCameraTimeline(
   shots: CameraShot[] | undefined,
   frozen: boolean,
@@ -323,6 +362,13 @@ export function EmbedScreen({
   fidelityToggle = false,
   inspect = false,
   inspectToggle = false,
+  pad = 0,
+  radius = 0,
+  canvasColor,
+  viewports,
+  viewportsAuto = false,
+  viewportsDelay = 4600,
+  viewportsMaxLoops = 0,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -385,6 +431,27 @@ export function EmbedScreen({
   /** Viewer-facing inspector toggle (?inspecttoggle=1) — corner chip
    *  next to the fidelity one. */
   inspectToggle?: boolean;
+  /** Inset in px between the canvas edge and the screen (?pad=). The screen
+   *  floats with that much canvas fill around it. */
+  pad?: number;
+  /** Corner radius in px (screen space) on the rendered viewport (?radius=). */
+  radius?: number;
+  /** Canvas / letterbox fill colour, overriding the DS token (?bg=<colour>).
+   *  `transparent` still wins and clears the fill entirely. */
+  canvasColor?: string;
+  /** Viewer-facing viewport switcher (?viewports=desktop,tablet,mobile).
+   *  Each option swaps the virtual width/height at runtime, so the screen
+   *  re-lays-out at real breakpoints. The URL w/h are the initial size. */
+  viewports?: ViewportOption[];
+  /** Auto-cycle through `viewports` on a loop, animated (?viewportsauto=1).
+   *  Honours reduced-motion / ?motion=off (then it holds on the first).
+   *  Stops the moment the visitor picks a viewport or engages the embed. */
+  viewportsAuto?: boolean;
+  /** ms each viewport is held before auto-advancing (?viewportsdelay=). */
+  viewportsDelay?: number;
+  /** How many full passes to auto-cycle before stopping (?viewportsloops=).
+   *  0 = loop forever (until the visitor interacts). */
+  viewportsMaxLoops?: number;
 }) {
   // Project theme — same resolution as SharedScreen: parse the draft,
   // generate the ramp set, fall back to the default built-in on any
@@ -508,16 +575,58 @@ export function EmbedScreen({
   const showTransport =
     Array.isArray(camera) && camera.length > 1 && !motionFrozen;
 
+  // Viewport switcher. The active option overrides the URL's w/h at runtime,
+  // so the screen re-lays-out at real breakpoints. Auto-cycle loops through
+  // them (animated) unless motion is frozen.
+  const hasViewports = Array.isArray(viewports) && viewports.length > 0;
+  const [vpIdx, setVpIdx] = React.useState(0);
+  const [vpAuto, setVpAuto] = React.useState(viewportsAuto);
+  const activeVp = hasViewports
+    ? viewports![Math.min(vpIdx, viewports!.length - 1)]
+    : null;
+  // Any deliberate interaction stops the auto-cycle so the visitor isn't
+  // fighting a moving target.
+  const pickViewport = React.useCallback((i: number) => {
+    setVpIdx(i);
+    setVpAuto(false);
+  }, []);
+  React.useEffect(() => {
+    if (!hasViewports || !vpAuto || motionFrozen) return;
+    const n = viewports!.length;
+    const maxSteps = viewportsMaxLoops > 0 ? viewportsMaxLoops * n : Infinity;
+    let steps = 0;
+    const id = setInterval(
+      () => {
+        steps += 1;
+        setVpIdx((i) => (i + 1) % n);
+        // After the requested number of full passes, settle and stop.
+        if (steps >= maxSteps) {
+          clearInterval(id);
+          setVpAuto(false);
+        }
+      },
+      Math.max(600, viewportsDelay),
+    );
+    return () => clearInterval(id);
+  }, [hasViewports, vpAuto, motionFrozen, viewports, viewportsDelay, viewportsMaxLoops]);
+
+  const effWidth = activeVp ? activeVp.w : renderWidth;
+  const effHeight = activeVp ? activeVp.h : renderHeight;
+
   // Fixed mode needs only a width. Height is an optional refinement.
-  const fixed = typeof renderWidth === "number" && renderWidth > 0;
+  const fixed = typeof effWidth === "number" && effWidth > 0;
 
   const content = fixed ? (
     <ScaledRender
       transparent={transparent}
-      width={renderWidth!}
+      pad={pad}
+      radius={radius}
+      canvasColor={canvasColor}
+      animate={hasViewports}
+      width={effWidth!}
       height={
-        typeof renderHeight === "number" && renderHeight > 0
-          ? renderHeight
+        typeof effHeight === "number" && effHeight > 0
+          ? effHeight
           : undefined
       }
     >
@@ -556,6 +665,9 @@ export function EmbedScreen({
       data-mode={effMode}
       onWheel={onWheelForward}
       onPointerLeave={shield ? () => setShieldDown(false) : undefined}
+      style={
+        !transparent && canvasColor ? { background: canvasColor } : undefined
+      }
     >
       <ZoomPan zoom={eff.zoom} focusX={eff.cx} focusY={eff.cy}>
         {content}
@@ -565,7 +677,10 @@ export function EmbedScreen({
         <button
           type="button"
           aria-label="Click to interact with this render"
-          onClick={() => setShieldDown(true)}
+          onClick={() => {
+            setShieldDown(true);
+            setVpAuto(false);
+          }}
           className="absolute inset-0 z-30 cursor-pointer appearance-none border-0 bg-transparent p-0"
         />
       )}
@@ -642,6 +757,45 @@ export function EmbedScreen({
               Measure
             </button>
           )}
+        </div>
+      )}
+
+      {/* Viewport switcher (?viewports=) — a bottom-centre segmented pill.
+          Each option swaps the virtual width/height; the change tweens via
+          ScaledRender's `animate`. z-40 keeps it tappable over the shield. */}
+      {hasViewports && (
+        <div
+          className={cn(
+            "absolute bottom-3 left-1/2 z-40 inline-flex -translate-x-1/2 items-center gap-0.5 rounded-full border p-1 backdrop-blur-md",
+            effMode === "dark"
+              ? "border-white/20 bg-black/45"
+              : "border-black/15 bg-white/70",
+          )}
+        >
+          {viewports!.map((vp, i) => {
+            const on = i === vpIdx;
+            return (
+              <button
+                key={vp.id}
+                type="button"
+                onClick={() => pickViewport(i)}
+                aria-pressed={on}
+                aria-label={`Viewport: ${vp.label}`}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs transition",
+                  on
+                    ? effMode === "dark"
+                      ? "bg-white/90 text-neutral-900"
+                      : "bg-neutral-900 text-white"
+                    : effMode === "dark"
+                      ? "text-white/80 hover:text-white"
+                      : "text-neutral-700 hover:text-neutral-900",
+                )}
+              >
+                {vp.label}
+              </button>
+            );
+          })}
         </div>
       )}
 

@@ -205,6 +205,75 @@ export default async function EmbedPage({
   const bgRaw = Array.isArray(sp.bg) ? sp.bg[0] : sp.bg;
   const transparent = bgRaw === "transparent";
 
+  // Canvas colour: any ?bg= value other than "transparent" is the
+  // canvas/letterbox fill behind the screen (hex sent url-encoded, e.g.
+  // bg=%23e8743c, or an oklch()/rgb() string). Empty → the DS token.
+  const canvasColor =
+    !transparent && typeof bgRaw === "string" && bgRaw.length > 0
+      ? bgRaw
+      : undefined;
+
+  // ?pad=24 insets the screen from the canvas edge (the screen floats with
+  // that much canvas fill around it); ?radius=16 rounds the viewport corners.
+  // Both in px; only meaningful in fixed (w[/h]) mode.
+  const pad = toDim(sp.pad);
+  const radius = toDim(sp.radius);
+
+  // Viewport switcher: ?viewports=desktop,tablet,mobile renders a control
+  // that swaps the virtual width/height at runtime (real breakpoints fire).
+  // Tokens are named presets or raw `WxH`. ?viewportsauto=1 auto-cycles them.
+  const VIEWPORT_PRESETS: Record<
+    string,
+    { label: string; w: number; h: number }
+  > = {
+    desktop: { label: "Desktop", w: 1280, h: 832 },
+    laptop: { label: "Laptop", w: 1024, h: 720 },
+    tablet: { label: "Tablet", w: 834, h: 1112 },
+    mobile: { label: "Mobile", w: 390, h: 844 },
+  };
+  const viewportsRaw = Array.isArray(sp.viewports)
+    ? sp.viewports[0]
+    : sp.viewports;
+  const viewports =
+    typeof viewportsRaw === "string" && viewportsRaw.length > 0
+      ? viewportsRaw
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .map((t) => {
+            const preset = VIEWPORT_PRESETS[t.toLowerCase()];
+            if (preset) return { id: t, ...preset };
+            const m = t.match(/^(\d+)x(\d+)$/i);
+            if (m)
+              return {
+                id: t,
+                label: `${m[1]}×${m[2]}`,
+                w: Number(m[1]),
+                h: Number(m[2]),
+              };
+            return null;
+          })
+          .filter(
+            (v): v is { id: string; label: string; w: number; h: number } =>
+              v !== null,
+          )
+      : null;
+  const viewportsAutoRaw = Array.isArray(sp.viewportsauto)
+    ? sp.viewportsauto[0]
+    : sp.viewportsauto;
+  const viewportsAuto =
+    viewportsAutoRaw === "1" || viewportsAutoRaw === "true";
+  // ?viewportsdelay= ms held per viewport; ?viewportsloops= full passes
+  // before the auto-cycle settles and stops (0/absent = until interaction).
+  const viewportsDelay = toDim(sp.viewportsdelay);
+  const viewportsLoopsRaw = Array.isArray(sp.viewportsloops)
+    ? sp.viewportsloops[0]
+    : sp.viewportsloops;
+  const viewportsMaxLoops = (() => {
+    const n = Number(viewportsLoopsRaw);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
+  })();
+
   // ?flat=1 — the "live URL": the screen rendered DIRECTLY in the page,
   // no FastIframeHost, no nested page boot. Breakpoints come from the
   // real viewport (the capturer sets it; a browser window just is one).
@@ -318,9 +387,11 @@ export default async function EmbedPage({
     <style>{`html, body { background: ${
       transparent
         ? "transparent"
-        : resolvedMode === "dark"
-          ? "oklch(0.16 0.01 250.94)"
-          : "oklch(0.985 0.0015 85)"
+        : canvasColor
+          ? canvasColor
+          : resolvedMode === "dark"
+            ? "oklch(0.16 0.01 250.94)"
+            : "oklch(0.985 0.0015 85)"
     }; color-scheme: ${resolvedMode}; }`}</style>
   );
 
@@ -373,6 +444,13 @@ export default async function EmbedPage({
         fidelityToggle={fidelityToggle}
         inspect={inspect}
         inspectToggle={inspectToggle}
+        pad={pad}
+        radius={radius}
+        canvasColor={canvasColor}
+        viewports={viewports ?? undefined}
+        viewportsAuto={viewportsAuto}
+        viewportsDelay={viewportsDelay}
+        viewportsMaxLoops={viewportsMaxLoops}
       />
     </>
   );
