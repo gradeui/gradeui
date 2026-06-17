@@ -213,6 +213,13 @@ interface AIChatProps {
    * actions) still renders below the assistant text either way.
    */
   assistantBubble?: boolean;
+  /**
+   * Auto-scroll the message list to newest content. Default true. Set
+   * false for non-interactive embeds / marketing demos where the content
+   * fits its container and scrollIntoView would otherwise nudge the whole
+   * page up and down as messages arrive.
+   */
+  autoScroll?: boolean;
   className?: string;
 }
 
@@ -506,6 +513,7 @@ export function AIChat({
   composerSlot,
   bare = false,
   assistantBubble = true,
+  autoScroll = true,
   className,
 }: AIChatProps) {
   const [query, setQuery] = useState("");
@@ -543,14 +551,14 @@ export function AIChat({
   useEffect(() => {
     const grewCount = messages.length > prevMessagesLengthRef.current;
     const grewContent = lastContentSig > prevContentSigRef.current;
-    if (!isScrolledUp && (grewCount || grewContent)) {
+    if (autoScroll && !isScrolledUp && (grewCount || grewContent)) {
       chatEndRef.current?.scrollIntoView({
         behavior: grewCount ? "smooth" : "auto",
       });
     }
     prevMessagesLengthRef.current = messages.length;
     prevContentSigRef.current = lastContentSig;
-  }, [messages, lastContentSig, isScrolledUp]);
+  }, [messages, lastContentSig, isScrolledUp, autoScroll]);
 
   return (
     <div
@@ -751,7 +759,6 @@ export function AIChat({
               >
                 <div className="bg-gds-gray-100 dark:bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-4 py-3 border border-gds-gray-200 dark:border-[#252525]">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gds-gray-500">{thinkingPhrase}</span>
                     <div className="flex gap-1">
                       {[0, 1, 2].map((i) => (
                         <motion.div
@@ -769,6 +776,7 @@ export function AIChat({
                         />
                       ))}
                     </div>
+                    <span className="text-xs text-gds-gray-500">{thinkingPhrase}</span>
                   </div>
                 </div>
               </motion.div>

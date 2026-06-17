@@ -476,9 +476,11 @@ export const gradeMarketingInput: ThemeInput = {
   },
   intensity: "default",
   typography: {
-    // Display keeps the terminal-flavoured Plex Mono headings — that IS
-    // the Grade voice — but body goes Inter for long-form marketing copy.
-    display: "ibmPlexMono",
+    // Display headers use Space Grotesk (the Neon Brutalist header face):
+    // a geometric display sans that reads cleaner and lighter than the old
+    // Plex Mono headings. Body stays Inter for long-form marketing copy;
+    // mono stays Plex Mono for code and value chips.
+    display: "spaceGrotesk",
     body: "inter",
     mono: "ibmPlexMono",
     // Spacious scale: marketing headlines want more air than app chrome.

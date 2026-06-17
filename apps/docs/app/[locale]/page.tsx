@@ -16,10 +16,12 @@ import { GradeWordmarkPen } from "@/components/marketing/grade-wordmark-pen";
 import { LiveEmbed } from "@/components/marketing/live-embed";
 import { BackgroundTweaker } from "@/components/marketing/background-tweaker";
 import { ShaderCapture } from "@/components/marketing/shader-capture";
+import { StudioChatDemo } from "@/components/marketing/studio-chat-demo";
 import {
   MarketingHero,
   ProductShowcase,
-  FeatureGrid,
+  SplitSection,
+  CodeFeature,
   FeatureColumns,
   MarketingFAQ,
   ClosingCta,
@@ -78,46 +80,81 @@ export default function Home() {
         />
       </ProductShowcase>
 
-      {/* Shaders, composable. The captured frame is an image base; Grade's
-          effect layers (gradient map, dots/halftone, dither) treat it live.
-          Evolving showcase — grows as the layer system lands. */}
-      <ProductShowcase label="Shaders — composable layers on anything, even your own snapshot">
-        <ShaderCapture />
-      </ProductShowcase>
-
-      <FeatureGrid
-        heading={
+      {/* Vibe-coding pitch — a scripted Composer typing a request, media on
+          the LEFT so it alternates with the code feature below. Just the
+          generic SplitSection with a <Composer> in the slot. */}
+      <SplitSection
+        mediaSide="left"
+        title={
           <>
-            Theme · Generate · <em>Refine</em>
+            Just say what you <em>want</em>
           </>
         }
-        subheading="Everything in Grade points at one idea: the design system should do what the designer says."
-        items={[
-          {
-            title: "Studio, driven by conversation",
-            description:
-              "Describe the screen you need and watch it assemble from real Grade components, then click into anything and change it.",
-          },
-          {
-            title: "Theming at will",
-            description:
-              "Three hues become a complete OKLCH design language. Drag hue, type scale, or density and the whole screen re-themes live, retroactively.",
-          },
-          {
-            title: "Themes that travel",
-            description:
-              "A Grade theme is a small, portable object. Save it, share it, remix someone else's. Your look is never locked to one project.",
-          },
-          {
-            title: "Share live, not flat",
-            description:
-              "Send a working screen as a link or embed it anywhere on the web. What you made, running, not a screenshot of it.",
-          },
+        subtitle="Studio is a conversation. Ask for a screen, a section, or a change, and it assembles from real Grade components, live."
+        bullets={[
+          "Type a request like “add in a pricing section” and watch it appear.",
+          "Every generation is real, themeable components, never throwaway markup.",
+          "Keep chatting to refine: move it, restyle it, swap the copy.",
         ]}
+      >
+        <StudioChatDemo />
+      </SplitSection>
+
+      {/* Code feature — the line-by-line reveal IS the show. Topical: the
+          Swatch / brand-pops API we just shipped. Code window on the right,
+          value props on the left. */}
+      <CodeFeature
+        title={
+          <>
+            Real code <em>underneath</em>
+          </>
+        }
+        subtitle="Every screen is real React, built from Grade components, nothing to reverse-engineer when you ship."
+        bullets={[
+          "Colours bind to live theme tokens, so changing the theme never touches the code.",
+          "Copy it straight into your app. No runtime, no lock-in.",
+          "The same components power Studio, the docs, and this page.",
+        ]}
+        code={{
+          filename: "brand-pops.tsx",
+          language: "tsx",
+          highlight: [6],
+          source: `import { SwatchGroup, Swatch } from "@gradeui/ui";
+
+export function BrandPops() {
+  return (
+    <SwatchGroup size="lg">
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+        <Swatch key={n} token={\`brand-\${n}\`} />
+      ))}
+    </SwatchGroup>
+  );
+}`,
+        }}
       />
 
+      {/* Share and embed — a live Pocket Films render via the public embed
+          route. shield=1 adds the click-to-interact guard so scrolling past
+          the embed doesn't get trapped by the map. */}
+      <ProductShowcase
+        title={
+          <>
+            Share and <em>embed</em>
+          </>
+        }
+        subtitle="Send a working screen as a link, or drop it into any site. It's the real thing running, not a screenshot."
+        label="Pocket Films, live embedded from Grade"
+      >
+        <LiveEmbed
+          src="/e/dc108b3d-2023-47b5-898d-f21933fb42e6?w=1280&h=720&mode=light&motion=on&shield=1"
+          title="Pocket Films live render"
+          colorScheme="light"
+          frameClassName="aspect-[16/9]"
+        />
+      </ProductShowcase>
+
       <FeatureColumns
-        heading={
+        title={
           <>
             …and so <em>much more</em>
           </>
@@ -141,7 +178,7 @@ export default function Home() {
           {
             title: "Your assets",
             description:
-              "Bring your own images and media — prototypes that look like your product, not stock.",
+              "Bring your own images and media, so prototypes look like your product, not stock.",
           },
           {
             title: "Brand pops",
@@ -156,6 +193,13 @@ export default function Home() {
         ]}
       />
 
+      {/* Shaders, composable. The captured frame is an image base; Grade's
+          effect layers (gradient map, dots/halftone, dither) treat it live.
+          An evolving showcase that grows as the layer system lands. */}
+      <ProductShowcase label="Shaders, composable layers on anything, even your own snapshot">
+        <ShaderCapture />
+      </ProductShowcase>
+
       <MarketingFAQ
         items={[
           {
@@ -166,7 +210,7 @@ export default function Home() {
           {
             question: "Do I need to write code?",
             answer:
-              "No. Studio is conversation- and control-driven. Code stays underneath for the people on your team who want it — everything you make is built from real components.",
+              "No. Studio is conversation- and control-driven. Code stays underneath for the people on your team who want it. Everything you make is built from real components.",
           },
           {
             question: "What makes Grade themes different?",

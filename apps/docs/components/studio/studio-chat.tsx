@@ -1183,7 +1183,7 @@ export function StudioChat({
           onStop={() => stop()}
           placeholder={
             currentCode
-              ? "Describe a change — e.g. 'make the button pill-shaped'"
+              ? "Describe a change, e.g. 'make the button pill-shaped'"
               : "Describe a UI…"
           }
           maxLength={INPUT_CHAR_LIMIT}
