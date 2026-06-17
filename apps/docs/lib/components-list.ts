@@ -38,6 +38,7 @@ export const componentsList = [
   { name: "Avatar", href: "/components/avatar", category: "Data Display" },
   { name: "Logo", href: "/components/logo", category: "Data Display" },
   { name: "Badge", href: "/components/badge", category: "Data Display" },
+  { name: "Swatch", href: "/components/swatch", category: "Data Display" },
   { name: "Message", href: "/components/message", category: "Data Display" },
   { name: "Card", href: "/components/card", category: "Data Display" },
   { name: "Chart", href: "/components/charts", category: "Data Display" },

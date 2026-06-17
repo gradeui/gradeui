@@ -95,7 +95,7 @@ export function themeToCSSVars(
     "--chart-4": theme.chart[4],
     "--chart-5": theme.chart[5],
 
-    // --- Brand pops — 8 vivid, saturated accents (--brand-1 … --brand-8).
+    // --- Brand pops — 8 LOUD, saturated accents (--brand-1 … --brand-8).
     // Backgrounds, themes, and primaries are often deliberately muted; these
     // are the LOUD slots an interface reaches for when it needs to pop —
     // shader fills, highlights, gradient stops, scene fills. Auto-derived
@@ -202,30 +202,44 @@ export function themeToCSSVars(
 }
 
 /**
- * The 8 brand-pop slots. Vivid by construction: the chart palette (5 hues,
- * already saturated mid-lightness) seeds 1–5; 6–8 pull the brightest stops
- * of the primary/accent ramps. Every value is an OKLCH triplet so it
- * composes via `oklch(var(--brand-N))`. A theme always has all 8; a
- * project's Branding panel later overrides individual slots.
+ * The 8 brand-pop slots — genuinely LOUD. The earlier version reused the
+ * chart palette (tuned for data-viz cohesion: mid-lightness, low chroma,
+ * one stop basically grey), so the pops came out muted/dull. Instead we
+ * build a vivid spectrum ANCHORED to the theme: take the primary and accent
+ * hues and fan eight high-chroma hues across the wheel from them, all at
+ * bright lightness. Stays on-brand (hues track the theme, so they re-voice
+ * when you switch theme or drag hue) but actually pops. Every value is a
+ * bare OKLCH triplet so it composes via `oklch(var(--brand-N))`. A theme
+ * always has all 8; a project's Branding panel later overrides slots.
  */
 function brandPops(theme: GeneratedTheme): Record<string, string> {
-  const c = theme.chart;
-  const p = theme.ramps.primary;
-  const a = theme.ramps.accent;
-  const slots: string[] = [
-    c[1],
-    c[2],
-    c[3],
-    c[4],
-    c[5],
-    // Vivid ramp stops — 400/500 read as the "loud" version of the brand.
-    p[400] ?? p[500],
-    a[400] ?? a[500],
-    p[600] ?? p[500],
-  ];
+  const hueOf = (triplet: string): number =>
+    parseFloat(triplet.trim().split(/\s+/)[2] ?? "0");
+  const wrap = (h: number): number => ((h % 360) + 360) % 360;
+
+  const pH = hueOf(theme.ramps.primary[500]);
+  const aH = hueOf(theme.ramps.accent[500]);
+
+  // Fan eight hues out from the two brand anchors so the set spans the
+  // wheel without drifting off-brand.
+  const hues = [
+    pH,
+    aH,
+    pH + 45,
+    aH + 60,
+    pH + 150,
+    aH - 75,
+    pH + 210,
+    aH + 165,
+  ].map(wrap);
+
+  // Vivid: high OKLCH chroma, bright lightness with a little step-to-step
+  // variation so neighbours don't read flat. Browsers gamut-map the few
+  // hues that exceed sRGB at this chroma.
   const out: Record<string, string> = {};
-  slots.forEach((v, i) => {
-    out[`--brand-${i + 1}`] = v;
+  hues.forEach((h, i) => {
+    const L = (0.68 + (i % 3) * 0.02).toFixed(3);
+    out[`--brand-${i + 1}`] = `${L} 0.200 ${h.toFixed(2)}`;
   });
   return out;
 }

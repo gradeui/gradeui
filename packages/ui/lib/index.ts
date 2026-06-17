@@ -325,6 +325,18 @@ export {
 
 export { Separator } from "../components/ui/separator";
 
+// Swatch — a single colour chip. THE primitive for showing a colour:
+// brand-pop strips, palette pickers, theme previews, token galleries.
+// Binds to a live theme token via `token` (re-voices on theme change) or
+// shows a raw `color`; `onSelect`/`selected` make it a pickable accent.
+export {
+  Swatch,
+  SwatchGroup,
+  swatchVariants,
+  type SwatchProps,
+  type SwatchGroupProps,
+} from "../components/ui/swatch";
+
 export {
   Sheet,
   SheetClose,

@@ -106,6 +106,7 @@ const componentsNav: NavSection[] = [
       { title: "Avatar", href: "/components/avatar" },
       { title: "Logo", href: "/components/logo" },
       { title: "Badge", href: "/components/badge" },
+      { title: "Swatch", href: "/components/swatch" },
       { title: "Message", href: "/components/message" },
       { title: "Card", href: "/components/card" },
       { title: "Table", href: "/components/table" },

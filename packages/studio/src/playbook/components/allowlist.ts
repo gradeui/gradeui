@@ -129,6 +129,18 @@ export const ALLOWED_COMPONENTS = [
   "CalloutTitle",
   "CalloutDescription",
   "Badge",
+  // Swatch — a single colour chip. Reach for it on "show the brand
+  // colours / palette / accents", a colour picker's option grid, or a
+  // theme/token preview. Bind to a live theme token via `token`
+  // ("brand-3", "primary", "chart-2" — no `--`, no oklch() wrap) so it
+  // re-voices on theme change, or pass a raw `color`. `onSelect` +
+  // `selected` make it a pickable accent. Don't hand-roll a
+  // `<div className="h-10 w-10 rounded" style={{ background }}>`.
+  // SwatchGroup arranges a set — layout="row" (spaced) or "stack"
+  // (overlapping coin-stack, the theme-picker "key colours" treatment);
+  // size/shape cascade to every child.
+  "Swatch",
+  "SwatchGroup",
   "Progress",
   "Skeleton",
   // Overlays

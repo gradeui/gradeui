@@ -13,7 +13,7 @@ export const SliderContract = contract({
   import: "@gradeui/ui",
   aliases: ["slider","range slider","range input","volume","opacity slider","scrub","drag value","slider control","value slider","react native slider"],
   composesWith: ["Label (mandatory above)","Row (label + current value display)","Card (settings rows)"],
-  styleDefaults: {"Slider":"relative flex w-full touch-none select-none items-center"},
+  styleDefaults: {"Slider":"relative w-full grow overflow-hidden rounded-full"},
   props: {
   "value": {
       schema: z.number().optional(),
