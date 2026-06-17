@@ -40,7 +40,11 @@ const Slider = React.forwardRef<
     <SliderPrimitive.Root
       ref={ref}
       className={cn(
-        "relative flex w-full touch-none select-none items-center",
+        // py-2 gives a taller, transparent hit area (Radix moves the thumb to
+        // wherever you press inside the Root), so a thin track is still easy
+        // to grab. `-my-1` claws back most of that height from the layout so
+        // dense rows don't balloon. cursor-pointer signals the whole band.
+        "relative flex w-full cursor-pointer touch-none select-none items-center py-2 -my-1",
         className
       )}
       {...props}
