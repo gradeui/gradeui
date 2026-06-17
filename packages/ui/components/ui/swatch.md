@@ -10,6 +10,7 @@ props:
   - shape? (square | rounded | circle) — default rounded (rides `--radius`); circle for dot pickers; square for a hard tile.
   - selected?: boolean — draws the shared selection ring (`--selected`). For palette / accent pickers.
   - onSelect?: () => void — makes the swatch a pickable <button> (adds aria-pressed, focus ring, hover lift). Omit for a static display chip.
+  - onColorChange?: (value: string) => void — makes the swatch an editable colour well: hosts a native `<input type="color">` (the OS picker) behind the DS chip and fires with the new `#rrggbb`. Presentation stays the chip, interaction stays native. Use for inspector / control-panel colour fields instead of styling a raw colour input. Takes precedence over `onSelect`.
   - label?: ReactNode — caption rendered beneath the chip; also becomes the accessible name + tooltip.
   - SwatchGroup: layout? (row | stack) — `row` (default) spaces chips out; `stack` overlaps them into a coin-stack (the theme-picker / "key colours" treatment, where each chip's ring reads as the separating edge).
   - SwatchGroup: size? / shape? — cascade to every child Swatch so a strip stays consistent without repeating the prop.

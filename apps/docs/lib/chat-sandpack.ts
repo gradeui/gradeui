@@ -1921,7 +1921,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
 
 const swatchVariants = cva(
-  "relative inline-block shrink-0 overflow-hidden ring-1 ring-inset ring-border/60 shadow-elevation-1",
+  "relative inline-block shrink-0 overflow-hidden shadow-elevation-1",
   {
     variants: {
       size: { xs: "size-5", sm: "size-6", md: "size-8", lg: "size-10", xl: "size-14" },
@@ -1937,6 +1937,8 @@ function resolveFill(color, token) {
   return "transparent"
 }
 
+const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
+
 const SwatchGroupContext = React.createContext({})
 
 export interface SwatchProps
@@ -1947,23 +1949,26 @@ export interface SwatchProps
   label?: React.ReactNode
   selected?: boolean
   onSelect?: () => void
+  onColorChange?: (value: string) => void
 }
 
 const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
-  { color, token, size, shape, label, selected, onSelect, className, style, title, "aria-label": ariaLabel, ...props },
+  { color, token, size, shape, label, selected, onSelect, onColorChange, className, style, title, "aria-label": ariaLabel, ...props },
   ref
 ) {
   const group = React.useContext(SwatchGroupContext)
   const resolvedSize = size ?? group.size
   const resolvedShape = shape ?? group.shape
   const fill = resolveFill(color, token)
-  const interactive = typeof onSelect === "function"
+  const editable = typeof onColorChange === "function"
+  const interactive = !editable && typeof onSelect === "function"
+  const hex = HEX_RE.test(color ?? "") ? color : "#000000"
   const name = (typeof label === "string" ? label : undefined) ?? token ?? color ?? "colour swatch"
   const checker = {
     backgroundImage: "repeating-conic-gradient(var(--gds-media-checker-color) 0% 25%, transparent 0% 50%)",
     backgroundSize: "var(--gds-media-checker-size) var(--gds-media-checker-size)",
   }
-  const Comp = (interactive ? "button" : "div")
+  const Comp = (editable ? "label" : interactive ? "button" : "div")
   const tile = (
     <Comp
       ref={ref}
@@ -1977,13 +1982,23 @@ const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
       className={cn(
         swatchVariants({ size: resolvedSize, shape: resolvedShape }),
         selected && "ring-2 ring-selected ring-offset-2 ring-offset-background",
-        interactive && "cursor-pointer outline-none transition-transform hover:scale-[1.06] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        (interactive || editable) && "cursor-pointer outline-none transition-transform hover:scale-[1.06] focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         !label && className
       )}
       style={{ ...checker, ...(label ? undefined : style) }}
       {...(label ? {} : props)}
     >
       <span className="absolute inset-0" style={{ background: fill }} />
+      <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-foreground/40" />
+      {editable && (
+        <input
+          type="color"
+          value={hex}
+          onChange={(e) => onColorChange(e.currentTarget.value)}
+          aria-label={ariaLabel ?? name}
+          className="absolute inset-0 cursor-pointer opacity-0"
+        />
+      )}
     </Comp>
   )
   if (!label) return tile

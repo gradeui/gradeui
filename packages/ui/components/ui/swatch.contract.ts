@@ -14,7 +14,7 @@ export const SwatchContract = contract({
   aliases: ["colour swatch","color swatch","colour chip","color chip","palette swatch","token swatch","brand pop","accent swatch","colour tile","color tile","paint chip","react native colour swatch"],
   subcomponents: ["SwatchGroup"],
   composesWith: ["Row (strip of swatches)","Stack","Grid (palette wall)","Field (as a colour-picker trailing slot)","Card (in a theme-preview)","RadioGroup (selectable accent set)","Label"],
-  styleDefaults: {"Swatch":"relative inline-block shrink-0 overflow-hidden ring-1 ring-inset ring-border/60 shadow-elevation-1 size-8 rounded-[var(--radius)]","SwatchGroup":"inline-flex flex-wrap items-center"},
+  styleDefaults: {"Swatch":"relative inline-block shrink-0 overflow-hidden shadow-elevation-1 size-8 rounded-[var(--radius)]","SwatchGroup":"inline-flex flex-wrap items-center"},
   variantDefaults: {"size":"md","shape":"rounded"},
   props: {
   "color": {
@@ -46,6 +46,11 @@ export const SwatchContract = contract({
       schema: z.unknown().optional(),
       design: "event",
       description: "makes the swatch a pickable <button> (adds aria-pressed, focus ring, hover lift). Omit for a static display chip.",
+  },
+  "onColorChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+      description: "makes the swatch an editable colour well: hosts a native `<input type=\"color\">` (the OS picker) behind the DS chip and fires with the new `#rrggbb`. Presentation stays the chip, interaction stays native. Use for inspector / control-panel colour fields instead of styling a raw colour input. Takes precedence over `onSelect`.",
   },
   "label": {
       schema: z.unknown().optional(),

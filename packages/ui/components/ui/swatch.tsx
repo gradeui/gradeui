@@ -34,7 +34,9 @@ import { cn } from "@/lib/utils";
  * `--radius`) / circle.
  */
 const swatchVariants = cva(
-  "relative inline-block shrink-0 overflow-hidden ring-1 ring-inset ring-border/60 shadow-elevation-1",
+  // The border is drawn as an overlay ABOVE the fill (see the component) —
+  // an inset ring here would be painted over by an opaque fill and vanish.
+  "relative inline-block shrink-0 overflow-hidden shadow-elevation-1",
   {
     variants: {
       size: {
@@ -64,6 +66,9 @@ function resolveFill(color?: string, token?: string): string {
   return "transparent";
 }
 
+/** Native `<input type="color">` only accepts #rgb / #rrggbb. */
+const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+
 type SwatchSize = NonNullable<VariantProps<typeof swatchVariants>["size"]>;
 type SwatchShape = NonNullable<VariantProps<typeof swatchVariants>["shape"]>;
 
@@ -87,6 +92,11 @@ export interface SwatchProps
   selected?: boolean;
   /** Makes the swatch a pickable <button> and fires on activation. */
   onSelect?: () => void;
+  /** Makes the swatch an editable colour well: hosts a native
+   *  `<input type="color">` (the OS picker) behind the chip and fires with
+   *  the new `#rrggbb`. The presentation stays the DS chip; the interaction
+   *  stays native. Takes precedence over `onSelect`. */
+  onColorChange?: (value: string) => void;
 }
 
 const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
@@ -98,6 +108,7 @@ const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
     label,
     selected,
     onSelect,
+    onColorChange,
     className,
     style,
     title,
@@ -110,7 +121,11 @@ const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
   const resolvedSize = size ?? group.size;
   const resolvedShape = shape ?? group.shape;
   const fill = resolveFill(color, token);
-  const interactive = typeof onSelect === "function";
+  const editable = typeof onColorChange === "function";
+  const interactive = !editable && typeof onSelect === "function";
+  // Native colour input only accepts hex; fall back so it stays usable
+  // even when the displayed fill is a token/oklch/rgba value.
+  const hex = HEX_RE.test(color ?? "") ? (color as string) : "#000000";
   const name =
     (typeof label === "string" ? label : undefined) ??
     token ??
@@ -126,7 +141,11 @@ const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
       "var(--gds-media-checker-size) var(--gds-media-checker-size)",
   };
 
-  const Comp = (interactive ? "button" : "div") as React.ElementType;
+  // editable → a <label> hosting the native picker; pickable → a <button>;
+  // otherwise a static <div>.
+  const Comp = (
+    editable ? "label" : interactive ? "button" : "div"
+  ) as React.ElementType;
 
   const tile = (
     <Comp
@@ -142,8 +161,8 @@ const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
         swatchVariants({ size: resolvedSize, shape: resolvedShape }),
         selected &&
           "ring-2 ring-selected ring-offset-2 ring-offset-background",
-        interactive &&
-          "cursor-pointer outline-none transition-transform hover:scale-[1.06] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        (interactive || editable) &&
+          "cursor-pointer outline-none transition-transform hover:scale-[1.06] focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         // When captioned, the wrapper owns layout className; the tile keeps
         // its own variant classes only.
         !label && className
@@ -152,6 +171,26 @@ const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
       {...(label ? {} : props)}
     >
       <span className="absolute inset-0" style={{ background: fill }} />
+      {/* Border drawn on TOP of the fill so it survives an opaque colour;
+          foreground-based so it reads on any surface (light hairline on
+          dark, dark on light). Clipped to the chip's radius by the parent's
+          overflow-hidden. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-foreground/40"
+      />
+      {editable && (
+        // Native OS colour picker, kept fully functional but visually
+        // replaced by the chip above. Covers the tile so the whole chip
+        // is the hit target.
+        <input
+          type="color"
+          value={hex}
+          onChange={(e) => onColorChange!(e.currentTarget.value)}
+          aria-label={ariaLabel ?? name}
+          className="absolute inset-0 cursor-pointer opacity-0"
+        />
+      )}
     </Comp>
   );
 

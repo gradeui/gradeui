@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Swatch } from "@/components/ui/swatch";
 import {
   Select,
   SelectContent,
@@ -277,8 +278,8 @@ function Row({
     >
       {label}
       {hint ? (
-        <span className="ml-1 text-[10px] text-muted-foreground/50">
-          → {hint}
+        <span className="ml-1.5 text-[10px] text-muted-foreground/50">
+          {hint}
         </span>
       ) : null}
     </Label>
@@ -367,9 +368,9 @@ function NumberValue({
   );
 }
 
-const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
-
-/** Native swatch + borderless DS hex/CSS field. */
+/** Borderless DS hex field + the editable DS Swatch (native OS picker
+ *  lives inside Swatch). Value first so its right-aligned digits sit
+ *  directly against the chip — no dead gap. No hand-rolled colour square. */
 function ColorField({
   value,
   disabled,
@@ -379,17 +380,8 @@ function ColorField({
   disabled?: boolean;
   onChange: (v: string) => void;
 }) {
-  const swatch = HEX_RE.test(value) ? value : "#000000";
   return (
     <div className="flex items-center gap-1.5">
-      <input
-        type="color"
-        value={swatch}
-        disabled={disabled}
-        onChange={(e) => onChange(e.currentTarget.value)}
-        aria-label="Colour swatch"
-        className="h-5 w-5 shrink-0 cursor-pointer rounded border border-border/60 bg-transparent p-0 disabled:opacity-50"
-      />
       <Input
         size="2xs"
         variant="ghost"
@@ -398,6 +390,13 @@ function ColorField({
         onChange={(e) => onChange(e.currentTarget.value)}
         className="w-20 px-0 text-right font-mono"
         aria-label="Colour value"
+      />
+      <Swatch
+        color={value}
+        size="xs"
+        shape="rounded"
+        onColorChange={disabled ? undefined : onChange}
+        className={disabled ? "opacity-50" : undefined}
       />
     </div>
   );
