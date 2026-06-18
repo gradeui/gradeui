@@ -8,7 +8,7 @@
  *     of all projects (names only — descriptions live in settings) +
  *     "New project". The settings cog targets the active project.
  *   - Body = the active project's SECTIONS as the primary nav:
- *     Screens / Flows (soon) / Motion Studio / Styles / Assets.
+ *     Screens / Motion Studio / Design System / Assets.
  *   - Assets is its own panel page (back-arrow returns to the nav),
  *     not an always-on tail below the list.
  *
@@ -39,7 +39,6 @@ import {
   ChevronsUpDown,
   Clapperboard,
   Folder,
-  GitBranch,
   Images,
   Monitor,
   Palette,
@@ -76,6 +75,15 @@ export type ProjectSection =
   | "motions"
   | "styles"
   | "assets";
+
+/** Sub-sections of the Design System ("styles") section — shown as
+ *  indented rows under "Design System" when it's the active section. */
+export type StylesSection =
+  | "general"
+  | "colours"
+  | "typography"
+  | "spacing"
+  | "components";
 
 /** Ambient counts the menu shows next to each project + screen.
  *  Owned by the page; the menu just reads. */
@@ -131,10 +139,15 @@ interface ProjectsMenuProps {
   /** Which section of the ACTIVE project the canvas is showing.
    *  Undefined → "screens". */
   activeSection?: ProjectSection;
-  /** Switch the active project's section (Screens / Motions / Styles —
-   *  Flows is disabled until FlowCanvas lands). When omitted, the
-   *  section rows don't render at all (back-compat). */
+  /** Switch the active project's section (Screens / Motions / Styles /
+   *  Assets). When omitted, the section rows don't render at all
+   *  (back-compat). */
   onSelectSection?: (section: ProjectSection) => void;
+  /** The active Design System sub-section (Colors / Typography / Spacing).
+   *  Only meaningful while `activeSection === "styles"`; drives the
+   *  indented sub-rows + the project-level Design System page. */
+  activeStylesSection?: StylesSection;
+  onSelectStylesSection?: (section: StylesSection) => void;
   /** Create a new Motion in the active project (the + on the Motions
    *  row). */
   onAddMotion?: () => void;
@@ -158,6 +171,8 @@ export function ProjectsMenu({
   assetsSlot: _assetsSlot,
   activeSection = "screens",
   onSelectSection,
+  activeStylesSection = "general",
+  onSelectStylesSection,
   onAddMotion,
 }: ProjectsMenuProps) {
   // The settings sheet target — null when closed; project ref when
@@ -295,17 +310,6 @@ export function ProjectsMenu({
                 </span>
               </span>
             </SidebarItem>
-            <SidebarItem
-              asButton
-              icon={<GitBranch />}
-              className="pointer-events-none opacity-50"
-              aria-disabled
-            >
-              <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                <span className="truncate">Flows</span>
-                <span className="text-[10px] text-muted-foreground">soon</span>
-              </span>
-            </SidebarItem>
             <div className="group/motions relative">
               <SidebarItem
                 asButton
@@ -346,6 +350,29 @@ export function ProjectsMenu({
                   System tab. */}
               Design System
             </SidebarItem>
+            {/* Design System sub-sections — only while it's the active
+                section. Indented so they read as children of the row above. */}
+            {activeSection === "styles" && onSelectStylesSection && (
+              <>
+                {([
+                  ["general", "General"],
+                  ["colours", "Colors"],
+                  ["typography", "Typography"],
+                  ["spacing", "Spacing"],
+                  ["components", "Components"],
+                ] as const).map(([id, label]) => (
+                  <SidebarItem
+                    key={id}
+                    asButton
+                    active={activeStylesSection === id}
+                    className="pl-9 text-xs"
+                    onClick={() => onSelectStylesSection(id)}
+                  >
+                    {label}
+                  </SidebarItem>
+                ))}
+              </>
+            )}
             {/* Assets — a full-screen CANVAS page, not a panel tail. */}
             <SidebarItem
               asButton

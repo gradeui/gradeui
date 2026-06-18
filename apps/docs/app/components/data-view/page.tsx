@@ -3,13 +3,18 @@ import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
 import { InstallBlock } from "@/components/install-block";
 
-import { DataView, useDataView } from "@/components/ui/data-view";
+import {
+  DataView,
+  useDataView,
+  type DataViewColumn,
+  type DataViewBadgeOption,
+} from "@/components/ui/data-view";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Row } from "@/components/ui/row";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
 
-const PEOPLE = {
+const PEOPLE: Record<string, { name: string; initials: string }> = {
   eo: { name: "Elena Okafor", initials: "EO" },
   ml: { name: "Marcus Li", initials: "ML" },
   pd: { name: "Priya Devi", initials: "PD" },
@@ -25,18 +30,18 @@ const ROWS = [
   { id: "u-05", name: "Vega Systems", status: "Trial", priority: "Medium", owner: "sk", arr: 67000, comments: 9 },
 ];
 
-const STATUS_OPTIONS = [
+const STATUS_OPTIONS: DataViewBadgeOption[] = [
   { value: "Active", variant: "success-soft" },
   { value: "Trial", variant: "warning-soft" },
   { value: "Churned", variant: "outline" },
 ];
-const PRIORITY_OPTIONS = [
+const PRIORITY_OPTIONS: DataViewBadgeOption[] = [
   { value: "Low", variant: "secondary" },
   { value: "Medium", variant: "warning-soft" },
   { value: "High", variant: "destructive-soft" },
 ];
 
-const COLUMNS = [
+const COLUMNS: DataViewColumn<(typeof ROWS)[number]>[] = [
   { key: "name", header: "Account", role: "title", sortable: true },
   { key: "status", header: "Status", type: "badge", options: STATUS_OPTIONS, sortable: true },
   { key: "priority", header: "Priority", type: "badge", options: PRIORITY_OPTIONS, sortable: true },

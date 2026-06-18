@@ -75,6 +75,8 @@ export {
 export {
   Section,
   Label,
+  Hint,
+  WeightSlider,
   Segmented,
   IconButton,
   ModeButton,

@@ -1,0 +1,13 @@
+{ "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "skipLibCheck": true, "incremental": false,
+    "baseUrl": ".", "paths": { "@/*": ["./*"], "@tanstack/react-table": ["../../node_modules/.pnpm/@tanstack+react-table@8.21.3_react-dom@19.2.5_react@19.2.5__react@19.2.5/node_modules/@tanstack/react-table/build/lib/index"] } },
+  "include": [
+    "app/components/property-list/page.tsx",
+    "app/components/combobox/page.tsx",
+    "app/components/data-view/page.tsx",
+    "components/ui/data-view.tsx",
+    "components/studio/studio-right-tabs.tsx",
+    "components/studio/projects-menu.tsx",
+    "components/theme-builder/theme-builder-controls.tsx",
+    "components/theme-builder/theme-builder-primitives.tsx"
+  ] }

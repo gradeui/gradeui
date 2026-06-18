@@ -22,7 +22,10 @@ const statusOptions = [
   { value: "resolved", label: "Resolved", icon: CircleCheck },
 ];
 
-const PRIORITY_VARIANT = {
+const PRIORITY_VARIANT: Record<
+  string,
+  "secondary" | "warning-soft" | "destructive-soft"
+> = {
   low: "secondary",
   medium: "warning-soft",
   high: "destructive-soft",

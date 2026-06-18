@@ -1,0 +1,3 @@
+{ "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "skipLibCheck": true, "incremental": false },
+  "include": ["components/studio/typography-editor.tsx","components/theme-builder/theme-builder-controls.tsx","components/theme-builder/theme-builder-primitives.tsx"] }

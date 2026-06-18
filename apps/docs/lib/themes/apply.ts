@@ -299,6 +299,27 @@ export function fontFaceCSS(
 }
 
 /**
+ * Serialise a generated theme into a self-contained, copy-pastable CSS block:
+ * @font-face rules + a `:root` (light) block + a `.dark` block. Drop it onto
+ * any site running @gradeui/ui (import `@gradeui/ui/styles.css` first) to wear
+ * this exact theme — colours, ramps, the `--text-*` scale, typography, the lot.
+ */
+export function themeToPortableCss(theme: GeneratedTheme): string {
+  const serialise = (vars: Record<string, string>) =>
+    Object.entries(vars)
+      .map(([k, v]) => `  ${k}: ${v};`)
+      .join("\n");
+  return [
+    "/* Grade theme — paste into a site running @gradeui/ui (import @gradeui/ui/styles.css first). */",
+    fontFaceCSS(theme.typography.fontFaces),
+    `:root {\n${serialise(themeToCSSVars(theme, "light"))}\n}`,
+    `.dark {\n${serialise(themeToCSSVars(theme, "dark"))}\n}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+/**
  * Upsert the theme's @font-face rules into a document's <head> via a
  * single managed <style id="gds-theme-fonts"> tag. Idempotent and
  * cheap to call on every theme apply: same CSS → no DOM write; a theme

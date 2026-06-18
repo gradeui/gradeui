@@ -35,7 +35,7 @@ const selectTriggerVariants = cva(
   // placeholder as a span flagged with that attribute; the input-style
   // pseudo-element selector never matches, so ghost values rendered
   // through the placeholder were showing full-strength.
-  "flex w-full items-center justify-between rounded-md border border-input bg-background ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+  "flex w-full items-center justify-between rounded-md border border-input bg-background ring-offset-background data-[placeholder]:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
   {
     variants: {
       size: {
@@ -145,9 +145,13 @@ const SelectContent = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & {
     size?: SelectMenuSize;
+    /** Portal target. Defaults to document.body; pass a themed wrapper to
+     *  keep the menu inside a scoped theme (e.g. the Studio preview, where
+     *  the theme is applied to a div, not :root). */
+    container?: HTMLElement | null;
   }
->(({ className, children, position = "popper", size = "default", ...props }, ref) => (
-  <SelectPrimitive.Portal>
+>(({ className, children, position = "popper", size = "default", container, ...props }, ref) => (
+  <SelectPrimitive.Portal container={container ?? undefined}>
     <SelectPrimitive.Content
       ref={ref}
       className={cn(

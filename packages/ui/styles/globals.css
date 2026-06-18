@@ -145,6 +145,49 @@
   --color-rds-black: var(--gds-black);
   --color-rds-white: var(--gds-white);
 
+  /* -- gds-* aliases — the canonical prefix after the May 2026 rename.
+     Components (Badge, etc.) reference bg-gds-green-500 / text-gds-gray-900
+     / bg-gds-yellow-400; without these registrations those utilities
+     resolve to nothing (a colourless Success badge). The rds-* names above
+     stay as back-compat for any pre-rename consumer. Same underlying
+     @gradeui/core --gds-* values, so the two prefixes are identical. -- */
+  --color-gds-green: var(--gds-green);
+  --color-gds-green-50: var(--gds-green-50);
+  --color-gds-green-100: var(--gds-green-100);
+  --color-gds-green-200: var(--gds-green-200);
+  --color-gds-green-300: var(--gds-green-300);
+  --color-gds-green-400: var(--gds-green-400);
+  --color-gds-green-500: var(--gds-green-500);
+  --color-gds-green-600: var(--gds-green-600);
+  --color-gds-green-700: var(--gds-green-700);
+  --color-gds-green-800: var(--gds-green-800);
+  --color-gds-green-900: var(--gds-green-900);
+  --color-gds-green-950: var(--gds-green-950);
+  --color-gds-yellow: var(--gds-yellow);
+  --color-gds-yellow-50: var(--gds-yellow-50);
+  --color-gds-yellow-100: var(--gds-yellow-100);
+  --color-gds-yellow-200: var(--gds-yellow-200);
+  --color-gds-yellow-300: var(--gds-yellow-300);
+  --color-gds-yellow-400: var(--gds-yellow-400);
+  --color-gds-yellow-500: var(--gds-yellow-500);
+  --color-gds-yellow-600: var(--gds-yellow-600);
+  --color-gds-yellow-700: var(--gds-yellow-700);
+  --color-gds-yellow-800: var(--gds-yellow-800);
+  --color-gds-yellow-900: var(--gds-yellow-900);
+  --color-gds-gray-50: var(--gds-gray-50);
+  --color-gds-gray-100: var(--gds-gray-100);
+  --color-gds-gray-200: var(--gds-gray-200);
+  --color-gds-gray-300: var(--gds-gray-300);
+  --color-gds-gray-400: var(--gds-gray-400);
+  --color-gds-gray-500: var(--gds-gray-500);
+  --color-gds-gray-600: var(--gds-gray-600);
+  --color-gds-gray-700: var(--gds-gray-700);
+  --color-gds-gray-800: var(--gds-gray-800);
+  --color-gds-gray-900: var(--gds-gray-900);
+  --color-gds-gray-950: var(--gds-gray-950);
+  --color-gds-black: var(--gds-black);
+  --color-gds-white: var(--gds-white);
+
   /* -- Semantic roles — runtime vars hold bare "L C H" OKLCH triplets,
      wrapped with oklch() at use. Opacity shortcuts (bg-primary/50) come
      out as color-mix() under v4 — visually identical to the old

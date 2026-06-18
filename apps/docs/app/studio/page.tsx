@@ -89,7 +89,7 @@ import {
 import { useChatSettings } from "@/components/ai-elements/provider-picker";
 import { StudioChat } from "@/components/studio/studio-chat";
 import { StudioCanvas } from "@/components/studio/studio-canvas";
-import { StudioRightTabs } from "@/components/studio/studio-right-tabs";
+import { StudioRightTabs, StylesTabContent } from "@/components/studio/studio-right-tabs";
 import {
   StudioSettings,
   StudioSettingsTrigger,
@@ -145,8 +145,10 @@ import {
 import {
   ProjectsMenu,
   type ProjectSection,
+  type StylesSection,
 } from "@/components/studio/projects-menu";
 import { AssetBrowser } from "@/components/studio/asset-browser";
+import { GradeLoader } from "@/components/ui/grade-loader";
 import { ProjectHome } from "@/components/studio/project-home";
 import { NewProjectDialog } from "@/components/studio/new-project-dialog";
 import { ConfirmDeleteDialog } from "@/components/studio/confirm-delete-dialog";
@@ -225,6 +227,36 @@ export default function StudioPage() {
   const [projectSection, setProjectSection] = useState<ProjectSection>(
     "screens",
   );
+  // Active Design System sub-section (Colors / Typography / Spacing). Only
+  // meaningful while projectSection === "styles"; drives the sidebar sub-rows
+  // and the project-level Design System page.
+  const [stylesSection, setStylesSection] = useState<StylesSection>("general");
+  // Persist the Design System sub-section across reloads (localStorage,
+  // grade-* namespace). SSR-safe: default "general", hydrate in an effect to
+  // avoid a hydration mismatch (see "localStorage in useState init" note).
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("grade-ds-section");
+      if (
+        saved === "general" ||
+        saved === "colours" ||
+        saved === "typography" ||
+        saved === "spacing" ||
+        saved === "components"
+      ) {
+        setStylesSection(saved);
+      }
+    } catch {
+      // localStorage unavailable — keep the default.
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("grade-ds-section", stylesSection);
+    } catch {
+      // ignore — non-persistent is fine.
+    }
+  }, [stylesSection]);
 
   // Per-design undo / redo for `appSource` (JSX). The hook is
   // self-persisting via localStorage keyed by `designId`, and reseeds
@@ -691,6 +723,11 @@ export default function StudioPage() {
   // flight, this lags behind activeProjectId — the persistence
   // effect uses the lag as a "don't save yet" signal.
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
+  // First-load gate. Stays false until bootstrap has resolved the active
+  // project AND applied its snapshot, so we can cover the un-hydrated chrome
+  // with a clean loader instead of flashing the empty, broken-looking shell
+  // (composer + "All screens" header over a blank canvas) on refresh.
+  const [booted, setBooted] = useState(false);
 
   // ── Persistence guard ───────────────────────────────────────────────
   // `lastSavedSig` is the content signature of what's currently durable in
@@ -765,6 +802,7 @@ export default function StudioPage() {
         if (cancelled || !snap) return;
         applySnapshot(snap);
         setLoadedProjectId(seeded.id);
+        setBooted(true);
         return;
       }
       setProjects(list);
@@ -827,6 +865,7 @@ export default function StudioPage() {
       setActiveProjectId(targetId);
       applySnapshot({ ...snap, activeDesignId: initialDesignId });
       setLoadedProjectId(targetId);
+      setBooted(true);
       // Load every project's snapshot once on bootstrap to seed
       // the Projects menu summaries. The active project's entry
       // is then kept fresh by the live-update effect below.
@@ -2282,19 +2321,11 @@ export default function StudioPage() {
   // disabled until FlowCanvas (D8).
   const handleSelectSection = useCallback(
     (section: ProjectSection) => {
-      if (section === "styles") {
-        // The right panel's Design System tab id is "styles" — the
-        // "theme" tab is the legacy full-builder hidden behind
-        // SHOW_THEME_TAB, so routing there showed nothing (the "Design
-        // System sidebar item does nothing" bug).
-        setRightTab("styles");
-        setRightPanelOpen(true);
-        setProjectSection("styles");
-        return;
-      }
       if (section === "flows") return;
-      // screens / motions filter the grid; assets takes over the canvas
-      // with the full-screen library. All of them live at the "all" zoom.
+      // screens / motions filter the grid; assets + Design System ("styles")
+      // each take over the canvas as a full-screen project page. All of them
+      // live at the "all" zoom. (Design System used to pop the right panel —
+      // it's per-PROJECT theme authoring, not per-screen, so it's a page now.)
       setProjectSection(section);
       setZoom("all");
     },
@@ -2334,6 +2365,8 @@ export default function StudioPage() {
       onDeleteProject={handleDeleteProject}
       activeSection={projectSection}
       onSelectSection={handleSelectSection}
+      activeStylesSection={stylesSection}
+      onSelectStylesSection={setStylesSection}
       onAddMotion={handleAddMotion}
     />
   ) : (
@@ -2421,8 +2454,6 @@ export default function StudioPage() {
       }
       tab={rightTab}
       onTabChange={setRightTab}
-      themeVariants={projectThemeVariants}
-      onThemeVariantsChange={handleThemeVariantsChange}
       commentsContent={
         <CommentsTabHost
           threads={commentThreads}
@@ -2543,6 +2574,17 @@ export default function StudioPage() {
           snapshot. Mounted as a sibling of the rest of the
           provider's children. */}
       <ThemeDraftPersister onChange={handleThemeDraftChange} />
+
+      {/* First-load gate — cover the un-hydrated chrome with a clean branded
+          loader until bootstrap has the active project + its snapshot applied.
+          Kills the empty/broken flash (composer over a blank canvas) on
+          refresh. Doesn't re-trigger on project switches (those keep `booted`
+          true and have their own mid-flight handling). */}
+      {!booted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+          <GradeLoader size={56} showLabel />
+        </div>
+      )}
 
       {/* Delete confirmation — gates screen + project deletion so nothing
           goes on a stray click, with a louder warning when the target is
@@ -2912,10 +2954,39 @@ export default function StudioPage() {
                   </div>
                 </div>
               )}
+              {/* Design System page — the project's theme (colours, type,
+                  shape, saved variants), one level up from any screen. Takes
+                  over the canvas like Assets; the canvas stays mounted below
+                  so screens don't reboot on the way back. Per-project, not
+                  per-screen (STUDIO-THEMES.md T1). */}
+              {projectSection === "styles" && zoom === "all" && (
+                <div className="absolute inset-0 z-10 flex flex-col bg-background">
+                  <div className="shrink-0 border-b border-border px-8 py-4">
+                    <h2 className="text-lg font-semibold text-foreground">
+                      Design System
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      The theme for this project — colours, type, shape, and
+                      saved variants. Applies to every screen.
+                    </p>
+                  </div>
+                  <div className="min-h-0 flex-1">
+                    <div className="mx-auto h-full max-w-3xl">
+                      <StylesTabContent
+                        section={stylesSection}
+                        variants={projectThemeVariants}
+                        onVariantsChange={handleThemeVariantsChange}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               <div
                 className={cn(
                   "h-full",
-                  projectSection === "assets" && zoom === "all" && "invisible",
+                  (projectSection === "assets" || projectSection === "styles") &&
+                    zoom === "all" &&
+                    "invisible",
                 )}
               >
               <StudioThemedCanvas

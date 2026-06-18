@@ -67,12 +67,24 @@ export interface ThemeBuilderControlsProps {
     shape?: boolean;
     components?: boolean;
   };
+  /** Render each section flat (no collapse chevron). Default keeps the
+   *  collapsible behaviour; the focused Design System sub-tabs pass false. */
+  collapsibleSections?: boolean;
+  /** Hide the global Heading weight control — the Design System editor owns
+   *  weight per base style instead, so the top section stays font + scale. */
+  hideHeadingWeight?: boolean;
+  /** Hide the Scale picker — the Design System editor renders it inside the
+   *  Type scale section instead. */
+  hideScale?: boolean;
 }
 
 export function ThemeBuilderControls({
   className,
   hideMode,
   sections,
+  collapsibleSections,
+  hideHeadingWeight,
+  hideScale,
 }: ThemeBuilderControlsProps) {
   const { input, patch, mode, setMode, baseline } = useThemeBuilder();
 
@@ -156,7 +168,7 @@ export function ThemeBuilderControls({
       data-lenis-prevent
     >
       {showMode && (
-        <Section title="Mode">
+        <Section collapsible={collapsibleSections} title="Mode">
           <div className="inline-flex items-center rounded-md border border-border bg-background p-0.5">
             <ModeButton
               active={mode === "light"}
@@ -175,7 +187,7 @@ export function ThemeBuilderControls({
       )}
 
       {show("colour") && (
-        <Section title="Colour" subtitle="Hues drive the full OKLCH ramps.">
+        <Section collapsible={collapsibleSections} title="Colour" subtitle="Hues drive the full OKLCH ramps.">
           <HueRow
             label="Primary"
             hue={input.hues.primary}
@@ -260,18 +272,7 @@ export function ThemeBuilderControls({
       )}
 
       {show("typography") && (
-        <Section title="Typography">
-          <FontRow
-            label="Display"
-            value={input.typography.display}
-            changed={changed((i) => i.typography.display)}
-            onReset={resetField((d, b) => {
-              d.typography.display = b.typography.display;
-            })}
-            onChange={setFont("display")}
-            customFonts={customFonts}
-            filter={(cat) => cat !== "mono"}
-          />
+        <Section collapsible={collapsibleSections} title="Typography">
           <FontRow
             label="Body"
             value={input.typography.body}
@@ -282,6 +283,19 @@ export function ThemeBuilderControls({
             onChange={setFont("body")}
             customFonts={customFonts}
             filter={(cat) => cat !== "mono"}
+            description="The workhorse — body copy and most UI text."
+          />
+          <FontRow
+            label="Display"
+            value={input.typography.display || input.typography.body}
+            changed={changed((i) => i.typography.display)}
+            onReset={resetField((d, b) => {
+              d.typography.display = b.typography.display;
+            })}
+            onChange={setFont("display")}
+            customFonts={customFonts}
+            filter={(cat) => cat !== "mono"}
+            description="Headings and large type. Inherits Body when left unset."
           />
           <FontRow
             label="Mono"
@@ -293,6 +307,7 @@ export function ThemeBuilderControls({
             onChange={setFont("mono")}
             customFonts={customFonts}
             filter={(cat) => cat === "mono"}
+            description="Code, tabular figures, and anything monospaced."
           />
 
           {/* Width — the variable-font wdth cut, applied theme-wide
@@ -333,7 +348,10 @@ export function ThemeBuilderControls({
           {/* Type scale — legacy flat presets plus the modular (musical)
               ratios. Modular ids generate the ladder middle-out from the
               body size (Utopia model): up by the ratio, down by the
-              reciprocal, floored. See @gradeui/core GDS_MODULAR_SCALES. */}
+              reciprocal, floored. See @gradeui/core GDS_MODULAR_SCALES.
+              Hidden in the Design System editor, which renders it in the
+              Type scale section. */}
+          {!hideScale && (
           <div className="space-y-1">
             <Label
               changed={changed((i) => i.typography.scale)}
@@ -372,31 +390,34 @@ export function ThemeBuilderControls({
               </SelectContent>
             </Select>
           </div>
+          )}
 
-          <div className="pt-1">
-            <Label
-              changed={changed((i) => i.typography.headingWeight ?? 600)}
-              onReset={resetField((d, b) => {
-                d.typography.headingWeight = b.typography.headingWeight;
-              })}
-            >
-              Heading weight
-            </Label>
-            <Segmented
-              value={String(input.typography.headingWeight ?? 600)}
-              options={WEIGHTS}
-              onChange={(v) =>
-                patch((d) => {
-                  d.typography.headingWeight = Number(v);
-                })
-              }
-            />
-          </div>
+          {!hideHeadingWeight && (
+            <div className="pt-1">
+              <Label
+                changed={changed((i) => i.typography.headingWeight ?? 600)}
+                onReset={resetField((d, b) => {
+                  d.typography.headingWeight = b.typography.headingWeight;
+                })}
+              >
+                Heading weight
+              </Label>
+              <Segmented
+                value={String(input.typography.headingWeight ?? 600)}
+                options={WEIGHTS}
+                onChange={(v) =>
+                  patch((d) => {
+                    d.typography.headingWeight = Number(v);
+                  })
+                }
+              />
+            </div>
+          )}
         </Section>
       )}
 
       {show("shape") && (
-        <Section title="Shape &amp; feel">
+        <Section collapsible={collapsibleSections} title="Shape &amp; feel">
           <div>
             <Label
               changed={changed((i) => i.radius.style)}
@@ -458,7 +479,7 @@ export function ThemeBuilderControls({
       )}
 
       {show("components") && (
-        <Section title="Components">
+        <Section collapsible={collapsibleSections} title="Components">
           <div>
             <Label
               changed={changed((i) => i.components?.buttonShape ?? "default")}

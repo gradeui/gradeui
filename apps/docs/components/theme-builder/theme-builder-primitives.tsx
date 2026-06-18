@@ -57,35 +57,47 @@ export function Section({
   title,
   subtitle,
   defaultOpen = true,
+  collapsible = true,
   children,
 }: {
   title: React.ReactNode;
   subtitle?: string;
   defaultOpen?: boolean;
+  /** When false, the section renders flat — a static header, always open,
+   *  no chevron. Used by the focused Design System sub-tabs, where the
+   *  collapse affordance is just noise on a single-section view. */
+  collapsible?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const expanded = collapsible ? open : true;
   return (
     <section className="border-t border-border/60 first:border-t-0">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className={cn(
-          "flex w-full items-center gap-1.5 px-3 pt-2.5 text-left",
-          open ? "pb-1.5" : "pb-2.5",
-        )}
-      >
-        <ChevronDown
-          aria-hidden
+      {collapsible ? (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
           className={cn(
-            "h-3 w-3 shrink-0 text-muted-foreground transition-transform",
-            !open && "-rotate-90",
+            "flex w-full items-center gap-1.5 px-3 pt-2.5 text-left",
+            open ? "pb-1.5" : "pb-2.5",
           )}
-        />
-        <span className="text-xs font-medium text-foreground">{title}</span>
-      </button>
-      {open && (
+        >
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "h-3 w-3 shrink-0 text-muted-foreground transition-transform",
+              !open && "-rotate-90",
+            )}
+          />
+          <span className="text-xs font-medium text-foreground">{title}</span>
+        </button>
+      ) : (
+        <div className="px-3 pb-1.5 pt-2.5">
+          <span className="text-xs font-medium text-foreground">{title}</span>
+        </div>
+      )}
+      {expanded && (
         <div className="space-y-2 px-3 pb-3">
           {subtitle && (
             <p className="text-2xs leading-snug text-muted-foreground">
@@ -138,6 +150,73 @@ export function Label({
           <RotateCcw className="h-2.5 w-2.5" />
         </button>
       )}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+   Hint — a muted helper line below a control. The inspector's equivalent
+   of Field.Description: sentence case, never all-caps.
+   ────────────────────────────────────────────────────────────────────── */
+
+export function Hint({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mt-1 text-2xs leading-snug text-muted-foreground">{children}</p>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+   WeightSlider — a font-weight range (100–900) with the standard stops
+   marked. A range, not a segmented set, because variable fonts land on
+   in-between values and run below 300 / above 800.
+   ────────────────────────────────────────────────────────────────────── */
+
+const WEIGHT_STOPS = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+
+export function WeightSlider({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const pct = ((value - 100) / 800) * 100;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="relative h-4 flex-1">
+        <div className="absolute left-0 top-1/2 h-1.5 w-full -translate-y-1/2 rounded-full bg-muted" />
+        <div
+          className="absolute left-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-primary"
+          style={{ width: `${pct}%` }}
+        />
+        {WEIGHT_STOPS.map((s, i) => (
+          <span
+            key={s}
+            className={cn(
+              "absolute top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full",
+              s <= value ? "bg-primary-foreground/70" : "bg-muted-foreground/40",
+            )}
+            style={{ left: `${(i / (WEIGHT_STOPS.length - 1)) * 100}%` }}
+          />
+        ))}
+        <div
+          className="pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-background"
+          style={{ left: `${pct}%` }}
+        />
+        <input
+          type="range"
+          min={100}
+          max={900}
+          step={10}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          aria-label="Font weight"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </div>
+      <span className="w-8 shrink-0 text-right font-mono text-2xs tabular-nums text-muted-foreground">
+        {value}
+      </span>
     </div>
   );
 }
@@ -366,6 +445,7 @@ export function FontRow({
   customFonts,
   changed,
   onReset,
+  description,
 }: {
   label: string;
   value: FontSelection;
@@ -380,6 +460,8 @@ export function FontRow({
   changed?: boolean;
   /** Per-control reset — see Label. */
   onReset?: () => void;
+  /** Muted helper line rendered below the picker (see Hint). */
+  description?: React.ReactNode;
 }) {
   const keys = (Object.keys(FONTS) as FontKey[]).filter((k) =>
     filter(FONT_CATEGORY[k])
@@ -416,7 +498,9 @@ export function FontRow({
       {/* Canonical Select at inspector density (size="2xs") — matches
           the Layout tab's NumericSelectRow triggers. */}
       <Select
-        value={value}
+        // Never blank: an unset value falls back to the first font available
+        // to this row, so the trigger always shows a real selection.
+        value={value || keys[0]}
         onValueChange={(v) => onChange(v as FontSelection)}
       >
         <SelectTrigger size="2xs" className="w-full">
@@ -444,6 +528,7 @@ export function FontRow({
           {group("Mono", mono)}
         </SelectContent>
       </Select>
+      {description ? <Hint>{description}</Hint> : null}
     </div>
   );
 }

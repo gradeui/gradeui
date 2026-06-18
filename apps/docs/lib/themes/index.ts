@@ -35,6 +35,7 @@ export * from "./types";
 export { generateTheme } from "./generator";
 export {
   themeToCSSVars,
+  themeToPortableCss,
   applyThemeToRoot,
   applyThemeToElement,
   fontFaceCSS,

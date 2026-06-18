@@ -392,6 +392,54 @@ export interface ThemeVariant {
   createdAt: number;
 }
 
+/** A theme font role — references the families defined on `typography`
+ *  (display / body / mono). Italic is deferred (STUDIO-TYPOGRAPHY.md TY3). */
+export type FontRole = "display" | "body" | "mono";
+
+/** A single typographic property set. All optional: on a base style, unset
+ *  falls back to the generator default; on a step, unset inherits from the
+ *  step's base style. Letter-spacing lives here, never a tracking-* utility. */
+export interface TypeStyleProps {
+  font?: FontRole;
+  weight?: number;
+  /** Unitless ("1.4") or a CSS length ("1.75rem"). */
+  lineHeight?: string;
+  /** CSS length, e.g. "-0.01em". */
+  letterSpacing?: string;
+}
+
+/** Reusable base text styles every theme has; steps inherit from one. */
+export type TypeBaseStyleKey = "body" | "header" | "mono" | "prose";
+
+/** The named ladder steps screens use. Size comes from the modular scale. */
+export type TypeStepKey =
+  | "display"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "h4"
+  | "h5"
+  | "h6"
+  | "body"
+  | "small"
+  | "caption";
+
+/** A ladder step: inherit a base style, override any individual property. */
+export interface TypeStep extends TypeStyleProps {
+  inheritsFrom?: TypeBaseStyleKey;
+}
+
+/** Long-form / markdown typography (the Tailwind `prose` tree). Composes the
+ *  base styles rather than redefining type. */
+export interface ProseStyle {
+  bodyStyle?: TypeBaseStyleKey;
+  headingStyle?: TypeBaseStyleKey;
+  paragraphSpacing?: string;
+  /** Max line length, e.g. "65ch". */
+  measure?: string;
+  linkColor?: "primary" | "accent" | "foreground";
+}
+
 export interface ThemeInput {
   /** Stable id. For user themes: "user:<uuid>"; for built-ins: short slug. */
   id: string;
@@ -472,10 +520,23 @@ export interface ThemeInput {
      *  above must have a matching entry here; unreferenced entries are
      *  harmless (kept so switching back is instant). */
     customFonts?: CustomFontFace[];
+    /** STUDIO-TYPOGRAPHY.md — base styles (Body / Header / Mono / Prose)
+     *  that steps inherit from. Sparse; empty = today's output. */
+    baseStyles?: Partial<Record<TypeBaseStyleKey, TypeStyleProps>>;
+    /** Per-step inherit-then-override on the named ladder. Sparse. */
+    steps?: Partial<Record<TypeStepKey, TypeStep>>;
+    /** Long-form / markdown typography (the Tailwind prose tree). */
+    prose?: ProseStyle;
+    /** Per-breakpoint scale override — sizes only (leading / tracking are
+     *  relative and ride along). Mobile often drops a step. */
+    scaleByBreakpoint?: Partial<Record<"sm" | "md" | "lg", TypeScale>>;
   };
 
   spacing: {
     density: SpacingDensity;
+    /** Per-breakpoint density override — spacing re-pitches `--spacing` at
+     *  the matching breakpoint (same idea as scaleByBreakpoint). */
+    densityByBreakpoint?: Partial<Record<"sm" | "md" | "lg", SpacingDensity>>;
   };
 
   radius: {
