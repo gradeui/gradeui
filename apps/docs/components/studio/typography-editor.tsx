@@ -37,6 +37,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { GDS_MODULAR_SCALES } from "@gradeui/core";
+import { customFontFamily } from "@/lib/themes";
+import { getStudioStorage } from "@/lib/studio-storage";
+import { assetToFontFace } from "@/lib/custom-fonts";
 import type {
   ThemeInput,
   FontRole,
@@ -45,6 +48,7 @@ import type {
   TypeStyleProps,
   TypeScale,
   FontSelection,
+  CustomFontFace,
 } from "@/lib/themes";
 
 // ── Static metadata ──────────────────────────────────────────────────────
@@ -159,11 +163,46 @@ function TextField({
 
 export function TypographyEditor() {
   const builder = useMaybeThemeBuilder();
+
+  // Project/org font library (uploaded faces). Merged into the picker below
+  // so an uploaded font shows even before it's copied onto the draft.
+  // Mirrors ThemeBuilderControls; hooks run before the early return.
+  const [libraryFonts, setLibraryFonts] = React.useState<CustomFontFace[]>([]);
+  React.useEffect(() => {
+    let alive = true;
+    getStudioStorage()
+      .listAssets({ type: "font" })
+      .then((assets) => {
+        if (!alive) return;
+        setLibraryFonts(
+          assets
+            .map(assetToFontFace)
+            .filter((f): f is CustomFontFace => f !== null),
+        );
+      })
+      .catch(() => {
+        // Asset library unavailable (local / signed out) — registry fonts
+        // still work, so stay quiet.
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   if (!builder) return null;
 
   const input = builder.input as ThemeInput;
   const generated = builder.generated;
   const typo = input.typography;
+
+  // Theme's own faces + library faces (deduped by family), so the picker
+  // lists uploaded fonts alongside the registry.
+  const customFonts = [
+    ...(typo.customFonts ?? []),
+    ...libraryFonts.filter(
+      (f) => !(typo.customFonts ?? []).some((o) => o.family === f.family),
+    ),
+  ];
 
   const patchBase = (key: TypeBaseStyleKey, patch: Partial<TypeStyleProps>) =>
     builder.patch((d: ThemeInput) => {
@@ -174,6 +213,15 @@ export function TypographyEditor() {
   const setBaseFont = (field: "body" | "display" | "mono", v: FontSelection) =>
     builder.patch((d: ThemeInput) => {
       d.typography[field] = v;
+      // Copy the chosen custom face onto the draft so the theme carries it
+      // (deterministic + portable) and the @font-face actually loads.
+      const family = customFontFamily(v);
+      if (!family) return;
+      const face = customFonts.find((f) => f.family === family);
+      const have = d.typography.customFonts ?? [];
+      if (face && !have.some((f) => f.family === family)) {
+        d.typography.customFonts = [...have, face];
+      }
     });
 
   // Base weights map to the REAL generator fields so they hit actual screens:
@@ -193,6 +241,28 @@ export function TypographyEditor() {
       else {
         const styles = (d.typography.baseStyles ??= {});
         styles[k] = { ...styles[k], weight: w };
+      }
+    });
+
+  // Width (variable-font wdth cut) follows the same dual-storage model as
+  // weight: Body → bodyStretch, Header → displayStretch (both LIVE on real
+  // screens via the generator), Mono → baseStyles.mono.stretch (preview only
+  // until a generator field exists). "normal" clears the override.
+  const widthFor = (k: TypeBaseStyleKey) =>
+    k === "header"
+      ? typo.displayStretch ?? "normal"
+      : k === "body"
+        ? typo.bodyStretch ?? "normal"
+        : typo.baseStyles?.[k]?.stretch ?? "normal";
+
+  const setBaseWidth = (k: TypeBaseStyleKey, v: string) =>
+    builder.patch((d: ThemeInput) => {
+      const val = v === "normal" ? undefined : v;
+      if (k === "header") d.typography.displayStretch = val;
+      else if (k === "body") d.typography.bodyStretch = val;
+      else {
+        const styles = (d.typography.baseStyles ??= {});
+        styles[k] = { ...styles[k], stretch: val };
       }
     });
 
@@ -289,7 +359,7 @@ export function TypographyEditor() {
                     value={fontValue}
                     onChange={(v) => setBaseFont(fontField, v)}
                     filter={(cat) => (key === "mono" ? cat === "mono" : true)}
-                    customFonts={typo.customFonts}
+                    customFonts={customFonts}
                   />
                   <div className="space-y-1">
                     <Label>Weight</Label>
@@ -314,6 +384,24 @@ export function TypographyEditor() {
                       patchBase(key, { letterSpacing: v || undefined })
                     }
                   />
+                </div>
+                <div className="space-y-1">
+                  <Label>Width</Label>
+                  <Select
+                    value={widthFor(key)}
+                    onValueChange={(v) => setBaseWidth(key, v)}
+                  >
+                    <SelectTrigger size="2xs" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent size="2xs">
+                      <SelectItem value="75%">Condensed (75%)</SelectItem>
+                      <SelectItem value="90%">Compact (90%)</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="112.5%">Wide (112.5%)</SelectItem>
+                      <SelectItem value="125%">Extended (125%)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             );

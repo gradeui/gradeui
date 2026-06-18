@@ -406,6 +406,11 @@ export interface TypeStyleProps {
   lineHeight?: string;
   /** CSS length, e.g. "-0.01em". */
   letterSpacing?: string;
+  /** CSS font-stretch ("75%" … "125%"). Only does anything on a variable
+   *  font with a wdth axis; static fonts ignore it. The body/header roles
+   *  map to the live `bodyStretch`/`displayStretch` theme fields; other
+   *  base styles carry it here. */
+  stretch?: string;
 }
 
 /** Reusable base text styles every theme has; steps inherit from one. */
