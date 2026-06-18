@@ -284,11 +284,10 @@ const Map = React.forwardRef<MapHandle, MapProps>(function Map(props, ref) {
       ref={containerRef}
       data-gds-part="map"
       className={cn("gds-map relative isolate overflow-hidden", className)}
-      style={{
-        borderRadius: "var(--gds-map-radius, var(--radius, 0.5rem))",
-        border: "var(--gds-map-border, 1px solid var(--border, transparent))",
-        ...style,
-      }}
+      // No baked-in radius/border: the Map is an unopinionated primitive.
+      // Consumers add `rounded-*` / `border` via className (the container
+      // already clips with overflow-hidden, so rounding via class works).
+      style={style}
     >
       <MapContext.Provider value={contextValue}>{children}</MapContext.Provider>
     </div>

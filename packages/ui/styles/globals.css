@@ -869,6 +869,12 @@
   --gds-map-marker-border: oklch(var(--border));
   --gds-map-marker-shadow: 0 1px 3px oklch(0 0 0 / 0.22),
     0 0 0 1px oklch(0 0 0 / 0.05);
+  /* Halo behind floating map labels (the text-stroke that separates a
+     label from busy tiles). Mode-aware: a white halo reads on pale
+     light tiles; the dark-mode override flips it to near-black so a
+     light label on dark tiles isn't a white-on-white wash-out. Applied
+     via the `.gds-map-label` helper. */
+  --gds-map-label-halo: oklch(1 0 0);
 
   /* Sidebar knobs — the width pair drives the collapsed/expanded animation
      on `<Sidebar>` (compound nav primitive). Header height + section
@@ -1008,6 +1014,9 @@
   --gds-map-marker-border: oklch(1 0 0 / 0.3);
   --gds-map-marker-shadow: 0 1px 3px oklch(0 0 0 / 0.5),
     0 0 0 1px oklch(0 0 0 / 0.4);
+  /* Dark-mode label halo — near-black so light labels stay legible on
+     dark tiles (mirror of the light-mode white halo above). */
+  --gds-map-label-halo: oklch(0.18 0 0);
 
   /* Alert surface pairs — dark-mode variant: tint sits just above the dark
      background without going gray; deep text stays bright and readable. */
@@ -1690,6 +1699,15 @@
   box-shadow: var(--gds-map-marker-shadow);
 }
 
+/* Floating map label halo — put this class on a text element inside a
+   MapMarker to give it a mode-aware outline (white on light tiles,
+   near-black on dark) instead of hard-coding a white text-stroke that
+   washes out in dark mode. Pairs with the `--gds-map-label-halo` token. */
+.gds-map-label {
+  -webkit-text-stroke: 1.5px var(--gds-map-label-halo);
+  paint-order: stroke;
+}
+
 /* Vendor font reset — Leaflet (`.leaflet-container`) and MapLibre
    (`.maplibregl-map`) both hard-set `font-family` on their map
    containers, which beats inheritance and strands marker content on
@@ -1700,6 +1718,19 @@
    `--font-sans`. */
 [data-gds-part="map-marker-content"] {
   font-family: var(--font-sans);
+}
+
+/* Vendor z-index neutralizer — Leaflet's stylesheet sets `z-index: 200`
+   on every `<svg>` inside the map. That hijacks an inline SVG used as
+   marker content (e.g. a pin shield) and paints it ABOVE later sibling
+   DOM — so a count/label sitting on top of the shield vanishes behind
+   it. The Mapbox/MapLibre/Google adapters have no such rule, so the
+   same marker markup renders fine there; this made pins look provider-
+   dependent ("numbers show on Mapbox, not Leaflet"). Reset marker SVGs
+   to `z-index: auto` so author paint order (DOM order) holds on every
+   provider. `!important` to beat Leaflet's vendor selector. */
+[data-gds-part="map-marker-content"] svg {
+  z-index: auto !important;
 }
 
 /* ============================================

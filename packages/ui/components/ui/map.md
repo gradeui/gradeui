@@ -90,3 +90,9 @@ ANTI-PATTERNS — don't do these:
 - DO NOT render >500 markers without clustering. The component warns in dev. For larger datasets, drop to `.instance` and use the provider's clustering layer.
 
 Markers are DOM — children inherit `--gds-*` tokens. Drop a `<Card>`, `<Badge>`, `<Avatar>`, or anything else inside `<MapMarker>` and it themes correctly.
+
+Stacking inside a marker follows normal DOM order on every provider — you do NOT need `z-index` hacks to layer content (e.g. a count label sitting on top of an inline pin-shield `<svg>`). The DS neutralizes Leaflet's vendor rule that sets `z-index: 200` on map `<svg>` elements (via `[data-gds-part="map-marker-content"] svg { z-index: auto }` in `globals.css`); without it, an inline SVG would paint above later siblings on Leaflet (the default provider) but not on Mapbox/MapLibre/Google, making the same marker markup look provider-dependent. If you nest an inline SVG behind text in a marker, just rely on source order.
+
+For a floating text label over busy tiles, add the `gds-map-label` class — it applies a mode-aware halo (`--gds-map-label-halo`: white stroke on light tiles, near-black on dark) so the label never washes out. Don't hard-code a white `-webkit-text-stroke`.
+
+Note: `<Map>` carries no border-radius or border of its own — it's an unopinionated primitive (the container clips with `overflow: hidden`). Round or frame it from the call site with `className` (e.g. `rounded-xl border`).
