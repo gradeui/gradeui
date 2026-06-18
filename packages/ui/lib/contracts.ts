@@ -25,8 +25,10 @@ import { CheckboxContract } from "../components/ui/checkbox.contract";
 import { CheckboxCardContract } from "../components/ui/checkbox-card.contract";
 import { CodeContract } from "../components/ui/code.contract";
 import { CollapsibleContract } from "../components/ui/collapsible.contract";
+import { ComboboxContract } from "../components/ui/combobox.contract";
 import { CommandContract } from "../components/ui/command.contract";
 import { ComposerContract } from "../components/ui/composer.contract";
+import { DataViewContract } from "../components/ui/data-view.contract";
 import { DatePickerContract } from "../components/ui/date-picker.contract";
 import { DialogContract } from "../components/ui/dialog.contract";
 import { DropdownMenuContract } from "../components/ui/dropdown-menu.contract";
@@ -45,6 +47,7 @@ import { MotionContract } from "../components/ui/motion.contract";
 import { MultiSelectContract } from "../components/ui/multi-select.contract";
 import { PopoverContract } from "../components/ui/popover.contract";
 import { ProgressContract } from "../components/ui/progress.contract";
+import { PropertyListContract } from "../components/ui/property-list.contract";
 import { RadioCardContract } from "../components/ui/radio-card.contract";
 import { RadioGroupContract } from "../components/ui/radio-group.contract";
 import { ResizableContract } from "../components/ui/resizable.contract";
@@ -97,8 +100,10 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   CheckboxCard: CheckboxCardContract,
   Code: CodeContract,
   Collapsible: CollapsibleContract,
+  Combobox: ComboboxContract,
   Command: CommandContract,
   Composer: ComposerContract,
+  DataView: DataViewContract,
   DatePicker: DatePickerContract,
   Dialog: DialogContract,
   DropdownMenu: DropdownMenuContract,
@@ -117,6 +122,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   MultiSelect: MultiSelectContract,
   Popover: PopoverContract,
   Progress: ProgressContract,
+  PropertyList: PropertyListContract,
   RadioCard: RadioCardContract,
   RadioGroup: RadioGroupContract,
   Resizable: ResizableContract,

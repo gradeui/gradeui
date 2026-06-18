@@ -151,6 +151,17 @@ export {
   type FieldProps,
 } from "../components/ui/field";
 
+// PropertyList — read-only "one record, stacked" display (a Table row
+// transposed). Compound: PropertyList + PropertyList.Row, value side is a
+// polymorphic slot so Table cell renderers drop straight in. Pairs with
+// Field for the read↔edit detail-panel pattern.
+export {
+  PropertyList,
+  PropertyListRow,
+  type PropertyListProps,
+  type PropertyListRowProps,
+} from "../components/ui/property-list";
+
 // Selection cards — RadioCard / CheckboxCard / SwitchCard. The whole card
 // is the control (focus + checked state on the parent surface), sharing one
 // `.gds-selection-card` look. Static content only — never nest interactive
@@ -293,6 +304,37 @@ export {
   type MultiSelectOption,
   type MultiSelectProps,
 } from "../components/ui/multi-select";
+
+// Combobox — single-pick searchable picker (Popover + Command + Button).
+// The single-select sibling of MultiSelect and the Linear "selectable
+// badge" pattern: triggerVariant="inline" + renderValue makes the value
+// itself the trigger. `disabled` (driven by a permission check) gives the
+// read-only display.
+export {
+  Combobox,
+  type ComboboxOption,
+  type ComboboxProps,
+} from "../components/ui/combobox";
+
+// DataView — one dataset drawn as a table / cards / grid, wrapping TanStack
+// so pages stop re-typing sortable-header + flexRender + selection + view-
+// switch boilerplate. `useDataView` holds the state so the toggle / columns
+// menu can live anywhere; pinned columns + sticky header for the table view.
+export {
+  DataView,
+  DataViewToggle,
+  DataViewColumns,
+  useDataView,
+  type DataViewProps,
+  type DataViewColumn,
+  type DataViewMode,
+  type DataViewCellType,
+  type DataViewBadgeOption,
+  type DataViewState,
+  type UseDataViewOptions,
+  type DataViewToggleProps,
+  type DataViewColumnsProps,
+} from "../components/ui/data-view";
 
 export { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 

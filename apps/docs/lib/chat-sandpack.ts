@@ -2501,6 +2501,66 @@ const SelectValue: React.FC<{ placeholder?: string }> = () => null
 
 export { Select, SelectTrigger, SelectContent, SelectValue, SelectItem }`,
 
+  "/components/ui/property-list.tsx": `import * as React from "react"
+import { cn } from "../../lib/utils"
+
+const PropertyListContext = React.createContext({ layout: "row", align: "center", divider: false })
+
+const ROW_GAP = {
+  compact: "var(--gds-property-list-row-gap-compact, 0.375rem)",
+  default: "var(--gds-property-list-row-gap, 0.625rem)",
+  relaxed: "var(--gds-property-list-row-gap-relaxed, 1rem)",
+}
+
+const PropertyListRoot = React.forwardRef(({ layout = "row", density = "default", align = "center", divider = false, labelWidth, className, style, children, ...props }, ref) => (
+  <PropertyListContext.Provider value={{ layout, align, divider }}>
+    <dl
+      ref={ref}
+      data-gds-part="property-list"
+      data-layout={layout}
+      data-density={density}
+      className={cn("flex min-w-0 flex-col", className)}
+      style={{ rowGap: ROW_GAP[density] || ROW_GAP.default, ...(labelWidth ? { ["--gds-property-list-label-width"]: labelWidth } : {}), ...style }}
+      {...props}
+    >
+      {children}
+    </dl>
+  </PropertyListContext.Provider>
+))
+PropertyListRoot.displayName = "PropertyList"
+
+const PropertyListRow = React.forwardRef(({ label, icon, value, align: alignProp, className, children, ...props }, ref) => {
+  const ctx = React.useContext(PropertyListContext)
+  const align = alignProp || ctx.align
+  const content = value != null ? value : children
+  return (
+    <div
+      ref={ref}
+      data-gds-part="property"
+      className={cn("grid", ctx.divider && "border-t border-border first:border-t-0", className)}
+      style={{
+        gridTemplateColumns: ctx.layout === "stack" ? "minmax(0, 1fr)" : "var(--gds-property-list-label-width, 8.5rem) minmax(0, 1fr)",
+        columnGap: "var(--gds-property-list-col-gap, 1rem)",
+        rowGap: ctx.layout === "stack" ? "0.25rem" : undefined,
+        alignItems: align === "start" ? "start" : "center",
+        paddingTop: ctx.divider ? "var(--gds-property-list-row-gap, 0.625rem)" : undefined,
+      }}
+      {...props}
+    >
+      <dt data-gds-part="property-label" className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+        {icon ? <span data-gds-part="property-icon" aria-hidden className="flex shrink-0 items-center justify-center [&_svg]:h-3.5 [&_svg]:w-3.5">{icon}</span> : null}
+        <span className="truncate">{label}</span>
+      </dt>
+      <dd data-gds-part="property-value" className="m-0 min-w-0 text-sm text-foreground">{content}</dd>
+    </div>
+  )
+})
+PropertyListRow.displayName = "PropertyList.Row"
+
+const PropertyList = Object.assign(PropertyListRoot, { Row: PropertyListRow })
+
+export { PropertyList, PropertyListRow }`,
+
   "/components/ui/table.tsx": `import * as React from "react"
 import { cn } from "../../lib/utils"
 

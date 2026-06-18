@@ -236,6 +236,11 @@ export const ALLOWED_COMPONENTS = [
   // Use Select for SINGLE selection; reach for Command directly when the
   // option set is unbounded / async (users to @-mention, email recipients).
   "MultiSelect",
+  // Combobox — single-pick searchable picker (Popover + Command + Button).
+  // The single-select sibling of MultiSelect and the Linear "selectable
+  // badge": triggerVariant="inline" + renderValue makes the value the
+  // trigger. Use for status / priority / assignee pickers.
+  "Combobox",
   // Date + Popover (shipped in @gradeui/ui@0.3.0)
   "DatePicker",
   "DateRangePicker",
@@ -277,6 +282,19 @@ export const ALLOWED_COMPONENTS = [
   "TableRow",
   "TableCell",
   "TableCaption",
+  // PropertyList — the read-only "one record, stacked" display (a Table
+  // row transposed). Reach for it for detail panels / inspectors / "about
+  // this item" cards. The value side is a slot, so the same renderers used
+  // in a Table cell (Badge, Avatar, tag group, date) compose straight in.
+  "PropertyList",
+  "PropertyListRow",
+  // DataView — one dataset drawn as a table / cards / grid (wraps TanStack).
+  // Reach for it instead of hand-rolling a <Table> with sortable headers +
+  // flexRender. `useDataView` (a hook, not a tag) holds the view / selection
+  // state so DataViewToggle / DataViewColumns can sit in a page header.
+  "DataView",
+  "DataViewToggle",
+  "DataViewColumns",
   // Media (shipped in @gradeui/ui@0.4.0)
   //   - VideoPlayer / ThreeScene are the high-level wrappers the model
   //     should reach for. MediaSurface is the low-level shell; exposing

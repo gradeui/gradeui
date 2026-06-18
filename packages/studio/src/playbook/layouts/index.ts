@@ -194,6 +194,26 @@ export const REFERENCE_LAYOUTS: readonly ReferenceLayout[] = [
     scaffold: requireScaffold("data-table-filters"),
   },
   {
+    // Master/detail: a TanStack table whose only job is to emit a
+    // selected id, a `useSelection` hook resolving it, and a detail
+    // panel built from PropertyList (read-only, with an edit toggle).
+    // The standout pattern is ONE `renderValue(type, value)` feeding
+    // both the table cells and the PropertyList rows — schema run
+    // horizontally vs. vertically over the same field types
+    // (select / status / priority / tags / date / user / users /
+    // relation / number / currency / percent / url / boolean / longtext).
+    id: "data-table-detail",
+    label: "Data table with detail panel",
+    description: "TanStack table + row-driven PropertyList detail panel; one value renderer feeds both cells and rows.",
+    tags: [
+      "table", "data table", "datatable", "tanstack", "master detail",
+      "master-detail", "detail panel", "detail view", "inspector",
+      "property list", "properties", "record", "row select", "selection",
+      "crm", "list detail", "split view", "rows", "columns", "schema",
+    ],
+    scaffold: requireScaffold("data-table-detail"),
+  },
+  {
     // Spotify-shaped layout: persistent side library, main as a stack
     // of horizontal "shelves". Hand-rolls `overflow-x-auto` — begging
     // for a Scroller primitive.

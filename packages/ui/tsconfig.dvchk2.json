@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true, "skipLibCheck": true, "incremental": false,
+    "baseUrl": ".",
+    "paths": { "@/*": ["./*"], "@tanstack/react-table": ["../../node_modules/.pnpm/@tanstack+react-table@8.21.3_react-dom@19.2.5_react@19.2.5__react@19.2.5/node_modules/@tanstack/react-table/build/lib/index"] }
+  },
+  "include": ["components/ui/data-view.tsx"]
+}

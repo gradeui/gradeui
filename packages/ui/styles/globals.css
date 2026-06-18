@@ -875,6 +875,13 @@
      light label on dark tiles isn't a white-on-white wash-out. Applied
      via the `.gds-map-label` helper. */
   --gds-map-label-halo: oklch(1 0 0);
+  /* Map canvas — the backing colour BEHIND the raster tiles. Leaflet's
+     default is `#dddddd`, so subpixel gaps between tiles flash light
+     "seams" over a dark basemap. Defaulting this to the tile base
+     colour (here, the CARTO voyager land tone) makes those gaps blend
+     away. Neutral on purpose: tint it and the seams come back as
+     coloured lines unless your tiles match. */
+  --gds-map-canvas: oklch(0.97 0.004 95);
 
   /* Sidebar knobs — the width pair drives the collapsed/expanded animation
      on `<Sidebar>` (compound nav primitive). Header height + section
@@ -886,6 +893,33 @@
   --gds-sidebar-content-py: 0.5rem;
   --gds-sidebar-section-px: 0.5rem;
   --gds-sidebar-section-gap: 0.125rem;
+
+  /* Property list knobs — <PropertyList> renders a single record as
+     label / value rows (a Table row transposed). The label column width
+     and the row/column rhythm are exposed so a dense inspector and an
+     airy settings page share one primitive. Read as
+     `var(--gds-property-list-* , <fallback>)` in the component, so a
+     missing stanza degrades gracefully. */
+  --gds-property-list-label-width: 8.5rem;
+  --gds-property-list-col-gap: 1rem;
+  --gds-property-list-row-gap: 0.625rem;
+  --gds-property-list-row-gap-compact: 0.375rem;
+  --gds-property-list-row-gap-relaxed: 1rem;
+  --gds-property-list-icon-size: 0.875rem;
+  --gds-property-list-label-color: oklch(var(--muted-foreground));
+  --gds-property-list-divider-color: oklch(var(--border));
+
+  /* Data view knobs — <DataView> draws one dataset as a table, cards, or a
+     grid. The card / grid tiles auto-fill, so these min column widths set
+     how many tiles sit per row at a given container width; the pinned and
+     header backgrounds back the sticky column / header so scrolled content
+     doesn't bleed through. */
+  --gds-data-view-card-min: 18rem;
+  --gds-data-view-grid-min: 11rem;
+  --gds-data-view-gap: 0.75rem;
+  --gds-data-view-pinned-bg: oklch(var(--background));
+  --gds-data-view-header-bg: oklch(var(--background));
+  --gds-data-view-table-max-h: 28rem; /* scroll height when stickyHeader is on */
 
   /* Carousel knobs — every visual dimension of <Carousel> is driven from
      this stanza so consumers can re-skin the slideshow (dot shape, arrow
@@ -1017,6 +1051,9 @@
   /* Dark-mode label halo — near-black so light labels stay legible on
      dark tiles (mirror of the light-mode white halo above). */
   --gds-map-label-halo: oklch(0.18 0 0);
+  /* Dark-mode map canvas — near-black to match the CARTO dark_all base,
+     so tile seams vanish on the dark basemap. */
+  --gds-map-canvas: oklch(0.17 0 0);
 
   /* Alert surface pairs — dark-mode variant: tint sits just above the dark
      background without going gray; deep text stays bright and readable. */
@@ -1731,6 +1768,19 @@
    provider. `!important` to beat Leaflet's vendor selector. */
 [data-gds-part="map-marker-content"] svg {
   z-index: auto !important;
+}
+
+/* Map canvas backing — sits behind the tiles so Leaflet's default
+   `#dddddd` no longer flashes through the subpixel gaps between raster
+   tiles ("seams"), most visible on a dark basemap. Harmless on the GL
+   providers (their opaque canvas covers it). Mode-aware via the token.
+   NB the selector is compounded with `[data-gds-part="map"]` on purpose:
+   Leaflet stamps `.leaflet-container` (which sets `background:#ddd`) onto
+   the SAME element, and its stylesheet loads after ours — a bare
+   `.gds-map` ties on specificity and loses. The data-part attribute
+   (present on every provider's root) lifts us above Leaflet's default. */
+.gds-map[data-gds-part="map"] {
+  background-color: var(--gds-map-canvas);
 }
 
 /* ============================================

@@ -59,6 +59,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | DropdownMenu (+ Item/CheckboxItem/RadioItem/Separator/Label) | `dropdown-menu.tsx` | DropdownMenuContent + DropdownMenuSubContent: `surface` | ✅ | Translucent matches iOS / Apple HIG menu sheets. Match surface between parent and submenus. |
 | Select (+ Trigger/Content/Item/Value) | `select.tsx` | none formally | ✅ | placeholder/filled/open in Figma |
 | MultiSelect | `multi-select.tsx` | `options`, `value`/`defaultValue`, `onValueChange`, `placeholder`, `maxCount` (badges before "+N more"), `searchable`, `badgeDismissible`, `modalPopover` | ⏳ | Composes Popover + Command + Badge. Data-driven via `options`; selected items render as removable Badges in the trigger with maxCount overflow. Select-all / Clear / Close actions in dropdown footer. For unbounded/async lists use `Command` directly. |
+| Combobox | `combobox.tsx` | `options`, `value`/`defaultValue` (string\|null), `onValueChange`, `placeholder`, `searchable`, `clearable`, `triggerVariant` (default/inline), `renderValue`, `hideChevron`, `disabled`, `align` | ⏳ | Single-pick searchable picker — the single-select sibling of MultiSelect, and the Linear "selectable badge" pattern. Composes Popover + Command + Button. `triggerVariant="inline"` + `renderValue` returning a Badge makes the value itself the trigger. `disabled` (driven by a permission check) gives the read-only display. Use Select for a small fixed list with no search. |
 | Command (+ Input/Item/Group) | `command.tsx` | none — bg-popover | ✅ | |
 
 ## Navigation
@@ -74,6 +75,8 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | Component | File | Key props | Figma | Notes |
 |---|---|---|---|---|
 | Table (+ Header/Body/Row/Head/Cell/Caption) | `table.tsx` | none — text-sm hover:bg-muted/50 | ✅ | |
+| DataView (+ Toggle/Columns · useDataView) | `data-view.tsx` | `data`, `columns` (schema: key/header/type/cell/role/sortable/pinned/width/align/hideable), `view`/`views` (table/cards/grid), `activeId`, `sorting`, `columnVisibility`, `stickyHeader`, `toolbar`, `renderCard` | ⏳ | Wraps TanStack. One schema drives table + cards + grid; cell renderers by `type` with `cell` override. `useDataView` hook externalises view/selection state so the toggle (`DataViewToggle`) + column menu (`DataViewColumns`) can live anywhere. Pinned (sticky-left) columns + sticky header. Pulls `@tanstack/react-table` into `@gradeui/ui`. Tokens `--gds-data-view-*`. |
+| PropertyList (+ Row) | `property-list.tsx` | `layout` (row/stack), `density` (compact/default/relaxed), `align` (start/center), `divider`, `labelWidth` · Row: `label`, `icon`, `value`, `align` | ⏳ | Read-only "one record, stacked" — a Table row transposed. Renders `<dl>`/`<dt>`/`<dd>`. Value side is a polymorphic slot, so Table cell renderers (Badge, Avatar stack, date, tags) drop straight in. Token-driven via `--gds-property-list-*`. For editable fields use `Field`; a read↔edit detail panel swaps PropertyList for a stack of Fields. |
 | Accordion (+ Item/Trigger/Content) | `accordion.tsx` | none — chevron rotates 180° on open | ✅ | |
 | Collapsible (+ Trigger/Content) | `collapsible.tsx` | pure Radix passthrough | ✅ | |
 | ScrollArea + ScrollBar | `scroll-area.tsx` | `orientation` for ScrollBar | ✅ | |
@@ -131,6 +134,7 @@ Single source of truth for every `@gradeui/ui` component and its Figma library s
 | airbnb-listings | AppShell, Stack, Row, Card, Button, Badge, Input, Select, DateRangePicker, MediaSurface, Map | ✅ |
 | confetti-celebration | AppShell, Stack, Row, Grid, Card, Button, Badge, Separator | ✅ |
 | data-table-filters | AppShell, Stack, Row, Button, Badge, Input, Select, Table, Avatar, Checkbox | ✅ |
+| data-table-detail | AppShell, Stack, Row, Card, Button, Badge, Avatar, Separator, Input, Switch, DataView, useDataView, Combobox, MultiSelect, PropertyList | ⏳ |
 | ecommerce-listing | AppShell, Stack, Row, Grid, Button, Card, Input, Label, Checkbox, Separator, Badge, Select, MediaSurface | ✅ |
 | music-app | AppShell, Stack, Row, Button, Card, Separator, Input, MediaSurface, Avatar | ✅ |
 | saas-user-editor | AppShell, Stack, Row, Button, Card, Input, Label, Textarea, Switch, Separator, Badge, Avatar, Select | ✅ |
