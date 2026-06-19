@@ -16,6 +16,10 @@ export interface PostMeta {
   date: string;
   excerpt: string;
   readingMinutes?: number;
+  /** Social share image (OpenGraph / Twitter), 1200×630. Path under
+   *  `public/` (e.g. "/og/composable-shaders.png"). Falls back to the
+   *  site-wide "/og.png" when unset. */
+  image?: string;
 }
 
 export interface Post extends PostMeta {

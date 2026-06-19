@@ -886,6 +886,102 @@ export function setTextAlign(
   return stripped ? `${stripped} ${token}` : token;
 }
 
+// ─── Flex layout (container) ─────────────────────────────────────────
+// Familiar Figma/Webflow flex controls for a container: direction + the
+// justify×align grid. Gap reuses setGap/parseGap above. All pure string
+// transforms over the className, same discipline as the setters above.
+
+export const FLEX_DIRECTIONS = ["row", "col"] as const;
+export type FlexDirection = (typeof FLEX_DIRECTIONS)[number];
+export const JUSTIFY_VALUES = ["start", "center", "end", "between"] as const;
+export type JustifyValue = (typeof JUSTIFY_VALUES)[number];
+export const ALIGN_ITEMS_VALUES = [
+  "start",
+  "center",
+  "end",
+  "stretch",
+] as const;
+export type AlignItemsValue = (typeof ALIGN_ITEMS_VALUES)[number];
+
+/** True when the element is a flex container (`flex` or `inline-flex`). */
+export function parseIsFlex(className: string | null | undefined): boolean {
+  return !!className && /(^|\s)(inline-)?flex(?=\s|$)/.test(className);
+}
+
+export function parseFlexDirection(
+  className: string | null | undefined,
+): FlexDirection | null {
+  if (!className) return null;
+  const re = /(^|\s)flex-(row|col)(?:-reverse)?(?=\s|$)/g;
+  let last: FlexDirection | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(className)) !== null) last = m[2] as FlexDirection;
+  return last;
+}
+
+/** Set flex-direction, ensuring the element IS a flex container. null
+ *  removes the direction (leaves `flex`). */
+export function setFlexDirection(
+  className: string | null | undefined,
+  value: FlexDirection | null,
+): string {
+  let cn = (className ?? "")
+    .replace(/(^|\s)flex-(?:row|col)(?:-reverse)?(?=\s|$)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!parseIsFlex(cn)) cn = cn ? `flex ${cn}` : "flex";
+  return value === null ? cn : `${cn} flex-${value}`;
+}
+
+export function parseJustify(
+  className: string | null | undefined,
+): JustifyValue | null {
+  if (!className) return null;
+  const re = /(^|\s)justify-(start|center|end|between|around|evenly)(?=\s|$)/g;
+  let last: string | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(className)) !== null) last = m[2];
+  return (last as JustifyValue) ?? null;
+}
+
+export function setJustify(
+  className: string | null | undefined,
+  value: JustifyValue | null,
+): string {
+  const cn = (className ?? "")
+    .replace(
+      /(^|\s)justify-(?:start|center|end|between|around|evenly)(?=\s|$)/g,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  if (value === null) return cn;
+  return cn ? `${cn} justify-${value}` : `justify-${value}`;
+}
+
+export function parseAlignItems(
+  className: string | null | undefined,
+): AlignItemsValue | null {
+  if (!className) return null;
+  const re = /(^|\s)items-(start|center|end|stretch|baseline)(?=\s|$)/g;
+  let last: string | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(className)) !== null) last = m[2];
+  return (last as AlignItemsValue) ?? null;
+}
+
+export function setAlignItems(
+  className: string | null | undefined,
+  value: AlignItemsValue | null,
+): string {
+  const cn = (className ?? "")
+    .replace(/(^|\s)items-(?:start|center|end|stretch|baseline)(?=\s|$)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (value === null) return cn;
+  return cn ? `${cn} items-${value}` : `items-${value}`;
+}
+
 // ─── Responsive (breakpoint) overrides ───────────────────────────────
 //
 // Generated heroes lean hard on `text-5xl md:text-8xl`-style ladders.

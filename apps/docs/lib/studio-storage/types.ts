@@ -272,6 +272,23 @@ export interface ShareLink {
   createdAt: number;
 }
 
+/**
+ * Thrown by a guarded write (saveScreen with `expectedUpdatedAt`) when the
+ * row moved on since the caller loaded it — i.e. someone else (the AI/MCP,
+ * another tab) saved in the meantime. The write did NOT happen; the caller
+ * should surface this (pause autosave, offer reload) rather than retrying
+ * blindly and clobbering the other edit. `currentUpdatedAt` is the live
+ * version that beat us, when known.
+ */
+export class VersionConflictError extends Error {
+  readonly currentUpdatedAt?: number;
+  constructor(currentUpdatedAt?: number) {
+    super("This was changed elsewhere since you loaded it.");
+    this.name = "VersionConflictError";
+    this.currentUpdatedAt = currentUpdatedAt;
+  }
+}
+
 export interface StudioStorage {
   /** List every project. Metadata only — call `loadProject` to get
    *  designs/chat/notes. */
@@ -352,11 +369,18 @@ export interface StudioStorage {
 
   /** Persist a screen's editable fields (name, appSource, status,
    *  updatedAt) without touching its siblings. Used after inline
-   *  rename / source regeneration. */
+   *  rename / source regeneration.
+   *
+   *  `expectedUpdatedAt` (optional) is the optimistic-concurrency token:
+   *  the `updatedAt` the caller last loaded. When provided, the write only
+   *  lands if the row hasn't moved on since — otherwise it throws
+   *  {@link VersionConflictError} and does NOT overwrite (a concurrent edit,
+   *  e.g. by the AI/MCP or another tab, won). Omit for an unguarded write. */
   saveScreen(
     projectId: string,
     design: Design,
     position?: number,
+    expectedUpdatedAt?: number,
   ): Promise<void>;
 
   /** Replace a screen's chat history wholesale. One row per message,

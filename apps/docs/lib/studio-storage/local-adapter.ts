@@ -834,6 +834,9 @@ export class LocalStorageStudioStorage implements StudioStorage {
     projectId: string,
     design: Design,
     position?: number,
+    // Single-writer local storage — no concurrency, so the optimistic token
+    // is accepted (interface parity) and ignored.
+    _expectedUpdatedAt?: number,
   ): Promise<void> {
     this.ensureHydrated();
     const storage = ssrSafeStorage();

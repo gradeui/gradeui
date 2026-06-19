@@ -19,7 +19,18 @@ export async function generateMetadata({
   return {
     title: `${post.title} — Grade`,
     description: post.excerpt,
-    openGraph: { title: post.title, description: post.excerpt, type: "article" },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      type: "article",
+      images: [{ url: post.image ?? "/og.png", width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: [post.image ?? "/og.png"],
+    },
   };
 }
 

@@ -773,6 +773,8 @@
      ---------------------------------------- */
   --background: 0.985 0.0018 85;          /* neutral 50 */
   --foreground: 0.170 0.0048 85;          /* neutral 950 */
+  --bg-base: 0.985 0.0018 85;             /* stable mirror for scope-inverse */
+  --fg-base: 0.170 0.0048 85;
   --card: 1 0 0;                            /* pure white */
   --card-foreground: 0.170 0.0048 85;
   --popover: 1 0 0;
@@ -1008,6 +1010,8 @@
      ---------------------------------------- */
   --background: 0.170 0.0048 85;
   --foreground: 0.985 0.0018 85;
+  --bg-base: 0.170 0.0048 85;
+  --fg-base: 0.985 0.0018 85;
   --card: 0.245 0.0096 85;                  /* neutral 900 */
   --card-foreground: 0.985 0.0018 85;
   --popover: 0.245 0.0096 85;
@@ -1123,6 +1127,8 @@
 :root[data-grade-theme="energy"] {
   --background: 0.985 0.0012 175;           /* neutral 50 */
   --foreground: 0.170 0.0032 175;           /* neutral 950 */
+  --bg-base: 0.985 0.0012 175;
+  --fg-base: 0.170 0.0032 175;
   --card: 1 0 0;
   --card-foreground: 0.170 0.0032 175;
   --popover: 1 0 0;
@@ -1147,6 +1153,8 @@
 .dark[data-grade-theme="energy"] {
   --background: 0.170 0.0032 175;
   --foreground: 0.985 0.0012 175;
+  --bg-base: 0.170 0.0032 175;
+  --fg-base: 0.985 0.0012 175;
   --card: 0.245 0.0064 175;
   --card-foreground: 0.985 0.0012 175;
   --popover: 0.245 0.0064 175;
@@ -2069,6 +2077,83 @@ html[data-gds-streaming] body * {
       oklch(var(--muted)) 100%
     );
     background-size: 200% 100%;
+  }
+}
+
+@layer utilities {
+  /* Colour SCOPES (STUDIO-COLOR.md) — a local colour mode, the same idea as
+     light/dark but scoped to a wrapper and focused on surfaces.
+     Apply `scope-inverse` (etc.) to any element and it becomes a mini themed
+     region: it re-points the SURFACE family of tokens — page background, card,
+     popover, muted, border, and every foreground — at the named pair, so the
+     whole subtree re-tones (a dark band with light text, cards that sit on the
+     band instead of glaring white). Descendants keep using the ordinary tokens
+     (bg-background / text-foreground / bg-card); only what they resolve to
+     changes. It deliberately leaves the ACTION colours (--primary / --accent /
+     --secondary / --destructive) untouched, so a CTA stays branded and vivid
+     on top of the band.
+     `inverse` reads --fg-base / --bg-base (stable literal mirrors of the page
+     ink/paper that the generator emits) so the fg/bg swap can't form a custom-
+     property cycle; the other scopes read the theme's own tokens directly. */
+  .scope-default,
+  .scope-inverse,
+  .scope-brand,
+  .scope-accent,
+  .scope-muted,
+  .scope-card {
+    background-color: oklch(var(--background));
+    color: oklch(var(--foreground));
+  }
+  /* default = identity: paints the page tokens as-is, no overrides. */
+  .scope-inverse {
+    --background: var(--fg-base);
+    --foreground: var(--bg-base);
+    --card: var(--fg-base);
+    --card-foreground: var(--bg-base);
+    --popover: var(--fg-base);
+    --popover-foreground: var(--bg-base);
+    --muted: var(--fg-base);
+    --muted-foreground: var(--bg-base);
+    --border: var(--bg-base);
+    --input: var(--bg-base);
+  }
+  .scope-brand {
+    --background: var(--primary);
+    --foreground: var(--primary-foreground);
+    --card: var(--primary);
+    --card-foreground: var(--primary-foreground);
+    --popover: var(--primary);
+    --popover-foreground: var(--primary-foreground);
+    --muted: var(--primary);
+    --muted-foreground: var(--primary-foreground);
+    --border: var(--primary-foreground);
+    --input: var(--primary-foreground);
+  }
+  .scope-accent {
+    --background: var(--accent);
+    --foreground: var(--accent-foreground);
+    --card: var(--accent);
+    --card-foreground: var(--accent-foreground);
+    --popover: var(--accent);
+    --popover-foreground: var(--accent-foreground);
+    --muted: var(--accent);
+    --muted-foreground: var(--accent-foreground);
+    --border: var(--accent-foreground);
+    --input: var(--accent-foreground);
+  }
+  .scope-muted {
+    --background: var(--muted);
+    --card: var(--muted);
+    --popover: var(--muted);
+    /* foreground + muted-foreground stay the page's: already tuned to read on
+       a muted surface. */
+  }
+  .scope-card {
+    --background: var(--card);
+    --foreground: var(--card-foreground);
+    --popover: var(--card);
+    --popover-foreground: var(--card-foreground);
+    --muted-foreground: var(--card-foreground);
   }
 }
 

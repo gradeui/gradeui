@@ -78,7 +78,7 @@ import type {
   StudioEvent,
   StudioStorage,
 } from "./types";
-import { SHARE_VIEWPORT_PRESETS } from "./types";
+import { SHARE_VIEWPORT_PRESETS, VersionConflictError } from "./types";
 
 /** Public bucket holding user assets (migration 0014). Public so the
  *  permanent getPublicUrl works in screens + shares without signing. */
@@ -864,6 +864,7 @@ export class SupabaseStudioStorage implements StudioStorage {
     projectId: string,
     design: Design,
     position?: number,
+    expectedUpdatedAt?: number,
   ): Promise<void> {
     let pos = position;
     if (pos === undefined) {
@@ -874,9 +875,32 @@ export class SupabaseStudioStorage implements StudioStorage {
         .maybeSingle();
       pos = (data as { position: number } | null)?.position ?? 0;
     }
+    const row = designToRow(projectId, design, pos);
+    if (expectedUpdatedAt != null) {
+      // Guarded write: only lands if the row is still at expectedUpdatedAt.
+      // 0 rows back ⇒ a concurrent edit moved it ⇒ refuse + signal conflict.
+      const { data, error } = await this.supabase
+        .from("designs")
+        .update(row)
+        .eq("id", design.id)
+        .eq("updated_at", expectedUpdatedAt)
+        .select("updated_at");
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        const { data: cur } = await this.supabase
+          .from("designs")
+          .select("updated_at")
+          .eq("id", design.id)
+          .maybeSingle();
+        throw new VersionConflictError(
+          (cur as { updated_at: number } | null)?.updated_at,
+        );
+      }
+      return;
+    }
     const { error } = await this.supabase
       .from("designs")
-      .upsert(designToRow(projectId, design, pos), { onConflict: "id" });
+      .upsert(row, { onConflict: "id" });
     if (error) throw error;
   }
 

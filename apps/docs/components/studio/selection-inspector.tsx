@@ -190,6 +190,15 @@ import {
   setTracking,
   setTextAlign,
   setGap,
+  parseIsFlex,
+  parseFlexDirection,
+  setFlexDirection,
+  parseJustify,
+  setJustify,
+  parseAlignItems,
+  setAlignItems,
+  type JustifyValue,
+  type AlignItemsValue,
   setGridCols,
   setMarginSides,
   setOpacity,
@@ -296,6 +305,12 @@ export function SelectionInspector({
 }: SelectionInspectorProps) {
   const part = selection?.part;
   const componentName = selection?.componentName;
+  // The grid currently drives RAW TAILWIND on className. That's correct for a
+  // plain div, but Stack/Row carry their layout as PROPS (gap="md", align=…),
+  // so pointing the grid at them would shadow those props and misread existing
+  // templates. Until the grid can drive Stack/Row's props directly, keep it to
+  // divs; Stack/Row keep their own (working) contract controls.
+  const isFlexTarget = selection?.tag === "div";
   // Image-like slot → offer the "Replace from library" asset picker.
   // Covers the DS MediaSurface and raw <img>.
   const isImageSlot =
@@ -455,9 +470,15 @@ export function SelectionInspector({
       settableProps.filter(
         (p) =>
           p.group !== "image" &&
-          LAYOUT_PROP_NAMES.has(p.name.toLowerCase()),
+          LAYOUT_PROP_NAMES.has(p.name.toLowerCase()) &&
+          // When the Flex controls own these (div / Stack / Row), don't also
+          // render the duplicate contract selects for align / justify / gap.
+          !(
+            isFlexTarget &&
+            ["gap", "align", "justify"].includes(p.name.toLowerCase())
+          ),
       ),
-    [settableProps, LAYOUT_PROP_NAMES],
+    [settableProps, LAYOUT_PROP_NAMES, isFlexTarget],
   );
   // Props the component's contract tagged `group: "image"` — rendered in
   // the dedicated Image section (with the asset picker + Fill action),
@@ -851,6 +872,17 @@ export function SelectionInspector({
           we render our own header so the section still reads as
           "Layout" rather than nameless rows.
           ============================================================ */}
+      {/* Flex controls — div containers get the familiar direction + gap +
+          justify×align grid before the generic Layout rows. */}
+      {isFlexTarget && selection?.sourceId && appSource && (
+        <FlexControls
+          source={appSource}
+          componentName={componentName ?? selection.tag}
+          sourceId={selection.sourceId}
+          onSourceChange={onSourceChange}
+        />
+      )}
+
       {(layoutProps.length > 0 || selection?.sourceId !== undefined) && (
         <LayoutGroup
           source={appSource}
@@ -867,7 +899,13 @@ export function SelectionInspector({
           // exposes. LayoutGroup hides the Tailwind family for any name
           // it sees here — so e.g. Row's `gap` prop stays canonical.
           manifestPropNames={
-            new Set(settableProps.map((p) => p.name.toLowerCase()))
+            new Set([
+              ...settableProps.map((p) => p.name.toLowerCase()),
+              // FlexControls (div containers) now owns the token Gap, so hide
+              // the duplicate Tailwind gap row in the Layout section below —
+              // one gap, lifted into the Flex section.
+              ...(isFlexTarget ? ["gap"] : []),
+            ])
           }
           // Contract layout props (gap/align/justify) render at the top
           // of the Layout section, above the Tailwind padding/margin
@@ -1848,6 +1886,169 @@ function labelFor(seg: {
  * underlying source when focus isn't here (so a chat regen / undo
  * flows back into the input cleanly).
  */
+/** FlexControls — familiar Figma/Webflow flex controls for a container
+ *  (`<div>` to start): direction toggle, gap, and the justify×align grid.
+ *  Writes Tailwind classes via the same read→set→write path the Layout
+ *  rows use, so it's just another source mutation. */
+function FlexControls({
+  source,
+  componentName,
+  sourceId,
+  onSourceChange,
+}: {
+  source: string;
+  componentName: string;
+  sourceId: string;
+  onSourceChange: (next: string, label?: string) => void;
+}) {
+  const classNow = readClassName(source, componentName, sourceId);
+  const isFlex = parseIsFlex(classNow);
+  const dir = parseFlexDirection(classNow) ?? "row";
+  const justify = parseJustify(classNow) ?? "start";
+  const items = parseAlignItems(classNow) ?? "start";
+  const gap = parseGap(classNow);
+
+  const apply = (fn: (c: string) => string, label: string) => {
+    const next = fn(readClassName(source, componentName, sourceId) ?? "");
+    const src2 = updateComponentProp(
+      source,
+      componentName,
+      "className",
+      next === "" ? null : next,
+      sourceId,
+    );
+    if (src2 !== source) onSourceChange(src2, label);
+  };
+
+  // Visual 3×3 grid of positions. Which CSS axis each VISUAL axis maps to
+  // depends on direction: for a row, horizontal = justify (main) + vertical =
+  // align (cross); for a column those swap — without the transpose below the
+  // grid drives the opposite axis on column flex.
+  const POS = ["start", "center", "end"] as const;
+  const mainIsRow = dir !== "col";
+
+  return (
+    <div className="space-y-2 border-t border-border/60 px-3 py-2.5">
+      <Label className={FIELD_LABEL}>Flex</Label>
+      <div className="flex items-start gap-2">
+        {/* Direction toggle: row / column. */}
+        <div className="flex w-[7.5rem] shrink-0 self-start gap-0.5 rounded-md border border-input p-0.5">
+          {([["row", "→"], ["col", "↓"]] as const).map(([d, glyph]) => (
+            <button
+              key={d}
+              type="button"
+              aria-pressed={isFlex && dir === d}
+              onClick={() =>
+                apply((c) => setFlexDirection(c, d), "Flex direction")
+              }
+              className={cn(
+                "h-6 flex-1 rounded text-xs transition-colors",
+                isFlex && dir === d
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {glyph}
+            </button>
+          ))}
+        </div>
+        {/* 3×3 alignment grid. Single-click sets justify (main) + align
+            (cross), mapped per direction so column flex isn't transposed, and
+            ensures the element IS a flex container so the classes actually
+            take effect. DOUBLE-click TOGGLES distribute (space-between) on the
+            main axis; the active cross-line then reads as bars. */}
+        <div className="grid grid-cols-3 grid-rows-3 rounded-md border border-input p-1">
+          {[0, 1, 2].map((r) =>
+            [0, 1, 2].map((c) => {
+              const cellJustify: JustifyValue = mainIsRow ? POS[c] : POS[r];
+              const cellAlign: AlignItemsValue = mainIsRow ? POS[r] : POS[c];
+              const single =
+                isFlex &&
+                justify !== "between" &&
+                justify === cellJustify &&
+                items === cellAlign;
+              const distributed =
+                isFlex && justify === "between" && items === cellAlign;
+              return (
+                <button
+                  key={`${r}-${c}`}
+                  type="button"
+                  aria-label={`justify ${cellJustify}, align ${cellAlign}`}
+                  title="Double-click to distribute (space-between)"
+                  onClick={() =>
+                    apply(
+                      (cls) =>
+                        setAlignItems(
+                          setJustify(setFlexDirection(cls, dir), cellJustify),
+                          cellAlign,
+                        ),
+                      "Flex alignment",
+                    )
+                  }
+                  onDoubleClick={() =>
+                    apply(
+                      (cls) =>
+                        setJustify(
+                          setAlignItems(setFlexDirection(cls, dir), cellAlign),
+                          // A second double-tap un-distributes back to this
+                          // cell's main-axis position.
+                          justify === "between" ? cellJustify : "between",
+                        ),
+                      justify === "between"
+                        ? "Undo distribute"
+                        : "Distribute (space-between)",
+                    )
+                  }
+                  className="flex h-7 w-7 items-center justify-center rounded-sm hover:bg-muted/60"
+                >
+                  {distributed ? (
+                    // Bar along the main axis — the line of three reads as
+                    // items pushed apart (space-between).
+                    <span
+                      className={cn(
+                        "rounded-full bg-primary",
+                        mainIsRow ? "h-3.5 w-[2px]" : "h-[2px] w-3.5",
+                      )}
+                    />
+                  ) : single ? (
+                    <span className="flex items-end gap-[2px]">
+                      <span className="h-2.5 w-[2px] rounded-full bg-primary" />
+                      <span className="h-3.5 w-[2px] rounded-full bg-primary" />
+                      <span className="h-2 w-[2px] rounded-full bg-primary" />
+                    </span>
+                  ) : (
+                    <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+                  )}
+                </button>
+              );
+            }),
+          )}
+        </div>
+      </div>
+      {/* Gap — token-first (Grade spacing scale). Writes a `gap-N` class that
+          resolves through the theme, so dialing the theme's spacing opens up
+          or closes up the whole page. */}
+      <TokenField
+        kind="gap"
+        label="Gap"
+        bound
+        token={gap === null ? null : String(gap)}
+        tokens={getAreaTokens("gap").map((t) => ({
+          value: t.value,
+          label: t.label,
+          hint: t.hint,
+        }))}
+        placeholder="0"
+        placeholderHint="0px"
+        unitSuffix="px"
+        onPickToken={(t) =>
+          apply((c) => setGap(c, t === null ? null : Number(t)), "Set gap")
+        }
+      />
+    </div>
+  );
+}
+
 /** Rich heading field — the TipTap mini-editor in inspector dress. Seeds
  *  from the heading's current inner JSX and emits inner JSX (with spans) on
  *  edit; the parent splices it back via updateElementInnerJsx. Keyed by

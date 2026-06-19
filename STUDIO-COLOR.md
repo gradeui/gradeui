@@ -57,6 +57,15 @@ We're already halfway there: every `--x` / `--x-foreground` is an implicit pair 
 
 Why it's quick + worth it: pairs are then trivially themeable, swap the pair definitions and every surface re-skins, and the per-surface override still exists for one-offs.
 
+**Shipped — colour SCOPES (2026-06-19).** A pair, in practice, is too thin: the moment a surface needs muted text or a card tone it's a *set* of tokens, not two. So the shipped mechanism is a **scope**, not a `--pair` var layer. A scope is exactly a Figma-style **variable mode** scoped to a wrapper: a `scope-*` class (globals.css) that re-points the surface family — `--background`, `--foreground`, `--card`, `--popover`, `--muted`, `--muted-foreground`, `--border` — for its subtree, while leaving the action colours (`--primary` / `--accent` / `--secondary` / `--destructive`) vivid so a CTA still pops. Descendants keep using the ordinary tokens (`bg-background`, `text-foreground`, `bg-card`); only what they resolve to changes.
+
+- Defaults: `default` / `inverse` / `brand` / `accent` / `muted` / `card`.
+- `brand` / `accent` / `muted` / `card` remap straight from the theme's existing tokens — **no new tokens**.
+- `inverse` (the dark-band / light-text flip) reads two stable literal mirrors the generator emits, `--bg-base` / `--fg-base`, so the fg/bg swap can't form a custom-property cycle. That's the *only* token addition — far lighter than the abandoned 12-var `--pair-*` layer.
+- A section wears one with `<SectionBlock scope="inverse">`, or drop the class on any element: `<div className="scope-brand">`.
+
+Remaining: a per-scope generated **muted-foreground** (today it reuses the on-colour, so it's legible but not dimmed) and user-authored named scopes + the editor.
+
 → Task **#33** (umbrella; absorbs #30 and #32).
 
 ## 3. Surfaces — assign a role, override when needed
@@ -64,7 +73,7 @@ Why it's quick + worth it: pairs are then trivially themeable, swap the pair def
 Surfaces reference a pair via a **thin override layer**: scoped tokens that default to inherit and only diverge when set.
 
 - **Components** (Button first, then Badge/Card): `--gds-button-bg` / `--gds-button-fg` default to `var(--primary)` / `var(--primary-foreground)`; a Buttons sub-section points them at a ramp step (e.g. primary-400 for a lighter button), a brand pop, or a named pair. Global `--primary` never moves — only buttons do. Precedent: the `raised` Button's `--btn-glow`, `data-button-shape`, the `--gds-*` component vars. → Task **#30**.
-- **Sections**: an official `<Section>` carries a **surface pair** (background + foreground), establishing a local colour context for its subtree — it sets `background` + `--foreground` / `--muted-foreground` (+ `color`) so every heading, paragraph and caption inside re-tones automatically. Same "themed island" trick that fixed `ThemePreviewScope`. → Task **#32**.
+- **Sections** *(shipped)*: `<SectionBlock scope="…">` applies a `scope-*` class so the whole subtree re-tones — same "themed island" trick that fixed `ThemePreviewScope`, now generalised to a reusable class. The section paints with the ordinary `bg-background text-foreground` tokens the scope has remapped, rather than ad-hoc inline colours. → Task **#32** (done).
 
 ### Marketing `<Section>` primitive
 

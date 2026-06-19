@@ -142,6 +142,7 @@ import {
   type Team,
   type User as StoredUser,
 } from "@/lib/studio-storage";
+import { VersionConflictError } from "@/lib/studio-storage/types";
 import {
   ProjectsMenu,
   type ProjectSection,
@@ -1099,6 +1100,20 @@ export default function StudioPage() {
           // eslint-disable-next-line no-console
           console.error("[studio] save failed:", err);
           if (!silent) setSaveStatus("error");
+          // …and tell the user, so a failed save never passes unnoticed. A
+          // version conflict (another tab / the AI saved a newer version)
+          // gets its own message; everything else is a generic save error.
+          if (err instanceof VersionConflictError) {
+            toast.error("This page changed elsewhere", {
+              description:
+                "A newer version was saved by another tab or the AI. Reload to pick it up before editing further.",
+            });
+          } else if (!silent) {
+            toast.error("Couldn’t save your changes", {
+              description:
+                "We’ll retry on your next edit; reload if it keeps failing.",
+            });
+          }
         });
     };
 

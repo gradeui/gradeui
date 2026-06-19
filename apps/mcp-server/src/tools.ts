@@ -491,13 +491,15 @@ export function registerGradeTools(
     async ({ projectId }) => {
       await assertProject(sb, env.ownerUserId, projectId);
       const theme = await getTheme(sb, projectId);
+      const versionLine = `version (updatedAt): ${theme.updatedAt} — pass this back to save_theme as expectedUpdatedAt so a concurrent edit isn't overwritten.`;
       if (theme.draft == null && theme.variants == null) {
         return text(
-          `Project ${projectId} has no theme set yet (it uses the default). Use save_theme to set one.`,
+          `Project ${projectId} has no theme set yet (it uses the default). Use save_theme to set one.\n${versionLine}`,
         );
       }
       const parts = [
         `Theme for project ${projectId}:`,
+        versionLine,
         "",
         "draft (ThemeInput):",
         JSON.stringify(theme.draft, null, 2),
@@ -515,7 +517,7 @@ export function registerGradeTools(
     {
       title: "Save a project's theme",
       description:
-        "Set a Grade project's working theme draft from a ThemeInput JSON string. Pass the FULL ThemeInput (e.g. get_theme's draft, edited, re-stringified). The theme is deterministic — Studio regenerates the rendered theme from it on next load. Only the draft is updated; saved variants are untouched.",
+        "Set a Grade project's working theme draft from a ThemeInput JSON string. Pass the FULL ThemeInput (e.g. get_theme's draft, edited, re-stringified). The theme is deterministic — Studio regenerates the rendered theme from it on next load. Only the draft is updated; saved variants are untouched. ALWAYS pass expectedUpdatedAt (the version from get_theme) so a concurrent edit isn't silently overwritten; on a version mismatch the save is refused and you should get_theme again, re-apply your change, and retry.",
       inputSchema: {
         projectId: z.string().describe("Project id (from list_projects)"),
         themeJson: z
@@ -523,9 +525,15 @@ export function registerGradeTools(
           .describe(
             "The full ThemeInput as a JSON string (an object with hues, typography, spacing, etc.).",
           ),
+        expectedUpdatedAt: z
+          .number()
+          .optional()
+          .describe(
+            "The `updatedAt` version returned by get_theme. The write is refused (no overwrite) if the theme changed since.",
+          ),
       },
     },
-    async ({ projectId, themeJson }) => {
+    async ({ projectId, themeJson, expectedUpdatedAt }) => {
       await assertProject(sb, env.ownerUserId, projectId);
       let theme: unknown;
       try {
@@ -540,9 +548,14 @@ export function registerGradeTools(
           "themeJson must be a JSON object (a ThemeInput), not an array or primitive.",
         );
       }
-      await saveTheme(sb, projectId, theme);
+      const result = await saveTheme(sb, projectId, theme, expectedUpdatedAt);
+      if (!result.ok) {
+        return text(
+          `Conflict: the theme for project ${projectId} changed since you loaded it (now version ${result.updatedAt}). NOT overwritten. Call get_theme again, re-apply your change on the latest, and retry with the new expectedUpdatedAt.`,
+        );
+      }
       return text(
-        `Saved theme draft for project ${projectId}. Studio will pick it up on next load.`,
+        `Saved theme draft for project ${projectId} (version ${result.updatedAt}). Studio will pick it up on next load.`,
       );
     },
   );
@@ -703,6 +716,7 @@ export function registerGradeTools(
       const { system, refs, style } = budgetedContext(appSource);
       const body = [
         `Screen: "${screen.name}" — id: ${screen.id} (position ${screen.position})`,
+        `version (updatedAt): ${screen.updatedAt} — pass this back to save_screen as expectedUpdatedAt so a concurrent edit isn't overwritten.`,
         `Component refs in scope (${style}): ${refs.join(", ") || "(none matched)"}`,
         "",
         "Current source (raw JSX):",
@@ -710,7 +724,7 @@ export function registerGradeTools(
         appSource,
         "```",
         "",
-        "Edit this JSX per the user's request, then call `save_screen` with { projectId, screenId, jsx } (same screenId) to update it in place. Grade rules below.",
+        "Edit this JSX per the user's request, then call `save_screen` with { projectId, screenId, jsx, expectedUpdatedAt } (same screenId, the version above) to update it in place. Grade rules below.",
         "",
         "─── GRADE SCREEN CONTEXT ───",
         system,
@@ -725,7 +739,7 @@ export function registerGradeTools(
     {
       title: "Save a Grade screen",
       description:
-        "Validate JSX against the Grade component contracts, then write it into the project. Omit screenId to create a new screen; pass it to update an existing one. If validation finds errors the screen is NOT saved — fix the JSX and call again.",
+        "Validate JSX against the Grade component contracts, then write it into the project. Omit screenId to create a new screen; pass it to update an existing one. If validation finds errors the screen is NOT saved — fix the JSX and call again. When UPDATING, ALWAYS pass expectedUpdatedAt (the version from get_screen) so a concurrent edit isn't silently overwritten; on a version mismatch the save is refused — get_screen again, re-apply your change on the latest, and retry.",
       inputSchema: {
         projectId: z.string().describe("Project id"),
         jsx: z
@@ -743,9 +757,15 @@ export function registerGradeTools(
           .boolean()
           .optional()
           .describe("Make this the project's active screen (default true)"),
+        expectedUpdatedAt: z
+          .number()
+          .optional()
+          .describe(
+            "The `updatedAt` version from get_screen. On UPDATE, the write is refused (no overwrite) if the screen changed since.",
+          ),
       },
     },
-    async ({ projectId, jsx, name, screenId, makeActive }) => {
+    async ({ projectId, jsx, name, screenId, makeActive, expectedUpdatedAt }) => {
       await assertProject(sb, env.ownerUserId, projectId);
 
       // Conformance gate — the deterministic seed of the eval ladder. Block
@@ -769,7 +789,14 @@ export function registerGradeTools(
         name,
         jsx,
         makeActive,
+        expectedUpdatedAt,
       });
+
+      if (result.conflict) {
+        return errorText(
+          `Conflict: screen ${result.id} changed since you loaded it (now version ${result.updatedAt}). NOT overwritten. Call get_screen again, re-apply your edit on the latest source, and retry save_screen with the new expectedUpdatedAt.`,
+        );
+      }
 
       const warnCount = report.violations.length;
       const warnNote =

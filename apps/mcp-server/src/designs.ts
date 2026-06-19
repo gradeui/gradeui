@@ -135,6 +135,9 @@ export interface ProjectTheme {
   draft: unknown | null;
   /** Saved named variants, if any. */
   variants: unknown | null;
+  /** The project row's current `updated_at` — its optimistic-concurrency
+   *  version. Pass it back to save_theme to guard against overwrites. */
+  updatedAt: number;
 }
 
 /** Read a project's theme: the working draft ThemeInput plus any saved
@@ -146,7 +149,7 @@ export async function getTheme(
 ): Promise<ProjectTheme> {
   const { data, error } = await sb
     .from("projects")
-    .select("theme_draft_json, theme_variants_json")
+    .select("theme_draft_json, theme_variants_json, updated_at")
     .eq("id", projectId)
     .maybeSingle();
   if (error) throw error;
@@ -165,24 +168,54 @@ export async function getTheme(
   return {
     draft: parse(data.theme_draft_json),
     variants: parse(data.theme_variants_json),
+    updatedAt: data.updated_at as number,
   };
+}
+
+export interface SaveThemeResult {
+  /** false when the write was refused (the row moved on since
+   *  expectedUpdatedAt) — reload, don't retry blindly. */
+  ok: boolean;
+  conflict?: boolean;
+  /** The row's current `updatedAt`: the value just written on success, or
+   *  the value that beat us on conflict. */
+  updatedAt?: number;
 }
 
 /** Write a project's working theme draft (a ThemeInput object). Stored as
  *  a JSON STRING to match the Studio adapter's column shape, and bumps
  *  updated_at so the project re-sorts and Studio reloads the new theme.
- *  Only the draft is touched — saved variants are left alone. */
+ *  Only the draft is touched — saved variants are left alone. When
+ *  `expectedUpdatedAt` is given, the write is guarded (race-free) and
+ *  refused on a version mismatch rather than overwriting. */
 export async function saveTheme(
   sb: SupabaseClient,
   projectId: string,
   theme: unknown,
-): Promise<void> {
+  expectedUpdatedAt?: number,
+): Promise<SaveThemeResult> {
   const now = nowMs();
-  const { error } = await sb
+  let q = sb
     .from("projects")
     .update({ theme_draft_json: JSON.stringify(theme), updated_at: now })
     .eq("id", projectId);
+  if (expectedUpdatedAt != null) q = q.eq("updated_at", expectedUpdatedAt);
+  const { data, error } = await q.select("id");
   if (error) throw error;
+  if (expectedUpdatedAt != null && (!data || data.length === 0)) {
+    // Version moved on (or the project vanished) — surface the live value.
+    const { data: cur } = await sb
+      .from("projects")
+      .select("updated_at")
+      .eq("id", projectId)
+      .maybeSingle();
+    return {
+      ok: false,
+      conflict: true,
+      updatedAt: cur?.updated_at as number | undefined,
+    };
+  }
+  return { ok: true, updatedAt: now };
 }
 
 // ─── Screens (the `designs` table) ─────────────────────────────────────
@@ -260,12 +293,23 @@ export interface SaveScreenInput {
   /** Point `projects.active_design_id` at this screen after saving so it's
    *  the one Studio opens. Defaults true. */
   makeActive?: boolean;
+  /** Optimistic-concurrency token: the `updatedAt` the caller loaded (from
+   *  get_screen). When provided on an UPDATE, the write only lands if the
+   *  row hasn't moved on since — otherwise it's a conflict and we DON'T
+   *  overwrite. Omit for a brand-new screen or to force an unguarded write. */
+  expectedUpdatedAt?: number;
 }
 
 export interface SaveScreenResult {
   id: string;
   position: number;
   created: boolean;
+  /** Set when the write was refused because the row changed since
+   *  `expectedUpdatedAt` — the caller should reload, not retry blindly. */
+  conflict?: boolean;
+  /** The row's current `updatedAt` (its live version) — on success the value
+   *  just written, on conflict the value that beat us. */
+  updatedAt?: number;
 }
 
 /**
@@ -277,10 +321,27 @@ export async function saveScreen(
   sb: SupabaseClient,
   input: SaveScreenInput,
 ): Promise<SaveScreenResult> {
-  const { projectId, jsx, makeActive = true } = input;
+  const { projectId, jsx, makeActive = true, expectedUpdatedAt } = input;
   const id = input.screenId ?? mintScreenId();
   const existing = await getScreen(sb, projectId, id);
   const now = nowMs();
+
+  // Optimistic concurrency. The early check gives a clean conflict; the
+  // `.eq("updated_at", …)` on the UPDATE below is the RACE-FREE guard (it's
+  // the database, not us, that compares-and-swaps).
+  if (
+    expectedUpdatedAt != null &&
+    existing &&
+    existing.updatedAt !== expectedUpdatedAt
+  ) {
+    return {
+      id,
+      position: existing.position,
+      created: false,
+      conflict: true,
+      updatedAt: existing.updatedAt,
+    };
+  }
 
   const createdAt = existing?.createdAt ?? now;
   const position =
@@ -298,10 +359,31 @@ export async function saveScreen(
     updated_at: now,
   };
 
-  const { error } = await sb
-    .from("designs")
-    .upsert(row, { onConflict: "id" });
-  if (error) throw error;
+  if (existing && expectedUpdatedAt != null) {
+    // Guarded update: only lands if the row is still at expectedUpdatedAt.
+    const { data, error } = await sb
+      .from("designs")
+      .update(row)
+      .eq("id", id)
+      .eq("updated_at", expectedUpdatedAt)
+      .select("id");
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      const fresh = await getScreen(sb, projectId, id);
+      return {
+        id,
+        position,
+        created: false,
+        conflict: true,
+        updatedAt: fresh?.updatedAt,
+      };
+    }
+  } else {
+    const { error } = await sb
+      .from("designs")
+      .upsert(row, { onConflict: "id" });
+    if (error) throw error;
+  }
 
   if (makeActive) {
     const { error: projErr } = await sb
@@ -311,5 +393,5 @@ export async function saveScreen(
     if (projErr) throw projErr;
   }
 
-  return { id, position, created: !existing };
+  return { id, position, created: !existing, updatedAt: now };
 }

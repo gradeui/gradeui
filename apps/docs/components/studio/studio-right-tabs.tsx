@@ -650,10 +650,23 @@ function ComponentsGallery() {
               <Badge>Default</Badge>
               <Badge variant="secondary">Secondary</Badge>
               <Badge variant="outline">Outline</Badge>
+            </div>
+            {/* Semantic — solid. Track --success / --warning / --info /
+                --highlight / --destructive, so they re-tone with the theme. */}
+            <div className="flex flex-wrap gap-1.5">
+              <Badge variant="success">Success</Badge>
+              <Badge variant="warning">Warning</Badge>
+              <Badge variant="destructive">Destructive</Badge>
+              <Badge variant="info">Info</Badge>
+              <Badge variant="highlight">Highlight</Badge>
+            </div>
+            {/* Semantic — soft (deep text on a tinted surface) */}
+            <div className="flex flex-wrap gap-1.5">
               <Badge variant="success-soft">Success</Badge>
               <Badge variant="warning-soft">Warning</Badge>
               <Badge variant="destructive-soft">Destructive</Badge>
               <Badge variant="info-soft">Info</Badge>
+              <Badge variant="highlight-soft">Highlight</Badge>
             </div>
           </GalleryGroup>
 
@@ -709,6 +722,14 @@ function ComponentsGallery() {
             <Callout variant="warning">
               <CalloutTitle>Heads up</CalloutTitle>
               <CalloutDescription>Double-check before publishing.</CalloutDescription>
+            </Callout>
+            <Callout variant="info">
+              <CalloutTitle>Good to know</CalloutTitle>
+              <CalloutDescription>Drafts autosave every few seconds.</CalloutDescription>
+            </Callout>
+            <Callout variant="destructive">
+              <CalloutTitle>Something went wrong</CalloutTitle>
+              <CalloutDescription>We couldn’t reach the server.</CalloutDescription>
             </Callout>
             <div className="space-y-1.5 pt-1">
               <UiLabel>Progress</UiLabel>

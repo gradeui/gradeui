@@ -15,35 +15,38 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
-        // Semantic solid variants
+        // Semantic solid variants — role colour at full strength. These track
+        // the theme's --success / --warning / --info / --highlight tokens, so a
+        // semantic-colour edit re-tones them (same source the Callout uses).
         highlight:
-          "border-transparent bg-gds-yellow-400 text-gds-gray-900 hover:bg-gds-yellow-500",
+          "border-transparent bg-highlight text-gds-gray-900 hover:bg-highlight/90",
         success:
-          "border-transparent bg-gds-green-500 text-gds-gray-900 hover:bg-gds-green-600",
+          "border-transparent bg-success text-gds-gray-900 hover:bg-success/90",
         warning:
-          "border-transparent bg-orange-500 text-white hover:bg-orange-600",
+          "border-transparent bg-warning text-white hover:bg-warning/90",
         info:
-          "border-transparent bg-blue-500 text-white hover:bg-blue-600",
-        // Semantic soft variants — colored text on tinted background
+          "border-transparent bg-info text-white hover:bg-info/90",
+        // Semantic soft variants — deep on-surface text over a tinted surface.
+        // -soft / -deep re-voice per light/dark, so no dark: overrides needed.
         "success-soft":
-          "border-gds-green-500/20 bg-gds-green-500/10 text-gds-green-600 dark:text-gds-green-400",
+          "border-success/30 bg-success-soft text-success-deep",
         "warning-soft":
-          "border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400",
+          "border-warning/30 bg-warning-soft text-warning-deep",
         "destructive-soft":
-          "border-destructive/20 bg-destructive/10 text-destructive dark:text-red-400",
+          "border-destructive/30 bg-destructive-soft text-destructive-deep",
         "info-soft":
-          "border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400",
+          "border-info/30 bg-info-soft text-info-deep",
         "highlight-soft":
-          "border-gds-yellow-500/20 bg-gds-yellow-400/10 text-gds-yellow-600 dark:text-gds-yellow-400",
-        // Outline variants - just border and text, no background
+          "border-highlight/30 bg-highlight-soft text-highlight-deep",
+        // Outline variants - border + deep text, no fill
         "success-outline":
-          "border-gds-green-500/50 bg-transparent text-gds-green-600 dark:text-gds-green-400",
+          "border-success/50 bg-transparent text-success-deep",
         "warning-outline":
-          "border-orange-500/50 bg-transparent text-orange-600 dark:text-orange-400",
+          "border-warning/50 bg-transparent text-warning-deep",
         "destructive-outline":
-          "border-destructive/50 bg-transparent text-destructive dark:text-red-400",
+          "border-destructive/50 bg-transparent text-destructive-deep",
         "info-outline":
-          "border-blue-500/50 bg-transparent text-blue-600 dark:text-blue-400",
+          "border-info/50 bg-transparent text-info-deep",
       },
       rounded: {
         default: "rounded-md",

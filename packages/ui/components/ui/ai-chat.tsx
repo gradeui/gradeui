@@ -334,7 +334,7 @@ function StepIcon({ status }: { status: ChatMessageStepStatus }) {
         <Loader2 className="w-3 h-3 text-primary animate-spin shrink-0" />
       );
     case "error":
-      return <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />;
+      return <AlertCircle className="w-3 h-3 text-destructive shrink-0" />;
     case "pending":
     default:
       return (

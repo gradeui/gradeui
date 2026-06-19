@@ -4,6 +4,22 @@ import { cn } from "@/lib/utils";
 import { Button, type buttonVariants } from "@/components/ui/button";
 import { SURFACE_CLASS, type Surface } from "@/lib/surface";
 
+/** Named colour SCOPES (STUDIO-COLOR.md). A `scope` makes the section a local
+ *  colour mode — like light/dark, but scoped to this element and focused on
+ *  surfaces. It applies the matching `scope-*` class, which re-points the
+ *  surface tokens (--background / --card / --muted / --foreground / --border)
+ *  at the named pair, so every descendant re-tones while still using the
+ *  ordinary tokens. `inverse` is the dark-band / light-text marketing scope. */
+export const SECTION_SCOPES = [
+  "default",
+  "inverse",
+  "brand",
+  "accent",
+  "muted",
+  "card",
+] as const;
+export type SectionScope = (typeof SECTION_SCOPES)[number];
+
 const sectionBlockVariants = cva("relative w-full", {
   variants: {
     padding: {
@@ -19,6 +35,9 @@ const sectionBlockVariants = cva("relative w-full", {
       card: "bg-card border-y",
       primary: "bg-primary text-primary-foreground",
       gradient: "bg-gradient-to-br from-primary/10 via-accent/5 to-background",
+      // Selected by the `scope` prop: paints with the ordinary semantic tokens,
+      // which the `scope-*` class on the same element has remapped.
+      scoped: "bg-background text-foreground",
     },
     fullBleed: {
       true: "w-full",
@@ -106,6 +125,10 @@ export interface SectionBlockProps
    */
   surface?: Surface;
 
+  /** Make the section a named colour scope (a local surface mode): applies the
+   *  `scope-*` class so the whole subtree re-tones. Overrides `background`. */
+  scope?: SectionScope;
+
   // Header content
   title?: string;
   subtitle?: string;
@@ -134,6 +157,7 @@ const SectionBlock = React.forwardRef<HTMLElement, SectionBlockProps>(
       container,
       alignment,
       surface = "solid",
+      scope,
       title,
       titleSize,
       subtitle,
@@ -163,7 +187,16 @@ const SectionBlock = React.forwardRef<HTMLElement, SectionBlockProps>(
         ref={ref as any}
         data-surface={surface}
         className={cn(
-          sectionBlockVariants({ padding, background, fullBleed }),
+          sectionBlockVariants({
+            padding,
+            background: scope ? "scoped" : background,
+            fullBleed,
+          }),
+          // `scope-*` is a colour scope (a local mode, like light/dark but
+          // scoped to this element): it remaps --background / --foreground /
+          // --card / --muted / --border for this subtree, so descendants keep
+          // using the ordinary tokens and re-tone automatically.
+          scope && `scope-${scope}`,
           SURFACE_CLASS[surface],
           className
         )}

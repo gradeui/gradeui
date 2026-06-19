@@ -30,6 +30,12 @@ function colorVars(c: GeneratedColorsMode): Record<string, string> {
   return {
     "--background": c.background,
     "--foreground": c.foreground,
+    // Stable literal mirrors of the page ink/paper. Identical to
+    // --background/--foreground but never overridden by a `scope-*` class, so
+    // the `inverse` scope can swap fg/bg without forming a custom-property
+    // cycle (globals.css .scope-inverse). re-voiced per light/dark mode.
+    "--bg-base": c.background,
+    "--fg-base": c.foreground,
     "--card": c.card,
     "--card-foreground": c.cardForeground,
     "--popover": c.popover,
@@ -67,6 +73,17 @@ function colorVars(c: GeneratedColorsMode): Record<string, string> {
     "--highlight-deep": c.highlightDeep,
   };
 }
+
+/*
+ * Colour SCOPES (STUDIO-COLOR.md) are not emitted here as tokens. A scope is a
+ * local colour mode applied with a `scope-*` class (globals.css); each scope is
+ * a scoped *set* of token overrides that simply re-point the existing semantic
+ * vars (--foreground / --primary / --muted / …) for its subtree. There is no
+ * separate `--pair-*` layer: the theme's own tokens are the source. A future
+ * generator pass (#33) can emit per-scope tokens with a properly toned
+ * muted-foreground; until then the scope classes remap the tokens we already
+ * have.
+ */
 
 /**
  * Produce every CSS custom property a given GeneratedTheme + mode implies,
