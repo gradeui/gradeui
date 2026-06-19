@@ -318,9 +318,12 @@ export function SplitSection({
           {bullets && bullets.length > 0 && <Bullets items={bullets} />}
         </div>
 
-        {/* Media */}
+        {/* Media — min-w-0 lets the grid item shrink below its content
+            width so a wide child (e.g. CodeFeature's horizontally
+            scrolling <pre>) scrolls internally instead of overflowing
+            the viewport on mobile. */}
         {children != null && (
-          <div className={cn(mediaLeft && "lg:order-1")}>{children}</div>
+          <div className={cn("min-w-0", mediaLeft && "lg:order-1")}>{children}</div>
         )}
       </div>
     </section>

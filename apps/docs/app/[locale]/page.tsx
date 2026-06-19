@@ -76,7 +76,7 @@ export default function Home() {
         <LiveEmbed
           src="/e/998ad8b7-c056-40af-b328-ba46b4cba557?w=1280&h=720&mode=dark&motion=on&tweak=1&themes=calm,neon-brutalist,candy-pop,forest-terminal&tweakopen=1"
           title="Grade Studio live render"
-          frameClassName="aspect-[16/9]"
+          frameClassName="aspect-[4/5] sm:aspect-[16/9]"
         />
       </ProductShowcase>
 
@@ -149,7 +149,7 @@ export function BrandPops() {
           src="/e/dc108b3d-2023-47b5-898d-f21933fb42e6?w=1280&h=800&mode=light&motion=on&pad=24&radius=8&bg=%233f3f46&viewports=desktop,tablet,mobile&viewportsauto=1&shield=1"
           title="Pocket Films live render"
           colorScheme="light"
-          frameClassName="aspect-[16/9]"
+          frameClassName="aspect-[4/5] sm:aspect-[16/9]"
         />
       </ProductShowcase>
 
