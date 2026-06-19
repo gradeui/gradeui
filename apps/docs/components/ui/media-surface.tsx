@@ -145,6 +145,21 @@ const aspectClass: Record<MediaAspect, string> = {
   auto: "",
 };
 
+// CSS aspect-ratio values, applied as an INLINE style when `aspect` is set
+// EXPLICITLY (not derived from the hint). Inline beats a className utility, so
+// an explicit `aspect` prop wins over a baked-in `className="aspect-video"` —
+// otherwise setting the aspect in the inspector did nothing on slots the
+// scaffolds had hard-coded. Derived (hint-default) aspect still rides the
+// class so a deliberate `className="aspect-[2/1]"` can override it.
+const aspectRatioStyle: Record<MediaAspect, string> = {
+  video: "16 / 9",
+  standard: "4 / 3",
+  square: "1 / 1",
+  portrait: "3 / 4",
+  wide: "21 / 9",
+  auto: "auto",
+};
+
 const radiusVar: Record<MediaRadius, string> = {
   none: "0",
   sm: "var(--radius, 0.25rem)",
@@ -547,6 +562,8 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
     // for the hint (album → square, landscape → wide, etc.). Falls through
     // to "video" via HINT_DEFAULT_ASPECT if hint is unset.
     const resolvedAspect: MediaAspect = aspect ?? HINT_DEFAULT_ASPECT[hint];
+    // Explicit prop → win over any className aspect via inline aspect-ratio.
+    const aspectExplicit = aspect != null;
 
     // Visibility observer (existing behaviour — left in place).
     React.useEffect(() => {
@@ -652,11 +669,16 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
           // The surface is transparent under custom `children` (e.g. a
           // Three.js canvas), which is the intended behaviour.
           "gds-media-surface relative w-full overflow-hidden",
-          aspectClass[resolvedAspect],
+          // Derived aspect rides the class (a deliberate className aspect can
+          // still override it); an EXPLICIT aspect prop goes inline below.
+          !aspectExplicit && aspectClass[resolvedAspect],
           border && "border border-border",
           className,
         )}
         style={{
+          ...(aspectExplicit
+            ? { aspectRatio: aspectRatioStyle[resolvedAspect] }
+            : {}),
           borderRadius: `var(--gds-media-radius, ${radiusVar[radius]})`,
           ...style,
         }}

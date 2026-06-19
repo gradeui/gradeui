@@ -127,6 +127,64 @@ export async function assertProject(
   }
 }
 
+// ─── Theme (on the `projects` row) ─────────────────────────────────────
+
+export interface ProjectTheme {
+  /** The working ThemeInput — deterministic; Studio's generateTheme()
+   *  reproduces the rendered theme from this. null when never edited. */
+  draft: unknown | null;
+  /** Saved named variants, if any. */
+  variants: unknown | null;
+}
+
+/** Read a project's theme: the working draft ThemeInput plus any saved
+ *  variants. The columns hold STRINGIFIED JSON (matching the Studio
+ *  adapter, supabase-adapter.ts), so we parse before returning. */
+export async function getTheme(
+  sb: SupabaseClient,
+  projectId: string,
+): Promise<ProjectTheme> {
+  const { data, error } = await sb
+    .from("projects")
+    .select("theme_draft_json, theme_variants_json")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error(`Project ${projectId} not found.`);
+  const parse = (s: unknown): unknown | null => {
+    if (s == null) return null;
+    if (typeof s !== "string") return s; // tolerate a JSONB column too
+    try {
+      return JSON.parse(s);
+    } catch {
+      throw new Error(
+        `Project ${projectId} theme JSON is malformed and could not be parsed.`,
+      );
+    }
+  };
+  return {
+    draft: parse(data.theme_draft_json),
+    variants: parse(data.theme_variants_json),
+  };
+}
+
+/** Write a project's working theme draft (a ThemeInput object). Stored as
+ *  a JSON STRING to match the Studio adapter's column shape, and bumps
+ *  updated_at so the project re-sorts and Studio reloads the new theme.
+ *  Only the draft is touched — saved variants are left alone. */
+export async function saveTheme(
+  sb: SupabaseClient,
+  projectId: string,
+  theme: unknown,
+): Promise<void> {
+  const now = nowMs();
+  const { error } = await sb
+    .from("projects")
+    .update({ theme_draft_json: JSON.stringify(theme), updated_at: now })
+    .eq("id", projectId);
+  if (error) throw error;
+}
+
 // ─── Screens (the `designs` table) ─────────────────────────────────────
 
 /** List a project's live screens in display order. */

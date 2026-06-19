@@ -195,6 +195,7 @@ export const FONTS = {
   // Sans
   geist: "var(--font-geist), system-ui, sans-serif",
   inter: "var(--font-inter), system-ui, sans-serif",
+  interTight: "var(--font-inter-tight), system-ui, sans-serif",
   manrope: "var(--font-manrope), system-ui, sans-serif",
   figtree: "var(--font-figtree), system-ui, sans-serif",
   dmSans: "var(--font-dm-sans), system-ui, sans-serif",
@@ -223,6 +224,7 @@ export type FontKey = keyof typeof FONTS;
 export const FONT_LABELS: Record<FontKey, string> = {
   geist: "Geist",
   inter: "Inter",
+  interTight: "Inter Tight",
   manrope: "Manrope",
   figtree: "Figtree",
   dmSans: "DM Sans",
@@ -246,6 +248,7 @@ export const FONT_LABELS: Record<FontKey, string> = {
 export const FONT_CATEGORY: Record<FontKey, "sans" | "serif" | "mono"> = {
   geist: "sans",
   inter: "sans",
+  interTight: "sans",
   manrope: "sans",
   figtree: "sans",
   dmSans: "sans",
@@ -394,7 +397,7 @@ export interface ThemeVariant {
 
 /** A theme font role — references the families defined on `typography`
  *  (display / body / mono). Italic is deferred (STUDIO-TYPOGRAPHY.md TY3). */
-export type FontRole = "display" | "body" | "mono";
+export type FontRole = "display" | "body" | "mono" | "accent";
 
 /** A single typographic property set. All optional: on a base style, unset
  *  falls back to the generator default; on a step, unset inherits from the
@@ -506,6 +509,10 @@ export interface ThemeInput {
     display: FontSelection;
     body: FontSelection;
     mono: FontSelection;
+    /** Supplementary "accent" face — eyebrows, pull quotes, stylised
+     *  display bits. Optional; defaults to Instrument Serif. Overridable
+     *  from the picker like any other role. */
+    accent?: FontSelection;
     scale: TypeScale;
     /** Override heading weight. Defaults to 600 for sans, 500 for serif. */
     headingWeight?: number;
@@ -615,6 +622,9 @@ export interface GeneratedTypography {
   fontSans: string;
   fontMono: string;
   fontDisplay: string;
+  /** Resolved accent family (supplementary display face). Defaults to
+   *  Instrument Serif when the theme doesn't set one. */
+  fontAccent: string;
   /** Custom @font-face sources carried through from the input. Whoever
    *  applies the theme (apply.ts, Fast Frame, Sandpack, embed) is
    *  responsible for injecting these — the font-family vars above already

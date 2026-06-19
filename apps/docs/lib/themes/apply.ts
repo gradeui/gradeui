@@ -109,6 +109,7 @@ export function themeToCSSVars(
     "--font-sans": theme.typography.fontSans,
     "--font-mono": theme.typography.fontMono,
     "--font-display": theme.typography.fontDisplay,
+    "--font-accent": theme.typography.fontAccent,
     "--font-heading-weight": String(theme.typography.headingWeight),
     "--font-body-weight": String(theme.typography.bodyWeight),
     "--font-heading-tracking": theme.typography.headingTracking,

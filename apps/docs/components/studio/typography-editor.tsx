@@ -36,7 +36,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TokenField } from "./token-field";
 import { GDS_MODULAR_SCALES } from "@gradeui/core";
+import {
+  TRACKING_SCALE,
+  TRACKING_HINT,
+  type TrackingValue,
+} from "@/lib/tailwind-classes";
 import { customFontFamily } from "@/lib/themes";
 import { getStudioStorage } from "@/lib/studio-storage";
 import { assetToFontFace } from "@/lib/custom-fonts";
@@ -64,12 +70,14 @@ const BASE_STYLES: { key: TypeBaseStyleKey; label: string }[] = [
   { key: "body", label: "Body" },
   { key: "header", label: "Header" },
   { key: "mono", label: "Mono" },
+  { key: "accent", label: "Accent" },
 ];
 
 const BASE_LABEL: Record<TypeBaseStyleKey, string> = {
   body: "Body",
   header: "Header",
   mono: "Mono",
+  accent: "Accent",
   prose: "Prose",
 };
 
@@ -114,23 +122,26 @@ const DEFAULT_WEIGHT: Record<TypeBaseStyleKey, number> = {
   body: 400,
   header: 600,
   mono: 400,
+  accent: 400,
   prose: 400,
 };
 const DEFAULT_FONT: Record<TypeBaseStyleKey, FontRole> = {
   body: "body",
   header: "display",
   mono: "mono",
+  accent: "accent",
   prose: "body",
 };
 
 // Which typography font field each base style edits (its actual family).
 const BASE_FONT_FIELD: Record<
-  "body" | "header" | "mono",
-  "body" | "display" | "mono"
+  "body" | "header" | "mono" | "accent",
+  "body" | "display" | "mono" | "accent"
 > = {
   body: "body",
   header: "display",
   mono: "mono",
+  accent: "accent",
 };
 
 // ── Small field row ──────────────────────────────────────────────────────
@@ -156,6 +167,73 @@ function TextField({
         className="h-7 w-full rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
       />
     </div>
+  );
+}
+
+// Em value → tracking token, so a stored letter-spacing re-displays as its
+// named token (tight, normal, …) in the picker.
+const LS_HINT_TO_TOKEN = Object.fromEntries(
+  TRACKING_SCALE.map((t) => [TRACKING_HINT[t], t]),
+) as Record<string, TrackingValue>;
+
+/**
+ * Letter-spacing field — TOKEN-FIRST via the shared `TokenField` (the same
+ * control the on-screen inspector uses). The value reads as a bound token
+ * chip — `tracking-tight · -0.025em` — and detaches to a raw em input for a
+ * custom value. The theme still stores the resolved em (letter-spacing is
+ * owned by the theme, never a `tracking-*` utility on output); a stored em
+ * that matches a token re-displays as that token.
+ */
+const LS_TOKENS = TRACKING_SCALE.map((t) => ({
+  value: t,
+  label: `tracking-${t}`,
+  hint: TRACKING_HINT[t],
+}));
+
+function LetterSpacingField({
+  value,
+  onChange,
+}: {
+  /** "" = inherit / unset. */
+  value: string;
+  onChange: (v: string | undefined) => void;
+}) {
+  const tokenMatch = value ? LS_HINT_TO_TOKEN[value] ?? null : null;
+  // Detached = a raw em that isn't a token. A bare custom value reads as
+  // detached on its own; `detached` only tracks an explicit unlink off a
+  // matching token.
+  const [detached, setDetached] = React.useState(false);
+  const bound = !detached && (value === "" || tokenMatch != null);
+  return (
+    <TokenField
+      kind="letter spacing"
+      label="Letter spacing"
+      bound={bound}
+      token={bound ? tokenMatch : null}
+      tokens={LS_TOKENS}
+      placeholder="Inherit"
+      currentRaw={bound ? undefined : value}
+      onPickToken={(t) => {
+        setDetached(false);
+        onChange(t == null ? undefined : TRACKING_HINT[t as TrackingValue]);
+      }}
+      onDetach={() => setDetached(true)}
+      onRebind={() => {
+        setDetached(false);
+        onChange(TRACKING_HINT.normal);
+      }}
+      renderRaw={(attach) => (
+        <div className="flex items-center gap-1">
+          <input
+            value={value}
+            placeholder="-0.01em"
+            onChange={(e) => onChange(e.target.value || undefined)}
+            className="h-7 flex-1 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          {attach}
+        </div>
+      )}
+    />
   );
 }
 
@@ -210,7 +288,10 @@ export function TypographyEditor() {
       styles[key] = { ...styles[key], ...patch };
     });
 
-  const setBaseFont = (field: "body" | "display" | "mono", v: FontSelection) =>
+  const setBaseFont = (
+    field: "body" | "display" | "mono" | "accent",
+    v: FontSelection,
+  ) =>
     builder.patch((d: ThemeInput) => {
       d.typography[field] = v;
       // Copy the chosen custom face onto the draft so the theme carries it
@@ -311,7 +392,9 @@ export function TypographyEditor() {
       ? generated.typography.fontDisplay
       : role === "mono"
         ? generated.typography.fontMono
-        : generated.typography.fontSans;
+        : role === "accent"
+          ? generated.typography.fontAccent
+          : generated.typography.fontSans;
 
   // Round step coarsens with the scale: at Augmented fourth (1.414) and up the
   // ladder snaps to the nearest 4px, otherwise the nearest 2px.
@@ -333,9 +416,14 @@ export function TypographyEditor() {
         <div className="space-y-3">
           {BASE_STYLES.map(({ key, label }) => {
             const b = typo.baseStyles?.[key] ?? {};
-            const fontField = BASE_FONT_FIELD[key as "body" | "header" | "mono"];
+            const fontField =
+              BASE_FONT_FIELD[key as "body" | "header" | "mono" | "accent"];
             const fontValue =
-              key === "header" ? typo.display || typo.body : typo[fontField];
+              key === "header"
+                ? typo.display || typo.body
+                : key === "accent"
+                  ? typo.accent ?? "instrumentSerif"
+                  : typo[fontField];
             return (
               <div
                 key={key}
@@ -376,13 +464,9 @@ export function TypographyEditor() {
                     placeholder="1.4"
                     onChange={(v) => patchBase(key, { lineHeight: v || undefined })}
                   />
-                  <TextField
-                    label="Letter spacing"
+                  <LetterSpacingField
                     value={b.letterSpacing ?? ""}
-                    placeholder="0"
-                    onChange={(v) =>
-                      patchBase(key, { letterSpacing: v || undefined })
-                    }
+                    onChange={(v) => patchBase(key, { letterSpacing: v })}
                   />
                 </div>
                 <div className="space-y-1">
@@ -550,12 +634,10 @@ export function TypographyEditor() {
                         patchStep(meta.key, { lineHeight: v || undefined })
                       }
                     />
-                    <TextField
-                      label="Letter spacing"
+                    <LetterSpacingField
                       value={r.step.letterSpacing ?? ""}
-                      placeholder={r.letterSpacing ?? "inherit"}
                       onChange={(v) =>
-                        patchStep(meta.key, { letterSpacing: v || undefined })
+                        patchStep(meta.key, { letterSpacing: v })
                       }
                     />
                   </div>

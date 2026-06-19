@@ -48,109 +48,16 @@
 @theme {
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1rem;
+  /* Accent font role — gives a `font-accent` utility that references the
+     runtime --font-accent var (set by the theme generator / apply.ts).
+     Plain @theme (not inline) so the utility stays var-referencing and
+     re-skins live; falls back to the display/sans stack until a theme
+     sets one. */
+  --font-accent: var(--font-display, var(--font-sans));
 }
 
 @theme inline reference {
   /* -- Brand color ramps — values live in @gradeui/core as --gds-* vars. -- */
-  --color-rds-green: var(--gds-green);
-  --color-rds-green-50: var(--gds-green-50);
-  --color-rds-green-100: var(--gds-green-100);
-  --color-rds-green-200: var(--gds-green-200);
-  --color-rds-green-300: var(--gds-green-300);
-  --color-rds-green-400: var(--gds-green-400);
-  --color-rds-green-500: var(--gds-green-500);
-  --color-rds-green-600: var(--gds-green-600);
-  --color-rds-green-700: var(--gds-green-700);
-  --color-rds-green-800: var(--gds-green-800);
-  --color-rds-green-900: var(--gds-green-900);
-  --color-rds-green-950: var(--gds-green-950);
-  --color-rds-yellow: var(--gds-yellow);
-  --color-rds-yellow-50: var(--gds-yellow-50);
-  --color-rds-yellow-100: var(--gds-yellow-100);
-  --color-rds-yellow-200: var(--gds-yellow-200);
-  --color-rds-yellow-300: var(--gds-yellow-300);
-  --color-rds-yellow-400: var(--gds-yellow-400);
-  --color-rds-yellow-500: var(--gds-yellow-500);
-  --color-rds-yellow-600: var(--gds-yellow-600);
-  --color-rds-yellow-700: var(--gds-yellow-700);
-  --color-rds-yellow-800: var(--gds-yellow-800);
-  --color-rds-yellow-900: var(--gds-yellow-900);
-  --color-rds-orange: var(--gds-orange);
-  --color-rds-orange-50: var(--gds-orange-50);
-  --color-rds-orange-100: var(--gds-orange-100);
-  --color-rds-orange-200: var(--gds-orange-200);
-  --color-rds-orange-300: var(--gds-orange-300);
-  --color-rds-orange-400: var(--gds-orange-400);
-  --color-rds-orange-500: var(--gds-orange-500);
-  --color-rds-orange-600: var(--gds-orange-600);
-  --color-rds-orange-700: var(--gds-orange-700);
-  --color-rds-orange-800: var(--gds-orange-800);
-  --color-rds-orange-900: var(--gds-orange-900);
-  --color-rds-red: var(--gds-red);
-  --color-rds-red-50: var(--gds-red-50);
-  --color-rds-red-100: var(--gds-red-100);
-  --color-rds-red-200: var(--gds-red-200);
-  --color-rds-red-300: var(--gds-red-300);
-  --color-rds-red-400: var(--gds-red-400);
-  --color-rds-red-500: var(--gds-red-500);
-  --color-rds-red-600: var(--gds-red-600);
-  --color-rds-red-700: var(--gds-red-700);
-  --color-rds-red-800: var(--gds-red-800);
-  --color-rds-red-900: var(--gds-red-900);
-  --color-rds-teal: var(--gds-teal);
-  --color-rds-teal-50: var(--gds-teal-50);
-  --color-rds-teal-100: var(--gds-teal-100);
-  --color-rds-teal-200: var(--gds-teal-200);
-  --color-rds-teal-300: var(--gds-teal-300);
-  --color-rds-teal-400: var(--gds-teal-400);
-  --color-rds-teal-500: var(--gds-teal-500);
-  --color-rds-teal-600: var(--gds-teal-600);
-  --color-rds-teal-700: var(--gds-teal-700);
-  --color-rds-teal-800: var(--gds-teal-800);
-  --color-rds-teal-900: var(--gds-teal-900);
-  --color-rds-teal-950: var(--gds-teal-950);
-  --color-rds-navy: var(--gds-navy);
-  --color-rds-navy-50: var(--gds-navy-50);
-  --color-rds-navy-100: var(--gds-navy-100);
-  --color-rds-navy-200: var(--gds-navy-200);
-  --color-rds-navy-300: var(--gds-navy-300);
-  --color-rds-navy-400: var(--gds-navy-400);
-  --color-rds-navy-500: var(--gds-navy-500);
-  --color-rds-navy-600: var(--gds-navy-600);
-  --color-rds-navy-700: var(--gds-navy-700);
-  --color-rds-navy-800: var(--gds-navy-800);
-  --color-rds-navy-900: var(--gds-navy-900);
-  --color-rds-blue: var(--gds-blue);
-  --color-rds-blue-50: var(--gds-blue-50);
-  --color-rds-blue-100: var(--gds-blue-100);
-  --color-rds-blue-200: var(--gds-blue-200);
-  --color-rds-blue-300: var(--gds-blue-300);
-  --color-rds-blue-400: var(--gds-blue-400);
-  --color-rds-blue-500: var(--gds-blue-500);
-  --color-rds-blue-600: var(--gds-blue-600);
-  --color-rds-blue-700: var(--gds-blue-700);
-  --color-rds-blue-800: var(--gds-blue-800);
-  --color-rds-blue-900: var(--gds-blue-900);
-  --color-rds-gray-50: var(--gds-gray-50);
-  --color-rds-gray-100: var(--gds-gray-100);
-  --color-rds-gray-200: var(--gds-gray-200);
-  --color-rds-gray-300: var(--gds-gray-300);
-  --color-rds-gray-400: var(--gds-gray-400);
-  --color-rds-gray-500: var(--gds-gray-500);
-  --color-rds-gray-600: var(--gds-gray-600);
-  --color-rds-gray-700: var(--gds-gray-700);
-  --color-rds-gray-800: var(--gds-gray-800);
-  --color-rds-gray-900: var(--gds-gray-900);
-  --color-rds-gray-950: var(--gds-gray-950);
-  --color-rds-black: var(--gds-black);
-  --color-rds-white: var(--gds-white);
-
-  /* -- gds-* aliases — the canonical prefix after the May 2026 rename.
-     Components (Badge, etc.) reference bg-gds-green-500 / text-gds-gray-900
-     / bg-gds-yellow-400; without these registrations those utilities
-     resolve to nothing (a colourless Success badge). The rds-* names above
-     stay as back-compat for any pre-rename consumer. Same underlying
-     @gradeui/core --gds-* values, so the two prefixes are identical. -- */
   --color-gds-green: var(--gds-green);
   --color-gds-green-50: var(--gds-green-50);
   --color-gds-green-100: var(--gds-green-100);
@@ -174,6 +81,62 @@
   --color-gds-yellow-700: var(--gds-yellow-700);
   --color-gds-yellow-800: var(--gds-yellow-800);
   --color-gds-yellow-900: var(--gds-yellow-900);
+  --color-gds-orange: var(--gds-orange);
+  --color-gds-orange-50: var(--gds-orange-50);
+  --color-gds-orange-100: var(--gds-orange-100);
+  --color-gds-orange-200: var(--gds-orange-200);
+  --color-gds-orange-300: var(--gds-orange-300);
+  --color-gds-orange-400: var(--gds-orange-400);
+  --color-gds-orange-500: var(--gds-orange-500);
+  --color-gds-orange-600: var(--gds-orange-600);
+  --color-gds-orange-700: var(--gds-orange-700);
+  --color-gds-orange-800: var(--gds-orange-800);
+  --color-gds-orange-900: var(--gds-orange-900);
+  --color-gds-red: var(--gds-red);
+  --color-gds-red-50: var(--gds-red-50);
+  --color-gds-red-100: var(--gds-red-100);
+  --color-gds-red-200: var(--gds-red-200);
+  --color-gds-red-300: var(--gds-red-300);
+  --color-gds-red-400: var(--gds-red-400);
+  --color-gds-red-500: var(--gds-red-500);
+  --color-gds-red-600: var(--gds-red-600);
+  --color-gds-red-700: var(--gds-red-700);
+  --color-gds-red-800: var(--gds-red-800);
+  --color-gds-red-900: var(--gds-red-900);
+  --color-gds-teal: var(--gds-teal);
+  --color-gds-teal-50: var(--gds-teal-50);
+  --color-gds-teal-100: var(--gds-teal-100);
+  --color-gds-teal-200: var(--gds-teal-200);
+  --color-gds-teal-300: var(--gds-teal-300);
+  --color-gds-teal-400: var(--gds-teal-400);
+  --color-gds-teal-500: var(--gds-teal-500);
+  --color-gds-teal-600: var(--gds-teal-600);
+  --color-gds-teal-700: var(--gds-teal-700);
+  --color-gds-teal-800: var(--gds-teal-800);
+  --color-gds-teal-900: var(--gds-teal-900);
+  --color-gds-teal-950: var(--gds-teal-950);
+  --color-gds-navy: var(--gds-navy);
+  --color-gds-navy-50: var(--gds-navy-50);
+  --color-gds-navy-100: var(--gds-navy-100);
+  --color-gds-navy-200: var(--gds-navy-200);
+  --color-gds-navy-300: var(--gds-navy-300);
+  --color-gds-navy-400: var(--gds-navy-400);
+  --color-gds-navy-500: var(--gds-navy-500);
+  --color-gds-navy-600: var(--gds-navy-600);
+  --color-gds-navy-700: var(--gds-navy-700);
+  --color-gds-navy-800: var(--gds-navy-800);
+  --color-gds-navy-900: var(--gds-navy-900);
+  --color-gds-blue: var(--gds-blue);
+  --color-gds-blue-50: var(--gds-blue-50);
+  --color-gds-blue-100: var(--gds-blue-100);
+  --color-gds-blue-200: var(--gds-blue-200);
+  --color-gds-blue-300: var(--gds-blue-300);
+  --color-gds-blue-400: var(--gds-blue-400);
+  --color-gds-blue-500: var(--gds-blue-500);
+  --color-gds-blue-600: var(--gds-blue-600);
+  --color-gds-blue-700: var(--gds-blue-700);
+  --color-gds-blue-800: var(--gds-blue-800);
+  --color-gds-blue-900: var(--gds-blue-900);
   --color-gds-gray-50: var(--gds-gray-50);
   --color-gds-gray-100: var(--gds-gray-100);
   --color-gds-gray-200: var(--gds-gray-200);

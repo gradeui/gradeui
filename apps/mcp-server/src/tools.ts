@@ -33,6 +33,8 @@ import {
   getScreen,
   listScreens,
   saveScreen,
+  getTheme,
+  saveTheme,
 } from "./designs";
 import {
   ensureShareLink,
@@ -472,6 +474,76 @@ export function registerGradeTools(
     async ({ name }) => {
       const p = await createProject(sb, env.ownerUserId, name);
       return text(`Created project "${p.name}".\nproject id: ${p.id}`);
+    },
+  );
+
+  // ── get_theme ────────────────────────────────────────────────────────
+  server.registerTool(
+    "get_theme",
+    {
+      title: "Get a project's theme",
+      description:
+        "Read a Grade project's theme — the working draft ThemeInput (deterministic: the rendered theme is generated from it) plus any saved variants. Edit the returned draft and pass it to save_theme to update the theme.",
+      inputSchema: {
+        projectId: z.string().describe("Project id (from list_projects)"),
+      },
+    },
+    async ({ projectId }) => {
+      await assertProject(sb, env.ownerUserId, projectId);
+      const theme = await getTheme(sb, projectId);
+      if (theme.draft == null && theme.variants == null) {
+        return text(
+          `Project ${projectId} has no theme set yet (it uses the default). Use save_theme to set one.`,
+        );
+      }
+      const parts = [
+        `Theme for project ${projectId}:`,
+        "",
+        "draft (ThemeInput):",
+        JSON.stringify(theme.draft, null, 2),
+      ];
+      if (theme.variants != null) {
+        parts.push("", "variants:", JSON.stringify(theme.variants, null, 2));
+      }
+      return text(parts.join("\n"));
+    },
+  );
+
+  // ── save_theme ───────────────────────────────────────────────────────
+  server.registerTool(
+    "save_theme",
+    {
+      title: "Save a project's theme",
+      description:
+        "Set a Grade project's working theme draft from a ThemeInput JSON string. Pass the FULL ThemeInput (e.g. get_theme's draft, edited, re-stringified). The theme is deterministic — Studio regenerates the rendered theme from it on next load. Only the draft is updated; saved variants are untouched.",
+      inputSchema: {
+        projectId: z.string().describe("Project id (from list_projects)"),
+        themeJson: z
+          .string()
+          .describe(
+            "The full ThemeInput as a JSON string (an object with hues, typography, spacing, etc.).",
+          ),
+      },
+    },
+    async ({ projectId, themeJson }) => {
+      await assertProject(sb, env.ownerUserId, projectId);
+      let theme: unknown;
+      try {
+        theme = JSON.parse(themeJson);
+      } catch {
+        return text(
+          "themeJson is not valid JSON. Pass the ThemeInput as a JSON string.",
+        );
+      }
+      if (theme == null || typeof theme !== "object" || Array.isArray(theme)) {
+        return text(
+          "themeJson must be a JSON object (a ThemeInput), not an array or primitive.",
+        );
+      }
+      await saveTheme(sb, projectId, theme);
+      return text(
+        `Saved theme draft for project ${projectId}. Studio will pick it up on next load.`,
+      );
     },
   );
 

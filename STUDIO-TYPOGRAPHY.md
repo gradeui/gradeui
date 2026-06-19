@@ -20,6 +20,7 @@ The fix is a small, additive layer: a handful of **base styles** you mix from, a
 - **Display** — headings / large type.
 - **Body** — the workhorse.
 - **Mono** — code.
+- **Accent** — supplementary display face (eyebrows, pull quotes, stylised bits). Optional; defaults to Instrument Serif and is overridable from the picker like any other role. Resolves to `--font-accent` with a `font-accent` utility.
 
 *(Italic is deferred. When it lands it's a supplementary font role, not a base style — a step or base style opts into it.)*
 
@@ -76,7 +77,7 @@ A base `scale` plus optional per-breakpoint overrides (`sm` / `md` / `lg`). The 
 ## The contract (additive on `ThemeInput.typography`)
 
 ```ts
-type FontRole = "display" | "body" | "mono";              // + "italic" later
+type FontRole = "display" | "body" | "mono" | "accent";   // + "italic" later
 
 interface TypeStyleProps {
   font?: FontRole;

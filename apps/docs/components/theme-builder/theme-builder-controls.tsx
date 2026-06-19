@@ -192,6 +192,7 @@ export function ThemeBuilderControls({
             label="Primary"
             hue={input.hues.primary}
             chroma={input.chroma?.primary ?? 1.0}
+            chromaMax={2.5}
             changed={changed((i) => i.hues.primary)}
             onReset={resetField((d, b) => {
               d.hues.primary = b.hues.primary;
@@ -201,11 +202,17 @@ export function ThemeBuilderControls({
                 d.hues.primary = h;
               })
             }
+            onChroma={(c) =>
+              patch((d) => {
+                (d.chroma ??= {}).primary = c;
+              })
+            }
           />
           <HueRow
             label="Accent"
             hue={input.hues.accent}
             chroma={input.chroma?.accent ?? 1.0}
+            chromaMax={2.5}
             changed={changed((i) => i.hues.accent)}
             onReset={resetField((d, b) => {
               d.hues.accent = b.hues.accent;
@@ -215,11 +222,17 @@ export function ThemeBuilderControls({
                 d.hues.accent = h;
               })
             }
+            onChroma={(c) =>
+              patch((d) => {
+                (d.chroma ??= {}).accent = c;
+              })
+            }
           />
           <HueRow
             label="Neutral"
             hue={input.hues.neutral}
             chroma={input.chroma?.neutral ?? 0.08}
+            chromaMax={0.4}
             changed={changed((i) => i.hues.neutral)}
             onReset={resetField((d, b) => {
               d.hues.neutral = b.hues.neutral;
@@ -227,6 +240,11 @@ export function ThemeBuilderControls({
             onChange={(h) =>
               patch((d) => {
                 d.hues.neutral = h;
+              })
+            }
+            onChroma={(c) =>
+              patch((d) => {
+                (d.chroma ??= {}).neutral = c;
               })
             }
           />

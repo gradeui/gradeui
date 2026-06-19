@@ -138,6 +138,10 @@ import {
   findComponentOpenTagBySourceId,
   findElementChildren,
   isElementTextEditable,
+  isElementInlineRichEditable,
+  getElementInnerJsx,
+  getElementTagName,
+  updateElementInnerJsx,
   readComponentProp,
   updateComponentProp,
   updateElementText,
@@ -145,6 +149,7 @@ import {
   setInlineStyle,
   type PropValue,
 } from "@/lib/studio-source-mutator";
+import { HeadingMiniEditor } from "@/components/studio/heading-mini-editor";
 import {
   readDataArrayEntryField,
   updateDataArrayEntry,
@@ -769,23 +774,43 @@ export function SelectionInspector({
           are skipped (the row hides itself); the chat is still the
           escape hatch for those. No section header on purpose —
           it's a single field, not a group. */}
-      {selection?.sourceId && appSource && (
-        <TextEditRow
-          source={appSource}
-          sourceId={selection.sourceId}
-          disabled={!componentPresent}
-          onChange={(next) => {
-            const updated = updateElementText(
-              appSource,
-              selection.sourceId!,
-              next
-            );
-            if (updated !== appSource) {
-              onSourceChange(updated, `Edit text`);
-            }
-          }}
-        />
-      )}
+      {selection?.sourceId && appSource &&
+        (/^h[1-6]$/i.test(
+          getElementTagName(appSource, selection.sourceId) ?? ""
+        ) && isElementInlineRichEditable(appSource, selection.sourceId) ? (
+          // Headings get the rich mini-editor: select a word, wrap it in an
+          // Accent / bold / italic span. Inline-only content only — a heading
+          // with a {expression} falls through to the plain field below.
+          <RichTextEditRow
+            source={appSource}
+            sourceId={selection.sourceId}
+            disabled={!componentPresent}
+            onChange={(inner) => {
+              const updated = updateElementInnerJsx(
+                appSource,
+                selection.sourceId!,
+                inner
+              );
+              if (updated !== appSource) onSourceChange(updated, "Edit text");
+            }}
+          />
+        ) : (
+          <TextEditRow
+            source={appSource}
+            sourceId={selection.sourceId}
+            disabled={!componentPresent}
+            onChange={(next) => {
+              const updated = updateElementText(
+                appSource,
+                selection.sourceId!,
+                next
+              );
+              if (updated !== appSource) {
+                onSourceChange(updated, `Edit text`);
+              }
+            }}
+          />
+        ))}
 
       {!componentPresent && appSource && (
         <div className="mx-3 my-2.5 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-2xs text-amber-700 dark:text-amber-300">
@@ -1823,6 +1848,46 @@ function labelFor(seg: {
  * underlying source when focus isn't here (so a chat regen / undo
  * flows back into the input cleanly).
  */
+/** Rich heading field — the TipTap mini-editor in inspector dress. Seeds
+ *  from the heading's current inner JSX and emits inner JSX (with spans) on
+ *  edit; the parent splices it back via updateElementInnerJsx. Keyed by
+ *  sourceId upstream so it re-seeds when the selection changes. */
+function RichTextEditRow({
+  source,
+  sourceId,
+  disabled,
+  onChange,
+}: {
+  source: string;
+  sourceId: string;
+  disabled?: boolean;
+  onChange: (innerJsx: string) => void;
+}) {
+  // The source's indentation/newlines around the text are render-irrelevant;
+  // collapse them so the editor doesn't show phantom leading space.
+  const seed = useMemo(() => {
+    const inner = getElementInnerJsx(source, sourceId);
+    return (inner ?? "").replace(/\s+/g, " ").trim();
+  }, [source, sourceId]);
+
+  return (
+    <div className="space-y-1 border-t border-border/60 px-3 py-2.5">
+      <Label className={FIELD_LABEL}>Text</Label>
+      <div
+        className={
+          "rounded-md border border-input bg-background px-2 py-1.5 text-sm focus-within:ring-1 focus-within:ring-ring" +
+          (disabled ? " pointer-events-none opacity-50" : "")
+        }
+      >
+        <HeadingMiniEditor key={sourceId} value={seed} onChange={onChange} />
+      </div>
+      <p className="text-2xs text-muted-foreground">
+        Select text, then Accent / bold / italic to style part of it.
+      </p>
+    </div>
+  );
+}
+
 function TextEditRow({
   source,
   sourceId,

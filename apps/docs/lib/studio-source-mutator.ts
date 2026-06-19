@@ -884,3 +884,77 @@ export function isElementTextEditable(
   // element. Reject only when there's structure inside.
   return !/[<{}]/.test(children.value);
 }
+
+// ── Inline-rich text (the heading mini-editor) ─────────────────────────
+//
+// The plain text path above refuses ANY `<` or `{` inside an element —
+// which is exactly what blocks a styled span in a heading. These helpers
+// are the richer path: read/replace an element's children as raw INLINE
+// JSX (text + a small set of inline tags), so the TipTap heading editor
+// can wrap a selection in `<span className="font-accent">…</span>` and
+// write it straight back. JSX expressions ({…}) and block/component tags
+// are still out of scope — those stay on the plain field / chat.
+
+/** Inline tags the rich heading editor can faithfully round-trip. */
+const INLINE_RICH_TAGS = new Set(["span", "strong", "em", "b", "i", "br"]);
+
+/** An element's children as a RAW JSX string (may include inline spans),
+ *  for seeding the heading editor. null when the element isn't found or is
+ *  self-closing. */
+export function getElementInnerJsx(
+  source: string,
+  sourceId: string
+): string | null {
+  const ensured = injectSourceIds(source);
+  const children = findElementChildren(ensured, sourceId);
+  return children ? children.value : null;
+}
+
+/** True when an element's children are INLINE-ONLY — text plus the inline
+ *  tags above, no JSX expressions and no block/component tags — so the
+ *  heading editor can represent them without losing anything. Plain text
+ *  (no tags) qualifies too. */
+export function isElementInlineRichEditable(
+  source: string,
+  sourceId: string
+): boolean {
+  const ensured = injectSourceIds(source);
+  const children = findElementChildren(ensured, sourceId);
+  if (!children) return false;
+  const value = children.value;
+  if (/[{}]/.test(value)) return false; // JSX expressions can't be marks
+  const tags = value.match(/<\/?\s*([A-Za-z][\w-]*)/g) ?? [];
+  return tags.every((t) =>
+    INLINE_RICH_TAGS.has(t.replace(/[</\s]/g, "").toLowerCase())
+  );
+}
+
+/** The tag name of the element carrying `sourceId` (e.g. "h1", "span",
+ *  "Button"), or null when not found. Lets the inspector gate the rich
+ *  heading editor to actual headings. */
+export function getElementTagName(
+  source: string,
+  sourceId: string
+): string | null {
+  const ensured = injectSourceIds(source);
+  const esc = sourceId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = ensured.match(
+    new RegExp(`<([A-Za-z][\\w.-]*)[^>]*?data-gds-source-id="${esc}"`)
+  );
+  return m ? m[1] : null;
+}
+
+/** Replace an element's children with a RAW JSX inner string (spans and
+ *  all). Unlike `updateElementText` this does NOT reject structured
+ *  content — it's the write path for the heading editor. Returns the
+ *  source unchanged when the element can't be found. */
+export function updateElementInnerJsx(
+  source: string,
+  sourceId: string,
+  inner: string
+): string {
+  const ensured = injectSourceIds(source);
+  const children = findElementChildren(ensured, sourceId);
+  if (!children) return source;
+  return ensured.slice(0, children.start) + inner + ensured.slice(children.end);
+}

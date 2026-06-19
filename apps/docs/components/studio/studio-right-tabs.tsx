@@ -119,6 +119,7 @@ import { StudioRightPanel } from "./studio-right-panel";
 import { ThemePickerSection } from "./theme-picker-section";
 import type { StylesSection } from "./projects-menu";
 import { TypographyEditor } from "./typography-editor";
+import { HeadingMiniEditor } from "./heading-mini-editor";
 
 export type TabId = "layout" | "styles" | "theme" | "comments";
 
@@ -599,6 +600,10 @@ function GalleryGroup({
 }
 
 function ComponentsGallery() {
+  // Demo state for the headline mini-editor (the styled-span playground).
+  const [headline, setHeadline] = React.useState(
+    'Your AI, <span className="font-accent">your rules</span>',
+  );
   return (
     <ThemePreviewScope className="rounded-xl border border-border/60 p-5">
       <div className="space-y-4">
@@ -609,6 +614,17 @@ function ComponentsGallery() {
             to check contrast.
           </p>
         </div>
+
+        <GalleryGroup title="Headline — select a word, then click Accent">
+          <HeadingMiniEditor
+            value={headline}
+            onChange={setHeadline}
+            className="text-3xl font-semibold leading-tight"
+          />
+          <pre className="mt-1 overflow-x-auto rounded bg-foreground/5 p-2 font-mono text-2xs text-muted-foreground">
+            {headline}
+          </pre>
+        </GalleryGroup>
 
         <div className="grid gap-3 lg:grid-cols-2">
           <GalleryGroup title="Buttons">

@@ -441,6 +441,14 @@ function resolveTypography(
     fontSans: resolveFontFamily(input.body, input.customFonts, "sans"),
     fontMono: resolveFontFamily(input.mono, input.customFonts, "mono"),
     fontDisplay: resolveFontFamily(input.display, input.customFonts, "sans"),
+    // Supplementary accent face. Defaults to Instrument Serif (a registry
+    // serif) when the theme doesn't pick one, so every theme ships a usable
+    // accent the user can override from the picker.
+    fontAccent: resolveFontFamily(
+      input.accent ?? "instrumentSerif",
+      input.customFonts,
+      "serif",
+    ),
     // Carry every face the theme owns (not just referenced ones) so
     // switching display↔body↔mono between custom faces never races a
     // network load that apply-time injection already paid for.

@@ -4,6 +4,7 @@ import Script from "next/script";
 import {
   JetBrains_Mono,
   Inter,
+  Inter_Tight,
   Fraunces,
   Space_Grotesk,
   Plus_Jakarta_Sans,
@@ -68,6 +69,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 // Alternative sans options surfaced in the builder's font picker.
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const interTight = Inter_Tight({ subsets: ["latin"], variable: "--font-inter-tight" });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk" });
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-plus-jakarta" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -107,6 +109,7 @@ const FONT_VARS = [
   geistMono.variable,
   jetbrainsMono.variable,
   inter.variable,
+  interTight.variable,
   spaceGrotesk.variable,
   poppins.variable,
   plusJakartaSans.variable,

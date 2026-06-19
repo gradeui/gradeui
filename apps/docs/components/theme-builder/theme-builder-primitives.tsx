@@ -356,6 +356,8 @@ export function HueRow({
   hue,
   chroma,
   onChange,
+  onChroma,
+  chromaMax = 2.5,
   changed,
   onReset,
 }: {
@@ -363,6 +365,12 @@ export function HueRow({
   hue: number;
   chroma: number;
   onChange: (hue: number) => void;
+  /** Edit the ramp's chroma multiplier (vibrancy). When provided, the
+   *  expanded panel gains a Vibrancy slider beneath the hue slider. */
+  onChroma?: (chroma: number) => void;
+  /** Top of the vibrancy range — brand ramps go loud (2.5), neutrals
+   *  stay subtle (~0.4). */
+  chromaMax?: number;
   /** Changed-from-base dot — see Label. */
   changed?: boolean;
   /** Per-control reset — see Label. */
@@ -416,18 +424,53 @@ export function HueRow({
       </button>
 
       {open && (
-        <input
-          type="range"
-          min={0}
-          max={360}
-          step={1}
-          value={hue}
-          onChange={(e) => onChange(Number(e.target.value))}
-          aria-label={`${label} hue`}
-          className="w-full"
-          // Native slider, tinted to the ramp — no bespoke chrome.
-          style={{ accentColor: `oklch(${ramp[500]})` }}
-        />
+        <div className="space-y-1.5 pt-0.5">
+          <div className="flex items-center gap-2">
+            <span className="w-14 shrink-0 text-2xs text-muted-foreground">
+              Hue
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={360}
+              step={1}
+              value={hue}
+              onChange={(e) => onChange(Number(e.target.value))}
+              aria-label={`${label} hue`}
+              className="flex-1"
+              // Native slider, tinted to the ramp — no bespoke chrome.
+              style={{ accentColor: `oklch(${ramp[500]})` }}
+            />
+            <span className="w-10 shrink-0 text-right font-mono text-2xs tabular-nums text-muted-foreground">
+              {Math.round(hue)}°
+            </span>
+          </div>
+          {onChroma && (
+            // Vibrancy = the ramp's chroma multiplier. Continuous, and it
+            // runs past the old "vibrant" preset — OKLCH chroma keeps going
+            // (the browser gamut-maps beyond sRGB) so loud brand greens /
+            // limes are reachable.
+            <div className="flex items-center gap-2">
+              <span className="w-14 shrink-0 text-2xs text-muted-foreground">
+                Vibrancy
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={chromaMax}
+                step={0.02}
+                value={chroma}
+                onChange={(e) => onChroma(Number(e.target.value))}
+                aria-label={`${label} vibrancy`}
+                className="flex-1"
+                style={{ accentColor: `oklch(${ramp[500]})` }}
+              />
+              <span className="w-10 shrink-0 text-right font-mono text-2xs tabular-nums text-muted-foreground">
+                {chroma.toFixed(2)}
+              </span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
