@@ -47,7 +47,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
       // hover treatment — SubTrigger previously set only the accent bg,
       // leaving default (near-black) text on hover while sibling items
       // flipped to accent-foreground (caught by Ali, 2026-06-11).
-      "flex cursor-default select-none items-center gap-2 rounded-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
+      "flex cursor-default select-none items-center gap-2 rounded-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground focus:[&_svg]:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
       ddItemBase(size),
       size === "default" ? "[&_svg]:size-4" : "[&_svg]:size-3.5",
       inset && (size === "default" ? "pl-8" : "pl-7"),
@@ -145,7 +145,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center gap-2 rounded-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:shrink-0",
+      "relative flex cursor-default select-none items-center gap-2 rounded-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground focus:[&_svg]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:shrink-0",
       ddItemBase(size),
       size === "default" ? "[&>svg]:size-4" : "[&>svg]:size-3.5",
       inset && (size === "default" ? "pl-8" : "pl-7"),
@@ -167,7 +167,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm pr-2 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-sm pr-2 outline-none transition-colors focus:bg-accent focus:text-accent-foreground focus:[&_svg]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       compact ? "py-1 pl-7 text-xs" : "py-1.5 pl-8 text-sm",
       className
     )}
@@ -201,7 +201,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm pr-2 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-sm pr-2 outline-none transition-colors focus:bg-accent focus:text-accent-foreground focus:[&_svg]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       compact ? "py-1 pl-7 text-xs" : "py-1.5 pl-8 text-sm",
       className
     )}

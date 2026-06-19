@@ -13,7 +13,7 @@ export const ButtonContract = contract({
   import: "@gradeui/ui",
   aliases: ["button","push button","plain button","bordered button","destructive button","capsule button","link button","action button","cta","raised button","pill button","key button"],
   composesWith: ["Dialog","DropdownMenu","Tooltip","Card (in CardFooter)","Row","Form controls"],
-  styleDefaults: {"Button":"inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-8 gap-1.5 px-3 text-base [&_svg]:size-4"},
+  styleDefaults: {"Button":"inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-8 gap-1.5 px-3 text-base [&_svg]:size-4"},
   variantDefaults: {"variant":"default","size":"md"},
   props: {
   "variant": {
