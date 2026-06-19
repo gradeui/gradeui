@@ -1,5 +1,48 @@
 # @gradeui/ui
 
+## 3.2.0
+
+### Minor Changes
+
+- 70f8050: Typography gains an **accent** font role — a supplementary display face (eyebrows, pull quotes, stylised bits) alongside display / body / mono. Themes carry `typography.accent` (defaults to Instrument Serif, overridable from the picker like any other role); the generator resolves it to `--font-accent`, and a new `font-accent` Tailwind utility applies it (falling back to the display/sans stack until a theme sets one).
+- dd91d10: Add `Combobox` — a single-pick searchable picker, the single-select sibling of `MultiSelect`.
+
+  - **Composes Popover + Command + Button.** Data-driven via `options` ({ value, label, icon?, keywords?, disabled? }); controlled or uncontrolled (`value` / `defaultValue` are `string | null`, `onValueChange` fires with the next value or null). Per-option icons render in the menu and on the trigger; cmdk handles search and keyboard nav.
+  - **The Linear "selectable badge".** `triggerVariant="inline"` drops the form-control chrome and `renderValue` lets you render the selection as a Badge, so a value (a status, a priority, an assignee) reads as a clickable token that opens the menu in place. `hideChevron` completes the token look.
+  - **`clearable`** adds a Clear row so the value can return to unset. **`disabled`** locks the control to a read-only display of its current value, intended to be driven by a permission check (a viewer sees the value but can't open the menu).
+  - Reach for `Select` for a short fixed list with no search, `MultiSelect` for multiple values, and `Command` directly for unbounded / async lists.
+
+- dd91d10: Add `DataView` — one dataset, drawn as a table, a list of cards, or a grid.
+
+  - **Wraps TanStack Table so pages stop re-typing the boilerplate.** Hand it `data` plus a `columns` schema and it owns sorting, column visibility, selection, and view switching. Columns declare a `type` (badge / tags / number / currency / percent / date / boolean / url / text) that DataView renders, with a `cell` override per column for bespoke cells (avatars, relations) and `role: "title"` marking the primary field for card / grid composition.
+  - **The view toggle can live anywhere.** `useDataView()` holds the view / selection / sorting / column-visibility state, so `<DataViewToggle>` and `<DataViewColumns>` (the "choose what to display" menu) can sit in a page header and drive a `<DataView>` lower down. Pass `toolbar` to render them inline instead. Single-view is first-class: `views={["table"]}` (or just `defaultView`) is only ever that one view, no switch.
+  - **Table extras:** mark a column `pinned="left"` (with a `width`) for a fixed column and `stickyHeader` to freeze the header row on scroll. Tunable via `--gds-data-view-*` (card / grid min column width, gap).
+  - For a single record's fields use `PropertyList`; for the bare table primitive use `Table`.
+
+  Adds `@tanstack/react-table` as a dependency of `@gradeui/ui`.
+
+- 70f8050: Brand colour utilities are now registered under the `gds-` prefix to match the rest of the system (the May 2026 rename had updated component class names to `gds-*` but missed the `@theme` colour registrations, which left e.g. a colourless Success badge). All ten families — green, yellow, orange, red, teal, navy, blue, gray, plus black/white — are now `--color-gds-*`, so `bg-gds-green-500`, `text-gds-gray-900`, `bg-gds-yellow-400` etc. resolve. The old `--color-rds-*` registrations are removed (no back-compat); switch any `*-rds-<family>` utility to `*-gds-<family>`.
+- 3a6682a: Map: unbake chrome, add a label halo token, and fix Leaflet marker layering.
+
+  - **Removed the baked-in radius/border on `<Map>`.** The container no longer sets an inline `border-radius`/`border` (which `className` couldn't override). The Map is now an unopinionated primitive — square with no border by default; round or frame it from the call site with `className` (e.g. `rounded-xl border`). This is a visual change for any existing `<Map>` that relied on the default rounding.
+  - **Added the `--gds-map-label-halo` token + `.gds-map-label` helper.** A mode-aware text-stroke for floating marker labels (white halo on light tiles, near-black on dark) so labels don't wash out in dark mode. Use the class instead of a hard-coded white `-webkit-text-stroke`.
+  - **Fixed Leaflet dropping inline marker SVG content.** Leaflet's stylesheet sets `z-index: 200` on map `<svg>` elements, which painted an inline pin-shield SVG above later sibling DOM (e.g. a count label), hiding it — but only on Leaflet (the default provider), not Mapbox/MapLibre/Google. Marker content now follows normal source order on every provider via `[data-gds-part="map-marker-content"] svg { z-index: auto }`.
+
+- dd91d10: Add `PropertyList` — the read-only "one record, stacked" display primitive.
+
+  - **New `PropertyList` + `PropertyList.Row`.** A PropertyList is a Table row transposed: where a Table runs the schema horizontally (a column per field, across many records), a PropertyList stacks one record's fields vertically as label / value pairs. Reach for it for detail panels, inspectors, "about this item" cards, and record summaries.
+  - **Polymorphic value slot.** The value side is `children` (or the `value` prop), not a string — so the same renderers that fill a Table cell (a Badge, an avatar stack, a date, a wrapping tag group, a link) drop straight into a row, and the two surfaces never drift.
+  - **Semantic + token-driven.** Renders a real `<dl>` / `<dt>` / `<dd>`. Layout (`row` / `stack`), density (`compact` / `default` / `relaxed`), alignment, dividers, and label-column width are driven by `--gds-property-list-*` so a narrow inspector and a wide settings page share one primitive. Parts emit `data-gds-part="property-list" | "property" | "property-label" | "property-value"`.
+  - It is a display primitive — for an editable label + control use `Field`; a read↔edit detail panel swaps a PropertyList for a stack of Fields.
+
+### Patch Changes
+
+- c55ca65: Badge: the solid variants are now flat — dropped the `shadow` utility from `default`, `destructive`, `highlight`, `success`, `warning`, and `info`. On a solid fill the theme's bevel-highlight shadow read as embossed (the same issue fixed on `Button`); flat is the intended resting look. The soft and outline variants were already shadowless and are unchanged.
+- c55ca65: Button: every resting variant is now flat — dropped `shadow` from `variant="default"` and `shadow-sm` from `secondary`, `outline`, and `destructive`. On solid/bordered fills the theme's bevel-highlight shadow read as embossed; flat is the intended resting look, and the tactile/beveled treatment stays exclusive to `variant="raised"` (and the `raised` prop).
+- c55ca65: Input: dropped `shadow-sm` from the default size so a text input sits flat, matching `SelectTrigger` (which carries no drop shadow). Previously a default-size Input read as slightly lifted next to a Select of the same height. The `xs` / `2xs` densities already opted out of the shadow, so only the default size changes.
+- 70f8050: MediaSurface: an explicit `aspect` prop now wins over a baked-in `className` aspect. Previously the aspect class was emitted before `className`, so a slot authored as `<MediaSurface className="aspect-video" />` ignored a later `aspect="square"` (e.g. set from the inspector) — it did nothing. An explicit `aspect` now applies via inline `aspect-ratio`, which beats the class; a derived (hint-default) aspect still rides the class so a deliberate `className="aspect-[2/1]"` can override it.
+- c55ca65: Select: the trigger's focus ring now matches Input (`focus-visible:ring-1 ring-ring`, no offset) instead of the heavier `focus:ring-2 ring-offset-2`, so a Select and an Input side by side highlight identically. `SelectContent` also gains an optional `container` prop that forwards to the Radix portal, letting the menu render inside a scoped-theme wrapper (e.g. a preview island) rather than always portaling to `document.body`.
+
 ## 3.1.0
 
 ### Minor Changes
