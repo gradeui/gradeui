@@ -83,6 +83,18 @@ export default function ToggleGroupPage() {
               <ToggleGroupItem value="right">Right</ToggleGroupItem>
             </ToggleGroup>
           </div>
+          <div>
+            <p className="text-sm text-muted-foreground mb-2">
+              Segmented — items sit in a muted track with the active one a soft
+              raised pill. Reads like a TabsList, but emits a value, so it&rsquo;s
+              the right pick for dense property panels.
+            </p>
+            <ToggleGroup type="single" variant="segmented" defaultValue="center">
+              <ToggleGroupItem value="left">Left</ToggleGroupItem>
+              <ToggleGroupItem value="center">Center</ToggleGroupItem>
+              <ToggleGroupItem value="right">Right</ToggleGroupItem>
+            </ToggleGroup>
+          </div>
         </div>
       </div>
 
@@ -92,6 +104,16 @@ export default function ToggleGroupPage() {
           Sizes
         </h2>
         <div className="space-y-4">
+          <ToggleGroup type="single" size="2xs" defaultValue="center">
+            <ToggleGroupItem value="left">2xs</ToggleGroupItem>
+            <ToggleGroupItem value="center">Densest</ToggleGroupItem>
+            <ToggleGroupItem value="right">Panel</ToggleGroupItem>
+          </ToggleGroup>
+          <ToggleGroup type="single" size="xs" defaultValue="center">
+            <ToggleGroupItem value="left">xs</ToggleGroupItem>
+            <ToggleGroupItem value="center">Dense</ToggleGroupItem>
+            <ToggleGroupItem value="right">Panel</ToggleGroupItem>
+          </ToggleGroup>
           <ToggleGroup type="single" size="sm" defaultValue="center">
             <ToggleGroupItem value="left">Small</ToggleGroupItem>
             <ToggleGroupItem value="center">Size</ToggleGroupItem>

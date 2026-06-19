@@ -24,9 +24,10 @@ const toggleVariants = cva(
         default: "h-9 px-2 min-w-9",
         sm: "h-8 px-1.5 min-w-8",
         // xs: h-7 (28px) — Figma-density for tool panels.
-        xs: "h-7 px-1 min-w-7",
-        // 2xs: h-6 (24px) — densest tool-panel toggle.
-        "2xs": "h-6 px-1 min-w-6",
+        xs: "h-7 px-1 min-w-7 text-xs",
+        // 2xs: h-6 (24px) — densest tool-panel toggle. Smaller text +
+        // icon so labelled toggles (Row/Stack) read at panel density.
+        "2xs": "h-6 px-1 min-w-6 text-2xs [&_svg]:size-3",
         lg: "h-10 px-2.5 min-w-10",
       },
     },

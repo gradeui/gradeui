@@ -54,6 +54,13 @@ const tabsListProps = [
       "T-shirt size for the list and every TabsTrigger inside it (cascades via context). md is the default — compact density that matches the rest of the chrome. sm for dense admin rows, lg for hero / settings pages.",
   },
   {
+    name: "variant",
+    type: '"pill" | "underlined"',
+    default: '"pill"',
+    description:
+      "pill (default) is the shadcn-style chips on a muted track — app chrome, in-card tab strips. underlined is the minimal text + bottom-border treatment for marketing pages, docs nav, and browser-tab-like layouts. Cascades to every TabsTrigger via context.",
+  },
+  {
     name: "className",
     type: "string",
     default: "-",
@@ -201,6 +208,47 @@ export default function TabsPage() {
               <TabsList size="lg">
                 <TabsTrigger value="preview"><Eye /> Preview</TabsTrigger>
                 <TabsTrigger value="code"><Code2 /> Code</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </ComponentPreview>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
+          Variants
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Two looks, set on <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">TabsList</code> and cascaded to every trigger.
+          <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded ml-1">pill</code> (default) is the chip-on-muted treatment for app chrome;
+          <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded ml-1">underlined</code> is the minimal text + bottom-border look for marketing and docs nav.
+        </p>
+        <ComponentPreview
+          code={`<Tabs defaultValue="account">
+  <TabsList variant="pill">
+    <TabsTrigger value="account">Account</TabsTrigger>
+    <TabsTrigger value="password">Password</TabsTrigger>
+  </TabsList>
+</Tabs>
+
+<Tabs defaultValue="account">
+  <TabsList variant="underlined">
+    <TabsTrigger value="account">Account</TabsTrigger>
+    <TabsTrigger value="password">Password</TabsTrigger>
+  </TabsList>
+</Tabs>`}
+        >
+          <div className="flex flex-col items-start gap-5">
+            <Tabs defaultValue="account">
+              <TabsList variant="pill">
+                <TabsTrigger value="account">Account</TabsTrigger>
+                <TabsTrigger value="password">Password</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Tabs defaultValue="account">
+              <TabsList variant="underlined">
+                <TabsTrigger value="account">Account</TabsTrigger>
+                <TabsTrigger value="password">Password</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

@@ -2,15 +2,15 @@
 name: ToggleGroup
 import: "@gradeui/ui"
 subcomponents: [ToggleGroupItem]
-variants: [default, outline]
-sizes: [sm, md, lg]
+variants: [default, outline, segmented]
+sizes: [2xs, xs, sm, md, lg]
 props:
   - ToggleGroup: type: "single" | "multiple" — single picks one, multiple picks any number
   - ToggleGroup: value?: string | string[] — controlled; matches `type` (string for single, string[] for multiple)
   - ToggleGroup: defaultValue?: string | string[] — uncontrolled initial
   - ToggleGroup: onValueChange?: (value: string | string[]) => void
-  - ToggleGroup: size? (sm | md | lg, default md) — cascades to every ToggleGroupItem via context, matches Tabs/Button heights
-  - ToggleGroup: variant? (default | outline)
+  - ToggleGroup: size? (2xs | xs | sm | md | lg, default md) — cascades to every ToggleGroupItem via context, matches Tabs/Button heights; 2xs/xs are the dense tool-panel sizes (2xs also drops text to text-2xs and icons to size-3 so labelled items read at panel density)
+  - ToggleGroup: variant? (default | outline | segmented) — segmented sits the items in a muted track with the active item as a soft raised pill, so it reads like a TabsList; reach for it in dense property panels (e.g. a Row/Stack direction toggle)
   - ToggleGroupItem: value: string — what the group reports when this item is pressed
   - ToggleGroupItem: tooltip?: ReactNode — when set, wraps the item in a Tooltip; required for icon-only items where the visible chrome doesn't carry a label
   - ToggleGroupItem: tooltipSide? ("top" | "right" | "bottom" | "left", default "top") — side the tooltip renders on
@@ -39,5 +39,22 @@ aliases: [toggle group, segmented control, segmented buttons, button group, pill
   <ToggleGroupItem value="bold" aria-label="Bold"><Bold /></ToggleGroupItem>
   <ToggleGroupItem value="italic" aria-label="Italic"><Italic /></ToggleGroupItem>
   <ToggleGroupItem value="underline" aria-label="Underline"><Underline /></ToggleGroupItem>
+</ToggleGroup>
+```
+
+```jsx
+// Segmented variant + 2xs — a dense property-panel toggle. Reads like a
+// tab strip (muted track, active pill) but emits a value, so it's a form
+// control, not panel-switching. This is the Studio Row/Stack control.
+<ToggleGroup
+  type="single"
+  variant="segmented"
+  size="2xs"
+  value={direction}
+  onValueChange={(v) => v && setDirection(v)}
+  className="w-full"
+>
+  <ToggleGroupItem value="row" className="flex-1"><Columns3 /> Row</ToggleGroupItem>
+  <ToggleGroupItem value="col" className="flex-1"><Rows3 /> Stack</ToggleGroupItem>
 </ToggleGroup>
 ```

@@ -105,6 +105,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   TokenField,
   ColorOpacityRow,
@@ -669,13 +670,11 @@ export function SelectionInspector({
   // Shell picks between the two variants. Body is the same.
   const body = (
     <>
-      {/* Layer Name — user-supplied label for this node. Writes
-          `data-gds-name` onto the JSX so it persists, reads back
-          into the canvas path bar (which prefers data-gds-name over
-          componentName) and any future tree views. Empty input
-          means "use the default" — the path bar will fall back to
-          the component name. */}
-      {selection?.sourceId && appSource && (
+      {/* Layer Name — user-supplied label for this node (writes
+          `data-gds-name`, read by the canvas path bar). HIDDEN for now: it
+          added clutter to the panel and isn't really used yet. Flip the
+          `false &&` below to bring it back. */}
+      {false && selection?.sourceId && appSource && (
         <div className="px-3 py-2.5">
         <LayerNameRow
           source={appSource}
@@ -1928,36 +1927,73 @@ function FlexControls({
   const mainIsRow = dir !== "col";
 
   return (
-    <div className="space-y-2 border-t border-border/60 px-3 py-2.5">
-      <Label className={FIELD_LABEL}>Flex</Label>
-      <div className="flex items-start gap-2">
-        {/* Direction toggle: row / column. */}
-        <div className="flex w-[7.5rem] shrink-0 self-start gap-0.5 rounded-md border border-input p-0.5">
-          {([["row", "→"], ["col", "↓"]] as const).map(([d, glyph]) => (
-            <button
-              key={d}
-              type="button"
-              aria-pressed={isFlex && dir === d}
-              onClick={() =>
-                apply((c) => setFlexDirection(c, d), "Flex direction")
-              }
-              className={cn(
-                "h-6 flex-1 rounded text-xs transition-colors",
-                isFlex && dir === d
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+    <CollapsibleSection title="Layout">
+      <div className="flex items-stretch gap-2">
+        {/* Left column: Flex direction toggle + Gap, stacked. */}
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="space-y-1.5">
+            <Label className={FIELD_LABEL}>Flex</Label>
+            {/* Direction: Row = flex-row, Stack = flex-col. Segmented
+                single-select (reads like a tab strip). */}
+            <ToggleGroup
+              type="single"
+              variant="segmented"
+              size="2xs"
+              value={isFlex ? dir : ""}
+              onValueChange={(v) => {
+                if (v === "row" || v === "col")
+                  apply((c) => setFlexDirection(c, v), "Flex direction");
+              }}
+              className="w-full"
             >
-              {glyph}
-            </button>
-          ))}
+              {(
+                [
+                  ["row", "Row", LucideIcons.Columns3],
+                  ["col", "Stack", LucideIcons.Rows3],
+                ] as const
+              ).map(([d, lbl, Icon]) => (
+                <ToggleGroupItem
+                  key={d}
+                  value={d}
+                  aria-label={lbl}
+                  className="flex-1 gap-1 [&_svg]:size-3"
+                >
+                  <Icon aria-hidden />
+                  {lbl}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+          {/* Gap — token-first (Grade spacing scale). Writes a `gap-N` class
+              that resolves through the theme, so dialing the theme's spacing
+              opens up or closes up the whole page. */}
+          <TokenField
+            kind="gap"
+            label="Gap"
+            bound
+            token={gap === null ? null : String(gap)}
+            tokens={getAreaTokens("gap").map((t) => ({
+              value: t.value,
+              label: t.label,
+              hint: t.hint,
+            }))}
+            placeholder="0"
+            placeholderHint="0px"
+            unitSuffix="px"
+            onPickToken={(t) =>
+              apply((c) => setGap(c, t === null ? null : Number(t)), "Set gap")
+            }
+          />
         </div>
-        {/* 3×3 alignment grid. Single-click sets justify (main) + align
-            (cross), mapped per direction so column flex isn't transposed, and
-            ensures the element IS a flex container so the classes actually
-            take effect. DOUBLE-click TOGGLES distribute (space-between) on the
-            main axis; the active cross-line then reads as bars. */}
-        <div className="grid grid-cols-3 grid-rows-3 rounded-md border border-input p-1">
+        {/* Right column: an "Alignment" label (identical Label to "Flex", so
+            identical height) tops the grid — the toggle and grid then start on
+            the same line, and items-stretch + flex-1 lands the grid's bottom on
+            the gap input. Single-click sets justify (main) + align (cross),
+            mapped per direction so column flex isn't transposed. DOUBLE-click
+            toggles distribute (space-between) on the main axis. */}
+        <div className="flex shrink-0 flex-col">
+          <Label className={FIELD_LABEL}>Alignment</Label>
+          <div className="mt-1.5 grid min-h-0 w-24 flex-1 grid-cols-3 grid-rows-3 rounded-md border border-input p-0.5">
           {[0, 1, 2].map((r) =>
             [0, 1, 2].map((c) => {
               const cellJustify: JustifyValue = mainIsRow ? POS[c] : POS[r];
@@ -1999,7 +2035,7 @@ function FlexControls({
                         : "Distribute (space-between)",
                     )
                   }
-                  className="flex h-7 w-7 items-center justify-center rounded-sm hover:bg-muted/60"
+                  className="flex items-center justify-center rounded-sm hover:bg-muted/60"
                 >
                   {distributed ? (
                     // Bar along the main axis — the line of three reads as
@@ -2011,10 +2047,39 @@ function FlexControls({
                       )}
                     />
                   ) : single ? (
-                    <span className="flex items-end gap-[2px]">
-                      <span className="h-2.5 w-[2px] rounded-full bg-primary" />
-                      <span className="h-3.5 w-[2px] rounded-full bg-primary" />
-                      <span className="h-2 w-[2px] rounded-full bg-primary" />
+                    // Live mini-preview: three item bars positioned by THIS
+                    // cell's justify + align, so the active glyph is correct
+                    // for every corner / edge / centre by construction.
+                    <span
+                      className="flex h-full w-full p-[3px]"
+                      style={{
+                        flexDirection: mainIsRow ? "row" : "column",
+                        justifyContent:
+                          cellJustify === "start"
+                            ? "flex-start"
+                            : cellJustify === "end"
+                              ? "flex-end"
+                              : "center",
+                        alignItems:
+                          cellAlign === "start"
+                            ? "flex-start"
+                            : cellAlign === "end"
+                              ? "flex-end"
+                              : "center",
+                        gap: "2px",
+                      }}
+                    >
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          className="rounded-full bg-primary"
+                          style={
+                            mainIsRow
+                              ? { width: 2, height: 8 }
+                              : { width: 8, height: 2 }
+                          }
+                        />
+                      ))}
                     </span>
                   ) : (
                     <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
@@ -2023,29 +2088,10 @@ function FlexControls({
               );
             }),
           )}
+          </div>
         </div>
       </div>
-      {/* Gap — token-first (Grade spacing scale). Writes a `gap-N` class that
-          resolves through the theme, so dialing the theme's spacing opens up
-          or closes up the whole page. */}
-      <TokenField
-        kind="gap"
-        label="Gap"
-        bound
-        token={gap === null ? null : String(gap)}
-        tokens={getAreaTokens("gap").map((t) => ({
-          value: t.value,
-          label: t.label,
-          hint: t.hint,
-        }))}
-        placeholder="0"
-        placeholderHint="0px"
-        unitSuffix="px"
-        onPickToken={(t) =>
-          apply((c) => setGap(c, t === null ? null : Number(t)), "Set gap")
-        }
-      />
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -2605,7 +2651,7 @@ function LayoutGroup({
 
   return (
     <CollapsibleSection
-      title="Layout"
+      title="Spacing"
       hint={
         anyOverride ? (
           <span className="flex items-center gap-1">
