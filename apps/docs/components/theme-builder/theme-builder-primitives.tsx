@@ -35,7 +35,13 @@ import {
   type FontKey,
   type FontSelection,
 } from "@/lib/themes";
-import { hueToRamp, RAMP_KEYS } from "@/lib/themes/oklch";
+import {
+  hueToRamp,
+  RAMP_KEYS,
+  RAMP_ANCHOR_L,
+  RAMP_ANCHOR_C,
+} from "@/lib/themes/oklch";
+import { SliderInput } from "@/components/ui/slider-input";
 import { cn } from "@/lib/utils";
 
 /** Field label classes — keep in sync with FIELD_LABEL in
@@ -358,6 +364,8 @@ export function HueRow({
   onChange,
   onChroma,
   chromaMax = 2.5,
+  lightnessShift = 0,
+  onLightness,
   changed,
   onReset,
 }: {
@@ -365,19 +373,24 @@ export function HueRow({
   hue: number;
   chroma: number;
   onChange: (hue: number) => void;
-  /** Edit the ramp's chroma multiplier (vibrancy). When provided, the
-   *  expanded panel gains a Vibrancy slider beneath the hue slider. */
+  /** Edit the ramp's chroma multiplier. When provided, the expanded panel
+   *  gains a Chroma slider (shown as the anchor's actual OKLCH chroma). */
   onChroma?: (chroma: number) => void;
-  /** Top of the vibrancy range — brand ramps go loud (2.5), neutrals
-   *  stay subtle (~0.4). */
+  /** Top of the chroma-multiplier range — brand ramps go loud (2.5),
+   *  neutrals stay subtle (~0.4). */
   chromaMax?: number;
+  /** Lightness shift of the ramp (anchor L = RAMP_ANCHOR_L + shift). */
+  lightnessShift?: number;
+  /** Edit the ramp's lightness shift. When provided, the expanded panel
+   *  gains a Lightness slider (shown as the anchor's actual OKLCH L). */
+  onLightness?: (shift: number) => void;
   /** Changed-from-base dot — see Label. */
   changed?: boolean;
   /** Per-control reset — see Label. */
   onReset?: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ramp = hueToRamp({ hue, chromaScale: chroma });
+  const ramp = hueToRamp({ hue, chromaScale: chroma, lightnessShift });
 
   return (
     <div className="space-y-1">
@@ -424,50 +437,57 @@ export function HueRow({
       </button>
 
       {open && (
-        <div className="space-y-1.5 pt-0.5">
+        <div className="space-y-2 pt-1">
+          {/* Real OKLCH channels. Hue is the ramp hue; Lightness and Chroma
+              show the ANCHOR (500) stop's actual L / C, so you read true
+              values, not abstract multipliers. */}
           <div className="flex items-center gap-2">
-            <span className="w-14 shrink-0 text-2xs text-muted-foreground">
+            <span className="w-16 shrink-0 text-2xs text-muted-foreground">
               Hue
             </span>
-            <input
-              type="range"
+            <SliderInput
+              className="flex-1"
+              aria-label={`${label} hue`}
+              value={hue}
               min={0}
               max={360}
               step={1}
-              value={hue}
-              onChange={(e) => onChange(Number(e.target.value))}
-              aria-label={`${label} hue`}
-              className="flex-1"
-              // Native slider, tinted to the ramp — no bespoke chrome.
-              style={{ accentColor: `oklch(${ramp[500]})` }}
+              unit="°"
+              onChange={onChange}
             />
-            <span className="w-10 shrink-0 text-right font-mono text-2xs tabular-nums text-muted-foreground">
-              {Math.round(hue)}°
-            </span>
           </div>
-          {onChroma && (
-            // Vibrancy = the ramp's chroma multiplier. Continuous, and it
-            // runs past the old "vibrant" preset — OKLCH chroma keeps going
-            // (the browser gamut-maps beyond sRGB) so loud brand greens /
-            // limes are reachable.
+          {onLightness && (
             <div className="flex items-center gap-2">
-              <span className="w-14 shrink-0 text-2xs text-muted-foreground">
-                Vibrancy
+              <span className="w-16 shrink-0 text-2xs text-muted-foreground">
+                Lightness
               </span>
-              <input
-                type="range"
-                min={0}
-                max={chromaMax}
-                step={0.02}
-                value={chroma}
-                onChange={(e) => onChroma(Number(e.target.value))}
-                aria-label={`${label} vibrancy`}
+              <SliderInput
                 className="flex-1"
-                style={{ accentColor: `oklch(${ramp[500]})` }}
+                aria-label={`${label} lightness`}
+                value={Math.min(1, Math.max(0, RAMP_ANCHOR_L + lightnessShift))}
+                min={0}
+                max={1}
+                step={0.01}
+                decimals={2}
+                onChange={(l) => onLightness(l - RAMP_ANCHOR_L)}
               />
-              <span className="w-10 shrink-0 text-right font-mono text-2xs tabular-nums text-muted-foreground">
-                {chroma.toFixed(2)}
+            </div>
+          )}
+          {onChroma && (
+            <div className="flex items-center gap-2">
+              <span className="w-16 shrink-0 text-2xs text-muted-foreground">
+                Chroma
               </span>
+              <SliderInput
+                className="flex-1"
+                aria-label={`${label} chroma`}
+                value={RAMP_ANCHOR_C * chroma}
+                min={0}
+                max={RAMP_ANCHOR_C * chromaMax}
+                step={0.005}
+                decimals={3}
+                onChange={(c) => onChroma(c / RAMP_ANCHOR_C)}
+              />
             </div>
           )}
         </div>

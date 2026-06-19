@@ -247,10 +247,12 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
                       disabled={opt.disabled}
                       data-gds-part="combobox-item"
                       data-selected={isSelected || undefined}
+                      // Icons muted at rest, but inherit the highlighted
+                      // foreground so they invert with the row (not left
+                      // stranded in muted grey on the accent fill).
+                      className="[&_svg]:text-muted-foreground data-[selected=true]:[&_svg]:text-accent-foreground"
                     >
-                      {Icon ? (
-                        <Icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                      ) : null}
+                      {Icon ? <Icon className="mr-2 h-4 w-4" /> : null}
                       <span className="truncate">{opt.label}</span>
                       <Check
                         className={cn(
@@ -273,8 +275,9 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
                         setOpen(false);
                       }}
                       data-gds-part="combobox-clear"
+                      className="[&_svg]:text-muted-foreground data-[selected=true]:[&_svg]:text-accent-foreground"
                     >
-                      <X className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <X className="mr-2 h-4 w-4" />
                       <span>Clear</span>
                     </CommandItem>
                   </CommandGroup>

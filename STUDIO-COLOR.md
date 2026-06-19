@@ -20,12 +20,17 @@ The fix is one idea in three layers.
 ## The layering
 
 ```
-Raw palette        → locked OKLCH swatches (the brand's actual colours)
-Pairs / triplets   → named roles binding 2–3 swatches, contrast guaranteed
+Core palette       → locked OKLCH swatches (the brand's actual colours)
+Roles              → brand · accent · semantics (error/success/…) · pairs/triplets
+                     — ALL select from the palette, nothing hardcodes a hue
 Surfaces           → Section / Card / Button / Badge ASSIGN a role
 ```
 
 Each layer only references the one below it. Override is always available at any layer — the layers are defaults, not a cage.
+
+The **core palette is the single pool**, and *everything* selects from it: brand and accent are palette picks, the marketing pairs/triplets pick strong pairings from it, and the **semantic roles (error / success / warning / info) become palette selections too** rather than separately-generated hues. That's the maximum-impact move — one palette, and every role is a reference into it. The locked swatches (layer 1) *are* the palette entries.
+
+**UI:** the `Swatch` / `SwatchGroup` primitives render the palette in the Colours section. A `Swatch` reads a `token` name (re-voices with the theme) or a raw `color`; `onSelect` makes it a pickable chip with a selection ring; `SwatchGroup` lays a set out. Selecting a swatch + editing it with the OKLCH L/C/H control (layer 1) is the pick-and-tune loop. (Swatch's native colour well is hex-only, so OKLCH editing rides our own control, not the OS picker.)
 
 ## 1. Palette — OKLCH anchors + locked swatches
 

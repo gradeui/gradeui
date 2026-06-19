@@ -43,6 +43,24 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
+import { Swatch, SwatchGroup } from "@/components/ui/swatch";
+import { SliderInput } from "@/components/ui/slider-input";
+
+/** Palette slots shown as swatches. `sem` (when set) is the editable
+ *  semantic-override key; brand/accent (sem null) are edited via the hue
+ *  rows below. `field` is the generated colour read for the chip + the
+ *  editor's seed. */
+const PALETTE_SLOTS = [
+  { field: "primary", label: "Brand", sem: null },
+  { field: "accent", label: "Accent", sem: null },
+  { field: "success", label: "Success", sem: "success" },
+  { field: "warning", label: "Warning", sem: "warning" },
+  { field: "info", label: "Info", sem: "info" },
+  { field: "highlight", label: "Highlight", sem: "highlight" },
+  { field: "destructive", label: "Error", sem: "destructive" },
+] as const;
+
+type SemanticKey = "success" | "warning" | "info" | "highlight" | "destructive";
 import { useThemeBuilder } from "./theme-builder-provider";
 import {
   Section,
@@ -86,7 +104,11 @@ export function ThemeBuilderControls({
   hideHeadingWeight,
   hideScale,
 }: ThemeBuilderControlsProps) {
-  const { input, patch, mode, setMode, baseline } = useThemeBuilder();
+  const { input, patch, mode, setMode, baseline, generated } =
+    useThemeBuilder();
+  // Which palette swatch is selected (foundation for select-then-tune; the
+  // OKLCH editor wires onto this in #29).
+  const [selectedSlot, setSelectedSlot] = React.useState<string | null>(null);
 
   // Resolve visibility. Defaults: everything visible except Mode when
   // `hideMode` is set. If `sections` is provided, undefined means "show";
@@ -188,6 +210,118 @@ export function ThemeBuilderControls({
 
       {show("colour") && (
         <Section collapsible={collapsibleSections} title="Colour" subtitle="Hues drive the full OKLCH ramps.">
+          {/* Palette — the theme's called-out colours as swatches. Driven by
+              the GENERATED triplets so it re-voices live as you edit. Select a
+              SEMANTIC chip to tune its OKLCH directly (an override); brand /
+              accent are edited via the hue rows below. */}
+          <div className="space-y-1.5">
+            <Label>Palette</Label>
+            <SwatchGroup gap="sm">
+              {PALETTE_SLOTS.map((slot) => (
+                <Swatch
+                  key={slot.field}
+                  size="sm"
+                  color={`oklch(${generated.colors[mode][slot.field]})`}
+                  label={slot.label}
+                  selected={selectedSlot === slot.field}
+                  onSelect={() =>
+                    setSelectedSlot((s) =>
+                      s === slot.field ? null : slot.field
+                    )
+                  }
+                />
+              ))}
+            </SwatchGroup>
+
+            {/* Per-semantic OKLCH editor — shown for a selected semantic chip.
+                Seeds from the override if present, else the generated default;
+                writing any channel stores the full triplet as an override. */}
+            {(() => {
+              const slot = PALETTE_SLOTS.find(
+                (s) => s.field === selectedSlot && s.sem
+              );
+              if (!slot || !slot.sem) return null;
+              const sem = slot.sem as SemanticKey;
+              const triplet =
+                input.semantics?.[sem] ?? generated.colors[mode][slot.field];
+              const [l, c, h] = triplet.trim().split(/\s+/).map(Number);
+              const write = (next: { l?: number; c?: number; h?: number }) =>
+                patch((d) => {
+                  (d.semantics ??= {})[sem] = `${(next.l ?? l).toFixed(4)} ${(
+                    next.c ?? c
+                  ).toFixed(4)} ${(next.h ?? h).toFixed(2)}`;
+                });
+              const overridden = input.semantics?.[sem] != null;
+              return (
+                <div className="space-y-2 rounded-md border border-border/60 p-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xs font-medium text-foreground/80">
+                      {slot.label}
+                    </span>
+                    {overridden && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          patch((d) => {
+                            if (d.semantics) d.semantics[sem] = undefined;
+                          })
+                        }
+                        className="text-2xs text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-16 shrink-0 text-2xs text-muted-foreground">
+                      Hue
+                    </span>
+                    <SliderInput
+                      className="flex-1"
+                      aria-label={`${slot.label} hue`}
+                      value={h}
+                      min={0}
+                      max={360}
+                      step={1}
+                      unit="°"
+                      onChange={(v) => write({ h: v })}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-16 shrink-0 text-2xs text-muted-foreground">
+                      Lightness
+                    </span>
+                    <SliderInput
+                      className="flex-1"
+                      aria-label={`${slot.label} lightness`}
+                      value={l}
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      decimals={2}
+                      onChange={(v) => write({ l: v })}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-16 shrink-0 text-2xs text-muted-foreground">
+                      Chroma
+                    </span>
+                    <SliderInput
+                      className="flex-1"
+                      aria-label={`${slot.label} chroma`}
+                      value={c}
+                      min={0}
+                      max={0.4}
+                      step={0.005}
+                      decimals={3}
+                      onChange={(v) => write({ c: v })}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
           <HueRow
             label="Primary"
             hue={input.hues.primary}
@@ -205,6 +339,12 @@ export function ThemeBuilderControls({
             onChroma={(c) =>
               patch((d) => {
                 (d.chroma ??= {}).primary = c;
+              })
+            }
+            lightnessShift={input.lightness?.primary ?? 0}
+            onLightness={(s) =>
+              patch((d) => {
+                (d.lightness ??= {}).primary = s;
               })
             }
           />
@@ -227,6 +367,12 @@ export function ThemeBuilderControls({
                 (d.chroma ??= {}).accent = c;
               })
             }
+            lightnessShift={input.lightness?.accent ?? 0}
+            onLightness={(s) =>
+              patch((d) => {
+                (d.lightness ??= {}).accent = s;
+              })
+            }
           />
           <HueRow
             label="Neutral"
@@ -245,6 +391,12 @@ export function ThemeBuilderControls({
             onChroma={(c) =>
               patch((d) => {
                 (d.chroma ??= {}).neutral = c;
+              })
+            }
+            lightnessShift={input.lightness?.neutral ?? 0}
+            onLightness={(s) =>
+              patch((d) => {
+                (d.lightness ??= {}).neutral = s;
               })
             }
           />

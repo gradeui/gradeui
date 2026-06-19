@@ -479,6 +479,31 @@ export interface ThemeInput {
     accent?: number; // default 1.0
   };
 
+  /**
+   * Per-ramp lightness SHIFT applied to the whole curve (default 0). Slides
+   * the anchor brighter/darker than its natural base so bright-fill brand
+   * colours are reachable. Passed to hueToRamp as `lightnessShift`.
+   */
+  lightness?: {
+    neutral?: number;
+    primary?: number;
+    accent?: number;
+  };
+
+  /**
+   * Per-semantic colour overrides as OKLCH "L C H" triplets. When set, the
+   * role uses this instead of the built-in fixed status colour, and its
+   * soft / deep tints derive from it. Lets a brand pick its own
+   * success / warning / info / highlight / error.
+   */
+  semantics?: {
+    success?: string;
+    warning?: string;
+    info?: string;
+    highlight?: string;
+    destructive?: string;
+  };
+
   /** If true, the neutral ramp is pure gray regardless of neutral hue. */
   neutralPureGray?: boolean;
 

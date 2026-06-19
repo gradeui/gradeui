@@ -229,14 +229,26 @@ function deriveColorsForMode(
    *  ring token resolves from THIS ramp at the mode-tuned step instead
    *  of the primary ramp — colour changes, per-mode contrast behaviour
    *  doesn't. */
-  ringRamp?: Ramp
+  ringRamp?: Ramp,
+  /** Per-semantic OKLCH overrides (ThemeInput.semantics). When a role is
+   *  set, it replaces the built-in fixed colour in BOTH light/dark, and the
+   *  soft/deep tints derive from the override. */
+  semantics?: ThemeInput["semantics"]
 ): GeneratedColorsMode {
   const map = MODE_TOKENS[mode];
   // Fixed semantic colors don't change with the brand hue — they use the
   // light/dark set because the 4 modes split cleanly into "has light bg"
-  // and "has dark bg" for contrast purposes.
+  // and "has dark bg" for contrast purposes. A theme-level override wins.
   const isLightBg = mode === "superLight" || mode === "light";
-  const fixed = isLightBg ? FIXED_SEMANTIC.light : FIXED_SEMANTIC.dark;
+  const base = isLightBg ? FIXED_SEMANTIC.light : FIXED_SEMANTIC.dark;
+  const fixed = {
+    ...base,
+    destructive: semantics?.destructive ?? base.destructive,
+    success: semantics?.success ?? base.success,
+    warning: semantics?.warning ?? base.warning,
+    info: semantics?.info ?? base.info,
+    highlight: semantics?.highlight ?? base.highlight,
+  };
 
   return {
     background: resolveToken(map.background, ramps),
@@ -605,9 +617,21 @@ export function generateTheme(input: ThemeInput): GeneratedTheme {
 
   const neutral = pureGray
     ? neutralRamp()
-    : hueToRamp({ hue: input.hues.neutral, chromaScale: neutralChroma });
-  const primary = hueToRamp({ hue: input.hues.primary, chromaScale: primaryChroma });
-  const accent = hueToRamp({ hue: input.hues.accent, chromaScale: accentChroma });
+    : hueToRamp({
+        hue: input.hues.neutral,
+        chromaScale: neutralChroma,
+        lightnessShift: input.lightness?.neutral ?? 0,
+      });
+  const primary = hueToRamp({
+    hue: input.hues.primary,
+    chromaScale: primaryChroma,
+    lightnessShift: input.lightness?.primary ?? 0,
+  });
+  const accent = hueToRamp({
+    hue: input.hues.accent,
+    chromaScale: accentChroma,
+    lightnessShift: input.lightness?.accent ?? 0,
+  });
 
   const ramps = { neutral, primary, accent };
 
@@ -631,7 +655,10 @@ export function generateTheme(input: ThemeInput): GeneratedTheme {
 
   // 2. Derive semantic tokens for all four modes
   const colors = Object.fromEntries(
-    ALL_MODES.map((mode) => [mode, deriveColorsForMode(ramps, mode, ringRamp)])
+    ALL_MODES.map((mode) => [
+      mode,
+      deriveColorsForMode(ramps, mode, ringRamp, input.semantics),
+    ])
   ) as Record<ModeName, GeneratedColorsMode>;
 
   // 2b. Role ramp families (THEME-MIGRATION.md B4, June 10 decision):
@@ -645,12 +672,21 @@ export function generateTheme(input: ThemeInput): GeneratedTheme {
   const statusHue = (t: OKLCHTriplet) =>
     parseFloat(t.trim().split(/\s+/)[2] ?? "0");
   const fixedLight = FIXED_SEMANTIC.light;
+  // An override re-hues the whole role ramp too, so soft/solid/text steps
+  // all track the brand's chosen status colour.
+  const sem = input.semantics;
+  const semHue = (
+    k: "success" | "warning" | "info" | "highlight" | "destructive",
+    fallback: OKLCHTriplet
+  ) => statusHue(sem?.[k] ?? fallback);
   const roleRamps: GeneratedTheme["roleRamps"] = {
-    success: hueToRamp({ hue: statusHue(fixedLight.success) }),
-    warning: hueToRamp({ hue: statusHue(fixedLight.warning) }),
-    info: hueToRamp({ hue: statusHue(fixedLight.info) }),
-    highlight: hueToRamp({ hue: statusHue(fixedLight.highlight) }),
-    destructive: hueToRamp({ hue: statusHue(fixedLight.destructive) }),
+    success: hueToRamp({ hue: semHue("success", fixedLight.success) }),
+    warning: hueToRamp({ hue: semHue("warning", fixedLight.warning) }),
+    info: hueToRamp({ hue: semHue("info", fixedLight.info) }),
+    highlight: hueToRamp({ hue: semHue("highlight", fixedLight.highlight) }),
+    destructive: hueToRamp({
+      hue: semHue("destructive", fixedLight.destructive),
+    }),
   };
 
   // 3. Resolve non-color config into concrete CSS values

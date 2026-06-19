@@ -84,6 +84,12 @@ const CHROMA_CURVE: readonly number[] = [
   0.040, // 950
 ];
 
+/** The 500-stop ("base") values of the curves — the ramp's natural anchor.
+ *  The editor shows L and C relative to these so the readouts are the
+ *  anchor's ACTUAL OKLCH lightness / chroma, not abstract multipliers. */
+export const RAMP_ANCHOR_L = LIGHTNESS_CURVE[5];
+export const RAMP_ANCHOR_C = CHROMA_CURVE[5];
+
 /** Arguments to hueToRamp. */
 export interface HueToRampOptions {
   /** Hue in degrees, 0–360. */
@@ -96,6 +102,12 @@ export interface HueToRampOptions {
    *   - Vibrant: 1.1–1.3 (may fall outside sRGB at high L, but browsers clip)
    */
   chromaScale?: number;
+  /**
+   * Lightness shift applied to every stop (the whole curve slides up/down).
+   * Default 0. Lets the anchor sit brighter/darker than its natural base —
+   * how a bright-fill brand colour becomes reachable. Clamped per stop.
+   */
+  lightnessShift?: number;
 }
 
 /**
@@ -105,11 +117,15 @@ export interface HueToRampOptions {
  * regardless of which mode the theme ends up being applied in. The mode
  * selects which stops are used for semantic tokens (see generator).
  */
-export function hueToRamp({ hue, chromaScale = 1 }: HueToRampOptions): Ramp {
+export function hueToRamp({
+  hue,
+  chromaScale = 1,
+  lightnessShift = 0,
+}: HueToRampOptions): Ramp {
   const normalizedHue = ((hue % 360) + 360) % 360; // clamp to 0–360
   const ramp = {} as Ramp;
   for (let i = 0; i < RAMP_KEYS.length; i++) {
-    const L = LIGHTNESS_CURVE[i];
+    const L = Math.min(0.99, Math.max(0.02, LIGHTNESS_CURVE[i] + lightnessShift));
     const C = CHROMA_CURVE[i] * chromaScale;
     ramp[RAMP_KEYS[i]] = `${L.toFixed(4)} ${C.toFixed(4)} ${normalizedHue.toFixed(2)}`;
   }
