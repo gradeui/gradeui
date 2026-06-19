@@ -418,12 +418,12 @@ export function TypographyEditor() {
             const b = typo.baseStyles?.[key] ?? {};
             const fontField =
               BASE_FONT_FIELD[key as "body" | "header" | "mono" | "accent"];
-            const fontValue =
+            const fontValue: FontSelection =
               key === "header"
                 ? typo.display || typo.body
                 : key === "accent"
                   ? typo.accent ?? "instrumentSerif"
-                  : typo[fontField];
+                  : typo[fontField] ?? typo.body;
             return (
               <div
                 key={key}

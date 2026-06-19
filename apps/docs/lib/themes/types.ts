@@ -417,7 +417,7 @@ export interface TypeStyleProps {
 }
 
 /** Reusable base text styles every theme has; steps inherit from one. */
-export type TypeBaseStyleKey = "body" | "header" | "mono" | "prose";
+export type TypeBaseStyleKey = "body" | "header" | "mono" | "accent" | "prose";
 
 /** The named ladder steps screens use. Size comes from the modular scale. */
 export type TypeStepKey =
