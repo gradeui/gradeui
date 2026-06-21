@@ -6,15 +6,15 @@
  * full Figma paint popover (solid / gradient / image / …), ColorPicker is
  * the focused "pick one colour token" control.
  *
- * Composes Popover + Command (cmdk) the same way Combobox does internally:
- *
- *   - Trigger: a button showing the selected token as a small <Swatch> + its
- *     short name. `triggerVariant="inline"` drops the form chrome down to
- *     just a clickable swatch — the inspector / fill-row affordance.
- *   - Open: a Popover with a searchable Command list, grouped by token family
- *     (surface · action · status), each row a Swatch + the token's last path
- *     segment, with a check on the selected row. A "Transparent" option sits
- *     at the top.
+ * Two exports:
+ *   - <ColorPickerPanel> — the popover BODY (header + search + grouped
+ *     list). Reusable: the inspector's colour fields host it inside their
+ *     own TokenField-chrome popover so every colour control shares ONE
+ *     panel. Matches the Figma "Color Picker" frame: a "Color" title with
+ *     a ghost close button, a search input, then DropdownMenuItem-style
+ *     rows (Swatch + token name + check) grouped by family.
+ *   - <ColorPicker> — panel + a self-contained trigger (swatch + name or,
+ *     with `triggerVariant="inline"`, just the swatch).
  *
  * Grade is token-led, so the value is a token NAME ("action/primary"), the
  * literal "transparent", or null. The Swatch resolves the live CSS variable,
@@ -22,7 +22,7 @@
  */
 
 import * as React from "react";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Swatch } from "@/components/ui/swatch";
@@ -81,7 +81,7 @@ export const TRANSPARENT = "transparent";
 type ColorPickerTriggerVariant = "default" | "inline";
 
 /** Short label = the last path segment of a token name. */
-function shortName(value: string): string {
+export function colorTokenShortName(value: string): string {
   if (value === TRANSPARENT) return "Transparent";
   const seg = value.split("/").pop() ?? value;
   return seg.charAt(0).toUpperCase() + seg.slice(1);
@@ -93,6 +93,105 @@ function TokenSwatch({ value }: { value: string }) {
     return <Swatch size="2xs" shape="rounded" type="solid" color="transparent" />;
   }
   return <Swatch size="2xs" shape="rounded" token={value} />;
+}
+
+export interface ColorPickerPanelProps {
+  /** Current value (token name, "transparent", or null). */
+  value?: string | null;
+  /** Fired with the next value. */
+  onValueChange?: (value: string | null) => void;
+  /** Token families offered in the list. */
+  tokens?: ColorTokenGroup[];
+  /** Show the search input. Default true. */
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  /** Include a "Transparent" option at the top. Default true. */
+  allowTransparent?: boolean;
+  /** Header title. Pass null to drop the header entirely. Default "Color". */
+  title?: string | null;
+  /** When provided, renders the header's ghost close button. */
+  onClose?: () => void;
+}
+
+/**
+ * ColorPickerPanel — the popover body. Header (title + close), search, then
+ * the grouped token rows. Hosted by <ColorPicker> and by the inspector's
+ * colour fields alike, so there's a single source of truth for the list.
+ */
+export function ColorPickerPanel({
+  value = null,
+  onValueChange,
+  tokens = DEFAULT_COLOR_TOKEN_GROUPS,
+  searchable = true,
+  searchPlaceholder = "Search…",
+  emptyMessage = "No colours match.",
+  allowTransparent = true,
+  title = "Color",
+  onClose,
+}: ColorPickerPanelProps) {
+  const pick = (next: string) => onValueChange?.(next);
+
+  return (
+    <div className="flex flex-col gap-2">
+      {title != null ? (
+        <div className="flex items-center justify-between gap-1 pl-1">
+          <span className="text-[13px] leading-none text-foreground">
+            {title}
+          </span>
+          {onClose ? (
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring [&_svg]:size-3.5"
+            >
+              <X />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      <Command
+        filter={(itemValue, search, keywords) => {
+          const haystack =
+            `${itemValue} ${(keywords ?? []).join(" ")}`.toLowerCase();
+          return haystack.includes(search.toLowerCase()) ? 1 : 0;
+        }}
+      >
+        {searchable && (
+          <CommandInput placeholder={searchPlaceholder} className="h-8 text-xs" />
+        )}
+        {/* FIXED height (not max-h): the popover size stays constant while
+            you type, so filtering the list never resizes the content and
+            Radix never repositions the popover mid-search. Long sets scroll
+            within it; short sets leave quiet space below. */}
+        <CommandList className="h-56 overflow-y-auto overflow-x-hidden">
+          <CommandEmpty>{emptyMessage}</CommandEmpty>
+          {allowTransparent && (
+            <CommandGroup>
+              <ColorRow
+                value={TRANSPARENT}
+                selected={value === TRANSPARENT}
+                onSelect={pick}
+              />
+            </CommandGroup>
+          )}
+          {tokens.map(({ group, tokens: list }) => (
+            <CommandGroup key={group} heading={group}>
+              {list.map((tok) => (
+                <ColorRow
+                  key={tok}
+                  value={tok}
+                  selected={value === tok}
+                  onSelect={pick}
+                />
+              ))}
+            </CommandGroup>
+          ))}
+        </CommandList>
+      </Command>
+    </div>
+  );
 }
 
 export interface ColorPickerProps {
@@ -116,6 +215,8 @@ export interface ColorPickerProps {
   emptyMessage?: string;
   /** Include a "Transparent" option at the top. Default true. */
   allowTransparent?: boolean;
+  /** Popover header title. Default "Color"; pass null to drop the header. */
+  title?: string | null;
   /** PopoverContent alignment. Default "start". */
   align?: "start" | "center" | "end";
   /** Lock the control to a display of its current value. */
@@ -136,9 +237,10 @@ export const ColorPicker = React.forwardRef<HTMLButtonElement, ColorPickerProps>
       searchable = true,
       triggerVariant = "default",
       placeholder = "Pick a colour",
-      searchPlaceholder = "Search colours…",
+      searchPlaceholder = "Search…",
       emptyMessage = "No colours match.",
       allowTransparent = true,
+      title = "Color",
       align = "start",
       disabled = false,
       className,
@@ -149,11 +251,6 @@ export const ColorPicker = React.forwardRef<HTMLButtonElement, ColorPickerProps>
     ref,
   ) {
     const [open, setOpen] = React.useState(false);
-
-    const pick = (next: string) => {
-      onValueChange?.(next);
-      setOpen(false);
-    };
 
     const inline = triggerVariant === "inline";
     const hasValue = value != null;
@@ -187,7 +284,7 @@ export const ColorPicker = React.forwardRef<HTMLButtonElement, ColorPickerProps>
               <>
                 <TokenSwatch value={value!} />
                 {!inline && (
-                  <span className="truncate">{shortName(value!)}</span>
+                  <span className="truncate">{colorTokenShortName(value!)}</span>
                 )}
               </>
             ) : inline ? (
@@ -199,42 +296,23 @@ export const ColorPicker = React.forwardRef<HTMLButtonElement, ColorPickerProps>
         </PopoverTrigger>
         <PopoverContent
           align={align}
-          className="w-56 p-0"
+          className="w-64 rounded-xl p-2"
           data-gds-part="color-picker-content"
         >
-          <Command
-            filter={(itemValue, search, keywords) => {
-              const haystack =
-                `${itemValue} ${(keywords ?? []).join(" ")}`.toLowerCase();
-              return haystack.includes(search.toLowerCase()) ? 1 : 0;
+          <ColorPickerPanel
+            value={value}
+            onValueChange={(v) => {
+              onValueChange?.(v);
+              setOpen(false);
             }}
-          >
-            {searchable && <CommandInput placeholder={searchPlaceholder} />}
-            <CommandList className="max-h-56 overflow-y-auto">
-              <CommandEmpty>{emptyMessage}</CommandEmpty>
-              {allowTransparent && (
-                <CommandGroup>
-                  <ColorRow
-                    value={TRANSPARENT}
-                    selected={value === TRANSPARENT}
-                    onSelect={pick}
-                  />
-                </CommandGroup>
-              )}
-              {tokens.map(({ group, tokens: list }) => (
-                <CommandGroup key={group} heading={group}>
-                  {list.map((tok) => (
-                    <ColorRow
-                      key={tok}
-                      value={tok}
-                      selected={value === tok}
-                      onSelect={pick}
-                    />
-                  ))}
-                </CommandGroup>
-              ))}
-            </CommandList>
-          </Command>
+            tokens={tokens}
+            searchable={searchable}
+            searchPlaceholder={searchPlaceholder}
+            emptyMessage={emptyMessage}
+            allowTransparent={allowTransparent}
+            title={title}
+            onClose={() => setOpen(false)}
+          />
         </PopoverContent>
       </Popover>
     );
@@ -254,15 +332,16 @@ function ColorRow({
   return (
     <CommandItem
       value={value}
-      keywords={[shortName(value)]}
+      keywords={[colorTokenShortName(value)]}
       onSelect={() => onSelect(value)}
       data-gds-part="color-picker-item"
       data-selected={selected || undefined}
+      className="gap-2 px-2 py-1 text-xs [&_svg]:size-3.5"
     >
       <TokenSwatch value={value} />
-      <span className="truncate">{shortName(value)}</span>
+      <span className="truncate">{colorTokenShortName(value)}</span>
       <Check
-        className={cn("ml-auto h-4 w-4", selected ? "opacity-100" : "opacity-0")}
+        className={cn("ml-auto h-3.5 w-3.5", selected ? "opacity-100" : "opacity-0")}
         aria-hidden
       />
     </CommandItem>

@@ -104,7 +104,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  ColorPicker,
+  ColorPickerPanel,
   type ColorTokenGroup,
 } from "@/components/ui/color-picker";
 import { type FillValue } from "@/components/ui/fill-picker";
@@ -688,36 +688,10 @@ export function SelectionInspector({
   // Shell picks between the two variants. Body is the same.
   const body = (
     <>
-      {/* Layer Name — user-supplied label for this node (writes
-          `data-gds-name`, read by the canvas path bar). HIDDEN for now: it
-          added clutter to the panel and isn't really used yet. Flip the
-          `false &&` below to bring it back. */}
-      {false && selection?.sourceId && appSource && (
-        <div className="px-3 py-2.5">
-        <LayerNameRow
-          source={appSource}
-          sourceId={selection.sourceId}
-          componentName={selection.componentName ?? selection.tag}
-          disabled={!componentPresent}
-          onChange={(nextName) => {
-            // Empty string clears the attribute; the mutator's null
-            // path strips the prop entirely, restoring default-
-            // label behavior in the path bar.
-            const value = nextName.trim();
-            const next = updateComponentProp(
-              appSource,
-              selection.componentName ?? selection.tag,
-              "data-gds-name",
-              value || null,
-              selection.sourceId
-            );
-            if (next !== appSource) {
-              onSourceChange(next, value ? `Name layer "${value}"` : "Clear layer name");
-            }
-          }}
-        />
-        </div>
-      )}
+      {/* Layer Name row removed (was hidden behind `false &&`, which broke
+          type-narrowing and the CI typecheck). It wrote `data-gds-name`
+          (read by the canvas path bar) but added clutter and wasn't used.
+          Recover from git history (LayerNameRow) if it's wanted back. */}
 
       {/* ============================================================
           IMAGE group — everything about the image in one place:
@@ -4547,6 +4521,107 @@ function isRawFillColor(value: string): boolean {
   return /[#(\s]/.test(value) || value.startsWith("var(");
 }
 
+/** ColorPicker groups for the border colour — bare ids, so the panel's
+ *  Swatch resolves `oklch(var(--<id>))` exactly like the Fill section. */
+const BORDER_COLOR_PICKER_GROUPS: ColorTokenGroup[] = [
+  { group: "border", tokens: [...BORDER_COLOR_TOKENS] },
+];
+
+/** Human label for a colour token shown in the field's bound chip. */
+function colorFieldLabel(token: string | null): string | null {
+  if (token == null) return null;
+  if (token === "transparent") return "Transparent";
+  if (isRawFillColor(token)) return "Custom";
+  return token.charAt(0).toUpperCase() + token.slice(1);
+}
+
+/**
+ * ColorPopoverField — the single colour control for the whole inspector.
+ * It is a TokenField (leading swatch + bound chip, identical chrome to the
+ * gap / opacity / border-width fields) whose trigger opens the Figma-
+ * designed <ColorPickerPanel> (header + search + grouped DropdownMenuItem
+ * rows). Used for Fill solid, gradient stops, border colour AND text
+ * colour, so every editable colour reads and behaves the same. Per the
+ * load-bearing rule: changeable colour tokens render in a TokenField — no
+ * bespoke colour controls.
+ */
+function ColorPopoverField({
+  token,
+  groups,
+  allowTransparent = false,
+  placeholder = "None",
+  title = "Color",
+  ariaLabel,
+  disabled,
+  onPick,
+}: {
+  token: string | null;
+  groups: ColorTokenGroup[];
+  allowTransparent?: boolean;
+  placeholder?: string;
+  title?: string;
+  ariaLabel?: string;
+  disabled?: boolean;
+  onPick: (value: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const label = colorFieldLabel(token);
+  return (
+    <TokenField
+      kind="colour"
+      bound
+      token={token}
+      tokens={[]}
+      placeholder={placeholder}
+      disabled={disabled}
+      onPickToken={() => {}}
+      renderToken={() => (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            {/* Native SelectTrigger-2xs chrome + accent bound chip — the
+                exact treatment the gradient trigger and the other token
+                fields use. */}
+            <button
+              type="button"
+              disabled={disabled}
+              aria-label={ariaLabel ?? title}
+              className="flex h-6 w-full items-center justify-between rounded-lg border border-input bg-background pl-1.5 pr-2 py-0 text-2xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                <span className="pointer-events-none flex shrink-0 items-center text-muted-foreground/70">
+                  <FillSwatchGlyph token={token} />
+                </span>
+                {label != null ? (
+                  <span className="flex min-w-0 items-center gap-0.5 rounded-[4px] border border-[oklch(var(--studio-accent,_0.62_0.18_264)/0.25)] bg-[oklch(var(--studio-accent,_0.62_0.18_264)/0.08)] px-1">
+                    <span className="truncate">{label}</span>
+                  </span>
+                ) : (
+                  <span className="truncate text-muted-foreground">
+                    {placeholder}
+                  </span>
+                )}
+              </span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-64 rounded-xl p-2">
+            <ColorPickerPanel
+              value={token}
+              tokens={groups}
+              allowTransparent={allowTransparent}
+              title={title}
+              onClose={() => setOpen(false)}
+              onValueChange={(v) => {
+                onPick(v);
+                setOpen(false);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+    />
+  );
+}
+
 /** The fill model stores the conic kind as `"conic"`; the GradientEditor's
  *  GradientValue calls it `"angular"`. These two helpers map the kind across
  *  that boundary so radial + conic round-trip (linear is the shared default). */
@@ -4887,15 +4962,15 @@ function GradientEditorPanel({
                 {/* Colour — a NATIVE TokenField with the colour swatch in
                     the leading slot, identical chrome to the Fill solid
                     value and the gap / opacity fields. */}
-                <TokenField
-                  kind="gradient stop"
-                  bound
+                <ColorPopoverField
                   token={stopColorValue(stop)}
-                  tokens={FILL_COLOR_OPTIONS}
+                  groups={FILL_COLOR_PICKER_GROUPS}
+                  allowTransparent
                   placeholder="None"
+                  title="Stop colour"
+                  ariaLabel="Gradient stop colour"
                   disabled={disabled}
-                  triggerIcon={<FillSwatchGlyph token={stopColorValue(stop)} />}
-                  onPickToken={(t) => setStopColor(stop.id, t)}
+                  onPick={(v) => setStopColor(stop.id, v)}
                 />
                 {/* Position — a 0–100 % TokenField, identical chrome to the
                     fill-opacity field. */}
@@ -5126,15 +5201,14 @@ function FillRow({
             )}
           />
         ) : (
-          <TokenField
-            kind="fill"
-            bound
+          <ColorPopoverField
             token={colorValue}
-            tokens={FILL_COLOR_OPTIONS}
+            groups={FILL_COLOR_PICKER_GROUPS}
             placeholder="None"
+            title="Fill"
+            ariaLabel="Fill colour"
             disabled={disabled}
-            triggerIcon={<FillSwatchGlyph token={colorValue} />}
-            onPickToken={(t) => onChange({ color: t ?? undefined })}
+            onPick={(v) => onChange({ color: v ?? undefined })}
           />
         )}
         {/* Opacity field: tokenised %, dotted opacity glyph, 10% ramp. */}
@@ -5373,32 +5447,18 @@ function ColorGroup({
     >
       <div className="space-y-1">
         <Label className={FIELD_LABEL}>Text</Label>
-        <ColorPicker
-          value={color}
-          tokens={TEXT_COLOR_PICKER_GROUPS}
-          triggerVariant="default"
-          allowTransparent={false}
-          align="start"
-          disabled={disabled}
+        <ColorPopoverField
+          token={color}
+          groups={TEXT_COLOR_PICKER_GROUPS}
           placeholder="None"
-          aria-label="Text colour"
-          onValueChange={(v) =>
-            writeColor(v as TextColorToken | null, "Set text color")
-          }
+          title="Text colour"
+          ariaLabel="Text colour"
+          disabled={disabled}
+          onPick={(v) => writeColor(v as TextColorToken | null, "Set text color")}
         />
       </div>
     </AddableSection>
   );
-}
-
-// Normalise a border colour token to the BARE custom-property id so the
-// chip resolves the SAME way the Fill section does — `<Swatch token>`
-// wraps it as `oklch(var(--<token>))`. Earlier this rendered a static
-// `bg-<token>` Tailwind class on a plain <span>, which (for `primary`)
-// mis-resolved to the studio chrome accent (blue) instead of the live
-// design-theme token. Strip any `group/` prefix; the tail is the CSS var.
-function bareBorderToken(token: BorderColorToken): string {
-  return token.includes("/") ? token.split("/").pop()! : token;
 }
 
 // Default px for each Tailwind radius token (theme default scale). Used
@@ -5599,30 +5659,19 @@ function BorderGroup({
               />
             </div>
           </div>
-          <Select
-            value={entry.color ?? "default"}
-            onValueChange={(v) =>
-              patchEntry(entry.id, {
-                color: v === "default" ? null : (v as BorderColorToken),
-              })
-            }
+          {/* Border colour — the SAME ColorPopoverField as Fill / Text:
+              swatch + name TokenField chrome opening the ColorPickerPanel. */}
+          <ColorPopoverField
+            token={entry.color ?? null}
+            groups={BORDER_COLOR_PICKER_GROUPS}
+            placeholder="Default"
+            title="Border colour"
+            ariaLabel="Border colour"
             disabled={disabled}
-          >
-            <SelectTrigger size="2xs" className="w-full">
-              <SelectValue placeholder="Default" />
-            </SelectTrigger>
-            <SelectContent size="2xs" position="item-aligned">
-              <SelectItem value="default">Default colour</SelectItem>
-              {BORDER_COLOR_TOKENS.map((c) => (
-                <SelectItem key={c} value={c}>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Swatch size="2xs" shape="rounded" token={bareBorderToken(c)} />
-                    {c}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onPick={(v) =>
+              patchEntry(entry.id, { color: (v as BorderColorToken) ?? null })
+            }
+          />
         </div>
       ))}
       {entries.length > 0 && (
