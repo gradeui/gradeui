@@ -42,7 +42,6 @@ import {
   Crosshair,
   ExternalLink,
   Eye,
-  Film,
   Hand,
   Image as ImageIcon,
   Loader2,
@@ -56,7 +55,6 @@ import {
   PanelRight,
   Plus,
   Redo2,
-  RotateCcw,
   Share2,
   UserPlus,
   LayoutTemplate,
@@ -99,7 +97,6 @@ import { DesignBreadcrumb } from "@/components/studio/design-breadcrumb";
 import { GradeMark } from "@/components/grade-mark";
 import { REFERENCE_LAYOUTS } from "@gradeui/studio/playbook";
 import { CanvasPathBar } from "@/components/studio/canvas-path-bar";
-import { SelectionChip } from "@/components/studio/selection-chip";
 import { StarterPicker } from "@/components/studio/starter-picker";
 import { TimelineDock } from "@/components/studio/timeline-dock";
 import {
@@ -615,8 +612,10 @@ export function StudioCanvas({
   // forwarded down to FocusedFastMount as a key. Lives at this level
   // so the toolbar and the mount stay synced without prop drilling
   // through three layers.
-  const [replayKey, setReplayKey] = useState(0);
-  const replay = React.useCallback(() => setReplayKey((k) => k + 1), []);
+  // replayKey is a stable mount key for the focused iframe. The manual
+  // "replay animations" button was removed; the key stays so the mount
+  // contract is unchanged (bring back a setter with the timeline work).
+  const [replayKey] = useState(0);
 
   // Fidelity — wireframe vs full. Removed from the chrome for a while
   // (pinned to "full"); lifted back into state June 2026 when the
@@ -1529,9 +1528,8 @@ export function StudioCanvas({
               )}
             </span>
           )}
-          {isFit && selection?.componentName && (
-            <SelectionChip selection={selection} prefix="Editing" />
-          )}
+          {/* "Editing <Row>" badge removed — the active selection already
+              shows in the chat, so it was redundant chrome here. */}
           {isStreaming && isFit && (
             <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-primary">
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -1656,47 +1654,37 @@ export function StudioCanvas({
               {/* Preview / Code — icon-only; the tooltip prop on each
                   item carries the label (and fills in aria-label for
                   screen readers, so we don't have to repeat it). */}
+              {/* size 2xs → the segmented track lands at 28px, matching the
+                  h-7 icon buttons; icons pinned to 3.5 so they don't shrink
+                  below the rest of the toolbar. */}
               <ToggleGroup
                 type="single"
-                size="sm"
+                variant="segmented"
+                size="2xs"
                 value={view}
                 onValueChange={(v: string) => {
-                  if (v === "preview" || v === "code" || v === "timeline")
-                    onViewChange(v);
+                  if (v === "preview" || v === "code") onViewChange(v);
                 }}
                 aria-label="Preview mode"
               >
-                <ToggleGroupItem value="preview" tooltip="Preview">
+                <ToggleGroupItem
+                  value="preview"
+                  tooltip="Preview"
+                  className="[&_svg]:size-3.5"
+                >
                   <Eye />
                 </ToggleGroupItem>
-                <ToggleGroupItem value="code" tooltip="Code">
+                <ToggleGroupItem
+                  value="code"
+                  tooltip="Code"
+                  className="[&_svg]:size-3.5"
+                >
                   <Code2 />
                 </ToggleGroupItem>
-                <ToggleGroupItem value="timeline" tooltip="Timeline">
-                  <Film />
-                </ToggleGroupItem>
+                {/* Timeline view — future work; entry point hidden for now. */}
               </ToggleGroup>
-              {/* Replay — re-keys the focused iframe so every inView
-                  reveal + mount animation runs again. Lives next to the
-                  Preview/Code toggle (was a floating overlay in the
-                  preview chrome; user flagged that as out of place,
-                  toolbar is the right home). Disabled in Code view —
-                  there's no preview animation to replay there. */}
-              <button
-                type="button"
-                onClick={replay}
-                disabled={view !== "preview"}
-                title="Replay animations"
-                aria-label="Replay animations"
-                className={cn(
-                  "h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors",
-                  "[&_svg]:size-3.5 [&_svg]:shrink-0",
-                  "text-muted-foreground hover:text-foreground hover:bg-muted",
-                  "disabled:opacity-40 disabled:pointer-events-none",
-                )}
-              >
-                <RotateCcw />
-              </button>
+              {/* Replay-animations button removed — extra affordance for
+                  now; bring it back with the timeline work if wanted. */}
               {/* Viewport width + Zoom moved OUT of the toolbar into the
                   right panel's Display section (Phase 1 of the right-panel
                   tidy). The canvas still owns the viewport VALUE as a
@@ -1708,40 +1696,35 @@ export function StudioCanvas({
                   Design turns the screen into a non-interactive artboard
                   where plain drag pans and pinch zooms. */}
               {view === "preview" && (
-                <div
-                  role="group"
+                // Same segmented ToggleGroup (size sm) as the Preview/Code
+                // toggle, so the two clusters read at one size. Clicking the
+                // active item emits "" (Radix) — ignored so a mode stays set.
+                <ToggleGroup
+                  type="single"
+                  variant="segmented"
+                  size="2xs"
+                  value={interactionMode}
+                  onValueChange={(v: string) => {
+                    if (v === "interact" || v === "design")
+                      setInteractionMode(v);
+                  }}
                   aria-label="Canvas mode"
-                  className="flex items-center gap-0.5 rounded-md bg-foreground/5 p-0.5"
                 >
-                  <button
-                    type="button"
-                    onClick={() => setInteractionMode("interact")}
-                    aria-pressed={interactionMode === "interact"}
-                    title="Interact — live prototype (V). Hold Space to pan."
-                    className={cn(
-                      "flex h-5 w-6 items-center justify-center rounded-[5px] transition",
-                      interactionMode === "interact"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
+                  <ToggleGroupItem
+                    value="interact"
+                    tooltip="Interact — live prototype (V). Hold Space to pan."
+                    className="[&_svg]:size-3.5"
                   >
-                    <MousePointer2 className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setInteractionMode("design")}
-                    aria-pressed={interactionMode === "design"}
-                    title="Design — pan & zoom the artboard (H)"
-                    className={cn(
-                      "flex h-5 w-6 items-center justify-center rounded-[5px] transition",
-                      interactionMode === "design"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
+                    <MousePointer2 />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="design"
+                    tooltip="Design — pan & zoom the artboard (H)"
+                    className="[&_svg]:size-3.5"
                   >
-                    <Hand className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                    <Hand />
+                  </ToggleGroupItem>
+                </ToggleGroup>
               )}
               {/* Zoom dropdown moved to the right panel's Display section
                   (see the viewport note above). Keyboard zoom (0 = fit,
