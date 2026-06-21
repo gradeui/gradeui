@@ -48,11 +48,9 @@ import {
   Loader2,
   Maximize2,
   MessageSquare,
-  Monitor,
   MoreHorizontal,
   MousePointer2,
   MousePointerClick,
-  MoveHorizontal,
   Package,
   PanelLeft,
   PanelRight,
@@ -61,9 +59,7 @@ import {
   RotateCcw,
   Share2,
   UserPlus,
-  Smartphone,
   LayoutTemplate,
-  Tablet,
   Trash2,
   Undo2,
   X,
@@ -118,117 +114,10 @@ import {
 import {
   ARTBOARD_DEVICE_SIZES,
   useArtboardZoom,
-  type ArtboardZoom,
 } from "@/components/studio/use-artboard-zoom";
 
-/** Viewport dropdown options — same glyphs the old 4-icon ToggleGroup
- *  used; collapsed into one menu to keep the canvas toolbar from
- *  overflowing. */
-const VIEWPORT_OPTIONS: {
-  value: ViewportWidth;
-  label: string;
-  hint: string;
-  icon: React.ReactNode;
-}[] = [
-  {
-    value: "mobile",
-    label: "Mobile",
-    hint: "390×844",
-    icon: <Smartphone className="h-3.5 w-3.5 shrink-0" />,
-  },
-  {
-    value: "tablet",
-    label: "Tablet",
-    hint: "768×1024",
-    icon: <Tablet className="h-3.5 w-3.5 shrink-0" />,
-  },
-  {
-    value: "desktop",
-    label: "Desktop",
-    hint: "1440×900",
-    icon: <Monitor className="h-3.5 w-3.5 shrink-0" />,
-  },
-  {
-    value: "responsive",
-    label: "Responsive",
-    hint: "fills column",
-    icon: <MoveHorizontal className="h-3.5 w-3.5 shrink-0" />,
-  },
-];
-
-/** Zoom presets surfaced in the ZoomMenu. */
-const ZOOM_MENU_PRESETS = [0.5, 1, 2];
-
-/**
- * ZoomMenu — the canvas toolbar's compact zoom surface: one tabular
- * percent trigger opening Fit + presets + step actions. Replaces the
- * inline ZoomControl row (Fit/Free segmented + steppers + readout),
- * which was a major contributor to toolbar overflow. The share view
- * keeps the full ZoomControl; both drive the same useArtboardZoom
- * hook, and the keyboard map (0 = fit, − / = step) is untouched.
- */
-function ZoomMenu({
-  artboard,
-}: {
-  artboard: Pick<
-    ArtboardZoom,
-    "fitMode" | "effectiveZoom" | "pickZoom" | "stepZoom" | "fit"
-  >;
-}) {
-  const pct = Math.round(artboard.effectiveZoom * 100);
-  const atPreset = (z: number) =>
-    !artboard.fitMode && pct === Math.round(z * 100);
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label="Zoom"
-          title="Zoom"
-          className={cn(
-            "h-7 px-1.5 inline-flex items-center gap-0.5 rounded-md text-xs tabular-nums transition-colors",
-            "text-muted-foreground hover:text-foreground hover:bg-muted",
-          )}
-        >
-          {artboard.fitMode ? "Fit" : `${pct}%`}
-          <ChevronDown className="h-3 w-3 text-muted-foreground/70" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuItem
-          onClick={() => artboard.stepZoom(1)}
-          className="gap-2 text-xs"
-        >
-          <span className="flex-1">Zoom in</span>
-          <span className="text-2xs text-muted-foreground">=</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => artboard.stepZoom(-1)}
-          className="gap-2 text-xs"
-        >
-          <span className="flex-1">Zoom out</span>
-          <span className="text-2xs text-muted-foreground">−</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={artboard.fit} className="gap-2 text-xs">
-          <span className="flex-1">Fit</span>
-          <span className="text-2xs text-muted-foreground">0</span>
-          {artboard.fitMode && <Check className="h-3.5 w-3.5 shrink-0" />}
-        </DropdownMenuItem>
-        {ZOOM_MENU_PRESETS.map((z) => (
-          <DropdownMenuItem
-            key={z}
-            onClick={() => artboard.pickZoom(z)}
-            className="gap-2 text-xs tabular-nums"
-          >
-            <span className="flex-1">{Math.round(z * 100)}%</span>
-            {atPreset(z) && <Check className="h-3.5 w-3.5 shrink-0" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
+// VIEWPORT_OPTIONS + the ZoomMenu moved to display-section.tsx — they
+// now render in the right panel's Display section, not the toolbar.
 
 /**
  * Minimal App module used to prewarm Sandpack when we don't yet have real
@@ -398,6 +287,24 @@ interface StudioCanvasProps {
   // truth and the canvas drives it via onZoomChange.
   zoom?: "fit" | "all";
   onZoomChange?: (zoom: "fit" | "all") => void;
+  // ─── Viewport width (controlled by parent) ───────────────────────
+  // Lifted out of the canvas so the studio page can render the device
+  // selector in the right panel's Display section. The canvas still
+  // READS this (resolveArtboardSize, the focused-frame width) — it just
+  // no longer owns the state or its localStorage persistence.
+  viewportWidth: ViewportWidth;
+  onViewportChange: (v: ViewportWidth) => void;
+  // ─── Artboard-zoom bridge (lifted to parent) ─────────────────────
+  // useArtboardZoom stays HERE (it measures the canvas DOM), but its
+  // state + gestures are mirrored UP so the right panel's Display
+  // section can render the zoom readout/menu. Effects below push the
+  // live values; the API object exposes the mutation gestures.
+  onZoomStateChange?: (s: { effectiveZoom: number; fitMode: boolean }) => void;
+  onZoomApiReady?: (api: {
+    pickZoom: (z: number) => void;
+    stepZoom: (dir: number) => void;
+    fit: () => void;
+  }) => void;
   // ─── Comment pins ──────────────────────────────────────────────
   // Open threads to surface as positioned pins over the preview.
   // Forwarded through FocusedFrame → FocusedFastMount → the
@@ -465,6 +372,10 @@ export function StudioCanvas({
   onToggleRightPanel,
   zoom: controlledZoom,
   onZoomChange,
+  viewportWidth,
+  onViewportChange,
+  onZoomStateChange,
+  onZoomApiReady,
   projectName,
   sectionLabel,
   saveStatus = "idle",
@@ -560,54 +471,12 @@ export function StudioCanvas({
     [canvasMode, onCanvasModeChange],
   );
 
-  // Viewport width for the focused frame. Default "responsive" matches
-  // the pre-picker behavior (no width constraint). Canvas-level state
-  // so flipping fit → all → fit preserves the user's width choice, and
-  // so the tiles ("all" view) aren't constrained by it — tiles want the
-  // full 1280 virtual width regardless. Persisted to localStorage (same
-  // pattern as studio:left-panel-open) so a refresh keeps the choice —
-  // deliberately NOT in the URL, which stays reserved for shareable
-  // identity (project/screen), not per-person workspace prefs.
-  // SSR-deterministic default; the stored choice is restored in a
-  // one-shot effect AFTER mount. Reading localStorage in the useState
-  // initializer here caused a hydration mismatch (server rendered the
-  // "responsive" artboard styles, client first-rendered the stored
-  // device preset) that regenerated the whole tree client-side. Same
-  // hydrate-after-mount pattern as studio:left-panel-open.
-  const [viewportWidth, setViewportWidth] =
-    useState<ViewportWidth>("responsive");
-  const viewportHydratedRef = useRef(false);
-  useEffect(() => {
-    if (viewportHydratedRef.current) return;
-    viewportHydratedRef.current = true;
-    try {
-      const stored = window.localStorage.getItem("studio:viewport-width");
-      if (
-        stored === "mobile" ||
-        stored === "tablet" ||
-        stored === "desktop" ||
-        stored === "responsive"
-      ) {
-        setViewportWidth(stored);
-      }
-    } catch {
-      // storage unavailable — keep the responsive default
-    }
-  }, []);
-  // Persist on change — skip the first commit so the default never
-  // clobbers a stored choice before the restore effect re-renders.
-  const viewportPersistArmedRef = useRef(false);
-  useEffect(() => {
-    if (!viewportPersistArmedRef.current) {
-      viewportPersistArmedRef.current = true;
-      return;
-    }
-    try {
-      window.localStorage.setItem("studio:viewport-width", viewportWidth);
-    } catch {
-      // storage unavailable (private mode etc.) — viewport just won't stick
-    }
-  }, [viewportWidth]);
+  // Viewport width for the focused frame is now a CONTROLLED prop
+  // (`viewportWidth` / `onViewportChange`). The studio page owns the
+  // state + its localStorage persistence so the device selector can
+  // live in the right panel's Display section; the canvas only reads
+  // the value (resolveArtboardSize, the focused-frame width) and calls
+  // onViewportChange when something here needs to change it.
 
   // Artboard zoom — the share view's Fit/zoom treatment, applied to the
   // focused Fast Frame. Device presets become real w×h artboards on the
@@ -705,6 +574,23 @@ export function StudioCanvas({
     // own defaults.
     persistKey: "studio:artboard",
   });
+  // Bridge the artboard zoom state + gestures UP to the parent so the
+  // right panel's Display section can render the zoom readout/menu. The
+  // hook itself stays here (it measures the canvas DOM); only the
+  // values + the mutation callbacks travel up.
+  useEffect(() => {
+    onZoomStateChange?.({
+      effectiveZoom: artboard.effectiveZoom,
+      fitMode: artboard.fitMode,
+    });
+  }, [artboard.effectiveZoom, artboard.fitMode, onZoomStateChange]);
+  useEffect(() => {
+    onZoomApiReady?.({
+      pickZoom: artboard.pickZoom,
+      stepZoom: artboard.stepZoom,
+      fit: artboard.fit,
+    });
+  }, [artboard.pickZoom, artboard.stepZoom, artboard.fit, onZoomApiReady]);
   // Canvas INTERACTION mode — distinct from `canvasMode` above (the
   // select/comment picker). "interact" (default): the screen is a
   // live prototype, Space-hold / middle-mouse pans. "design": the
@@ -1811,53 +1697,12 @@ export function StudioCanvas({
               >
                 <RotateCcw />
               </button>
-              {/* Viewport width — single dropdown (was a 4-icon
-                  ToggleGroup; the toolbar was overflowing). The trigger
-                  shows the active device's glyph; labels + sizes live
-                  in the menu. */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Viewport width"
-                    title="Viewport width"
-                    className={cn(
-                      "h-7 px-1.5 inline-flex items-center gap-0.5 rounded-md transition-colors",
-                      "[&_svg]:size-3.5 [&_svg]:shrink-0",
-                      "text-muted-foreground hover:text-foreground hover:bg-muted",
-                    )}
-                  >
-                    {VIEWPORT_OPTIONS.find((o) => o.value === viewportWidth)
-                      ?.icon ?? <Monitor />}
-                    <ChevronDown className="!size-3 text-muted-foreground/70" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-52">
-                  {VIEWPORT_OPTIONS.map((o) => (
-                    <DropdownMenuItem
-                      key={o.value}
-                      onClick={() => setViewportWidth(o.value)}
-                      className="gap-2 text-xs"
-                    >
-                      {o.icon}
-                      <span className="flex-1">{o.label}</span>
-                      <span className="text-2xs tabular-nums text-muted-foreground">
-                        {o.hint}
-                      </span>
-                      {viewportWidth === o.value && (
-                        <Check className="h-3.5 w-3.5 shrink-0" />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {/* Zoom — the shared ZoomControl (Fit/Free toggle, ±10%
-                  steppers, 10–400% slider, readout). Same component the
-                  share view's toolbar renders; pinch/ctrl+wheel feed
-                  the same hook via useZoomGestures (wired near the
-                  artboard hook above). Keyboard: 0 = fit, 1–4 = legacy
-                  levels, − / = step ±10%. Preview-only — Code and
-                  Timeline have nothing to scale. */}
+              {/* Viewport width + Zoom moved OUT of the toolbar into the
+                  right panel's Display section (Phase 1 of the right-panel
+                  tidy). The canvas still owns the viewport VALUE as a
+                  controlled prop and the zoom hook (it measures the canvas
+                  DOM); the Display section drives both via the lifted
+                  state + the onZoom* bridge. */}
               {/* Canvas mode — pointer (Interact, V) vs hand (Design, H).
                   Interact keeps the prototype live (Space-hold to pan);
                   Design turns the screen into a non-interactive artboard
@@ -1898,12 +1743,10 @@ export function StudioCanvas({
                   </button>
                 </div>
               )}
-              {/* Zoom — collapsed to a single percent dropdown (the
-                  Fit/Free segmented + steppers + readout overflowed the
-                  toolbar). The share view keeps the full ZoomControl;
-                  keyboard zoom (0 = fit, −/= step) still works — the
-                  menu is just the pointer surface for the same hook. */}
-              {view === "preview" && <ZoomMenu artboard={artboard} />}
+              {/* Zoom dropdown moved to the right panel's Display section
+                  (see the viewport note above). Keyboard zoom (0 = fit,
+                  −/= step) still works — those handlers live in this
+                  component, driving the same hook. */}
               {/* Fidelity toggle removed — wireframe/full has no
                   product surface yet; fidelity is pinned to "full"
                   via the constant near the top of this component. */}

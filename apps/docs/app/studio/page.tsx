@@ -90,6 +90,7 @@ import { useChatSettings } from "@/components/ai-elements/provider-picker";
 import { StudioChat } from "@/components/studio/studio-chat";
 import { StudioCanvas } from "@/components/studio/studio-canvas";
 import { StudioRightTabs, StylesTabContent } from "@/components/studio/studio-right-tabs";
+import type { ViewportWidth } from "@/components/studio/sandpack-frame";
 import {
   StudioSettings,
   StudioSettingsTrigger,
@@ -219,6 +220,61 @@ export default function StudioPage() {
   // param all follow this. Bootstrap flips it to "fit" only when the URL
   // carries a ?screen.
   const [zoom, setZoom] = useState<"fit" | "all">("all");
+
+  // ─── Display section state (lifted out of the canvas) ────────────
+  // Viewport width for the focused frame. Owned here so the right
+  // panel's Display section can render the device selector while the
+  // canvas reads the value (resolveArtboardSize / focused-frame
+  // width). Persisted to localStorage (key "studio:viewport-width") —
+  // SSR-deterministic default, hydrate-after-mount, skip-first-persist
+  // — verbatim from where it used to live in StudioCanvas.
+  const [viewportWidth, setViewportWidth] =
+    useState<ViewportWidth>("responsive");
+  const viewportHydratedRef = useRef(false);
+  useEffect(() => {
+    if (viewportHydratedRef.current) return;
+    viewportHydratedRef.current = true;
+    try {
+      const stored = window.localStorage.getItem("studio:viewport-width");
+      if (
+        stored === "mobile" ||
+        stored === "tablet" ||
+        stored === "desktop" ||
+        stored === "responsive"
+      ) {
+        setViewportWidth(stored);
+      }
+    } catch {
+      // storage unavailable — keep the responsive default
+    }
+  }, []);
+  const viewportPersistArmedRef = useRef(false);
+  useEffect(() => {
+    if (!viewportPersistArmedRef.current) {
+      viewportPersistArmedRef.current = true;
+      return;
+    }
+    try {
+      window.localStorage.setItem("studio:viewport-width", viewportWidth);
+    } catch {
+      // storage unavailable (private mode etc.) — viewport just won't stick
+    }
+  }, [viewportWidth]);
+
+  // Bridged artboard-zoom state + gestures. The useArtboardZoom hook
+  // stays inside StudioCanvas (it measures the canvas DOM); the canvas
+  // mirrors its live state up via onZoomStateChange and exposes the
+  // mutation gestures via onZoomApiReady so the Display section can
+  // render the zoom menu.
+  const [zoomState, setZoomState] = useState<{
+    effectiveZoom: number;
+    fitMode: boolean;
+  }>({ effectiveZoom: 1, fitMode: true });
+  const [zoomApi, setZoomApi] = useState<{
+    pickZoom: (z: number) => void;
+    stepZoom: (d: number) => void;
+    fit: () => void;
+  } | null>(null);
 
   // Which section of the active project the grid is showing — the left
   // nav's Screens / Flows (tbd) / Motions / Styles rows. Filters the
@@ -2469,6 +2525,10 @@ export default function StudioPage() {
       }
       tab={rightTab}
       onTabChange={setRightTab}
+      viewportWidth={viewportWidth}
+      onViewportChange={setViewportWidth}
+      zoomState={zoomState}
+      zoomApi={zoomApi}
       commentsContent={
         <CommentsTabHost
           threads={commentThreads}
@@ -3055,6 +3115,10 @@ export default function StudioPage() {
                 onToggleRightPanel={toggleRightPanel}
                 zoom={zoom}
                 onZoomChange={setZoom}
+                viewportWidth={viewportWidth}
+                onViewportChange={setViewportWidth}
+                onZoomStateChange={setZoomState}
+                onZoomApiReady={setZoomApi}
                 projectName={
                   projects.find((p) => p.id === activeProjectId)?.name
                 }
@@ -3601,6 +3665,10 @@ function StudioThemedCanvas({
   onToggleRightPanel,
   zoom,
   onZoomChange,
+  viewportWidth,
+  onViewportChange,
+  onZoomStateChange,
+  onZoomApiReady,
   projectName,
   sectionLabel,
   saveStatus,
@@ -3646,6 +3714,14 @@ function StudioThemedCanvas({
   onToggleRightPanel: () => void;
   zoom: "fit" | "all";
   onZoomChange: (zoom: "fit" | "all") => void;
+  viewportWidth: ViewportWidth;
+  onViewportChange: (v: ViewportWidth) => void;
+  onZoomStateChange: (s: { effectiveZoom: number; fitMode: boolean }) => void;
+  onZoomApiReady: (api: {
+    pickZoom: (z: number) => void;
+    stepZoom: (dir: number) => void;
+    fit: () => void;
+  }) => void;
   projectName?: string;
   /** Grid-mode crumb label ("All screens" / "Motion Studio"). */
   sectionLabel?: string;
@@ -3697,6 +3773,10 @@ function StudioThemedCanvas({
       onToggleRightPanel={onToggleRightPanel}
       zoom={zoom}
       onZoomChange={onZoomChange}
+      viewportWidth={viewportWidth}
+      onViewportChange={onViewportChange}
+      onZoomStateChange={onZoomStateChange}
+      onZoomApiReady={onZoomApiReady}
       projectName={projectName}
       sectionLabel={sectionLabel}
       saveStatus={saveStatus}

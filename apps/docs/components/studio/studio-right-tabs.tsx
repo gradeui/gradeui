@@ -116,6 +116,7 @@ import {
 import { GDS_MODULAR_SCALES } from "@gradeui/core";
 
 import { StudioRightPanel } from "./studio-right-panel";
+import type { ViewportWidth } from "./sandpack-frame";
 import { ThemePickerSection } from "./theme-picker-section";
 import type { StylesSection } from "./projects-menu";
 import { TypographyEditor } from "./typography-editor";
@@ -165,6 +166,18 @@ export interface StudioRightTabsProps {
   revisions?: number;
   projectName?: string;
   onStatusChange?: (status: DesignStatus) => void;
+  // ─── Display section (forwarded to StudioRightPanel) ─────────────
+  // Canvas-wide view controls lifted out of the canvas toolbar. The
+  // page owns the state; the tabs shell just threads them to the
+  // Layout panel where the persistent Display section renders.
+  viewportWidth: ViewportWidth;
+  onViewportChange: (v: ViewportWidth) => void;
+  zoomState: { effectiveZoom: number; fitMode: boolean };
+  zoomApi: {
+    pickZoom: (z: number) => void;
+    stepZoom: (dir: number) => void;
+    fit: () => void;
+  } | null;
   defaultTab?: TabId;
   /** Controlled active tab. When provided, the tab state is owned
    *  upstream — used so other parts of the chrome (e.g. canvas
@@ -189,6 +202,10 @@ export function StudioRightTabs({
   revisions = 0,
   projectName = "—",
   onStatusChange,
+  viewportWidth,
+  onViewportChange,
+  zoomState,
+  zoomApi,
   defaultTab = "layout",
   tab: controlledTab,
   onTabChange,
@@ -224,11 +241,10 @@ export function StudioRightTabs({
           inside the card edge. `w-full` on the list + `flex-1` on
           each trigger spreads them across the column rather than
           letting the pill auto-size to its content. */}
-      <div className="p-2 shrink-0 space-y-2">
-        {/* INTERIM theme selector — the share view's compact dropdown,
-            sitting above the tabs while the full Theme tab is hidden.
-            See the SHOW_THEME_TAB note above. */}
-        {!SHOW_THEME_TAB && <ThemeDropdown />}
+      <div className="p-2 shrink-0">
+        {/* Theme picker removed from the per-screen panel (it moves to a
+            project-level surface). The tab strip now sits at the top. The
+            <ThemeDropdown> component is still exported for ProjectHome. */}
         <TabsList className="w-full">
           {TABS.map((t) => (
             <TabsTrigger key={t.id} value={t.id} className="flex-1">
@@ -258,6 +274,10 @@ export function StudioRightTabs({
           revisions={revisions}
           projectName={projectName}
           onStatusChange={onStatusChange ?? (() => {})}
+          viewportWidth={viewportWidth}
+          onViewportChange={onViewportChange}
+          zoomState={zoomState}
+          zoomApi={zoomApi}
         />
       </TabsContent>
       {SHOW_THEME_TAB && (

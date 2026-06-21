@@ -681,7 +681,9 @@ export function SelectionInspector({
 
   const headerBadge = (
     <span className="font-mono text-2xs text-primary">
-      &lt;{componentName}&gt;
+      {/* Fall back to the element tag so plain elements (h1, p, …) read
+          "<h1>" instead of an empty "<>" when there's no component name. */}
+      &lt;{componentName ?? selection?.tag}&gt;
     </span>
   );
 
@@ -751,8 +753,32 @@ export function SelectionInspector({
           group below, NOT here — keeps the mental model clean:
           Properties = what it is, Layout = how it sits.
           ============================================================ */}
-      {otherProps.length > 0 && (
-        <CollapsibleSection title="Properties">
+      {(componentName || selection?.tag) && (
+        <CollapsibleSection title={componentName ? "Component" : "Element"}>
+          {/* Identity row — the component glyph + its name/tag, the
+              "this is what it IS" line above the manifest props. Shows for
+              propless elements (h1, p, …) too, where it's the only row. */}
+          <div className="flex items-center gap-1.5 pt-1.5">
+            {/* DS component → the component glyph + its name. Plain element
+                (h1, p, …) → no icon (it's not a component) + a human label
+                ("Heading 1") rather than the raw tag, so it reads like an
+                editor, not markup. */}
+            {componentName ? (
+              <>
+                <LucideIcons.Component
+                  aria-hidden
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                />
+                <span className="truncate text-xs font-medium text-foreground">
+                  {componentName}
+                </span>
+              </>
+            ) : (
+              <span className="truncate text-xs font-medium text-foreground">
+                {elementLabel(selection?.tag)}
+              </span>
+            )}
+          </div>
           {otherProps.map((prop) => {
             const design = propDesignByName[prop.name];
             const perItem =
@@ -777,52 +803,47 @@ export function SelectionInspector({
               />
             );
           })}
+          {/* Text content — kept INSIDE the Component section so identity +
+              props + text read as one group (not a separate area). For
+              Button it's the label; for h1–h6 the heading; for label/p/span
+              the body text. Nested JSX / expressions skip the row (chat is
+              the escape hatch). */}
+          {selection?.sourceId && appSource &&
+            (/^h[1-6]$/i.test(
+              getElementTagName(appSource, selection.sourceId) ?? ""
+            ) && isElementInlineRichEditable(appSource, selection.sourceId) ? (
+              <RichTextEditRow
+                source={appSource}
+                sourceId={selection.sourceId}
+                disabled={!componentPresent}
+                onChange={(inner) => {
+                  const updated = updateElementInnerJsx(
+                    appSource,
+                    selection.sourceId!,
+                    inner
+                  );
+                  if (updated !== appSource) onSourceChange(updated, "Edit text");
+                }}
+              />
+            ) : (
+              <TextEditRow
+                source={appSource}
+                sourceId={selection.sourceId}
+                disabled={!componentPresent}
+                onChange={(next) => {
+                  const updated = updateElementText(
+                    appSource,
+                    selection.sourceId!,
+                    next
+                  );
+                  if (updated !== appSource) {
+                    onSourceChange(updated, `Edit text`);
+                  }
+                }}
+              />
+            ))}
         </CollapsibleSection>
       )}
-
-      {/* Text content — sits below Properties. For Button it's the
-          label; for h1–h6 it's the heading; for label/p/span it's
-          the body text. Children with nested JSX or expressions
-          are skipped (the row hides itself); the chat is still the
-          escape hatch for those. No section header on purpose —
-          it's a single field, not a group. */}
-      {selection?.sourceId && appSource &&
-        (/^h[1-6]$/i.test(
-          getElementTagName(appSource, selection.sourceId) ?? ""
-        ) && isElementInlineRichEditable(appSource, selection.sourceId) ? (
-          // Headings get the rich mini-editor: select a word, wrap it in an
-          // Accent / bold / italic span. Inline-only content only — a heading
-          // with a {expression} falls through to the plain field below.
-          <RichTextEditRow
-            source={appSource}
-            sourceId={selection.sourceId}
-            disabled={!componentPresent}
-            onChange={(inner) => {
-              const updated = updateElementInnerJsx(
-                appSource,
-                selection.sourceId!,
-                inner
-              );
-              if (updated !== appSource) onSourceChange(updated, "Edit text");
-            }}
-          />
-        ) : (
-          <TextEditRow
-            source={appSource}
-            sourceId={selection.sourceId}
-            disabled={!componentPresent}
-            onChange={(next) => {
-              const updated = updateElementText(
-                appSource,
-                selection.sourceId!,
-                next
-              );
-              if (updated !== appSource) {
-                onSourceChange(updated, `Edit text`);
-              }
-            }}
-          />
-        ))}
 
       {!componentPresent && appSource && (
         <div className="mx-3 my-2.5 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-2xs text-amber-700 dark:text-amber-300">
@@ -1314,30 +1335,29 @@ export function SelectionInspector({
         data-lenis-prevent
         data-gds-part="selection-inspector"
       >
-        {/* Header — title + status badge only. The Settings2 icon
-            was dropped (Nov 2026) because the inspector lives in a
-            tabbed shell whose own tab label already says "Layout",
-            and the in-panel icon was just visual noise. The
-            verbose `when_to_use` paragraph below was removed too —
-            see comment below. */}
-        <header className="flex items-center gap-2 px-3 py-2.5 text-sm border-b border-border">
-          <span className="font-semibold">Component settings</span>
-          {headerBadge}
-          {loadingPart === part && (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-          )}
-          {onRequestUndock && (
-            <button
-              type="button"
-              onClick={onRequestUndock}
-              title="Return to chat column and show the theme builder here again"
-              className="ml-auto flex items-center gap-1 rounded-md border border-border bg-background px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <PanelRightClose className="h-3 w-3" />
-              Undock
-            </button>
-          )}
-        </header>
+        {/* Thin chrome row — just the undock affordance + a loading
+            spinner. The component IDENTITY (glyph + name) now lives in
+            the "Component" section of the body, so this bar no longer
+            carries a "Component settings" title. Renders only when it
+            has something to show, so there's no empty header. */}
+        {(onRequestUndock || loadingPart === part) && (
+          <header className="flex items-center gap-2 px-3 pt-2.5 pb-1.5 text-xs">
+            {loadingPart === part && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            )}
+            {onRequestUndock && (
+              <button
+                type="button"
+                onClick={onRequestUndock}
+                title="Return to chat column and show the theme builder here again"
+                className="ml-auto flex items-center gap-1 rounded-md border border-border bg-background px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <PanelRightClose className="h-3 w-3" />
+                Undock
+              </button>
+            )}
+          </header>
+        )}
         {/* `when_to_use` was a verbose component description pulled
             from the .md sidecar — useful for the docs site but just
             chrome inside the inspector, where the user already knows
@@ -2146,11 +2166,11 @@ function RichTextEditRow({
   }, [source, sourceId]);
 
   return (
-    <div className="space-y-1 border-t border-border/60 px-3 py-2.5">
+    <div className="space-y-1">
       <Label className={FIELD_LABEL}>Text</Label>
       <div
         className={
-          "rounded-md border border-input bg-background px-2 py-1.5 text-sm focus-within:ring-1 focus-within:ring-ring" +
+          "rounded-md border border-input bg-background px-2 py-1 text-xs focus-within:ring-1 focus-within:ring-ring" +
           (disabled ? " pointer-events-none opacity-50" : "")
         }
       >
@@ -2345,6 +2365,39 @@ function TextEditRow({
  * `first:border-t-0` drops the leading rule (the panel header already
  * provides one).
  */
+/** Human label for a plain HTML element (when there's no DS component
+ *  name). Headings become "Heading 1"…"Heading 6"; common tags get a
+ *  friendly noun; anything unmapped falls back to the bare tag. Keeps the
+ *  Component section reading like an editor rather than raw markup. */
+function elementLabel(tag: string | undefined): string {
+  if (!tag) return "Element";
+  const t = tag.toLowerCase();
+  const heading = /^h([1-6])$/.exec(t);
+  if (heading) return `Heading ${heading[1]}`;
+  const NAMES: Record<string, string> = {
+    p: "Paragraph",
+    span: "Text",
+    a: "Link",
+    img: "Image",
+    button: "Button",
+    ul: "List",
+    ol: "List",
+    li: "List item",
+    section: "Section",
+    article: "Article",
+    div: "Container",
+    nav: "Navigation",
+    header: "Header",
+    footer: "Footer",
+    main: "Main",
+    aside: "Aside",
+    input: "Input",
+    label: "Label",
+    form: "Form",
+  };
+  return NAMES[t] ?? t;
+}
+
 function CollapsibleSection({
   title,
   hint,
