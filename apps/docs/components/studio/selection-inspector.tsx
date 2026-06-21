@@ -1104,8 +1104,7 @@ export function SelectionInspector({
           return (
             <>
               <TypographyGroup {...styleProps} />
-              <BlendingGroup {...styleProps} />
-              <RadiusGroup {...styleProps} />
+              <AppearanceGroup {...styleProps} />
             </>
           );
         })()}
@@ -2088,18 +2087,13 @@ function FlexControls({
                       className="flex h-full w-full p-[3px]"
                       style={{
                         flexDirection: mainIsRow ? "row" : "column",
-                        justifyContent:
-                          cellJustify === "start"
-                            ? "flex-start"
-                            : cellJustify === "end"
-                              ? "flex-end"
-                              : "center",
-                        alignItems:
-                          cellAlign === "start"
-                            ? "flex-start"
-                            : cellAlign === "end"
-                              ? "flex-end"
-                              : "center",
+                        // The selected glyph sits CENTRED in its cell — the
+                        // cell's POSITION in the 3×3 grid conveys the
+                        // alignment, so the bars no longer push to the
+                        // matching edge/corner (every cell now reads like
+                        // the centre one did).
+                        justifyContent: "center",
+                        alignItems: "center",
                         gap: "2px",
                       }}
                     >
@@ -2355,14 +2349,19 @@ function CollapsibleSection({
   title,
   hint,
   defaultOpen = true,
+  collapsible = true,
   children,
 }: {
   title: string;
   hint?: React.ReactNode;
   defaultOpen?: boolean;
+  /** When false the section is always open and shows no disclosure chevron
+   *  (a permanent header — e.g. the compacted "Appearance" section). */
+  collapsible?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const expanded = collapsible ? open : true;
   return (
     <section className="border-t border-border/60 first:border-t-0">
       {/* Header flex row: the collapse trigger and the hint are SIBLINGS.
@@ -2373,27 +2372,33 @@ function CollapsibleSection({
         className={cn(
           "flex w-full items-center gap-1.5 px-3 pt-2.5",
           // Tighter gap to the values when open; balanced when collapsed.
-          open ? "pb-1.5" : "pb-2.5",
+          expanded ? "pb-1.5" : "pb-2.5",
         )}
       >
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          className="flex flex-1 items-center gap-1.5 text-left"
-        >
-          <ChevronDown
-            aria-hidden
-            className={cn(
-              "h-3 w-3 shrink-0 text-muted-foreground transition-transform",
-              !open && "-rotate-90",
-            )}
-          />
-          <span className="text-xs font-medium text-foreground">{title}</span>
-        </button>
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            className="flex flex-1 items-center gap-1.5 text-left"
+          >
+            <ChevronDown
+              aria-hidden
+              className={cn(
+                "h-3 w-3 shrink-0 text-muted-foreground transition-transform",
+                !open && "-rotate-90",
+              )}
+            />
+            <span className="text-xs font-medium text-foreground">{title}</span>
+          </button>
+        ) : (
+          <span className="flex flex-1 items-center text-xs font-medium text-foreground">
+            {title}
+          </span>
+        )}
         {hint ? <span className="shrink-0 pl-2">{hint}</span> : null}
       </div>
-      {open && <div className="space-y-2 px-3 pb-3">{children}</div>}
+      {expanded && <div className="space-y-2 px-3 pb-3">{children}</div>}
     </section>
   );
 }
@@ -3751,9 +3756,10 @@ function BlendingGroup({
       );
     }, "Set custom opacity");
 
+  // Inner content only — hosted inside the non-collapsible AppearanceGroup
+  // section (no own CollapsibleSection wrapper). Self-gates to null above.
   return (
-    <CollapsibleSection title="Blending">
-      <div className="grid grid-cols-2 gap-1.5">
+    <div className="grid grid-cols-2 gap-1.5">
         <TokenField
           kind="opacity"
           label="Opacity"
@@ -3833,8 +3839,7 @@ function BlendingGroup({
             </SelectContent>
           </Select>
         </div>
-      </div>
-    </CollapsibleSection>
+    </div>
   );
 }
 
@@ -4089,9 +4094,10 @@ function RadiusGroup({
     </IconTip>
   );
 
+  // Inner content only — hosted inside the non-collapsible AppearanceGroup
+  // section (no own CollapsibleSection wrapper). Self-gates to null above.
   return (
-    <CollapsibleSection title="Radius">
-      <div className="space-y-1.5">
+    <div className="space-y-1.5">
         {mode === "all" ? (
           <>
             <TokenField
@@ -4240,7 +4246,33 @@ function RadiusGroup({
           </div>
           </>
         )}
-      </div>
+    </div>
+  );
+}
+
+/**
+ * AppearanceGroup — a single NON-collapsible "Appearance" section that
+ * gathers the whole-element visual knobs: opacity + blend mode
+ * (BlendingGroup) and corner radius (RadiusGroup). Replaces the two
+ * separate collapsible "Blending" + "Radius" sections to compact the
+ * panel. Each child still self-gates on its capability, so the section
+ * shows whichever apply and hides only when NEITHER opacity nor radius is
+ * editable here.
+ */
+function AppearanceGroup(props: StyleGroupProps) {
+  const caps = getSpacingCapabilities({
+    tag: props.tag,
+    componentName: props.componentName,
+  });
+  const showOpacity =
+    caps.opacity && !ownsAny(props.manifestPropNames, ["opacity"]);
+  const showRadius =
+    caps.radius && !ownsAny(props.manifestPropNames, ["rounded", "radius"]);
+  if (!showOpacity && !showRadius) return null;
+  return (
+    <CollapsibleSection title="Appearance" collapsible={false}>
+      <BlendingGroup {...props} />
+      <RadiusGroup {...props} />
     </CollapsibleSection>
   );
 }
