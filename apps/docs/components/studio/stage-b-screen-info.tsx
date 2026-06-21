@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PropertyList } from "@/components/ui/property-list";
 import { cn } from "@/lib/utils";
 
 import {
@@ -97,26 +98,6 @@ function formatRelative(epoch: number): string {
   }
 }
 
-interface RowProps {
-  label: string;
-  children: React.ReactNode;
-}
-
-/** One key/value row in the metadata list. Grid layout so labels
- *  align across rows; label column width is a CSS var so a future
- *  theme tweak can widen it without touching the markup. */
-function Row({ label, children }: RowProps) {
-  return (
-    <div
-      className="grid items-center gap-3 py-2"
-      style={{ gridTemplateColumns: "var(--gds-meta-label-col, 96px) 1fr" }}
-    >
-      <dt className="text-[11px] text-muted-foreground">{label}</dt>
-      <dd className="text-xs text-foreground min-w-0 truncate">{children}</dd>
-    </div>
-  );
-}
-
 export function StageBScreenInfo({
   appSource,
   designName,
@@ -140,101 +121,79 @@ export function StageBScreenInfo({
   }, []);
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
-      {/* Header strip — screen name + status pill. Mirrors the
-          "page properties" pattern: identity on the left, state on
-          the right. Border-b ties it to the divider rhythm the
-          tab shell already establishes. */}
-      <header className="px-3 pt-3 pb-2 shrink-0 border-b border-border">
-        <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+    <div className={cn("flex h-full flex-col", className)}>
+      {/* Screen identity — quiet eyebrow + name, on the same section
+          rhythm (border-/60) as the Display section above it. */}
+      <section className="shrink-0 border-b border-border/60 px-3 pt-2.5 pb-2.5">
+        <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">
           Screen
         </p>
-        <h2 className="text-sm font-semibold text-foreground truncate">
+        <h2 className="truncate text-sm font-semibold text-foreground">
           {designName}
         </h2>
-      </header>
+      </section>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        <dl className="divide-y divide-border">
-          <Row label="Status">
-            <Select
-              value={effectiveStatus}
-              onValueChange={(v) => onStatusChange(v as DesignStatus)}
-            >
-              <SelectTrigger
-                className={cn(
-                  "h-7 text-xs w-auto min-w-[120px]",
-                  // Tone the trigger to feel like a chip rather than
-                  // a full input — borderless until hovered.
-                  "border-transparent bg-transparent hover:bg-muted",
-                  "focus:bg-muted",
-                )}
+      <div className="flex-1 overflow-y-auto">
+        {/* Metadata — the shared PropertyList primitive (read-only
+            label/value), so it matches every other detail surface and
+            drops the per-row dividers that made this read busy. */}
+        <section className="px-3 py-3">
+          <PropertyList density="compact" labelWidth="6rem">
+            <PropertyList.Row label="Status">
+              <Select
+                value={effectiveStatus}
+                onValueChange={(v) => onStatusChange(v as DesignStatus)}
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DESIGN_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s} className="text-xs">
-                    {designStatusLabel(s)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Row>
+                <SelectTrigger
+                  size="xs"
+                  className="w-auto min-w-[120px] border-transparent bg-transparent hover:bg-muted focus:bg-muted"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent size="xs" position="item-aligned">
+                  {DESIGN_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {designStatusLabel(s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </PropertyList.Row>
 
-          <Row label="Project">
-            <Badge
-              variant="outline"
-              className="text-[11px] font-normal max-w-full"
-            >
-              <span className="truncate">{projectName}</span>
-            </Badge>
-          </Row>
+            <PropertyList.Row label="Project">
+              <Badge variant="outline" className="max-w-full font-normal">
+                <span className="truncate">{projectName}</span>
+              </Badge>
+            </PropertyList.Row>
 
-          <Row label="Revisions">
-            <span className="font-mono text-xs">{revisions}</span>
-          </Row>
+            <PropertyList.Row label="Revisions" value={revisions} />
 
-          <Row label="Created">
-            <span
-              className="text-xs text-foreground/80"
-              title={createdAt ? new Date(createdAt).toString() : undefined}
-            >
-              {createdAt ? formatCreated(createdAt) : "—"}
-            </span>
-          </Row>
+            <PropertyList.Row
+              label="Created"
+              value={createdAt ? formatCreated(createdAt) : "—"}
+            />
 
-          <Row label="Updated">
-            <span
-              className="text-xs text-foreground/80"
-              title={updatedAt ? new Date(updatedAt).toString() : undefined}
-            >
-              {updatedAt ? formatRelative(updatedAt) : "—"}
-            </span>
-          </Row>
-        </dl>
+            <PropertyList.Row
+              label="Updated"
+              value={updatedAt ? formatRelative(updatedAt) : "—"}
+            />
+          </PropertyList>
+        </section>
 
-        {/* Advanced disclosure — keeps the inventory reachable
-            without dragging it into the default view. Collapsed
-            by default. Border-t separates it from the metadata
-            block above. */}
-        <div className="pt-3 mt-2 border-t border-border">
+        {/* Component inventory — collapsible, on the section divider
+            rhythm so it reads as one more block, not a tacked-on extra. */}
+        <section className="border-t border-border/60 px-3">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="inventory" className="border-b-0">
-              <AccordionTrigger
-                className={cn(
-                  "py-2 text-xs font-medium text-muted-foreground hover:no-underline",
-                  "hover:text-foreground",
-                )}
-              >
+              <AccordionTrigger className="py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:no-underline">
                 Component inventory
               </AccordionTrigger>
-              <AccordionContent className="pt-2 pb-1">
+              <AccordionContent className="pb-2 pt-1">
                 <ComponentInventory appSource={appSource} />
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </div>
+        </section>
       </div>
     </div>
   );
