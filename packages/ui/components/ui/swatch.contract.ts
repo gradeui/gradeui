@@ -27,10 +27,25 @@ export const SwatchContract = contract({
       design: "content",
       description: "a Grade colour token NAME with no `--` and no `oklch()` wrap; resolved internally to `oklch(var(--<token>))`. THE design-system path — e.g. `token=\"brand-3\"`, `token=\"primary\"`, `token=\"chart-2\"`. Re-voices live when the theme changes.",
   },
-  "size": {
-      schema: z.enum(["xs", "sm", "md", "lg", "xl"]).optional(),
+  "type": {
+      schema: z.enum(["solid", "gradient", "image"]).optional(),
       design: "knob",
-      description: "t-shirt scale, 20px → 56px; default md (32px). Prefer over h-*/w-* utilities.",
+      description: "fill kind; default solid (or inferred from `image` / `gradient`). Determines what the chip renders in place.",
+  },
+  "gradient": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "CSS gradient for `type=\"gradient\"`, e.g. `linear-gradient(135deg,#6366f1,#ec4899)`.",
+  },
+  "image": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "image URL for `type=\"image\"`; rendered cover-fit behind the chip.",
+  },
+  "size": {
+      schema: z.enum(["2xs", "xs", "sm", "md", "lg", "xl"]).optional(),
+      design: "knob",
+      description: "t-shirt scale, 16px → 56px; default md (32px). 2xs (16px) suits dense colour lists. Prefer over h-*/w-* utilities.",
   },
   "shape": {
       schema: z.enum(["square", "rounded", "circle"]).optional(),

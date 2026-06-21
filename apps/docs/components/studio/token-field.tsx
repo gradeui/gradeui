@@ -135,6 +135,15 @@ export interface TokenFieldProps {
   /** Resolved-value hint for the "unset" menu row ("0px") — every other
    *  row carries one, so a blank first row reads broken. */
   placeholderHint?: string;
+  /** OPTIONAL bound-token control override. When provided, it REPLACES
+   *  the built-in Select used for the bound case (the detach button +
+   *  unit suffix wrapper are still rendered around it). Used by colour
+   *  fields, which swap the token Select for a swatch-led ColorPicker
+   *  while keeping the rest of TokenField's detach/raw machinery. The
+   *  detach button only renders when `token != null && onDetach` — same
+   *  rule as the Select path — so callers that own their own picker but
+   *  want detach should pass `onDetach`. */
+  renderToken?: () => React.ReactNode;
 }
 
 export function TokenField({
@@ -157,6 +166,7 @@ export function TokenField({
   ghostToken,
   unitSuffix,
   placeholderHint,
+  renderToken,
 }: TokenFieldProps) {
   // Suffix shows only for PLAIN ghost numbers ("0"). Token explainers
   // (ghost chips, menu rows) keep the unit WITH the number — "pt-6 ·24px"
@@ -216,6 +226,14 @@ export function TokenField({
 
       {bound ? (
         <div className="relative">
+        {renderToken ? (
+          // Caller-owned bound control (e.g. colour swatch ColorPicker).
+          // Pad the right edge so the absolutely-positioned detach button
+          // doesn't overlap when a token is bound.
+          <div className={cn("w-full", token != null && onDetach && "pr-7")}>
+            {renderToken()}
+          </div>
+        ) : (
         <Select
           value={token == null ? "__none" : token}
           onValueChange={(v) => onPickToken(v === "__none" ? null : v)}
@@ -308,6 +326,7 @@ export function TokenField({
             ))}
           </SelectContent>
         </Select>
+        )}
         {/* Detach — INSIDE the field, Figma's "Detach variable". Only
             rendered when a token is actually bound (an unset field has
             nothing to detach). Absolutely positioned because a button

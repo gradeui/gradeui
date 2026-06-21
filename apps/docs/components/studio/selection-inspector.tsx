@@ -103,6 +103,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import {
+  ColorPicker,
+  type ColorTokenGroup,
+} from "@/components/ui/color-picker";
+import { type FillValue } from "@/components/ui/fill-picker";
+import { Swatch } from "@/components/ui/swatch";
+import { Button } from "@/components/ui/button";
+import {
+  gradientToCss,
+  type GradientValue,
+} from "@/components/ui/gradient-editor";
+import { readFills, serialiseFills } from "@/lib/fill-serialise";
+import { stripTailwindGradient } from "@/lib/tailwind-gradients";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -126,6 +139,7 @@ import {
 } from "@/lib/token-registry";
 import {
   Popover,
+  PopoverClose,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
@@ -235,7 +249,11 @@ import {
   setBlend,
   parseFill,
   setFill,
+  FILL_COLOR_TOKENS,
+  parseTextColor,
+  setTextColor,
   type FillColorToken,
+  type TextColorToken,
   type BorderEntry,
   type BlendMode,
   type FontSizeValue,
@@ -1157,6 +1175,48 @@ export function SelectionInspector({
       )}
 
       {/* ============================================================
+          COLOR group — foreground (text + icon) colour token. Sits
+          below Fill (a frame's paint, then its content's colour).
+          Self-hides for non-text elements via caps.fontSize and for
+          components whose contract owns a colour prop.
+          ============================================================ */}
+      {selection?.sourceId !== undefined && (
+        <ColorGroup
+          source={appSource}
+          componentName={componentName ?? selection.tag}
+          tag={selection.tag}
+          sourceId={selection?.sourceId}
+          disabled={!componentPresent}
+          manifestPropNames={
+            new Set(settableProps.map((p) => p.name.toLowerCase()))
+          }
+          // ColorGroup writes through onApplySource only; onChangeClassName
+          // is part of the shared StyleGroupProps contract, so wire the same
+          // className updater FillGroup uses to satisfy the type.
+          onChangeClassName={(next) => {
+            if (!appSource) return;
+            const target = componentName ?? selection?.tag;
+            if (!target) return;
+            const updated = updateComponentProp(
+              appSource,
+              target,
+              "className",
+              next,
+              selection?.sourceId,
+            );
+            if (updated !== appSource) {
+              onSourceChange(updated, `Set text color`);
+            }
+          }}
+          onApplySource={(mutate, label) => {
+            if (appSource == null) return;
+            const next = mutate(appSource);
+            if (next !== appSource) onSourceChange(next, label);
+          }}
+        />
+      )}
+
+      {/* ============================================================
           BORDER group — width / position (inside·centre·outside) /
           style / colour, all theme-token driven. Sits below
           Appearance, above the className override. Self-hides for
@@ -1991,9 +2051,9 @@ function FlexControls({
             the gap input. Single-click sets justify (main) + align (cross),
             mapped per direction so column flex isn't transposed. DOUBLE-click
             toggles distribute (space-between) on the main axis. */}
-        <div className="flex shrink-0 flex-col">
+        <div className="flex min-h-0 shrink-0 flex-col">
           <Label className={FIELD_LABEL}>Alignment</Label>
-          <div className="mt-1.5 grid min-h-0 w-24 flex-1 grid-cols-3 grid-rows-3 rounded-md border border-input p-0.5">
+          <div className="mt-1.5 grid min-h-0 w-24 flex-1 auto-rows-fr grid-cols-3 grid-rows-3 rounded-md border border-input p-0.5">
           {[0, 1, 2].map((r) =>
             [0, 1, 2].map((c) => {
               const cellJustify: JustifyValue = mainIsRow ? POS[c] : POS[r];
@@ -2331,26 +2391,34 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
   return (
     <section className="border-t border-border/60 first:border-t-0">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
+      {/* Header flex row: the collapse trigger and the hint are SIBLINGS.
+          The hint can itself contain interactive controls (a reset button),
+          so it must NOT live inside the trigger <button> — a <button> nested
+          in a <button> is invalid HTML and throws a hydration error. */}
+      <div
         className={cn(
-          "flex w-full items-center gap-1.5 px-3 pt-2.5 text-left",
+          "flex w-full items-center gap-1.5 px-3 pt-2.5",
           // Tighter gap to the values when open; balanced when collapsed.
           open ? "pb-1.5" : "pb-2.5",
         )}
       >
-        <ChevronDown
-          aria-hidden
-          className={cn(
-            "h-3 w-3 shrink-0 text-muted-foreground transition-transform",
-            !open && "-rotate-90",
-          )}
-        />
-        <span className="text-xs font-medium text-foreground">{title}</span>
-        {hint ? <span className="ml-auto pl-2">{hint}</span> : null}
-      </button>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex flex-1 items-center gap-1.5 text-left"
+        >
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "h-3 w-3 shrink-0 text-muted-foreground transition-transform",
+              !open && "-rotate-90",
+            )}
+          />
+          <span className="text-xs font-medium text-foreground">{title}</span>
+        </button>
+        {hint ? <span className="shrink-0 pl-2">{hint}</span> : null}
+      </div>
       {open && <div className="space-y-2 px-3 pb-3">{children}</div>}
     </section>
   );
@@ -2447,6 +2515,57 @@ function EntryIconButton({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * SectionRowActions — the canonical show/hide (eye) + remove (minus)
+ * icon cluster for a style-section entry row. The Border section is the
+ * reference implementation; this component lifts its exact affordances
+ * (icon colour, hover, size, behaviour via EntryIconButton) so Fill,
+ * Border, and Shadow all read identically.
+ *
+ *  - `visible` + `onToggleVisible` render the eye / eye-off toggle.
+ *    Omit BOTH to hide the eye button (a section with remove-only, e.g.
+ *    a single-value section).
+ *  - `onRemove` renders the minus button.
+ *  - `noun` customises the aria-label / tooltip ("border", "fill",
+ *    "shadow"); defaults to "layer".
+ */
+function SectionRowActions({
+  visible,
+  onToggleVisible,
+  onRemove,
+  disabled,
+  noun = "layer",
+}: {
+  visible?: boolean;
+  onToggleVisible?: () => void;
+  onRemove?: () => void;
+  disabled?: boolean;
+  noun?: string;
+}) {
+  return (
+    <>
+      {onToggleVisible ? (
+        <EntryIconButton
+          label={visible ? `Hide ${noun}` : `Show ${noun}`}
+          disabled={disabled}
+          onClick={onToggleVisible}
+        >
+          {visible ? <Eye /> : <EyeOff />}
+        </EntryIconButton>
+      ) : null}
+      {onRemove ? (
+        <EntryIconButton
+          label={`Remove ${noun}`}
+          disabled={disabled}
+          onClick={onRemove}
+        >
+          <Minus />
+        </EntryIconButton>
+      ) : null}
+    </>
   );
 }
 
@@ -4237,13 +4356,14 @@ function ShadowGroup({
       onAdd={() => writeToken("md", "Add shadow")}
       headerExtra={
         !empty ? (
-          <EntryIconButton
-            label="Remove shadow"
+          // Remove-only (shadow is a single-value section, no per-row
+          // visibility) — shared affordance with Fill / Border via
+          // SectionRowActions so the minus icon matches exactly.
+          <SectionRowActions
+            noun="shadow"
+            onRemove={() => writeToken(null, "Remove shadow")}
             disabled={disabled}
-            onClick={() => writeToken(null, "Remove shadow")}
-          >
-            <Minus />
-          </EntryIconButton>
+          />
         ) : null
       }
     >
@@ -4325,12 +4445,739 @@ const FIELD_LABEL = "text-2xs font-medium text-foreground/80";
 // Fill swatch classes moved to lib/token-registry (the scoped fill
 // tokens carry their own swatchClass).
 
+// ColorPicker token groups built from the inspector's OWN fill token
+// list, so the ids the picker emits line up 1:1 with FillColorToken
+// (the picker value IS the bare token id `card`/`muted`/… that
+// setFill writes as `bg-<id>`). `transparent` is dropped from the
+// list because the ColorPicker offers it via `allowTransparent` as the
+// dedicated checkerboard row. The Swatch resolves each id as
+// `oklch(var(--<id>))`, which matches the theme's `--card`, `--primary`
+// … custom properties.
+const FILL_COLOR_PICKER_GROUPS: ColorTokenGroup[] = [
+  {
+    group: "surface",
+    tokens: ["background", "card", "muted", "secondary"],
+  },
+  {
+    group: "action",
+    tokens: ["primary", "accent", "destructive"],
+  },
+];
+
+// ColorPicker token groups for the foreground/content (text + icon)
+// colours. The ids are the bare TextColorToken ids; setTextColor writes
+// them as `text-<id>`, and the Swatch resolves `oklch(var(--<id>))`
+// against the theme's `--foreground`, `--primary`, … custom properties.
+const TEXT_COLOR_PICKER_GROUPS: ColorTokenGroup[] = [
+  {
+    group: "content",
+    tokens: ["foreground", "muted-foreground", "card-foreground", "popover-foreground"],
+  },
+  {
+    group: "action",
+    tokens: [
+      "primary",
+      "primary-foreground",
+      "secondary-foreground",
+      "accent-foreground",
+      "destructive",
+    ],
+  },
+];
+
+/* ── Fill row plumbing ──────────────────────────────────────────────── */
+
+/** The three fill kinds a FillRow can switch between. */
+type FillRowKind = "solid" | "gradient" | "image";
+
+function fillRowKindOf(v: FillValue): FillRowKind {
+  if (v.type === "gradient") return "gradient";
+  if (v.type === "image") return "image";
+  return "solid";
+}
+
+/** Bare token ids the fill model round-trips (`card` → `bg-card` /
+ *  `oklch(var(--card))`). `transparent` is dropped here — it's surfaced as
+ *  the picker's own "Transparent" row, not a swatch token. */
+const FILL_TOKEN_IDS = FILL_COLOR_TOKENS.filter((t) => t !== "transparent");
+
+/** Colour options for a solid fill's TokenField: just the capitalised
+ *  token NAME. No `preview` swatch — Radix `SelectValue` mirrors a
+ *  preview into the field chip, which double-renders against the leading
+ *  `triggerIcon` swatch. The swatch lives in the field's leading slot
+ *  (FillSwatchGlyph). TODO: bring swatches back into the dropdown rows via
+ *  the ColorPicker (Figma-designed) rework. */
+const FILL_COLOR_OPTIONS: TokenOption[] = FILL_TOKEN_IDS.map((t) => ({
+  value: t,
+  label: t.charAt(0).toUpperCase() + t.slice(1),
+}));
+
+/** The colour swatch shown in a colour field's LEADING slot (TokenField's
+ *  `triggerIcon`) — the direct analogue of the opacity field's OpacityIcon.
+ *  Sized 2xs (16px) so it sits inside the field height; `shadow-none` strips
+ *  the Swatch's default elevation so it matches the flat leading glyphs of
+ *  the other fields. A null token renders a dashed empty chip with the same
+ *  2px rounding. */
+function FillSwatchGlyph({ token }: { token: string | null }) {
+  if (token == null) {
+    return (
+      <span
+        aria-hidden
+        className="size-4 shrink-0 rounded-[2px] border border-dashed border-input"
+      />
+    );
+  }
+  if (token === "transparent" || isRawFillColor(token)) {
+    return (
+      <Swatch
+        size="2xs"
+        shape="rounded"
+        type="solid"
+        color={token}
+        className="shadow-none"
+      />
+    );
+  }
+  return <Swatch size="2xs" shape="rounded" token={token} className="shadow-none" />;
+}
+
+/** A bare-word value (no `(`, `#`, space, `var(`) is a theme token name;
+ *  anything else is a raw CSS colour (hex / oklch() / rgb()). */
+function isRawFillColor(value: string): boolean {
+  return /[#(\s]/.test(value) || value.startsWith("var(");
+}
+
+/** The fill model stores the conic kind as `"conic"`; the GradientEditor's
+ *  GradientValue calls it `"angular"`. These two helpers map the kind across
+ *  that boundary so radial + conic round-trip (linear is the shared default). */
+function fillKindToEditorType(
+  t: NonNullable<FillValue["gradient"]>["type"],
+): GradientValue["type"] {
+  if (t === "radial") return "radial";
+  if (t === "conic") return "angular";
+  return "linear";
+}
+
+function editorTypeToFillKind(
+  t: GradientValue["type"],
+): NonNullable<FillValue["gradient"]>["type"] {
+  if (t === "radial") return "radial";
+  if (t === "angular") return "conic";
+  return "linear";
+}
+
+/** Bridge FillValue.gradient ({from,via,to,angle,type,position}) → the
+ *  structured GradientValue the GradientEditor edits, and back — mirrors the
+ *  bridges in fill-picker so the editor + serialiser agree on the shape. */
+function fillToGradientValue(v: FillValue): GradientValue {
+  const g = v.gradient ?? {};
+  const stops: GradientValue["stops"] = [];
+  const push = (value: string | undefined, position: number, id: string) => {
+    if (value == null) return;
+    if (value === "transparent" || isRawFillColor(value))
+      stops.push({ id, position, color: value, opacity: 1 });
+    else stops.push({ id, position, token: value, opacity: 1 });
+  };
+  push(g.from ?? "primary", 0, "g-from");
+  if (g.via != null) push(g.via, 50, "g-via");
+  push(g.to ?? "accent", 100, "g-to");
+  return {
+    type: fillKindToEditorType(g.type),
+    angle: g.angle ?? 90,
+    position: g.position,
+    stops,
+    source: g.source,
+    tailwindClass: g.tailwindClass,
+    interpolation: g.interpolation,
+  };
+}
+
+function fillFromGradientValue(gv: GradientValue): FillValue["gradient"] {
+  const sorted = [...gv.stops].sort((a, b) => a.position - b.position);
+  const from = sorted[0]?.token ?? sorted[0]?.color;
+  const to =
+    sorted[sorted.length - 1]?.token ?? sorted[sorted.length - 1]?.color;
+  const via =
+    sorted.length > 2 ? (sorted[1]?.token ?? sorted[1]?.color) : undefined;
+  return {
+    from,
+    via,
+    to,
+    angle: gv.angle,
+    type: editorTypeToFillKind(gv.type),
+    position: gv.position,
+    source: gv.source,
+    tailwindClass: gv.tailwindClass,
+    interpolation: gv.interpolation,
+  };
+}
+
+/** Human label for the gradient kind, for the value-field chip. */
+function gradientKindLabel(t: GradientValue["type"]): string {
+  if (t === "radial") return "Radial";
+  if (t === "angular") return "Conic";
+  return "Linear";
+}
+
+/** Opacity ramp — 0–100 in 10% steps — the TokenField options for a
+ *  fill's opacity field (same option shape as every spacing token). */
+const FILL_OPACITY_OPTIONS: TokenOption[] = Array.from(
+  { length: 11 },
+  (_, i) => {
+    const pct = i * 10;
+    return { value: String(pct), label: String(pct), hint: `${pct}%` };
+  },
+);
+
+/** Gradient TYPE options for the panel's Select — same component + styling
+ *  as the Border "Side" select. "Conic" is the user-facing label for the
+ *  editor's `angular` kind. */
+const GRADIENT_TYPE_OPTIONS: { value: GradientValue["type"]; label: string }[] =
+  [
+    { value: "linear", label: "Linear" },
+    { value: "radial", label: "Radial" },
+    { value: "angular", label: "Conic" },
+  ];
+
+/** Angle ramp (deg) for the linear-gradient angle TokenField — the 8
+ *  cardinal/diagonal directions plus the in-between 45s, matching Tailwind's
+ *  `to-{dir}` set so a picked angle can round-trip to a clean preset. */
+const GRADIENT_ANGLE_OPTIONS: TokenOption[] = [
+  0, 45, 90, 135, 180, 225, 270, 315,
+].map((deg) => ({
+  value: String(deg),
+  label: String(deg),
+  hint: `${deg}°`,
+}));
+
+/** Centre-position options for radial / conic gradients — the same set CSS
+ *  accepts as a `<position>` keyword pair, offered through the Border-style
+ *  Select so the control matches the rest of the inspector. */
+const GRADIENT_POSITION_OPTIONS: { value: string; label: string }[] = [
+  { value: "center", label: "Center" },
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+  { value: "top left", label: "Top left" },
+  { value: "top right", label: "Top right" },
+  { value: "bottom left", label: "Bottom left" },
+  { value: "bottom right", label: "Bottom right" },
+];
+
+/** A gradient stop, as the panel edits it: a colour (token id or raw CSS,
+ *  null = unset) plus a fixed role (from / via / to). */
+type GradientStopRole = "from" | "via" | "to";
+
 /**
- * FillGroup — background colour as a theme token (`bg-card`, `bg-muted`,
- * …). Writes a className `bg-*` override; never a raw hex. Hides when a
- * component's contract already owns the surface/fill (Card's `surface`
- * prop is canonical — the generic override would just fight it), and
- * for element types where a fill makes no sense (text, app-shell).
+ * GradientEditorPanel — the inspector's OWN gradient editor, composed
+ * entirely from the existing inspector field components so it reads and
+ * behaves exactly like the gap / padding / fill rows. It REPLACES the
+ * bespoke `<GradientEditor>` inside the Fill row's gradient popover.
+ *
+ * Layout, top to bottom:
+ *   1. Type  — a <Select> (Linear · Radial · Conic), same component/styling
+ *      as the Border "Side" select. Switching kind re-renders the preview
+ *      and the serialised gradient (linear → radial-gradient / conic).
+ *   2. Angle (linear) — a <TokenField> over a degree ramp, identical chrome
+ *      to the gap / border-width fields. Radial / Conic swap this for a
+ *      Position <Select>; Conic shows BOTH (a from-angle + a centre).
+ *   3. Stops — up to 3 (from / via / to). Each is a <TokenField> whose
+ *      `renderToken` hosts the SAME swatch-led <ColorPicker> the Fill solid
+ *      value uses (swatch + token name), plus a position TokenField. The via
+ *      stop carries a remove (minus) via SectionRowActions; an add (plus)
+ *      appears in the Stops header while under the 3-stop cap.
+ *   4. Preview — a full-width <Swatch type="gradient">.
+ *
+ * It speaks the same `{ value, onChange }` GradientValue contract as the old
+ * editor, so the FillRow wiring is unchanged.
+ */
+function GradientEditorPanel({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: GradientValue;
+  onChange: (value: GradientValue) => void;
+  disabled?: boolean;
+}) {
+  const set = (patch: Partial<GradientValue>) =>
+    onChange({ ...value, ...patch });
+
+  const sorted = [...value.stops].sort((a, b) => a.position - b.position);
+  const hasVia = sorted.length >= 3;
+  const atStopCap = sorted.length >= 3;
+
+  // Map the sorted stops to their from/via/to roles so each row knows which
+  // GradientValue stop it edits (first = from, last = to, middle = via).
+  const roleOf = (i: number): GradientStopRole => {
+    if (i === 0) return "from";
+    if (i === sorted.length - 1) return "to";
+    return "via";
+  };
+
+  // Editing a stop turns a Tailwind preset into a user-built gradient — drop
+  // the preset provenance so the serialiser stops trying to re-emit the class
+  // and instead writes the (now-custom) inline gradient. Folded into every
+  // stop edit so a single onChange carries both the edit AND the demotion.
+  const markCustom = (): Partial<GradientValue> =>
+    value.source === "tailwind"
+      ? { source: "custom", tailwindClass: undefined }
+      : {};
+
+  const setStop = (id: string, patch: Partial<GradientValue["stops"][number]>) =>
+    set({
+      ...markCustom(),
+      stops: value.stops.map((s) => (s.id === id ? { ...s, ...patch } : s)),
+    });
+
+  // Set a stop's colour from the ColorPicker (token id / raw / null). A bare
+  // token id binds `token`; a raw CSS colour binds `color`; matching the Fill
+  // solid value's normalisation.
+  const setStopColor = (id: string, v: string | null) => {
+    if (v == null) {
+      setStop(id, { token: undefined, color: undefined });
+    } else if (v === "transparent" || isRawFillColor(v)) {
+      setStop(id, { token: undefined, color: v });
+    } else {
+      setStop(id, { token: v, color: undefined });
+    }
+  };
+
+  const addStop = () => {
+    if (atStopCap) return;
+    // Insert a "via" stop at 50% between the existing from/to.
+    const next = [
+      sorted[0],
+      {
+        id: `g-via-${Date.now().toString(36)}`,
+        position: 50,
+        token: "secondary",
+        opacity: 1,
+      },
+      sorted[sorted.length - 1],
+    ];
+    set({ ...markCustom(), stops: next });
+  };
+
+  const removeVia = () => {
+    if (!hasVia) return;
+    set({ ...markCustom(), stops: [sorted[0], sorted[sorted.length - 1]] });
+  };
+
+  const css = gradientToCss(value);
+  const isLinear = value.type === "linear";
+  const isConic = value.type === "angular";
+  const position = value.position ?? "center";
+
+  // Switch direction — flip the gradient end-for-end by mirroring every
+  // stop position (0↔100). Colours stay; their order reverses. Demotes a
+  // Tailwind preset to custom (it's no longer a verbatim preset).
+  const switchDirection = () =>
+    set({
+      ...markCustom(),
+      stops: value.stops.map((s) => ({ ...s, position: 100 - s.position })),
+    });
+
+  // Rotate — turn a linear/conic gradient 45° clockwise (wraps at 360).
+  // No-op for radial (no angle).
+  const canRotate = isLinear || isConic;
+  const rotate = () =>
+    set({ angle: ((value.angle ?? 90) + 45) % 360, ...markCustom() });
+
+  const stopColorValue = (s: GradientValue["stops"][number]) =>
+    s.token ?? s.color ?? null;
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      {/* Type select + direction actions on one row (switch direction /
+          rotate), matching the Figma "Gradient Fill" panel. */}
+      <div className="flex items-center gap-1.5">
+        <Select
+          value={value.type}
+          onValueChange={(v) =>
+            set({ type: v as GradientValue["type"], ...markCustom() })
+          }
+          disabled={disabled}
+        >
+          <SelectTrigger size="2xs" className="flex-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent size="2xs" position="item-aligned">
+            {GRADIENT_TYPE_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <EntryIconButton
+          label="Switch direction"
+          disabled={disabled}
+          onClick={switchDirection}
+        >
+          <LucideIcons.ArrowLeftRight />
+        </EntryIconButton>
+        <EntryIconButton
+          label="Rotate 45°"
+          disabled={disabled || !canRotate}
+          onClick={rotate}
+        >
+          <LucideIcons.RotateCw />
+        </EntryIconButton>
+      </div>
+
+      {/* Angle (linear / conic) — a degree-ramp TokenField, same chrome as
+          gap / border-width. */}
+      {(isLinear || isConic) && (
+        <TokenField
+          kind="gradient angle"
+          label="Angle"
+          bound
+          token={String(value.angle ?? 90)}
+          tokens={GRADIENT_ANGLE_OPTIONS}
+          placeholder="90"
+          placeholderHint="90°"
+          unitSuffix="°"
+          disabled={disabled}
+          onPickToken={(t) =>
+            set({ angle: t === null ? 90 : Number(t), ...markCustom() })
+          }
+        />
+      )}
+
+      {/* Position (radial / conic) — the Border-"Side" Select. */}
+      {!isLinear && (
+        <div className="space-y-1">
+          <Label className={FIELD_LABEL}>Position</Label>
+          <Select
+            value={position}
+            onValueChange={(v) => set({ position: v, ...markCustom() })}
+            disabled={disabled}
+          >
+            <SelectTrigger size="2xs" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent size="2xs" position="item-aligned">
+              {GRADIENT_POSITION_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Stops — up to 3 (from / via / to). */}
+      <div className="space-y-1.5">
+        <div className="flex min-h-4 items-center justify-between">
+          <Label className={FIELD_LABEL}>Stops</Label>
+          {!atStopCap ? (
+            <EntryIconButton label="Add stop" disabled={disabled} onClick={addStop}>
+              <Plus />
+            </EntryIconButton>
+          ) : null}
+        </div>
+        {sorted.map((stop, i) => {
+          const role = roleOf(i);
+          return (
+            <div key={stop.id} className="flex items-end gap-1.5">
+              <div className="grid min-w-0 flex-1 grid-cols-2 gap-1.5">
+                {/* Colour — a NATIVE TokenField with the colour swatch in
+                    the leading slot, identical chrome to the Fill solid
+                    value and the gap / opacity fields. */}
+                <TokenField
+                  kind="gradient stop"
+                  bound
+                  token={stopColorValue(stop)}
+                  tokens={FILL_COLOR_OPTIONS}
+                  placeholder="None"
+                  disabled={disabled}
+                  triggerIcon={<FillSwatchGlyph token={stopColorValue(stop)} />}
+                  onPickToken={(t) => setStopColor(stop.id, t)}
+                />
+                {/* Position — a 0–100 % TokenField, identical chrome to the
+                    fill-opacity field. */}
+                <TokenField
+                  kind="gradient stop position"
+                  bound
+                  token={String(stop.position)}
+                  tokens={FILL_OPACITY_OPTIONS}
+                  placeholder="0"
+                  unitSuffix="%"
+                  disabled={disabled}
+                  onPickToken={(t) =>
+                    setStop(stop.id, {
+                      position:
+                        t === null
+                          ? stop.position
+                          : Math.max(0, Math.min(100, Number(t))),
+                    })
+                  }
+                />
+              </div>
+              {/* Remove — only the via (middle) stop is removable; from / to
+                  are structural. Shared SectionRowActions minus button. */}
+              {role === "via" ? (
+                <SectionRowActions
+                  noun="stop"
+                  onRemove={removeVia}
+                  disabled={disabled}
+                />
+              ) : (
+                // Keep the row width aligned with the via row (which carries a
+                // remove button) so the colour/position fields don't jump.
+                <span className="h-7 w-6 shrink-0" aria-hidden />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Preview — a full-width gradient Swatch. */}
+      <Swatch type="gradient" gradient={css} shape="rounded" className="h-8 w-full" />
+    </div>
+  );
+}
+
+/**
+ * FillRow — one paint, rendered with the inspector's OWN field components
+ * so it matches every other section (gap / padding / opacity) exactly:
+ *
+ *   1. A segmented Solid · Gradient · Image (Image disabled) toggle plus a
+ *      visibility eye + a remove minus — the Figma fill-row action cluster.
+ *   2. A value TokenField. For a SOLID fill `renderToken` hosts a
+ *      swatch-led ColorPicker (the leading control is the swatch + the
+ *      token name, identical to the gap field's chip); for a GRADIENT it
+ *      hosts a gradient-swatch button that opens the GradientEditor in a
+ *      popover.
+ *   3. An opacity TokenField — the dotted opacity glyph (same as the
+ *      Blending section), a `%` suffix, and a 0–100 (10% step) token ramp.
+ *
+ * Visibility rides FillValue.opacity (0 = hidden, stashing the prior value
+ * in `_opacity`), matching the shared <FillSection> semantics.
+ */
+function FillRow({
+  fill,
+  disabled,
+  onChange,
+  onRemove,
+}: {
+  fill: FillValue;
+  disabled?: boolean;
+  onChange: (patch: Partial<FillValue>) => void;
+  onRemove: () => void;
+}) {
+  const kind = fillRowKindOf(fill);
+  const opacity = fill.opacity ?? 1;
+  const visible = opacity > 0;
+  const stashed = (fill as { _opacity?: number })._opacity;
+  const opacityPct = Math.round(opacity * 100);
+
+  const switchKind = (next: FillRowKind) => {
+    if (next === "image") {
+      onChange({ type: "image", repeat: false });
+    } else if (next === "gradient") {
+      // Seed a sensible 2-stop linear gradient so the kind round-trips:
+      // fillRowKindOf() reads the kind from `type`, but the serialiser only
+      // keeps a gradient that carries stops — without a seed it re-reads as
+      // solid and the toggle snaps back. `from` reuses the current solid
+      // token (or `card`); `to` defaults to `primary`; to-r (90°) angle.
+      onChange({
+        type: "gradient",
+        gradient: fill.gradient ?? {
+          from: fill.color ?? "card",
+          to: "primary",
+          angle: 90,
+        },
+      });
+    } else {
+      onChange({ type: next as FillValue["type"] });
+    }
+  };
+
+  const toggleVisible = () => {
+    if (visible)
+      onChange({ opacity: 0, ...({ _opacity: opacity } as Partial<FillValue>) });
+    else onChange({ opacity: stashed ?? 1 });
+  };
+
+  // Solid colour as a TokenField value: bound (a token id) vs the
+  // ColorPicker's null/transparent/raw cases. The picker speaks
+  // `group/token`, bare token, "transparent", or null; the fill model
+  // stores bare ids / raw CSS — so we pass the bare value straight through.
+  const colorValue = fill.color ?? null;
+
+  return (
+    <div data-gds-part="fill-row" className="flex flex-col gap-1.5">
+      {/* Type toggle + actions */}
+      <div className="flex items-center gap-1.5">
+        <ToggleGroup
+          type="single"
+          variant="segmented"
+          // size="xs" → h-7 items, so the segmented track renders at the
+          // SAME height as the TokenField value/opacity rows below (both
+          // 2xs/h-7-class fields). No manual h-7 + [&>*]:h-full hack — the
+          // size variant carries the height natively so the toggle row and
+          // the field rows read as one scale.
+          size="2xs"
+          value={kind}
+          onValueChange={(v) => v && switchKind(v as FillRowKind)}
+          disabled={disabled}
+          className="flex-1"
+        >
+          <ToggleGroupItem value="solid" className="flex-1">
+            Solid
+          </ToggleGroupItem>
+          <ToggleGroupItem value="gradient" className="flex-1">
+            Gradient
+          </ToggleGroupItem>
+          {/* Image fill is not exposed in the inspector toggle — only
+              Solid | Gradient. (FillValue's image type stays in the
+              library; the row's image branch below is dead but harmless.) */}
+        </ToggleGroup>
+        {/* Eye + remove — shared with Border / Shadow via SectionRowActions
+            so all three sections carry identical affordances (the Border
+            section is the reference). */}
+        <SectionRowActions
+          noun="fill"
+          visible={visible}
+          onToggleVisible={toggleVisible}
+          onRemove={onRemove}
+          disabled={disabled}
+        />
+      </div>
+
+      {/* Value field + opacity field — both TokenFields, same frame as the
+          gap / opacity rows. */}
+      <div className="grid grid-cols-2 gap-1.5">
+        {/* Value field. SOLID renders a NATIVE TokenField with a colour
+            swatch in the leading slot (triggerIcon) — identical chrome to
+            the opacity / gap fields (the field owns its own border, radius,
+            height and dropdown; only the leading glyph differs). GRADIENT
+            keeps the swatch-led popover button (a gradient has no single
+            token to bind, so it can't use the native token Select). */}
+        {kind === "gradient" ? (
+          <TokenField
+            kind="fill"
+            bound
+            token="__gradient"
+            tokens={FILL_COLOR_OPTIONS}
+            placeholder="None"
+            disabled={disabled}
+            onPickToken={() => {}}
+            renderToken={() => (
+              <Popover>
+                <PopoverTrigger asChild>
+                  {/* Mirrors the solid field's native SelectTrigger 2xs
+                      chrome (h-6 / rounded-lg / pl-1.5 pr-2 / text-2xs) and
+                      its accent bound-chip — so the gradient row reads as
+                      the SAME TokenField, just opening a popover instead of
+                      a token Select (a gradient has no single token to
+                      bind). Don't reintroduce a bespoke button here. */}
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    aria-label="Edit gradient"
+                    className="flex h-6 w-full items-center justify-between rounded-lg border border-input bg-background pl-1.5 pr-2 py-0 text-2xs ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                      <span className="pointer-events-none flex shrink-0 items-center text-muted-foreground/70">
+                        <Swatch
+                          size="2xs"
+                          shape="rounded"
+                          type="gradient"
+                          gradient={gradientToCss(fillToGradientValue(fill))}
+                          className="shadow-none"
+                        />
+                      </span>
+                      <span className="flex min-w-0 items-center gap-0.5 rounded-[4px] border border-[oklch(var(--studio-accent,_0.62_0.18_264)/0.25)] bg-[oklch(var(--studio-accent,_0.62_0.18_264)/0.08)] px-1">
+                        <span className="truncate">
+                          {`${gradientKindLabel(fillToGradientValue(fill).type)} · ${fillToGradientValue(fill).stops.length} stops`}
+                        </span>
+                      </span>
+                    </span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-80">
+                  {/* Header + close — the popover is a working panel, so it
+                      carries an explicit dismiss affordance. */}
+                  <div className="mb-2.5 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-foreground">
+                      Gradient Fill
+                    </span>
+                    <PopoverClose
+                      aria-label="Close"
+                      className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring [&_svg]:size-3.5"
+                    >
+                      <LucideIcons.X />
+                    </PopoverClose>
+                  </div>
+                  <GradientEditorPanel
+                    value={fillToGradientValue(fill)}
+                    onChange={(gv) =>
+                      onChange({ gradient: fillFromGradientValue(gv) })
+                    }
+                    disabled={disabled}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          />
+        ) : (
+          <TokenField
+            kind="fill"
+            bound
+            token={colorValue}
+            tokens={FILL_COLOR_OPTIONS}
+            placeholder="None"
+            disabled={disabled}
+            triggerIcon={<FillSwatchGlyph token={colorValue} />}
+            onPickToken={(t) => onChange({ color: t ?? undefined })}
+          />
+        )}
+        {/* Opacity field: tokenised %, dotted opacity glyph, 10% ramp. */}
+        <TokenField
+          kind="fill opacity"
+          bound
+          token={String(opacityPct)}
+          tokens={FILL_OPACITY_OPTIONS}
+          placeholder="100"
+          unitSuffix="%"
+          disabled={disabled}
+          triggerIcon={
+            <IconTip label="Fill opacity">
+              <span className="flex items-center">
+                <OpacityIcon aria-hidden />
+              </span>
+            </IconTip>
+          }
+          onPickToken={(t) =>
+            onChange({
+              opacity:
+                t === null
+                  ? 1
+                  : Math.max(0, Math.min(100, Number(t))) / 100,
+            })
+          }
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * FillGroup — MULTI-fill background, driven by the shared <FillSection>
+ * control (FillValue[]). A single solid token round-trips to a clean
+ * `bg-<token>` class; anything richer (2+ fills, any gradient/image, or a
+ * translucent solid) serialises to an inline `style.background` layer
+ * stack via lib/fill-serialise. The two reps are mutually exclusive — the
+ * writer always clears the one it isn't using.
+ *
+ * Hides when a component's contract already owns the surface/fill (Card's
+ * `surface` prop is canonical), and for element types where a fill makes
+ * no sense (text, app-shell) — the original self-hide rules are kept.
  */
 function FillGroup({
   source,
@@ -4350,25 +5197,44 @@ function FillGroup({
     "bg",
     "surface",
   ]);
-  const cn0 = readClassName(source, componentName, sourceId);
-  const fill = parseFill(cn0);
-  // Detached fill rides the inline `style` attr (Fast Frame — see
-  // ShadowGroup): backgroundColor as #hex or rgba() when translucent.
-  const inline = source
-    ? readInlineStyle(source, componentName, sourceId)
-    : {};
-  const custom = cssColorToHexOpacity(inline?.["backgroundColor"]);
 
   if (!caps.fill || contractOwnsFill) return null;
 
-  const bound = custom === null;
-  const empty = fill === null && custom === null;
-  const c = custom ?? { hex: "ffffff", opacity: 100 };
+  const cn0 = readClassName(source, componentName, sourceId);
+  // The `bg-<token>` class (single-solid round-trip) — null when none.
+  const bgToken = parseFill(cn0);
+  // The inline `style.background` (multi-layer stack) — read whichever of
+  // `background` / `backgroundImage` carries paint.
+  const inline = source
+    ? readInlineStyle(source, componentName, sourceId)
+    : {};
+  const inlineBackground =
+    inline?.["background"] ?? inline?.["backgroundImage"] ?? null;
 
-  const writeToken = (v: FillColorToken | null, label: string) =>
+  // Seed FillValue[] from the inline layers, a Tailwind gradient class, or
+  // the single `bg-<token>` solid (cn0 lets readFills sniff the gradient).
+  const fills = readFills(bgToken, inlineBackground, cn0);
+
+  // Write: serialise FillValue[] → { className, background } and apply
+  // BOTH (className `bg-*` + inline background), each cleared when the
+  // chosen representation doesn't use it. We always strip the prior
+  // `bg-*` token first (via setFill(..., null)) so a move to inline
+  // doesn't leave a stale class, and clear `backgroundImage` too in case
+  // a previous parse pulled paint from there.
+  const writeFills = (next: FillValue[]) =>
     onApplySource?.((src) => {
+      const { className, background } = serialiseFills(next);
       const cnNow = readClassName(src, componentName, sourceId);
-      const nextCn = setFill(cnNow, v);
+      // Strip any existing bg-* token AND any prior Tailwind gradient
+      // utility (bg-gradient-to-*/from-/via-/to-), then add the new
+      // representation (or none) so a re-serialise never leaves stale
+      // stop classes behind.
+      const strippedCn = stripTailwindGradient(setFill(cnNow, null));
+      const nextCn = className
+        ? strippedCn
+          ? `${strippedCn} ${className}`
+          : className
+        : strippedCn;
       const src2 = updateComponentProp(
         src,
         componentName,
@@ -4379,99 +5245,161 @@ function FillGroup({
       return setInlineStyle(
         src2,
         componentName,
-        { backgroundColor: null },
+        {
+          background: background,
+          // Belt-and-braces: clear the legacy single detached carriers so
+          // they can't shadow the new `background` stack.
+          backgroundColor: null,
+          backgroundImage: null,
+        },
         sourceId,
       );
-    }, label);
-  const writeCustom = (hex: string, opacity: number) =>
-    onApplySource?.((src) => {
-      const cnNow = readClassName(src, componentName, sourceId);
-      const strippedCn = setFill(cnNow, null);
-      const src2 = updateComponentProp(
-        src,
-        componentName,
-        "className",
-        strippedCn === "" ? null : strippedCn,
-        sourceId,
-      );
-      return setInlineStyle(
-        src2,
-        componentName,
-        { backgroundColor: hexOpacityToCssColor(hex, opacity) },
-        sourceId,
-      );
-    }, "Set custom fill");
-
-  // Fill tokens — scoped from the registry, theme swatch chip per row.
-  const tokens: TokenOption[] = getAreaTokens("fill").map((t) => ({
-    value: t.value,
-    label: t.label,
-    preview: (
-      <span
-        className={cn(
-          "inline-block h-3 w-3 shrink-0 rounded-[3px] border border-border/60",
-          t.swatchClass,
-        )}
-      />
-    ),
-  }));
+    }, "Set fill");
 
   return (
     <AddableSection
       title="Fill"
-      empty={empty}
+      empty={fills.length === 0}
       addLabel="Add fill"
       // Default to the surface token so the added fill is visible.
-      onAdd={() => writeToken("card", "Add fill")}
-      headerExtra={
-        !empty ? (
-          <EntryIconButton
-            label="Remove fill"
-            disabled={disabled}
-            onClick={() => writeToken(null, "Remove fill")}
-          >
-            <Minus />
-          </EntryIconButton>
-        ) : null
+      onAdd={() =>
+        writeFills([...fills, { type: "solid", color: "card", opacity: 1 }])
       }
     >
-      <TokenField
-        kind="fill"
-        label="Colour"
-        bound={bound}
-        token={fill}
-        tokens={tokens}
-        placeholder="None"
-        disabled={disabled}
-        onPickToken={(t) =>
-          writeToken(t as FillColorToken | null, "Set fill")
-        }
-        onDetach={() => writeCustom(c.hex, c.opacity)}
-        onRebind={() => writeToken("card", "Re-bind fill to token")}
-        renderRaw={(attach) => (
-          <ColorOpacityRow
-            hex={c.hex}
-            opacity={c.opacity}
+      {/* The AddableSection header ("Fill" + `+`) owns the heading and the
+          add control. Each fill renders as a FillRow built from the
+          inspector's own field components (TokenField / Swatch / toggle),
+          so the rows match every other inspector section pixel-for-pixel
+          rather than the generic <FillSection> chrome. */}
+      <div className="flex flex-col gap-2.5">
+        {fills.map((fill, index) => (
+          <FillRow
+            key={index}
+            fill={fill}
             disabled={disabled}
-            onChange={(hex, opacity) => writeCustom(hex, opacity)}
-            endExtra={attach}
+            onChange={(patch) =>
+              writeFills(
+                fills.map((f, i) => (i === index ? { ...f, ...patch } : f)),
+              )
+            }
+            onRemove={() => writeFills(fills.filter((_, i) => i !== index))}
           />
-        )}
-      />
+        ))}
+      </div>
     </AddableSection>
   );
 }
 
-// Static swatch classes for the border colour tokens. Kept as literal
-// strings (not interpolated) so Tailwind's JIT keeps them in the build.
-const BORDER_SWATCH: Record<BorderColorToken, string> = {
-  border: "bg-border",
-  foreground: "bg-foreground",
-  primary: "bg-primary",
-  "muted-foreground": "bg-muted-foreground",
-  destructive: "bg-destructive",
-  ring: "bg-ring",
-};
+/**
+ * ColorGroup — foreground colour for text + icons, as a theme token
+ * (`text-foreground`, `text-primary`, `text-muted-foreground`, …).
+ * Writes a className `text-<token>` override; never a raw hex (mirrors
+ * FillGroup's token-led model).
+ *
+ * Scope: text-bearing elements only — gated on `caps.fontSize`, which is
+ * true exactly for the text intrinsics (h1–h6, p, span, label, …) and
+ * button-like elements (see lib/spacing-capabilities). Hides when a
+ * component's contract owns its colour prop (e.g. a Badge variant), the
+ * same self-hide rule FillGroup uses for surface-owning components.
+ *
+ * Token-only by design — text colour has no meaningful per-instance raw
+ * value in the Grade model, so there's no detached/custom hex path here
+ * (FillGroup keeps one because surfaces sometimes need an exact tint).
+ *
+ * In Tailwind, `text-*` is also the foreground colour of an inline SVG
+ * icon (`[&_svg]:text-*` aside), so this single control colours both the
+ * text and any icons that inherit `currentColor`.
+ * TODO(icon): a dedicated Icon-colour row (separate from text) would need
+ * an icon-targeting class mechanism (e.g. `[&_svg]:text-*`) that the
+ * className model doesn't parse today — ship Text colour now, revisit
+ * Icon when that selector family is added to lib/tailwind-classes.
+ */
+function ColorGroup({
+  source,
+  componentName,
+  tag,
+  sourceId,
+  disabled,
+  manifestPropNames,
+  onApplySource,
+}: StyleGroupProps) {
+  const caps = getSpacingCapabilities({ tag, componentName });
+  const contractOwnsColor = ownsAny(manifestPropNames, [
+    "color",
+    "colour",
+    "textcolor",
+    "text-color",
+  ]);
+  // Same scope as Typography's font controls — text intrinsics +
+  // button-like. A colour control on a layout container is rarely the
+  // intent and just crowds the panel.
+  if (!caps.fontSize || contractOwnsColor) return null;
+
+  const cn0 = readClassName(source, componentName, sourceId);
+  const color = parseTextColor(cn0);
+  const empty = color === null;
+
+  const writeColor = (v: TextColorToken | null, label: string) =>
+    onApplySource?.((src) => {
+      const cnNow = readClassName(src, componentName, sourceId);
+      const nextCn = setTextColor(cnNow, v);
+      return updateComponentProp(
+        src,
+        componentName,
+        "className",
+        nextCn === "" ? null : nextCn,
+        sourceId,
+      );
+    }, label);
+
+  return (
+    <AddableSection
+      title="Color"
+      empty={empty}
+      addLabel="Add color"
+      // Default to the primary text colour so the added colour is visible.
+      onAdd={() => writeColor("foreground", "Add color")}
+      headerExtra={
+        !empty ? (
+          // Remove-only — shared affordance via SectionRowActions so the
+          // minus icon matches Fill / Border / Shadow exactly.
+          <SectionRowActions
+            noun="color"
+            onRemove={() => writeColor(null, "Remove color")}
+            disabled={disabled}
+          />
+        ) : null
+      }
+    >
+      <div className="space-y-1">
+        <Label className={FIELD_LABEL}>Text</Label>
+        <ColorPicker
+          value={color}
+          tokens={TEXT_COLOR_PICKER_GROUPS}
+          triggerVariant="default"
+          allowTransparent={false}
+          align="start"
+          disabled={disabled}
+          placeholder="None"
+          aria-label="Text colour"
+          onValueChange={(v) =>
+            writeColor(v as TextColorToken | null, "Set text color")
+          }
+        />
+      </div>
+    </AddableSection>
+  );
+}
+
+// Normalise a border colour token to the BARE custom-property id so the
+// chip resolves the SAME way the Fill section does — `<Swatch token>`
+// wraps it as `oklch(var(--<token>))`. Earlier this rendered a static
+// `bg-<token>` Tailwind class on a plain <span>, which (for `primary`)
+// mis-resolved to the studio chrome accent (blue) instead of the live
+// design-theme token. Strip any `group/` prefix; the tail is the CSS var.
+function bareBorderToken(token: BorderColorToken): string {
+  return token.includes("/") ? token.split("/").pop()! : token;
+}
 
 // Default px for each Tailwind radius token (theme default scale). Used
 // to show the rendered pixels alongside the token (rounded-lg · 8px).
@@ -4494,6 +5422,13 @@ type UiBorderEntry = BorderEntry & { id: number; visible: boolean };
  * selection (component state), not across reloads — only visible
  * entries serialise into the className.
  */
+/** Width options for a border entry's TokenField — the fixed Tailwind
+ *  border-width ramp (1/2/4/8), each labelled in px. Mirrors the gap
+ *  field's option shape so the control reads identically. */
+const BORDER_WIDTH_OPTIONS: TokenOption[] = BORDER_WIDTH_SCALE.filter(
+  (w) => w > 0,
+).map((w) => ({ value: String(w), label: String(w), hint: `${w}px` }));
+
 /** Border-side glyphs — Grade's border-stroke icons (Square for all). */
 const BORDER_SIDE_ICONS: Record<BorderSide, React.ReactNode> = {
   all: <Square aria-hidden />,
@@ -4589,63 +5524,80 @@ function BorderGroup({
             !entry.visible && "opacity-50",
           )}
         >
-          <div className="flex items-end gap-1.5">
-            <div className="w-16 shrink-0 space-y-1">
-              <Label className={FIELD_LABEL}>Width</Label>
-              <Select
-                value={String(entry.width)}
-                onValueChange={(v) => patchEntry(entry.id, { width: Number(v) })}
-                disabled={disabled}
-              >
-                <SelectTrigger size="2xs" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent size="2xs" position="item-aligned">
-                  {BORDER_WIDTH_SCALE.filter((w) => w > 0).map((w) => (
-                    <SelectItem key={w} value={String(w)}>
-                      {w}px
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="min-w-0 flex-1 space-y-1">
-              <Label className={FIELD_LABEL}>Side</Label>
-              <Select
-                value={entry.side}
-                onValueChange={(v) => patchEntry(entry.id, { side: v as BorderSide })}
-                disabled={disabled}
-              >
-                <SelectTrigger
-                  size="2xs"
-                  className="w-full"
-                  startSlot={BORDER_SIDE_ICONS[entry.side]}
+          <div className="flex items-start gap-1.5">
+            {/* Width + Side as EQUAL-width, TOP-aligned columns so the two
+                controls read as one balanced pair. Both columns carry an
+                identical label row (the TokenField provides its own; the
+                Side column mirrors it with the same `min-h-4 items-center`
+                wrapper) so the two fields' tops line up exactly. */}
+            <div className="grid min-w-0 flex-1 grid-cols-2 items-start gap-1.5">
+              {/* Border width as a TokenField (slot-based token picker) so
+                  it matches the gap / padding / fill fields. Token-only —
+                  the width ramp is the only valid set, so there's no
+                  detach/raw path (no onDetach/onRebind/renderRaw). `px`
+                  suffix mirrors the gap field; placeholderHint matches the
+                  gap / radius fields so the bound token chip + value render
+                  exactly like them. */}
+              <div className="min-w-0">
+                <TokenField
+                  kind="border width"
+                  label="Width"
+                  bound
+                  token={String(entry.width)}
+                  tokens={BORDER_WIDTH_OPTIONS}
+                  placeholder="0"
+                  placeholderHint="0px"
+                  unitSuffix="px"
+                  disabled={disabled}
+                  onPickToken={(t) =>
+                    patchEntry(entry.id, { width: t === null ? 1 : Number(t) })
+                  }
+                />
+              </div>
+              <div className="min-w-0 space-y-1">
+                {/* Match the TokenField's label row height + alignment so the
+                    Width and Side fields share one baseline. */}
+                <div className="flex min-h-4 items-center">
+                  <Label className={cn(FIELD_LABEL, "leading-none")}>Side</Label>
+                </div>
+                <Select
+                  value={entry.side}
+                  onValueChange={(v) => patchEntry(entry.id, { side: v as BorderSide })}
+                  disabled={disabled}
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent size="2xs" position="item-aligned">
-                  {BORDER_SIDES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {BORDER_SIDE_LABELS[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  <SelectTrigger
+                    size="2xs"
+                    className="w-full"
+                    startSlot={BORDER_SIDE_ICONS[entry.side]}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent size="2xs" position="item-aligned">
+                    {BORDER_SIDES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {BORDER_SIDE_LABELS[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <EntryIconButton
-              label={entry.visible ? "Hide border" : "Show border"}
-              disabled={disabled}
-              onClick={() => patchEntry(entry.id, { visible: !entry.visible })}
-            >
-              {entry.visible ? <Eye /> : <EyeOff />}
-            </EntryIconButton>
-            <EntryIconButton
-              label="Remove border"
-              disabled={disabled}
-              onClick={() => removeEntry(entry.id)}
-            >
-              <Minus />
-            </EntryIconButton>
+            {/* Eye + remove — shared with Fill / Shadow via
+                SectionRowActions (this Border section is the reference). The
+                `mt-5` clears the columns' label row (min-h-4 + space-y-1) so
+                the action buttons align to the FIELD baseline, not the label
+                row, now that the row is top-aligned. */}
+            <div className="mt-5 flex shrink-0 items-center gap-1">
+              <SectionRowActions
+                noun="border"
+                visible={entry.visible}
+                onToggleVisible={() =>
+                  patchEntry(entry.id, { visible: !entry.visible })
+                }
+                onRemove={() => removeEntry(entry.id)}
+                disabled={disabled}
+              />
+            </div>
           </div>
           <Select
             value={entry.color ?? "default"}
@@ -4664,12 +5616,7 @@ function BorderGroup({
               {BORDER_COLOR_TOKENS.map((c) => (
                 <SelectItem key={c} value={c}>
                   <span className="inline-flex items-center gap-1.5">
-                    <span
-                      className={cn(
-                        "inline-block h-3 w-3 rounded-[3px] border border-border/60",
-                        BORDER_SWATCH[c],
-                      )}
-                    />
+                    <Swatch size="2xs" shape="rounded" token={bareBorderToken(c)} />
                     {c}
                   </span>
                 </SelectItem>

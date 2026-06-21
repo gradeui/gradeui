@@ -115,7 +115,7 @@ export default function ToolbarPage() {
   center={<Input placeholder="Search" className="max-w-md" />}
   trailing={
     <Row gap="xs" align="center">
-      <Button variant="ghost" size="icon"><Bell /></Button>
+      <Button variant="ghost" iconOnly><Bell /></Button>
       <Avatar><AvatarFallback>AL</AvatarFallback></Avatar>
     </Row>
   }
@@ -133,7 +133,7 @@ export default function ToolbarPage() {
               center={<Input placeholder="Search" className="max-w-md" />}
               trailing={
                 <Row gap="xs" align="center">
-                  <Button variant="ghost" size="icon"><Bell className="h-4 w-4" /></Button>
+                  <Button variant="ghost" iconOnly><Bell className="h-4 w-4" /></Button>
                   <Avatar className="h-7 w-7"><AvatarFallback className="text-xs">AL</AvatarFallback></Avatar>
                 </Row>
               }
@@ -217,9 +217,9 @@ export default function ToolbarPage() {
   }
   trailing={
     <Row gap="xs">
-      <Button variant="ghost" size="icon"><Search /></Button>
+      <Button variant="ghost" iconOnly><Search /></Button>
       <Button size="sm"><Plus className="mr-1" /> New</Button>
-      <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+      <Button variant="ghost" iconOnly><MoreHorizontal /></Button>
     </Row>
   }
 />`}
@@ -234,9 +234,9 @@ export default function ToolbarPage() {
               }
               trailing={
                 <Row gap="xs">
-                  <Button variant="ghost" size="icon"><Search className="h-4 w-4" /></Button>
+                  <Button variant="ghost" iconOnly><Search className="h-4 w-4" /></Button>
                   <Button size="sm"><Plus className="h-3.5 w-3.5 mr-1" /> New</Button>
-                  <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                  <Button variant="ghost" iconOnly><MoreHorizontal className="h-4 w-4" /></Button>
                 </Row>
               }
             />

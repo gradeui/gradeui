@@ -175,7 +175,7 @@ const CardBlock = React.forwardRef<HTMLDivElement, CardBlockProps>(
               {/* Navigation Arrows */}
               <Button
                 variant="outline"
-                size="icon"
+                iconOnly
                 className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm z-10"
                 onClick={handlePrev}
               >
@@ -183,7 +183,7 @@ const CardBlock = React.forwardRef<HTMLDivElement, CardBlockProps>(
               </Button>
               <Button
                 variant="outline"
-                size="icon"
+                iconOnly
                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm z-10"
                 onClick={handleNext}
               >

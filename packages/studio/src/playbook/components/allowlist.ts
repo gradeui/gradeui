@@ -56,6 +56,31 @@ export const ALLOWED_COMPONENTS = [
   "AppShellAside",
   "AppShellMain",
   "AppShellFooter",
+  // Section — the page SCAFFOLD primitive (STUDIO-SECTIONS.md). A page is an
+  // ordered stack of Sections; each distinct band gets its own. Section owns a
+  // colour `scope` (subtheme — re-tones the band), a `width`
+  // (contained|full|grid, + `maxW`), and vertical `pad` rhythm. The content
+  // inside is FREE. Reach for it as the top-level building block of any
+  // marketing / landing / content page instead of hand-rolling
+  // <section className="py-20"> bands. The known composable PARTS give the
+  // common shape (heading + copy + CTAs + media) design intent — offered,
+  // never required:
+  //   SectionEyebrow · SectionTitle · SectionSubtitle · SectionDescription ·
+  //   SectionActions (CTA group) · SectionMedia (slot: image / carousel /
+  //   video / embed / a whole app UI).
+  "Section",
+  // Container — the MEASURE. A centred max-width (`maxW` sm/md/lg/xl/prose/full)
+  // + gutters, dropped INSIDE a Section to constrain its content; omit it for a
+  // full-bleed band. `grid` snaps children to a 12-column grid. Section stays
+  // full-width; Container owns the width. Use it anywhere you'd reach for a
+  // `max-w-7xl mx-auto px-6` wrapper.
+  "Container",
+  "SectionEyebrow",
+  "SectionTitle",
+  "SectionSubtitle",
+  "SectionDescription",
+  "SectionActions",
+  "SectionMedia",
   // Toolbar — slot-based chrome bar with `leading` / `center` /
   // `trailing` props (Apple HIG "Toolbar" shape). THE ANSWER for any
   // three-region top/bottom bar — Reddit / Twitter / GitHub / Linear's
@@ -498,6 +523,11 @@ export const ALLOWED_EXTERNAL_IMPORTS = [
  */
 export const PINNED_COMPONENTS = [
   "AppShell",
+  // Section + Container are the page scaffold — pages are authored as an
+  // ordered stack of Sections (STUDIO-SECTIONS.md). Pin them so the model
+  // reaches for the band/measure split instead of hand-rolled <section> divs.
+  "Section",
+  "Container",
   "Stack",
   "Row",
   "Grid",

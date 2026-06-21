@@ -34,7 +34,7 @@ export function MobileNav() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
+        <Button variant="ghost" iconOnly className="md:hidden">
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle menu</span>
         </Button>
@@ -63,14 +63,14 @@ export function MobileNav() {
           ))}
         </nav>
         <div className="flex items-center gap-2 mt-8 pt-8 border-t">
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+          <Button variant="ghost" iconOnly onClick={toggleTheme}>
             {isDark ? (
               <Sun className="h-5 w-5" />
             ) : (
               <Moon className="h-5 w-5" />
             )}
           </Button>
-          <Button variant="ghost" size="icon" asChild>
+          <Button variant="ghost" iconOnly asChild>
             <a
               href="https://github.com/gradeui/gradeui"
               target="_blank"

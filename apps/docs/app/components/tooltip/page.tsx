@@ -96,7 +96,7 @@ export default function TooltipPage() {
           code={`<TooltipProvider>
   <Tooltip>
     <TooltipTrigger asChild>
-      <Button variant="outline" size="icon">
+      <Button variant="outline" iconOnly>
         <Settings className="h-4 w-4" />
       </Button>
     </TooltipTrigger>
@@ -109,7 +109,7 @@ export default function TooltipPage() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" iconOnly>
                   <Settings className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -234,7 +234,7 @@ export default function TooltipPage() {
   <div className="flex gap-2">
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" iconOnly>
           <Zap className="h-4 w-4" />
         </Button>
       </TooltipTrigger>
@@ -244,7 +244,7 @@ export default function TooltipPage() {
     </Tooltip>
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" iconOnly>
           <Settings className="h-4 w-4" />
         </Button>
       </TooltipTrigger>
@@ -254,7 +254,7 @@ export default function TooltipPage() {
     </Tooltip>
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" iconOnly>
           <Info className="h-4 w-4" />
         </Button>
       </TooltipTrigger>
@@ -269,7 +269,7 @@ export default function TooltipPage() {
             <div className="flex gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" iconOnly>
                     <Zap className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -279,7 +279,7 @@ export default function TooltipPage() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" iconOnly>
                     <Settings className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -289,7 +289,7 @@ export default function TooltipPage() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" iconOnly>
                     <Info className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>

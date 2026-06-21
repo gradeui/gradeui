@@ -9,11 +9,12 @@ import { contract } from "@gradeui/contracts";
 
 export const FillPickerContract = contract({
   name: "FillPicker",
-  description: "Grade's paint picker — the control for choosing a frame's background fill, modelled on Figma's fill popover. A fill-type icon row (solid · gradient · image · pattern · video · shader) switches the panel below; a global opacity sits at the foot. Emits a FillValue that maps 1:1 onto BackgroundFill props. This is a Studio/inspector chrome control — pair it with BackgroundFill, which renders the chosen paint. Not for app content.",
+  description: "Grade's paint picker — the control for choosing a frame's background fill, modelled on Figma's fill popover. A fill-type icon row (solid · gradient · image · pattern · video · shader) switches the panel below; a global opacity sits at the foot. Emits a FillValue that maps 1:1 onto BackgroundFill props. This is a Studio/inspector chrome control — pair it with BackgroundFill, which renders the chosen paint. Not for app content. Use the FillSection subcomponent to edit a LIST of fills (the Figma \"Fill\" inspector section): each row is a Solid/Gradient/Image toggle, the matching value control (ColorPicker / GradientEditor popover / image URL), an opacity %, a visibility eye, and a remove button, with an add button in the header.",
   import: "@gradeui/ui",
-  aliases: ["fill picker","paint picker","background picker","fill chooser","fill popover"],
-  composesWith: ["BackgroundFill (renders the FillValue)","Popover (host it in a popover)","ShaderPresetPicker (the shader tab)","the inspector Fill section"],
-  styleDefaults: {"Swatch":"h-7 w-7 rounded-md border border-border/60 transition-shadow","FillPicker":"flex flex-col gap-3"},
+  aliases: ["fill picker","paint picker","background picker","fill chooser","fill popover","fill section","fill list","fills inspector","paint section"],
+  subcomponents: ["FillSection"],
+  composesWith: ["BackgroundFill (renders the FillValue)","Popover (host it in a popover)","ColorPicker (the solid value)","GradientEditor (the gradient value)","ShaderPresetPicker (the shader tab)","the inspector Fill section"],
+  styleDefaults: {"Swatch":"h-7 w-7 rounded-md border border-border/60 transition-shadow","FillPicker":"flex flex-col gap-3","FillSection":"flex flex-col gap-2"},
   props: {
   "value": {
       schema: z.unknown(),
@@ -24,6 +25,11 @@ export const FillPickerContract = contract({
       schema: z.unknown(),
       design: "event",
       description: "called on any change (required)",
+  },
+  "title": {
+      schema: z.string().optional(),
+      design: "plumbing",
+      description: "section heading (default \"Fills\")",
   },
   },
 });

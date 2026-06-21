@@ -133,10 +133,10 @@ export function FleetDashboardExample() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" iconOnly>
                 <Filter className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" iconOnly>
                 <Download className="h-4 w-4" />
               </Button>
               <Button size="sm" className="sm:size-default">
@@ -222,7 +222,7 @@ export function FleetDashboardExample() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" iconOnly className="h-8 w-8">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>

@@ -687,7 +687,7 @@ export const ThreeScene = React.forwardRef<HTMLDivElement, ThreeSceneProps>(
               "bg-gradient-to-t from-black/30 to-transparent",
             )}
           >
-            <Button size="icon" variant="secondary" onClick={togglePlay}>
+            <Button iconOnly variant="secondary" onClick={togglePlay}>
               {playing ? (
                 <Pause className="h-4 w-4" />
               ) : (

@@ -553,7 +553,7 @@ SortableItem.displayName = "Sortable.Item";
 
 export interface SortableHandleProps extends React.HTMLAttributes<HTMLElement> {
   /** Render as the child element via Slot — typical pattern is
-   *  `<Sortable.Handle asChild><Button variant="ghost" size="icon">…</Button></Sortable.Handle>`. */
+   *  `<Sortable.Handle asChild><Button variant="ghost" iconOnly>…</Button></Sortable.Handle>`. */
   asChild?: boolean;
 }
 

@@ -152,7 +152,7 @@ export function BackgroundTweaker({ className }: { className?: string }) {
         <motion.div key="trigger" {...triggerMotion} className="absolute top-0 right-0">
           <Button
             variant="ghost"
-            size="icon"
+            iconOnly
             onClick={() => setOpen(true)}
             aria-label="Tune the background"
             className="rounded-full border border-border/60 bg-background/60 backdrop-blur-xl shadow-[var(--gds-shadow-lg)]"

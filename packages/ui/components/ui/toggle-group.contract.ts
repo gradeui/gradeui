@@ -36,13 +36,14 @@ export const ToggleGroupContract = contract({
       design: "event",
   },
   "size": {
-      schema: z.enum(["sm", "md", "lg, default md"]).optional(),
+      schema: z.enum(["2xs", "xs", "sm", "md", "lg, default md"]).optional(),
       design: "knob",
-      description: "cascades to every ToggleGroupItem via context, matches Tabs/Button heights",
+      description: "cascades to every ToggleGroupItem via context, matches Tabs/Button heights; 2xs/xs are the dense tool-panel sizes (2xs also drops text to text-2xs and icons to size-3 so labelled items read at panel density)",
   },
   "variant": {
-      schema: z.enum(["default", "outline"]).optional(),
+      schema: z.enum(["default", "outline", "segmented"]).optional(),
       design: "knob",
+      description: "segmented sits the items in a muted track with the active item as a soft raised pill, so it reads like a TabsList; reach for it in dense property panels (e.g. a Row/Stack direction toggle)",
   },
   "tooltip": {
       schema: z.unknown().optional(),

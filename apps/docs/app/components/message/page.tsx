@@ -187,13 +187,13 @@ export default function MessagePage() {
             }
             actions={
               <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button size="icon" variant="ghost" className="h-6 w-6">
+                <Button iconOnly variant="ghost" className="h-6 w-6">
                   <Heart className="h-3 w-3" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-6 w-6">
+                <Button iconOnly variant="ghost" className="h-6 w-6">
                   <Reply className="h-3 w-3" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-6 w-6">
+                <Button iconOnly variant="ghost" className="h-6 w-6">
                   <MoreHorizontal className="h-3 w-3" />
                 </Button>
               </div>

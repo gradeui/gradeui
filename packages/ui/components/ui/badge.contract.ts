@@ -13,8 +13,6 @@ export const BadgeContract = contract({
   import: "@gradeui/ui",
   aliases: ["chip","tag","pill","label chip","badge","tag view","status pill","token","count badge"],
   composesWith: ["Card","Table (inside a cell)","Avatar (next to it)","anywhere inline"],
-  styleDefaults: {"Badge":"inline-flex items-center gap-1 border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 [&_svg]:size-3 [&_svg]:shrink-0 border-transparent bg-primary text-primary-foreground hover:bg-primary/80 rounded-md"},
-  variantDefaults: {"variant":"default","rounded":"default"},
   props: {
   "variant": {
       schema: z.enum(["default", "secondary", "destructive", "outline", "highlight", "success", "warning", "info", "success-soft", "warning-soft", "destructive-soft", "info-soft", "highlight-soft", "success-outline", "warning-outline", "destructive-outline", "info-outline"]).optional(),

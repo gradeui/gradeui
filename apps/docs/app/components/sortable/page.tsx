@@ -168,7 +168,7 @@ export default function SortablePage() {
   <Card>
     <Row gap="sm" align="center" className="p-3">
       <Sortable.Handle asChild>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" iconOnly>
           <GripVertical className="h-4 w-4" />
         </Button>
       </Sortable.Handle>
@@ -186,7 +186,7 @@ export default function SortablePage() {
                     <Card>
                       <Row gap="sm" align="center" className="p-2 pl-1">
                         <Sortable.Handle asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" iconOnly>
                             <GripVertical className="h-4 w-4" />
                           </Button>
                         </Sortable.Handle>

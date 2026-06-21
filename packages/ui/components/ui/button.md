@@ -2,15 +2,16 @@
 name: Button
 import: "@gradeui/ui"
 variants: [default, destructive, outline, secondary, ghost, link, raised]
-sizes: [sm, md, lg, icon]
+sizes: [2xs, xs, sm, md, lg]
 props:
   - variant? (default | destructive | outline | secondary | ghost | link | raised) — `raised` here is a back-compat alias (the raised TRAIT on a neutral key surface); prefer the `raised` prop
   - raised?: boolean — presence TRAIT: tactile elevation (bevel + drop + hover glow + pressed sink) layered onto ANY variant — raised primary, raised outline, etc. Glow tone reads --btn-glow → --accent-glow → --selected-glow; override per-button via style={{ "--btn-glow": "var(--warning)" }}
-  - size? (sm | md | lg | icon) — t-shirt scale aligned with Tabs/ToggleGroup heights (sm=h-7, md=h-8, lg=h-10). `default` still works as an alias for `md`.
+  - size? (2xs | xs | sm | md | lg) — t-shirt scale aligned with Tabs/ToggleGroup heights (2xs=h-5, xs=h-6, sm=h-7, md=h-8, lg=h-10). 2xs/xs are the dense tool-panel sizes (match Figma Button size=2xs/xs). `default` still works as an alias for `md`.
+  - iconOnly?: boolean — squares the button at the current `size` height (w = h, no horizontal padding) for icon-only buttons; the icon child is centered. This is THE way to make a square icon button at any density (sm→28², 2xs→20²).
   - asChild?: boolean — renders as the child element (use to wrap <a>/<Link>)
   - disabled?: boolean
   - All native button HTML attrs (onClick, type, etc.)
-when_to_use: Any clickable action. Use size="icon" for square icon-only buttons, variant="link" for inline links that should look like Button, the `raised` prop for high-commitment / weighty actions where the chrome can afford a tactile "physical key" treatment (composes with any variant; variant="raised" remains the neutral-key alias). A Button placed next to a TabsList of the same size lines up edge-to-edge without per-call overrides.
+when_to_use: Any clickable action. Use `iconOnly` for square icon-only buttons (at any size), variant="link" for inline links that should look like Button, the `raised` prop for high-commitment / weighty actions where the chrome can afford a tactile "physical key" treatment (composes with any variant; variant="raised" remains the neutral-key alias). A Button placed next to a TabsList of the same size lines up edge-to-edge without per-call overrides.
 composes_with: [Dialog, DropdownMenu, Tooltip, Card (in CardFooter), Row, Form controls]
 aliases: [button, push button, plain button, bordered button, destructive button, capsule button, link button, action button, cta, raised button, pill button, key button]
 ---
@@ -18,7 +19,8 @@ aliases: [button, push button, plain button, bordered button, destructive button
 ```jsx
 <Button>Save</Button>
 <Button variant="outline" size="sm">Cancel</Button>
-<Button size="icon" variant="ghost"><Mail /></Button>
+<Button iconOnly variant="ghost"><Mail /></Button>
+<Button size="sm" iconOnly variant="outline"><Plus /></Button>
 ```
 
 ```jsx

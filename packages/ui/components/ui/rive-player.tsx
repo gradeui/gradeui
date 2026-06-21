@@ -232,7 +232,7 @@ function RiveInner({
             "bg-gradient-to-t from-black/40 to-transparent",
           )}
         >
-          <Button size="icon" variant="secondary" onClick={togglePlay}>
+          <Button iconOnly variant="secondary" onClick={togglePlay}>
             {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
         </div>

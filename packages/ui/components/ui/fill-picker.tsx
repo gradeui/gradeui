@@ -22,6 +22,10 @@ import {
   Grid3x3,
   Video as VideoIcon,
   Sparkles,
+  Eye,
+  EyeOff,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -29,6 +33,18 @@ import { ToggleGroup, ToggleGroupItem } from "./toggle-group";
 import { Input } from "./input";
 import { Slider } from "./slider";
 import { Switch } from "./switch";
+import { Button } from "./button";
+import { ColorPicker } from "./color-picker";
+import {
+  GradientEditor,
+  gradientToCss,
+  type GradientValue,
+} from "./gradient-editor";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./popover";
 import { ShaderPresetPicker } from "./shader-preset-picker";
 import type { BackgroundFillType, BackgroundFillFit } from "./background-fill";
 import type { Palette, PostPreset } from "@/lib/three/types";
@@ -312,3 +328,246 @@ export function FillPicker({ value, onChange, className }: FillPickerProps) {
   );
 }
 FillPicker.displayName = "FillPicker";
+
+/* ──────────────────────────────────────────────────────────────────────
+   FillSection — the multi-fill list (Figma's "Fill" inspector section).
+
+   Where <FillPicker> edits ONE paint with the full type-icon row,
+   <FillSection> stacks a LIST of fills: each row is a Solid/Gradient/Image
+   toggle, the matching value control (ColorPicker / GradientEditor popover /
+   image URL), an opacity %, a visibility eye, and a remove button. The header
+   carries an "add fill" button. Reuses FillValue + the new ColorPicker +
+   GradientEditor so the data shape stays the one <BackgroundFill> speaks.
+
+   `visible` rides FillValue.opacity: hiding a fill stashes its opacity and
+   sets 0; showing restores it.
+   ────────────────────────────────────────────────────────────────────── */
+
+/** The three fill kinds FillSection rows can switch between. */
+type RowKind = "solid" | "gradient" | "image";
+
+const ROW_KINDS: { kind: RowKind; icon: React.ElementType; label: string }[] = [
+  { kind: "solid", icon: Square, label: "Solid" },
+  { kind: "gradient", icon: Blend, label: "Gradient" },
+  { kind: "image", icon: ImageIcon, label: "Image" },
+];
+
+function rowKindOf(v: FillValue): RowKind {
+  if (v.type === "gradient") return "gradient";
+  if (v.type === "image") return "image";
+  return "solid";
+}
+
+/** Bridge FillValue.gradient ({from,via,to,angle}) → the structured
+ *  GradientValue the GradientEditor edits, and back. */
+function toGradientValue(v: FillValue): GradientValue {
+  const g = v.gradient ?? {};
+  const stops: GradientValue["stops"] = [];
+  const push = (token: string | undefined, position: number, id: string) => {
+    if (token == null) return;
+    stops.push({ id, position, token, opacity: 1 });
+  };
+  push(g.from ?? "primary", 0, "g-from");
+  if (g.via != null) push(g.via, 50, "g-via");
+  push(g.to ?? "accent", 100, "g-to");
+  return { type: "linear", angle: g.angle ?? 90, stops };
+}
+
+function fromGradientValue(gv: GradientValue): FillValue["gradient"] {
+  const sorted = [...gv.stops].sort((a, b) => a.position - b.position);
+  const from = sorted[0]?.token;
+  const to = sorted[sorted.length - 1]?.token;
+  const via = sorted.length > 2 ? sorted[1]?.token : undefined;
+  return { from, via, to, angle: gv.angle };
+}
+
+export interface FillSectionProps {
+  /** The ordered list of fills (top-most last, Figma-style — but the list
+   *  renders in array order; the consumer owns z-ordering semantics). */
+  value: FillValue[];
+  /** Fired with the next list on any add / edit / remove / reorder. */
+  onChange: (value: FillValue[]) => void;
+  /** Section heading. Default "Fills". */
+  title?: string;
+  className?: string;
+}
+
+/** A sensible new solid fill. */
+function defaultFill(): FillValue {
+  return { type: "solid", color: "primary", opacity: 1 };
+}
+
+export function FillSection({
+  value,
+  onChange,
+  title = "Fills",
+  className,
+}: FillSectionProps) {
+  const setAt = (index: number, patch: Partial<FillValue>) =>
+    onChange(value.map((f, i) => (i === index ? { ...f, ...patch } : f)));
+
+  const removeAt = (index: number) =>
+    onChange(value.filter((_, i) => i !== index));
+
+  const add = () => onChange([...value, defaultFill()]);
+
+  const switchKind = (index: number, kind: RowKind) => {
+    if (kind === "image") setAt(index, { type: "image", repeat: false });
+    else setAt(index, { type: kind as BackgroundFillType });
+  };
+
+  return (
+    <div className={cn("flex flex-col gap-2", className)}>
+      <div className="flex items-center justify-between">
+        <span className={LABEL}>{title}</span>
+        <Button
+          size="2xs"
+          iconOnly
+          variant="ghost"
+          onClick={add}
+          aria-label="Add fill"
+          title="Add fill"
+        >
+          <Plus />
+        </Button>
+      </div>
+
+      {value.length === 0 && (
+        <p className="text-[11px] text-muted-foreground">No fills.</p>
+      )}
+
+      <div className="flex flex-col gap-1.5">
+        {value.map((fill, index) => {
+          const kind = rowKindOf(fill);
+          const opacity = fill.opacity ?? 1;
+          const visible = opacity > 0;
+          const stashed = (fill as { _opacity?: number })._opacity;
+
+          const toggleVisible = () => {
+            if (visible)
+              setAt(index, {
+                opacity: 0,
+                ...({ _opacity: opacity } as Partial<FillValue>),
+              });
+            else setAt(index, { opacity: stashed ?? 1 });
+          };
+
+          return (
+            <div
+              key={index}
+              data-gds-part="fill-row"
+              className="flex items-center gap-1.5"
+            >
+              <ToggleGroup
+                type="single"
+                size="sm"
+                value={kind}
+                onValueChange={(v) => v && switchKind(index, v as RowKind)}
+                className="gap-0.5"
+              >
+                {ROW_KINDS.map(({ kind: k, icon: Icon, label }) => (
+                  <ToggleGroupItem
+                    key={k}
+                    value={k}
+                    aria-label={label}
+                    title={label}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+
+              {/* Value control per kind */}
+              <div className="min-w-0 flex-1">
+                {kind === "solid" && (
+                  <ColorPicker
+                    triggerVariant="inline"
+                    value={fill.color ?? null}
+                    onValueChange={(v) =>
+                      setAt(index, { color: v ?? undefined })
+                    }
+                    aria-label="Fill colour"
+                  />
+                )}
+                {kind === "gradient" && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Edit gradient"
+                        className="h-6 w-full rounded-md border border-border/60"
+                        style={{
+                          background: gradientToCss(toGradientValue(fill)),
+                        }}
+                      />
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-64">
+                      <GradientEditor
+                        value={toGradientValue(fill)}
+                        onChange={(gv) =>
+                          setAt(index, { gradient: fromGradientValue(gv) })
+                        }
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+                {kind === "image" && (
+                  <Input
+                    size="xs"
+                    value={fill.src ?? ""}
+                    placeholder="https://… or /asset.png"
+                    onChange={(e) => setAt(index, { src: e.target.value })}
+                    aria-label="Image URL"
+                  />
+                )}
+              </div>
+
+              {/* Opacity */}
+              <Input
+                size="xs"
+                type="number"
+                min={0}
+                max={100}
+                value={Math.round(opacity * 100)}
+                onChange={(e) =>
+                  setAt(index, {
+                    opacity:
+                      Math.max(0, Math.min(100, Number(e.target.value))) / 100,
+                  })
+                }
+                endSlot="%"
+                aria-label="Fill opacity"
+                className="w-14"
+              />
+
+              {/* Visibility */}
+              <Button
+                size="xs"
+                iconOnly
+                variant="ghost"
+                onClick={toggleVisible}
+                aria-label={visible ? "Hide fill" : "Show fill"}
+                title={visible ? "Hide fill" : "Show fill"}
+              >
+                {visible ? <Eye /> : <EyeOff />}
+              </Button>
+
+              {/* Remove */}
+              <Button
+                size="xs"
+                iconOnly
+                variant="ghost"
+                onClick={() => removeAt(index)}
+                aria-label="Remove fill"
+                title="Remove fill"
+              >
+                <Trash2 />
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+FillSection.displayName = "FillSection";

@@ -11,13 +11,19 @@ import { cn } from "@/lib/utils"
  * heights so a button placed next to a tab strip lines up without
  * any per-call className overrides:
  *
+ *   2xs: h-5 (20px)  — densest tool-panel size; matches Figma Button size=2xs
+ *   xs:  h-6 (24px)  — tool-panel density; matches Figma Button size=xs
  *   sm:  h-7 (28px)  — matches `<TabsList size="sm">` height
  *   md:  h-8 (32px)  — matches `<TabsList size="md">` height (default)
  *   lg:  h-10 (40px) — matches `<TabsList size="lg">` height
- *   icon: h-8 w-8    — square variant, md height
  *
  * `default` is preserved as an alias for `md` so existing call sites
  * keep working through the rename.
+ *
+ * `iconOnly` squares the button at WHATEVER `size` it has (2xs=20, sm=28,
+ * md=32, lg=40) by dropping horizontal padding and matching width to
+ * height. It's a boolean modifier on top of the height ramp — there is no
+ * separate icon size value — and the icon you pass as the child is centered.
  *
  * Type and icon sizes also follow the Tabs scale (text-xs + size-3.5
  * at sm/md, text-sm + size-4 at lg) so the visual rhythm reads
@@ -49,9 +55,9 @@ const buttonVariants = cva(
         raised: "gds-button-raised gds-button-raised-surface",
       },
       size: {
-        // 2xs: h-6 (24px) — densest tool-panel button (the Studio inspector).
-        "2xs": "h-6 gap-1 px-1.5 text-2xs [&_svg]:size-3",
-        // xs: h-6 (24px) — Figma-density for tool panels.
+        // 2xs: h-5 (20px) — densest tool-panel button (the Studio inspector); matches Figma Button size=2xs.
+        "2xs": "h-5 gap-1 px-1.5 text-2xs [&_svg]:size-3",
+        // xs: h-6 (24px) — Figma-density for tool panels; matches Figma Button size=xs.
         xs: "h-6 gap-1 px-2 text-xs [&_svg]:size-3",
         sm: "h-7 gap-1.5 px-2.5 text-sm [&_svg]:size-3.5",
         md: "h-8 gap-1.5 px-3 text-base [&_svg]:size-4",
@@ -59,9 +65,24 @@ const buttonVariants = cva(
         // t-shirt rename. Same classes as md verbatim.
         default: "h-8 gap-1.5 px-3 text-base [&_svg]:size-4",
         lg: "h-10 gap-2 px-4 text-lg [&_svg]:size-5",
-        icon: "h-8 w-8 [&_svg]:size-4",
+      },
+      // Squares the button at the current `size` height for icon-only use.
+      // px-0 here drops the text padding; the per-size width that makes it
+      // square (w = h) lives in compoundVariants below.
+      iconOnly: {
+        true: "px-0",
+        false: "",
       },
     },
+    compoundVariants: [
+      // width = height per size → a true square at every density.
+      { size: "2xs", iconOnly: true, class: "w-5" },
+      { size: "xs", iconOnly: true, class: "w-6" },
+      { size: "sm", iconOnly: true, class: "w-7" },
+      { size: "md", iconOnly: true, class: "w-8" },
+      { size: "default", iconOnly: true, class: "w-8" },
+      { size: "lg", iconOnly: true, class: "w-10" },
+    ],
     defaultVariants: {
       variant: "default",
       size: "md",
@@ -84,7 +105,7 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, raised = false, ...props }, ref) => {
+  ({ className, variant, size, iconOnly, asChild = false, raised = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     return (
       <Comp
@@ -95,7 +116,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         // inner SVG instead, and the inspector can't load the Button
         // contract because there's no componentName to look up.
         data-gds-part="button"
-        className={cn("gds-button", buttonVariants({ variant, size }), raised && "gds-button-raised", className)}
+        className={cn("gds-button", buttonVariants({ variant, size, iconOnly }), raised && "gds-button-raised", className)}
         ref={ref}
         {...props}
       />

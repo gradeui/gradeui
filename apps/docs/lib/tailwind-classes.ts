@@ -1749,6 +1749,66 @@ export function setFill(
   return stripped ? `${stripped} ${token}` : token;
 }
 
+// ─── Text colour ─────────────────────────────────────────────────────
+//
+// Foreground (text + icon) colour as a THEME token (`text-foreground`,
+// `text-primary`, `text-muted-foreground`, …) — never a raw hex, same
+// rationale as Fill. The token resolves through the theme's colour
+// scale, so a colour picked here re-voices globally when the theme
+// changes. `null` means "no text-colour token" (inherits).
+//
+// `text-*` is a busy prefix in Tailwind (font size, alignment, wrap,
+// balance), so the regex matches an exact allow-list of colour suffixes
+// only — it must NOT bait on `text-lg` / `text-center` / `text-balance`.
+// The allow-list is the set of foreground/content tokens the theme
+// ships; keep it in sync with the swatch map in token-registry.
+
+export const TEXT_COLOR_TOKENS = [
+  "foreground",
+  "muted-foreground",
+  "primary",
+  "primary-foreground",
+  "secondary-foreground",
+  "accent-foreground",
+  "destructive",
+  "card-foreground",
+  "popover-foreground",
+] as const;
+export type TextColorToken = (typeof TEXT_COLOR_TOKENS)[number];
+
+// Longest-first so the alternation prefers `muted-foreground` over a
+// bare `foreground` prefix match.
+const TEXT_COLOR_ALT = [...TEXT_COLOR_TOKENS]
+  .sort((a, b) => b.length - a.length)
+  .join("|");
+const TEXT_COLOR_RE = new RegExp(`(^|\\s)text-(${TEXT_COLOR_ALT})(?=\\s|$)`, "g");
+
+export function parseTextColor(
+  className: string | null | undefined,
+): TextColorToken | null {
+  if (!className) return null;
+  let last: TextColorToken | null = null;
+  TEXT_COLOR_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = TEXT_COLOR_RE.exec(className)) !== null) {
+    last = match[2] as TextColorToken;
+  }
+  return last;
+}
+
+export function setTextColor(
+  className: string | null | undefined,
+  value: TextColorToken | null,
+): string {
+  const stripped = (className ?? "")
+    .replace(TEXT_COLOR_RE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (value === null) return stripped;
+  const token = `text-${value}`;
+  return stripped ? `${stripped} ${token}` : token;
+}
+
 // ─── Internal helpers ────────────────────────────────────────────────
 // Shared scan/strip logic for the numeric families above so each
 // family is a thin wrapper that supplies its own pattern + token

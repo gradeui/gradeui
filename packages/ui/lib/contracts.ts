@@ -25,6 +25,7 @@ import { CheckboxContract } from "../components/ui/checkbox.contract";
 import { CheckboxCardContract } from "../components/ui/checkbox-card.contract";
 import { CodeContract } from "../components/ui/code.contract";
 import { CollapsibleContract } from "../components/ui/collapsible.contract";
+import { ColorPickerContract } from "../components/ui/color-picker.contract";
 import { ComboboxContract } from "../components/ui/combobox.contract";
 import { CommandContract } from "../components/ui/command.contract";
 import { ComposerContract } from "../components/ui/composer.contract";
@@ -35,6 +36,7 @@ import { DropdownMenuContract } from "../components/ui/dropdown-menu.contract";
 import { FieldContract } from "../components/ui/field.contract";
 import { FillPickerContract } from "../components/ui/fill-picker.contract";
 import { FlexContract } from "../components/ui/flex.contract";
+import { GradientEditorContract } from "../components/ui/gradient-editor.contract";
 import { GridContract } from "../components/ui/grid.contract";
 import { HoverCardContract } from "../components/ui/hover-card.contract";
 import { InputContract } from "../components/ui/input.contract";
@@ -55,6 +57,7 @@ import { RivePlayerContract } from "../components/ui/rive-player.contract";
 import { RowContract } from "../components/ui/row.contract";
 import { ScreenAnimatorContract } from "../components/ui/screen-animator.contract";
 import { ScrollAreaContract } from "../components/ui/scroll-area.contract";
+import { SectionContract } from "../components/ui/section.contract";
 import { SectionBlockContract } from "../components/ui/section-block.contract";
 import { SelectContract } from "../components/ui/select.contract";
 import { SeparatorContract } from "../components/ui/separator.contract";
@@ -100,6 +103,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   CheckboxCard: CheckboxCardContract,
   Code: CodeContract,
   Collapsible: CollapsibleContract,
+  ColorPicker: ColorPickerContract,
   Combobox: ComboboxContract,
   Command: CommandContract,
   Composer: ComposerContract,
@@ -110,6 +114,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Field: FieldContract,
   FillPicker: FillPickerContract,
   Flex: FlexContract,
+  GradientEditor: GradientEditorContract,
   Grid: GridContract,
   HoverCard: HoverCardContract,
   Input: InputContract,
@@ -130,6 +135,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Row: RowContract,
   ScreenAnimator: ScreenAnimatorContract,
   ScrollArea: ScrollAreaContract,
+  Section: SectionContract,
   SectionBlock: SectionBlockContract,
   Select: SelectContract,
   Separator: SeparatorContract,

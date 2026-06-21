@@ -23,9 +23,17 @@ const buttonProps = [
   },
   {
     name: "size",
-    type: '"2xs" | "default" | "sm" | "lg" | "icon"',
-    default: '"default"',
-    description: "The size of the button.",
+    type: '"2xs" | "xs" | "sm" | "md" | "lg"',
+    default: '"md"',
+    description:
+      "T-shirt height scale aligned with Tabs/ToggleGroup: 2xs=20, xs=24, sm=28, md=32, lg=40. (\"default\" stays as an alias for md.)",
+  },
+  {
+    name: "iconOnly",
+    type: "boolean",
+    default: "false",
+    description:
+      "Squares the button at the current size height (no horizontal padding, width = height) for icon-only buttons. Replaces the old size=\"icon\".",
   },
   {
     name: "asChild",
@@ -243,8 +251,8 @@ export default function ButtonPage() {
         </ComponentPreview>
 
         <h3 className="text-lg font-medium">Icon Only</h3>
-        <ComponentPreview code={`<Button size="icon"><ChevronRight className="h-4 w-4" /></Button>`}>
-          <Button size="icon">
+        <ComponentPreview code={`<Button iconOnly><ChevronRight className="h-4 w-4" /></Button>`}>
+          <Button iconOnly>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </ComponentPreview>

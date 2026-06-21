@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
  * shared selection ring (`--selected`). Pass `label` to caption it (the
  * caption also becomes the accessible name / tooltip).
  *
- * Sizing is the t-shirt scale (xs → xl); reach for `size` over `h-*`/`w-*`
+ * Sizing is the t-shirt scale (2xs → xl, 16px → 56px); reach for `size` over `h-*`/`w-*`
  * utilities so the scale stays on tokens. Shape is square / rounded (rides
  * `--radius`) / circle.
  */
@@ -40,6 +40,7 @@ const swatchVariants = cva(
   {
     variants: {
       size: {
+        "2xs": "size-4",
         xs: "size-5",
         sm: "size-6",
         md: "size-8",
@@ -52,6 +53,11 @@ const swatchVariants = cva(
         circle: "rounded-full",
       },
     },
+    compoundVariants: [
+      // At 16px the full --radius reads as a squircle — pin the rounded
+      // 2xs chip to a 2px hairline so it stays visually square.
+      { size: "2xs", shape: "rounded", class: "rounded-[2px]" },
+    ],
     defaultVariants: {
       size: "md",
       shape: "rounded",
@@ -86,6 +92,13 @@ export interface SwatchProps
   color?: string;
   /** A Grade colour token name (no `--`), resolved as `oklch(var(--<token>))`. */
   token?: string;
+  /** Fill kind. Defaults to "solid", or is inferred from `image` / `gradient`
+   *  when omitted. Drives what the chip renders in place. */
+  type?: "solid" | "gradient" | "image";
+  /** CSS gradient for `type="gradient"` — e.g. `"linear-gradient(135deg,#6366f1,#ec4899)"`. */
+  gradient?: string;
+  /** Image URL for `type="image"` — rendered cover-fit behind the chip. */
+  image?: string;
   /** Optional caption rendered beneath the chip; also the accessible name. */
   label?: React.ReactNode;
   /** Draws the shared selection ring (`--selected`). */
@@ -103,6 +116,9 @@ const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
   {
     color,
     token,
+    type,
+    gradient,
+    image,
     size,
     shape,
     label,
@@ -120,7 +136,13 @@ const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
   const group = React.useContext(SwatchGroupContext);
   const resolvedSize = size ?? group.size;
   const resolvedShape = shape ?? group.shape;
-  const fill = resolveFill(color, token);
+  const resolvedType = type ?? (image ? "image" : gradient ? "gradient" : "solid");
+  const fill =
+    resolvedType === "image" && image
+      ? `url("${image}") center / cover no-repeat`
+      : resolvedType === "gradient" && gradient
+        ? gradient
+        : resolveFill(color, token);
   const editable = typeof onColorChange === "function";
   const interactive = !editable && typeof onSelect === "function";
   // Native colour input only accepts hex; fall back so it stays usable
@@ -177,7 +199,7 @@ const Swatch = React.forwardRef<HTMLElement, SwatchProps>(function Swatch(
           overflow-hidden. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-foreground/40"
+        className="pointer-events-none absolute inset-0 rounded-[inherit] ring-[0.5px] ring-inset ring-border"
       />
       {editable && (
         // Native OS colour picker, kept fully functional but visually
@@ -220,6 +242,7 @@ Swatch.displayName = "Swatch";
    ────────────────────────────────────────────────────────────────────── */
 
 const STACK_OVERLAP: Record<SwatchSize, string> = {
+  "2xs": "-space-x-1",
   xs: "-space-x-1.5",
   sm: "-space-x-2",
   md: "-space-x-2.5",

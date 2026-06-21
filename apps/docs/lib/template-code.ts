@@ -593,7 +593,7 @@ export default function DeviceList() {
                       {device.status}
                     </Badge>
                   </div>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" iconOnly>
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </div>
@@ -854,7 +854,7 @@ export default function NotificationsCenter() {
                           {notification.time}
                         </p>
                       </div>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" iconOnly>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

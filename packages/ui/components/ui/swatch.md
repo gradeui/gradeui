@@ -2,11 +2,14 @@
 name: Swatch
 import: "@gradeui/ui"
 subcomponents: [SwatchGroup]
-sizes: [xs, sm, md, lg, xl]
+sizes: [2xs, xs, sm, md, lg, xl]
 props:
   - color?: string — any raw CSS colour (`#1f6feb`, `oklch(...)`, `rgb(...)`, or `var(--x)`). Takes precedence over `token`. Use for one-off or external colours.
   - token?: string — a Grade colour token NAME with no `--` and no `oklch()` wrap; resolved internally to `oklch(var(--<token>))`. THE design-system path — e.g. `token="brand-3"`, `token="primary"`, `token="chart-2"`. Re-voices live when the theme changes.
-  - size? (xs | sm | md | lg | xl) — t-shirt scale, 20px → 56px; default md (32px). Prefer over h-*/w-* utilities.
+  - type? (solid | gradient | image) — fill kind; default solid (or inferred from `image` / `gradient`). Determines what the chip renders in place.
+  - gradient?: string — CSS gradient for `type="gradient"`, e.g. `linear-gradient(135deg,#6366f1,#ec4899)`.
+  - image?: string — image URL for `type="image"`; rendered cover-fit behind the chip.
+  - size? (2xs | xs | sm | md | lg | xl) — t-shirt scale, 16px → 56px; default md (32px). 2xs (16px) suits dense colour lists. Prefer over h-*/w-* utilities.
   - shape? (square | rounded | circle) — default rounded (rides `--radius`); circle for dot pickers; square for a hard tile.
   - selected?: boolean — draws the shared selection ring (`--selected`). For palette / accent pickers.
   - onSelect?: () => void — makes the swatch a pickable <button> (adds aria-pressed, focus ring, hover lift). Omit for a static display chip.

@@ -103,6 +103,25 @@ export { Badge, badgeVariants } from "../components/ui/badge";
 export { Banner, bannerVariants, type BannerProps } from "../components/ui/banner";
 
 export { Button, buttonVariants } from "../components/ui/button";
+// Section — the page scaffold primitive (STUDIO-SECTIONS.md): a band that owns
+// a colour scope + width + vertical rhythm, with free content. Plus the known
+// composable parts (Eyebrow / Title / Subtitle / Description / Actions / Media).
+export {
+  Section,
+  Container,
+  SectionEyebrow,
+  SectionTitle,
+  SectionSubtitle,
+  SectionDescription,
+  SectionActions,
+  SectionMedia,
+  sectionBandVariants,
+  containerVariants,
+  type SectionProps,
+  type SectionScope,
+  type ContainerProps,
+  type ContainerMaxW,
+} from "../components/ui/section";
 
 export { Calendar, CalendarDayButton } from "../components/ui/calendar";
 
@@ -602,10 +621,36 @@ export {
 } from "../components/ui/background-fill";
 export {
   FillPicker,
+  FillSection,
   type FillPickerProps,
+  type FillSectionProps,
   type FillValue,
   FILL_TOKENS,
 } from "../components/ui/fill-picker";
+
+// ColorPicker — token-led, grouped, searchable single-select colour picker.
+// The focused "pick one colour token" sibling of FillPicker's solid tab
+// (Popover + Command + Swatch). triggerVariant="inline" reduces it to a
+// clickable swatch for inspector / fill-row use.
+export {
+  ColorPicker,
+  DEFAULT_COLOR_TOKEN_GROUPS,
+  TRANSPARENT as COLOR_PICKER_TRANSPARENT,
+  type ColorPickerProps,
+  type ColorTokenGroup,
+} from "../components/ui/color-picker";
+
+// GradientEditor — edit a multi-stop CSS gradient with token-led stops
+// (type Select + reverse/rotate + live preview + stops list). Emits the
+// structured GradientValue; render the CSS with the exported gradientToCss.
+export {
+  GradientEditor,
+  gradientToCss,
+  type GradientEditorProps,
+  type GradientValue,
+  type GradientStop,
+  type GradientType,
+} from "../components/ui/gradient-editor";
 
 export {
   ShaderPresetPreview,

@@ -208,7 +208,7 @@ const MediaBlock = React.forwardRef<HTMLDivElement, MediaBlockProps>(
               {/* Navigation Arrows */}
               <Button
                 variant="outline"
-                size="icon"
+                iconOnly
                 className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm"
                 onClick={handlePrev}
               >
@@ -216,7 +216,7 @@ const MediaBlock = React.forwardRef<HTMLDivElement, MediaBlockProps>(
               </Button>
               <Button
                 variant="outline"
-                size="icon"
+                iconOnly
                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm"
                 onClick={handleNext}
               >
