@@ -1,0 +1,105 @@
+---
+/* The document shell — "all the html crap" in one place. Owns <html>/<head>/
+   <body>, the theme attribute, and the meta tags. Each page passes its own
+   title / description / image, so SEO + OG tags are per-page and updatable.
+   The page chrome (site header, footer, nav) is meant to come from Grade
+   components dropped around the <slot/> — Astro's layout is just the wrapper.
+   Nav uses the Grade Toolbar (via SiteToolbar). Footers are sections, authored
+   in Studio and dropped into the content, not baked here; the `footer` slot is
+   where one lands.
+
+   Astro has no built-in metadata API; this layout IS the pattern. For sitemaps
+   / RSS you'd add @astrojs/sitemap etc. */
+import "../styles/global.css";
+import SiteToolbar from "../components/SiteToolbar";
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Absolute or root-relative OG/Twitter image. */
+  image?: string;
+  /** data-grade-theme id (e.g. "energy"); omit for the neutral default. */
+  theme?: string;
+  /** Override the canonical URL; defaults to the current page. */
+  canonical?: string;
+}
+
+const {
+  title,
+  description = "Built with the Grade design system, rendered by Astro.",
+  image,
+  theme,
+  canonical,
+} = Astro.props;
+
+const canonicalURL = canonical ?? new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
+const ogImage = image ? new URL(image, Astro.site ?? Astro.url).href : undefined;
+---
+
+<!doctype html>
+<html lang="en" data-grade-theme={theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="canonical" href={canonicalURL} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
+    />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content={ogImage ? "summary_large_image" : "summary"} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {ogImage && <meta name="twitter:image" content={ogImage} />}
+
+    <!-- Per-page extras (extra <link>/<meta>/JSON-LD) slot in here. -->
+    <slot name="head" />
+  </head>
+  <body class="bg-background text-foreground">
+    <!-- Nav: the Grade Toolbar (DS chrome), rendered static. -->
+    <SiteToolbar />
+
+    <main>
+      <slot />
+    </main>
+
+    <!-- Footer is a section, not layout chrome: a page drops one in here. -->
+    <slot name="footer" />
+
+    <!-- Reveal-on-scroll: add `.in-view` when a [data-reveal] enters the
+         viewport. The motion + hidden state live in the DS (token-driven);
+         this is just the trigger. No-IO fallback shows everything. -->
+    <script>
+      const els = document.querySelectorAll("[data-reveal]");
+      if (!("IntersectionObserver" in window)) {
+        els.forEach((el) => el.classList.add("in-view"));
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add("in-view");
+                io.unobserve(e.target);
+              }
+            }
+          },
+          { rootMargin: "0px 0px -10% 0px", threshold: 0.1 },
+        );
+        els.forEach((el) => io.observe(el));
+      }
+    </script>
+  </body>
+</html>

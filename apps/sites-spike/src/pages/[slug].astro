@@ -1,0 +1,19 @@
+---
+import { getCollection } from "astro:content";
+import SectionRenderer from "../components/SectionRenderer.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+// One static route per content file: src/content/pages/home.json → /home.
+// A page is an ordered stack of sections, loaded from the CMS (files today,
+// Payload later) and rendered to static HTML inside the shared layout.
+export async function getStaticPaths() {
+  const pages = await getCollection("pages");
+  return pages.map((p) => ({ params: { slug: p.id }, props: { page: p.data } }));
+}
+
+const { page } = Astro.props;
+---
+
+<BaseLayout title={page.title} theme={page.theme}>
+  {page.sections.map((section: any) => <SectionRenderer section={section} />)}
+</BaseLayout>

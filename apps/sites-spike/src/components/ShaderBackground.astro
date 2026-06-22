@@ -1,0 +1,104 @@
+---
+/* Animated WebGL gradient that reads an expressive accent's ramp tokens
+   (--gds-expressive-<accent>-{300,700,900}) as its colours, so the shader
+   always matches whichever accent the band uses. Drop inside a `relative
+   overflow-hidden` Section, behind a `relative z-10` content wrapper.
+   Falls back to nothing (the band keeps its flat .expressive bg) if WebGL is
+   unavailable, and freezes on prefers-reduced-motion. */
+interface Props {
+  accent?: string;
+}
+const { accent = "accent1" } = Astro.props;
+---
+
+<canvas
+  class="gds-shader pointer-events-none absolute inset-0 block h-full w-full"
+  data-accent={accent}
+  aria-hidden="true"></canvas>
+
+<script>
+  function hexToRgb(hex: string): [number, number, number] {
+    const h = (hex || "").trim().replace("#", "");
+    if (!h) return [0.1, 0.1, 0.1];
+    const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+    const n = parseInt(full, 16);
+    return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+  }
+
+  const VERT = `attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }`;
+  const FRAG = `
+    precision highp float;
+    uniform vec2 u_res; uniform float u_time;
+    uniform vec3 u_c1; uniform vec3 u_c2; uniform vec3 u_c3;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float noise(vec2 p){
+      vec2 i = floor(p), f = fract(p);
+      float a = hash(i), b = hash(i + vec2(1.0,0.0));
+      float c = hash(i + vec2(0.0,1.0)), d = hash(i + vec2(1.0,1.0));
+      vec2 u = f * f * (3.0 - 2.0 * f);
+      return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+    }
+    float fbm(vec2 p){ float v = 0.0, a = 0.5; for(int i=0;i<5;i++){ v += a*noise(p); p *= 2.0; a *= 0.5; } return v; }
+    void main(){
+      vec2 uv = gl_FragCoord.xy / u_res;
+      float t = u_time * 0.04;
+      float n = fbm(uv * 2.2 + vec2(t, t * 0.6));
+      float m = fbm(uv * 3.1 - vec2(t * 0.5, t * 0.8) + n);
+      vec3 col = mix(u_c1, u_c2, smoothstep(0.15, 0.85, n));
+      col = mix(col, u_c3, smoothstep(0.4, 0.95, m) * 0.7);
+      gl_FragColor = vec4(col, 1.0);
+    }`;
+
+  function initShader(canvas: HTMLCanvasElement) {
+    const gl = canvas.getContext("webgl");
+    if (!gl) return;
+    const compile = (type: number, src: string) => {
+      const s = gl.createShader(type)!;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    };
+    const prog = gl.createProgram()!;
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p");
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+    const uRes = gl.getUniformLocation(prog, "u_res");
+    const uTime = gl.getUniformLocation(prog, "u_time");
+    const accent = canvas.dataset.accent || "accent1";
+    const root = getComputedStyle(document.documentElement);
+    const stop = (step: string) => hexToRgb(root.getPropertyValue(`--gds-expressive-${accent}-${step}`));
+    gl.uniform3fv(gl.getUniformLocation(prog, "u_c1"), stop("900"));
+    gl.uniform3fv(gl.getUniformLocation(prog, "u_c2"), stop("700"));
+    gl.uniform3fv(gl.getUniformLocation(prog, "u_c3"), stop("300"));
+
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, canvas.clientWidth * dpr);
+      canvas.height = Math.max(1, canvas.clientHeight * dpr);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const start = performance.now();
+    const frame = () => {
+      gl.uniform1f(uTime, reduce ? 0 : (performance.now() - start) / 1000);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (!reduce) requestAnimationFrame(frame);
+    };
+    frame();
+  }
+
+  document.querySelectorAll<HTMLCanvasElement>("canvas.gds-shader").forEach(initShader);
+</script>

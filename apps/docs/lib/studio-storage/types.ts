@@ -51,6 +51,35 @@ import type {
  *  Supabase will fill these from server queries; today's local
  *  setup backfills them via the storage adapter's v3→v4
  *  migration. */
+/** Which interface created a project / screen. Open vocabulary (the `(string
+ *  & {})` keeps autocomplete while allowing new surfaces without a code change):
+ *  "studio" (the canvas), "assets" (a separate social-asset app sharing the
+ *  gradeui login), "mcp", "api", "import". */
+export type ProjectOrigin =
+  | "studio"
+  | "assets"
+  | "mcp"
+  | "api"
+  | "import"
+  | (string & {});
+
+/** Project KIND — drives the Studio interface/canvas. Open vocabulary. */
+export type ProjectType =
+  | "web-app"
+  | "website"
+  | "mobile-app"
+  | "slides"
+  | "social"
+  | "email"
+  | (string & {});
+
+/** A canvas viewport frame. Unset on a project → the defaults for its `type`. */
+export interface Viewport {
+  name: string;
+  width: number;
+  height: number;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -72,6 +101,20 @@ export interface Project {
    *  subjects) and team-shares (team-typed). Order is preserved as
    *  written; the UI sorts for display. */
   access: ResourceAccess[];
+  /** Free-form project brief fed to the generation prompt — project-level
+   *  steering ("what this project is, who it's for"). Empty → undefined. */
+  context?: string;
+  /** Project steering rules the agent follows / avoids — bullet lists that
+   *  ride into the prompt alongside the per-component contracts. */
+  dos?: string[];
+  donts?: string[];
+  /** Which interface created this project (studio | assets | sites | mcp |
+   *  api | import). Defaults to "studio". */
+  origin?: ProjectOrigin;
+  /** Project KIND — drives the interface. Defaults to "web-app". */
+  type?: ProjectType;
+  /** Optional canvas viewports; unset = the defaults for `type`. */
+  viewports?: Viewport[];
 }
 
 // Re-exports of related entity types — keeps `@/lib/studio-storage`

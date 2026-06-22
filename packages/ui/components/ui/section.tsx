@@ -46,21 +46,53 @@ export interface SectionProps
   /** Colour subtheme — applies the `scope-*` class (STUDIO-COLOR.md). Unset =
    *  the page surface (transparent). */
   scope?: SectionScope;
+  /** Visual band background — image / video / gradient / shader (e.g.
+   *  `<BackgroundFill>`). Renders BEHIND the content; Section owns the
+   *  relative + overflow-hidden + z-layering. Works with `scope`, which
+   *  re-tones the content tokens so text stays legible over the media. */
+  background?: React.ReactNode;
   /** Semantic element. */
   as?: "section" | "header" | "footer" | "div";
 }
 
 const Section = React.forwardRef<HTMLElement, SectionProps>(
-  ({ className, scope, pad, as: Comp = "section", ...props }, ref) => (
+  (
+    {
+      className,
+      scope,
+      background,
+      pad,
+      as: Comp = "section",
+      children,
+      ...props
+    },
+    ref,
+  ) => (
     <Comp
       ref={ref as never}
       data-gds-part="section"
       data-scope={scope}
       // The scope class paints the band (background-color + color) AND
       // re-points the surface tokens for the subtree. No scope = page bg.
-      className={cn(bandVariants({ pad }), scope && `scope-${scope}`, className)}
+      className={cn(
+        bandVariants({ pad }),
+        scope && `scope-${scope}`,
+        background != null && "relative overflow-hidden",
+        className,
+      )}
       {...props}
-    />
+    >
+      {background != null ? (
+        <>
+          <div data-gds-part="section-background" className="absolute inset-0">
+            {background}
+          </div>
+          <div className="relative z-10">{children}</div>
+        </>
+      ) : (
+        children
+      )}
+    </Comp>
   ),
 );
 Section.displayName = "Section";

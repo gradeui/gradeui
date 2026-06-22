@@ -1,0 +1,207 @@
+---
+import {
+  Section,
+  Container,
+  SectionEyebrow,
+  SectionTitle,
+  SectionSubtitle,
+  SectionActions,
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  MediaSurface,
+  Badge,
+} from "@gradeui/ui";
+
+// One section object from the content collection.
+const { section } = Astro.props;
+
+// A `collection` section lists every entry of a collection (products / articles)
+// and links each to its detail page. Fetched at build time.
+import { getCollection } from "astro:content";
+let collectionItems: any[] = [];
+if (section.type === "collection") {
+  const entries = await getCollection(section.source);
+  collectionItems = entries.map((e: any) => ({ slug: e.id, href: `/${section.source}/${e.id}`, ...e.data }));
+}
+
+// Resolve the band's colour treatment: an expressive accent wins, else a scope.
+const exp = section.expressive;
+const bandProps: any = exp
+  ? { "data-expressive": exp.accent, "data-expressive-tier": exp.tier, className: "expressive" }
+  : { scope: section.scope ?? "default" };
+// Token-driven scroll-in reveal (BaseLayout's observer adds .in-view).
+if (section.reveal) bandProps["data-reveal"] = section.reveal;
+
+// On expressive bands the muted-foreground token doesn't re-tone, so use plain
+// (colour-inheriting) elements for sub-text instead of the muted Section parts.
+const onAccent = Boolean(exp);
+const pad = section.type === "hero" || section.type === "cta" ? "xl" : "lg";
+---
+
+<Section {...bandProps} pad={pad}>
+  <Container
+    maxW={section.maxW ?? (section.type === "testimonial" || section.type === "cta" ? "md" : "lg")}
+  >
+    {section.type === "hero" && (
+      <div class="flex flex-col items-start gap-4">
+        {section.eyebrow &&
+          (onAccent ? (
+            <span class="text-xs font-medium uppercase tracking-wider opacity-60">{section.eyebrow}</span>
+          ) : (
+            <SectionEyebrow>{section.eyebrow}</SectionEyebrow>
+          ))}
+        <SectionTitle>{section.title}</SectionTitle>
+        {section.subtitle &&
+          (onAccent ? (
+            <p class="max-w-prose text-lg opacity-80">{section.subtitle}</p>
+          ) : (
+            <SectionSubtitle>{section.subtitle}</SectionSubtitle>
+          ))}
+        {section.actions && (
+          <SectionActions>
+            {section.actions.map((a: any) => (
+              <Button variant={a.variant ?? "default"}>{a.label}</Button>
+            ))}
+          </SectionActions>
+        )}
+        {section.media && (
+          <MediaSurface hint={section.media.hint} alt={section.title} radius="lg" className="mt-4 w-full" />
+        )}
+      </div>
+    )}
+
+    {section.type === "logos" && (
+      <div class="flex flex-col items-center gap-6 text-center">
+        {section.title && <p class="text-sm font-medium opacity-70">{section.title}</p>}
+        <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+          {section.items.map((name: string) => (
+            <span class="text-lg font-semibold opacity-60">{name}</span>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {section.type === "features" && (
+      <>
+        <div class="flex flex-col items-start gap-2">
+          {section.eyebrow && <SectionEyebrow>{section.eyebrow}</SectionEyebrow>}
+          <SectionTitle>{section.title}</SectionTitle>
+        </div>
+        <div class="mt-8 grid gap-6 md:grid-cols-3">
+          {section.items.map((f: any) => (
+            <Card>
+              <MediaSurface hint={f.hint ?? "generic"} alt={f.title} aspect="video" className="w-full" />
+              <CardHeader>
+                <CardTitle>{f.title}</CardTitle>
+                <CardDescription>{f.body}</CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </>
+    )}
+
+    {section.type === "pricing" && (
+      <>
+        <div class="flex flex-col items-center gap-2 text-center">
+          {section.eyebrow && <span class="text-xs font-medium uppercase tracking-wider opacity-60">{section.eyebrow}</span>}
+          <SectionTitle>{section.title}</SectionTitle>
+        </div>
+        <div class="mt-10 grid gap-4 md:grid-cols-3">
+          {section.plans.map((p: any) =>
+            p.featured && exp ? (
+              <div data-expressive={exp.accent} data-expressive-tier="dark" class="expressive rounded-xl p-6 shadow-elevation-3">
+                <h3 class="text-lg font-semibold">{p.name}</h3>
+                {p.blurb && <p class="mt-1 text-sm opacity-80">{p.blurb}</p>}
+                <p class="mt-5 text-3xl font-semibold">{p.price}</p>
+              </div>
+            ) : (
+              <div class="rounded-xl border border-current/15 p-6">
+                <h3 class="text-lg font-semibold">{p.name}</h3>
+                {p.blurb && <p class="mt-1 text-sm opacity-70">{p.blurb}</p>}
+                <p class="mt-5 text-3xl font-semibold">{p.price}</p>
+              </div>
+            ),
+          )}
+        </div>
+      </>
+    )}
+
+    {section.type === "testimonial" && (
+      <figure class="flex flex-col items-center gap-6 text-center">
+        <blockquote class="text-balance text-2xl font-medium md:text-3xl">“{section.quote}”</blockquote>
+        {section.author && <figcaption class="text-sm opacity-75">{section.author}</figcaption>}
+      </figure>
+    )}
+
+    {section.type === "media" && (
+      <div class="flex flex-col items-start gap-4">
+        {section.title && <SectionTitle>{section.title}</SectionTitle>}
+        <MediaSurface hint={section.hint} alt={section.title ?? "media"} aspect={section.aspect ?? "wide"} radius="lg" className="w-full" />
+      </div>
+    )}
+
+    {section.type === "cta" && (
+      <div class="flex flex-col items-center gap-4 text-center">
+        <SectionTitle>{section.title}</SectionTitle>
+        {section.body && <p class="max-w-prose text-lg opacity-80">{section.body}</p>}
+        {section.action && (
+          <a
+            href={section.action.href}
+            class="mt-2 inline-flex items-center rounded-full border border-current px-5 py-2 text-sm font-medium hover:opacity-80"
+            >{section.action.label}</a
+          >
+        )}
+      </div>
+    )}
+
+    {section.type === "accentCards" && (
+      <>
+        <div class="flex flex-col items-start gap-2">
+          {section.eyebrow && <SectionEyebrow>{section.eyebrow}</SectionEyebrow>}
+          <SectionTitle>{section.title}</SectionTitle>
+        </div>
+        <div class="mt-8 grid gap-6 md:grid-cols-3">
+          {section.cards.map((c: any) => (
+            <div
+              data-expressive={c.accent}
+              data-expressive-tier={c.tier}
+              class="expressive flex flex-col rounded-xl p-6 shadow-elevation-2"
+            >
+              <h3 class="text-lg font-semibold">{c.title}</h3>
+              <p class="mt-2 text-sm opacity-80">{c.body}</p>
+            </div>
+          ))}
+        </div>
+      </>
+    )}
+
+    {section.type === "collection" && (
+      <>
+        <div class="flex flex-col items-start gap-2">
+          {section.eyebrow && <SectionEyebrow>{section.eyebrow}</SectionEyebrow>}
+          <SectionTitle>{section.title}</SectionTitle>
+        </div>
+        <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {collectionItems.map((item) => (
+            <a href={item.href} class="group block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <Card className="h-full overflow-hidden transition-shadow group-hover:shadow-elevation-3">
+                <MediaSurface hint={item.hint ?? "product"} alt={item.title} aspect="video" className="w-full" />
+                <CardHeader>
+                  <div class="flex items-center justify-between gap-2">
+                    <CardTitle>{item.title}</CardTitle>
+                    {item.price && <Badge variant="info-soft">{item.price}</Badge>}
+                  </div>
+                  <CardDescription>{item.summary}</CardDescription>
+                </CardHeader>
+              </Card>
+            </a>
+          ))}
+        </div>
+      </>
+    )}
+  </Container>
+</Section>

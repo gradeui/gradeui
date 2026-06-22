@@ -22,6 +22,11 @@ export const SectionContract = contract({
       design: "knob",
       description: "colour SUBTHEME; applies the `scope-*` class so the whole band re-tones (bg/fg/card/muted/border) while action colours stay vivid. Unset = the page surface. See STUDIO-COLOR.md.",
   },
+  "background": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "visual band background slot: image / video / gradient / shader (drop a <BackgroundFill> here). Renders BEHIND the content; Section owns the relative/overflow/z plumbing. Works with `scope` (which re-tones the content tokens so text stays legible over the media).",
+  },
   "pad": {
       schema: z.enum(["none", "sm", "md", "lg", "xl"]).optional(),
       design: "knob",

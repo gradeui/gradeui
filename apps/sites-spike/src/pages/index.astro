@@ -1,0 +1,360 @@
+---
+import "../styles/global.css";
+import {
+  Section,
+  Container,
+  SectionEyebrow,
+  SectionTitle,
+  SectionSubtitle,
+  SectionDescription,
+  SectionActions,
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Badge,
+  MediaSurface,
+} from "@gradeui/ui";
+import ShaderBackground from "../components/ShaderBackground.astro";
+import LocationMap from "../components/LocationMap";
+
+const features = [
+  {
+    title: "Own the components",
+    body: "Install @gradeui/ui like any npm package. No lock-in, no runtime.",
+    hint: "product",
+    badge: "MIT",
+  },
+  {
+    title: "Themeable bands",
+    body: "Each Section carries a scope. Re-skin one band without touching the rest.",
+    hint: "album",
+    badge: "Scopes",
+  },
+  {
+    title: "Static by default",
+    body: "Astro renders to HTML with zero JS. Add client:* only where you need it.",
+    hint: "landscape",
+    badge: "0 KB JS",
+  },
+];
+---
+
+<!doctype html>
+<!-- data-grade-theme engages a coloured palette (teal "energy") purely via CSS.
+     Remove it for the neutral default, or swap for another built-in theme id.
+     In a real Sites build this attribute is what the per-site theme writes. -->
+<html lang="en" data-grade-theme="energy">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
+    />
+    <title>Grade × Astro — POC</title>
+    <!-- Pre-paint: reconcile the SSR default with the visitor's saved choice
+         BEFORE first paint, so there's no theme flash on reload. -->
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem("grade-theme");
+          if (t === "default") document.documentElement.removeAttribute("data-grade-theme");
+          else if (t) document.documentElement.setAttribute("data-grade-theme", t);
+          if (localStorage.getItem("grade-mode") === "dark")
+            document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-background text-foreground">
+    <!-- Inverse hero band — the scope re-tones everything inside it. -->
+    <Section scope="inverse" pad="xl">
+      <Container maxW="lg">
+        <div class="flex flex-col items-start gap-4">
+          <SectionEyebrow>POC</SectionEyebrow>
+          <SectionTitle>Built with Grade, rendered by Astro.</SectionTitle>
+          <SectionSubtitle>
+            Static HTML, zero JS by default. The scope re-tones the band; the
+            Buttons stay vivid.
+          </SectionSubtitle>
+          <SectionActions>
+            <Button>Get started</Button>
+            <Button variant="outline">Docs</Button>
+          </SectionActions>
+          <MediaSurface
+            hint="landscape"
+            alt="Product screenshot"
+            radius="lg"
+            className="mt-4 w-full"
+          />
+        </div>
+      </Container>
+    </Section>
+
+    <!-- Feature grid — Cards with a media thumbnail + a Badge each. -->
+    <Section pad="lg">
+      <Container maxW="lg">
+        <div class="flex flex-col items-start gap-2">
+          <SectionEyebrow>Why Grade</SectionEyebrow>
+          <SectionTitle>Three primitives doing real work.</SectionTitle>
+        </div>
+        <div class="mt-8 grid gap-6 md:grid-cols-3">
+          {
+            features.map((f) => (
+              <Card>
+                <MediaSurface
+                  hint={f.hint}
+                  alt={f.title}
+                  aspect="video"
+                  className="w-full"
+                />
+                <CardHeader>
+                  <div class="flex items-center justify-between gap-2">
+                    <CardTitle>{f.title}</CardTitle>
+                    <Badge variant="info-soft">{f.badge}</Badge>
+                  </div>
+                  <CardDescription>{f.body}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))
+          }
+        </div>
+      </Container>
+    </Section>
+
+    <!-- Media-led split band on a muted scope. -->
+    <Section scope="muted" pad="lg">
+      <Container maxW="lg">
+        <div class="grid items-center gap-8 md:grid-cols-2">
+          <div class="flex flex-col items-start gap-4">
+            <Badge variant="success-soft">Live</Badge>
+            <SectionTitle>Drop media anywhere.</SectionTitle>
+            <SectionDescription>
+              MediaSurface is the canonical placeholder for any non-person
+              image. Pass a hint and alt; the generation pipeline fills it
+              later. Here it renders as a static, themed empty state.
+            </SectionDescription>
+            <SectionActions>
+              <Button>See components</Button>
+            </SectionActions>
+          </div>
+          <MediaSurface
+            hint="album"
+            alt="Square media slot"
+            aspect="square"
+            radius="lg"
+            className="w-full"
+          />
+        </div>
+      </Container>
+    </Section>
+
+    <!-- ───────────────────────────────────────────────────────────────
+         EXPRESSIVE bands — the highlight layer from STUDIO-EXPRESSIVE, now
+         in code. data-expressive picks an accent slot (1–5 = rose/orange/
+         amber/yellow/olive), data-expressive-tier picks a tier, and the
+         `expressive` class paints the resolved bg+fg. Pure CSS, zero JS.
+         ─────────────────────────────────────────────────────────────── -->
+
+    <!-- Pricing — ONE accent, TWO tiers: a pale band with a featured dark tile. -->
+    <Section
+      data-expressive="accent1"
+      data-expressive-tier="superlight"
+      className="expressive"
+      pad="lg"
+    >
+      <Container maxW="lg">
+        <div class="flex flex-col items-center gap-2 text-center">
+          <span class="text-xs font-medium uppercase tracking-wider opacity-60">Pricing</span>
+          <SectionTitle>One accent, every tier.</SectionTitle>
+        </div>
+        <div class="mt-10 grid gap-4 md:grid-cols-3">
+          <div class="rounded-xl border border-current/15 p-6">
+            <h3 class="text-lg font-semibold">Starter</h3>
+            <p class="mt-1 text-sm opacity-70">For trying things out.</p>
+            <p class="mt-5 text-3xl font-semibold">£0</p>
+          </div>
+          <div
+            data-expressive="accent1"
+            data-expressive-tier="dark"
+            class="expressive rounded-xl p-6 shadow-elevation-3"
+          >
+            <h3 class="text-lg font-semibold">Pro</h3>
+            <p class="mt-1 text-sm opacity-80">The featured plan — same accent, darker tier.</p>
+            <p class="mt-5 text-3xl font-semibold">£19</p>
+          </div>
+          <div class="rounded-xl border border-current/15 p-6">
+            <h3 class="text-lg font-semibold">Team</h3>
+            <p class="mt-1 text-sm opacity-70">For the whole crew.</p>
+            <p class="mt-5 text-3xl font-semibold">£49</p>
+          </div>
+        </div>
+      </Container>
+    </Section>
+
+    <!-- Testimonial — accent3 (amber), dark tier. -->
+    <Section
+      data-expressive="accent3"
+      data-expressive-tier="dark"
+      className="expressive"
+      pad="xl"
+    >
+      <Container maxW="md">
+        <figure class="flex flex-col items-center gap-6 text-center">
+          <blockquote class="text-balance text-2xl font-medium md:text-3xl">
+            “We shipped a themed marketing site from our own design system in an
+            afternoon. The sections just dropped in.”
+          </blockquote>
+          <figcaption class="text-sm opacity-75">A very happy design-systems person</figcaption>
+        </figure>
+      </Container>
+    </Section>
+
+    <!-- CTA — accent2 (orange), superdark tier, with a palette-driven shader. -->
+    <Section
+      data-expressive="accent2"
+      data-expressive-tier="superdark"
+      className="expressive relative overflow-hidden"
+      pad="xl"
+    >
+      <ShaderBackground accent="accent2" />
+      <Container maxW="md" className="relative z-10">
+        <div class="flex flex-col items-center gap-4 text-center">
+          <SectionTitle>Build vibrant sections, fast.</SectionTitle>
+          <p class="max-w-prose text-lg opacity-80">
+            Five accents, four tiers, one attribute each. The whole expressive
+            layer is just tokens.
+          </p>
+          <a
+            href="#"
+            class="mt-2 inline-flex items-center rounded-full border border-current px-5 py-2 text-sm font-medium hover:opacity-80"
+            >Get started</a
+          >
+        </div>
+      </Container>
+    </Section>
+
+    <!-- Find us — a Grade Map (leaflet default, no API key) as a client island. -->
+    <Section pad="lg">
+      <Container maxW="lg">
+        <div class="flex flex-col items-start gap-3">
+          <SectionEyebrow>Find us</SectionEyebrow>
+          <SectionTitle>338 Queens Park Road, Brighton.</SectionTitle>
+        </div>
+        <div class="mt-8">
+          <LocationMap client:load lng={-0.1285} lat={50.8252} label="338 Queens Park Road" />
+        </div>
+      </Container>
+    </Section>
+
+    <!-- Page-surface band — no scope = the default theme. -->
+    <Section pad="lg">
+      <Container maxW="lg">
+        <div class="flex flex-col items-start gap-3">
+          <SectionTitle>Stack sections to build the page.</SectionTitle>
+          <SectionSubtitle>
+            Each band is independently themeable — change a scope, re-skin one
+            section without touching the rest.
+          </SectionSubtitle>
+        </div>
+      </Container>
+    </Section>
+    <!-- Theme switcher — flips data-grade-theme (and .dark) on <html>. Pure
+         attribute swap, vanilla JS, no framework island. This is the same
+         mechanism a real Sites build uses; here it's wired to a control. -->
+    <div class="fixed inset-x-0 bottom-5 z-50 flex justify-center">
+      <div
+        class="flex items-center gap-2 rounded-full border border-border bg-card/90 px-3 py-2 text-card-foreground shadow-elevation-2 backdrop-blur"
+      >
+        <span class="px-1 text-xs font-medium text-muted-foreground">Theme</span>
+        <button
+          type="button"
+          data-theme="default"
+          aria-label="Neutral"
+          class="size-6 rounded-full border border-border ring-foreground ring-offset-2 ring-offset-card aria-pressed:ring-2"
+          style="background: oklch(0.7 0.004 85)"
+        ></button>
+        <button
+          type="button"
+          data-theme="energy"
+          aria-label="Teal"
+          class="size-6 rounded-full ring-foreground ring-offset-2 ring-offset-card aria-pressed:ring-2"
+          style="background: oklch(0.61 0.17 175)"
+        ></button>
+        <button
+          type="button"
+          data-theme="violet"
+          aria-label="Violet"
+          class="size-6 rounded-full ring-foreground ring-offset-2 ring-offset-card aria-pressed:ring-2"
+          style="background: oklch(0.61 0.17 300)"
+        ></button>
+        <button
+          type="button"
+          data-theme="amber"
+          aria-label="Amber"
+          class="size-6 rounded-full ring-foreground ring-offset-2 ring-offset-card aria-pressed:ring-2"
+          style="background: oklch(0.61 0.17 75)"
+        ></button>
+        <button
+          type="button"
+          data-theme="rose"
+          aria-label="Rose"
+          class="size-6 rounded-full ring-foreground ring-offset-2 ring-offset-card aria-pressed:ring-2"
+          style="background: oklch(0.61 0.17 15)"
+        ></button>
+        <span class="mx-1 h-5 w-px bg-border"></span>
+        <button
+          type="button"
+          data-mode-toggle
+          class="rounded-full px-3 py-1 text-xs font-medium text-foreground hover:bg-muted aria-pressed:bg-muted"
+        >
+          <span class="dark-only">Light</span><span class="light-only">Dark</span>
+        </button>
+      </div>
+    </div>
+
+    <style is:global>
+      /* Show the right mode-toggle label without JS branching. */
+      .dark-only { display: none; }
+      .dark .dark-only { display: inline; }
+      .dark .light-only { display: none; }
+    </style>
+
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+        function sync() {
+          var cur = root.getAttribute("data-grade-theme") || "default";
+          document.querySelectorAll("[data-theme]").forEach(function (b) {
+            b.setAttribute("aria-pressed", b.getAttribute("data-theme") === cur ? "true" : "false");
+          });
+          var mt = document.querySelector("[data-mode-toggle]");
+          if (mt) mt.setAttribute("aria-pressed", root.classList.contains("dark") ? "true" : "false");
+        }
+        document.querySelectorAll("[data-theme]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var t = b.getAttribute("data-theme");
+            if (t === "default") root.removeAttribute("data-grade-theme");
+            else root.setAttribute("data-grade-theme", t);
+            try { localStorage.setItem("grade-theme", t); } catch (e) {}
+            sync();
+          });
+        });
+        var mt = document.querySelector("[data-mode-toggle]");
+        if (mt)
+          mt.addEventListener("click", function () {
+            var dark = !root.classList.contains("dark");
+            root.classList.toggle("dark", dark);
+            try { localStorage.setItem("grade-mode", dark ? "dark" : "light"); } catch (e) {}
+            sync();
+          });
+        sync();
+      })();
+    </script>
+  </body>
+</html>

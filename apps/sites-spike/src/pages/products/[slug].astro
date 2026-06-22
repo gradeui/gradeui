@@ -1,0 +1,36 @@
+---
+import { getCollection } from "astro:content";
+import { Section, Container, SectionTitle, Button, Badge, MediaSurface } from "@gradeui/ui";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+// One detail page per product file: aurora-desk.json → /products/aurora-desk.
+export async function getStaticPaths() {
+  const products = await getCollection("products");
+  return products.map((p) => ({ params: { slug: p.id }, props: { product: p.data } }));
+}
+
+const { product } = Astro.props;
+---
+
+<BaseLayout title={product.title} description={product.summary} theme="energy">
+  <Section pad="lg">
+    <Container maxW="lg">
+      <a href="/home" class="text-sm text-muted-foreground hover:text-foreground">← Back</a>
+      <div class="mt-6 grid items-start gap-10 md:grid-cols-2">
+        <MediaSurface hint={product.hint} alt={product.title} aspect="square" radius="lg" className="w-full" />
+        <div class="flex flex-col items-start gap-4">
+          <div class="flex items-center gap-3">
+            <SectionTitle>{product.title}</SectionTitle>
+            {product.price && <Badge variant="info-soft">{product.price}</Badge>}
+          </div>
+          <p class="text-lg text-muted-foreground">{product.summary}</p>
+          {product.body && <p class="leading-relaxed">{product.body}</p>}
+          <div class="mt-2 flex gap-3">
+            <Button>Add to basket</Button>
+            <Button variant="outline">Save</Button>
+          </div>
+        </div>
+      </div>
+    </Container>
+  </Section>
+</BaseLayout>

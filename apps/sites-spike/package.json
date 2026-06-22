@@ -1,0 +1,27 @@
+{
+  "name": "sites-spike",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "POC: render a Grade section as fast static HTML via Astro (STUDIO-SITES.md).",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@gradeui/ui": "workspace:*",
+    "astro": "^7.0.0",
+    "@astrojs/react": "^6.0.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "tailwindcss": "^4.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}

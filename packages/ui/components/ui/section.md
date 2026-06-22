@@ -4,6 +4,7 @@ import: "@gradeui/ui"
 subcomponents: [Container, SectionEyebrow, SectionTitle, SectionSubtitle, SectionDescription, SectionActions, SectionMedia]
 props:
   - Section: scope? (default | inverse | brand | accent | muted | card) — colour SUBTHEME; applies the `scope-*` class so the whole band re-tones (bg/fg/card/muted/border) while action colours stay vivid. Unset = the page surface. See STUDIO-COLOR.md.
+  - Section: background?: ReactNode — visual band background slot: image / video / gradient / shader (drop a <BackgroundFill> here). Renders BEHIND the content; Section owns the relative/overflow/z plumbing. Works with `scope` (which re-tones the content tokens so text stays legible over the media).
   - Section: pad? (none | sm | md | lg | xl) — vertical rhythm (responsive py); default lg. Section is ALWAYS full width — it never sets a max width.
   - Section: as? (section | header | footer | div) — semantic element; default section.
   - Container: maxW? (sm | md | lg | xl | prose | full) — centred max width + gutters; default lg. The MEASURE.

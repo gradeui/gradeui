@@ -66,6 +66,16 @@ const sharedOptions = {
   // links it at build time inside the workspace.
   noExternal: [
     "@gradeui/contracts",
+    // Force-bundle lexical-beautiful-mentions. Its published ESM uses
+    // extensionless re-exports (`export * from "./BeautifulMentionsPlugin"`)
+    // which strict ESM resolvers (Vite SSR, Astro, @tailwindcss/node, plain
+    // Node) reject — only webpack-style lenient resolvers tolerate them. If we
+    // externalize it (the tsup default for dependencies), that broken
+    // resolution is pushed onto every consumer of @gradeui/ui, so a downstream
+    // app importing even <Section> from the barrel crashes. Inlining it here
+    // lets esbuild add the extensions at OUR build time, so the published
+    // bundle is self-contained and resolves cleanly everywhere.
+    "lexical-beautiful-mentions",
   ],
   treeshake: true,
   minify: true,

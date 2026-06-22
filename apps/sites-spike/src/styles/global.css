@@ -1,0 +1,180 @@
+/* Grade's source stylesheet is the SOLE Tailwind entrypoint — it already does
+   `@import "tailwindcss"` on line 1 and pulls the @gradeui/core tokens, the
+   @theme blocks, the :root palette, and the scope-* classes. Importing
+   tailwindcss again here would double the entry and drop the theme (black &
+   white). Mirrors apps/docs/app/globals.css. */
+@import "@gradeui/ui/styles/globals.css";
+
+/* Scan THIS app's pages for utility classes. */
+@source "../**/*.{astro,tsx,jsx,ts,js,mdx}";
+
+/* ALSO scan the @gradeui/ui package source. Tailwind skips node_modules during
+   auto-detection, and @gradeui/ui resolves there (workspace symlink), so the
+   utility classes baked INTO the components — Container's `max-w-7xl`, the
+   grid classes, etc. — were never seen and never generated, leaving those
+   classes inert (every Container rendered full-width). Pointing @source at the
+   package's own source files fixes it. Mirrors how apps/docs scans packages/ui. */
+@source "../../../../packages/ui/components/**/*.{ts,tsx}";
+@source "../../../../packages/ui/lib/**/*.{ts,tsx}";
+
+/* ── Fonts. Loaded via <link> in the page <head> (Google: Inter + Instrument
+   Serif), then wired into the DS font tokens so the theme + type scale use
+   them. The energy theme reads --font-geist for sans/display; the accent role
+   reads --font-instrument-serif. Supplying those vars is all it takes; no
+   component changes. Swap for Astro's Fonts API (self-hosted, optimised) once
+   you're settled on Astro 7. */
+:root {
+  --font-geist: "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Inter", system-ui, sans-serif;
+  --font-instrument-serif: "Instrument Serif", Georgia, serif;
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   Demo palettes for the theme switcher. Each is just a token block keyed to
+   data-grade-theme — exactly what a real Sites build would write into the
+   page. Derived from the package's built-in "energy" palette by hue-shift
+   (violet 300, amber 75, rose 15). The neutral default + teal "energy" are
+   already provided by @gradeui/ui/styles/globals.css.
+   ─────────────────────────────────────────────────────────────────────── */
+:root[data-grade-theme="violet"] {
+  --background: 0.985 0.0012 300;           /* neutral 50 */
+  --foreground: 0.170 0.0032 300;           /* neutral 950 */
+  --bg-base: 0.985 0.0012 300;
+  --fg-base: 0.170 0.0032 300;
+  --card: 1 0 0;
+  --card-foreground: 0.170 0.0032 300;
+  --popover: 1 0 0;
+  --popover-foreground: 0.170 0.0032 300;
+  --primary: 0.610 0.170 300;               
+  --primary-foreground: 0.985 0.015 300;
+  --secondary: 0.955 0.0032 300;            /* neutral 100 */
+  --secondary-foreground: 0.415 0.012 300;  /* neutral 700 */
+  --muted: 0.955 0.0032 300;
+  --muted-foreground: 0.610 0.0136 300;
+  --accent: 0.610 0.170 300;
+  --accent-foreground: 0.985 0.015 300;
+  --border: 0.895 0.006 300;
+  --input: 0.895 0.006 300;
+  --ring: 0.610 0.170 300;
+  --radius: 0.5rem;
+
+}
+
+.dark[data-grade-theme="violet"] {
+  --background: 0.170 0.0032 300;
+  --foreground: 0.985 0.0012 300;
+  --bg-base: 0.170 0.0032 300;
+  --fg-base: 0.985 0.0012 300;
+  --card: 0.245 0.0064 300;
+  --card-foreground: 0.985 0.0012 300;
+  --popover: 0.245 0.0064 300;
+  --popover-foreground: 0.985 0.0012 300;
+  --primary: 0.720 0.140 300;
+  --primary-foreground: 0.170 0.040 300;
+  --secondary: 0.325 0.0096 300;
+  --secondary-foreground: 0.895 0.006 300;
+  --muted: 0.325 0.0096 300;
+  --muted-foreground: 0.720 0.0112 300;
+  --accent: 0.720 0.140 300;
+  --accent-foreground: 0.170 0.040 300;
+  --border: 0.325 0.0096 300;
+  --input: 0.325 0.0096 300;
+  --ring: 0.720 0.140 300;
+}
+
+
+:root[data-grade-theme="amber"] {
+  --background: 0.985 0.0012 75;           /* neutral 50 */
+  --foreground: 0.170 0.0032 75;           /* neutral 950 */
+  --bg-base: 0.985 0.0012 75;
+  --fg-base: 0.170 0.0032 75;
+  --card: 1 0 0;
+  --card-foreground: 0.170 0.0032 75;
+  --popover: 1 0 0;
+  --popover-foreground: 0.170 0.0032 75;
+  --primary: 0.610 0.170 75;               
+  --primary-foreground: 0.985 0.015 75;
+  --secondary: 0.955 0.0032 75;            /* neutral 100 */
+  --secondary-foreground: 0.415 0.012 75;  /* neutral 700 */
+  --muted: 0.955 0.0032 75;
+  --muted-foreground: 0.610 0.0136 75;
+  --accent: 0.610 0.170 75;
+  --accent-foreground: 0.985 0.015 75;
+  --border: 0.895 0.006 75;
+  --input: 0.895 0.006 75;
+  --ring: 0.610 0.170 75;
+  --radius: 0.5rem;
+
+}
+
+.dark[data-grade-theme="amber"] {
+  --background: 0.170 0.0032 75;
+  --foreground: 0.985 0.0012 75;
+  --bg-base: 0.170 0.0032 75;
+  --fg-base: 0.985 0.0012 75;
+  --card: 0.245 0.0064 75;
+  --card-foreground: 0.985 0.0012 75;
+  --popover: 0.245 0.0064 75;
+  --popover-foreground: 0.985 0.0012 75;
+  --primary: 0.720 0.140 75;
+  --primary-foreground: 0.170 0.040 75;
+  --secondary: 0.325 0.0096 75;
+  --secondary-foreground: 0.895 0.006 75;
+  --muted: 0.325 0.0096 75;
+  --muted-foreground: 0.720 0.0112 75;
+  --accent: 0.720 0.140 75;
+  --accent-foreground: 0.170 0.040 75;
+  --border: 0.325 0.0096 75;
+  --input: 0.325 0.0096 75;
+  --ring: 0.720 0.140 75;
+}
+
+
+:root[data-grade-theme="rose"] {
+  --background: 0.985 0.0012 15;           /* neutral 50 */
+  --foreground: 0.170 0.0032 15;           /* neutral 950 */
+  --bg-base: 0.985 0.0012 15;
+  --fg-base: 0.170 0.0032 15;
+  --card: 1 0 0;
+  --card-foreground: 0.170 0.0032 15;
+  --popover: 1 0 0;
+  --popover-foreground: 0.170 0.0032 15;
+  --primary: 0.610 0.170 15;               
+  --primary-foreground: 0.985 0.015 15;
+  --secondary: 0.955 0.0032 15;            /* neutral 100 */
+  --secondary-foreground: 0.415 0.012 15;  /* neutral 700 */
+  --muted: 0.955 0.0032 15;
+  --muted-foreground: 0.610 0.0136 15;
+  --accent: 0.610 0.170 15;
+  --accent-foreground: 0.985 0.015 15;
+  --border: 0.895 0.006 15;
+  --input: 0.895 0.006 15;
+  --ring: 0.610 0.170 15;
+  --radius: 0.5rem;
+
+}
+
+.dark[data-grade-theme="rose"] {
+  --background: 0.170 0.0032 15;
+  --foreground: 0.985 0.0012 15;
+  --bg-base: 0.170 0.0032 15;
+  --fg-base: 0.985 0.0012 15;
+  --card: 0.245 0.0064 15;
+  --card-foreground: 0.985 0.0012 15;
+  --popover: 0.245 0.0064 15;
+  --popover-foreground: 0.985 0.0012 15;
+  --primary: 0.720 0.140 15;
+  --primary-foreground: 0.170 0.040 15;
+  --secondary: 0.325 0.0096 15;
+  --secondary-foreground: 0.895 0.006 15;
+  --muted: 0.325 0.0096 15;
+  --muted-foreground: 0.720 0.0112 15;
+  --accent: 0.720 0.140 15;
+  --accent-foreground: 0.170 0.040 15;
+  --border: 0.325 0.0096 15;
+  --input: 0.325 0.0096 15;
+  --ring: 0.720 0.140 15;
+}
+
+

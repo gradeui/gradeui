@@ -1733,22 +1733,15 @@
 }
 
 /* ============================================
-   MAP MARKER LIFT — every pin gets a border
+   MAP MARKER — intentionally unstyled
    ============================================
-   Map tiles are external imagery and don't follow the theme, so marker
-   content (Badge price pins, numbered markers, avatars) can melt into
-   them — illegible dark-on-dark pins were the symptom. Guarantee the
-   lift at the DS level: every DIRECT child of a MapMarker's content
-   wrapper gets a 1px border + ambient shadow from the mode-aware
-   `--gds-map-marker-*` pair (light hairline on dark tiles, dark line
-   on light). Being unlayered, this wins over a Badge's own
-   border-transparent utility — deliberate: the border is the floor,
-   not a suggestion. Backgrounds/text are NOT touched; content keeps
-   its own surface tokens. */
-[data-gds-part="map-marker-content"] > * {
-  border: 1px solid var(--gds-map-marker-border);
-  box-shadow: var(--gds-map-marker-shadow);
-}
+   Marker content (Badge price pins, numbered markers, avatars, custom pin
+   types) is the CONSUMER's design. The DS used to force a 1px border + ambient
+   shadow on every direct child of a marker as a legibility "floor", but that's
+   too opinionated for a primitive — it imposed a look on content you supply.
+   Removed. The mode-aware `--gds-map-marker-border` / `--gds-map-marker-shadow`
+   tokens remain defined, and `.gds-map-label` (below) still gives text a halo,
+   so legibility on busy tiles is OPT-IN, not mandatory. */
 
 /* Floating map label halo — put this class on a text element inside a
    MapMarker to give it a mode-aware outline (white on light tiles,
@@ -2154,6 +2147,76 @@ html[data-gds-streaming] body * {
     --popover: var(--card);
     --popover-foreground: var(--card-foreground);
     --muted-foreground: var(--card-foreground);
+  }
+}
+
+/* ============================================
+   EXPRESSIVE colour layer — see STUDIO-EXPRESSIVE.md
+   A highlight layer for painting whole SECTIONS, deliberately louder than the
+   neutral product chrome (marketing bands, feature cards, promo strips).
+   Orthogonal to the surface scopes above: it does NOT touch --primary/--accent,
+   so it stacks on top of any theme. Two attributes resolve a section's colour:
+     data-expressive="accent1..5"   picks one of 5 accent slots
+     data-expressive-tier="…"       picks one of 4 tiers (default: light)
+   …landing an accessible pair on --gds-expressive-bg / --gds-expressive-fg,
+   which the `.expressive` helper paints. Values mirror the Figma "Expressive"
+   collection (accent1..5 = rose, orange, amber, yellow, olive). The accents are
+   fixed ramps today; the generator will later write them from one hue per slot
+   — the token shape stays identical. Tiers use ramp steps 100/300/700/900. */
+:root {
+  --gds-expressive-accent1-100: #ffe9e6; --gds-expressive-accent1-300: #ffaaa2; --gds-expressive-accent1-700: #8b181d; --gds-expressive-accent1-900: #3f0b0b;
+  --gds-expressive-accent2-100: #ffeae0; --gds-expressive-accent2-300: #ffae89; --gds-expressive-accent2-700: #822c00; --gds-expressive-accent2-900: #3c1100;
+  --gds-expressive-accent3-100: #ffecd8; --gds-expressive-accent3-300: #f6b575; --gds-expressive-accent3-700: #743b00; --gds-expressive-accent3-900: #331900;
+  --gds-expressive-accent4-100: #fdefd2; --gds-expressive-accent4-300: #e5bf6d; --gds-expressive-accent4-700: #634600; --gds-expressive-accent4-900: #2d1d00;
+  --gds-expressive-accent5-100: #f4f2d4; --gds-expressive-accent5-300: #cfc871; --gds-expressive-accent5-700: #544e00; --gds-expressive-accent5-900: #252100;
+}
+
+/* accent slot → generic step vars */
+[data-expressive="accent1"] { --exp-100: var(--gds-expressive-accent1-100); --exp-300: var(--gds-expressive-accent1-300); --exp-700: var(--gds-expressive-accent1-700); --exp-900: var(--gds-expressive-accent1-900); }
+[data-expressive="accent2"] { --exp-100: var(--gds-expressive-accent2-100); --exp-300: var(--gds-expressive-accent2-300); --exp-700: var(--gds-expressive-accent2-700); --exp-900: var(--gds-expressive-accent2-900); }
+[data-expressive="accent3"] { --exp-100: var(--gds-expressive-accent3-100); --exp-300: var(--gds-expressive-accent3-300); --exp-700: var(--gds-expressive-accent3-700); --exp-900: var(--gds-expressive-accent3-900); }
+[data-expressive="accent4"] { --exp-100: var(--gds-expressive-accent4-100); --exp-300: var(--gds-expressive-accent4-300); --exp-700: var(--gds-expressive-accent4-700); --exp-900: var(--gds-expressive-accent4-900); }
+[data-expressive="accent5"] { --exp-100: var(--gds-expressive-accent5-100); --exp-300: var(--gds-expressive-accent5-300); --exp-700: var(--gds-expressive-accent5-700); --exp-900: var(--gds-expressive-accent5-900); }
+
+/* tier → which steps become bg / fg (default = light) */
+[data-expressive] { --gds-expressive-bg: var(--exp-300); --gds-expressive-fg: var(--exp-900); }
+[data-expressive][data-expressive-tier="superlight"] { --gds-expressive-bg: var(--exp-100); --gds-expressive-fg: var(--exp-900); }
+[data-expressive][data-expressive-tier="light"]      { --gds-expressive-bg: var(--exp-300); --gds-expressive-fg: var(--exp-900); }
+[data-expressive][data-expressive-tier="dark"]       { --gds-expressive-bg: var(--exp-700); --gds-expressive-fg: var(--exp-100); }
+[data-expressive][data-expressive-tier="superdark"]  { --gds-expressive-bg: var(--exp-900); --gds-expressive-fg: var(--exp-100); }
+
+/* the surface helper a section wears: paints the resolved expressive pair */
+.expressive { background-color: var(--gds-expressive-bg); color: var(--gds-expressive-fg); }
+
+/* ============================================
+   REVEAL — scroll-in motion for sections (and any element). Token-driven:
+   reuses the DS transition durations + eases (above), adds a reveal distance.
+   An element with `data-reveal` starts hidden/offset; an IntersectionObserver
+   in the consumer adds `.in-view` to animate it in. Entirely disabled under
+   prefers-reduced-motion (the hidden state lives inside the media query, so
+   content is always visible if motion is off or JS never runs). */
+:root {
+  --gds-reveal-distance: 1.25rem;
+  --gds-reveal-duration: var(--gds-transition-slower); /* 500ms */
+  --gds-reveal-ease: var(--gds-ease-out);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(var(--gds-reveal-distance));
+    transition:
+      opacity var(--gds-reveal-duration) var(--gds-reveal-ease),
+      transform var(--gds-reveal-duration) var(--gds-reveal-ease);
+    will-change: opacity, transform;
+  }
+  [data-reveal="fade"] { transform: none; }
+  [data-reveal="fade-down"] { transform: translateY(calc(-1 * var(--gds-reveal-distance))); }
+  [data-reveal="fade-left"] { transform: translateX(var(--gds-reveal-distance)); }
+  [data-reveal="fade-right"] { transform: translateX(calc(-1 * var(--gds-reveal-distance))); }
+  [data-reveal].in-view {
+    opacity: 1;
+    transform: none;
   }
 }
 

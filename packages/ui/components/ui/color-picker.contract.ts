@@ -13,7 +13,7 @@ export const ColorPickerContract = contract({
   import: "@gradeui/ui",
   aliases: ["color picker","colour picker","token picker","colour token picker","color token picker","swatch picker","paint colour","fill colour picker","accent picker","colour dropdown"],
   composesWith: ["Popover","Command","Swatch","FillSection","GradientEditor","Field","PropertyList"],
-  styleDefaults: {"ColorPicker":"ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50","ColorRow":"ml-auto h-4 w-4"},
+  styleDefaults: {"ColorPicker":"ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50","ColorRow":"ml-auto h-3.5 w-3.5"},
   props: {
   "value": {
       schema: z.string().optional(),
