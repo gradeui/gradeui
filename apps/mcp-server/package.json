@@ -1,6 +1,6 @@
 {
   "name": "@gradeui/mcp-server",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Grade Design System MCP server — generate Grade screens from any MCP host (Claude Desktop / Claude Code) on your subscription and save them straight into a Supabase project, where they appear in Studio. A thin stdio adapter over @gradeui/studio/core (createScreenContext + validateAgainstContract).",
   "private": true,
   "license": "UNLICENSED",

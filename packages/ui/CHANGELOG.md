@@ -1,5 +1,74 @@
 # @gradeui/ui
 
+## 3.3.0
+
+### Minor Changes
+
+- 7d0353f: Button sizing reworked to match the Figma Button with zero drift:
+
+  - `2xs` and `xs` are now first-class `size` values (previously only in the cva, so they worked at runtime but the Studio inspector treated them as raw overrides). `2xs` corrected to `h-5` (20px). Full ramp: 2xs 20 · xs 24 · sm 28 · md 32 · lg 40.
+  - New `iconOnly` boolean: squares the button at the current `size` height (width = height, no horizontal padding) so you can make a square icon-only button at _any_ density (`size="sm" iconOnly` → 28², `size="2xs" iconOnly` → 20²). The icon child is centered.
+  - BREAKING: `size="icon"` is removed. Migrate `size="icon"` → `iconOnly` (identical 32² result, since `iconOnly` defaults to the md height). All in-repo call sites have been migrated.
+  - Code Connect updated: `size` map drops `icon`, adds `iconOnly` (mapped from an "Icon only" Figma variant axis).
+
+- b99a9a2: ColorPicker reworked into the Figma "Color Picker" popover, and adopted as the inspector's one colour control:
+
+  - New `<ColorPickerPanel>` export — the popover body (header title + ghost close button, search, grouped DropdownMenuItem-style rows: Swatch + token name + check). `<ColorPicker>` now composes it behind its own trigger, and the Studio inspector hosts the same panel inside its TokenField-chrome fields so every colour control shares one list.
+  - New `title` prop on `ColorPicker` (default `"Color"`; pass `null` to drop the header) and `onClose` on `ColorPickerPanel`. `shortName` is exported as `colorTokenShortName`.
+  - Compact rows (`text-xs`, 12px) and a fixed-height scroll area so filtering never resizes the popover (Radix no longer repositions mid-search).
+  - `PopoverClose` is now exported from `popover.tsx`.
+
+  Inspector: Fill solid, gradient stops, border colour, and text colour all now render as TokenFields (leading swatch + bound chip) that open this picker — replacing the previous plain token Selects and the oversized default ColorPicker trigger.
+
+- 7d0353f: Add three token-led colour/fill controls:
+
+  - **ColorPicker** — a grouped, searchable single-select colour picker (Popover + Command + Swatch), the focused "pick one colour token" sibling of FillPicker's solid tab. `triggerVariant="inline"` reduces it to a clickable swatch for inspector / fill-row use.
+  - **GradientEditor** — edit a multi-stop CSS gradient with token-led stops: type Select (linear / radial / angular) with reverse + rotate, a live preview bar, and a stops list (position % + colour + opacity %). Emits the structured `GradientValue`; render the CSS with the exported `gradientToCss(value)`.
+  - **FillSection** (alongside the existing `FillPicker`) — a multi-fill list: each row a Solid/Gradient/Image toggle, the matching value control (ColorPicker / GradientEditor popover / image URL), an opacity %, a visibility toggle, and a remove button, with an "add fill" button in the header.
+
+- 2e8cf59: Map markers are no longer styled by default. The DS used to force a 1px border
+
+  - ambient shadow on every direct child of a `MapMarker`'s content (a legibility
+    "floor"). That's too opinionated for a primitive, marker/pin design belongs to
+    the consumer. The `[data-gds-part="map-marker-content"] > *` border + box-shadow
+    rule is removed; pins now render exactly as authored.
+
+  The `--gds-map-marker-border` / `--gds-map-marker-shadow` tokens remain defined,
+  and the `.gds-map-label` halo helper is unchanged, so legibility on busy tiles
+  is now opt-in rather than mandatory. If you relied on the automatic lift, add
+  the border/shadow yourself (or use the tokens) on your marker content.
+
+- 1f2ca64: Add colour **scopes**: `scope-*` utility classes (`default` / `inverse` / `brand` / `accent` / `muted` / `card`) that act like a local Figma variable mode, re-pointing the surface token family (`--background`, `--foreground`, `--card`, `--popover`, `--muted`, `--border`) for a subtree while leaving the action colours vivid. `SectionBlock` gains a `scope` prop that applies one, so a section sets a background + foreground colour context as a unit and every descendant re-tones using the ordinary tokens. The generator emits stable `--bg-base` / `--fg-base` mirrors so the `inverse` swap can't form a custom-property cycle.
+- 7d0353f: Add the **Section** page-scaffold primitive and its **Container** measure. A page is an ordered stack of Sections — each distinct band gets its own, independently themeable. `Section` is the full-width band: it owns a colour `scope` (subtheme, via the `scope-*` classes) and vertical `pad` rhythm, nothing else. `Container` is the centred max-width + gutters you drop inside a section (or anywhere) to constrain content; omit it for a full-bleed band, and `grid` snaps children to a 12-column grid. The composable parts — `SectionEyebrow`, `SectionTitle`, `SectionSubtitle`, `SectionDescription`, `SectionActions`, `SectionMedia` (a slot for any media) — give the common heading + copy + CTA + media shape design intent without constraining the content. Design doc: `STUDIO-SECTIONS.md`.
+- 7d0353f: Swatch:
+
+  - New `2xs` size (16px) for dense colour lists / inspector rows (full ramp 16 → 56px).
+  - New `type` ("solid" | "gradient" | "image") plus `gradient?: string` and `image?: string`. The chip now renders a gradient or image fill **in place**, not just a solid colour/token. `type` is inferred from `image`/`gradient` when omitted, so existing solid usage is unchanged. The transparency checkerboard continues to sit behind the fill so translucent values read honestly.
+  - Chip border now uses the `border` token at `ring-[0.5px]` (was `ring-1 ring-foreground/40`) — a themed hairline that reads as an edge at small sizes instead of a heavy box.
+
+### Patch Changes
+
+- 1f2ca64: Badge status variants now use the semantic `--success` / `--warning` / `--info` / `--highlight` / `--destructive` tokens (solid, soft, and outline) instead of fixed `gds-green` / `orange` / `blue` ramps. They now re-tone with a theme's semantic-colour edits, matching Callout and Banner. Also switched the AI chat error icon from `text-red-500` to `text-destructive`.
+- 1369595: Combobox: the leading option icon now inverts with its row. It was pinned to `text-muted-foreground`, so on the highlighted/selected row (accent fill, `accent-foreground` text) the icon stayed muted grey and read as wrong against the fill. Icons are now muted at rest and pick up `accent-foreground` when the row is highlighted, matching the label.
+- 2e8cf59: Make the package barrel ESM-safe by force-bundling `lexical-beautiful-mentions`.
+
+  Previously tsup externalized `lexical-beautiful-mentions` (the default for
+  dependencies), so `dist/index.mjs` shipped a bare
+  `from "lexical-beautiful-mentions"` import. That package's published ESM uses
+  extensionless re-exports (`export * from "./BeautifulMentionsPlugin"`), which
+  strict ESM resolvers (Vite SSR, Astro, `@tailwindcss/node`, plain Node) reject.
+  The result: any consumer importing even `<Section>` or `<Button>` from
+  `@gradeui/ui` could crash during module resolution, because the Composer export
+  dragged the broken dependency into the barrel's static graph.
+
+  It's now in tsup's `noExternal` list, so esbuild inlines it at our build time
+  and resolves the extensionless imports. The published bundle is self-contained
+  and resolves cleanly in every consumer, no patches or resolver shims required.
+  No runtime or API change to `<Composer>`.
+
+- d7dd171: Menu items now invert their icons on highlight. A leading icon with its own colour (e.g. a muted folder, a primary check) used to stay that colour on the highlighted/selected row, where the text had flipped to `accent-foreground`, leaving the icon stranded and low-contrast on the accent fill. `DropdownMenuItem` (and sub-trigger / checkbox / radio items), `SelectItem`, and `Combobox` options now flip every SVG to `accent-foreground` while the row is highlighted, so the icon tracks the label. Resting-state icon colours are unchanged.
+- 525a6dc: Toggle / ToggleGroup dense sizes now scale their text and icons: `2xs` drops to `text-2xs` + `size-3` icons and `xs` to `text-xs`, so a labelled segmented control (e.g. a Row/Stack direction toggle) reads at property-panel density instead of inheriting the base `text-sm`.
+
 ## 3.2.0
 
 ### Minor Changes
