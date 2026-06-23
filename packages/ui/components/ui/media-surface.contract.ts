@@ -210,8 +210,9 @@ export const MediaSurfaceContract = contract({
       design: "knob",
       control: "toggle-group",
       label: "Corner radius",
-      default: "lg",
-      description: "Driven by the `--gds-media-radius` CSS variable.",
+      default: "none",
+      description:
+        "Driven by the `--gds-media-radius` CSS variable. Defaults to `none` so the slot sits flush — set `lg`/`xl` for a standalone rounded image. (A media slot mounted flush at the top of a Card should stay square and let the Card clip it.)",
     },
     border: {
       schema: z.boolean().optional(),

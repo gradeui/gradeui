@@ -66,16 +66,14 @@ const sharedOptions = {
   // links it at build time inside the workspace.
   noExternal: [
     "@gradeui/contracts",
-    // Force-bundle lexical-beautiful-mentions. Its published ESM uses
-    // extensionless re-exports (`export * from "./BeautifulMentionsPlugin"`)
-    // which strict ESM resolvers (Vite SSR, Astro, @tailwindcss/node, plain
-    // Node) reject — only webpack-style lenient resolvers tolerate them. If we
-    // externalize it (the tsup default for dependencies), that broken
-    // resolution is pushed onto every consumer of @gradeui/ui, so a downstream
-    // app importing even <Section> from the barrel crashes. Inlining it here
-    // lets esbuild add the extensions at OUR build time, so the published
-    // bundle is self-contained and resolves cleanly everywhere.
-    "lexical-beautiful-mentions",
+    // NOTE: lexical-beautiful-mentions is deliberately NOT force-bundled.
+    // Bundling its CJS pulls `require("react/jsx-runtime")` / `@lexical/*` into
+    // the ESM dist as dynamic-require shims, which Vite 8 / Node strict ESM
+    // reject ("Dynamic require ... is not supported"). Left external, it
+    // resolves to its own CJS build and bundlers interop it cleanly. The real
+    // durable fix is to move Composer (the only lexical consumer) to a
+    // `@gradeui/ui/composer` subpath so the main barrel never pulls lexical at
+    // all — tracked separately.
   ],
   treeshake: true,
   minify: true,
@@ -105,6 +103,8 @@ export default defineConfig([
       "map/mapbox": "components/ui/map/adapters/mapbox.ts",
       "map/google": "components/ui/map/adapters/google.ts",
       "map/leaflet": "components/ui/map/adapters/leaflet.ts",
+      // Composer on its own subpath so the main barrel stays lexical-free.
+      composer: "lib/composer.ts",
     },
     async onSuccess() {
       const fs = await import("node:fs/promises");
@@ -119,6 +119,8 @@ export default defineConfig([
         "dist/map/google.js",
         "dist/map/leaflet.mjs",
         "dist/map/leaflet.js",
+        "dist/composer.mjs",
+        "dist/composer.js",
       ];
       const DIRECTIVE = '"use client";\n';
       for (const file of CLIENT_FILES) {

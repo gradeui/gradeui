@@ -311,7 +311,7 @@ export default function ComposerPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
-        <InstallBlock>{`import { Composer, type ComposerContent } from "@gradeui/ui";
+        <InstallBlock>{`import { Composer, type ComposerContent } from "@gradeui/ui/composer";
 
 const [submitted, setSubmitted] = useState<ComposerContent | null>(null);
 

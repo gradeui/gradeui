@@ -1434,7 +1434,13 @@ export default function StudioPage() {
   const handleUpdateProject = useCallback(
     async (
       id: string,
-      patch: { name?: string; description?: string },
+      patch: {
+        name?: string;
+        description?: string;
+        context?: string;
+        dos?: string[];
+        donts?: string[];
+      },
     ) => {
       await storage.updateProject(id, patch);
       const list = await storage.listProjects();

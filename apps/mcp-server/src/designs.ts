@@ -172,6 +172,35 @@ export async function getTheme(
   };
 }
 
+/** A project's owner-set agent guidance (migration 0019). The harness injects
+ *  these into every screen context so the model follows the project's steering,
+ *  not just the global Grade rules. */
+export interface ProjectGuidelines {
+  context: string | null;
+  dos: string[];
+  donts: string[];
+  type: string | null;
+}
+
+export async function getProjectGuidelines(
+  sb: SupabaseClient,
+  projectId: string,
+): Promise<ProjectGuidelines> {
+  const { data, error } = await sb
+    .from("projects")
+    .select("context, dos, donts, type")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error(`Project ${projectId} not found.`);
+  return {
+    context: (data.context as string | null) ?? null,
+    dos: (data.dos as string[] | null) ?? [],
+    donts: (data.donts as string[] | null) ?? [],
+    type: (data.type as string | null) ?? null,
+  };
+}
+
 export interface SaveThemeResult {
   /** false when the write was refused (the row moved on since
    *  expectedUpdatedAt) — reload, don't retry blindly. */

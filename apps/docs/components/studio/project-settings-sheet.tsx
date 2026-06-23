@@ -71,7 +71,13 @@ interface ProjectSettingsSheetProps {
    *  layer normalises to undefined. */
   onUpdate: (
     id: string,
-    patch: { name?: string; description?: string },
+    patch: {
+      name?: string;
+      description?: string;
+      context?: string;
+      dos?: string[];
+      donts?: string[];
+    },
   ) => void;
   /** Confirm + delete. Parent owns the confirmation UI — pass a
    *  handler that has already prompted for confirmation, OR show
@@ -92,6 +98,11 @@ export function ProjectSettingsSheet({
 }: ProjectSettingsSheetProps) {
   const [draftName, setDraftName] = React.useState("");
   const [draftDescription, setDraftDescription] = React.useState("");
+  // Agent guidance. dos/donts edit as newline-separated text (one rule per
+  // line); converted to/from string[] at the storage boundary.
+  const [draftContext, setDraftContext] = React.useState("");
+  const [draftDos, setDraftDos] = React.useState("");
+  const [draftDonts, setDraftDonts] = React.useState("");
   const [confirmingDelete, setConfirmingDelete] = React.useState(false);
   const currentUser = useCurrentUser();
 
@@ -102,6 +113,9 @@ export function ProjectSettingsSheet({
     if (project) {
       setDraftName(project.name);
       setDraftDescription(project.description ?? "");
+      setDraftContext(project.context ?? "");
+      setDraftDos((project.dos ?? []).join("\n"));
+      setDraftDonts((project.donts ?? []).join("\n"));
       setConfirmingDelete(false);
     }
   }, [project?.id]);
@@ -115,13 +129,32 @@ export function ProjectSettingsSheet({
   const descriptionDirty =
     !!project &&
     (draftDescription.trim() || "") !== (project.description ?? "");
-  const canSave = nameDirty || descriptionDirty;
+  const normLines = (s: string) =>
+    s.split("\n").map((x) => x.trim()).filter(Boolean);
+  const contextDirty =
+    !!project && (draftContext.trim() || "") !== (project.context ?? "");
+  const dosDirty =
+    !!project && normLines(draftDos).join("\n") !== (project.dos ?? []).join("\n");
+  const dontsDirty =
+    !!project &&
+    normLines(draftDonts).join("\n") !== (project.donts ?? []).join("\n");
+  const canSave =
+    nameDirty || descriptionDirty || contextDirty || dosDirty || dontsDirty;
 
   const handleSave = () => {
     if (!project || !canSave) return;
-    const patch: { name?: string; description?: string } = {};
+    const patch: {
+      name?: string;
+      description?: string;
+      context?: string;
+      dos?: string[];
+      donts?: string[];
+    } = {};
     if (nameDirty) patch.name = draftName.trim();
     if (descriptionDirty) patch.description = draftDescription.trim();
+    if (contextDirty) patch.context = draftContext.trim();
+    if (dosDirty) patch.dos = normLines(draftDos);
+    if (dontsDirty) patch.donts = normLines(draftDonts);
     onUpdate(project.id, patch);
   };
 
@@ -188,6 +221,54 @@ export function ProjectSettingsSheet({
                 count. Leave empty to fall back to the count.
               </p>
             </div>
+
+            {/* Agent guidance — context + do/don't. The harness injects these
+                into every screen it builds for this project, so the model
+                follows the project's steering over generic defaults. */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="project-context">
+                Context{" "}
+                <span className="text-muted-foreground font-normal">
+                  (for the AI)
+                </span>
+              </Label>
+              <Textarea
+                id="project-context"
+                value={draftContext}
+                onChange={(e) => setDraftContext(e.target.value)}
+                placeholder="What the AI should know — audience, brand, tone, the kind of thing you're building."
+                rows={3}
+                className="min-h-0"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="project-dos">Do</Label>
+                <Textarea
+                  id="project-dos"
+                  value={draftDos}
+                  onChange={(e) => setDraftDos(e.target.value)}
+                  placeholder={"One per line:\nUse Section + Container\nOne primary CTA per band"}
+                  rows={4}
+                  className="min-h-0"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="project-donts">Don&rsquo;t</Label>
+                <Textarea
+                  id="project-donts"
+                  value={draftDonts}
+                  onChange={(e) => setDraftDonts(e.target.value)}
+                  placeholder={"One per line:\nNo raw hex colours\nDon't nest cards"}
+                  rows={4}
+                  className="min-h-0"
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              One rule per line. The AI follows these over its defaults.
+            </p>
+
             <div className="flex justify-end">
               <Button
                 variant="default"

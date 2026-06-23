@@ -22,7 +22,12 @@
  * (and the apps/docs mirror) under the SURFACE CLASSES section.
  */
 
-export type Surface = "solid" | "translucent" | "glass" | "glass-strong";
+export type Surface =
+  | "solid"
+  | "translucent"
+  | "glass"
+  | "glass-strong"
+  | "frosted";
 
 /**
  * Maps a Surface variant to the `gds-surface-*` class. `solid` returns
@@ -36,6 +41,7 @@ export const SURFACE_CLASS: Record<Surface, string> = {
   translucent: "gds-surface-translucent",
   glass: "gds-surface-glass",
   "glass-strong": "gds-surface-glass-strong",
+  frosted: "gds-surface-frosted",
 };
 
 /**

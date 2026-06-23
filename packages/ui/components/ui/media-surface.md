@@ -3,7 +3,7 @@ name: MediaSurface
 import: "@gradeui/ui"
 props:
   - aspect?: "video" | "square" | "portrait" | "wide" | "auto" — when omitted, derived from `hint` (album/product/food → square, portrait/poster → portrait, landscape → wide, video/audio/embed/generic → video)
-  - radius?: "none" | "sm" | "md" | "lg" | "xl" (default "lg") — driven by `--gds-media-radius` CSS var
+  - radius?: "none" | "sm" | "md" | "lg" | "xl" (default "none") — driven by `--gds-media-radius` CSS var. Square by default so a slot mounted flush at the top of a Card lets the Card clip it; set `lg`/`xl` for a standalone rounded image
   - border?: boolean (default false)
   - loading?: boolean — renders the muted skeleton overlay
   - hint?: "album" | "portrait" | "landscape" | "poster" | "product" | "food" | "video" | "audio" | "embed" | "3d" | "generic" (default "generic") — picks the placeholder glyph + the default aspect + the future generation provider

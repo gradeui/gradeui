@@ -676,7 +676,9 @@ export class LocalStorageStudioStorage implements StudioStorage {
 
   async updateProject(
     id: string,
-    patch: Partial<Pick<Project, "name" | "description">>,
+    patch: Partial<
+      Pick<Project, "name" | "description" | "context" | "dos" | "donts">
+    >,
   ): Promise<Project> {
     this.ensureHydrated();
     const storage = ssrSafeStorage();
@@ -698,6 +700,15 @@ export class LocalStorageStudioStorage implements StudioStorage {
     }
     if (patch.description !== undefined) {
       next.description = patch.description.trim() || undefined;
+    }
+    if (patch.context !== undefined) {
+      next.context = patch.context.trim() || undefined;
+    }
+    if (patch.dos !== undefined) {
+      next.dos = patch.dos.map((s) => s.trim()).filter(Boolean);
+    }
+    if (patch.donts !== undefined) {
+      next.donts = patch.donts.map((s) => s.trim()).filter(Boolean);
     }
 
     const nextList = [...list];

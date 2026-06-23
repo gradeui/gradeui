@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import Script from "next/script";
 import {
   JetBrains_Mono,
   Inter,
@@ -285,30 +284,22 @@ export default async function RootLayout({
         {/*
           Pre-hydration script. Runs before React mounts and sets the
           .dark class + data-mode attribute from localStorage or system
-          preference — avoids the dark-mode FOUC without depending on
+          preference, avoiding the dark-mode FOUC without depending on
           next-themes.
 
-          Why this lives in <body> (not <head>): React 19 stopped
-          executing inline <script> tags rendered through the React tree,
-          so the historical pattern (`<script dangerouslySetInnerHTML
-          ={...}/>` inside <head>) now logs "Encountered a script tag
-          while rendering React component. Scripts inside React
-          components are never executed". next/script with
-          `beforeInteractive` is the App Router replacement, but Next
-          documents it as a `<body>`-only API — placing the same Script
-          inside <head> trips the same React 19 warning, because React
-          still owns the head subtree. Putting it in <body> hands the
-          script to Next's hoister, which inlines it into the document
-          stream before hydration. The body-vs-head position doesn't
-          affect run order for `beforeInteractive` — both fire before
-          React boots.
+          Rendered as a raw <script dangerouslySetInnerHTML> at the top of
+          <body> (the same pattern as the JSON-LD block below, and the
+          theming docs page). next/script's <Script> with inline children
+          trips React 19's "Encountered a script tag while rendering React
+          component" warning; dangerouslySetInnerHTML does not, and a body-
+          top script is parsed and executed before the app content renders,
+          so the theme class is applied before first paint.
         */}
-        <Script
+        <script
           id="grade-pre-hydration"
-          strategy="beforeInteractive"
-        >
-          {GRADE_PRE_HYDRATION_SCRIPT}
-        </Script>
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: GRADE_PRE_HYDRATION_SCRIPT }}
+        />
         {/*
           JSON-LD graph (Person + WebSite + SoftwareApplication).
           Plain <script type="application/ld+json"> rendered in the

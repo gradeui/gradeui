@@ -7,22 +7,40 @@
    unavailable, and freezes on prefers-reduced-motion. */
 interface Props {
   accent?: string;
+  /** `soft` (default) builds light tints from the theme's *primary* hue — an
+      airy wash for light bands. `vivid` uses the expressive accent's dark ramp
+      stops (the original look) — for dark bands like the CTA. */
+  tone?: "soft" | "vivid";
+  /** 0–1 canvas opacity, so the shader can sit subtly behind body text
+      instead of dominating the band. Defaults to fully opaque. */
+  opacity?: number;
 }
-const { accent = "accent1" } = Astro.props;
+const { accent = "accent1", tone = "soft", opacity = 1 } = Astro.props;
 ---
 
 <canvas
   class="gds-shader pointer-events-none absolute inset-0 block h-full w-full"
   data-accent={accent}
+  data-tone={tone}
+  style={`opacity:${opacity}`}
   aria-hidden="true"></canvas>
 
 <script>
-  function hexToRgb(hex: string): [number, number, number] {
-    const h = (hex || "").trim().replace("#", "");
-    if (!h) return [0.1, 0.1, 0.1];
-    const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
-    const n = parseInt(full, 16);
-    return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+  // Resolve ANY CSS colour string (hex, oklch(), rgb()) to normalised sRGB.
+  // A 2D canvas's fillStyle is the only reliable converter: getComputedStyle
+  // returns oklch() VERBATIM in Chrome (no rgb normalisation), so parsing its
+  // numbers treated the hue as a blue channel — hence the bright-blue hero.
+  // Canvas parses CSS Color 4 and getImageData hands back true sRGB bytes.
+  const _probe = document.createElement("canvas");
+  _probe.width = _probe.height = 1;
+  const _pctx = _probe.getContext("2d", { willReadFrequently: true });
+  function resolveRgb(value: string): [number, number, number] {
+    if (!_pctx) return [0.9, 0.9, 0.9];
+    _pctx.fillStyle = "#000";
+    _pctx.fillStyle = (value || "").trim() || "#000";
+    _pctx.fillRect(0, 0, 1, 1);
+    const d = _pctx.getImageData(0, 0, 1, 1).data;
+    return [d[0] / 255, d[1] / 255, d[2] / 255];
   }
 
   const VERT = `attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }`;
@@ -50,7 +68,10 @@ const { accent = "accent1" } = Astro.props;
     }`;
 
   function initShader(canvas: HTMLCanvasElement) {
-    const gl = canvas.getContext("webgl");
+    // preserveDrawingBuffer keeps the last frame on screen: without it a
+    // draw-once canvas (e.g. prefers-reduced-motion) is cleared by the
+    // compositor right after — "loads and immediately disappears".
+    const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
     if (!gl) return;
     const compile = (type: number, src: string) => {
       const s = gl.createShader(type)!;
@@ -73,12 +94,39 @@ const { accent = "accent1" } = Astro.props;
 
     const uRes = gl.getUniformLocation(prog, "u_res");
     const uTime = gl.getUniformLocation(prog, "u_time");
-    const accent = canvas.dataset.accent || "accent1";
-    const root = getComputedStyle(document.documentElement);
-    const stop = (step: string) => hexToRgb(root.getPropertyValue(`--gds-expressive-${accent}-${step}`));
-    gl.uniform3fv(gl.getUniformLocation(prog, "u_c1"), stop("900"));
-    gl.uniform3fv(gl.getUniformLocation(prog, "u_c2"), stop("700"));
-    gl.uniform3fv(gl.getUniformLocation(prog, "u_c3"), stop("300"));
+    const uC1 = gl.getUniformLocation(prog, "u_c1");
+    const uC2 = gl.getUniformLocation(prog, "u_c2");
+    const uC3 = gl.getUniformLocation(prog, "u_c3");
+
+    // Re-read the colour source from the LIVE custom properties and re-upload
+    // the uniforms. Called at init AND whenever the customiser fires
+    // `grade:theme-changed`, so a palette/mode switch in the Sheet re-tints the
+    // shader instead of leaving it frozen on its load-time colours.
+    const applyColors = () => {
+      const root = getComputedStyle(document.documentElement);
+      let c1: [number, number, number], c2: typeof c1, c3: typeof c1;
+      if ((canvas.dataset.tone || "soft") === "vivid") {
+        // The expressive accent's dark ramp stops. Suits a dark band.
+        const accent = canvas.dataset.accent || "accent1";
+        const stop = (s: string) =>
+          resolveRgb(root.getPropertyValue(`--gds-expressive-${accent}-${s}`));
+        [c1, c2, c3] = [stop("900"), stop("700"), stop("300")];
+      } else {
+        // Soft: three light tints of the theme's primary hue — an airy wash that
+        // reads as a subtle premium gradient over a light band, not dark blobs.
+        const p = root.getPropertyValue("--primary").trim().split(/\s+/).map(Number);
+        const h = p.length === 3 && !p.some(Number.isNaN) ? p[2] : 250;
+        c1 = resolveRgb(`oklch(0.96 0.04 ${h})`);
+        c2 = resolveRgb(`oklch(0.90 0.08 ${h})`);
+        c3 = resolveRgb(`oklch(0.82 0.13 ${h})`);
+      }
+      gl.uniform3fv(uC1, c1);
+      gl.uniform3fv(uC2, c2);
+      gl.uniform3fv(uC3, c3);
+      gl.drawArrays(gl.TRIANGLES, 0, 3); // redraw now (covers reduced-motion)
+    };
+    applyColors();
+    window.addEventListener("grade:theme-changed", applyColors);
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);

@@ -35,6 +35,8 @@ import {
   saveScreen,
   getTheme,
   saveTheme,
+  getProjectGuidelines,
+  type ProjectGuidelines,
 } from "./designs";
 import {
   ensureShareLink,
@@ -56,6 +58,23 @@ import {
   SRCDOC_PROBE_URI,
   SRCDOC_PROBE_HTML,
 } from "./ui-scaled-template";
+
+/** Format a project's owner-set guidance (context + do/don't, migration 0019)
+ *  into a block injected into every screen context, so the agent follows the
+ *  project's steering over generic defaults. Empty string when nothing is set. */
+function projectGuidelinesBlock(g: ProjectGuidelines): string {
+  const parts: string[] = [];
+  if (g.type) parts.push(`Project type: ${g.type}`);
+  if (g.context?.trim()) parts.push(`Context: ${g.context.trim()}`);
+  if (g.dos.length) parts.push(`DO:\n${g.dos.map((d) => `  - ${d}`).join("\n")}`);
+  if (g.donts.length)
+    parts.push(`DO NOT:\n${g.donts.map((d) => `  - ${d}`).join("\n")}`);
+  if (parts.length === 0) return "";
+  return [
+    "─── PROJECT GUIDELINES (set by the project owner — follow these over generic defaults) ───",
+    ...parts,
+  ].join("\n");
+}
 
 export interface GradeToolsOptions {
   siteUrl: string;
@@ -668,12 +687,16 @@ export function registerGradeTools(
     },
     async ({ projectId, brief }) => {
       await assertProject(sb, env.ownerUserId, projectId);
+      const guidelines = projectGuidelinesBlock(
+        await getProjectGuidelines(sb, projectId),
+      );
       const { system, refs, style } = budgetedContext(brief);
       const body = [
         `Target project: ${projectId}`,
         `Component refs in scope (${style}): ${refs.join(", ") || "(none matched)"}`,
         "",
         "Write the screen as ONE self-contained React component named `App` with `export default`, following the Grade rules below. Then call `save_screen` with { projectId, name, jsx } where `jsx` is the full component source.",
+        ...(guidelines ? ["", guidelines] : []),
         "",
         "─── GRADE SCREEN CONTEXT ───",
         system,
@@ -714,6 +737,9 @@ export function registerGradeTools(
       // Derive refs from the CURRENT source so the edit context surfaces the
       // components the screen actually uses.
       const { system, refs, style } = budgetedContext(appSource);
+      const guidelines = projectGuidelinesBlock(
+        await getProjectGuidelines(sb, projectId),
+      );
       const body = [
         `Screen: "${screen.name}" — id: ${screen.id} (position ${screen.position})`,
         `version (updatedAt): ${screen.updatedAt} — pass this back to save_screen as expectedUpdatedAt so a concurrent edit isn't overwritten.`,

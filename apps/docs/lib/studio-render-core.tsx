@@ -32,6 +32,13 @@ import { transform as sucraseTransform } from "sucrase";
 // DEPENDENCIES. If you add an entry to either of those, mirror it here
 // so snippets that import it actually resolve.
 import * as GradeuiUi from "@gradeui/ui";
+// Composer comes from the VENDORED copy, NOT @gradeui/ui/composer (dist). The
+// Studio chat chrome already loads the vendored composer, and lexical requires a
+// single module instance app-wide. Pulling the dist subpath here loaded a second
+// copy of lexical-beautiful-mentions, so BeautifulMentionNode subclassed a
+// different LexicalNode and the editor threw on creation. Merged into the
+// "@gradeui/ui" namespace so existing <Composer> screens still resolve.
+import * as GradeuiComposer from "@/components/ui/composer";
 import * as LucideReact from "lucide-react";
 import * as Recharts from "recharts";
 import * as CanvasConfetti from "canvas-confetti";
@@ -74,7 +81,7 @@ export function resolveImport(path: string): unknown {
   if (path === "react/jsx-dev-runtime") return ReactJsxDevRuntime;
 
   if (path === "@gradeui/ui" || path.startsWith("@gradeui/ui/")) {
-    return GradeuiUi;
+    return { ...GradeuiUi, ...GradeuiComposer };
   }
   if (path === "lucide-react") return LucideReact;
   if (path === "recharts") return Recharts;
@@ -104,7 +111,7 @@ export function resolveImport(path: string): unknown {
     return { cn };
   }
 
-  if (/^\.\.?\/components\/ui\//.test(path)) return GradeuiUi;
+  if (/^\.\.?\/components\/ui\//.test(path)) return { ...GradeuiUi, ...GradeuiComposer };
 
   if (CDN_CACHE.has(path)) {
     const entry = CDN_CACHE.get(path);

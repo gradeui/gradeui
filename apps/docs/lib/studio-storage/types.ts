@@ -355,13 +355,16 @@ export interface StudioStorage {
    *  patch of any editable metadata. */
   renameProject(id: string, name: string): Promise<Project>;
 
-  /** Patch a project's editable metadata (name, description).
-   *  Bumps `updatedAt`. Empty strings on `description` are
-   *  normalised to undefined so the UI fallback to the screen
-   *  count works after a user clears the field. */
+  /** Patch a project's editable metadata. `name`/`description` are the
+   *  basics; `context`/`dos`/`donts` are the agent-steering guidance the
+   *  harness injects into every screen context. Bumps `updatedAt`. Empty
+   *  strings on `description` are normalised to undefined so the UI fallback
+   *  to the screen count works after a user clears the field. */
   updateProject(
     id: string,
-    patch: Partial<Pick<Project, "name" | "description">>,
+    patch: Partial<
+      Pick<Project, "name" | "description" | "context" | "dos" | "donts">
+    >,
   ): Promise<Project>;
 
   /** Soft-delete a project — marks `deleted_at` so it drops out of

@@ -512,7 +512,7 @@ export const MediaSurface = React.forwardRef<HTMLDivElement, MediaSurfaceProps>(
     {
       className,
       aspect: aspectProp,
-      radius: radiusProp = "lg",
+      radius: radiusProp = "none",
       border: borderProp = false,
       loading: loadingProp = false,
       onVisibilityChange,

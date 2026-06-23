@@ -22,7 +22,7 @@ export default function SiteToolbar() {
               <a href="/" className="hover:text-foreground">
                 Home
               </a>
-              <a href="/home" className="hover:text-foreground">
+              <a href="/products/aurora-desk" className="hover:text-foreground">
                 Shop
               </a>
               <Button size="sm">Get started</Button>

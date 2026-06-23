@@ -15,7 +15,7 @@ const { product } = Astro.props;
 <BaseLayout title={product.title} description={product.summary} theme="energy">
   <Section pad="lg">
     <Container maxW="lg">
-      <a href="/home" class="text-sm text-muted-foreground hover:text-foreground">← Back</a>
+      <a href="/" class="text-sm text-muted-foreground hover:text-foreground">← Back</a>
       <div class="mt-6 grid items-start gap-10 md:grid-cols-2">
         <MediaSurface hint={product.hint} alt={product.title} aspect="square" radius="lg" className="w-full" />
         <div class="flex flex-col items-start gap-4">

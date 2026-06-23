@@ -235,6 +235,9 @@ interface ProjectRow {
   id: string;
   name: string;
   description: string | null;
+  context: string | null;
+  dos: string[] | null;
+  donts: string[] | null;
   owner_type: "user" | "team";
   owner_id: string;
   active_design_id: string | null;
@@ -248,9 +251,9 @@ interface ProjectRow {
  *  are only needed by loadProject). Kept as a const so listProjects
  *  and the mutation methods select an identical shape. */
 const PROJECT_META_COLS =
-  "id, name, description, owner_type, owner_id, created_at, updated_at";
+  "id, name, description, context, dos, donts, owner_type, owner_id, created_at, updated_at";
 const PROJECT_FULL_COLS =
-  "id, name, description, owner_type, owner_id, active_design_id, theme_draft_json, theme_variants_json, created_at, updated_at";
+  "id, name, description, context, dos, donts, owner_type, owner_id, active_design_id, theme_draft_json, theme_variants_json, created_at, updated_at";
 
 // ─── Screen / message / note rows ─────────────────────────────────
 
@@ -417,6 +420,9 @@ function rowToProject(r: ProjectRow, access: ResourceAccess[]): Project {
     id: r.id,
     name: r.name,
     description: r.description ?? undefined,
+    context: r.context ?? undefined,
+    dos: r.dos ?? [],
+    donts: r.donts ?? [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     owner: { type: r.owner_type, id: r.owner_id } as Subject,
@@ -642,12 +648,25 @@ export class SupabaseStudioStorage implements StudioStorage {
 
   async updateProject(
     id: string,
-    patch: Partial<Pick<Project, "name" | "description">>,
+    patch: Partial<
+      Pick<Project, "name" | "description" | "context" | "dos" | "donts">
+    >,
   ): Promise<Project> {
     const update: Record<string, unknown> = {};
     if (patch.name !== undefined) update.name = patch.name;
     if (patch.description !== undefined) {
       update.description = patch.description?.trim() ? patch.description : null;
+    }
+    if (patch.context !== undefined) {
+      update.context = patch.context?.trim() ? patch.context : null;
+    }
+    // dos/donts are NOT NULL text[] columns: persist a cleaned array (drop
+    // blank lines), defaulting to [] so the harness reads a stable shape.
+    if (patch.dos !== undefined) {
+      update.dos = (patch.dos ?? []).map((s) => s.trim()).filter(Boolean);
+    }
+    if (patch.donts !== undefined) {
+      update.donts = (patch.donts ?? []).map((s) => s.trim()).filter(Boolean);
     }
 
     const { data, error } = await this.supabase

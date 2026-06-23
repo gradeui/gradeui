@@ -9,6 +9,7 @@
     "pnpm": ">=9.0.0"
   },
   "scripts": {
+    "postinstall": "node scripts/fix-lexical-mentions.mjs",
     "build": "pnpm -r --filter \"./packages/*\" build",
     "build:all": "pnpm -r build",
     "build:docs": "pnpm --filter @gradeui/docs build",

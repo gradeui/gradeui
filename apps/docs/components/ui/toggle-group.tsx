@@ -30,7 +30,7 @@ const ToggleGroup = React.forwardRef<
       "flex items-center justify-center gap-1",
       // segmented — the items sit in a single muted track, no gaps, so it
       // reads as one control rather than separate toggle buttons.
-      variant === "segmented" && "inline-flex gap-0 rounded-lg bg-muted/70 p-0.5",
+      variant === "segmented" && "inline-flex gap-0 rounded-lg bg-muted p-0.5",
       className,
     )}
     {...props}

@@ -218,25 +218,11 @@ export {
   type MessageProps,
 } from "../components/ui/message";
 
-// Composer — the generic text composition surface. Lexical-backed,
-// rich text + mentions/slash + image attachments + scripted demo
-// playback. Hosts wrap it for AI chat (paperclip + send), comments
-// (no toolbar, no attachments), document editing (full toolbar), etc.
-// Shares lib/demo's step-machine vocabulary so demo scripts read the
-// same as <Code>'s. See packages/ui/components/ui/composer.md.
-export {
-  Composer,
-  ComposerReply,
-  type ComposerProps,
-  type ComposerHandle,
-  type ComposerContent,
-  type ComposerStep,
-  type ComposerFormat,
-  type ComposerMentionItem,
-  type ComposerTriggerConfig,
-  type ComposerAttachmentConfig,
-  type ComposerAttachment,
-} from "../components/ui/composer";
+// Composer is NOT exported here. It's lexical-backed, and lexical's transitive
+// deps trip strict ESM bundlers (Vite 8, plain Node), so keeping it on the main
+// barrel forced every consumer (even Section/Button-only ones) to load lexical.
+// It now lives on its own subpath:  import { Composer } from "@gradeui/ui/composer".
+// See packages/ui/lib/composer.ts + components/ui/composer.md.
 
 // lib/demo — shared scripted-demo primitive. The spine behind every
 // "type this, wait, then reveal that" surface in gradeui. Used

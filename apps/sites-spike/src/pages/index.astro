@@ -19,6 +19,8 @@ import {
 } from "@gradeui/ui";
 import ShaderBackground from "../components/ShaderBackground.astro";
 import LocationMap from "../components/LocationMap";
+import ContactForm from "../components/ContactForm";
+import CustomiseSheet from "../components/CustomiseSheet";
 
 const features = [
   {
@@ -54,7 +56,7 @@ const features = [
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Playfair+Display:wght@400;600;700&family=Instrument+Serif:ital@0;1&family=Caveat:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
     />
     <title>Grade × Astro — POC</title>
     <!-- Pre-paint: reconcile the SSR default with the visitor's saved choice
@@ -62,25 +64,36 @@ const features = [
     <script is:inline>
       (function () {
         try {
-          var t = localStorage.getItem("grade-theme");
-          if (t === "default") document.documentElement.removeAttribute("data-grade-theme");
-          else if (t) document.documentElement.setAttribute("data-grade-theme", t);
-          if (localStorage.getItem("grade-mode") === "dark")
-            document.documentElement.classList.add("dark");
+          var r = document.documentElement, g = localStorage;
+          var t = g.getItem("grade-theme");
+          if (t === "default") r.removeAttribute("data-grade-theme");
+          else if (t) r.setAttribute("data-grade-theme", t);
+          if (g.getItem("grade-mode") === "dark") r.classList.add("dark");
+          [["grade-ts-mobile", "data-type-scale-mobile"], ["grade-ts-desktop", "data-type-scale-desktop"], ["grade-ss-mobile", "data-size-scale-mobile"], ["grade-ss-desktop", "data-size-scale-desktop"]].forEach(function (p) {
+            var v = g.getItem(p[0]); if (v && v !== "default") r.setAttribute(p[1], v);
+          });
+          var F = { inter: '"Inter", system-ui, sans-serif', manrope: '"Manrope", system-ui, sans-serif', "space-grotesk": '"Space Grotesk", system-ui, sans-serif', fraunces: '"Fraunces", Georgia, serif', playfair: '"Playfair Display", Georgia, serif', instrument: '"Instrument Serif", Georgia, serif', caveat: '"Caveat", ui-rounded, cursive', "ibm-plex": '"IBM Plex Sans", system-ui, sans-serif' };
+          [["grade-font-body", ["--font-sans"]], ["grade-font-heading", ["--font-heading", "--font-display"]], ["grade-font-accent", ["--font-accent"]]].forEach(function (p) {
+            var v = g.getItem(p[0]); if (v && v !== "default" && F[v]) p[1].forEach(function (cv) { r.style.setProperty(cv, F[v]); });
+          });
         } catch (e) {}
       })();
     </script>
   </head>
   <body class="bg-background text-foreground">
-    <!-- Inverse hero band — the scope re-tones everything inside it. -->
-    <Section scope="inverse" pad="xl">
-      <Container maxW="lg">
+    <!-- Hero band — a real, subtle shader behind dark-on-light text. (Dropped
+         the old scope="inverse", which deliberately flips dark↔light by mode
+         and read as "weirdly white". A faint accent shader gives it life
+         without inverting the whole band.) -->
+    <Section pad="xl" className="relative overflow-hidden">
+      <ShaderBackground tone="soft" opacity={0.85} />
+      <Container maxW="lg" className="relative z-10">
         <div class="flex flex-col items-start gap-4">
           <SectionEyebrow>POC</SectionEyebrow>
           <SectionTitle>Built with Grade, rendered by Astro.</SectionTitle>
           <SectionSubtitle>
-            Static HTML, zero JS by default. The scope re-tones the band; the
-            Buttons stay vivid.
+            Static HTML, zero JS by default. The shader behind this band is the
+            only WebGL on the page, and it's purely decorative.
           </SectionSubtitle>
           <SectionActions>
             <Button>Get started</Button>
@@ -161,6 +174,44 @@ const features = [
          `expressive` class paints the resolved bg+fg. Pure CSS, zero JS.
          ─────────────────────────────────────────────────────────────── -->
 
+    <!-- Three cards, three accents — each card carries its own expressive
+         accent, proving the accent layer composes per-element, not just per
+         band. (Brought onto the homepage from the CMS demo's accentCards.) -->
+    <Section pad="lg">
+      <Container maxW="lg">
+        <div class="flex flex-col items-start gap-2">
+          <SectionEyebrow>Composes anywhere</SectionEyebrow>
+          <SectionTitle>Three cards, three accents.</SectionTitle>
+        </div>
+        <div class="mt-8 grid gap-6 md:grid-cols-3">
+          <div
+            data-expressive="accent1"
+            data-expressive-tier="dark"
+            class="expressive flex flex-col rounded-xl p-6 shadow-elevation-2"
+          >
+            <h3 class="text-lg font-semibold">Accent 1</h3>
+            <p class="mt-2 text-sm opacity-80">accent1 on the dark tier.</p>
+          </div>
+          <div
+            data-expressive="accent3"
+            data-expressive-tier="light"
+            class="expressive flex flex-col rounded-xl p-6 shadow-elevation-2"
+          >
+            <h3 class="text-lg font-semibold">Accent 3</h3>
+            <p class="mt-2 text-sm opacity-80">accent3 on the light tier.</p>
+          </div>
+          <div
+            data-expressive="accent5"
+            data-expressive-tier="superdark"
+            class="expressive flex flex-col rounded-xl p-6 shadow-elevation-2"
+          >
+            <h3 class="text-lg font-semibold">Accent 5</h3>
+            <p class="mt-2 text-sm opacity-80">accent5 on the superdark tier.</p>
+          </div>
+        </div>
+      </Container>
+    </Section>
+
     <!-- Pricing — ONE accent, TWO tiers: a pale band with a featured dark tile. -->
     <Section
       data-expressive="accent1"
@@ -182,10 +233,11 @@ const features = [
           <div
             data-expressive="accent1"
             data-expressive-tier="dark"
-            class="expressive rounded-xl p-6 shadow-elevation-3"
+            class="expressive rounded-xl p-6"
+            style="box-shadow: var(--shadow-lift), var(--shadow-contact)"
           >
             <h3 class="text-lg font-semibold">Pro</h3>
-            <p class="mt-1 text-sm opacity-80">The featured plan — same accent, darker tier.</p>
+            <p class="mt-1 text-sm opacity-80">The featured plan: same accent, darker tier.</p>
             <p class="mt-5 text-3xl font-semibold">£19</p>
           </div>
           <div class="rounded-xl border border-current/15 p-6">
@@ -222,7 +274,7 @@ const features = [
       className="expressive relative overflow-hidden"
       pad="xl"
     >
-      <ShaderBackground accent="accent2" />
+      <ShaderBackground accent="accent2" tone="vivid" />
       <Container maxW="md" className="relative z-10">
         <div class="flex flex-col items-center gap-4 text-center">
           <SectionTitle>Build vibrant sections, fast.</SectionTitle>
@@ -252,6 +304,24 @@ const features = [
       </Container>
     </Section>
 
+    <!-- Contact — a Grade-styled form wired to an Astro Action (src/actions).
+         The page stays static; only the action endpoint is server-rendered. -->
+    <Section scope="muted" pad="lg">
+      <Container maxW="lg">
+        <div class="grid items-start gap-10 md:grid-cols-2">
+          <div class="flex flex-col items-start gap-3">
+            <SectionEyebrow>Get in touch</SectionEyebrow>
+            <SectionTitle>Tell us about your project.</SectionTitle>
+            <SectionDescription>
+              Built on Astro Actions — type-safe, server-validated, with inline
+              field errors. Swap the stubbed send for Resend when you're ready.
+            </SectionDescription>
+          </div>
+          <ContactForm client:load />
+        </div>
+      </Container>
+    </Section>
+
     <!-- Page-surface band — no scope = the default theme. -->
     <Section pad="lg">
       <Container maxW="lg">
@@ -267,94 +337,6 @@ const features = [
     <!-- Theme switcher — flips data-grade-theme (and .dark) on <html>. Pure
          attribute swap, vanilla JS, no framework island. This is the same
          mechanism a real Sites build uses; here it's wired to a control. -->
-    <div class="fixed inset-x-0 bottom-5 z-50 flex justify-center">
-      <div
-        class="flex items-center gap-2 rounded-full border border-border bg-card/90 px-3 py-2 text-card-foreground shadow-elevation-2 backdrop-blur"
-      >
-        <span class="px-1 text-xs font-medium text-muted-foreground">Theme</span>
-        <button
-          type="button"
-          data-theme="default"
-          aria-label="Neutral"
-          class="size-6 rounded-full border border-border ring-foreground ring-offset-2 ring-offset-card aria-pressed:ring-2"
-          style="background: oklch(0.7 0.004 85)"
-        ></button>
-        <button
-          type="button"
-          data-theme="energy"
-          aria-label="Teal"
-          class="size-6 rounded-full ring-foreground ring-offset-2 ring-offset-card aria-pressed:ring-2"
-          style="background: oklch(0.61 0.17 175)"
-        ></button>
-        <button
-          type="button"
-          data-theme="violet"
-          aria-label="Violet"
-          class="size-6 rounded-full ring-foreground ring-offset-2 ring-offset-card aria-pressed:ring-2"
-          style="background: oklch(0.61 0.17 300)"
-        ></button>
-        <button
-          type="button"
-          data-theme="amber"
-          aria-label="Amber"
-          class="size-6 rounded-full ring-foreground ring-offset-2 ring-offset-card aria-pressed:ring-2"
-          style="background: oklch(0.61 0.17 75)"
-        ></button>
-        <button
-          type="button"
-          data-theme="rose"
-          aria-label="Rose"
-          class="size-6 rounded-full ring-foreground ring-offset-2 ring-offset-card aria-pressed:ring-2"
-          style="background: oklch(0.61 0.17 15)"
-        ></button>
-        <span class="mx-1 h-5 w-px bg-border"></span>
-        <button
-          type="button"
-          data-mode-toggle
-          class="rounded-full px-3 py-1 text-xs font-medium text-foreground hover:bg-muted aria-pressed:bg-muted"
-        >
-          <span class="dark-only">Light</span><span class="light-only">Dark</span>
-        </button>
-      </div>
-    </div>
-
-    <style is:global>
-      /* Show the right mode-toggle label without JS branching. */
-      .dark-only { display: none; }
-      .dark .dark-only { display: inline; }
-      .dark .light-only { display: none; }
-    </style>
-
-    <script is:inline>
-      (function () {
-        var root = document.documentElement;
-        function sync() {
-          var cur = root.getAttribute("data-grade-theme") || "default";
-          document.querySelectorAll("[data-theme]").forEach(function (b) {
-            b.setAttribute("aria-pressed", b.getAttribute("data-theme") === cur ? "true" : "false");
-          });
-          var mt = document.querySelector("[data-mode-toggle]");
-          if (mt) mt.setAttribute("aria-pressed", root.classList.contains("dark") ? "true" : "false");
-        }
-        document.querySelectorAll("[data-theme]").forEach(function (b) {
-          b.addEventListener("click", function () {
-            var t = b.getAttribute("data-theme");
-            if (t === "default") root.removeAttribute("data-grade-theme");
-            else root.setAttribute("data-grade-theme", t);
-            try { localStorage.setItem("grade-theme", t); } catch (e) {}
-            sync();
-          });
-        });
-        var mt = document.querySelector("[data-mode-toggle]");
-        if (mt)
-          mt.addEventListener("click", function () {
-            var dark = !root.classList.contains("dark");
-            root.classList.toggle("dark", dark);
-            try { localStorage.setItem("grade-mode", dark ? "dark" : "light"); } catch (e) {}
-            sync();
-          });
-        sync();
-      })();
-    </script>
+    <CustomiseSheet client:load />
   </body>
 </html>

@@ -684,6 +684,7 @@
   --surface-alpha-translucent: 0.82;
   --surface-alpha-glass: 0.58;
   --surface-alpha-glass-strong: 0.42;
+  --surface-alpha-frosted: 0.92; /* near-opaque, just a whisper of the page behind */
 
   /* -- Atomic blurs -- */
   --surface-blur-subtle: 6px;
@@ -699,6 +700,7 @@
   --surface-translucent: oklch(var(--card) / var(--surface-alpha-translucent));
   --surface-glass: oklch(var(--card) / var(--surface-alpha-glass));
   --surface-glass-strong: oklch(var(--card) / var(--surface-alpha-glass-strong));
+  --surface-frosted: oklch(var(--card) / var(--surface-alpha-frosted));
 
   /* ============================================
      AURA SYSTEM
@@ -1091,6 +1093,7 @@
   --surface-alpha-translucent: 0.74;
   --surface-alpha-glass: 0.48;
   --surface-alpha-glass-strong: 0.32;
+  --surface-alpha-frosted: 0.88;
   --surface-edge-alpha: 0.06;
 
   /* Code surface tokens — dark mode mirror. Background sits a touch
@@ -1525,6 +1528,17 @@
 
 .gds-surface-glass-strong {
   background-color: var(--surface-glass-strong);
+  backdrop-filter: blur(var(--surface-blur-strong));
+  -webkit-backdrop-filter: blur(var(--surface-blur-strong));
+  border: 1px solid oklch(var(--border) / 0.4);
+  box-shadow: var(--surface-edge);
+}
+
+/* Frosted — near-opaque (≈0.92) but keeps the strong blur, so it reads almost
+   solid with just a halo of the page behind. The most solid of the blurred
+   surfaces; above this, reach for `solid`. */
+.gds-surface-frosted {
+  background-color: var(--surface-frosted);
   backdrop-filter: blur(var(--surface-blur-strong));
   -webkit-backdrop-filter: blur(var(--surface-blur-strong));
   border: 1px solid oklch(var(--border) / 0.4);
@@ -2218,6 +2232,422 @@ html[data-gds-streaming] body * {
     opacity: 1;
     transform: none;
   }
+}
+
+/* ============================================
+   TYPE SCALE — scoped, switchable, fluid (mobile → desktop)
+   ============================================
+   Two scales, one fluid ramp. Pick a mobile + a desktop scale and the whole
+   --text-* ramp (Tailwind 2xs…7xl + semantic display/h1…body) interpolates
+   between them by viewport, CLAMPED to the mobile floor and desktop ceiling
+   (the clamp lives on --ts-fluid: 0→1, so values never exceed either end):
+     data-type-scale-mobile="minor-third"  data-type-scale-desktop="perfect-fifth"
+   Shorthand (flat): data-type-scale="major-third" (sets both). Assign to :root,
+   a page, or any element — composes via the cascade like the colour scopes.
+
+   ASYMMETRIC by design: steps go UP at the chosen ratio but DOWN capped at
+   major-third, so a dramatic display scale keeps sm/xs/2xs readable instead of
+   shrinking body/caption text into the floor. Generated from @gradeui/core. */
+
+[data-type-scale-mobile="minor-second"] {
+  --tsm-2xs: 0.823rem;
+  --tsm-xs: 0.878rem;
+  --tsm-sm: 0.937rem;
+  --tsm-base: 1rem;
+  --tsm-lg: 1.067rem;
+  --tsm-xl: 1.138rem;
+  --tsm-2xl: 1.215rem;
+  --tsm-3xl: 1.296rem;
+  --tsm-4xl: 1.383rem;
+  --tsm-5xl: 1.476rem;
+  --tsm-6xl: 1.575rem;
+  --tsm-7xl: 1.68rem;
+}
+[data-type-scale-desktop="minor-second"] {
+  --tsd-2xs: 0.823rem;
+  --tsd-xs: 0.878rem;
+  --tsd-sm: 0.937rem;
+  --tsd-base: 1rem;
+  --tsd-lg: 1.067rem;
+  --tsd-xl: 1.138rem;
+  --tsd-2xl: 1.215rem;
+  --tsd-3xl: 1.296rem;
+  --tsd-4xl: 1.383rem;
+  --tsd-5xl: 1.476rem;
+  --tsd-6xl: 1.575rem;
+  --tsd-7xl: 1.68rem;
+}
+[data-type-scale="minor-second"] {
+  --tsm-2xs: 0.823rem; --tsd-2xs: 0.823rem;
+  --tsm-xs: 0.878rem; --tsd-xs: 0.878rem;
+  --tsm-sm: 0.937rem; --tsd-sm: 0.937rem;
+  --tsm-base: 1rem; --tsd-base: 1rem;
+  --tsm-lg: 1.067rem; --tsd-lg: 1.067rem;
+  --tsm-xl: 1.138rem; --tsd-xl: 1.138rem;
+  --tsm-2xl: 1.215rem; --tsd-2xl: 1.215rem;
+  --tsm-3xl: 1.296rem; --tsd-3xl: 1.296rem;
+  --tsm-4xl: 1.383rem; --tsd-4xl: 1.383rem;
+  --tsm-5xl: 1.476rem; --tsd-5xl: 1.476rem;
+  --tsm-6xl: 1.575rem; --tsd-6xl: 1.575rem;
+  --tsm-7xl: 1.68rem; --tsd-7xl: 1.68rem;
+}
+
+[data-type-scale-mobile="major-second"] {
+  --tsm-2xs: 0.702rem;
+  --tsm-xs: 0.79rem;
+  --tsm-sm: 0.889rem;
+  --tsm-base: 1rem;
+  --tsm-lg: 1.125rem;
+  --tsm-xl: 1.266rem;
+  --tsm-2xl: 1.424rem;
+  --tsm-3xl: 1.602rem;
+  --tsm-4xl: 1.802rem;
+  --tsm-5xl: 2.027rem;
+  --tsm-6xl: 2.281rem;
+  --tsm-7xl: 2.566rem;
+}
+[data-type-scale-desktop="major-second"] {
+  --tsd-2xs: 0.702rem;
+  --tsd-xs: 0.79rem;
+  --tsd-sm: 0.889rem;
+  --tsd-base: 1rem;
+  --tsd-lg: 1.125rem;
+  --tsd-xl: 1.266rem;
+  --tsd-2xl: 1.424rem;
+  --tsd-3xl: 1.602rem;
+  --tsd-4xl: 1.802rem;
+  --tsd-5xl: 2.027rem;
+  --tsd-6xl: 2.281rem;
+  --tsd-7xl: 2.566rem;
+}
+[data-type-scale="major-second"] {
+  --tsm-2xs: 0.702rem; --tsd-2xs: 0.702rem;
+  --tsm-xs: 0.79rem; --tsd-xs: 0.79rem;
+  --tsm-sm: 0.889rem; --tsd-sm: 0.889rem;
+  --tsm-base: 1rem; --tsd-base: 1rem;
+  --tsm-lg: 1.125rem; --tsd-lg: 1.125rem;
+  --tsm-xl: 1.266rem; --tsd-xl: 1.266rem;
+  --tsm-2xl: 1.424rem; --tsd-2xl: 1.424rem;
+  --tsm-3xl: 1.602rem; --tsd-3xl: 1.602rem;
+  --tsm-4xl: 1.802rem; --tsd-4xl: 1.802rem;
+  --tsm-5xl: 2.027rem; --tsd-5xl: 2.027rem;
+  --tsm-6xl: 2.281rem; --tsd-6xl: 2.281rem;
+  --tsm-7xl: 2.566rem; --tsd-7xl: 2.566rem;
+}
+
+[data-type-scale-mobile="minor-third"] {
+  --tsm-2xs: 0.625rem;
+  --tsm-xs: 0.694rem;
+  --tsm-sm: 0.833rem;
+  --tsm-base: 1rem;
+  --tsm-lg: 1.2rem;
+  --tsm-xl: 1.44rem;
+  --tsm-2xl: 1.728rem;
+  --tsm-3xl: 2.074rem;
+  --tsm-4xl: 2.488rem;
+  --tsm-5xl: 2.986rem;
+  --tsm-6xl: 3.583rem;
+  --tsm-7xl: 4.3rem;
+}
+[data-type-scale-desktop="minor-third"] {
+  --tsd-2xs: 0.625rem;
+  --tsd-xs: 0.694rem;
+  --tsd-sm: 0.833rem;
+  --tsd-base: 1rem;
+  --tsd-lg: 1.2rem;
+  --tsd-xl: 1.44rem;
+  --tsd-2xl: 1.728rem;
+  --tsd-3xl: 2.074rem;
+  --tsd-4xl: 2.488rem;
+  --tsd-5xl: 2.986rem;
+  --tsd-6xl: 3.583rem;
+  --tsd-7xl: 4.3rem;
+}
+[data-type-scale="minor-third"] {
+  --tsm-2xs: 0.625rem; --tsd-2xs: 0.625rem;
+  --tsm-xs: 0.694rem; --tsd-xs: 0.694rem;
+  --tsm-sm: 0.833rem; --tsd-sm: 0.833rem;
+  --tsm-base: 1rem; --tsd-base: 1rem;
+  --tsm-lg: 1.2rem; --tsd-lg: 1.2rem;
+  --tsm-xl: 1.44rem; --tsd-xl: 1.44rem;
+  --tsm-2xl: 1.728rem; --tsd-2xl: 1.728rem;
+  --tsm-3xl: 2.074rem; --tsd-3xl: 2.074rem;
+  --tsm-4xl: 2.488rem; --tsd-4xl: 2.488rem;
+  --tsm-5xl: 2.986rem; --tsd-5xl: 2.986rem;
+  --tsm-6xl: 3.583rem; --tsd-6xl: 3.583rem;
+  --tsm-7xl: 4.3rem; --tsd-7xl: 4.3rem;
+}
+
+[data-type-scale-mobile="major-third"] {
+  --tsm-2xs: 0.625rem;
+  --tsm-xs: 0.64rem;
+  --tsm-sm: 0.8rem;
+  --tsm-base: 1rem;
+  --tsm-lg: 1.25rem;
+  --tsm-xl: 1.563rem;
+  --tsm-2xl: 1.953rem;
+  --tsm-3xl: 2.441rem;
+  --tsm-4xl: 3.052rem;
+  --tsm-5xl: 3.815rem;
+  --tsm-6xl: 4.768rem;
+  --tsm-7xl: 5.96rem;
+}
+[data-type-scale-desktop="major-third"] {
+  --tsd-2xs: 0.625rem;
+  --tsd-xs: 0.64rem;
+  --tsd-sm: 0.8rem;
+  --tsd-base: 1rem;
+  --tsd-lg: 1.25rem;
+  --tsd-xl: 1.563rem;
+  --tsd-2xl: 1.953rem;
+  --tsd-3xl: 2.441rem;
+  --tsd-4xl: 3.052rem;
+  --tsd-5xl: 3.815rem;
+  --tsd-6xl: 4.768rem;
+  --tsd-7xl: 5.96rem;
+}
+[data-type-scale="major-third"] {
+  --tsm-2xs: 0.625rem; --tsd-2xs: 0.625rem;
+  --tsm-xs: 0.64rem; --tsd-xs: 0.64rem;
+  --tsm-sm: 0.8rem; --tsd-sm: 0.8rem;
+  --tsm-base: 1rem; --tsd-base: 1rem;
+  --tsm-lg: 1.25rem; --tsd-lg: 1.25rem;
+  --tsm-xl: 1.563rem; --tsd-xl: 1.563rem;
+  --tsm-2xl: 1.953rem; --tsd-2xl: 1.953rem;
+  --tsm-3xl: 2.441rem; --tsd-3xl: 2.441rem;
+  --tsm-4xl: 3.052rem; --tsd-4xl: 3.052rem;
+  --tsm-5xl: 3.815rem; --tsd-5xl: 3.815rem;
+  --tsm-6xl: 4.768rem; --tsd-6xl: 4.768rem;
+  --tsm-7xl: 5.96rem; --tsd-7xl: 5.96rem;
+}
+
+[data-type-scale-mobile="perfect-fourth"] {
+  --tsm-2xs: 0.625rem;
+  --tsm-xs: 0.64rem;
+  --tsm-sm: 0.8rem;
+  --tsm-base: 1rem;
+  --tsm-lg: 1.333rem;
+  --tsm-xl: 1.777rem;
+  --tsm-2xl: 2.369rem;
+  --tsm-3xl: 3.157rem;
+  --tsm-4xl: 4.209rem;
+  --tsm-5xl: 5.61rem;
+  --tsm-6xl: 7.478rem;
+  --tsm-7xl: 9.969rem;
+}
+[data-type-scale-desktop="perfect-fourth"] {
+  --tsd-2xs: 0.625rem;
+  --tsd-xs: 0.64rem;
+  --tsd-sm: 0.8rem;
+  --tsd-base: 1rem;
+  --tsd-lg: 1.333rem;
+  --tsd-xl: 1.777rem;
+  --tsd-2xl: 2.369rem;
+  --tsd-3xl: 3.157rem;
+  --tsd-4xl: 4.209rem;
+  --tsd-5xl: 5.61rem;
+  --tsd-6xl: 7.478rem;
+  --tsd-7xl: 9.969rem;
+}
+[data-type-scale="perfect-fourth"] {
+  --tsm-2xs: 0.625rem; --tsd-2xs: 0.625rem;
+  --tsm-xs: 0.64rem; --tsd-xs: 0.64rem;
+  --tsm-sm: 0.8rem; --tsd-sm: 0.8rem;
+  --tsm-base: 1rem; --tsd-base: 1rem;
+  --tsm-lg: 1.333rem; --tsd-lg: 1.333rem;
+  --tsm-xl: 1.777rem; --tsd-xl: 1.777rem;
+  --tsm-2xl: 2.369rem; --tsd-2xl: 2.369rem;
+  --tsm-3xl: 3.157rem; --tsd-3xl: 3.157rem;
+  --tsm-4xl: 4.209rem; --tsd-4xl: 4.209rem;
+  --tsm-5xl: 5.61rem; --tsd-5xl: 5.61rem;
+  --tsm-6xl: 7.478rem; --tsd-6xl: 7.478rem;
+  --tsm-7xl: 9.969rem; --tsd-7xl: 9.969rem;
+}
+
+[data-type-scale-mobile="augmented-fourth"] {
+  --tsm-2xs: 0.625rem;
+  --tsm-xs: 0.64rem;
+  --tsm-sm: 0.8rem;
+  --tsm-base: 1rem;
+  --tsm-lg: 1.414rem;
+  --tsm-xl: 1.999rem;
+  --tsm-2xl: 2.827rem;
+  --tsm-3xl: 3.998rem;
+  --tsm-4xl: 5.653rem;
+  --tsm-5xl: 7.993rem;
+  --tsm-6xl: 11.302rem;
+  --tsm-7xl: 15.981rem;
+}
+[data-type-scale-desktop="augmented-fourth"] {
+  --tsd-2xs: 0.625rem;
+  --tsd-xs: 0.64rem;
+  --tsd-sm: 0.8rem;
+  --tsd-base: 1rem;
+  --tsd-lg: 1.414rem;
+  --tsd-xl: 1.999rem;
+  --tsd-2xl: 2.827rem;
+  --tsd-3xl: 3.998rem;
+  --tsd-4xl: 5.653rem;
+  --tsd-5xl: 7.993rem;
+  --tsd-6xl: 11.302rem;
+  --tsd-7xl: 15.981rem;
+}
+[data-type-scale="augmented-fourth"] {
+  --tsm-2xs: 0.625rem; --tsd-2xs: 0.625rem;
+  --tsm-xs: 0.64rem; --tsd-xs: 0.64rem;
+  --tsm-sm: 0.8rem; --tsd-sm: 0.8rem;
+  --tsm-base: 1rem; --tsd-base: 1rem;
+  --tsm-lg: 1.414rem; --tsd-lg: 1.414rem;
+  --tsm-xl: 1.999rem; --tsd-xl: 1.999rem;
+  --tsm-2xl: 2.827rem; --tsd-2xl: 2.827rem;
+  --tsm-3xl: 3.998rem; --tsd-3xl: 3.998rem;
+  --tsm-4xl: 5.653rem; --tsd-4xl: 5.653rem;
+  --tsm-5xl: 7.993rem; --tsd-5xl: 7.993rem;
+  --tsm-6xl: 11.302rem; --tsd-6xl: 11.302rem;
+  --tsm-7xl: 15.981rem; --tsd-7xl: 15.981rem;
+}
+
+[data-type-scale-mobile="perfect-fifth"] {
+  --tsm-2xs: 0.625rem;
+  --tsm-xs: 0.64rem;
+  --tsm-sm: 0.8rem;
+  --tsm-base: 1rem;
+  --tsm-lg: 1.5rem;
+  --tsm-xl: 2.25rem;
+  --tsm-2xl: 3.375rem;
+  --tsm-3xl: 5.063rem;
+  --tsm-4xl: 7.594rem;
+  --tsm-5xl: 11.391rem;
+  --tsm-6xl: 17.086rem;
+  --tsm-7xl: 25.629rem;
+}
+[data-type-scale-desktop="perfect-fifth"] {
+  --tsd-2xs: 0.625rem;
+  --tsd-xs: 0.64rem;
+  --tsd-sm: 0.8rem;
+  --tsd-base: 1rem;
+  --tsd-lg: 1.5rem;
+  --tsd-xl: 2.25rem;
+  --tsd-2xl: 3.375rem;
+  --tsd-3xl: 5.063rem;
+  --tsd-4xl: 7.594rem;
+  --tsd-5xl: 11.391rem;
+  --tsd-6xl: 17.086rem;
+  --tsd-7xl: 25.629rem;
+}
+[data-type-scale="perfect-fifth"] {
+  --tsm-2xs: 0.625rem; --tsd-2xs: 0.625rem;
+  --tsm-xs: 0.64rem; --tsd-xs: 0.64rem;
+  --tsm-sm: 0.8rem; --tsd-sm: 0.8rem;
+  --tsm-base: 1rem; --tsd-base: 1rem;
+  --tsm-lg: 1.5rem; --tsd-lg: 1.5rem;
+  --tsm-xl: 2.25rem; --tsd-xl: 2.25rem;
+  --tsm-2xl: 3.375rem; --tsd-2xl: 3.375rem;
+  --tsm-3xl: 5.063rem; --tsd-3xl: 5.063rem;
+  --tsm-4xl: 7.594rem; --tsd-4xl: 7.594rem;
+  --tsm-5xl: 11.391rem; --tsd-5xl: 11.391rem;
+  --tsm-6xl: 17.086rem; --tsd-6xl: 17.086rem;
+  --tsm-7xl: 25.629rem; --tsd-7xl: 25.629rem;
+}
+
+[data-type-scale-mobile="golden-ratio"] {
+  --tsm-2xs: 0.625rem;
+  --tsm-xs: 0.64rem;
+  --tsm-sm: 0.8rem;
+  --tsm-base: 1rem;
+  --tsm-lg: 1.618rem;
+  --tsm-xl: 2.618rem;
+  --tsm-2xl: 4.236rem;
+  --tsm-3xl: 6.854rem;
+  --tsm-4xl: 11.089rem;
+  --tsm-5xl: 17.942rem;
+  --tsm-6xl: 29.03rem;
+  --tsm-7xl: 46.971rem;
+}
+[data-type-scale-desktop="golden-ratio"] {
+  --tsd-2xs: 0.625rem;
+  --tsd-xs: 0.64rem;
+  --tsd-sm: 0.8rem;
+  --tsd-base: 1rem;
+  --tsd-lg: 1.618rem;
+  --tsd-xl: 2.618rem;
+  --tsd-2xl: 4.236rem;
+  --tsd-3xl: 6.854rem;
+  --tsd-4xl: 11.089rem;
+  --tsd-5xl: 17.942rem;
+  --tsd-6xl: 29.03rem;
+  --tsd-7xl: 46.971rem;
+}
+[data-type-scale="golden-ratio"] {
+  --tsm-2xs: 0.625rem; --tsd-2xs: 0.625rem;
+  --tsm-xs: 0.64rem; --tsd-xs: 0.64rem;
+  --tsm-sm: 0.8rem; --tsd-sm: 0.8rem;
+  --tsm-base: 1rem; --tsd-base: 1rem;
+  --tsm-lg: 1.618rem; --tsd-lg: 1.618rem;
+  --tsm-xl: 2.618rem; --tsd-xl: 2.618rem;
+  --tsm-2xl: 4.236rem; --tsd-2xl: 4.236rem;
+  --tsm-3xl: 6.854rem; --tsd-3xl: 6.854rem;
+  --tsm-4xl: 11.089rem; --tsd-4xl: 11.089rem;
+  --tsm-5xl: 17.942rem; --tsd-5xl: 17.942rem;
+  --tsm-6xl: 29.03rem; --tsd-6xl: 29.03rem;
+  --tsm-7xl: 46.971rem; --tsd-7xl: 46.971rem;
+}
+
+[data-type-scale], [data-type-scale-mobile], [data-type-scale-desktop] {
+  --ts-fluid: clamp(0, calc((100vw - 20rem) / 60rem), 1);
+  --text-2xs: calc(var(--tsm-2xs, var(--tsd-2xs)) + (var(--tsd-2xs, var(--tsm-2xs)) - var(--tsm-2xs, var(--tsd-2xs))) * var(--ts-fluid));
+  --text-xs: calc(var(--tsm-xs, var(--tsd-xs)) + (var(--tsd-xs, var(--tsm-xs)) - var(--tsm-xs, var(--tsd-xs))) * var(--ts-fluid));
+  --text-sm: calc(var(--tsm-sm, var(--tsd-sm)) + (var(--tsd-sm, var(--tsm-sm)) - var(--tsm-sm, var(--tsd-sm))) * var(--ts-fluid));
+  --text-base: calc(var(--tsm-base, var(--tsd-base)) + (var(--tsd-base, var(--tsm-base)) - var(--tsm-base, var(--tsd-base))) * var(--ts-fluid));
+  --text-lg: calc(var(--tsm-lg, var(--tsd-lg)) + (var(--tsd-lg, var(--tsm-lg)) - var(--tsm-lg, var(--tsd-lg))) * var(--ts-fluid));
+  --text-xl: calc(var(--tsm-xl, var(--tsd-xl)) + (var(--tsd-xl, var(--tsm-xl)) - var(--tsm-xl, var(--tsd-xl))) * var(--ts-fluid));
+  --text-2xl: calc(var(--tsm-2xl, var(--tsd-2xl)) + (var(--tsd-2xl, var(--tsm-2xl)) - var(--tsm-2xl, var(--tsd-2xl))) * var(--ts-fluid));
+  --text-3xl: calc(var(--tsm-3xl, var(--tsd-3xl)) + (var(--tsd-3xl, var(--tsm-3xl)) - var(--tsm-3xl, var(--tsd-3xl))) * var(--ts-fluid));
+  --text-4xl: calc(var(--tsm-4xl, var(--tsd-4xl)) + (var(--tsd-4xl, var(--tsm-4xl)) - var(--tsm-4xl, var(--tsd-4xl))) * var(--ts-fluid));
+  --text-5xl: calc(var(--tsm-5xl, var(--tsd-5xl)) + (var(--tsd-5xl, var(--tsm-5xl)) - var(--tsm-5xl, var(--tsd-5xl))) * var(--ts-fluid));
+  --text-6xl: calc(var(--tsm-6xl, var(--tsd-6xl)) + (var(--tsd-6xl, var(--tsm-6xl)) - var(--tsm-6xl, var(--tsd-6xl))) * var(--ts-fluid));
+  --text-7xl: calc(var(--tsm-7xl, var(--tsd-7xl)) + (var(--tsd-7xl, var(--tsm-7xl)) - var(--tsm-7xl, var(--tsd-7xl))) * var(--ts-fluid));
+  --text-display: var(--text-6xl);
+  --text-h1: var(--text-4xl);
+  --text-h2: var(--text-3xl);
+  --text-h3: var(--text-2xl);
+  --text-h4: var(--text-xl);
+  --text-h5: var(--text-lg);
+  --text-body-lg: var(--text-lg);
+  --text-h6: var(--text-base);
+  --text-body: var(--text-base);
+  --text-body-sm: var(--text-sm);
+}
+
+/* ============================================
+   SIZE SCALE — scoped, switchable, fluid (mobile → desktop)
+   ============================================
+   Same engine as the type scale, for SPACING. Re-points Tailwind's --spacing
+   base, so EVERY spacing utility (gap-*, p-*, m-*, size-*) re-pitches at once —
+   one knob for a page or section's whole density. Pick a mobile density + a
+   desktop density; --spacing interpolates between them by viewport, clamped.
+   Shorthand data-size-scale="comfortable" sets both (flat). Levels are density
+   presets (the --spacing base unit), not modular ratios — spacing is a linear
+   grid. Composes via the cascade like the type scale; drop data-size-scale=
+   "compact" on an embedded table/UI mockup to tighten just that region. */
+[data-size-scale-mobile="compact"]      { --ssm: 0.2rem; }
+[data-size-scale-mobile="cozy"]         { --ssm: 0.225rem; }
+[data-size-scale-mobile="comfortable"]  { --ssm: 0.25rem; }
+[data-size-scale-mobile="spacious"]     { --ssm: 0.3rem; }
+[data-size-scale-mobile="expansive"]    { --ssm: 0.35rem; }
+[data-size-scale-desktop="compact"]     { --ssd: 0.2rem; }
+[data-size-scale-desktop="cozy"]        { --ssd: 0.225rem; }
+[data-size-scale-desktop="comfortable"] { --ssd: 0.25rem; }
+[data-size-scale-desktop="spacious"]    { --ssd: 0.3rem; }
+[data-size-scale-desktop="expansive"]   { --ssd: 0.35rem; }
+[data-size-scale="compact"]      { --ssm: 0.2rem;   --ssd: 0.2rem; }
+[data-size-scale="cozy"]         { --ssm: 0.225rem; --ssd: 0.225rem; }
+[data-size-scale="comfortable"]  { --ssm: 0.25rem;  --ssd: 0.25rem; }
+[data-size-scale="spacious"]     { --ssm: 0.3rem;   --ssd: 0.3rem; }
+[data-size-scale="expansive"]    { --ssm: 0.35rem;  --ssd: 0.35rem; }
+[data-size-scale], [data-size-scale-mobile], [data-size-scale-desktop] {
+  --ss-fluid: clamp(0, calc((100vw - 20rem) / 60rem), 1);
+  --spacing: calc(var(--ssm, var(--ssd)) + (var(--ssd, var(--ssm)) - var(--ssm, var(--ssd))) * var(--ss-fluid));
 }
 
 /* Keyframes */

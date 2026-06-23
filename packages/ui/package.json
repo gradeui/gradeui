@@ -67,6 +67,11 @@
       "import": "./dist/contracts.mjs",
       "require": "./dist/contracts.js"
     },
+    "./composer": {
+      "types": "./dist/composer.d.ts",
+      "import": "./dist/composer.mjs",
+      "require": "./dist/composer.js"
+    },
     "./map/maplibre": {
       "types": "./dist/map/maplibre.d.ts",
       "import": "./dist/map/maplibre.mjs",

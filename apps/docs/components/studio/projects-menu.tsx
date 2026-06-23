@@ -128,7 +128,13 @@ interface ProjectsMenuProps {
    *  editor; falls back to onRenameProject when only name changes. */
   onUpdateProject?: (
     id: string,
-    patch: { name?: string; description?: string },
+    patch: {
+      name?: string;
+      description?: string;
+      context?: string;
+      dos?: string[];
+      donts?: string[];
+    },
   ) => void;
   /** Optional — delete a project (surfaced inside the settings sheet). */
   onDeleteProject?: (id: string) => void;

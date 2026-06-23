@@ -60,6 +60,12 @@ import { transform as sucraseTransform } from "sucrase";
 // DEPENDENCIES. If you add an entry to either of those, mirror it here
 // so snippets that import it actually resolve.
 import * as GradeuiUi from "@gradeui/ui";
+// Composer comes from the VENDORED copy, NOT @gradeui/ui/composer (dist): lexical
+// requires a single module instance app-wide, and the dist subpath loaded a
+// second copy of lexical-beautiful-mentions (BeautifulMentionNode then subclassed
+// a different LexicalNode and the editor threw). Merged into the sandbox's
+// "@gradeui/ui" namespace so existing <Composer> screens still resolve.
+import * as GradeuiComposer from "@/components/ui/composer";
 import * as LucideReact from "lucide-react";
 import * as Recharts from "recharts";
 import * as CanvasConfetti from "canvas-confetti";
@@ -130,7 +136,7 @@ function resolveImport(path: string): unknown {
 
   // Bundled preview-vocab modules.
   if (path === "@gradeui/ui" || path.startsWith("@gradeui/ui/")) {
-    return GradeuiUi;
+    return { ...GradeuiUi, ...GradeuiComposer };
   }
   if (path === "lucide-react") return LucideReact;
   if (path === "recharts") return Recharts;
@@ -169,7 +175,7 @@ function resolveImport(path: string): unknown {
 
   // Relative imports to `components/ui/*` that `autoImportGradeComponents`
   // in chat-sandpack.ts doesn't catch — route to the barrel.
-  if (/^\.\.?\/components\/ui\//.test(path)) return GradeuiUi;
+  if (/^\.\.?\/components\/ui\//.test(path)) return { ...GradeuiUi, ...GradeuiComposer };
 
   // Tier-2 — esm.sh runtime fallback. Pre-resolve in compile() populates
   // CDN_CACHE before the synchronous render path reaches here, so the
