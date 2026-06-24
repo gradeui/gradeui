@@ -1,5 +1,12 @@
 # sites-spike
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [66de776]
+  - @gradeui/ui@4.1.0
+
 ## 0.0.3
 
 ### Patch Changes
