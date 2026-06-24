@@ -1,0 +1,32 @@
+# @gradeui/ui
+
+> Grade Design System — React components, a deterministic theme engine, and design
+> tokens. This package is self-describing: everything an AI agent needs to generate
+> correct Grade UI ships inside the installed package.
+
+The one rule: a page is an ordered stack of `Section` bands, and every `Section`
+wraps a `Container`. Full-bleed is `<Container maxW="full">`, never omitting it.
+Never hand-roll `<section className="py-20">` or `<div className="max-w-7xl mx-auto px-6">`.
+
+## Read first
+
+- [AGENTS.md](./AGENTS.md): the entry point — the scaffold rule + where everything is.
+- [DESIGN.md](./DESIGN.md): the whole design system in one file — foundations
+  (themes, colour scopes, expressive accents, typography, spacing) + every component
+  sidecar (when_to_use, props, examples).
+- [DESIGN.index.md](./DESIGN.index.md): a cheap one-line-per-component scan; pull the
+  specific `components/ui/<name>.md` sidecar you need from it.
+
+## Programmatic
+
+- `import { COMPONENT_CONTRACTS } from "@gradeui/ui/contracts"`: machine-readable prop
+  schemas (zod), descriptions, aliases, composition data.
+- `import { generateTheme, GradeThemeProvider } from "@gradeui/ui"`: the theme engine.
+- `import "@gradeui/ui/styles.css"`: precompiled styles (or wire
+  `@gradeui/ui/styles/globals.css` into a Tailwind v4 build).
+
+## Optional per-project layer
+
+A consumer may add their own `Product.md` (what the product is + voice/do-don'ts) in
+their repo. The generating harness concatenates it on top of this design-system layer:
+[system: foundations + scaffold] + [product: Product.md] + [retrieved sidecars] + [prompt].

@@ -2,6 +2,7 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { Button, type buttonVariants } from "@/components/ui/button";
+import { Section, Container, type ContainerMaxW } from "@/components/ui/section";
 import { SURFACE_CLASS, type Surface } from "@/lib/surface";
 
 /** Named colour SCOPES (STUDIO-COLOR.md). A `scope` makes the section a local
@@ -185,6 +186,7 @@ const SectionBlock = React.forwardRef<HTMLElement, SectionBlockProps>(
     return (
       <Comp
         ref={ref as any}
+        data-gds-part="section-block"
         data-surface={surface}
         className={cn(
           sectionBlockVariants({
@@ -211,7 +213,7 @@ const SectionBlock = React.forwardRef<HTMLElement, SectionBlockProps>(
         }
         {...props}
       >
-        <div className={containerVariants({ container })}>
+        <div data-gds-part="container" className={containerVariants({ container })}>
           {/* Header */}
           {(title || subtitle) && (
             <div className={headerVariants({ alignment })}>

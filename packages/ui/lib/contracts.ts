@@ -60,7 +60,9 @@ import { ScrollAreaContract } from "../components/ui/scroll-area.contract";
 import { SectionContract } from "../components/ui/section.contract";
 import { SectionBlockContract } from "../components/ui/section-block.contract";
 import { SelectContract } from "../components/ui/select.contract";
+import { SelectionCardContract } from "../components/ui/selection-card.contract";
 import { SeparatorContract } from "../components/ui/separator.contract";
+import { ShaderControlsContract } from "../components/ui/shader-controls.contract";
 import { ShaderPresetPickerContract } from "../components/ui/shader-preset-picker.contract";
 import { ShaderPresetPreviewContract } from "../components/ui/shader-preset-preview.contract";
 import { SheetContract } from "../components/ui/sheet.contract";
@@ -138,7 +140,9 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Section: SectionContract,
   SectionBlock: SectionBlockContract,
   Select: SelectContract,
+  SelectionCard: SelectionCardContract,
   Separator: SeparatorContract,
+  ShaderControls: ShaderControlsContract,
   ShaderPresetPicker: ShaderPresetPickerContract,
   ShaderPresetPreview: ShaderPresetPreviewContract,
   Sheet: SheetContract,

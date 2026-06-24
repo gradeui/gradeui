@@ -62,6 +62,11 @@
     "./package.json": "./package.json",
     "./styles.css": "./dist/styles.css",
     "./styles/globals.css": "./styles/globals.css",
+    "./DESIGN.md": "./DESIGN.md",
+    "./DESIGN.index.md": "./DESIGN.index.md",
+    "./AGENTS.md": "./AGENTS.md",
+    "./llms.txt": "./llms.txt",
+    "./foundations/*": "./foundations/*",
     "./contracts": {
       "types": "./dist/contracts.d.ts",
       "import": "./dist/contracts.mjs",
@@ -91,14 +96,21 @@
   "files": [
     "dist",
     "styles",
-    "components/ui/*.md"
+    "components/ui/*.md",
+    "foundations/*.md",
+    "DESIGN.md",
+    "DESIGN.index.md",
+    "AGENTS.md",
+    "llms.txt"
   ],
   "sideEffects": [
     "**/*.css"
   ],
   "scripts": {
     "generate:contracts": "node scripts/generate-contracts.mjs",
-    "prebuild": "npm run generate:contracts",
+    "generate:design": "node scripts/generate-design.mjs",
+    "verify:portability": "node scripts/verify-portability.mjs",
+    "prebuild": "npm run generate:contracts && npm run generate:design",
     "build": "npm run clean && tsup && npm run build:css",
     "build:css": "tailwindcss -i ./styles/globals.css -o ./dist/styles.css --minify",
     "build:css:watch": "tailwindcss -i ./styles/globals.css -o ./dist/styles.css --watch",
