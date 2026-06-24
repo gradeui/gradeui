@@ -1,5 +1,12 @@
 # @gradeui/mcp-server
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [fa91f11]
+  - @gradeui/ui@4.0.1
+
 ## 0.1.6
 
 ### Patch Changes
