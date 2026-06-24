@@ -637,12 +637,23 @@ export function generateTheme(input: ThemeInput): GeneratedTheme {
   const statusHue = (t: OKLCHTriplet) =>
     parseFloat(t.trim().split(/\s+/)[2] ?? "0");
   const fixedLight = FIXED_SEMANTIC.light;
+  // Expressive accent ramps — DEFAULT = the primary hue rotated +60°·k in
+  // OKLCH (k = 1..5), at accent chroma. A theme-cohesive default (ported from
+  // the Astro build); consumers can override the emitted `--gds-accent{1..5}-*`
+  // vars downstream.
+  const norm360 = (h: number) => ((h % 360) + 360) % 360;
+  const accentHue = (k: number) => norm360(input.hues.primary + 60 * k);
   const roleRamps: GeneratedTheme["roleRamps"] = {
     success: hueToRamp({ hue: statusHue(fixedLight.success) }),
     warning: hueToRamp({ hue: statusHue(fixedLight.warning) }),
     info: hueToRamp({ hue: statusHue(fixedLight.info) }),
     highlight: hueToRamp({ hue: statusHue(fixedLight.highlight) }),
     destructive: hueToRamp({ hue: statusHue(fixedLight.destructive) }),
+    accent1: hueToRamp({ hue: accentHue(1), chromaScale: accentChroma }),
+    accent2: hueToRamp({ hue: accentHue(2), chromaScale: accentChroma }),
+    accent3: hueToRamp({ hue: accentHue(3), chromaScale: accentChroma }),
+    accent4: hueToRamp({ hue: accentHue(4), chromaScale: accentChroma }),
+    accent5: hueToRamp({ hue: accentHue(5), chromaScale: accentChroma }),
   };
 
   // 3. Resolve non-color config into concrete CSS values

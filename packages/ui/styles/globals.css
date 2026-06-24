@@ -681,10 +681,10 @@
 
   /* -- Atomic alphas -- */
   --surface-alpha-solid: 1;
-  --surface-alpha-translucent: 0.82;
-  --surface-alpha-glass: 0.58;
-  --surface-alpha-glass-strong: 0.42;
-  --surface-alpha-frosted: 0.92; /* near-opaque, just a whisper of the page behind */
+  --surface-alpha-translucent: 0.8;
+  --surface-alpha-glass: 0.6;
+  --surface-alpha-glass-strong: 0.4;
+  --surface-alpha-frosted: 0.9; /* near-opaque, just a whisper of the page behind */
 
   /* -- Atomic blurs -- */
   --surface-blur-subtle: 6px;

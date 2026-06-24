@@ -191,6 +191,12 @@ export function themeToCSSVars(
     ["info", theme.roleRamps?.info],
     ["highlight", theme.roleRamps?.highlight],
     ["destructive", theme.roleRamps?.destructive],
+    // Expressive accents — primary hue rotated +60°·k (k = 1..5).
+    ["accent1", theme.roleRamps?.accent1],
+    ["accent2", theme.roleRamps?.accent2],
+    ["accent3", theme.roleRamps?.accent3],
+    ["accent4", theme.roleRamps?.accent4],
+    ["accent5", theme.roleRamps?.accent5],
   ];
   for (const [role, ramp] of families) {
     if (!ramp) continue;

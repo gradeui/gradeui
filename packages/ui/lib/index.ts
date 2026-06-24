@@ -123,6 +123,12 @@ export {
   type ContainerMaxW,
 } from "../components/ui/section";
 
+export {
+  SectionBlock,
+  sectionBlockVariants,
+  type SectionBlockProps,
+} from "../components/ui/section-block";
+
 export { Calendar, CalendarDayButton } from "../components/ui/calendar";
 
 // Carousel — embla-backed slideshow with custom autoplay (per-slide

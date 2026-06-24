@@ -661,6 +661,16 @@ export interface GeneratedTheme {
     info: Ramp;
     highlight: Ramp;
     destructive: Ramp;
+    /**
+     * Expressive accent ramps — default = the primary hue rotated +60°·k in
+     * OKLCH (k = 1..5). Optional so partially-constructed themes stay valid;
+     * generator output always includes them. Emitted as `--gds-accent{1..5}-<step>`.
+     */
+    accent1?: Ramp;
+    accent2?: Ramp;
+    accent3?: Ramp;
+    accent4?: Ramp;
+    accent5?: Ramp;
   };
 
   /** Semantic tokens for all four modes. */
