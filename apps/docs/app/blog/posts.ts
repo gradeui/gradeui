@@ -6,6 +6,8 @@
  */
 
 import type { ComponentType } from "react";
+import { meta as selfDescribing } from "./_posts/self-describing-design-system.meta";
+import { Body as SelfDescribingBody } from "./_posts/self-describing-design-system";
 import { meta as composableShaders } from "./_posts/composable-shaders.meta";
 import { Body as ComposableShadersBody } from "./_posts/composable-shaders";
 
@@ -27,6 +29,7 @@ export interface Post extends PostMeta {
 }
 
 export const posts: Post[] = [
+  { ...selfDescribing, Body: SelfDescribingBody },
   { ...composableShaders, Body: ComposableShadersBody },
 ];
 
