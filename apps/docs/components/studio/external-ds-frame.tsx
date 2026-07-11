@@ -39,6 +39,12 @@ export function ExternalDsMount({
 }: ExternalDsMountProps) {
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
   const readyRef = React.useRef(false);
+  // Ref mirror so the ext:ready handler can replay the CURRENT select
+  // state without stale-closure risk — if select mode was enabled before
+  // the iframe finished booting, the change-driven effect below fired
+  // into a void and the iframe would never install its hover overlay.
+  const selectModeRef = React.useRef(selectMode);
+  selectModeRef.current = selectMode;
   const [error, setError] = React.useState<string | null>(null);
   const [sourceMode, setSourceMode] = React.useState<"view" | "edit">("view");
   const effectiveSourceMode =
@@ -60,6 +66,14 @@ export function ExternalDsMount({
         readyRef.current = true;
         setError(null);
         push();
+        // Replay select-mode state — the iframe may have (re)booted
+        // after the parent last broadcast it.
+        if (selectModeRef.current) {
+          iframeRef.current?.contentWindow?.postMessage(
+            { type: "ext:select-mode", on: true },
+            window.location.origin,
+          );
+        }
       } else if (d?.type === "ext:rendered") {
         setError(null);
       } else if (d?.type === "ext:error") {
