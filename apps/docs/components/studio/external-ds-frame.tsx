@@ -1,15 +1,22 @@
 "use client";
 
 /**
- * ExternalDsMount — focused-frame mount for EXTERNAL design systems.
+ * External-DS renderer hosts — the /external-sandbox counterpart of
+ * fast-frame.tsx, split the same way:
  *
- * Hosts the /external-sandbox iframe (esm.sh-fed fast renderer — see the
- * page header for the architecture) and mirrors the fast mount's code
- * view (View = read-only CodeView, Edit = SourceEditor → onSourceEdit).
+ *   - `ExternalIframeHost` — the KERNEL. Just the iframe + the ext:*
+ *     postMessage protocol (source push with source-id injection,
+ *     select-mode arming/replay, selection + zoom-gesture + content-
+ *     height routing). No chrome, no layout opinion — the share view
+ *     and the embed mount this directly, exactly like FastIframeHost.
+ *   - `ExternalDsMount` — the FOCUSED-FRAME mount. Wraps the host in
+ *     the artboard camera (device presets × zoom), the code view
+ *     (View/Edit), the error strip, and the comment-pins overlay.
  *
  * Protocol: waits for `ext:ready`, then pushes `ext:source` on every
- * appSource / mode change. Compile and render failures surface in an
- * error strip rather than a dead iframe.
+ * appSource / mode change. Compile and render failures surface via
+ * `onError` (the mount renders them as a strip) rather than a dead
+ * iframe.
  */
 
 import * as React from "react";
@@ -20,6 +27,139 @@ import { injectSourceIds } from "@/lib/chat-sandpack";
 import type { CommentThreadWithMessages } from "@/lib/studio-storage";
 import type { User } from "@/lib/studio-users";
 import { cn } from "@/lib/utils";
+
+// ─── Kernel: the iframe + protocol ─────────────────────────────────────
+
+export interface ExternalIframeHostProps {
+  appSource: string | null;
+  mode: "light" | "dark";
+  className?: string;
+  style?: React.CSSProperties;
+  /** Select-tool state — arms the in-iframe studio selection agent. */
+  selectMode?: boolean;
+  /** SelectionPayload from the shared selection agent. */
+  onSelect?: (sel: unknown) => void;
+  /** Escape inside the iframe (mirrors grade:selection-cleared). */
+  onClearSelection?: () => void;
+  /** Pinch / ctrl+wheel over the screen (ext:zoom-gesture). */
+  onZoomBy?: (factor: number) => void;
+  /** Compile/render failure message; null = cleared (fresh paint). */
+  onError?: (message: string | null) => void;
+  /** Rendered content height (ext:content-height) — feeds the share
+   *  view's responsive content-height artboard, like the fast host's
+   *  onContentHeight. */
+  onContentHeight?: (height: number) => void;
+  /** Exposed iframe ref so wrapping chrome (the comment-pins overlay)
+   *  can reach contentDocument. */
+  iframeRef?: React.MutableRefObject<HTMLIFrameElement | null>;
+}
+
+export function ExternalIframeHost({
+  appSource,
+  mode,
+  className,
+  style,
+  selectMode = false,
+  onSelect,
+  onClearSelection,
+  onZoomBy,
+  onError,
+  onContentHeight,
+  iframeRef: externalIframeRef,
+}: ExternalIframeHostProps) {
+  const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
+  const readyRef = React.useRef(false);
+  // Ref mirror so the ext:ready handler can replay the CURRENT select
+  // state without stale-closure risk — if select mode was enabled before
+  // the iframe finished booting, the change-driven effect below fired
+  // into a void and the iframe would never install its hover overlay.
+  const selectModeRef = React.useRef(selectMode);
+  selectModeRef.current = selectMode;
+
+  const setIframe = React.useCallback(
+    (el: HTMLIFrameElement | null) => {
+      iframeRef.current = el;
+      if (externalIframeRef) externalIframeRef.current = el;
+    },
+    [externalIframeRef],
+  );
+
+  const push = React.useCallback(() => {
+    if (!readyRef.current || !appSource) return;
+    // Source-id injection at the push boundary — the external mirror of
+    // prepareAppSource's finalise step. `injectSourceIds` is
+    // deterministic + idempotent, and the source mutators re-run it
+    // over the durable appSource, so the ids the selection agent reads
+    // off the DOM (BL components spread ...props to their roots, the
+    // same path that lands dataHook as data-hook) line up with the ids
+    // the mutator finds in source. The durable appSource stays clean —
+    // ids exist only in the renderer input.
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "ext:source", source: injectSourceIds(appSource), mode },
+      window.location.origin,
+    );
+  }, [appSource, mode]);
+
+  React.useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.source !== iframeRef.current?.contentWindow) return;
+      const d = e.data as { type?: string; message?: string } | null;
+      if (d?.type === "ext:ready") {
+        readyRef.current = true;
+        onError?.(null);
+        push();
+        // Replay select-mode state — the iframe may have (re)booted
+        // after the parent last broadcast it.
+        if (selectModeRef.current) {
+          iframeRef.current?.contentWindow?.postMessage(
+            { type: "ext:select-mode", on: true },
+            window.location.origin,
+          );
+        }
+      } else if (d?.type === "ext:rendered") {
+        onError?.(null);
+      } else if (d?.type === "ext:error") {
+        onError?.(d.message ?? "render failed");
+      } else if (d?.type === "ext:select") {
+        onSelect?.((e.data as { selection?: unknown }).selection);
+      } else if (d?.type === "ext:selection-cleared") {
+        onClearSelection?.();
+      } else if (d?.type === "ext:zoom-gesture") {
+        const factor = (e.data as { factor?: number }).factor;
+        if (typeof factor === "number") onZoomBy?.(factor);
+      } else if (d?.type === "ext:content-height") {
+        const height = (e.data as { height?: number }).height;
+        if (typeof height === "number" && height > 0) onContentHeight?.(height);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [push, onSelect, onClearSelection, onZoomBy, onError, onContentHeight]);
+
+  // Mirror select-mode into the iframe whenever it flips.
+  React.useEffect(() => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "ext:select-mode", on: selectMode },
+      window.location.origin,
+    );
+  }, [selectMode]);
+
+  React.useEffect(() => {
+    push();
+  }, [push]);
+
+  return (
+    <iframe
+      ref={setIframe}
+      src="/external-sandbox"
+      title="External design system preview"
+      className={cn("block h-full w-full border-0 bg-white", className)}
+      style={{ border: 0, colorScheme: mode, ...style }}
+    />
+  );
+}
+
+// ─── Focused-frame mount ───────────────────────────────────────────────
 
 interface ExternalDsMountProps {
   appSource: string | null;
@@ -76,78 +216,10 @@ export function ExternalDsMount({
   getCommentUser,
 }: ExternalDsMountProps) {
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
-  const readyRef = React.useRef(false);
-  // Ref mirror so the ext:ready handler can replay the CURRENT select
-  // state without stale-closure risk — if select mode was enabled before
-  // the iframe finished booting, the change-driven effect below fired
-  // into a void and the iframe would never install its hover overlay.
-  const selectModeRef = React.useRef(selectMode);
-  selectModeRef.current = selectMode;
   const [error, setError] = React.useState<string | null>(null);
   const [sourceMode, setSourceMode] = React.useState<"view" | "edit">("view");
   const effectiveSourceMode =
     sourceMode === "edit" && onSourceEdit ? "edit" : "view";
-
-  const push = React.useCallback(() => {
-    if (!readyRef.current || !appSource) return;
-    // Source-id injection at the push boundary — the external mirror of
-    // prepareAppSource's finalise step. `injectSourceIds` is
-    // deterministic + idempotent, and the source mutators re-run it
-    // over the durable appSource, so the ids the selection agent reads
-    // off the DOM (BL components spread ...props to their roots, the
-    // same path that lands dataHook as data-hook) line up with the ids
-    // the mutator finds in source. The durable appSource stays clean —
-    // ids exist only in the renderer input.
-    iframeRef.current?.contentWindow?.postMessage(
-      { type: "ext:source", source: injectSourceIds(appSource), mode },
-      window.location.origin,
-    );
-  }, [appSource, mode]);
-
-  React.useEffect(() => {
-    const onMessage = (e: MessageEvent) => {
-      if (e.source !== iframeRef.current?.contentWindow) return;
-      const d = e.data as { type?: string; message?: string } | null;
-      if (d?.type === "ext:ready") {
-        readyRef.current = true;
-        setError(null);
-        push();
-        // Replay select-mode state — the iframe may have (re)booted
-        // after the parent last broadcast it.
-        if (selectModeRef.current) {
-          iframeRef.current?.contentWindow?.postMessage(
-            { type: "ext:select-mode", on: true },
-            window.location.origin,
-          );
-        }
-      } else if (d?.type === "ext:rendered") {
-        setError(null);
-      } else if (d?.type === "ext:error") {
-        setError(d.message ?? "render failed");
-      } else if (d?.type === "ext:select") {
-        onSelect?.((e.data as { selection?: unknown }).selection);
-      } else if (d?.type === "ext:selection-cleared") {
-        onClearSelection?.();
-      } else if (d?.type === "ext:zoom-gesture") {
-        const factor = (e.data as { factor?: number }).factor;
-        if (typeof factor === "number") onZoomBy?.(factor);
-      }
-    };
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [push, onSelect, onClearSelection, onZoomBy]);
-
-  // Mirror select-mode into the iframe whenever it flips.
-  React.useEffect(() => {
-    iframeRef.current?.contentWindow?.postMessage(
-      { type: "ext:select-mode", on: selectMode },
-      window.location.origin,
-    );
-  }, [selectMode]);
-
-  React.useEffect(() => {
-    push();
-  }, [push]);
 
   const framed = Boolean(artboardSize);
   return (
@@ -196,11 +268,15 @@ export function ExternalDsMount({
                   : undefined
               }
             >
-              <iframe
-                ref={iframeRef}
-                src="/external-sandbox"
-                title="External design system preview"
-                className="block h-full w-full border-0 bg-white"
+              <ExternalIframeHost
+                appSource={appSource}
+                mode={mode}
+                selectMode={selectMode}
+                onSelect={onSelect}
+                onClearSelection={onClearSelection}
+                onZoomBy={onZoomBy}
+                onError={setError}
+                iframeRef={iframeRef}
               />
             </div>
           </div>

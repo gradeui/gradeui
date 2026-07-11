@@ -24,6 +24,7 @@
  *   iframe → parent: { type: "ext:select", selection }     — SelectionPayload from the agent
  *   iframe → parent: { type: "ext:selection-cleared" }     — Escape inside the iframe
  *   iframe → parent: { type: "ext:zoom-gesture", factor }  — pinch/ctrl+wheel over the screen
+ *   iframe → parent: { type: "ext:content-height", height }— rendered page height (share Fit)
  *
  * This page renders with ITS OWN React (esm.sh copy) inside the iframe —
  * fully isolated from the host app's React, so there's no double-React
@@ -172,6 +173,13 @@ export default function ExternalSandboxPage() {
         reactRoot!.render(m.react.createElement(App));
         setStatus("");
         post({ type: "ext:rendered" });
+        // Paint settles a frame later — report the fresh height then.
+        requestAnimationFrame(() =>
+          post({
+            type: "ext:content-height",
+            height: Math.ceil(document.documentElement.scrollHeight),
+          }),
+        );
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         setStatus(`render error: ${message}`);
@@ -253,6 +261,21 @@ export default function ExternalSandboxPage() {
     };
     window.addEventListener("wheel", onWheel, { passive: false });
 
+    // Content-height reporting — the share view's responsive artboard
+    // frames the WHOLE page (like the fast sandbox's onContentHeight).
+    // ResizeObserver on <body> catches reflows (fonts, images, source
+    // updates); dedupe so observer chatter doesn't spam the parent.
+    let lastReportedH = 0;
+    const reportHeight = () => {
+      const h = Math.ceil(document.documentElement.scrollHeight);
+      if (h > 0 && h !== lastReportedH) {
+        lastReportedH = h;
+        post({ type: "ext:content-height", height: h });
+      }
+    };
+    const heightRo = new ResizeObserver(reportHeight);
+    heightRo.observe(document.body);
+
     // Import map FIRST — the DS module is fetched with
     // ?external=react,react-dom, so its bare "react" imports need a map
     // pinning them to the same esm.sh copy this page renders with.
@@ -319,6 +342,7 @@ export default function ExternalSandboxPage() {
       window.removeEventListener("message", onMessage);
       window.removeEventListener("wheel", onWheel);
       if (zoomRaf !== null) cancelAnimationFrame(zoomRaf);
+      heightRo.disconnect();
       teardownAgent();
       reactRoot?.unmount();
       plain.remove();

@@ -33,6 +33,8 @@ import {
   Pause,
 } from "lucide-react";
 import { FastIframeHost } from "@/components/studio/fast-frame";
+import { ExternalIframeHost } from "@/components/studio/external-ds-frame";
+import { getActiveRegistry } from "@/lib/active-registry";
 import { GradeLogo } from "@/components/grade-logo";
 import {
   DropdownMenu,
@@ -214,6 +216,11 @@ export function SharedScreen({
   // the focused canvas). Owns canvas measurement, the fit math, and
   // the pick/step/fit gestures. The share opens at 100% (defaultFit
   // false) — the creator framed the screen; honour it.
+  // External registry (BYODS) — the share renders through the ext:*
+  // kernel instead of Fast Frame, and theme/motion chrome is hidden
+  // (external DS themes aren't Studio-switchable yet). Env-driven for
+  // now; becomes a per-project attribute with the registry_id work.
+  const isExternal = getActiveRegistry().id !== "gradeui";
   const artboard = useArtboardZoom({ deviceSize: resolveDeviceSize });
   const {
     canvasRef: screenRef,
@@ -669,7 +676,12 @@ export function SharedScreen({
           {/* Controls shelf — theme menu, light/dark, zoom. Grows over
               time (more "tweakers"). */}
           <div className="flex shrink-0 items-center gap-2">
-            {/* Theme — glass dropdown with names */}
+            {/* Theme — glass dropdown with names. HIDDEN for external
+                registries: the DS's theme rides inside the sandbox
+                (runtime.previewCss) and Studio's theme engine doesn't
+                drive it yet — a selector that does nothing is worse
+                than none. */}
+            {!isExternal && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -706,6 +718,7 @@ export function SharedScreen({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
 
             {/* Light / dark */}
             <div className="flex items-center rounded-md border border-border/60 p-0.5">
@@ -808,7 +821,9 @@ export function SharedScreen({
 
             {/* Motion — pause/resume animation (shaders, ThreeScene, CSS).
                 Mirrors ThreeScene's own play/pause vocabulary. Reduce-only:
-                the viewer's OS reduced-motion is honoured regardless. */}
+                the viewer's OS reduced-motion is honoured regardless.
+                Hidden for external registries — no ext:set-motion yet. */}
+            {!isExternal && (
             <button
               type="button"
               onClick={() => setMotionOn((v) => !v)}
@@ -823,6 +838,7 @@ export function SharedScreen({
                 <Play className="h-4 w-4" />
               )}
             </button>
+            )}
 
             {hasComments && (
               <button
@@ -968,6 +984,43 @@ export function SharedScreen({
                 : undefined
             }
           >
+          {isExternal ? (
+          // External registry — the ext:* kernel instead of Fast Frame.
+          // Theme prop intentionally absent (the DS's own tokens ride
+          // inside the sandbox via runtime.previewCss; the toolbar's
+          // theme selector is hidden above). Inline comment pins and
+          // motion aren't in the ext protocol yet.
+          <ExternalIframeHost
+            appSource={appSource}
+            mode={mode}
+            // Responsive only — feeds the content-height artboard above.
+            onContentHeight={activeSpec.responsive ? setContentH : undefined}
+            className={cn(
+              "block",
+              framed ? "shrink-0" : "h-full w-full",
+              (framed || effectiveZoom < 1) &&
+                "rounded-xl ring-1 ring-border/40",
+            )}
+            style={{
+              width: deviceSize?.w,
+              height: deviceSize?.h,
+              transform: `scale(${effectiveZoom})`,
+              transformOrigin: framed ? "top left" : "center center",
+              transition:
+                fitMode || artboard.gesturing || imperativeGesturing
+                  ? "box-shadow 220ms ease"
+                  : `transform 340ms ${
+                      effectiveZoom === 1
+                        ? "cubic-bezier(0.33, 1.08, 0.68, 1)"
+                        : "cubic-bezier(0.33, 1.25, 0.68, 1)"
+                    }, box-shadow 220ms ease`,
+              boxShadow:
+                framed || effectiveZoom < 1
+                  ? "0 25px 50px -12px rgb(0 0 0 / 0.35)"
+                  : undefined,
+            }}
+          />
+          ) : (
           <FastIframeHost
             appSource={appSource}
             theme={activeTheme}
@@ -1024,6 +1077,7 @@ export function SharedScreen({
                   : undefined,
             }}
           />
+          )}
           </div>
         </div>
 
