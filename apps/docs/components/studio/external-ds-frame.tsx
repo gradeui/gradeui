@@ -15,6 +15,7 @@
 import * as React from "react";
 import { CodeView } from "@/components/studio/code-view";
 import { SourceEditor } from "@/components/studio/source-editor";
+import { injectSourceIds } from "@/lib/chat-sandpack";
 import { cn } from "@/lib/utils";
 
 interface ExternalDsMountProps {
@@ -57,8 +58,16 @@ export function ExternalDsMount({
 
   const push = React.useCallback(() => {
     if (!readyRef.current || !appSource) return;
+    // Source-id injection at the push boundary — the external mirror of
+    // prepareAppSource's finalise step. `injectSourceIds` is
+    // deterministic + idempotent, and the source mutators re-run it
+    // over the durable appSource, so the ids the selection agent reads
+    // off the DOM (BL components spread ...props to their roots, the
+    // same path that lands dataHook as data-hook) line up with the ids
+    // the mutator finds in source. The durable appSource stays clean —
+    // ids exist only in the renderer input.
     iframeRef.current?.contentWindow?.postMessage(
-      { type: "ext:source", source: appSource, mode },
+      { type: "ext:source", source: injectSourceIds(appSource), mode },
       window.location.origin,
     );
   }, [appSource, mode]);
