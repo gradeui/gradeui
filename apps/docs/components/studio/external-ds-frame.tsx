@@ -23,9 +23,13 @@ interface ExternalDsMountProps {
   view: "preview" | "code";
   canRender: boolean;
   onSourceEdit?: (next: string, label?: string) => void;
-  /** Select-tool state + callback — ScreenSelection-shaped payloads. */
+  /** Select-tool state + callback — SelectionPayload from the shared
+   *  studio selection agent (same shape Fast Frame reports). */
   selectMode?: boolean;
   onSelect?: (sel: unknown) => void;
+  /** User hit Escape inside the iframe — drop the right-panel chip in
+   *  lock-step with the ring vanishing (mirrors grade:selection-cleared). */
+  onClearSelection?: () => void;
 }
 
 export function ExternalDsMount({
@@ -36,6 +40,7 @@ export function ExternalDsMount({
   onSourceEdit,
   selectMode = false,
   onSelect,
+  onClearSelection,
 }: ExternalDsMountProps) {
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
   const readyRef = React.useRef(false);
@@ -80,11 +85,13 @@ export function ExternalDsMount({
         setError(d.message ?? "render failed");
       } else if (d?.type === "ext:select") {
         onSelect?.((e.data as { selection?: unknown }).selection);
+      } else if (d?.type === "ext:selection-cleared") {
+        onClearSelection?.();
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [push, onSelect]);
+  }, [push, onSelect, onClearSelection]);
 
   // Mirror select-mode into the iframe whenever it flips.
   React.useEffect(() => {

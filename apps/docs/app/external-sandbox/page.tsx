@@ -14,11 +14,15 @@
  * Cold boot is a few seconds; subsequent source updates re-render
  * near-instantly (modules cached, only the screen recompiles).
  *
- * Protocol (deliberately tiny, v0):
+ * Protocol (deliberately tiny, v0 + selection):
  *   parent → iframe: { type: "ext:source", source, mode }  — render this
+ *   parent → iframe: { type: "ext:select-mode", on }       — arm/disarm the selection agent
+ *   parent → iframe: { type: "ext:clear-selection" }       — drop the persistent ring
  *   iframe → parent: { type: "ext:ready" }                 — send me source
  *   iframe → parent: { type: "ext:error", message }        — compile/render failed
  *   iframe → parent: { type: "ext:rendered" }              — paint done
+ *   iframe → parent: { type: "ext:select", selection }     — SelectionPayload from the agent
+ *   iframe → parent: { type: "ext:selection-cleared" }     — Escape inside the iframe
  *
  * This page renders with ITS OWN React (esm.sh copy) inside the iframe —
  * fully isolated from the host app's React, so there's no double-React
@@ -32,6 +36,11 @@ import {
   EXTERNAL_FONTS_URL,
 } from "@/lib/external-ds-preview";
 import { getActiveRegistry } from "@/lib/active-registry";
+import {
+  installStudioSelectionAgent,
+  type SelectionAgentHandle,
+  type SelectionPayload,
+} from "@/lib/studio-selection-agent";
 
 const REGISTRY = getActiveRegistry();
 
@@ -168,135 +177,48 @@ export default function ExternalSandboxPage() {
       }
     }
 
-    // Click-to-select (v1): when the parent enables select mode, clicks
-    // resolve the nearest part-attributed ancestor and ship a
-    // ScreenSelection-shaped payload up. Suffix map turns BrightLocal's
-    // instance hooks ("settings-save-button") into component names.
-    let selectOn = false;
-    const partAttr = REGISTRY.selection.partAttribute;
+    // Select mode — the REAL Studio selection agent, same module Fast
+    // Frame and Sandpack run (two-agent rule → three renderers, one
+    // agent). Full parity: hover ring, persistent ring with corner
+    // handles + dimension badge, activation suppression, Escape-to-
+    // clear, sibling outlines. The two registry seams are parameters:
+    // the part attribute (BrightLocal: data-hook) and component-name
+    // resolution (their hooks name INSTANCES — "settings-save-button"
+    // — so the suffix map turns them into component names; unmatched
+    // parts fall back to the agent's kebab→Pascal).
+    let agent: SelectionAgentHandle | null = null;
     const suffixMap = REGISTRY.selection.partSuffixMap ?? {};
     const suffixes = Object.keys(suffixMap).sort((a, b) => b.length - a.length);
-    const kebabToPascal = (k: string) =>
-      k.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("");
-    /** Shared by click + hover: nearest part-attributed ancestor (else the
-     *  raw target) plus its resolved DS component name. */
-    const resolveTarget = (target: Element | null) => {
-      const el = target?.closest?.(`[${partAttr}]`) ?? target;
-      if (!el) return null;
-      const part = el.getAttribute?.(partAttr) ?? undefined;
-      const sfx = part ? suffixes.find((x) => part === x || part.endsWith(`-${x}`)) : undefined;
-      const componentName = sfx ? suffixMap[sfx] : part ? kebabToPascal(part) : undefined;
-      return { el, part, componentName };
+    const resolveComponentName = (part: string): string | undefined => {
+      const sfx = suffixes.find((x) => part === x || part.endsWith(`-${x}`));
+      return sfx ? suffixMap[sfx] : undefined;
     };
-
-    /**
-     * Hover outline + measure overlay for select mode — the external-DS
-     * mirror of Fast Frame's installMeasureAgent (fast-sandbox/page.tsx),
-     * fused with selection targeting: the outline snaps to the SAME
-     * element a click would select (nearest part-attributed ancestor),
-     * and the label names the resolved component plus its rendered size.
-     * External DSes ship full-value hex tokens (shadcn-style --primary),
-     * not gradeui's oklch channel pairs, so colours use var()+color-mix
-     * with a blue fallback rather than oklch(var(--selected)).
-     */
-    let hover: { onMove: (e: MouseEvent) => void; onLeave: () => void; host: HTMLDivElement; raf: number } | null = null;
-    function installHoverOverlay() {
-      const host = document.createElement("div");
-      host.setAttribute("data-ext-hover-overlay", "");
-      host.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:2147483600;";
-      const box = document.createElement("div");
-      box.style.cssText =
-        "position:absolute;display:none;border-radius:2px;" +
-        "border:1px solid var(--primary, #3b82f6);" +
-        "background:color-mix(in srgb, var(--primary, #3b82f6) 8%, transparent);";
-      const label = document.createElement("div");
-      label.style.cssText =
-        "position:absolute;display:none;padding:2px 6px;border-radius:4px;" +
-        "background:var(--primary, #3b82f6);color:var(--primary-foreground, #fff);" +
-        "font:600 11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;";
-      host.append(box, label);
-      document.body.appendChild(host);
-      const hide = () => {
-        box.style.display = "none";
-        label.style.display = "none";
-      };
-      const state = {
-        host,
-        raf: 0,
-        onMove(e: MouseEvent) {
-          cancelAnimationFrame(state.raf);
-          state.raf = requestAnimationFrame(() => {
-            const hit = resolveTarget(e.target as Element | null);
-            const el = hit?.el;
-            if (!el || host.contains(el) || el === document.body || el === document.documentElement) {
-              hide();
-              return;
-            }
-            const r = el.getBoundingClientRect();
-            if (r.width <= 0 || r.height <= 0) {
-              hide();
-              return;
-            }
-            box.style.display = "block";
-            box.style.left = `${r.left}px`;
-            box.style.top = `${r.top}px`;
-            box.style.width = `${r.width}px`;
-            box.style.height = `${r.height}px`;
-            const name = hit.componentName ?? el.tagName.toLowerCase();
-            label.textContent = `${name} · ${Math.round(r.width)} × ${Math.round(r.height)}`;
-            label.style.display = "block";
-            // Above the box; flip below when there's no headroom.
-            label.style.left = `${Math.max(2, r.left)}px`;
-            label.style.top =
-              r.top >= 26 ? `${r.top - 24}px` : `${Math.min(window.innerHeight - 24, r.bottom + 4)}px`;
-          });
-        },
-        onLeave: hide,
-      };
-      document.addEventListener("mousemove", state.onMove, true);
-      document.documentElement.addEventListener("mouseleave", state.onLeave, true);
-      return state;
-    }
-    function teardownHoverOverlay() {
-      if (!hover) return;
-      cancelAnimationFrame(hover.raf);
-      document.removeEventListener("mousemove", hover.onMove, true);
-      document.documentElement.removeEventListener("mouseleave", hover.onLeave, true);
-      hover.host.remove();
-      hover = null;
-    }
-
-    const onClick = (e: MouseEvent) => {
-      if (!selectOn) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const hit = resolveTarget(e.target as Element | null);
-      if (!hit) return;
-      const { el, part, componentName } = hit;
-      const rect = el.getBoundingClientRect();
-      post({
-        type: "ext:select",
-        selection: {
-          tag: el.tagName?.toLowerCase() ?? "",
-          text: ((el as HTMLElement).innerText ?? "").replace(/\s+/g, " ").trim().slice(0, 120),
-          outerHTML: (el.outerHTML ?? "").slice(0, 500),
-          rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
-          part,
-          componentName,
-        },
+    const installAgent = () => {
+      if (agent) return;
+      agent = installStudioSelectionAgent({
+        root: document,
+        overlayHost: document.body,
+        partAttribute: REGISTRY.selection.partAttribute,
+        resolveComponentName,
+        reportSelected: (selection: SelectionPayload) =>
+          post({ type: "ext:select", selection }),
+        reportCleared: () => post({ type: "ext:selection-cleared" }),
       });
     };
-    document.addEventListener("click", onClick, true);
+    const teardownAgent = () => {
+      agent?.teardown();
+      agent = null;
+    };
 
     const onMessage = (e: MessageEvent) => {
       const d = e.data as { type?: string; source?: string; mode?: string; on?: boolean } | null;
       if (d?.type === "ext:source" && typeof d.source === "string") {
         void render(d.source, d.mode ?? "light");
       } else if (d?.type === "ext:select-mode") {
-        selectOn = Boolean(d.on);
-        document.body.style.cursor = selectOn ? "crosshair" : "";
-        if (selectOn && !hover) hover = installHoverOverlay();
-        else if (!selectOn) teardownHoverOverlay();
+        if (d.on) installAgent();
+        else teardownAgent();
+      } else if (d?.type === "ext:clear-selection") {
+        agent?.clear();
       }
     };
     window.addEventListener("message", onMessage);
@@ -365,8 +287,7 @@ export default function ExternalSandboxPage() {
     return () => {
       disposed = true;
       window.removeEventListener("message", onMessage);
-      document.removeEventListener("click", onClick, true);
-      teardownHoverOverlay();
+      teardownAgent();
       reactRoot?.unmount();
       plain.remove();
       tw.remove();

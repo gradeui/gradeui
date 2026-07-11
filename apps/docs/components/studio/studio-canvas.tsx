@@ -2540,6 +2540,7 @@ function FocusedFrame({
           onSourceEdit={onSourceMutation}
           selectMode={selectMode}
           onSelect={(sel) => onSelect?.(sel as never)}
+          onClearSelection={onClearSelection}
         />
       ) : (
         <>

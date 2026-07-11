@@ -166,6 +166,15 @@ export interface InstallSelectionAgentOptions {
    *  uses this to drop the right-panel chip in lock-step with the
    *  in-iframe ring vanishing. */
   reportCleared?: () => void;
+  /** DS component-boundary attribute. Defaults to `data-gds-part`
+   *  (gradeui). External registries pass their own convention —
+   *  BrightLocal's is `data-hook` (registry.selection.partAttribute). */
+  partAttribute?: string;
+  /** Part value → component name. Defaults to kebab→Pascal (gradeui's
+   *  parts ARE component names). External registries whose parts name
+   *  INSTANCES ("settings-save-button") pass a suffix-map resolver.
+   *  Return undefined to fall back to kebab→Pascal. */
+  resolveComponentName?: (part: string) => string | undefined;
 }
 
 /** One immediate-child descriptor returned by `getChildrenOf`. The
@@ -230,6 +239,9 @@ export function installStudioSelectionAgent(
   opts: InstallSelectionAgentOptions
 ): SelectionAgentHandle {
   const { root, overlayHost, reportSelected, reportCleared } = opts;
+  // Registry seams — both default to the gradeui conventions so the
+  // two existing renderers are byte-identical in behaviour.
+  const PART_ATTR = opts.partAttribute || "data-gds-part";
 
   // "three-scene" → "ThreeScene"
   function kebabToPascal(kebab: string): string {
@@ -238,6 +250,10 @@ export function installStudioSelectionAgent(
       .filter(Boolean)
       .map((seg) => seg.charAt(0).toUpperCase() + seg.slice(1))
       .join("");
+  }
+
+  function partToComponentName(part: string): string {
+    return opts.resolveComponentName?.(part) ?? kebabToPascal(part);
   }
 
   // Parts that live INSIDE another DS component rather than being their
@@ -270,14 +286,14 @@ export function installStudioSelectionAgent(
   function findComponentOwner(el: Element | null): Element | null {
     if (!el || !el.closest) return null;
     let node: Element | null = el.closest(
-      "[data-gds-part]"
+      `[${PART_ATTR}]`
     ) as Element | null;
     while (node) {
-      const part = node.getAttribute("data-gds-part") || "";
+      const part = node.getAttribute(PART_ATTR) || "";
       if (!SUB_PART_NAMES.has(part)) return node;
       const parent = node.parentElement;
       if (!parent) return null;
-      node = parent.closest("[data-gds-part]") as Element | null;
+      node = parent.closest(`[${PART_ATTR}]`) as Element | null;
     }
     return null;
   }
@@ -357,7 +373,7 @@ export function installStudioSelectionAgent(
     // to a Card or section ancestor would hide the TextEditRow
     // because the ancestor's children contain nested JSX.
     const hasPart =
-      el.hasAttribute && el.hasAttribute("data-gds-part");
+      el.hasAttribute && el.hasAttribute(PART_ATTR);
     const hasSourceId =
       el.hasAttribute && el.hasAttribute("data-gds-source-id");
     const className = (el.getAttribute?.("class") ?? "").trim();
@@ -398,8 +414,8 @@ export function installStudioSelectionAgent(
     // own data-gds-part, there's no manifest-driven UI to render —
     // and that's correct, the TextEditRow + Spacing group still work
     // off `sourceId` / className.
-    const part = el.getAttribute("data-gds-part") || undefined;
-    const componentName = part ? kebabToPascal(part) : undefined;
+    const part = el.getAttribute(PART_ATTR) || undefined;
+    const componentName = part ? partToComponentName(part) : undefined;
 
     const rect = el.getBoundingClientRect();
     const rawText = (
@@ -471,7 +487,7 @@ export function installStudioSelectionAgent(
         : "";
       if (nodeSourceId) {
         const nodePart = node.getAttribute
-          ? node.getAttribute("data-gds-part") || ""
+          ? node.getAttribute(PART_ATTR) || ""
           : "";
         const nodeInstanceId = node.getAttribute
           ? node.getAttribute("data-gds-instance-id") || ""
@@ -482,7 +498,7 @@ export function installStudioSelectionAgent(
         chain.unshift({
           sourceId: nodeSourceId,
           tag: node.tagName ? node.tagName.toLowerCase() : "",
-          componentName: nodePart ? kebabToPascal(nodePart) : undefined,
+          componentName: nodePart ? partToComponentName(nodePart) : undefined,
           instanceId: nodeInstanceId || undefined,
           name: nodeName || undefined,
         });
@@ -767,6 +783,20 @@ export function installStudioSelectionAgent(
     );
     if (dimLabel) {
       dimLabel.textContent = `${Math.round(rect.width)} × ${Math.round(rect.height)}`;
+      // Viewport-aware placement: below the box by default, flipped
+      // ABOVE when the box's bottom edge is too close to the viewport
+      // bottom for the badge to fit (selection near the fold used to
+      // push the badge offscreen). rect is viewport-relative in both
+      // positioning modes, so the same check works for fixed (iframe)
+      // and absolute (fast mode) overlays.
+      const viewH =
+        el.ownerDocument?.defaultView?.innerHeight ?? window.innerHeight;
+      const flipAbove = rect.bottom + 28 > viewH;
+      dimLabel.style.top = flipAbove ? "auto" : "100%";
+      dimLabel.style.bottom = flipAbove ? "100%" : "auto";
+      dimLabel.style.transform = flipAbove
+        ? "translate(-50%,-6px)"
+        : "translate(-50%,6px)";
     }
   }
 
@@ -1179,7 +1209,7 @@ export function installStudioSelectionAgent(
           // belongs to the inspector via instanceId, not here.
           if (seen.has(id)) continue;
           seen.add(id);
-          const part = kid.getAttribute("data-gds-part") || "";
+          const part = kid.getAttribute(PART_ATTR) || "";
           const nameAttr = kid.getAttribute("data-gds-name") || "";
           const summaryAttr = kid.getAttribute("data-gds-summary") || "";
           const instanceId =
@@ -1200,7 +1230,7 @@ export function installStudioSelectionAgent(
           const descriptor: ChildDescriptor = {
             sourceId: id,
             tag: kid.tagName.toLowerCase(),
-            componentName: part ? kebabToPascal(part) : undefined,
+            componentName: part ? partToComponentName(part) : undefined,
             instanceId,
             name: nameAttr || undefined,
             summary: summaryAttr || fallback,
@@ -1243,9 +1273,9 @@ export function installStudioSelectionAgent(
       // wrapper and a valid target (e.g. a page-wide background fill).
       // Fall back to main content, then any shell part, then body.
       scope =
-        docOrEl.querySelector('[data-gds-part="app-shell"]') ||
-        docOrEl.querySelector('[data-gds-part="app-shell-main"]') ||
-        docOrEl.querySelector('[data-gds-part^="app-shell"]') ||
+        docOrEl.querySelector(`[${PART_ATTR}="app-shell"]`) ||
+        docOrEl.querySelector(`[${PART_ATTR}="app-shell-main"]`) ||
+        docOrEl.querySelector(`[${PART_ATTR}^="app-shell"]`) ||
         (root instanceof Document ? root.body : (root as Element));
     }
     if (!scope) return [];
