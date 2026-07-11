@@ -1,33 +1,104 @@
 # BYODS Pilot — BrightLocal (`@brightlocal/ui-components` + `@brightlocal/tokens`)
 
-## NEXT SESSION — start here (written end of July 11 session)
+## NEXT SESSION — start here (written end of July 11 session #2)
 
-**State:** Everything below WORKS and is UNCOMMITTED in the working tree. The full pipeline is
-live: prompt → BL screens in their true tokens → `/external-sandbox` renderer (esm.sh, seconds,
-editor + tiles unified) → click-to-select with data-hook suffix resolution → CodeSandbox export
-in their per-file import style. Sidecars are harvested from BrightLocal's own MCP server
-(https://brightlocal-design-system-mcp.vercel.app/api/mcp — open, JSON-RPC POST, no auth).
+**State:** Everything is COMMITTED (`bfbf93f`…`7166404` + the active-registry follow-up). Session #2
+shipped full editor parity for external screens, all verified live in-browser:
+
+- **Selection parity** — `/external-sandbox` mounts the REAL `installStudioSelectionAgent`
+  (hover ring, persistent ring + corner handles + dimension badge, sibling outlines, Escape).
+  Two registry seams parameterised on the agent (`partAttribute`, `resolveComponentName` via
+  suffix map), defaults keep gradeui byte-identical. Dimension badge is now viewport-aware
+  (flips above near the fold) in ALL renderers. Select-mode state replays on `ext:ready`
+  (boot race fixed).
+- **Per-registry contracts** — `RegistryContractSpec` (JSON-safe, registry rule 1) on
+  `components.contracts`; `generate:brightlocal-contracts` transforms the 68 sidecars →
+  `contracts.generated.ts`; `apps/docs/lib/registry-contracts.ts` converts specs → zod
+  ComponentContracts at the edge. Inspector lookups all go through the registry seam — BL
+  Button shows BL's `default|sm|lg`, never gradeui's by name collision. Non-gradeui registry
+  without a spec ⇒ null, never another DS's contract.
+- **Source-anchored edits** — `injectSourceIds` runs at the external push boundary
+  (deterministic+idempotent ⇒ ids agree with the mutators' own pass). Breadcrumb chain,
+  sibling overlays, panel mutations (verified size sm→lg round-trip + autosave) all live.
+- **Viewport + zoom** — `ExternalDsMount` consumes the artboard camera (device presets ×
+  effective zoom incl. Fit); style-driven sizing so the iframe survives preset flips.
+  Pinch/ctrl+wheel forwards out as `ext:zoom-gesture` (UNANCHORED — see below).
+- **Comments** — same agent captures for comment mode (page-side routing);
+  `CanvasCommentPinsOverlay` reused as-is (same-origin iframe, source-id anchors).
+- **Share** — `ExternalIframeHost` extracted from `ExternalDsMount` (the FastIframeHost
+  split); `/s/` mounts it for external registries with identical framing math; theme selector
+  + motion button hidden for external shares. `ext:content-height` feeds the responsive
+  artboard. gradeui shares untouched.
+- **Vercel build fix** — esm.sh imports via `importUrl()` variable indirection (tsc resolves
+  LITERAL specifiers in `import()`).
+
 Run with `NEXT_PUBLIC_STUDIO_REGISTRY=brightlocal pnpm dev`.
 
-**Do first:**
-1. `git add -p` and commit in chunks: (a) registry contract + B1/B2 plumbing (packages/studio/src/registry, refs.ts, screen-context, chat-sandpack, prompts/system.ts — verify gradeui zero-diff note in system.ts), (b) external renderer (app/external-sandbox, components/studio/external-ds-frame.tsx, studio-canvas wiring, middleware, layout), (c) BL registry data + scripts (registries/brightlocal, generated files, harvest scripts), (d) export parity (chat-export-npm, chat-export guard).
-2. Delete the two zero-byte files `apps/docs/public/bl-probe.html` + `bl-live-probe.html` (sandbox couldn't unlink).
-3. Add to `BRIGHTLOCAL_EXTRA_RULES` (packages/studio/src/registry/brightlocal.ts): charts always sit in a fixed-height wrapper (`h-64`/`h-80`), never height="100%" in an unsized parent (recharts width(-1) log).
+**Do first — per-project registry (the agreed next priority).** Goal: different registries at
+the SAME url, one per project (gradeui + BL projects side by side). Surface is fully mapped:
 
-**Open engineering (priority order):**
-- Hover outline + measure overlay in `/external-sandbox` select mode (click works; no hover affordance yet).
-- Comment pins + viewport-width picker + zoom on `ExternalDsMount` (protocol needs `ext:` messages for each).
-- data-gds-source-id mutator path for external screens (source-anchored edits from selection).
-- gradeui Breadcrumb bug: `BreadcrumbSeparator` renders `<li>` nested in `<li>` (hydration error; check component vs model composition).
-- fast-sandbox vendored v4 build 404-fetches `/tailwindcss/theme` + `/utilities` on every load — pre-existing noise, investigate the vendored build's import resolution.
-- Sandpack in-iframe CSS bootstrap (`/external-ds-css.ts` in chat-sandpack) is parked — beacons never fired inside CSB's iframe; safe to strip or leave.
+1. **Registry lookup**: `getRegistryById(id)` already exported from `apps/docs/lib/active-registry.ts`
+   (added end of session). Resolution rule: `project.registryId → getRegistryById → getActiveRegistry()`
+   (env stays as deployment default/fallback).
+2. **Project record**: add optional `registryId` to `Project`
+   (`lib/studio-storage/types.ts:83-118`), to `updateProject`'s patch whitelist (`:363-368`),
+   both adapters (`local-adapter.ts:622+`, `supabase-adapter.ts` — `ProjectRow` `:234-248`,
+   `rowToProject` `:418-431`, BOTH `*_COLS` strings `:253-256`, create/update writes).
+   Migration `0020_project_registry.sql` modelled on `0019_project_context_origin.sql`
+   (additive `alter table projects add column if not exists registry_id text`).
+3. **Client threading**: NO project context exists — `activeProjectId` is useState in
+   `app/studio/page.tsx:447`, prop-drilled. Either add a tiny ActiveRegistryProvider or thread
+   a `registry` prop. The `buildSystemPrompt` memo at `page.tsx:188` has `[]` deps — must
+   depend on the active project's registry.
+4. **Module-scope hazards (6)** — these evaluate at import, before any project exists:
+   `studio-walker-register.ts:34`, `fast-sandbox/page.tsx:131`, `external-sandbox/page.tsx:47`
+   (iframe: pass `?registry=<id>` on the src, read `useSearchParams`/location), 
+   `chat-sandpack.ts:27` (`ACTIVE_REGISTRY` const — biggest refactor: make the consumers take
+   a registry arg), `chat-export-npm.ts:41`, `stage-b-inspector.tsx:76`.
+5. **Server routes**: `api/chat/route.ts:442` + `api/component-manifest/route.ts:52` call
+   `getActiveRegistry()` server-side — add `registryId` to the request bodies
+   (`studio-chat.tsx:447-475` builds the chat body; use the `settingsRef.current` pattern).
+6. **Share**: `/s/[token]/page.tsx` already fetches the `projects` row (`:162-166`) — add
+   `registry_id` to that select, pass a `registry`/`isExternal` prop into `SharedScreen`
+   (replace the env check at `shared-screen.tsx:~223`).
+7. **UI**: registry picker in `ProjectSettingsSheet`
+   (`components/studio/project-settings-sheet.tsx`) + optionally on `NewProjectDialog`.
+   Registry-keyed caches are already fine (refs + contracts key by `registry.id`).
+
+**Then (priority order):**
+- **Anchored pinch zoom on the external renderer** — Ali's explicit ask: the fast renderer
+  zooms FROM the pinch point (zoom-to-cursor; `FocusedFastMount` owns the camera and anchors
+  each `zoomBy` tick at the pointer before calling `artboard.zoomBy` — study that wiring
+  properly, incl. the `grade:zoom-gesture` forwarding + pan compensation). The external
+  `ext:zoom-gesture` currently forwards a bare factor ⇒ zooms from origin. Forward pointer
+  coords in the message and replicate the anchor math in both the share view and
+  `ExternalDsMount` (which has no pan camera yet — may need one for correct anchoring).
+- gradeui Breadcrumb bug: `BreadcrumbSeparator` renders `<li>` nested in `<li>` (hydration
+  error; check component vs model composition).
+- Sidecar review pass: 68 BL sidecars have `TODO(review)` prop stubs; typed props flow
+  straight into the contracts via `generate:brightlocal-contracts` (untyped ones are recorded
+  as hidden "plumbing" today). Also consider `extends`/prop-inheritance on
+  `RegistryContractSpec` (Ali: compound components should inherit e.g. Card's props).
+- Starter templates for external registries: starters are gradeui JSX — hide for external
+  registries or build per-registry starter sets (BL's Storybook patterns as seeds).
+- Comment pins for external SHARES (inline `ext:set-comments` path, or reuse the host overlay
+  — it's scale-aware and same-origin) + `ext:set-motion` if BL screens ever animate.
+- fast-sandbox vendored v4 build 404-fetches `/tailwindcss/theme` + `/utilities` on every
+  load — pre-existing noise, investigate the vendored build's import resolution.
+- Sandpack in-iframe CSS bootstrap (`/external-ds-css.ts` in chat-sandpack) is parked — safe
+  to strip or leave.
 
 **Client findings for the BrightLocal report:** (1) `component-meta.json` lists 23 phantom
 exports (17 subcomponents + 6 roots — Typography/Chart/Map/DatePicker/Resizable/InputPassword);
 reconcile log in draft-brightlocal-sidecars.mjs output; fix = generate meta from the barrel.
 (2) `data-hook` names instances not components — tooling needs the suffix convention (our
 `partSuffixMap`). (3) They already ship an MCP server + AI docs — pitch Studio as the design
-surface over the same pipes.
+surface over the same pipes. (4) NEW: their meta's props lack types (sidecar `TODO(review)`
+stubs) — typed prop metadata would make the settings-panel controls fully automatic.
+(5) NEW: BYODS "Level 3 entry conventions" the pilot has surfaced so far: public npm +
+prebundlable (esm.sh), shadcn-vocabulary tokens, components spread `...props` to their root
+(what makes selection + source-anchoring work), a stable part attribute (`data-hook`), charts
+need explicit-height wrappers.
 
 ---
 

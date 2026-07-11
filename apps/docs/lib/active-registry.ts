@@ -25,6 +25,15 @@ const REGISTRIES: Readonly<Record<string, DesignSystemRegistry>> = {
   [BRIGHTLOCAL_REGISTRY.id]: BRIGHTLOCAL_REGISTRY,
 };
 
+/** id → registry, or null. The per-project registry work (Project.
+ *  registryId) resolves through this; unknown/absent ids mean "fall
+ *  back to the deployment default" (getActiveRegistry). */
+export function getRegistryById(
+  id: string | null | undefined,
+): DesignSystemRegistry | null {
+  return (id && REGISTRIES[id]) || null;
+}
+
 export function getActiveRegistry(): DesignSystemRegistry {
   const id = process.env.NEXT_PUBLIC_STUDIO_REGISTRY;
   if (!id) return GRADE_REGISTRY;
