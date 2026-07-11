@@ -23,6 +23,7 @@
  *   iframe → parent: { type: "ext:rendered" }              — paint done
  *   iframe → parent: { type: "ext:select", selection }     — SelectionPayload from the agent
  *   iframe → parent: { type: "ext:selection-cleared" }     — Escape inside the iframe
+ *   iframe → parent: { type: "ext:zoom-gesture", factor }  — pinch/ctrl+wheel over the screen
  *
  * This page renders with ITS OWN React (esm.sh copy) inside the iframe —
  * fully isolated from the host app's React, so there's no double-React
@@ -223,6 +224,27 @@ export default function ExternalSandboxPage() {
     };
     window.addEventListener("message", onMessage);
 
+    // Pinch / ctrl+wheel over the screen — the parent owns the camera,
+    // so forward the gesture out (the fast sandbox's grade:zoom-gesture
+    // pattern). Same math as useZoomGestures: exponential mapping,
+    // multiplicative factors coalesced to one post per frame.
+    let zoomAcc = 1;
+    let zoomRaf: number | null = null;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault(); // stop the browser's own page zoom
+      zoomAcc *= Math.exp(-e.deltaY * 0.01);
+      if (zoomRaf === null) {
+        zoomRaf = requestAnimationFrame(() => {
+          zoomRaf = null;
+          const factor = zoomAcc;
+          zoomAcc = 1;
+          if (factor !== 1) post({ type: "ext:zoom-gesture", factor });
+        });
+      }
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+
     // Import map FIRST — the DS module is fetched with
     // ?external=react,react-dom, so its bare "react" imports need a map
     // pinning them to the same esm.sh copy this page renders with.
@@ -287,6 +309,8 @@ export default function ExternalSandboxPage() {
     return () => {
       disposed = true;
       window.removeEventListener("message", onMessage);
+      window.removeEventListener("wheel", onWheel);
+      if (zoomRaf !== null) cancelAnimationFrame(zoomRaf);
       teardownAgent();
       reactRoot?.unmount();
       plain.remove();

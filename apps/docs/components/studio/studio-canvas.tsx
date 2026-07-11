@@ -2538,12 +2538,22 @@ function FocusedFrame({
           view={view}
           canRender={canRender}
           onSourceEdit={onSourceMutation}
-          selectMode={selectMode}
-          onSelect={(sel) => onSelect?.(sel as never)}
+          // The agent captures for BOTH modes (same one-capture rule as
+          // grade:select-mode); routing happens page-side below.
+          selectMode={selectMode || commentMode}
+          onSelect={(sel) => {
+            if (commentMode) onCommentSelect?.(sel as never);
+            else onSelect?.(sel as never);
+          }}
           onClearSelection={onClearSelection}
           artboardSize={artboardSize}
           zoom={artboardZoom}
           zoomCanvasRef={artboardCanvasRef}
+          onZoomBy={onArtboardZoomBy}
+          commentThreads={commentThreads}
+          activeCommentThreadId={activeCommentThreadId}
+          onCommentPinClick={onCommentPinClick}
+          getCommentUser={getCommentUser}
         />
       ) : (
         <>

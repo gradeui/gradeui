@@ -13,9 +13,12 @@
  */
 
 import * as React from "react";
+import { CanvasCommentPinsOverlay } from "@/components/studio/canvas-comment-pins-overlay";
 import { CodeView } from "@/components/studio/code-view";
 import { SourceEditor } from "@/components/studio/source-editor";
 import { injectSourceIds } from "@/lib/chat-sandpack";
+import type { CommentThreadWithMessages } from "@/lib/studio-storage";
+import type { User } from "@/lib/studio-users";
 import { cn } from "@/lib/utils";
 
 interface ExternalDsMountProps {
@@ -41,6 +44,17 @@ interface ExternalDsMountProps {
   /** useArtboardZoom.canvasRef — attach to the STABLE (non-scrolling)
    *  preview wrapper so the Fit math can measure the canvas. */
   zoomCanvasRef?: (el: HTMLElement | null) => void;
+  /** useArtboardZoom.zoomBy — pinch / ctrl+wheel inside the iframe is
+   *  forwarded out as ext:zoom-gesture and fed here. */
+  onZoomBy?: (factor: number) => void;
+  /** Comment pins — same host-side overlay the fast mount uses (the
+   *  /external-sandbox iframe is same-origin, so contentDocument
+   *  anchor lookups work identically). Threads anchor by
+   *  data-gds-source-id, which the push boundary injects. */
+  commentThreads?: CommentThreadWithMessages[];
+  activeCommentThreadId?: string | null;
+  onCommentPinClick?: (threadId: string) => void;
+  getCommentUser?: (id: string) => User | undefined;
 }
 
 export function ExternalDsMount({
@@ -55,6 +69,11 @@ export function ExternalDsMount({
   artboardSize,
   zoom = 1,
   zoomCanvasRef,
+  onZoomBy,
+  commentThreads,
+  activeCommentThreadId,
+  onCommentPinClick,
+  getCommentUser,
 }: ExternalDsMountProps) {
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
   const readyRef = React.useRef(false);
@@ -109,11 +128,14 @@ export function ExternalDsMount({
         onSelect?.((e.data as { selection?: unknown }).selection);
       } else if (d?.type === "ext:selection-cleared") {
         onClearSelection?.();
+      } else if (d?.type === "ext:zoom-gesture") {
+        const factor = (e.data as { factor?: number }).factor;
+        if (typeof factor === "number") onZoomBy?.(factor);
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [push, onSelect, onClearSelection]);
+  }, [push, onSelect, onClearSelection, onZoomBy]);
 
   // Mirror select-mode into the iframe whenever it flips.
   React.useEffect(() => {
@@ -184,6 +206,21 @@ export function ExternalDsMount({
           </div>
         </div>
       </div>
+      {/* Comment pins — host overlay, live anchor lookups against the
+          same-origin iframe's contentDocument (see the fast mount). */}
+      {view === "preview" &&
+        canRender &&
+        commentThreads &&
+        commentThreads.length > 0 &&
+        onCommentPinClick && (
+          <CanvasCommentPinsOverlay
+            iframeRef={iframeRef}
+            threads={commentThreads}
+            activeThreadId={activeCommentThreadId}
+            onPinClick={onCommentPinClick}
+            getUser={getCommentUser}
+          />
+        )}
       {error && view === "preview" && (
         <div className="absolute inset-x-3 top-3 z-20 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {error}
