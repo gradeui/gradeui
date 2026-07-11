@@ -178,15 +178,101 @@ export default function ExternalSandboxPage() {
     const suffixes = Object.keys(suffixMap).sort((a, b) => b.length - a.length);
     const kebabToPascal = (k: string) =>
       k.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("");
+    /** Shared by click + hover: nearest part-attributed ancestor (else the
+     *  raw target) plus its resolved DS component name. */
+    const resolveTarget = (target: Element | null) => {
+      const el = target?.closest?.(`[${partAttr}]`) ?? target;
+      if (!el) return null;
+      const part = el.getAttribute?.(partAttr) ?? undefined;
+      const sfx = part ? suffixes.find((x) => part === x || part.endsWith(`-${x}`)) : undefined;
+      const componentName = sfx ? suffixMap[sfx] : part ? kebabToPascal(part) : undefined;
+      return { el, part, componentName };
+    };
+
+    /**
+     * Hover outline + measure overlay for select mode — the external-DS
+     * mirror of Fast Frame's installMeasureAgent (fast-sandbox/page.tsx),
+     * fused with selection targeting: the outline snaps to the SAME
+     * element a click would select (nearest part-attributed ancestor),
+     * and the label names the resolved component plus its rendered size.
+     * External DSes ship full-value hex tokens (shadcn-style --primary),
+     * not gradeui's oklch channel pairs, so colours use var()+color-mix
+     * with a blue fallback rather than oklch(var(--selected)).
+     */
+    let hover: { onMove: (e: MouseEvent) => void; onLeave: () => void; host: HTMLDivElement; raf: number } | null = null;
+    function installHoverOverlay() {
+      const host = document.createElement("div");
+      host.setAttribute("data-ext-hover-overlay", "");
+      host.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:2147483600;";
+      const box = document.createElement("div");
+      box.style.cssText =
+        "position:absolute;display:none;border-radius:2px;" +
+        "border:1px solid var(--primary, #3b82f6);" +
+        "background:color-mix(in srgb, var(--primary, #3b82f6) 8%, transparent);";
+      const label = document.createElement("div");
+      label.style.cssText =
+        "position:absolute;display:none;padding:2px 6px;border-radius:4px;" +
+        "background:var(--primary, #3b82f6);color:var(--primary-foreground, #fff);" +
+        "font:600 11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;";
+      host.append(box, label);
+      document.body.appendChild(host);
+      const hide = () => {
+        box.style.display = "none";
+        label.style.display = "none";
+      };
+      const state = {
+        host,
+        raf: 0,
+        onMove(e: MouseEvent) {
+          cancelAnimationFrame(state.raf);
+          state.raf = requestAnimationFrame(() => {
+            const hit = resolveTarget(e.target as Element | null);
+            const el = hit?.el;
+            if (!el || host.contains(el) || el === document.body || el === document.documentElement) {
+              hide();
+              return;
+            }
+            const r = el.getBoundingClientRect();
+            if (r.width <= 0 || r.height <= 0) {
+              hide();
+              return;
+            }
+            box.style.display = "block";
+            box.style.left = `${r.left}px`;
+            box.style.top = `${r.top}px`;
+            box.style.width = `${r.width}px`;
+            box.style.height = `${r.height}px`;
+            const name = hit.componentName ?? el.tagName.toLowerCase();
+            label.textContent = `${name} · ${Math.round(r.width)} × ${Math.round(r.height)}`;
+            label.style.display = "block";
+            // Above the box; flip below when there's no headroom.
+            label.style.left = `${Math.max(2, r.left)}px`;
+            label.style.top =
+              r.top >= 26 ? `${r.top - 24}px` : `${Math.min(window.innerHeight - 24, r.bottom + 4)}px`;
+          });
+        },
+        onLeave: hide,
+      };
+      document.addEventListener("mousemove", state.onMove, true);
+      document.documentElement.addEventListener("mouseleave", state.onLeave, true);
+      return state;
+    }
+    function teardownHoverOverlay() {
+      if (!hover) return;
+      cancelAnimationFrame(hover.raf);
+      document.removeEventListener("mousemove", hover.onMove, true);
+      document.documentElement.removeEventListener("mouseleave", hover.onLeave, true);
+      hover.host.remove();
+      hover = null;
+    }
+
     const onClick = (e: MouseEvent) => {
       if (!selectOn) return;
       e.preventDefault();
       e.stopPropagation();
-      const el = (e.target as Element | null)?.closest?.(`[${partAttr}]`) ?? (e.target as Element | null);
-      if (!el) return;
-      const part = el.getAttribute?.(partAttr) ?? undefined;
-      const sfx = part ? suffixes.find((x) => part === x || part.endsWith(`-${x}`)) : undefined;
-      const componentName = sfx ? suffixMap[sfx] : part ? kebabToPascal(part) : undefined;
+      const hit = resolveTarget(e.target as Element | null);
+      if (!hit) return;
+      const { el, part, componentName } = hit;
       const rect = el.getBoundingClientRect();
       post({
         type: "ext:select",
@@ -209,6 +295,8 @@ export default function ExternalSandboxPage() {
       } else if (d?.type === "ext:select-mode") {
         selectOn = Boolean(d.on);
         document.body.style.cursor = selectOn ? "crosshair" : "";
+        if (selectOn && !hover) hover = installHoverOverlay();
+        else if (!selectOn) teardownHoverOverlay();
       }
     };
     window.addEventListener("message", onMessage);
@@ -278,6 +366,7 @@ export default function ExternalSandboxPage() {
       disposed = true;
       window.removeEventListener("message", onMessage);
       document.removeEventListener("click", onClick, true);
+      teardownHoverOverlay();
       reactRoot?.unmount();
       plain.remove();
       tw.remove();
