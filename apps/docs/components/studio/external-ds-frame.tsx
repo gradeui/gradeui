@@ -31,6 +31,16 @@ interface ExternalDsMountProps {
   /** User hit Escape inside the iframe — drop the right-panel chip in
    *  lock-step with the ring vanishing (mirrors grade:selection-cleared). */
   onClearSelection?: () => void;
+  /** Fixed artboard from the viewport preset (resolveArtboardSize in
+   *  studio-canvas — mobile 390×844, tablet 768×1024, desktop 1440×900).
+   *  Undefined = responsive: the iframe plain-fills the column. */
+  artboardSize?: { w: number; h: number };
+  /** Effective scale from useArtboardZoom (Fit included). Applied as a
+   *  CSS transform on the artboard, same as the fast mount. */
+  zoom?: number;
+  /** useArtboardZoom.canvasRef — attach to the STABLE (non-scrolling)
+   *  preview wrapper so the Fit math can measure the canvas. */
+  zoomCanvasRef?: (el: HTMLElement | null) => void;
 }
 
 export function ExternalDsMount({
@@ -42,6 +52,9 @@ export function ExternalDsMount({
   selectMode = false,
   onSelect,
   onClearSelection,
+  artboardSize,
+  zoom = 1,
+  zoomCanvasRef,
 }: ExternalDsMountProps) {
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
   const readyRef = React.useRef(false);
@@ -114,19 +127,63 @@ export function ExternalDsMount({
     push();
   }, [push]);
 
+  const framed = Boolean(artboardSize);
   return (
     <div className="relative h-full w-full">
-      {/* Preview iframe stays mounted across view flips so the esm.sh
-          module cache and React root survive. */}
-      <iframe
-        ref={iframeRef}
-        src="/external-sandbox"
-        title="External design system preview"
+      {/* Preview stays MOUNTED across view flips and artboard↔fill
+          flips (sizing is style-driven, never structural) so the
+          esm.sh module cache and React root survive. Structure mirrors
+          the fast mount's camera-less core: stable wrapper (Fit
+          measurement) → scroller → sizer (reserves the SCALED
+          footprint so overflow scrolls instead of clipping past an
+          unreachable edge) → artboard (device size × zoom transform). */}
+      <div
+        ref={zoomCanvasRef}
         className={cn(
-          "h-full w-full border-0 bg-white",
+          "absolute inset-0",
           view === "preview" && canRender ? "block" : "hidden",
         )}
-      />
+      >
+        <div className="flex h-full w-full overflow-auto">
+          <div
+            className="m-auto"
+            style={
+              framed
+                ? {
+                    width: artboardSize!.w * zoom,
+                    height: artboardSize!.h * zoom,
+                    flex: "none",
+                  }
+                : { width: "100%", height: "100%" }
+            }
+          >
+            <div
+              className={cn(
+                "h-full w-full",
+                framed &&
+                  "overflow-hidden rounded-lg shadow-lg ring-1 ring-border",
+              )}
+              style={
+                framed
+                  ? {
+                      width: artboardSize!.w,
+                      height: artboardSize!.h,
+                      transform: `scale(${zoom})`,
+                      transformOrigin: "top left",
+                    }
+                  : undefined
+              }
+            >
+              <iframe
+                ref={iframeRef}
+                src="/external-sandbox"
+                title="External design system preview"
+                className="block h-full w-full border-0 bg-white"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
       {error && view === "preview" && (
         <div className="absolute inset-x-3 top-3 z-20 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {error}

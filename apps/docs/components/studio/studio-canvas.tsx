@@ -2541,6 +2541,9 @@ function FocusedFrame({
           selectMode={selectMode}
           onSelect={(sel) => onSelect?.(sel as never)}
           onClearSelection={onClearSelection}
+          artboardSize={artboardSize}
+          zoom={artboardZoom}
+          zoomCanvasRef={artboardCanvasRef}
         />
       ) : (
         <>
