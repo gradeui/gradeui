@@ -61,6 +61,14 @@ function dsUrl(): string {
   return `https://esm.sh/${REGISTRY.package.name}${v}?external=react,react-dom`;
 }
 
+/** Dynamic import via variable indirection. A LITERAL string inside
+ *  import() is type-checked as a module specifier — `tsc` tries to
+ *  resolve the https:// URL and fails the production build. Routing
+ *  the URL through a parameter keeps the runtime behaviour identical
+ *  while opting out of specifier resolution. */
+const importUrl = (url: string): Promise<Record<string, unknown>> =>
+  import(/* webpackIgnore: true */ url);
+
 export default function ExternalSandboxPage() {
   const rootRef = React.useRef<HTMLDivElement | null>(null);
   const [status, setStatus] = React.useState("booting…");
@@ -83,23 +91,23 @@ export default function ExternalSandboxPage() {
     async function loadModules() {
       const [react, jsx, jsxDev, reactDom, reactDomClient, sucrase, ds, lucide, motion, recharts, confetti, icons] =
         await Promise.all([
-          import(/* webpackIgnore: true */ ESM.react),
-          import(/* webpackIgnore: true */ ESM.jsx),
-          import(/* webpackIgnore: true */ ESM.jsxDev),
-          import(/* webpackIgnore: true */ ESM.reactDom),
-          import(/* webpackIgnore: true */ ESM.reactDomClient),
-          import(/* webpackIgnore: true */ ESM.sucrase),
-          import(/* webpackIgnore: true */ dsUrl()),
-          import(/* webpackIgnore: true */ "https://esm.sh/lucide-react@0.475.0?external=react"),
-          import(/* webpackIgnore: true */ "https://esm.sh/motion@12.29.2/react?external=react"),
+          importUrl(ESM.react),
+          importUrl(ESM.jsx),
+          importUrl(ESM.jsxDev),
+          importUrl(ESM.reactDom),
+          importUrl(ESM.reactDomClient),
+          importUrl(ESM.sucrase),
+          importUrl(dsUrl()),
+          importUrl("https://esm.sh/lucide-react@0.475.0?external=react"),
+          importUrl("https://esm.sh/motion@12.29.2/react?external=react"),
           // Preview-vocab packages the system prompt licenses (rules 6/6a).
-          import(/* webpackIgnore: true */ "https://esm.sh/recharts@3.7.0?external=react,react-dom"),
-          import(/* webpackIgnore: true */ "https://esm.sh/canvas-confetti@1.9.3"),
+          importUrl("https://esm.sh/recharts@3.7.0?external=react,react-dom"),
+          importUrl("https://esm.sh/canvas-confetti@1.9.3"),
           // Companion packages (icons etc.) — best-effort; a DS without
           // them just resolves to an empty namespace.
           ...Object.keys(REGISTRY.runtime?.dependencies ?? {}).map((name) =>
-            import(
-              /* webpackIgnore: true */ `https://esm.sh/${name}@${REGISTRY.runtime!.dependencies![name]}?external=react,react-dom`
+            importUrl(
+              `https://esm.sh/${name}@${REGISTRY.runtime!.dependencies![name]}?external=react,react-dom`
             ).catch(() => ({})),
           ),
         ]);
