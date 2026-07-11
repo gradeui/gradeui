@@ -38,7 +38,8 @@ const BRIGHTLOCAL_EXTRA_RULES = `BrightLocal house rules (from the design system
 - Forms: the canonical pattern is Field > FieldLabel + control + FieldDescription + FieldError.
 - Branding: app chrome (sidebar headers, top bars) uses the <Logo /> component — the BrightLocal mark — not hand-rolled initial tiles or text logos.
 - NEVER restyle a DS component's own chrome with utility classes. No border/background/rounded/padding/state overrides on TabsTrigger, TabsList, Button, Input, Card internals, etc. — render them BARE and let the design system paint them (e.g. <TabsTrigger value="overview" dataHook="tab-overview">Overview</TabsTrigger>, nothing more). Utility classes are for LAYOUT AROUND components only: spacing, width, grid/flex placement. If a component looks wrong bare, the fix is a variant or size prop, never className surgery.
-- No celebration effects (canvas-confetti) in BrightLocal screens.`;
+- No celebration effects (canvas-confetti) in BrightLocal screens.
+- Charts: always wrap in a container with an explicit fixed height (h-64, h-80) — never height="100%" inside an unsized parent (recharts logs width(-1) and renders nothing).`;
 
 export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
   id: "brightlocal",
