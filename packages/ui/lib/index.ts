@@ -165,14 +165,21 @@ export {
 
 export { Checkbox } from "../components/ui/checkbox";
 
-// Field — inline composition primitive (control + label + description +
-// trailing slot) with automatic id / aria-describedby wiring. Keeps the
-// Checkbox / RadioGroupItem / Switch primitives bare.
+// Field — 1:1 port of shadcn's Field family (Field / FieldLabel / FieldTitle /
+// FieldDescription / FieldContent / FieldGroup / FieldSet / FieldLegend /
+// FieldSeparator / FieldError) with invisible id / aria-describedby auto-wiring.
 export {
   Field,
   FieldLabel,
+  FieldTitle,
   FieldDescription,
+  FieldContent,
   FieldTrailing,
+  FieldGroup,
+  FieldSet,
+  FieldLegend,
+  FieldSeparator,
+  FieldError,
   type FieldProps,
 } from "../components/ui/field";
 
@@ -295,6 +302,17 @@ export {
 
 export { Input } from "../components/ui/input";
 
+// InputGroup — 1:1 port of shadcn's Input Group family (input + addons /
+// affixes / buttons / toolbars in one bordered field).
+export {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupText,
+  InputGroupInput,
+  InputGroupTextarea,
+} from "../components/ui/input-group";
+
 export { Label } from "../components/ui/label";
 
 export {
@@ -316,15 +334,26 @@ export {
   type MultiSelectProps,
 } from "../components/ui/multi-select";
 
-// Combobox — single-pick searchable picker (Popover + Command + Button).
-// The single-select sibling of MultiSelect and the Linear "selectable
-// badge" pattern: triggerVariant="inline" + renderValue makes the value
-// itself the trigger. `disabled` (driven by a permission check) gives the
-// read-only display.
+// Combobox — 1:1 port of shadcn's Base UI Combobox. Compositional
+// (ComboboxItem children, not an options array), built on @base-ui/react +
+// InputGroup. Single-select by default; `multiple` on the root enables chips.
 export {
   Combobox,
-  type ComboboxOption,
-  type ComboboxProps,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxGroup,
+  ComboboxLabel,
+  ComboboxCollection,
+  ComboboxEmpty,
+  ComboboxSeparator,
+  ComboboxChips,
+  ComboboxChip,
+  ComboboxChipsInput,
+  ComboboxTrigger,
+  ComboboxValue,
+  useComboboxAnchor,
 } from "../components/ui/combobox";
 
 // DataView — one dataset drawn as a table / cards / grid, wrapping TanStack

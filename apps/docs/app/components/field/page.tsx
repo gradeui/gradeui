@@ -7,34 +7,56 @@ import { Field } from "@/components/ui/field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
 
 const fieldProps = [
   {
+    name: "orientation",
+    type: '"vertical" | "horizontal" | "responsive"',
+    default: '"vertical"',
+    description:
+      "vertical = label on top, control, then description (Input / Select / Textarea fields). horizontal = control + text in a row; placement follows DOM order (control first = checkbox/radio row; control after the text = settings row). responsive = vertical, switching to horizontal at @md (needs a Field.Group ancestor).",
+  },
+  {
     name: "layout",
     type: '"option" | "setting"',
-    default: '"option"',
+    default: "-",
     description:
-      "option = control leads, text stacks beside it (checkbox / radio rows). setting = text leads, control pinned trailing (the classic settings row, e.g. a Switch).",
+      "Deprecated alias for orientation. option → horizontal (control leads); setting → horizontal (control trails). Prefer orientation.",
   },
   {
     name: "children",
     type: "ReactNode",
     default: "-",
     description:
-      "One bare control (Checkbox / RadioGroupItem / Switch) plus Field.Label, optional Field.Description, and optional Field.Trailing. Order does not matter.",
+      "One control (Input / Select / Textarea / Checkbox / RadioGroupItem / Switch) plus Field.Label (or Field.Title), optional Field.Description, and optional Field.Trailing. id + aria-describedby are wired automatically.",
   },
 ];
 
 const slotProps = [
   {
+    name: "Field.Content",
+    type: "<div> props",
+    default: "-",
+    description:
+      "Stacks the label + description. Required in a horizontal field so the text stacks beside the control (shadcn anatomy).",
+  },
+  {
     name: "Field.Label",
     type: "<label> props",
     default: "-",
     description:
-      "The title line. Its htmlFor is wired to the control automatically.",
+      "The label line. htmlFor is wired to the control automatically. Wrap a Field in a Field.Label to turn it into a selectable card.",
+  },
+  {
+    name: "Field.Title",
+    type: "<div> props",
+    default: "-",
+    description:
+      "A non-label title — use inside a card (a Field wrapped in Field.Label) so you don't nest two labels.",
   },
   {
     name: "Field.Description",
@@ -44,10 +66,25 @@ const slotProps = [
       "Optional secondary line. Linked to the control via aria-describedby automatically.",
   },
   {
+    name: "Field.Error",
+    type: "<div> props + errors?",
+    default: "-",
+    description:
+      "Validation message (role=alert). Pass children or an errors array (react-hook-form friendly).",
+  },
+  {
+    name: "Field.Group / Set / Legend / Separator",
+    type: "layout props",
+    default: "-",
+    description:
+      "Structural helpers for composing multiple fields, matching shadcn's Field family.",
+  },
+  {
     name: "Field.Trailing",
     type: "<div> props",
     default: "-",
-    description: "Optional slot pinned to the end of the row (a Badge, kbd, price).",
+    description:
+      "Grade extension (not in shadcn): a slot pinned to the end of the row (a Badge, kbd, price).",
   },
 ];
 
@@ -75,19 +112,45 @@ export default function FieldPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Usage
         </h2>
+        <p className="text-muted-foreground">
+          Vertical is the default — label on top, control, then description.
+          The workhorse for Input / Select / Textarea fields.
+        </p>
         <ComponentPreview
           code={`<Field>
-  <Checkbox value="terms" />
-  <Field.Label>Accept terms</Field.Label>
-  <Field.Description>You agree to the privacy policy.</Field.Description>
+  <Field.Label>Email</Field.Label>
+  <Input type="email" placeholder="you@example.com" />
+  <Field.Description>We'll never share it.</Field.Description>
 </Field>`}
         >
           <Field>
+            <Field.Label>Email</Field.Label>
+            <Input type="email" placeholder="you@example.com" />
+            <Field.Description>We&apos;ll never share it.</Field.Description>
+          </Field>
+        </ComponentPreview>
+
+        <p className="text-muted-foreground">
+          For a checkbox or radio row, set orientation=&quot;horizontal&quot;,
+          put the control first, and stack the text in a Field.Content.
+        </p>
+        <ComponentPreview
+          code={`<Field orientation="horizontal">
+  <Checkbox value="terms" />
+  <Field.Content>
+    <Field.Label>Accept terms</Field.Label>
+    <Field.Description>You agree to the privacy policy.</Field.Description>
+  </Field.Content>
+</Field>`}
+        >
+          <Field orientation="horizontal">
             <Checkbox />
-            <Field.Label>Accept terms</Field.Label>
-            <Field.Description>
-              You agree to the privacy policy.
-            </Field.Description>
+            <Field.Content>
+              <Field.Label>Accept terms</Field.Label>
+              <Field.Description>
+                You agree to the privacy policy.
+              </Field.Description>
+            </Field.Content>
           </Field>
         </ComponentPreview>
       </div>
@@ -99,21 +162,25 @@ export default function FieldPage() {
 
         <h3 className="text-lg font-medium">Trailing slot</h3>
         <p className="text-muted-foreground">
-          Field.Trailing pins anything (a Badge, a price, a shortcut hint) to
-          the end of the row.
+          Field.Trailing (a Grade extension) pins anything — a Badge, a price,
+          a shortcut hint — to the end of the row.
         </p>
         <ComponentPreview
-          code={`<Field>
+          code={`<Field orientation="horizontal">
   <Checkbox defaultChecked />
-  <Field.Label>Enable beta features</Field.Label>
-  <Field.Description>Early access, may change.</Field.Description>
+  <Field.Content>
+    <Field.Label>Enable beta features</Field.Label>
+    <Field.Description>Early access, may change.</Field.Description>
+  </Field.Content>
   <Field.Trailing><Badge variant="info-soft">New</Badge></Field.Trailing>
 </Field>`}
         >
-          <Field>
+          <Field orientation="horizontal">
             <Checkbox defaultChecked />
-            <Field.Label>Enable beta features</Field.Label>
-            <Field.Description>Early access, may change.</Field.Description>
+            <Field.Content>
+              <Field.Label>Enable beta features</Field.Label>
+              <Field.Description>Early access, may change.</Field.Description>
+            </Field.Content>
             <Field.Trailing>
               <Badge variant="info-soft">New</Badge>
             </Field.Trailing>
@@ -127,47 +194,59 @@ export default function FieldPage() {
         </p>
         <ComponentPreview
           code={`<RadioGroup defaultValue="weekly" className="gap-4">
-  <Field>
+  <Field orientation="horizontal">
     <RadioGroupItem value="weekly" />
-    <Field.Label>Weekly</Field.Label>
-    <Field.Description>A digest every Monday.</Field.Description>
+    <Field.Content>
+      <Field.Label>Weekly</Field.Label>
+      <Field.Description>A digest every Monday.</Field.Description>
+    </Field.Content>
   </Field>
-  <Field>
+  <Field orientation="horizontal">
     <RadioGroupItem value="daily" />
-    <Field.Label>Daily</Field.Label>
-    <Field.Description>One email each morning.</Field.Description>
+    <Field.Content>
+      <Field.Label>Daily</Field.Label>
+      <Field.Description>One email each morning.</Field.Description>
+    </Field.Content>
   </Field>
 </RadioGroup>`}
         >
           <RadioGroup defaultValue="weekly" className="gap-4">
-            <Field>
+            <Field orientation="horizontal">
               <RadioGroupItem value="weekly" />
-              <Field.Label>Weekly</Field.Label>
-              <Field.Description>A digest every Monday.</Field.Description>
+              <Field.Content>
+                <Field.Label>Weekly</Field.Label>
+                <Field.Description>A digest every Monday.</Field.Description>
+              </Field.Content>
             </Field>
-            <Field>
+            <Field orientation="horizontal">
               <RadioGroupItem value="daily" />
-              <Field.Label>Daily</Field.Label>
-              <Field.Description>One email each morning.</Field.Description>
+              <Field.Content>
+                <Field.Label>Daily</Field.Label>
+                <Field.Description>One email each morning.</Field.Description>
+              </Field.Content>
             </Field>
           </RadioGroup>
         </ComponentPreview>
 
         <h3 className="text-lg font-medium">Setting row</h3>
         <p className="text-muted-foreground">
-          layout=&quot;setting&quot; flips the row: text on the left, control
-          pinned right. The classic settings list with a Switch.
+          In a horizontal field, putting the control after the text pins it
+          to the right — the classic settings list with a Switch.
         </p>
         <ComponentPreview
-          code={`<Field layout="setting">
-  <Field.Label>Email notifications</Field.Label>
-  <Field.Description>Weekly digest of activity.</Field.Description>
+          code={`<Field orientation="horizontal">
+  <Field.Content>
+    <Field.Label>Email notifications</Field.Label>
+    <Field.Description>Weekly digest of activity.</Field.Description>
+  </Field.Content>
   <Switch defaultChecked />
 </Field>`}
         >
-          <Field layout="setting">
-            <Field.Label>Email notifications</Field.Label>
-            <Field.Description>Weekly digest of activity.</Field.Description>
+          <Field orientation="horizontal">
+            <Field.Content>
+              <Field.Label>Email notifications</Field.Label>
+              <Field.Description>Weekly digest of activity.</Field.Description>
+            </Field.Content>
             <Switch defaultChecked />
           </Field>
         </ComponentPreview>

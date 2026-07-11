@@ -20,6 +20,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { buildComponentManifest } from "@gradeui/studio/playbook";
+import { getActiveRegistry } from "@/lib/active-registry";
 
 // The playbook package inlines sidecars as a TS string map — no fs access
 // needed at runtime, so this route runs fine on the edge if we ever want.
@@ -46,9 +47,22 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const manifest = buildComponentManifest(
-    onlyFor.length ? { onlyFor } : undefined
-  );
+  // Instance-named parts (BrightLocal's data-hook "{context}-{type}") →
+  // component names via the registry's suffix map, longest suffix first.
+  const registry = getActiveRegistry();
+  const suffixMap = registry.selection.partSuffixMap;
+  if (suffixMap) {
+    const suffixes = Object.keys(suffixMap).sort((a, b) => b.length - a.length);
+    for (const part of [...onlyFor]) {
+      const hit = suffixes.find((sfx) => part === sfx || part.endsWith(`-${sfx}`));
+      if (hit) onlyFor.push(suffixMap[hit]);
+    }
+  }
+
+  const manifest = buildComponentManifest({
+    ...(onlyFor.length ? { onlyFor } : {}),
+    registry,
+  });
 
   return NextResponse.json(
     { manifest },

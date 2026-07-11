@@ -21,16 +21,17 @@
  */
 
 import { registerAll, type RewriteRule } from "@gradeui/walker";
-import { ALLOWED_COMPONENTS } from "@gradeui/studio/playbook";
+import { getActiveRegistry } from "@/lib/active-registry";
 import * as LucideReact from "lucide-react";
 
-// ALLOWED_COMPONENTS is a string[] of PascalCase component names.
+// The active registry's `components.allowed` is a string[] of PascalCase
+// component names (B1 — registry-fed instead of the gradeui constant).
 // registerAll expects a `Record<string, unknown>` (the module's named
 // exports). Bridge it: build a synthetic object whose KEYS are the
 // component names. registerAll only inspects keys to populate the
 // known-names set, so the values can be anything.
 const registry: Record<string, true> = {};
-for (const name of ALLOWED_COMPONENTS) {
+for (const name of getActiveRegistry().components.allowed) {
   registry[name] = true;
 }
 registerAll(registry);

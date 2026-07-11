@@ -10,7 +10,9 @@ export type {
   DesignSystemRegistry,
   RegistryComponents,
   RegistryPackage,
+  RegistryPrompt,
   RegistrySelection,
 } from "./types";
 export { registryShortName } from "./types";
 export { GRADE_REGISTRY } from "./gradeui";
+export { BRIGHTLOCAL_REGISTRY } from "./brightlocal";

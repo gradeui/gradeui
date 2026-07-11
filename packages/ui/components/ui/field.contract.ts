@@ -9,21 +9,27 @@ import { contract } from "@gradeui/contracts";
 
 export const FieldContract = contract({
   name: "Field",
-  description: "Pair a bare control with a label and optional description in a row, with id + aria-describedby wired automatically. Use layout=\"setting\" for the classic settings row (label on the left, Switch on the right). For a selectable CARD where the whole surface is the control, use RadioCard / CheckboxCard / SwitchCard instead.",
+  description: "The form-field wrapper. Default vertical for Input/Select/Textarea (label on top). horizontal for a checkbox/radio row (control first) or a settings row (label left, Switch right). Stack fields with Field.Group; group a related set with Field.Set + Field.Legend; divide with Field.Separator; surface validation with Field.Error; use Field.Title for a non-label heading. For a selectable CARD where the whole surface is the control, use RadioCard / CheckboxCard / SwitchCard instead.",
   import: "@gradeui/ui",
-  aliases: ["field","form field","control row","label and description","two line checkbox","option row","setting row","toggle row"],
-  composesWith: ["Checkbox","RadioGroup","RadioGroupItem","Switch","Badge (inside Field.Trailing)"],
-  styleDefaults: {"FieldLabel":"text-sm font-medium leading-none text-foreground cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70","FieldDescription":"text-sm text-muted-foreground","FieldTrailing":"flex shrink-0 items-center gap-2","FieldRoot":"flex gap-3"},
+  aliases: ["field","form field","control row","label and description","input field","vertical field","two line checkbox","option row","setting row","toggle row","field group","fieldset","field legend","field error","orientation"],
+  composesWith: ["Input","Select","Textarea","Checkbox","RadioGroup","RadioGroupItem","Switch","Badge (inside Field.Trailing)","Field.Group","Field.Set","Field.Legend","Field.Separator","Field.Error","Field.Content","Field.Title"],
+  styleDefaults: {"FieldSet":"flex flex-col gap-6","FieldLegend":"mb-3 font-medium","FieldGroup":"group/field-group @container/field-group flex w-full flex-col gap-7 data-[slot=checkbox-group]:gap-3 [&>[data-slot=field-group]]:gap-4","Field":"group/field flex w-full gap-3 data-[invalid=true]:text-destructive","FieldTrailing":"flex shrink-0 items-center gap-2","FieldContent":"group/field-content flex flex-1 flex-col gap-1.5 leading-snug","FieldLabel":"group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50","FieldTitle":"flex w-fit items-center gap-2 text-sm leading-snug font-medium group-data-[disabled=true]/field:opacity-50","FieldDescription":"text-sm leading-normal font-normal text-muted-foreground group-has-[[data-orientation=horizontal]]/field:text-balance","FieldSeparator":"relative -my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2","FieldError":"text-destructive text-sm font-normal"},
+  variantDefaults: {"orientation":"vertical"},
   props: {
+  "orientation": {
+      schema: z.enum(["vertical", "horizontal", "responsive"]).optional(),
+      design: "knob",
+      description: "vertical (default): label on top, control, then description (Input/Select/Textarea fields); horizontal: control + text in a row, placement follows DOM order (control first = checkbox row; control after text = settings row); responsive: vertical then horizontal at @md (needs a Field.Group ancestor)",
+  },
   "layout": {
       schema: z.enum(["option", "setting"]).optional(),
       design: "knob",
-      description: "option (default): control leads, text beside it; setting: text leads, control pinned trailing",
+      description: "DEPRECATED alias; option → horizontal control-leading, setting → horizontal control-trailing. Prefer orientation",
   },
   "children": {
       schema: z.unknown(),
       design: "plumbing",
-      description: "order does not matter",
+      description: "id + aria-describedby auto-wired",
   },
   },
 });

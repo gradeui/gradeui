@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { Check } from "lucide-react";
+import { CheckIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Checkbox = React.forwardRef<
@@ -11,20 +11,27 @@ const Checkbox = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <CheckboxPrimitive.Root
     ref={ref}
+    data-slot="checkbox"
     className={cn(
-      // Fixed 3px radius so the checkbox always reads as a rounded square —
-      // even under "round"/"pill" themes where rounded-sm would otherwise
-      // derive from a large --radius and turn it circular (a radio button
-      // look). Override via className if you really want it circular.
-      "gds-checkbox peer h-4 w-4 shrink-0 rounded-[3px] border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+      // shadcn (radix) structure: neutral `border-input` at rest, the
+      // brand `border-primary` + fill only on checked, the ring-[3px]
+      // focus model, shadow-xs, dark fill and aria-invalid states.
+      //
+      // Grade trait kept on purpose: a fixed 3px radius so the checkbox
+      // always reads as a rounded square — even under "round"/"pill"
+      // themes where a token-derived radius would otherwise turn it
+      // circular (a radio-button look). Override via className if you
+      // really want it circular.
+      "gds-checkbox peer size-4 shrink-0 rounded-[3px] border border-input shadow-xs outline-none transition-shadow focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:bg-input/30 dark:aria-invalid:ring-destructive/40 dark:data-[state=checked]:bg-primary",
       className
     )}
     {...props}
   >
     <CheckboxPrimitive.Indicator
-      className={cn("flex items-center justify-center text-current")}
+      data-slot="checkbox-indicator"
+      className={cn("grid place-content-center text-current transition-none")}
     >
-      <Check className="h-4 w-4" />
+      <CheckIcon className="size-3.5" />
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 ));

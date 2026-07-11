@@ -25,16 +25,33 @@ import { compressToBase64 } from "lz-string";
 import {
   PLAYGROUND_FONTS_URL,
   PLAYGROUND_FONT_VARS,
+  EXTERNAL_TAILWIND_HEAD,
+  EXTERNAL_FONTS_URL,
+  EXTERNAL_FONT_VARS,
   formatThemeVars,
   prepareAppSource,
 } from "./chat-sandpack";
 import { applyBuiltInThemeOverrides, fontFaceCSS } from "./themes";
 import type { GeneratedTheme } from "./themes";
+import { getActiveRegistry } from "@/lib/active-registry";
 
-/** Current published version of @gradeui/ui. Bump when we pin to a newer
- *  release. Left at `latest` by default so freshly-published versions are
- *  picked up without code changes. */
-const GRADEUI_VERSION = "latest";
+// Active DS (BYODS B2/Phase-4): the exporter is the one surface that
+// translates Studio's internal barrel form into the DS's own import
+// convention (per-file subpaths) via `package.importMap`.
+const EXPORT_REGISTRY = getActiveRegistry();
+const EXPORT_DS_PKG = EXPORT_REGISTRY.package.name;
+
+/** Version of the DS package the exported sandbox installs. gradeui keeps
+ *  its historical `latest` (freshly-published versions picked up without
+ *  code changes); external registries use their pinned version. */
+const DS_EXPORT_VERSION =
+  EXPORT_REGISTRY.id === "gradeui"
+    ? "latest"
+    : EXPORT_REGISTRY.package.version ?? "latest";
+
+/** External DS → the exported sandbox mirrors the preview's Tailwind v4
+ *  browser-build head instead of the gradeui v3-CDN + oklch config. */
+const EXPORT_EXTERNAL = EXPORT_REGISTRY.id !== "gradeui";
 
 /**
  * Rewrite local component imports to flat imports from @gradeui/ui. The
@@ -61,10 +78,59 @@ export function rewriteImportsToGradeui(source: string): string {
     return ""; // drop the original line
   });
   if (specifiers.size === 0) return source;
-  const merged = `import { ${Array.from(specifiers).join(", ")} } from "@gradeui/ui";\n`;
+  const merged = `import { ${Array.from(specifiers).join(", ")} } from "${EXPORT_DS_PKG}";\n`;
   // Place the consolidated import at the top, just after any remaining
   // imports (e.g. lucide-react). Simplest: prepend.
   return merged + stripped.trimStart();
+}
+
+/**
+ * Translate Studio's internal barrel import into the design system's own
+ * import convention at the handoff boundary (BYODS: "keep the barrel
+ * internally, translate at export").
+ *
+ * When the active registry carries `package.importMap` (component →
+ * per-file subpath, e.g. BrightLocal's "never barrel" rule), the single
+ * `import { Button, Card } from "<pkg>"` line becomes one import per
+ * subpath, grouped:
+ *
+ *   import { Button } from "@brightlocal/ui-components/button";
+ *   import { Card, CardHeader } from "@brightlocal/ui-components/card";
+ *
+ * Names missing from the map stay on the barrel (defensive — better a
+ * working barrel import than a fabricated path). No importMap → no-op,
+ * so gradeui exports are byte-identical to before.
+ */
+export function applyRegistryImportStyle(source: string): string {
+  const importMap = EXPORT_REGISTRY.package.importMap;
+  if (!importMap) return source;
+  const barrelRx = new RegExp(
+    `import\\s*\\{\\s*([^}]+?)\\s*\\}\\s*from\\s*["']${EXPORT_DS_PKG.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["'];?\\n?`,
+  );
+  const m = source.match(barrelRx);
+  if (!m) return source;
+  const bySubpath = new Map<string, string[]>();
+  const unmapped: string[] = [];
+  for (const raw of m[1].split(",")) {
+    const name = raw.trim();
+    if (!name) continue;
+    const subpath = importMap[name.replace(/\s+as\s+.+$/, "").trim()];
+    if (subpath) {
+      const list = bySubpath.get(subpath) ?? [];
+      list.push(name);
+      bySubpath.set(subpath, list);
+    } else {
+      unmapped.push(name);
+    }
+  }
+  const lines: string[] = [];
+  for (const [subpath, names] of Array.from(bySubpath.entries()).sort()) {
+    lines.push(`import { ${names.join(", ")} } from "${subpath}";`);
+  }
+  if (unmapped.length) {
+    lines.push(`import { ${unmapped.join(", ")} } from "${EXPORT_DS_PKG}";`);
+  }
+  return source.replace(barrelRx, lines.join("\n") + "\n");
 }
 
 /** Build the set of virtual files the CodeSandbox define API expects. */
@@ -75,7 +141,7 @@ export function buildNpmSandboxFiles(params: {
 }): Record<string, { content: string }> {
   const { appSource, theme, mode } = params;
   const prepared = prepareAppSource(appSource);
-  const rewritten = rewriteImportsToGradeui(prepared);
+  const rewritten = applyRegistryImportStyle(rewriteImportsToGradeui(prepared));
 
   // Apply the same per-theme tokenOverrides Studio uses in-page. The
   // registry-loaded built-in themes already have these baked in, but a
@@ -102,7 +168,27 @@ export function buildNpmSandboxFiles(params: {
     version: "1.0.0",
     private: true,
     dependencies: {
-      "@gradeui/ui": GRADEUI_VERSION,
+      [EXPORT_DS_PKG]: DS_EXPORT_VERSION,
+      ...(EXPORT_REGISTRY.runtime?.dependencies ?? {}),
+      // Preview-vocab packages the prompt licenses (charts, animation,
+      // rich text). gradeui gets these transitively via @gradeui/ui;
+      // an external DS's tree doesn't carry them, and a screen that
+      // imports them must run in the exported sandbox exactly as it
+      // renders in Studio — the export IS the handoff.
+      ...(EXPORT_EXTERNAL
+        ? {
+            recharts: "^3.7.0",
+            // recharts' unhoisted peer — CRA/CodeSandbox doesn't
+            // auto-resolve it ("Could not find dependency: 'react-is'").
+            "react-is": "^19.0.0",
+            motion: "^12.0.0",
+            "canvas-confetti": "^1.9.3",
+            "@tiptap/react": "^2.6.0",
+            "@tiptap/starter-kit": "^2.6.0",
+            "@tiptap/extension-mention": "^2.6.0",
+            "@tiptap/extension-placeholder": "^2.6.0",
+          }
+        : {}),
       react: "^19.0.0",
       "react-dom": "^19.0.0",
       "react-scripts": "5.0.1",
@@ -136,9 +222,12 @@ export function buildNpmSandboxFiles(params: {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="${PLAYGROUND_FONTS_URL}" />
-    <title>Grade DS — CodeSandbox preview</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="${EXPORT_EXTERNAL ? EXTERNAL_FONTS_URL : PLAYGROUND_FONTS_URL}" />
+    <title>${EXPORT_REGISTRY.name} — CodeSandbox preview</title>
+${
+  EXPORT_EXTERNAL
+    ? EXTERNAL_TAILWIND_HEAD
+    : `    <script src="https://cdn.tailwindcss.com"></script>
     <script>
       // Same Tailwind config shape as the in-page Sandpack preview — keep
       // in sync with buildPlaygroundIndexHtml in chat-sandpack.ts.
@@ -211,20 +300,22 @@ export function buildNpmSandboxFiles(params: {
           },
         },
       };
-    </script>
+    </script>`
+}
     <style>
+${EXPORT_EXTERNAL ? EXPORT_REGISTRY.runtime?.previewCss ?? "" : ""}
 ${fontFaces}
       :root {
-${PLAYGROUND_FONT_VARS}
-${lightVars}
+${EXPORT_EXTERNAL ? EXTERNAL_FONT_VARS : PLAYGROUND_FONT_VARS}
+${EXPORT_EXTERNAL ? "" : lightVars}
       }
       .dark {
-${darkVars}
+${EXPORT_EXTERNAL ? "" : darkVars}
       }
-      * { border-color: oklch(var(--border)); }
+      * { border-color: ${EXPORT_EXTERNAL ? "var(--border)" : "oklch(var(--border))"}; }
       body {
-        background-color: oklch(var(--background));
-        color: oklch(var(--foreground));
+        background-color: ${EXPORT_EXTERNAL ? "var(--background)" : "oklch(var(--background))"};
+        color: ${EXPORT_EXTERNAL ? "var(--foreground)" : "oklch(var(--foreground))"};
         font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
         margin: 0;
       }
@@ -260,7 +351,7 @@ ${darkVars}
   const indexTsx = `import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import "@gradeui/ui/styles.css";
+${EXPORT_REGISTRY.package.styleImports.map((s) => `import "${s}";`).join("\n")}
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

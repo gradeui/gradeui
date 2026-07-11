@@ -404,7 +404,7 @@ export function ThemeBuilderControls({
           <div className="pt-2 space-y-2">
             {/* Canonical Field + Checkbox row (id/aria wiring for free)
                 instead of the old raw <input type="checkbox">. */}
-            <Field>
+            <Field orientation="horizontal">
               <Checkbox
                 checked={Boolean(input.neutralPureGray)}
                 onCheckedChange={(checked) =>

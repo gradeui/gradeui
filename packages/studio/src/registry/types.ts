@@ -49,6 +49,41 @@ export interface RegistryPackage {
   version?: string;
   /** Stylesheets the preview iframe must load ("@gradeui/ui/styles.css"). */
   styleImports: readonly string[];
+  /** Component → per-file subpath ("Button" → "@brightlocal/ui-components/button").
+   *  Consumed ONLY by the exporters: Studio's internal normal form stays the
+   *  barrel (generation + preview), and export/handoff rewrites to the DS's
+   *  per-file import convention when this map is present. Absent = the DS
+   *  has no such convention and exports keep the barrel. */
+  importMap?: Readonly<Record<string, string>>;
+}
+
+export interface RegistryRuntime {
+  /** Extra npm dependencies the preview must install alongside the DS
+   *  package itself (a separate tokens package, an icons package, …).
+   *  The DS package + version come from `package`; this is only for
+   *  companions. */
+  dependencies?: Readonly<Record<string, string>>;
+  /** The DS's OWN Tailwind v4 `@theme` block (v4 SOURCE, compiled by the
+   *  preview's v4 browser build). This is the full utility vocabulary —
+   *  primitive family remaps, semantic colors, fonts, weights, radii.
+   *  When present it REPLACES the generic shadcn-vocabulary bridge; a
+   *  hand-approximated bridge renders stock Tailwind for every primitive
+   *  utility, which reads as "not the design system". */
+  previewThemeCss?: string;
+  /** Raw CSS injected into the preview alongside `package.styleImports`.
+   *  For design systems whose published CSS is a build-time SOURCE file
+   *  (Tailwind v4 @import/@theme presets) rather than compiled output,
+   *  this carries the runtime-consumable extract — e.g. BrightLocal's
+   *  semantic :root/.dark alias blocks. Plain data; stays serialisable. */
+  previewCss?: string;
+}
+
+export interface RegistryPrompt {
+  /** House rules injected verbatim as a system-prompt stanza (a design
+   *  system's AI_USAGE.md distilled: conventions the model must follow
+   *  beyond what sidecars express — required props, styling rules, …).
+   *  Forerunner of the full B3 `prompt.designMd` slot. */
+  extraRules?: string;
 }
 
 export interface RegistrySelection {
@@ -56,6 +91,13 @@ export interface RegistrySelection {
    *  The in-iframe selection agent walks up the DOM looking for it; a
    *  library that stamps nothing degrades to tag-level selection. */
   partAttribute: string;
+  /** For DSes whose part attribute names INSTANCES, not components
+   *  (BrightLocal's data-hook convention is "{context}-{componentType}"
+   *  — "settings-save-button"), a suffix → component-name map so
+   *  selection can still resolve WHICH component was clicked. Checked
+   *  longest-suffix-first. Absent = the attribute value is already a
+   *  kebab-case component name (gradeui). */
+  partSuffixMap?: Readonly<Record<string, string>>;
 }
 
 export interface DesignSystemRegistry {
@@ -77,6 +119,8 @@ export interface DesignSystemRegistry {
   package: RegistryPackage;
   components: RegistryComponents;
   selection: RegistrySelection;
+  prompt?: RegistryPrompt;
+  runtime?: RegistryRuntime;
 
   // B2/B3 fields (theme, prompt.designMd/extraRules, scaffolds, runtime
   // dependencies) are specified in STUDIO-BYODS.md and land with the

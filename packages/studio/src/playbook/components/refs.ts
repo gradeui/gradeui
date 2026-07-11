@@ -25,7 +25,8 @@ import type {
   PropManifest,
   ComponentManifest,
 } from "./types";
-import { SIDECARS } from "./sidecars.generated";
+import { GRADE_REGISTRY } from "../../registry/gradeui";
+import type { DesignSystemRegistry } from "../../registry/types";
 
 // ─── Frontmatter parsing ──────────────────────────────────────────────────
 
@@ -181,12 +182,12 @@ function toRef(
  * can't take the chat route offline — we'd rather degrade to "no reference
  * for that component" than 500 the request.
  */
-function loadAll(): ComponentRef[] {
+function loadAll(sidecars: Readonly<Record<string, string>>): ComponentRef[] {
   const refs: ComponentRef[] = [];
-  const files = Object.keys(SIDECARS).sort();
+  const files = Object.keys(sidecars).sort();
   for (const file of files) {
     try {
-      const raw = SIDECARS[file];
+      const raw = sidecars[file];
       const fm = parseFrontmatter(raw);
       const fallback = file.replace(/\.md$/, "");
       const ref = toRef(fm, fallback);
@@ -225,14 +226,21 @@ function extractBody(raw: string): string {
   return raw.slice(afterFence).replace(/^\r?\n/, "").trim();
 }
 
-// Cache once at module scope. Unlike the old fs-based loader, there's no
-// "dev hot-reload" wrinkle: SIDECARS is a bundled TS module, so editing a
-// .md and regenerating with `generate:sidecars` is a normal HMR module
-// update — Next's watcher picks it up for free.
-const CACHED_REFS: ComponentRef[] = loadAll();
+// Per-registry cache keyed by `registry.id` (B1 — STUDIO-BYODS.md). The
+// old module-scope constant was the gradeui special case; each registry's
+// sidecars are still parsed exactly once per process. Unlike the old
+// fs-based loader, there's no "dev hot-reload" wrinkle: sidecar bundles
+// are generated TS modules, so editing a .md and regenerating is a normal
+// HMR module update — Next's watcher picks it up for free.
+const REF_CACHE = new Map<string, ComponentRef[]>();
 
-function getRefs(): ComponentRef[] {
-  return CACHED_REFS;
+function getRefs(registry: DesignSystemRegistry = GRADE_REGISTRY): ComponentRef[] {
+  let refs = REF_CACHE.get(registry.id);
+  if (!refs) {
+    refs = loadAll(registry.components.sidecars);
+    REF_CACHE.set(registry.id, refs);
+  }
+  return refs;
 }
 
 // ─── Public API: render ───────────────────────────────────────────────────
@@ -344,8 +352,10 @@ export function renderComponentRefsBlock(options?: {
    *  surface survives; idiom misses are caught downstream by
    *  validateAgainstContract. */
   style?: "full" | "compact";
+  /** Design system whose sidecars feed the block (default gradeui). */
+  registry?: DesignSystemRegistry;
 }): string {
-  const refs = getRefs();
+  const refs = getRefs(options?.registry);
   if (!refs.length) return "";
   const style = options?.style ?? "full";
   const filter = options?.onlyFor?.length
@@ -392,8 +402,11 @@ export function renderComponentRefsBlock(options?: {
  * array — the main system prompt's allowed-list already tells the model what
  * components exist; we only pay for API details when there's signal we need them.
  */
-export function relevantComponentNames(text: string): string[] {
-  const refs = getRefs();
+export function relevantComponentNames(
+  text: string,
+  registry?: DesignSystemRegistry,
+): string[] {
+  const refs = getRefs(registry);
   if (!text || !refs.length) return [];
 
   // Build alias table: each canonical name maps to itself + any sub-exports
@@ -441,8 +454,10 @@ export function relevantComponentNames(text: string): string[] {
 }
 
 /** Introspection for debugging — not used by the prompt pipeline. */
-export function listComponentRefs(): ReadonlyArray<ComponentRef> {
-  return getRefs();
+export function listComponentRefs(
+  registry?: DesignSystemRegistry,
+): ReadonlyArray<ComponentRef> {
+  return getRefs(registry);
 }
 
 // ─── Structured prop manifest ─────────────────────────────────────────────
@@ -696,8 +711,10 @@ function buildManifestFromRef(ref: ComponentRef): ComponentManifest {
  */
 export function buildComponentManifest(options?: {
   onlyFor?: readonly string[];
+  /** Design system whose sidecars feed the manifest (default gradeui). */
+  registry?: DesignSystemRegistry;
 }): ComponentManifest[] {
-  const refs = getRefs();
+  const refs = getRefs(options?.registry);
   if (!refs.length) return [];
   const filter = options?.onlyFor?.length
     ? new Set(options.onlyFor.map((s) => s.toLowerCase()))

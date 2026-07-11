@@ -40,6 +40,7 @@ import { GradientEditorContract } from "../components/ui/gradient-editor.contrac
 import { GridContract } from "../components/ui/grid.contract";
 import { HoverCardContract } from "../components/ui/hover-card.contract";
 import { InputContract } from "../components/ui/input.contract";
+import { InputGroupContract } from "../components/ui/input-group.contract";
 import { LabelContract } from "../components/ui/label.contract";
 import { LogoContract } from "../components/ui/logo.contract";
 import { MapContract } from "../components/ui/map.contract";
@@ -120,6 +121,7 @@ export const COMPONENT_CONTRACTS: Readonly<Record<string, ComponentContract>> = 
   Grid: GridContract,
   HoverCard: HoverCardContract,
   Input: InputContract,
+  InputGroup: InputGroupContract,
   Label: LabelContract,
   Logo: LogoContract,
   Map: MapContract,

@@ -78,6 +78,9 @@ importers:
       '@ai-sdk/react':
         specifier: ^2.0.0
         version: 2.0.181(react@19.2.5)(zod@3.25.76)
+      '@base-ui/react':
+        specifier: ^1.6.0
+        version: 1.6.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@codemirror/lang-javascript':
         specifier: ^6.2.5
         version: 6.2.5
@@ -605,6 +608,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@base-ui/react':
+        specifier: ^1.6.0
+        version: 1.6.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -1096,6 +1102,33 @@ packages:
   '@babel/types@7.29.7':
     resolution: {integrity: sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==}
     engines: {node: '>=6.9.0'}
+
+  '@base-ui/react@1.6.0':
+    resolution: {integrity: sha512-/jzjTWJYXhRFO45Bev9lc3cHbmjzCMpUqbMZ2AgKy/z25mY9B6shGSNcXcjQar9n5doM0KYW1W8fcFv2jZBuMw==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      '@date-fns/tz': ^1.2.0
+      '@types/react': ^17 || ^18 || ^19
+      date-fns: ^4.0.0
+      react: ^17 || ^18 || ^19
+      react-dom: ^17 || ^18 || ^19
+    peerDependenciesMeta:
+      '@date-fns/tz':
+        optional: true
+      '@types/react':
+        optional: true
+      date-fns:
+        optional: true
+
+  '@base-ui/utils@0.3.1':
+    resolution: {integrity: sha512-gFFiltORVmW/N6IILTGxizP3PBpVpysqML1ALY5Vk0mH+7faVkCknOU31goYHN5Aoek2dkjxva1XOD2Ce9WuIg==}
+    peerDependencies:
+      '@types/react': ^17 || ^18 || ^19
+      react: ^17 || ^18 || ^19
+      react-dom: ^17 || ^18 || ^19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@bruits/satteri-darwin-arm64@0.9.1':
     resolution: {integrity: sha512-NE4qC2sRd0+R+oPMsKcUikIvWTGpAV16fSXNBoMSW7nK7Pd9e/ZGB7M8knep83pFmGmOb/5NbGKiVIh3oLbljw==}
@@ -7472,6 +7505,9 @@ packages:
   requires-port@1.0.0:
     resolution: {integrity: sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==}
 
+  reselect@5.2.0:
+    resolution: {integrity: sha512-AgZ3UOZm3YndfrJ4OYjgrT7bmCm/1iqkjvEfH/oYjzh6PD2qw4QuT3jjnXIrpdt4MTpMXclMT3lXbmRY+XRakw==}
+
   resend@4.8.0:
     resolution: {integrity: sha512-R8eBOFQDO6dzRTDmaMEdpqrkmgSjPpVXt4nGfWsZdYOet0kqra0xgbvTES6HmCriZEXbmGk3e0DiGIaLFTFSHA==}
     engines: {node: '>=18'}
@@ -8763,6 +8799,31 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
+
+  '@base-ui/react@1.6.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+    dependencies:
+      '@babel/runtime': 7.29.2
+      '@base-ui/utils': 0.3.1(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@floating-ui/react-dom': 2.1.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@floating-ui/utils': 0.2.11
+      react: 19.2.5
+      react-dom: 19.2.5(react@19.2.5)
+      use-sync-external-store: 1.6.0(react@19.2.5)
+    optionalDependencies:
+      '@date-fns/tz': 1.4.1
+      '@types/react': 19.2.14
+      date-fns: 4.1.0
+
+  '@base-ui/utils@0.3.1(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+    dependencies:
+      '@babel/runtime': 7.29.2
+      '@floating-ui/utils': 0.2.11
+      react: 19.2.5
+      react-dom: 19.2.5(react@19.2.5)
+      reselect: 5.2.0
+      use-sync-external-store: 1.6.0(react@19.2.5)
+    optionalDependencies:
+      '@types/react': 19.2.14
 
   '@bruits/satteri-darwin-arm64@0.9.1':
     optional: true
@@ -15973,6 +16034,8 @@ snapshots:
   require-from-string@2.0.2: {}
 
   requires-port@1.0.0: {}
+
+  reselect@5.2.0: {}
 
   resend@4.8.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
     dependencies:

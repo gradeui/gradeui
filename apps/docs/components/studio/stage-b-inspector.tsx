@@ -34,7 +34,7 @@ import * as React from "react";
 import Link from "next/link";
 import * as ts from "typescript";
 import { Boxes, Package, ExternalLink } from "lucide-react";
-import { ALLOWED_COMPONENTS } from "@gradeui/studio/playbook";
+import { getActiveRegistry } from "@/lib/active-registry";
 import { COMPONENT_CONTRACTS } from "@gradeui/ui/contracts";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -73,7 +73,7 @@ const TIER_1_SPECIFIERS = new Set<string>([
 ]);
 
 const ALLOWED_COMPONENT_LOWER = new Set(
-  ALLOWED_COMPONENTS.map((c) => c.toLowerCase()),
+  getActiveRegistry().components.allowed.map((c) => c.toLowerCase()),
 );
 
 /**

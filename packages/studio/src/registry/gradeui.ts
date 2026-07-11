@@ -23,8 +23,12 @@ export const GRADE_REGISTRY: DesignSystemRegistry = {
   shortName: "Grade DS",
   package: {
     name: "@gradeui/ui",
-    // version intentionally absent in B0 — chat-sandpack.ts owns the npm
-    // pin until the preview bootstrap goes registry-fed (B2).
+    // B2: the registry owns the npm pin (chat-sandpack derives its
+    // dependency map from here). EXACT version, not a range — see the
+    // cache/resolver rationale on PLAYGROUND_DEPENDENCIES in
+    // apps/docs/lib/chat-sandpack.ts. Bump when a new minor lands and
+    // newly exported components need to be reachable in Studio.
+    version: "0.10.0",
     styleImports: ["@gradeui/ui/styles.css"],
   },
   components: {

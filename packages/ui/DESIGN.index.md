@@ -1,7 +1,7 @@
 <!-- GENERATED — pnpm -F @gradeui/ui generate:design -->
 # Grade component index
 
-A cheap scan of all 79 components. Read the foundations + this
+A cheap scan of all 80 components. Read the foundations + this
 index first; then pull only the sidecars you need from `components/ui/<name>.md`
 (or the full `@gradeui/ui/DESIGN.md`). Foundations: themes, color-scopes, expressive, typography, spacing-layout.
 
@@ -27,20 +27,21 @@ index first; then pull only the sidecars you need from `components/ui/<name>.md`
 | `Code` | Read-only code surface for marketing heroes, docs, changelog entries, AI-output displays. |
 | `Collapsible` | A single show/hide reveal — "Show advanced settings" rows, expandable inline help, "More details" sections inside cards. |
 | `ColorPicker` | The token-led single-select colour picker — the focused "pick one colour token" sibling of FillPicker's solid tab. |
-| `Combobox` | Single-pick searchable picker — the single-select sibling of MultiSelect and the Linear "selectable badge" pattern (status / priority / assignee). |
+| `Combobox` | A searchable picker with type-to-filter. |
 | `Command` | A searchable list of actions or destinations — global ⌘K palettes, "jump to" inputs, account switchers with filter. |
 | `Composer` | | |
 | `DataView` | One dataset, drawn as a table, a list of cards, or a grid — without re-typing the TanStack boilerplate (sortable headers, flexRender, selection, view switch) on |
 | `DatePicker` | Any date or date-range entry. |
 | `Dialog` | Modal interruptions — confirmations, focused forms, detail views, AI suggestion sheets. |
 | `DropdownMenu` | A small action menu attached to a trigger — overflow "…" buttons on cards, user-avatar menus in headers, "Insert" menus in editors. |
-| `Field` | Pair a bare control with a label and optional description in a row, with id + aria-describedby wired automatically. |
+| `Field` | The form-field wrapper. |
 | `FillPicker` | Grade's paint picker — the control for choosing a frame's background fill, modelled on Figma's fill popover. |
 | `Flex` | The unopinionated flexbox primitive — reach for Flex when Stack, Row, or Grid don't quite fit. |
 | `grade-loader` |  |
 | `GradientEditor` | Edit a multi-stop CSS gradient with token-led stops. |
 | `Grid` | 2D layouts where Stack (vertical) and Row (horizontal) don't fit — stat-card grids, feature tiles, pricing columns, photo grids. |
 | `HoverCard` | Rich preview content surfaced on hover — user profile mini-cards on @-mentions, link previews, definition popups, layer-thumbnail peeks. |
+| `InputGroup` | Compose an input with leading/trailing icons, text affixes, buttons, or a toolbar inside one bordered field. |
 | `Input` | Any single-line text entry. |
 | `Label` | Every Input / Textarea / Checkbox / Switch / RadioGroup. |
 | `Logo` | ALWAYS use <Logo> wherever a screen carries a brand mark — |

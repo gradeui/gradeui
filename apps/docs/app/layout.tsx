@@ -268,7 +268,9 @@ export default async function RootLayout({
   // (/e/<token>) want a bare tree: no AuthProvider (its config-error
   // banner would leak into the iframe / embed), no Lenis, no Toaster.
   const isSandbox =
-    pathname.startsWith("/fast-sandbox") || pathname.startsWith("/e/");
+    pathname.startsWith("/fast-sandbox") ||
+    pathname.startsWith("/external-sandbox") ||
+    pathname.startsWith("/e/");
 
   return (
     // Font-loader classes go on <html> (not <body>) so their --font-*

@@ -18,6 +18,7 @@
  */
 
 import { componentFiles, buildPlaygroundStylesCss } from "./chat-sandpack";
+import { getActiveRegistry } from "@/lib/active-registry";
 
 interface ExportArgs {
   /** The user-visible App component source (already normalised). */
@@ -102,6 +103,19 @@ export function buildStandaloneHtml({
   mode,
   filename = "ramp-design",
 }: ExportArgs): string {
+  // BYODS (B2): this export inlines gradeui's vendored component copies
+  // (componentFiles) into a data:-URL importmap — an external DS has no
+  // vendored copies here, so the artifact would silently render broken.
+  // Fail loudly; the npm export path (chat-export-npm.ts) is the one that
+  // works for any registry.
+  const activeRegistry = getActiveRegistry();
+  if (activeRegistry.id !== "gradeui") {
+    throw new Error(
+      `Standalone HTML export supports only the gradeui registry (it inlines ` +
+        `vendored gradeui component copies). Active registry is ` +
+        `"${activeRegistry.id}" — use "Open in CodeSandbox (npm)" instead.`,
+    );
+  }
   const stylesCss = buildPlaygroundStylesCss(lightVars, darkVars, fontFaces);
 
   // Build data: URLs for each of the component files so the user's code

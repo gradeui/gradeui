@@ -2,45 +2,49 @@
 name: Combobox
 import: "@gradeui/ui"
 props:
-  - options: { value, label, icon?, keywords?, disabled? }[] — the selectable pool
-  - value?: string | null — controlled selection (wire onValueChange)
-  - defaultValue?: string | null — uncontrolled initial selection
-  - onValueChange?: (next: string | null) => void — fired with the next value, or null when cleared
-  - placeholder?: string — trigger text when nothing is selected
-  - searchPlaceholder?: string — search-input placeholder
-  - emptyMessage?: string — shown when search returns no rows
-  - searchable?: boolean — show the search input (default true)
-  - clearable?: boolean — add a Clear row so the value can return to unset
-  - triggerVariant?: "default" | "inline" — default = form-control surface (like Select); inline = chrome-free token trigger
-  - renderValue?: (option) => ReactNode — render the selected value yourself (e.g. a Badge); falls back to icon + label
-  - hideChevron?: boolean — drop the trailing chevron (inline token look)
-  - disabled?: boolean — lock to a read-only display of the current value
-  - align?: "start" | "center" | "end" — popover alignment
-when_to_use: Single-pick searchable picker — the single-select sibling of MultiSelect and the Linear "selectable badge" pattern (status / priority / assignee). Use triggerVariant="inline" with renderValue returning a Badge to make a value read as a clickable token that opens a command menu. For multiple selection use MultiSelect; for a small fixed list with no search use Select; for free-form command palettes use Command directly. Pass disabled (driven by a permission check) to show the value without letting the user edit it.
-composes_with: [Popover, Command, Badge, Avatar, PropertyList, Table, Field]
-aliases: [combobox, single select, searchable select, picker, status picker, priority picker, assignee picker, command select, autocomplete, dropdown select, selectable badge, inline select, token select, linear combobox]
+  - Combobox: the root (Base UI Combobox.Root). Pass items={array} for filtering, value/defaultValue + onValueChange for selection, and multiple to enable chips.
+  - ComboboxInput: the field (built on InputGroup). showTrigger?=true (chevron button), showClear?=false (clear button). Spreads Base UI Input props.
+  - ComboboxContent: the popover surface. side/align/sideOffset/alignOffset/anchor for positioning.
+  - ComboboxList: scroll container. Accepts a render function child `(item) => <ComboboxItem/>` when items are provided on the root.
+  - ComboboxItem: a row. value={item}; shows a check when selected.
+  - ComboboxGroup / ComboboxLabel: grouped sections with a heading.
+  - ComboboxEmpty: shown when the filter returns nothing.
+  - ComboboxSeparator: divider row.
+  - ComboboxChips / ComboboxChip / ComboboxChipsInput: multiple-select chips (only with multiple on the root).
+  - ComboboxValue / ComboboxTrigger / ComboboxClear: lower-level parts (used internally by ComboboxInput).
+  - useComboboxAnchor: ref hook to anchor the content to a custom element (e.g. a chips row).
+when_to_use: A searchable picker with type-to-filter. Single-select by default (value shows in the input); add multiple for tag-style chips. For a single chip that opens the popover (the Studio token-field pattern), keep it single-select and render your own chip in an InputGroupAddon — the built-in ComboboxChips is multiple-only. For a small fixed list without search use Select; for a free-form command palette use Command.
+composes_with: [InputGroup, Button, Field, Badge, Avatar, PropertyList, Table]
+aliases: [combobox, autocomplete, searchable select, single select, multi select, tag input, chips input, picker, status picker, assignee picker, token select, command select]
 ---
 
 ```jsx
-<Combobox
-  options={[
-    { value: "low", label: "Low" },
-    { value: "medium", label: "Medium" },
-    { value: "high", label: "High" },
-  ]}
-  defaultValue="low"
-  placeholder="Set priority"
-/>
+<Combobox items={frameworks}>
+  <ComboboxInput placeholder="Search framework…" />
+  <ComboboxContent>
+    <ComboboxEmpty>No framework found.</ComboboxEmpty>
+    <ComboboxList>
+      {(item) => (
+        <ComboboxItem key={item} value={item}>
+          {item}
+        </ComboboxItem>
+      )}
+    </ComboboxList>
+  </ComboboxContent>
+</Combobox>
 ```
 
 ```jsx
-// Linear-style: the value IS the trigger.
-<Combobox
-  triggerVariant="inline"
-  hideChevron
-  options={priorityOptions}
-  value={priority}
-  onValueChange={setPriority}
-  renderValue={(opt) => <Badge variant="warning-soft">{opt.label}</Badge>}
-/>
+// Multiple selection with chips
+<Combobox items={labels} multiple>
+  <ComboboxChips>
+    <ComboboxChip />
+    <ComboboxChipsInput placeholder="Add labels…" />
+  </ComboboxChips>
+  <ComboboxContent>
+    <ComboboxList>
+      {(item) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}
+    </ComboboxList>
+  </ComboboxContent>
+</Combobox>
 ```

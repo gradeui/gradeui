@@ -39,6 +39,8 @@ import {
   PLAYGROUND_EXTERNAL_RESOURCES,
   buildSandpackFiles,
 } from "@/lib/chat-sandpack";
+import { SourceEditor } from "@/components/studio/source-editor";
+import { cn } from "@/lib/utils";
 
 /**
  * Viewport widths for the focused-frame picker. "responsive" means "let
@@ -81,6 +83,14 @@ interface FocusedSandpackMountProps {
    *  parent StudioCanvas, not here). */
   canRender: boolean;
   viewportWidth: ViewportWidth;
+  /** Raw screen source for the Edit mode of the code view. Optional —
+   *  absent keeps the old read-only Sandpack editor behaviour. */
+  appSource?: string;
+  /** Persist an edited source (same signature as the fast mount's
+   *  onSourceEdit → StudioCanvas onSourceMutation). Providing it turns
+   *  on the View | Edit toolbar — parity with Fast Frame's code view,
+   *  which BYODS registries (pinned to Sandpack) would otherwise lose. */
+  onSourceEdit?: (next: string, label?: string) => void;
 }
 
 /**
@@ -97,7 +107,14 @@ export function FocusedSandpackMount({
   view,
   canRender,
   viewportWidth,
+  appSource,
+  onSourceEdit,
 }: FocusedSandpackMountProps) {
+  // View | Edit toggle for the code view — mirrors the fast mount's
+  // source toolbar so pinned-to-Sandpack registries keep source editing.
+  const [sourceMode, setSourceMode] = React.useState<"view" | "edit">("view");
+  const effectiveSourceMode =
+    sourceMode === "edit" && onSourceEdit ? "edit" : "view";
   return (
     <SandpackErrorBoundary resetKey={preparedSource}>
       <SandpackProvider
@@ -125,22 +142,67 @@ export function FocusedSandpackMount({
           } as React.CSSProperties
         }
       >
-        <SandpackLayout
+        <div
           style={{
             height: "100%",
             display: view === "code" && canRender ? "flex" : "none",
-            border: 0,
+            flexDirection: "column",
           }}
         >
-          {/* showTabs={false} belt-and-braces with visibleFiles above:
-              with a single visible file there's nothing to tab between,
-              so the strip is pure chrome. */}
-          <SandpackCodeEditor
-            showLineNumbers
-            showTabs={false}
-            style={{ height: "100%" }}
-          />
-        </SandpackLayout>
+          {/* Source toolbar — View | Edit. Same affordance as the fast
+              mount's code view; Edit shows only when the parent wired
+              onSourceEdit. */}
+          {onSourceEdit && (
+            <div className="flex shrink-0 items-center border-b border-border px-3 py-1.5">
+              <div className="inline-flex rounded-md border border-border p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setSourceMode("view")}
+                  className={cn(
+                    "rounded-sm px-2 py-0.5 transition",
+                    effectiveSourceMode === "view"
+                      ? "bg-foreground/10 text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSourceMode("edit")}
+                  className={cn(
+                    "rounded-sm px-2 py-0.5 transition",
+                    effectiveSourceMode === "edit"
+                      ? "bg-foreground/10 text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          )}
+          <div style={{ flex: 1, minHeight: 0 }}>
+            {effectiveSourceMode === "edit" && onSourceEdit ? (
+              <SourceEditor
+                value={appSource ?? ""}
+                mode={mode}
+                onSourceEdit={onSourceEdit}
+              />
+            ) : (
+              <SandpackLayout style={{ height: "100%", border: 0 }}>
+                {/* showTabs={false} belt-and-braces with visibleFiles above:
+                    with a single visible file there's nothing to tab between,
+                    so the strip is pure chrome. */}
+                <SandpackCodeEditor
+                  showLineNumbers
+                  showTabs={false}
+                  style={{ height: "100%" }}
+                />
+              </SandpackLayout>
+            )}
+          </div>
+        </div>
         {/* Viewport-width wrapper. The SandpackProvider's root is a
             block-level div, so `flex: 1` on this wrapper wouldn't
             pick up any height — we have to take it explicitly via

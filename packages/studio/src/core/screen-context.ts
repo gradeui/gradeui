@@ -26,18 +26,26 @@ import {
   EDIT_MODE_PROMPT,
   renderComponentRefsBlock,
   relevantComponentNames,
-  ALLOWED_COMPONENTS,
-  PINNED_COMPONENTS,
 } from "../playbook";
+import { GRADE_REGISTRY } from "../registry/gradeui";
+import type { DesignSystemRegistry } from "../registry/types";
 
-// Fast-path membership check to filter ref matches down to the Studio-exposed
-// allowlist. Built once at module load because the allowlist is static.
-// Example: a sidecar may alias "animation"/"lottie", so a prompt mentioning
-// "animation" pulls in that component's ref — but if it isn't in
-// ALLOWED_COMPONENTS the model can't emit it, so we drop the hint.
-const ALLOWED_COMPONENT_SET = new Set<string>(
-  ALLOWED_COMPONENTS.map((n) => n.toLowerCase()),
-);
+// Fast-path membership check to filter ref matches down to the registry's
+// allowlist, cached per registry id (B1 — the module-scope constant was the
+// gradeui special case). Example: a sidecar may alias "animation"/"lottie",
+// so a prompt mentioning "animation" pulls in that component's ref — but if
+// it isn't in the registry's `components.allowed` the model can't emit it,
+// so we drop the hint.
+const ALLOWED_SET_CACHE = new Map<string, Set<string>>();
+
+function allowedSet(registry: DesignSystemRegistry): Set<string> {
+  let set = ALLOWED_SET_CACHE.get(registry.id);
+  if (!set) {
+    set = new Set(registry.components.allowed.map((n) => n.toLowerCase()));
+    ALLOWED_SET_CACHE.set(registry.id, set);
+  }
+  return set;
+}
 
 /**
  * Element the user pointed at in the preview via the Select tool. The
@@ -82,6 +90,10 @@ export interface ScreenContextOptions {
    *  Transport-budgeted adapters (MCP) fall back to compact when the
    *  full payload would exceed the host's tool-result limit. */
   refsStyle?: "full" | "compact";
+  /** Design system the screen is generated against (default gradeui).
+   *  Drives the base prompt, retrieval, pinning, and the refs block —
+   *  one registry per request, end to end (STUDIO-BYODS.md B1). */
+  registry?: DesignSystemRegistry;
 }
 
 export interface ScreenContext {
@@ -114,12 +126,14 @@ export function createScreenContext(
     includeComponentRefs = true,
     pin = [],
     refsStyle = "full",
+    registry = GRADE_REGISTRY,
   } = options;
 
-  const base = basePrompt ?? buildSystemPrompt();
+  const base = basePrompt ?? buildSystemPrompt(registry);
   const editStanza = editMode ? EDIT_MODE_PROMPT : "";
 
-  const allowed = (n: string) => ALLOWED_COMPONENT_SET.has(n.toLowerCase());
+  const set = allowedSet(registry);
+  const allowed = (n: string) => set.has(n.toLowerCase());
 
   // Pin layout primitives up front (order matters — the model reads
   // top-down, so structural choices arrive before component-specific refs),
@@ -127,15 +141,15 @@ export function createScreenContext(
   const refs = includeComponentRefs
     ? Array.from(
         new Set([
-          ...PINNED_COMPONENTS.filter(allowed),
-          ...relevantComponentNames(brief).filter(allowed),
+          ...registry.components.pinned.filter(allowed),
+          ...relevantComponentNames(brief, registry).filter(allowed),
           ...pin.filter(allowed),
         ]),
       )
     : [];
 
   const refsBlock = refs.length > 0
-    ? renderComponentRefsBlock({ onlyFor: refs, style: refsStyle })
+    ? renderComponentRefsBlock({ onlyFor: refs, style: refsStyle, registry })
     : "";
 
   const selectionBlock = renderSelectionBlock(selection);

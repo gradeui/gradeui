@@ -115,6 +115,7 @@ import {
   type StudioSelection,
 } from "@/lib/chat-sandpack";
 import { buildSystemPrompt } from "@gradeui/studio/playbook";
+import { getActiveRegistry } from "@/lib/active-registry";
 import {
   createDesign,
   designKind,
@@ -184,7 +185,7 @@ import "@/lib/studio-walker-register";
 export default function StudioPage() {
   const [settings, updateSettings] = useChatSettings();
   const { theme: siteTheme, isDark: chromeIsDark } = useGradeTheme();
-  const systemPrompt = useMemo(() => buildSystemPrompt(), []);
+  const systemPrompt = useMemo(() => buildSystemPrompt(getActiveRegistry()), []);
 
   // The screen-level draft theme — seeded once from whatever chrome
   // theme is active when Studio mounts. After that, the Theme tab in

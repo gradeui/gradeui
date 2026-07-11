@@ -128,6 +128,19 @@ export const ALLOWED_COMPONENTS = [
   "Input",
   "Label",
   "Textarea",
+  // InputGroup — an input + addons / affixes / buttons / toolbars in ONE
+  // bordered field. InputGroupInput / InputGroupTextarea are the controls;
+  // InputGroupAddon (align="inline-start"|"inline-end"|"block-start"|
+  // "block-end") holds an icon, InputGroupText (prefix/suffix), or an
+  // InputGroupButton. THE answer for search inputs, prefix/suffix fields,
+  // unit inputs, and inline-button inputs — don't float an icon inside a
+  // bare <Input> or hand-roll the border.
+  "InputGroup",
+  "InputGroupAddon",
+  "InputGroupButton",
+  "InputGroupText",
+  "InputGroupInput",
+  "InputGroupTextarea",
   // Composer — Lexical-backed text composition surface. MANDATORY for
   // any chat input (Slack / Discord / Teams clones), comment box
   // (Linear / GitHub / Jira), reply input (Reddit / Twitter), AI prompt
@@ -261,11 +274,29 @@ export const ALLOWED_COMPONENTS = [
   // Use Select for SINGLE selection; reach for Command directly when the
   // option set is unbounded / async (users to @-mention, email recipients).
   "MultiSelect",
-  // Combobox — single-pick searchable picker (Popover + Command + Button).
-  // The single-select sibling of MultiSelect and the Linear "selectable
-  // badge": triggerVariant="inline" + renderValue makes the value the
-  // trigger. Use for status / priority / assignee pickers.
+  // Combobox — searchable picker with type-to-filter (Base UI). COMPOSITIONAL,
+  // not data-driven: Combobox (root; items={...} + value/onValueChange, add
+  // `multiple` for chips) → ComboboxInput (showTrigger / showClear) →
+  // ComboboxContent → ComboboxList with a `(item) => <ComboboxItem value={item}>`
+  // child, + ComboboxEmpty for the no-results row. Group with ComboboxGroup +
+  // ComboboxLabel; multi-select chips via ComboboxChips / ComboboxChip /
+  // ComboboxChipsInput. Single-select shows the value in the input. Use Select
+  // for a short fixed list with no search; MultiSelect is the older data-driven
+  // multi picker.
   "Combobox",
+  "ComboboxInput",
+  "ComboboxContent",
+  "ComboboxList",
+  "ComboboxItem",
+  "ComboboxGroup",
+  "ComboboxLabel",
+  "ComboboxEmpty",
+  "ComboboxSeparator",
+  "ComboboxChips",
+  "ComboboxChip",
+  "ComboboxChipsInput",
+  "ComboboxTrigger",
+  "ComboboxValue",
   // Date + Popover (shipped in @gradeui/ui@0.3.0)
   "DatePicker",
   "DateRangePicker",

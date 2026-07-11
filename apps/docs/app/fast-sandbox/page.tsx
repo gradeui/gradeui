@@ -53,6 +53,7 @@ import { flushSync } from "react-dom";
 import * as ReactJsxRuntime from "react/jsx-runtime";
 import * as ReactJsxDevRuntime from "react/jsx-dev-runtime";
 import { transform as sucraseTransform } from "sucrase";
+import { getActiveRegistry } from "@/lib/active-registry";
 
 // ─── Static imports of every module the preview can reach for. ────────
 //
@@ -124,6 +125,13 @@ import {
 // pre-bundled module object here — the whole point of the sandbox page
 // is that there's no runtime npm fetch.
 
+// Active-DS package name when it is NOT the precompiled gradeui barrel
+// (BYODS B2). Null in the default deployment.
+const EXTERNAL_DS_PKG = (() => {
+  const reg = getActiveRegistry();
+  return reg.id === "gradeui" ? null : reg.package.name;
+})();
+
 function resolveImport(path: string): unknown {
   // Stylesheets — no-op; styles are bundled by Next's CSS loader at
   // module import time (e.g. @gradeui/ui/styles.css is imported below).
@@ -137,6 +145,21 @@ function resolveImport(path: string): unknown {
   // Bundled preview-vocab modules.
   if (path === "@gradeui/ui" || path.startsWith("@gradeui/ui/")) {
     return { ...GradeuiUi, ...GradeuiComposer };
+  }
+  // BYODS (B2): an EXTERNAL design system is not precompiled into this
+  // page, and esm.sh would double-load React (invalid-hook-call). Fail
+  // with a pointed message — studio-canvas already pins non-gradeui
+  // registries to the Sandpack renderer, so hitting this means a surface
+  // (embed/share) mounted Fast Frame with an external registry active.
+  if (
+    EXTERNAL_DS_PKG &&
+    (path === EXTERNAL_DS_PKG || path.startsWith(`${EXTERNAL_DS_PKG}/`))
+  ) {
+    throw new Error(
+      `Fast sandbox: the active design system "${EXTERNAL_DS_PKG}" is not ` +
+        `precompiled into Fast Frame. Use the Sandpack renderer (it installs ` +
+        `the package from npm) — studio-canvas does this automatically.`
+    );
   }
   if (path === "lucide-react") return LucideReact;
   if (path === "recharts") return Recharts;

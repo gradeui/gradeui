@@ -29,7 +29,12 @@ export default async function middleware(req: NextRequest) {
   // the root layout can detect sandbox routes and render a bare
   // tree. Keep this branch first so neither next-intl nor the
   // auth gate gets a chance to interfere.
-  if (pathname.startsWith("/fast-sandbox")) {
+  if (
+    pathname.startsWith("/fast-sandbox") ||
+    // /external-sandbox — same deal, for the external-DS fast renderer
+    // (BYODS). Bare iframe route; no i18n, no auth, bare layout.
+    pathname.startsWith("/external-sandbox")
+  ) {
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-pathname", pathname);
     return NextResponse.next({

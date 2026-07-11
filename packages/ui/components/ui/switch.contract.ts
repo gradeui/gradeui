@@ -13,7 +13,7 @@ export const SwitchContract = contract({
   import: "@gradeui/ui",
   aliases: ["toggle","switch","on/off switch","ios toggle","toggle switch","switch control","react native switch"],
   composesWith: ["Label (via htmlFor)","Field (layout=\"setting\" settings row)","SwitchCard (whole-card toggle)","Card (settings rows)"],
-  styleDefaults: {"Switch":"peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input h-6 w-11"},
+  styleDefaults: {"Switch":"peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-xs outline-none transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input dark:data-[state=unchecked]:bg-input/80 h-6 w-11"},
   variantDefaults: {"size":"default"},
   props: {
   "checked": {

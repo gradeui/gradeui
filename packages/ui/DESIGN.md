@@ -351,7 +351,7 @@ absolute spacing that can't follow the density.
 
 # Components
 
-79 components. Each sidecar carries `when_to_use`, `props`, `composes_with`, and worked examples. Programmatic prop schemas are also importable from `@gradeui/ui/contracts`.
+80 components. Each sidecar carries `when_to_use`, `props`, `composes_with`, and worked examples. Programmatic prop schemas are also importable from `@gradeui/ui/contracts`.
 
 ---
 
@@ -1909,47 +1909,51 @@ aliases: [color picker, colour picker, token picker, colour token picker, color 
 name: Combobox
 import: "@gradeui/ui"
 props:
-  - options: { value, label, icon?, keywords?, disabled? }[] — the selectable pool
-  - value?: string | null — controlled selection (wire onValueChange)
-  - defaultValue?: string | null — uncontrolled initial selection
-  - onValueChange?: (next: string | null) => void — fired with the next value, or null when cleared
-  - placeholder?: string — trigger text when nothing is selected
-  - searchPlaceholder?: string — search-input placeholder
-  - emptyMessage?: string — shown when search returns no rows
-  - searchable?: boolean — show the search input (default true)
-  - clearable?: boolean — add a Clear row so the value can return to unset
-  - triggerVariant?: "default" | "inline" — default = form-control surface (like Select); inline = chrome-free token trigger
-  - renderValue?: (option) => ReactNode — render the selected value yourself (e.g. a Badge); falls back to icon + label
-  - hideChevron?: boolean — drop the trailing chevron (inline token look)
-  - disabled?: boolean — lock to a read-only display of the current value
-  - align?: "start" | "center" | "end" — popover alignment
-when_to_use: Single-pick searchable picker — the single-select sibling of MultiSelect and the Linear "selectable badge" pattern (status / priority / assignee). Use triggerVariant="inline" with renderValue returning a Badge to make a value read as a clickable token that opens a command menu. For multiple selection use MultiSelect; for a small fixed list with no search use Select; for free-form command palettes use Command directly. Pass disabled (driven by a permission check) to show the value without letting the user edit it.
-composes_with: [Popover, Command, Badge, Avatar, PropertyList, Table, Field]
-aliases: [combobox, single select, searchable select, picker, status picker, priority picker, assignee picker, command select, autocomplete, dropdown select, selectable badge, inline select, token select, linear combobox]
+  - Combobox: the root (Base UI Combobox.Root). Pass items={array} for filtering, value/defaultValue + onValueChange for selection, and multiple to enable chips.
+  - ComboboxInput: the field (built on InputGroup). showTrigger?=true (chevron button), showClear?=false (clear button). Spreads Base UI Input props.
+  - ComboboxContent: the popover surface. side/align/sideOffset/alignOffset/anchor for positioning.
+  - ComboboxList: scroll container. Accepts a render function child `(item) => <ComboboxItem/>` when items are provided on the root.
+  - ComboboxItem: a row. value={item}; shows a check when selected.
+  - ComboboxGroup / ComboboxLabel: grouped sections with a heading.
+  - ComboboxEmpty: shown when the filter returns nothing.
+  - ComboboxSeparator: divider row.
+  - ComboboxChips / ComboboxChip / ComboboxChipsInput: multiple-select chips (only with multiple on the root).
+  - ComboboxValue / ComboboxTrigger / ComboboxClear: lower-level parts (used internally by ComboboxInput).
+  - useComboboxAnchor: ref hook to anchor the content to a custom element (e.g. a chips row).
+when_to_use: A searchable picker with type-to-filter. Single-select by default (value shows in the input); add multiple for tag-style chips. For a single chip that opens the popover (the Studio token-field pattern), keep it single-select and render your own chip in an InputGroupAddon — the built-in ComboboxChips is multiple-only. For a small fixed list without search use Select; for a free-form command palette use Command.
+composes_with: [InputGroup, Button, Field, Badge, Avatar, PropertyList, Table]
+aliases: [combobox, autocomplete, searchable select, single select, multi select, tag input, chips input, picker, status picker, assignee picker, token select, command select]
 ---
 
 ```jsx
-<Combobox
-  options={[
-    { value: "low", label: "Low" },
-    { value: "medium", label: "Medium" },
-    { value: "high", label: "High" },
-  ]}
-  defaultValue="low"
-  placeholder="Set priority"
-/>
+<Combobox items={frameworks}>
+  <ComboboxInput placeholder="Search framework…" />
+  <ComboboxContent>
+    <ComboboxEmpty>No framework found.</ComboboxEmpty>
+    <ComboboxList>
+      {(item) => (
+        <ComboboxItem key={item} value={item}>
+          {item}
+        </ComboboxItem>
+      )}
+    </ComboboxList>
+  </ComboboxContent>
+</Combobox>
 ```
 
 ```jsx
-// Linear-style: the value IS the trigger.
-<Combobox
-  triggerVariant="inline"
-  hideChevron
-  options={priorityOptions}
-  value={priority}
-  onValueChange={setPriority}
-  renderValue={(opt) => <Badge variant="warning-soft">{opt.label}</Badge>}
-/>
+// Multiple selection with chips
+<Combobox items={labels} multiple>
+  <ComboboxChips>
+    <ComboboxChip />
+    <ComboboxChipsInput placeholder="Add labels…" />
+  </ComboboxChips>
+  <ComboboxContent>
+    <ComboboxList>
+      {(item) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}
+    </ComboboxList>
+  </ComboboxContent>
+</Combobox>
 ```
 
 ---
@@ -2621,11 +2625,13 @@ Pass `surface="glass"` to BOTH the root content AND the sub-content — submenus
 name: Field
 import: "@gradeui/ui"
 props:
-  - layout?: "option" | "setting" — option (default): control leads, text beside it; setting: text leads, control pinned trailing
-  - children: one bare control (Checkbox / RadioGroupItem / Switch) + Field.Label + Field.Description? + Field.Trailing? — order does not matter
-when_to_use: Pair a bare control with a label and optional description in a row, with id + aria-describedby wired automatically. Use layout="setting" for the classic settings row (label on the left, Switch on the right). For a selectable CARD where the whole surface is the control, use RadioCard / CheckboxCard / SwitchCard instead.
-composes_with: [Checkbox, RadioGroup, RadioGroupItem, Switch, Badge (inside Field.Trailing)]
-aliases: [field, form field, control row, label and description, two line checkbox, option row, setting row, toggle row]
+  - orientation?: "vertical" | "horizontal" | "responsive" — vertical (default): label on top, control, then description (Input/Select/Textarea fields); horizontal: control + text in a row, placement follows DOM order (control first = checkbox row; control after text = settings row); responsive: vertical then horizontal at @md (needs a Field.Group ancestor)
+  - layout?: "option" | "setting" — DEPRECATED alias; option → horizontal control-leading, setting → horizontal control-trailing. Prefer orientation
+  - children: one control (Checkbox / RadioGroupItem / Switch / Input / Select / Textarea) + Field.Label (or Field.Title) + Field.Description? + Field.Trailing? + Field.Content? — id + aria-describedby auto-wired
+  - "data-invalid / data-disabled": set on <Field> to cascade error / disabled styling to label + description (via the group/field selector)
+when_to_use: The form-field wrapper. Default vertical for Input/Select/Textarea (label on top). horizontal for a checkbox/radio row (control first) or a settings row (label left, Switch right). Stack fields with Field.Group; group a related set with Field.Set + Field.Legend; divide with Field.Separator; surface validation with Field.Error; use Field.Title for a non-label heading. For a selectable CARD where the whole surface is the control, use RadioCard / CheckboxCard / SwitchCard instead.
+composes_with: [Input, Select, Textarea, Checkbox, RadioGroup, RadioGroupItem, Switch, Badge (inside Field.Trailing), Field.Group, Field.Set, Field.Legend, Field.Separator, Field.Error, Field.Content, Field.Title]
+aliases: [field, form field, control row, label and description, input field, vertical field, two line checkbox, option row, setting row, toggle row, field group, fieldset, field legend, field error, orientation]
 ---
 
 ```jsx
@@ -2976,6 +2982,42 @@ You're showing a hover preview of a code reference (a function name in docs, a s
 **DO NOT use HoverCard for tooltips.** Tooltips are tiny, label-only, and dismiss instantly. HoverCard is for rich content with delay. If the content is a few words, reach for Tooltip.
 
 **DO NOT use HoverCard as a primary navigation surface.** It dismisses on pointer-out — if the user has to traverse a path to reach a button inside, the preview will close before they get there.
+
+---
+
+---
+name: InputGroup
+import: "@gradeui/ui"
+props:
+  - InputGroup: <div> — the bordered wrapper. role=group. Focus/error styles react to the inner control via :has().
+  - InputGroupInput: <input> props — the text control (data-slot=input-group-control). Borderless, fills the group.
+  - InputGroupTextarea: <textarea> props — multiline control; the group grows to fit.
+  - InputGroupAddon: align?: "inline-start" | "inline-end" | "block-start" | "block-end" — a slot for icons / text / buttons. inline = beside the control; block = stacked above/below (toolbars, textareas).
+  - InputGroupButton: variant?=ghost; size?: "xs" | "sm" | "icon-xs" | "icon-sm" — a compact button sized for addons (wraps Button).
+  - InputGroupText: <span> props — inline label/affix text (prefixes, suffixes, units).
+when_to_use: Compose an input with leading/trailing icons, text affixes, buttons, or a toolbar inside one bordered field. Put controls in InputGroupInput / InputGroupTextarea and decorations in InputGroupAddon. For a plain field with a label + description, use Field instead.
+composes_with: [Input, Textarea, Button, Field, Label, Kbd, Tooltip]
+aliases: [input group, input with icon, input addon, prefix suffix input, search input, input affix, text field with button, leading icon input, trailing button input]
+---
+
+```jsx
+<InputGroup>
+  <InputGroupAddon>
+    <SearchIcon />
+  </InputGroupAddon>
+  <InputGroupInput placeholder="Search…" />
+  <InputGroupAddon align="inline-end">
+    <InputGroupButton>Go</InputGroupButton>
+  </InputGroupAddon>
+</InputGroup>
+```
+
+```jsx
+<InputGroup>
+  <InputGroupAddon><InputGroupText>https://</InputGroupText></InputGroupAddon>
+  <InputGroupInput placeholder="yoursite.com" />
+</InputGroup>
+```
 
 ---
 

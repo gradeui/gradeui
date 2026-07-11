@@ -12,7 +12,44 @@
 
 import { themeToCSSVars, fontFaceCSS, type GeneratedTheme } from "@/lib/themes";
 import { injectMediaSourceAttrs } from "@/lib/media-fill";
-import { ALLOWED_COMPONENTS } from "@gradeui/studio/playbook";
+import { getActiveRegistry } from "@/lib/active-registry";
+import { externalTwCss, EXTERNAL_FONT_VARS_CSS, EXTERNAL_FONTS_URL as _EXTERNAL_FONTS_URL } from "@/lib/external-ds-preview";
+
+// ─────────────────────────────────────────────────────────────────────
+// Active design system (B2 — STUDIO-BYODS.md)
+// ─────────────────────────────────────────────────────────────────────
+//
+// Every literal that used to hardcode `@gradeui/ui` in this file now
+// derives from the active registry: the import rewriters, the auto-import
+// injector, the npm dependency pin, and the entry file's style imports.
+// One registry per deployment (see lib/active-registry.ts), resolved once
+// at module scope — the same constant both renderers and the API routes see.
+const ACTIVE_REGISTRY = getActiveRegistry();
+/** Barrel specifier of the active DS ("@gradeui/ui"). */
+const DS_PKG = ACTIVE_REGISTRY.package.name;
+/** Allowlist of the active DS — what the auto-importer may fabricate. */
+const DS_ALLOWED: readonly string[] = ACTIVE_REGISTRY.components.allowed;
+
+/** Escape a package specifier for embedding in a RegExp. */
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Attribute the active DS stamps on addressable component parts —
+ *  "data-gds-part" for gradeui, "data-hook" for BrightLocal. Interpolated
+ *  into the in-iframe selection agent (a template-literal TSX file), so
+ *  the agent's closest()/getAttribute() calls follow the registry. */
+const DS_PART_ATTR = ACTIVE_REGISTRY.selection.partAttribute;
+
+/** True when the active DS is not gradeui. External design systems carry
+ *  full-color semantic vars (hex), their own preview CSS, and skip the
+ *  Studio theme engine's oklch triplet injection (Phase 5 wires theming). */
+const EXTERNAL_DS = ACTIVE_REGISTRY.id !== "gradeui";
+
+/** Full Tailwind v4 source for the active external DS — its own @theme
+ *  vocabulary when provided (BrightLocal ships one), generic bridge
+ *  otherwise. */
+const EXTERNAL_TW_SOURCE = externalTwCss(ACTIVE_REGISTRY.runtime?.previewThemeCss);
 
 // ─────────────────────────────────────────────────────────────────────
 // Selection agent wire types
@@ -250,8 +287,10 @@ export function rewriteLocalComponentImports(code: string): string {
   // All three collapse into one consolidated `import { ... } from
   // "@gradeui/ui"` at the top of the file. Plain `from "@gradeui/ui"`
   // (no subpath) is NOT matched — it's already correct.
-  const rx =
-    /import\s*\{\s*([^}]+?)\s*\}\s*from\s*["'](?:\.\.?\/components\/ui\/[a-z-]+|@gradeui\/ui\/[a-z-]+)["'];?/g;
+  const rx = new RegExp(
+    `import\\s*\\{\\s*([^}]+?)\\s*\\}\\s*from\\s*["'](?:\\.\\.?\\/components\\/ui\\/[a-z-]+|${escapeRe(DS_PKG)}\\/[a-z\\/-]+)["'];?`,
+    "g",
+  );
   const specifiers = new Set<string>();
   let matched = false;
   const stripped = code.replace(rx, (_m, group: string) => {
@@ -266,7 +305,7 @@ export function rewriteLocalComponentImports(code: string): string {
     return "";
   });
   if (!matched) return code;
-  const merged = `import { ${Array.from(specifiers).join(", ")} } from "@gradeui/ui";\n`;
+  const merged = `import { ${Array.from(specifiers).join(", ")} } from "${DS_PKG}";\n`;
   return merged + stripped.trimStart();
 }
 
@@ -310,8 +349,13 @@ export function autoImportGradeComponents(code: string): string {
   let im: RegExpExecArray | null;
   while ((im = anyImportRx.exec(code)) !== null) {
     for (const raw of im[1].split(",")) {
-      // Handle `X as Y` — Y is the binding in scope, strip the alias.
-      const name = raw.trim().replace(/\s+as\s+.+$/, "").trim();
+      // Handle `X as Y` — Y (the ALIAS) is the binding in scope, so THAT
+      // is the name that must block auto-injection. Keeping the original
+      // instead let `Tooltip as ChartTooltip` (recharts, per rule 6)
+      // collide with a DS export named ChartTooltip: the injector saw the
+      // alias as "unimported" and fabricated a duplicate declaration.
+      const parts = raw.trim().split(/\s+as\s+/);
+      const name = parts[parts.length - 1].trim();
       if (name) resolved.add(name);
     }
   }
@@ -326,7 +370,7 @@ export function autoImportGradeComponents(code: string): string {
   // down the file.
   const missing: string[] = [];
   for (const tag of usedTags) {
-    if ((ALLOWED_COMPONENTS as readonly string[]).includes(tag) && !resolved.has(tag)) {
+    if (DS_ALLOWED.includes(tag) && !resolved.has(tag)) {
       missing.push(tag);
     }
   }
@@ -337,8 +381,9 @@ export function autoImportGradeComponents(code: string): string {
   // prepend a new one at the top of the file. `rewriteLocalComponentImports`
   // has already collapsed any legacy paths into a single barrel import
   // by the time we run, so there's at most one import to touch.
-  const gradeImportRx =
-    /import\s*\{\s*([^}]+?)\s*\}\s*from\s*["']@gradeui\/ui["'];?/;
+  const gradeImportRx = new RegExp(
+    `import\\s*\\{\\s*([^}]+?)\\s*\\}\\s*from\\s*["']${escapeRe(DS_PKG)}["'];?`,
+  );
   const gradeMatch = code.match(gradeImportRx);
   if (gradeMatch) {
     const existing = new Set(
@@ -348,10 +393,10 @@ export function autoImportGradeComponents(code: string): string {
     const merged = Array.from(existing).sort();
     return code.replace(
       gradeImportRx,
-      `import { ${merged.join(", ")} } from "@gradeui/ui";`
+      `import { ${merged.join(", ")} } from "${DS_PKG}";`
     );
   }
-  return `import { ${missing.join(", ")} } from "@gradeui/ui";\n${code}`;
+  return `import { ${missing.join(", ")} } from "${DS_PKG}";\n${code}`;
 }
 
 /**
@@ -626,6 +671,27 @@ export function injectSourceIds(source: string): string {
 
 export const PLAYGROUND_TAILWIND_CDN = "https://cdn.tailwindcss.com";
 
+/** Tailwind v4 browser build — used for EXTERNAL design systems, whose
+ *  components are authored against v4 (container queries, v4 theme
+ *  wiring) that the v3 Play CDN can't compile. gradeui keeps the v3 CDN
+ *  path untouched. */
+export const TAILWIND_V4_BROWSER_CDN =
+  "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4";
+
+/** Head fragment for external-DS previews: the v4 browser compiler plus
+ *  a `text/tailwindcss` sheet carrying tw-animate-css, the dark variant,
+ *  and the @theme inline bridge — all shared with Fast Frame via
+ *  lib/external-ds-preview.ts (two-renderer rule). */
+export const EXTERNAL_TAILWIND_HEAD = `    <script src="${TAILWIND_V4_BROWSER_CDN}"></script>
+    <style type="text/tailwindcss">
+${EXTERNAL_TW_SOURCE}
+    </style>`;
+
+/** Re-exported from the shared external-DS preview module so existing
+ *  consumers (chat-export-npm) keep their import path. */
+export { EXTERNAL_FONTS_URL } from "@/lib/external-ds-preview";
+export const EXTERNAL_FONT_VARS = EXTERNAL_FONT_VARS_CSS;
+
 export const PLAYGROUND_FONTS_URL =
   "https://fonts.googleapis.com/css2" +
   "?family=Geist:wght@100..900" +
@@ -669,8 +735,8 @@ export const PLAYGROUND_FONT_VARS = `
  * consumer picks it up for free.
  */
 export const PLAYGROUND_EXTERNAL_RESOURCES: readonly string[] = [
-  PLAYGROUND_TAILWIND_CDN,
-  PLAYGROUND_FONTS_URL,
+  EXTERNAL_DS ? TAILWIND_V4_BROWSER_CDN : PLAYGROUND_TAILWIND_CDN,
+  EXTERNAL_DS ? _EXTERNAL_FONTS_URL : PLAYGROUND_FONTS_URL,
 ];
 
 /**
@@ -710,7 +776,26 @@ export const PLAYGROUND_EXTERNAL_RESOURCES: readonly string[] = [
  * components need to be reachable in Studio.
  */
 export const PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> = {
-  "@gradeui/ui": "0.10.0",
+  // The active DS package + its companion packages (a tokens npm, an
+  // icons npm, …) come from the registry — B2. For gradeui this resolves
+  // to exactly the old hardcoded pin ("@gradeui/ui": "0.10.0").
+  [DS_PKG]: ACTIVE_REGISTRY.package.version ?? "latest",
+  ...(ACTIVE_REGISTRY.runtime?.dependencies ?? {}),
+  // Preview-vocab packages the system prompt licenses the model to import
+  // (rules 6b/6d). For gradeui these arrive transitively via @gradeui/ui,
+  // so they're deliberately absent from the base map — an external DS has
+  // its own dep tree (BrightLocal ships framer-motion, not motion), so
+  // Sandpack needs them pinned explicitly or `import "motion/react"`
+  // fails with "Could not find dependency".
+  ...(EXTERNAL_DS
+    ? {
+        motion: "^12.0.0",
+        "@tiptap/react": "^2.6.0",
+        "@tiptap/starter-kit": "^2.6.0",
+        "@tiptap/extension-mention": "^2.6.0",
+        "@tiptap/extension-placeholder": "^2.6.0",
+      }
+    : {}),
   "class-variance-authority": "^0.7.0",
   clsx: "^2.0.0",
   "tailwind-merge": "^2.0.0",
@@ -777,11 +862,14 @@ export function buildPlaygroundIndexHtml(
   <head>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="${PLAYGROUND_FONTS_URL}">
+    <link rel="stylesheet" href="${EXTERNAL_DS ? _EXTERNAL_FONTS_URL : PLAYGROUND_FONTS_URL}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade DS Chat Preview</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+${
+  EXTERNAL_DS
+    ? EXTERNAL_TAILWIND_HEAD
+    : `    <script src="https://cdn.tailwindcss.com"></script>
     <script>
       // Role ramp families (THEME-MIGRATION.md B4) — numeric steps per
       // themed role, mirroring the --color-<role>-<step> @theme entries
@@ -875,20 +963,22 @@ export function buildPlaygroundIndexHtml(
           },
         },
       }
-    </script>
+    </script>`
+}
     <style>
 ${fontFaces}
       :root {
-${PLAYGROUND_FONT_VARS}
-${lightVars}
+${EXTERNAL_DS ? EXTERNAL_FONT_VARS : PLAYGROUND_FONT_VARS}
+${EXTERNAL_DS ? "" : lightVars}
       }
       .dark {
-${darkVars}
+${EXTERNAL_DS ? "" : darkVars}
       }
-      * { border-color: oklch(var(--border)); }
+${EXTERNAL_DS ? ACTIVE_REGISTRY.runtime?.previewCss ?? "" : ""}
+      * { border-color: ${EXTERNAL_DS ? "var(--border)" : "oklch(var(--border))"}; }
       body {
-        background-color: oklch(var(--background));
-        color: oklch(var(--foreground));
+        background-color: ${EXTERNAL_DS ? "var(--background)" : "oklch(var(--background))"};
+        color: ${EXTERNAL_DS ? "var(--foreground)" : "oklch(var(--foreground))"};
         font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
         font-stretch: var(--font-body-stretch, normal);
         margin: 0;
@@ -1020,13 +1110,13 @@ const SUB_PART_NAMES = new Set<string>([
 // component.
 function findComponentOwner(el: Element | null): Element | null {
   if (!el || !el.closest) return null;
-  let node: Element | null = el.closest("[data-gds-part]") as Element | null;
+  let node: Element | null = el.closest("[${DS_PART_ATTR}]") as Element | null;
   while (node) {
-    const part = node.getAttribute("data-gds-part") || "";
+    const part = node.getAttribute("${DS_PART_ATTR}") || "";
     if (!SUB_PART_NAMES.has(part)) return node;
     const parent = node.parentElement;
     if (!parent) return null;
-    node = parent.closest("[data-gds-part]") as Element | null;
+    node = parent.closest("[${DS_PART_ATTR}]") as Element | null;
   }
   return null;
 }
@@ -1110,7 +1200,7 @@ function findComponentOwner(el: Element | null): Element | null {
     // with what the chip is showing.
     const target = partOwner ?? el;
     const part = partOwner
-      ? partOwner.getAttribute("data-gds-part") || undefined
+      ? partOwner.getAttribute("${DS_PART_ATTR}") || undefined
       : undefined;
     const componentName = part ? kebabToPascal(part) : undefined;
 
@@ -1283,8 +1373,8 @@ function findComponentOwner(el: Element | null): Element | null {
             mBox.style.width = r.width + "px";
             mBox.style.height = r.height + "px";
             const part = t
-              .closest("[data-gds-part]")
-              ?.getAttribute("data-gds-part");
+              .closest("[${DS_PART_ATTR}]")
+              ?.getAttribute("${DS_PART_ATTR}");
             const name = part ? mPascal(part) : t.tagName.toLowerCase();
             mLabel.textContent =
               name + " · " + Math.round(r.width) + " × " + Math.round(r.height);
@@ -1444,22 +1534,23 @@ export function buildPlaygroundStylesCss(
 ): string {
   return `${fontFaces}
 :root {
-${PLAYGROUND_FONT_VARS}
-${lightVars}
+${EXTERNAL_DS ? EXTERNAL_FONT_VARS : PLAYGROUND_FONT_VARS}
+${EXTERNAL_DS ? "" : lightVars}
 }
 
 .dark {
-${darkVars}
+${EXTERNAL_DS ? "" : darkVars}
 }
 
+${EXTERNAL_DS ? ACTIVE_REGISTRY.runtime?.previewCss ?? "" : ""}
 *, *::before, *::after {
   box-sizing: border-box;
-  border-color: oklch(var(--border));
+  border-color: ${EXTERNAL_DS ? "var(--border)" : "oklch(var(--border))"};
 }
 
 body {
-  background-color: oklch(var(--background));
-  color: oklch(var(--foreground));
+  background-color: ${EXTERNAL_DS ? "var(--background)" : "oklch(var(--background))"};
+  color: ${EXTERNAL_DS ? "var(--foreground)" : "oklch(var(--foreground))"};
   font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
   font-stretch: var(--font-body-stretch, normal);
   margin: 0;
@@ -2719,10 +2810,73 @@ export {
  * panel even if something else in the tree re-renders for unrelated
  * reasons.
  */
+/** Bundled style bootstrap for external design systems (see the files-map
+ *  comment where this mounts). All data is baked at build time — the
+ *  module just appends nodes. Idempotent across HMR re-runs. */
+const EXTERNAL_DS_CSS_BOOTSTRAP_TSX = `// Generated by chat-sandpack.ts — external-DS style bootstrap.
+const w = window as unknown as { __gradeExternalDsCss?: boolean };
+// Diagnostic beacon — the iframe is cross-origin, so this is the only
+// observable trace of the bootstrap. Cheap; keep it.
+const beacon = (step: string) => {
+  try { window.parent.postMessage({ type: "grade:external-css", step }, "*"); } catch {}
+};
+if (!w.__gradeExternalDsCss) {
+  w.__gradeExternalDsCss = true;
+  beacon("start");
+  // 1. DS token CSS (plain) — primitives + semantic aliases + dark block,
+  //    plus the --font-* alias bridge.
+  const plain = document.createElement("style");
+  plain.setAttribute("data-grade-external-ds", "tokens");
+  plain.textContent = ${JSON.stringify(
+    (ACTIVE_REGISTRY.runtime?.previewCss ?? "") +
+      "\n:root {\n" +
+      EXTERNAL_FONT_VARS_CSS +
+      "\n}\n",
+  )};
+  document.head.appendChild(plain);
+  // 2. Tailwind v4 SOURCE sheet — tw-animate + the @theme inline bridge.
+  //    Appended BEFORE the compiler script loads so its initial scan
+  //    picks it up.
+  const tw = document.createElement("style");
+  tw.setAttribute("type", "text/tailwindcss");
+  tw.textContent = ${JSON.stringify(EXTERNAL_TW_SOURCE)};
+  document.head.appendChild(tw);
+  // 3. Fonts.
+  const fonts = document.createElement("link");
+  fonts.rel = "stylesheet";
+  fonts.href = ${JSON.stringify(_EXTERNAL_FONTS_URL)};
+  document.head.appendChild(fonts);
+  // 4. The v4 browser compiler. externalResources SHOULD have loaded it
+  //    already; this is the belt-and-braces path for hosts that strip
+  //    head scripts. A second load just re-runs an idempotent scan.
+  const s = document.createElement("script");
+  s.src = ${JSON.stringify(TAILWIND_V4_BROWSER_CDN)};
+  s.onload = () => beacon("v4-loaded");
+  s.onerror = () => beacon("v4-FAILED");
+  document.head.appendChild(s);
+  beacon("styles-appended");
+  // Verify compilation actually happened: measure a probe after a beat.
+  setTimeout(() => {
+    const probe = document.createElement("div");
+    probe.className = "bg-primary";
+    probe.style.position = "absolute"; probe.style.visibility = "hidden";
+    document.body.appendChild(probe);
+    setTimeout(() => {
+      beacon("probe bg=" + getComputedStyle(probe).backgroundColor);
+      probe.remove();
+    }, 1500);
+  }, 1500);
+}
+export {};
+`;
+
 const PLAYGROUND_INDEX_TSX = [
   'import React from "react";',
   'import ReactDOM from "react-dom/client";',
-  'import "@gradeui/ui/styles.css";',
+  // The DS's own stylesheet(s) — registry-fed (B2). gradeui: the single
+  // "@gradeui/ui/styles.css"; BrightLocal: the tokens package's Tailwind
+  // preset. Side-effect imports, resolved by Sandpack from npm.
+  ...ACTIVE_REGISTRY.package.styleImports.map((s) => `import "${s}";`),
   'import "./styles.css";',
   // Side-effect import: installs the element-selection agent (hover
   // outline, click capture, postMessage bus). Imported BEFORE the React
@@ -2730,6 +2884,9 @@ const PLAYGROUND_INDEX_TSX = [
   // possible — the parent uses it to replay select-mode state across
   // iframe remounts.
   'import "./selection-agent";',
+  // Side-effect import: external-DS style bootstrap (no-op for gradeui).
+  // Before the React root so the token vars exist at first paint.
+  'import "./external-ds-css";',
   'import ThemeOptionsApplier from "./theme-options";',
   'import App from "./App";',
   "",
@@ -2878,6 +3035,12 @@ export function buildSandpackFiles({
     // reliably runs inside Sandpack's cross-origin iframe; see the big
     // comment above PLAYGROUND_SELECTION_AGENT_TSX for why.
     "/selection-agent.ts": PLAYGROUND_SELECTION_AGENT_TSX,
+    // External-DS style bootstrap — bundled side-effect module (same
+    // rationale as the selection agent: Sandpack's iframe strips/ignores
+    // scripts and links in the host HTML, but the JS graph always runs).
+    // Loads the DS token CSS, the v4 source sheet, the DS fonts, and the
+    // v4 browser compiler. Empty module for gradeui — zero change.
+    "/external-ds-css.ts": EXTERNAL_DS ? EXTERNAL_DS_CSS_BOOTSTRAP_TSX : "export {};",
     "/theme-options.tsx": buildPlaygroundThemeOptionsTsx(mode, components, themeSignature),
     "/styles.css": buildPlaygroundStylesCss(lightVars, darkVars, fontFaces),
     ...(extraFiles ?? {}),

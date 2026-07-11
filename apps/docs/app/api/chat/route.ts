@@ -58,6 +58,7 @@ import {
 // server uses, so the demo surface can't quietly drift from what ships.
 // (See grade-local-testing-and-eval.md and @gradeui/studio/core.)
 import { createScreenContext } from "@gradeui/studio/core";
+import { getActiveRegistry } from "@/lib/active-registry";
 
 /**
  * Pull text out of a UIMessage's parts array. Mirrors the small helper in
@@ -438,6 +439,7 @@ export async function POST(req: Request) {
         basePrompt: systemPrompt,
         selection,
         includeComponentRefs,
+        registry: getActiveRegistry(),
       }
     );
 

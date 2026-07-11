@@ -9,81 +9,47 @@ import { contract } from "@gradeui/contracts";
 
 export const ComboboxContract = contract({
   name: "Combobox",
-  description: "Single-pick searchable picker — the single-select sibling of MultiSelect and the Linear \"selectable badge\" pattern (status / priority / assignee). Use triggerVariant=\"inline\" with renderValue returning a Badge to make a value read as a clickable token that opens a command menu. For multiple selection use MultiSelect; for a small fixed list with no search use Select; for free-form command palettes use Command directly. Pass disabled (driven by a permission check) to show the value without letting the user edit it.",
+  description: "A searchable picker with type-to-filter. Single-select by default (value shows in the input); add multiple for tag-style chips. For a single chip that opens the popover (the Studio token-field pattern), keep it single-select and render your own chip in an InputGroupAddon — the built-in ComboboxChips is multiple-only. For a small fixed list without search use Select; for a free-form command palette use Command.",
   import: "@gradeui/ui",
-  aliases: ["combobox","single select","searchable select","picker","status picker","priority picker","assignee picker","command select","autocomplete","dropdown select","selectable badge","inline select","token select","linear combobox"],
-  composesWith: ["Popover","Command","Badge","Avatar","PropertyList","Table","Field"],
-  styleDefaults: {"Combobox":"ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"},
+  aliases: ["combobox","autocomplete","searchable select","single select","multi select","tag input","chips input","picker","status picker","assignee picker","token select","command select"],
+  composesWith: ["InputGroup","Button","Field","Badge","Avatar","PropertyList","Table"],
+  styleDefaults: {"ComboboxTrigger":"[&_svg:not([class*='size-'])]:size-4","ComboboxInput":"w-auto","ComboboxContent":"group/combobox-content relative max-h-96 w-(--anchor-width) max-w-(--available-width) min-w-[calc(var(--anchor-width)+--spacing(7))] origin-(--transform-origin) overflow-hidden rounded-md bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[chips=true]:min-w-(--anchor-width) data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 *:data-[slot=input-group]:m-1 *:data-[slot=input-group]:mb-0 *:data-[slot=input-group]:h-8 *:data-[slot=input-group]:border-input/30 *:data-[slot=input-group]:bg-input/30 *:data-[slot=input-group]:shadow-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95","ComboboxList":"max-h-[min(calc(--spacing(96)---spacing(9)),calc(var(--available-height)---spacing(9)))] scroll-py-1 overflow-y-auto p-1 data-empty:p-0","ComboboxItem":"relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4","ComboboxLabel":"px-2 py-1.5 text-xs text-muted-foreground pointer-coarse:px-3 pointer-coarse:py-2 pointer-coarse:text-sm","ComboboxEmpty":"hidden w-full justify-center py-2 text-center text-sm text-muted-foreground group-data-empty/combobox-content:flex","ComboboxSeparator":"-mx-1 my-1 h-px bg-border","ComboboxChips":"flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent bg-clip-padding px-2.5 py-1.5 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 has-aria-invalid:border-destructive has-aria-invalid:ring-[3px] has-aria-invalid:ring-destructive/20 has-data-[slot=combobox-chip]:px-1.5 dark:bg-input/30 dark:has-aria-invalid:border-destructive/50 dark:has-aria-invalid:ring-destructive/40","ComboboxChip":"flex h-[calc(--spacing(5.5))] w-fit items-center justify-center gap-1 rounded-sm bg-muted px-1.5 text-xs font-medium whitespace-nowrap text-foreground has-disabled:pointer-events-none has-disabled:cursor-not-allowed has-disabled:opacity-50 has-data-[slot=combobox-chip-remove]:pr-0","ComboboxChipsInput":"min-w-16 flex-1 outline-none"},
   props: {
-  "options": {
+  "the": {
       schema: z.unknown(),
       design: "plumbing",
-      description: "the selectable pool",
   },
-  "value": {
-      schema: z.string().optional(),
-      design: "content",
-      description: "controlled selection (wire onValueChange)",
-  },
-  "defaultValue": {
-      schema: z.string().optional(),
-      design: "content",
-      description: "uncontrolled initial selection",
-  },
-  "onValueChange": {
-      schema: z.unknown().optional(),
-      design: "event",
-      description: "fired with the next value, or null when cleared",
-  },
-  "placeholder": {
-      schema: z.string().optional(),
-      design: "content",
-      description: "trigger text when nothing is selected",
-  },
-  "searchPlaceholder": {
-      schema: z.string().optional(),
-      design: "content",
-      description: "search-input placeholder",
-  },
-  "emptyMessage": {
-      schema: z.string().optional(),
-      design: "content",
-      description: "shown when search returns no rows",
-  },
-  "searchable": {
-      schema: z.boolean().optional(),
-      design: "knob",
-      description: "show the search input (default true)",
-  },
-  "clearable": {
-      schema: z.boolean().optional(),
-      design: "knob",
-      description: "add a Clear row so the value can return to unset",
-  },
-  "triggerVariant": {
-      schema: z.enum(["default", "inline"]).optional(),
-      design: "knob",
-      description: "default = form-control surface (like Select); inline = chrome-free token trigger",
-  },
-  "renderValue": {
+  "scroll": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "render the selected value yourself (e.g. a Badge); falls back to icon + label",
   },
-  "hideChevron": {
-      schema: z.boolean().optional(),
-      design: "knob",
-      description: "drop the trailing chevron (inline token look)",
+  "a": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
   },
-  "disabled": {
-      schema: z.boolean().optional(),
-      design: "knob",
-      description: "lock to a read-only display of the current value",
+  "ComboboxGroup": {
+      schema: z.unknown(),
+      design: "plumbing",
   },
-  "align": {
-      schema: z.enum(["start", "center", "end"]).optional(),
-      design: "knob",
-      description: "popover alignment",
+  "shown": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "divider": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+  },
+  "ComboboxChips": {
+      schema: z.unknown(),
+      design: "plumbing",
+  },
+  "ComboboxValue": {
+      schema: z.unknown(),
+      design: "plumbing",
+  },
+  "useComboboxAnchor": {
+      schema: z.unknown(),
+      design: "plumbing",
   },
   },
 });

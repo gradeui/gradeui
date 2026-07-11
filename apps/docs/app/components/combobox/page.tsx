@@ -1,120 +1,79 @@
 "use client";
-import { useState } from "react";
 import { ComponentNav } from "@/components/component-nav";
 import { SidecarBlock } from "@/components/sidecar-block";
 import { InstallBlock } from "@/components/install-block";
 
-import { Combobox } from "@/components/ui/combobox";
-import { Badge } from "@/components/ui/badge";
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+  ComboboxChips,
+  ComboboxChip,
+  ComboboxChipsInput,
+} from "@/components/ui/combobox";
 import { ComponentPreview } from "@/components/component-preview";
 import { PropsTable } from "@/components/props-table";
-import { Circle, CircleDot, CircleCheck, SignalLow, SignalMedium, SignalHigh } from "lucide-react";
 
-const priorityOptions = [
-  { value: "low", label: "Low", icon: SignalLow },
-  { value: "medium", label: "Medium", icon: SignalMedium },
-  { value: "high", label: "High", icon: SignalHigh },
-];
-
-const statusOptions = [
-  { value: "open", label: "Open", icon: Circle },
-  { value: "in-progress", label: "In progress", icon: CircleDot },
-  { value: "resolved", label: "Resolved", icon: CircleCheck },
-];
-
-const PRIORITY_VARIANT: Record<
-  string,
-  "secondary" | "warning-soft" | "destructive-soft"
-> = {
-  low: "secondary",
-  medium: "warning-soft",
-  high: "destructive-soft",
-};
+const frameworks = ["Next.js", "React", "Remix", "Astro", "Vite", "Nuxt"];
+const labels = ["bug", "feature", "docs", "chore", "design"];
 
 const comboboxProps = [
   {
-    name: "options",
-    type: "{ value, label, icon?, keywords?, disabled? }[]",
+    name: "items",
+    type: "T[]",
     default: "-",
-    description: "The selectable pool. icon renders in the row (and the trigger); keywords add extra search terms.",
+    description:
+      "The pool to filter as the user types. Pair with a render-function child on ComboboxList.",
   },
   {
     name: "value / defaultValue",
-    type: "string | null",
+    type: "T | T[] | null",
     default: "null",
-    description: "Controlled / uncontrolled selection. Wire onValueChange when controlled.",
+    description:
+      "Controlled / uncontrolled selection. An array when multiple is set.",
   },
   {
     name: "onValueChange",
-    type: "(next: string | null) => void",
+    type: "(next) => void",
     default: "-",
-    description: "Fired with the next value, or null when cleared.",
+    description: "Fired with the next selection.",
   },
   {
-    name: "triggerVariant",
-    type: '"default" | "inline"',
-    default: '"default"',
-    description: "default = form-control surface (like Select). inline = chrome-free token trigger; pair with renderValue to render a Badge.",
+    name: "multiple",
+    type: "boolean",
+    default: "false",
+    description:
+      "Enable multi-select. Render the selection with ComboboxChips / ComboboxChip.",
   },
   {
-    name: "renderValue",
-    type: "(option) => ReactNode",
-    default: "-",
-    description: "Render the selected value yourself (e.g. a Badge). Falls back to the option icon + label.",
-  },
-  {
-    name: "searchable",
+    name: "ComboboxInput · showTrigger",
     type: "boolean",
     default: "true",
-    description: "Show the search input. Turn off for short lists.",
+    description: "Show the trailing chevron button that opens the list.",
   },
   {
-    name: "clearable",
+    name: "ComboboxInput · showClear",
     type: "boolean",
     default: "false",
-    description: "Add a Clear row so the value can return to unset (null).",
-  },
-  {
-    name: "hideChevron",
-    type: "boolean",
-    default: "false",
-    description: "Drop the trailing chevron — the inline token look.",
-  },
-  {
-    name: "disabled",
-    type: "boolean",
-    default: "false",
-    description: "Lock the control to a read-only display of its current value. Drive this from a permission check.",
+    description: "Show a clear (×) button to reset the value.",
   },
 ];
-
-function InlinePriority() {
-  const [priority, setPriority] = useState("medium");
-  return (
-    <Combobox
-      triggerVariant="inline"
-      hideChevron
-      searchable={false}
-      options={priorityOptions}
-      value={priority}
-      onValueChange={(v) => setPriority(v ?? "medium")}
-      renderValue={(opt) => (
-        <Badge variant={PRIORITY_VARIANT[opt.value] || "secondary"}>{opt.label}</Badge>
-      )}
-    />
-  );
-}
 
 export default function ComboboxPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="scroll-m-20 text-4xl font-bold tracking-tight">Combobox</h1>
+        <h1 className="scroll-m-20 text-4xl font-bold tracking-tight">
+          Combobox
+        </h1>
         <p className="text-lg text-muted-foreground mt-2">
-          Single-pick searchable picker. The single-select sibling of
-          MultiSelect, and the Linear &quot;selectable badge&quot; pattern: a
-          status or priority value that is itself the trigger and opens a
-          searchable command menu. Composes Popover, Command, and Button.
+          A searchable picker with type-to-filter, built on the Base UI Combobox
+          primitive and composed from InputGroup. Compositional — you render
+          ComboboxItem children rather than passing an options array. Single
+          select by default; add multiple for tag-style chips.
         </p>
       </div>
 
@@ -122,7 +81,14 @@ export default function ComboboxPage() {
         <h2 className="scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight">
           Installation
         </h2>
-        <InstallBlock>{`import { Combobox } from "@gradeui/ui"`}</InstallBlock>
+        <InstallBlock>{`import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@gradeui/ui"`}</InstallBlock>
       </div>
 
       <div className="space-y-4">
@@ -130,18 +96,34 @@ export default function ComboboxPage() {
           Usage
         </h2>
         <ComponentPreview
-          code={`<Combobox
-  options={[
-    { value: "low", label: "Low" },
-    { value: "medium", label: "Medium" },
-    { value: "high", label: "High" },
-  ]}
-  defaultValue="low"
-  placeholder="Set priority"
-/>`}
+          code={`<Combobox items={frameworks}>
+  <ComboboxInput placeholder="Search framework…" />
+  <ComboboxContent>
+    <ComboboxEmpty>No framework found.</ComboboxEmpty>
+    <ComboboxList>
+      {(item) => (
+        <ComboboxItem key={item} value={item}>
+          {item}
+        </ComboboxItem>
+      )}
+    </ComboboxList>
+  </ComboboxContent>
+</Combobox>`}
         >
-          <div className="w-56">
-            <Combobox options={priorityOptions} defaultValue="low" placeholder="Set priority" />
+          <div className="w-64">
+            <Combobox items={frameworks}>
+              <ComboboxInput placeholder="Search framework…" />
+              <ComboboxContent>
+                <ComboboxEmpty>No framework found.</ComboboxEmpty>
+                <ComboboxList>
+                  {(item: string) => (
+                    <ComboboxItem key={item} value={item}>
+                      {item}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </div>
         </ComponentPreview>
       </div>
@@ -151,75 +133,71 @@ export default function ComboboxPage() {
           Examples
         </h2>
 
-        <h3 className="text-lg font-medium">Inline — the value is the trigger</h3>
-        <p className="text-muted-foreground">
-          triggerVariant=&quot;inline&quot; drops the form chrome; renderValue
-          renders the selection as a Badge. The result reads as a selectable
-          token, the Linear status / priority move. Click it to change the
-          value in place.
-        </p>
-        <ComponentPreview
-          code={`<Combobox
-  triggerVariant="inline"
-  hideChevron
-  searchable={false}
-  options={priorityOptions}
-  value={priority}
-  onValueChange={setPriority}
-  renderValue={(opt) => <Badge variant={variantFor(opt)}>{opt.label}</Badge>}
-/>`}
-        >
-          <InlinePriority />
-        </ComponentPreview>
-
-        <h3 className="text-lg font-medium">With option icons</h3>
-        <p className="text-muted-foreground">
-          Per-option icons render in the menu and on the default trigger.
-        </p>
-        <ComponentPreview
-          code={`<Combobox options={statusOptions} defaultValue="in-progress" />`}
-        >
-          <div className="w-56">
-            <Combobox options={statusOptions} defaultValue="in-progress" />
-          </div>
-        </ComponentPreview>
-
         <h3 className="text-lg font-medium">Clearable</h3>
         <p className="text-muted-foreground">
-          clearable adds a Clear row so the value can return to unset.
+          showClear on ComboboxInput adds a × button to reset the value.
         </p>
         <ComponentPreview
-          code={`<Combobox options={statusOptions} defaultValue="open" clearable placeholder="No status" />`}
+          code={`<Combobox items={frameworks} defaultValue="React">
+  <ComboboxInput showClear placeholder="Framework…" />
+  <ComboboxContent>
+    <ComboboxList>
+      {(item) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}
+    </ComboboxList>
+  </ComboboxContent>
+</Combobox>`}
         >
-          <div className="w-56">
-            <Combobox options={statusOptions} defaultValue="open" clearable placeholder="No status" />
+          <div className="w-64">
+            <Combobox items={frameworks} defaultValue="React">
+              <ComboboxInput showClear placeholder="Framework…" />
+              <ComboboxContent>
+                <ComboboxList>
+                  {(item: string) => (
+                    <ComboboxItem key={item} value={item}>
+                      {item}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </div>
         </ComponentPreview>
 
-        <h3 className="text-lg font-medium">Read-only (no edit access)</h3>
+        <h3 className="text-lg font-medium">Multiple — chips</h3>
         <p className="text-muted-foreground">
-          disabled shows the value without letting the user change it. Drive it
-          from a permission check so a viewer sees the badge but can&apos;t open
-          the menu.
+          Pass multiple and render the selection with ComboboxChips +
+          ComboboxChip. Each chip carries its own remove button.
         </p>
         <ComponentPreview
-          code={`<Combobox
-  disabled
-  triggerVariant="inline"
-  hideChevron
-  options={priorityOptions}
-  defaultValue="high"
-  renderValue={(opt) => <Badge variant="destructive-soft">{opt.label}</Badge>}
-/>`}
+          code={`<Combobox items={labels} multiple>
+  <ComboboxChips>
+    <ComboboxChip />
+    <ComboboxChipsInput placeholder="Add labels…" />
+  </ComboboxChips>
+  <ComboboxContent>
+    <ComboboxList>
+      {(item) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}
+    </ComboboxList>
+  </ComboboxContent>
+</Combobox>`}
         >
-          <Combobox
-            disabled
-            triggerVariant="inline"
-            hideChevron
-            options={priorityOptions}
-            defaultValue="high"
-            renderValue={(opt) => <Badge variant="destructive-soft">{opt.label}</Badge>}
-          />
+          <div className="w-72">
+            <Combobox items={labels} multiple>
+              <ComboboxChips>
+                <ComboboxChip />
+                <ComboboxChipsInput placeholder="Add labels…" />
+              </ComboboxChips>
+              <ComboboxContent>
+                <ComboboxList>
+                  {(item: string) => (
+                    <ComboboxItem key={item} value={item}>
+                      {item}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </div>
         </ComponentPreview>
       </div>
 
@@ -228,6 +206,10 @@ export default function ComboboxPage() {
           Props
         </h2>
         <PropsTable props={comboboxProps} />
+        <p className="text-muted-foreground">
+          The full slot list (ComboboxGroup, ComboboxLabel, ComboboxSeparator,
+          ComboboxTrigger, …) is in the contract below.
+        </p>
       </div>
 
       <div className="space-y-4">
@@ -236,19 +218,14 @@ export default function ComboboxPage() {
         </h2>
         <ul className="list-disc list-inside space-y-2 text-muted-foreground">
           <li>
-            <strong>Combobox</strong> — one value, searchable, often shown as an
-            inline token (status, priority, assignee).
-          </li>
-          <li>
-            <strong>MultiSelect</strong> — several values, rendered as removable
-            badges in the trigger.
+            <strong>Combobox</strong> — type-to-filter; single value, or
+            multiple as chips.
           </li>
           <li>
             <strong>Select</strong> — a short fixed list with no search.
           </li>
           <li>
-            <strong>Command</strong> — unbounded or async lists (a person to
-            @-mention), or a command palette.
+            <strong>Command</strong> — command palettes and async lists.
           </li>
         </ul>
       </div>

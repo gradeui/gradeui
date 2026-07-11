@@ -84,6 +84,8 @@ import {
   type StudioSelection,
 } from "@/lib/chat-sandpack";
 import { openInCodeSandboxNpm } from "@/lib/chat-export-npm";
+import { getActiveRegistry } from "@/lib/active-registry";
+import { ExternalDsMount } from "@/components/studio/external-ds-frame";
 import {
   backfillMediaSurfaceSrcProp,
   setInlineMediaSurfaceSrc,
@@ -380,9 +382,16 @@ export function StudioCanvas({
   activeCommentThreadId,
   onCommentPinClick,
   getCommentUser,
-  rendererMode = "sandpack",
+  rendererMode: rendererModeProp = "sandpack",
   className,
 }: StudioCanvasProps) {
+  // BYODS (B2): Fast Frame precompiles ONLY gradeui — an external DS
+  // (BrightLocal, …) cannot resolve there, so a non-gradeui active
+  // registry pins EVERY mount (focused frame, tile grid, and anything
+  // else downstream) to Sandpack. Coerced once here so no child can
+  // accidentally mount Fast Frame with an external registry.
+  const rendererMode: "sandpack" | "fast" =
+    getActiveRegistry().id !== "gradeui" ? "sandpack" : rendererModeProp;
   // Zoom — controlled by the parent when `controlledZoom` is passed
   // (Studio uses this to route the left panel based on view), with
   // an internal fallback for any consumer that doesn't lift state.
@@ -2308,7 +2317,14 @@ function FocusedFrame({
   useEffect(() => {
     setForcedSandpack(false);
   }, [appSource]);
-  const effectiveRendererMode = forcedSandpack ? "sandpack" : rendererMode;
+  // BYODS (B2): Fast Frame precompiles ONLY gradeui — an external DS
+  // (BrightLocal, …) can't resolve there (and esm.sh would double-load
+  // React), so a non-gradeui active registry pins the renderer to
+  // Sandpack, which installs the DS from npm. Promoting an external DS
+  // into Fast Frame is a later, deliberate step (see BYODS plan).
+  const registryNeedsSandpack = getActiveRegistry().id !== "gradeui";
+  const effectiveRendererMode =
+    forcedSandpack || registryNeedsSandpack ? "sandpack" : rendererMode;
 
   const preparedSource = useMemo(
     () => (appSource ? prepareAppSource(appSource) : PLAYGROUND_PLACEHOLDER_APP),
@@ -2511,6 +2527,20 @@ function FocusedFrame({
           onContentHeight={onContentHeight}
           onTrySandpack={() => setForcedSandpack(true)}
         />
+      ) : registryNeedsSandpack ? (
+        // External DS (BYODS): the esm.sh-fed fast mount — seconds to
+        // boot, full v4 CSS pipeline (see /external-sandbox). Sandpack
+        // remains the CodeSandbox export/handoff path, not the live
+        // preview; the code view here mirrors the fast mount's.
+        <ExternalDsMount
+          appSource={appSource}
+          mode={mode}
+          view={view}
+          canRender={canRender}
+          onSourceEdit={onSourceMutation}
+          selectMode={selectMode}
+          onSelect={(sel) => onSelect?.(sel as never)}
+        />
       ) : (
         <>
           <FocusedSandpackMount
@@ -2520,6 +2550,8 @@ function FocusedFrame({
             view={view}
             canRender={canRender}
             viewportWidth={viewportWidth}
+            appSource={appSource ?? undefined}
+            onSourceEdit={onSourceMutation}
           />
           {/* Escape-hatch chrome — only when the user forced Sandpack
               from the FailurePanel. One pill back to the default
@@ -3068,6 +3100,17 @@ function ScreenTile({
               fidelity={fidelity}
               mediaUrls={mediaUrls}
               mediaOverrides={mediaOverrides}
+            />
+          ) : getActiveRegistry().id !== "gradeui" ? (
+            // External DS: tiles use the SAME renderer as the focused
+            // editor (/external-sandbox) so grid previews match what
+            // the editor shows — Sandpack tiles here rendered with a
+            // different (broken) CSS pipeline.
+            <ExternalDsMount
+              appSource={appSource ?? null}
+              mode={mode}
+              view="preview"
+              canRender={canRender}
             />
           ) : (
             <TileSandpackMount
