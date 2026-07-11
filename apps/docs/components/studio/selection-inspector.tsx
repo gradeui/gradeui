@@ -79,13 +79,15 @@ import {
   BlendMode as BlendModeIcon,
 } from "@/components/icons";
 import {
-  getComponentContract,
-  listContractedComponents,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@gradeui/ui";
+import {
+  getRegistryComponentContract,
+  listRegistryContractedComponents,
+} from "@/lib/registry-contracts";
 import { Image as ImageIcon } from "lucide-react";
 import { getStudioStorage } from "@/lib/studio-storage";
 import type { Asset } from "@/lib/studio-storage";
@@ -344,7 +346,9 @@ export function SelectionInspector({
   // Components that haven't been migrated yet (most of them today)
   // continue to use the legacy manifest fetch.
   const contract = useMemo(
-    () => getComponentContract(componentName ?? null),
+    // Registry-keyed: BrightLocal's Button must surface BL's contract
+    // (their variant/size scales), never gradeui's by name collision.
+    () => getRegistryComponentContract(componentName ?? null),
     [componentName],
   );
   const contractManifest = useMemo(
@@ -3023,10 +3027,10 @@ function getContractDefaultClasses(
   if (!name) return null;
   if (contractDefaultsIndex === null) {
     contractDefaultsIndex = {};
-    for (const n of listContractedComponents()) {
+    for (const n of listRegistryContractedComponents()) {
       // Cast: dist types may predate the styleDefaults field until the
       // package is rebuilt; the data rides through regardless.
-      const c = getComponentContract(n) as {
+      const c = getRegistryComponentContract(n) as {
         styleDefaults?: Record<string, string>;
       } | null;
       if (!c?.styleDefaults) continue;
@@ -3048,7 +3052,7 @@ function getContractVariantDefault(
   if (!componentName) return null;
   // Cast: dist types may predate the variantDefaults field until the
   // package is rebuilt; the data rides through regardless.
-  const c = getComponentContract(componentName) as {
+  const c = getRegistryComponentContract(componentName) as {
     variantDefaults?: Record<string, string>;
   } | null;
   return c?.variantDefaults?.[propName] ?? null;

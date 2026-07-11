@@ -22,6 +22,7 @@ import {
   BRIGHTLOCAL_IMPORT_MAP,
 } from "./brightlocal/allowlist.generated";
 import { BRIGHTLOCAL_SIDECARS } from "./brightlocal/sidecars.generated";
+import { BRIGHTLOCAL_CONTRACTS } from "./brightlocal/contracts.generated";
 import { BRIGHTLOCAL_PREVIEW_CSS } from "./brightlocal/preview-css.generated";
 import { BRIGHTLOCAL_PREVIEW_THEME } from "./brightlocal/preview-theme.generated";
 
@@ -73,6 +74,10 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
     ],
     externalImports: ["@brightlocal/icons"],
     sidecars: BRIGHTLOCAL_SIDECARS,
+    // Serialisable contract specs (sidecar transform, dist-grounded) —
+    // the settings panel renders BL's OWN variant/size scales from
+    // these instead of colliding into gradeui's contracts by name.
+    contracts: BRIGHTLOCAL_CONTRACTS,
   },
   selection: {
     // Their QA/testing attribute doubles as Studio's selection protocol;

@@ -24,6 +24,38 @@
  *      library-agnostic.
  */
 
+/** One prop on a registry contract spec — the JSON-safe subset of
+ *  `@gradeui/contracts` PropContract (rule 1: no zod on the registry).
+ *  Consumers (the settings panel) convert specs into real zod-backed
+ *  ComponentContracts at the edge — see apps/docs/lib/registry-contracts. */
+export interface RegistryPropSpec {
+  kind: "enum" | "boolean" | "string" | "number";
+  /** Enum members, in display order. Required when kind === "enum". */
+  values?: readonly string[];
+  /** Same taxonomy as PropContract.design. Controls panel visibility:
+   *  knob/content render controls; plumbing/event/ref are recorded for
+   *  completeness but filtered from the UI. */
+  design: "knob" | "content" | "structured" | "plumbing" | "event" | "ref";
+  optional?: boolean;
+  default?: string | number | boolean;
+  description?: string;
+}
+
+/** Serialisable per-component contract — what the settings panel needs
+ *  to render correct tweak controls for a non-gradeui DS (the right
+ *  variant/size scales, not gradeui's). Transform output of the DS's
+ *  own metadata (component-meta.json, sidecars), grounded in the real
+ *  barrel exports. */
+export interface RegistryContractSpec {
+  name: string;
+  description?: string;
+  props: Readonly<Record<string, RegistryPropSpec>>;
+  /** Default variant values baked into the component (cva
+   *  defaultVariants equivalent) — lets the panel show the effective
+   *  value instead of a blank control. */
+  variantDefaults?: Readonly<Record<string, string>>;
+}
+
 /** The component-surface portion of a registry. */
 export interface RegistryComponents {
   /** Components the model may emit in `jsx` blocks (OUTPUT RULE #4). */
@@ -38,6 +70,12 @@ export interface RegistryComponents {
   /** filename → raw sidecar markdown ("button.md" → "---\nname: Button…").
    *  Feeds refs, retrieval aliases, and the settings-panel prop manifest. */
   sidecars: Readonly<Record<string, string>>;
+  /** Component name → serialisable contract spec. Feeds the settings
+   *  panel's tweak controls for THIS registry's components. Absent =
+   *  the registry has no contract data; the panel must NOT fall back to
+   *  another registry's contracts (component names collide — "Button"
+   *  exists everywhere, with different prop scales). */
+  contracts?: Readonly<Record<string, RegistryContractSpec>>;
 }
 
 export interface RegistryPackage {

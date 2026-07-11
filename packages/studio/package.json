@@ -22,6 +22,7 @@
   "scripts": {
     "generate:sidecars": "node scripts/generate-sidecars.mjs",
     "generate:registry-sidecars": "node scripts/generate-registry-sidecars.mjs",
+    "generate:brightlocal-contracts": "node scripts/generate-brightlocal-contracts.mjs",
     "generate:scaffolds": "node scripts/generate-scaffolds.mjs",
     "gen:scaffolds-playground": "node scripts/generate-scaffolds-playground.mjs",
     "generate": "pnpm run generate:sidecars && pnpm run generate:scaffolds && pnpm run gen:scaffolds-playground",
