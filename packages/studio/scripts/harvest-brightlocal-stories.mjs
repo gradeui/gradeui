@@ -15,8 +15,10 @@
  * `npx playwright install chromium` once).
  *
  * What it does:
- *   1. GET <storybook>/index.json → all entries. Keeps `components-*--docs`
- *      and `blocks-*--docs` pages.
+ *   1. GET <storybook>/index.json → all entries. Keeps `ui-components-*--docs`
+ *      pages (their actual id scheme — verified July 2026; the original
+ *      `components-*` filter matched NOTHING, which is why the sidecar
+ *      bodies stayed example-less).
  *   2. For each, opens <storybook>/iframe.html?id=<id>&viewMode=docs in
  *      headless chromium, expands every "Show code" toggle, and scrapes the
  *      `.docblock-source` code blocks (the canonical story JSX).
@@ -60,15 +62,24 @@ const index = await fetch(`${base}/index.json`).then((r) => r.json());
 const entries = Object.values(index.entries ?? index.stories ?? {}).filter(
   (e) =>
     e.type === "docs" &&
-    /^(components|blocks)-[a-z0-9-]+--docs$/.test(e.id),
+    /^ui-components-[a-z0-9-]+--docs$/.test(e.id),
 );
 console.log(`[harvest] ${entries.length} component docs pages`);
 
 const sidecarFiles = readdirSync(SIDECARS_DIR).filter((f) => f.endsWith(".md"));
 const sidecarFor = (docId) => {
-  // "components-sidebar--docs" → "sidebar.md"; blocks too.
-  const slug = docId.replace(/^(components|blocks)-/, "").replace(/--docs$/, "");
-  return sidecarFiles.find((f) => f === `${slug}.md`) ?? null;
+  // "ui-components-alert-dialog--docs" → "alert-dialog.md". Their ids
+  // are not always hyphenated where the sidecar name is
+  // ("aspectratio" vs "aspect-ratio.md"), so fall back to a
+  // hyphen-insensitive match.
+  const slug = docId.replace(/^ui-components-/, "").replace(/--docs$/, "");
+  const exact = sidecarFiles.find((f) => f === `${slug}.md`);
+  if (exact) return exact;
+  const flat = slug.replace(/-/g, "");
+  return (
+    sidecarFiles.find((f) => f.replace(/\.md$/, "").replace(/-/g, "") === flat) ??
+    null
+  );
 };
 
 const browser = await chromium.launch();
