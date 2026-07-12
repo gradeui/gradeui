@@ -82,6 +82,7 @@ import {
 } from "@gradeui/ui";
 
 import type { StudioSelection } from "@/lib/chat-sandpack";
+import { RegistryComponentsBrowser } from "@/components/studio/registry-components-browser";
 import type { DesignStatus } from "@/lib/studio-designs";
 import { cn } from "@/lib/utils";
 import { useMaybeGradeTheme } from "@/components/grade-theme-provider";
@@ -874,8 +875,13 @@ export function StylesTabContent({
       data-lenis-prevent
     >
       {section === "components" ? (
-        <div className="mx-auto w-full max-w-4xl">
-          <ComponentsGallery />
+        // Registry-driven component browser — what the agent knows, per
+        // component: exact refs text, retrieval aliases, live canonical
+        // examples. Replaced the hand-authored ComponentsGallery (which
+        // showed a fixed gradeui cross-section and nothing about the
+        // model's context; gallery kept below for a future theme tab).
+        <div className="mx-auto h-full w-full min-h-0 max-w-6xl">
+          <RegistryComponentsBrowser />
         </div>
       ) : section === "typography" ? (
         <div className="mx-auto w-full max-w-2xl">
