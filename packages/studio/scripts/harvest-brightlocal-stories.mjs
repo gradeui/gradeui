@@ -93,13 +93,25 @@ for (const entry of entries) {
     continue;
   }
   try {
+    console.log(`[harvest] ${entry.id} …`);
+    // NOT networkidle — Storybook docs pages hold connections open
+    // (HMR ping, telemetry), so networkidle never settles and the run
+    // wedges on the first page that keeps a socket alive. DOM-ready +
+    // an explicit wait for the docs blocks is what we actually need.
     await page.goto(`${base}/iframe.html?id=${entry.id}&viewMode=docs`, {
-      waitUntil: "networkidle",
-      timeout: 30000,
+      waitUntil: "domcontentloaded",
+      timeout: 20000,
     });
-    // Expand every "Show code" toggle so the source blocks exist in DOM.
+    await page
+      .waitForSelector(".docblock-source, .docblock-code-toggle, .sbdocs", {
+        timeout: 8000,
+      })
+      .catch(() => {});
+    // Expand every "Show code" toggle so the source blocks exist in
+    // DOM. Tight per-click timeout — a stale/covered toggle must not
+    // stall the whole harvest (Playwright's default is 30s per click).
     for (const btn of await page.locator("button:has-text('Show code')").all()) {
-      await btn.click().catch(() => {});
+      await btn.click({ timeout: 1500 }).catch(() => {});
     }
     await page.waitForTimeout(400);
     const codes = await page
