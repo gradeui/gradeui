@@ -238,6 +238,7 @@ interface ProjectRow {
   context: string | null;
   dos: string[] | null;
   donts: string[] | null;
+  registry_id: string | null;
   owner_type: "user" | "team";
   owner_id: string;
   active_design_id: string | null;
@@ -251,9 +252,9 @@ interface ProjectRow {
  *  are only needed by loadProject). Kept as a const so listProjects
  *  and the mutation methods select an identical shape. */
 const PROJECT_META_COLS =
-  "id, name, description, context, dos, donts, owner_type, owner_id, created_at, updated_at";
+  "id, name, description, context, dos, donts, registry_id, owner_type, owner_id, created_at, updated_at";
 const PROJECT_FULL_COLS =
-  "id, name, description, context, dos, donts, owner_type, owner_id, active_design_id, theme_draft_json, theme_variants_json, created_at, updated_at";
+  "id, name, description, context, dos, donts, registry_id, owner_type, owner_id, active_design_id, theme_draft_json, theme_variants_json, created_at, updated_at";
 
 // ─── Screen / message / note rows ─────────────────────────────────
 
@@ -423,6 +424,7 @@ function rowToProject(r: ProjectRow, access: ResourceAccess[]): Project {
     context: r.context ?? undefined,
     dos: r.dos ?? [],
     donts: r.donts ?? [],
+    registryId: r.registry_id ?? undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     owner: { type: r.owner_type, id: r.owner_id } as Subject,
@@ -595,6 +597,7 @@ export class SupabaseStudioStorage implements StudioStorage {
   async createProject(input: {
     name: string;
     description?: string;
+    registryId?: string;
   }): Promise<Project> {
     const { data: userData } = await this.supabase.auth.getUser();
     const uid = userData.user?.id;
@@ -607,6 +610,7 @@ export class SupabaseStudioStorage implements StudioStorage {
       .insert({
         name: input.name,
         description: input.description ?? null,
+        registry_id: input.registryId ?? null,
         owner_type: "user",
         owner_id: uid,
       })
@@ -649,7 +653,10 @@ export class SupabaseStudioStorage implements StudioStorage {
   async updateProject(
     id: string,
     patch: Partial<
-      Pick<Project, "name" | "description" | "context" | "dos" | "donts">
+      Pick<
+        Project,
+        "name" | "description" | "context" | "dos" | "donts" | "registryId"
+      >
     >,
   ): Promise<Project> {
     const update: Record<string, unknown> = {};
@@ -667,6 +674,10 @@ export class SupabaseStudioStorage implements StudioStorage {
     }
     if (patch.donts !== undefined) {
       update.donts = (patch.donts ?? []).map((s) => s.trim()).filter(Boolean);
+    }
+    if (patch.registryId !== undefined) {
+      // Empty string = "clear back to the deployment default".
+      update.registry_id = patch.registryId?.trim() ? patch.registryId : null;
     }
 
     const { data, error } = await this.supabase

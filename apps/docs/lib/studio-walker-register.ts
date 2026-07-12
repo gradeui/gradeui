@@ -21,7 +21,10 @@
  */
 
 import { registerAll, type RewriteRule } from "@gradeui/walker";
-import { getActiveRegistry } from "@/lib/active-registry";
+import {
+  getActiveRegistry,
+  subscribeActiveRegistry,
+} from "@/lib/active-registry";
 import * as LucideReact from "lucide-react";
 
 // The active registry's `components.allowed` is a string[] of PascalCase
@@ -30,11 +33,18 @@ import * as LucideReact from "lucide-react";
 // exports). Bridge it: build a synthetic object whose KEYS are the
 // component names. registerAll only inspects keys to populate the
 // known-names set, so the values can be anything.
-const registry: Record<string, true> = {};
-for (const name of getActiveRegistry().components.allowed) {
-  registry[name] = true;
+function registerAllowedComponents(): void {
+  const registry: Record<string, true> = {};
+  for (const name of getActiveRegistry().components.allowed) {
+    registry[name] = true;
+  }
+  registerAll(registry);
 }
-registerAll(registry);
+registerAllowedComponents();
+// Per-project registries: re-seed when the override flips. registerAll
+// is additive, so the known-names set becomes the union across visited
+// registries — harmless for the walker's purpose (recognising DS tags).
+subscribeActiveRegistry(registerAllowedComponents);
 
 // ─── Lucide icon name format ────────────────────────────────────────────
 //

@@ -88,6 +88,7 @@ import {
   getRegistryComponentContract,
   listRegistryContractedComponents,
 } from "@/lib/registry-contracts";
+import { useActiveRegistry } from "@/lib/use-active-registry";
 import { Image as ImageIcon } from "lucide-react";
 import { getStudioStorage } from "@/lib/studio-storage";
 import type { Asset } from "@/lib/studio-storage";
@@ -96,6 +97,7 @@ import type {
   ComponentContract,
 } from "@gradeui/contracts";
 import { contractToManifest } from "@/lib/contract-to-manifest";
+import { getActiveRegistry } from "@/lib/active-registry";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -345,11 +347,15 @@ export function SelectionInspector({
   // round-trip to /api/component-manifest entirely.
   // Components that haven't been migrated yet (most of them today)
   // continue to use the legacy manifest fetch.
+  // Reactive registry read — per-project switching must re-resolve the
+  // contract even when the selected componentName is unchanged
+  // ("Button" exists in every registry with different props).
+  const inspectorRegistryId = useActiveRegistry().id;
   const contract = useMemo(
     // Registry-keyed: BrightLocal's Button must surface BL's contract
     // (their variant/size scales), never gradeui's by name collision.
     () => getRegistryComponentContract(componentName ?? null),
-    [componentName],
+    [componentName, inspectorRegistryId],
   );
   const contractManifest = useMemo(
     () => (contract ? contractToManifest(contract) : null),
@@ -385,7 +391,9 @@ export function SelectionInspector({
     let cancelled = false;
     setLoadingPart(part);
     setError(null);
-    fetch(`/api/component-manifest?part=${encodeURIComponent(part)}`)
+    fetch(
+      `/api/component-manifest?part=${encodeURIComponent(part)}&registry=${encodeURIComponent(getActiveRegistry().id)}`,
+    )
       .then((r) => {
         if (!r.ok) throw new Error(`manifest request failed (${r.status})`);
         return r.json();
@@ -3020,13 +3028,21 @@ function readClassName(
 // (CardContent lives on the Card contract's styleDefaults map). These
 // are REAL classes from the component source — legitimate to render as
 // (dulled) token chips, unlike values reverse-derived from computed px.
-let contractDefaultsIndex: Record<string, string> | null = null;
+// Keyed by registry id — per-project switching must not leak one DS's
+// styleDefaults into another's part names.
+const contractDefaultsIndexByRegistry = new Map<
+  string,
+  Record<string, string>
+>();
 function getContractDefaultClasses(
   name: string | null | undefined,
 ): string | null {
   if (!name) return null;
-  if (contractDefaultsIndex === null) {
+  const registryKey = getActiveRegistry().id;
+  let contractDefaultsIndex = contractDefaultsIndexByRegistry.get(registryKey);
+  if (!contractDefaultsIndex) {
     contractDefaultsIndex = {};
+    contractDefaultsIndexByRegistry.set(registryKey, contractDefaultsIndex);
     for (const n of listRegistryContractedComponents()) {
       // Cast: dist types may predate the styleDefaults field until the
       // package is rebuilt; the data rides through regardless.

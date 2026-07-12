@@ -622,6 +622,7 @@ export class LocalStorageStudioStorage implements StudioStorage {
   async createProject(input: {
     name: string;
     description?: string;
+    registryId?: string;
   }): Promise<Project> {
     this.ensureHydrated();
     const storage = ssrSafeStorage();
@@ -645,6 +646,7 @@ export class LocalStorageStudioStorage implements StudioStorage {
       // user re-home into a different team later.
       owner: defaultOwnerForLocalUser(),
       access: defaultAccessForNewProject(),
+      registryId: input.registryId || undefined,
     };
     // Seed every new project with a single blank screen — matches
     // the pre-projects bootstrap behaviour. Users land in a state
@@ -677,7 +679,10 @@ export class LocalStorageStudioStorage implements StudioStorage {
   async updateProject(
     id: string,
     patch: Partial<
-      Pick<Project, "name" | "description" | "context" | "dos" | "donts">
+      Pick<
+        Project,
+        "name" | "description" | "context" | "dos" | "donts" | "registryId"
+      >
     >,
   ): Promise<Project> {
     this.ensureHydrated();
@@ -709,6 +714,10 @@ export class LocalStorageStudioStorage implements StudioStorage {
     }
     if (patch.donts !== undefined) {
       next.donts = patch.donts.map((s) => s.trim()).filter(Boolean);
+    }
+    if (patch.registryId !== undefined) {
+      // Empty string = "clear back to the deployment default".
+      next.registryId = patch.registryId.trim() || undefined;
     }
 
     const nextList = [...list];

@@ -41,6 +41,7 @@ import {
 } from "@gradeui/ui";
 
 import type { Project, Team } from "@/lib/studio-storage";
+import { getActiveRegistry, listRegistries } from "@/lib/active-registry";
 import {
   roleLabel,
   useCurrentUser,
@@ -77,6 +78,7 @@ interface ProjectSettingsSheetProps {
       context?: string;
       dos?: string[];
       donts?: string[];
+      registryId?: string;
     },
   ) => void;
   /** Confirm + delete. Parent owns the confirmation UI — pass a
@@ -279,6 +281,42 @@ export function ProjectSettingsSheet({
                 Save changes
               </Button>
             </div>
+          </section>
+
+          <Separator />
+
+          {/* Design system — which DesignSystemRegistry this project's
+              screens are written against (BYODS). Applies IMMEDIATELY
+              (not part of Save): the prompt, renderer, contracts and
+              selection all follow. Existing screens keep their JSX —
+              switching registry doesn't rewrite them, it changes what
+              NEW generations target, so warn when screens exist. */}
+          <section className="flex flex-col gap-2">
+            <Label htmlFor="project-registry" className="text-sm font-medium">
+              Design system
+            </Label>
+            <select
+              id="project-registry"
+              value={project?.registryId ?? ""}
+              onChange={(e) =>
+                project && onUpdate(project.id, { registryId: e.target.value })
+              }
+              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">
+                Deployment default ({getActiveRegistry().name})
+              </option>
+              {listRegistries().map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted-foreground">
+              New screens are generated with this design system&rsquo;s
+              components. Existing screens keep their code — switch back to
+              edit them with the right tools.
+            </p>
           </section>
 
           <Separator />

@@ -161,12 +161,13 @@ export default async function SharePage({
 
   const { data: project } = await supabase
     .from("projects")
-    .select("theme_draft_json, name")
+    .select("theme_draft_json, name, registry_id")
     .eq("id", share.project_id)
     .maybeSingle();
   const projectRow = project as {
     theme_draft_json: string | null;
     name: string;
+    registry_id: string | null;
   } | null;
 
   // Open comment threads on this screen — rendered read-only as pins in
@@ -281,6 +282,9 @@ export default async function SharePage({
       canComment={share.mode === "comment"}
       commentThreads={commentThreads}
       commentUsers={commentUsers}
+      // The PROJECT's registry — resolved server-side so the share
+      // renders with the right DS regardless of the deployment default.
+      registryId={projectRow?.registry_id ?? null}
     />
   );
 }

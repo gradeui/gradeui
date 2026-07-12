@@ -84,7 +84,7 @@ import {
   type StudioSelection,
 } from "@/lib/chat-sandpack";
 import { openInCodeSandboxNpm } from "@/lib/chat-export-npm";
-import { getActiveRegistry } from "@/lib/active-registry";
+import { useActiveRegistry } from "@/lib/use-active-registry";
 import { ExternalDsMount } from "@/components/studio/external-ds-frame";
 import {
   backfillMediaSurfaceSrcProp,
@@ -390,8 +390,9 @@ export function StudioCanvas({
   // registry pins EVERY mount (focused frame, tile grid, and anything
   // else downstream) to Sandpack. Coerced once here so no child can
   // accidentally mount Fast Frame with an external registry.
+  const activeRegistryId = useActiveRegistry().id;
   const rendererMode: "sandpack" | "fast" =
-    getActiveRegistry().id !== "gradeui" ? "sandpack" : rendererModeProp;
+    activeRegistryId !== "gradeui" ? "sandpack" : rendererModeProp;
   // Zoom — controlled by the parent when `controlledZoom` is passed
   // (Studio uses this to route the left panel based on view), with
   // an internal fallback for any consumer that doesn't lift state.
@@ -2322,7 +2323,7 @@ function FocusedFrame({
   // React), so a non-gradeui active registry pins the renderer to
   // Sandpack, which installs the DS from npm. Promoting an external DS
   // into Fast Frame is a later, deliberate step (see BYODS plan).
-  const registryNeedsSandpack = getActiveRegistry().id !== "gradeui";
+  const registryNeedsSandpack = useActiveRegistry().id !== "gradeui";
   const effectiveRendererMode =
     forcedSandpack || registryNeedsSandpack ? "sandpack" : rendererMode;
 
@@ -2915,6 +2916,7 @@ function ScreenTile({
   mediaOverrides,
   rendererMode = "sandpack",
 }: ScreenTileProps) {
+  const tileRegistryId = useActiveRegistry().id;
   const appSource = design.appSource;
   const canRender = Boolean(appSource) && looksComplete(appSource || "");
 
@@ -3115,7 +3117,7 @@ function ScreenTile({
               mediaUrls={mediaUrls}
               mediaOverrides={mediaOverrides}
             />
-          ) : getActiveRegistry().id !== "gradeui" ? (
+          ) : tileRegistryId !== "gradeui" ? (
             // External DS: tiles use the SAME renderer as the focused
             // editor (/external-sandbox) so grid previews match what
             // the editor shows — Sandpack tiles here rendered with a

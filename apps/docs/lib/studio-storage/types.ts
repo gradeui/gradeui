@@ -115,6 +115,14 @@ export interface Project {
   type?: ProjectType;
   /** Optional canvas viewports; unset = the defaults for `type`. */
   viewports?: Viewport[];
+  /** Design-system registry this project's screens are written against
+   *  ("gradeui", "brightlocal" — DesignSystemRegistry.id). Unset =
+   *  the deployment default (NEXT_PUBLIC_STUDIO_REGISTRY, else
+   *  gradeui). PROJECT-level on purpose: a screen's JSX targets one
+   *  component vocabulary and chat context / refs / allowlist /
+   *  exporters are project-scoped — screens inherit. Resolution:
+   *  getRegistryById(project.registryId) ?? getActiveRegistry(). */
+  registryId?: string;
 }
 
 // Re-exports of related entity types — keeps `@/lib/studio-storage`
@@ -348,6 +356,8 @@ export interface StudioStorage {
   createProject(input: {
     name: string;
     description?: string;
+    /** Design-system registry id — see Project.registryId. */
+    registryId?: string;
   }): Promise<Project>;
 
   /** Rename a project. Bumps `updatedAt`. Kept for back-compat;
@@ -363,7 +373,10 @@ export interface StudioStorage {
   updateProject(
     id: string,
     patch: Partial<
-      Pick<Project, "name" | "description" | "context" | "dos" | "donts">
+      Pick<
+        Project,
+        "name" | "description" | "context" | "dos" | "donts" | "registryId"
+      >
     >,
   ): Promise<Project>;
 

@@ -20,7 +20,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { buildComponentManifest } from "@gradeui/studio/playbook";
-import { getActiveRegistry } from "@/lib/active-registry";
+import { getActiveRegistry, getRegistryById } from "@/lib/active-registry";
 
 // The playbook package inlines sidecars as a TS string map — no fs access
 // needed at runtime, so this route runs fine on the edge if we ever want.
@@ -49,7 +49,10 @@ export async function GET(req: NextRequest) {
 
   // Instance-named parts (BrightLocal's data-hook "{context}-{type}") →
   // component names via the registry's suffix map, longest suffix first.
-  const registry = getActiveRegistry();
+  // Per-request registry: ?registry=<id> from the client's active
+  // project, else the deployment default.
+  const registry =
+    getRegistryById(searchParams.get("registry")) ?? getActiveRegistry();
   const suffixMap = registry.selection.partSuffixMap;
   if (suffixMap) {
     const suffixes = Object.keys(suffixMap).sort((a, b) => b.length - a.length);

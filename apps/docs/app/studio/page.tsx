@@ -115,7 +115,8 @@ import {
   type StudioSelection,
 } from "@/lib/chat-sandpack";
 import { buildSystemPrompt } from "@gradeui/studio/playbook";
-import { getActiveRegistry } from "@/lib/active-registry";
+import { setActiveProjectRegistry } from "@/lib/active-registry";
+import { useActiveRegistry } from "@/lib/use-active-registry";
 import {
   createDesign,
   designKind,
@@ -185,7 +186,15 @@ import "@/lib/studio-walker-register";
 export default function StudioPage() {
   const [settings, updateSettings] = useChatSettings();
   const { theme: siteTheme, isDark: chromeIsDark } = useGradeTheme();
-  const systemPrompt = useMemo(() => buildSystemPrompt(getActiveRegistry()), []);
+  // Per-project registry: the memo depends on the ACTIVE registry (the
+  // project-registry effect below flips the override when the active
+  // project changes), so switching to a BrightLocal project rebuilds
+  // the prompt with BL's package/allowlist/rules.
+  const activeRegistry = useActiveRegistry();
+  const systemPrompt = useMemo(
+    () => buildSystemPrompt(activeRegistry),
+    [activeRegistry],
+  );
 
   // The screen-level draft theme — seeded once from whatever chrome
   // theme is active when Studio mounts. After that, the Theme tab in
@@ -445,6 +454,17 @@ export default function StudioPage() {
   const storage = useMemo(() => getStudioStorage(), []);
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+
+  // Point the module-level registry override at the active project's
+  // registryId (null = deployment default). This is THE per-project
+  // registry switch: everything that reads getActiveRegistry() /
+  // useActiveRegistry() — prompt, renderer pick, contracts, selection
+  // attributes, exporters — follows the active project from here.
+  const activeProjectRegistryId =
+    projects.find((p) => p.id === activeProjectId)?.registryId ?? null;
+  useEffect(() => {
+    setActiveProjectRegistry(activeProjectRegistryId);
+  }, [activeProjectRegistryId]);
 
   // Author id for comments/threads. In cloud mode this MUST be the
   // signed-in Supabase user id — `created_by` / `author_id` /
@@ -1441,10 +1461,13 @@ export default function StudioPage() {
         context?: string;
         dos?: string[];
         donts?: string[];
+        registryId?: string;
       },
     ) => {
       await storage.updateProject(id, patch);
       const list = await storage.listProjects();
+      // Refreshing `projects` also re-derives activeProjectRegistryId,
+      // so a registry change here flips the override immediately.
       setProjects(list);
     },
     [storage],

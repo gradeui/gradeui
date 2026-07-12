@@ -24,6 +24,7 @@ import { CanvasCommentPinsOverlay } from "@/components/studio/canvas-comment-pin
 import { CodeView } from "@/components/studio/code-view";
 import { SourceEditor } from "@/components/studio/source-editor";
 import { injectSourceIds } from "@/lib/chat-sandpack";
+import { useActiveRegistry } from "@/lib/use-active-registry";
 import type { CommentThreadWithMessages } from "@/lib/studio-storage";
 import type { User } from "@/lib/studio-users";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,10 @@ export interface ExternalIframeHostProps {
   /** Exposed iframe ref so wrapping chrome (the comment-pins overlay)
    *  can reach contentDocument. */
   iframeRef?: React.MutableRefObject<HTMLIFrameElement | null>;
+  /** Explicit registry id for surfaces that resolve it themselves (the
+   *  share view resolves the PROJECT's registry server-side). Absent =
+   *  the active registry (per-project override in Studio). */
+  registryId?: string;
 }
 
 export function ExternalIframeHost({
@@ -66,6 +71,7 @@ export function ExternalIframeHost({
   onError,
   onContentHeight,
   iframeRef: externalIframeRef,
+  registryId: registryIdProp,
 }: ExternalIframeHostProps) {
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
   const readyRef = React.useRef(false);
@@ -148,10 +154,18 @@ export function ExternalIframeHost({
     push();
   }, [push]);
 
+  // Per-project registries: the sandbox is a separate module instance
+  // and can't see the parent's override, so the id rides the iframe
+  // URL. A registry change remounts the iframe (new src) — correct,
+  // the DS bundle itself must change. Explicit prop wins (share view
+  // resolves the project registry server-side). Hook called
+  // unconditionally — rules of hooks.
+  const activeRegistryId = useActiveRegistry().id;
+  const registryId = registryIdProp ?? activeRegistryId;
   return (
     <iframe
       ref={setIframe}
-      src="/external-sandbox"
+      src={`/external-sandbox?registry=${encodeURIComponent(registryId)}`}
       title="External design system preview"
       className={cn("block h-full w-full border-0 bg-white", className)}
       style={{ border: 0, colorScheme: mode, ...style }}

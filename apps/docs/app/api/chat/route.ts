@@ -58,7 +58,7 @@ import {
 // server uses, so the demo surface can't quietly drift from what ships.
 // (See grade-local-testing-and-eval.md and @gradeui/studio/core.)
 import { createScreenContext } from "@gradeui/studio/core";
-import { getActiveRegistry } from "@/lib/active-registry";
+import { getActiveRegistry, getRegistryById } from "@/lib/active-registry";
 
 /**
  * Pull text out of a UIMessage's parts array. Mirrors the small helper in
@@ -193,6 +193,11 @@ interface ChatRequestBody {
    *  DeepSeek R1 via OpenRouter) stream it regardless of this flag —
    *  the client just won't render it while the toggle is off. */
   requestReasoning?: boolean;
+  /** DesignSystemRegistry.id of the ACTIVE PROJECT — server routes can't
+   *  see the client's per-project override (and must not use a singleton
+   *  across concurrent requests), so it rides the request. Absent /
+   *  unknown = the deployment default. */
+  registryId?: string;
 }
 
 /**
@@ -329,6 +334,7 @@ export async function POST(req: Request) {
     selection,
     requestReasoning = false,
     editMode = false,
+    registryId,
   } = body;
 
   if (!messages || !Array.isArray(messages)) {
@@ -439,7 +445,10 @@ export async function POST(req: Request) {
         basePrompt: systemPrompt,
         selection,
         includeComponentRefs,
-        registry: getActiveRegistry(),
+        // Per-request resolution — the request's project registry, else
+        // the deployment default. NEVER a server-side singleton (two
+        // concurrent requests can target different registries).
+        registry: getRegistryById(registryId) ?? getActiveRegistry(),
       }
     );
 

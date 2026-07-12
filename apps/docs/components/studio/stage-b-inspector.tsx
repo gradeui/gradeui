@@ -34,7 +34,10 @@ import * as React from "react";
 import Link from "next/link";
 import * as ts from "typescript";
 import { Boxes, Package, ExternalLink } from "lucide-react";
-import { getActiveRegistry } from "@/lib/active-registry";
+import {
+  getActiveRegistry,
+  subscribeActiveRegistry,
+} from "@/lib/active-registry";
 import { COMPONENT_CONTRACTS } from "@gradeui/ui/contracts";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -72,9 +75,15 @@ const TIER_1_SPECIFIERS = new Set<string>([
   "@radix-ui/react-toolbar",
 ]);
 
-const ALLOWED_COMPONENT_LOWER = new Set(
+let ALLOWED_COMPONENT_LOWER = new Set(
   getActiveRegistry().components.allowed.map((c) => c.toLowerCase()),
 );
+// Per-project registries flip the override at runtime — recompute.
+subscribeActiveRegistry(() => {
+  ALLOWED_COMPONENT_LOWER = new Set(
+    getActiveRegistry().components.allowed.map((c) => c.toLowerCase()),
+  );
+});
 
 /**
  * Subcomponent → root map built from the contract registry. Lets the

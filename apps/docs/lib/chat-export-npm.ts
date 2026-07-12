@@ -33,25 +33,40 @@ import {
 } from "./chat-sandpack";
 import { applyBuiltInThemeOverrides, fontFaceCSS } from "./themes";
 import type { GeneratedTheme } from "./themes";
-import { getActiveRegistry } from "@/lib/active-registry";
+import {
+  getActiveRegistry,
+  subscribeActiveRegistry,
+} from "@/lib/active-registry";
 
 // Active DS (BYODS B2/Phase-4): the exporter is the one surface that
 // translates Studio's internal barrel form into the DS's own import
 // convention (per-file subpaths) via `package.importMap`.
-const EXPORT_REGISTRY = getActiveRegistry();
-const EXPORT_DS_PKG = EXPORT_REGISTRY.package.name;
+// `let`s + subscription: per-project registries flip the override at
+// runtime, and exports happen long after module load.
+let EXPORT_REGISTRY = getActiveRegistry();
+let EXPORT_DS_PKG = EXPORT_REGISTRY.package.name;
 
 /** Version of the DS package the exported sandbox installs. gradeui keeps
  *  its historical `latest` (freshly-published versions picked up without
  *  code changes); external registries use their pinned version. */
-const DS_EXPORT_VERSION =
+let DS_EXPORT_VERSION =
   EXPORT_REGISTRY.id === "gradeui"
     ? "latest"
     : EXPORT_REGISTRY.package.version ?? "latest";
 
 /** External DS → the exported sandbox mirrors the preview's Tailwind v4
  *  browser-build head instead of the gradeui v3-CDN + oklch config. */
-const EXPORT_EXTERNAL = EXPORT_REGISTRY.id !== "gradeui";
+let EXPORT_EXTERNAL = EXPORT_REGISTRY.id !== "gradeui";
+
+subscribeActiveRegistry(() => {
+  EXPORT_REGISTRY = getActiveRegistry();
+  EXPORT_DS_PKG = EXPORT_REGISTRY.package.name;
+  DS_EXPORT_VERSION =
+    EXPORT_REGISTRY.id === "gradeui"
+      ? "latest"
+      : EXPORT_REGISTRY.package.version ?? "latest";
+  EXPORT_EXTERNAL = EXPORT_REGISTRY.id !== "gradeui";
+});
 
 /**
  * Rewrite local component imports to flat imports from @gradeui/ui. The

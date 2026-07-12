@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { FastIframeHost } from "@/components/studio/fast-frame";
 import { ExternalIframeHost } from "@/components/studio/external-ds-frame";
-import { getActiveRegistry } from "@/lib/active-registry";
+import { getActiveRegistry, getRegistryById } from "@/lib/active-registry";
 import { GradeLogo } from "@/components/grade-logo";
 import {
   DropdownMenu,
@@ -114,6 +114,7 @@ export function SharedScreen({
   canComment = false,
   commentThreads = [],
   commentUsers = [],
+  registryId = null,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -130,6 +131,9 @@ export function SharedScreen({
   canComment?: boolean;
   commentThreads?: CommentThreadWithMessages[];
   commentUsers?: User[];
+  /** The share's PROJECT registry id (projects.registry_id), resolved
+   *  server-side by /s/[token]. null = deployment default. */
+  registryId?: string | null;
 }) {
   // The project's own theme — the default treatment the share opens on.
   const projectTheme = React.useMemo<GeneratedTheme>(() => {
@@ -218,9 +222,12 @@ export function SharedScreen({
   // false) — the creator framed the screen; honour it.
   // External registry (BYODS) — the share renders through the ext:*
   // kernel instead of Fast Frame, and theme/motion chrome is hidden
-  // (external DS themes aren't Studio-switchable yet). Env-driven for
-  // now; becomes a per-project attribute with the registry_id work.
-  const isExternal = getActiveRegistry().id !== "gradeui";
+  // (external DS themes aren't Studio-switchable yet). Resolved from
+  // the share's PROJECT (registryId prop), falling back to the
+  // deployment default — synchronous, so first paint mounts the right
+  // renderer with no remount flash.
+  const shareRegistry = getRegistryById(registryId) ?? getActiveRegistry();
+  const isExternal = shareRegistry.id !== "gradeui";
   const artboard = useArtboardZoom({ deviceSize: resolveDeviceSize });
   const {
     canvasRef: screenRef,
@@ -993,6 +1000,7 @@ export function SharedScreen({
           <ExternalIframeHost
             appSource={appSource}
             mode={mode}
+            registryId={shareRegistry.id}
             // Responsive only — feeds the content-height artboard above.
             onContentHeight={activeSpec.responsive ? setContentH : undefined}
             className={cn(

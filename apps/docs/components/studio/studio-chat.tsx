@@ -35,6 +35,7 @@ import {
 import { EDIT_MODE_PROMPT, MOTION_GUIDE } from "@gradeui/studio/playbook";
 import { SelectionInspector } from "@/components/studio/selection-inspector";
 import { SelectionChip } from "@/components/studio/selection-chip";
+import { getActiveRegistry } from "@/lib/active-registry";
 import { AIChat, type ChatMessage } from "@/components/ui/ai-chat";
 import {
   AIChatComposer,
@@ -471,6 +472,10 @@ export function StudioChat({
             // tokens, so off must mean off. Gemini free tier supports
             // this (thought summaries via includeThoughts).
             requestReasoning: thinkingOn,
+            // The active project's registry — read at SEND time (module
+            // getter, follows the per-project override) so the server
+            // stitches refs/prompt for the right design system.
+            registryId: getActiveRegistry().id,
           },
         };
       },

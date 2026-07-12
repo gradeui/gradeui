@@ -12,7 +12,10 @@
 
 import { themeToCSSVars, fontFaceCSS, type GeneratedTheme } from "@/lib/themes";
 import { injectMediaSourceAttrs } from "@/lib/media-fill";
-import { getActiveRegistry } from "@/lib/active-registry";
+import {
+  getActiveRegistry,
+  subscribeActiveRegistry,
+} from "@/lib/active-registry";
 import { externalTwCss, EXTERNAL_FONT_VARS_CSS, EXTERNAL_FONTS_URL as _EXTERNAL_FONTS_URL } from "@/lib/external-ds-preview";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -22,13 +25,16 @@ import { externalTwCss, EXTERNAL_FONT_VARS_CSS, EXTERNAL_FONTS_URL as _EXTERNAL_
 // Every literal that used to hardcode `@gradeui/ui` in this file now
 // derives from the active registry: the import rewriters, the auto-import
 // injector, the npm dependency pin, and the entry file's style imports.
-// One registry per deployment (see lib/active-registry.ts), resolved once
-// at module scope — the same constant both renderers and the API routes see.
-const ACTIVE_REGISTRY = getActiveRegistry();
+//
+// PER-PROJECT registries made these `let`s: the values are recomputed by
+// `refreshRegistryDerived()` (bottom of file) whenever the active-project
+// override flips (subscribeActiveRegistry). ESM exports are live bindings,
+// so importers of the exported ones always see the current values.
+let ACTIVE_REGISTRY = getActiveRegistry();
 /** Barrel specifier of the active DS ("@gradeui/ui"). */
-const DS_PKG = ACTIVE_REGISTRY.package.name;
+let DS_PKG = ACTIVE_REGISTRY.package.name;
 /** Allowlist of the active DS — what the auto-importer may fabricate. */
-const DS_ALLOWED: readonly string[] = ACTIVE_REGISTRY.components.allowed;
+let DS_ALLOWED: readonly string[] = ACTIVE_REGISTRY.components.allowed;
 
 /** Escape a package specifier for embedding in a RegExp. */
 function escapeRe(s: string): string {
@@ -39,17 +45,17 @@ function escapeRe(s: string): string {
  *  "data-gds-part" for gradeui, "data-hook" for BrightLocal. Interpolated
  *  into the in-iframe selection agent (a template-literal TSX file), so
  *  the agent's closest()/getAttribute() calls follow the registry. */
-const DS_PART_ATTR = ACTIVE_REGISTRY.selection.partAttribute;
+let DS_PART_ATTR = ACTIVE_REGISTRY.selection.partAttribute;
 
 /** True when the active DS is not gradeui. External design systems carry
  *  full-color semantic vars (hex), their own preview CSS, and skip the
  *  Studio theme engine's oklch triplet injection (Phase 5 wires theming). */
-const EXTERNAL_DS = ACTIVE_REGISTRY.id !== "gradeui";
+let EXTERNAL_DS = ACTIVE_REGISTRY.id !== "gradeui";
 
 /** Full Tailwind v4 source for the active external DS — its own @theme
  *  vocabulary when provided (BrightLocal ships one), generic bridge
  *  otherwise. */
-const EXTERNAL_TW_SOURCE = externalTwCss(ACTIVE_REGISTRY.runtime?.previewThemeCss);
+let EXTERNAL_TW_SOURCE = externalTwCss(ACTIVE_REGISTRY.runtime?.previewThemeCss);
 
 // ─────────────────────────────────────────────────────────────────────
 // Selection agent wire types
@@ -682,10 +688,11 @@ export const TAILWIND_V4_BROWSER_CDN =
  *  a `text/tailwindcss` sheet carrying tw-animate-css, the dark variant,
  *  and the @theme inline bridge — all shared with Fast Frame via
  *  lib/external-ds-preview.ts (two-renderer rule). */
-export const EXTERNAL_TAILWIND_HEAD = `    <script src="${TAILWIND_V4_BROWSER_CDN}"></script>
+const buildExternalTailwindHead = () => `    <script src="${TAILWIND_V4_BROWSER_CDN}"></script>
     <style type="text/tailwindcss">
 ${EXTERNAL_TW_SOURCE}
     </style>`;
+export let EXTERNAL_TAILWIND_HEAD = buildExternalTailwindHead();
 
 /** Re-exported from the shared external-DS preview module so existing
  *  consumers (chat-export-npm) keep their import path. */
@@ -734,10 +741,12 @@ export const PLAYGROUND_FONT_VARS = `
  * another CDN script or stylesheet in the preview, add it here and every
  * consumer picks it up for free.
  */
-export const PLAYGROUND_EXTERNAL_RESOURCES: readonly string[] = [
+const buildExternalResources = (): readonly string[] => [
   EXTERNAL_DS ? TAILWIND_V4_BROWSER_CDN : PLAYGROUND_TAILWIND_CDN,
   EXTERNAL_DS ? _EXTERNAL_FONTS_URL : PLAYGROUND_FONTS_URL,
 ];
+export let PLAYGROUND_EXTERNAL_RESOURCES: readonly string[] =
+  buildExternalResources();
 
 /**
  * The Sandpack `customSetup.dependencies` map every Grade preview uses.
@@ -775,7 +784,7 @@ export const PLAYGROUND_EXTERNAL_RESOURCES: readonly string[] = [
  * Bump this when a new minor/major lands and the newly exported
  * components need to be reachable in Studio.
  */
-export const PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> = {
+const buildPlaygroundDependencies = (): Readonly<Record<string, string>> => ({
   // The active DS package + its companion packages (a tokens npm, an
   // icons npm, …) come from the registry — B2. For gradeui this resolves
   // to exactly the old hardcoded pin ("@gradeui/ui": "0.10.0").
@@ -813,7 +822,9 @@ export const PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> = {
   // runtime adds ~900KB to every sandbox boot and we're not pushing Rive as a
   // studio-first primitive. Consumers installing @gradeui/ui directly can still
   // use it by adding the optional dep themselves.
-};
+});
+export let PLAYGROUND_DEPENDENCIES: Readonly<Record<string, string>> =
+  buildPlaygroundDependencies();
 
 // ─────────────────────────────────────────────────────────────────────
 // Theme vars
@@ -1056,7 +1067,7 @@ ${EXTERNAL_DS ? ACTIVE_REGISTRY.runtime?.previewCss ?? "" : ""}
 // can't "select the whole frame". It also ignores its own overlay.
 // ─────────────────────────────────────────────────────────────────────
 
-const PLAYGROUND_SELECTION_AGENT_TSX = `// Runs once per iframe boot as a side-effect import from /index.tsx.
+const buildSelectionAgentTsx = () => `// Runs once per iframe boot as a side-effect import from /index.tsx.
 // No React, no JSX — pure DOM + postMessage so the agent is up the
 // moment the bundle loads, independent of the React root's state.
 
@@ -1526,6 +1537,7 @@ function findComponentOwner(el: Element | null): Element | null {
 
 export {};
 `;
+let PLAYGROUND_SELECTION_AGENT_TSX = buildSelectionAgentTsx();
 
 export function buildPlaygroundStylesCss(
   lightVars: string,
@@ -2813,7 +2825,7 @@ export {
 /** Bundled style bootstrap for external design systems (see the files-map
  *  comment where this mounts). All data is baked at build time — the
  *  module just appends nodes. Idempotent across HMR re-runs. */
-const EXTERNAL_DS_CSS_BOOTSTRAP_TSX = `// Generated by chat-sandpack.ts — external-DS style bootstrap.
+const buildExternalDsCssBootstrapTsx = () => `// Generated by chat-sandpack.ts — external-DS style bootstrap.
 const w = window as unknown as { __gradeExternalDsCss?: boolean };
 // Diagnostic beacon — the iframe is cross-origin, so this is the only
 // observable trace of the bootstrap. Cheap; keep it.
@@ -2869,8 +2881,9 @@ if (!w.__gradeExternalDsCss) {
 }
 export {};
 `;
+let EXTERNAL_DS_CSS_BOOTSTRAP_TSX = buildExternalDsCssBootstrapTsx();
 
-const PLAYGROUND_INDEX_TSX = [
+const buildPlaygroundIndexTsx = () => [
   'import React from "react";',
   'import ReactDOM from "react-dom/client";',
   // The DS's own stylesheet(s) — registry-fed (B2). gradeui: the single
@@ -2896,6 +2909,32 @@ const PLAYGROUND_INDEX_TSX = [
   "  </ThemeOptionsApplier>",
   ");",
 ].join("\n");
+let PLAYGROUND_INDEX_TSX = buildPlaygroundIndexTsx();
+
+// ─────────────────────────────────────────────────────────────────────
+// Per-project registry refresh
+// ─────────────────────────────────────────────────────────────────────
+//
+// All the registry-derived module values above are recomputed when the
+// active-project override flips (studio page switches project). Exports
+// are live bindings, so importers always read the current values; the
+// next buildSandpackFiles / prepareAppSource call after a project switch
+// sees the new DS. Client-only in practice — server routes never flip
+// the override (they resolve per-request).
+subscribeActiveRegistry(() => {
+  ACTIVE_REGISTRY = getActiveRegistry();
+  DS_PKG = ACTIVE_REGISTRY.package.name;
+  DS_ALLOWED = ACTIVE_REGISTRY.components.allowed;
+  DS_PART_ATTR = ACTIVE_REGISTRY.selection.partAttribute;
+  EXTERNAL_DS = ACTIVE_REGISTRY.id !== "gradeui";
+  EXTERNAL_TW_SOURCE = externalTwCss(ACTIVE_REGISTRY.runtime?.previewThemeCss);
+  EXTERNAL_TAILWIND_HEAD = buildExternalTailwindHead();
+  PLAYGROUND_EXTERNAL_RESOURCES = buildExternalResources();
+  PLAYGROUND_DEPENDENCIES = buildPlaygroundDependencies();
+  PLAYGROUND_SELECTION_AGENT_TSX = buildSelectionAgentTsx();
+  EXTERNAL_DS_CSS_BOOTSTRAP_TSX = buildExternalDsCssBootstrapTsx();
+  PLAYGROUND_INDEX_TSX = buildPlaygroundIndexTsx();
+});
 
 /**
  * Tiny, deterministic string hash. Used to derive a short signature from

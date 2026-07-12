@@ -37,14 +37,24 @@ import {
   EXTERNAL_FONT_VARS_CSS,
   EXTERNAL_FONTS_URL,
 } from "@/lib/external-ds-preview";
-import { getActiveRegistry } from "@/lib/active-registry";
+import { getActiveRegistry, getRegistryById } from "@/lib/active-registry";
 import {
   installStudioSelectionAgent,
   type SelectionAgentHandle,
   type SelectionPayload,
 } from "@/lib/studio-selection-agent";
 
-const REGISTRY = getActiveRegistry();
+// Which registry this iframe renders. This is a SEPARATE module
+// instance from the parent window's — the per-project override can't
+// reach us — so the host passes the registry id on the iframe URL
+// (?registry=brightlocal). Resolved at effect start (window exists);
+// the env default keeps standalone opens working. Module-scope `let`
+// matches this page's single-instance style.
+let REGISTRY = getActiveRegistry();
+function resolveRegistryFromUrl(): void {
+  const id = new URLSearchParams(window.location.search).get("registry");
+  REGISTRY = getRegistryById(id) ?? getActiveRegistry();
+}
 
 /** esm.sh module URLs. React is pinned and shared via import map so the
  *  DS package (externalized) resolves the same instance. */
@@ -75,6 +85,9 @@ export default function ExternalSandboxPage() {
   const [status, setStatus] = React.useState("booting…");
 
   React.useEffect(() => {
+    // FIRST: pin the registry from ?registry= — everything below
+    // (dsUrl, companion deps, selection config, preview CSS) reads it.
+    resolveRegistryFromUrl();
     let disposed = false;
     let reactRoot: { render: (n: unknown) => void; unmount: () => void } | null = null;
     let pendingSource: { source: string; mode: string } | null = null;

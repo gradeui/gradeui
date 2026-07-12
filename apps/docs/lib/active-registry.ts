@@ -1,17 +1,25 @@
 /**
- * Active design-system registry for this deployment (STUDIO-BYODS.md B1).
+ * Active design-system registry (STUDIO-BYODS.md B1/B4).
  *
- * Interim selection mechanism: one registry per deployment, chosen by env.
+ * TWO layers of selection, resolved by `getActiveRegistry()`:
  *
- *   NEXT_PUBLIC_STUDIO_REGISTRY=brightlocal pnpm dev
+ *   1. PER-PROJECT (client): the studio page calls
+ *      `setActiveProjectRegistry(project.registryId)` whenever the
+ *      active project changes. The override is a module singleton —
+ *      one active project per tab — and subscribable so React
+ *      consumers re-render (`useActiveRegistry` in
+ *      use-active-registry.ts).
+ *   2. DEPLOYMENT DEFAULT (env): NEXT_PUBLIC_STUDIO_REGISTRY.
+ *      Unset (or "gradeui") keeps stock behaviour. NEXT_PUBLIC_ so the
+ *      same fallback drives both server routes and client callsites.
  *
- * Unset (or "gradeui") keeps today's behaviour exactly. NEXT_PUBLIC_ so the
- * same value drives both the server routes (chat, component-manifest) and
- * the client callsites (studio page's buildSystemPrompt, selection agent's
- * partAttribute) — the registry must agree end-to-end within one session.
+ * Server routes must NOT rely on the singleton (concurrent requests) —
+ * they receive a `registryId` per-request and resolve it with
+ * `getRegistryById(id) ?? getActiveRegistry()`.
  *
- * B4 replaces this with per-org `active_registry` in Supabase; keep every
- * consumer going through `getActiveRegistry()` so that swap is one file.
+ * Keep every consumer going through these helpers; module-scope
+ * `const X = getActiveRegistry()` captures the value BEFORE any project
+ * is known and defeats the per-project layer.
  */
 
 import {
@@ -25,16 +33,44 @@ const REGISTRIES: Readonly<Record<string, DesignSystemRegistry>> = {
   [BRIGHTLOCAL_REGISTRY.id]: BRIGHTLOCAL_REGISTRY,
 };
 
-/** id → registry, or null. The per-project registry work (Project.
- *  registryId) resolves through this; unknown/absent ids mean "fall
- *  back to the deployment default" (getActiveRegistry). */
+/** id → registry, or null. Unknown/absent ids mean "fall back to the
+ *  deployment default" (getActiveRegistry). */
 export function getRegistryById(
   id: string | null | undefined,
 ): DesignSystemRegistry | null {
   return (id && REGISTRIES[id]) || null;
 }
 
-export function getActiveRegistry(): DesignSystemRegistry {
+/** Every registry available on this deployment — drives the project
+ *  settings picker. */
+export function listRegistries(): DesignSystemRegistry[] {
+  return Object.values(REGISTRIES);
+}
+
+// ─── Per-project override (client singleton) ───────────────────────────
+
+let projectOverride: DesignSystemRegistry | null = null;
+const listeners = new Set<() => void>();
+
+/** Point the active registry at a project's registryId (null/undefined
+ *  or unknown id = clear back to the deployment default). Called by the
+ *  studio page whenever the active project changes, and by the share
+ *  view with the share's project registry. Notifies subscribers only on
+ *  an actual change. */
+export function setActiveProjectRegistry(id: string | null | undefined): void {
+  const next = getRegistryById(id);
+  if (next === projectOverride) return;
+  projectOverride = next;
+  for (const l of listeners) l();
+}
+
+/** Subscribe to override changes — useSyncExternalStore shape. */
+export function subscribeActiveRegistry(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function envRegistry(): DesignSystemRegistry {
   const id = process.env.NEXT_PUBLIC_STUDIO_REGISTRY;
   if (!id) return GRADE_REGISTRY;
   const registry = REGISTRIES[id];
@@ -49,4 +85,8 @@ export function getActiveRegistry(): DesignSystemRegistry {
     return GRADE_REGISTRY;
   }
   return registry;
+}
+
+export function getActiveRegistry(): DesignSystemRegistry {
+  return projectOverride ?? envRegistry();
 }

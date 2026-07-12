@@ -53,7 +53,7 @@ import { flushSync } from "react-dom";
 import * as ReactJsxRuntime from "react/jsx-runtime";
 import * as ReactJsxDevRuntime from "react/jsx-dev-runtime";
 import { transform as sucraseTransform } from "sucrase";
-import { getActiveRegistry } from "@/lib/active-registry";
+import { listRegistries } from "@/lib/active-registry";
 
 // ─── Static imports of every module the preview can reach for. ────────
 //
@@ -125,12 +125,13 @@ import {
 // pre-bundled module object here — the whole point of the sandbox page
 // is that there's no runtime npm fetch.
 
-// Active-DS package name when it is NOT the precompiled gradeui barrel
-// (BYODS B2). Null in the default deployment.
-const EXTERNAL_DS_PKG = (() => {
-  const reg = getActiveRegistry();
-  return reg.id === "gradeui" ? null : reg.package.name;
-})();
+// EVERY known external-DS package name (BYODS B2). This iframe can't see
+// the parent's per-project registry override (separate module instance),
+// and it only needs the names for a pointed error message — so guard
+// against all known external registries instead of just the env default.
+const EXTERNAL_DS_PKGS = listRegistries()
+  .filter((r) => r.id !== "gradeui")
+  .map((r) => r.package.name);
 
 function resolveImport(path: string): unknown {
   // Stylesheets — no-op; styles are bundled by Next's CSS loader at
@@ -151,14 +152,14 @@ function resolveImport(path: string): unknown {
   // with a pointed message — studio-canvas already pins non-gradeui
   // registries to the Sandpack renderer, so hitting this means a surface
   // (embed/share) mounted Fast Frame with an external registry active.
-  if (
-    EXTERNAL_DS_PKG &&
-    (path === EXTERNAL_DS_PKG || path.startsWith(`${EXTERNAL_DS_PKG}/`))
-  ) {
+  const externalHit = EXTERNAL_DS_PKGS.find(
+    (pkg) => path === pkg || path.startsWith(`${pkg}/`),
+  );
+  if (externalHit) {
     throw new Error(
-      `Fast sandbox: the active design system "${EXTERNAL_DS_PKG}" is not ` +
-        `precompiled into Fast Frame. Use the Sandpack renderer (it installs ` +
-        `the package from npm) — studio-canvas does this automatically.`
+      `Fast sandbox: the external design system "${externalHit}" is not ` +
+        `precompiled into Fast Frame. Use the external/Sandpack renderer ` +
+        `(studio-canvas picks it automatically for external registries).`
     );
   }
   if (path === "lucide-react") return LucideReact;
