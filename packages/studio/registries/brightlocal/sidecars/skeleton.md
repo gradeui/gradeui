@@ -6,28 +6,23 @@ props:
   - dataHook?: string — optional on structural components (renders data-hook)
 ---
 
-Placeholder shimmer animation for loading states.
+```jsx
+<Skeleton className="h-4 w-[250px]" loadingLabel={t("skeleton.loading")} />
+```
+```jsx
+<div className="space-y-4">
+  <div className="space-y-2">
+    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-4 w-[250px]" />
+  </div>
+  <Skeleton className="h-48 w-full rounded-lg" />
+</div>
+```
+```jsx
+<div className="space-y-2">
+  <Skeleton className="h-4 w-[250px]" />
+  <Skeleton className="h-4 w-[250px]" />
+</div>
+```
 
-## Guidance
-
-Skeleton is a loading placeholder component that displays a pulsing animation. Custom implementation using Tailwind CSS.
-
-### When to Use
-- Content placeholders while data is loading from an API
-- Preview layouts before images or text have loaded
-- Reducing perceived loading time with visual feedback
-- Form and card layouts during skeleton loading states
-
-### Features
-- Pulsing animation to indicate loading
-- Flexible sizing via className prop
-- Supports custom shapes (rounded, circular)
-- Lightweight implementation with Tailwind CSS
-- Accessible with `aria-busy` and screen-reader loading label
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "skeleton") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-skeleton--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

@@ -13,29 +13,56 @@ composes_with: [AlertDialog, Sheet, Drawer]
 aliases: [modal, popup, lightbox]
 ---
 
-Modal overlay for focused content or forms with focus trapping.
+```jsx
+<Dialog>
+  <DialogTrigger asChild>
+    <Button variant="outline">Edit Profile</Button>
+  </DialogTrigger>
+  <DialogContent dataHook="edit-profile-dialog">
+    <DialogHeader>
+      <DialogTitle dataHook="edit-profile-title">Edit profile</DialogTitle>
+      <DialogDescription dataHook="edit-profile-description">
+        Make changes to your profile here. Click save when you're done.
+      </DialogDescription>
+    </DialogHeader>
+    <div className="py-4">
+      {/* Your form content here */}
+    </div>
+    <DialogFooter>
+      <DialogClose asChild>
+        <Button variant="outline">Cancel</Button>
+      </DialogClose>
+      <Button>Save changes</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
+```jsx
+<DialogContent dataHook="dialog" closeLabel={t("dialog.close")}>
+  ...
+</DialogContent>
+```
+```jsx
+<Dialog>
+  <DialogTrigger asChild>
+    <Button variant="outline" dataHook="dialog-trigger">Open Dialog</Button>
+  </DialogTrigger>
+  <DialogContent dataHook="dialog-content">
+    <DialogHeader>
+      <DialogTitle dataHook="dialog-title">Dialog title</DialogTitle>
+      <DialogDescription dataHook="dialog-description">
+        This is a dialog description.
+      </DialogDescription>
+    </DialogHeader>
+    {/* Content slot */}
+    <DialogFooter>
+      <DialogClose asChild>
+        <Button variant="outline" dataHook="dialog-cancel">Cancel</Button>
+      </DialogClose>
+      <Button dataHook="dialog-save">Save changes</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
 
-## Guidance
-
-Dialog displays content in a modal overlay that interrupts the user's workflow. Built on [Radix UI Dialog](https://www.radix-ui.com/primitives/docs/components/dialog).
-
-### When to Use
-- Forms requiring user input (edit profile, settings)
-- Content that needs focused attention
-- Multi-step flows within a modal context
-
-### Features
-- Accessible by default with proper ARIA attributes
-- Keyboard navigation (Escape to close, Tab to navigate)
-- Focus trapping within dialog when open
-- Animated entry and exit transitions
-- Compositional sub-components for flexible layouts
-- Controlled and uncontrolled modes
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "dialog") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-dialog--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

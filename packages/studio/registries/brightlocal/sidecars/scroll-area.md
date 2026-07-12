@@ -8,28 +8,27 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Custom-styled scrollable container with overlay scrollbars.
+```jsx
+<ScrollArea dataHook="my-scroll" className="h-[200px] w-[350px] rounded-md border">
+  <div className="p-4">
+    {items.map((item) => (
+      <div key={item}>{item}</div>
+    ))}
+  </div>
+</ScrollArea>
+```
+```jsx
+<ScrollArea className="h-72 w-48 rounded-md border" dataHook="scroll-area">
+  <div className="p-4">
+    <h4 className="mb-4 text-sm font-medium leading-none">Tags</h4>
+    {tags.map((tag) => (
+      <div key={tag}>
+        <div className="text-sm">{tag}</div>
+        <Separator spacing="sm" />
+      </div>
+    ))}
+  </div>
+</ScrollArea>
+```
 
-## Guidance
-
-ScrollArea provides a custom-styled scrollable viewport with native scroll behavior. Built on [Radix UI ScrollArea](https://www.radix-ui.com/primitives/docs/components/scroll-area).
-
-### When to Use
-- Long lists that need scrolling (dropdown menus, sidebars)
-- Chat or message containers
-- Code preview areas with horizontal overflow
-
-### Features
-- Custom styled scrollbars that match the design system
-- Vertical and horizontal scrolling support
-- Native scroll behavior (keyboard, touch, mouse wheel)
-- Focusable viewport for accessibility
-- Consistent appearance across browsers
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "scroll-area") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-scrollarea--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

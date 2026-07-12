@@ -9,29 +9,47 @@ when_to_use: Do NOT use for: navigation (use NavigationMenu); form selection (us
 aliases: [context menu, action menu, kebab menu, more menu, three-dot menu]
 ---
 
-Trigger-activated menu with items, submenus, checkboxes, and radio groups.
+```jsx
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="outline">Open Menu</Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent dataHook="menu-content">
+    <DropdownMenuLabel dataHook="menu-label">My Account</DropdownMenuLabel>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem dataHook="profile-item">Profile</DropdownMenuItem>
+    <DropdownMenuItem dataHook="settings-item">Settings</DropdownMenuItem>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem dataHook="logout-item">Log out</DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+```
+```jsx
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="outline">
+      Dropdown <ChevronDown />
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent className="w-56" dataHook="dropdown-content">
+    <DropdownMenuLabel>Label Text</DropdownMenuLabel>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem dataHook="menu-item-1">
+      <span>Dropdown Menu Item Text</span>
+      <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+    </DropdownMenuItem>
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger dataHook="submenu-trigger">
+        <span>SubTrigger Text</span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuPortal>
+        <DropdownMenuSubContent>
+          <DropdownMenuItem>Submenu Item</DropdownMenuItem>
+        </DropdownMenuSubContent>
+      </DropdownMenuPortal>
+    </DropdownMenuSub>
+  </DropdownMenuContent>
+</DropdownMenu>
+```
 
-## Guidance
-
-DropdownMenu displays a menu of actions or options triggered by a button. Built on [Radix UI Dropdown Menu](https://www.radix-ui.com/primitives/docs/components/dropdown-menu).
-
-### When to Use
-- Action menus for items (edit, delete, share)
-- User account menus with profile options
-- Settings and preferences menus
-
-### Features
-- Full keyboard navigation and ARIA support
-- Nested menus with SubTrigger and SubContent
-- Checkbox items with checkable state
-- Radio groups for single-select options
-- Keyboard shortcut display
-- Avatar trigger variant for user menus
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "dropdown-menu") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-dropdownmenu--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

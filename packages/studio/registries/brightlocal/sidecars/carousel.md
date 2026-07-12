@@ -13,29 +13,36 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Horizontal scrollable content viewer with navigation controls.
+```jsx
+<Carousel dataHook="my-carousel">
+  <CarouselContent>
+    <CarouselItem>Slide 1</CarouselItem>
+    <CarouselItem>Slide 2</CarouselItem>
+    <CarouselItem>Slide 3</CarouselItem>
+  </CarouselContent>
+  <CarouselPrevious />
+  <CarouselNext />
+  <CarouselDots className="mt-4" />
+</Carousel>
+```
+```jsx
+<Carousel dataHook="gallery" lazyLoad overscan={1}>
+  <CarouselContent>
+    {images.map((src) => (
+      <CarouselItem key={src}>
+        <img src={src} loading="lazy" />
+      </CarouselItem>
+    ))}
+  </CarouselContent>
+</Carousel>
+```
+```jsx
+<CarouselPrevious ariaLabel={t("carousel.prev")} />
+<CarouselNext ariaLabel={t("carousel.next")} />
+<CarouselDots
+  ariaLabel={t("carousel.dotNav")}
+  slideAriaLabel={t("carousel.goToSlide", { slide: 1 })}
+/>
+```
 
-## Guidance
-
-Carousel displays a scrollable series of content items with navigation controls. Built on [Embla Carousel](https://www.embla-carousel.com/).
-
-### When to Use
-- Image galleries and product showcases
-- Testimonial sliders and content carousels
-- Multi-step wizards with slide transitions
-
-### Features
-- Horizontal and vertical orientations
-- Keyboard navigation support (arrow keys)
-- Responsive slide sizing with CSS
-- Previous/Next navigation buttons
-- Touch-enabled sliding with momentum
-- API access for programmatic control
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "carousel") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-carousel--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

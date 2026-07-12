@@ -11,28 +11,51 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Vertically stacked collapsible sections with mutual-exclusion support.
+```jsx
+<Accordion type="single" collapsible dataHook="faq-accordion">
+  <AccordionItem value="item-1">
+    <AccordionTrigger>Is it accessible?</AccordionTrigger>
+    <AccordionContent>
+      Yes. It adheres to the WAI-ARIA design pattern.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+```
+```jsx
+<Accordion
+  className="w-80"
+  collapsible
+  dataHook="accordion-default"
+  defaultValue="item-1"
+  onValueChange={function z0e(){}}
+  storyDescription="Open"
+  type="single"
+>
+  <AccordionItem value="item-1">
+    <AccordionTrigger>
+      Is it accessible?
+    </AccordionTrigger>
+    <AccordionContent>
+      Yes. It adheres to the WAI-ARIA design pattern.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="item-2">
+    <AccordionTrigger>
+      Is it styled?
+    </AccordionTrigger>
+    <AccordionContent>
+      Yes. It comes with default styles that matches the other components' aesthetic.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="item-3">
+    <AccordionTrigger>
+      Is it animated?
+    </AccordionTrigger>
+    <AccordionContent>
+      Yes. It's animated by default, but you can disable it if you prefer.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+```
 
-## Guidance
-
-Accordion displays a vertically stacked set of interactive headings that each reveal content sections. Built on [Radix UI Accordion](https://www.radix-ui.com/primitives/docs/components/accordion).
-
-### When to Use
-- FAQs and help documentation
-- Settings panels with collapsible sections
-- Content organization with multiple topics
-
-### Features
-- Single or multiple items can be opened simultaneously
-- Keyboard navigation and ARIA attributes built-in
-- Collapsible option for single-item mode
-- Smooth animated expand/collapse transitions
-- Customizable trigger and content styling
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "accordion") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-accordion--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

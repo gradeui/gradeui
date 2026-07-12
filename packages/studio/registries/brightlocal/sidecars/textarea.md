@@ -7,27 +7,55 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Multi-line text input with auto-resize support.
+```jsx
+<Textarea
+  dataHook="message-textarea"
+  placeholder="Type your message here."
+  rows={4}
+/>
+```
+```jsx
+import { Controller, useForm } from "react-hook-form";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import * as z from "zod/v4";
+import { Textarea } from "@brightlocal/ui-components/textarea";
+import {
+  Field,
+  FieldLabel,
+  FieldDescription
+} from "@brightlocal/ui-components/field";
 
-## Guidance
+const formSchema = z.object({
+  message: z.string().min(1, "Message is required"),
+});
 
-A multi-line text input for longer form content with built-in validation support. Custom implementation using Tailwind CSS.
+function TextareaExample() {
+  const form = useForm({
+    resolver: standardSchemaResolver(formSchema),
+    mode: "onChange",
+    defaultValues: { message: "" },
+  });
 
-### When to Use
-- Long-form text input (comments, descriptions, feedback)
-- Form fields requiring multiple lines of text
-- Message composition (emails, support tickets)
+  return (
+    <form onSubmit={form.handleSubmit((data) => console.log(data))}>
+      <Controller
+        control={form.control}
+        name="message"
+        render={({ field }) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>Your message</FieldLabel>
+            <Textarea
+              {...field}
+              id={field.name}
+              placeholder="Type your message here."
+              rows={4}
+              dataHook="textarea"
+              trackingEl="textarea-default"
+              trackingLabel="default-story"
+            />
+            <FieldDescription>
+              Your message w
+/* …truncated */
+```
 
-### Features
-- Configurable row count for initial height
-- Error state styling via `error` prop
-- Integration with Field components for labels and descriptions
-- React Hook Form compatible via Controller pattern
-- Placeholder and disabled state support
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "textarea") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-textarea--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

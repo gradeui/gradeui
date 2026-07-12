@@ -14,46 +14,45 @@ when_to_use: Grouping related content with a visual boundary (form sections, det
 aliases: [container, panel, box, wrapper, content card]
 ---
 
-Contained surface with header, content, and footer sections. Full-width by default — constrain via className.
+```jsx
+<Card variant="filled" dataHook="example-card">
+  <CardHeader dataHook="example-card-header">
+    <CardTitle dataHook="example-card-title">Card Title</CardTitle>
+    <CardDescription dataHook="example-card-description">Card description text.</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <p>Card content goes here</p>
+  </CardContent>
+  <CardFooter>
+    <Button dataHook="action-button">Action</Button>
+  </CardFooter>
+</Card>
+```
+```jsx
+import { AspectRatio } from "@brightlocal/ui-components/aspect-ratio";
 
-## Guidance
+<Card variant="filled" dataHook="product-card">
+  <CardMedia>
+    <AspectRatio ratio={4 / 3} dataHook="product-image">
+      <img src="product.jpg" alt="Product" className="size-full object-cover" />
+    </AspectRatio>
+  </CardMedia>
+  <CardHeader>
+    <CardTitle>Product Name</CardTitle>
+    <CardDescription>Product description here.</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <p>Details...</p>
+  </CardContent>
+  <CardFooter>
+    <Button dataHook="buy-button">Buy Now</Button>
+  </CardFooter>
+</Card>
+```
+```jsx
+<Card variant="filled" dataHook="narrow-card" className="max-w-sm">
+  <CardContent>Constrained to max-w-sm (384px)</CardContent>
+</Card>
+```
 
-Card is a container component for grouping related content with visual separation. Custom implementation using Tailwind CSS.
-
-### When to Use
-- Dashboard widgets and metric displays
-- Content sections with headers and actions
-- Settings panels and form groupings
-- Media cards with images or video thumbnails
-
-### Features
-- Full-width by default — width is controlled by the parent layout, not the card itself
-- Four visual variants: Filled, Transparent, Border, Transparent Flush (opt-in flush layout)
-- Two density modes: Default and Condensed for compact layouts like StatTile
-- `CardTitle` supports `size` prop: `"default"` (24px) and `"small"` (16px) for nested or secondary headings
-- `CardHeader` supports `align` prop: `"left"` (default grid), `"center"` (centred column), or `"right"` (right-aligned grid)
-- `CardMedia` sub-component for images, videos, or visual content with automatic rounded clipping
-- Compositional sub-components for flexible layouts
-- Consistent padding and spacing across non-flush variants
-- Transparent Flush variant removes horizontal padding for edge-to-edge layouts
-- Accessible with proper semantic structure
-
-### Sub-components
-
-| Sub-component | Purpose |
-|---|---|
-| `CardHeader` | Header section containing title and description. Accepts `align` prop: `"left"`, `"center"`, or `"right"` |
-| `CardTitle` | Title element within the header. Accepts `size` prop: `"default"` (24px) or `"small"` (16px) |
-| `CardDescription` | Description text within the header |
-| `CardAction` | Action area within the header for buttons/controls |
-| `CardMedia` | Media container for images/videos with rounded clipping |
-| `CardContent` | Main content area |
-| `CardFooter` | Footer section for actions or metadata |
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "card") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-card--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

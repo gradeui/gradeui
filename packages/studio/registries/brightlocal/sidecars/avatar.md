@@ -9,27 +9,69 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Circular image with fallback initials for user profile pictures.
+```jsx
+<Avatar dataHook="user-avatar">
+  <AvatarImage src="/avatar.jpg" alt="User" />
+  <AvatarFallback>CN</AvatarFallback>
+</Avatar>
+```
+```jsx
+<Avatar
+  className="size-5"
+  dataHook="avatar-default"
+  storyDescription="20px"
+>
+  <AvatarImage
+    alt="@shadcn"
+    src="https://github.com/shadcn.png"
+  />
+  <AvatarFallback>
+    CN
+  </AvatarFallback>
+</Avatar>
+```
+```jsx
+<div className="flex -space-x-2">
+  <Avatar
+    className="size-8"
+    dataHook="avatar-group-1"
+    storyDescription="32px"
+  >
+    <AvatarImage
+      alt="@shadcn"
+      src="https://github.com/shadcn.png"
+    />
+    <AvatarFallback>
+      CN
+    </AvatarFallback>
+  </Avatar>
+  <Avatar
+    className="size-8"
+    dataHook="avatar-group-2"
+    storyDescription="32px"
+  >
+    <AvatarImage
+      alt="@maxleiter"
+      src="https://github.com/maxleiter.png"
+    />
+    <AvatarFallback>
+      LR
+    </AvatarFallback>
+  </Avatar>
+  <Avatar
+    className="size-8"
+    dataHook="avatar-group-3"
+    storyDescription="32px"
+  >
+    <AvatarImage
+      alt="@evilrabbit"
+      src="https://github.com/evilrabbit.png"
+    />
+    <AvatarFallback>
+      ER
+    </AvatarFallback>
+  </Avatar>
+</div>
+```
 
-## Guidance
-
-Avatar displays a user image with fallback for representing people. Built on [Radix UI Avatar](https://www.radix-ui.com/primitives/docs/components/avatar).
-
-### When to Use
-- User profile pictures and account displays
-- Comment threads and activity feeds
-- Team member lists and collaborator views
-
-### Features
-- Circular container with customizable sizes via Tailwind classes
-- Automatic fallback to initials when image fails to load
-- Group layout support with overlapping avatars
-- Accessible alt text support for images
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "avatar") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-avatar--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

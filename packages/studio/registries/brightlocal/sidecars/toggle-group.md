@@ -12,28 +12,52 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Group of toggle buttons with single or multi-select mode.
+```jsx
+import { ToggleGroup, ToggleGroupItem } from "@brightlocal/ui-components/toggle-group";
+import { Bold, Italic, Underline } from "@brightlocal/icons";
 
-## Guidance
+function Example() {
+  return (
+    <ToggleGroup type="single" variant="simple" dataHook="toggle-group">
+      <ToggleGroupItem dataHook="toggle-bold" value="bold" aria-label="Toggle bold">
+        <Bold />
+      </ToggleGroupItem>
+      <ToggleGroupItem dataHook="toggle-italic" value="italic" aria-label="Toggle italic">
+        <Italic />
+      </ToggleGroupItem>
+      <ToggleGroupItem dataHook="toggle-underline" value="underline" aria-label="Toggle underline">
+        <Underline />
+      </ToggleGroupItem>
+    </ToggleGroup>
+  );
+}
+```
+```jsx
+<ToggleGroup
+  dataHook="toggle-group-outline-focus"
+  storyDescription="Focus state"
+  type="single"
+  variant="outline"
+>
+  <ToggleGroupItem
+    aria-label="Toggle bold"
+    value="bold"
+  >
+    <Bold />
+  </ToggleGroupItem>
+  <ToggleGroupItem
+    aria-label="Toggle italic"
+    value="italic"
+  >
+    <Italic />
+  </ToggleGroupItem>
+  <ToggleGroupItem
+    aria-label="Toggle underline"
+    value="underline"
+  >
+    <Underline />
+  </ToggleGroupItem>
+</ToggleGroup>
+```
 
-A set of grouped toggle buttons for single or multiple selection. Built on [Radix UI Toggle Group](https://www.radix-ui.com/primitives/docs/components/toggle-group).
-
-### When to Use
-- Text formatting toolbars (bold, italic, underline)
-- View mode switching (list, grid, gallery)
-- Alignment controls (left, center, right, justify)
-
-### Features
-- Single or multiple selection modes
-- Two visual variants: Simple (transparent) and Outline (bordered)
-- Three sizes: Small (32px), Default (36px), Large (40px)
-- Keyboard navigation with arrow keys
-- ARIA-compliant for screen reader accessibility
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "toggle-group") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-togglegroup--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

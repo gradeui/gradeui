@@ -10,22 +10,36 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-## Guidance
+```jsx
+<TextRevealMotion dataHook="my-reveal">
+  <TypographyP dataHook="w1">Analyzing</TypographyP>
+  <TypographyP dataHook="w2">Processing</TypographyP>
+  <TypographyP dataHook="w3">Loading</TypographyP>
+</TextRevealMotion>
+```
+```jsx
+<TextRevealMotion dataHook="my-reveal" loadingLabel={t("loading")}>
+  <TypographyP dataHook="w1">Analyzing</TypographyP>
+</TextRevealMotion>
+```
+```jsx
+<TextRevealMotion
+  _renderOverride="mixed"
+  dataHook="text-reveal"
+  holdTime={1300}
+  shimmer
+  storyDescription="Mixed typography sizes"
+>
+  <TypographyH2 dataHook="heading-1">
+    Welcome
+  </TypographyH2>
+  <TypographyH2 dataHook="heading-2">
+    Bienvenue
+  </TypographyH2>
+  <TypographyH2 dataHook="heading-3">
+    Willkommen
+  </TypographyH2>
+</TextRevealMotion>
+```
 
-Animated text reveal with a rolling shape-morphing ball.
-
-The ball rolls across each child, revealing it via clip-path, holds, then rolls back and cycles to the next child. Works with any Typography component as children.
-
-- Ball size auto-scales to 1.5× the children's font-size
-- Spring-physics driven rolling animation
-- Shape morphing (circle, star, starburst) during roll and hold
-- Ball keeps animating during hold phase
-- Shimmer effect after reveal
-- Respects `prefers-reduced-motion`
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "text-reveal-motion") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-textrevealmotion--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

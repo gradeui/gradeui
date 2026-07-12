@@ -11,26 +11,27 @@ when_to_use: Do NOT use for: multi-option selection (use Checkbox or RadioGroup)
 aliases: [toggle switch, on/off toggle]
 ---
 
-Toggle switch for on/off boolean values.
+```jsx
+<Field orientation="horizontal">
+  <Switch id="notifications" dataHook="notifications-switch" />
+  <FieldLabel htmlFor="notifications" dataHook="notifications-label">
+    Enable notifications
+  </FieldLabel>
+</Field>
+```
+```jsx
+<Field orientation="horizontal">
+  <Switch id="feature" dataHook="feature-switch" checked={checked} onCheckedChange={setChecked} />
+  <FieldContent>
+    <FieldLabel htmlFor="feature" dataHook="feature-label">Enable feature</FieldLabel>
+    <FieldDescription dataHook="feature-desc">
+      This feature allows you to do something useful.
+    </FieldDescription>
+  </FieldContent>
+</Field>
+```
+```jsx
+<Switch aria-label="Toggle option" dataHook="toggle-switch" />
+```
 
-## Guidance
-
-A toggle control that allows users to switch between checked and unchecked states. Built on [Radix UI Switch](https://www.radix-ui.com/primitives/docs/components/switch).
-
-### When to Use
-- Binary on/off settings (enable notifications, dark mode)
-- Form controls for boolean values (opt-in, preferences)
-- Settings panels where immediate feedback is needed
-
-### Features
-- Composition with Field, FieldLabel, and FieldDescription
-- Keyboard accessible with Space/Enter keys
-- ARIA-compliant with proper role and state attributes
-- React Hook Form integration via Controller pattern
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "switch") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-switch--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

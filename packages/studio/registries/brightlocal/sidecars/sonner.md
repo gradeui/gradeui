@@ -15,25 +15,52 @@ when_to_use: Do NOT use for: persistent alerts (use Alert); confirmation dialogs
 aliases: [toast, notification, snackbar, flash message]
 ---
 
-Toast notification system with auto-dismiss and action support.
+```jsx
+// Mount Sonner once in your app root
+<Sonner />
 
-## Guidance
+// Then call sonner() anywhere to show a toast
+sonner({
+  title: "Changes saved",
+  description: "Your changes have been saved successfully.",
+  icon: "success",
+});
 
-Sonner is a toast notification system for displaying temporary messages. Built on [sonner](https://sonner.emilkowal.ski/).
+// Persistent toast that stays visible until dismissed
+sonner(
+  { title: "Redirecting…", icon: "loading" },
+  { duration: Infinity },
+);
+```
+```jsx
+import { sonner } from "@brightlocal/ui-components/sonner";
 
-### When to Use
-- Success/error feedback after form submissions
-- Progress updates for async operations (uploads, saves)
-- Non-blocking notifications that auto-dismiss
-- Undo actions with timed toast messages
+// Standard toast (auto-dismisses after 4 000 ms)
+<Button
+  onClick={() =>
+    sonner({
+      title: "Event has been created",
+      description: "Sunday, December 03, 2023 at 9:00 AM.",
+      icon: "success",
+      colorSchema: "default",
+      button: {
+        label: "Undo",
+        onClick: () => console.log("Undo clicked"),
+      },
+    })
+  }
+>
+  Show toast
+</Button>
 
-### Features
-- Multiple icon types (info, success, warning, error, loading)
-- Action buttons with custom handlers
-- Color schemas (default, success)
-- Auto-dismiss after 4 000 ms by default (configurable via `duration`)
-- Persistent toasts (`duration: Infinity`) are not swipeable — they can only be dismissed programmatically via `sonner.dismiss(id)` or through an action button
-- Accessible with ARIA live regions
-- Dark mode support
+// Persistent toast (stays visible until manually dismissed)
+sonner(
+  { title: "Redirecting…", icon: "loading" },
+  { duration: Infinity, id: "redirect-toast" },
+);
 
-<!-- Harvested from BrightLocal's MCP server (get_component_api "sonner") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+// Later, dismiss it programmatically
+sonner.dismiss("redirect-toast");
+```
+
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-sonner--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

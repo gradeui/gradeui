@@ -10,28 +10,28 @@ props:
   - dataHook?: string — optional on structural components (renders data-hook)
 ---
 
-Horizontal or vertical divider line.
+```jsx
+{/* Horizontal separator */}
+<Separator dataHook="divider" />
 
-## Guidance
+{/* With spacing */}
+<Separator spacing="md" dataHook="divider" />
 
-Separator visually divides content with a horizontal or vertical line. Horizontal orientation renders a semantic `<hr>` element; vertical uses a `<div>` with appropriate ARIA attributes.
+{/* Vertical separator */}
+<div className="flex h-10 items-center gap-4">
+  <span>Left</span>
+  <Separator orientation="vertical" dataHook="divider" />
+  <span>Right</span>
+</div>
 
-### When to Use
-- Dividing sections of content
-- Separating navigation items inline
-- Creating "OR" dividers in forms
+{/* Separator with text */}
+<SeparatorWithText dataHook="or-divider">OR</SeparatorWithText>
+```
+```jsx
+<Separator orientation="horizontal" dataHook="separator" />
+```
+```jsx
+<SeparatorWithText dataHook="or-divider">OR</SeparatorWithText>
+```
 
-### Features
-- Horizontal and vertical orientations
-- Configurable spacing (default, sm, md, lg)
-- Text variant for labeled dividers
-- Decorative mode for accessibility
-- Uses design system border tokens
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "separator") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-separator--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

@@ -9,31 +9,44 @@ when_to_use: Single-column centered pages (login, signup, password reset, onboar
 composes_with: [SplitLayout, GlobalLayout]
 ---
 
-Page layout centered horizontally with max-width constraint.
+```jsx
+// Basic usage with content only
+<CentredLayout dataHook="my-layout">
+  <CentredLayoutContent>
+    <Card dataHook="my-card">
+      <CardHeader>
+        <CardTitle>Your Content</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* Your content here */}
+      </CardContent>
+    </Card>
+  </CentredLayoutContent>
+</CentredLayout>
 
-## Guidance
+// With Header (composition pattern)
+<CentredLayout dataHook="my-layout">
+  <CentredLayoutHeader>
+    <Header dataHook="my-header">
+      <Logo dataHook="my-logo" />
+    </Header>
+  </CentredLayoutHeader>
+  <CentredLayoutContent>
+    <Card dataHook="my-card">
+      {/* Your content here */}
+    </Card>
+  </CentredLayoutContent>
+</CentredLayout>
+```
+```jsx
+<CentredLayout
+  dataHook="centred-layout-default"
+  storyDescription="Full page width/height"
+>
+  <CentredLayoutContent>
+    <g />
+  </CentredLayoutContent>
+</CentredLayout>
+```
 
-CentredLayout is a full-page centered layout container. Custom implementation using Tailwind CSS.
-
-### When to Use
-- Full-page layouts with centered content
-- Login/signup pages and onboarding flows
-- Settings pages and form containers
-- Layouts with optional header (Logo, navigation)
-
-### Features
-- Full page width and height (w-full, min-h-screen)
-- Automatic centering horizontally and vertically
-- Responsive padding using section-padding tokens (16px mobile, 24px desktop)
-- Composition pattern with `CentredLayoutHeader` and `CentredLayoutContent` sub-components
-- Automatic spacing (16px gap) between header and content
-- Header is centered on mobile/tablet, left-aligned from lg breakpoint
-- Flexible content support for Cards, forms, or custom components
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "centred-layout") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-centredlayout--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

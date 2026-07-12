@@ -7,26 +7,33 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Wrapper that enforces a fixed aspect ratio on its child element.
+```jsx
+<div className="w-[300px]">
+  <AspectRatio ratio={16 / 9} dataHook="video-container">
+    <img
+      src="/image.jpg"
+      alt="Description"
+      className="h-full w-full object-cover"
+    />
+  </AspectRatio>
+</div>
+```
+```jsx
+<div className="w-[300px]">
+  <AspectRatio
+    dataHook="aspect-ratio"
+    ratio={0.6666666666666666}
+    storyDescription="2:3 aspect ratio"
+    trackingEl="aspect-ratio-element"
+    trackingLabel="AspectRatio Component"
+  >
+    <img
+      alt="Photo by Drew Beamer"
+      className="h-full w-full rounded-md object-cover"
+      src="https://images.unsplash.com/photo-1588345921523-c2dcdb7f1dcd?w=800&dpr=2&q=80"
+    />
+  </AspectRatio>
+</div>
+```
 
-## Guidance
-
-AspectRatio maintains a consistent width-to-height ratio for content. Built on [Radix UI Aspect Ratio](https://www.radix-ui.com/primitives/docs/components/aspect-ratio).
-
-### When to Use
-- Image galleries with consistent proportions
-- Video embeds (16:9, 21:9)
-- Thumbnail grids and media cards
-
-### Features
-- Common ratios: 1:1, 4:3, 16:9, 21:9
-- Content scales to fill container while preserving ratio
-- Works with images, videos, iframes, and any child content
-- Responsive - adapts to container width
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "aspect-ratio") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-aspectratio--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

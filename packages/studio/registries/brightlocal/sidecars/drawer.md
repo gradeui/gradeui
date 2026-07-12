@@ -12,29 +12,53 @@ when_to_use: Mobile-friendly slide-out panel from any edge Non-modal supplementa
 composes_with: [Sheet, Dialog]
 ---
 
-Slide-in panel from screen edge with drag-to-dismiss gesture.
+```jsx
+<Drawer>
+  <DrawerTrigger asChild>
+    <Button>Open Drawer</Button>
+  </DrawerTrigger>
+  <DrawerContent dataHook="drawer-content">
+    <DrawerHeader>
+      <DrawerTitle>Drawer Title</DrawerTitle>
+      <DrawerDescription>
+        This is a drawer description.
+      </DrawerDescription>
+    </DrawerHeader>
+    <DrawerBody>
+      {/* Your content here */}
+    </DrawerBody>
+    <DrawerFooter>
+      <Button>Submit</Button>
+      <DrawerClose asChild>
+        <Button variant="outline">Cancel</Button>
+      </DrawerClose>
+    </DrawerFooter>
+  </DrawerContent>
+</Drawer>
+```
+```jsx
+<Drawer>
+  <DrawerTrigger asChild>
+    <Button>Open Drawer</Button>
+  </DrawerTrigger>
+  <DrawerContent dataHook="drawer-content">
+    <DrawerHeader>
+      <DrawerTitle>Drawer Title</DrawerTitle>
+      <DrawerDescription>
+        This is a drawer description.
+      </DrawerDescription>
+    </DrawerHeader>
+    <DrawerBody>
+      {/* Content slot */}
+    </DrawerBody>
+    <DrawerFooter>
+      <Button>Submit</Button>
+      <DrawerClose asChild>
+        <Button variant="outline">Cancel</Button>
+      </DrawerClose>
+    </DrawerFooter>
+  </DrawerContent>
+</Drawer>
+```
 
-## Guidance
-
-Drawer is a slide-out panel component optimized for mobile interactions. Built on [vaul](https://vaul.emilkowal.ski/).
-
-### When to Use
-- Mobile-first navigation or actions
-- Settings panels and filters on small screens
-- Quick actions that don't require full-screen attention
-
-### Features
-- Swipe to dismiss on touch devices
-- Keyboard accessible (Escape to close)
-- Focus trapping within drawer when open
-- Multi-directional support (top, bottom, left, right)
-- Responsive design with handle bar for mobile
-- Compositional sub-components for flexible layouts
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "drawer") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-drawer--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

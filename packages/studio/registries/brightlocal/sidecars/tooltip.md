@@ -14,28 +14,31 @@ when_to_use: Do NOT use for: interactive content (use Popover); complex content 
 aliases: [hover tip, info tip, help text]
 ---
 
-Small text popup that appears on hover/focus for supplementary info.
+```jsx
+<TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button variant="outline" dataHook="button">Hover me</Button>
+    </TooltipTrigger>
+    <TooltipContent dataHook="tooltip">
+      Add to library
+    </TooltipContent>
+  </Tooltip>
+</TooltipProvider>
+```
+```jsx
+<TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button variant="outline" dataHook="tooltip-trigger">
+        Hover me
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent dataHook="tooltip-content">
+      Add to library
+    </TooltipContent>
+  </Tooltip>
+</TooltipProvider>
+```
 
-## Guidance
-
-A popup that displays information when hovering over an element. Built on [Radix UI Tooltip](https://www.radix-ui.com/primitives/docs/components/tooltip).
-
-### When to Use
-- Icon-only buttons that need text explanation
-- Truncated text that needs full content shown
-- Additional context for form fields or controls
-
-### Features
-- Flexible positioning (top, bottom, left, right)
-- Customizable delay and skip delay for better UX
-- Keyboard accessible (Escape to dismiss)
-- TooltipProvider for consistent timing across app
-- ARIA-compliant for screen reader accessibility
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "tooltip") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-tooltip--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

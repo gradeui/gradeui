@@ -8,28 +8,123 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Horizontal menu bar with dropdown submenus for application menus.
+```jsx
+<Menubar dataHook="app-menu">
+  <MenubarMenu>
+    <MenubarTrigger>File</MenubarTrigger>
+    <MenubarContent>
+      <MenubarItem>
+        New Tab <MenubarShortcut>⌘T</MenubarShortcut>
+      </MenubarItem>
+      <MenubarSeparator />
+      <MenubarItem>Close</MenubarItem>
+    </MenubarContent>
+  </MenubarMenu>
+</Menubar>
+```
+```jsx
+<Menubar
+  dataHook="menubar-checkbox"
+  defaultValue="view"
+>
+  <MenubarMenu>
+    <MenubarTrigger>
+      File
+    </MenubarTrigger>
+    <MenubarContent>
+      <MenubarItem>
+        New Tab{' '}
+        <MenubarShortcut>
+          ⌘T
+        </MenubarShortcut>
+      </MenubarItem>
+      <MenubarItem>
+        New Window{' '}
+        <MenubarShortcut>
+          ⌘N
+        </MenubarShortcut>
+      </MenubarItem>
+      <MenubarItem disabled>
+        New Incognito Window
+      </MenubarItem>
+      <MenubarSeparator />
+      <MenubarSub>
+        <MenubarSubTrigger>
+          Share
+        </MenubarSubTrigger>
+        <MenubarSubContent>
+          <MenubarItem>
+            Email link
+          </MenubarItem>
+          <MenubarItem>
+            Messages
+          </MenubarItem>
+          <MenubarItem>
+            Notes
+          </MenubarItem>
+        </MenubarSubContent>
+      </MenubarSub>
+      <MenubarSeparator />
+      <MenubarItem>
+        Print{' '}
+        <MenubarShortcut>
+          ⌘P
+        </MenubarShortcut>
+      </MenubarItem>
+    </MenubarContent>
+  </MenubarMenu>
+  <MenubarMenu>
+    <MenubarTrigger>
+      Edit
+    </MenubarTrigger>
+    <MenubarContent>
+      <MenubarItem>
 
-## Guidance
+/* …truncated */
+```
+```jsx
+<Menubar
+  dataHook="menubar-radio"
+  defaultValue="profiles"
+>
+  <MenubarMenu>
+    <MenubarTrigger>
+      File
+    </MenubarTrigger>
+  </MenubarMenu>
+  <MenubarMenu>
+    <MenubarTrigger>
+      Edit
+    </MenubarTrigger>
+  </MenubarMenu>
+  <MenubarMenu value="profiles">
+    <MenubarTrigger>
+      Profiles
+    </MenubarTrigger>
+    <MenubarContent>
+      <MenubarRadioGroup
+        onValueChange={function z0e(){}}
+        value="work"
+      >
+        <MenubarRadioItem
+          value="personal"
+        >
+          Personal
+        </MenubarRadioItem>
+        <MenubarRadioItem
+          value="work"
+        >
+          Work
+        </MenubarRadioItem>
+        <MenubarRadioItem
+          value="guest"
+        >
+          Guest
+        </MenubarRadioItem>
+      </MenubarRadioGroup>
+    </MenubarContent>
+  </MenubarMenu>
+</Menubar>
+```
 
-Menubar is a horizontal menu bar for creating application-style menu systems. Built on [Radix UI Menubar](https://www.radix-ui.com/primitives/docs/components/menubar).
-
-### When to Use
-- Desktop-style application menus (File, Edit, View, Help)
-- Settings panels with toggle options
-- Navigation bars with dropdown sections
-
-### Features
-- Full keyboard navigation with arrow keys
-- Nested submenus support
-- Checkbox and radio menu items
-- Keyboard shortcut display
-- Accessible with ARIA roles
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "menubar") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-menubar--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

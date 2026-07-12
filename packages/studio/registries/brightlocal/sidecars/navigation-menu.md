@@ -7,27 +7,49 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Horizontal navigation with dropdown panels for site navigation.
+```jsx
+<NavigationMenu dataHook="main-nav">
+  <NavigationMenuList>
+    <NavigationMenuItem>
+      <NavigationMenuTrigger>Products</NavigationMenuTrigger>
+      <NavigationMenuContent>
+        <NavigationMenuLink href="/analytics">Analytics</NavigationMenuLink>
+      </NavigationMenuContent>
+    </NavigationMenuItem>
+  </NavigationMenuList>
+</NavigationMenu>
+```
+```jsx
+<NavigationMenu dataHook="navigation-menu-default" defaultValue="products">
+  <NavigationMenuList>
+    <NavigationMenuItem value="products">
+      <NavigationMenuTrigger>Products</NavigationMenuTrigger>
+      <NavigationMenuContent>
+        <ul className="grid w-[400px] gap-3 p-4 md:grid-cols-2">
+          <li>
+            <NavigationMenuLink asChild>
+              <a href="/analytics">
+                <div className="text-sm leading-none font-medium">Analytics</div>
+                <p className="text-muted-foreground text-sm">Track and analyze your data.</p>
+              </a>
+            </NavigationMenuLink>
+          </li>
+          <li>
+            <NavigationMenuLink asChild>
+              <a href="/reports">
+                <div className="text-sm leading-none font-medium">Reports</div>
+                <p className="text-muted-foreground text-sm">Generate detailed reports.</p>
+              </a>
+            </NavigationMenuLink>
+          </li>
+        </ul>
+      </NavigationMenuContent>
+    </NavigationMenuItem>
+    <NavigationMenuItem value="resources">
+      <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
+      <NavigationMenuContent>
+        <ul className="grid
+/* …truncated */
+```
 
-## Guidance
-
-NavigationMenu is a horizontal navigation component with dropdown support. Built on [Radix UI Navigation Menu](https://www.radix-ui.com/primitives/docs/components/navigation-menu).
-
-### When to Use
-- Main website navigation with mega-menu dropdowns
-- Product navigation requiring rich content previews
-- Multi-level site navigation with categorized links
-
-### Features
-- Full keyboard navigation with arrow keys
-- Rich dropdown content with customizable layouts
-- Focus management and accessibility built-in
-- Animated viewport transitions
-- Active item indicator
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "navigation-menu") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-navigationmenu--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

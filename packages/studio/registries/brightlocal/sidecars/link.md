@@ -13,27 +13,29 @@ when_to_use: Inline text links within paragraphs or sentences (inline variant) N
 composes_with: [Button]
 ---
 
-Styled anchor element for navigation with design system theming.
+```jsx
+<Link href="/about" dataHook="about-link">
+  Learn more
+</Link>
 
-## Guidance
+<Link href="/upgrade" variant="filled" dataHook="upgrade-link">
+  Upgrade plan
+</Link>
+```
+```jsx
+import { Link } from "@brightlocal/ui-components/link";
+import { Link as RouterLink } from "@tanstack/react-router";
 
-Link is a styled anchor element. The default `inline` variant renders a text link for navigation; the `filled`, `outline` and `ghost` variants render button-styled treatments for inline actions and high-priority navigation while remaining a semantic `<a>`.
+<Link asChild variant="outline" dataHook="nav-link">
+  <RouterLink to="/dashboard">Dashboard</RouterLink>
+</Link>
+```
+```jsx
+import NextLink from "next/link";
 
-### When to Use
-- `inline` — navigation inside content (breadcrumbs, menus, inline links) and external links
-- `filled` / `outline` / `ghost` — button-styled links for high-priority navigation or inline actions that need a button appearance
+<Link asChild external dataHook="docs-link">
+  <NextLink href="https://docs.example.com">Documentation</NextLink>
+</Link>
+```
 
-### Features
-- Four visual variants (`inline`, `filled`, `outline`, `ghost`) sharing the Button's styling tokens
-- Consistent link styling with design tokens
-- External link support with automatic icon and security attributes
-- Next.js / router Link integration via asChild prop
-- Focus ring for keyboard navigation
-- Visited state styling (inline variant)
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "link") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-link--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

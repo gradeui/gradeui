@@ -13,31 +13,51 @@ composes_with: [Label]
 aliases: [form field, input group, field wrapper]
 ---
 
-Form field wrapper that connects label, input, description, and error message.
+```jsx
+<Field dataHook="email-field">
+  <FieldLabel htmlFor="email" dataHook="email-label">Email Address</FieldLabel>
+  <Input id="email" type="email" dataHook="email-input" />
+  <FieldDescription dataHook="email-description">We'll never share your email</FieldDescription>
+</Field>
+```
+```jsx
+// Without icon (default)
+<Field>
+  <FieldLabel htmlFor="email">Email Address</FieldLabel>
+  <Input id="email" type="email" dataHook="email-input" error />
+  <FieldError>Please enter a valid email address.</FieldError>
+</Field>
 
-## Guidance
+// With icon (composition pattern)
+<Field>
+  <FieldLabel htmlFor="email">Email Address</FieldLabel>
+  <Input id="email" type="email" dataHook="email-input" error />
+  <FieldError>
+    <FieldErrorIcon /> Please enter a valid email address.
+  </FieldError>
+</Field>
+```
+```jsx
+import { useForm } from "react-hook-form";
 
-> Note: This is a helper component used when building other components. It is not present in the Design System files in Figma.
+function MyForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm();
 
-Field is a form field wrapper that provides consistent layout and styling for form inputs. Custom implementation using Tailwind CSS.
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Field>
+        <FieldLabel htmlFor="email">Email Address</FieldLabel>
+        <Input
+          id="email"
+          type="email"
+          dataHook="email-input"
+          {...register("email", { required: "Email is required" })}
+        />
+        <FieldError errors={[errors.email]} />
+      </Field>
+    </form>
+  );
+}
+```
 
-### When to Use
-- Form fields with labels and descriptions
-- Grouped form inputs (checkboxes, radio buttons)
-- Horizontal or vertical field layouts
-
-### Features
-- Three orientation variants (vertical, horizontal, responsive)
-- Label and description composition
-- FieldError for validation messages with composable FieldErrorIcon
-- FieldSet and FieldLegend for grouped inputs
-- FieldContent for checkbox/radio descriptions
-- Container queries for responsive layouts
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "field") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-field--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

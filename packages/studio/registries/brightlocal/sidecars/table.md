@@ -12,43 +12,53 @@ composes_with: [DataTable]
 aliases: [data grid, grid, list table]
 ---
 
-Styled HTML table with header, body, footer, and cell size variants.
+```jsx
+<Table dataHook="my-table">
+  <TableHeader>
+    <TableRow>
+      <TableHead>Name</TableHead>
+      <TableHead>Status</TableHead>
+      <TableHead align="right">Amount</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell>John Doe</TableCell>
+      <TableCell><Badge dataHook="status-badge">Active</Badge></TableCell>
+      <TableCell align="right">$250.00</TableCell>
+    </TableRow>
+  </TableBody>
+  <TableCaption>A list of recent transactions.</TableCaption>
+</Table>
+```
+```jsx
+<Table dataHook="invoices-table">
+  <TableHeader>
+    <TableRow>
+      <TableHead>Invoice</TableHead>
+      <TableHead>Status</TableHead>
+      <TableHead align="right">Amount</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell>INV001</TableCell>
+      <TableCell><Badge dataHook="status-badge">Paid</Badge></TableCell>
+      <TableCell align="right">$250.00</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>INV002</TableCell>
+      <TableCell><Badge dataHook="status-badge">Pending</Badge></TableCell>
+      <TableCell align="right">$150.00</TableCell>
+    </TableRow>
+  </TableBody>
+  <TableFooter>
+    <TableRow>
+      <TableCell colSpan={2}>Total</TableCell>
+      <TableCell align="right">$400.00</TableCell>
+    </TableRow>
+  </TableFooter>
+</Table>
+```
 
-## Guidance
-
-A semantic table component for displaying structured tabular data. Custom implementation using Tailwind CSS.
-
-### When to Use
-- Displaying structured data with rows and columns (invoices, reports)
-- Data grids with sortable/filterable content
-- Comparison tables for features or pricing
-
-### When Not to Use
-- For simple key-value pairs, use a description list
-- For card-based layouts, use Card components
-- For complex interactive data grids with virtualization, use DataTable
-
-### Features
-- **Sizes**: Default, MD, LG cell heights
-- **Alignment**: Logical (start/end/center) and physical (left/right) text alignment with RTL support
-- **Accessibility**: `scope="col"` on headers by default, `scope="row"` supported
-- Horizontal scroll container for wide tables
-- Flexible cell content: text, badges, avatars, buttons, inputs
-
-### Accessibility
-- `TableHead` renders `<th scope="col">` by default for column association
-- Use `scope="row"` on row header cells for row association
-- `dataHook` is required on the root `Table`; optional on sub-components
-
-### Content Guidelines
-- **Empty/null cells**: Use blank space for empty data cells, not em dashes or placeholders
-- **Truncation**: For long text, use CSS `truncate` class with `Tooltip` for full text on hover
-- **Responsive**: Wrap Table in a container with `overflow-x-auto` (built-in) for horizontal scroll
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "table") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-table--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

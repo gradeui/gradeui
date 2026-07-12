@@ -116,8 +116,16 @@ function snippetToApp(
   if (/^\s*(?:function|const)\s+[A-Z]/.test(code)) {
     return prepareAppSource(code);
   }
-  const body = code
-    .split("\n")
+  // Split PRELUDE STATEMENTS from JSX. Storybook show-code snippets
+  // often lead with hook setup (`const [date, setDate] = useState(...)`)
+  // before the JSX — statements belong in the component body, not
+  // inside JSX children. The first column-0 `<` starts the JSX chunk.
+  const rawLines = code.split("\n");
+  const firstJsxIdx = rawLines.findIndex((l) => /^</.test(l));
+  const preludeLines = firstJsxIdx > 0 ? rawLines.slice(0, firstJsxIdx) : [];
+  const jsxLines = firstJsxIdx >= 0 ? rawLines.slice(firstJsxIdx) : rawLines;
+  const prelude = preludeLines.join("\n").trim();
+  const body = jsxLines
     .map((l) =>
       /^\s*\/\//.test(l)
         ? l.replace(/^(\s*)\/\/(.*)$/, "$1{/*$2 */}")
@@ -137,6 +145,7 @@ function snippetToApp(
     registry.components.externalImports.find((p) => /icon|lucide/i.test(p)) ??
     "lucide-react";
   const importLines = [
+    `import * as React from "react";`,
     ds.length
       ? `import { ${ds.sort().join(", ")} } from "${registry.package.name}";`
       : "",
@@ -151,7 +160,7 @@ function snippetToApp(
     `${importLines}
 
 export default function Example() {
-  return (
+${prelude ? `  ${prelude.split("\n").join("\n  ")}\n` : ""}  return (
     <div className="flex min-h-full flex-col items-start justify-center gap-4 p-6">
 ${body}
     </div>

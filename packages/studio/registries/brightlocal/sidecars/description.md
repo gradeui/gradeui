@@ -6,27 +6,31 @@ props:
   - dataHook?: string — optional on structural components (renders data-hook)
 ---
 
-Key-value pair layout for displaying metadata.
+```jsx
+<Description dataHook="help-text">
+  This is a helpful description that provides additional context.
+</Description>
+```
+```jsx
+<Description dataHook="terms-info">
+  By signing up, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.
+</Description>
+```
+```jsx
+<Description
+  dataHook="description-with-links"
+  storyDescription="With links"
+>
+  By signing up, you agree to our{' '}
+  <a href="#terms">
+    Terms of Service
+  </a>
+  {' '}and{' '}
+  <a href="#privacy">
+    Privacy Policy
+  </a>
+  .
+</Description>
+```
 
-## Guidance
-
-> Note: This is a helper component used when building other components. It is not present in the Design System files in Figma.
-
-Description displays helper text and additional context in muted styling. Custom implementation using Tailwind CSS.
-
-### When to Use
-- Form field descriptions and hints
-- Help text and contextual information
-- Legal disclaimers with links (terms, privacy)
-
-### Features
-- Muted, smaller text for secondary content
-- Supports inline links with hover styling
-- For form fields, use FieldDescription for form-specific styles
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "description") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-description--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

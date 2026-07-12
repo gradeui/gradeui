@@ -11,29 +11,20 @@ props:
 aliases: [inputpassword]
 ---
 
-Password input with show/hide toggle.
+```jsx
+<InputPasswordRoot
+  dataHook="password-input"
+  onStrengthChange={function z0e(){}}
+  trackingEl="input-password"
+  trackingLabel="password-field"
+>
+  <InputPasswordField
+    hideLabel="Ocultar contraseña"
+    placeholder="Enter your password"
+    showLabel="Mostrar contraseña"
+  />
+  <InputPasswordStrength />
+</InputPasswordRoot>
+```
 
-## Guidance
-
-Password input with visibility toggle and strength indicator. Composable architecture for flexible layouts.
-
-### When to Use
-- User registration forms with password creation
-- Login forms requiring password entry
-- Account settings for password changes
-
-### Features
-- **Composable API** - Build custom layouts with InputPasswordRoot, InputPasswordField, and InputPasswordStrength
-- Show/hide password toggle button
-- Real-time password strength indicator
-- Strength levels: Meter, Weak, Ok, Good, Great
-- Debounced strength calculation for performance
-- Built on InputGroup for consistent styling
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "input-password") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-inputpassword--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

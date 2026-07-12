@@ -12,28 +12,43 @@ composes_with: [Dialog, Sonner]
 aliases: [confirmation dialog, confirm modal, destructive action dialog]
 ---
 
-Modal dialog for confirming destructive or irreversible actions.
+```jsx
+<AlertDialog>
+  <AlertDialogTrigger asChild>
+    <Button>Delete Account</Button>
+  </AlertDialogTrigger>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle dataHook="confirm-title">Are you absolutely sure?</AlertDialogTitle>
+      <AlertDialogDescription dataHook="confirm-description">
+        This action cannot be undone.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <AlertDialogAction>Continue</AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+```jsx
+<AlertDialog dataHook="confirm-dialog">
+  <AlertDialogTrigger asChild>
+    <Button dataHook="delete-account">Delete Account</Button>
+  </AlertDialogTrigger>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle dataHook="confirm-title">Are you absolutely sure?</AlertDialogTitle>
+      <AlertDialogDescription dataHook="confirm-description">
+        This action cannot be undone.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <AlertDialogAction>Continue</AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
 
-## Guidance
-
-AlertDialog interrupts the user with important content and expects a response. Built on [Radix UI Alert Dialog](https://www.radix-ui.com/primitives/docs/components/alert-dialog).
-
-### When to Use
-- Destructive actions requiring confirmation (delete, remove)
-- Critical decisions that can't be undone
-- Important warnings before proceeding
-
-### Features
-- Accessible by default with proper ARIA attributes
-- Keyboard navigation (Escape to close, Tab to navigate)
-- Focus trapping within dialog when open
-- Animated entry and exit transitions
-- Compositional sub-components for flexible layouts
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "alert-dialog") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-alert-dialog--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

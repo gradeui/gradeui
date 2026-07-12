@@ -17,28 +17,40 @@ composes_with: [Link, Toggle, DropdownMenu]
 aliases: [btn, cta, action button, submit button, confirm button]
 ---
 
-Interactive button with variants (default, destructive, outline, secondary, ghost, warning), sizes, loading state, and iconOnly mode.
+```jsx
+<Button
+  variant="primary"
+  size="default"
+  dataHook="submit-button"
+>
+  Submit
+</Button>
+```
+```jsx
+<Button
+  dataHook="destructive-button"
+  size="default"
+  storyDescription="With left icon"
+  variant="destructive"
+>
+  <React.Fragment key=".0">
+    <Trash2 />
+    {' '}Delete Item
+  </React.Fragment>
+</Button>
+```
+```jsx
+<Button
+  dataHook="outline-button"
+  size="default"
+  storyDescription="With left icon"
+  variant="outline"
+>
+  <React.Fragment key=".0">
+    <Download />
+    {' '}Download
+  </React.Fragment>
+</Button>
+```
 
-## Guidance
-
-Button triggers an action or event when clicked. Custom implementation using Tailwind CSS and class-variance-authority.
-
-### When to Use
-- Primary actions (submit form, save changes)
-- Secondary actions (cancel, go back)
-- Destructive actions (delete, remove)
-
-### Features
-- Six style variants: Primary, Secondary, Destructive, Outline, Ghost, Warning
-- Three sizes: Small (sm), Default, Large (lg)
-- Loading state with spinner animation
-- Icon-only and icon with text support
-- Full-width option for block-level buttons
-- Proper accessibility with ARIA attributes
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "button") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-button--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

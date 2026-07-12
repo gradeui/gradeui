@@ -13,31 +13,46 @@ when_to_use: Two-column pages where one side is content and the other is decorat
 composes_with: [CentredLayout, GlobalLayout]
 ---
 
-Two-column layout with resizable split pane.
+```jsx
+// Basic usage
+<SplitLayout dataHook="login-layout">
+  <SplitLayoutContentLeft>
+    <LoginForm />
+  </SplitLayoutContentLeft>
+  <SplitLayoutContentRight>
+    <MarketingContent />
+  </SplitLayoutContentRight>
+</SplitLayout>
+```
+```jsx
+// With full-bleed image
+<SplitLayout dataHook="signup-layout">
+  <SplitLayoutContentLeft>
+    <SignUpForm />
+  </SplitLayoutContentLeft>
+  <SplitLayoutContentRight flush>
+    <SplitLayoutImage
+      dataHook="signup-hero"
+      src="/images/signup-hero.png"
+      alt="Product preview"
+    />
+  </SplitLayoutContentRight>
+</SplitLayout>
+```
+```jsx
+// With animation and marketing content
+<SplitLayout dataHook="signup-layout">
+  <SplitLayoutContentLeft>
+    <SignUpForm />
+  </SplitLayoutContentLeft>
+  <SplitLayoutContentRight>
+    <Badge dataHook="badge" variant="secondary">
+      <Sparkles /> Turning data into insights
+    </Badge>
+    <h2>We empower businesses to grow locally.</h2>
+    <Lottie animationData={dashboardAnimation} loop />
+  </SplitLayoutContentRight>
+</SplitLayout>
+```
 
-## Guidance
-
-SplitLayout is a responsive two-column layout component. Custom implementation using Tailwind CSS.
-
-### When to Use
-- Login, signup, and onboarding pages with form and marketing content
-- Landing pages with content and imagery sections
-- Authentication flows where form is prioritized on mobile
-- Split-screen layouts that need responsive behavior
-
-### Features
-- Responsive behavior (stacked on mobile, side-by-side on desktop)
-- Right section hidden on mobile/tablet (<1024px)
-- Equal-width columns on desktop
-- Built-in background colors (bg-background, bg-card)
-- Automatic scrolling for overflowing content
-- Composition pattern with `SplitLayoutHeader`, `SplitLayoutContentLeft`, and `SplitLayoutContentRight` sub-components
-- Full-bleed image support via `flush` prop and `SplitLayoutImage`
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "split-layout") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-splitlayout--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

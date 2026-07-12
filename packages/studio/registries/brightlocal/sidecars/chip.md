@@ -13,28 +13,44 @@ when_to_use: Displaying user-created tags that can be removed Selected filter va
 composes_with: [Badge, InputChip]
 ---
 
-Removable tag/chip element for multi-value inputs and filters.
+```jsx
+<Chip dataHook="filter-chip" onRemove={() => console.log("removed")}>
+  Option
+</Chip>
 
-## Guidance
+<Chip size="lg" dataHook="large-chip" onRemove={handleRemove}>
+  Large Option
+</Chip>
 
-Chip displays a removable tag or selection with a delete button. Used for filter selections, tag lists, and multi-select values.
+<Chip loading dataHook="loading-chip">
+  Loading
+</Chip>
 
-### When to Use
-- Filter selections that can be removed
-- Tag lists with delete capability
-- Multi-select input values
-- Selected items in a list
+<Chip disabled dataHook="disabled-chip">
+  Disabled
+</Chip>
+```
+```jsx
+<Chip
+  dataHook="filter-chip"
+  loadingLabel={t("chip.loading")}
+  removeAriaLabel={t("chip.remove", { name: "Option" })}
+>
+  Option
+</Chip>
+```
+```jsx
+<Chip
+  dataHook="chip"
+  onRemove={function z0e(){}}
+  removeAriaLabel="Eliminar Opción"
+  size="md"
+  storyDescription="Custom labels (i18n)"
+  trackingEl="chip-element"
+  trackingLabel="Chip Component"
+>
+  Opción
+</Chip>
+```
 
-### Features
-- Two sizes: medium (md) and large (lg)
-- Delete button with X icon
-- Loading state with spinner
-- Disabled state
-- Design system tokens for light and dark modes
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "chip") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-chip--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

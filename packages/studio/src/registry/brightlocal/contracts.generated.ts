@@ -10,7 +10,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
 > = {
   "Accordion": {
     "name": "Accordion",
-    "description": "Vertically stacked collapsible sections with mutual-exclusion support.",
+    "description": "```jsx",
     "props": {
       "type": {
         "kind": "enum",
@@ -45,7 +45,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "AlertDialog": {
     "name": "AlertDialog",
-    "description": "Modal dialog for confirming destructive or irreversible actions.",
+    "description": "```jsx",
     "props": {
       "open": {
         "kind": "boolean",
@@ -66,7 +66,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Alert": {
     "name": "Alert",
-    "description": "Informational banner for success, warning, error, or info messages.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -108,7 +108,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "AspectRatio": {
     "name": "AspectRatio",
-    "description": "Wrapper that enforces a fixed aspect ratio on its child element.",
+    "description": "```jsx",
     "props": {
       "ratio": {
         "kind": "string",
@@ -124,7 +124,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Avatar": {
     "name": "Avatar",
-    "description": "Circular image with fallback initials for user profile pictures.",
+    "description": "```jsx",
     "props": {
       "src": {
         "kind": "string",
@@ -145,7 +145,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Badge": {
     "name": "Badge",
-    "description": "Small status label with semantic color variants (default, secondary, destructive, outline).",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -176,7 +176,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Breadcrumb": {
     "name": "Breadcrumb",
-    "description": "Navigation trail showing the current page location in a hierarchy.",
+    "description": "```jsx",
     "props": {
       "dataHook": {
         "kind": "string",
@@ -187,7 +187,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Button": {
     "name": "Button",
-    "description": "Interactive button with variants (default, destructive, outline, secondary, ghost, warning), sizes, loading state, and iconOnly mode.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -257,7 +257,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Calendar": {
     "name": "Calendar",
-    "description": "Date picker calendar grid for selecting single dates or date ranges.",
+    "description": "```jsx",
     "props": {
       "numberOfMonths": {
         "kind": "string",
@@ -293,7 +293,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Callout": {
     "name": "Callout",
-    "description": "Speech bubble callout for highlighting key statements, quotes, or important messages. Features a directional pointer/caret and bold heading typography.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -331,7 +331,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Card": {
     "name": "Card",
-    "description": "Contained surface with header, content, and footer sections. Full-width by default — constrain via className.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -381,7 +381,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Carousel": {
     "name": "Carousel",
-    "description": "Horizontal scrollable content viewer with navigation controls.",
+    "description": "```jsx",
     "props": {
       "orientation": {
         "kind": "enum",
@@ -426,7 +426,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "CentredLayout": {
     "name": "CentredLayout",
-    "description": "Page layout centered horizontally with max-width constraint.",
+    "description": "```jsx",
     "props": {
       "dataHook": {
         "kind": "string",
@@ -458,7 +458,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Checkbox": {
     "name": "Checkbox",
-    "description": "Toggle control for boolean values with checked, unchecked, and indeterminate states.",
+    "description": "```jsx",
     "props": {
       "disabled": {
         "kind": "boolean",
@@ -489,7 +489,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Chip": {
     "name": "Chip",
-    "description": "Removable tag/chip element for multi-value inputs and filters.",
+    "description": "```jsx",
     "props": {
       "size": {
         "kind": "enum",
@@ -533,7 +533,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Collapsible": {
     "name": "Collapsible",
-    "description": "Unstyled Radix primitive for toggling content visibility.",
+    "description": "```jsx",
     "props": {
       "open": {
         "kind": "boolean",
@@ -564,7 +564,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Combobox": {
     "name": "Combobox",
-    "description": "Searchable, filterable dropdown for selecting from large option lists. Supports single and multi-select.",
+    "description": "```jsx",
     "props": {
       "value": {
         "kind": "string",
@@ -615,7 +615,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Command": {
     "name": "Command",
-    "description": "Keyboard-driven command palette for search and actions.",
+    "description": "```jsx",
     "props": {
       "filter": {
         "kind": "string",
@@ -651,7 +651,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "ContextMenu": {
     "name": "ContextMenu",
-    "description": "Right-click menu with nested submenus.",
+    "description": "```jsx",
     "props": {
       "dataHook": {
         "kind": "string",
@@ -719,7 +719,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "DatePickerRoot": {
     "name": "DatePickerRoot",
-    "description": "Date input with calendar dropdown for selecting dates.",
+    "description": "```jsx",
     "props": {
       "mode": {
         "kind": "enum",
@@ -769,7 +769,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Description": {
     "name": "Description",
-    "description": "Key-value pair layout for displaying metadata.",
+    "description": "```jsx",
     "props": {
       "dataHook": {
         "kind": "string",
@@ -781,7 +781,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Dialog": {
     "name": "Dialog",
-    "description": "Modal overlay for focused content or forms with focus trapping.",
+    "description": "```jsx",
     "props": {
       "open": {
         "kind": "boolean",
@@ -808,7 +808,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Drawer": {
     "name": "Drawer",
-    "description": "Slide-in panel from screen edge with drag-to-dismiss gesture.",
+    "description": "```jsx",
     "props": {
       "open": {
         "kind": "boolean",
@@ -835,7 +835,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "DropdownMenu": {
     "name": "DropdownMenu",
-    "description": "Trigger-activated menu with items, submenus, checkboxes, and radio groups.",
+    "description": "```jsx",
     "props": {
       "dataHook": {
         "kind": "string",
@@ -847,7 +847,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Field": {
     "name": "Field",
-    "description": "Form field wrapper that connects label, input, description, and error message.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -886,7 +886,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "GlobalLayout": {
     "name": "GlobalLayout",
-    "description": "Root application layout with sidebar and main content area.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -921,7 +921,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Header": {
     "name": "Header",
-    "description": "Page or section header component.",
+    "description": "```jsx",
     "props": {
       "align": {
         "kind": "enum",
@@ -942,7 +942,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "HoverCard": {
     "name": "HoverCard",
-    "description": "Popover that appears on hover for previewing linked content.",
+    "description": "```jsx",
     "props": {
       "openDelay": {
         "kind": "string",
@@ -969,7 +969,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "InputChip": {
     "name": "InputChip",
-    "description": "Tag/chip input for entering multiple values as removable chips.",
+    "description": "```jsx",
     "props": {
       "value": {
         "kind": "string",
@@ -1005,7 +1005,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "InputGroup": {
     "name": "InputGroup",
-    "description": "Wrapper for grouping an input with prefix/suffix addons.",
+    "description": "```jsx",
     "props": {
       "size": {
         "kind": "enum",
@@ -1066,7 +1066,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "InputOTP": {
     "name": "InputOTP",
-    "description": "One-time password input with individual character cells.",
+    "description": "```jsx",
     "props": {
       "maxLength": {
         "kind": "string",
@@ -1097,7 +1097,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "InputPasswordRoot": {
     "name": "InputPasswordRoot",
-    "description": "Password input with show/hide toggle.",
+    "description": "```jsx",
     "props": {
       "strengthLevels": {
         "kind": "string",
@@ -1123,7 +1123,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Input": {
     "name": "Input",
-    "description": "Text input with error state and data-hook support.",
+    "description": "```jsx",
     "props": {
       "error": {
         "kind": "boolean",
@@ -1149,7 +1149,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Label": {
     "name": "Label",
-    "description": "Form label element that associates with inputs via htmlFor.",
+    "description": "```jsx",
     "props": {
       "optional": {
         "kind": "string",
@@ -1171,7 +1171,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Link": {
     "name": "Link",
-    "description": "Styled anchor element for navigation with design system theming.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -1212,7 +1212,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "List": {
     "name": "List",
-    "description": "Vertical list container with Item sub-components (ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions) for rendering structured rows.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -1238,7 +1238,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Logo": {
     "name": "Logo",
-    "description": "BrightLocal logo component with size variants.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -1334,7 +1334,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Menubar": {
     "name": "Menubar",
-    "description": "Horizontal menu bar with dropdown submenus for application menus.",
+    "description": "```jsx",
     "props": {
       "defaultValue": {
         "kind": "string",
@@ -1350,7 +1350,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "NavigationMenu": {
     "name": "NavigationMenu",
-    "description": "Horizontal navigation with dropdown panels for site navigation.",
+    "description": "```jsx",
     "props": {
       "dataHook": {
         "kind": "string",
@@ -1361,7 +1361,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Pagination": {
     "name": "Pagination",
-    "description": "Page navigation controls with previous/next and page number links.",
+    "description": "```jsx",
     "props": {
       "page": {
         "kind": "string",
@@ -1393,7 +1393,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Popover": {
     "name": "Popover",
-    "description": "Floating panel anchored to a trigger for forms or interactive content.",
+    "description": "```jsx",
     "props": {
       "open": {
         "kind": "boolean",
@@ -1440,7 +1440,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Progress": {
     "name": "Progress",
-    "description": "Horizontal progress bar with animated fill (0-100).",
+    "description": "```jsx",
     "props": {
       "value": {
         "kind": "string",
@@ -1476,7 +1476,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "RadioGroup": {
     "name": "RadioGroup",
-    "description": "Group of mutually exclusive radio button options.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -1522,7 +1522,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Rating": {
     "name": "Rating",
-    "description": "Star rating display and input component.",
+    "description": "```jsx",
     "props": {
       "value": {
         "kind": "string",
@@ -1538,7 +1538,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "ResizablePanelGroup": {
     "name": "ResizablePanelGroup",
-    "description": "Draggable split pane layout with resizable panels.",
+    "description": "```jsx",
     "props": {
       "direction": {
         "kind": "string",
@@ -1575,7 +1575,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "ScrollArea": {
     "name": "ScrollArea",
-    "description": "Custom-styled scrollable container with overlay scrollbars.",
+    "description": "```jsx",
     "props": {
       "orientation": {
         "kind": "enum",
@@ -1595,7 +1595,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Select": {
     "name": "Select",
-    "description": "Styled dropdown select with trigger, content, and item sub-components. Uses Radix (not native select).",
+    "description": "```jsx",
     "props": {
       "value": {
         "kind": "string",
@@ -1632,7 +1632,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Separator": {
     "name": "Separator",
-    "description": "Horizontal or vertical divider line.",
+    "description": "```jsx",
     "props": {
       "orientation": {
         "kind": "enum",
@@ -1669,7 +1669,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Sheet": {
     "name": "Sheet",
-    "description": "Modal slide-in panel from screen edge (always modal, renders via portal).",
+    "description": "```jsx",
     "props": {
       "side": {
         "kind": "enum",
@@ -1745,7 +1745,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Skeleton": {
     "name": "Skeleton",
-    "description": "Placeholder shimmer animation for loading states.",
+    "description": "```jsx",
     "props": {
       "dataHook": {
         "kind": "string",
@@ -1757,7 +1757,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Slider": {
     "name": "Slider",
-    "description": "Range input slider with single or dual thumbs.",
+    "description": "```jsx",
     "props": {
       "mode": {
         "kind": "enum",
@@ -1812,7 +1812,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Sonner": {
     "name": "Sonner",
-    "description": "Toast notification system with auto-dismiss and action support.",
+    "description": "```jsx",
     "props": {
       "title": {
         "kind": "string",
@@ -1854,7 +1854,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "SplitLayout": {
     "name": "SplitLayout",
-    "description": "Two-column layout with resizable split pane.",
+    "description": "```jsx",
     "props": {
       "left": {
         "kind": "string",
@@ -1875,7 +1875,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Stepper": {
     "name": "Stepper",
-    "description": "Guides users through a multi-step process, showing progress and the current step.",
+    "description": "```jsx",
     "props": {
       "orientation": {
         "kind": "enum",
@@ -1960,7 +1960,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Switch": {
     "name": "Switch",
-    "description": "Toggle switch for on/off boolean values.",
+    "description": "```jsx",
     "props": {
       "disabled": {
         "kind": "boolean",
@@ -1986,7 +1986,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Table": {
     "name": "Table",
-    "description": "Styled HTML table with header, body, footer, and cell size variants.",
+    "description": "```jsx",
     "props": {
       "size": {
         "kind": "enum",
@@ -2021,7 +2021,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Tabs": {
     "name": "Tabs",
-    "description": "Tabbed interface for switching between content panels.",
+    "description": "```jsx",
     "props": {
       "value": {
         "kind": "string",
@@ -2057,7 +2057,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "TextRevealMotion": {
     "name": "TextRevealMotion",
-    "description": "Animated text reveal with a rolling shape-morphing ball.",
+    "description": "```jsx",
     "props": {
       "holdTime": {
         "kind": "string",
@@ -2088,7 +2088,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Textarea": {
     "name": "Textarea",
-    "description": "Multi-line text input with auto-resize support.",
+    "description": "```jsx",
     "props": {
       "error": {
         "kind": "boolean",
@@ -2104,7 +2104,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "ToggleGroup": {
     "name": "ToggleGroup",
-    "description": "Group of toggle buttons with single or multi-select mode.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -2159,7 +2159,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Toggle": {
     "name": "Toggle",
-    "description": "Two-state button that can be pressed or unpressed.",
+    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -2210,7 +2210,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Tooltip": {
     "name": "Tooltip",
-    "description": "Small text popup that appears on hover/focus for supplementary info.",
+    "description": "```jsx",
     "props": {
       "delayDuration": {
         "kind": "string",

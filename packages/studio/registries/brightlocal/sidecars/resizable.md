@@ -13,28 +13,35 @@ props:
 aliases: [resizable]
 ---
 
-Draggable split pane layout with resizable panels.
+```jsx
+<ResizablePanelGroup direction="horizontal" dataHook="resizable">
+  <ResizablePanel defaultSize={50}>
+    <div>Panel One</div>
+  </ResizablePanel>
+  <ResizableHandle withHandle />
+  <ResizablePanel defaultSize={50}>
+    <div>Panel Two</div>
+  </ResizablePanel>
+</ResizablePanelGroup>
+```
+```jsx
+<ResizablePanelGroup
+  dataHook="resizable-panel-group"
+  direction="horizontal"
+  className="rounded-lg border"
+>
+  <ResizablePanel defaultSize={50}>
+    <div className="flex h-full items-center justify-center">
+      <span>One</span>
+    </div>
+  </ResizablePanel>
+  <ResizableHandle withHandle />
+  <ResizablePanel defaultSize={50}>
+    <div className="flex h-full items-center justify-center">
+      <span>Two</span>
+    </div>
+  </ResizablePanel>
+</ResizablePanelGroup>
+```
 
-## Guidance
-
-Resizable provides a set of components for building resizable panel layouts. Built on [react-resizable-panels](https://github.com/bvaughn/react-resizable-panels).
-
-### When to Use
-- Split-pane layouts (code editors, file explorers)
-- Adjustable sidebar widths
-- Customizable dashboard layouts
-
-### Features
-- Horizontal and vertical layouts
-- Keyboard accessible resize handles
-- Minimum and maximum size constraints
-- Optional visible drag handle indicator
-- Collapsible panels
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "resizable") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-resizable--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

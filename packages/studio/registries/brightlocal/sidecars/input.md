@@ -11,28 +11,32 @@ when_to_use: Do NOT use for: multi-line text (use Textarea); search with dropdow
 aliases: [text field, textbox, text input]
 ---
 
-Text input with error state and data-hook support.
+```jsx
+<Input
+  type="email"
+  placeholder="Enter your email"
+  dataHook="email-input"
+/>
+```
+```jsx
+<Field>
+  <FieldLabel htmlFor="email">Email Address</FieldLabel>
+  <Input
+    id="email"
+    type="email"
+    placeholder="Enter your email"
+    dataHook="email-input"
+  />
+  <FieldDescription>We'll never share your email</FieldDescription>
+</Field>
+```
+```jsx
+<InputGroup dataHook="search-input-group">
+  <InputGroupAddon className="pl-3">
+    <Search />
+  </InputGroupAddon>
+  <InputGroupInput placeholder="Search..." />
+</InputGroup>
+```
 
-## Guidance
-
-Input is a styled text input element. Custom implementation using Tailwind CSS.
-
-### When to Use
-- Text, email, password, and other text-based inputs
-- Search fields and URL inputs
-- Form fields requiring user text entry
-
-### Features
-- Multiple input types (text, email, password, search, url, tel, number)
-- Focus, disabled, and error states
-- Composable with Field, FieldLabel, FieldDescription
-- Icon support via InputGroup
-- React Hook Form compatible
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "input") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-input--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

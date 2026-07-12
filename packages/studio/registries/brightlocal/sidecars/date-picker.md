@@ -15,28 +15,55 @@ props:
 aliases: [datepicker]
 ---
 
-Date input with calendar dropdown for selecting dates.
+```jsx
+function Example() {
+  const [date, setDate] = React.useState<Date | undefined>();
 
-## Guidance
+  return (
+    <DatePickerRoot dataHook="my-date-picker" date={date} onDateChange={setDate}>
+      <DatePickerTrigger />
+      <DatePickerContent>
+        <DatePickerCalendar />
+      </DatePickerContent>
+    </DatePickerRoot>
+  );
+}
+```
+```jsx
+function Example() {
+  const [date, setDate] = React.useState<Date | undefined>();
 
-DatePicker is a composable date selection component with calendar popover. Built on [react-day-picker](https://daypicker.dev/).
+  return (
+    <DatePickerRoot dataHook="my-date-picker" date={date} onDateChange={setDate}>
+      <DatePickerTrigger />
+      <DatePickerContent>
+        <div className="flex flex-col gap-2 p-2">
+          <DatePickerPresets />
+          <DatePickerCalendar className="rounded-lg border" />
+        </div>
+      </DatePickerContent>
+    </DatePickerRoot>
+  );
+}
+```
+```jsx
+function Example() {
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>();
 
-### When to Use
-- Single date selection (birthdays, due dates)
-- Date range selection (booking periods, reports)
-- Quick date presets (today, tomorrow, next week)
+  return (
+    <DatePickerRoot
+      dataHook="my-date-picker"
+      mode="range"
+      dateRange={dateRange}
+      onDateRangeChange={setDateRange}
+    >
+      <DatePickerTrigger />
+      <DatePickerContent>
+        <DatePickerCalendar numberOfMonths={2} />
+      </DatePickerContent>
+    </DatePickerRoot>
+  );
+}
+```
 
-### Features
-- **Composable API** - Build custom layouts with Root, Trigger, Content, Calendar, and Presets
-- Single date or date range selection via `mode` prop
-- Quick preset options with DatePickerPresets
-- Accessible keyboard navigation
-- Customizable date format using date-fns tokens
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "date-picker") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-datepicker--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

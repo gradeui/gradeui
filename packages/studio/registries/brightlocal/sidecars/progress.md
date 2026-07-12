@@ -11,26 +11,38 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Horizontal progress bar with animated fill (0-100).
+```jsx
+<Progress dataHook="upload-progress" value={66} label="Uploading..." />
 
-## Guidance
+<Progress
+  dataHook="score"
+  value={90}
+  label="Local SEO score"
+  color="green"
+  showValue
+/>
 
-Progress displays completion status with an animated indicator bar. Built on [Radix UI Progress](https://www.radix-ui.com/primitives/docs/components/progress) with Framer Motion animation.
+<Progress
+  dataHook="steps"
+  value={3}
+  max={5}
+  unit="steps"
+  label="Setup"
+  showValue
+/>
+```
+```jsx
+<Progress dataHook="progress" value={50} ariaLabel={t("progress.label")} />
+```
+```jsx
+<Progress
+  ariaLabel="Progress"
+  dataHook="progress"
+  label="Pending"
+  showValue
+  storyDescription="Value — none, falls back to –"
+  value={null}
+/>
+```
 
-### When to Use
-- File uploads and downloads showing transfer status
-- Multi-step forms indicating current step completion
-- Loading states for long-running operations
-
-### Features
-- Smooth spring animation for value changes
-- Optional visible label for accessibility
-- Supports 0-100% range with visual fill indicator
-- ARIA attributes for screen reader announcements
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "progress") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-progress--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

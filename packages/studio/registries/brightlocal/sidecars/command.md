@@ -12,31 +12,65 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Keyboard-driven command palette for search and actions.
+```jsx
+<Command dataHook="my-command">
+  <CommandInput placeholder="Type a command or search..." />
+  <CommandList>
+    <CommandEmpty>No results found.</CommandEmpty>
+    <CommandGroup heading="Suggestions">
+      <CommandItem dataHook="calendar-item">
+        <Calendar />
+        <span>Calendar</span>
+      </CommandItem>
+      <CommandItem dataHook="settings-item">
+        <Settings />
+        <span>Settings</span>
+        <CommandShortcut>⌘S</CommandShortcut>
+      </CommandItem>
+    </CommandGroup>
+  </CommandList>
+</Command>
+```
+```jsx
+<CommandInput
+  placeholder={t("command.placeholder")}
+  clearSearchAriaLabel={t("command.clearSearch")}
+/>
+```
+```jsx
+<Command
+  className="w-[512px]"
+  dataHook="command"
+>
+  <React.Fragment key=".0">
+    <CommandInput
+      clearSearchAriaLabel="Borrar búsqueda"
+      placeholder="Escribe un comando..."
+    />
+    <CommandList>
+      <CommandEmpty>
+        No se encontraron resultados.
+      </CommandEmpty>
+      <CommandGroup heading="Sugerencias">
+        <CommandItem>
+          <Calendar />
+          <span>
+            Calendario
+          </span>
+        </CommandItem>
+        <CommandItem>
+          <Settings />
+          <span>
+            Configuración
+          </span>
+          <CommandShortcut>
+            ⌘S
+          </CommandShortcut>
+        </CommandItem>
+      </CommandGroup>
+    </CommandList>
+  </React.Fragment>
+</Command>
+```
 
-## Guidance
-
-Command is a composable command menu for searchable actions and navigation. Built on [cmdk](https://cmdk.paco.me/).
-
-### When to Use
-- Command palettes (⌘K style interfaces)
-- Searchable action menus
-- Quick navigation between app sections
-
-### Features
-- Searchable command palette with type-to-filter
-- Full keyboard navigation (arrow keys, Enter, Escape)
-- Grouped commands with headings
-- Keyboard shortcut display
-- Empty state handling
-- ARIA roles and labels for screen readers
-- Virtualised list for large datasets (`CommandVirtualList`)
-- Input debounce for async filtering (`debounceMs`)
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "command") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-command--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

@@ -10,28 +10,33 @@ when_to_use: Do NOT use for: standalone text (use Typography).
 aliases: [form label, input label]
 ---
 
-Form label element that associates with inputs via htmlFor.
+```jsx
+<div className="flex flex-col gap-2">
+  <Label dataHook="email-label" htmlFor="email">
+    Email
+  </Label>
+  <Input dataHook="email-input" id="email" type="email" />
+</div>
+```
+```jsx
+<Label dataHook="phone-label" htmlFor="phone" optional>
+  Phone number
+</Label>
+```
+```jsx
+<div className="flex items-center gap-2">
+  <Checkbox
+    dataHook="checkbox-demo"
+    id="demo-terms"
+  />
+  <Label
+    dataHook="label-with-checkbox"
+    htmlFor="demo-terms"
+    storyDescription="With checkbox"
+  >
+    Accept terms and conditions
+  </Label>
+</div>
+```
 
-## Guidance
-
-> Note: This is a helper component used when building other components. It is not present in the Design System files in Figma.
-
-Label renders accessible labels for form controls. Built on [Radix UI Label](https://www.radix-ui.com/primitives/docs/components/label).
-
-### When to Use
-- Form field labels that need to be associated with inputs
-- Checkbox and radio button labels
-- Any form control requiring an accessible label
-
-### Features
-- Automatic association with form controls via `htmlFor`
-- Optional indicator with "(optional)" suffix
-- Disabled state styling when paired with disabled inputs
-- Accessible by default with proper semantics
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "label") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-label--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

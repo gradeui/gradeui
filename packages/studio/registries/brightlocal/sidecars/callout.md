@@ -9,20 +9,42 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-## Guidance
+```jsx
+<Callout variant="primary" pointer="bottom" dataHook="onboarding-callout">
+  <CalloutHeading>Let's get you set up.</CalloutHeading>
+</Callout>
 
-Speech bubble callout for highlighting key statements, quotes, or important messages. Features a directional pointer/caret and bold heading typography.
+<Callout variant="purple" dataHook="stat-callout">
+  <CalloutHeading>93% of consumers read online reviews.</CalloutHeading>
+  <CalloutCitation>— BrightLocal Consumer Review Survey 2024</CalloutCitation>
+</Callout>
+```
+```jsx
+<Callout
+  dataHook="callout-blue"
+  pointer="none"
+  storyDescription="Without pointer"
+  variant="blue"
+>
+  <CalloutHeading>
+    Your online reputation is your most valuable marketing asset.
+  </CalloutHeading>
+  <CalloutCitation>
+    — BrightLocal Industry Report
+  </CalloutCitation>
+</Callout>
+```
+```jsx
+<Callout
+  dataHook="callout-primary"
+  pointer="none"
+  storyDescription="Without pointer"
+  variant="primary"
+>
+  <CalloutHeading>
+    Let's get you set up.
+  </CalloutHeading>
+</Callout>
+```
 
-- Four color variants: primary, purple, blue, green
-- Configurable pointer direction (top, bottom, left, right, none)
-- Compound component with `CalloutHeading` and `CalloutCitation` sub-components
-- `CalloutCitation` auto-styles based on parent variant via context
-- Uses `font-display text-4xl` display typography and `shadow-lg` token
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "callout") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-callout--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

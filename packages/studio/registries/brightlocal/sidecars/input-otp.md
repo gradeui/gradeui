@@ -11,30 +11,40 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-One-time password input with individual character cells.
+```jsx
+<Field>
+  <FieldLabel htmlFor="otp" dataHook="otp-label">Verification Code</FieldLabel>
+  <InputOTPDigitsOnly
+    id="otp"
+    dataHook="verification-otp"
+    maxLength={6}
+  />
+</Field>
+```
+```jsx
+<Field>
+  <FieldLabel htmlFor="otp" dataHook="otp-label">Enter Code</FieldLabel>
+  <InputOTP id="otp" dataHook="custom-otp" maxLength={6} error={hasError}>
+    <InputOTPGroup>
+      <InputOTPSlot index={0} />
+      <InputOTPSlot index={1} />
+      <InputOTPSlot index={2} />
+    </InputOTPGroup>
+    <InputOTPSeparator />
+    <InputOTPGroup>
+      <InputOTPSlot index={3} />
+      <InputOTPSlot index={4} />
+      <InputOTPSlot index={5} />
+    </InputOTPGroup>
+  </InputOTP>
+</Field>
+```
+```jsx
+<InputOTPDigitsOnly
+  aria-label="Verification code"
+  dataHook="otp"
+  maxLength={6}
+/>
+```
 
-## Guidance
-
-One-time password input component for verification codes and 2FA. Built on [input-otp](https://input-otp.rodz.dev/).
-
-### When to Use
-- Two-factor authentication code entry
-- Email or phone verification flows
-- PIN code entry for secure actions
-
-### Features
-- Composition with Field, FieldLabel, and FieldError
-- Multiple pre-built variants (connected, spaced, with separators)
-- Configurable digit count (4-8 digits)
-- Automatic focus management between slots
-- Paste support with automatic transformation
-- Error state support via context
-- ARIA labels for screen reader accessibility
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "input-otp") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-inputotp--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

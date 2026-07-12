@@ -10,28 +10,21 @@ props:
   - dataHook?: string — optional on structural components (renders data-hook)
 ---
 
-Popover that appears on hover for previewing linked content.
+```jsx
+<HoverCard>
+  <HoverCardTrigger
+    dataHook="hover-trigger"
+    disabled
+  >
+    Trigger Text
+  </HoverCardTrigger>
+  <HoverCardContent
+    className="w-80"
+    dataHook="hover-card-content"
+  >
+    <Slot />
+  </HoverCardContent>
+</HoverCard>
+```
 
-## Guidance
-
-HoverCard displays rich content when hovering over a trigger element. Built on [Radix UI Hover Card](https://www.radix-ui.com/primitives/docs/components/hover-card).
-
-### When to Use
-- User profile previews on @mentions or avatars
-- Link previews showing page summaries
-- Additional context without cluttering the interface
-
-### Features
-- Hover-activated popover content
-- Customizable open/close delays (default: 300ms)
-- Support for any trigger element (links, buttons, text)
-- Smooth enter/exit animations
-- ARIA attributes for screen readers
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "hover-card") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-hovercard--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

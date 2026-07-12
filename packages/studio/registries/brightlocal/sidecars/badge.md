@@ -11,26 +11,39 @@ composes_with: [Chip, Button]
 aliases: [tag, chip, pill, label, status indicator]
 ---
 
-Small status label with semantic color variants (default, secondary, destructive, outline).
+```jsx
+<Badge variant="primary" dataHook="status-badge">New</Badge>
+<Badge variant="secondary">Draft</Badge>
+<Badge variant="outline">Published</Badge>
+<Badge variant="destructive">Error</Badge>
+```
+```jsx
+<Badge
+  asChild
+  dataHook="badge"
+  storyDescription="Focus (asChild button)"
+  trackingEl="badge-element"
+  trackingLabel="Badge Component"
+  variant="destructive"
+>
+  <button>
+    Destructive
+  </button>
+</Badge>
+```
+```jsx
+<Badge
+  asChild
+  dataHook="badge"
+  storyDescription="Focus (asChild button)"
+  trackingEl="badge-element"
+  trackingLabel="Badge Component"
+  variant="primary"
+>
+  <button>
+    Badge
+  </button>
+</Badge>
+```
 
-## Guidance
-
-Badge displays a small label for status or categorization. Custom implementation using Tailwind CSS.
-
-### When to Use
-- Status indicators (new, draft, published, error)
-- Category labels and tags
-- Count badges on icons or navigation items
-
-### Features
-- Four visual variants: Primary, Secondary, Outline, Destructive
-- Optional icon support with proper spacing
-- Focusable when used as interactive elements
-- Design system tokens for light and dark modes
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "badge") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-badge--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

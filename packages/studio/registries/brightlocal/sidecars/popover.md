@@ -16,28 +16,42 @@ when_to_use: Do NOT use for: tooltips (use Tooltip); menus (use DropdownMenu).
 aliases: [floating panel, popup panel, info popup]
 ---
 
-Floating panel anchored to a trigger for forms or interactive content.
+```jsx
+<Popover>
+  <PopoverTrigger asChild>
+    <Button>Open popover</Button>
+  </PopoverTrigger>
+  <PopoverContent>
+    Place content for the popover here.
+  </PopoverContent>
+</Popover>
+```
+```jsx
+<Popover>
+  <PopoverTrigger asChild>
+    <Button dataHook="popover-trigger">Open popover</Button>
+  </PopoverTrigger>
+  <PopoverContent dataHook="popover-content">
+    <div className="grid gap-4">
+      <div className="space-y-2">
+        <h4 className="leading-none font-medium">Dimensions</h4>
+        <p className="text-muted-foreground text-sm">
+          Set the dimensions for the layer.
+        </p>
+      </div>
+      <div className="grid gap-2">
+        <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+          <Label htmlFor="width">Width</Label>
+          <Input id="width" defaultValue="100%" dataHook="width-input" />
+        </div>
+        <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+          <Label htmlFor="height">Height</Label>
+          <Input id="height" defaultValue="25px" dataHook="height-input" />
+        </div>
+      </div>
+    </div>
+  </PopoverContent>
+</Popover>
+```
 
-## Guidance
-
-Popover displays rich content in a floating panel anchored to a trigger element. Built on [Radix UI Popover](https://www.radix-ui.com/primitives/docs/components/popover).
-
-### When to Use
-- Contextual forms or settings panels
-- Rich tooltips with interactive content
-- Quick actions without leaving the current page
-
-### Features
-- Accessible with proper ARIA attributes and focus management
-- Keyboard navigation (Escape to close, Tab to navigate)
-- Flexible positioning with auto-flip behavior
-- Customizable alignment and offset
-- Portal rendering for proper z-index layering
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "popover") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-popover--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

@@ -7,29 +7,47 @@ props:
   - dataHook?: string — optional on structural components (renders data-hook)
 ---
 
-Right-click menu with nested submenus.
+```jsx
+<ContextMenu>
+  <ContextMenuTrigger dataHook="my-trigger">
+    Right click here
+  </ContextMenuTrigger>
+  <ContextMenuContent>
+    <ContextMenuItem dataHook="item-back">
+      Back
+      <ContextMenuShortcut>⌘[</ContextMenuShortcut>
+    </ContextMenuItem>
+    <ContextMenuItem dataHook="item-forward" disabled>
+      Forward
+      <ContextMenuShortcut>⌘]</ContextMenuShortcut>
+    </ContextMenuItem>
+    <ContextMenuSeparator />
+    <ContextMenuCheckboxItem checked dataHook="item-bookmarks">
+      Show Bookmarks
+    </ContextMenuCheckboxItem>
+  </ContextMenuContent>
+</ContextMenu>
+```
+```jsx
+<ContextMenu>
+  <ContextMenuTrigger dataHook="context-menu-trigger">
+    Right click here
+  </ContextMenuTrigger>
+  <ContextMenuContent>
+    <ContextMenuItem dataHook="item-back">
+      Back
+      <ContextMenuShortcut>⌘[</ContextMenuShortcut>
+    </ContextMenuItem>
+    <ContextMenuItem dataHook="item-forward" disabled>
+      Forward
+      <ContextMenuShortcut>⌘]</ContextMenuShortcut>
+    </ContextMenuItem>
+    <ContextMenuSeparator />
+    <ContextMenuCheckboxItem checked dataHook="item-bookmarks">
+      Show Bookmarks
+    </ContextMenuCheckboxItem>
+  </ContextMenuContent>
+</ContextMenu>
+```
 
-## Guidance
-
-ContextMenu displays a menu on right-click for context-aware actions. Built on [Radix UI Context Menu](https://www.radix-ui.com/primitives/docs/components/context-menu).
-
-### When to Use
-- Right-click menus for file/item operations
-- Context-specific actions (copy, paste, delete)
-- Quick access to item-specific options
-
-### Features
-- Right-click trigger for context-aware actions
-- Full keyboard navigation
-- Sub-menus for nested actions
-- Checkbox and radio items for selections
-- Keyboard shortcut hints
-- ARIA roles and labels for screen readers
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "context-menu") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-contextmenu--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

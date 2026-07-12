@@ -13,30 +13,32 @@ composes_with: [Dialog, Drawer, Sidebar]
 aliases: [side panel, drawer, flyout, tray, slide-out]
 ---
 
-Modal slide-in panel from screen edge (always modal, renders via portal).
+```jsx
+<Sheet>
+  <SheetTrigger asChild>
+    <Button dataHook="open-sheet">Open Sheet</Button>
+  </SheetTrigger>
+  <SheetContent dataHook="my-sheet" side="right">
+    <SheetHeader>
+      <SheetTitle dataHook="my-sheet-title">Title Text</SheetTitle>
+      <SheetDescription dataHook="my-sheet-description">This is a sheet description.</SheetDescription>
+    </SheetHeader>
+    <div className="grid gap-4 py-4">
+      {/* Your content here */}
+    </div>
+    <SheetFooter>
+      <Button dataHook="save-button">Save changes</Button>
+    </SheetFooter>
+  </SheetContent>
+</Sheet>
+```
+```jsx
+<SheetTitle icon={<Heart />}>Title Text</SheetTitle>
+```
+```jsx
+<SheetContent closeLabel={t("sheet.close")} side="right">
+  ...
+</SheetContent>
+```
 
-## Guidance
-
-Sheet is a drawer component that slides in from the edge of the screen. Built on [Radix UI Dialog](https://www.radix-ui.com/primitives/docs/components/dialog).
-
-### When to Use
-- Side navigation menus that slide in from the left
-- Form panels and settings drawers that slide in from the right
-- Bottom sheets for mobile-style action menus
-- Quick edit panels without leaving the current page
-
-### Features
-- Four position options (top, right, bottom, left)
-- Keyboard navigation (Escape to close, Tab to move focus)
-- Focus trap when open
-- Overlay backdrop with click-to-close
-- Smooth slide-in/out animations
-- Portal rendering for proper z-index layering
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "sheet") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-sheet--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

@@ -7,27 +7,20 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Star rating display and input component.
+```jsx
+<Rating dataHook="product-rating" value={4.5} />
+<Rating dataHook="product-rating-lg" value={4.5} size="md" />
+```
+```jsx
+<Rating dataHook="rating" value={4.5} ariaLabel={t("rating.label", { value: "4.5" })} />
+```
+```jsx
+<Rating
+  dataHook="rating"
+  size="md"
+  storyDescription="Medium size (24px)"
+  value={4.5}
+/>
+```
 
-## Guidance
-
-Rating displays a star-based rating indicator. Custom implementation using Tailwind CSS.
-
-### When to Use
-- Displaying product or service ratings (e.g., 4.5 out of 5 stars)
-- Showing user review scores
-- Visualizing quality or satisfaction levels
-
-### Features
-- Supports values from 0 to 5
-- Half-star precision (0.5 increments)
-- Two size variants: `sm` (16px, default) and `md` (24px)
-- Accessible with ARIA labels for screen readers
-- Visual fill percentage for partial stars
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "rating") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-rating--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

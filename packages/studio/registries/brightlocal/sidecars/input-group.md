@@ -9,30 +9,33 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Wrapper for grouping an input with prefix/suffix addons.
+```jsx
+<InputGroup>
+  <InputGroupAddon className="pl-3">
+    <Search />
+  </InputGroupAddon>
+  <InputGroupInput placeholder="Search..." />
+</InputGroup>
+```
+```jsx
+<InputGroup>
+  <InputGroupInput type="password" />
+  <InputGroupButton size="icon-sm">
+    <Eye />
+  </InputGroupButton>
+</InputGroup>
+```
+```jsx
+<InputGroup
+  dataHook="input-group"
+  size="default"
+  storyDescription="Focus state"
+>
+  <InputGroupAddon className="pl-3">
+    <Search />
+  </InputGroupAddon>
+  <InputGroupInput placeholder="Search..." />
+</InputGroup>
+```
 
-## Guidance
-
-> Note: This is a helper component used when building other components. It is not present in the Design System files in Figma.
-
-InputGroup combines an input with icons or buttons as addons. Custom implementation using Tailwind CSS.
-
-### When to Use
-- Search inputs with search icon
-- Email/URL inputs with leading icons
-- Password inputs with visibility toggle
-- Inputs with clear buttons
-
-### Features
-- Left and right addon support
-- Button addon for interactive actions
-- Focus state shared across container
-- Supports disabled and error states
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "input-group") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-inputgroup--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

@@ -18,31 +18,141 @@ composes_with: [Select, Command, DropdownMenu]
 aliases: [autocomplete, searchable select, typeahead, filterable dropdown]
 ---
 
-Searchable, filterable dropdown for selecting from large option lists. Supports single and multi-select.
+```jsx
+<div className="w-full max-w-[350px]">
+  <Combobox
+    onValueChange={function z0e(){}}
+    value=""
+  >
+    <ComboboxTrigger
+      aria-label="Search dynamically"
+      dataHook="combobox-async"
+    >
+      <ComboboxValue placeholder="Search dynamically..." />
+    </ComboboxTrigger>
+    <ComboboxContent
+      hideList
+      side="bottom"
+      sideOffset={4}
+    >
+      <ComboboxInput
+        onValueChange={function z0e(){}}
+        placeholder="Type at least 2 characters..."
+        value=""
+      />
+      <ComboboxList>
+        <React.Fragment key=".0" />
+      </ComboboxList>
+    </ComboboxContent>
+  </Combobox>
+</div>
+```
+```jsx
+<div className="w-full max-w-[350px]">
+  <Combobox
+    onValueChange={function z0e(){}}
+    shouldFilter
+    value="city-42"
+  >
+    <ComboboxTrigger
+      aria-label="Select a city"
+      dataHook="combobox-virtual"
+    >
+      <ComboboxValue
+        items={[
+          {
+            label: 'City 0001',
+            value: 'city-0'
+          },
+          {
+            label: 'City 0002',
+            value: 'city-1'
+          },
+          {
+            label: 'City 0003',
+            value: 'city-2'
+          },
+          {
+            label: 'City 0004',
+            value: 'city-3'
+          },
+          {
+            label: 'City 0005',
+            value: 'city-4'
+          },
+          {
+            label: 'City 0006',
+            value: 'city-5'
+          },
+          {
+            label: 'City 0007',
+            value: 'city-6'
+          },
+          {
+            label: 'City 0008',
+            value: 'city-7'
+          },
+          {
+            label: 'City 0009',
+            value: 'city-8'
+          },
+          {
+            label: 'City 0010',
+            value: 'city-9'
+          },
+          {
+            label: 'City 0011',
+            value: 'city-10'
+          },
+   
+/* …truncated */
+```
+```jsx
+<div className="w-full max-w-[350px]">
+  <Combobox
+    onValueChange={function z0e(){}}
+    shouldFilter
+    value=""
+  >
+    <ComboboxTrigger
+      aria-label="Select a location"
+      dataHook="combobox-default"
+    >
+      <ComboboxValue placeholder="Seleccionar ubicación..." />
+    </ComboboxTrigger>
+    <ComboboxContent
+      avoidCollisions
+      side="bottom"
+      sideOffset={4}
+    >
+      <ComboboxInput
+        onValueChange={function z0e(){}}
+        placeholder="Buscar ubicaciones..."
+        value=""
+      />
+      <ComboboxList>
+        <ComboboxEmpty>
+          No se encontraron resultados.
+        </ComboboxEmpty>
+        <ComboboxGroup>
+          <ComboboxItem
+            highlight=""
+            highlightClassName="text-sm leading-normal font-semibold"
+            value="loc-1"
+          >
+            Brew and Bean cafe, Brighton, UK
+          </ComboboxItem>
+          <ComboboxItem
+            highlight=""
+            highlightClassName="text-sm leading-normal font-semibold"
+            value="loc-2"
+          >
+            The Coffee House, London, UK
+          </ComboboxItem>
+          <ComboboxItem
+            highlight=""
+            highlightClassName="text-
+/* …truncated */
+```
 
-## Guidance
-
-A composable, searchable dropdown for selecting from a list of options. Built on [Radix UI Popover](https://www.radix-ui.com/primitives/docs/components/popover) and [cmdk](https://cmdk.paco.me/).
-
-### When to Use
-- Large option lists (100+ items) — use `ComboboxVirtualList` for efficient DOM rendering
-- When users need to search/filter options by typing
-- Async data fetching with server-side search
-- For small-to-medium lists (< 100 options) without search, prefer [Select](/docs/ui-components-select--docs)
-
-### Features
-- **Composable API** - Full control over trigger, content, and items
-- **Async Search** - Set `shouldFilter={false}` for server-side filtering
-- **Virtual Scrolling** - Use `ComboboxVirtualList` for 100+ items with efficient DOM rendering
-- **Built-in Debounce** - Use `debounceMs` on ComboboxInput to throttle async search callbacks
-- **Search Highlighting** - Use `highlight` prop on ComboboxItem to highlight matching text
-- **Keyboard Navigation** - Arrow keys, Enter, Escape
-- **Grouped Options** - Organize items with ComboboxGroup
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "combobox") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-combobox--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

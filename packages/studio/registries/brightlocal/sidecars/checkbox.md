@@ -12,36 +12,50 @@ when_to_use: Do NOT use for: on/off toggle (use Switch); radio selection (use Ra
 aliases: [check, checkmark, tick box]
 ---
 
-Toggle control for boolean values with checked, unchecked, and indeterminate states.
+```jsx
+import { Checkbox } from "@brightlocal/ui-components/checkbox";
+import { Field, FieldLabel, FieldDescription } from "@brightlocal/ui-components/field";
 
-## Guidance
+function Example() {
+  return (
+    <Field orientation="horizontal">
+      <Checkbox id="terms" dataHook="terms-checkbox" />
+      <FieldLabel htmlFor="terms" dataHook="terms-label">I agree to the terms and conditions</FieldLabel>
+    </Field>
+  );
+}
+```
+```jsx
+import { Checkbox } from "@brightlocal/ui-components/checkbox";
+import { Field, FieldLabel, FieldDescription, FieldContent } from "@brightlocal/ui-components/field";
 
-Checkbox is a form input for binary choices with full accessibility support. Built on [Radix UI Checkbox](https://www.radix-ui.com/primitives/docs/components/checkbox).
+function Example() {
+  return (
+    <Field orientation="horizontal">
+      <Checkbox
+      id="marketing"
+      dataHook="marketing-checkbox"
+      checked={true}
+      />
+      <FieldContent>
+        <FieldLabel htmlFor="marketing" dataHook="marketing-label">Marketing emails</FieldLabel>
+        <FieldDescription dataHook="marketing-desc">Receive updates about new features and promotions.</FieldDescription>
+      </FieldContent>
+    </Field>
+  );
+}
+```
+```jsx
+import { Checkbox } from "@brightlocal/ui-components/checkbox";
 
-### When to Use
-- Single yes/no selections (terms acceptance, opt-ins)
-- Multiple selections from a list of options
-- Toggle settings on/off
+function Example() {
+  return (
+    <Checkbox
+      aria-label="Select row"
+      dataHook="select-row-checkbox"
+    />
+  );
+}
+```
 
-### Features
-- Controlled and uncontrolled modes via `checked` prop
-- Composition with Field, FieldLabel, and FieldDescription
-- Full ARIA support with proper labeling
-- Error states for validation feedback
-- WCAG AA color contrast (4.5:1) in all states
-
-## Accessibility Requirements
-
-⚠️ **Important**: Every checkbox must have an accessible name for screen readers. You must provide either:
-
-1. **Visible label**: Use FieldLabel with `htmlFor` to associate with checkbox `id`
-2. **ARIA label**: Provide an `aria-label` attribute when no visible label is present
-
-✅ **Color Contrast**: The component automatically maintains WCAG AA color contrast ratios (4.5:1) in all states, including disabled states.
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "checkbox") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-checkbox--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

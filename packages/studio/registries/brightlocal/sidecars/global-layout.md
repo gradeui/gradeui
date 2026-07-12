@@ -10,29 +10,67 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
 ---
 
-Root application layout with sidebar and main content area.
+```jsx
+function App() {
+  const addButton = <Button dataHook="add-location">+ Add Location</Button>;
 
-## Guidance
+  return (
+    <GlobalLayout dataHook="app-layout" maxWidth={breakpoint.xl}>
+      <GlobalLayoutSidebar dataHook="app-sidebar">
+        {/* Sidebar navigation — sticky */}
+      </GlobalLayoutSidebar>
+      <GlobalLayoutContent dataHook="app-content" maxWidth={breakpoint.lg}>
+        {/* Mobile: button in the mobile header row */}
+        <GlobalLayoutMobileHeader dataHook="mobile-header">
+          <MenuButton />
+          <Logo />
+          <div className="ml-auto lg:hidden">{addButton}</div>
+        </GlobalLayoutMobileHeader>
 
-GlobalLayout provides a full-viewport layout with an optional sticky sidebar and native page scrolling.
+        {/* Desktop: button in its own actions row above the header */}
+        <GlobalLayoutContentActions dataHook="content-actions">
+          {addButton}
+        </GlobalLayoutContentActions>
 
-### When to Use
-- Application shells with navigation sidebars
-- Dashboard layouts with collapsible sidebars
-- Content pages with consistent max-width containers
+        <GlobalLayoutContentHeader dataHook="page-header">
+          <h1 className="font-display text-4xl font-medium">All Locations</h1>
+        </GlobalLayoutContentHeader>
+        {/* Main content */}
+      </GlobalLayoutContent>
+    </GlobalLayout>
+  );
+}
+```
+```jsx
+<GlobalLayoutMobileHeader
+  dataHook="mobile-header"
+  ariaLabel={t("layout.mobileNav")}
+>
+  {/* Mobile navigation content */}
+</GlobalLayoutMobileHeader>
+```
+```jsx
+<GlobalLayout dataHook="global-layout">
+  <React.Fragment key=".0">
+    <GlobalLayoutSidebar dataHook="global-layout-sidebar">
+      <x />
+    </GlobalLayoutSidebar>
+    <GlobalLayoutContent
+      dataHook="global-layout-content"
+      maxWidth="var(--ds-breakpoint-lg)"
+    >
+      <GlobalLayoutMobileHeader
+        ariaLabel="Navegación móvil"
+        dataHook="mobile-header-i18n"
+      >
+        <Slot className="h-8 w-24">
+          Menu
+        </Slot>
+      </GlobalLayoutMobileHeader>
+      <u label="Content Area (i18n)" />
+    </GlobalLayoutContent>
+  </React.Fragment>
+</GlobalLayout>
+```
 
-### Features
-- Native page scrolling with browser scrollbar at viewport edge
-- Sticky sidebar stays in view while content scrolls
-- Optional 224px fixed-width sidebar (hidden on mobile/tablet)
-- `maxWidth` on GlobalLayout controls the global container width
-- `maxWidth` on GlobalLayoutContent controls the content area width
-- Use `breakpoint` tokens from `@brightlocal/tokens/breakpoints` for standard widths
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "global-layout") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-globallayout--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->

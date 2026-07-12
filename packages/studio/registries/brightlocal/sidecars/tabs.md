@@ -14,32 +14,36 @@ when_to_use: Do NOT use for: page navigation (use NavigationMenu); step-by-step 
 aliases: [tab bar, tab group, tabbed interface]
 ---
 
-Tabbed interface for switching between content panels.
+```jsx
+<Tabs defaultValue="account" dataHook="tabs">
+  <TabsList dataHook="tabs-list">
+    <TabsTrigger value="account" dataHook="account-tab">
+      Account
+    </TabsTrigger>
+    <TabsTrigger value="password" dataHook="password-tab">
+      Password
+    </TabsTrigger>
+  </TabsList>
+  <TabsContent value="account" dataHook="account-content">
+    Account content
+  </TabsContent>
+  <TabsContent value="password" dataHook="password-content">
+    Password content
+  </TabsContent>
+</Tabs>
+```
+```jsx
+type ReportTab = "lsg" | "lrt" | "ct";
 
-## Guidance
+const [tab, setTab] = useState<ReportTab>("lsg");
 
-A set of layered sections of content—known as tab panels—that display one at a time. Built on [Radix UI Tabs](https://www.radix-ui.com/primitives/docs/components/tabs).
+<Tabs<ReportTab> value={tab} onValueChange={setTab} dataHook="report-tabs">
+  <TabsList>
+    <TabsTrigger value="lsg">Local Search Grid</TabsTrigger>
+    <TabsTrigger value="lrt">Local Rank Tracker</TabsTrigger>
+    <TabsTrigger value="ct">Citation Tracker</TabsTrigger>
+  </TabsList>
+</Tabs>
+```
 
-### When to Use
-- Organizing related content into distinct sections (settings, profile)
-- Reducing visual clutter by showing one panel at a time
-- Navigation within a page where URL changes aren't needed
-
-### Features
-- Keyboard navigation (Arrow keys, Home, End)
-- Automatic and manual activation modes
-- Full ARIA accessibility with proper roles and states
-- Support for icons and custom content in triggers
-- Disabled state support per trigger
-- Lazy mounting via `lazyMount` prop (only mount panels on first activation)
-- Optional unmount on exit via `unmountOnExit` prop
-- Responsive and mobile-friendly
-- Generic value type for type-safe `onValueChange` callbacks
-
-## Props (from BrightLocal MCP)
-
-- primary?
-- enums?
-- subComponents?
-
-<!-- Harvested from BrightLocal's MCP server (get_component_api "tabs") — re-run harvest-brightlocal-mcp.mjs to refresh. -->
+<!-- Examples harvested from https://storybook.brightlocal.com (ui-components-tabs--docs); re-run harvest-brightlocal-stories.mjs to refresh. -->
