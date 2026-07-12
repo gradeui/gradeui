@@ -1,6 +1,36 @@
 # BYODS Pilot — BrightLocal (`@brightlocal/ui-components` + `@brightlocal/tokens`)
 
-## NEXT SESSION — start here (written end of July 11 session #2)
+## NEXT SESSION — start here (written end of July 12 session #3)
+
+**State: everything committed through `a325f40`.** Session #3 shipped the two big ones:
+
+- **PER-PROJECT REGISTRIES (live-verified):** `Project.registryId` + migration `0020`
+  (APPLIED to the cloud instance), runtime override (`setActiveProjectRegistry` /
+  `useActiveRegistry`), all 6 module-scope hazards defused (chat-sandpack templates are
+  builder-backed lets on a subscription), per-REQUEST resolution in the chat +
+  component-manifest routes, share resolves the project's registry server-side,
+  picker in ProjectSettingsSheet. One deployment now serves gradeui and BrightLocal
+  projects side by side — plain `pnpm dev`, no env var.
+- **COMPONENTS BROWSER (Design System → Components):** per-registry grid → detail;
+  "Exactly what the agent receives" = renderComponentRefsBlock({onlyFor}) byte-identical
+  to the chat route; retrieval aliases; live previews via the registry's own renderer
+  (lazy-mounted, boot shimmer); sidecar path + regen command per component.
+- **BL CANONICAL EXAMPLES:** Storybook harvest fixed (id scheme `ui-components-*--docs`,
+  anti-wedge waits) and RUN — 62/68 sidecar bodies now carry their Show-code JSX, riding
+  every refs block. snippetToApp renders them live (import hoisting, prelude/JSX split,
+  type-arg stripping, truncation skip; 147/157 blocks compile — 2 non-JSX API demos +
+  8 truncated). Breadcrumb li-in-li fixed (span separator, both copies).
+
+**Next up (agreed order):** (1) finish #13 — type the TODO(review) props (flows straight
+into contracts) + re-harvest with a smarter MAX_CHARS so the 8 truncated blocks preview;
+(2) anchored pinch zoom (#17 — diagnosis in the task: speak grade:zoom-gesture
+{deltaY,clientX,clientY}; shared-screen's anchored session already consumes it);
+(3) external starters (#15); (4) sidecar EDITING from the components page (dev-only
+write route) — Ali wants to author compound-card examples there.
+
+---
+
+## Session #2 handoff (July 11) — superseded above, kept for context
 
 **State:** Everything is COMMITTED (`bfbf93f`…`7166404` + the active-registry follow-up). Session #2
 shipped full editor parity for external screens, all verified live in-browser:
