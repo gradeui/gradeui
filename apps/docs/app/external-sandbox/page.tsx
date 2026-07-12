@@ -64,7 +64,10 @@ const ESM = {
   jsxDev: "https://esm.sh/react@19.0.0/jsx-dev-runtime",
   reactDom: "https://esm.sh/react-dom@19.0.0",
   reactDomClient: "https://esm.sh/react-dom@19.0.0/client",
-  sucrase: "https://esm.sh/sucrase@3.35.0",
+  // 3.35.1, NOT .0 — the .0 parser rejects TS type arguments in call
+  // expressions ("useState<Date | undefined>(...)" → Unexpected token),
+  // which sidecar example preludes hit. Matches apps/docs' local pin.
+  sucrase: "https://esm.sh/sucrase@3.35.1",
 };
 
 function dsUrl(): string {

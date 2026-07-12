@@ -49,7 +49,10 @@ function extractJsxBlocks(body: string | undefined): string[] {
   let m: RegExpExecArray | null;
   while ((m = re.exec(body)) !== null) {
     const code = m[1].trim();
-    if (code) out.push(code);
+    // Harvest truncation artifacts are mid-expression cuts — they can
+    // never compile (unterminated strings/JSX). Still in the sidecar
+    // (the model reads prose fine), just not previewable.
+    if (code && !code.includes("…truncated")) out.push(code);
   }
   return out;
 }
@@ -112,19 +115,51 @@ function snippetToApp(
   registry: DesignSystemRegistry,
   dsNames: ReadonlySet<string>,
 ): string {
-  if (/export\s+default/.test(code)) return prepareAppSource(code);
-  if (/^\s*(?:function|const)\s+[A-Z]/.test(code)) {
-    return prepareAppSource(code);
+  // 0. HOIST IMPORTS. Storybook snippets carry their own import lines
+  //    (often mid-snippet, before a nested example) — they must sit at
+  //    module top, and every name they bind is excluded from our
+  //    generated imports (duplicate bindings are a SyntaxError).
+  const snippetImports: string[] = [];
+  const restLines: string[] = [];
+  for (const l of code.split("\n")) {
+    (/^\s*import\s/.test(l) ? snippetImports : restLines).push(l);
   }
-  // Split PRELUDE STATEMENTS from JSX. Storybook show-code snippets
-  // often lead with hook setup (`const [date, setDate] = useState(...)`)
-  // before the JSX — statements belong in the component body, not
-  // inside JSX children. The first column-0 `<` starts the JSX chunk.
-  const rawLines = code.split("\n");
+  const rest = restLines.join("\n").trim();
+  const importedNames = new Set<string>();
+  for (const l of snippetImports) {
+    const named = /\{([^}]*)\}/.exec(l);
+    if (named) {
+      for (const n of named[1].split(",")) {
+        const clean = n.trim().split(/\s+as\s+/).pop();
+        if (clean) importedNames.add(clean);
+      }
+    }
+    const dflt = /^import\s+([A-Za-z_$][\w$]*)/.exec(l.trim());
+    if (dflt) importedNames.add(dflt[1]);
+  }
+
+  // Complete modules / named components: reassemble and let
+  // prepareAppSource's own wrapping (export-default detection, named-
+  // function fallback) do the rest.
+  if (/export\s+default/.test(rest) || /^(?:function|const)\s+[A-Z]/.test(rest)) {
+    return prepareAppSource([...snippetImports, "", rest].join("\n"));
+  }
+
+  // FRAGMENT path. Split PRELUDE STATEMENTS (hook setup) from JSX —
+  // statements belong in the component body, not JSX children. The
+  // first column-0 `<` starts the JSX chunk.
+  const rawLines = rest.split("\n");
   const firstJsxIdx = rawLines.findIndex((l) => /^</.test(l));
   const preludeLines = firstJsxIdx > 0 ? rawLines.slice(0, firstJsxIdx) : [];
   const jsxLines = firstJsxIdx >= 0 ? rawLines.slice(firstJsxIdx) : rawLines;
-  const prelude = preludeLines.join("\n").trim();
+  // Strip TS type ARGUMENTS from prelude calls — the esm.sh sucrase
+  // build chokes on `useState<Date | undefined>(...)` (works in the
+  // local build; parser-version lottery). Types are inert in a
+  // preview, so `useState(...)` is behaviour-identical.
+  const prelude = preludeLines
+    .join("\n")
+    .replace(/([A-Za-z_$][\w$]*)<[^<>()]*(?:<[^<>()]*>[^<>()]*)*>\(/g, "$1(")
+    .trim();
   const body = jsxLines
     .map((l) =>
       /^\s*\/\//.test(l)
@@ -133,11 +168,16 @@ function snippetToApp(
     )
     .join("\n");
 
-  // Tag census → import lines.
+  // Tag census → import lines (minus what the snippet already imports).
+  // Scanned over the JSX CHUNK only — the prelude's TS generics
+  // ("useState<Date | undefined>") would otherwise read as tags and
+  // fabricate a phantom `import { Date }` that shadows the global.
   const tags = new Set<string>();
   const tagRe = /<([A-Z][A-Za-z0-9]*)/g;
   let m: RegExpExecArray | null;
-  while ((m = tagRe.exec(code)) !== null) tags.add(m[1]);
+  while ((m = tagRe.exec(body)) !== null) {
+    if (!importedNames.has(m[1])) tags.add(m[1]);
+  }
   const ds: string[] = [];
   const icons: string[] = [];
   for (const t of tags) (dsNames.has(t) ? ds : icons).push(t);
@@ -145,7 +185,8 @@ function snippetToApp(
     registry.components.externalImports.find((p) => /icon|lucide/i.test(p)) ??
     "lucide-react";
   const importLines = [
-    `import * as React from "react";`,
+    importedNames.has("React") ? "" : `import * as React from "react";`,
+    ...snippetImports,
     ds.length
       ? `import { ${ds.sort().join(", ")} } from "${registry.package.name}";`
       : "",
@@ -202,13 +243,18 @@ function ExamplePreview({
     () => snippetToApp(code, registry, dsNames),
     [code, registry, dsNames],
   );
+  // Boot shimmer for the external renderer — the esm.sh module graph
+  // takes seconds (tens on a dev server), and a silent white box reads
+  // as "broken". Dropped on the first ext:rendered.
+  const [booting, setBooting] = React.useState(external);
   return (
-    <div className={cn("overflow-hidden bg-white", className)}>
+    <div className={cn("relative overflow-hidden bg-white", className)}>
       {external ? (
         <ExternalIframeHost
           appSource={appSource}
           mode="light"
           registryId={registry.id}
+          onRendered={() => setBooting(false)}
         />
       ) : (
         <FastIframeHost
@@ -217,6 +263,13 @@ function ExamplePreview({
           mode="light"
           motion={false}
         />
+      )}
+      {booting && (
+        <div className="pointer-events-none absolute inset-0 flex animate-pulse items-center justify-center bg-muted/40">
+          <span className="text-[11px] text-muted-foreground">
+            Booting {registry.shortName ?? registry.name}…
+          </span>
+        </div>
       )}
     </div>
   );

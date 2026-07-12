@@ -46,6 +46,9 @@ export interface ExternalIframeHostProps {
   onZoomBy?: (factor: number) => void;
   /** Compile/render failure message; null = cleared (fresh paint). */
   onError?: (message: string | null) => void;
+  /** First successful paint (ext:rendered) — small preview surfaces use
+   *  it to drop their boot shimmer. */
+  onRendered?: () => void;
   /** Rendered content height (ext:content-height) — feeds the share
    *  view's responsive content-height artboard, like the fast host's
    *  onContentHeight. */
@@ -69,6 +72,7 @@ export function ExternalIframeHost({
   onClearSelection,
   onZoomBy,
   onError,
+  onRendered,
   onContentHeight,
   iframeRef: externalIframeRef,
   registryId: registryIdProp,
@@ -124,6 +128,7 @@ export function ExternalIframeHost({
         }
       } else if (d?.type === "ext:rendered") {
         onError?.(null);
+        onRendered?.();
       } else if (d?.type === "ext:error") {
         onError?.(d.message ?? "render failed");
       } else if (d?.type === "ext:select") {
@@ -140,7 +145,7 @@ export function ExternalIframeHost({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [push, onSelect, onClearSelection, onZoomBy, onError, onContentHeight]);
+  }, [push, onSelect, onClearSelection, onZoomBy, onError, onRendered, onContentHeight]);
 
   // Mirror select-mode into the iframe whenever it flips.
   React.useEffect(() => {

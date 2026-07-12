@@ -168,26 +168,34 @@ const BreadcrumbSeparator = ({
   children,
   className,
   ...props
-}: React.ComponentProps<"li">) => {
+}: React.ComponentProps<"span">) => {
   // Per-instance `children` always wins (so designs that want a
   // different glyph just before the current page can opt-out). When
   // no children, read the tree-wide default from context — set by
   // the Breadcrumb root's `separator` prop. If neither is set,
   // ChevronRight is the fallback so a bare <BreadcrumbSeparator/>
   // outside a Breadcrumb root still renders something.
+  //
+  // <span>, NOT <li> (where shadcn puts it): the model routinely
+  // composes the separator INSIDE <BreadcrumbItem> rather than as a
+  // sibling, and li-in-li is invalid HTML — React 19 throws a
+  // hydration error and the whole screen re-renders client-side. A
+  // span is valid in both positions (browsers tolerate it as an <ol>
+  // child; it's aria-hidden presentation either way), so the
+  // component absorbs both compositions instead of failing one.
   const fromContext = React.useContext(BreadcrumbSeparatorContext)
   return (
-    <li
+    <span
       role="presentation"
       aria-hidden="true"
       className={cn(
-        "[&_svg]:size-3 [&_svg]:shrink-0 text-muted-foreground/60",
+        "inline-flex items-center [&_svg]:size-3 [&_svg]:shrink-0 text-muted-foreground/60",
         className
       )}
       {...props}
     >
       {children ?? fromContext}
-    </li>
+    </span>
   )
 }
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator"
