@@ -9,7 +9,9 @@
 export type {
   DesignSystemRegistry,
   RegistryComponents,
+  RegistryContractSpec,
   RegistryPackage,
+  RegistryPropSpec,
   RegistryPrompt,
   RegistrySelection,
 } from "./types";
