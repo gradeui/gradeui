@@ -22,6 +22,7 @@ import {
   Logo,
   Separator,
   Sidebar,
+  SidebarAccountDropdown,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -89,17 +90,32 @@ export default function PageSkeleton() {
               <NavGroup items={TOOL_ITEMS} />
             </SidebarContent>
             <SidebarFooter dataHook="sidebar-footer">
-              <div className="flex items-center gap-2 rounded-md p-2 text-sm">
-                <div className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium">
-                  HB
-                </div>
-                <div className="flex min-w-0 flex-col">
-                  <span className="truncate font-medium">Harry Brignull</span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    brightlocal@brig…
-                  </span>
-                </div>
-              </div>
+              {/* Account menu — the shipped SidebarAccountDropdown
+                  (name/email trigger + divider-grouped menu), mounted
+                  exactly as the DS's own story does. */}
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarAccountDropdown
+                    dataHook="sidebar-account-dropdown"
+                    name="Harry Brignull"
+                    email="brightlocal@brignull.com"
+                    avatar={
+                      <Avatar dataHook="sidebar-user-avatar">
+                        <AvatarFallback>HB</AvatarFallback>
+                      </Avatar>
+                    }
+                    menuGroups={[
+                      [
+                        { label: "Account settings" },
+                        { label: "Notification preferences" },
+                      ],
+                      [{ label: "Log out" }],
+                    ]}
+                    side="top"
+                    align="end"
+                  />
+                </SidebarMenuItem>
+              </SidebarMenu>
             </SidebarFooter>
           </Sidebar>
         </GlobalLayoutSidebar>
