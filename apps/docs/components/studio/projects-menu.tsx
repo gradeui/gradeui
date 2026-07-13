@@ -1,5 +1,7 @@
 "use client";
 
+import { useActiveRegistry } from "@/lib/use-active-registry";
+
 /**
  * ProjectsMenu — left-panel content when the canvas is in "All screens" mode.
  *
@@ -182,6 +184,9 @@ export function ProjectsMenu({
   onSelectStylesSection,
   onAddMotion,
 }: ProjectsMenuProps) {
+  // External-registry flag for the Design System sub-nav gating below.
+  const stylesIsExternal = useActiveRegistry().id !== "gradeui";
+
   // The settings sheet target — null when closed; project ref when
   // open. Tracking by Project (rather than id + a separate boolean)
   // lets us pop the sheet open from a different row without an
@@ -368,7 +373,18 @@ export function ProjectsMenu({
                   ["spacing", "Spacing"],
                   ["components", "Components"],
                   ["blocks", "Blocks"],
-                ] as const).map(([id, label]) => (
+                ] as const)
+                  // External DS: the theme-authoring sub-pages (General/
+                  // Colors/Typography/Spacing) are GRADEUI theme tooling —
+                  // an external system's tokens aren't editable here.
+                  // Components + Blocks are registry-fed and stay.
+                  .filter(
+                    ([id]) =>
+                      !stylesIsExternal ||
+                      id === "components" ||
+                      id === "blocks",
+                  )
+                  .map(([id, label]) => (
                   <SidebarItem
                     key={id}
                     asButton
