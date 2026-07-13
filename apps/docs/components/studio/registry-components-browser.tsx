@@ -49,10 +49,22 @@ function extractJsxBlocks(body: string | undefined): string[] {
   let m: RegExpExecArray | null;
   while ((m = re.exec(body)) !== null) {
     const code = m[1].trim();
+    if (!code) continue;
     // Harvest truncation artifacts are mid-expression cuts — they can
     // never compile (unterminated strings/JSX). Still in the sidecar
     // (the model reads prose fine), just not previewable.
-    if (code && !code.includes("…truncated")) out.push(code);
+    if (code.includes("…truncated")) continue;
+    // API demos: bare statement calls AFTER the JSX (sonner({...})
+    // toast triggers). Statements can't live in JSX children — the
+    // block documents an API, not a composition. Source-only.
+    const lines = code.split("\n");
+    const firstJsx = lines.findIndex((l) => /^</.test(l));
+    const afterJsx = firstJsx >= 0 ? lines.slice(firstJsx) : [];
+    const hasBareCall = afterJsx.some((l) =>
+      /^[a-z_$][\w$]*\s*\(/.test(l.trim()),
+    );
+    if (hasBareCall) continue;
+    out.push(code);
   }
   return out;
 }
