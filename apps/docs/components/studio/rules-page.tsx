@@ -339,7 +339,7 @@ export function RulesPage({
                   />
                   <Button
                     variant="ghost"
-                    size="icon"
+                    size="xs"
                     onClick={() => deleteFile(selectedProject.id)}
                     aria-label={`Delete ${selectedProject.name}`}
                     title="Delete file"
