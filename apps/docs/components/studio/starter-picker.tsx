@@ -61,6 +61,7 @@ import {
   Badge,
 } from "@gradeui/ui";
 import { cn } from "@/lib/utils";
+import { useActiveRegistry } from "@/lib/use-active-registry";
 
 /**
  * Rewrite every `id: "..."` (or `'...'`) literal in a scaffold's JSX
@@ -136,6 +137,16 @@ export function StarterPicker({
   onPick,
 }: StarterPickerProps) {
   const [tab, setTab] = useState<Tab>("layouts");
+
+  // Per-project registry: on an external project the gradeui reference
+  // layouts (and the Motion/Playground scaffolds — all gradeui JSX)
+  // don't apply. Offer the registry's SOURCE templates instead, same
+  // pick contract. Mirrors LayoutStartersPanel / EmptyPreview gating.
+  const registry = useActiveRegistry();
+  const external = registry.id !== "gradeui";
+  const registryTemplates = external
+    ? (registry.templates ?? []).filter((t) => t.source)
+    : [];
 
   const handlePickLayout = (layout: ReferenceLayout) => {
     onPick({
@@ -225,8 +236,9 @@ export function StarterPicker({
           />
           {/* Motion reels — scene-sequence starters ONLY (anything whose
               source renders <Motion>). Spawning one lands in Motion
-              Studio via the page's kind inference. */}
-          {MOTION_LIST.length > 0 && (
+              Studio via the page's kind inference. gradeui JSX, so
+              hidden on external projects. */}
+          {!external && MOTION_LIST.length > 0 && (
             <TabButton
               active={tab === "motion"}
               onClick={() => setTab("motion")}
@@ -240,13 +252,15 @@ export function StarterPicker({
               REFERENCE_LAYOUTS, not retrieved by the model. Surfaced
               here so we can spawn screens from screenshot-generated
               JSX without polluting the curated starter set. */}
-          <TabButton
-            active={tab === "playground"}
-            onClick={() => setTab("playground")}
-            icon={<FlaskConical className="h-3.5 w-3.5" />}
-            label="Playground"
-            badge={PLAYGROUND_LIST.length > 0 ? PLAYGROUND_LIST.length : undefined}
-          />
+          {!external && (
+            <TabButton
+              active={tab === "playground"}
+              onClick={() => setTab("playground")}
+              icon={<FlaskConical className="h-3.5 w-3.5" />}
+              label="Playground"
+              badge={PLAYGROUND_LIST.length > 0 ? PLAYGROUND_LIST.length : undefined}
+            />
+          )}
           <TabButton
             active={tab === "paste"}
             onClick={() => setTab("paste")}
@@ -255,9 +269,26 @@ export function StarterPicker({
           />
         </div>
 
-        {tab === "layouts" && <LayoutsGrid onPick={handlePickLayout} />}
-        {tab === "motion" && <MotionGrid onPick={handlePickPlayground} />}
-        {tab === "playground" && <PlaygroundGrid onPick={handlePickPlayground} />}
+        {tab === "layouts" &&
+          (external ? (
+            <RegistryTemplatesGrid
+              registryName={registry.shortName ?? registry.name}
+              templates={registryTemplates}
+              onPick={(t) => {
+                onPick({
+                  source: freshenScaffoldIds(t.source as string),
+                  name: t.label,
+                  origin: "layout",
+                  layoutId: t.id,
+                });
+                onOpenChange(false);
+              }}
+            />
+          ) : (
+            <LayoutsGrid onPick={handlePickLayout} />
+          ))}
+        {tab === "motion" && !external && <MotionGrid onPick={handlePickPlayground} />}
+        {tab === "playground" && !external && <PlaygroundGrid onPick={handlePickPlayground} />}
         {tab === "paste" && <PasteCodeForm onSubmit={handleSubmitPaste} />}
       </DialogContent>
     </Dialog>
@@ -303,6 +334,61 @@ function TabButton({
         </Badge>
       )}
     </button>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Registry templates grid — external projects only. The registry's
+// hand-authored SOURCE templates (scaffolds), no thumbnails yet.
+// ────────────────────────────────────────────────────────────────────
+
+function RegistryTemplatesGrid({
+  registryName,
+  templates,
+  onPick,
+}: {
+  registryName: string;
+  templates: { id: string; label: string; description?: string; source?: string }[];
+  onPick: (t: { id: string; label: string; source?: string }) => void;
+}) {
+  return (
+    <div className="px-6 py-5 min-h-0 flex-1 overflow-y-auto" data-lenis-prevent>
+      {templates.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No templates in the {registryName} registry yet. Add JSX files
+          under the registry&apos;s <code>templates/</code> directory and
+          re-run the template generator.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {templates.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onPick(t)}
+              className={cn(
+                "group flex flex-col rounded-lg border border-border bg-card",
+                "px-4 py-3.5 text-left",
+                "hover:border-primary/60 hover:shadow-sm transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+              )}
+            >
+              <div className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
+                {t.label}
+              </div>
+              {t.description && (
+                <p className="text-[11px] text-muted-foreground line-clamp-3 mt-0.5">
+                  {t.description}
+                </p>
+              )}
+              <span className="mt-2 text-[10px] text-muted-foreground/70">
+                {registryName} scaffold
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

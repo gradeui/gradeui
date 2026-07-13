@@ -3340,17 +3340,89 @@ function EmptyPreview({
   mode: "light" | "dark";
   onPickStarter?: (scaffold: string, layoutId: string) => void;
 }) {
-  const [category, setCategory] = useState<string>("all");
-
-  // Per-project registry: the reference-layout gallery below is
-  // gradeui JSX rendered as gradeui thumbnails — wrong DS on an
-  // external project. External registries get their SOURCE templates
-  // as simple pick cards instead.
+  // Per-project registry: the reference-layout gallery is gradeui JSX
+  // rendered as gradeui thumbnails — wrong DS on an external project.
+  // Branch to a CHILD component per registry kind: the registry can
+  // flip after mount (project override lands via useSyncExternalStore),
+  // and an inline early-return here skipped the gallery's hooks —
+  // "Rendered fewer hooks than expected". Children remount cleanly.
   const emptyPreviewRegistry = useActiveRegistry();
-  const externalTemplates =
-    emptyPreviewRegistry.id !== "gradeui"
-      ? (emptyPreviewRegistry.templates ?? []).filter((t) => t.source)
-      : null;
+  if (emptyPreviewRegistry.id !== "gradeui") {
+    return (
+      <ExternalTemplatesEmpty
+        registry={emptyPreviewRegistry}
+        onPickStarter={onPickStarter}
+      />
+    );
+  }
+  return (
+    <GradeuiStarterGallery
+      theme={theme}
+      mode={mode}
+      onPickStarter={onPickStarter}
+    />
+  );
+}
+
+function ExternalTemplatesEmpty({
+  registry,
+  onPickStarter,
+}: {
+  registry: ReturnType<typeof useActiveRegistry>;
+  onPickStarter?: (scaffold: string, layoutId: string) => void;
+}) {
+  const externalTemplates = (registry.templates ?? []).filter(
+    (t) => t.source,
+  );
+  return (
+    <div className="h-full overflow-y-auto" data-lenis-prevent>
+      <div className="mx-auto max-w-3xl px-6 py-10 md:px-10">
+        <div className="flex flex-col items-center text-center">
+          <GradeMark className="h-9 w-9 text-foreground mb-4" />
+          <h3 className="text-base font-semibold text-foreground mb-1">
+            Describe a UI on the left
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            …or seed this screen from one of {registry.name}&rsquo;s
+            templates.
+          </p>
+        </div>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          {externalTemplates.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onPickStarter?.(t.source as string, t.id)}
+              className="rounded-lg border border-border p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted"
+            >
+              <span className="block text-sm font-medium">{t.label}</span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                {t.description}
+              </span>
+            </button>
+          ))}
+          {externalTemplates.length === 0 && (
+            <p className="col-span-full text-center text-sm text-muted-foreground">
+              No templates yet — add one under
+              registries/{registry.id}/templates/.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GradeuiStarterGallery({
+  theme,
+  mode,
+  onPickStarter,
+}: {
+  theme: GeneratedTheme;
+  mode: "light" | "dark";
+  onPickStarter?: (scaffold: string, layoutId: string) => void;
+}) {
+  const [category, setCategory] = useState<string>("all");
 
   // Categorise once — REFERENCE_LAYOUTS is static.
   const categorised = useMemo(
@@ -3362,45 +3434,6 @@ function EmptyPreview({
     [],
   );
 
-  if (externalTemplates) {
-    return (
-      <div className="h-full overflow-y-auto" data-lenis-prevent>
-        <div className="mx-auto max-w-3xl px-6 py-10 md:px-10">
-          <div className="flex flex-col items-center text-center">
-            <GradeMark className="h-9 w-9 text-foreground mb-4" />
-            <h3 className="text-base font-semibold text-foreground mb-1">
-              Describe a UI on the left
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              …or seed this screen from one of{" "}
-              {emptyPreviewRegistry.name}&rsquo;s templates.
-            </p>
-          </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            {externalTemplates.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => onPickStarter?.(t.source as string, t.id)}
-                className="rounded-lg border border-border p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted"
-              >
-                <span className="block text-sm font-medium">{t.label}</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  {t.description}
-                </span>
-              </button>
-            ))}
-            {externalTemplates.length === 0 && (
-              <p className="col-span-full text-center text-sm text-muted-foreground">
-                No templates yet — add one under
-                registries/{emptyPreviewRegistry.id}/templates/.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
   // Only offer chips for categories that actually have layouts.
   const presentCategories = useMemo(
     () =>
