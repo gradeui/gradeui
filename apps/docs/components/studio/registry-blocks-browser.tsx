@@ -90,10 +90,21 @@ export default function BlockPreview() {
   return (
     <div style={{ padding: 24, boxSizing: "border-box" }}>
 ${
-  // Leading // header lines (recipe provenance/keywords) would render
-  // as literal text in JSX children — strip them from the PREVIEW
-  // build only; the code view shows the full source.
-  source.replace(/^(?:\/\/[^\n]*\n)+/, "")
+  // PREVIEW-only source transforms; the code view shows the raw source.
+  // 1. Leading // header lines (recipe provenance/keywords) would
+  //    render as literal text in JSX children — strip them.
+  // 2. {/* slot */} JSX comments are how recipes mark fill-me regions
+  //    ("form fields", "marketing content") — invisible in a render,
+  //    which reads as broken. Show them as dashed slot placeholders.
+  source
+    .replace(/^(?:\/\/[^\n]*\n)+/, "")
+    .replace(
+      /\{\/\*\s*([^*]*?)\s*\*\/\}/g,
+      (_m, label: string) =>
+        '<div style={{ padding: 12, border: "1px dashed #94a3b8", borderRadius: 8, color: "#64748b", fontSize: 12, textAlign: "center" }}>' +
+        JSON.stringify(String(label)).replace(/^"|"$/g, "") +
+        "</div>",
+    )
 }
     </div>
   );
@@ -291,7 +302,7 @@ function BlockDetail({
             block={block}
             registry={registry}
             dsNames={dsNames}
-            className="h-[480px] rounded-md border border-border"
+            className="h-[70vh] min-h-[480px] rounded-md border border-border"
           />
           <section className="flex flex-col gap-1.5">
             <h4 className="text-sm font-medium">Source</h4>
@@ -322,7 +333,31 @@ export function RegistryBlocksBrowser() {
     [registry],
   );
   const [query, setQuery] = React.useState("");
-  const [selected, setSelected] = React.useState<string | null>(null);
+  // Selection lives in the URL (?block=<id>) so the browser back stack
+  // works while drilling in and out of block details. Open pushes a
+  // history entry; Back (button or browser) pops it; popstate re-syncs.
+  const readBlockParam = () =>
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("block");
+  const [selected, setSelected] = React.useState<string | null>(readBlockParam);
+  const openBlock = React.useCallback((id: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("block", id);
+    window.history.pushState(null, "", url);
+    setSelected(id);
+  }, []);
+  const closeBlock = React.useCallback(() => {
+    // Prefer popping the entry we pushed so Back/Forward stay coherent;
+    // popstate below does the state sync.
+    if (readBlockParam()) window.history.back();
+    else setSelected(null);
+  }, []);
+  React.useEffect(() => {
+    const onPop = () => setSelected(readBlockParam());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   React.useEffect(() => {
     setSelected(null);
   }, [registry.id]);
@@ -355,7 +390,7 @@ export function RegistryBlocksBrowser() {
         block={selectedBlock}
         registry={registry}
         dsNames={dsNames}
-        onBack={() => setSelected(null)}
+        onBack={closeBlock}
       />
     );
   }
@@ -410,7 +445,7 @@ export function RegistryBlocksBrowser() {
                     block={b}
                     registry={registry}
                     dsNames={dsNames}
-                    onOpen={() => setSelected(b.id)}
+                    onOpen={() => openBlock(b.id)}
                   />
                 ))}
               </div>
