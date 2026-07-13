@@ -14,7 +14,7 @@ export const BreadcrumbContract = contract({
   aliases: ["breadcrumb","breadcrumbs","crumbs","path","page hierarchy","path bar","navigation trail","finder path"],
   subcomponents: ["BreadcrumbList","BreadcrumbItem","BreadcrumbLink","BreadcrumbPage","BreadcrumbSeparator","BreadcrumbEllipsis"],
   composesWith: ["AppShellMain","Card (in CardHeader)","Dialog"],
-  styleDefaults: {"BreadcrumbList":"flex flex-wrap items-center gap-1.5 break-words text-xs text-muted-foreground","BreadcrumbItem":"inline-flex items-center gap-1.5","BreadcrumbPage":"inline-flex items-center gap-1.5 px-0.5 text-xs font-medium text-foreground","BreadcrumbSeparator":"[&_svg]:size-3 [&_svg]:shrink-0 text-muted-foreground/60","BreadcrumbEllipsis":"flex h-5 w-5 items-center justify-center","BreadcrumbMenuTrigger":"h-3 w-3 text-muted-foreground transition-transform"},
+  styleDefaults: {"BreadcrumbList":"flex flex-wrap items-center gap-1.5 break-words text-xs text-muted-foreground","BreadcrumbItem":"inline-flex items-center gap-1.5","BreadcrumbPage":"inline-flex items-center gap-1.5 px-0.5 text-xs font-medium text-foreground","BreadcrumbSeparator":"inline-flex items-center [&_svg]:size-3 [&_svg]:shrink-0 text-muted-foreground/60","BreadcrumbEllipsis":"flex h-5 w-5 items-center justify-center","BreadcrumbMenuTrigger":"h-3 w-3 text-muted-foreground transition-transform"},
   props: {
   "aria-label": {
       schema: z.unknown().optional(),

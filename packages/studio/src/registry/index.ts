@@ -14,6 +14,7 @@ export type {
   RegistryPackage,
   RegistryPropSpec,
   RegistryPrompt,
+  RegistryRuleFile,
   RegistrySelection,
   RegistryTemplate,
 } from "./types";

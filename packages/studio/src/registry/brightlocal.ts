@@ -25,7 +25,10 @@ import { BRIGHTLOCAL_SIDECARS } from "./brightlocal/sidecars.generated";
 import { BRIGHTLOCAL_CONTRACTS } from "./brightlocal/contracts.generated";
 import { BRIGHTLOCAL_BLOCKS } from "./brightlocal/blocks.generated";
 import { BRIGHTLOCAL_RECIPES } from "./brightlocal/recipes.generated";
-import { BRIGHTLOCAL_RULES } from "./brightlocal/rules.generated";
+import {
+  BRIGHTLOCAL_RULES,
+  BRIGHTLOCAL_RULES_FILES,
+} from "./brightlocal/rules.generated";
 import { BRIGHTLOCAL_TEMPLATES } from "./brightlocal/templates.generated";
 import { BRIGHTLOCAL_PREVIEW_CSS } from "./brightlocal/preview-css.generated";
 import { BRIGHTLOCAL_PREVIEW_THEME_FULL } from "./brightlocal/preview-theme.generated";
@@ -91,6 +94,9 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
   },
   prompt: {
     extraRules: BRIGHTLOCAL_RULES,
+    // Per-file split of the same rules — drives the Rules screen's
+    // registry section + per-project file toggles.
+    ruleFiles: BRIGHTLOCAL_RULES_FILES,
   },
   // Their composed patterns, two provenances, one browsable surface:
   //   - blocks: harvested from the hidden blocks-* Storybook section

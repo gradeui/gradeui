@@ -37,9 +37,9 @@ import { useActiveRegistry } from "@/lib/use-active-registry";
 
 import * as React from "react";
 import {
+  BookOpen,
   Check,
   ChevronsUpDown,
-  Clapperboard,
   Folder,
   Images,
   Monitor,
@@ -76,6 +76,7 @@ export type ProjectSection =
   | "flows"
   | "motions"
   | "styles"
+  | "rules"
   | "assets";
 
 /** Sub-sections of the Design System ("styles") section — shown as
@@ -182,7 +183,7 @@ export function ProjectsMenu({
   onSelectSection,
   activeStylesSection = "general",
   onSelectStylesSection,
-  onAddMotion,
+  onAddMotion: _onAddMotion,
 }: ProjectsMenuProps) {
   // External-registry flag for the Design System sub-nav gating below.
   const stylesIsExternal = useActiveRegistry().id !== "gradeui";
@@ -233,7 +234,6 @@ export function ProjectsMenu({
   const screenCount = allDesigns.filter(
     (d) => (d.kind ?? "screen") === "screen",
   ).length;
-  const motionCount = allDesigns.filter((d) => d.kind === "motion").length;
 
   const projectRow = (project: Project) => (
     <DropdownMenuItem
@@ -322,35 +322,9 @@ export function ProjectsMenu({
                 </span>
               </span>
             </SidebarItem>
-            <div className="group/motions relative">
-              <SidebarItem
-                asButton
-                active={activeSection === "motions"}
-                icon={<Clapperboard />}
-                onClick={() => onSelectSection?.("motions")}
-              >
-                <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                  <span className="truncate">Motion Studio</span>
-                  <span className="pr-5 text-[10px] tabular-nums text-muted-foreground">
-                    {motionCount}
-                  </span>
-                </span>
-              </SidebarItem>
-              {onAddMotion && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddMotion();
-                  }}
-                  aria-label="New motion"
-                  title="New motion"
-                  className="absolute right-1 top-1/2 h-5 w-5 -translate-y-1/2 inline-flex items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover/motions:opacity-100 [&_svg]:size-3"
-                >
-                  <Plus />
-                </button>
-              )}
-            </div>
+            {/* Motion Studio row removed from the nav (July 2026 — "not
+                going to happen any time soon"). The "motions" section id
+                and props stay for storage/URL back-compat. */}
             <SidebarItem
               asButton
               active={activeSection === "styles"}
@@ -397,6 +371,16 @@ export function ProjectsMenu({
                 ))}
               </>
             )}
+            {/* Rules — the project's prompt-riding .md files (registry
+                house rules + project files), full-screen canvas page. */}
+            <SidebarItem
+              asButton
+              active={activeSection === "rules"}
+              icon={<BookOpen />}
+              onClick={() => onSelectSection?.("rules")}
+            >
+              Rules
+            </SidebarItem>
             {/* Assets — a full-screen CANVAS page, not a panel tail. */}
             <SidebarItem
               asButton

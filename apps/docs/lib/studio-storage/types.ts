@@ -136,6 +136,17 @@ export interface ProjectRulesFile {
   /** Display name, .md by convention ("copy-tone.md", "nav-rules.md"). */
   name: string;
   content: string;
+  /** Ride into the prompt? Undefined = true (back-compat with rows
+   *  written before the toggle existed). Toggled per-file in the Rules
+   *  screen — off keeps the file but stops injecting it. */
+  enabled?: boolean;
+  /** "project" (default) = a user-authored file whose content is
+   *  injected. "registry" = a TOGGLE RECORD for one of the registry's
+   *  built-in rules files (id = "registry:<fileId>", content unused):
+   *  its presence with enabled:false switches that registry file OFF
+   *  for this project. Absence = registry file rides as normal. Stored
+   *  in the same jsonb column — no migration needed. */
+  kind?: "project" | "registry";
 }
 
 // Re-exports of related entity types — keeps `@/lib/studio-storage`

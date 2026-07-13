@@ -16,7 +16,6 @@ import * as React from "react";
 import { Users, FileText, Activity, UserPlus, Clock } from "lucide-react";
 import { getStudioStorage } from "@/lib/studio-storage";
 import type { StudioEvent } from "@/lib/studio-storage";
-import { ThemeDropdown } from "@/components/studio/studio-right-tabs";
 
 interface ProjectHomeProps {
   projectId: string;
@@ -105,8 +104,6 @@ export function ProjectHome({
   projectName,
   createdAt,
   screens,
-  activeScreenId,
-  onSelectScreen,
   onInvite,
   memberCount,
   currentUserId,
@@ -156,14 +153,9 @@ export function ProjectHome({
         {projectName}
       </h2>
 
-      {/* Project theme — the same compact dropdown the focused view
-          shows above its tabs, so the theme is pickable from the
-          homepage without drilling into a screen. Renders nothing if
-          the page-level providers aren't in scope. */}
-      <div className="mt-2">
-        <ThemeDropdown />
-      </div>
-
+      {/* Theme dropdown removed (July 2026): the project home is
+          overview + people + activity — theme lives in the Design
+          System section, and screens live in the middle grid. */}
       <SectionTitle>Overview</SectionTitle>
       <div className="rounded-lg border border-border/60 px-3 py-1.5">
         {createdAt && (
@@ -198,25 +190,9 @@ export function ProjectHome({
         Owner{memberCount > 0 ? ` + ${memberCount} invited` : ""}.
       </p>
 
-      <SectionTitle>Screens</SectionTitle>
-      <div className="flex flex-col gap-0.5">
-        {screens.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => onSelectScreen(s.id)}
-            className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition hover:bg-muted [&_svg]:size-3.5 ${
-              s.id === activeScreenId
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <FileText />
-            <span className="min-w-0 flex-1 truncate">{s.name}</span>
-          </button>
-        ))}
-      </div>
-
+      {/* Screens list removed (July 2026): duplicated the middle grid —
+          the canvas is the screens surface. `screens` stays a prop for
+          the activity trail's name resolution. */}
       <SectionTitle>
         <span className="inline-flex items-center gap-1">
           <Activity className="size-3.5" />

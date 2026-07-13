@@ -34,6 +34,12 @@ import { registryShortName, type DesignSystemRegistry } from "../../registry/typ
  */
 export function buildSystemPrompt(
   registry: DesignSystemRegistry = GRADE_REGISTRY,
+  opts?: {
+    /** Registry rules-file ids a project has toggled OFF (Rules screen).
+     *  Only honoured when the registry supplies `prompt.ruleFiles`;
+     *  otherwise the concatenated `extraRules` rides whole. */
+    disabledRuleIds?: readonly string[];
+  },
 ): string {
   const list = registry.components.allowed.join(", ");
   const pkg = registry.package.name;
@@ -47,9 +53,18 @@ export function buildSystemPrompt(
   const has = (name: string) => registry.components.allowed.includes(name);
   // House rules supplied by the registry (a DS's AI_USAGE.md distilled) —
   // appended as a trailing stanza. Absent on GRADE_REGISTRY → zero diff.
-  const extraRules = registry.prompt?.extraRules
-    ? `\n\n${registry.prompt.extraRules}`
-    : "";
+  // When the registry exposes per-file rules, honour the project's
+  // per-file toggles; else fall back to the concatenated string.
+  const disabled = new Set(opts?.disabledRuleIds ?? []);
+  const ruleFiles = registry.prompt?.ruleFiles;
+  const rulesBody = ruleFiles?.length
+    ? ruleFiles
+        .filter((f) => !disabled.has(f.id))
+        .map((f) => f.content.trim())
+        .filter(Boolean)
+        .join("\n\n")
+    : registry.prompt?.extraRules ?? "";
+  const extraRules = rulesBody ? `\n\n${rulesBody}` : "";
   return `You are an assistant that designs UIs using the ${dsName}.
 
 OUTPUT RULES — follow these exactly:

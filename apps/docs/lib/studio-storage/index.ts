@@ -32,6 +32,7 @@ export type {
   OrgMembership,
   Organisation,
   Project,
+  ProjectRulesFile,
   ProjectSnapshot,
   ScreenRevision,
   ShareLink,

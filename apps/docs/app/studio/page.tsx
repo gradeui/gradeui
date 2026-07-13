@@ -138,6 +138,7 @@ import {
   type OrgMembership,
   type Organisation,
   type Project,
+  type ProjectRulesFile,
   type ProjectSnapshot,
   type ShareViewport,
   type ShareViewportSpec,
@@ -152,6 +153,7 @@ import {
   type StylesSection,
 } from "@/components/studio/projects-menu";
 import { AssetBrowser } from "@/components/studio/asset-browser";
+import { RulesPage } from "@/components/studio/rules-page";
 import { GradeLoader } from "@/components/ui/grade-loader";
 import { ProjectHome } from "@/components/studio/project-home";
 import { NewProjectDialog } from "@/components/studio/new-project-dialog";
@@ -301,6 +303,17 @@ export default function StudioPage() {
   // meaningful while projectSection === "styles"; drives the sidebar sub-rows
   // and the project-level Design System page.
   const [stylesSection, setStylesSection] = useState<StylesSection>("general");
+  // External DS: the theme-authoring sub-pages (General/Colors/Typography/
+  // Spacing) are GRADEUI tooling — the sub-nav already hides them, but the
+  // persisted localStorage value can still be one of them (saved while on
+  // a gradeui project). Clamp so an external project never renders the
+  // gradeui theme page as its Design System landing.
+  const stylesSectionEffective: StylesSection =
+    activeRegistry.id !== "gradeui" &&
+    stylesSection !== "components" &&
+    stylesSection !== "blocks"
+      ? "components"
+      : stylesSection;
   // Persist the Design System sub-section across reloads (localStorage,
   // grade-* namespace). SSR-safe: default "general", hydrate in an effect to
   // avoid a hydration mismatch (see "localStorage in useState init" note).
@@ -479,18 +492,30 @@ export default function StudioPage() {
   const projectSystemPrompt = useMemo(() => {
     const proj = projects.find((p) => p.id === activeProjectId);
     if (!proj) return systemPrompt;
+    const files = proj.rulesFiles ?? [];
+    // Registry-toggle records (kind: "registry", enabled: false) switch
+    // OFF individual registry rules files for this project — rebuild the
+    // base prompt without them. No toggles = the shared memo as-is.
+    const disabledRuleIds = files
+      .filter((f) => f.kind === "registry" && f.enabled === false)
+      .map((f) => f.id.replace(/^registry:/, ""));
+    const base = disabledRuleIds.length
+      ? buildSystemPrompt(activeRegistry, { disabledRuleIds })
+      : systemPrompt;
     const chunks: string[] = [];
     if (proj.context?.trim()) chunks.push(`PROJECT BRIEF:\n${proj.context.trim()}`);
     if (proj.dos?.length)
       chunks.push(`PROJECT RULES — ALWAYS:\n${proj.dos.map((d) => `- ${d}`).join("\n")}`);
     if (proj.donts?.length)
       chunks.push(`PROJECT RULES — NEVER:\n${proj.donts.map((d) => `- ${d}`).join("\n")}`);
-    for (const f of proj.rulesFiles ?? []) {
+    for (const f of files) {
+      // Registry records carry no content; disabled files stay home.
+      if (f.kind === "registry" || f.enabled === false) continue;
       if (f.content.trim())
         chunks.push(`PROJECT RULES (${f.name}):\n${f.content.trim()}`);
     }
-    return chunks.length ? `${systemPrompt}\n\n${chunks.join("\n\n")}` : systemPrompt;
-  }, [systemPrompt, projects, activeProjectId]);
+    return chunks.length ? `${base}\n\n${chunks.join("\n\n")}` : base;
+  }, [systemPrompt, activeRegistry, projects, activeProjectId]);
 
   // Author id for comments/threads. In cloud mode this MUST be the
   // signed-in Supabase user id — `created_by` / `author_id` /
@@ -926,6 +951,7 @@ export default function StudioPage() {
       if (
         urlSection === "motions" ||
         urlSection === "styles" ||
+        urlSection === "rules" ||
         urlSection === "assets"
       ) {
         setProjectSection(urlSection);
@@ -1488,7 +1514,7 @@ export default function StudioPage() {
         dos?: string[];
         donts?: string[];
         registryId?: string;
-        rulesFiles?: { id: string; name: string; content: string }[];
+        rulesFiles?: ProjectRulesFile[];
       },
     ) => {
       await storage.updateProject(id, patch);
@@ -2493,7 +2519,7 @@ export default function StudioPage() {
       onDeleteProject={handleDeleteProject}
       activeSection={projectSection}
       onSelectSection={handleSelectSection}
-      activeStylesSection={stylesSection}
+      activeStylesSection={stylesSectionEffective}
       onSelectStylesSection={setStylesSection}
       onAddMotion={handleAddMotion}
     />
@@ -3086,6 +3112,30 @@ export default function StudioPage() {
                   </div>
                 </div>
               )}
+              {/* Rules page — the project's prompt-riding .md files:
+                  registry house rules (toggleable) + project files (full
+                  CRUD). Takes over the canvas like Assets. */}
+              {projectSection === "rules" && zoom === "all" && (
+                <div className="absolute inset-0 z-10 overflow-y-auto bg-muted/20 p-8">
+                  {(() => {
+                    const proj = projects.find(
+                      (p) => p.id === activeProjectId,
+                    );
+                    return proj ? (
+                      <RulesPage
+                        project={proj}
+                        registryRuleFiles={
+                          activeRegistry.prompt?.ruleFiles ?? []
+                        }
+                        registryName={activeRegistry.name}
+                        onUpdateRulesFiles={(id, rulesFiles) =>
+                          handleUpdateProject(id, { rulesFiles })
+                        }
+                      />
+                    ) : null;
+                  })()}
+                </div>
+              )}
               {/* Design System page — the project's theme (colours, type,
                   shape, saved variants), one level up from any screen. Takes
                   over the canvas like Assets; the canvas stays mounted below
@@ -3098,14 +3148,15 @@ export default function StudioPage() {
                       Design System
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      The theme for this project — colours, type, shape, and
-                      saved variants. Applies to every screen.
+                      {activeRegistry.id === "gradeui"
+                        ? "The theme for this project — colours, type, shape, and saved variants. Applies to every screen."
+                        : `${activeRegistry.name} — the components and patterns the agent builds with on this project.`}
                     </p>
                   </div>
                   <div className="min-h-0 flex-1">
                     <div className="mx-auto h-full max-w-3xl">
                       <StylesTabContent
-                        section={stylesSection}
+                        section={stylesSectionEffective}
                         variants={projectThemeVariants}
                         onVariantsChange={handleThemeVariantsChange}
                       />
@@ -3116,7 +3167,9 @@ export default function StudioPage() {
               <div
                 className={cn(
                   "h-full",
-                  (projectSection === "assets" || projectSection === "styles") &&
+                  (projectSection === "assets" ||
+                    projectSection === "styles" ||
+                    projectSection === "rules") &&
                     zoom === "all" &&
                     "invisible",
                 )}

@@ -71,6 +71,7 @@ import type {
   AssetOrigin,
   AssetType,
   Project,
+  ProjectRulesFile,
   ProjectSnapshot,
   ScreenRevision,
   ShareLink,
@@ -239,7 +240,7 @@ interface ProjectRow {
   dos: string[] | null;
   donts: string[] | null;
   registry_id: string | null;
-  rules_files: { id: string; name: string; content: string }[] | null;
+  rules_files: ProjectRulesFile[] | null;
   owner_type: "user" | "team";
   owner_id: string;
   active_design_id: string | null;
