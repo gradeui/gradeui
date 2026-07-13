@@ -26,7 +26,7 @@ import { BRIGHTLOCAL_CONTRACTS } from "./brightlocal/contracts.generated";
 import { BRIGHTLOCAL_BLOCKS } from "./brightlocal/blocks.generated";
 import { BRIGHTLOCAL_TEMPLATES } from "./brightlocal/templates.generated";
 import { BRIGHTLOCAL_PREVIEW_CSS } from "./brightlocal/preview-css.generated";
-import { BRIGHTLOCAL_PREVIEW_THEME } from "./brightlocal/preview-theme.generated";
+import { BRIGHTLOCAL_PREVIEW_THEME_FULL } from "./brightlocal/preview-theme.generated";
 
 /** AI_USAGE.md distilled — everything except the import rule (see note
  *  above) and anything the sidecars already express per component. */
@@ -117,6 +117,10 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
       "@brightlocal/icons": "2.3.1",
     },
     previewCss: BRIGHTLOCAL_PREVIEW_CSS,
-    previewThemeCss: BRIGHTLOCAL_PREVIEW_THEME,
+    // FULL preset extraction: the @theme block PLUS the preset's
+    // @utility sections — px-section-md etc. are how Card gets its
+    // padding; @theme alone rendered every component flush (the "cards
+    // have no padding" bug).
+    previewThemeCss: BRIGHTLOCAL_PREVIEW_THEME_FULL,
   },
 };

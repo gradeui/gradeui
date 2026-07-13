@@ -22,6 +22,7 @@
 import * as React from "react";
 
 import { REFERENCE_LAYOUTS } from "@gradeui/studio/playbook";
+import { useActiveRegistry } from "@/lib/use-active-registry";
 import { cn } from "@/lib/utils";
 
 export interface LayoutStartersPanelProps {
@@ -35,6 +36,22 @@ export function LayoutStartersPanel({
   className,
   onPick,
 }: LayoutStartersPanelProps) {
+  // Per-project registry: REFERENCE_LAYOUTS are gradeui JSX — on an
+  // external project, offer the registry's SOURCE templates instead
+  // (same pick contract: scaffold JSX → appSource).
+  const registry = useActiveRegistry();
+  const external = registry.id !== "gradeui";
+  const starters = external
+    ? (registry.templates ?? [])
+        .filter((t) => t.source)
+        .map((t) => ({
+          id: t.id,
+          label: t.label,
+          description: t.description,
+          scaffold: t.source as string,
+          tags: [] as string[],
+        }))
+    : REFERENCE_LAYOUTS;
   return (
     <div
       className={cn(
@@ -56,7 +73,7 @@ export function LayoutStartersPanel({
         <p className="px-1 pb-1 text-[11px] text-muted-foreground/70">
           Pick a starter to seed this screen.
         </p>
-        {REFERENCE_LAYOUTS.map((layout) => (
+        {starters.map((layout) => (
           <button
             key={layout.id}
             type="button"

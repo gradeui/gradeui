@@ -131,6 +131,24 @@ export default function ExternalSandboxPage() {
       return { react, jsx, jsxDev, reactDom, reactDomClient, sucrase, ds, lucide, motion, recharts, confetti, icons };
     }
 
+    /** esm.sh fetches flake under parallel load (grid mounts a dozen
+     *  iframes) — "Failed to fetch dynamically imported module" killed
+     *  tiles permanently because the boot was one-shot. Retry with
+     *  backoff; successes are HTTP-cached so retries are cheap. */
+    async function loadModulesWithRetry() {
+      let lastErr: unknown;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          return await loadModules();
+        } catch (e) {
+          lastErr = e;
+          setStatus(`design system fetch failed — retrying (${attempt + 1}/3)…`);
+          await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+        }
+      }
+      throw lastErr;
+    }
+
     /** Wrap a namespace so accessing a MISSING export throws a named
      *  error ("X has no export Y") instead of handing React `undefined`
      *  and dying with minified error #130 that names nothing. */
@@ -365,7 +383,7 @@ export default function ExternalSandboxPage() {
     document.head.appendChild(twScript);
 
     setStatus("loading design system…");
-    void loadModules().then((m) => {
+    void loadModulesWithRetry().then((m) => {
       if (disposed) return;
       modules = m as never;
       setStatus("ready — waiting for source");
