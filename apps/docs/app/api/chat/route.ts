@@ -439,7 +439,11 @@ export async function POST(req: Request) {
     // frontmatter contributed to THIS request — stamped onto the response
     // metadata below so the chat UI can show "3 refs loaded: Button,
     // Dialog, Input", making the token-vs-quality trade-off visible.
-    const { system: finalSystem, refs: relevant } = createScreenContext(
+    const {
+      system: finalSystem,
+      refs: relevant,
+      recipes: recipeNames,
+    } = createScreenContext(
       textFromMessages(messages),
       {
         basePrompt: systemPrompt,
@@ -569,7 +573,12 @@ export async function POST(req: Request) {
             // Empty array when `includeComponentRefs` is off or when no
             // refs matched — the client shows a "no refs" state in that
             // case, which is what makes the toggle's effect legible.
-            refs: relevant,
+            // Retrieved recipes ride the same list, suffixed "(recipe)",
+            // so the transparency chip shows pattern retrieval too.
+            refs: [
+              ...relevant,
+              ...recipeNames.map((n) => `${n} (recipe)`),
+            ],
             refsIncluded: includeComponentRefs,
           };
         }

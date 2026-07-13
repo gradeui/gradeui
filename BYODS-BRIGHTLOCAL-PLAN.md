@@ -1,179 +1,164 @@
-# BYODS Pilot — BrightLocal. Session-5 handoff (end of July 13, session #4)
+# BYODS Pilot — BrightLocal. Session-6 handoff (end of July 14, session #5)
 
-Paste into a fresh session. Read `CLAUDE.md` first. Ali is in **prep day**
-for a live BrightLocal engagement — Studio must be fully productive against
+Paste into a fresh session. Read `CLAUDE.md` first. Ali is mid-engagement
+with BrightLocal — Studio is productive against
 `@brightlocal/ui-components` as a Level-3 external DS. Standing rules:
-**parity, not reinvention** (shared agents/kernels with parameterised
-seams — never re-rolled variants); *"crack on — don't stop, we are
-working"*; curating vocabulary/templates/rules IS the design work.
+**parity, not reinvention**; *"crack on — don't stop, we are working"*;
+curating vocabulary/templates/rules IS the design work.
 
 ## ⚠️ Do first
 
-1. **Studio "Loading…" hang — diagnosed, needs Ali's SQL.** The projects
-   SELECT now includes `rules_files`; his cloud Supabase lacks the column
-   → raw PostgrestError (`[object Object]` overlay) → full-page Loading.
-   Ali was given the one-liner (migration `0021_project_rules_files.sql`:
-   `alter table public.projects add column if not exists rules_files
-   jsonb;`). Confirm he ran it, reload, Studio returns. Lesson (twice
-   now): missing column == silent Loading; consider surfacing adapter
-   errors instead of throwing raw (P-series persistence rule: "surface
-   every write error, never swallow it" — reads too).
-2. **Verify the rules harness end-to-end**: distinctive sentence in the
-   project's Context field (settings sheet) → send a chat message →
-   devtools: `/api/chat` request body's `systemPrompt` should end with
-   `PROJECT BRIEF: …`. Wiring: `projectSystemPrompt` memo in
-   `app/studio/page.tsx` (after the `setActiveProjectRegistry` effect),
-   consumer at `systemPrompt={projectSystemPrompt}`.
-3. **Uncommitted file**: `apps/docs/components/studio/projects-menu.tsx`
-   — Design System sub-nav gating for external registries (only
-   Components + Blocks; General/Colors/Typography/Spacing are gradeui
-   theme tooling = Ali's "we don't need the theme selector on external
-   DS"). One bug already fixed in it (missing `useActiveRegistry` import
-   — a conditional python patch silently no-opped). Verify once Studio
-   loads, then commit.
-4. Ali-side, still pending: `pnpm -F @gradeui/ui build` (Breadcrumb
-   `<li>`→`<span>` fix; the li-in-li hydration noise in every console
-   dump persists until the dist rebuilds).
+1. **Commit the tree.** Session 5 shipped ~25 files, ALL verified live on
+   localhost, ALL uncommitted (the Cowork sandbox lost its shell mount to
+   the repo mid-session — file edits worked, git didn't). Everything from
+   "What session 5 shipped" below is in the working tree. Suggested split:
+   rules-screen commit, recipes-retrieval commit, UI-cleanup commit,
+   docs/handoff commit.
+2. **Verify Ali's generator runs** — he ran
+   `generate-registry-templates.mjs` (citations-hub confirmed in
+   templates.generated.ts). `generate-registry-rules.mjs` is OPTIONAL:
+   rules.generated.ts was hand-synced to match its output (template
+   literals instead of JSON strings; same content + the new
+   `BRIGHTLOCAL_RULES_FILES` per-file export). Re-running it just
+   normalises the format — safe either way.
+3. **Quiglet is deliberate.** The Brightlocal-DS project's Context field
+   says "The brand mascot is a purple axolotl named Quiglet" and Screen 3
+   renders a Quiglet banner + stats row. It started as a rules-harness
+   sentinel; Ali kept it as the works-end-to-end demo. Don't clean it up
+   without asking.
 
 ## State of the tree
 
-`main`, 16 commits ahead of origin. Session-4 commits `5f99e6c`…`a3fbe9a`
-(git log tells the story; every message is written as documentation).
-One uncommitted file (above).
+`main`, 16 commits ahead of origin + the uncommitted session-5 work.
+Session-4 commits `5f99e6c`…`99aef53`.
 
-## What session 4 shipped (verified live unless noted)
+## What session 5 shipped (all verified live, all uncommitted)
 
-- **`5f99e6c` padding fix** — BL ships spacing as `@utility` blocks
-  (`px-section-md`…) in tailwind-preset.css; preview theme had only
-  `@theme`. Full preset now in `preview-theme.generated.ts`
-  (`BRIGHTLOCAL_PREVIEW_THEME_FULL`). Also: esm.sh module-load retry
-  (fixed the all-screens grid breakage), starter surfaces registry-gated.
-- **`72b9a3f` + `6c8b258` Page Skeleton template** — 2nd BL scaffold
-  (`registries/brightlocal/templates/page-skeleton.jsx`), authored from
-  the LIVE dashboard screenshot, rebuilt on their compounds after Ali
-  caught hand-rolled nav: `SidebarProvider > GlobalLayout >
-  GlobalLayoutSidebar > Sidebar(Header/Content/Footer)` + `SidebarMenu`,
-  footer = `SidebarAccountDropdown` (their story's exact mount). Props
-  audited against dist `.d.ts` from unpkg (better type source than their
-  MCP). "Start a new screen" dialog now registry-aware (BL scaffolds
-  only; Motion/Playground hidden). Fixed a real hooks crash in
-  EmptyPreview (early return above useMemo + post-mount registry flip =
-  "Rendered fewer hooks" — split into child components).
-- **`c71e124` standalone preview** — "Open preview in new tab" resolves
-  per registry at click time: external → `/external-sandbox?registry=
-  <id>#screen=<key>`; sandbox gained fast-sandbox's localStorage
-  handshake (hash key, `{source,name}`, storage-event live updates, tab
-  title). Share `/s/` = latest SAVED state (force-dynamic; pinned
-  revision overrides).
-- **BrightLocal DS MCP** (`https://brightlocal-design-system-mcp.
-  vercel.app/api/mcp`, also added to Ali's Cowork):
-  - **`ddf27fc` sidecar props typed (#13 ~done)** — v1 harvester wrote
-    the props payload's KEYS ("primary?"); rewritten as frontmatter-
-    props updater (`harvest-brightlocal-mcp.mjs`): 66/68 sidecars typed
-    from `props.primary` + `extractedVariants` (cva enum values),
-    deprecations flagged, sub-component props annotated → contracts
-    regenerated → real enum/boolean knobs in the settings panel.
-    Remaining TODO(review): map.md + sonner.md only (no typed props
-    server-side).
-  - **`fd17d5a` 29 composition recipes harvested** — page-level patterns
-    (PageHeader, StatsGrid, LoginPage, SettingsPage, DataTablePage…)
-    that exist NOWHERE in their Storybook (149 titles checked, zero
-    matches — an agent-only pattern library; headline client finding).
-    Hand-editable: `registries/brightlocal/recipes/*.jsx` (header
-    `// Name — description` / `// keywords:` / `// components:`);
-    `generate-registry-recipes.mjs` → Record spread into `blocks` as
-    group "Recipes".
-- **Blocks browser hardening** (`ec83864`, `adce394`, `02a9d2f`) —
-  recipe `{/* slot */}` comments render as dashed placeholders
-  (preview-only; 8/29 recipes ship placeholder slots); detail preview
-  70vh; selection in URL (`?block=<id>`) so browser Back works; grid
-  restores scroll on Back; module-shaped recipe sources handled
-  (imports stripped multi-line-aware, prelude/first-JSX-tree split
-  brace-depth-aware, defined components instantiated, trailing snippets
-  preview-dropped); unknown tags resolve against `@brightlocal/icons`
-  at runtime (`__icons.X ?? stub` — named imports of missing exports
-  kill the module at link time); recipes carry VM-audited `freeIds`
-  with name-aware shims (use*→()=>({}) / set*|handle*→noop / else []).
-  All 29 mechanically audited; ~26 render fully; Map ones need a live
-  Maps API key (badged, inherent).
-- **`a3fbe9a` rules harness** (the "can I add rules / .md files?"
-  answer):
-  - Registry level: `registries/<id>/rules/*.md` → `generate-registry-
-    rules.mjs` → `rules.generated.ts` → `prompt.extraRules`. BL's
-    AI_USAGE distillation moved to `rules/00-house-rules.md`.
-  - Project level: NEW `Project.rulesFiles` ({id,name,content}[]; types
-    + both adapters + migration 0021) and — important — the pre-existing
-    `context`/`dos`/`donts` were saved by the settings sheet but NEVER
-    injected; now appended after the registry prompt as PROJECT BRIEF /
-    ALWAYS / NEVER / PROJECT RULES (<name>) stanzas.
+### Session-4 queue cleared
+- Migration 0021 ran on cloud Supabase → Studio loads, no silent-Loading.
+- **Rules harness verified behaviorally**: Context-field sentinel →
+  generation reproduced it (stronger proof than devtools inspection).
+- External-DS sub-nav gating verified BOTH ways (BL: Components+Blocks
+  only; gradeui: full nav). `99aef53`'s "unverified" flag is cleared.
+- `@gradeui/ui` dist rebuilt (Breadcrumb li→span fix live).
 
-## Next queue (Ali's stated priorities)
+### Rules screen (Magic Patterns-style; Ali's toggle request)
+- New "Rules" nav item + full-canvas page:
+  `apps/docs/components/studio/rules-page.tsx`. Files list left, editor
+  right.
+- **Design-system section**: the registry's rules/*.md shown per-file,
+  read-only, each with an on/off Switch.
+- **Project section**: full CRUD — add (kebab-case presets: company.md,
+  tone-of-voice.md, glossary.md, ux-rules.md — Ali's "named house files"
+  — plus blank), rename, edit, delete, toggle. Char counter warns every
+  char is prompt tokens per turn.
+- **Persistence with ZERO migration**: `ProjectRulesFile` gained
+  `enabled?: boolean` and `kind?: "project" | "registry"`. A registry
+  file toggled OFF is stored as `{id: "registry:<fileId>", kind:
+  "registry", enabled: false}` inside the EXISTING `rules_files` jsonb
+  (absence = on). Both adapters pass the array verbatim.
+- **Prompt plumbing**: `buildSystemPrompt(registry, {disabledRuleIds})`;
+  `RegistryPrompt.ruleFiles` (per-file split, new `RegistryRuleFile`
+  type); `generate-registry-rules.mjs` now emits
+  `<ID>_RULES_FILES` + concatenated `<ID>_RULES`;
+  `projectSystemPrompt` memo in page.tsx skips disabled files and
+  rebuilds the base without disabled registry ids.
+- URL: `?section=rules` added to the section allowlist (init parser).
 
-1. Unbreak + verify harness (above).
-2. **Dedicated screens**: Project Settings as its OWN screen, and a
-   separate **Rules screen** — full-size editors, multiple named .md
-   files. Data layer ready (`rulesFiles` + `handleUpdateProject`); NO
-   rulesFiles UI exists anywhere yet. Ali: "we'd have these text areas
-   much larger — and even allow multiple .md files".
-3. **Recipes → retrieval** (the real prize): recipe `keywords` arrays
-   are ready-made retrieval vocabulary — "add a stats row" should pull
-   the StatsGrid recipe into context like sidecar refs. Not built.
-4. Maybe rename the Blocks surface "Patterns" (industry term; keep
-   "Recipes" as BL's own group label). Offered, undecided.
-5. #17 anchored pinch zoom (deprioritised). Diagnosis saved in task:
-   external-sandbox should emit `grade:zoom-gesture {deltaY, clientX,
-   clientY}` like fast-sandbox/page.tsx:1470-89; shared-screen.tsx:
-   521-39 already consumes.
-6. Parity nit: breadcrumb click-to-select doesn't move selection on the
-   external renderer (verify Fast Frame does before building).
+### Rules vs skills — the conceptual frame (Ali's mental model, keep using it)
+- **Rules** = always-on, every prompt, terse (glossary, voice, house
+  style). **Skills** = load-on-demand via retrieval (recipes, templates,
+  vertical playbooks). "Changes how everything looks → rule; about one
+  kind of screen → skill." This is DESIGN.md decomposed into includable
+  units — Ali's phrasing.
+- New BL registry rules (live, individually toggleable):
+  `05-product-map.md` (lazy vertical prompts → correct shell/nav/hub
+  conventions; splits into per-vertical retrieved files when more
+  verticals land), `10-glossary.md` (GBP, NAP, SoLV, geo-grid…),
+  `20-voice.md` (reading age ~9, verb-first buttons, error tone).
+- New template `templates/citations-hub.jsx` — first vertical hub
+  scaffold (page-skeleton shell + citations content per product map).
+  In Starters (Ali ran the generator).
 
-## Client findings ledger (upstream BrightLocal report)
+### Recipes → retrieval (queue #3 — SHIPPED and verified)
+- `packages/studio/src/playbook/components/recipes.ts` — parses
+  `// keywords:` / `// components:` headers from registry blocks
+  (group "Recipes"), scores keyword phrases against the conversation
+  (word-boundary, plural-tolerant, `(?<!\.)` method-call guard, same as
+  refs.ts), ranks by distinct hits, **caps at 2 per request**.
+- `createScreenContext` stitches winners in as a "COMPOSITION RECIPES —
+  use as the STRUCTURAL BASIS" stanza; returns new `recipes: string[]`.
+- Chat route metadata suffixes them `"(recipe)"` into the refs chip.
+- **Verified live**: "Add a stats row of key metrics above the location
+  score" → refs chip showed `StatsGrid (recipe)` → generated a correct
+  recipe-shaped stats grid, AND the copy used glossary terms unprompted
+  ("Share of Local Voice (SoLV)", "NAP Consistent") — rules + retrieval
+  compounding. Applied as a single edit block, 18.5s.
+- Explainer for humans: `registries/brightlocal/recipes/README.md`
+  (format, retrieval mechanics, curation advice, rules-vs-recipes-vs-
+  templates).
 
-- component-meta.json: 23 phantom exports vs the real barrel;
-  SidebarAccountDropdown absent entirely.
-- data-hook names INSTANCES not components (selection suffix-map works
-  around it).
-- Hidden Storybook sections (blocks-*, lab-*); lab source minified;
-  story-file-local components unrecoverable (standing ask: source).
-- **Composition recipes exist ONLY behind the MCP** — zero Storybook
-  presence. Drafted recommendation: one source of truth, two renderers —
-  recipe files should generate both the MCP responses and a visible
-  "Patterns" Storybook section as real CSF stories (executable, a11y +
-  snapshot tested; MDX drifts). 8/29 ship placeholder slots nobody
-  eyeballed rendering.
-- `validate_usage`: dataHook check matches `<Sidebar` as a PREFIX
-  (false positives on SidebarProvider etc.); flags barrel imports as
-  errors — fine for their prod code, but fights our internal normal
-  form (per-file convention applies at export via importMap; do NOT add
-  "never barrel" to rules — OUTPUT RULE #3).
-- Live logged-in product only partially matches published Storybook —
-  drift finding; don't overstate ("or at least not that much").
-- Their MCP `get_component_api` is EXCELLENT for props (typed tables,
-  extractedVariants, deprecations, styling notes) — our v1 harvest was
-  the problem, not their metadata. `get_composition_recipe` enumerates
-  via the error path (`suggestions` on a miss; no list tool).
+### UI cleanup (Ali's live requests)
+- Right panel (`project-home.tsx`): theme dropdown + Screens list
+  REMOVED — Overview/People/Activity only. (`screens` prop retained for
+  activity-trail name resolution.)
+- Motion Studio nav row REMOVED from projects-menu ("not going to happen
+  any time soon"); "motions" section id kept for URL/storage back-compat.
+- **stylesSection clamp** (`stylesSectionEffective` in page.tsx): the
+  persisted localStorage sub-section ("general" etc.) leaked the GRADEUI
+  theme page as an external project's Design System landing. Now clamped
+  to components/blocks when registry ≠ gradeui.
+- DS page header copy is registry-aware (no "colours, type, shape" talk
+  on external DS).
+
+## Next queue
+
+1. Commit (above), then push.
+2. **Dedicated Project Settings screen** — Ali wants settings as its own
+   screen like Rules (the sheet's textareas are cramped). Rules screen is
+   the pattern to copy.
+3. Recipe retrieval refinements: match against the LATEST user message
+   (whole-history matching keeps re-shipping a recipe once mentioned);
+   use `// components:` to pin those sidecar refs alongside the recipe;
+   consider surfacing "why this recipe" in the chip tooltip.
+4. **Make the registry override survive HMR** — bit us TWICE today (see
+   gotchas). Likely: re-run `setActiveProjectRegistry` in a
+   module-load-time replay or subscribe the override to project state
+   rather than an effect.
+5. Rename Blocks surface "Patterns" (offered, still undecided).
+6. #17 anchored pinch zoom (deprioritised; diagnosis in prior handoff).
+7. Breadcrumb click-to-select parity on external renderer (verify Fast
+   Frame first).
 
 ## Gotchas that cost time (don't repeat)
 
-- **Assert python-heredoc patches applied** — a conditional
-  `str.replace` on a missing anchor silently no-ops (the projects-menu
-  import bug: page died with an opaque exception).
-- Escaped backticks inside a template-literal `${}` expression are a
-  syntax error ("Expected unicode escape") — nest unescaped or concat.
-- `BRIGHTLOCAL_BLOCKS` / `_RECIPES` are **Records, not arrays**: spread
-  `{...a, ...b}`; the browser does `Object.values`.
-- Missing Supabase column == raw thrown PostgrestError == silent
-  full-page "Loading" (twice now: 0020, 0021).
-- Re-run the matching generator after editing any hand-editable dir
-  (rules/templates/recipes/sidecars); harvesters OVERWRITE their files
-  (stories harvester respects the `curated:end` marker; recipes/mcp
-  harvesters do not — curate by renaming).
-- Red "N" badges on preview tiles are the Next dev overlay INSIDE the
-  iframe (hidden via `nextjs-portal{display:none}` in both sandbox
-  pages) — not app errors.
-- HMR bursts reset the module-scope registry override until the
-  project-load effect reruns → screens look "switched/broken"; hard
-  reload fixes. Warn Ali when a burst is coming.
-- Browser automation: HMR reloads land the studio tab on the Screens
-  view and eat queued clicks — re-navigate, then interact. Multiline
-  commits: `git commit -F - <<'MSG'`; stale `.git/index.lock` → rm -f.
+- **HMR burst resets the module-scope registry override** while React
+  state survives → the `activeProjectRegistryId` effect doesn't re-fire →
+  BL project renders with gradeui pipeline ("renderers are all broken").
+  A SOFT navigate does NOT fix it (same-page nav, state survives): only
+  `location.reload()` / a real hard reload does. Happens on every edit
+  to `packages/studio` (transpilePackages = source-watched).
+- Cowork sandbox: the repo's bash mount can drop mid-session (file tools
+  keep working via host paths; `pnpm`/`git`/`node` don't). An interrupted
+  `pnpm -F @gradeui/ui build` had run `clean` first → empty dist → docs
+  dev server "Can't resolve '@gradeui/ui/styles.css'". Rebuild fixes.
+- Glob tool is flaky against this repo; Grep works — enumerate dirs with
+  `Grep pattern:"."` when Glob returns nothing you know exists.
+- esm.sh module-load still fails transiently; the session-4 retry
+  ("design system fetch failed — retrying (1/3)") recovers, else reload.
+- jsonb columns take extra object fields with no migration — reach for
+  that before a new column (0020/0021 both caused silent-Loading when
+  the SELECT ran ahead of the migration).
+- Recipes/MCP harvesters OVERWRITE their files — curate by renaming.
+  The new recipes/README.md documents this for BL's team too.
+
+## Client findings ledger (upstream BrightLocal report)
+
+Unchanged from session 4 (component-meta phantom exports; data-hook names
+instances; hidden Storybook sections; recipes exist ONLY behind their MCP
+— recommend one-source-two-renderers; validate_usage prefix false
+positives; live product vs Storybook drift — don't overstate; their
+get_component_api props metadata is excellent). NEW: their recipe
+keywords proved out as retrieval vocabulary with zero rework — worth
+telling them their MCP recipes are directly agent-consumable, and that
+the 8/29 placeholder-slot recipes still ship uneyeballed.

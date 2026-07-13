@@ -26,6 +26,8 @@ import {
   EDIT_MODE_PROMPT,
   renderComponentRefsBlock,
   relevantComponentNames,
+  relevantRecipes,
+  renderRecipesBlock,
 } from "../playbook";
 import { GRADE_REGISTRY } from "../registry/gradeui";
 import type { DesignSystemRegistry } from "../registry/types";
@@ -103,6 +105,10 @@ export interface ScreenContext {
    *  chip the chat UI shows next to each turn, and the MCP adapter's
    *  response metadata. */
   refs: string[];
+  /** Recipe names whose full sources were folded in (keyword retrieval
+   *  over the registry's "Recipes" blocks). Empty when nothing matched
+   *  — the common case, which costs zero tokens. */
+  recipes: string[];
 }
 
 /**
@@ -152,13 +158,23 @@ export function createScreenContext(
     ? renderComponentRefsBlock({ onlyFor: refs, style: refsStyle, registry })
     : "";
 
+  // Recipe retrieval — keyword-phrase matches over the registry's
+  // "Recipes" blocks ("add a stats row" → the StatsGrid recipe rides
+  // as a worked pattern). Follows includeComponentRefs: a caller that
+  // opts out of DS context opts out of recipes too. Capped inside
+  // relevantRecipes (recipes are whole JSX sources).
+  const recipeRefs = includeComponentRefs
+    ? relevantRecipes(brief, registry)
+    : [];
+  const recipesBlock = renderRecipesBlock(recipeRefs);
+
   const selectionBlock = renderSelectionBlock(selection);
 
-  const system = [base, editStanza, refsBlock, selectionBlock]
+  const system = [base, editStanza, refsBlock, recipesBlock, selectionBlock]
     .filter((s): s is string => Boolean(s && s.trim()))
     .join("\n\n");
 
-  return { system, refs };
+  return { system, refs, recipes: recipeRefs.map((r) => r.name) };
 }
 
 /**

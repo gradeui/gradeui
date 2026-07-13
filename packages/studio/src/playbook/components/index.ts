@@ -23,6 +23,13 @@ export {
 } from "./refs";
 
 export {
+  relevantRecipes,
+  renderRecipesBlock,
+  listRecipeRefs,
+  type RecipeRef,
+} from "./recipes";
+
+export {
   ALLOWED_COMPONENTS,
   ALLOWED_EXTERNAL_IMPORTS,
   PINNED_COMPONENTS,
