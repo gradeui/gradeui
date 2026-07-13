@@ -3,11 +3,15 @@ name: TextRevealMotion
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/text-reveal-motion"
 props:
-  - holdTime? — TODO(review): type + one-line description from src
-  - shimmer? — TODO(review): type + one-line description from src
-  - gradientFrom? — TODO(review): type + one-line description from src
-  - gradientTo? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - holdTime?: number — How long (ms) each item stays fully visible. The ball keeps morphing and rotating during the hold. (default 1300)
+  - shimmer?: boolean — Show shimmer sweep after each reveal. (default true)
+  - gradientFrom?: string — Gradient start color. Accepts any CSS color value. (default "var(--loading-gradient-from)")
+  - gradientTo?: string — Gradient end color. Accepts any CSS color value. (default "var(--loading-gradient-to)")
+  - loadingLabel?: string — Accessible label for the loading animation. (default "Loading")
+  - trackingEl?: string — Tracking element identifier for analytics.
+  - trackingLabel?: string — Tracking label for analytics context.
+  - children — Each child is one item in the reveal cycle. Pass any Typography component as a child. @example ```tsx <TypographyP dataHook="w1">Analyzing</TypographyP> <TypographyP dataHook="w2">Processing</TypographyP> ```
 ---
 
 ```jsx

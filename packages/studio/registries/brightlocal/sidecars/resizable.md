@@ -4,12 +4,19 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/resizable"
 subcomponents: [ResizablePanel, ResizableHandle]
 props:
-  - direction? — TODO(review): type + one-line description from src
-  - withHandle? — TODO(review): type + one-line description from src
-  - defaultSize? — TODO(review): type + one-line description from src
-  - minSize? — TODO(review): type + one-line description from src
-  - maxSize? — TODO(review): type + one-line description from src
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - id?: string
+  - autoSaveId?: string
+  - direction
+  - keyboardResizeBy?: number
+  - onLayout?
+  - storage?
+  - tagName?
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - key?
+  - ref? — Allows getting a ref to the component instance. Once the component unmounts, React will set `ref.current` to `null` (or call the ref with `null` if you passed a callback ref). @see {@link https://react.dev/learn/referencing-values-with-refs#refs-and-the-dom React Docs}
+  - withHandle?: boolean — ResizableHandle: Show a visible drag handle indicator
 aliases: [resizable]
 ---
 

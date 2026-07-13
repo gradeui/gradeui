@@ -6,6 +6,10 @@ subcomponents: [Item, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemAc
 variants: [default, filled, outline, loading]
 props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics.
+  - trackingLabel?: string — Tracking label for analytics context.
+  - asChild?: boolean — Item: Render as the child element instead of `<li>`. Useful when the item is wrapped by another element (e.g. `<motion.li>`).
+  - variant? (default | filled | outline | loading) — Item: Visual style of the item row. - `default` — plain row without background or border - `filled` — card background (default) - `outline` — bordered row on page background - `loading` — skeleton placeholder (default "filled")
 ---
 
 ```jsx

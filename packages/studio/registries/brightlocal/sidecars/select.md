@@ -4,12 +4,12 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/select"
 subcomponents: [SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel, SelectSeparator]
 props:
-  - value? — TODO(review): type + one-line description from src
-  - onValueChange? — TODO(review): type + one-line description from src
-  - open? — TODO(review): type + one-line description from src
-  - onOpenChange? — TODO(review): type + one-line description from src
-  - disabled? — TODO(review): type + one-line description from src
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - children? — Children to render inside the select
+  - maxHeight?: number — SelectContent: Maximum height of the dropdown in pixels. Constrains the dropdown height and shows scroll indicators when content overflows. The dropdown uses the smaller of this value and the available viewport space.
+  - placeholder?: string — SelectTrigger: Placeholder text when no value is selected
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - error?: boolean — SelectTrigger: Whether the select trigger has an error state
+  - selectLabel?: string — SelectTrigger: Accessible label for the select trigger. Priority: aria-label > selectLabel > placeholder > "Select an option" (default "Select) an option"
 when_to_use: Do NOT use for: searchable lists (use Combobox); multi-select (use Combobox).
 aliases: [dropdown, picker, select menu]
 ---

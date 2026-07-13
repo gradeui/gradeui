@@ -4,7 +4,19 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/dropdown-menu"
 subcomponents: [DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuSeparator, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuLabel, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger]
 props:
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - dir?
+  - open?: boolean
+  - defaultOpen?: boolean
+  - onOpenChange?
+  - modal?: boolean
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — DropdownMenuCheckboxItem: Tracking element identifier for analytics
+  - trackingLabel?: string — DropdownMenuCheckboxItem: Tracking label for analytics context
+  - inset?: boolean — DropdownMenuItem: Indent the item (for hierarchical menus)
+  - avatar — DropdownMenuTriggerAvatar: Avatar slot - expects an Avatar component
+  - title: string — DropdownMenuTriggerAvatar: Main text/title displayed next to avatar
+  - description?: string — DropdownMenuTriggerAvatar: Description text displayed below title
+  - ariaLabel?: string — DropdownMenuTriggerAvatar: Accessible label for screen readers. Defaults to title if not provided.
 when_to_use: Do NOT use for: navigation (use NavigationMenu); form selection (use Select).
 aliases: [context menu, action menu, kebab menu, more menu, three-dot menu]
 ---

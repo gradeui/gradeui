@@ -4,8 +4,11 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/scroll-area"
 subcomponents: [ScrollBar]
 props:
-  - orientation? (vertical | horizontal)
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - scrollOrientation? — Scrollbar orientation. "vertical" shows only vertical, "both" adds horizontal. (default "vertical")
+  - orientation? — ScrollBar: The orientation of the scrollbar (default "vertical")
 ---
 
 ```jsx

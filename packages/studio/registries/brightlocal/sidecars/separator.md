@@ -4,10 +4,14 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/separator"
 subcomponents: [SeparatorWithText]
 props:
-  - orientation? (horizontal | vertical)
-  - spacing? (default | sm | md | lg)
-  - decorative? — TODO(review): type + one-line description from src
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - orientation? (horizontal | vertical) — Visual orientation of the separator. Horizontal renders a native `<hr>`, vertical renders a `<div>`. (default "horizontal")
+  - spacing? (default | sm | md | lg) — Controls the spacing around the separator. (default "default")
+  - decorative?: boolean — When true, the separator is purely decorative (role="none"). When false, it carries separator semantics for assistive technology. (default true)
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - className?: string — SeparatorWithText: Additional CSS classes
+  - children — SeparatorWithText: Text content to display between separators
 ---
 
 ```jsx

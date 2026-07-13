@@ -4,10 +4,15 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/sheet"
 subcomponents: [SheetTrigger, SheetPortal, SheetClose, SheetOverlay, SheetContent, SheetHeader, SheetFooter, SheetTitle, SheetDescription]
 props:
-  - side? (top | right | bottom | left)
-  - open? — TODO(review): type + one-line description from src
-  - onOpenChange? — TODO(review): type + one-line description from src
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - open?: boolean
+  - defaultOpen?: boolean
+  - onOpenChange?
+  - modal?: boolean
+  - side? (top | right | bottom | left) — SheetContent: Side from which the sheet slides in (default "right")
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — SheetContent: Tracking element identifier for analytics
+  - trackingLabel?: string — SheetContent: Tracking label for analytics context
+  - closeLabel?: string — SheetContent: Accessible label for the close button. (default "Close")
 when_to_use: Side panel for editing details, settings, or supplementary info Right-side panel pattern (most common: filters, detail views, forms) Content that should slide in from an edge without navigating away Do NOT use for: centered dialogs (use Dialog); confirmations (use AlertDialog). Use Dialog for centered content requiring focused attention. Use Drawer when you need non-modal behavior or mobile bottom-sheet pattern. Use Sidebar for persistent collapsible navigation — Sheet is for temporary overlays.
 composes_with: [Dialog, Drawer, Sidebar]
 aliases: [side panel, drawer, flyout, tray, slide-out]

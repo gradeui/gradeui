@@ -3,7 +3,10 @@ name: Skeleton
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/skeleton"
 props:
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - loadingLabel?: string — Accessible label announced to screen readers during loading. (default "Loading")
 ---
 
 ```jsx

@@ -6,10 +6,13 @@ subcomponents: [ToggleGroupItem]
 variants: [default, outline]
 sizes: [default, sm, lg]
 props:
-  - type? (single | multiple)
-  - value? — TODO(review): type + one-line description from src
-  - onValueChange? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - variant? — Visual style variant (default "simple")
+  - size? — Size variant (default "default")
+  - value: string — ToggleGroupItem: Unique value for the toggle item (REQUIRED)
+  - ariaLabel?: string — ToggleGroupItem: ARIA label for accessibility (required when no text content)
 ---
 
 ```jsx

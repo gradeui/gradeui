@@ -4,16 +4,29 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/data-table"
 subcomponents: [VirtualizedDataTable, useDataTable, DataTableColumnHeader, DataTableSearch, DataTablePagination, DataTablePaginationRowCount, DataTablePaginationNav, DataTableSelectAllCheckbox, DataTableSelectRowCheckbox, DataTableToolbar, DataTableToolbarLeft, DataTableToolbarRight]
 props:
-  - columns? — TODO(review): type + one-line description from src
-  - data? — TODO(review): type + one-line description from src
-  - enableSorting? — TODO(review): type + one-line description from src
-  - enableGlobalFiltering? — TODO(review): type + one-line description from src
-  - enableRowSelection? — TODO(review): type + one-line description from src
-  - enablePagination? — TODO(review): type + one-line description from src
-  - pageSize? — TODO(review): type + one-line description from src
-  - isLoading? — TODO(review): type + one-line description from src
-  - noResultsMessage? — TODO(review): type + one-line description from src
+  - table — TanStack Table instance (usually returned from `useDataTable`).
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Analytics element identifier.
+  - trackingLabel?: string — Analytics label.
+  - isLoading?: boolean — Show skeleton rows instead of data while loading async data.
+  - skeletonRowCount?: number — Number of skeleton rows when loading. Falls back to the table's page size, then 10.
+  - noResultsMessage?: string — Empty state message. (default "No) results."
+  - stickyHeader?: boolean — Pin the `<thead>` to the top of the scroll container so column headers remain visible while scrolling. The header receives an opaque background (`bg-background`) to separate it from body rows. (default false)
+  - className?: string — Additional class name for the outer wrapper.
+  - footer? — Optional footer rendered inside the `<table>` element after `<tbody>`. Use for summary rows or totals. Pass a `<TableFooter>` with rows.
+  - ariaLabel?: string — DataTablePaginationNav: Accessible label for the nav landmark. (default "Table) pagination"
+  - height?: number — VirtualizedDataTable: Height of the scroll container in pixels. Required — virtualization needs a bounded viewport. Pass a CSS value via `className` instead if you need responsive heights (e.g. `className="h-[80vh]"`), and omit this prop.
+  - estimateSize?: number — VirtualizedDataTable: Estimated height of a single row in pixels. The virtualizer uses this for initial layout before measuring real DOM nodes. (default 48)
+  - overscan?: number — VirtualizedDataTable: Number of rows to render outside the visible viewport. Higher values reduce blank-flash on fast scrolling at the cost of more DOM nodes. (default 5)
+  - column — DataTableColumnHeader: TanStack column instance (from the `header` render slot).
+  - title: string — DataTableColumnHeader: Header label.
+  - align? — DataTableColumnHeader: Alignment — should match the cell's alignment. (default "left")
+  - placeholder?: string — DataTableSearch: Input placeholder. (default "Search...")
+  - clearSearchAriaLabel?: string — DataTableSearch: Accessible label for the clear button. (default "Clear) search"
+  - showRowCount?: boolean — DataTablePagination: Show the row count text in the default (non-compositional) layout. Ignored when `children` are provided — use `DataTablePaginationRowCount` instead. (default true)
+  - selectAllAriaLabel?: string — DataTableSelectAllCheckbox: Accessible label for the select-all checkbox. (default "Select) all"
+  - row — DataTableSelectRowCheckbox: TanStack row instance.
+  - children — DataTableToolbar: Toolbar contents — typically `DataTableToolbarLeft` and `DataTableToolbarRight`.
 ---
 
 Full-featured data table with sorting, filtering, pagination, and row selection.

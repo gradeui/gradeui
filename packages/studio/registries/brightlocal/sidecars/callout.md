@@ -5,8 +5,11 @@ subpath: "@brightlocal/ui-components/callout"
 subcomponents: [CalloutHeading, CalloutCitation]
 variants: [primary, purple, blue, green]
 props:
-  - pointer? (top | bottom | left | right | none)
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - variant? (primary | purple | blue | green) — Color variant (default "primary")
+  - pointer? — Pointer/caret direction (default "bottom")
+  - trackingEl?: string — Analytics element identifier
+  - trackingLabel?: string — Analytics label
 ---
 
 ```jsx

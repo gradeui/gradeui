@@ -4,12 +4,14 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/tabs"
 subcomponents: [TabsList, TabsTrigger, TabsContent]
 props:
-  - value? — TODO(review): type + one-line description from src
-  - defaultValue? — TODO(review): type + one-line description from src
-  - onValueChange? — TODO(review): type + one-line description from src
-  - lazyMount? — TODO(review): type + one-line description from src
-  - unmountOnExit? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - lazyMount?: boolean — Only mount tab panel content when the tab is first activated (opt-in)
+  - unmountOnExit?: boolean — Unmount tab panel content when the tab becomes inactive
+  - value? — The controlled value of the active tab
+  - defaultValue? — The default value of the active tab (uncontrolled)
+  - onValueChange? — Callback when the active tab changes
 when_to_use: Do NOT use for: page navigation (use NavigationMenu); step-by-step wizards.
 aliases: [tab bar, tab group, tabbed interface]
 ---

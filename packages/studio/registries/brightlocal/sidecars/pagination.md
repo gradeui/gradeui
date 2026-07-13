@@ -4,11 +4,14 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/pagination"
 subcomponents: [PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, PaginationEllipsis]
 props:
-  - page? — TODO(review): type + one-line description from src
-  - totalPages? — TODO(review): type + one-line description from src
-  - siblingCount? — TODO(review): type + one-line description from src
-  - boundaryCount? — TODO(review): type + one-line description from src
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - ariaLabel?: string — Accessible label for the pagination navigation (for unique landmark identification). (default "Pagination")
+  - isActive?: boolean — PaginationButton: Whether this page is the current page
+  - page: number — PaginationLink: Page number to display
+  - disabled?: boolean — PaginationPrevious: Whether the previous button is disabled (on first page)
+  - srLabel?: string — PaginationEllipsis: Screen-reader-only label for the ellipsis. (default "More) pages"
 ---
 
 ```jsx

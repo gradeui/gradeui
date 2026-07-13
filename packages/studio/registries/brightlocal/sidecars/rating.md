@@ -3,8 +3,9 @@ name: Rating
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/rating"
 props:
-  - value? — TODO(review): type + one-line description from src
+  - value: number — The rating value (0-5, supports 0.5 increments)
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - size? — Size of the star icons. (default "sm")
 ---
 
 ```jsx

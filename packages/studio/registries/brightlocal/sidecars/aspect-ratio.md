@@ -3,8 +3,9 @@ name: AspectRatio
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/aspect-ratio"
 props:
-  - ratio? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
 ---
 
 ```jsx

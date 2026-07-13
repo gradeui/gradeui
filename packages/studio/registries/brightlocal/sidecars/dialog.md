@@ -4,10 +4,14 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/dialog"
 subcomponents: [DialogTrigger, DialogPortal, DialogClose, DialogOverlay, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription]
 props:
-  - open? — TODO(review): type + one-line description from src
-  - onOpenChange? — TODO(review): type + one-line description from src
-  - modal? — TODO(review): type + one-line description from src
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - open?: boolean
+  - defaultOpen?: boolean
+  - onOpenChange?
+  - modal?: boolean
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — DialogContent: Tracking element identifier for analytics
+  - trackingLabel?: string — DialogContent: Tracking label for analytics context
+  - closeLabel?: string — DialogContent: Accessible label for the close button. (default "Close")
 when_to_use: Presenting informational content or forms that require focused attention Content that should block interaction with the page behind it Multi-step flows or forms that don't fit inline Do NOT use for: confirmation actions (use AlertDialog); side panels (use Sheet or Drawer). Use AlertDialog when the user must confirm or cancel a destructive/irreversible action. Use Sheet for side panels with supplementary content or forms that don't need centered focus. Use Drawer for mobile-friendly bottom/side slide-out panels.
 composes_with: [AlertDialog, Sheet, Drawer]
 aliases: [modal, popup, lightbox]

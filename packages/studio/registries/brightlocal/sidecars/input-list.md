@@ -4,11 +4,17 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/input-list"
 subcomponents: [InputListItems, InputListInput, InputListAddButton, useInputListContext]
 props:
-  - value? — TODO(review): type + one-line description from src
-  - onValueChange? — TODO(review): type + one-line description from src
-  - children? — TODO(review): type + one-line description from src
-  - className? — TODO(review): type + one-line description from src
+  - value — The current list of item strings (controlled).
+  - onValueChange — Called when the list of items changes.
+  - children — Children — compose with InputListItems and InputListInput.
+  - className?: string — Additional CSS classes applied to the root element.
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics.
+  - trackingLabel?: string — Tracking label for analytics context.
+  - loading?: boolean — InputListItems: Shows skeleton placeholder rows instead of the item list.
+  - skeletonCount?: number — InputListItems: Number of skeleton rows to render in the loading state. (default 5)
+  - disabled?: boolean — InputListItems: Disables all remove buttons in the list.
+  - error?: boolean — InputListInput: Applies an error style to the input.
 ---
 
 Managed list of text items with add-input, per-row remove controls, multi-line paste, max item limit, loading skeletons, and validation states.

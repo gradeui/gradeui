@@ -4,11 +4,23 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/input-otp"
 subcomponents: [InputOTPGroup, InputOTPSlot, InputOTPSeparator]
 props:
-  - maxLength? — TODO(review): type + one-line description from src
-  - pattern? — TODO(review): type + one-line description from src
-  - error? — TODO(review): type + one-line description from src
-  - disabled? — TODO(review): type + one-line description from src
+  - maxLength?: number
+  - value?: string
+  - onChange?
+  - children — Children components
+  - textAlign?
+  - onComplete?
+  - pushPasswordManagerStrategy?
+  - pasteTransformer?
+  - containerClassName?: string — Custom class for the container element
+  - noScriptCSSFallback?: string
+  - key?
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - error?: boolean — Whether the input has an error state
+  - ref? — Allows getting a ref to the component instance. Once the component unmounts, React will set `ref.current` to `null` (or call the ref with `null` if you passed a callback ref). @see {@link https://react.dev/learn/referencing-values-with-refs#refs-and-the-dom React Docs}
+  - index: number — InputOTPSlot: The index of the slot in the OTP input
 ---
 
 ```jsx

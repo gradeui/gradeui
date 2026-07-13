@@ -2,13 +2,15 @@
 name: Toggle
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/toggle"
-variants: [default, outline]
+variants: [simple, outline]
 sizes: [default, sm, lg]
 props:
-  - pressed? — TODO(review): type + one-line description from src
-  - onPressedChange? — TODO(review): type + one-line description from src
-  - ariaLabel? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - variant? (simple | outline) — Visual style variant (default "simple")
+  - size? (default | sm | lg) — Size variant (default "default")
+  - ariaLabel?: string — ARIA label for accessibility (required when no text content)
 ---
 
 ```jsx

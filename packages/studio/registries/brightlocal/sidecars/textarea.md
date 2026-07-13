@@ -3,8 +3,11 @@ name: Textarea
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/textarea"
 props:
-  - error? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - id?: string — Optional id attribute for linking with label via htmlFor
+  - error?: boolean — Whether the textarea has an error state
+  - trackingEl?: string — Optional tracking prop for analytics tracking element identifier
+  - trackingLabel?: string — Optional tracking prop for analytics tracking label
 ---
 
 ```jsx

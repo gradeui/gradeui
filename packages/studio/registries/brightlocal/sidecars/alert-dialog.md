@@ -4,9 +4,9 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/alert-dialog"
 subcomponents: [AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel]
 props:
-  - open? — TODO(review): type + one-line description from src
-  - onOpenChange? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
 when_to_use: User is about to perform an irreversible or destructive action (delete, discard, overwrite) Action has significant consequences that require explicit confirmation Two clear actions: confirm or cancel — no other options needed Do NOT use for: informational dialogs (use Dialog); toast messages (use Sonner). Use Dialog when content is informational or includes a form — not a simple confirm/cancel. Use Sonner for non-blocking success/error feedback after an action completes.
 composes_with: [Dialog, Sonner]
 aliases: [confirmation dialog, confirm modal, destructive action dialog]

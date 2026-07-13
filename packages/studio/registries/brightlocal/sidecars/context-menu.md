@@ -4,7 +4,13 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/context-menu"
 subcomponents: [ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuCheckboxItem, ContextMenuRadioGroup, ContextMenuLabel, ContextMenuSeparator, ContextMenuShortcut, ContextMenuSub]
 props:
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - onOpenChange?
+  - dir?
+  - modal?: boolean
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - inset?: boolean — ContextMenuItem: Whether to add left padding for alignment with other items
+  - trackingEl?: string — ContextMenuItem: Tracking element identifier for analytics
+  - trackingLabel?: string — ContextMenuItem: Tracking label for analytics context
 ---
 
 ```jsx

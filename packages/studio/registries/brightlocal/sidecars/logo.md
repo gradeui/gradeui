@@ -5,6 +5,9 @@ subpath: "@brightlocal/ui-components/logo"
 variants: [logotype, mark]
 props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - ariaLabel?: string — Accessible label for the logo image. (default "BrightLocal) Logo"
+  - trackingEl?: string — Optional tracking element identifier for analytics
+  - trackingLabel?: string — Optional tracking label for analytics
 ---
 
 ```jsx

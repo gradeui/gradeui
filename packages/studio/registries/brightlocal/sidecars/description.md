@@ -3,7 +3,9 @@ name: Description
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/description"
 props:
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics Defaults to "description" if not provided
+  - trackingLabel?: string — Tracking label for analytics context Additional context for tracking events
 ---
 
 ```jsx

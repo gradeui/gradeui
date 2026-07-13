@@ -5,6 +5,9 @@ subpath: "@brightlocal/ui-components/centred-layout"
 subcomponents: [CentredLayoutHeader, CentredLayoutContent]
 props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - children — CentredLayoutHeader: Header content (e.g., Header component with Logo)
 when_to_use: Single-column centered pages (login, signup, password reset, onboarding) Pages with a centered Card and branded header Do NOT use for: two-column layouts (use SplitLayout); app shells with sidebar navigation (use GlobalLayout + Sidebar). Use SplitLayout for two-column pages with marketing content on one side. Use GlobalLayout for full app shells with sidebar navigation.
 composes_with: [SplitLayout, GlobalLayout]
 ---

@@ -2,10 +2,12 @@
 name: Badge
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/badge"
-variants: [default, secondary, destructive, outline]
+variants: [primary, secondary, destructive, outline]
 props:
-  - asChild? — TODO(review): type + one-line description from src
+  - asChild?: boolean — Render as a different element (Radix Slot pattern)
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
 when_to_use: Displaying a status label (active/inactive, new, draft) Showing a count or numeric indicator Non-interactive categorical labels Do NOT use for: removable tags (use Chip); interactive elements (use Button). Use Chip when the user can remove/dismiss the tag — Badge is non-interactive. Use Button for interactive status toggles.
 composes_with: [Chip, Button]
 aliases: [tag, chip, pill, label, status indicator]

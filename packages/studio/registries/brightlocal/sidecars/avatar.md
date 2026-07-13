@@ -4,9 +4,11 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/avatar"
 subcomponents: [AvatarImage, AvatarFallback]
 props:
-  - src? — TODO(review): type + one-line description from src
-  - alt? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - src?: string — AvatarImage: The image source URL
+  - alt?: string — AvatarImage: Alternative text for the image for accessibility
 ---
 
 ```jsx

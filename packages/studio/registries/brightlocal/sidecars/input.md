@@ -3,10 +3,10 @@ name: Input
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/input"
 props:
-  - error? — TODO(review): type + one-line description from src
-  - hasIcon? — TODO(review): type + one-line description from src
-  - hasSecondaryIcon? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - error?: boolean — Whether the input has an error state
+  - trackingEl?: string — Optional tracking element identifier for analytics
+  - trackingLabel?: string — Optional tracking label for analytics context
 when_to_use: Do NOT use for: multi-line text (use Textarea); search with dropdown (use Combobox).
 aliases: [text field, textbox, text input]
 ---

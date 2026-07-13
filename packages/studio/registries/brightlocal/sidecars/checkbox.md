@@ -3,11 +3,10 @@ name: Checkbox
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/checkbox"
 props:
-  - disabled? — TODO(review): type + one-line description from src
-  - error? — TODO(review): type + one-line description from src
-  - checked? — TODO(review): type + one-line description from src
-  - onCheckedChange? — TODO(review): type + one-line description from src
+  - disabled?: boolean — Whether the checkbox is disabled
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
 when_to_use: Do NOT use for: on/off toggle (use Switch); radio selection (use RadioGroup).
 aliases: [check, checkmark, tick box]
 ---

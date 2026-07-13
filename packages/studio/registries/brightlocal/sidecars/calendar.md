@@ -3,12 +3,10 @@ name: Calendar
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/calendar"
 props:
-  - numberOfMonths? — TODO(review): type + one-line description from src
-  - mode? — TODO(review): type + one-line description from src
-  - selected? — TODO(review): type + one-line description from src
-  - onSelect? — TODO(review): type + one-line description from src
-  - disabled? — TODO(review): type + one-line description from src
+  - numberOfMonths? — Number of months to display (1-3) (default 1)
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier
+  - trackingLabel?: string — Tracking label for analytics
 ---
 
 ```jsx

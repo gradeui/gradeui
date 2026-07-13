@@ -5,8 +5,12 @@ subpath: "@brightlocal/ui-components/input-group"
 subcomponents: [InputGroupInput, InputGroupAddon, InputGroupButton]
 sizes: [default, sm, lg]
 props:
-  - error? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - error?: boolean — Whether the input group has an error state
+  - asChild?: boolean — InputGroupButton:
+  - size? (default | sm | lg | icon | icon-xs | icon-sm | icon-lg) — InputGroupButton: Size variant for the button. Options: "default" | "sm" | "lg" | "icon" | "icon-xs" | "icon-sm" | "icon-lg"
 ---
 
 ```jsx

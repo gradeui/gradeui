@@ -5,8 +5,13 @@ subpath: "@brightlocal/ui-components/table"
 subcomponents: [TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption]
 sizes: [default, md, lg]
 props:
-  - align? (left | right | center)
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - minWidth?: string — Minimum width for the table (e.g., "600px", "40rem"). Prevents columns from compressing on narrow viewports and enables horizontal scroll via the built-in overflow container. When set, the scroll container becomes a focusable region for keyboard accessibility.
+  - scrollRegionLabel?: string — Accessible label for the scroll container region. Used when `minWidth` is set to provide context for keyboard users. (default "Scrollable) table"
+  - align? (left | right | center) — TableHead: Text alignment for the header cell. (default "left")
+  - size? (default | md | lg) — TableCell: Size variant for cell height/padding (default "default")
 when_to_use: Simple read-only data display with no sorting, filtering, or pagination Static tables like pricing tiers, feature comparisons, or settings summaries When you control the exact columns and rows — no dynamic column configuration needed Do NOT use for: complex filtering and sorting (use DataTable block); layout grids (use CSS grid). Use DataTable for sortable, filterable, paginated tables with row selection — it wraps TanStack Table.
 composes_with: [DataTable]
 aliases: [data grid, grid, list table]

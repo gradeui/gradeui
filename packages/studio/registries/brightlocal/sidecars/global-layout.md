@@ -5,9 +5,12 @@ subpath: "@brightlocal/ui-components/global-layout"
 subcomponents: [GlobalLayoutSidebar, GlobalLayoutContent, GlobalLayoutContentActions, GlobalLayoutContentHeader, GlobalLayoutContentBody, GlobalLayoutMobileHeader]
 variants: [full, md, sm]
 props:
-  - maxWidth? — TODO(review): type + one-line description from src
-  - width? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - maxWidth? — Maximum width of the global container. Use `breakpoint` tokens from `@brightlocal/tokens/breakpoints`. (default breakpoint.xl)
+  - width? — GlobalLayoutSidebar: Width of the sidebar (default: 224px)
+  - ariaLabel?: string — GlobalLayoutMobileHeader: Accessible label for the mobile navigation toolbar. (default "Mobile) navigation"
 ---
 
 ```jsx

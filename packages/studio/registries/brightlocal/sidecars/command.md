@@ -4,12 +4,25 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/command"
 subcomponents: [CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut, CommandVirtualItem, CommandVirtualList]
 props:
-  - filter? — TODO(review): type + one-line description from src
-  - value? — TODO(review): type + one-line description from src
-  - onValueChange? — TODO(review): type + one-line description from src
-  - onClear? — TODO(review): type + one-line description from src
-  - debounceMs? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - onClear? — CommandInput: Callback when clear button is clicked
+  - debounceMs?: number — CommandInput: Debounce delay in milliseconds for the `onValueChange` callback. The input display updates immediately; only the callback is debounced. Useful for async filtering to avoid firing on every keystroke. @example 300
+  - clearSearchAriaLabel?: string — CommandInput: Accessible label for the clear button. (default "Clear) search"
+  - selected?: boolean — CommandItem: Whether the item is selected (shows checkmark)
+  - value: string — CommandVirtualItem: Unique value identifying this item.
+  - disabled?: boolean — CommandVirtualItem: Whether this item is disabled.
+  - onSelect? — CommandVirtualItem: Callback when the item is activated (click or Enter).
+  - items — CommandVirtualList: Array of items to render. Memoize to avoid re-registration on every render.
+  - getItemValue — CommandVirtualList: Extract a unique string value from each item.
+  - getItemLabel? — CommandVirtualList: Extract a display label for filtering. Defaults to `getItemValue`.
+  - getItemKeywords? — CommandVirtualList: Extra searchable keywords per item.
+  - estimateSize?: number — CommandVirtualList: Estimated item height in px for the virtualiser. (default 44)
+  - overscan?: number — CommandVirtualList: Number of items to render outside the visible viewport. (default 5)
+  - children — CommandVirtualList: Render function called for each visible item.
+  - renderEmpty? — CommandVirtualList: Content rendered when the filtered list is empty.
+  - className?: string — CommandVirtualList: Accessible label for the listbox. Required for a11y — describes the list's purpose to screen readers. / "aria-label": string; / Additional CSS classes for the scroll container.
 ---
 
 ```jsx

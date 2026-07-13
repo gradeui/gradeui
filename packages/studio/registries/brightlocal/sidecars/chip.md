@@ -4,11 +4,16 @@ import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/chip"
 sizes: [md, lg]
 props:
-  - loading? — TODO(review): type + one-line description from src
-  - disabled? — TODO(review): type + one-line description from src
-  - onRemove? — TODO(review): type + one-line description from src
-  - maxWidth? — TODO(review): type + one-line description from src
+  - children — Chip content (text label)
+  - size? (md | lg) — Size variant of the chip (default "md")
+  - loading?: boolean — Show loading spinner instead of delete button (default false)
+  - disabled?: boolean — Disable the chip and its delete button (default false)
+  - onRemove? — Callback when delete button is clicked
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - maxWidth?: number — Maximum width of the chip label before truncation (default 200)
+  - loadingLabel?: string — Accessible label for the loading spinner. (default "Loading")
 when_to_use: Displaying user-created tags that can be removed Selected filter values that can be dismissed Multi-select token display with remove capability Do NOT use for: non-interactive status labels (use Badge); category labels without remove action (use Badge). Use Badge for non-interactive status indicators or labels. Use InputChip when users need to both add and remove tags via an input field.
 composes_with: [Badge, InputChip]
 ---

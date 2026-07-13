@@ -3,10 +3,9 @@ name: Switch
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/switch"
 props:
-  - disabled? — TODO(review): type + one-line description from src
-  - checked? — TODO(review): type + one-line description from src
-  - onCheckedChange? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
 when_to_use: Do NOT use for: multi-option selection (use Checkbox or RadioGroup); button toggle (use Toggle).
 aliases: [toggle switch, on/off toggle]
 ---

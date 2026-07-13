@@ -3,9 +3,10 @@ name: Header
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/header"
 props:
-  - align? (left | center | right)
-  - align? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - align? (left | center | right) — Content alignment: "left" (default), "center", or "right"
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
 ---
 
 ```jsx

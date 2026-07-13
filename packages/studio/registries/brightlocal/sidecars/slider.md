@@ -3,15 +3,11 @@ name: Slider
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/slider"
 props:
-  - mode? (single | range)
-  - value? — TODO(review): type + one-line description from src
-  - defaultValue? — TODO(review): type + one-line description from src
-  - onValueChange? — TODO(review): type + one-line description from src
-  - min? — TODO(review): type + one-line description from src
-  - max? — TODO(review): type + one-line description from src
-  - step? — TODO(review): type + one-line description from src
-  - thumbLabels? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - mode? — Slider mode - single value or range (two thumbs). - "single": One thumb, selects a single value (default) - "range": Two thumbs, selects a min/max range (default "single")
+  - thumbLabels? — Accessible labels for the slider thumb(s). - For single mode: provide one label (e.g., ["Volume"]) - For range mode: provide two labels (e.g., ["Minimum price", "Maximum price"]) (default ["Slider"]) for single, ["Minimum value", "Maximum value"] for range
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
 ---
 
 ```jsx

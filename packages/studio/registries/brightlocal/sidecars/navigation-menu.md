@@ -5,6 +5,7 @@ subpath: "@brightlocal/ui-components/navigation-menu"
 subcomponents: [NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuViewport, NavigationMenuIndicator]
 props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - className?: string
 ---
 
 ```jsx

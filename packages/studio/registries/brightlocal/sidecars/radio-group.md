@@ -3,13 +3,12 @@ name: RadioGroup
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/radio-group"
 subcomponents: [RadioGroupItem]
-variants: [default, box, boxIconVertical, boxIconHorizontal]
+variants: [simple, box, boxIconVertical, boxIconHorizontal]
 props:
-  - value? — TODO(review): type + one-line description from src
-  - onValueChange? — TODO(review): type + one-line description from src
-  - disabled? — TODO(review): type + one-line description from src
-  - error? — TODO(review): type + one-line description from src
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - error?: boolean — Whether the radio group has an error state
 ---
 
 ```jsx

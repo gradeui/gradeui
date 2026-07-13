@@ -140,7 +140,7 @@ function parsePropLine(line) {
 
 function firstBodyLine(md) {
   const body = md.replace(/^---\n[\s\S]*?\n---\n?/, "");
-  const line = body.split("\n").map((l) => l.trim()).find((l) => l && !l.startsWith("#") && !l.startsWith("<!--"));
+  const line = body.split("\n").map((l) => l.trim()).find((l) => l && !/^[#<`\/{]/.test(l) && !/^(import|export|const|let|return)\b/.test(l)); // prose only — example-only bodies yield undefined
   return line || undefined;
 }
 

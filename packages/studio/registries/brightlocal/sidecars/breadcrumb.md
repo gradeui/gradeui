@@ -5,6 +5,12 @@ subpath: "@brightlocal/ui-components/breadcrumb"
 subcomponents: [BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator, BreadcrumbEllipsis]
 props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics
+  - trackingLabel?: string — Tracking label for analytics context
+  - ariaLabel?: string — Accessible label for the breadcrumb navigation. (default "breadcrumb")
+  - asChild?: boolean — BreadcrumbLink: Render as a different element (Radix Slot pattern)
+  - href?: string — BreadcrumbLink: URL the breadcrumb link navigates to
+  - srLabel?: string — BreadcrumbEllipsis: Screen-reader-only label for the ellipsis. (default "More")
 ---
 
 ```jsx

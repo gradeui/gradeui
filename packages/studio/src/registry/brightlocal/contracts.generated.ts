@@ -10,18 +10,18 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
 > = {
   "Accordion": {
     "name": "Accordion",
-    "description": "```jsx",
+    "description": "Yes. It adheres to the WAI-ARIA design pattern.",
     "props": {
       "type": {
-        "kind": "enum",
-        "values": [
-          "single",
-          "multiple"
-        ],
-        "design": "plumbing",
-        "optional": true
+        "kind": "string",
+        "design": "plumbing"
       },
       "collapsible": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "defaultValue": {
         "kind": "string",
         "design": "plumbing",
         "optional": true
@@ -40,33 +40,94 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the accordion is disabled"
+      },
+      "dir": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Text direction"
+      },
+      "orientation": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Orientation of the accordion"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Additional CSS classes"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accordion items"
+      },
+      "ref": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Allows getting a ref to the component instance. Once the component unmounts, React will set `ref.current` to `null` (or call the ref with `null` if you passed a callback ref). @see {@link https://react.dev/learn/referencing-values-with-refs#refs-and-the-dom React Docs}"
+      },
+      "key": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "forceMount": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "AccordionContent: Force mounting of the content when true"
       }
     }
   },
   "AlertDialog": {
     "name": "AlertDialog",
-    "description": "```jsx",
+    "description": "This action cannot be undone.",
     "props": {
-      "open": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "onOpenChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       }
     }
   },
   "Alert": {
     "name": "Alert",
-    "description": "```jsx",
+    "description": "title=\"Success\"",
     "props": {
       "variant": {
         "kind": "enum",
@@ -81,17 +142,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "default"
       },
-      "title": {
+      "ref": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
+        "optional": true,
+        "description": "Allows getting a ref to the component instance. Once the component unmounts, React will set `ref.current` to `null` (or call the ref with `null` if you passed a callback ref). @see {@link https://react.dev/learn/referencing-values-with-refs#refs-and-the-dom React Docs}"
       },
-      "description": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "action": {
+      "key": {
         "kind": "string",
         "design": "plumbing",
         "optional": true
@@ -108,100 +165,170 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "AspectRatio": {
     "name": "AspectRatio",
-    "description": "```jsx",
+    "description": "src=\"/image.jpg\"",
     "props": {
-      "ratio": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       }
     }
   },
   "Avatar": {
     "name": "Avatar",
-    "description": "```jsx",
+    "description": "className=\"size-5\"",
     "props": {
-      "src": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "alt": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "src": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "AvatarImage: The image source URL"
+      },
+      "alt": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "AvatarImage: Alternative text for the image for accessibility"
       }
     }
   },
   "Badge": {
     "name": "Badge",
-    "description": "```jsx",
+    "description": "asChild",
     "props": {
       "variant": {
         "kind": "enum",
         "values": [
-          "default",
+          "primary",
           "secondary",
           "destructive",
           "outline"
         ],
         "design": "knob",
         "optional": true,
-        "default": "default"
+        "default": "primary"
       },
       "asChild": {
         "kind": "boolean",
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Render as a different element (Radix Slot pattern)"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       }
     },
     "variantDefaults": {
-      "variant": "default"
+      "variant": "primary"
     }
   },
   "Breadcrumb": {
     "name": "Breadcrumb",
-    "description": "```jsx",
+    "description": "...",
     "props": {
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible label for the breadcrumb navigation. (default \"breadcrumb\")"
+      },
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "BreadcrumbLink: Render as a different element (Radix Slot pattern)"
+      },
+      "href": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "BreadcrumbLink: URL the breadcrumb link navigates to"
+      },
+      "srLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "BreadcrumbEllipsis: Screen-reader-only label for the ellipsis. (default \"More\")"
       }
     }
   },
   "Button": {
     "name": "Button",
-    "description": "```jsx",
+    "description": "variant=\"primary\"",
     "props": {
       "variant": {
         "kind": "enum",
         "values": [
-          "default",
+          "primary",
+          "secondary",
+          "warning",
           "destructive",
           "outline",
-          "secondary",
-          "ghost",
-          "warning"
+          "ghost"
         ],
         "design": "knob",
         "optional": true,
-        "default": "default"
+        "default": "primary"
       },
       "size": {
         "kind": "enum",
@@ -214,10 +341,26 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "default"
       },
-      "loading": {
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "asChild": {
         "kind": "boolean",
         "design": "knob",
         "optional": true
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "type": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Button type attribute (default \"button\")"
       },
       "fullWidth": {
         "kind": "boolean",
@@ -229,71 +372,59 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "design": "knob",
         "optional": true
       },
-      "asChild": {
+      "loading": {
         "kind": "boolean",
         "design": "knob",
         "optional": true
       },
-      "type": {
+      "trackingEl": {
         "kind": "string",
-        "design": "plumbing",
+        "design": "knob",
         "optional": true
       },
-      "ariaLabel": {
+      "trackingLabel": {
         "kind": "string",
-        "design": "plumbing",
+        "design": "knob",
         "optional": true
-      },
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
-        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
       }
     },
     "variantDefaults": {
-      "variant": "default",
+      "variant": "primary",
       "size": "default"
     }
   },
   "Calendar": {
     "name": "Calendar",
-    "description": "```jsx",
+    "description": "mode=\"single\"",
     "props": {
       "numberOfMonths": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
-      },
-      "mode": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "selected": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "onSelect": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "disabled": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Number of months to display (1-3) (default 1)"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics"
       }
     }
   },
   "Callout": {
     "name": "Callout",
-    "description": "```jsx",
+    "description": "dataHook=\"callout-blue\"",
     "props": {
       "variant": {
         "kind": "enum",
@@ -307,22 +438,28 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "primary"
       },
-      "pointer": {
-        "kind": "enum",
-        "values": [
-          "top",
-          "bottom",
-          "left",
-          "right",
-          "none"
-        ],
-        "design": "knob",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "pointer": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Pointer/caret direction (default \"bottom\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Analytics element identifier"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Analytics label"
       }
     },
     "variantDefaults": {
@@ -331,7 +468,6 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Card": {
     "name": "Card",
-    "description": "```jsx",
     "props": {
       "variant": {
         "kind": "enum",
@@ -352,7 +488,31 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "condensed"
         ],
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Spacing density of the card (default \"default\")"
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "maxWidth": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "DEPRECATED: Use Tailwind max-width utilities via className instead (e.g., className=\"max-w-sm\"). (Maximum width of the card (e.g., \"420px\", \"600px\", \"100%\"). Cards are full-width by default — use className=\"max-w-[400px]\" instead.)"
       },
       "align": {
         "kind": "enum",
@@ -362,17 +522,18 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "right"
         ],
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "CardHeader: Content alignment within the header. Use `\"center\"` for status screens with an illustration above heading and description. (default \"left\")"
       },
-      "maxWidth": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
-        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      "size": {
+        "kind": "enum",
+        "values": [
+          "small",
+          "default"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "CardTitle: Title text size. (default \"default\")"
       }
     },
     "variantDefaults": {
@@ -381,57 +542,112 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Carousel": {
     "name": "Carousel",
-    "description": "```jsx",
+    "description": "))}",
     "props": {
-      "orientation": {
-        "kind": "enum",
-        "values": [
-          "horizontal",
-          "vertical"
-        ],
-        "design": "knob",
-        "optional": true
-      },
-      "opts": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "plugins": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "setApi": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "lazyLoad": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "overscan": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "opts": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Embla carousel options"
+      },
+      "plugins": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Embla carousel plugins"
+      },
+      "orientation": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Carousel orientation (default \"horizontal\")"
+      },
+      "setApi": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Callback to receive the carousel API instance"
+      },
+      "lazyLoad": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Enable lazy loading to only mount slides near the viewport. Off-screen slide children are not rendered until they scroll into view. (default false)"
+      },
+      "overscan": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Number of off-screen slides to pre-render on each side of the viewport. Only applies when `lazyLoad` is enabled. (default 1)"
+      },
+      "variant": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "CarouselPrevious: Visual style variant of the button (default \"outline\")"
+      },
+      "size": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "CarouselPrevious: Size variant of the button (default \"default\")"
+      },
+      "hideWhenDisabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "CarouselPrevious: Hide the button instead of disabling it when there are no previous slides (default false)"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "CarouselPrevious: Accessible label for the previous slide button. (default \"Previous) slide\""
       }
     }
   },
   "CentredLayout": {
     "name": "CentredLayout",
-    "description": "```jsx",
+    "description": "dataHook=\"centred-layout-default\"",
     "props": {
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "CentredLayoutHeader: Header content (e.g., Header component with Logo)"
       }
     }
   },
@@ -439,57 +655,179 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
     "name": "ChartContainer",
     "description": "Recharts wrapper with design system theming for bar, line, area, pie, and radar charts.",
     "props": {
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Chart content (typically a Recharts chart component)"
+      },
       "config": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
-      },
-      "id": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "description": "Configuration object for chart colors and labels"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "width": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Width of the chart's ResponsiveContainer. A number (px) skips responsive measurement and avoids the initial -1 warning. A percent string (e.g. \"50%\") keeps responsive behaviour within that fraction."
+      },
+      "height": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Height of the chart's ResponsiveContainer. A number (px) skips responsive measurement and avoids the initial -1 warning. A percent string (e.g. \"50%\") keeps responsive behaviour within that fraction."
+      },
+      "minWidth": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Minimum width for the chart's ResponsiveContainer."
+      },
+      "minHeight": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Minimum height for the chart's ResponsiveContainer."
+      },
+      "maxHeight": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Maximum height for the chart's ResponsiveContainer."
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "key": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "ref": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Allows getting a ref to the component instance. Once the component unmounts, React will set `ref.current` to `null` (or call the ref with `null` if you passed a callback ref). @see {@link https://react.dev/learn/referencing-values-with-refs#refs-and-the-dom React Docs}"
+      },
+      "hideLabel": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "ChartTooltip: Hide the tooltip label"
+      },
+      "hideIndicator": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "ChartTooltip: Hide the color indicator"
+      },
+      "indicator": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ChartTooltip: Style of the color indicator"
+      },
+      "nameKey": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ChartTooltip: Key to use for the series name"
+      },
+      "labelKey": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ChartTooltip: Key to use for the label"
+      },
+      "labelFormatter": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ChartTooltipContent: Custom label formatter function"
+      },
+      "labelClassName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ChartTooltipContent: Additional CSS class for the label"
+      },
+      "formatter": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ChartTooltipContent: Custom value formatter function"
+      },
+      "hideIcon": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "ChartLegendContent: Hide the series icon in the legend"
+      },
+      "payload": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ChartLegendContent: Legend payload from Recharts (automatically provided)"
+      },
+      "dataKey": {
+        "kind": "string",
+        "design": "knob",
+        "description": "ChartLegendContent:"
+      },
+      "color": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ChartLegendContent:"
       }
     }
   },
   "Checkbox": {
     "name": "Checkbox",
-    "description": "```jsx",
+    "description": "function Example() {",
     "props": {
       "disabled": {
         "kind": "boolean",
         "design": "knob",
-        "optional": true
-      },
-      "error": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "checked": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "onCheckedChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
+        "optional": true,
+        "description": "Whether the checkbox is disabled"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       }
     }
   },
   "Chip": {
     "name": "Chip",
-    "description": "```jsx",
+    "description": "Option",
     "props": {
       "size": {
         "kind": "enum",
@@ -501,30 +839,57 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "md"
       },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Chip content (text label)"
+      },
       "loading": {
         "kind": "boolean",
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Show loading spinner instead of delete button (default false)"
       },
       "disabled": {
         "kind": "boolean",
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Disable the chip and its delete button (default false)"
       },
       "onRemove": {
         "kind": "string",
         "design": "event",
-        "optional": true
-      },
-      "maxWidth": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "optional": true,
+        "description": "Callback when delete button is clicked"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "maxWidth": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Maximum width of the chip label before truncation (default 200)"
+      },
+      "loadingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the loading spinner. (default \"Loading\")"
       }
     },
     "variantDefaults": {
@@ -533,131 +898,390 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Collapsible": {
     "name": "Collapsible",
-    "description": "```jsx",
+    "description": "className=\"w-[350px] space-y-2\"",
     "props": {
-      "open": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "onOpenChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "defaultOpen": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "disabled": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       }
     }
   },
   "Combobox": {
     "name": "Combobox",
-    "description": "```jsx",
+    "description": "onValueChange={function z0e(){}}",
     "props": {
       "value": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
+        "optional": true,
+        "description": "Controlled selected value"
       },
       "onValueChange": {
         "kind": "string",
         "design": "event",
-        "optional": true
+        "optional": true,
+        "description": "Callback when value changes"
       },
       "open": {
         "kind": "boolean",
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Controlled open state"
       },
       "onOpenChange": {
         "kind": "string",
         "design": "event",
-        "optional": true
+        "optional": true,
+        "description": "Callback when open state changes"
       },
       "shouldFilter": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether to use built-in client-side filtering. Defaults to `true`. Both `ComboboxList` (cmdk) and `ComboboxVirtualList` respect this flag. Set to `false` only for async/server-driven search where the consumer controls the items list."
       },
-      "side": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Disabled state"
       },
-      "sideOffset": {
+      "itemToStringValue": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
+        "optional": true,
+        "description": "Maps item value to a searchable string. When provided, filtering uses this string instead of the raw value."
       },
-      "avoidCollisions": {
+      "children": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
+        "description": "Children"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxTrigger: Accessible label for the combobox trigger. Use either aria-label or aria-labelledby for accessibility. / \"aria-label\"?: string; / ID reference to a label element that provides the accessible name / \"aria-labelledby\"?: string; / Whether the combobox trigger has an error state"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxTrigger: Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxTrigger: Tracking label for analytics context"
+      },
+      "placeholder": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxValue: Placeholder text when no value is selected"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxValue: Custom className"
+      },
+      "align": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ComboboxContent: Alignment of the popover relative to trigger"
+      },
+      "side": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ComboboxContent: Which side of the trigger to render the popover. Only vertical positioning is supported — the dropdown spans the full trigger width. (default \"bottom\")"
+      },
+      "sideOffset": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxContent: Distance in px between the trigger and the popover. (default 4)"
+      },
+      "avoidCollisions": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxContent: When true, Radix avoids collisions with the viewport/boundaries by flipping and/or shifting the popover to keep it in view. Set to false to disable collision handling and force the requested position. (default true)"
+      },
+      "hideList": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxContent: Hide the list area (and the input border). Useful for async search where you want to hide results until a minimum character count."
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ComboboxContent: Accessible label for the options popover. (default \"Options\")"
+      },
+      "debounceMs": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxInput: Debounce delay in milliseconds for the `onValueChange` callback. The input display updates immediately; only the callback is debounced. Useful for async search to avoid firing API calls on every keystroke. @example 300"
+      },
+      "items": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "ComboboxVirtualList: Array of items to virtualise. Memoize with useMemo to avoid re-registering labels on every render."
+      },
+      "getItemValue": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ComboboxVirtualList: Extract the string value for each item (used for selection and keyboard navigation). Auto-inferred for items with a `value` string property."
+      },
+      "getItemLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ComboboxVirtualList: Extract a display label for filtering and trigger display. Defaults to `getItemValue`. Only used when `shouldFilter` is true on the parent Combobox."
+      },
+      "getItemKeywords": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ComboboxVirtualList: Extract additional keywords to match against when filtering. The item label is always included automatically — these are extras (e.g. ISO codes, abbreviations) that should be searchable without appearing in the trigger display."
+      },
+      "estimateSize": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxVirtualList: Estimated item height in pixels. (default 36)"
+      },
+      "overscan": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxVirtualList: Number of items to render above and below the visible area. (default 5)"
+      },
+      "renderEmpty": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ComboboxVirtualList: Content to render when no items match the filter"
+      },
+      "label": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxItem: Display label - if not provided, inferred from children text content. Required when children are React elements (not plain text) to enable label-based search and trigger display."
+      },
+      "highlight": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxItem: Text to highlight in the item (typically the search query)"
+      },
+      "highlightClassName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxItem: Class name for highlighted text"
+      },
+      "keywords": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ComboboxItem: Additional keywords to match against when filtering. The item label is always included automatically."
+      },
+      "onSelect": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "ComboboxItem: Callback fired when the item is activated (clicked or chosen via keyboard). Fires on every activation, including when the item is being deselected (toggled off). Always receives the item's own value, not the resulting combobox value — use `Combobox`'s `onValueChange` for selection state. @param value - The value of the activated item"
+      },
+      "loadingText": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ComboboxLoading: Loading text displayed next to the spinner. (default \"Loading...\")"
       }
     }
   },
   "Command": {
     "name": "Command",
-    "description": "```jsx",
+    "description": "placeholder={t(\"command.placeholder\")}",
     "props": {
-      "filter": {
+      "dataHook": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
       },
-      "value": {
+      "trackingEl": {
         "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
       },
-      "onValueChange": {
+      "trackingLabel": {
         "kind": "string",
-        "design": "event",
-        "optional": true
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       },
       "onClear": {
         "kind": "string",
         "design": "event",
-        "optional": true
+        "optional": true,
+        "description": "CommandInput: Callback when clear button is clicked"
       },
       "debounceMs": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "CommandInput: Debounce delay in milliseconds for the `onValueChange` callback. The input display updates immediately; only the callback is debounced. Useful for async filtering to avoid firing on every keystroke. @example 300"
+      },
+      "clearSearchAriaLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "CommandInput: Accessible label for the clear button. (default \"Clear) search\""
+      },
+      "selected": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "CommandItem: Whether the item is selected (shows checkmark)"
+      },
+      "value": {
         "kind": "string",
         "design": "plumbing",
+        "description": "CommandVirtualItem: Unique value identifying this item."
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "CommandVirtualItem: Whether this item is disabled."
+      },
+      "onSelect": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "CommandVirtualItem: Callback when the item is activated (click or Enter)."
+      },
+      "items": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "CommandVirtualList: Array of items to render. Memoize to avoid re-registration on every render."
+      },
+      "getItemValue": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "CommandVirtualList: Extract a unique string value from each item."
+      },
+      "getItemLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "CommandVirtualList: Extract a display label for filtering. Defaults to `getItemValue`."
+      },
+      "getItemKeywords": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "CommandVirtualList: Extra searchable keywords per item."
+      },
+      "estimateSize": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "CommandVirtualList: Estimated item height in px for the virtualiser. (default 44)"
+      },
+      "overscan": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "CommandVirtualList: Number of items to render outside the visible viewport. (default 5)"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "CommandVirtualList: Render function called for each visible item."
+      },
+      "renderEmpty": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "CommandVirtualList: Content rendered when the filtered list is empty."
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "CommandVirtualList: Accessible label for the listbox. Required for a11y — describes the list's purpose to screen readers. / \"aria-label\": string; / Additional CSS classes for the scroll container."
+      }
+    }
+  },
+  "ContextMenu": {
+    "name": "ContextMenu",
+    "description": "Right click here",
+    "props": {
+      "onOpenChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true
+      },
+      "dir": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "modal": {
+        "kind": "boolean",
+        "design": "knob",
         "optional": true
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
-      }
-    }
-  },
-  "ContextMenu": {
-    "name": "ContextMenu",
-    "description": "```jsx",
-    "props": {
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
+      },
+      "inset": {
+        "kind": "boolean",
+        "design": "knob",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
+        "description": "ContextMenuItem: Whether to add left padding for alignment with other items"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ContextMenuItem: Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ContextMenuItem: Tracking label for analytics context"
       }
     }
   },
@@ -665,125 +1289,303 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
     "name": "DataTable",
     "description": "Full-featured data table with sorting, filtering, pagination, and row selection.",
     "props": {
-      "columns": {
+      "table": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
-      },
-      "data": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "enableSorting": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "enableGlobalFiltering": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "enableRowSelection": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "enablePagination": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "pageSize": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "isLoading": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "noResultsMessage": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "description": "TanStack Table instance (usually returned from `useDataTable`)."
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Analytics element identifier."
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Analytics label."
+      },
+      "isLoading": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Show skeleton rows instead of data while loading async data."
+      },
+      "skeletonRowCount": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Number of skeleton rows when loading. Falls back to the table's page size, then 10."
+      },
+      "noResultsMessage": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Empty state message. (default \"No) results.\""
+      },
+      "stickyHeader": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Pin the `<thead>` to the top of the scroll container so column headers remain visible while scrolling. The header receives an opaque background (`bg-background`) to separate it from body rows. (default false)"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Additional class name for the outer wrapper."
+      },
+      "footer": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Optional footer rendered inside the `<table>` element after `<tbody>`. Use for summary rows or totals. Pass a `<TableFooter>` with rows."
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "DataTablePaginationNav: Accessible label for the nav landmark. (default \"Table) pagination\""
+      },
+      "height": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "VirtualizedDataTable: Height of the scroll container in pixels. Required — virtualization needs a bounded viewport. Pass a CSS value via `className` instead if you need responsive heights (e.g. `className=\"h-[80vh]\"`), and omit this prop."
+      },
+      "estimateSize": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "VirtualizedDataTable: Estimated height of a single row in pixels. The virtualizer uses this for initial layout before measuring real DOM nodes. (default 48)"
+      },
+      "overscan": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "VirtualizedDataTable: Number of rows to render outside the visible viewport. Higher values reduce blank-flash on fast scrolling at the cost of more DOM nodes. (default 5)"
+      },
+      "column": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "DataTableColumnHeader: TanStack column instance (from the `header` render slot)."
+      },
+      "title": {
+        "kind": "string",
+        "design": "knob",
+        "description": "DataTableColumnHeader: Header label."
+      },
+      "align": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "DataTableColumnHeader: Alignment — should match the cell's alignment. (default \"left\")"
+      },
+      "placeholder": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DataTableSearch: Input placeholder. (default \"Search...\")"
+      },
+      "clearSearchAriaLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DataTableSearch: Accessible label for the clear button. (default \"Clear) search\""
+      },
+      "showRowCount": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "DataTablePagination: Show the row count text in the default (non-compositional) layout. Ignored when `children` are provided — use `DataTablePaginationRowCount` instead. (default true)"
+      },
+      "selectAllAriaLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DataTableSelectAllCheckbox: Accessible label for the select-all checkbox. (default \"Select) all\""
+      },
+      "row": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "DataTableSelectRowCheckbox: TanStack row instance."
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "DataTableToolbar: Toolbar contents — typically `DataTableToolbarLeft` and `DataTableToolbarRight`."
       }
     }
   },
   "DatePickerRoot": {
     "name": "DatePickerRoot",
-    "description": "```jsx",
+    "description": "function Example() {",
     "props": {
-      "mode": {
-        "kind": "enum",
-        "values": [
-          "single",
-          "range"
-        ],
-        "design": "knob",
-        "optional": true
-      },
-      "date": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "onDateChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "dateRange": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "onDateRangeChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "disabled": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "dateFormat": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "mode": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Selection mode: 'single' for single date, 'range' for date range"
+      },
+      "date": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Selected date value (single mode)"
+      },
+      "onDateChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback fired when date selection changes (single mode)"
+      },
+      "dateRange": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Selected date range value (range mode)"
+      },
+      "onDateRangeChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback fired when date range selection changes (range mode)"
+      },
+      "placeholder": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Placeholder text when no date is selected"
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Disabled state"
+      },
+      "dateFormat": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Format string for displaying selected date Uses date-fns format tokens"
+      },
+      "open": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Controlled open state"
+      },
+      "onOpenChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback fired when open state changes"
+      },
+      "defaultOpen": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Default open state for uncontrolled usage"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Children components"
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "DatePickerTrigger: Whether the trigger has an error state"
+      },
+      "triggerLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DatePickerTrigger: Accessible label for the trigger button. (default \"Select) date\" (single) or \"Select date range\" (range)"
+      },
+      "contentLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DatePickerContent: Accessible label for the date picker popover. (default \"Date) picker\" (single) or \"Date range picker\" (range)"
+      },
+      "closeOnSelect": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "DatePickerCalendar: Whether to close the popover when a date is selected (single mode only) (default true)"
+      },
+      "presets": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "DatePickerPresets: Array of preset options (default DEFAULT_DATE_PRESETS)"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DatePickerPresets: Additional class name"
       }
     }
   },
   "Description": {
     "name": "Description",
-    "description": "```jsx",
+    "description": "This is a helpful description that provides additional context.",
     "props": {
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
+        "description": "Tracking element identifier for analytics Defaults to \"description\" if not provided"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context Additional context for tracking events"
       }
     }
   },
   "Dialog": {
     "name": "Dialog",
-    "description": "```jsx",
+    "description": "Make changes to your profile here. Click save when you're done.",
     "props": {
       "open": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "defaultOpen": {
         "kind": "boolean",
         "design": "knob",
         "optional": true
@@ -801,16 +1603,222 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
+        "description": "DialogContent: Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DialogContent: Tracking label for analytics context"
+      },
+      "closeLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DialogContent: Accessible label for the close button. (default \"Close\")"
       }
     }
   },
   "Drawer": {
     "name": "Drawer",
-    "description": "```jsx",
+    "description": "This is a drawer description.",
     "props": {
+      "activeSnapPoint": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "setActiveSnapPoint": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
       "open": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "closeThreshold": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Number between 0 and 1 that determines when the drawer should be closed. Example: threshold of 0.5 would close the drawer if the user swiped for 50% of the height of the drawer or more."
+      },
+      "noBodyStyles": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When `true` the `body` doesn't get any styles assigned from Vaul"
+      },
+      "onOpenChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true
+      },
+      "shouldScaleBackground": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "setBackgroundColorOnScale": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When `false` we don't change body's background color when the drawer is open."
+      },
+      "scrollLockTimeout": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Duration for which the drawer is not draggable after scrolling content inside of the drawer."
+      },
+      "fixed": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When `true`, don't move the drawer upwards if there's space, but rather only change it's height so it's fully scrollable when the keyboard is open"
+      },
+      "handleOnly": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When `true` only allows the drawer to be dragged by the `<Drawer.Handle />` component."
+      },
+      "dismissible": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When `false` dragging, clicking outside, pressing esc, etc. will not close the drawer. Use this in comination with the `open` prop, otherwise you won't be able to open/close the drawer."
+      },
+      "onDrag": {
+        "kind": "string",
+        "design": "event",
+        "optional": true
+      },
+      "onRelease": {
+        "kind": "string",
+        "design": "event",
+        "optional": true
+      },
+      "modal": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When `false` it allows to interact with elements outside of the drawer without closing it."
+      },
+      "nested": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "onClose": {
+        "kind": "string",
+        "design": "event",
+        "optional": true
+      },
+      "direction": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Direction of the drawer. Can be `top` or `bottom`, `left`, `right`."
+      },
+      "defaultOpen": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Opened by default, skips initial enter animation. Still reacts to `open` state changes"
+      },
+      "disablePreventScroll": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When set to `true` prevents scrolling on the document body on mount, and restores it on unmount."
+      },
+      "repositionInputs": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When `true` Vaul will reposition inputs rather than scroll then into view if the keyboard is in the way. Setting it to `false` will fall back to the default browser behavior."
+      },
+      "snapToSequentialPoint": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Disabled velocity based swiping for snap points. This means that a snap point won't be skipped even if the velocity is high enough. Useful if each snap point in a drawer is equally important."
+      },
+      "container": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "onAnimationEnd": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Gets triggered after the open or close animation ends, it receives an `open` argument with the `open` state of the drawer by the time the function was triggered. Useful to revert any state changes for example."
+      },
+      "preventScrollRestoration": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "autoFocus": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "snapPoints": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Array of numbers from 0 to 100 that corresponds to % of the screen a given snap point should take up. Should go from least visible. Example `[0.2, 0.5, 0.8]`. You can also use px values, which doesn't take screen height into account."
+      },
+      "fadeFromIndex": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Index of a `snapPoint` from which the overlay fade should be applied. Defaults to the last snap point."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DrawerContent: Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DrawerContent: Tracking label for analytics context"
+      }
+    }
+  },
+  "DropdownMenu": {
+    "name": "DropdownMenu",
+    "description": "Dropdown <ChevronDown />",
+    "props": {
+      "dir": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "open": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "defaultOpen": {
         "kind": "boolean",
         "design": "knob",
         "optional": true
@@ -820,34 +1828,61 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "design": "event",
         "optional": true
       },
-      "direction": {
-        "kind": "string",
-        "design": "plumbing",
+      "modal": {
+        "kind": "boolean",
+        "design": "knob",
         "optional": true
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
-      }
-    }
-  },
-  "DropdownMenu": {
-    "name": "DropdownMenu",
-    "description": "```jsx",
-    "props": {
-      "dataHook": {
+        "description": "DropdownMenuCheckboxItem: Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DropdownMenuCheckboxItem: Tracking label for analytics context"
+      },
+      "inset": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "DropdownMenuItem: Indent the item (for hierarchical menus)"
+      },
+      "avatar": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "DropdownMenuTriggerAvatar: Avatar slot - expects an Avatar component"
+      },
+      "title": {
+        "kind": "string",
+        "design": "knob",
+        "description": "DropdownMenuTriggerAvatar: Main text/title displayed next to avatar"
+      },
+      "description": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DropdownMenuTriggerAvatar: Description text displayed below title"
+      },
+      "ariaLabel": {
         "kind": "string",
         "design": "plumbing",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
+        "description": "DropdownMenuTriggerAvatar: Accessible label for screen readers. Defaults to title if not provided."
       }
     }
   },
   "Field": {
     "name": "Field",
-    "description": "```jsx",
+    "description": "function MyForm() {",
     "props": {
       "variant": {
         "kind": "enum",
@@ -859,25 +1894,39 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "default"
       },
-      "orientation": {
-        "kind": "enum",
-        "values": [
-          "vertical",
-          "horizontal",
-          "responsive"
-        ],
-        "design": "knob",
-        "optional": true
-      },
-      "align": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "align": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Controls the grid column sizing for horizontal orientation. - `\"start\"` (default): `auto 1fr` — control left, content right - `\"end\"`: `1fr auto` — content left, control right"
+      },
+      "htmlFor": {
+        "kind": "string",
+        "design": "knob",
+        "description": "FieldLabel: Required htmlFor attribute for linking label with input"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "FieldError: Error message to display as children"
+      },
+      "errors": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "FieldError: Array of error objects from form libraries (e.g., react-hook-form) Each error object should have a message property"
+      },
+      "icon": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "FieldErrorIcon: Custom icon component to render instead of the default AlertCircle. Pass a BrightLocal icon component (not an element). (default AlertCircle)"
       }
     },
     "variantDefaults": {
@@ -886,7 +1935,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "GlobalLayout": {
     "name": "GlobalLayout",
-    "description": "```jsx",
+    "description": "function App() {",
     "props": {
       "variant": {
         "kind": "enum",
@@ -899,20 +1948,40 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "full"
       },
-      "maxWidth": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "width": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "maxWidth": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Maximum width of the global container. Use `breakpoint` tokens from `@brightlocal/tokens/breakpoints`. (default breakpoint.xl)"
+      },
+      "width": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "GlobalLayoutSidebar: Width of the sidebar (default: 224px)"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "GlobalLayoutMobileHeader: Accessible label for the mobile navigation toolbar. (default \"Mobile) navigation\""
       }
     },
     "variantDefaults": {
@@ -921,8 +1990,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Header": {
     "name": "Header",
-    "description": "```jsx",
+    "description": "aria-label=\"Header with navigation example\"",
     "props": {
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
       "align": {
         "kind": "enum",
         "values": [
@@ -931,81 +2005,155 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "right"
         ],
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Content alignment: \"left\" (default), \"center\", or \"right\""
       },
-      "dataHook": {
+      "trackingEl": {
         "kind": "string",
-        "design": "plumbing",
-        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       }
     }
   },
   "HoverCard": {
     "name": "HoverCard",
-    "description": "```jsx",
+    "description": "dataHook=\"hover-trigger\"",
     "props": {
       "openDelay": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Time in milliseconds to delay opening the hover card (default 300)"
       },
       "closeDelay": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "disabled": {
-        "kind": "boolean",
+        "kind": "number",
         "design": "knob",
-        "optional": true
-      },
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
-      }
-    }
-  },
-  "InputChip": {
-    "name": "InputChip",
-    "description": "```jsx",
-    "props": {
-      "value": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "onValueChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "defaultValue": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "disabled": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "allowDuplicates": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "description": "Time in milliseconds to delay closing the hover card (default 300)"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "HoverCardTrigger: Whether the trigger is disabled"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "HoverCardTrigger: Optional analytics element identifier"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "HoverCardTrigger: Optional analytics label context"
+      }
+    }
+  },
+  "InputChip": {
+    "name": "InputChip",
+    "description": "defaultValue={[",
+    "props": {
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Controlled value - array of chip values"
+      },
+      "defaultValue": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Default value for uncontrolled mode"
+      },
+      "onValueChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback when value changes"
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Disabled state"
+      },
+      "allowDuplicates": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Allow duplicate values (default: false)"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Children"
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "InputChipInput: Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "InputChipInput: Tracking label for analytics context"
+      },
+      "placeholder": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "InputChipInput: Placeholder text for the input"
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "InputChipInput: Whether the input has an error state"
+      },
+      "inputId": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "InputChipInput: ID for the input element (for label association)"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "InputChipItems: Custom className for the container"
+      },
+      "dataHookPrefix": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "InputChipItems: Data hook prefix for chips"
       }
     }
   },
   "InputGroup": {
     "name": "InputGroup",
-    "description": "```jsx",
+    "description": "dataHook=\"input-group\"",
     "props": {
       "size": {
         "kind": "enum",
@@ -1018,15 +2166,34 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "default"
       },
-      "error": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the input group has an error state"
+      },
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "InputGroupButton:"
       }
     },
     "variantDefaults": {
@@ -1040,9 +2207,82 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "value": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
+        "description": "The current list of item strings (controlled)."
       },
       "onValueChange": {
+        "kind": "string",
+        "design": "event",
+        "description": "Called when the list of items changes."
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Children — compose with InputListItems and InputListInput."
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Additional CSS classes applied to the root element."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics."
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context."
+      },
+      "loading": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "InputListItems: Shows skeleton placeholder rows instead of the item list."
+      },
+      "skeletonCount": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "InputListItems: Number of skeleton rows to render in the loading state. (default 5)"
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "InputListItems: Disables all remove buttons in the list."
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "InputListInput: Applies an error style to the input."
+      }
+    }
+  },
+  "InputOTP": {
+    "name": "InputOTP",
+    "description": "id=\"otp\"",
+    "props": {
+      "maxLength": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true
+      },
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "onChange": {
         "kind": "string",
         "design": "event",
         "optional": true
@@ -1050,9 +2290,40 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "children": {
         "kind": "string",
         "design": "plumbing",
+        "description": "Children components"
+      },
+      "textAlign": {
+        "kind": "string",
+        "design": "plumbing",
         "optional": true
       },
-      "className": {
+      "onComplete": {
+        "kind": "string",
+        "design": "event",
+        "optional": true
+      },
+      "pushPasswordManagerStrategy": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "pasteTransformer": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "containerClassName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Custom class for the container element"
+      },
+      "noScriptCSSFallback": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true
+      },
+      "key": {
         "kind": "string",
         "design": "plumbing",
         "optional": true
@@ -1061,117 +2332,199 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
-      }
-    }
-  },
-  "InputOTP": {
-    "name": "InputOTP",
-    "description": "```jsx",
-    "props": {
-      "maxLength": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
       },
-      "pattern": {
+      "trackingEl": {
         "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       },
       "error": {
         "kind": "boolean",
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Whether the input has an error state"
       },
-      "disabled": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "dataHook": {
+      "ref": {
         "kind": "string",
         "design": "plumbing",
-        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+        "optional": true,
+        "description": "Allows getting a ref to the component instance. Once the component unmounts, React will set `ref.current` to `null` (or call the ref with `null` if you passed a callback ref). @see {@link https://react.dev/learn/referencing-values-with-refs#refs-and-the-dom React Docs}"
+      },
+      "index": {
+        "kind": "number",
+        "design": "knob",
+        "description": "InputOTPSlot: The index of the slot in the OTP input"
       }
     }
   },
   "InputPasswordRoot": {
     "name": "InputPasswordRoot",
-    "description": "```jsx",
+    "description": "dataHook=\"password-input\"",
     "props": {
-      "strengthLevels": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "onStrengthChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "showMeter": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Disabled state"
+      },
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Controlled password value"
+      },
+      "onChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback fired when password changes"
+      },
+      "onStrengthChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback fired when password strength changes"
+      },
+      "strengthLevels": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Custom strength levels configuration. Define your own levels with custom keys, labels, values, and colors. @example strengthLevels={{ empty: { label: \"Enter password\", value: 0, color: \"bg-muted\" }, slow: { label: \"Slow\", value: 33, color: \"bg-red-500\" }, medium: { label: \"Medium\", value: 66, color: \"bg-yellow-500\" }, fast: { label: \"Fast\", value: 100, color: \"bg-green-500\" }, }}"
+      },
+      "calculateStrength": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Custom function to calculate password strength. Must return a key from strengthLevels (or default levels if not provided)."
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the input has an error state"
+      },
+      "id": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ID for the input element (for label association)"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Children components"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Additional class name for the root container"
+      },
+      "groupClassName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "InputPasswordField: Additional class name for the InputGroup wrapper"
+      },
+      "showLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "InputPasswordField: Accessible label for the toggle button when password is hidden. (default \"Show) password\""
+      },
+      "hideLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "InputPasswordField: Accessible label for the toggle button when password is visible. (default \"Hide) password\""
       }
     }
   },
   "Input": {
     "name": "Input",
-    "description": "```jsx",
+    "description": "type=\"email\"",
     "props": {
-      "error": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "hasIcon": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "hasSecondaryIcon": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the input has an error state"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional tracking label for analytics context"
       }
     }
   },
   "Label": {
     "name": "Label",
-    "description": "```jsx",
+    "description": "Email",
     "props": {
-      "optional": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "htmlFor": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
+        "description": "Tracking element identifier for analytics Defaults to \"label\" if not provided"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context Additional context for tracking events"
+      },
+      "optional": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Display \"(optional)\" suffix after label text (default false)"
       }
     }
   },
   "Link": {
     "name": "Link",
-    "description": "```jsx",
+    "description": "Learn more",
     "props": {
       "variant": {
         "kind": "enum",
@@ -1185,25 +2538,40 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "inline"
       },
-      "external": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "showExternalIcon": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "asChild": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "If true, the link will be rendered as its child element Useful for Next.js Link or other custom link components"
+      },
+      "external": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "If true, opens link in a new tab with target=\"_blank\" and rel=\"noopener noreferrer\""
+      },
+      "showExternalIcon": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "If true, shows the external link icon when external is true. (default true)"
       }
     },
     "variantDefaults": {
@@ -1212,7 +2580,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "List": {
     "name": "List",
-    "description": "```jsx",
+    "description": "dataHook=\"list\"",
     "props": {
       "variant": {
         "kind": "enum",
@@ -1230,6 +2598,24 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics."
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context."
+      },
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Item: Render as the child element instead of `<li>`. Useful when the item is wrapped by another element (e.g. `<motion.li>`)."
       }
     },
     "variantDefaults": {
@@ -1238,7 +2624,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Logo": {
     "name": "Logo",
-    "description": "```jsx",
+    "description": "variant=\"logotype\"",
     "props": {
       "variant": {
         "kind": "enum",
@@ -1254,6 +2640,24 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible label for the logo image. (default \"BrightLocal) Logo\""
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional tracking label for analytics"
       }
     },
     "variantDefaults": {
@@ -1334,305 +2738,501 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Menubar": {
     "name": "Menubar",
-    "description": "```jsx",
-    "props": {
-      "defaultValue": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
-        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
-      }
-    }
-  },
-  "NavigationMenu": {
-    "name": "NavigationMenu",
-    "description": "```jsx",
-    "props": {
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
-        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
-      }
-    }
-  },
-  "Pagination": {
-    "name": "Pagination",
-    "description": "```jsx",
-    "props": {
-      "page": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "totalPages": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "siblingCount": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "boundaryCount": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true,
-        "description": "optional on structural components (renders data-hook)"
-      }
-    }
-  },
-  "Popover": {
-    "name": "Popover",
-    "description": "```jsx",
-    "props": {
-      "open": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "onOpenChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "defaultOpen": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "modal": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "align": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "side": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "sideOffset": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true,
-        "description": "optional on structural components (renders data-hook)"
-      }
-    }
-  },
-  "Progress": {
-    "name": "Progress",
-    "description": "```jsx",
+    "description": "New Tab <MenubarShortcut>⌘T</MenubarShortcut>",
     "props": {
       "value": {
         "kind": "string",
         "design": "plumbing",
         "optional": true
       },
-      "ariaLabel": {
+      "defaultValue": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
+        "optional": true,
+        "description": "The value of the menu that should be open when initially rendered (uncontrolled)"
       },
-      "label": {
+      "onValueChange": {
         "kind": "string",
-        "design": "plumbing",
+        "design": "event",
         "optional": true
       },
-      "indicatorClassName": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "disabled": {
+      "loop": {
         "kind": "boolean",
         "design": "knob",
         "optional": true
+      },
+      "dir": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "key": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "ref": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Allows getting a ref to the component instance. Once the component unmounts, React will set `ref.current` to `null` (or call the ref with `null` if you passed a callback ref). @see {@link https://react.dev/learn/referencing-values-with-refs#refs-and-the-dom React Docs}"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "checked": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "MenubarCheckboxItem:"
+      },
+      "closeOnSelect": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "MenubarCheckboxItem:"
+      },
+      "onCheckedChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "MenubarCheckboxItem:"
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "MenubarItem:"
+      },
+      "inset": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "MenubarItem:"
+      }
+    }
+  },
+  "NavigationMenu": {
+    "name": "NavigationMenu",
+    "props": {
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true
+      }
+    }
+  },
+  "Pagination": {
+    "name": "Pagination",
+    "description": "))}",
+    "props": {
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible label for the pagination navigation (for unique landmark identification). (default \"Pagination\")"
+      },
+      "isActive": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "PaginationButton: Whether this page is the current page"
+      },
+      "page": {
+        "kind": "number",
+        "design": "knob",
+        "description": "PaginationLink: Page number to display"
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "PaginationPrevious: Whether the previous button is disabled (on first page)"
+      },
+      "srLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "PaginationEllipsis: Screen-reader-only label for the ellipsis. (default \"More) pages\""
+      }
+    }
+  },
+  "Popover": {
+    "name": "Popover",
+    "description": "Place content for the popover here.",
+    "props": {
+      "defaultOpen": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "The open state when initially rendered. Use when you do not need to control the open state."
+      },
+      "open": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "The controlled open state of the popover."
+      },
+      "onOpenChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Event handler called when the open state of the popover changes."
+      },
+      "modal": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When true, interaction with outside elements is disabled and only popover content is visible to screen readers."
+      },
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "PopoverTrigger: Change the default rendered element for the one passed as a child, merging their props and behavior."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "side": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "PopoverContent: The preferred side of the anchor to render against. Will be reversed when collisions occur."
+      },
+      "sideOffset": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "PopoverContent: The distance in pixels from the anchor."
+      },
+      "align": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "PopoverContent: The preferred alignment against the anchor. May change when collisions occur."
+      },
+      "alignOffset": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "PopoverContent: An offset in pixels from the \"start\" or \"end\" alignment options."
+      },
+      "avoidCollisions": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "PopoverContent: When true, overrides side and align to prevent collisions with boundary edges."
+      },
+      "sticky": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "PopoverContent: The sticky behavior on the align axis. \"partial\" keeps content in boundary as long as trigger is at least partially in boundary."
+      },
+      "hideWhenDetached": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "PopoverContent: Whether to hide content when the trigger becomes fully occluded."
+      }
+    }
+  },
+  "Progress": {
+    "name": "Progress",
+    "description": "dataHook=\"score\"",
+    "props": {
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional tracking label for analytics"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible label for the progress bar for screen readers (default \"Progress\")"
+      },
+      "label": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional visible label text displayed above the progress bar"
+      },
+      "indicatorClassName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Custom class name for the indicator (progress fill) Use this to customize the color, e.g., \"bg-red-500\""
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the progress is in a disabled state When disabled, the component renders with 50% opacity"
       }
     }
   },
   "RadioGroup": {
     "name": "RadioGroup",
-    "description": "```jsx",
+    "description": "key=\"false\"",
     "props": {
       "variant": {
         "kind": "enum",
         "values": [
-          "default",
+          "simple",
           "box",
           "boxIconVertical",
           "boxIconHorizontal"
         ],
         "design": "knob",
         "optional": true,
-        "default": "default"
+        "default": "simple"
       },
-      "value": {
+      "dataHook": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
       },
-      "onValueChange": {
+      "trackingEl": {
         "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "disabled": {
-        "kind": "boolean",
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       },
       "error": {
         "kind": "boolean",
         "design": "knob",
-        "optional": true
-      },
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
-        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+        "optional": true,
+        "description": "Whether the radio group has an error state"
       }
     },
     "variantDefaults": {
-      "variant": "default"
+      "variant": "simple"
     }
   },
   "Rating": {
     "name": "Rating",
-    "description": "```jsx",
+    "description": "dataHook=\"rating\"",
     "props": {
       "value": {
-        "kind": "string",
+        "kind": "number",
         "design": "plumbing",
-        "optional": true
+        "description": "The rating value (0-5, supports 0.5 increments)"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "size": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Size of the star icons. (default \"sm\")"
       }
     }
   },
   "ResizablePanelGroup": {
     "name": "ResizablePanelGroup",
-    "description": "```jsx",
+    "description": "dataHook=\"resizable-panel-group\"",
     "props": {
+      "id": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "autoSaveId": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true
+      },
       "direction": {
         "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "design": "plumbing"
       },
-      "withHandle": {
-        "kind": "boolean",
+      "keyboardResizeBy": {
+        "kind": "number",
         "design": "knob",
         "optional": true
       },
-      "defaultSize": {
+      "onLayout": {
+        "kind": "string",
+        "design": "event",
+        "optional": true
+      },
+      "storage": {
         "kind": "string",
         "design": "plumbing",
         "optional": true
       },
-      "minSize": {
+      "tagName": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
-      },
-      "maxSize": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true,
-        "description": "optional on structural components (renders data-hook)"
-      }
-    }
-  },
-  "ScrollArea": {
-    "name": "ScrollArea",
-    "description": "```jsx",
-    "props": {
-      "orientation": {
-        "kind": "enum",
-        "values": [
-          "vertical",
-          "horizontal"
-        ],
-        "design": "knob",
         "optional": true
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "key": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "ref": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Allows getting a ref to the component instance. Once the component unmounts, React will set `ref.current` to `null` (or call the ref with `null` if you passed a callback ref). @see {@link https://react.dev/learn/referencing-values-with-refs#refs-and-the-dom React Docs}"
+      },
+      "withHandle": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "ResizableHandle: Show a visible drag handle indicator"
+      }
+    }
+  },
+  "ScrollArea": {
+    "name": "ScrollArea",
+    "description": "))}",
+    "props": {
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "scrollOrientation": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Scrollbar orientation. \"vertical\" shows only vertical, \"both\" adds horizontal. (default \"vertical\")"
+      },
+      "orientation": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ScrollBar: The orientation of the scrollbar (default \"vertical\")"
       }
     }
   },
   "Select": {
     "name": "Select",
-    "description": "```jsx",
     "props": {
-      "value": {
+      "children": {
         "kind": "string",
         "design": "plumbing",
-        "optional": true
+        "optional": true,
+        "description": "Children to render inside the select"
       },
-      "onValueChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "open": {
-        "kind": "boolean",
+      "maxHeight": {
+        "kind": "number",
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "SelectContent: Maximum height of the dropdown in pixels. Constrains the dropdown height and shows scroll indicators when content overflows. The dropdown uses the smaller of this value and the available viewport space."
       },
-      "onOpenChange": {
+      "placeholder": {
         "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "disabled": {
-        "kind": "boolean",
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "SelectTrigger: Placeholder text when no value is selected"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
+        "description": "SelectTrigger: Whether the select trigger has an error state"
+      },
+      "selectLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SelectTrigger: Accessible label for the select trigger. Priority: aria-label > selectLabel > placeholder > \"Select an option\" (default \"Select) an option\""
       }
     }
   },
   "Separator": {
     "name": "Separator",
-    "description": "```jsx",
     "props": {
       "orientation": {
         "kind": "enum",
@@ -1641,7 +3241,8 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "vertical"
         ],
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Visual orientation of the separator. Horizontal renders a native `<hr>`, vertical renders a `<div>`. (default \"horizontal\")"
       },
       "spacing": {
         "kind": "enum",
@@ -1652,37 +3253,55 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "lg"
         ],
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Controls the spacing around the separator. (default \"default\")"
       },
       "decorative": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When true, the separator is purely decorative (role=\"none\"). When false, it carries separator semantics for assistive technology. (default true)"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SeparatorWithText: Additional CSS classes"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "SeparatorWithText: Text content to display between separators"
       }
     }
   },
   "Sheet": {
     "name": "Sheet",
-    "description": "```jsx",
+    "description": "...",
     "props": {
-      "side": {
-        "kind": "enum",
-        "values": [
-          "top",
-          "right",
-          "bottom",
-          "left"
-        ],
+      "open": {
+        "kind": "boolean",
         "design": "knob",
         "optional": true
       },
-      "open": {
+      "defaultOpen": {
         "kind": "boolean",
         "design": "knob",
         "optional": true
@@ -1692,11 +3311,45 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "design": "event",
         "optional": true
       },
+      "modal": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "side": {
+        "kind": "enum",
+        "values": [
+          "top",
+          "right",
+          "bottom",
+          "left"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "SheetContent: Side from which the sheet slides in (default \"right\")"
+      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
+        "description": "SheetContent: Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SheetContent: Tracking label for analytics context"
+      },
+      "closeLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SheetContent: Accessible label for the close button. (default \"Close\")"
       }
     }
   },
@@ -1713,30 +3366,251 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "sidebar"
       },
-      "side": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "collapsible": {
-        "kind": "enum",
-        "values": [
-          "offcanvas",
-          "icon",
-          "none"
-        ],
-        "design": "knob",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
       },
-      "embedded": {
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics Defaults to \"sidebar\" if not provided"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "side": {
         "kind": "string",
         "design": "plumbing",
-        "description": "DEPRECATED since 2.9.0: Sidebar now always uses inline layout ()"
+        "optional": true,
+        "description": "Position of the sidebar (default SidebarSide.LEFT)"
+      },
+      "collapsible": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Collapsible behavior (default SidebarCollapsible.OFFCANVAS)"
+      },
+      "embedded": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "DEPRECATED: No longer needed. The Sidebar now always uses inline layout for desktop and Sheet overlay for mobile. Remove this prop."
+      },
+      "mobileTitle": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible title for the mobile sheet overlay (default \"Navigation\")"
+      },
+      "mobileDescription": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible description for the mobile sheet overlay (default \"Main) navigation menu\""
+      },
+      "name": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "SidebarAccountDropdown: User's display name"
+      },
+      "email": {
+        "kind": "string",
+        "design": "knob",
+        "description": "SidebarAccountDropdown: User's email address"
+      },
+      "avatar": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SidebarAccountDropdown: Avatar element (use DS Avatar component)"
+      },
+      "menuGroups": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SidebarAccountDropdown: Menu items to render. Each group is separated by a divider."
+      },
+      "onClick": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "SidebarAccountDropdown:"
+      },
+      "icon": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SidebarAccountDropdown:"
+      },
+      "type": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SidebarCollapseIcon: Icon type variant (default SidebarCollapseIconType.CARET)"
+      },
+      "isActive": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarCollapseIcon: Whether the icon is in active/open state"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SidebarContent: Accessible label for the sidebar navigation landmark. Override for i18n. (default \"Sidebar\")"
+      },
+      "separator": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarFooter: Whether to render a separator at the top of the footer. (default true)"
+      },
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarGroupAction: Render as a different element (Radix Slot pattern)"
+      },
+      "size": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SidebarGroupLabel: Size variant (default SidebarGroupLabelSize.SM)"
+      },
+      "isOpen": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarGroupLabel: Whether the collapsible section is open"
+      },
+      "onToggle": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "SidebarGroupLabel: Callback when collapsible is toggled"
+      },
+      "onAction": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "SidebarGroupLabel: Callback when action is triggered"
+      },
+      "senderName": {
+        "kind": "string",
+        "design": "knob",
+        "description": "SidebarInboxItem: Sender or person name"
+      },
+      "title": {
+        "kind": "string",
+        "design": "knob",
+        "description": "SidebarInboxItem: Notification title"
+      },
+      "description": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarInboxItem: Preview description text"
+      },
+      "timestamp": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarInboxItem: Timestamp string"
+      },
+      "showOnHover": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarMenuAction: Show action only on hover"
+      },
+      "tooltip": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SidebarMenuButton: Tooltip content to show when sidebar is collapsed"
+      },
+      "defaultOpen": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarMenuCollapsible: Whether the collapsible is open by default"
+      },
+      "open": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarMenuCollapsible: Controlled open state"
+      },
+      "onOpenChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "SidebarMenuCollapsible: Callback when open state changes"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarMenuCollapsible: Additional CSS classes"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SidebarMenuCollapsible:"
+      },
+      "showIcon": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarMenuSkeleton: Show icon skeleton placeholder"
+      },
+      "groupTitle": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarPopoverMenu: Group title displayed at the top of the menu. (default \"Teams\")"
+      },
+      "items": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SidebarPopoverMenu: Items to render in the menu"
+      },
+      "shortcut": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarPopoverMenu:"
+      },
+      "triggerAriaLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarPopoverTrigger: Accessible label for the trigger button. (default \"Switch) workspace\""
+      },
+      "toggleAriaLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarRail: Accessible label and tooltip for the rail toggle. (default \"Toggle) Sidebar\""
+      },
+      "label": {
+        "kind": "string",
+        "design": "knob",
+        "description": "SidebarSwitcher: Label displayed in the trigger"
+      },
+      "triggerClassName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SidebarSwitcher: Additional CSS classes for the trigger"
       }
     },
     "variantDefaults": {
@@ -1745,74 +3619,70 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Skeleton": {
     "name": "Skeleton",
-    "description": "```jsx",
     "props": {
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "loadingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label announced to screen readers during loading. (default \"Loading\")"
       }
     }
   },
   "Slider": {
     "name": "Slider",
-    "description": "```jsx",
+    "description": "dataHook=\"slider\"",
     "props": {
-      "mode": {
-        "kind": "enum",
-        "values": [
-          "single",
-          "range"
-        ],
-        "design": "knob",
-        "optional": true
-      },
-      "value": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "defaultValue": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "onValueChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "min": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "max": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "step": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "thumbLabels": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "mode": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Slider mode - single value or range (two thumbs). - \"single\": One thumb, selects a single value (default) - \"range\": Two thumbs, selects a min/max range (default \"single\")"
+      },
+      "thumbLabels": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible labels for the slider thumb(s). - For single mode: provide one label (e.g., [\"Volume\"]) - For range mode: provide two labels (e.g., [\"Minimum price\", \"Maximum price\"]) (default [\"Slider\"]) for single, [\"Minimum value\", \"Maximum value\"] for range"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       }
     }
   },
   "Sonner": {
     "name": "Sonner",
-    "description": "```jsx",
+    "description": "sonner({",
     "props": {
       "title": {
         "kind": "string",
@@ -1854,139 +3724,220 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "SplitLayout": {
     "name": "SplitLayout",
-    "description": "```jsx",
+    "description": "dataHook=\"signup-hero\"",
     "props": {
-      "left": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "right": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "left": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "DEPRECATED: Use `<SplitLayoutContentLeft>` composition instead. (Content for the left/primary section.)"
+      },
+      "right": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "DEPRECATED: Use `<SplitLayoutContentRight>` composition instead. (Content for the right/secondary section.)"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "SplitLayoutHeader: Header content (e.g., Header component with Logo)"
+      },
+      "sticky": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "SplitLayoutContentLeft: Pins the column to the viewport on desktop (≥lg) so it stays visible while the sibling column grows beyond one screen. Applies `sticky top-0 h-screen self-start`. (default false)"
+      },
+      "flush": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "SplitLayoutContentRight: Removes padding so content can fill edge-to-edge. Use with `SplitLayoutImage` for full-bleed imagery. (default false)"
+      },
+      "src": {
+        "kind": "string",
+        "design": "knob",
+        "description": "SplitLayoutImage: Image source URL"
+      },
+      "alt": {
+        "kind": "string",
+        "design": "knob",
+        "description": "SplitLayoutImage: Alt text for the image"
+      },
+      "objectFit": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SplitLayoutImage: How the image fits its container. (default \"cover\")"
+      },
+      "objectPosition": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "SplitLayoutImage: CSS object-position value controlling the focal point of the image. (default \"center\") @example \"top\", \"center\", \"left 30%\""
       }
     }
   },
   "Stepper": {
     "name": "Stepper",
-    "description": "```jsx",
+    "description": "))}",
     "props": {
-      "orientation": {
-        "kind": "enum",
-        "values": [
-          "horizontal",
-          "vertical"
-        ],
-        "design": "knob",
-        "optional": true
-      },
-      "labelPlacement": {
-        "kind": "enum",
-        "values": [
-          "below",
-          "inline"
-        ],
-        "design": "knob",
-        "optional": true
-      },
-      "state": {
-        "kind": "enum",
-        "values": [
-          "active",
-          "completed",
-          "inactive",
-          "error"
-        ],
-        "design": "knob",
-        "optional": true
-      },
-      "steps": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "value": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "defaultValue": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "onValueChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "stepId": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "completed": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "error": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "disabled": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "loading": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "steps": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Ordered list of steps. Defines step order, total count and id → index resolution."
+      },
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Controlled active step id."
+      },
+      "defaultValue": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Active step id for uncontrolled usage. Defaults to the first step."
+      },
+      "onValueChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Called with the new active step id when the active step changes."
+      },
+      "orientation": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Layout orientation. (default \"horizontal\")"
+      },
+      "labelPlacement": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Where labels sit relative to the indicator in horizontal orientation. (default \"below\")"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible label for the stepper region. (default \"Progress\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics."
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context."
+      },
+      "stepId": {
+        "kind": "string",
+        "design": "knob",
+        "description": "StepperItem: Id of the step this item represents (must match an `id` in `steps`)."
+      },
+      "completed": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "StepperItem: Force the completed state regardless of the active step."
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "StepperItem: Mark the step as errored (shows the error indicator)."
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "StepperItem: Disable interaction with the step."
+      },
+      "loading": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "StepperItem: Show a loading spinner in the indicator while this step is active."
+      },
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "StepperTrigger: Render as the child element instead of a button (Radix Slot pattern). Note: the disabled state is not applied automatically when `asChild` is true — the consumer must handle disabled styling/behavior on the child."
+      },
+      "completedLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "StepperIndicator: Screen-reader label appended when the step is completed. (default \"Completed\")"
+      },
+      "errorLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "StepperIndicator: Screen-reader label appended when the step has an error. (default \"Error\")"
+      },
+      "loadingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "StepperIndicator: Screen-reader label appended while the step is loading. (default \"Loading\")"
       }
     }
   },
   "Switch": {
     "name": "Switch",
-    "description": "```jsx",
+    "description": "Enable notifications",
     "props": {
-      "disabled": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "checked": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
-      "onCheckedChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
       }
     }
   },
   "Table": {
     "name": "Table",
-    "description": "```jsx",
     "props": {
       "size": {
         "kind": "enum",
@@ -1999,6 +3950,35 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "default"
       },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "minWidth": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Minimum width for the table (e.g., \"600px\", \"40rem\"). Prevents columns from compressing on narrow viewports and enables horizontal scroll via the built-in overflow container. When set, the scroll container becomes a focusable region for keyboard accessibility."
+      },
+      "scrollRegionLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the scroll container region. Used when `minWidth` is set to provide context for keyboard users. (default \"Scrollable) table\""
+      },
       "align": {
         "kind": "enum",
         "values": [
@@ -2007,12 +3987,8 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "center"
         ],
         "design": "knob",
-        "optional": true
-      },
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
-        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+        "optional": true,
+        "description": "TableHead: Text alignment for the header cell. (default \"left\")"
       }
     },
     "variantDefaults": {
@@ -2021,90 +3997,153 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Tabs": {
     "name": "Tabs",
-    "description": "```jsx",
+    "description": "Account",
     "props": {
-      "value": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "defaultValue": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "onValueChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "lazyMount": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "unmountOnExit": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "lazyMount": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Only mount tab panel content when the tab is first activated (opt-in)"
+      },
+      "unmountOnExit": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Unmount tab panel content when the tab becomes inactive"
+      },
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "The controlled value of the active tab"
+      },
+      "defaultValue": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "The default value of the active tab (uncontrolled)"
+      },
+      "onValueChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback when the active tab changes"
       }
     }
   },
   "TextRevealMotion": {
     "name": "TextRevealMotion",
-    "description": "```jsx",
+    "description": "_renderOverride=\"mixed\"",
     "props": {
-      "holdTime": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "shimmer": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "gradientFrom": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "gradientTo": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "holdTime": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "How long (ms) each item stays fully visible. The ball keeps morphing and rotating during the hold. (default 1300)"
+      },
+      "shimmer": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Show shimmer sweep after each reveal. (default true)"
+      },
+      "gradientFrom": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Gradient start color. Accepts any CSS color value. (default \"var(--loading-gradient-from)\")"
+      },
+      "gradientTo": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Gradient end color. Accepts any CSS color value. (default \"var(--loading-gradient-to)\")"
+      },
+      "loadingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the loading animation. (default \"Loading\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics."
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context."
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Each child is one item in the reveal cycle. Pass any Typography component as a child. @example ```tsx <TypographyP dataHook=\"w1\">Analyzing</TypographyP> <TypographyP dataHook=\"w2\">Processing</TypographyP> ```"
       }
     }
   },
   "Textarea": {
     "name": "Textarea",
-    "description": "```jsx",
+    "description": "dataHook=\"message-textarea\"",
     "props": {
-      "error": {
-        "kind": "boolean",
-        "design": "knob",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "id": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Optional id attribute for linking with label via htmlFor"
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the textarea has an error state"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional tracking prop for analytics tracking element identifier"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional tracking prop for analytics tracking label"
       }
     }
   },
   "ToggleGroup": {
     "name": "ToggleGroup",
-    "description": "```jsx",
+    "description": "function Example() {",
     "props": {
       "variant": {
         "kind": "enum",
@@ -2127,29 +4166,33 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "default"
       },
-      "type": {
-        "kind": "enum",
-        "values": [
-          "single",
-          "multiple"
-        ],
-        "design": "plumbing",
-        "optional": true
-      },
-      "value": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "onValueChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "ToggleGroupItem: Unique value for the toggle item (REQUIRED)"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ToggleGroupItem: ARIA label for accessibility (required when no text content)"
       }
     },
     "variantDefaults": {
@@ -2159,17 +4202,17 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "Toggle": {
     "name": "Toggle",
-    "description": "```jsx",
+    "description": "dataHook=\"toggle-bold\"",
     "props": {
       "variant": {
         "kind": "enum",
         "values": [
-          "default",
+          "simple",
           "outline"
         ],
         "design": "knob",
         "optional": true,
-        "default": "default"
+        "default": "simple"
       },
       "size": {
         "kind": "enum",
@@ -2182,66 +4225,94 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "default": "default"
       },
-      "pressed": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "onPressedChange": {
-        "kind": "string",
-        "design": "event",
-        "optional": true
-      },
-      "ariaLabel": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ARIA label for accessibility (required when no text content)"
       }
     },
     "variantDefaults": {
-      "variant": "default",
+      "variant": "simple",
       "size": "default"
     }
   },
   "Tooltip": {
     "name": "Tooltip",
-    "description": "```jsx",
+    "description": "Add to library",
     "props": {
+      "open": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "defaultOpen": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "onOpenChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true
+      },
       "delayDuration": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "The duration from when the pointer enters the trigger until the tooltip gets opened. This will override the prop with the same name passed to Provider. @defaultValue 700"
       },
-      "skipDelayDuration": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "side": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "align": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
-      },
-      "sideOffset": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true
+      "disableHoverableContent": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When `true`, trying to hover the content will result in the tooltip closing as the pointer leaves the trigger. @defaultValue false"
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
+        "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
         "optional": true,
-        "description": "optional on structural components (renders data-hook)"
+        "description": "TooltipContent: Optional analytics element identifier"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "TooltipContent: Optional analytics label context"
+      },
+      "hideArrow": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "TooltipContent: Hide the tooltip arrow"
+      },
+      "skipDelayDuration": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "TooltipProvider:"
       }
     }
   },
@@ -2249,15 +4320,39 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
     "name": "TypographyH1",
     "description": "Styled typographic elements: headings (H1-H4), paragraph, blockquote, list, code, lead, and muted text.",
     "props": {
+      "key": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
       "asChild": {
         "kind": "boolean",
         "design": "knob",
-        "optional": true
+        "optional": true,
+        "description": "Render as a different element using Radix Slot pattern. When true, merges props onto the child element."
       },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",
         "description": "REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. \"settings-save-button\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics. Defaults to component name if not provided."
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context. Additional context for tracking events."
+      },
+      "ref": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Allows getting a ref to the component instance. Once the component unmounts, React will set `ref.current` to `null` (or call the ref with `null` if you passed a callback ref). @see {@link https://react.dev/learn/referencing-values-with-refs#refs-and-the-dom React Docs}"
       }
     }
   }

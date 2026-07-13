@@ -3,9 +3,10 @@ name: Label
 import: "@brightlocal/ui-components"
 subpath: "@brightlocal/ui-components/label"
 props:
-  - optional? — TODO(review): type + one-line description from src
-  - htmlFor? — TODO(review): type + one-line description from src
-  - dataHook?: string — optional on structural components (renders data-hook)
+  - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
+  - trackingEl?: string — Tracking element identifier for analytics Defaults to "label" if not provided
+  - trackingLabel?: string — Tracking label for analytics context Additional context for tracking events
+  - optional?: boolean — Display "(optional)" suffix after label text (default false)
 when_to_use: Do NOT use for: standalone text (use Typography).
 aliases: [form label, input label]
 ---
