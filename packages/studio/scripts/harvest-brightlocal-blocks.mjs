@@ -76,6 +76,11 @@ await page.waitForFunction(() => Boolean(window.__STORYBOOK_PREVIEW__), null, {
 });
 
 const blocks = await page.evaluate(async () => {
+  // The preview loads its story index asynchronously — extract() before
+  // that throws SB_PREVIEW_API_0005. The docs render (my interactive
+  // session) had implicitly awaited it; a fresh headless boot must do
+  // so explicitly.
+  await window.__STORYBOOK_PREVIEW__.initializationPromise;
   const store = await window.__STORYBOOK_PREVIEW__.extract();
   const out = [];
   for (const [id, s] of Object.entries(store)) {
