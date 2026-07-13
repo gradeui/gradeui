@@ -115,16 +115,16 @@ for (const b of blocks) {
   // Minified/mangled story source (the lab failure mode) — flag, keep
   // anyway for reference, a human can DOM-reconstruct.
   const mangled = /=>\s*<[a-z]{1,2}\s*\/>/.test(b.src);
-  const header = [
-    `// ${b.title} — ${b.name}`,
-    `// Harvested from ${base}/?path=/story/${b.id}`,
-    `// (parameters.docs.source.originalSource — story-file-local helper`,
-    `// components are NOT included; they live in BrightLocal's repo.)`,
-    mangled ? "// WARNING: source looks minified — reconstruct from rendered DOM." : "",
-    "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const header =
+    [
+      `// ${b.title} — ${b.name}`,
+      `// Harvested from ${base}/?path=/story/${b.id}`,
+      `// (parameters.docs.source.originalSource — story-file-local helper`,
+      `// components are NOT included; they live in BrightLocal's repo.)`,
+      ...(mangled
+        ? ["// WARNING: source looks minified — reconstruct from rendered DOM."]
+        : []),
+    ].join("\n") + "\n\n";
   writeFileSync(join(OUT_DIR, `${b.id}.jsx`), header + b.src + "\n");
   written++;
 }
