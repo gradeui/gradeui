@@ -74,14 +74,27 @@ await page.goto(`${base}/iframe.html?id=ui-components-button--docs&viewMode=docs
 await page.waitForFunction(() => Boolean(window.__STORYBOOK_PREVIEW__), null, {
   timeout: 15000,
 });
+// Wait for the docs page to actually RENDER — the preview object exists
+// well before its story index loads, and initializationPromise alone
+// proved insufficient headlessly (SB_PREVIEW_API_0005 regardless).
+await page
+  .waitForSelector(".sbdocs, #storybook-docs, .docblock-source", { timeout: 20000 })
+  .catch(() => {});
 
 const blocks = await page.evaluate(async () => {
-  // The preview loads its story index asynchronously — extract() before
-  // that throws SB_PREVIEW_API_0005. The docs render (my interactive
-  // session) had implicitly awaited it; a fresh headless boot must do
-  // so explicitly.
-  await window.__STORYBOOK_PREVIEW__.initializationPromise;
-  const store = await window.__STORYBOOK_PREVIEW__.extract();
+  const preview = window.__STORYBOOK_PREVIEW__;
+  if (preview.initializationPromise) await preview.initializationPromise;
+  // Retry loop — the index arrives asynchronously and there is no
+  // reliable public signal across Storybook versions. 60 × 500ms cap.
+  let store = null;
+  for (let i = 0; i < 60 && !store; i++) {
+    try {
+      store = await preview.extract();
+    } catch {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+  if (!store) throw new Error("story store never initialized (60s)");
   const out = [];
   for (const [id, s] of Object.entries(store)) {
     if (!id.startsWith("blocks-")) continue;
