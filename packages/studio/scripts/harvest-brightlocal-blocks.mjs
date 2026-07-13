@@ -47,10 +47,21 @@ let chromium;
 try {
   ({ chromium } = require("playwright"));
 } catch {
-  console.error(
-    "playwright not found — `npx playwright install chromium` once, or run from a dir that has it (apps/docs devDeps).",
-  );
-  process.exit(1);
+  try {
+    // pnpm's strict layout hides apps/docs' devDeps from this package —
+    // reach into its node_modules directly (same fallback as the
+    // stories harvester).
+    ({ chromium } = require(
+      join(__dirname, "..", "..", "..", "apps", "docs", "node_modules", "playwright"),
+    ));
+  } catch (err) {
+    console.error(
+      "playwright not found — install it where npx can see it:\n" +
+        "  cd ../../apps/docs && npx playwright install chromium\n" +
+        `(resolution error: ${err instanceof Error ? err.message : err})`,
+    );
+    process.exit(1);
+  }
 }
 
 const browser = await chromium.launch();

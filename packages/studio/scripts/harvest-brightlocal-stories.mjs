@@ -130,14 +130,29 @@ for (const entry of entries) {
     const raw = readFileSync(path, "utf-8");
     const fenceEnd = raw.indexOf("\n---", 3) + 4;
     const frontmatter = raw.slice(0, fenceEnd);
+    // CURATION-SAFE: hand-authored examples live between the
+    // frontmatter and the CURATED_END marker and SURVIVE re-harvests —
+    // only the harvested region below is replaced. The card.md rich
+    // examples (stat-summary / entity card, reconstructed from the Lab
+    // dashboard) are the reason this exists: a re-run must never
+    // clobber curation. To curate: put your ```jsx blocks right after
+    // the frontmatter and close with the marker line.
+    const CURATED_END = "<!-- curated:end — harvested examples below are replaced on re-harvest -->";
+    const oldBody = raw.slice(fenceEnd);
+    const markerIdx = oldBody.indexOf(CURATED_END);
+    const curated =
+      markerIdx >= 0
+        ? oldBody.slice(0, markerIdx + CURATED_END.length)
+        : `\n${CURATED_END}`;
     const body = [
+      curated,
       "",
       ...examples.map((c) => "```jsx\n" + c + "\n```"),
       "",
       `<!-- Examples harvested from ${base} (${entry.id}); re-run harvest-brightlocal-stories.mjs to refresh. -->`,
       "",
     ].join("\n");
-    writeFileSync(path, frontmatter + "\n" + body);
+    writeFileSync(path, frontmatter + body);
     updated++;
     console.log(`[harvest] ${file} ← ${examples.length} example(s)`);
   } catch (err) {

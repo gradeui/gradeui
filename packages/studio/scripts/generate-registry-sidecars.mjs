@@ -22,8 +22,11 @@ import { dirname, join } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const id = process.argv[2];
-if (!id || !/^[a-z][a-z0-9-]*$/.test(id)) {
+// Default to brightlocal — the only external registry today, and
+// `pnpm -F @gradeui/studio generate:registry-sidecars` doesn't forward
+// positional args without an extra `--` that nobody remembers.
+const id = process.argv[2] ?? "brightlocal";
+if (!/^[a-z][a-z0-9-]*$/.test(id)) {
   console.error("usage: generate-registry-sidecars.mjs <registry-id>   (kebab-case)");
   process.exit(1);
 }
