@@ -341,12 +341,23 @@ export function RegistryBlocksBrowser() {
       ? null
       : new URLSearchParams(window.location.search).get("block");
   const [selected, setSelected] = React.useState<string | null>(readBlockParam);
+  // The grid unmounts while a detail is open, so its scroll position
+  // dies with it — remember scrollTop when opening and restore it when
+  // the grid remounts (the Back annoyance on a 71-block list).
+  const gridScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const savedScrollTop = React.useRef(0);
   const openBlock = React.useCallback((id: string) => {
+    savedScrollTop.current = gridScrollRef.current?.scrollTop ?? 0;
     const url = new URL(window.location.href);
     url.searchParams.set("block", id);
     window.history.pushState(null, "", url);
     setSelected(id);
   }, []);
+  React.useLayoutEffect(() => {
+    if (selected === null && gridScrollRef.current) {
+      gridScrollRef.current.scrollTop = savedScrollTop.current;
+    }
+  }, [selected]);
   const closeBlock = React.useCallback(() => {
     // Prefer popping the entry we pushed so Back/Forward stay coherent;
     // popstate below does the state sync.
@@ -428,7 +439,11 @@ export function RegistryBlocksBrowser() {
           />
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1" data-lenis-prevent>
+      <div
+        ref={gridScrollRef}
+        className="min-h-0 flex-1 overflow-y-auto pr-1"
+        data-lenis-prevent
+      >
         <div className="flex flex-col gap-8 pb-10">
           {groups.map(([group, items]) => (
             <section key={group} className="flex flex-col gap-3">
