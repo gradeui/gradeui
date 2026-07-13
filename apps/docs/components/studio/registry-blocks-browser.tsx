@@ -34,6 +34,101 @@ import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** Block story source → renderable module (best effort). */
+/**
+ * Plain (non-CSF) source → previewable component module body.
+ *
+ * Recipes are MODULE-SHAPED documents, not bare JSX: many carry import
+ * statements, consts, and hook calls before the JSX, and the multi-
+ * example ones carry FURTHER snippets after the first tree. PREVIEW-only
+ * transforms (the code view always shows the raw source):
+ *   1. strip the // provenance header (renders as literal JSX text)
+ *   2. render {/* slot *\/} comments as dashed placeholders — recipes
+ *      mark fill-me regions that way ("form fields")
+ *   3. strip import statements (the tag/identifier census builds the
+ *      real DS import; stray imports inside a function are a syntax
+ *      error — the "AuthPageShell renders nothing" class)
+ *   4. split prelude (consts/hooks — legal inside a component) from the
+ *      FIRST top-level JSX tree, found with a line-wise depth scan;
+ *      anything after that tree (extra doc snippets) is preview-dropped.
+ */
+function buildPlainPreview(source: string): string {
+  const cleaned = source
+    .replace(/^(?:\/\/[^\n]*\n)+/, "")
+    .replace(
+      /\{\/\*\s*([^*]*?)\s*\*\/\}/g,
+      (_m, label: string) =>
+        '<div style={{ padding: 12, border: "1px dashed #94a3b8", borderRadius: 8, color: "#64748b", fontSize: 12, textAlign: "center" }}>' +
+        JSON.stringify(String(label)).replace(/^"|"$/g, "") +
+        "</div>",
+    )
+    // Imports, single- or multi-line (import { a,\n b } from "x";) and
+    // side-effect/type forms.
+    .replace(/^import\b[\s\S]*?["'][^"'\n]+["'];?[ \t]*$/gm, "")
+    .trim();
+
+  const lines = cleaned.split("\n");
+  // First TOP-LEVEL JSX line — brace-depth-aware, so JSX inside a
+  // `function MapZoomControls() { … }` definition doesn't count (that
+  // class parsed as garbage: half a function in the prelude).
+  let braceDepth = 0;
+  let jsxStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (braceDepth === 0 && /^</.test(t) && !/^<\//.test(t)) {
+      jsxStart = i;
+      break;
+    }
+    braceDepth +=
+      (lines[i].match(/\{/g) ?? []).length -
+      (lines[i].match(/\}/g) ?? []).length;
+  }
+  if (jsxStart < 0) {
+    // No top-level JSX — but recipes that define a COMPONENT can be
+    // previewed by instantiating it (function decls are legal inside
+    // the preview component).
+    const def = cleaned.match(/^(?:export\s+)?function\s+([A-Z]\w*)/m) ??
+      cleaned.match(/^const\s+([A-Z]\w*)\s*=/m);
+    if (def) {
+      return `export default function BlockPreview() {
+${cleaned}
+  return (
+    <div style={{ padding: 24, boxSizing: "border-box" }}>
+      <${def[1]} dataHook="preview" />
+    </div>
+  );
+}`;
+    }
+    return `export default function BlockPreview() {
+  return <div style={{ padding: 24, color: "#64748b", fontSize: 13 }}>No renderable JSX — see source.</div>;
+}`;
+  }
+  const prelude = lines.slice(0, jsxStart).join("\n").trim();
+  // Depth-scan to the end of the first JSX tree.
+  let depth = 0;
+  let end = lines.length - 1;
+  for (let i = jsxStart; i < lines.length; i++) {
+    const l = lines[i];
+    const opens = (l.match(/<[A-Za-z]/g) ?? []).length;
+    const closes = (l.match(/<\//g) ?? []).length;
+    const selfCloses = (l.match(/\/>/g) ?? []).length;
+    depth += opens - closes - selfCloses;
+    if (depth <= 0) {
+      end = i;
+      break;
+    }
+  }
+  const jsx = lines.slice(jsxStart, end + 1).join("\n");
+
+  return `export default function BlockPreview() {
+${prelude}
+  return (
+    <div style={{ padding: 24, boxSizing: "border-box" }}>
+${jsx}
+    </div>
+  );
+}`;
+}
+
 function blockToApp(
   block: RegistryBlock,
   registry: DesignSystemRegistry,
@@ -49,22 +144,42 @@ function blockToApp(
   const ds: string[] = [];
   const stubs: string[] = [];
   for (const t of tags) (dsNames.has(t) ? ds : stubs).push(t);
+  // DS identifiers used outside tag position (hooks/helpers:
+  // useDataTable, createClusterPinElement, …) — import them too.
+  // Word-boundary scan per known name; sources are small.
+  for (const name of dsNames) {
+    if (ds.includes(name) || stubs.includes(name)) continue;
+    if (new RegExp(`\\b${name}\\b`).test(source)) ds.push(name);
+  }
+
+  // Unknown tags are often ICONS (Plus, ChevronDown, Menu — the
+  // registry's sanctioned icon package), not story-locals. Namespace-
+  // import the icon package and resolve each unknown tag at runtime,
+  // falling back to the dashed stub only when the icon package doesn't
+  // export it either. (A named import of a missing export would kill
+  // the whole module at link time — the nullish probe is crash-safe.)
+  const iconPkg = (registry.components.externalImports ?? []).find((p) =>
+    /icon|lucide/i.test(p),
+  );
 
   const imports = [
     `import * as React from "react";`,
     ds.length
       ? `import { ${ds.sort().join(", ")} } from "${registry.package.name}";`
       : "",
+    iconPkg && stubs.length ? `import * as __icons from "${iconPkg}";` : "",
   ]
     .filter(Boolean)
     .join("\n");
 
   const stubDefs = stubs
     .sort()
-    .map(
-      (s) =>
-        `const ${s} = (props) => <div style={{ padding: 16, border: "1px dashed #cbd5e1", borderRadius: 8, color: "#64748b", fontSize: 12 }}>{"<${s} /> (story-local)"}{props.children}</div>;`,
-    )
+    .map((s) => {
+      const stub = `(props) => <div style={{ padding: 16, border: "1px dashed #cbd5e1", borderRadius: 8, color: "#64748b", fontSize: 12 }}>{"<${s} /> (story-local)"}{props.children}</div>`;
+      return iconPkg
+        ? `const ${s} = __icons.${s} ?? (${stub});`
+        : `const ${s} = ${stub};`;
+    })
     .join("\n");
 
   // Story-helper shims — the common CSF vocab (fn() handlers,
@@ -75,7 +190,18 @@ function blockToApp(
   const shims = [
     `const fn = () => () => {};`,
     `const breakpoint = { sm: 640, md: 768, lg: 1024, xl: 1280, "2xl": 1536 };`,
-    ...(block.freeIds ?? []).map((id) => `const ${id} = [];`),
+    // Name-aware shims: hooks must be CALLABLE during render
+    // (useDataTable() on an empty array throws before first paint),
+    // handlers only fire on interaction, everything else is data.
+    // (minus anything the DS import already provides — the generator's
+    // audit stubs only tags, so real DS hooks land in freeIds too)
+    ...(block.freeIds ?? []).filter((id) => !ds.includes(id)).map((id) =>
+      /^use[A-Z]/.test(id)
+        ? `const ${id} = () => ({});`
+        : /^(set|handle|on|toggle)[A-Z]/.test(id)
+          ? `const ${id} = () => {};`
+          : `const ${id} = [];`,
+    ),
   ].join("\n");
 
   const isStoryObject = source.startsWith("{");
@@ -86,29 +212,7 @@ export default function BlockPreview() {
   if (!R) return <div style={{ padding: 24, color: "#64748b", fontSize: 13 }}>Story has no render() — see source.</div>;
   return <R {...(__story.args ?? {})} />;
 }`
-    : `export default function BlockPreview() {
-  return (
-    <div style={{ padding: 24, boxSizing: "border-box" }}>
-${
-  // PREVIEW-only source transforms; the code view shows the raw source.
-  // 1. Leading // header lines (recipe provenance/keywords) would
-  //    render as literal text in JSX children — strip them.
-  // 2. {/* slot */} JSX comments are how recipes mark fill-me regions
-  //    ("form fields", "marketing content") — invisible in a render,
-  //    which reads as broken. Show them as dashed slot placeholders.
-  source
-    .replace(/^(?:\/\/[^\n]*\n)+/, "")
-    .replace(
-      /\{\/\*\s*([^*]*?)\s*\*\/\}/g,
-      (_m, label: string) =>
-        '<div style={{ padding: 12, border: "1px dashed #94a3b8", borderRadius: 8, color: "#64748b", fontSize: 12, textAlign: "center" }}>' +
-        JSON.stringify(String(label)).replace(/^"|"$/g, "") +
-        "</div>",
-    )
-}
-    </div>
-  );
-}`;
+    : buildPlainPreview(source);
 
   // NO prepareAppSource here — its repair/inject passes (multiline-
   // string repair, source-id injection) use regex scanners that mangle
