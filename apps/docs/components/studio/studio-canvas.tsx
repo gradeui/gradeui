@@ -85,6 +85,23 @@ import {
 } from "@/lib/chat-sandpack";
 import { openInCodeSandboxNpm } from "@/lib/chat-export-npm";
 import { useActiveRegistry } from "@/lib/use-active-registry";
+import { getActiveRegistry } from "@/lib/active-registry";
+
+/**
+ * Standalone-preview URL for "Open preview in new tab" / grid Preview.
+ * Both renderers speak the same localStorage handshake (`{source,name}`
+ * JSON under `grade:screen:<id>` + `#screen=<key>` + storage events) —
+ * external projects just need the EXTERNAL renderer document, with the
+ * registry pinned in the query so the right DS module/theme loads.
+ * Resolved at click time (plain read, not a hook) so it always reflects
+ * the project's registry override.
+ */
+function standalonePreviewUrl(key: string): string {
+  const registry = getActiveRegistry();
+  return registry.id !== "gradeui"
+    ? `/external-sandbox?registry=${encodeURIComponent(registry.id)}#screen=${encodeURIComponent(key)}`
+    : `/fast-sandbox#screen=${encodeURIComponent(key)}`;
+}
 import { ExternalDsMount } from "@/components/studio/external-ds-frame";
 import {
   backfillMediaSurfaceSrcProp,
@@ -1894,7 +1911,7 @@ export function StudioCanvas({
                         return;
                       }
                       window.open(
-                        `/fast-sandbox#screen=${encodeURIComponent(key)}`,
+                        standalonePreviewUrl(key),
                         "_blank",
                         "noopener,noreferrer",
                       );
@@ -3043,7 +3060,7 @@ function ScreenTile({
                   return;
                 }
                 window.open(
-                  `/fast-sandbox#screen=${encodeURIComponent(key)}`,
+                  standalonePreviewUrl(key),
                   "_blank",
                   "noopener,noreferrer",
                 );

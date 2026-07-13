@@ -271,6 +271,9 @@ export default function ExternalSandboxPage() {
     // — so the suffix map turns them into component names; unmatched
     // parts fall back to the agent's kebab→Pascal).
     let agent: SelectionAgentHandle | null = null;
+    // Standalone-preview storage listener (registered after module
+    // load if a #screen= key is present) — held here for cleanup.
+    let onStandaloneStorage: ((e: StorageEvent) => void) | null = null;
     const suffixMap = REGISTRY.selection.partSuffixMap ?? {};
     const suffixes = Object.keys(suffixMap).sort((a, b) => b.length - a.length);
     const resolveComponentName = (part: string): string | undefined => {
@@ -388,16 +391,49 @@ export default function ExternalSandboxPage() {
       modules = m as never;
       setStatus("ready — waiting for source");
       post({ type: "ext:ready" });
-      // Standalone/debug path: ?screen=<id> renders straight from the
-      // Studio localStorage record, no parent required.
-      const screenId = new URLSearchParams(window.location.search).get("screen");
-      if (screenId) {
+      // Standalone-preview handoff — parity with /fast-sandbox. Studio's
+      // "Open preview in new tab" writes `{ source, name }` JSON under a
+      // `grade:screen:<id>` localStorage key and opens `#screen=<key>`;
+      // we render from that record (no parent iframe required), set the
+      // tab title, and live-update via `storage` events as the Studio
+      // canvas keeps writing. The older `?screen=<bare-id>` debug form
+      // still works.
+      const hashMatch = window.location.hash.match(/[#&]screen=([^&]+)/);
+      const queryId = new URLSearchParams(window.location.search).get("screen");
+      const screenKey = hashMatch
+        ? decodeURIComponent(hashMatch[1])
+        : queryId
+          ? `grade:screen:${queryId}`
+          : null;
+      if (screenKey) {
+        const applyScreenPayload = (raw: string | null) => {
+          if (!raw) return;
+          try {
+            const parsed = JSON.parse(raw) as { source?: string; name?: string };
+            if (typeof parsed.source === "string") void render(parsed.source, "light");
+            if (typeof parsed.name === "string") {
+              const title = `${parsed.name} - Preview - Grade`;
+              document.title = title;
+              // Next's metadata pass re-applies the default title after
+              // this effect on first mount — defer a frame so ours wins.
+              requestAnimationFrame(() => {
+                document.title = title;
+              });
+            }
+          } catch {
+            /* corrupt record — leave the empty preview */
+          }
+        };
         try {
-          const raw = window.localStorage.getItem(`grade:screen:${screenId}`);
-          if (raw) void render(JSON.parse(raw).source, "light");
+          applyScreenPayload(window.localStorage.getItem(screenKey));
         } catch {
-          /* ignore */
+          /* storage disabled */
         }
+        onStandaloneStorage = (e: StorageEvent) => {
+          if (e.key !== screenKey || e.newValue == null) return;
+          applyScreenPayload(e.newValue);
+        };
+        window.addEventListener("storage", onStandaloneStorage);
       }
     }).catch((e) => {
       setStatus(`module load failed: ${e instanceof Error ? e.message : e}`);
@@ -408,6 +444,8 @@ export default function ExternalSandboxPage() {
       disposed = true;
       window.removeEventListener("message", onMessage);
       window.removeEventListener("wheel", onWheel);
+      if (onStandaloneStorage)
+        window.removeEventListener("storage", onStandaloneStorage);
       if (zoomRaf !== null) cancelAnimationFrame(zoomRaf);
       heightRo.disconnect();
       teardownAgent();
