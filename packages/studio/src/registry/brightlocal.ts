@@ -24,6 +24,7 @@ import {
 import { BRIGHTLOCAL_SIDECARS } from "./brightlocal/sidecars.generated";
 import { BRIGHTLOCAL_CONTRACTS } from "./brightlocal/contracts.generated";
 import { BRIGHTLOCAL_BLOCKS } from "./brightlocal/blocks.generated";
+import { BRIGHTLOCAL_RECIPES } from "./brightlocal/recipes.generated";
 import { BRIGHTLOCAL_TEMPLATES } from "./brightlocal/templates.generated";
 import { BRIGHTLOCAL_PREVIEW_CSS } from "./brightlocal/preview-css.generated";
 import { BRIGHTLOCAL_PREVIEW_THEME_FULL } from "./brightlocal/preview-theme.generated";
@@ -101,10 +102,14 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
   prompt: {
     extraRules: BRIGHTLOCAL_EXTRA_RULES,
   },
-  // Their composed patterns, harvested from the hidden blocks-* section
-  // of their Storybook (story-store originalSource). Browsable in
-  // Studio's Blocks area.
-  blocks: BRIGHTLOCAL_BLOCKS,
+  // Their composed patterns, two provenances, one browsable surface:
+  //   - blocks: harvested from the hidden blocks-* Storybook section
+  //     (story-store originalSource) — component-family stories.
+  //   - recipes: the DS MCP's get_composition_recipe catalogue —
+  //     page-level patterns (PageHeader, StatsGrid, SettingsPage…) the
+  //     Storybook doesn't cover. "Recipes" group first — they're what
+  //     a designer reaches for when composing a page.
+  blocks: { ...BRIGHTLOCAL_RECIPES, ...BRIGHTLOCAL_BLOCKS },
   // Hand-authored full-page scaffolds (registries/brightlocal/templates)
   // — SOURCE templates: picking one applies the JSX as the screen.
   templates: BRIGHTLOCAL_TEMPLATES,

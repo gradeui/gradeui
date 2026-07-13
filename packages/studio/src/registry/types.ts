@@ -67,6 +67,10 @@ export interface RegistryBlock {
   group: string;
   /** Human story name ("Login Form", "Server Side"). */
   name: string;
+  /** One-line human description for the block's card — what the pattern
+   *  is FOR ("A page header with title, breadcrumb, and actions").
+   *  Composition recipes carry these from the DS's own MCP. */
+  description?: string;
   source: string;
   /** Identifiers the source references that exist only in the DS's
    *  story file (projectColumns, mainItems). Detected at generation

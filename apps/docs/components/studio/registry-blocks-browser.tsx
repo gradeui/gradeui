@@ -89,7 +89,12 @@ export default function BlockPreview() {
     : `export default function BlockPreview() {
   return (
     <div style={{ padding: 24, boxSizing: "border-box" }}>
-${source}
+${
+  // Leading // header lines (recipe provenance/keywords) would render
+  // as literal text in JSX children — strip them from the PREVIEW
+  // build only; the code view shows the full source.
+  source.replace(/^(?:\/\/[^\n]*\n)+/, "")
+}
     </div>
   );
 }`;
@@ -203,7 +208,7 @@ function BlockCard({
             {block.name}
           </span>
           <span className="block truncate text-[11px] text-muted-foreground">
-            {block.group}
+            {block.description ?? block.group}
           </span>
         </div>
         <span className="flex shrink-0 items-center gap-1.5">
@@ -267,7 +272,10 @@ function BlockDetail({
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold">{block.name}</h3>
-              <p className="text-xs text-muted-foreground">{block.group}</p>
+              <p className="text-xs text-muted-foreground">
+                {block.group}
+                {block.description ? ` — ${block.description}` : ""}
+              </p>
             </div>
             <CopyButton text={block.source} />
           </div>
