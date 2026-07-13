@@ -195,6 +195,9 @@ export default function StudioPage() {
     () => buildSystemPrompt(activeRegistry),
     [activeRegistry],
   );
+  // NOTE: per-PROJECT steering (context/dos/donts/rulesFiles) is
+  // appended in projectSystemPrompt below — it needs `projects` state,
+  // which is declared after this memo.
 
   // The screen-level draft theme — seeded once from whatever chrome
   // theme is active when Studio mounts. After that, the Theme tab in
@@ -466,6 +469,28 @@ export default function StudioPage() {
   useEffect(() => {
     setActiveProjectRegistry(activeProjectRegistryId);
   }, [activeProjectRegistryId]);
+
+  // Per-project steering — the project's brief (`context`), dos/donts,
+  // and named rules files, appended AFTER the registry prompt so
+  // project rules can sharpen (or override) registry defaults. These
+  // fields were saved by Project Settings but never injected until
+  // now. Every char is prompt tokens on every turn — the settings UI
+  // says so too.
+  const projectSystemPrompt = useMemo(() => {
+    const proj = projects.find((p) => p.id === activeProjectId);
+    if (!proj) return systemPrompt;
+    const chunks: string[] = [];
+    if (proj.context?.trim()) chunks.push(`PROJECT BRIEF:\n${proj.context.trim()}`);
+    if (proj.dos?.length)
+      chunks.push(`PROJECT RULES — ALWAYS:\n${proj.dos.map((d) => `- ${d}`).join("\n")}`);
+    if (proj.donts?.length)
+      chunks.push(`PROJECT RULES — NEVER:\n${proj.donts.map((d) => `- ${d}`).join("\n")}`);
+    for (const f of proj.rulesFiles ?? []) {
+      if (f.content.trim())
+        chunks.push(`PROJECT RULES (${f.name}):\n${f.content.trim()}`);
+    }
+    return chunks.length ? `${systemPrompt}\n\n${chunks.join("\n\n")}` : systemPrompt;
+  }, [systemPrompt, projects, activeProjectId]);
 
   // Author id for comments/threads. In cloud mode this MUST be the
   // signed-in Supabase user id — `created_by` / `author_id` /
@@ -1463,6 +1488,7 @@ export default function StudioPage() {
         dos?: string[];
         donts?: string[];
         registryId?: string;
+        rulesFiles?: { id: string; name: string; content: string }[];
       },
     ) => {
       await storage.updateProject(id, patch);
@@ -2476,7 +2502,7 @@ export default function StudioPage() {
       key={`chat-${activeId}`}
       chatId={activeId}
       settings={settings}
-      systemPrompt={systemPrompt}
+      systemPrompt={projectSystemPrompt}
       initialMessages={messagesByDesign[activeId]}
       onMessagesChange={handleMessagesChange}
       onStreamingChange={handleStreamingChange}

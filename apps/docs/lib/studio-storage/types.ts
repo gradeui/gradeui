@@ -123,6 +123,19 @@ export interface Project {
    *  exporters are project-scoped — screens inherit. Resolution:
    *  getRegistryById(project.registryId) ?? getActiveRegistry(). */
   registryId?: string;
+  /** Named per-project rules files — the project-scoped sibling of the
+   *  registry's rules/*.md dir. Each file's content rides verbatim into
+   *  the generation prompt (after the registry rules, before the
+   *  brief). Editable in Project Settings; keep them terse — every
+   *  char is prompt tokens on every turn. */
+  rulesFiles?: ProjectRulesFile[];
+}
+
+export interface ProjectRulesFile {
+  id: string;
+  /** Display name, .md by convention ("copy-tone.md", "nav-rules.md"). */
+  name: string;
+  content: string;
 }
 
 // Re-exports of related entity types — keeps `@/lib/studio-storage`
@@ -375,7 +388,7 @@ export interface StudioStorage {
     patch: Partial<
       Pick<
         Project,
-        "name" | "description" | "context" | "dos" | "donts" | "registryId"
+        "name" | "description" | "context" | "dos" | "donts" | "registryId" | "rulesFiles"
       >
     >,
   ): Promise<Project>;

@@ -25,25 +25,15 @@ import { BRIGHTLOCAL_SIDECARS } from "./brightlocal/sidecars.generated";
 import { BRIGHTLOCAL_CONTRACTS } from "./brightlocal/contracts.generated";
 import { BRIGHTLOCAL_BLOCKS } from "./brightlocal/blocks.generated";
 import { BRIGHTLOCAL_RECIPES } from "./brightlocal/recipes.generated";
+import { BRIGHTLOCAL_RULES } from "./brightlocal/rules.generated";
 import { BRIGHTLOCAL_TEMPLATES } from "./brightlocal/templates.generated";
 import { BRIGHTLOCAL_PREVIEW_CSS } from "./brightlocal/preview-css.generated";
 import { BRIGHTLOCAL_PREVIEW_THEME_FULL } from "./brightlocal/preview-theme.generated";
 
-/** AI_USAGE.md distilled — everything except the import rule (see note
- *  above) and anything the sidecars already express per component. */
-const BRIGHTLOCAL_EXTRA_RULES = `BrightLocal house rules (from the design system's AI_USAGE.md):
-- dataHook is REQUIRED on every user-interactive component root (Button, Input, Select, Dialog, Tabs, …) and optional on structural ones. It renders as a data-hook attribute. Naming: kebab-case {context}-{componentType} — "settings-save-button", "login-email-input"; lists include the item id ("user-{id}-row"). Never generic names like "test-button".
-- Styling: semantic color tokens first (primary, secondary, muted, destructive, …); fall back to Tailwind color utilities (text-blue-600) only when no token fits; NEVER raw hex/rgb values.
-- Use DS components, not raw HTML: <Button> not <button>, <Input> not <input>, Typography for text.
-- Compose compound components from their provided sub-exports; don't rebuild patterns from primitives.
-- Transitions: always name the property (transition-colors, transition-opacity); never transition-all.
-- Focus styles: focus-visible: prefix only; never bare focus:.
-- Icons come from @brightlocal/icons at their default 16px — no size/strokeWidth overrides.
-- Forms: the canonical pattern is Field > FieldLabel + control + FieldDescription + FieldError.
-- Branding: app chrome (sidebar headers, top bars) uses the <Logo /> component — the BrightLocal mark — not hand-rolled initial tiles or text logos.
-- NEVER restyle a DS component's own chrome with utility classes. No border/background/rounded/padding/state overrides on TabsTrigger, TabsList, Button, Input, Card internals, etc. — render them BARE and let the design system paint them (e.g. <TabsTrigger value="overview" dataHook="tab-overview">Overview</TabsTrigger>, nothing more). Utility classes are for LAYOUT AROUND components only: spacing, width, grid/flex placement. If a component looks wrong bare, the fix is a variant or size prop, never className surgery.
-- No celebration effects (canvas-confetti) in BrightLocal screens.
-- Charts: always wrap in a container with an explicit fixed height (h-64, h-80) — never height="100%" inside an unsized parent (recharts logs width(-1) and renders nothing).`;
+// Generation rules live in registries/brightlocal/rules/*.md — the
+// hand-editable home (00-house-rules.md carries the AI_USAGE.md
+// distillation). Drop a new .md there + `node
+// scripts/generate-registry-rules.mjs` to extend the harness.
 
 export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
   id: "brightlocal",
@@ -100,7 +90,7 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
     },
   },
   prompt: {
-    extraRules: BRIGHTLOCAL_EXTRA_RULES,
+    extraRules: BRIGHTLOCAL_RULES,
   },
   // Their composed patterns, two provenances, one browsable surface:
   //   - blocks: harvested from the hidden blocks-* Storybook section

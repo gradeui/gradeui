@@ -239,6 +239,7 @@ interface ProjectRow {
   dos: string[] | null;
   donts: string[] | null;
   registry_id: string | null;
+  rules_files: { id: string; name: string; content: string }[] | null;
   owner_type: "user" | "team";
   owner_id: string;
   active_design_id: string | null;
@@ -252,9 +253,9 @@ interface ProjectRow {
  *  are only needed by loadProject). Kept as a const so listProjects
  *  and the mutation methods select an identical shape. */
 const PROJECT_META_COLS =
-  "id, name, description, context, dos, donts, registry_id, owner_type, owner_id, created_at, updated_at";
+  "id, name, description, context, dos, donts, registry_id, rules_files, owner_type, owner_id, created_at, updated_at";
 const PROJECT_FULL_COLS =
-  "id, name, description, context, dos, donts, registry_id, owner_type, owner_id, active_design_id, theme_draft_json, theme_variants_json, created_at, updated_at";
+  "id, name, description, context, dos, donts, registry_id, rules_files, owner_type, owner_id, active_design_id, theme_draft_json, theme_variants_json, created_at, updated_at";
 
 // ─── Screen / message / note rows ─────────────────────────────────
 
@@ -425,6 +426,7 @@ function rowToProject(r: ProjectRow, access: ResourceAccess[]): Project {
     dos: r.dos ?? [],
     donts: r.donts ?? [],
     registryId: r.registry_id ?? undefined,
+    rulesFiles: r.rules_files?.length ? r.rules_files : undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     owner: { type: r.owner_type, id: r.owner_id } as Subject,
@@ -655,7 +657,7 @@ export class SupabaseStudioStorage implements StudioStorage {
     patch: Partial<
       Pick<
         Project,
-        "name" | "description" | "context" | "dos" | "donts" | "registryId"
+        "name" | "description" | "context" | "dos" | "donts" | "registryId" | "rulesFiles"
       >
     >,
   ): Promise<Project> {
@@ -674,6 +676,9 @@ export class SupabaseStudioStorage implements StudioStorage {
     }
     if (patch.donts !== undefined) {
       update.donts = (patch.donts ?? []).map((s) => s.trim()).filter(Boolean);
+    }
+    if (patch.rulesFiles !== undefined) {
+      update.rules_files = patch.rulesFiles.length ? patch.rulesFiles : null;
     }
     if (patch.registryId !== undefined) {
       // Empty string = "clear back to the deployment default".

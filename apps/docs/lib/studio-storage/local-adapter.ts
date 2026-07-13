@@ -681,7 +681,7 @@ export class LocalStorageStudioStorage implements StudioStorage {
     patch: Partial<
       Pick<
         Project,
-        "name" | "description" | "context" | "dos" | "donts" | "registryId"
+        "name" | "description" | "context" | "dos" | "donts" | "registryId" | "rulesFiles"
       >
     >,
   ): Promise<Project> {
@@ -714,6 +714,9 @@ export class LocalStorageStudioStorage implements StudioStorage {
     }
     if (patch.donts !== undefined) {
       next.donts = patch.donts.map((s) => s.trim()).filter(Boolean);
+    }
+    if (patch.rulesFiles !== undefined) {
+      next.rulesFiles = patch.rulesFiles.length ? patch.rulesFiles : undefined;
     }
     if (patch.registryId !== undefined) {
       // Empty string = "clear back to the deployment default".
