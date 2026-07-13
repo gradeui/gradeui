@@ -60,6 +60,11 @@ export interface ExternalIframeHostProps {
    *  share view resolves the PROJECT's registry server-side). Absent =
    *  the active registry (per-project override in Studio). */
   registryId?: string;
+  /** Skip source-id injection. For READ-ONLY previews (blocks browser)
+   *  whose source contains nested template literals with JSX inside —
+   *  injectSourceIds' regex scanner isn't template-aware and corrupts
+   *  them. No selection on these surfaces, so ids buy nothing. */
+  rawSource?: boolean;
 }
 
 export function ExternalIframeHost({
@@ -76,6 +81,7 @@ export function ExternalIframeHost({
   onContentHeight,
   iframeRef: externalIframeRef,
   registryId: registryIdProp,
+  rawSource = false,
 }: ExternalIframeHostProps) {
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
   const readyRef = React.useRef(false);
@@ -105,10 +111,14 @@ export function ExternalIframeHost({
     // the mutator finds in source. The durable appSource stays clean —
     // ids exist only in the renderer input.
     iframeRef.current?.contentWindow?.postMessage(
-      { type: "ext:source", source: injectSourceIds(appSource), mode },
+      {
+        type: "ext:source",
+        source: rawSource ? appSource : injectSourceIds(appSource),
+        mode,
+      },
       window.location.origin,
     );
-  }, [appSource, mode]);
+  }, [appSource, mode, rawSource]);
 
   React.useEffect(() => {
     const onMessage = (e: MessageEvent) => {

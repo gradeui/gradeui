@@ -197,12 +197,15 @@ function snippetToApp(
     .filter(Boolean)
     .join("\n");
 
+  // Inline styles, not Tailwind classes — the wrapper must have its
+  // padding regardless of whether the renderer's utility compiler has
+  // scanned it (Ali: "no margins on the card page examples").
   return prepareAppSource(
     `${importLines}
 
 export default function Example() {
 ${prelude ? `  ${prelude.split("\n").join("\n  ")}\n` : ""}  return (
-    <div className="flex min-h-full flex-col items-start justify-center gap-4 p-6">
+    <div style={{ display: "flex", minHeight: "100%", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 16, padding: 24, boxSizing: "border-box" }}>
 ${body}
     </div>
   );
@@ -598,7 +601,7 @@ export function RegistryComponentsBrowser() {
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto pr-1" data-lenis-prevent>
-        <div className="grid grid-cols-1 gap-4 pb-10 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 pb-10 sm:grid-cols-2">
           {filtered.map((name) => (
             <ComponentCard
               key={`${registry.id}:${name}`}

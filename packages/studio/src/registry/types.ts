@@ -56,6 +56,20 @@ export interface RegistryContractSpec {
   variantDefaults?: Readonly<Record<string, string>>;
 }
 
+/** One composed PATTERN from the design system — a block: a login
+ *  layout, a data table with toolbar/pagination, a sidebar family
+ *  member. Harvested from the DS's own Storybook (blocks harvest) or
+ *  hand-authored. `source` is JSX or a CSF story object literal — the
+ *  Blocks browser normalises at render time. Serialisable (rule 1). */
+export interface RegistryBlock {
+  id: string;
+  /** Grouping label ("DataTable", "Sidebar", "Map", "Form"). */
+  group: string;
+  /** Human story name ("Login Form", "Server Side"). */
+  name: string;
+  source: string;
+}
+
 /** The component-surface portion of a registry. */
 export interface RegistryComponents {
   /** Components the model may emit in `jsx` blocks (OUTPUT RULE #4). */
@@ -159,6 +173,11 @@ export interface DesignSystemRegistry {
   selection: RegistrySelection;
   prompt?: RegistryPrompt;
   runtime?: RegistryRuntime;
+  /** Composed patterns (blocks) — browsable in Studio's Blocks area,
+   *  future starter seeds + agent composition examples. Absent = the
+   *  registry ships no blocks (gradeui's equivalents live in the
+   *  playbook's reference layouts today). */
+  blocks?: Readonly<Record<string, RegistryBlock>>;
 
   // B2/B3 fields (theme, prompt.designMd/extraRules, scaffolds, runtime
   // dependencies) are specified in STUDIO-BYODS.md and land with the

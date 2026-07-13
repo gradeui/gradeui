@@ -83,6 +83,7 @@ import {
 
 import type { StudioSelection } from "@/lib/chat-sandpack";
 import { RegistryComponentsBrowser } from "@/components/studio/registry-components-browser";
+import { RegistryBlocksBrowser } from "@/components/studio/registry-blocks-browser";
 import type { DesignStatus } from "@/lib/studio-designs";
 import { cn } from "@/lib/utils";
 import { useMaybeGradeTheme } from "@/components/grade-theme-provider";
@@ -882,6 +883,12 @@ export function StylesTabContent({
         // model's context; gallery kept below for a future theme tab).
         <div className="mx-auto h-full w-full min-h-0 max-w-6xl">
           <RegistryComponentsBrowser />
+        </div>
+      ) : section === "blocks" ? (
+        // Registry blocks — the DS's composed patterns (harvested from
+        // its Storybook). Source-first with best-effort live previews.
+        <div className="mx-auto h-full w-full min-h-0 max-w-6xl">
+          <RegistryBlocksBrowser />
         </div>
       ) : section === "typography" ? (
         <div className="mx-auto w-full max-w-2xl">

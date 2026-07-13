@@ -309,7 +309,8 @@ export default function StudioPage() {
         saved === "colours" ||
         saved === "typography" ||
         saved === "spacing" ||
-        saved === "components"
+        saved === "components" ||
+        saved === "blocks"
       ) {
         setStylesSection(saved);
       }

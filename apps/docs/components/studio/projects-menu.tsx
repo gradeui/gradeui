@@ -83,7 +83,8 @@ export type StylesSection =
   | "colours"
   | "typography"
   | "spacing"
-  | "components";
+  | "components"
+  | "blocks";
 
 /** Ambient counts the menu shows next to each project + screen.
  *  Owned by the page; the menu just reads. */
@@ -366,6 +367,7 @@ export function ProjectsMenu({
                   ["typography", "Typography"],
                   ["spacing", "Spacing"],
                   ["components", "Components"],
+                  ["blocks", "Blocks"],
                 ] as const).map(([id, label]) => (
                   <SidebarItem
                     key={id}

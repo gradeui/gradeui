@@ -23,6 +23,7 @@ import {
 } from "./brightlocal/allowlist.generated";
 import { BRIGHTLOCAL_SIDECARS } from "./brightlocal/sidecars.generated";
 import { BRIGHTLOCAL_CONTRACTS } from "./brightlocal/contracts.generated";
+import { BRIGHTLOCAL_BLOCKS } from "./brightlocal/blocks.generated";
 import { BRIGHTLOCAL_PREVIEW_CSS } from "./brightlocal/preview-css.generated";
 import { BRIGHTLOCAL_PREVIEW_THEME } from "./brightlocal/preview-theme.generated";
 
@@ -99,6 +100,10 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
   prompt: {
     extraRules: BRIGHTLOCAL_EXTRA_RULES,
   },
+  // Their composed patterns, harvested from the hidden blocks-* section
+  // of their Storybook (story-store originalSource). Browsable in
+  // Studio's Blocks area.
+  blocks: BRIGHTLOCAL_BLOCKS,
   runtime: {
     dependencies: {
       // Icons: the sanctioned icon source per AI_USAGE. The tokens
