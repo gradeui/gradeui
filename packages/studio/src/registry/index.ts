@@ -15,6 +15,7 @@ export type {
   RegistryPropSpec,
   RegistryPrompt,
   RegistrySelection,
+  RegistryTemplate,
 } from "./types";
 export { registryShortName } from "./types";
 export { GRADE_REGISTRY } from "./gradeui";

@@ -15,6 +15,7 @@
 
 import { ALLOWED_COMPONENTS, ALLOWED_EXTERNAL_IMPORTS, PINNED_COMPONENTS } from "../playbook/components/allowlist";
 import { SIDECARS } from "../playbook/components/sidecars.generated";
+import { STUDIO_TEMPLATES } from "../playbook/templates";
 import type { DesignSystemRegistry } from "./types";
 
 export const GRADE_REGISTRY: DesignSystemRegistry = {
@@ -40,4 +41,9 @@ export const GRADE_REGISTRY: DesignSystemRegistry = {
   selection: {
     partAttribute: "data-gds-part",
   },
+  // The playbook's labelled-prompt starters, unchanged and unmoved —
+  // the registry is the delivery shape, templates/index.ts stays the
+  // authoring home. (StudioTemplate is structurally a RegistryTemplate
+  // with prompt required.)
+  templates: STUDIO_TEMPLATES,
 };

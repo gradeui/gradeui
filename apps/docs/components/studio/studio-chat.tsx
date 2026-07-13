@@ -22,7 +22,11 @@ import { X, MousePointerClick } from "lucide-react";
 import { GradeMark } from "@/components/grade-mark";
 import { cn } from "@/lib/utils";
 import type { ChatSettings } from "@/components/ai-elements/provider-picker";
-import { STUDIO_TEMPLATES, type StudioTemplate } from "@/lib/studio-templates";
+import {
+  resolveStudioTemplates,
+  type StudioTemplate,
+} from "@/lib/studio-templates";
+import { useActiveRegistry } from "@/lib/use-active-registry";
 import { humanizeChatError } from "@/lib/chat-error";
 import { stripSourceIds, type StudioSelection } from "@/lib/chat-sandpack";
 import { transform as sucraseTransform } from "sucrase";
@@ -330,7 +334,7 @@ export function StudioChat({
   chatId,
   settings,
   systemPrompt,
-  templates = STUDIO_TEMPLATES,
+  templates: templatesProp,
   initialMessages,
   onMessagesChange,
   onStreamingChange,
@@ -919,20 +923,39 @@ export function StudioChat({
     setInput("");
   };
 
-  // Picking a template seeds the input and moves focus into the textarea so
-  // the user can tweak the wording before sending (or just hit enter).
-  // Templates only surface on truly blank tabs (see the EmptyState gate in
-  // the render tree below), so there's no "clear the scaffold first" dance —
-  // the absence of `currentCode` is the contract that makes a template
-  // prompt the right starting shape.
-  const handlePickTemplate = useCallback((template: StudioTemplate) => {
-    setInput(template.prompt);
-    requestAnimationFrame(() => {
-      composerRef.current?.focus();
-      const len = template.prompt.length;
-      composerRef.current?.setSelectionRange(len, len);
-    });
-  }, []);
+  // Per-project registry templates — the default set when the parent
+  // doesn't pass one. gradeui projects get the playbook prompts;
+  // external registries get their hand-authored source scaffolds.
+  const activeRegistry = useActiveRegistry();
+  const templates = useMemo(
+    () => templatesProp ?? resolveStudioTemplates(activeRegistry),
+    [templatesProp, activeRegistry],
+  );
+
+  // Picking a template: SOURCE scaffolds apply directly as the screen
+  // (hand-authored full pages — external registries); PROMPT templates
+  // seed the input and move focus into the textarea so the user can
+  // tweak the wording before sending. Templates only surface on truly
+  // blank tabs (see the EmptyState gate in the render tree below), so
+  // there's no "clear the scaffold first" dance — the absence of
+  // `currentCode` is the contract that makes a template the right
+  // starting shape.
+  const handlePickTemplate = useCallback(
+    (template: StudioTemplate) => {
+      if (template.source && onSourceMutation) {
+        onSourceMutation(template.source, `Template: ${template.label}`);
+        return;
+      }
+      if (!template.prompt) return;
+      const prompt = template.prompt;
+      setInput(prompt);
+      requestAnimationFrame(() => {
+        composerRef.current?.focus();
+        composerRef.current?.setSelectionRange(prompt.length, prompt.length);
+      });
+    },
+    [onSourceMutation],
+  );
 
   // Map the AI SDK's UIMessage[] into the DS's ChatMessage[] shape.
   // - User prose has the "Here is the current component …" preamble

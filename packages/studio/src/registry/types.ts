@@ -76,6 +76,23 @@ export interface RegistryBlock {
   freeIds?: readonly string[];
 }
 
+/** One STARTER TEMPLATE — what the Starters/empty-state picker offers
+ *  for projects on this registry. Two kinds, one shape:
+ *    - prompt templates (gradeui's originals): a labelled prompt that
+ *      seeds the chat input; the model generates the screen.
+ *    - source templates (external scaffolds): hand-authored full-page
+ *      JSX applied DIRECTLY as the screen's appSource — "literally what
+ *      I call scaffolds… full example pages" (BYODS pilot). Both fields
+ *      may be present; source wins when the consumer can apply it. */
+export interface RegistryTemplate {
+  id: string;
+  /** Short chip label (≤ ~16 chars reads best). */
+  label: string;
+  description: string;
+  prompt?: string;
+  source?: string;
+}
+
 /** The component-surface portion of a registry. */
 export interface RegistryComponents {
   /** Components the model may emit in `jsx` blocks (OUTPUT RULE #4). */
@@ -184,6 +201,11 @@ export interface DesignSystemRegistry {
    *  registry ships no blocks (gradeui's equivalents live in the
    *  playbook's reference layouts today). */
   blocks?: Readonly<Record<string, RegistryBlock>>;
+  /** Starter templates for the chat empty state / Starters picker.
+   *  gradeui points at the playbook's STUDIO_TEMPLATES; external
+   *  registries author source scaffolds under
+   *  registries/<id>/templates/*.jsx (hand-editable, generator-built). */
+  templates?: readonly RegistryTemplate[];
 
   // B2/B3 fields (theme, prompt.designMd/extraRules, scaffolds, runtime
   // dependencies) are specified in STUDIO-BYODS.md and land with the

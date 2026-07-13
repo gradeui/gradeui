@@ -14,10 +14,11 @@
  */
 import type { LucideIcon } from "lucide-react";
 
-import {
-  STUDIO_TEMPLATES as PLAYBOOK_TEMPLATES,
-  type StudioTemplate as PlaybookTemplate,
-} from "@gradeui/studio/playbook";
+import { STUDIO_TEMPLATES as PLAYBOOK_TEMPLATES } from "@gradeui/studio/playbook";
+import type {
+  DesignSystemRegistry,
+  RegistryTemplate,
+} from "@gradeui/studio/registry";
 
 import {
   STUDIO_TEMPLATE_ICONS,
@@ -25,16 +26,34 @@ import {
 } from "./studio-template-icons";
 
 /**
- * The playbook's `StudioTemplate` augmented with an `icon` field resolved
- * from the host-side icon map. This is what the studio chat UI expects.
+ * A registry template augmented with an `icon` field resolved from the
+ * host-side icon map. This is what the studio chat UI expects. Two
+ * kinds ride the same shape: `prompt` templates seed the chat input
+ * (gradeui's originals); `source` templates apply their JSX directly
+ * as the screen (external scaffolds — see RegistryTemplate).
  */
-export interface StudioTemplate extends PlaybookTemplate {
+export interface StudioTemplate extends RegistryTemplate {
   icon: LucideIcon;
 }
 
-export const STUDIO_TEMPLATES: StudioTemplate[] = PLAYBOOK_TEMPLATES.map(
-  (t) => ({
+function withIcons(templates: readonly RegistryTemplate[]): StudioTemplate[] {
+  return templates.map((t) => ({
     ...t,
     icon: STUDIO_TEMPLATE_ICONS[t.id] ?? DEFAULT_TEMPLATE_ICON,
-  }),
-);
+  }));
+}
+
+/** gradeui's canonical set — kept for callers that are explicitly
+ *  gradeui-scoped (docs pages). Studio surfaces should use
+ *  `resolveStudioTemplates(registry)` instead. */
+export const STUDIO_TEMPLATES: StudioTemplate[] = withIcons(PLAYBOOK_TEMPLATES);
+
+/** The ACTIVE registry's starter templates, icon-joined. Registries
+ *  without templates fall back to none (an empty picker beats showing
+ *  gradeui prompts to a BrightLocal project — those prompts name
+ *  gradeui components the BL model may not have). */
+export function resolveStudioTemplates(
+  registry: DesignSystemRegistry,
+): StudioTemplate[] {
+  return withIcons(registry.templates ?? []);
+}

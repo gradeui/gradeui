@@ -165,6 +165,13 @@ export default function ExternalSandboxPage() {
       };
     }
 
+    // The DOM node the react root was created on. Tracked so a render
+    // can detect DETACHMENT: Next's hydration re-render (or HMR) can
+    // replace the page tree AFTER our effect captured rootRef — the DS
+    // then renders into an orphaned div and the screen looks blank
+    // while ext:rendered still fires. The screen mount races this more
+    // often than the lazy grid previews (it pushes at ext:ready).
+    let rootHost: HTMLElement | null = null;
     async function render(source: string, mode: string) {
       if (disposed || !modules) return;
       if (rendering) {
@@ -180,11 +187,37 @@ export default function ExternalSandboxPage() {
           production: true,
         });
         const mod = { exports: {} as Record<string, unknown> };
-        new Function("module", "exports", "require", code)(mod, mod.exports, makeRequire(m as never));
+        // React rides as an AMBIENT parameter, not just via require:
+        // sucrase compiles JSX to React.createElement, and screens that
+        // never `import React` (templates, model output) would otherwise
+        // throw "React is not defined" — asynchronously, inside React's
+        // concurrent render, so our try/catch never saw it and the
+        // screen just looked blank while ext:rendered still fired.
+        new Function("module", "exports", "require", "React", code)(
+          mod,
+          mod.exports,
+          makeRequire(m as never),
+          m.react,
+        );
         const App = (mod.exports.default ?? Object.values(mod.exports)[0]) as unknown;
         if (typeof App !== "function") throw new Error("screen has no component export");
+        // Re-anchor if our container left the document (see rootHost).
+        let host = rootRef.current;
+        if (!host || !host.isConnected) {
+          host = document.getElementById("root") as HTMLElement | null;
+        }
+        if (!host) throw new Error("render root missing from document");
+        if (reactRoot && rootHost !== host) {
+          try {
+            reactRoot.unmount();
+          } catch {
+            /* stale root — nothing to unmount into */
+          }
+          reactRoot = null;
+        }
         if (!reactRoot) {
-          reactRoot = m.reactDomClient.createRoot(rootRef.current!);
+          reactRoot = m.reactDomClient.createRoot(host);
+          rootHost = host;
         }
         reactRoot!.render(m.react.createElement(App));
         setStatus("");
