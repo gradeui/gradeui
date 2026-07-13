@@ -222,7 +222,9 @@ export default function ExternalSandboxPage() {
         // Re-anchor if our container left the document (see rootHost).
         let host = rootRef.current;
         if (!host || !host.isConnected) {
-          host = document.getElementById("root") as HTMLElement | null;
+          // Cast matches rootRef's element type — createRoot only needs
+          // a container, but `host` is typed by the ref it re-anchors.
+          host = document.getElementById("root") as HTMLDivElement | null;
         }
         if (!host) throw new Error("render root missing from document");
         if (reactRoot && rootHost !== host) {
