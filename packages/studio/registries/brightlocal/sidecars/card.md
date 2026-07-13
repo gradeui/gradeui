@@ -15,6 +15,73 @@ aliases: [container, panel, box, wrapper, content card]
 ---
 
 ```jsx
+// STAT-SUMMARY CARD (from the Location Dashboard lab composition):
+// an outer Card with a grid of NESTED density="condensed" Cards as
+// metric tiles — label, big value, delta Badge. This is the canonical
+// "nested sub-sections within a parent card" pattern from when_to_use.
+<Card variant="filled" dataHook="customer-actions-card" className="max-w-md">
+  <CardHeader dataHook="customer-actions-header">
+    <CardTitle>Customer actions</CardTitle>
+    <CardDescription>This month vs last month</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <div className="grid gap-3">
+      <Card density="condensed" variant="filled" dataHook="call-clicks-tile">
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Call clicks</p>
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-semibold">312</span>
+            <Badge dataHook="call-clicks-delta">↑ 8%</Badge>
+          </div>
+        </CardContent>
+      </Card>
+      <Card density="condensed" variant="filled" dataHook="website-clicks-tile">
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Website clicks</p>
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-semibold">1,847</span>
+            <Badge dataHook="website-clicks-delta">↑ 14%</Badge>
+          </div>
+        </CardContent>
+      </Card>
+      <Card density="condensed" variant="filled" dataHook="direction-requests-tile">
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Direction requests</p>
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-semibold">428</span>
+            <Badge variant="destructive" dataHook="direction-requests-delta">↓ 3%</Badge>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  </CardContent>
+</Card>
+```
+```jsx
+// ENTITY CARD (Location Dashboard lab): identity header with a status
+// Badge in CardAction (keep CardAction SMALL — see the LAYOUT RULE),
+// meta rows in CardContent, photo in CardMedia.
+<Card variant="filled" dataHook="location-card" className="max-w-sm">
+  <CardHeader dataHook="location-card-header">
+    <CardTitle>Bailiffscourt Hotel &amp; Spa</CardTitle>
+    <CardDescription>★ 4.4 (764 reviews)</CardDescription>
+    <CardAction>
+      <Badge dataHook="location-status">Active</Badge>
+    </CardAction>
+  </CardHeader>
+  <CardContent>
+    <div className="grid gap-1 text-sm text-muted-foreground">
+      <span>Littlehampton, BN17 5RW</span>
+      <span>Hotel</span>
+      <span>+44 1903 723511</span>
+    </div>
+  </CardContent>
+  <CardFooter>
+    <Button variant="outline" dataHook="view-location-button">View location</Button>
+  </CardFooter>
+</Card>
+```
+```jsx
 <Card variant="filled" dataHook="example-card">
   <CardHeader dataHook="example-card-header">
     <CardTitle dataHook="example-card-title">Card Title</CardTitle>
