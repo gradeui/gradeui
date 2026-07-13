@@ -371,6 +371,12 @@ export default function ExternalSandboxPage() {
 
   return (
     <>
+      {/* Hide Next's dev-overlay badge inside this RENDERER document —
+          it stamps an "N issues" circle onto every preview tile (the
+          hydration noise belongs to the rendered SCREEN, and our own
+          error strip / snag UI is the surface for that). Dev-only
+          element; no-op in production builds. */}
+      <style>{`nextjs-portal { display: none !important; }`}</style>
       <div ref={rootRef} id="root" />
       {status ? (
         <div

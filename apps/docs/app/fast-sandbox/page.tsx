@@ -1608,6 +1608,11 @@ export default function FastSandboxPage() {
 
   return (
     <>
+      {/* Hide Next's dev-overlay badge inside this RENDERER document —
+          it stamps an "N issues" circle onto every preview surface.
+          Screen errors surface through the snag UI instead. Dev-only
+          element; no-op in production builds. */}
+      <style>{`nextjs-portal { display: none !important; }`}</style>
       {/* ── Runtime Tailwind JIT ───────────────────────────────────────
           The bundled @gradeui/ui stylesheet is PRECOMPILED — it only
           contains classes the build saw. Anything an agent invents at

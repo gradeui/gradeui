@@ -68,6 +68,12 @@ export interface RegistryBlock {
   /** Human story name ("Login Form", "Server Side"). */
   name: string;
   source: string;
+  /** Identifiers the source references that exist only in the DS's
+   *  story file (projectColumns, mainItems). Detected at generation
+   *  time by executing the block in a stubbed VM; the preview shims
+   *  them as empty arrays so structure renders, and the UI badges the
+   *  card as partially-shimmed. */
+  freeIds?: readonly string[];
 }
 
 /** The component-surface portion of a registry. */
