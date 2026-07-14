@@ -36,6 +36,13 @@
  */
 
 import * as React from "react";
+// The screen compiler — BUNDLED by Next from node_modules (^3.35.0 in
+// apps/docs), not fetched from esm.sh at runtime: sucrase has no React
+// coupling, and the CDN fetch was a prod-outage single point of failure
+// ("Failed to fetch dynamically imported module: esm.sh/sucrase@3.35.1"
+// on gradeui.com). Namespace import so the shape matches the old
+// esm.sh module (`m.sucrase.transform`).
+import * as sucraseModule from "sucrase";
 import {
   externalTwCss,
   EXTERNAL_FONT_VARS_CSS,
@@ -68,10 +75,9 @@ const ESM = {
   jsxDev: "https://esm.sh/react@19.0.0/jsx-dev-runtime",
   reactDom: "https://esm.sh/react-dom@19.0.0",
   reactDomClient: "https://esm.sh/react-dom@19.0.0/client",
-  // 3.35.1, NOT .0 — the .0 parser rejects TS type arguments in call
-  // expressions ("useState<Date | undefined>(...)" → Unexpected token),
-  // which sidecar example preludes hit. Matches apps/docs' local pin.
-  sucrase: "https://esm.sh/sucrase@3.35.1",
+  // sucrase is deliberately NOT here — it's bundled (see the static
+  // import at the top). Note for the bundled version: >=3.35.1 needed;
+  // the 3.35.0 parser rejects TS type arguments in call expressions.
 };
 
 function dsUrl(): string {
@@ -110,14 +116,13 @@ export default function ExternalSandboxPage() {
     };
 
     async function loadModules() {
-      const [react, jsx, jsxDev, reactDom, reactDomClient, sucrase, ds, lucide, motion, recharts, confetti, icons] =
+      const [react, jsx, jsxDev, reactDom, reactDomClient, ds, lucide, motion, recharts, confetti, icons] =
         await Promise.all([
           importUrl(ESM.react),
           importUrl(ESM.jsx),
           importUrl(ESM.jsxDev),
           importUrl(ESM.reactDom),
           importUrl(ESM.reactDomClient),
-          importUrl(ESM.sucrase),
           importUrl(dsUrl()),
           importUrl("https://esm.sh/lucide-react@0.475.0?external=react"),
           importUrl("https://esm.sh/motion@12.29.2/react?external=react"),
@@ -132,7 +137,12 @@ export default function ExternalSandboxPage() {
             ).catch(() => ({})),
           ),
         ]);
-      return { react, jsx, jsxDev, reactDom, reactDomClient, sucrase, ds, lucide, motion, recharts, confetti, icons };
+      // sucrase is BUNDLED (static import above), not esm.sh-fetched: it
+      // has no React coupling, and a third-party CDN fetch for the
+      // compiler took the whole renderer down in prod ("Failed to fetch
+      // dynamically imported module: esm.sh/sucrase"). Only React + the
+      // DS module + preview vocab stay external (isolation requires it).
+      return { react, jsx, jsxDev, reactDom, reactDomClient, sucrase: sucraseModule, ds, lucide, motion, recharts, confetti, icons };
     }
 
     /** esm.sh fetches flake under parallel load (grid mounts a dozen
