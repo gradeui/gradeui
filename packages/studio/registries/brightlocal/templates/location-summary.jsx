@@ -243,10 +243,13 @@ export default function LocationSummary() {
 
           <GlobalLayoutContentBody dataHook="page-body">
             <div className="flex flex-col gap-6">
-              {/* Welcome + Location Score */}
-              <Card variant="filled" dataHook="welcome-card">
+              {/* Welcome + Location Score — the welcome-insights-card
+                  recipe (full width, donut ring, Sparkles CTA). Copied,
+                  not included: screens are self-contained JSX — the
+                  recipe file is the authoring source; re-sync on change. */}
+              <Card variant="filled" className="w-full" dataHook="welcome-card">
                 <CardContent>
-                  <div className="grid gap-8 lg:grid-cols-[1fr_auto]">
+                  <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
                     <div className="flex flex-col gap-3">
                       <TypographyH2 dataHook="welcome-title">
                         Welcome back, Andy Smith
@@ -266,6 +269,7 @@ export default function LocationSummary() {
                       <div>
                         <Button dataHook="see-all-insights-button">
                           See all insights
+                          <Sparkles />
                         </Button>
                       </div>
                     </div>
@@ -273,9 +277,37 @@ export default function LocationSummary() {
                       <span className="text-muted-foreground text-sm">
                         Location Score
                       </span>
-                      <span className="font-display text-5xl font-semibold">
-                        32<span className="text-muted-foreground text-lg">/100</span>
-                      </span>
+                      <div className="relative size-36">
+                        <svg viewBox="0 0 120 120" className="size-full -rotate-90">
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="52"
+                            fill="none"
+                            strokeWidth="10"
+                            className="stroke-muted"
+                          />
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="52"
+                            fill="none"
+                            strokeWidth="10"
+                            strokeLinecap="round"
+                            strokeDasharray="326.7"
+                            strokeDashoffset={326.7 * (1 - 32 / 100)}
+                            className="stroke-orange-400"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="font-display text-4xl font-semibold">
+                            32
+                          </span>
+                          <span className="text-muted-foreground text-xs">
+                            /100
+                          </span>
+                        </div>
+                      </div>
                       <div className="text-muted-foreground flex gap-4 text-xs">
                         <span>Foundation 64/100</span>
                         <span>Visibility 0/100</span>
@@ -296,14 +328,19 @@ export default function LocationSummary() {
                 </p>
               </div>
               <div className="grid gap-6 lg:grid-cols-2">
+                {/* foundation-metric-card recipe ×2 (copied; recipe file
+                    is the authoring source). */}
                 <Card variant="filled" dataHook="website-content-card">
                   <CardContent>
                     <div className="flex flex-col gap-4">
-                      <div className="flex items-baseline gap-2">
+                      <div className="flex items-center gap-2">
+                        <Globe className="text-muted-foreground size-5" />
                         <span className="text-sm font-medium">
                           Website and content
                         </span>
-                        <span className="text-2xl font-bold">68</span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-bold">68</span>
                         <span className="text-muted-foreground text-sm">/100</span>
                       </div>
                       <div className="flex flex-col gap-3">
@@ -317,11 +354,14 @@ export default function LocationSummary() {
                 <Card variant="filled" dataHook="gbp-card">
                   <CardContent>
                     <div className="flex flex-col gap-4">
-                      <div className="flex items-baseline gap-2">
+                      <div className="flex items-center gap-2">
+                        <Store className="text-muted-foreground size-5" />
                         <span className="text-sm font-medium">
                           Google Business Profile
                         </span>
-                        <span className="text-2xl font-bold">54</span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-bold">54</span>
                         <span className="text-muted-foreground text-sm">/100</span>
                       </div>
                       <div className="flex flex-col gap-3">
