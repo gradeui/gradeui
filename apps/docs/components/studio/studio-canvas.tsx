@@ -86,6 +86,7 @@ import {
 import { openInCodeSandboxNpm } from "@/lib/chat-export-npm";
 import { useActiveRegistry } from "@/lib/use-active-registry";
 import { getActiveRegistry } from "@/lib/active-registry";
+import { getProjectPreviewCss } from "@/lib/project-preview-css";
 
 /**
  * Standalone-preview URL for "Open preview in new tab" / grid Preview.
@@ -1903,6 +1904,9 @@ export function StudioCanvas({
                           JSON.stringify({
                             source: focusedAppSource,
                             name: focused.name,
+                            // Project CSS overrides — the standalone
+                            // tab applies these before first paint.
+                            css: getProjectPreviewCss(),
                           }),
                         );
                       } catch {

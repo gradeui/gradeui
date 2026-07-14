@@ -1530,15 +1530,37 @@ export default function FastSandboxPage() {
       // string for backward compatibility with old keys.
       let source: string | null = null;
       let name: string | null = null;
+      let css: string | null = null;
       try {
-        const parsed = JSON.parse(raw) as { source?: string; name?: string };
+        const parsed = JSON.parse(raw) as {
+          source?: string;
+          name?: string;
+          css?: string;
+        };
         if (parsed && typeof parsed.source === "string") {
           source = parsed.source;
           if (typeof parsed.name === "string") name = parsed.name;
+          if (typeof parsed.css === "string") css = parsed.css;
         }
       } catch {
         // Not JSON — treat the raw value as the JSX source itself.
         source = raw;
+      }
+      // Project CSS overrides ride the standalone payload — upserted
+      // LAST in <head> (same element the grade:fast-theme path uses),
+      // applied before render so first paint has them.
+      if (css !== null) {
+        let el = document.querySelector(
+          "style[data-grade-project-css]",
+        ) as HTMLStyleElement | null;
+        if (!el) {
+          el = document.createElement("style");
+          el.setAttribute("data-grade-project-css", "");
+          document.head.appendChild(el);
+        } else if (el !== document.head.lastElementChild) {
+          document.head.appendChild(el);
+        }
+        if (el.textContent !== css) el.textContent = css;
       }
       if (source) renderCompiled(source);
       if (name) {

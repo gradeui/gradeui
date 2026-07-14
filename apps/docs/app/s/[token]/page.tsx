@@ -161,14 +161,32 @@ export default async function SharePage({
 
   const { data: project } = await supabase
     .from("projects")
-    .select("theme_draft_json, name, registry_id")
+    .select("theme_draft_json, name, registry_id, rules_files")
     .eq("id", share.project_id)
     .maybeSingle();
   const projectRow = project as {
     theme_draft_json: string | null;
     name: string;
     registry_id: string | null;
+    rules_files:
+      | { name: string; content: string; enabled?: boolean; kind?: string }[]
+      | null;
   } | null;
+
+  // Project CSS overrides — the enabled .css rules files, resolved
+  // server-side exactly like the Studio canvas does client-side, so a
+  // share renders what the creator sees (e.g. the client-DS patches in
+  // custom.css). .md rules are prompt-side only and never ship here.
+  const projectCss = (projectRow?.rules_files ?? [])
+    .filter(
+      (f) =>
+        f.kind !== "registry" &&
+        f.enabled !== false &&
+        f.name.trim().toLowerCase().endsWith(".css") &&
+        (f.content ?? "").trim(),
+    )
+    .map((f) => `/* ${f.name} */\n${f.content.trim()}`)
+    .join("\n\n");
 
   // Open comment threads on this screen — rendered read-only as pins in
   // the share. (Adding a comment requires sign-in; that's handled in the
@@ -285,6 +303,7 @@ export default async function SharePage({
       // The PROJECT's registry — resolved server-side so the share
       // renders with the right DS regardless of the deployment default.
       registryId={projectRow?.registry_id ?? null}
+      projectCss={projectCss}
     />
   );
 }

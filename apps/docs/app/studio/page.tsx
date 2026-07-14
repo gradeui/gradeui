@@ -378,37 +378,9 @@ export default function StudioPage() {
     }
   }, [activeId, designs]);
 
-  // Live-broadcast each design's source AND name to localStorage
-  // under a stable key so any open "Open preview" tab can re-render
-  // via the `storage` event and set its own document.title. JSON
-  // shape is { source, name } so the preview can show the screen
-  // name in the browser tab too.
-  //
-  // Cleanup happens in handleCloseDesign so closed designs don't
-  // leave orphan entries.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    for (const d of designs) {
-      const key = `grade:screen:${d.id}`;
-      try {
-        if (d.appSource) {
-          const next = JSON.stringify({ source: d.appSource, name: d.name });
-          // Only write when the serialized payload actually changed.
-          // `storage` events don't fire in the writer's own tab but
-          // they DO fire in every other same-origin tab, so a noisy
-          // write would re-render every open preview unnecessarily.
-          if (window.localStorage.getItem(key) !== next) {
-            window.localStorage.setItem(key, next);
-          }
-        } else {
-          window.localStorage.removeItem(key);
-        }
-      } catch {
-        // storage disabled / quota — silent fallback; the snapshot
-        // already in the preview tab stays valid.
-      }
-    }
-  }, [designs]);
+  // Live-broadcast to standalone preview tabs — MOVED below the
+  // projectPreviewCss memo (it now rides the payload); see the effect
+  // after the setProjectPreviewCss wiring.
 
   // Per-design chat history. `useChat` from @ai-sdk/react@2 doesn't persist
   // messages by id across remounts — it builds a fresh `Chat` every time.
@@ -505,6 +477,43 @@ export default function StudioPage() {
   useEffect(() => {
     setProjectPreviewCss(projectPreviewCss);
   }, [projectPreviewCss]);
+
+  // Live-broadcast each design's source AND name to localStorage
+  // under a stable key so any open "Open preview" tab can re-render
+  // via the `storage` event and set its own document.title. JSON
+  // shape is { source, name, css } — css carries the project's CSS
+  // overrides so standalone previews match the canvas, and a css
+  // change re-broadcasts to open preview tabs (dep below).
+  //
+  // Cleanup happens in handleCloseDesign so closed designs don't
+  // leave orphan entries.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    for (const d of designs) {
+      const key = `grade:screen:${d.id}`;
+      try {
+        if (d.appSource) {
+          const next = JSON.stringify({
+            source: d.appSource,
+            name: d.name,
+            css: projectPreviewCss,
+          });
+          // Only write when the serialized payload actually changed.
+          // `storage` events don't fire in the writer's own tab but
+          // they DO fire in every other same-origin tab, so a noisy
+          // write would re-render every open preview unnecessarily.
+          if (window.localStorage.getItem(key) !== next) {
+            window.localStorage.setItem(key, next);
+          }
+        } else {
+          window.localStorage.removeItem(key);
+        }
+      } catch {
+        // storage disabled / quota — silent fallback; the snapshot
+        // already in the preview tab stays valid.
+      }
+    }
+  }, [designs, projectPreviewCss]);
 
   // Per-project steering — the project's brief (`context`), dos/donts,
   // and named rules files, appended AFTER the registry prompt so

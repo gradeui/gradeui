@@ -457,7 +457,10 @@ export default function ExternalSandboxPage() {
         const applyScreenPayload = (raw: string | null) => {
           if (!raw) return;
           try {
-            const parsed = JSON.parse(raw) as { source?: string; name?: string };
+            const parsed = JSON.parse(raw) as { source?: string; name?: string; css?: string };
+            // Project CSS overrides ride the standalone payload too —
+            // apply BEFORE render so first paint already has them.
+            if (typeof parsed.css === "string") applyProjectCss(parsed.css);
             if (typeof parsed.source === "string") void render(parsed.source, "light");
             if (typeof parsed.name === "string") {
               const title = `${parsed.name} - Preview - Grade`;

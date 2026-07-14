@@ -35,6 +35,7 @@ import {
 import { FastIframeHost } from "@/components/studio/fast-frame";
 import { ExternalIframeHost } from "@/components/studio/external-ds-frame";
 import { getActiveRegistry, getRegistryById } from "@/lib/active-registry";
+import { setProjectPreviewCss } from "@/lib/project-preview-css";
 import { GradeLogo } from "@/components/grade-logo";
 import {
   DropdownMenu,
@@ -115,6 +116,7 @@ export function SharedScreen({
   commentThreads = [],
   commentUsers = [],
   registryId = null,
+  projectCss = "",
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -134,7 +136,19 @@ export function SharedScreen({
   /** The share's PROJECT registry id (projects.registry_id), resolved
    *  server-side by /s/[token]. null = deployment default. */
   registryId?: string | null;
+  /** The project's CSS overrides (enabled .css rules files), resolved
+   *  server-side by /s/[token]. Seeded into the preview-css store so
+   *  both frame hosts inject it — the share renders what the creator
+   *  sees (e.g. custom.css patches over a client DS). */
+  projectCss?: string;
 }) {
+  // Seed the preview-css store BEFORE the frame hosts push source —
+  // Studio's page-level effect does this in the editor; the share view
+  // has no studio page, so it seeds from the server-resolved prop.
+  React.useEffect(() => {
+    setProjectPreviewCss(projectCss);
+  }, [projectCss]);
+
   // The project's own theme — the default treatment the share opens on.
   const projectTheme = React.useMemo<GeneratedTheme>(() => {
     if (themeDraftJson) {
