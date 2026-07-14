@@ -42,6 +42,7 @@ import {
   House,
   LayoutDashboard,
   Link,
+  Menu,
   Sparkles,
   Star,
   Store,
@@ -148,9 +149,14 @@ export default function PageSkeleton() {
           {/* Mobile top bar — the live platform's responsive shell: the
               sidebar is hidden below lg, and this bar (hamburger + logo)
               takes over. SidebarTrigger opens the DS's built-in mobile
-              sheet — no hand-rolled drawer. */}
-          <header className="flex items-center gap-3 border-b px-4 py-3 lg:hidden">
-            <SidebarTrigger dataHook="mobile-sidebar-trigger" />
+              sheet — no hand-rolled drawer. Menu (≡) matches the live
+              platform's icon; size-11 = 44px minimum touch target with
+              the size-5 glyph matching the sidebar nav icons. No border
+              — the live platform's mobile bar has no dividing line. */}
+          <header className="flex items-center gap-2 px-3 py-2 lg:hidden">
+            <SidebarTrigger dataHook="mobile-sidebar-trigger" className="size-11">
+              <Menu className="size-5" />
+            </SidebarTrigger>
             <Logo className="h-6" dataHook="mobile-logo" />
           </header>
           {/* Page header — location identity */}

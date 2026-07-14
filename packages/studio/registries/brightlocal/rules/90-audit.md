@@ -1,0 +1,9 @@
+BrightLocal DS audit log — known gaps between their docs, the npm package (2.20.0), and the live platform. Work around these; don't fight them. (This file doubles as the running findings ledger for the upstream report — append new discrepancies here.)
+- --sidebar-width is set INLINE by SidebarProvider (224px) and hardcoded on the live platform's container — not overridable from :root. The project's custom.css patches it at [data-slot="sidebar-provider"]; never try to set it via classes or :root vars.
+- Sidebar icon sizing: AI_USAGE says 16px-no-overrides, the sidebar docs say nothing, the live platform ships 24px at strokeWidth 1.33. Our convention is 20px size-5 (see the product map) — follow it, not the live platform.
+- Account dropdown: the live platform wraps the user in a bordered card (data-slot="dropdown-menu-trigger-avatar") that does NOT exist in the published package; Storybook shows only a bare logout. Use SidebarAccountDropdown exactly as published — do not fake the border with utility classes.
+- Mobile shell: SidebarTrigger + the built-in mobile sheet exist in the package but are documented nowhere — mount them per the product map's responsive-shell rule; never hand-roll a drawer.
+- component-meta.json lists ~23 exports that don't exist in the real barrel and omits SidebarAccountDropdown entirely — trust the component allowlist, not component-meta.
+- data-hook names INSTANCES ("settings-save-button"), not components; component identity comes from data-slot.
+- Their MCP composition recipes appear nowhere in Storybook, and 8 of 29 contain placeholder slots that have never been rendered — treat recipe slots as structure, not finished content.
+- The published npm package lags the live product (account trigger, possibly more). When a live screenshot disagrees with what the package renders, the package wins for generation; log the difference here.

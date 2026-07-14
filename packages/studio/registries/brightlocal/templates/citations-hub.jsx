@@ -48,6 +48,7 @@ import {
   House,
   LayoutDashboard,
   Link as LinkIcon,
+  Menu,
   Sparkles,
   Star,
   Store,
@@ -150,10 +151,14 @@ export default function CitationsHub() {
         </GlobalLayoutSidebar>
 
         <GlobalLayoutContent dataHook="global-layout-content">
-          {/* Mobile top bar — hamburger + logo below lg; SidebarTrigger
-              opens the DS's built-in mobile sheet. */}
-          <header className="flex items-center gap-3 border-b px-4 py-3 lg:hidden">
-            <SidebarTrigger dataHook="mobile-sidebar-trigger" />
+          {/* Mobile top bar — hamburger (≡, matching live) + logo below
+              lg; 44px touch target, 20px glyph, no border (matching
+              live). SidebarTrigger opens the DS's built-in mobile
+              sheet. */}
+          <header className="flex items-center gap-2 px-3 py-2 lg:hidden">
+            <SidebarTrigger dataHook="mobile-sidebar-trigger" className="size-11">
+              <Menu className="size-5" />
+            </SidebarTrigger>
             <Logo className="h-6" dataHook="mobile-logo" />
           </header>
           <GlobalLayoutContentHeader dataHook="page-header">
