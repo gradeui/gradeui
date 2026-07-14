@@ -191,3 +191,21 @@ get_component_api props metadata is excellent). NEW: their recipe
 keywords proved out as retrieval vocabulary with zero rework — worth
 telling them their MCP recipes are directly agent-consumable, and that
 the 8/29 placeholder-slot recipes still ship uneyeballed.
+
+NEW (July 14, from Ali's live-platform screenshot pass — each also
+logged where actionable):
+- `--sidebar-width: 224px` is set INLINE by SidebarProvider (and
+  hardcoded on the live aside) — not overridable via :root, truncates
+  labels. Patched project-side in custom.css; recommend exposing it as
+  a prop/themeable token.
+- Sidebar icon sizing: AI_USAGE says 16px-no-overrides, sidebar docs say
+  NOTHING, live product ships 24px lucide at stroke-width 1.33 (the
+  1.33 = optical stroke parity with 16px — clever, undocumented,
+  contradictory). Studio codified 20px/size-5 as the curated middle
+  (rules/05-product-map.md).
+- Account-dropdown trigger: live product wraps the user in a bordered
+  card (data-slot="dropdown-menu-trigger-avatar") that does NOT exist
+  in published 2.20.0; Storybook shows only a bare "logout". Published
+  package lags production — recommend releasing what production runs.
+  Ready-made match-live CSS sits COMMENTED in the project's custom.css
+  pending their steer.
