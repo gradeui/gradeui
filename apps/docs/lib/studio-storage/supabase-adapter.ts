@@ -748,17 +748,33 @@ export class SupabaseStudioStorage implements StudioStorage {
     // 1. Project metadata + the soft pointers (active screen, theme
     //    draft). No snapshot blob — the children below are the
     //    source of truth now.
+    //
+    //    THEME COLUMNS ARE WRITE-IF-PRESENT. `themeDraftJson ?? null`
+    //    used to run unconditionally, so any client whose in-memory
+    //    snapshot didn't carry the theme (a tab loaded before the theme
+    //    was set, or a surface that builds its snapshot from defaults)
+    //    nulled `theme_draft_json` on its next save — this is the bug
+    //    that wiped the Pocket Films project theme on every deploy
+    //    (deploys reload every open tab, exactly when a stale-snapshot
+    //    save fires). `undefined` now means "don't touch"; clearing a
+    //    theme must be an explicit write of an empty draft, never a
+    //    side effect of a snapshot that simply doesn't know about it.
+    const projectUpdate: Record<string, unknown> = {
+      name: project.name,
+      description: project.description ?? null,
+      owner_type: project.owner.type,
+      owner_id: project.owner.id,
+      active_design_id: activeDesignId || null,
+    };
+    if (typeof themeDraftJson === "string") {
+      projectUpdate.theme_draft_json = themeDraftJson;
+    }
+    if (typeof themeVariantsJson === "string") {
+      projectUpdate.theme_variants_json = themeVariantsJson;
+    }
     const { error } = await this.supabase
       .from("projects")
-      .update({
-        name: project.name,
-        description: project.description ?? null,
-        owner_type: project.owner.type,
-        owner_id: project.owner.id,
-        active_design_id: activeDesignId || null,
-        theme_draft_json: themeDraftJson ?? null,
-        theme_variants_json: themeVariantsJson ?? null,
-      })
+      .update(projectUpdate)
       .eq("id", project.id);
     if (error) throw error;
 
