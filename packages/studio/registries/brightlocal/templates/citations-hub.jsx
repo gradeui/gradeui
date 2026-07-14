@@ -225,7 +225,7 @@ export default function CitationsHub() {
                   Where your business listing appears and how accurate it is.
                 </p>
               </div>
-              <Card variant="filled" dataHook="directories-card">
+              <Card variant="filled" className="max-w-none" dataHook="directories-card">
                 <CardContent>
                   <Table dataHook="directories-table">
                     <TableHeader>

@@ -11,7 +11,7 @@ import { Button } from "@brightlocal/ui-components/button";
 import { TypographyH2 } from "@brightlocal/ui-components/typography";
 import { Sparkles } from "@brightlocal/icons";
 
-<Card variant="filled" className="w-full" dataHook="welcome-card">
+<Card variant="filled" className="w-full max-w-none" dataHook="welcome-card">
   <CardContent>
     <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
       <div className="flex flex-col gap-3">

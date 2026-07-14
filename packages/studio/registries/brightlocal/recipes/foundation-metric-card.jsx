@@ -18,7 +18,7 @@ const METRICS = [
   { id: "local-intent", label: "Local intent & linking", score: 14 },
 ];
 
-<Card variant="filled" dataHook="website-content-card">
+<Card variant="filled" className="max-w-none" dataHook="website-content-card">
   <CardContent>
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">

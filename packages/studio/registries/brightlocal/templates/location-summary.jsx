@@ -247,7 +247,7 @@ export default function LocationSummary() {
                   recipe (full width, donut ring, Sparkles CTA). Copied,
                   not included: screens are self-contained JSX — the
                   recipe file is the authoring source; re-sync on change. */}
-              <Card variant="filled" className="w-full" dataHook="welcome-card">
+              <Card variant="filled" className="w-full max-w-none" dataHook="welcome-card">
                 <CardContent>
                   <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
                     <div className="flex flex-col gap-3">
@@ -330,7 +330,7 @@ export default function LocationSummary() {
               <div className="grid gap-6 lg:grid-cols-2">
                 {/* foundation-metric-card recipe ×2 (copied; recipe file
                     is the authoring source). */}
-                <Card variant="filled" dataHook="website-content-card">
+                <Card variant="filled" className="max-w-none" dataHook="website-content-card">
                   <CardContent>
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center gap-2">
@@ -351,7 +351,7 @@ export default function LocationSummary() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card variant="filled" dataHook="gbp-card">
+                <Card variant="filled" className="max-w-none" dataHook="gbp-card">
                   <CardContent>
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center gap-2">

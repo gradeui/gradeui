@@ -184,7 +184,7 @@ export default function PageSkeleton() {
           {/* Page content — placeholder region to build on */}
           <GlobalLayoutContentBody dataHook="page-body">
             <div className="flex flex-col gap-6">
-              <Card variant="filled" dataHook="content-primary-card">
+              <Card variant="filled" className="max-w-none" dataHook="content-primary-card">
                 <CardContent>
                   <p className="text-muted-foreground py-10 text-center text-sm">
                     Primary content — welcome card, score, insights.
@@ -200,14 +200,14 @@ export default function PageSkeleton() {
                 </p>
               </div>
               <div className="grid gap-6 sm:grid-cols-2">
-                <Card variant="filled" dataHook="section-card-1">
+                <Card variant="filled" className="max-w-none" dataHook="section-card-1">
                   <CardContent>
                     <p className="text-muted-foreground py-10 text-center text-sm">
                       Section card
                     </p>
                   </CardContent>
                 </Card>
-                <Card variant="filled" dataHook="section-card-2">
+                <Card variant="filled" className="max-w-none" dataHook="section-card-2">
                   <CardContent>
                     <p className="text-muted-foreground py-10 text-center text-sm">
                       Section card

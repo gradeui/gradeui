@@ -270,7 +270,7 @@ export default function LocationDashboard() {
         </Card>
 
         {/* Rankings — full-width tabs section */}
-        <Card variant="filled" className="lg:col-span-3" dataHook="visibility-card">
+        <Card variant="filled" className="max-w-none lg:col-span-3" dataHook="visibility-card">
           <CardHeader dataHook="visibility-header">
             <CardTitle>Visibility</CardTitle>
             <CardDescription>
