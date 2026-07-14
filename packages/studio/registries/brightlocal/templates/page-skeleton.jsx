@@ -32,6 +32,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarTrigger,
   TypographyH2,
 } from "@brightlocal/ui-components";
 import {
@@ -144,6 +145,14 @@ export default function PageSkeleton() {
         </GlobalLayoutSidebar>
 
         <GlobalLayoutContent dataHook="global-layout-content">
+          {/* Mobile top bar — the live platform's responsive shell: the
+              sidebar is hidden below lg, and this bar (hamburger + logo)
+              takes over. SidebarTrigger opens the DS's built-in mobile
+              sheet — no hand-rolled drawer. */}
+          <header className="flex items-center gap-3 border-b px-4 py-3 lg:hidden">
+            <SidebarTrigger dataHook="mobile-sidebar-trigger" />
+            <Logo className="h-6" dataHook="mobile-logo" />
+          </header>
           {/* Page header — location identity */}
           <GlobalLayoutContentHeader dataHook="page-header">
             <div className="flex min-w-0 items-center gap-3">

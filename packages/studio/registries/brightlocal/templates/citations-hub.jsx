@@ -32,6 +32,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarTrigger,
   Table,
   TableBody,
   TableCell,
@@ -149,6 +150,12 @@ export default function CitationsHub() {
         </GlobalLayoutSidebar>
 
         <GlobalLayoutContent dataHook="global-layout-content">
+          {/* Mobile top bar — hamburger + logo below lg; SidebarTrigger
+              opens the DS's built-in mobile sheet. */}
+          <header className="flex items-center gap-3 border-b px-4 py-3 lg:hidden">
+            <SidebarTrigger dataHook="mobile-sidebar-trigger" />
+            <Logo className="h-6" dataHook="mobile-logo" />
+          </header>
           <GlobalLayoutContentHeader dataHook="page-header">
             <div className="flex min-w-0 items-center gap-3">
               <Avatar dataHook="location-avatar">
