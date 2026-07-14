@@ -155,7 +155,7 @@ export default function CitationsHub() {
               lg; 44px touch target, 20px glyph, no border (matching
               live). SidebarTrigger opens the DS's built-in mobile
               sheet. */}
-          <header className="flex items-center gap-2 px-3 py-2 lg:hidden">
+          <header className="flex items-center gap-1 px-1 py-1 lg:hidden">
             <SidebarTrigger dataHook="mobile-sidebar-trigger" className="size-11">
               <Menu className="size-5" />
             </SidebarTrigger>

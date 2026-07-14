@@ -153,7 +153,7 @@ export default function PageSkeleton() {
               platform's icon; size-11 = 44px minimum touch target with
               the size-5 glyph matching the sidebar nav icons. No border
               — the live platform's mobile bar has no dividing line. */}
-          <header className="flex items-center gap-2 px-3 py-2 lg:hidden">
+          <header className="flex items-center gap-1 px-1 py-1 lg:hidden">
             <SidebarTrigger dataHook="mobile-sidebar-trigger" className="size-11">
               <Menu className="size-5" />
             </SidebarTrigger>
