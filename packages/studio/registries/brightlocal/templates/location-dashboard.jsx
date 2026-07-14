@@ -9,6 +9,8 @@
 // `node scripts/generate-registry-templates.mjs` after changes.
 
 import {
+  Avatar,
+  AvatarFallback,
   Badge,
   Breadcrumb,
   BreadcrumbItem,
@@ -24,34 +26,165 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  GlobalLayout,
+  GlobalLayoutContent,
+  GlobalLayoutContentBody,
+  GlobalLayoutContentHeader,
+  GlobalLayoutSidebar,
+  Logo,
+  Separator,
+  Sidebar,
+  SidebarAccountDropdown,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@brightlocal/ui-components";
+import {
+  Building,
+  Globe,
+  Grid3x3,
+  House,
+  LayoutDashboard,
+  Link as LinkIcon,
+  Menu,
+  Sparkles,
+  Star,
+  Store,
+  TrendingUp,
+} from "@brightlocal/icons";
+
+const TOP_ITEMS = [
+  { id: "your-locations", label: "Your Locations", icon: House },
+];
+
+const LOCATION_ITEMS = [
+  {
+    id: "location-summary",
+    label: "Location Summary",
+    icon: LayoutDashboard,
+    active: true,
+  },
+  { id: "ai-insights", label: "AI Insights", icon: Sparkles },
+  { id: "rankings", label: "Rankings", icon: TrendingUp },
+  { id: "local-search-grid", label: "Local Search Grid", icon: Grid3x3 },
+  { id: "citations", label: "Citations", icon: LinkIcon },
+  { id: "gbp", label: "GBP", icon: Store },
+  { id: "reputation-reviews", label: "Reputation & Reviews", icon: Star },
+];
+
+const TOOL_ITEMS = [
+  { id: "location-manager", label: "Location Manager", icon: Building },
+  { id: "white-label", label: "White-label", icon: Globe },
+];
+
+function NavGroup({ items }) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.id}>
+              <SidebarMenuButton
+                dataHook={`nav-${item.id}`}
+                isActive={item.active}
+              >
+                {item.icon ? <item.icon className="size-5" /> : null}
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
 
 export default function LocationDashboard() {
   return (
-    <div className="min-h-screen bg-background" data-hook="location-dashboard-page">
-      {/* Top bar — breadcrumb + date scope */}
-      <header className="flex items-center justify-between border-b px-6 py-3">
-        <Breadcrumb dataHook="location-breadcrumb">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="#">All locations</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Bailiffscourt Hotel &amp; Spa</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        <Button variant="outline" dataHook="date-scope-button">
-          April 23rd, 2026
-        </Button>
-      </header>
+    <SidebarProvider dataHook="location-dashboard-sidebar-provider" defaultOpen>
+      <GlobalLayout dataHook="global-layout">
+        <GlobalLayoutSidebar dataHook="global-layout-sidebar">
+          <Sidebar dataHook="app-sidebar">
+            <SidebarHeader>
+              <Logo className="h-6" dataHook="sidebar-logo" />
+            </SidebarHeader>
+            <SidebarContent dataHook="sidebar-content">
+              <NavGroup items={TOP_ITEMS} />
+              <Separator spacing="md" dataHook="sidebar-separator-1" />
+              <NavGroup items={LOCATION_ITEMS} />
+              <Separator spacing="md" dataHook="sidebar-separator-2" />
+              <NavGroup items={TOOL_ITEMS} />
+            </SidebarContent>
+            <SidebarFooter dataHook="sidebar-footer">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarAccountDropdown
+                    dataHook="sidebar-account-dropdown"
+                    name="Andy Smith"
+                    email="andy@acmecorp.com"
+                    avatar={
+                      <Avatar dataHook="sidebar-user-avatar">
+                        <AvatarFallback>AS</AvatarFallback>
+                      </Avatar>
+                    }
+                    menuGroups={[
+                      [
+                        { label: "Account settings" },
+                        { label: "Notification preferences" },
+                      ],
+                      [{ label: "Log out" }],
+                    ]}
+                    side="top"
+                    align="end"
+                  />
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarFooter>
+          </Sidebar>
+        </GlobalLayoutSidebar>
 
-      <main className="mx-auto grid max-w-6xl gap-6 p-6 lg:grid-cols-3">
+        <GlobalLayoutContent dataHook="global-layout-content">
+          {/* Mobile top bar — see rules/05-product-map.md. */}
+          <header className="flex items-center gap-1 px-1 py-1 lg:hidden">
+            <SidebarTrigger dataHook="mobile-sidebar-trigger" className="size-11">
+              <Menu className="size-5" />
+            </SidebarTrigger>
+            <Logo className="h-6" dataHook="mobile-logo" />
+          </header>
+
+          {/* Page header — breadcrumb + date scope (this page keeps its
+              identity in the body card, so the header stays the
+              breadcrumb bar like the live dashboard). */}
+          <GlobalLayoutContentHeader dataHook="page-header">
+            <Breadcrumb dataHook="location-breadcrumb">
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#">All locations</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Bailiffscourt Hotel &amp; Spa</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+            <Button variant="outline" dataHook="date-scope-button">
+              April 23rd, 2026
+            </Button>
+          </GlobalLayoutContentHeader>
+
+          <GlobalLayoutContentBody dataHook="page-body">
+            <div className="grid gap-6 lg:grid-cols-3">
         {/* Identity card */}
         <Card variant="filled" dataHook="location-card">
           <CardHeader dataHook="location-card-header">
@@ -199,7 +332,10 @@ export default function LocationDashboard() {
             </Tabs>
           </CardContent>
         </Card>
-      </main>
-    </div>
+            </div>
+          </GlobalLayoutContentBody>
+        </GlobalLayoutContent>
+      </GlobalLayout>
+    </SidebarProvider>
   );
 }
