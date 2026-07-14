@@ -20,6 +20,9 @@
  * Keep every consumer going through these helpers; module-scope
  * `const X = getActiveRegistry()` captures the value BEFORE any project
  * is known and defeats the per-project layer.
+ *
+ * HMR-proof since July 2026: the override state lives on globalThis
+ * (see below), so dev-mode hot updates can no longer reset it.
  */
 
 import {
@@ -48,9 +51,33 @@ export function listRegistries(): DesignSystemRegistry[] {
 }
 
 // ─── Per-project override (client singleton) ───────────────────────────
+//
+// The store lives on `globalThis`, NOT at module scope, because module
+// scope is exactly what dev-mode HMR resets: every edit to a file in
+// this import graph replaced the module, wiped the override, and left
+// React state (which survives HMR) pointing at a project whose registry
+// the app had forgotten — external screens silently rendered with the
+// gradeui pipeline until a hard reload ("renderers are all broken",
+// July 13/14, three times). globalThis survives module replacement, so
+// the override now rides through HMR bursts untouched.
+//
+// We store the registry ID (string), not the registry object — the
+// objects are re-created by each module swap, so a held reference would
+// go stale and defeat the `===` change check. Resolution happens at
+// read time against the current module's REGISTRIES.
 
-let projectOverride: DesignSystemRegistry | null = null;
-const listeners = new Set<() => void>();
+interface RegistryOverrideStore {
+  id: string | null;
+  listeners: Set<() => void>;
+}
+
+const globalStore = globalThis as typeof globalThis & {
+  __gradeRegistryOverride?: RegistryOverrideStore;
+};
+const store: RegistryOverrideStore = (globalStore.__gradeRegistryOverride ??= {
+  id: null,
+  listeners: new Set(),
+});
 
 /** Point the active registry at a project's registryId (null/undefined
  *  or unknown id = clear back to the deployment default). Called by the
@@ -58,16 +85,18 @@ const listeners = new Set<() => void>();
  *  view with the share's project registry. Notifies subscribers only on
  *  an actual change. */
 export function setActiveProjectRegistry(id: string | null | undefined): void {
-  const next = getRegistryById(id);
-  if (next === projectOverride) return;
-  projectOverride = next;
-  for (const l of listeners) l();
+  // Normalise unknown ids to null so the stored value is always
+  // resolvable — matches the old behaviour (getRegistryById fallback).
+  const nextId = getRegistryById(id)?.id ?? null;
+  if (nextId === store.id) return;
+  store.id = nextId;
+  for (const l of store.listeners) l();
 }
 
 /** Subscribe to override changes — useSyncExternalStore shape. */
 export function subscribeActiveRegistry(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+  store.listeners.add(listener);
+  return () => store.listeners.delete(listener);
 }
 
 function envRegistry(): DesignSystemRegistry {
@@ -88,5 +117,5 @@ function envRegistry(): DesignSystemRegistry {
 }
 
 export function getActiveRegistry(): DesignSystemRegistry {
-  return projectOverride ?? envRegistry();
+  return getRegistryById(store.id) ?? envRegistry();
 }

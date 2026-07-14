@@ -146,12 +146,12 @@ Session-4 commits `5f99e6c`…`99aef53`.
 
 ## Gotchas that cost time (don't repeat)
 
-- **HMR burst resets the module-scope registry override** while React
-  state survives → the `activeProjectRegistryId` effect doesn't re-fire →
-  BL project renders with gradeui pipeline ("renderers are all broken").
-  A SOFT navigate does NOT fix it (same-page nav, state survives): only
-  `location.reload()` / a real hard reload does. Happens on every edit
-  to `packages/studio` (transpilePackages = source-watched).
+- ~~HMR burst resets the registry override~~ — **FIXED July 14 am**: the
+  override store moved from module scope to `globalThis`
+  (`window.__gradeRegistryOverride`, id-based so swapped-in registry
+  objects resolve at read time). Verified by editing active-registry.ts
+  live: override survived the swap, renderers stayed BL. If "renderers
+  broken" ever reappears in dev, check that store in the console first.
 - Cowork sandbox: the repo's bash mount can drop mid-session (file tools
   keep working via host paths; `pnpm`/`git`/`node` don't). An interrupted
   `pnpm -F @gradeui/ui build` had run `clean` first → empty dist → docs
