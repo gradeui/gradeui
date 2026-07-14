@@ -1,6 +1,7 @@
 "use client";
 
 import { useActiveRegistry } from "@/lib/use-active-registry";
+import { isAuthConfigured } from "@/lib/supabase/env";
 
 /**
  * ProjectsMenu — left-panel content when the canvas is in "All screens" mode.
@@ -394,7 +395,10 @@ export function ProjectsMenu({
       </SidebarContent>
 
       <SidebarFooter className="text-[10px] text-muted-foreground">
-        Stored locally — sync coming later
+        {/* Truthful storage indicator — the old static "Stored locally"
+            copy misled a real debugging session (July 14) while the app
+            was actually on cloud Supabase. */}
+        {isAuthConfigured() ? "Synced to cloud" : "Stored locally on this device"}
       </SidebarFooter>
 
       <ProjectSettingsSheet

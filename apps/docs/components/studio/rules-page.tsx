@@ -73,14 +73,22 @@ interface RulesPageProps {
   registryRuleFiles: readonly RegistryRuleFile[];
   registryName: string;
   /** Persist a rulesFiles patch (page's handleUpdateProject). */
-  onUpdateRulesFiles: (id: string, rulesFiles: ProjectRulesFile[]) => void;
+  /** Persist a rules-files MUTATION. The page applies `mutate` to the
+   *  freshest server copy of the array before writing, so two tabs
+   *  editing different files can't clobber each other — sending a whole
+   *  replacement array from this component's (possibly stale) props is
+   *  exactly the last-writer-wins bug that erased custom.css (July 14). */
+  onMutateRulesFiles: (
+    id: string,
+    mutate: (files: ProjectRulesFile[]) => ProjectRulesFile[],
+  ) => void;
 }
 
 export function RulesPage({
   project,
   registryRuleFiles,
   registryName,
-  onUpdateRulesFiles,
+  onMutateRulesFiles,
 }: RulesPageProps) {
   const all = React.useMemo(
     () => project.rulesFiles ?? [],
@@ -110,36 +118,38 @@ export function RulesPage({
   );
   const selectedProject = projectFiles.find((f) => f.id === effectiveSelected);
 
-  const commit = (next: ProjectRulesFile[]) =>
-    onUpdateRulesFiles(project.id, next);
+  // Every edit is an ID-BASED DELTA (toggle X, patch Y, add, delete)
+  // expressed as a mutator the page applies to the freshest server
+  // array — never a wholesale replacement built from this component's
+  // possibly-stale props.
+  const commit = (mutate: (files: ProjectRulesFile[]) => ProjectRulesFile[]) =>
+    onMutateRulesFiles(project.id, mutate);
 
   const toggleRegistry = (fileId: string, on: boolean) => {
     const recId = `${REGISTRY_RULE_PREFIX}${fileId}`;
-    const rest = all.filter((f) => f.id !== recId);
+    const name =
+      registryRuleFiles.find((f) => f.id === fileId)?.name ?? fileId;
     // On = drop the record (absence = enabled); off = store the toggle.
-    commit(
-      on
+    commit((files) => {
+      const rest = files.filter((f) => f.id !== recId);
+      return on
         ? rest
         : [
             ...rest,
-            {
-              id: recId,
-              name: registryRuleFiles.find((f) => f.id === fileId)?.name ?? fileId,
-              content: "",
-              kind: "registry",
-              enabled: false,
-            },
-          ],
-    );
+            { id: recId, name, content: "", kind: "registry", enabled: false },
+          ];
+    });
   };
 
   const patchProjectFile = (id: string, patch: Partial<ProjectRulesFile>) =>
-    commit(all.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+    commit((files) =>
+      files.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    );
 
   const addFile = (preset?: { name: string; content: string }) => {
     const id = mintId();
-    commit([
-      ...all,
+    commit((files) => [
+      ...files,
       {
         id,
         name: preset?.name ?? "untitled.md",
@@ -151,7 +161,7 @@ export function RulesPage({
   };
 
   const deleteFile = (id: string) => {
-    commit(all.filter((f) => f.id !== id));
+    commit((files) => files.filter((f) => f.id !== id));
     if (effectiveSelected === id) setSelectedId(null);
   };
 

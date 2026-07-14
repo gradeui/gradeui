@@ -1552,6 +1552,42 @@ export default function StudioPage() {
     [storage],
   );
 
+  // Rules-files mutations — read-modify-write against the FRESHEST
+  // server copy, never a replacement array from component props. Two
+  // tabs editing different files now interleave instead of erasing
+  // each other (the custom.css clobber, July 14). Still last-writer-
+  // wins on the SAME file — acceptable for a single-user surface.
+  const handleMutateRulesFiles = useCallback(
+    async (
+      id: string,
+      mutate: (files: ProjectRulesFile[]) => ProjectRulesFile[],
+    ) => {
+      const list = await storage.listProjects();
+      const fresh = list.find((p) => p.id === id);
+      const next = mutate(fresh?.rulesFiles ?? []);
+      await storage.updateProject(id, { rulesFiles: next });
+      setProjects(await storage.listProjects());
+    },
+    [storage],
+  );
+
+  // Stale-tab healing: re-read project metadata whenever the window
+  // regains focus, so a tab that sat in the background while another
+  // tab edited rules/settings shows (and mutates against) current
+  // state instead of its boot-time snapshot.
+  useEffect(() => {
+    const onFocus = () => {
+      storage
+        .listProjects()
+        .then(setProjects)
+        .catch(() => {
+          /* transient — next focus retries */
+        });
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [storage]);
+
   // Click a screen inside ANY project from the Projects menu.
   // If the screen belongs to the active project, just set it
   // active and zoom in. Otherwise switch projects first (which
@@ -3154,9 +3190,7 @@ export default function StudioPage() {
                           activeRegistry.prompt?.ruleFiles ?? []
                         }
                         registryName={activeRegistry.name}
-                        onUpdateRulesFiles={(id, rulesFiles) =>
-                          handleUpdateProject(id, { rulesFiles })
-                        }
+                        onMutateRulesFiles={handleMutateRulesFiles}
                       />
                     ) : null;
                   })()}
