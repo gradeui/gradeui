@@ -40,22 +40,38 @@ import {
   TableRow,
   TypographyH2,
 } from "@brightlocal/ui-components";
+import {
+  Building,
+  Globe,
+  Grid3x3,
+  House,
+  LayoutDashboard,
+  Link as LinkIcon,
+  Sparkles,
+  Star,
+  Store,
+  TrendingUp,
+} from "@brightlocal/icons";
 
-const TOP_ITEMS = [{ id: "your-locations", label: "Your Locations" }];
+// Sidebar nav icons: 20px (size-5), default stroke — the project's
+// curated convention (rules/05-product-map.md).
+const TOP_ITEMS = [
+  { id: "your-locations", label: "Your Locations", icon: House },
+];
 
 const LOCATION_ITEMS = [
-  { id: "location-summary", label: "Location Summary" },
-  { id: "ai-insights", label: "AI Insights" },
-  { id: "rankings", label: "Rankings" },
-  { id: "local-search-grid", label: "Local Search Grid" },
-  { id: "citations", label: "Citations", active: true },
-  { id: "gbp", label: "GBP" },
-  { id: "reputation-reviews", label: "Reputation & Reviews" },
+  { id: "location-summary", label: "Location Summary", icon: LayoutDashboard },
+  { id: "ai-insights", label: "AI Insights", icon: Sparkles },
+  { id: "rankings", label: "Rankings", icon: TrendingUp },
+  { id: "local-search-grid", label: "Local Search Grid", icon: Grid3x3 },
+  { id: "citations", label: "Citations", icon: LinkIcon, active: true },
+  { id: "gbp", label: "GBP", icon: Store },
+  { id: "reputation-reviews", label: "Reputation & Reviews", icon: Star },
 ];
 
 const TOOL_ITEMS = [
-  { id: "location-manager", label: "Location Manager" },
-  { id: "white-label", label: "White-label" },
+  { id: "location-manager", label: "Location Manager", icon: Building },
+  { id: "white-label", label: "White-label", icon: Globe },
 ];
 
 const DIRECTORIES = [
@@ -77,7 +93,8 @@ function NavGroup({ items }) {
                 dataHook={`nav-${item.id}`}
                 isActive={item.active}
               >
-                {item.label}
+                {item.icon ? <item.icon className="size-5" /> : null}
+                <span>{item.label}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
