@@ -127,11 +127,11 @@ export default function CitationsHub() {
                 <SidebarMenuItem>
                   <SidebarAccountDropdown
                     dataHook="sidebar-account-dropdown"
-                    name="Harry Brignull"
-                    email="brightlocal@brignull.com"
+                    name="Andy Smith"
+                    email="andy@acmecorp.com"
                     avatar={
                       <Avatar dataHook="sidebar-user-avatar">
-                        <AvatarFallback>HB</AvatarFallback>
+                        <AvatarFallback>AS</AvatarFallback>
                       </Avatar>
                     }
                     menuGroups={[
