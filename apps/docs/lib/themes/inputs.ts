@@ -445,6 +445,86 @@ export const brightGreenInput: ThemeInput = {
 };
 
 /**
+ * Pocket Films — brand theme for the Pocket Films client project (the
+ * "Cards and map" screen embedded live on the gradeui.com homepage).
+ *
+ * Brand anchor is the logo: a black wordmark with a coral mark (the
+ * screen's `.pf-logo` dark-mode trick exists specifically to keep that
+ * coral on-brand when inverted). Coral primary (~30° OKLCH) on warm
+ * near-neutral greys, with a cool teal accent for the classic cinematic
+ * coral-and-teal pairing. Premium production-studio register: geometric
+ * display sans, readable body, soft corners, subtle depth.
+ *
+ * This lives in the codebase (not just the Studio project's theme draft
+ * in Supabase) so it can't be reset — if the project draft ever reverts
+ * to default again, re-save it from this ThemeInput.
+ */
+export const pocketFilmsInput: ThemeInput = {
+  id: "pocketfilms",
+  name: "Pocket Films",
+  description: "Coral brand on warm neutrals — TT Commons Pro, 90% compact cut.",
+  tagline: "Brand",
+  hues: {
+    // Warm-tinted neutrals — greys lean toward the coral's key rather
+    // than clinical blue, so dark mode reads charcoal, not navy.
+    neutral: 30,
+    // Coral — the logo mark. ~30° OKLCH (coral #FF6B57 territory).
+    primary: 30,
+    // Accent rides the same coral as primary for now — single-colour
+    // brand until a second colour is decided.
+    accent: 30,
+  },
+  chroma: {
+    // Barely-there warmth on the greys.
+    neutral: 0.05,
+    // Push the coral vivid — it's the single brand colour and has to
+    // carry buttons, links, and the map markers.
+    primary: 1.05,
+    accent: 1.05,
+  },
+  intensity: "default",
+  typography: {
+    // TT Commons Pro (Trial), variable — the brand face. Uploaded to the
+    // Pocket Films project's asset library (user-assets bucket); the theme
+    // carries the @font-face itself via customFonts below, so it renders
+    // identically in Studio, the share view, and the homepage embed.
+    display: "custom:TT Commons Pro Trial Variable",
+    body: "custom:TT Commons Pro Trial Variable",
+    mono: "geistMono",
+    scale: "default",
+    headingWeight: 600,
+    headingTracking: "-0.02em",
+    // The brand runs the 90% compact cut of the wdth axis (this is the
+    // exact case the bodyStretch field was built for). displayStretch
+    // defaults to bodyStretch, so one knob re-cuts the whole theme.
+    bodyStretch: "90%",
+    displayStretch: "90%",
+    customFonts: [
+      {
+        family: "TT Commons Pro Trial Variable",
+        url: "https://fbftniekvvkbduwpuzfs.supabase.co/storage/v1/object/public/user-assets/2a40a97c-287a-4e87-87eb-a9f453064abe/9e072b06-7b31-4200-8f28-59bbb9eb6f41.ttf",
+        format: "truetype",
+        weight: "100 900",
+        category: "sans",
+        assetId: "9e072b06-7b31-4200-8f28-59bbb9eb6f41",
+      },
+    ],
+  },
+  spacing: { density: "default" },
+  radius: { style: "soft" },
+  effects: {
+    // A touch of depth — cards float over map imagery.
+    shadows: "subtle",
+    motionIntensity: 1,
+  },
+  components: {
+    buttonShape: "default",
+    inputStyle: "outlined",
+    cardStyle: "elevated",
+  },
+};
+
+/**
  * Grade Marketing — the theme for gradeui.com's own marketing surfaces
  * (homepage, /waitlist, and any future landing pages).
  *
@@ -521,6 +601,7 @@ export const BUILT_IN_INPUTS: ThemeInput[] = [
   calmInput,
   energyInput,
   brightGreenInput,
+  pocketFilmsInput,
   neonBrutalistInput,
   sunsetVaporInput,
   forestTerminalInput,
