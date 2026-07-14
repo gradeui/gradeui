@@ -76,11 +76,19 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
     contracts: BRIGHTLOCAL_CONTRACTS,
   },
   selection: {
-    // Their QA/testing attribute doubles as Studio's selection protocol;
-    // AI_USAGE already forces the model to stamp it on interactive roots.
-    partAttribute: "data-hook",
-    // data-hook names INSTANCES ("settings-save-button"), not components
-    // (finding #2 for the upstream report). Suffix convention → component.
+    // Their components stamp shadcn-style `data-slot` with kebab-case
+    // COMPONENT names ("card-header", "global-layout") on every part —
+    // verified in the published dist (Ali spotted it on the live
+    // platform, July 2026). That's the same semantics as gradeui's
+    // data-gds-part, stamped by the DS itself, so selection no longer
+    // depends on the model's dataHook discipline or suffix guessing.
+    partAttribute: "data-slot",
+    // data-hook names INSTANCES ("settings-save-button") — now the
+    // display/QA label, not the component-identity signal.
+    nameAttribute: "data-hook",
+    // Legacy suffix map (data-hook → component), kept as the fallback
+    // for surfaces still fed instance-named parts (finding #2 in the
+    // upstream report documents why it exists).
     partSuffixMap: {
       button: "Button", btn: "Button", input: "Input", select: "Select",
       card: "Card", table: "Table", dialog: "Dialog", tabs: "Tabs",

@@ -185,8 +185,19 @@ export interface RegistryPrompt {
 export interface RegistrySelection {
   /** Attribute the library stamps on addressable parts ("data-gds-part").
    *  The in-iframe selection agent walks up the DOM looking for it; a
-   *  library that stamps nothing degrades to tag-level selection. */
+   *  library that stamps nothing degrades to tag-level selection.
+   *  Values must name COMPONENTS (kebab-case → Pascal), not instances —
+   *  shadcn-derived libraries stamp this as `data-slot` ("card-header").
+   *  BrightLocal ships BOTH: data-slot (component identity, stamped by
+   *  the components themselves) and data-hook (instance names, stamped
+   *  by app code) — use data-slot here and data-hook as
+   *  `nameAttribute`. */
   partAttribute: string;
+  /** Attribute carrying a human/QA INSTANCE label ("data-hook":
+   *  "settings-save-button"). Surfaces as the breadcrumb/layer display
+   *  name (after any explicit data-gds-name), never as a component
+   *  name. Absent = no instance labels. */
+  nameAttribute?: string;
   /** For DSes whose part attribute names INSTANCES, not components
    *  (BrightLocal's data-hook convention is "{context}-{componentType}"
    *  — "settings-save-button"), a suffix → component-name map so

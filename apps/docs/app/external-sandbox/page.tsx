@@ -267,11 +267,13 @@ export default function ExternalSandboxPage() {
     // Frame and Sandpack run (two-agent rule → three renderers, one
     // agent). Full parity: hover ring, persistent ring with corner
     // handles + dimension badge, activation suppression, Escape-to-
-    // clear, sibling outlines. The two registry seams are parameters:
-    // the part attribute (BrightLocal: data-hook) and component-name
-    // resolution (their hooks name INSTANCES — "settings-save-button"
-    // — so the suffix map turns them into component names; unmatched
-    // parts fall back to the agent's kebab→Pascal).
+    // clear, sibling outlines. The registry seams are parameters:
+    // the part attribute (BrightLocal: data-slot — their components
+    // stamp kebab-case COMPONENT names shadcn-style, so the agent's
+    // default kebab→Pascal resolves directly), the instance-label
+    // attribute (data-hook — surfaces as the display name in the
+    // breadcrumb/path bar), and — only for registries whose parts name
+    // INSTANCES (no nameAttribute declared) — a suffix-map resolver.
     let agent: SelectionAgentHandle | null = null;
     // Standalone-preview storage listener (registered after module
     // load if a #screen= key is present) — held here for cleanup.
@@ -282,13 +284,21 @@ export default function ExternalSandboxPage() {
       const sfx = suffixes.find((x) => part === x || part.endsWith(`-${x}`));
       return sfx ? suffixMap[sfx] : undefined;
     };
+    // When the registry declares a nameAttribute, its partAttribute
+    // values are component-shaped (data-slot) — the suffix resolver
+    // would only misfire on them ("card-header" has no suffix entry →
+    // unknown). Legacy instance-named parts keep the resolver.
+    const partsAreComponents = Boolean(REGISTRY.selection.nameAttribute);
     const installAgent = () => {
       if (agent) return;
       agent = installStudioSelectionAgent({
         root: document,
         overlayHost: document.body,
         partAttribute: REGISTRY.selection.partAttribute,
-        resolveComponentName,
+        nameAttribute: REGISTRY.selection.nameAttribute,
+        resolveComponentName: partsAreComponents
+          ? undefined
+          : resolveComponentName,
         reportSelected: (selection: SelectionPayload) =>
           post({ type: "ext:select", selection }),
         reportCleared: () => post({ type: "ext:selection-cleared" }),

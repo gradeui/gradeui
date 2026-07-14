@@ -168,12 +168,22 @@ export interface InstallSelectionAgentOptions {
   reportCleared?: () => void;
   /** DS component-boundary attribute. Defaults to `data-gds-part`
    *  (gradeui). External registries pass their own convention —
-   *  BrightLocal's is `data-hook` (registry.selection.partAttribute). */
+   *  BrightLocal's is `data-slot` (registry.selection.partAttribute),
+   *  the shadcn convention their components stamp themselves. */
   partAttribute?: string;
+  /** Attribute carrying a human/QA INSTANCE label — BrightLocal's
+   *  `data-hook` ("settings-save-button"). Used as the display name
+   *  (after any explicit data-gds-name); never treated as a component
+   *  identity. */
+  nameAttribute?: string;
   /** Part value → component name. Defaults to kebab→Pascal (gradeui's
    *  parts ARE component names). External registries whose parts name
    *  INSTANCES ("settings-save-button") pass a suffix-map resolver.
-   *  Return undefined to fall back to kebab→Pascal. */
+   *  Returning undefined means "unknown component" — labels fall back
+   *  to the tag and the raw part value becomes the display name. (It
+   *  deliberately does NOT fall back to kebab→Pascal: that fabricated
+   *  non-existent components like "StatLocations" from unmapped
+   *  data-hooks.) */
   resolveComponentName?: (part: string) => string | undefined;
 }
 
@@ -242,6 +252,14 @@ export function installStudioSelectionAgent(
   // Registry seams — both default to the gradeui conventions so the
   // two existing renderers are byte-identical in behaviour.
   const PART_ATTR = opts.partAttribute || "data-gds-part";
+  const NAME_ATTR = opts.nameAttribute || "";
+
+  /** Instance label from the registry's nameAttribute (data-hook), when
+   *  configured and present on the element. */
+  function instanceLabel(el: Element | null): string | undefined {
+    if (!NAME_ATTR || !el || !el.getAttribute) return undefined;
+    return el.getAttribute(NAME_ATTR) || undefined;
+  }
 
   // "three-scene" → "ThreeScene"
   function kebabToPascal(kebab: string): string {
@@ -252,8 +270,30 @@ export function installStudioSelectionAgent(
       .join("");
   }
 
-  function partToComponentName(part: string): string {
-    return opts.resolveComponentName?.(part) ?? kebabToPascal(part);
+  // Whether the registry supplied its own part→component resolver. When
+  // it did, the part values name INSTANCES (BrightLocal's data-hook:
+  // "settings-save-button"), so a resolver MISS must NOT fall back to
+  // kebab→Pascal — that fabricates components that don't exist
+  // ("stat-locations" → "StatLocations") in the breadcrumb, the settings
+  // panel, and the TARGETED EDIT stanza the model reads. On a miss the
+  // component name is simply unknown: labels fall back to the tag, and
+  // the raw part value rides as the display `name` (it's the DS's own
+  // QA identifier — truthful and useful). Without a custom resolver
+  // (gradeui) parts ARE component names, so kebab→Pascal stands.
+  const hasCustomResolver = Boolean(opts.resolveComponentName);
+  function partToComponentName(part: string): string | undefined {
+    if (hasCustomResolver) return opts.resolveComponentName!(part);
+    return kebabToPascal(part);
+  }
+
+  /** Display-name fallback for a part the resolver couldn't map — the
+   *  raw part value on external registries, nothing on gradeui (where
+   *  an unresolved part can't happen: kebab→Pascal always answers). */
+  function partAsLabel(
+    part: string,
+    componentName: string | undefined,
+  ): string | undefined {
+    return hasCustomResolver && part && !componentName ? part : undefined;
   }
 
   // Parts that live INSIDE another DS component rather than being their
@@ -495,12 +535,22 @@ export function installStudioSelectionAgent(
         const nodeName = node.getAttribute
           ? node.getAttribute("data-gds-name") || ""
           : "";
+        const nodeComponentName = nodePart
+          ? partToComponentName(nodePart)
+          : undefined;
         chain.unshift({
           sourceId: nodeSourceId,
           tag: node.tagName ? node.tagName.toLowerCase() : "",
-          componentName: nodePart ? partToComponentName(nodePart) : undefined,
+          componentName: nodeComponentName,
           instanceId: nodeInstanceId || undefined,
-          name: nodeName || undefined,
+          // Explicit layer name wins; else the registry's instance label
+          // (data-hook); else an unresolved external part labels the
+          // crumb truthfully.
+          name:
+            nodeName ||
+            instanceLabel(node) ||
+            partAsLabel(nodePart, nodeComponentName) ||
+            undefined,
         });
         // Stop at the AppShell ROOT — it's the user's topmost wrapper
         // and a valid target (e.g. for a page-wide background fill), so
@@ -1227,12 +1277,19 @@ export function installStudioSelectionAgent(
           // hasChildren: any source-id-bearing descendant inside
           // this child. Computed by querySelector for simplicity.
           const hasChildren = !!kid.querySelector("[data-gds-source-id]");
+          const kidComponentName = part
+            ? partToComponentName(part)
+            : undefined;
           const descriptor: ChildDescriptor = {
             sourceId: id,
             tag: kid.tagName.toLowerCase(),
-            componentName: part ? partToComponentName(part) : undefined,
+            componentName: kidComponentName,
             instanceId,
-            name: nameAttr || undefined,
+            name:
+              nameAttr ||
+              instanceLabel(kid) ||
+              partAsLabel(part ?? "", kidComponentName) ||
+              undefined,
             summary: summaryAttr || fallback,
             hasChildren,
           };

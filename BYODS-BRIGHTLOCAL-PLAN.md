@@ -125,7 +125,21 @@ Session-4 commits `5f99e6c`…`99aef53`.
    gotchas). Likely: re-run `setActiveProjectRegistry` in a
    module-load-time replay or subscribe the override to project state
    rather than an effect.
-5. Rename Blocks surface "Patterns" (offered, still undecided).
+5. ~~Breadcrumb pascalised data-hooks~~ — DONE (July 14 am), and better
+   than planned: Ali spotted BL's live platform stamps shadcn-style
+   `data-slot` (kebab COMPONENT names, verified in the published dist)
+   alongside `data-hook` (instance names). Registry now uses
+   `partAttribute: "data-slot"` + NEW `selection.nameAttribute:
+   "data-hook"`; the agent surfaces data-hook as the display label
+   (after data-gds-name) and never pascalises unresolved parts. Path
+   bar verified live: `location-card › CardFooter ›
+   edit-location-button` — components from data-slot, hooks as labels.
+   Suffix map retained as fallback for instance-named parts. Selection
+   no longer depends on model dataHook discipline; Sandpack inherits
+   via DS_PART_ATTR. **Client finding for the upstream report**: their
+   data-slot convention is directly agent-consumable — worth telling
+   them it's load-bearing for tooling, don't drop it.
+6. Rename Blocks surface "Patterns" (offered, still undecided).
 6. #17 anchored pinch zoom (deprioritised; diagnosis in prior handoff).
 7. Breadcrumb click-to-select parity on external renderer (verify Fast
    Frame first).
