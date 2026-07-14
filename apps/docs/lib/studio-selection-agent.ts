@@ -543,13 +543,18 @@ export function installStudioSelectionAgent(
           tag: node.tagName ? node.tagName.toLowerCase() : "",
           componentName: nodeComponentName,
           instanceId: nodeInstanceId || undefined,
-          // Explicit layer name wins; else the registry's instance label
-          // (data-hook); else an unresolved external part labels the
-          // crumb truthfully.
+          // Label precedence: an explicit user layer name always wins;
+          // otherwise the COMPONENT name labels the crumb (it matches
+          // the JSX the user reads in the code view — "GlobalLayout",
+          // not its data-hook echo "global-layout"); the instance label
+          // (data-hook) only steps in for elements with no component
+          // identity, where it beats a bare <div>.
           name:
             nodeName ||
-            instanceLabel(node) ||
-            partAsLabel(nodePart, nodeComponentName) ||
+            (nodeComponentName
+              ? undefined
+              : instanceLabel(node) ||
+                partAsLabel(nodePart, nodeComponentName)) ||
             undefined,
         });
         // Stop at the AppShell ROOT — it's the user's topmost wrapper
@@ -1280,6 +1285,12 @@ export function installStudioSelectionAgent(
           const kidComponentName = part
             ? partToComponentName(part)
             : undefined;
+          // Same label precedence as the ancestor chain: user layer
+          // name > component name (matches the code) > instance label
+          // for component-less elements. The data-hook still surfaces
+          // as the dropdown SUBTITLE via `summary` when nothing better
+          // exists — instance context stays one glance away.
+          const kidInstanceLabel = instanceLabel(kid);
           const descriptor: ChildDescriptor = {
             sourceId: id,
             tag: kid.tagName.toLowerCase(),
@@ -1287,10 +1298,12 @@ export function installStudioSelectionAgent(
             instanceId,
             name:
               nameAttr ||
-              instanceLabel(kid) ||
-              partAsLabel(part ?? "", kidComponentName) ||
+              (kidComponentName
+                ? undefined
+                : kidInstanceLabel ||
+                  partAsLabel(part ?? "", kidComponentName)) ||
               undefined,
-            summary: summaryAttr || fallback,
+            summary: summaryAttr || fallback || kidInstanceLabel,
             hasChildren,
           };
           // Recurse for one less level when there's depth left and

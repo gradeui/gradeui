@@ -15,9 +15,13 @@
  * near-instantly (modules cached, only the screen recompiles).
  *
  * Protocol (deliberately tiny, v0 + selection):
- *   parent → iframe: { type: "ext:source", source, mode }  — render this
+ *   parent → iframe: { type: "ext:source", source, mode, css? } — render this
+ *                    (css = project overrides, upserted as the last <style>)
  *   parent → iframe: { type: "ext:select-mode", on }       — arm/disarm the selection agent
  *   parent → iframe: { type: "ext:clear-selection" }       — drop the persistent ring
+ *   parent → iframe: { type: "grade:select-by-source-id", id } — breadcrumb
+ *                    traversal (same name as Fast Frame so the path bar
+ *                    doesn't branch on renderer)
  *   iframe → parent: { type: "ext:ready" }                 — send me source
  *   iframe → parent: { type: "ext:error", message }        — compile/render failed
  *   iframe → parent: { type: "ext:rendered" }              — paint done
@@ -330,7 +334,7 @@ export default function ExternalSandboxPage() {
     };
 
     const onMessage = (e: MessageEvent) => {
-      const d = e.data as { type?: string; source?: string; mode?: string; on?: boolean; css?: string } | null;
+      const d = e.data as { type?: string; source?: string; mode?: string; on?: boolean; css?: string; id?: string } | null;
       if (d?.type === "ext:source" && typeof d.source === "string") {
         if (typeof d.css === "string") applyProjectCss(d.css);
         void render(d.source, d.mode ?? "light");
@@ -339,6 +343,17 @@ export default function ExternalSandboxPage() {
         else teardownAgent();
       } else if (d?.type === "ext:clear-selection") {
         agent?.clear();
+      } else if (d?.type === "grade:select-by-source-id") {
+        // Breadcrumb / path-bar traversal — the parent asks us to
+        // re-select an ancestor by its data-gds-source-id. Fast Frame
+        // has handled this since the path bar shipped; the external
+        // renderer silently dropped it (two-renderer parity miss —
+        // "can't traverse up the breadcrumbs"). Same shape: the agent
+        // runs its standard resolve heuristics and emits a fresh
+        // selection back through ext:select.
+        if (typeof d.id === "string" && d.id) {
+          agent?.selectBySourceId(d.id);
+        }
       }
     };
     window.addEventListener("message", onMessage);
