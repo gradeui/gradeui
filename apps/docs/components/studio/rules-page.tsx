@@ -146,6 +146,71 @@ export function RulesPage({
       files.map((f) => (f.id === id ? { ...f, ...patch } : f)),
     );
 
+  // ── Editor draft — the typing fix ────────────────────────────────
+  // Name + content edits go to LOCAL state instantly (so the caret
+  // never moves and keystrokes never lag), and the server commit is
+  // debounced. Committing per keystroke round-tripped Supabase on
+  // every character: the controlled value was replaced by the server
+  // echo (caret jumped to the end) and rapid keystrokes raced each
+  // other's read-modify-write (characters vanished). The draft is
+  // authoritative for the SELECTED file while it exists; server state
+  // still drives everything else (list, toggles, other files).
+  const [draft, setDraft] = React.useState<{
+    id: string;
+    name: string;
+    content: string;
+  } | null>(null);
+  const draftTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDraft = React.useRef<typeof draft>(null);
+
+  const flushDraft = React.useCallback(() => {
+    if (draftTimer.current) {
+      clearTimeout(draftTimer.current);
+      draftTimer.current = null;
+    }
+    const d = pendingDraft.current;
+    if (!d) return;
+    pendingDraft.current = null;
+    commit((files) =>
+      files.map((f) =>
+        f.id === d.id ? { ...f, name: d.name, content: d.content } : f,
+      ),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.id]);
+
+  // Seed / reseed the draft when the selection lands on a different
+  // file. Deliberately NOT reseeded on server echoes for the same file
+  // — that's the caret-jump bug.
+  React.useEffect(() => {
+    if (selectedProject && draft?.id !== selectedProject.id) {
+      flushDraft(); // don't lose unsaved edits to the previous file
+      setDraft({
+        id: selectedProject.id,
+        name: selectedProject.name,
+        content: selectedProject.content,
+      });
+    } else if (!selectedProject && draft) {
+      flushDraft();
+      setDraft(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProject?.id]);
+
+  // Flush on unmount (leaving the Rules screen mid-debounce).
+  React.useEffect(() => flushDraft, [flushDraft]);
+
+  const editDraft = (patch: Partial<{ name: string; content: string }>) => {
+    setDraft((cur) => {
+      if (!cur) return cur;
+      const next = { ...cur, ...patch };
+      pendingDraft.current = next;
+      if (draftTimer.current) clearTimeout(draftTimer.current);
+      draftTimer.current = setTimeout(flushDraft, 600);
+      return next;
+    });
+  };
+
   const addFile = (preset?: { name: string; content: string }) => {
     const id = mintId();
     commit((files) => [
@@ -333,16 +398,16 @@ export function RulesPage({
                 {selectedRegistry.content}
               </pre>
             </>
-          ) : selectedProject ? (
+          ) : selectedProject && draft ? (
             <>
+              {/* Name + content bind to the LOCAL DRAFT (instant typing,
+                  stable caret); the debounced flush persists. Toggle +
+                  delete are single-shot server mutations as before. */}
               <div className="flex items-center justify-between gap-2">
                 <Input
-                  value={selectedProject.name}
-                  onChange={(e) =>
-                    patchProjectFile(selectedProject.id, {
-                      name: e.target.value,
-                    })
-                  }
+                  value={draft.name}
+                  onChange={(e) => editDraft({ name: e.target.value })}
+                  onBlur={flushDraft}
                   className="h-8 max-w-64 font-mono text-sm"
                   aria-label="File name"
                 />
@@ -366,18 +431,15 @@ export function RulesPage({
                 </div>
               </div>
               <Textarea
-                value={selectedProject.content}
-                onChange={(e) =>
-                  patchProjectFile(selectedProject.id, {
-                    content: e.target.value,
-                  })
-                }
+                value={draft.content}
+                onChange={(e) => editDraft({ content: e.target.value })}
+                onBlur={flushDraft}
                 placeholder="Rules ride verbatim into the AI prompt — keep them short and specific."
                 className="min-h-0 flex-1 resize-none font-mono text-xs leading-relaxed"
               />
               <p className="text-[10px] text-muted-foreground">
-                {selectedProject.content.length} chars — every char is prompt
-                tokens on every turn.
+                {draft.content.length} chars — every char is prompt tokens on
+                every turn.
               </p>
             </>
           ) : (
