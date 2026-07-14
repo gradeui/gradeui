@@ -309,9 +309,30 @@ export default function ExternalSandboxPage() {
       agent = null;
     };
 
+    // Project CSS overrides — upserted as the LAST <style> in <head> on
+    // every source push, so project-level patches (e.g. `:root {
+    // --sidebar-width: 264px; }` or `[data-slot="sidebar-container"] {
+    // width: 264px !important; }`) win the cascade over the registry's
+    // token CSS injected at bootstrap below. Cheap to re-set; removed
+    // content clears cleanly (empty string).
+    const applyProjectCss = (css: string) => {
+      let el = document.querySelector(
+        "style[data-grade-project-css]",
+      ) as HTMLStyleElement | null;
+      if (!el) {
+        el = document.createElement("style");
+        el.setAttribute("data-grade-project-css", "");
+        document.head.appendChild(el);
+      } else if (el !== document.head.lastElementChild) {
+        document.head.appendChild(el); // keep it LAST as other styles land
+      }
+      if (el.textContent !== css) el.textContent = css;
+    };
+
     const onMessage = (e: MessageEvent) => {
-      const d = e.data as { type?: string; source?: string; mode?: string; on?: boolean } | null;
+      const d = e.data as { type?: string; source?: string; mode?: string; on?: boolean; css?: string } | null;
       if (d?.type === "ext:source" && typeof d.source === "string") {
+        if (typeof d.css === "string") applyProjectCss(d.css);
         void render(d.source, d.mode ?? "light");
       } else if (d?.type === "ext:select-mode") {
         if (d.on) installAgent();

@@ -56,6 +56,7 @@ import {
 } from "@/lib/studio-walker-register";
 import { toast } from "sonner";
 import { themeToCSSVars, fontFaceCSS } from "@/lib/themes/apply";
+import { useProjectPreviewCss } from "@/lib/project-preview-css";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { ViewportWidth } from "@/components/studio/sandpack-frame";
 import {
@@ -362,7 +363,10 @@ export function FastIframeHost({
   // uploaded faces ride along as a ready-made @font-face CSS string —
   // the sandbox can't resolve a "custom:" family from vars alone (the
   // face lives in the theme, not the registry), so the host pays the
-  // serialization and the sandbox just upserts a <style> tag.
+  // serialization and the sandbox just upserts a <style> tag. Project
+  // CSS overrides (.css rules files) ride the same message; the sandbox
+  // upserts them as the LAST <style> so they win the cascade.
+  const projectCss = useProjectPreviewCss();
   useEffect(() => {
     if (!ready) return;
     const vars = themeToCSSVars(theme, mode);
@@ -371,9 +375,10 @@ export function FastIframeHost({
       vars,
       mode,
       fontFaces: fontFaceCSS(theme.typography.fontFaces),
+      customCss: projectCss,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, theme, mode]);
+  }, [ready, theme, mode, projectCss]);
 
   // Select-mode toggle.
   useEffect(() => {

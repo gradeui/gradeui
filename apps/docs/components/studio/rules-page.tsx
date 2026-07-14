@@ -55,6 +55,11 @@ const PRESETS: { name: string; content: string }[] = [
     content:
       "UX rules:\n- Navigation / layout conventions.\n- Form and validation behaviour.\n- Empty-state and error conventions.",
   },
+  {
+    name: "custom.css",
+    content:
+      "/* Project CSS overrides — injected LAST into every preview,\n   so these win the cascade over the design system's own CSS.\n   Great for patching a client DS you can't edit — and this file\n   doubles as the log of what their DS needs fixing. */\n\n:root {\n  /* --sidebar-width: 264px; */\n}\n",
+  },
 ];
 
 function mintId() {
@@ -195,9 +200,11 @@ export function RulesPage({
       <div>
         <h2 className="text-lg font-semibold text-foreground">Rules</h2>
         <p className="text-sm text-muted-foreground">
-          Every file that&apos;s switched on rides into the AI&apos;s prompt on
-          every turn for this project — keep them short. Design-system rules
-          come from {registryName}; project rules are yours.
+          Every .md file that&apos;s switched on rides into the AI&apos;s
+          prompt on every turn — keep them short. <code>.css</code> files are
+          different: they inject into the preview instead, overriding the
+          design system&apos;s own styles. Design-system rules come from{" "}
+          {registryName}; project files are yours.
         </p>
       </div>
 

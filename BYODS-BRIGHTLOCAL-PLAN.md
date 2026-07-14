@@ -111,6 +111,21 @@ Session-4 commits `5f99e6c`…`99aef53`.
 - DS page header copy is registry-aware (no "colours, type, shape" talk
   on external DS).
 
+## Also shipped July 14 am (after the handoff was first written)
+
+- **Project CSS overrides** (Ali: "somewhere to set CSS for the whole
+  project"). `.css` files in the Rules screen ride the PREVIEW, not the
+  prompt: `lib/project-preview-css.ts` (globalThis store, HMR-proof like
+  the registry override) → `ext:source` gains `css` / `grade:fast-theme`
+  gains `customCss` → both sandboxes upsert `<style
+  data-grade-project-css>` LAST so overrides win the cascade. Preset
+  `custom.css` in the add-file menu. Verified live: BL's inline
+  `width:224px` on `[data-slot=sidebar-container]` beaten with
+  `!important` + `--sidebar-width: 264px` — labels no longer truncate.
+  The file doubles as the LOG of what the client DS needs fixing
+  (upstream report fodder). Gap: Sandpack renderer + standalone-preview
+  localStorage handshake don't carry it yet.
+
 ## Next queue
 
 1. Commit (above), then push.

@@ -116,6 +116,7 @@ import {
 } from "@/lib/chat-sandpack";
 import { buildSystemPrompt } from "@gradeui/studio/playbook";
 import { setActiveProjectRegistry } from "@/lib/active-registry";
+import { setProjectPreviewCss } from "@/lib/project-preview-css";
 import { useActiveRegistry } from "@/lib/use-active-registry";
 import {
   createDesign,
@@ -483,6 +484,28 @@ export default function StudioPage() {
     setActiveProjectRegistry(activeProjectRegistryId);
   }, [activeProjectRegistryId]);
 
+  // Project preview CSS — enabled .css rules files, concatenated, pushed
+  // to the globalThis store the frame hosts subscribe to. These files
+  // override the design system's CSS inside every preview iframe (e.g.
+  // `:root { --sidebar-width: 280px; }` on a client DS we can't edit)
+  // and deliberately do NOT ride the prompt (see projectSystemPrompt).
+  const projectPreviewCss = useMemo(() => {
+    const proj = projects.find((p) => p.id === activeProjectId);
+    return (proj?.rulesFiles ?? [])
+      .filter(
+        (f) =>
+          f.kind !== "registry" &&
+          f.enabled !== false &&
+          f.name.trim().toLowerCase().endsWith(".css") &&
+          f.content.trim(),
+      )
+      .map((f) => `/* ${f.name} */\n${f.content.trim()}`)
+      .join("\n\n");
+  }, [projects, activeProjectId]);
+  useEffect(() => {
+    setProjectPreviewCss(projectPreviewCss);
+  }, [projectPreviewCss]);
+
   // Per-project steering — the project's brief (`context`), dos/donts,
   // and named rules files, appended AFTER the registry prompt so
   // project rules can sharpen (or override) registry defaults. These
@@ -510,7 +533,10 @@ export default function StudioPage() {
       chunks.push(`PROJECT RULES — NEVER:\n${proj.donts.map((d) => `- ${d}`).join("\n")}`);
     for (const f of files) {
       // Registry records carry no content; disabled files stay home.
+      // .css files ride the PREVIEW (setProjectPreviewCss effect below),
+      // not the prompt.
       if (f.kind === "registry" || f.enabled === false) continue;
+      if (f.name.trim().toLowerCase().endsWith(".css")) continue;
       if (f.content.trim())
         chunks.push(`PROJECT RULES (${f.name}):\n${f.content.trim()}`);
     }

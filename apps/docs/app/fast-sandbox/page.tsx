@@ -30,9 +30,11 @@
  *       FailurePanel, no grade:fast-error — the previous render stays up
  *       and the next stream tick retries. Successes render but skip the
  *       grade:fast-compiled ack (the Fill flow must never await a draft).
- *     { type: "grade:fast-theme",    vars, mode, fontFaces? } — apply CSS
- *       vars; `fontFaces` is pre-serialized @font-face CSS for the
- *       theme's custom uploaded fonts, upserted as <style #gds-theme-fonts>
+ *     { type: "grade:fast-theme",    vars, mode, fontFaces?, customCss? } —
+ *       apply CSS vars; `fontFaces` is pre-serialized @font-face CSS for
+ *       the theme's custom uploaded fonts, upserted as <style
+ *       #gds-theme-fonts>; `customCss` is the project's .css rules files
+ *       (overrides), upserted LAST as <style data-grade-project-css>
  *     { type: "grade:select-mode",   enabled }       — toggle agent
  *     { type: "grade:clear-selection" }              — hide overlay
  *
@@ -1029,6 +1031,23 @@ export default function FastSandboxPage() {
           const fontFaces =
             typeof data.fontFaces === "string" ? data.fontFaces : undefined;
           if (vars && mode) applyTheme(vars, mode, fontFaces);
+          // Project CSS overrides (.css rules files) — upserted LAST in
+          // <head> so project patches win the cascade over the DS
+          // stylesheet and the theme vars applied above.
+          if (typeof data.customCss === "string") {
+            let el = document.querySelector(
+              "style[data-grade-project-css]",
+            ) as HTMLStyleElement | null;
+            if (!el) {
+              el = document.createElement("style");
+              el.setAttribute("data-grade-project-css", "");
+              document.head.appendChild(el);
+            } else if (el !== document.head.lastElementChild) {
+              document.head.appendChild(el);
+            }
+            if (el.textContent !== data.customCss)
+              el.textContent = data.customCss;
+          }
           break;
         }
         case "grade:select-mode": {

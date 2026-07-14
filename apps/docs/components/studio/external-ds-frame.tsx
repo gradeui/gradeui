@@ -24,6 +24,7 @@ import { CanvasCommentPinsOverlay } from "@/components/studio/canvas-comment-pin
 import { CodeView } from "@/components/studio/code-view";
 import { SourceEditor } from "@/components/studio/source-editor";
 import { injectSourceIds } from "@/lib/chat-sandpack";
+import { useProjectPreviewCss } from "@/lib/project-preview-css";
 import { useActiveRegistry } from "@/lib/use-active-registry";
 import type { CommentThreadWithMessages } from "@/lib/studio-storage";
 import type { User } from "@/lib/studio-users";
@@ -100,6 +101,11 @@ export function ExternalIframeHost({
     [externalIframeRef],
   );
 
+  // Project CSS overrides (.css rules files) — ride every source push
+  // and get upserted as the LAST <style> in the sandbox so they win the
+  // cascade over the DS's own tokens (e.g. --sidebar-width).
+  const projectCss = useProjectPreviewCss();
+
   const push = React.useCallback(() => {
     if (!readyRef.current || !appSource) return;
     // Source-id injection at the push boundary — the external mirror of
@@ -115,10 +121,11 @@ export function ExternalIframeHost({
         type: "ext:source",
         source: rawSource ? appSource : injectSourceIds(appSource),
         mode,
+        css: projectCss,
       },
       window.location.origin,
     );
-  }, [appSource, mode, rawSource]);
+  }, [appSource, mode, rawSource, projectCss]);
 
   React.useEffect(() => {
     const onMessage = (e: MessageEvent) => {
