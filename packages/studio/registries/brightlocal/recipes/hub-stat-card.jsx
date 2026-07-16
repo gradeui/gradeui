@@ -50,6 +50,9 @@ function HubStatCard({
   // ctaHook names the chevron (the card's single drill-down control —
   // footer CTAs were dropped once the chevron landed; two buttons to
   // the same place was noise).
+  // Screen link (STUDIO-FLOWS): name of the screen this card drills
+  // into — stamps data-grade-goto; shares/embeds navigate on click.
+  goto,
   ctaHook,
   dataHook,
   // Everything else (data-grade-goto for STUDIO-FLOWS navigation,
@@ -66,6 +69,7 @@ function HubStatCard({
       density="condensed"
       className="max-w-none cursor-pointer"
       dataHook={dataHook}
+      data-grade-goto={goto}
       {...rest}
     >
       <CardHeader>

@@ -79,7 +79,9 @@ const ACCOUNTS = [
 
 // ─── Nav model — the new IA (July 2026). Three levels: section →
 // item → leaf. `paid` marks add-ons in the IA data (not rendered —
-// the '$' marker was spreadsheet notation, not UI); `active` opens the trail.
+// the '$' marker was spreadsheet notation, not UI); `active` opens the
+// trail; `goto: "<screen name>"` links a row to another screen
+// (STUDIO-FLOWS — the flow lives in this data, not in markup).
 const SECTIONS = [
   {
     id: "ai-insights",
@@ -605,6 +607,7 @@ function SubRows({ items }) {
           className="h-auto min-h-7 w-full py-1 [&>span:last-of-type]:whitespace-normal!"
           dataHook={`sub-btn-${item.id}`}
           isActive={item.active}
+          data-grade-goto={item.goto}
         >
           <span>{item.label}</span>
         </SidebarMenuSubButton>
@@ -621,6 +624,7 @@ function NavSection({ section }) {
           className="px-4 [&>span:last-of-type]:whitespace-normal!"
           dataHook={`nav-${section.id}`}
           isActive={section.active}
+          data-grade-goto={section.goto}
         >
           <section.icon className="size-5" />
           <span>{section.label}</span>

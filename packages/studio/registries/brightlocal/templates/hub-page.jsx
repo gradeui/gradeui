@@ -89,7 +89,9 @@ const ACCOUNTS = [
 
 // ─── Nav model — the new IA (July 2026). Three levels: section →
 // item → leaf. `paid` marks add-ons in the IA data (not rendered —
-// the '$' marker was spreadsheet notation, not UI); `active` opens the trail.
+// the '$' marker was spreadsheet notation, not UI); `active` opens the
+// trail; `goto: "<screen name>"` links a row to another screen
+// (STUDIO-FLOWS — the flow lives in this data, not in markup).
 const SECTIONS = [
   {
     id: "ai-insights",
@@ -615,6 +617,7 @@ function SubRows({ items }) {
           className="h-auto min-h-7 w-full py-1 [&>span:last-of-type]:whitespace-normal!"
           dataHook={`sub-btn-${item.id}`}
           isActive={item.active}
+          data-grade-goto={item.goto}
         >
           <span>{item.label}</span>
         </SidebarMenuSubButton>
@@ -631,6 +634,7 @@ function NavSection({ section }) {
           className="px-4 [&>span:last-of-type]:whitespace-normal!"
           dataHook={`nav-${section.id}`}
           isActive={section.active}
+          data-grade-goto={section.goto}
         >
           <section.icon className="size-5" />
           <span>{section.label}</span>
@@ -679,6 +683,9 @@ function HubStatCard({
   // ctaHook names the chevron (the card's single drill-down control —
   // footer CTAs were dropped once the chevron landed; two buttons to
   // the same place was noise).
+  // Screen link (STUDIO-FLOWS): name of the screen this card drills
+  // into — stamps data-grade-goto; shares/embeds navigate on click.
+  goto,
   ctaHook,
   dataHook,
   // Everything else (data-grade-goto for STUDIO-FLOWS navigation,
@@ -695,6 +702,7 @@ function HubStatCard({
       density="condensed"
       className="max-w-none cursor-pointer"
       dataHook={dataHook}
+      data-grade-goto={goto}
       {...rest}
     >
       <CardHeader>
@@ -759,6 +767,8 @@ function HubHeroCard({
   // default (video read too letterboxy at w-2/5); "square" for
   // illustration-led heroes.
   mediaAspect = "4/3", // "4/3" | "square" | "video"
+  // Screen link (STUDIO-FLOWS) — stamps data-grade-goto.
+  goto,
   dataHook,
   // Pass-through (data-grade-goto etc.) — same rule as HubStatCard.
   ...rest
@@ -777,6 +787,7 @@ function HubHeroCard({
       density="condensed"
       className="max-w-none px-6"
       dataHook={dataHook}
+      data-grade-goto={goto}
       {...rest}
     >
       <CardContent>

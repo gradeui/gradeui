@@ -34,6 +34,8 @@ function HubHeroCard({
   // default (video read too letterboxy at w-2/5); "square" for
   // illustration-led heroes.
   mediaAspect = "4/3", // "4/3" | "square" | "video"
+  // Screen link (STUDIO-FLOWS) — stamps data-grade-goto.
+  goto,
   dataHook,
   // Pass-through (data-grade-goto etc.) — same rule as HubStatCard.
   ...rest
@@ -52,6 +54,7 @@ function HubHeroCard({
       density="condensed"
       className="max-w-none px-6"
       dataHook={dataHook}
+      data-grade-goto={goto}
       {...rest}
     >
       <CardContent>
