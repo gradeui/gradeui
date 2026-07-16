@@ -30,6 +30,7 @@ import {
   EXTERNAL_FONT_VARS,
   formatThemeVars,
   prepareAppSource,
+  rewriteRegistryLibImports,
 } from "./chat-sandpack";
 import { applyBuiltInThemeOverrides, fontFaceCSS } from "./themes";
 import type { GeneratedTheme } from "./themes";
@@ -381,7 +382,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     compilerOptions: {
       target: "ES2020",
       lib: ["DOM", "DOM.Iterable", "ES2020"],
-      allowJs: false,
+      // true: registry lib modules ship as plain .jsx next to App.tsx.
+      allowJs: true,
       skipLibCheck: true,
       esModuleInterop: true,
       allowSyntheticDefaultImports: true,
@@ -398,12 +400,29 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     include: ["src"],
   };
 
+  // Registry lib modules (STUDIO-FLOWS M0 — "@brightlocal/proposal"):
+  // the specifier isn't a real npm package, so ship the SOURCE as a
+  // sibling file and alias the import to it — same parity contract as
+  // buildSandpackFiles ("exported sandbox = screen + one lib file").
+  // Lib sources get the same aliasing (lib-to-lib imports:
+  // "@brightlocal/proposal" imports "@brightlocal/data").
+  const libFiles: Record<string, { content: string }> = {};
+  for (const [spec, source] of Object.entries(
+    getActiveRegistry().runtime?.libModules ?? {},
+  )) {
+    const stem = spec.replace(/^@/, "").replace(/\//g, "-");
+    libFiles[`src/${stem}.jsx`] = {
+      content: rewriteRegistryLibImports(source),
+    };
+  }
+
   return {
     "package.json": { content: JSON.stringify(packageJson, null, 2) },
     "tsconfig.json": { content: JSON.stringify(tsconfigJson, null, 2) },
     "public/index.html": { content: indexHtml },
     "src/index.tsx": { content: indexTsx },
-    "src/App.tsx": { content: rewritten },
+    "src/App.tsx": { content: rewriteRegistryLibImports(rewritten) },
+    ...libFiles,
   };
 }
 
