@@ -84,7 +84,7 @@ import {
 import type { StudioSelection } from "@/lib/chat-sandpack";
 import { RegistryComponentsBrowser } from "@/components/studio/registry-components-browser";
 import { RegistryBlocksBrowser } from "@/components/studio/registry-blocks-browser";
-import type { DesignStatus } from "@/lib/studio-designs";
+import type { DesignStatus, DesignTag } from "@/lib/studio-designs";
 import { cn } from "@/lib/utils";
 import { useMaybeGradeTheme } from "@/components/grade-theme-provider";
 import { cloneInput } from "@/lib/studio-state";
@@ -170,6 +170,9 @@ export interface StudioRightTabsProps {
   revisions?: number;
   projectName?: string;
   onStatusChange?: (status: DesignStatus) => void;
+  /** Typed tags on the active design (STUDIO-TAGS T0). */
+  designTags?: DesignTag[];
+  onTagsChange?: (tags: DesignTag[]) => void;
   // ─── Display section (forwarded to StudioRightPanel) ─────────────
   // Canvas-wide view controls lifted out of the canvas toolbar. The
   // page owns the state; the tabs shell just threads them to the
@@ -207,6 +210,8 @@ export function StudioRightTabs({
   revisions = 0,
   projectName = "—",
   onStatusChange,
+  designTags,
+  onTagsChange,
   viewportWidth,
   onViewportChange,
   zoomState,
@@ -280,6 +285,8 @@ export function StudioRightTabs({
           revisions={revisions}
           projectName={projectName}
           onStatusChange={onStatusChange ?? (() => {})}
+          designTags={designTags}
+          onTagsChange={onTagsChange}
           viewportWidth={viewportWidth}
           onViewportChange={onViewportChange}
           zoomState={zoomState}

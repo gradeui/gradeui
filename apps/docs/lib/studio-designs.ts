@@ -46,6 +46,47 @@ export type DesignStatus = "draft" | "in_progress" | "in_review" | "done";
  */
 export type DesignKind = "screen" | "motion";
 
+/**
+ * One typed tag on a screen (STUDIO-TAGS T0). Flat faceted
+ * classification: `type` is the facet ("section", "status-note",
+ * "flow", anything), `value` is the member. Hierarchy is a VIEW
+ * (group-by), never storage. The flow extras (`entry`, `order`,
+ * `tagAlias`) only mean something on `type: "flow"` tags — see
+ * STUDIO-TAGS.md "Flows as a facet".
+ */
+export interface DesignTag {
+  type: string;
+  value: string;
+  /** flow tags: this screen is the flow's suggested entry point. */
+  entry?: boolean;
+  /** flow tags: intended reading sequence within the flow. */
+  order?: number;
+  /** flow tags: logical goto name this screen answers WITHIN the flow
+   *  (Screen-A/Screen-B variants answering the same target). */
+  tagAlias?: string;
+}
+
+/** "section:rankings" ⇄ { type, value }. Bare values (no colon) fall
+ *  into the general-purpose "label" facet. */
+export function parseTagInput(raw: string): DesignTag | null {
+  const s = raw.trim();
+  if (!s) return null;
+  const i = s.indexOf(":");
+  if (i <= 0) return { type: "label", value: s };
+  const type = s.slice(0, i).trim().toLowerCase();
+  const value = s.slice(i + 1).trim();
+  if (!type || !value) return null;
+  return { type, value };
+}
+
+export function formatTag(t: DesignTag): string {
+  return t.type === "label" ? t.value : `${t.type}:${t.value}`;
+}
+
+export function sameTag(a: DesignTag, b: DesignTag): boolean {
+  return a.type === b.type && a.value === b.value;
+}
+
 export interface Design {
   id: string;
   name: string;
@@ -70,6 +111,12 @@ export interface Design {
    *  persisted designs that pre-date this field. New designs default
    *  to "draft" via `createDesign()`. */
   status?: DesignStatus;
+  /** Typed tags (STUDIO-TAGS T0) — the organisation facets. Optional;
+   *  undefined = untagged (every pre-existing design is valid). NOTE:
+   *  persisted inside the designs row's `state` jsonb — the supabase
+   *  adapter maps state fields EXPLICITLY, so this is threaded through
+   *  DesignState / rowToDesign / designToRow there. */
+  tags?: DesignTag[];
 }
 
 /**

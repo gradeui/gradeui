@@ -49,6 +49,7 @@ import type {
   Design,
   DesignKind,
   DesignStatus,
+  DesignTag,
 } from "@/lib/studio-designs";
 import {
   type Comment,
@@ -271,6 +272,9 @@ interface DesignState {
   /** "screen" (default when absent — every pre-Motion row) | "motion".
    *  See DesignKind in lib/studio-designs.ts. */
   kind?: DesignKind | null;
+  /** Typed tags (STUDIO-TAGS T0) — see DesignTag in
+   *  lib/studio-designs.ts. Absent/empty = untagged. */
+  tags?: DesignTag[] | null;
 }
 
 interface DesignRow {
@@ -290,6 +294,7 @@ function rowToDesign(r: DesignRow): Design {
     appSource: r.state?.appSource ?? null,
     status: r.state?.status ?? undefined,
     kind: r.state?.kind ?? undefined,
+    tags: r.state?.tags?.length ? r.state.tags : undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -309,6 +314,7 @@ function designToRow(
       appSource: d.appSource ?? null,
       status: d.status ?? null,
       kind: d.kind ?? null,
+      tags: d.tags?.length ? d.tags : null,
     },
     position,
     created_at: d.createdAt ?? now,

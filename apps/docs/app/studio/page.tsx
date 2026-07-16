@@ -2678,6 +2678,16 @@ export default function StudioPage() {
           ),
         )
       }
+      // Typed tags (STUDIO-TAGS T0) — same persist path as status:
+      // patch the design, autosave does the rest.
+      designTags={activeDesign.tags}
+      onTagsChange={(tags) =>
+        setDesigns((ds) =>
+          ds.map((d) =>
+            d.id === activeId ? { ...d, tags, updatedAt: Date.now() } : d,
+          ),
+        )
+      }
       tab={rightTab}
       onTabChange={setRightTab}
       viewportWidth={viewportWidth}

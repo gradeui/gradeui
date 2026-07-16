@@ -42,7 +42,11 @@ import { cn } from "@/lib/utils";
 import {
   DESIGN_STATUSES,
   designStatusLabel,
+  formatTag,
+  parseTagInput,
+  sameTag,
   type DesignStatus,
+  type DesignTag,
 } from "@/lib/studio-designs";
 
 import { ComponentInventory } from "./stage-b-inspector";
@@ -73,6 +77,11 @@ export interface StageBScreenInfoProps {
   /** Patch status on the active design. Empty / no-op handler is
    *  fine — the select stays controlled either way. */
   onStatusChange: (status: DesignStatus) => void;
+  /** Typed tags on the active design (STUDIO-TAGS T0). */
+  tags?: DesignTag[];
+  /** Replace the active design's tag set. Same persist path as
+   *  onStatusChange (setDesigns → autosave). */
+  onTagsChange?: (tags: DesignTag[]) => void;
   className?: string;
 }
 
@@ -112,9 +121,29 @@ export function StageBScreenInfo({
   revisions,
   projectName,
   onStatusChange,
+  tags,
+  onTagsChange,
   className,
 }: StageBScreenInfoProps) {
   const effectiveStatus: DesignStatus = status ?? "draft";
+
+  // Tags editor (STUDIO-TAGS T0) — chips + a small add input.
+  // "type:value" syntax ("section:rankings", "flow:walkthrough");
+  // bare words land in the general "label" facet. Enter/comma commits.
+  const [tagDraft, setTagDraft] = React.useState("");
+  const commitTagDraft = () => {
+    const parsed = parseTagInput(tagDraft);
+    if (!parsed || !onTagsChange) return;
+    const cur = tags ?? [];
+    if (!cur.some((t) => sameTag(t, parsed))) {
+      onTagsChange([...cur, parsed]);
+    }
+    setTagDraft("");
+  };
+  const removeTag = (tag: DesignTag) => {
+    if (!onTagsChange) return;
+    onTagsChange((tags ?? []).filter((t) => !sameTag(t, tag)));
+  };
 
   // Brief "Copied ✓" feedback for the Flow link chip.
   const [copiedFlowLink, setCopiedFlowLink] = React.useState(false);
@@ -197,6 +226,57 @@ export function StageBScreenInfo({
                 {copiedFlowLink ? "Copied ✓" : `screen:${designId ?? designName}`}
               </button>
             </PropertyList.Row>
+
+            {/* Tags (STUDIO-TAGS T0) — typed facets. Chips show
+                type:value; click ✕ to remove; the input adds on
+                Enter/comma. Group-by/filter views land in T1. */}
+            {onTagsChange && (
+              <PropertyList.Row label="Tags">
+                <div className="flex max-w-full flex-wrap items-center gap-1">
+                  {(tags ?? []).map((t) => (
+                    <Badge
+                      key={`${t.type}:${t.value}`}
+                      variant="outline"
+                      className="max-w-full gap-1 pr-1 font-normal"
+                    >
+                      <span className="truncate">
+                        {t.type !== "label" && (
+                          <span className="text-muted-foreground">{t.type}:</span>
+                        )}
+                        {t.value}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`Remove tag ${formatTag(t)}`}
+                        onClick={() => removeTag(t)}
+                        className="rounded-sm text-muted-foreground hover:text-foreground"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                  <input
+                    value={tagDraft}
+                    onChange={(e) => setTagDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === ",") {
+                        e.preventDefault();
+                        commitTagDraft();
+                      } else if (
+                        e.key === "Backspace" &&
+                        !tagDraft &&
+                        (tags?.length ?? 0) > 0
+                      ) {
+                        removeTag(tags![tags!.length - 1]);
+                      }
+                    }}
+                    onBlur={commitTagDraft}
+                    placeholder={tags?.length ? "add…" : "section:rankings"}
+                    className="min-w-[72px] flex-1 bg-transparent px-1 py-0.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/60"
+                  />
+                </div>
+              </PropertyList.Row>
+            )}
 
             <PropertyList.Row label="Revisions" value={revisions} />
 

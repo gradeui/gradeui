@@ -527,6 +527,10 @@ export const PAGE_LAYERS = {
   },
 };
 
+// Session tweak stash — survives navigation (module scope), dies with
+// the sandbox (reload = authored look). See AppLayoutShell's seeding.
+let SESSION_TWEAKS = null;
+
 // ─── ShellTweakerPanel — hidden, session-local demo controls ─────────
 // Stakeholder-demo layer: reveals in the bottom-right corner (hover the
 // corner, or Alt+T) and OVERRIDES the shell's look knobs at runtime.
@@ -694,7 +698,22 @@ export function AppLayoutShell({
   // Reassigning the params keeps every downstream reference
   // (tone/frame/shadow/layers/sticky) reading the LIVE values.
   const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset };
-  const [ownTweaks, setOwnTweaks] = React.useState({});
+  // SESSION MEMORY: seed from the module-scope stash (below) so tweaks —
+  // colours, frame, DATASET — persist across flow navigation and screen
+  // switches: the lib module is compiled once per sandbox boot and its
+  // namespace survives every source swap, while component state dies
+  // with each screen's tree. Reload still resets to the authored look
+  // (session-local semantics kept). Controlled mode bypasses the stash.
+  const [ownTweaks, setOwnTweaksState] = React.useState(
+    () => SESSION_TWEAKS ?? {},
+  );
+  const setOwnTweaks = React.useCallback((updater) => {
+    setOwnTweaksState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      SESSION_TWEAKS = next;
+      return next;
+    });
+  }, []);
   const tweaks = controlledTweaks ?? ownTweaks;
   const setTweaks = onTweaksChange ?? setOwnTweaks;
   ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset } = {

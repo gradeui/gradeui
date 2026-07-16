@@ -27,7 +27,7 @@
  */
 
 import type { StudioSelection } from "@/lib/chat-sandpack";
-import type { DesignStatus } from "@/lib/studio-designs";
+import type { DesignStatus, DesignTag } from "@/lib/studio-designs";
 import { cn } from "@/lib/utils";
 import {
   resolveRightPanelStage,
@@ -67,6 +67,9 @@ export interface StudioRightPanelProps {
   projectName: string;
   /** Patch status on the active design. */
   onStatusChange: (status: DesignStatus) => void;
+  /** Typed tags on the active design (STUDIO-TAGS T0). */
+  designTags?: DesignTag[];
+  onTagsChange?: (tags: DesignTag[]) => void;
   // ─── Display section (persistent, top of panel) ──────────────────
   // Canvas-wide view controls lifted out of the canvas toolbar. The
   // page owns the state; this panel renders the picker at the top of
@@ -95,6 +98,8 @@ export function StudioRightPanel({
   revisions,
   projectName,
   onStatusChange,
+  designTags,
+  onTagsChange,
   viewportWidth,
   onViewportChange,
   zoomState,
@@ -187,6 +192,8 @@ export function StudioRightPanel({
             revisions={revisions}
             projectName={projectName}
             onStatusChange={onStatusChange}
+            tags={designTags}
+            onTagsChange={onTagsChange}
           />
         );
     }
