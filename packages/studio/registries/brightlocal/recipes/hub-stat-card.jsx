@@ -26,14 +26,18 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@brightlocal/ui-components";
-import { Star, TrendingUp, Link } from "@brightlocal/icons";
+import {
+  ChevronRight,
+  Link,
+  Star,
+  TrendingUp,
+} from "@brightlocal/icons";
 
 // ─── The canonical arrangement ──────────────────────────────────────
-// icon → title → description → metric (+ optional delta chip) → CTA.
+// icon → title → chevron (drill-down) → description → metric (+ delta).
 // `metric` and `delta` accept ReactNodes so screens can pass richer
 // values (a formatted number, a sparkline) without changing the seam.
 function HubStatCard({
@@ -42,7 +46,9 @@ function HubStatCard({
   description,
   metric,
   delta,
-  cta = "View",
+  // ctaHook names the chevron (the card's single drill-down control —
+  // footer CTAs were dropped once the chevron landed; two buttons to
+  // the same place was noise).
   ctaHook,
   dataHook,
 }) {
@@ -72,6 +78,19 @@ function HubStatCard({
             <CardTitle size="small" className="font-semibold">
               {title}
             </CardTitle>
+            {/* Drill-down affordance — mirrors the whole-card click
+                target for pointer users and gives AT/keyboard a
+                focusable control. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              className="ml-auto shrink-0"
+              ariaLabel={`Open ${typeof title === "string" ? title : "module"}`}
+              dataHook={ctaHook ? `${ctaHook}-chevron` : undefined}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
           </div>
           <CardDescription>{description}</CardDescription>
         </div>
@@ -87,11 +106,6 @@ function HubStatCard({
           {delta ? <Badge variant="secondary">{delta}</Badge> : null}
         </div>
       </CardContent>
-      <CardFooter>
-        <Button variant="secondary" size="sm" dataHook={ctaHook}>
-          {cta}
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
@@ -105,7 +119,6 @@ function HubStatCard({
     description="Monitor and respond across 30+ sites"
     metric="4.3"
     delta="+0.2 this month"
-    cta="Monitor Reviews"
     ctaHook="hub-reviews-cta"
     dataHook="hub-reviews-card"
   />
@@ -115,7 +128,6 @@ function HubStatCard({
     description="Local search positions for tracked keywords"
     metric="12"
     delta="↑ 3 places"
-    cta="View Rankings"
     ctaHook="hub-rankings-cta"
     dataHook="hub-rankings-card"
   />
@@ -124,7 +136,6 @@ function HubStatCard({
     title="Citations"
     description="Live listings across the citation network"
     metric="86"
-    cta="View Citations"
     ctaHook="hub-citations-cta"
     dataHook="hub-citations-card"
   />

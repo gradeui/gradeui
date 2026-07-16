@@ -29,10 +29,27 @@ function HubHeroCard({
   secondaryCta,
   secondaryHook,
   media,
+  // Media proportion presets — Tailwind aspect utilities. "4/3" is the
+  // default (video read too letterboxy at w-2/5); "square" for
+  // illustration-led heroes.
+  mediaAspect = "4/3", // "4/3" | "square" | "video"
   dataHook,
 }) {
+  const MEDIA_ASPECTS = {
+    "4/3": "aspect-[4/3]",
+    square: "aspect-square",
+    video: "aspect-video",
+  };
+  const aspect = MEDIA_ASPECTS[mediaAspect] ?? MEDIA_ASPECTS["4/3"];
+  // condensed density bakes px-3 on the card — too tight for a hero.
+  // px-6 wins the merge (same utility group); vertical rhythm stays
+  // condensed.
   return (
-    <Card density="condensed" className="max-w-none" dataHook={dataHook}>
+    <Card
+      density="condensed"
+      className="max-w-none px-6"
+      dataHook={dataHook}
+    >
       <CardContent>
         <div className="flex items-center gap-8">
           {/* Copy column */}
@@ -50,10 +67,11 @@ function HubHeroCard({
               ) : null}
             </div>
           </div>
-          {/* Media column — hidden below md */}
-          <div className="hidden w-2/5 shrink-0 self-stretch md:block">
+          {/* Media column — hidden below md; proportion owned by the
+              aspect preset so real media and the placeholder agree. */}
+          <div className={`hidden w-2/5 shrink-0 md:block ${aspect}`}>
             {media ?? (
-              <div className="flex h-full min-h-40 items-center justify-center rounded-lg border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-neutral-50)]">
+              <div className="flex h-full w-full items-center justify-center rounded-lg border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-neutral-50)]">
                 <Sparkles className="text-muted-foreground size-6" />
               </div>
             )}

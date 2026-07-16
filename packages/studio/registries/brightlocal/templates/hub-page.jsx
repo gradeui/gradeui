@@ -27,7 +27,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
   Chip,
@@ -65,6 +64,7 @@ import {
   BarChart3,
   Briefcase,
   Building,
+  ChevronRight,
   Globe,
   Grid3x3,
   House,
@@ -542,7 +542,7 @@ function NavSection({ section }) {
 
 // ─── HubStatCard (in-file — canonical copy: recipes/hub-stat-card.jsx) ───
 // ─── The canonical arrangement ──────────────────────────────────────
-// icon → title → description → metric (+ optional delta chip) → CTA.
+// icon → title → chevron (drill-down) → description → metric (+ delta).
 // `metric` and `delta` accept ReactNodes so screens can pass richer
 // values (a formatted number, a sparkline) without changing the seam.
 function HubStatCard({
@@ -551,7 +551,9 @@ function HubStatCard({
   description,
   metric,
   delta,
-  cta = "View",
+  // ctaHook names the chevron (the card's single drill-down control —
+  // footer CTAs were dropped once the chevron landed; two buttons to
+  // the same place was noise).
   ctaHook,
   dataHook,
 }) {
@@ -581,6 +583,19 @@ function HubStatCard({
             <CardTitle size="small" className="font-semibold">
               {title}
             </CardTitle>
+            {/* Drill-down affordance — mirrors the whole-card click
+                target for pointer users and gives AT/keyboard a
+                focusable control. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              className="ml-auto shrink-0"
+              ariaLabel={`Open ${typeof title === "string" ? title : "module"}`}
+              dataHook={ctaHook ? `${ctaHook}-chevron` : undefined}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
           </div>
           <CardDescription>{description}</CardDescription>
         </div>
@@ -596,11 +611,6 @@ function HubStatCard({
           {delta ? <Badge variant="secondary">{delta}</Badge> : null}
         </div>
       </CardContent>
-      <CardFooter>
-        <Button variant="secondary" size="sm" dataHook={ctaHook}>
-          {cta}
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
@@ -614,10 +624,27 @@ function HubHeroCard({
   secondaryCta,
   secondaryHook,
   media,
+  // Media proportion presets — Tailwind aspect utilities. "4/3" is the
+  // default (video read too letterboxy at w-2/5); "square" for
+  // illustration-led heroes.
+  mediaAspect = "4/3", // "4/3" | "square" | "video"
   dataHook,
 }) {
+  const MEDIA_ASPECTS = {
+    "4/3": "aspect-[4/3]",
+    square: "aspect-square",
+    video: "aspect-video",
+  };
+  const aspect = MEDIA_ASPECTS[mediaAspect] ?? MEDIA_ASPECTS["4/3"];
+  // condensed density bakes px-3 on the card — too tight for a hero.
+  // px-6 wins the merge (same utility group); vertical rhythm stays
+  // condensed.
   return (
-    <Card density="condensed" className="max-w-none" dataHook={dataHook}>
+    <Card
+      density="condensed"
+      className="max-w-none px-6"
+      dataHook={dataHook}
+    >
       <CardContent>
         <div className="flex items-center gap-8">
           {/* Copy column */}
@@ -635,10 +662,11 @@ function HubHeroCard({
               ) : null}
             </div>
           </div>
-          {/* Media column — hidden below md */}
-          <div className="hidden w-2/5 shrink-0 self-stretch md:block">
+          {/* Media column — hidden below md; proportion owned by the
+              aspect preset so real media and the placeholder agree. */}
+          <div className={`hidden w-2/5 shrink-0 md:block ${aspect}`}>
             {media ?? (
-              <div className="flex h-full min-h-40 items-center justify-center rounded-lg border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-neutral-50)]">
+              <div className="flex h-full w-full items-center justify-center rounded-lg border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-neutral-50)]">
                 <Sparkles className="text-muted-foreground size-6" />
               </div>
             )}
@@ -665,7 +693,12 @@ export default function App() {
       {/* Tight vertical rhythm: kill the DS's default gap between
           groups and between menu items — the separators alone mark
           the sections. */}
-      <SidebarContent dataHook="sidebar-content" className="gap-0 pt-1">
+      {/* pr-2 ALWAYS: the DS adds pr-2 only when the nav overflows
+          (hasOverflow in sidebar.tsx), so the whole nav nudged 8px left
+          the moment it became scrollable. Reserving the gutter
+          permanently keeps the width stable either way — cn dedupes the
+          double pr-2 when the DS adds its own. */}
+      <SidebarContent dataHook="sidebar-content" className="gap-0 pt-1 pr-2">
         <SidebarGroup className="px-2 py-1">
           <SidebarGroupContent>
             <SidebarMenu className="gap-0">
@@ -820,7 +853,6 @@ export default function App() {
               description="Monitor and respond across 30+ sites"
               metric="4.3"
               delta="+0.2 this month"
-              cta="Monitor Reviews"
               ctaHook="hub-reviews-cta"
               dataHook="hub-reviews-card"
             />
@@ -830,7 +862,6 @@ export default function App() {
               description="Local search positions for tracked keywords"
               metric="12"
               delta="↑ 3 places"
-              cta="View Rankings"
               ctaHook="hub-rankings-cta"
               dataHook="hub-rankings-card"
             />
@@ -839,7 +870,6 @@ export default function App() {
               title="Citations"
               description="Live listings across the citation network"
               metric="86"
-              cta="View Citations"
               ctaHook="hub-citations-cta"
               dataHook="hub-citations-card"
             />
@@ -849,7 +879,6 @@ export default function App() {
               description="Map-grid visibility for your keywords"
               metric="5"
               delta="keywords tracked"
-              cta="Open Grid"
               ctaHook="hub-lsg-cta"
               dataHook="hub-lsg-card"
             />
@@ -859,7 +888,6 @@ export default function App() {
               description="Posts, Q&A and profile updates"
               metric="3"
               delta="pending posts"
-              cta="Manage Profile"
               ctaHook="hub-gbp-cta"
               dataHook="hub-gbp-card"
             />
@@ -869,7 +897,6 @@ export default function App() {
               description="On-site health and optimisation"
               metric="78"
               delta="site score"
-              cta="View Report"
               ctaHook="hub-seo-cta"
               dataHook="hub-seo-card"
             />

@@ -20,3 +20,11 @@ BrightLocal DS audit log — known gaps between their docs, the npm package (2.2
 
 `Chip` ALWAYS renders a remove button (`data-slot="chip-delete"`; a loading spinner replaces it while `loading`) — there is no non-dismissible mode in 2.20.0. It is an INPUT control (filters, selected values), never a status label. For read-only status, plan, or delta labels use `Badge` (primary | secondary | destructive | outline). Symptom that prompted this: every "badge" on the hub cards sprouting a ✕.
 
+## SidebarContent overflow nudge (16 Jul 2026)
+
+`SidebarContent` adds `pr-2` only when its nav overflows (`hasOverflow` state in sidebar.tsx), so the entire nav shifts 8px left the moment it becomes scrollable. Account for it by passing `pr-2` permanently via className — cn dedupes when the DS adds its own. Upstream ask: reserve the gutter unconditionally (or scrollbar-gutter: stable).
+
+## Font-weight ramp is shifted (16 Jul 2026)
+
+The theme remaps the whole weight scale one step down: `--ds-font-weight-normal: 300`, `medium: 400`, `semibold: 500`, `bold: 600`. Consequence: DS defaults like CardDescription's `font-normal` paint at 300 — visibly light/thin, especially in Inter at text-sm. For body copy that should read as regular weight, use `font-medium` (= 400). Deliberate at token level, but worth an upstream conversation about whether description text should sit at 300. PROPOSAL DECISION (same day): every proposal screen re-points the ramp to the standard scale (normal=400 … bold=700) via BRIGHTLOCAL_WEIGHT_RAMP_FIX appended to the registry previewThemeCss — weight utilities mean what they say, no per-component overrides needed. The upstream recommendation is to ship that ramp.
+

@@ -546,7 +546,12 @@ export default function App() {
       {/* Tight vertical rhythm: kill the DS's default gap between
           groups and between menu items — the separators alone mark
           the sections. */}
-      <SidebarContent dataHook="sidebar-content" className="gap-0 pt-1">
+      {/* pr-2 ALWAYS: the DS adds pr-2 only when the nav overflows
+          (hasOverflow in sidebar.tsx), so the whole nav nudged 8px left
+          the moment it became scrollable. Reserving the gutter
+          permanently keeps the width stable either way — cn dedupes the
+          double pr-2 when the DS adds its own. */}
+      <SidebarContent dataHook="sidebar-content" className="gap-0 pt-1 pr-2">
         <SidebarGroup className="px-2 py-1">
           <SidebarGroupContent>
             <SidebarMenu className="gap-0">

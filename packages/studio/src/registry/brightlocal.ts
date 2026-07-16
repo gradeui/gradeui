@@ -53,6 +53,26 @@ const BRIGHTLOCAL_V4_BASE_COMPAT = `
 }
 `;
 
+// PROPOSAL OVERRIDE (July 2026, Ali): BL's theme ships the font-weight
+// ramp shifted one step down (--ds-font-weight-normal: 300, medium:
+// 400, semibold: 500, bold: 600) — body copy set with \`font-normal\`
+// paints LIGHT (300), visibly thin at text-sm. Every proposal screen
+// re-points the ramp to the standard scale, so weight utilities mean
+// what they say. Remove this block to preview against the shipped ramp.
+// Companion finding: rules/90-audit.md "Font-weight ramp is shifted".
+const BRIGHTLOCAL_WEIGHT_RAMP_FIX = `
+:root {
+  --ds-font-weight-extralight: 200;
+  --ds-font-weight-light: 300;
+  --ds-font-weight-normal: 400;
+  --ds-font-weight-medium: 500;
+  --ds-font-weight-semibold: 600;
+  --ds-font-weight-bold: 700;
+  --ds-font-weight-extrabold: 800;
+  --ds-font-weight-black: 900;
+}
+`;
+
 export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
   id: "brightlocal",
   name: "BrightLocal Design System",
@@ -161,6 +181,9 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
     // @utility sections — px-section-md etc. are how Card gets its
     // padding; @theme alone rendered every component flush (the "cards
     // have no padding" bug).
-    previewThemeCss: BRIGHTLOCAL_PREVIEW_THEME_FULL + BRIGHTLOCAL_V4_BASE_COMPAT,
+    previewThemeCss:
+      BRIGHTLOCAL_PREVIEW_THEME_FULL +
+      BRIGHTLOCAL_V4_BASE_COMPAT +
+      BRIGHTLOCAL_WEIGHT_RAMP_FIX,
   },
 };

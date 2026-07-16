@@ -496,12 +496,16 @@ export default function ExternalSandboxPage() {
      *  frames share the Web Locks API, so serialize the boot: the first
      *  frame warms the HTTP cache, the rest reuse it near-instantly.
      *  No-op where Web Locks is unavailable. */
-    const loadModulesSerialized = (): Promise<Awaited<ReturnType<typeof loadModules>>> =>
+    const loadModulesSerialized = async (): Promise<
+      Awaited<ReturnType<typeof loadModules>>
+    > =>
       typeof navigator !== "undefined" && navigator.locks?.request
-        ? (navigator.locks.request(
-            "grade-ext-module-boot",
-            () => loadModulesWithRetry(),
-          ) as Promise<Awaited<ReturnType<typeof loadModules>>>)
+        ? // await flattens the nested promise the lock callback returns —
+          // lib.dom types LockManager.request's generic off the callback's
+          // RETURN type, so TS otherwise sees Promise<Promise<…>>.
+          await navigator.locks.request("grade-ext-module-boot", () =>
+            loadModulesWithRetry(),
+          )
         : loadModulesWithRetry();
 
     void loadModulesSerialized().then((m) => {
