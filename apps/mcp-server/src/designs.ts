@@ -28,11 +28,14 @@ export function mintScreenId(): string {
   return "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
-/** The JSONB `state` blob on a `designs` row. */
+/** The JSONB `state` blob on a `designs` row. Studio stores MORE than
+ *  these keys here (e.g. `tags` — STUDIO-TAGS T0); saveScreen must
+ *  carry unknown keys through untouched, hence the index signature. */
 export interface DesignState {
   appSource?: string | null;
   status?: string | null;
   kind?: string | null;
+  [key: string]: unknown;
 }
 
 export interface ProjectSummary {
@@ -385,7 +388,14 @@ export async function saveScreen(
     id,
     project_id: projectId,
     name,
-    state: { appSource: jsx, status, kind: "screen" } satisfies DesignState,
+    // MERGE over the existing state — Studio keeps sibling keys in this
+    // jsonb (state.tags et al.); clobbering here silently deleted them.
+    state: {
+      ...(existing?.state ?? {}),
+      appSource: jsx,
+      status,
+      kind: "screen",
+    } satisfies DesignState,
     position,
     created_at: createdAt,
     updated_at: now,
