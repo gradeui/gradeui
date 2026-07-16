@@ -61,8 +61,13 @@ import {
   SidebarMenuSubVariant,
   SidebarPopoverMenu,
   SidebarSwitcher,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
   TypographyH2,
   TypographyH3,
+  TypographyMuted,
 } from "@brightlocal/ui-components";
 import {
   BarChart3,
@@ -71,6 +76,7 @@ import {
   ChevronRight,
   Globe,
   Grid3x3,
+  Info,
   Link,
   ListChecks,
   SlidersHorizontal,
@@ -1072,11 +1078,16 @@ export function PageHeader({
       meta
     );
   return (
+    // w-full is LOAD-BEARING: inside GlobalLayoutContentHeader the
+    // header block otherwise spans content width only, and
+    // justify-between has nothing to distribute — actions hugged the
+    // title (16 Jul screenshot). flex-1/ml-auto belt-and-braces so the
+    // actions pin to the far right even in odd flex parents.
     <div
       data-hook={dataHook}
-      className="flex min-w-0 items-start justify-between gap-4"
+      className="flex w-full min-w-0 items-start justify-between gap-4"
     >
-      <div className="flex min-w-0 flex-col gap-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         {breadcrumbs.length > 0 ? (
           <Breadcrumb dataHook={`${dataHook}-breadcrumb`}>
             <BreadcrumbList>
@@ -1098,7 +1109,7 @@ export function PageHeader({
         ) : null}
       </div>
       {actions ? (
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>
       ) : null}
     </div>
   );
@@ -1195,6 +1206,129 @@ export function HubStatCard({
               (it's a dismissible input); Badge is the read-only
               status/delta component. */}
           {delta ? <Badge variant="secondary">{delta}</Badge> : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── StatCard — the compact metric tile ───────────────────────────────
+// The consistency-critical primitive: label → value (+delta badge /
+// trend icon) → optional info tooltip. INHERITS FROM CARD (variant
+// "filled", condensed density) and owns its anatomy — never hand-roll
+// Card + pt-6 for a stat tile (BL's Card already pads content; the
+// shadcn pt-6 idiom double-pads and reads as an oversized top gap).
+//
+// ONE tone knob for consistency: it colors the value, the trend icon
+// AND the delta badge together. Presets only — no per-part styling.
+const STAT_TONES = {
+  default: {
+    value: "",
+    icon: "text-muted-foreground",
+    badge: "border-transparent bg-success-background text-success-foreground",
+  },
+  success: {
+    value: "text-emerald-600",
+    icon: "text-emerald-600",
+    badge: "border-transparent bg-success-background text-success-foreground",
+  },
+  destructive: {
+    value: "text-rose-600",
+    icon: "text-rose-600",
+    badge: "border-transparent bg-destructive/10 text-destructive",
+  },
+  neutral: { value: "", icon: "text-muted-foreground", badge: "" },
+};
+
+export function StatCard({
+  // Small uppercase label above the value ("Average Position").
+  label,
+  // Data binding: key into data.metrics — value/delta read from the
+  // proposal data context at render position (dataset switches reach
+  // the tile). Explicit props win.
+  metricKey,
+  value,
+  // Small Badge beside the value ("+4.2% vs last month", "improving").
+  delta,
+  // ONE knob: colors value + trend icon + delta badge as a set.
+  tone = "default", // "default" | "success" | "destructive" | "neutral"
+  // Optional trend icon rendered after the value (TrendingUp/Down).
+  icon: IconCmp,
+  // Info tooltip text — renders the ghost (i) button top-right.
+  info,
+  // Card level: "page" sits on the canvas (white card on the raised
+  // layer); "nested" sits ON another card — steps down to the
+  // neutral-50 tier with a border so a stat row can live at the top of
+  // a bigger module card.
+  level = "page", // "page" | "nested"
+  // Screen link (STUDIO-FLOWS) — stamps data-grade-goto/-transition.
+  goto,
+  transition,
+  dataHook,
+  // Layout-only className (grid placement); pass-through for data-*.
+  className,
+  ...rest
+}) {
+  const data = useProposalData();
+  const bound = metricKey ? data.metrics?.[metricKey] : undefined;
+  value = value ?? bound?.metric;
+  delta = delta ?? bound?.delta;
+  const t = STAT_TONES[tone] ?? STAT_TONES.default;
+  return (
+    <Card
+      variant="filled"
+      density="condensed"
+      dataHook={dataHook}
+      data-grade-goto={goto}
+      data-grade-transition={transition}
+      className={[
+        "max-w-none",
+        level === "nested"
+          ? "border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]"
+          : "",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      {...rest}
+    >
+      <CardContent>
+        <div className="flex items-start justify-between gap-2">
+          <TypographyMuted className="text-xs font-semibold uppercase">
+            {label}
+          </TypographyMuted>
+          {info ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconOnly
+                    className="-mt-1 -mr-1 size-7 shrink-0"
+                    ariaLabel={`About ${typeof label === "string" ? label : "this metric"}`}
+                    dataHook={dataHook ? `${dataHook}-info` : undefined}
+                  >
+                    <Info className="text-muted-foreground size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{info}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : null}
+        </div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className={`text-3xl font-bold tracking-tight ${t.value}`}>
+            {value}
+          </span>
+          {delta ? (
+            tone === "neutral" ? (
+              <Badge variant="secondary">{delta}</Badge>
+            ) : (
+              <Badge className={t.badge}>{delta}</Badge>
+            )
+          ) : null}
+          {IconCmp ? <IconCmp className={`size-5 self-center ${t.icon}`} /> : null}
         </div>
       </CardContent>
     </Card>

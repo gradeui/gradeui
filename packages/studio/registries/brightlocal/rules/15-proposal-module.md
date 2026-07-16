@@ -1,7 +1,8 @@
 @brightlocal/proposal — the shared proposal module (USE IT BY DEFAULT):
 
 - For ANY hub, dashboard, or full-page screen with the app sidebar, import the shell and chrome from "@brightlocal/proposal" instead of composing GlobalLayout/Sidebar by hand or copying shell code into the screen:
-  import { AppLayoutShell, ProposalSidebar, PageHeader, HubStatCard, HubHeroCard, useProposalData } from "@brightlocal/proposal";
+  import { AppLayoutShell, ProposalSidebar, PageHeader, StatCard, HubStatCard, HubHeroCard, useProposalData } from "@brightlocal/proposal";
+- EVERY compact metric tile is a <StatCard> (label/value/delta/tone/icon/info; metricKey binds from data.metrics; level="nested" for a stat row ON a bigger card). Never hand-roll Card + CardContent className="pt-6" for stats — BL's Card already pads content and pt-6 double-pads the top.
 - The canonical page skeleton is:
   <SidebarProvider defaultOpen>
     <AppLayoutShell flush stickyHeader pinnedSidebar sidebarTone="white"

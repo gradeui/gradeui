@@ -4226,6 +4226,99 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       }
     }
   },
+  "StatCard": {
+    "name": "StatCard",
+    "description": "Card-on-card: give a big module Card a stat row with `level=\"nested\"` —",
+    "props": {
+      "label": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Small uppercase label above the value (\"Average Position\"). Required."
+      },
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Headline value (ReactNode). Wins over the metricKey binding."
+      },
+      "metricKey": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DATA BINDING: key into data.metrics — value/delta read from the proposal data context at render position. Prefer over literals where the seam has the number."
+      },
+      "delta": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Small Badge beside the value (\"+4.2% vs last month\"). Wins over bound."
+      },
+      "tone": {
+        "kind": "enum",
+        "values": [
+          "default",
+          "success",
+          "destructive",
+          "neutral"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "ONE knob colouring value + trend icon + delta badge AS A SET. \"default\" = plain value, success-toned badge; \"success\"/\"destructive\" also tint the value and icon; \"neutral\" = secondary badge, no tinting. Never style parts individually. (default \"default\")"
+      },
+      "icon": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Optional trend icon component rendered after the value (TrendingUp / TrendingDown from @brightlocal/icons)."
+      },
+      "info": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tooltip text; renders the ghost (i) button top-right."
+      },
+      "level": {
+        "kind": "enum",
+        "values": [
+          "page",
+          "nested"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Card level. \"page\" sits on the canvas (white card on the raised layer); \"nested\" sits ON another card — steps down to the neutral-50 tier with a border, for a stat row at the top of a bigger module card. (default \"page\")"
+      },
+      "goto": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Screen link (STUDIO-FLOWS); stamps data-grade-goto."
+      },
+      "transition": {
+        "kind": "enum",
+        "values": [
+          "fade",
+          "slide-left",
+          "slide-right",
+          "none"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Swap treatment for the goto."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name; the info button derives \"<dataHook>-info\"."
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "LAYOUT ONLY (grid placement) — never restyle the tile."
+      }
+    }
+  },
   "Stepper": {
     "name": "Stepper",
     "description": "))}",
