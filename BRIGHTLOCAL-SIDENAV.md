@@ -333,3 +333,17 @@ system-prompt stitching should PIN it for hub/dashboard asks).
 Clobber guard shipped in supabase-adapter saveProject (bulk upsert now
 version-filtered per design).
 
+## QUEUED — shared REGISTRY module: @brightlocal/proposal (Ali, 16 Jul)
+
+Registry-scoped (NOT project-scoped — Ali runs play projects + share
+projects on the same registry and needs one source of truth): shared
+user-land components (AppLayoutShell, the proposal sidenav, PageHeader,
+HubStatCard/HubHeroCard) live in packages/studio/registries/brightlocal/lib/,
+compile into the registry, and are exposed to screens via the sandbox
+import map as "@brightlocal/proposal". Screens then import instead of
+carrying in-file copies. Sandpack parity: the same source ships as a
+file in chat-sandpack's file map. Edited in the repo (regen like
+recipes), versioned in git, zero DB surface. Also: comments must pass
+through flow navigation (thread-set swap on goto — the F1 TODO in
+shared-screen.tsx) — Ali confirmed wanting this.
+
