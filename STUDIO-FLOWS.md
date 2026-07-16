@@ -105,3 +105,44 @@ Studio) — never a broken screen.
 - **F2:** flow bar; "flow" badge on share management; View Transitions.
 - **F3:** flow-aware capture (STUDIO-CAPTURE walks the graph → a
   clickable static export), Director records across navigations.
+
+## F1/F2 build notes (16 Jul evening — Ali's priorities, build-ready)
+
+**F1 precompile ("instant linkage"):** new `ext:precompile { sources }`
+message; external sandbox keeps a compile cache keyed by source hash,
+idle-compiles flow siblings AFTER the current screen's ext:rendered;
+ext:source checks the cache first. `ExternalIframeHost` gets
+`precompileSources?: string[]`; share/embed pass the other flowScreens'
+sources when 2+.
+
+**Transitions are DATA ON THE LINK (Ali):** `data-grade-transition`
+rides next to data-grade-goto (goto/`transition` fields in nav data and
+card props). Values are presets ("fade" default | "slide-left" |
+"slide-right" | "none" — extend in code, the toggles-with-presets
+rule). Implementation ladder: double-buffered cross-fade first (hold
+old screen until new stamps rendered), then View Transitions API inside
+the sandbox document with data-hook-matched shared elements. The Back
+chip plays the reverse of the transition that got you there.
+
+**@brightlocal/proposal (M0) — the verbosity killer:** shared user-land
+components (AppLayoutShell + tones/frames/layers presets, proposal
+sidenav incl. SECTIONS-driven nav, PageHeader, HubStatCard, HubHeroCard,
+ShellTweakerPanel) live in packages/studio/registries/brightlocal/lib/
+proposal.jsx, compiled into the registry bundle as a SOURCE STRING.
+Screens shrink to just the page: import { AppLayoutShell, ProposalSidebar,
+PageHeader, HubStatCard } from "@brightlocal/proposal".
+- External sandbox: sucrase-compile the lib source at boot, register as
+  a blob-URL module in the import map BEFORE screen modules load (import
+  maps are static — build the map with the blob entry up front).
+- Sandpack/CodeSandbox parity (Ali's constraint — screens are a
+  one-to-one copy today): the same source ships as a FILE in
+  chat-sandpack's file map (/brightlocal-proposal.jsx) with the import
+  aliased to it, so an exported sandbox = screen + one lib file, runs
+  as-is. The copy stays one-to-one, just two files instead of one.
+- Templates/recipes regenerate to import from the module instead of
+  carrying in-file copies; generation prompt pins the import as the
+  default scaffold for hub/dashboard asks (Ali: "used by default by any
+  agent").
+- Migration: new screens import; existing screens keep working (in-file
+  copies are self-contained) and migrate on regen.
+
