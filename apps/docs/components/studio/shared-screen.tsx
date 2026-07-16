@@ -945,14 +945,58 @@ export function SharedScreen({
                 {projectName}
               </span>
               <span className="shrink-0 text-xs text-muted-foreground/60">/</span>
-              <span className="truncate text-sm font-medium text-foreground">
-                {/* Names the CURRENT screen — or the SCOPE on the
-                    compare row (a scoped share is "the tag", not any
-                    one screen; the tag was invisible in the chrome). */}
-                {compare
-                  ? (scopeLabel ?? `${scopedMembers.length} screens`)
-                  : currentScreenName}
-              </span>
+              {compare ? (
+                // The SCOPE names a compare share — and doubles as the
+                // member menu: pick a screen to glide the camera to its
+                // pane (Ali: "a dropdown next to the shared tag name").
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex min-w-0 items-center gap-1 rounded text-sm font-medium text-foreground transition hover:opacity-70"
+                    >
+                      <span className="truncate">
+                        {scopeLabel ?? `${scopedMembers.length} screens`}
+                      </span>
+                      <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="z-[80] w-56 border-border/60 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/65"
+                  >
+                    {scopedMembers.map((m) => (
+                      <DropdownMenuItem
+                        key={m.id}
+                        onClick={() => focusPane(m.id)}
+                        className="gap-2 focus:bg-foreground/10 focus:text-foreground"
+                      >
+                        <span className="flex-1 truncate">{m.name}</span>
+                        {focusedPaneId === m.id && (
+                          <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <span className="truncate text-sm font-medium text-foreground">
+                  {/* Names the CURRENT screen — updates on flow navigation. */}
+                  {currentScreenName}
+                </span>
+              )}
+              {/* Zoom out — back to the fitted row (same as Esc). */}
+              {compare && (
+                <button
+                  type="button"
+                  onClick={unfocusPanes}
+                  title="Zoom out to all screens (Esc)"
+                  aria-label="Zoom out to all screens"
+                  className="ml-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-md text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground"
+                >
+                  <Maximize className="h-3.5 w-3.5" />
+                </button>
+              )}
               {compare && scopeLabel && (
                 <span
                   className="ml-1 inline-flex shrink-0 items-center gap-1 self-center rounded-full px-2 py-0.5 text-[10px] text-muted-foreground"
