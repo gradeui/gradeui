@@ -34,10 +34,23 @@ import {
   PageHeader,
   HubStatCard,
   HubHeroCard,
+  ProposalDataProvider,
 } from "@brightlocal/proposal";
+
+// ─── Project data — the per-project wiring layer ─────────────────────
+// navLinks map nav row ids → screen names (STUDIO-FLOWS): flows live in
+// DATA, stable per project, editable without touching the IA. Providers
+// STACK, so the tweaker's dataset switch keeps these links. Add area
+// data (tables, insights) here as screens need it.
+const PROJECT_DATA = {
+  navLinks: {
+    "rk-table": "Rankings Table",
+  },
+};
 
 export default function App() {
   return (
+    <ProposalDataProvider data={PROJECT_DATA}>
     <SidebarProvider dataHook="switcher-sidebar-provider" defaultOpen>
       {/* Layout knobs are LITERAL props so the inspector can edit them —
           select the shell (click the page background) and flip
@@ -47,7 +60,11 @@ export default function App() {
         stickyHeader={true}
         pinnedSidebar={true}
         sidebarTone="white"
-        sidebar={<ProposalSidebar dataHook="app-sidebar" />}
+        // activeId states WHICH PAGE THIS IS: the hub is the location's
+        // landing, matching no nav row — nothing highlights, trails stay
+        // collapsed. A module screen passes its row id instead
+        // (activeId="rk-table" on the Rankings Table screen).
+        sidebar={<ProposalSidebar dataHook="app-sidebar" activeId="location-hub" />}
         header={
           // meta omitted ON PURPOSE — PageHeader's default meta is
           // data-bound (location name + status from useProposalData,
@@ -132,5 +149,6 @@ export default function App() {
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>
+    </ProposalDataProvider>
   );
 }

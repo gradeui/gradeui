@@ -241,6 +241,25 @@ split for the 32px line, rail ml-6.
 
 ## Status log
 
+- 2026-07-16 (latest) — **Active nav row + per-project nav links**
+  (Ali: "set a navigation item to true for a page" + goto links that
+  are stable per project but editable):
+  - `<ProposalSidebar activeId="lp-hours" />` — the per-screen "which
+    page is this" knob: the row highlights AND every collapsible on its
+    trail opens (subtreeHas walks the tree). Overrides the IA's baked
+    flags; an id matching nothing (hub landing) renders all-collapsed.
+  - `data.navLinks` — row id → screen name (or { goto, transition }),
+    applied by buildProposalSections: nav flow wiring is per-project
+    DATA, never forked sections. hub-page.jsx demonstrates both
+    (PROJECT_DATA const + activeId="location-hub").
+  - ProposalDataProvider now merges over its PARENT context, so
+    providers STACK — the tweaker's dataset switch keeps the screen
+    provider's navLinks. Location Profile flagged as the main data
+    stream; its area section lands in the JSON as screens are built.
+  - rules/15 updated (always set activeId; wire flows via navLinks).
+    Harness-verified: leaf highlight + trail, template navLink stamps,
+    provider stacking under a dataset switch.
+
 - 2026-07-16 (late evening) — **Named datasets + data binding** (Ali +
   Harry's "switch the data" request, extended live in-session):
   - Raw JSON datasets at `registries/brightlocal/lib/data/<name>.json`

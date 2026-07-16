@@ -191,24 +191,56 @@ export const PROPOSAL_SECTIONS = [
   { id: "agency-tools", label: "Agency Tools", icon: Briefcase },
 ];
 
-/** The proposal IA with data-driven rows injected: Local Search Grid's
- *  keyword sub-items come from `data.keywords`, ahead of the section's
- *  static rows (Add more / Settings). ProposalSidebar calls this with
- *  the context data by default; screens with a custom nav can call it
- *  themselves or pass `sections` raw. */
+/** The proposal IA with data-driven rows injected:
+ *  - Local Search Grid's keyword sub-items come from `data.keywords`,
+ *    ahead of the section's static rows (Add more / Settings).
+ *  - `data.navLinks` wires goto targets onto nav rows BY ID — per
+ *    project data, not module structure, so links can change over time
+ *    without touching the IA. Value is a screen name string, or
+ *    { goto, transition } for a transition preset:
+ *      "navLinks": { "rk-table": "Rankings Table",
+ *                    "lp-hours": { "goto": "Opening Hours", "transition": "slide-left" } }
+ *  ProposalSidebar calls this with the context data by default; screens
+ *  with a custom nav can call it themselves or pass `sections` raw. */
 export function buildProposalSections(data) {
   const keywords = data?.keywords ?? [];
-  return PROPOSAL_SECTIONS.map((section) =>
-    section.id === "local-search-grid"
-      ? {
-          ...section,
-          sub: [
-            ...keywords.map((kw, i) => ({ id: `lsg-kw-${i}`, label: kw })),
-            ...section.sub,
-          ],
-        }
-      : section,
-  );
+  const links = data?.navLinks ?? {};
+  const applyLinks = (item) => {
+    const link = links[item.id];
+    const patched = link
+      ? typeof link === "string"
+        ? { ...item, goto: link }
+        : {
+            ...item,
+            goto: link.goto ?? item.goto,
+            transition: link.transition ?? item.transition,
+          }
+      : item;
+    return patched.sub
+      ? { ...patched, sub: patched.sub.map(applyLinks) }
+      : patched;
+  };
+  return PROPOSAL_SECTIONS.map((section) => {
+    const withKeywords =
+      section.id === "local-search-grid"
+        ? {
+            ...section,
+            sub: [
+              ...keywords.map((kw, i) => ({ id: `lsg-kw-${i}`, label: kw })),
+              ...section.sub,
+            ],
+          }
+        : section;
+    return applyLinks(withKeywords);
+  });
+}
+
+/** Does this item's subtree contain the id? Drives the open trail when
+ *  ProposalSidebar gets an explicit activeId. */
+function subtreeHas(item, id) {
+  if (!id) return false;
+  if (item.id === id) return true;
+  return (item.sub ?? []).some((child) => subtreeHas(child, id));
 }
 
 // ─── Proposal data layer (lightweight data binding — Ali/Harry) ───────
@@ -244,6 +276,12 @@ export const PROPOSAL_DATA = {
     "glamping south downs",
     "caravan park brighton",
   ],
+  // Nav goto links BY ROW ID — per-project wiring, stable per project
+  // but editable over time without touching the IA structure. Value:
+  // screen name, or { goto, transition }. Applied by
+  // buildProposalSections; authored per project via ProposalDataProvider
+  // data or a dataset JSON.
+  navLinks: {},
   // AI Insights — the headline featureset. A dataset section of its
   // own: `summary` is the one-liner surfaces quote (hero, hub);
   // `items` are "the three things to fix first" — area matches a nav
@@ -335,16 +373,20 @@ function mergeProposalData(base, patch) {
 export const PROPOSAL_DATASETS = DATASETS;
 
 export function ProposalDataProvider({ dataset, data, children }) {
-  // Merge order: defaults → named dataset patch → the `data` prop —
-  // so ad-hoc overrides still win on top of a dataset.
+  // Merge order: PARENT context → named dataset patch → the `data`
+  // prop. Base is the parent (not PROPOSAL_DATA directly — though with
+  // no outer provider the parent IS the defaults), so nested providers
+  // STACK: a screen-level provider carrying project navLinks survives
+  // the shell/tweaker mounting a dataset provider inside it.
+  const parent = React.useContext(ProposalDataContext);
   const merged = React.useMemo(() => {
     const named = dataset && dataset !== "default" ? DATASETS[dataset] : undefined;
     if (dataset && dataset !== "default" && !named) {
       // eslint-disable-next-line no-console
       console.warn(`[proposal] unknown dataset "${dataset}" — using defaults`);
     }
-    return mergeProposalData(mergeProposalData(PROPOSAL_DATA, named), data);
-  }, [dataset, data]);
+    return mergeProposalData(mergeProposalData(parent, named), data);
+  }, [parent, dataset, data]);
   return (
     <ProposalDataContext.Provider value={merged}>
       {children}
@@ -784,13 +826,17 @@ export function AppLayoutShell({
    the sub rhythm instead of the top-level pill. NOTE: the nested
    SidebarMenuCollapsible renders its own <li>, so it is NOT wrapped in
    SidebarMenuSubItem (li>li). */
-function SubRows({ items }) {
+/* Active resolution: an explicit activeId (per-screen prop) overrides
+   the IA's baked `active` flags entirely — the id names the row, and
+   every collapsible on the trail to it opens. No activeId = legacy
+   behaviour (the flags in the sections data). */
+function SubRows({ items, activeId }) {
   return items.map((item) =>
     item.sub ? (
       <SidebarMenuCollapsible
         key={item.id}
         dataHook={`collapsible-${item.id}`}
-        defaultOpen={item.active}
+        defaultOpen={activeId ? subtreeHas(item, activeId) : item.active}
       >
         <SidebarMenuCollapsibleTrigger
           size="sm"
@@ -802,7 +848,7 @@ function SubRows({ items }) {
           variant={SidebarMenuSubVariant.BORDER}
           className="ml-2 items-stretch pr-0"
         >
-          <SubRows items={item.sub} />
+          <SubRows items={item.sub} activeId={activeId} />
         </SidebarMenuCollapsibleContent>
       </SidebarMenuCollapsible>
     ) : (
@@ -810,7 +856,7 @@ function SubRows({ items }) {
         <SidebarMenuSubButton
           className="h-auto min-h-7 w-full py-1 [&>span:last-of-type]:whitespace-normal!"
           dataHook={`sub-btn-${item.id}`}
-          isActive={item.active}
+          isActive={activeId ? item.id === activeId : item.active}
           data-grade-goto={item.goto}
           data-grade-transition={item.transition}
         >
@@ -821,14 +867,14 @@ function SubRows({ items }) {
   );
 }
 
-function NavSection({ section }) {
+function NavSection({ section, activeId }) {
   if (!section.sub) {
     return (
       <SidebarMenuItem>
         <SidebarMenuButton
           className="px-4 [&>span:last-of-type]:whitespace-normal!"
           dataHook={`nav-${section.id}`}
-          isActive={section.active}
+          isActive={activeId ? section.id === activeId : section.active}
           data-grade-goto={section.goto}
           data-grade-transition={section.transition}
         >
@@ -841,7 +887,7 @@ function NavSection({ section }) {
   return (
     <SidebarMenuCollapsible
       dataHook={`collapsible-${section.id}`}
-      defaultOpen={section.active}
+      defaultOpen={activeId ? subtreeHas(section, activeId) : section.active}
     >
       <SidebarMenuCollapsibleTrigger
         className="px-4 [&>span:last-of-type]:whitespace-normal!"
@@ -858,7 +904,7 @@ function NavSection({ section }) {
         variant={SidebarMenuSubVariant.BORDER}
         className="ml-6 items-stretch pr-2"
       >
-        <SubRows items={section.sub} />
+        <SubRows items={section.sub} activeId={activeId} />
       </SidebarMenuCollapsibleContent>
     </SidebarMenuCollapsible>
   );
@@ -871,9 +917,15 @@ function NavSection({ section }) {
 // the screen root — the provider is per-screen state, not lib chrome.
 export function ProposalSidebar({
   // Default nav is DATA-DRIVEN: built from the proposal data context
-  // (keywords feed the Local Search Grid rows), so a dataset switch
-  // re-writes the left nav too. Pass `sections` to opt out.
+  // (keywords feed the Local Search Grid rows; data.navLinks wires goto
+  // targets by row id), so a dataset switch re-writes the left nav too.
+  // Pass `sections` to opt out.
   sections,
+  // WHICH ROW IS ACTIVE — the per-screen knob ("this page is Opening
+  // Hours"): pass the nav row's id (activeId="lp-hours") and the row
+  // highlights + every collapsible on its trail opens. Overrides the
+  // IA's baked flags; omit for the default (Rankings Table).
+  activeId,
   accounts = PROPOSAL_ACCOUNTS,
   // Account/user rows resolve PROPS FIRST, then the proposal data
   // context — so a screen wrapped in ProposalDataProvider re-skins the
@@ -925,7 +977,7 @@ export function ProposalSidebar({
           <SidebarGroupContent>
             <SidebarMenu className="gap-0">
               {sections.map((section) => (
-                <NavSection key={section.id} section={section} />
+                <NavSection key={section.id} section={section} activeId={activeId} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
