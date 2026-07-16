@@ -231,6 +231,14 @@ split for the 32px line, rail ml-6.
 
 ## Next up (from Ali, queued)
 
+- STUDIO external-mount pinch parity: the share view's external zoom is
+  now pointer-anchored (session machinery, 16 Jul); Studio's
+  ExternalDsMount still does plain centre zoomBy with no anchor/counter-
+  translate — feels shonky by contrast. Give it the FocusedFastMount
+  treatment (anchor from ext:zoom-gesture coords, camera counter-
+  translate). Also queued: tags T1 (group-by/filter rail views —
+  STUDIO-TAGS.md; T0 substrate + inspector editor shipped f60db6b).
+
 - PAGE HEADER needs real rules: a composable recipe/component spec with
   slots — breadcrumbs, title, subtitle, right-hand actions — plus its
   OWN padding so it renders identically sticky or not (today the sticky
