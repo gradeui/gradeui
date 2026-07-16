@@ -21,7 +21,7 @@
  * `projects.view_prefs` jsonb) — these components are controlled.
  */
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -292,6 +292,17 @@ export function ScreensListView({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tagDraft, setTagDraft] = useState("");
+  // Bulk input autocompletes the project vocabulary (facets carry every
+  // observed type:value) — exact-match discipline until the T2 registry
+  // normalises spellings.
+  const bulkListId = useId();
+  const bulkSuggestions = useMemo(
+    () =>
+      facets
+        .flatMap((f) => f.values.map(({ value }) => `${f.type}:${value}`))
+        .sort(),
+    [facets],
+  );
 
   // Selection survives filter changes only for still-visible designs —
   // acting on hidden rows would be a silent surprise.
@@ -402,7 +413,15 @@ export function ScreensListView({
             }}
             placeholder="section:rankings — type:value, Enter to apply"
             className="h-6 flex-1 min-w-0 rounded border border-border bg-background px-2 text-[11px] outline-none focus:border-primary/50"
+            list={bulkSuggestions.length ? bulkListId : undefined}
           />
+          {bulkSuggestions.length > 0 && (
+            <datalist id={bulkListId}>
+              {bulkSuggestions.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          )}
           <Button
             size="sm"
             variant="secondary"

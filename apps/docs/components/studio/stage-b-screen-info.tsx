@@ -79,6 +79,12 @@ export interface StageBScreenInfoProps {
   onStatusChange: (status: DesignStatus) => void;
   /** Typed tags on the active design (STUDIO-TAGS T0). */
   tags?: DesignTag[];
+  /** Project-wide tag vocabulary ("type:value" strings) — feeds the
+   *  input's datalist so existing spellings autocomplete instead of
+   *  drifting ("40 spellings of ranking"). The T2 registry replaces
+   *  this with normalisation; until then, exact-match discipline via
+   *  suggestion. */
+  tagSuggestions?: string[];
   /** Replace the active design's tag set. Same persist path as
    *  onStatusChange (setDesigns → autosave). */
   onTagsChange?: (tags: DesignTag[]) => void;
@@ -123,9 +129,19 @@ export function StageBScreenInfo({
   onStatusChange,
   tags,
   onTagsChange,
+  tagSuggestions,
   className,
 }: StageBScreenInfoProps) {
   const effectiveStatus: DesignStatus = status ?? "draft";
+
+  // Datalist id for the tag input's project-vocabulary autocomplete —
+  // useId so multiple mounts (panel + future surfaces) don't collide.
+  const tagListId = React.useId();
+  // Suggest only what this design doesn't already carry.
+  const applied = new Set((tags ?? []).map((t) => formatTag(t)));
+  const openSuggestions = (tagSuggestions ?? []).filter(
+    (s) => !applied.has(s),
+  );
 
   // Tags editor (STUDIO-TAGS T0) — chips + a small add input.
   // "type:value" syntax ("section:rankings", "flow:walkthrough");
@@ -273,7 +289,15 @@ export function StageBScreenInfo({
                     onBlur={commitTagDraft}
                     placeholder={tags?.length ? "add…" : "section:rankings"}
                     className="min-w-[72px] flex-1 bg-transparent px-1 py-0.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/60"
+                    list={openSuggestions.length ? tagListId : undefined}
                   />
+                  {openSuggestions.length > 0 && (
+                    <datalist id={tagListId}>
+                      {openSuggestions.map((s) => (
+                        <option key={s} value={s} />
+                      ))}
+                    </datalist>
+                  )}
                 </div>
               </PropertyList.Row>
             )}

@@ -121,6 +121,7 @@ import { useActiveRegistry } from "@/lib/use-active-registry";
 import {
   createDesign,
   designKind,
+  formatTag,
   initialDesigns,
   starterMotionSource,
   type Design,
@@ -524,6 +525,21 @@ export default function StudioPage() {
   // as the inspector's onTagsChange: patch the designs, autosave's
   // content signature does the rest. `single` types replace the
   // design's existing tag of that type (folder semantics).
+  // Project tag vocabulary — every distinct "type:value" in use (plus
+  // bare "type:" starters) feeds the inspector tag input's datalist so
+  // existing spellings autocomplete instead of forking ("do I have to
+  // match it exactly?" — yes, so the input should finish it for you).
+  const tagSuggestions = useMemo(() => {
+    const out = new Set<string>();
+    for (const d of designs) {
+      for (const t of d.tags ?? []) {
+        out.add(formatTag(t));
+        if (t.type !== "label") out.add(`${t.type}:`);
+      }
+    }
+    return [...out].sort();
+  }, [designs]);
+
   const handleBulkTagDesigns = useCallback(
     (ids: string[], tag: DesignTag, single: boolean) => {
       const idSet = new Set(ids);
@@ -2774,6 +2790,7 @@ export default function StudioPage() {
           ),
         )
       }
+      tagSuggestions={tagSuggestions}
       tab={rightTab}
       onTabChange={setRightTab}
       viewportWidth={viewportWidth}
