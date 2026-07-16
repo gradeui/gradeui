@@ -214,27 +214,34 @@ function sidebarTone(bg, fg, accent, accentFg, border) {
   };
 }
 
+// Theme-aware pair: resolves via CSS light-dark(), which follows
+// color-scheme — the shell wires color-scheme to the .dark class
+// (schemeCss below), so every preset flips with Studio's mode toggle.
+// Without this the presets pinned LIGHT ramp steps and dark mode had
+// nothing left to flip (the semantic .dark overrides were bypassed).
+const ld = (light, dark) => `light-dark(${light}, ${dark})`;
+
 const SIDEBAR_TONES = {
   default: {},
   // Pure white panel — pairs with pageLayers "raised" (white nav +
   // white cards on the green-grey canvas) and the flush frame's
   // default border.
   white: sidebarTone(
-    "var(--ds-tailwind-colors-base-white)",
-    "var(--ds-tailwind-colors-neutral-600)",
-    "var(--ds-tailwind-colors-neutral-100)",
-    "var(--ds-tailwind-colors-neutral-900)",
-    "var(--ds-colors-sidebar-border-light)",
+    ld("var(--ds-tailwind-colors-base-white)", "var(--ds-tailwind-colors-neutral-900)"),
+    ld("var(--ds-tailwind-colors-neutral-600)", "var(--ds-tailwind-colors-neutral-300)"),
+    ld("var(--ds-tailwind-colors-neutral-100)", "var(--ds-tailwind-colors-neutral-800)"),
+    ld("var(--ds-tailwind-colors-neutral-900)", "var(--ds-tailwind-colors-neutral-50)"),
+    ld("var(--ds-colors-sidebar-border-light)", "var(--ds-colors-sidebar-border-dark)"),
   ),
   // The grey/green light version: BL's neutral ramp IS green-tinted
   // (#f2f7f3 etc.), so neutral-100 on the neutral-50 page reads as a
   // subtle brand-adjacent panel rather than plain grey.
   subtle: sidebarTone(
-    "var(--ds-tailwind-colors-neutral-100)",
-    "var(--ds-tailwind-colors-neutral-600)",
-    "var(--ds-tailwind-colors-neutral-200)",
-    "var(--ds-tailwind-colors-neutral-900)",
-    "var(--ds-colors-sidebar-border-light)",
+    ld("var(--ds-tailwind-colors-neutral-100)", "var(--ds-tailwind-colors-neutral-950)"),
+    ld("var(--ds-tailwind-colors-neutral-600)", "var(--ds-tailwind-colors-neutral-300)"),
+    ld("var(--ds-tailwind-colors-neutral-200)", "var(--ds-tailwind-colors-neutral-800)"),
+    ld("var(--ds-tailwind-colors-neutral-900)", "var(--ds-tailwind-colors-neutral-50)"),
+    ld("var(--ds-colors-sidebar-border-light)", "var(--ds-colors-sidebar-border-dark)"),
   ),
   dark: sidebarTone(
     "var(--ds-tailwind-colors-neutral-900)",
@@ -291,13 +298,13 @@ const PAGE_LAYERS = {
   // read too strong), cards pure white, muted UP to neutral-100 so
   // filled surfaces sit between card and canvas.
   raised: {
-    backgroundColor: "var(--ds-tailwind-colors-neutral-50)",
-    "--background": "var(--ds-tailwind-colors-neutral-50)",
-    "--color-background": "var(--ds-tailwind-colors-neutral-50)",
-    "--card": "var(--ds-tailwind-colors-base-white)",
-    "--color-card": "var(--ds-tailwind-colors-base-white)",
-    "--muted": "var(--ds-tailwind-colors-neutral-100)",
-    "--color-muted": "var(--ds-tailwind-colors-neutral-100)",
+    backgroundColor: ld("var(--ds-tailwind-colors-neutral-50)", "var(--ds-tailwind-colors-neutral-950)"),
+    "--background": ld("var(--ds-tailwind-colors-neutral-50)", "var(--ds-tailwind-colors-neutral-950)"),
+    "--color-background": ld("var(--ds-tailwind-colors-neutral-50)", "var(--ds-tailwind-colors-neutral-950)"),
+    "--card": ld("var(--ds-tailwind-colors-base-white)", "var(--ds-tailwind-colors-neutral-900)"),
+    "--color-card": ld("var(--ds-tailwind-colors-base-white)", "var(--ds-tailwind-colors-neutral-900)"),
+    "--muted": ld("var(--ds-tailwind-colors-neutral-100)", "var(--ds-tailwind-colors-neutral-800)"),
+    "--color-muted": ld("var(--ds-tailwind-colors-neutral-100)", "var(--ds-tailwind-colors-neutral-800)"),
   },
 };
 
@@ -343,7 +350,7 @@ function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
   return (
     <div className="group fixed right-0 bottom-0 z-50 p-3" data-slot="shell-tweaker">
       {open ? (
-        <div className="w-64 rounded-xl border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-base-white)] p-3 shadow-lg">
+        <div className="w-64 rounded-xl border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] p-3 shadow-lg">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold">Shell tweaks</span>
             <span className="flex items-center gap-2">
@@ -377,8 +384,8 @@ function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
                     onClick={() => set(row.key, v)}
                     className={
                       live[row.key] === v
-                        ? "rounded-full bg-[var(--ds-tailwind-colors-neutral-900)] px-2 py-0.5 text-[11px] text-white"
-                        : "rounded-full bg-[var(--ds-tailwind-colors-neutral-50)] px-2 py-0.5 text-[11px] text-[var(--ds-tailwind-colors-neutral-600)]"
+                        ? "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-50))] px-2 py-0.5 text-[11px] text-[light-dark(white,var(--ds-tailwind-colors-neutral-900))]"
+                        : "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))] px-2 py-0.5 text-[11px] text-[light-dark(var(--ds-tailwind-colors-neutral-600),var(--ds-tailwind-colors-neutral-300))]"
                     }
                   >
                     {v === true ? "on" : v === false ? "off" : v}
@@ -392,7 +399,7 @@ function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
         <button
           onClick={() => setOpen(true)}
           aria-label="Open shell tweaks (Alt+T)"
-          className="flex size-9 items-center justify-center rounded-full border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-base-white)] opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100"
+          className="flex size-9 items-center justify-center rounded-full border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100"
         >
           <SlidersHorizontal className="size-4" />
         </button>
@@ -477,16 +484,17 @@ function AppLayoutShell({
     (sidebarFrame === "flush" ? "var(--sidebar-border)" : undefined);
   const tone = SIDEBAR_TONES[sidebarTone] ?? {};
   const layers = PAGE_LAYERS[pageLayers] ?? {};
-  // Tinted layers earn the floating-panel card treatment page-wide:
-  // filled cards are already WHITE (the layer re-points --card) — the
-  // shadow is what lifts them off the near-white canvas, same as the
-  // floating sidebar frame. Border softens to the light hairline so the
-  // lift reads as elevation, not outline. Scoped <style> because a
-  // box-shadow can't ride a token swap.
+  // Raised layers: cards are WHITE (the layer re-points --card) with a
+  // softened hairline border and NO shadow — matches their Figma, where
+  // card elevation is border-only. Shadows stay a SIDEBAR treatment
+  // (SIDEBAR_SHADOWS / the floating frame). Scoped <style> because the
+  // border-color can't ride the --card token swap.
   const layerCss =
     pageLayers === "raised"
-      ? `[data-slot="card"]{box-shadow:0 1px 3px 0 rgb(0 0 0/0.06),0 1px 2px -1px rgb(0 0 0/0.06);border-color:var(--ds-tailwind-colors-neutral-100)}`
+      ? `[data-slot="card"]{border-color:light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))}`
       : "";
+  // color-scheme wiring for the ld() pairs above — .dark flips them.
+  const schemeCss = ":root{color-scheme:light}.dark{color-scheme:dark}";
   const mobileToneCss =
     mobileTone && Object.keys(tone).length > 0
       ? `[data-sidebar="sidebar"][data-mobile="true"]{${Object.entries(tone)
@@ -511,7 +519,7 @@ function AppLayoutShell({
       // inside resolves against them.
       style={layers}
     >
-      {mobileToneCss || layerCss ? <style>{mobileToneCss + layerCss}</style> : null}
+      <style>{schemeCss + mobileToneCss + layerCss}</style>
       {tweaker ? (
         <ShellTweakerPanel authored={authored} tweaks={tweaks} setTweaks={setTweaks} />
       ) : null}
@@ -691,7 +699,7 @@ function HubStatCard({
                 it reads on BOTH a raised white card and a regular
                 default/filled card without riding the muted token
                 (which the raised layer bumps to neutral-100). */}
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-neutral-50)]">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
               <Icon className="size-4" />
             </div>
             {/* DS scale reference (2.20.0): CardTitle default =
@@ -784,7 +792,7 @@ function HubHeroCard({
               aspect preset so real media and the placeholder agree. */}
           <div className={`hidden w-2/5 shrink-0 md:block ${aspect}`}>
             {media ?? (
-              <div className="flex h-full w-full items-center justify-center rounded-lg border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-neutral-50)]">
+              <div className="flex h-full w-full items-center justify-center rounded-lg border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
                 <Sparkles className="text-muted-foreground size-6" />
               </div>
             )}

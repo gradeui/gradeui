@@ -5,8 +5,9 @@
 // harvested; the recipe harvester does not touch custom-named files.
 //
 // Same composition rules as HubStatCard: in-file user-land component,
-// copy into the screen, slots as props. ELEVATION IS NOT SET HERE —
-// the raised page layer paints every [data-slot="card"] globally.
+// copy into the screen, slots as props. CARD TREATMENT IS NOT SET
+// HERE — the raised page layer paints every [data-slot="card"]:
+// white + hairline border, NO shadow (border-only per their Figma).
 //
 // `media` accepts any ReactNode — an <img>, a chart, an illustration.
 // When omitted, a neutral-50 placeholder keeps the split so the layout
@@ -71,7 +72,7 @@ function HubHeroCard({
               aspect preset so real media and the placeholder agree. */}
           <div className={`hidden w-2/5 shrink-0 md:block ${aspect}`}>
             {media ?? (
-              <div className="flex h-full w-full items-center justify-center rounded-lg border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-neutral-50)]">
+              <div className="flex h-full w-full items-center justify-center rounded-lg border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
                 <Sparkles className="text-muted-foreground size-6" />
               </div>
             )}

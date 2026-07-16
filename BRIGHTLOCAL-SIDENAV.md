@@ -278,3 +278,31 @@ split for the 32px line, rail ml-6.
 ## OPEN — registry-centric token layer (fill picker / TokenField)
 
 The inspector's PROP layer is registry-aware (contracts); the STYLE layer is not — the Fill picker and TokenField offer gradeui tokens even on BrightLocal projects. Needed: the registry seam described in STUDIO-FILLS/STUDIO-TOKENFIELD feeding BL's `--ds-*` palette (and its Tailwind class vocabulary) into the token picker + className editing. Until then, BL styling edits via the panel should use the className field with BL-valid classes.
+
+## QUEUED — share-link OG images via Playwright capture of the embed
+
+Problem: /s/<token> generateMetadata sets title only; scrapers fall back
+to the gradeui OG image — an advert on a client share.
+
+Design (agreed 16 Jul, Ali: capture the EMBED, not the share view — the
+share view carries chrome):
+1. DONE (16 Jul): /e/[token] is registry-aware — page fetches
+   projects.registry_id, EmbedScreen takes registryId and branches both
+   FastIframeHost callsites to ExternalIframeHost (share-view pattern);
+   external embeds stamp data-grade-ready on a display:contents wrapper
+   (0/1/error via ext:rendered / ext:error) so the capture loop waits
+   for the REAL render, not the esm.sh loading status; external ?flat=1
+   falls through to the live embed (FlatScreen compiles against gradeui
+   vocabulary — capture seam is STUDIO-CAPTURE work). Unblocks MCP
+   preview_screen / mobile previews for BL screens.
+2. Capture at SHARE TIME, not scrape time (scrapers allow ~2s; chromium
+   cold-start + DS module boot won't make it): on share-link create (and
+   on revision change), run the existing serverless Playwright pipeline
+   (apps/mcp-server/src/preview-serverless.ts — playwright-core +
+   @sparticuz/chromium-min, Chromium 147 lockstep) against /e/<token>,
+   1200x630, store PNG in Supabase Storage.
+3. generateMetadata: openGraph.images → stored capture, fallback to the
+   default OG only when no capture exists.
+Note: third consumer of the STUDIO-CAPTURE primitive (posters, exports,
+now OG).
+

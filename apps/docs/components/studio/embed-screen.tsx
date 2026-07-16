@@ -35,6 +35,8 @@ import * as React from "react";
 import { Play, Pause, Frame, Image as ImageIcon, Ruler } from "lucide-react";
 import { useReducedMotion } from "@gradeui/ui";
 import { FastIframeHost } from "@/components/studio/fast-frame";
+import { ExternalIframeHost } from "@/components/studio/external-ds-frame";
+import { getActiveRegistry, getRegistryById } from "@/lib/active-registry";
 import { EmbedTweaker, type EmbedTweakControl } from "@/components/studio/embed-tweaker";
 import {
   generateTheme,
@@ -345,6 +347,7 @@ function useCameraTimeline(
 export function EmbedScreen({
   appSource,
   themeDraftJson,
+  registryId = null,
   mode = "light",
   renderWidth,
   renderHeight,
@@ -372,6 +375,13 @@ export function EmbedScreen({
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
+  /** The share's PROJECT registry id (projects.registry_id) — same
+   *  contract as SharedScreen. External registries (BYODS, e.g.
+   *  "brightlocal") render through ExternalIframeHost's ext:* kernel;
+   *  null/"gradeui" keeps Fast Frame. Before this prop the embed was
+   *  the ONE surface that wasn't registry-aware — every BL screen
+   *  404-of-the-soul'd here, which also broke MCP preview_screen. */
+  registryId?: string | null;
   mode?: "light" | "dark";
   /** Fixed virtual resolution. `renderWidth` alone engages fixed mode
    *  (width pins the breakpoints; the box fills); add `renderHeight` for an
@@ -616,6 +626,35 @@ export function EmbedScreen({
   // Fixed mode needs only a width. Height is an optional refinement.
   const fixed = typeof effWidth === "number" && effWidth > 0;
 
+  // External registry (BYODS) — same branch as SharedScreen: resolve
+  // the project's registry, and anything non-gradeui renders through
+  // the ext:* kernel. Theme/motion/fidelity/inspect props are Fast
+  // Frame concerns and intentionally absent on the external host (the
+  // DS's own tokens ride inside the sandbox via runtime.previewCss).
+  const embedRegistry = getRegistryById(registryId) ?? getActiveRegistry();
+  const isExternal = embedRegistry.id !== "gradeui";
+  // Readiness contract for the capture loop (preview.ts): the external
+  // sandbox paints visible STATUS text ("loading design system…") while
+  // esm.sh boots, which would trip the capturer's visible-text fallback
+  // into screenshotting the loading state. Stamp data-grade-ready on a
+  // layout-neutral wrapper instead — "0" booting, "1" on ext:rendered,
+  // "error" on ext:error (the error panel is then the honest capture).
+  const [extReady, setExtReady] = React.useState<"0" | "1" | "error">("0");
+  const externalFrame = (
+    <div style={{ display: "contents" }} data-grade-ready={extReady}>
+      <ExternalIframeHost
+        appSource={appSource}
+        mode={effMode}
+        registryId={embedRegistry.id}
+        onRendered={() => setExtReady("1")}
+        // null = "error cleared" (retry succeeded) — only real messages
+        // stamp the error state; a later ext:rendered flips it to "1".
+        onError={(m) => (m ? setExtReady("error") : undefined)}
+        className="block h-full w-full"
+      />
+    </div>
+  );
+
   const content = fixed ? (
     <ScaledRender
       transparent={transparent}
@@ -631,17 +670,23 @@ export function EmbedScreen({
       }
     >
       {/* The ScaledRender box owns the pixel size; the iframe fills it. */}
-      <FastIframeHost
-        appSource={appSource}
-        theme={effTheme}
-        mode={effMode}
-        motion={motion}
-        fidelity={liveFidelity}
-        inspect={inspect || inspectToggle ? liveInspect : undefined}
-        transparent={transparent}
-        className="block h-full w-full"
-      />
+      {isExternal ? (
+        externalFrame
+      ) : (
+        <FastIframeHost
+          appSource={appSource}
+          theme={effTheme}
+          mode={effMode}
+          motion={motion}
+          fidelity={liveFidelity}
+          inspect={inspect || inspectToggle ? liveInspect : undefined}
+          transparent={transparent}
+          className="block h-full w-full"
+        />
+      )}
     </ScaledRender>
+  ) : isExternal ? (
+    externalFrame
   ) : (
     <FastIframeHost
       appSource={appSource}

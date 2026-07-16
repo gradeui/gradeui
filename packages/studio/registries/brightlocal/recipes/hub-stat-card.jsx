@@ -10,11 +10,12 @@
 // this is the composition seam: the ARRANGEMENT is canonical, the
 // content is per-instance.
 //
-// ELEVATION IS NOT SET HERE — deliberately. The floating-panel
-// treatment (white surface, soft shadow, hairline border) is a PAGE
-// LAYER concern: AppLayoutShell's pageLayers="raised" (the default)
-// paints every [data-slot="card"] with it globally. Cards stay
+// CARD TREATMENT IS NOT SET HERE — deliberately. The raised layer
+// (AppLayoutShell pageLayers="raised", the default) paints every
+// [data-slot="card"]: white surface + hairline border, NO shadow —
+// border-only elevation matches their Figma. Cards stay
 // treatment-agnostic so the whole page re-skins from one switch.
+// (Shadows remain a sidebar-only treatment: SIDEBAR_SHADOWS.)
 //
 // Card gotcha (2.20.0 dist): the base cva bakes `max-w-[400px]` — a
 // grid of these needs `max-w-none` on each Card or the tiles won't
@@ -68,7 +69,7 @@ function HubStatCard({
                 it reads on BOTH a raised white card and a regular
                 default/filled card without riding the muted token
                 (which the raised layer bumps to neutral-100). */}
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-neutral-50)]">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
               <Icon className="size-4" />
             </div>
             {/* DS scale reference (2.20.0): CardTitle default =

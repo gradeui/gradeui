@@ -364,15 +364,21 @@ export default async function EmbedPage({
     appSource = state?.appSource ?? null;
   }
 
-  // Project theme — the treatment the embed renders in.
+  // Project theme + registry — the treatment the embed renders in, and
+  // WHICH renderer renders it (external registries take the ext:*
+  // kernel inside EmbedScreen, same contract as the share view).
   const { data: project } = await supabase
     .from("projects")
-    .select("theme_draft_json")
+    .select("theme_draft_json, registry_id")
     .eq("id", share.project_id)
     .maybeSingle();
-  const themeDraftJson =
-    (project as { theme_draft_json: string | null } | null)?.theme_draft_json ??
-    null;
+  const projectRow = project as {
+    theme_draft_json: string | null;
+    registry_id: string | null;
+  } | null;
+  const themeDraftJson = projectRow?.theme_draft_json ?? null;
+  const registryId = projectRow?.registry_id ?? null;
+  const isExternalRegistry = Boolean(registryId) && registryId !== "gradeui";
 
   // The "live URL" / capture variant — flat render, no iframe, explicit
   // data-grade-ready contract. Zoom/camera don't apply: a capture wants
@@ -395,7 +401,13 @@ export default async function EmbedPage({
     }; color-scheme: ${resolvedMode}; }`}</style>
   );
 
-  if (flat) {
+  // FlatScreen compiles against gradeui's vocabulary (vendored Tailwind
+  // + Grade theme) — an external-registry screen would render wrong or
+  // not at all. Until the capture path grows a registry seam
+  // (STUDIO-CAPTURE), external flat requests fall through to the LIVE
+  // embed below; preview.ts's readiness check already handles non-flat
+  // pages via its visible-text fallback.
+  if (flat && !isExternalRegistry) {
     return (
       <>
         {backdrop}
@@ -427,6 +439,7 @@ export default async function EmbedPage({
       <EmbedScreen
         appSource={appSource}
         themeDraftJson={themeDraftJson}
+        registryId={registryId}
         mode={resolvedMode}
         renderWidth={renderWidth}
         renderHeight={renderHeight}
