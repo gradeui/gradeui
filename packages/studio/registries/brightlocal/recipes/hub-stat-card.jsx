@@ -53,13 +53,14 @@ function HubStatCard({
   ctaHook,
   dataHook,
 }) {
-  // The whole card is a drill-down target — hover lifts it a step
-  // above the resting layer shadow. Wire navigation per-screen (the
-  // CTA carries the same destination for keyboard/AT users).
+  // The whole card is a drill-down target (wire navigation per-screen;
+  // the chevron is the named control for keyboard/AT users). No hover
+  // treatment — resting state stays border-only per the Figma, and the
+  // chevron's own hover carries the affordance.
   return (
     <Card
       density="condensed"
-      className="max-w-none cursor-pointer transition-shadow hover:shadow-md"
+      className="max-w-none cursor-pointer"
       dataHook={dataHook}
     >
       <CardHeader>

@@ -687,20 +687,6 @@ export default function App() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator className="my-2" dataHook="sidebar-separator-1" />
-
-        <SidebarGroup className="px-2 py-1">
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0">
-              <SidebarMenuItem>
-                <SidebarMenuButton dataHook="nav-all-locations">
-                  <House className="size-5" />
-                  <span>All Locations</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       {/* STUCK footer — deliberately NOT SidebarFooter: that component

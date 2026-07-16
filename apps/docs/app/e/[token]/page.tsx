@@ -378,6 +378,26 @@ export default async function EmbedPage({
   } | null;
   const themeDraftJson = projectRow?.theme_draft_json ?? null;
   const registryId = projectRow?.registry_id ?? null;
+
+  // Flow map — ALL screens in the share's project, in canvas order
+  // (STUDIO-FLOWS, same fetch as /s/[token]). The token still NAMES one
+  // screen (the entry); siblings are traversable only via author-wired
+  // data-grade-goto links inside the rendered JSX.
+  const { data: flowRows } = await supabase
+    .from("designs")
+    .select("id, name, state")
+    .eq("project_id", share.project_id)
+    .order("position", { ascending: true });
+  const flowScreens = ((flowRows ?? []) as {
+    id: string;
+    name: string;
+    state: unknown;
+  }[]).map((r) => ({
+    id: r.id,
+    name: r.name,
+    appSource:
+      ((r.state as { appSource?: string | null } | null)?.appSource ?? null),
+  }));
   const isExternalRegistry = Boolean(registryId) && registryId !== "gradeui";
 
   // The "live URL" / capture variant — flat render, no iframe, explicit
@@ -440,6 +460,7 @@ export default async function EmbedPage({
         appSource={appSource}
         themeDraftJson={themeDraftJson}
         registryId={registryId}
+        flowScreens={flowScreens}
         mode={resolvedMode}
         renderWidth={renderWidth}
         renderHeight={renderHeight}

@@ -167,6 +167,12 @@ interface FastIframeHostProps {
    *  whole-page Fit in FocusedFastMount). Only polled while the prop is
    *  set; only fires on change. */
   onContentHeight?: (h: number) => void;
+  /** A click on an author-wired [data-grade-goto] element inside the
+   *  screen (grade:goto — STUDIO-FLOWS; ext:goto is the external
+   *  host's twin). `target` is a screen name or "screen:<id>"; the
+   *  host does NOT resolve it — resolution needs the project's screen
+   *  list, which the consumer (share view / embed) holds. */
+  onGoto?: (target: string) => void;
   /** Transparent sandbox document — the iframe page paints NO
    *  background, so the host shows through wherever the screen doesn't
    *  paint. Carried as ?transparent=1 on the sandbox URL (read at boot
@@ -198,6 +204,7 @@ export function FastIframeHost({
   inlineComments = false,
   onTrySandpack,
   onContentHeight,
+  onGoto,
   transparent = false,
   className,
   style,
@@ -213,13 +220,15 @@ export function FastIframeHost({
   const onSelectModeChangeRef = useRef(onSelectModeChange);
   const onCommentPinClickRef = useRef(onCommentPinClick);
   const onTrySandpackRef = useRef(onTrySandpack);
+  const onGotoRef = useRef(onGoto);
   useEffect(() => {
     onSelectRef.current = onSelect;
     onClearSelectionRef.current = onClearSelection;
     onSelectModeChangeRef.current = onSelectModeChange;
     onCommentPinClickRef.current = onCommentPinClick;
     onTrySandpackRef.current = onTrySandpack;
-  }, [onSelect, onClearSelection, onSelectModeChange, onCommentPinClick, onTrySandpack]);
+    onGotoRef.current = onGoto;
+  }, [onSelect, onClearSelection, onSelectModeChange, onCommentPinClick, onTrySandpack, onGoto]);
 
   // Listen for sandbox → parent messages. Guard on source so multiple
   // Fast iframes (one focused + N tiles in All mode) don't cross-talk.
@@ -267,6 +276,15 @@ export function FastIframeHost({
           const threadId =
             typeof data.threadId === "string" ? data.threadId : "";
           if (threadId) onCommentPinClickRef.current?.(threadId);
+          break;
+        }
+        case "grade:goto": {
+          // STUDIO-FLOWS navigation intent — a click landed on an
+          // author-wired [data-grade-goto] element inside the sandbox.
+          // Surface the raw target; the consumer resolves it against
+          // its flow map (hosts never resolve — see STUDIO-FLOWS.md).
+          const target = typeof data.target === "string" ? data.target : "";
+          if (target) onGotoRef.current?.(target);
           break;
         }
         // grade:fast-error messages currently just log — the sandbox

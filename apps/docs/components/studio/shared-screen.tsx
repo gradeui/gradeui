@@ -117,6 +117,7 @@ export function SharedScreen({
   commentUsers = [],
   registryId = null,
   projectCss = "",
+  flowScreens,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -141,6 +142,13 @@ export function SharedScreen({
    *  both frame hosts inject it — the share renders what the creator
    *  sees (e.g. custom.css patches over a client DS). */
   projectCss?: string;
+  /** Flow map (STUDIO-FLOWS) — every screen in the share's project, in
+   *  canvas order, resolved server-side by /s/[token]. Navigation is
+   *  history-shaped: a click on an author-wired [data-grade-goto]
+   *  element resolves against this list and pushes onto an in-memory
+   *  stack; Back (chip / Escape) pops. The token stays the address of
+   *  the FLOW, not the position — no URL change. */
+  flowScreens?: { id: string; name: string; appSource: string | null }[];
 }) {
   // Seed the preview-css store BEFORE the frame hosts push source —
   // Studio's page-level effect does this in the editor; the share view
@@ -148,6 +156,56 @@ export function SharedScreen({
   React.useEffect(() => {
     setProjectPreviewCss(projectCss);
   }, [projectCss]);
+
+  // ─── Flow navigation (STUDIO-FLOWS F0) ────────────────────────────
+  // History, not a sitemap: an in-memory stack of visited screens.
+  // Empty stack = the share's own screen (the entry the token names).
+  // A click on an author-wired [data-grade-goto] element resolves
+  // against the flow map and pushes; Back (chip / Escape) pops. No URL
+  // change — the token stays the address of the flow, not the position.
+  const [flowStack, setFlowStack] = React.useState<
+    { id: string; appSource: string }[]
+  >([]);
+  const flowTop = flowStack.length > 0 ? flowStack[flowStack.length - 1] : null;
+  // currentSource feeds BOTH renderer branches below — navigation is
+  // just "source push with a different screen" (swap is what every
+  // surface already does when source changes).
+  const currentSource = flowTop ? flowTop.appSource : appSource;
+  // The header names the CURRENT screen (STUDIO-FLOWS "Showing the
+  // flow") — look the visited screen up in the map, fall back to the
+  // entry's name if the row went missing.
+  const currentScreenName = flowTop
+    ? (flowScreens?.find((s) => s.id === flowTop.id)?.name ?? screenName)
+    : screenName;
+  const resolveGoto = React.useCallback(
+    (target: string) => {
+      const t = target.trim();
+      if (!t) return;
+      // "screen:<id>" pins exactly (ids survive renames); anything else
+      // is a screen NAME, matched case-insensitively after trimming —
+      // the authoring ergonomic (see STUDIO-FLOWS.md "wire contract").
+      const match = t.toLowerCase().startsWith("screen:")
+        ? flowScreens?.find((s) => s.id === t.slice("screen:".length))
+        : flowScreens?.find(
+            (s) => s.name.trim().toLowerCase() === t.toLowerCase(),
+          );
+      if (!match || !match.appSource) {
+        // Unresolvable targets no-op with a warn — never a broken screen.
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[flows] goto target "${target}" did not resolve to a screen`,
+        );
+        return;
+      }
+      const src = match.appSource;
+      setFlowStack((prev) => [...prev, { id: match.id, appSource: src }]);
+    },
+    [flowScreens],
+  );
+  const popFlow = React.useCallback(
+    () => setFlowStack((prev) => prev.slice(0, -1)),
+    [],
+  );
 
   // The project's own theme — the default treatment the share opens on.
   const projectTheme = React.useMemo<GeneratedTheme>(() => {
@@ -213,7 +271,9 @@ export function SharedScreen({
   const [contentH, setContentH] = React.useState<number | null>(null);
   React.useEffect(() => {
     setContentH(null);
-  }, [viewportId]);
+    // flowTop: a flow navigation swaps the rendered screen — its height
+    // is a different page's height, so re-probe like a viewport flip.
+  }, [viewportId, flowTop]);
   const resolveDeviceSize = React.useCallback(
     (canvas: { w: number; h: number }) => {
       if (activeSize) return activeSize;
@@ -652,6 +712,14 @@ export function SharedScreen({
         case "+":
           stepZoom(1);
           break;
+        case "Escape":
+          // Flow Back (STUDIO-FLOWS). Safe to own here: the share view
+          // has no parent-realm Escape consumer (selection-clearing
+          // Escapes happen INSIDE the iframe realm and never reach this
+          // listener). Functional pop keeps the effect's dep list
+          // unchanged.
+          setFlowStack((prev) => (prev.length > 0 ? prev.slice(0, -1) : prev));
+          break;
         default:
           break;
       }
@@ -689,7 +757,8 @@ export function SharedScreen({
               </span>
               <span className="shrink-0 text-xs text-muted-foreground/60">/</span>
               <span className="truncate text-sm font-medium text-foreground">
-                {screenName}
+                {/* Names the CURRENT screen — updates on flow navigation. */}
+                {currentScreenName}
               </span>
             </div>
           </div>
@@ -953,12 +1022,31 @@ export function SharedScreen({
           </div>
         )}
 
+        {/* ← Back — flow history chip (STUDIO-FLOWS). Only rendered once
+            the viewer has navigated (stack non-empty); pops one screen.
+            Escape does the same via the keyboard handler above. Floats
+            top-left INSIDE the canvas area, above the iframe (z above
+            the artboard, below the gesture shield at z-[60] is fine —
+            the shield only exists mid-gesture). */}
+        {flowStack.length > 0 && (
+          <div className="absolute left-3 top-3 z-[55]">
+            <button
+              type="button"
+              onClick={popFlow}
+              title="Back (Esc)"
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs text-foreground shadow-sm backdrop-blur-md transition hover:bg-foreground/10"
+            >
+              ← Back
+            </button>
+          </div>
+        )}
+
         {/* Annotation — appears on zoom-out, labelling the screen as it
             sits in space. */}
         {effectiveZoom < 1 && (
           <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2">
             <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur-md">
-              <span className="font-medium text-foreground">{screenName}</span>
+              <span className="font-medium text-foreground">{currentScreenName}</span>
               <span className="opacity-40">·</span>
               <span className="tabular-nums">
                 {fitMode ? "Fit" : `${Math.round(effectiveZoom * 100)}%`}
@@ -1012,9 +1100,12 @@ export function SharedScreen({
           // theme selector is hidden above). Inline comment pins and
           // motion aren't in the ext protocol yet.
           <ExternalIframeHost
-            appSource={appSource}
+            appSource={currentSource}
             mode={mode}
             registryId={shareRegistry.id}
+            // Flow navigation (STUDIO-FLOWS) — clicks on [data-grade-goto]
+            // inside the screen resolve + push here.
+            onGoto={resolveGoto}
             // Responsive only — feeds the content-height artboard above.
             onContentHeight={activeSpec.responsive ? setContentH : undefined}
             className={cn(
@@ -1044,11 +1135,22 @@ export function SharedScreen({
           />
           ) : (
           <FastIframeHost
-            appSource={appSource}
+            appSource={currentSource}
             theme={activeTheme}
             mode={mode}
             motion={motionOn}
-            commentThreads={showComments ? threads : undefined}
+            // Flow navigation — same wire contract as the external host
+            // (grade:goto / ext:goto, STUDIO-FLOWS two-agent rule).
+            onGoto={resolveGoto}
+            // Comment threads stay bound to the ENTRY screen (threads are
+            // keyed by design_id and fetched server-side for the token's
+            // screen only) — hide the pins while navigated away so they
+            // can't mis-anchor on a sibling screen's DOM.
+            // TODO(F1): swap thread sets on navigation (STUDIO-FLOWS
+            // "Comments … across a flow").
+            commentThreads={
+              showComments && flowStack.length === 0 ? threads : undefined
+            }
             getCommentUser={getCommentUser}
             // Inline mode — pins are injected into the iframe's live DOM by
             // the sandbox, so they ride scroll + the zoom transform below

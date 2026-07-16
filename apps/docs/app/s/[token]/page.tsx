@@ -41,7 +41,18 @@ export async function generateMetadata({
   ]);
   const screen = (design as { name: string } | null)?.name ?? "Screen";
   const proj = (project as { name: string } | null)?.name ?? "Grade";
-  return { title: `${screen} — ${proj} · Grade` };
+  const title = `${screen} — ${proj} · Grade`;
+  // Unfurl copy (Ali, July 2026): the description names the SHARE, not
+  // the product — the site-wide OG pitch read as an advert on client
+  // shares. The og:image stays the default until the per-share capture
+  // ships (see BRIGHTLOCAL-SIDENAV.md "share-link OG images").
+  const description = `${screen}: ${proj} : GradeUI`;
+  return {
+    title,
+    description,
+    openGraph: { title, description },
+    twitter: { title, description },
+  };
 }
 
 interface ThreadRow {
@@ -158,6 +169,27 @@ export default async function SharePage({
     .eq("id", share.design_id)
     .maybeSingle();
   const screenName = (design as { name: string } | null)?.name ?? "Screen";
+
+  // Flow map — ALL screens in the share's project, in canvas order
+  // (STUDIO-FLOWS). The token still NAMES one screen (the entry);
+  // siblings are traversable only via author-wired data-grade-goto
+  // links inside the rendered JSX — an unwired screen stays
+  // unreachable, so this leaks nothing the author didn't link to.
+  const { data: flowRows } = await supabase
+    .from("designs")
+    .select("id, name, state")
+    .eq("project_id", share.project_id)
+    .order("position", { ascending: true });
+  const flowScreens = ((flowRows ?? []) as {
+    id: string;
+    name: string;
+    state: unknown;
+  }[]).map((r) => ({
+    id: r.id,
+    name: r.name,
+    appSource:
+      ((r.state as { appSource?: string | null } | null)?.appSource ?? null),
+  }));
 
   const { data: project } = await supabase
     .from("projects")
@@ -304,6 +336,7 @@ export default async function SharePage({
       // renders with the right DS regardless of the deployment default.
       registryId={projectRow?.registry_id ?? null}
       projectCss={projectCss}
+      flowScreens={flowScreens}
     />
   );
 }

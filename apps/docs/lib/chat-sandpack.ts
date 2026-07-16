@@ -1310,6 +1310,32 @@ function findComponentOwner(el: Element | null): Element | null {
     lastHovered = null;
   }
 
+  // grade:goto — the STUDIO-FLOWS wire contract (two-agent rule:
+  // mirrors the listener in app/fast-sandbox/page.tsx; ext:goto in the
+  // external sandbox is the third twin). ONE delegated listener: a
+  // click inside an author-wired [data-grade-goto] element posts the
+  // target up to the host, which resolves it against the project's
+  // screen list. CAPTURE phase so navigation intent wins over the
+  // screen's own click handlers / native anchors. In select mode the
+  // click belongs to the selection agent (its own capture handler
+  // swallows it anyway), so we no-op.
+  function onGotoClick(e: MouseEvent) {
+    if (enabled) return; // select mode — a click is selection, not navigation
+    const el = (e.target as Element).closest?.("[data-grade-goto]");
+    if (!el) return;
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      window.parent.postMessage(
+        { type: "grade:goto", target: el.getAttribute("data-grade-goto") },
+        "*"
+      );
+    } catch {
+      /* parent may be gone — swallow */
+    }
+  }
+  document.addEventListener("click", onGotoClick, true);
+
   window.addEventListener("message", (e: MessageEvent) => {
     const data = e && (e.data as {
       type?: string;

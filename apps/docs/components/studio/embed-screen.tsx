@@ -348,6 +348,7 @@ export function EmbedScreen({
   appSource,
   themeDraftJson,
   registryId = null,
+  flowScreens,
   mode = "light",
   renderWidth,
   renderHeight,
@@ -382,6 +383,10 @@ export function EmbedScreen({
    *  the ONE surface that wasn't registry-aware — every BL screen
    *  404-of-the-soul'd here, which also broke MCP preview_screen. */
   registryId?: string | null;
+  /** Flow map (STUDIO-FLOWS) — every screen in the share's project,
+   *  resolved server-side by /e/[token]. Same stack + resolver pattern
+   *  as SharedScreen: [data-grade-goto] clicks push, Back/Escape pop. */
+  flowScreens?: { id: string; name: string; appSource: string | null }[];
   mode?: "light" | "dark";
   /** Fixed virtual resolution. `renderWidth` alone engages fixed mode
    *  (width pins the breakpoints; the box fills); add `renderHeight` for an
@@ -503,6 +508,52 @@ export function EmbedScreen({
     },
     [],
   );
+
+  // ─── Flow navigation (STUDIO-FLOWS F0) — same stack + resolver as
+  // SharedScreen. Empty stack = the share's own screen; a click on an
+  // author-wired [data-grade-goto] element pushes; Back/Escape pops.
+  const [flowStack, setFlowStack] = React.useState<
+    { id: string; appSource: string }[]
+  >([]);
+  const flowTop = flowStack.length > 0 ? flowStack[flowStack.length - 1] : null;
+  // currentSource feeds EVERY renderer callsite below (the external
+  // frame + both FastIframeHost branches) — navigation is just a
+  // source push with a different screen.
+  const currentSource = flowTop ? flowTop.appSource : appSource;
+  const resolveGoto = React.useCallback(
+    (target: string) => {
+      const t = target.trim();
+      if (!t) return;
+      // "screen:<id>" pins exactly; anything else is a screen name,
+      // matched case-insensitively after trimming (STUDIO-FLOWS).
+      const match = t.toLowerCase().startsWith("screen:")
+        ? flowScreens?.find((s) => s.id === t.slice("screen:".length))
+        : flowScreens?.find(
+            (s) => s.name.trim().toLowerCase() === t.toLowerCase(),
+          );
+      if (!match || !match.appSource) {
+        // Unresolvable targets no-op with a warn — never a broken screen.
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[flows] goto target "${target}" did not resolve to a screen`,
+        );
+        return;
+      }
+      const src = match.appSource;
+      setFlowStack((prev) => [...prev, { id: match.id, appSource: src }]);
+    },
+    [flowScreens],
+  );
+  // Escape pops one screen. The embed has no other parent-realm Escape
+  // consumer (selection/inspector Escapes live inside the iframe realm).
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setFlowStack((prev) => (prev.length > 0 ? prev.slice(0, -1) : prev));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // In-embed click shield (?shield=1): guard interaction until the
   // visitor opts in; re-arm when the pointer leaves the frame.
@@ -643,9 +694,12 @@ export function EmbedScreen({
   const externalFrame = (
     <div style={{ display: "contents" }} data-grade-ready={extReady}>
       <ExternalIframeHost
-        appSource={appSource}
+        appSource={currentSource}
         mode={effMode}
         registryId={embedRegistry.id}
+        // Flow navigation (STUDIO-FLOWS) — [data-grade-goto] clicks
+        // resolve + push via the stack above.
+        onGoto={resolveGoto}
         onRendered={() => setExtReady("1")}
         // null = "error cleared" (retry succeeded) — only real messages
         // stamp the error state; a later ext:rendered flips it to "1".
@@ -674,13 +728,16 @@ export function EmbedScreen({
         externalFrame
       ) : (
         <FastIframeHost
-          appSource={appSource}
+          appSource={currentSource}
           theme={effTheme}
           mode={effMode}
           motion={motion}
           fidelity={liveFidelity}
           inspect={inspect || inspectToggle ? liveInspect : undefined}
           transparent={transparent}
+          // Flow navigation — grade:goto, the Fast Frame twin of the
+          // external host's ext:goto (STUDIO-FLOWS).
+          onGoto={resolveGoto}
           className="block h-full w-full"
         />
       )}
@@ -689,13 +746,15 @@ export function EmbedScreen({
     externalFrame
   ) : (
     <FastIframeHost
-      appSource={appSource}
+      appSource={currentSource}
       theme={effTheme}
       mode={effMode}
       motion={motion}
       fidelity={liveFidelity}
       inspect={inspect || inspectToggle ? liveInspect : undefined}
       transparent={transparent}
+      // Flow navigation — grade:goto (STUDIO-FLOWS).
+      onGoto={resolveGoto}
       className="block h-full w-full"
     />
   );
@@ -750,8 +809,32 @@ export function EmbedScreen({
           wireframe cross-fade (grade:set-fidelity → data-fidelity),
           inspect is the read-only hover-measure overlay
           (grade:set-inspect). */}
-      {(fidelityToggle || inspectToggle) && (
+      {/* The flow Back chip shares this row (bottom-LEFT) so it never
+          collides with the fidelity/measure chips — the embed is
+          chrome-free, keep it one subtle cluster. z-10 like the other
+          chips is fine: you can't have navigated while the shield
+          (z-30) is still up, so Back never needs to beat it. */}
+      {(fidelityToggle || inspectToggle || flowStack.length > 0) && (
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2">
+          {/* ← Back — flow history (STUDIO-FLOWS), only when navigated.
+              Escape pops too (keydown effect above). */}
+          {flowStack.length > 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                setFlowStack((prev) => prev.slice(0, -1))
+              }
+              aria-label="Back to the previous screen"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs backdrop-blur-md transition",
+                effMode === "dark"
+                  ? "border-white/20 bg-black/45 text-white/90 hover:bg-black/60"
+                  : "border-black/15 bg-white/70 text-neutral-900 hover:bg-white/90",
+              )}
+            >
+              ← Back
+            </button>
+          )}
           {fidelityToggle && (
             <button
               type="button"

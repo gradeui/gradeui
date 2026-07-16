@@ -42,6 +42,7 @@
  *     { type: "grade:fast-ready" }                   — bundle loaded
  *     { type: "grade:selected",      selection }     — user clicked
  *     { type: "grade:fast-error",    message }       — compile/runtime error
+ *     { type: "grade:goto",          target }        — click on [data-grade-goto] (STUDIO-FLOWS)
  *
  * Event names deliberately reuse the Sandpack agent's (`grade:select-mode`,
  * `grade:selected`, `grade:clear-selection`) so the parent-side listener
@@ -1478,6 +1479,32 @@ export default function FastSandboxPage() {
 
     window.addEventListener("message", handleMessage);
 
+    // grade:goto — the STUDIO-FLOWS wire contract (ext:goto is the
+    // external sandbox's twin; the srcdoc Sandpack agent mirrors this
+    // too — two-agent rule). ONE delegated listener: a click inside an
+    // author-wired [data-grade-goto] element posts the target up to the
+    // host; resolution against the screen list is the CONSUMER's job.
+    // CAPTURE phase so navigation intent wins over the screen's own
+    // click handlers / native anchors. When select mode is armed the
+    // click belongs to the selection agent (a click is selection, not
+    // navigation), so we no-op.
+    const onGotoClick = (e: MouseEvent) => {
+      if (agentTeardownRef.current) return; // select mode — selection wins
+      const el = (e.target as Element).closest?.("[data-grade-goto]");
+      if (!el) return;
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        window.parent.postMessage(
+          { type: "grade:goto", target: el.getAttribute("data-grade-goto") },
+          "*",
+        );
+      } catch {
+        /* parent gone — drop */
+      }
+    };
+    document.addEventListener("click", onGotoClick, true);
+
     // Pinch / ctrl+wheel forwarding — browsers report a trackpad pinch
     // as a `wheel` event with `ctrlKey: true`. The parent's artboard
     // zoom can't see gestures that start over THIS document (the
@@ -1626,6 +1653,7 @@ export default function FastSandboxPage() {
 
     return () => {
       window.removeEventListener("message", handleMessage);
+      document.removeEventListener("click", onGotoClick, true);
       window.removeEventListener("wheel", onPinchWheel);
       if (onStorage) window.removeEventListener("storage", onStorage);
       window.removeEventListener("resize", renderPins);

@@ -682,13 +682,14 @@ function HubStatCard({
   ctaHook,
   dataHook,
 }) {
-  // The whole card is a drill-down target — hover lifts it a step
-  // above the resting layer shadow. Wire navigation per-screen (the
-  // CTA carries the same destination for keyboard/AT users).
+  // The whole card is a drill-down target (wire navigation per-screen;
+  // the chevron is the named control for keyboard/AT users). No hover
+  // treatment — resting state stays border-only per the Figma, and the
+  // chevron's own hover carries the affordance.
   return (
     <Card
       density="condensed"
-      className="max-w-none cursor-pointer transition-shadow hover:shadow-md"
+      className="max-w-none cursor-pointer"
       dataHook={dataHook}
     >
       <CardHeader>
@@ -834,20 +835,6 @@ export default function App() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator className="my-2" dataHook="sidebar-separator-1" />
-
-        <SidebarGroup className="px-2 py-1">
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0">
-              <SidebarMenuItem>
-                <SidebarMenuButton dataHook="nav-all-locations">
-                  <House className="size-5" />
-                  <span>All Locations</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       {/* STUCK footer — deliberately NOT SidebarFooter: that component

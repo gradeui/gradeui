@@ -29,6 +29,7 @@
  *   iframe → parent: { type: "ext:selection-cleared" }     — Escape inside the iframe
  *   iframe → parent: { type: "ext:zoom-gesture", factor }  — pinch/ctrl+wheel over the screen
  *   iframe → parent: { type: "ext:content-height", height }— rendered page height (share Fit)
+ *   iframe → parent: { type: "ext:goto", target }         — click on [data-grade-goto] (STUDIO-FLOWS)
  *
  * This page renders with ITS OWN React (esm.sh copy) inside the iframe —
  * fully isolated from the host app's React, so there's no double-React
@@ -412,6 +413,26 @@ export default function ExternalSandboxPage() {
     };
     window.addEventListener("message", onMessage);
 
+    // ext:goto — the STUDIO-FLOWS wire contract. ONE delegated listener:
+    // any click that lands inside an element stamped data-grade-goto
+    // (author-wired, spread through DS components like the data-slot
+    // selection stamp) posts the target up to the host, which resolves it
+    // against the project's screen list (resolution needs the flow map —
+    // the consumer's knowledge, never the sandbox's). CAPTURE phase so
+    // the navigation intent wins over the screen's own click handlers
+    // and native anchor navigation. When SELECT MODE is armed the click
+    // belongs to the selection agent (a click is selection, not
+    // navigation — see STUDIO-FLOWS.md "Studio canvas"), so we no-op.
+    const onGotoClick = (e: MouseEvent) => {
+      if (agent) return; // select mode active — selection wins
+      const el = (e.target as Element).closest?.("[data-grade-goto]");
+      if (!el) return;
+      e.preventDefault();
+      e.stopPropagation();
+      post({ type: "ext:goto", target: el.getAttribute("data-grade-goto") });
+    };
+    document.addEventListener("click", onGotoClick, true);
+
     // Pinch / ctrl+wheel over the screen — the parent owns the camera,
     // so forward the gesture out (the fast sandbox's grade:zoom-gesture
     // pattern). Same math as useZoomGestures: exponential mapping,
@@ -568,6 +589,7 @@ export default function ExternalSandboxPage() {
     return () => {
       disposed = true;
       window.removeEventListener("message", onMessage);
+      document.removeEventListener("click", onGotoClick, true);
       window.removeEventListener("wheel", onWheel);
       if (onStandaloneStorage)
         window.removeEventListener("storage", onStandaloneStorage);

@@ -54,6 +54,12 @@ export interface ExternalIframeHostProps {
    *  view's responsive content-height artboard, like the fast host's
    *  onContentHeight. */
   onContentHeight?: (height: number) => void;
+  /** A click on an author-wired [data-grade-goto] element inside the
+   *  screen (ext:goto — STUDIO-FLOWS). `target` is a screen name or
+   *  "screen:<id>"; the HOST does not resolve it — resolution needs the
+   *  project's screen list, which is the consumer's knowledge (the
+   *  share view / embed hold the flow map). */
+  onGoto?: (target: string) => void;
   /** Exposed iframe ref so wrapping chrome (the comment-pins overlay)
    *  can reach contentDocument. */
   iframeRef?: React.MutableRefObject<HTMLIFrameElement | null>;
@@ -80,6 +86,7 @@ export function ExternalIframeHost({
   onError,
   onRendered,
   onContentHeight,
+  onGoto,
   iframeRef: externalIframeRef,
   registryId: registryIdProp,
   rawSource = false,
@@ -158,11 +165,16 @@ export function ExternalIframeHost({
       } else if (d?.type === "ext:content-height") {
         const height = (e.data as { height?: number }).height;
         if (typeof height === "number" && height > 0) onContentHeight?.(height);
+      } else if (d?.type === "ext:goto") {
+        // STUDIO-FLOWS navigation intent — surface the raw target;
+        // the consumer resolves it against its flow map.
+        const target = (e.data as { target?: string }).target;
+        if (typeof target === "string" && target) onGoto?.(target);
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [push, onSelect, onClearSelection, onZoomBy, onError, onRendered, onContentHeight]);
+  }, [push, onSelect, onClearSelection, onZoomBy, onError, onRendered, onContentHeight, onGoto]);
 
   // Mirror select-mode into the iframe whenever it flips.
   React.useEffect(() => {
