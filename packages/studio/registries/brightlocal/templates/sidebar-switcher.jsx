@@ -61,12 +61,13 @@ import {
   Link,
   ListChecks,
   Menu,
+  SlidersHorizontal,
   Sparkles,
   Star,
   Store,
   TrendingUp,
 } from "@brightlocal/icons";
-
+ 
 // ─── Accounts for the switcher popover ─────────────────────────────
 // No shortcuts, no add-action: this is an account switcher, not a
 // command menu.
@@ -290,6 +291,106 @@ const PAGE_LAYERS = {
   },
 };
 
+
+// ─── ShellTweaker — hidden, session-local demo controls ─────────────
+// Stakeholder-demo layer: reveals in the bottom-right corner (hover the
+// corner, or Alt+T) and OVERRIDES the shell's look knobs at runtime.
+// Two layers, two owners: literal props on <AppLayoutShell> are the
+// AUTHORED decision (the inspector edits those, they persist in the
+// screen source); tweaks live in component state — a viewer on a share
+// link can play freely and reload always returns to the authored look.
+// Chips mark overridden knobs; Reset drops back to authored. Plain
+// elements on purpose — this is prototype chrome, not proposal UI.
+function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
+  const [open, setOpen] = React.useState(false);
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if (e.altKey && (e.code === "KeyT" || e.key === "t" || e.key === "T")) {
+        e.preventDefault();
+        setOpen((o) => !o);
+      }
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const ROWS = [
+    { key: "sidebarTone", label: "Sidebar tone", values: ["default", "white", "subtle", "dark", "brand"] },
+    { key: "sidebarFrame", label: "Frame", values: ["flush", "floating"] },
+    { key: "sidebarShadow", label: "Shadow", values: ["frame", "none", "sm", "md", "lg"] },
+    { key: "pageLayers", label: "Page layers", values: ["default", "raised"] },
+    { key: "stickyHeader", label: "Sticky header", values: [true, false] },
+  ];
+  const live = { ...authored, ...tweaks };
+  const dirty = Object.keys(tweaks).length > 0;
+  const set = (key, v) =>
+    setTweaks((prev) => {
+      const next = { ...prev };
+      if (v === authored[key]) delete next[key];
+      else next[key] = v;
+      return next;
+    });
+  return (
+    <div className="group fixed right-0 bottom-0 z-50 p-3" data-slot="shell-tweaker">
+      {open ? (
+        <div className="w-64 rounded-xl border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-base-white)] p-3 shadow-lg">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold">Shell tweaks</span>
+            <span className="flex items-center gap-2">
+              {dirty ? (
+                <button
+                  onClick={() => setTweaks({})}
+                  className="text-muted-foreground text-[11px] underline underline-offset-2"
+                >
+                  Reset
+                </button>
+              ) : null}
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close shell tweaks"
+                className="text-muted-foreground text-sm leading-none"
+              >
+                {"\u00d7"}
+              </button>
+            </span>
+          </div>
+          {ROWS.map((row) => (
+            <div key={row.key} className="mb-2 last:mb-0">
+              <div className="text-muted-foreground mb-1 flex items-center justify-between text-[11px]">
+                <span>{row.label}</span>
+                {tweaks[row.key] !== undefined ? <span>tweaked</span> : null}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {row.values.map((v) => (
+                  <button
+                    key={String(v)}
+                    onClick={() => set(row.key, v)}
+                    className={
+                      live[row.key] === v
+                        ? "rounded-full bg-[var(--ds-tailwind-colors-neutral-900)] px-2 py-0.5 text-[11px] text-white"
+                        : "rounded-full bg-[var(--ds-tailwind-colors-neutral-50)] px-2 py-0.5 text-[11px] text-[var(--ds-tailwind-colors-neutral-600)]"
+                    }
+                  >
+                    {v === true ? "on" : v === false ? "off" : v}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Open shell tweaks (Alt+T)"
+          className="flex size-9 items-center justify-center rounded-full border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-base-white)] opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100"
+        >
+          <SlidersHorizontal className="size-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function AppLayoutShell({
   flush = true,
   stickyHeader = false,
@@ -327,8 +428,22 @@ function AppLayoutShell({
   mobileBar,
   children,
   className,
+  // Render the hidden demo tweaker (corner hover / Alt+T). Turn off
+  // for screens where prototype chrome must not exist at all.
+  tweaker = true,
   dataHook = "app-layout",
 }) {
+  // ─── Tweaker override layer (see ShellTweakerPanel above): literal
+  // props are the AUTHORED look; tweaks shadow them for this session
+  // only. Reassigning the params keeps every downstream reference
+  // (tone/frame/shadow/layers/sticky) reading the LIVE values.
+  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader };
+  const [tweaks, setTweaks] = React.useState({});
+  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader } = {
+    ...authored,
+    ...tweaks,
+  });
+
   const flushClasses = flush
     ? // Zero the baked padding for the desktop flush layout, but put a
       // uniform p-4 BACK below lg — the sidebar is hidden there and the
@@ -387,6 +502,9 @@ function AppLayoutShell({
       style={layers}
     >
       {mobileToneCss || layerCss ? <style>{mobileToneCss + layerCss}</style> : null}
+      {tweaker ? (
+        <ShellTweakerPanel authored={authored} tweaks={tweaks} setTweaks={setTweaks} />
+      ) : null}
       <GlobalLayoutSidebar
         dataHook={`${dataHook}-sidebar`}
         // Tailwind for everything static (py-4 breathing room, frame

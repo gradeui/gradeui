@@ -227,6 +227,12 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Sidebar drop shadow on Tailwind's scale, independent of the frame. \"frame\" (default) defers to the frame preset (floating ships shadow-sm). (default \"frame\")"
       },
+      "tweaker": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Render the hidden ShellTweakerPanel (bottom-right corner hover / Alt+T): session-local overrides of the look knobs for stakeholder demos; literal props stay the authored truth. (default true)"
+      },
       "pageLayers": {
         "kind": "enum",
         "values": [
