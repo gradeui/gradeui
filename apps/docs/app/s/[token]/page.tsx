@@ -248,15 +248,16 @@ export default async function SharePage({
       appSource:
         ((r.state as { appSource?: string | null } | null)?.appSource ?? null),
     }));
-  // Row annotation: the tag ("walkthrough", "compare:nav-tone") or the
-  // set size. `label`-typed tags read prefix-less, matching the editor.
+  // Row annotation: ALWAYS the human-readable name — the tag VALUE
+  // exactly as the author typed it (the type: grammar is authoring
+  // machinery, not viewer copy; Ali). The type rides separately for
+  // the chrome's facet colour.
   const scopeLabel = scope
     ? scope.tag
-      ? scope.tag.type === "label"
-        ? scope.tag.value
-        : `${scope.tag.type}:${scope.tag.value}`
+      ? scope.tag.value
       : `${flowScreens.length} screens`
     : undefined;
+  const scopeTagType = scope?.tag?.type;
 
   const { data: project } = await supabase
     .from("projects")
@@ -406,6 +407,7 @@ export default async function SharePage({
       flowScreens={flowScreens}
       scoped={Boolean(scope)}
       scopeLabel={scopeLabel}
+      scopeTagType={scopeTagType}
     />
   );
 }

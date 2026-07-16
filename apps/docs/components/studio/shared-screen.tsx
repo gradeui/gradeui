@@ -37,6 +37,7 @@ import { FastIframeHost } from "@/components/studio/fast-frame";
 import { ExternalIframeHost } from "@/components/studio/external-ds-frame";
 import { getActiveRegistry, getRegistryById } from "@/lib/active-registry";
 import { setProjectPreviewCss } from "@/lib/project-preview-css";
+import { tagTypeColor } from "@/lib/studio-view-prefs";
 import { GradeLogo } from "@/components/grade-logo";
 import {
   DropdownMenu,
@@ -121,6 +122,7 @@ export function SharedScreen({
   flowScreens,
   scoped = false,
   scopeLabel,
+  scopeTagType,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -159,9 +161,12 @@ export function SharedScreen({
    *  Back returns to the row). flowScreens is already filtered to
    *  members server-side. */
   scoped?: boolean;
-  /** Human name for the scope ("flow:proposal-walkthrough",
-   *  "3 screens") — the row's annotation label. */
+  /** Human name for the scope — the tag VALUE exactly as typed
+   *  ("White VS Black", "proposal-walkthrough") or "N screens". */
   scopeLabel?: string;
+  /** The scope tag's TYPE — colour only (chart-ramp facet accent),
+   *  never viewer copy. */
+  scopeTagType?: string;
 }) {
   // Seed the preview-css store BEFORE the frame hosts push source —
   // Studio's page-level effect does this in the editor; the share view
@@ -310,7 +315,9 @@ export function SharedScreen({
     [scoped, flowScreens],
   );
   const compare = scopedMembers.length >= 2 && flowStack.length === 0;
-  const PANE_GAP = 48;
+  // Generous air between panes — variants must read as separate objects
+  // at Fit, not columns of one layout (Ali: "larger gaps").
+  const PANE_GAP = 120;
   const PANE_LABEL_H = 44;
   // Pane artboard: the share's device spec, or a desktop default for
   // "responsive" (a fill viewport is meaningless × N — panes scroll
@@ -436,6 +443,50 @@ export function SharedScreen({
   React.useEffect(() => {
     if (fitMode) setPan({ x: 0, y: 0 });
   }, [fitMode]);
+
+  // ─── In-place pane focus (compare row) ────────────────────────────
+  // Tap a pane → the CAMERA frames it and siblings dim (opacity +
+  // desaturate); nothing leaves the canvas — "look closer" is a camera
+  // move, not a view switch (the jump-cut version read as disjointed).
+  // Esc / "← All screens" returns to the fitted row. A goto INSIDE the
+  // focused (now interactive) pane still walks the flow full-screen via
+  // the flow stack; Back lands home on the row.
+  const [focusedPaneId, setFocusedPaneId] = React.useState<string | null>(
+    null,
+  );
+  const focusedPaneRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    focusedPaneRef.current = focusedPaneId;
+  });
+  // Leaving compare (flow walk / share without scope) drops the focus.
+  React.useEffect(() => {
+    if (!compare) setFocusedPaneId(null);
+  }, [compare]);
+  const focusPane = React.useCallback(
+    (id: string) => {
+      const idx = scopedMembers.findIndex((m) => m.id === id);
+      if (idx < 0 || !canvasEl || !deviceSize) return;
+      setFocusedPaneId(id);
+      // Frame the pane with breathing room, never past 100%. Camera
+      // home is the row centre, so panning to a pane is the offset
+      // between the row centre and that pane's centre, scaled.
+      const margin = 96;
+      const z = Math.min(
+        (canvasEl.clientWidth - margin) / paneSize.w,
+        (canvasEl.clientHeight - margin) / (paneSize.h + PANE_LABEL_H),
+        1,
+      );
+      const paneCenterX = idx * (paneSize.w + PANE_GAP) + paneSize.w / 2;
+      pickZoom(z);
+      setPan({ x: (deviceSize.w / 2 - paneCenterX) * z, y: 0 });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scopedMembers, canvasEl, deviceSize, paneSize.w, paneSize.h, pickZoom],
+  );
+  const unfocusPanes = React.useCallback(() => {
+    setFocusedPaneId(null);
+    fit();
+  }, [fit]);
   React.useEffect(() => {
     setPan({ x: 0, y: 0 });
   }, [viewportId]);
@@ -800,6 +851,13 @@ export function SharedScreen({
           stepZoom(1);
           break;
         case "Escape":
+          // Focused compare pane first — Esc steps OUT one level:
+          // pane → row, then flow Back. Ref keeps the dep list stable.
+          if (focusedPaneRef.current) {
+            setFocusedPaneId(null);
+            fit();
+            break;
+          }
           // Flow Back (STUDIO-FLOWS). Safe to own here: the share view
           // has no parent-realm Escape consumer (selection-clearing
           // Escapes happen INSIDE the iframe realm and never reach this
@@ -844,9 +902,31 @@ export function SharedScreen({
               </span>
               <span className="shrink-0 text-xs text-muted-foreground/60">/</span>
               <span className="truncate text-sm font-medium text-foreground">
-                {/* Names the CURRENT screen — updates on flow navigation. */}
-                {currentScreenName}
+                {/* Names the CURRENT screen — or the SCOPE on the
+                    compare row (a scoped share is "the tag", not any
+                    one screen; the tag was invisible in the chrome). */}
+                {compare
+                  ? (scopeLabel ?? `${scopedMembers.length} screens`)
+                  : currentScreenName}
               </span>
+              {compare && scopeLabel && (
+                <span
+                  className="ml-1 inline-flex shrink-0 items-center gap-1 self-center rounded-full px-2 py-0.5 text-[10px] text-muted-foreground"
+                  style={{
+                    backgroundColor: `color-mix(in oklab, ${tagTypeColor(
+                      scopeTagType ?? "label",
+                    )} 14%, transparent)`,
+                  }}
+                >
+                  <span
+                    className="size-1.5 rounded-full"
+                    style={{
+                      backgroundColor: tagTypeColor(scopeTagType ?? "label"),
+                    }}
+                  />
+                  {scopedMembers.length} screens
+                </span>
+              )}
             </div>
           </div>
 
@@ -1128,6 +1208,22 @@ export function SharedScreen({
           </div>
         )}
 
+        {/* ← All screens — the way home from a focused compare pane.
+            Always visible while focused (the undiscoverable exit was
+            the disjointed bit); Esc does the same. */}
+        {compare && focusedPaneId && (
+          <div className="absolute left-3 top-3 z-[55]">
+            <button
+              type="button"
+              onClick={unfocusPanes}
+              title="All screens (Esc)"
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs text-foreground shadow-sm backdrop-blur-md transition hover:bg-foreground/10"
+            >
+              ← All screens
+            </button>
+          </div>
+        )}
+
         {/* Annotation — appears on zoom-out, labelling the screen as it
             sits in space. */}
         {effectiveZoom < 1 && (
@@ -1208,7 +1304,14 @@ export function SharedScreen({
               {scopedMembers.map((m) => (
                 <div
                   key={m.id}
-                  className="relative shrink-0"
+                  className={cn(
+                    "relative shrink-0 transition-[opacity,filter] duration-300",
+                    // Focused sibling treatment — everything else fades
+                    // back (Ali: "fade back to monochrome / opacity").
+                    focusedPaneId &&
+                      focusedPaneId !== m.id &&
+                      "opacity-30 saturate-0",
+                  )}
                   style={{ width: paneSize.w }}
                 >
                   <div
@@ -1228,6 +1331,12 @@ export function SharedScreen({
                         appSource={m.appSource}
                         mode={mode}
                         registryId={shareRegistry.id}
+                        // Interactive only while focused — a goto from
+                        // the focused pane walks the flow full-screen
+                        // (flow stack); Back lands home on the row.
+                        onGoto={
+                          focusedPaneId === m.id ? resolveGoto : undefined
+                        }
                         className="block rounded-[28px] ring-1 ring-border/40"
                         style={{
                           width: paneSize.w,
@@ -1241,6 +1350,9 @@ export function SharedScreen({
                         theme={activeTheme}
                         mode={mode}
                         motion={motionOn}
+                        onGoto={
+                          focusedPaneId === m.id ? resolveGoto : undefined
+                        }
                         className="block rounded-[28px] ring-1 ring-border/40"
                         style={{
                           width: paneSize.w,
@@ -1249,19 +1361,19 @@ export function SharedScreen({
                         }}
                       />
                     )}
-                    {/* Focus shield — the pane's single interaction from
-                        the row is "look closer". Focus = push the flow
-                        stack; the single-screen path (gotos, Back,
-                        Escape) takes over from there. */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFlowStack([{ id: m.id, appSource: m.appSource }])
-                      }
-                      className="absolute inset-0 cursor-zoom-in rounded-[28px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                      aria-label={`Focus ${m.name}`}
-                      title={`Focus ${m.name}`}
-                    />
+                    {/* Focus shield — tap zooms the CAMERA to this pane
+                        in place and dims the siblings; the focused pane
+                        loses its shield and becomes the live, touchable
+                        prototype. Tapping a dimmed pane refocuses. */}
+                    {focusedPaneId !== m.id && (
+                      <button
+                        type="button"
+                        onClick={() => focusPane(m.id)}
+                        className="absolute inset-0 cursor-zoom-in rounded-[28px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                        aria-label={`Focus ${m.name}`}
+                        title={`Focus ${m.name}`}
+                      />
+                    )}
                   </div>
                 </div>
               ))}

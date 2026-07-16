@@ -2469,7 +2469,19 @@ export default function StudioPage() {
       const source = designs.find((d) => d.id === id);
       if (!source) return;
       const fresh = createDesign(designs.length, `${source.name} copy`);
-      const duplicate: Design = { ...fresh, appSource: source.appSource };
+      // Tags TRAVEL with a duplicate (they live on the row, not in the
+      // JSX — a copy belongs in the same folder/labels as its source).
+      // EXCEPT flow tags: tag membership resolves LIVE in scoped shares,
+      // so a duplicate silently joining a client-facing walkthrough
+      // link would be a leak, not a convenience. (Ali, 17 Jul.)
+      const inheritedTags = (source.tags ?? []).filter(
+        (t) => t.type !== "flow",
+      );
+      const duplicate: Design = {
+        ...fresh,
+        appSource: source.appSource,
+        tags: inheritedTags.length ? inheritedTags : undefined,
+      };
       const srcIdx = designs.findIndex((d) => d.id === id);
       setDesigns((ds) => {
         if (ds.length >= MAX_DESIGNS) return ds;
