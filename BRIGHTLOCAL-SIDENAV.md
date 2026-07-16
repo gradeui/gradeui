@@ -241,6 +241,39 @@ split for the 32px line, rail ml-6.
 
 ## Status log
 
+- 2026-07-16 (late evening) — **Named datasets + data binding** (Ali +
+  Harry's "switch the data" request, extended live in-session):
+  - Raw JSON datasets at `registries/brightlocal/lib/data/<name>.json`
+    (harbour-co, northside-dental) — PARTIAL patches deep-merged over
+    PROPOSAL_DATA; arrays (keywords) replace wholesale. Folded by
+    generate-registry-lib.mjs into a second lib module
+    `@brightlocal/data` (lib-to-lib requires work; Sandpack lib files
+    get the same import aliasing).
+  - Merge order: defaults → dataset → data prop.
+    `<ProposalDataProvider dataset="…">`, or authored on the shell:
+    `<AppLayoutShell dataset="…">` (wraps in a nested provider, beats
+    any outer one — deliberate for demos). ShellTweakerPanel gained a
+    **Data row** — Alt+T flips the whole interface between clients
+    live, session-only.
+  - Data binding at render position (so tweaker switches reach
+    everything): HubStatCard `metricKey`, PageHeader default meta =
+    current location, ProposalSidebar keyword rows from data.keywords
+    (buildProposalSections). hub-page.jsx is now fully bound — zero
+    hardcoded metrics.
+  - `aiInsights` seeded as its own data section ({ summary, items:
+    [{id, area, severity, title, action}] }) — the headline featureset;
+    shape to be refined against real product output (the JSON is the
+    contract). Per-area convention: each product area gets its own
+    top-level key; data shape stays SEPARATE from nav structure.
+  - rules/15-proposal-module.md: datasets, binding, per-area
+    convention, and a "don't starve the page" rule (seam = shared
+    identity/area data; page-specific tables/charts stay invented
+    in-page; never render sparse because the seam lacks a key).
+  - Verified via the sandbox-pipeline harness against the GENERATED
+    module strings: lib-to-lib require, dataset switch (provider +
+    shell prop), keyword nav, metricKey binding, goto stamps. docs +
+    studio tsc clean.
+
 - 2026-07-16 (evening) — STUDIO-FLOWS **F1 precompile** + **@brightlocal/
   proposal M0** built (see the BUILT block above for the file map).
   F1: external sandbox owns a bounded FIFO compile cache (FNV-1a keyed

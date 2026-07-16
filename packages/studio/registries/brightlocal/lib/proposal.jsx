@@ -79,6 +79,10 @@ import {
   Store,
   TrendingUp,
 } from "@brightlocal/icons";
+// Named datasets — generated from registries/brightlocal/lib/data/*.json
+// (raw hand-editable JSON; filename = dataset name). Lib-to-lib import,
+// resolved through the same libModules seam as this file itself.
+import { DATASETS } from "@brightlocal/data";
 
 // ─── Nav + account data (the proposal's default IA) ──────────────────
 // Screens can pass their own `sections` / `accounts` to ProposalSidebar;
@@ -161,12 +165,10 @@ export const PROPOSAL_SECTIONS = [
     id: "local-search-grid",
     label: "Local Search Grid",
     icon: Grid3x3,
+    // Keyword rows are DATA-DRIVEN — injected from data.keywords by
+    // buildProposalSections below (Harry: keywords come from the JSON).
+    // This static fallback only renders if sections are used raw.
     sub: [
-      { id: "lsg-kw1", label: "Keyword phrase #1" },
-      { id: "lsg-kw2", label: "Keyword phrase #2" },
-      { id: "lsg-kw3", label: "Keyword phrase #3" },
-      { id: "lsg-kw4", label: "Keyword phrase #4" },
-      { id: "lsg-kw5", label: "Keyword phrase #5" },
       { id: "lsg-add", label: "Add more keywords", paid: true },
       { id: "lsg-settings", label: "Settings" },
     ],
@@ -189,6 +191,26 @@ export const PROPOSAL_SECTIONS = [
   { id: "agency-tools", label: "Agency Tools", icon: Briefcase },
 ];
 
+/** The proposal IA with data-driven rows injected: Local Search Grid's
+ *  keyword sub-items come from `data.keywords`, ahead of the section's
+ *  static rows (Add more / Settings). ProposalSidebar calls this with
+ *  the context data by default; screens with a custom nav can call it
+ *  themselves or pass `sections` raw. */
+export function buildProposalSections(data) {
+  const keywords = data?.keywords ?? [];
+  return PROPOSAL_SECTIONS.map((section) =>
+    section.id === "local-search-grid"
+      ? {
+          ...section,
+          sub: [
+            ...keywords.map((kw, i) => ({ id: `lsg-kw-${i}`, label: kw })),
+            ...section.sub,
+          ],
+        }
+      : section,
+  );
+}
+
 // ─── Proposal data layer (lightweight data binding — Ali/Harry) ───────
 // "You could just switch the data and it would be magic": ONE data
 // object drives the interface. The context's DEFAULT value is the demo
@@ -210,6 +232,50 @@ export const PROPOSAL_DATA = {
   location: {
     name: "Blackberry Farm Park — Lewes, BN8 6JD",
     status: "Active",
+  },
+  // Tracked keywords — feed the Local Search Grid nav sub-items (via
+  // buildProposalSections) and any keyword table/grid a screen renders.
+  // Arrays replace WHOLESALE on merge, so a dataset swaps the whole
+  // list (Harry's point: keywords should come from the JSON).
+  keywords: [
+    "campsite lewes",
+    "holiday park east sussex",
+    "family camping near me",
+    "glamping south downs",
+    "caravan park brighton",
+  ],
+  // AI Insights — the headline featureset. A dataset section of its
+  // own: `summary` is the one-liner surfaces quote (hero, hub);
+  // `items` are "the three things to fix first" — area matches a nav
+  // section id, severity drives any status treatment. Refine the shape
+  // against the real product output when it lands; the JSON is the
+  // contract and screens bind through useProposalData().aiInsights.
+  aiInsights: {
+    summary:
+      "Your listings are strong, but reviews velocity dropped and two citations conflict.",
+    items: [
+      {
+        id: "ins-1",
+        area: "reviews",
+        severity: "high",
+        title: "Review replies are 9 days behind",
+        action: "Respond to 6 unanswered reviews on Google and Yelp.",
+      },
+      {
+        id: "ins-2",
+        area: "citations",
+        severity: "medium",
+        title: "Conflicting opening hours on 2 citations",
+        action: "Sync hours from the Location Profile to Bing and Apple.",
+      },
+      {
+        id: "ins-3",
+        area: "website-seo",
+        severity: "low",
+        title: "Location page is missing LocalBusiness schema",
+        action: "Add structured data to lift map-pack eligibility.",
+      },
+    ],
   },
   metrics: {
     reviews: {
@@ -263,11 +329,22 @@ function mergeProposalData(base, patch) {
   return out;
 }
 
-export function ProposalDataProvider({ data, children }) {
-  const merged = React.useMemo(
-    () => mergeProposalData(PROPOSAL_DATA, data),
-    [data],
-  );
+// Named datasets (raw JSON in lib/data/*.json, folded into the
+// "@brightlocal/data" module at generation time). Re-exported so
+// screens/chrome can enumerate the options.
+export const PROPOSAL_DATASETS = DATASETS;
+
+export function ProposalDataProvider({ dataset, data, children }) {
+  // Merge order: defaults → named dataset patch → the `data` prop —
+  // so ad-hoc overrides still win on top of a dataset.
+  const merged = React.useMemo(() => {
+    const named = dataset && dataset !== "default" ? DATASETS[dataset] : undefined;
+    if (dataset && dataset !== "default" && !named) {
+      // eslint-disable-next-line no-console
+      console.warn(`[proposal] unknown dataset "${dataset}" — using defaults`);
+    }
+    return mergeProposalData(mergeProposalData(PROPOSAL_DATA, named), data);
+  }, [dataset, data]);
   return (
     <ProposalDataContext.Provider value={merged}>
       {children}
@@ -427,6 +504,10 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     { key: "sidebarShadow", label: "Shadow", values: ["frame", "none", "sm", "md", "lg"] },
     { key: "pageLayers", label: "Page layers", values: ["default", "raised"] },
     { key: "stickyHeader", label: "Sticky header", values: [true, false] },
+    // Named datasets — flips the WHOLE interface's data live (account,
+    // user, location, metrics) via a nested ProposalDataProvider in
+    // AppLayoutShell. The meeting trick: Alt+T, switch client.
+    { key: "dataset", label: "Data", values: ["default", ...Object.keys(DATASETS)] },
   ];
   const live = { ...authored, ...tweaks };
   const dirty = Object.keys(tweaks).length > 0;
@@ -531,6 +612,11 @@ export function AppLayoutShell({
   // Page-wide layer treatment — canvas + card surface. Presets in
   // PAGE_LAYERS. "raised" = green-grey canvas, white cards.
   pageLayers = "raised", // "default" | "raised"
+  // Named dataset (lib/data/*.json) — "default" renders PROPOSAL_DATA;
+  // anything else wraps the shell in a nested ProposalDataProvider, so
+  // it also OVERRIDES any provider a screen mounted outside. A tweaker
+  // knob like the visual ones: authored here, overridable via Alt+T.
+  dataset = "default",
   sidebar,
   header,
   // Mobile top bar slot (hamburger + logo). Rendered FIRST inside the
@@ -556,11 +642,11 @@ export function AppLayoutShell({
   // are the AUTHORED look; tweaks shadow them for this session only.
   // Reassigning the params keeps every downstream reference
   // (tone/frame/shadow/layers/sticky) reading the LIVE values.
-  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader };
+  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset };
   const [ownTweaks, setOwnTweaks] = React.useState({});
   const tweaks = controlledTweaks ?? ownTweaks;
   const setTweaks = onTweaksChange ?? setOwnTweaks;
-  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader } = {
+  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset } = {
     ...authored,
     ...tweaks,
   });
@@ -607,7 +693,7 @@ export function AppLayoutShell({
           .map(([k, v]) => `${k === "backgroundColor" ? "background-color" : k}:${v}`)
           .join(";")}}`
       : "";
-  return (
+  const shell = (
     <GlobalLayout
       dataHook={dataHook}
       // Selection stamp: GlobalLayout's inner div spreads rest props
@@ -681,6 +767,15 @@ export function AppLayoutShell({
         {children}
       </GlobalLayoutContent>
     </GlobalLayout>
+  );
+  // Named dataset (authored prop or live tweak) — nested provider wins
+  // over both the module default AND any provider the screen mounted
+  // outside, which is exactly what a demo switch should do. "default"
+  // mounts nothing, so an outer provider (or the defaults) shows through.
+  return dataset && dataset !== "default" ? (
+    <ProposalDataProvider dataset={dataset}>{shell}</ProposalDataProvider>
+  ) : (
+    shell
   );
 }
 
@@ -775,7 +870,10 @@ function NavSection({ section }) {
 // switcher + signed-in dropdown). Wrap in the DS's SidebarProvider at
 // the screen root — the provider is per-screen state, not lib chrome.
 export function ProposalSidebar({
-  sections = PROPOSAL_SECTIONS,
+  // Default nav is DATA-DRIVEN: built from the proposal data context
+  // (keywords feed the Local Search Grid rows), so a dataset switch
+  // re-writes the left nav too. Pass `sections` to opt out.
+  sections,
   accounts = PROPOSAL_ACCOUNTS,
   // Account/user rows resolve PROPS FIRST, then the proposal data
   // context — so a screen wrapped in ProposalDataProvider re-skins the
@@ -800,6 +898,7 @@ export function ProposalSidebar({
   dataHook = "app-sidebar",
 }) {
   const data = useProposalData();
+  sections = sections ?? buildProposalSections(data);
   accountLabel = accountLabel ?? data.account.label;
   userName = userName ?? data.user.name;
   userMeta = userMeta ?? data.user.meta;
@@ -896,10 +995,24 @@ export function ProposalSidebar({
 export function PageHeader({
   breadcrumbs = [],
   title,
+  // Muted row under the title. DEFAULT is data-bound: the current
+  // location (name + status badge) from the proposal data context —
+  // reads at render position, so it follows dataset switches. Pass
+  // `meta={null}` to suppress, or any node to replace.
   meta,
   actions,
   dataHook = "page-header",
 }) {
+  const data = useProposalData();
+  const resolvedMeta =
+    meta === undefined ? (
+      <>
+        <span>{data.location.name}</span>
+        <Badge dataHook="location-status">{data.location.status}</Badge>
+      </>
+    ) : (
+      meta
+    );
   return (
     <div
       data-hook={dataHook}
@@ -920,9 +1033,9 @@ export function PageHeader({
           </Breadcrumb>
         ) : null}
         <TypographyH2 dataHook={`${dataHook}-title`}>{title}</TypographyH2>
-        {meta ? (
+        {resolvedMeta ? (
           <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
-            {meta}
+            {resolvedMeta}
           </div>
         ) : null}
       </div>
@@ -941,6 +1054,11 @@ export function PageHeader({
 export function HubStatCard({
   icon: Icon,
   title,
+  // Data binding: name a key in data.metrics ("reviews", "rankings",
+  // …) and the card reads metric/delta/description from the proposal
+  // data context AT RENDER POSITION — so it follows dataset switches
+  // (tweaker or provider). Explicit props win over the bound values.
+  metricKey,
   description,
   metric,
   delta,
@@ -958,6 +1076,11 @@ export function HubStatCard({
   // user-land components must not swallow wire-contract attributes.
   ...rest
 }) {
+  const data = useProposalData();
+  const bound = metricKey ? data.metrics?.[metricKey] : undefined;
+  metric = metric ?? bound?.metric;
+  delta = delta ?? bound?.delta;
+  description = description ?? bound?.description;
   // The whole card is a drill-down target (wire navigation per-screen;
   // the chevron is the named control for keyboard/AT users). No hover
   // treatment — resting state stays border-only per the Figma, and the

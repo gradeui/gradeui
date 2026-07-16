@@ -3051,12 +3051,15 @@ function libModuleStem(spec: string): string {
   return spec.replace(/^@/, "").replace(/\//g, "-");
 }
 
-/** The registry's lib modules as Sandpack files ("/brightlocal-proposal.jsx"). */
+/** The registry's lib modules as Sandpack files ("/brightlocal-proposal.jsx").
+ *  Lib sources get the SAME import aliasing as screens — lib modules may
+ *  import each other ("@brightlocal/proposal" imports "@brightlocal/data"),
+ *  and inside Sandpack those specifiers must resolve to the mounted files. */
 function registryLibFiles(): Record<string, string> {
   const mods = ACTIVE_REGISTRY.runtime?.libModules ?? {};
   const files: Record<string, string> = {};
   for (const [spec, source] of Object.entries(mods)) {
-    files[`/${libModuleStem(spec)}.jsx`] = source;
+    files[`/${libModuleStem(spec)}.jsx`] = rewriteRegistryLibImports(source);
   }
   return files;
 }

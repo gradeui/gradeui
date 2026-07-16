@@ -50,6 +50,33 @@ for (const f of readdirSync(LIB_DIR).filter((f) => f.endsWith(".jsx")).sort()) {
   modules[spec] = readFileSync(join(LIB_DIR, f), "utf-8").trim();
 }
 
+// ─── Named datasets: lib/data/*.json → the "@<id>/data" module ────────
+// Raw, hand-editable JSON — each file is a PARTIAL patch deep-merged
+// over the lib's default data by the consumer (ProposalDataProvider).
+// Filename = dataset name. JSON on purpose: it can't carry JSX, which
+// keeps datasets pure content. Folded into a tiny generated module so
+// lib code can `import { DATASETS } from "@<id>/data"` through the
+// same lib-module seam (lib-to-lib requires are supported).
+const DATA_DIR = join(LIB_DIR, "data");
+if (existsSync(DATA_DIR)) {
+  const datasets = {};
+  for (const f of readdirSync(DATA_DIR).filter((f) => f.endsWith(".json")).sort()) {
+    const raw = readFileSync(join(DATA_DIR, f), "utf-8");
+    try {
+      datasets[f.replace(/\.json$/, "")] = JSON.parse(raw);
+    } catch (e) {
+      console.error(`[lib] invalid JSON in lib/data/${f}: ${e.message}`);
+      process.exit(1);
+    }
+  }
+  if (Object.keys(datasets).length > 0) {
+    modules[`@${id}/data`] =
+      `// AUTO-GENERATED from registries/${id}/lib/data/*.json — edit the JSON.\n` +
+      `export const DATASETS = ${JSON.stringify(datasets, null, 2)};\n` +
+      `export default DATASETS;\n`;
+  }
+}
+
 mkdirSync(dirname(OUT_FILE), { recursive: true });
 writeFileSync(
   OUT_FILE,

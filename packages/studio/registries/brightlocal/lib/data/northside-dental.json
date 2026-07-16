@@ -1,0 +1,49 @@
+{
+  "account": { "label": "Northside Dental Group" },
+  "user": { "name": "Priya Shah", "meta": "Agency plan", "initials": "PS" },
+  "location": {
+    "name": "Northside Dental — Manchester, M4 4BF",
+    "status": "Needs attention"
+  },
+  "keywords": [
+    "dentist manchester",
+    "emergency dentist near me",
+    "teeth whitening manchester",
+    "invisalign manchester",
+    "dental implants cost uk"
+  ],
+  "aiInsights": {
+    "summary": "Three issues are holding back the map pack: reviews, NAP conflicts and a slow site.",
+    "items": [
+      {
+        "id": "ins-1",
+        "area": "reviews",
+        "severity": "high",
+        "title": "Rating fell below 4.0 on Google",
+        "action": "Trigger the review campaign to recent happy patients."
+      },
+      {
+        "id": "ins-2",
+        "area": "citations",
+        "severity": "high",
+        "title": "Old practice address on 12 citations",
+        "action": "Run Citation Builder to push the M4 4BF address."
+      },
+      {
+        "id": "ins-3",
+        "area": "website-seo",
+        "severity": "medium",
+        "title": "Mobile page speed scores 41",
+        "action": "Compress hero images on the booking page."
+      }
+    ]
+  },
+  "metrics": {
+    "reviews": { "metric": "3.6", "delta": "−0.2 this month" },
+    "rankings": { "metric": "24", "delta": "↓ 5 places" },
+    "citations": { "metric": "41" },
+    "localSearchGrid": { "metric": "3", "delta": "keywords tracked" },
+    "gbpManager": { "metric": "7", "delta": "pending posts" },
+    "websiteSeo": { "metric": "58", "delta": "site score" }
+  }
+}

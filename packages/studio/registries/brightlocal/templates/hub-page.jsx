@@ -14,7 +14,6 @@
 // `node scripts/generate-registry-templates.mjs`.
 
 import {
-  Badge,
   SidebarProvider,
   SidebarTrigger,
   GlobalLayoutContentBody,
@@ -35,12 +34,9 @@ import {
   PageHeader,
   HubStatCard,
   HubHeroCard,
-  useProposalData,
 } from "@brightlocal/proposal";
 
 export default function App() {
-  const data = useProposalData();
-  const m = data.metrics;
   return (
     <SidebarProvider dataHook="switcher-sidebar-provider" defaultOpen>
       {/* Layout knobs are LITERAL props so the inspector can edit them —
@@ -53,15 +49,12 @@ export default function App() {
         sidebarTone="white"
         sidebar={<ProposalSidebar dataHook="app-sidebar" />}
         header={
+          // meta omitted ON PURPOSE — PageHeader's default meta is
+          // data-bound (location name + status from useProposalData,
+          // read at render position so dataset switches reach it).
           <PageHeader
             breadcrumbs={[{ label: "Your Locations", href: "#" }]}
             title="Location Hub"
-            meta={
-              <>
-                <span>{data.location.name}</span>
-                <Badge dataHook="location-status">{data.location.status}</Badge>
-              </>
-            }
             dataHook="page-header"
           />
         }
@@ -86,23 +79,23 @@ export default function App() {
             dataHook="hub-hero-card"
           />
           {/* Tracks own the sizing — Card bakes max-w-[400px], hence
-              max-w-none inside HubStatCard. */}
+              max-w-none inside HubStatCard. metricKey = full data
+              binding: metric/delta/description come from
+              data.metrics.<key> at render position, so dataset
+              switches (tweaker Data row, ProposalDataProvider) re-skin
+              every card live. */}
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <HubStatCard
               icon={Star}
               title="Reviews"
-              description={m.reviews.description}
-              metric={m.reviews.metric}
-              delta={m.reviews.delta}
+              metricKey="reviews"
               ctaHook="hub-reviews-cta"
               dataHook="hub-reviews-card"
             />
             <HubStatCard
               icon={TrendingUp}
               title="Rankings"
-              description={m.rankings.description}
-              metric={m.rankings.metric}
-              delta={m.rankings.delta}
+              metricKey="rankings"
               goto="Rankings Table"
               ctaHook="hub-rankings-cta"
               dataHook="hub-rankings-card"
@@ -110,36 +103,28 @@ export default function App() {
             <HubStatCard
               icon={Link}
               title="Citations"
-              description={m.citations.description}
-              metric={m.citations.metric}
-              delta={m.citations.delta}
+              metricKey="citations"
               ctaHook="hub-citations-cta"
               dataHook="hub-citations-card"
             />
             <HubStatCard
               icon={Grid3x3}
               title="Local Search Grid"
-              description={m.localSearchGrid.description}
-              metric={m.localSearchGrid.metric}
-              delta={m.localSearchGrid.delta}
+              metricKey="localSearchGrid"
               ctaHook="hub-lsg-cta"
               dataHook="hub-lsg-card"
             />
             <HubStatCard
               icon={Store}
               title="GBP Manager"
-              description={m.gbpManager.description}
-              metric={m.gbpManager.metric}
-              delta={m.gbpManager.delta}
+              metricKey="gbpManager"
               ctaHook="hub-gbp-cta"
               dataHook="hub-gbp-card"
             />
             <HubStatCard
               icon={Globe}
               title="Website SEO"
-              description={m.websiteSeo.description}
-              metric={m.websiteSeo.metric}
-              delta={m.websiteSeo.delta}
+              metricKey="websiteSeo"
               ctaHook="hub-seo-cta"
               dataHook="hub-seo-card"
             />

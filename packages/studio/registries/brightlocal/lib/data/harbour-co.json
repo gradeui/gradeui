@@ -1,0 +1,49 @@
+{
+  "account": { "label": "Harbour & Co" },
+  "user": { "name": "Sofia Marsh", "meta": "Pro — annual", "initials": "SM" },
+  "location": {
+    "name": "Harbour & Co — Brighton Marina, BN2 5WA",
+    "status": "Active"
+  },
+  "keywords": [
+    "seafood restaurant brighton",
+    "harbourside dining brighton marina",
+    "private dining sussex coast",
+    "sunday lunch brighton",
+    "restaurant with sea view"
+  ],
+  "aiInsights": {
+    "summary": "Visibility is excellent — the wins now are content freshness and photo coverage.",
+    "items": [
+      {
+        "id": "ins-1",
+        "area": "gbp-manager",
+        "severity": "medium",
+        "title": "No GBP posts in 3 weeks",
+        "action": "Publish the spring menu as a What's New post."
+      },
+      {
+        "id": "ins-2",
+        "area": "website-seo",
+        "severity": "medium",
+        "title": "Menu page title tag is generic",
+        "action": "Include 'seafood restaurant Brighton' in the title."
+      },
+      {
+        "id": "ins-3",
+        "area": "reviews",
+        "severity": "low",
+        "title": "Photo reviews outperform text 3:1",
+        "action": "Prompt diners for photos in the follow-up email."
+      }
+    ]
+  },
+  "metrics": {
+    "reviews": { "metric": "4.7", "delta": "+0.1 this month" },
+    "rankings": { "metric": "5", "delta": "↑ 1 place" },
+    "citations": { "metric": "132" },
+    "localSearchGrid": { "metric": "8", "delta": "keywords tracked" },
+    "gbpManager": { "metric": "1", "delta": "pending post" },
+    "websiteSeo": { "metric": "91", "delta": "site score" }
+  }
+}
