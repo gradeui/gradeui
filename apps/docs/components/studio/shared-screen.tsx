@@ -32,6 +32,7 @@ import {
   Play,
   Pause,
 } from "lucide-react";
+import { CanvasCommentPinsOverlay } from "@/components/studio/canvas-comment-pins-overlay";
 import { FastIframeHost } from "@/components/studio/fast-frame";
 import { ExternalIframeHost } from "@/components/studio/external-ds-frame";
 import { getActiveRegistry, getRegistryById } from "@/lib/active-registry";
@@ -206,6 +207,9 @@ export function SharedScreen({
     () => setFlowStack((prev) => prev.slice(0, -1)),
     [],
   );
+  // External-renderer iframe — the comment-pins overlay reads its
+  // contentDocument (same-origin) to anchor pins by data-gds-source-id.
+  const extIframeRef = React.useRef<HTMLIFrameElement | null>(null);
   // F1 "instant linkage": the OTHER flow screens' sources, forwarded to
   // the external host as ext:precompile so the sandbox warms its compile
   // cache during idle time and a goto swap is paint-only. Only worth the
@@ -606,22 +610,33 @@ export function SharedScreen({
     return () => canvasEl.removeEventListener("wheel", onWheel);
   }, [canvasEl, queueGesture]);
   // Pinch over the live iframe — the sandbox forwards ctrl+wheel with
-  // iframe-local pointer coords.
+  // iframe-local pointer coords. TWO dialects, one queue: Fast Frame
+  // posts grade:zoom-gesture with a raw deltaY; the external sandbox
+  // posts ext:zoom-gesture with a pre-multiplied factor (+ coords since
+  // the share-pinch fix) — before this branch the external share
+  // dropped pinch entirely ("using a different frame to render").
   React.useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       const data = e.data as {
         type?: string;
         deltaY?: number;
+        factor?: number;
         clientX?: number;
         clientY?: number;
       } | null;
-      if (!data || data.type !== "grade:zoom-gesture") return;
-      if (typeof data.deltaY !== "number") return;
+      if (!data) return;
+      const factor =
+        data.type === "grade:zoom-gesture" && typeof data.deltaY === "number"
+          ? Math.exp(-data.deltaY * 0.01)
+          : data.type === "ext:zoom-gesture" && typeof data.factor === "number"
+            ? data.factor
+            : null;
+      if (factor === null) return;
       const anchor =
         typeof data.clientX === "number" && typeof data.clientY === "number"
           ? { kind: "iframe" as const, x: data.clientX, y: data.clientY }
           : null;
-      queueGesture(Math.exp(-data.deltaY * 0.01), anchor);
+      queueGesture(factor, anchor);
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
@@ -1118,6 +1133,11 @@ export function SharedScreen({
             appSource={currentSource}
             mode={mode}
             registryId={shareRegistry.id}
+            // Comment pins — host-side overlay below needs contentDocument
+            // (same-origin /external-sandbox, same pattern as Studio's
+            // ExternalDsMount). The ext protocol has no inline-pin channel
+            // yet (queued with the F1 comments package).
+            iframeRef={extIframeRef}
             // Flow navigation (STUDIO-FLOWS) — clicks on [data-grade-goto]
             // inside the screen resolve + push here.
             onGoto={resolveGoto}
@@ -1222,6 +1242,30 @@ export function SharedScreen({
           )}
           </div>
         </div>
+
+        {/* Comment pins on the EXTERNAL renderer — host-side overlay
+            (fixed-position pins anchored via contentDocument rects,
+            scale-aware), mounted OUTSIDE the camera's transformed div
+            so position:fixed stays viewport-relative. Fast Frame uses
+            inline in-DOM pins instead; this is the BL-share parity fix
+            ("I still haven't seen comments"). Same gating as fast:
+            toggle on, entry screen only (threads are keyed by
+            design_id), faded while a zoom gesture settles. */}
+        {isExternal &&
+          showComments &&
+          flowStack.length === 0 &&
+          threads.length > 0 && (
+            <CanvasCommentPinsOverlay
+              iframeRef={extIframeRef}
+              threads={threads}
+              activeThreadId={activeThreadId}
+              onPinClick={(id) =>
+                setActiveThreadId((cur) => (cur === id ? null : id))
+              }
+              getUser={getCommentUser}
+              visible={!(artboard.gesturing || imperativeGesturing)}
+            />
+          )}
 
         {/* Gesture / pan overlay — up while a zoom gesture settles
             (transparent pointer shield) or while Space is held (grab

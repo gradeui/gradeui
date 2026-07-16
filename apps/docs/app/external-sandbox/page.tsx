@@ -528,6 +528,13 @@ export default function ExternalSandboxPage() {
       if (d?.type === "ext:source" && typeof d.source === "string") {
         if (typeof d.css === "string") applyProjectCss(d.css);
         void render(d.source, d.mode ?? "light");
+      } else if (d?.type === "ext:ping") {
+        // Handshake heal: ext:ready is posted ONCE at boot — if the
+        // parent's listener attached late (dev HMR remounts the parent
+        // while this iframe persists), it missed it and waited forever
+        // ("ready — waiting for source", 16 Jul). The host pings on
+        // mount; if we're already booted, re-announce readiness.
+        if (modules) post({ type: "ext:ready" });
       } else if (d?.type === "ext:precompile" && Array.isArray(d.sources)) {
         // Replace, don't append — the host re-posts the CURRENT flow
         // set on every change; stale siblings would only waste idle
@@ -583,16 +590,25 @@ export default function ExternalSandboxPage() {
     // multiplicative factors coalesced to one post per frame.
     let zoomAcc = 1;
     let zoomRaf: number | null = null;
+    // Anchor coords ride along (iframe-local, like Fast Frame's
+    // grade:zoom-gesture) so the share view can zoom about the POINTER
+    // instead of the centre — without them the external share pinch
+    // felt dead/wrong vs the fast renderer ("on gradeui npm it's lush").
+    let zoomX = 0;
+    let zoomY = 0;
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault(); // stop the browser's own page zoom
       zoomAcc *= Math.exp(-e.deltaY * 0.01);
+      zoomX = e.clientX;
+      zoomY = e.clientY;
       if (zoomRaf === null) {
         zoomRaf = requestAnimationFrame(() => {
           zoomRaf = null;
           const factor = zoomAcc;
           zoomAcc = 1;
-          if (factor !== 1) post({ type: "ext:zoom-gesture", factor });
+          if (factor !== 1)
+            post({ type: "ext:zoom-gesture", factor, clientX: zoomX, clientY: zoomY });
         });
       }
     };

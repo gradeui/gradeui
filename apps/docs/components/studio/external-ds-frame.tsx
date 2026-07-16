@@ -218,6 +218,25 @@ export function ExternalIframeHost({
     );
   }, [selectMode]);
 
+  // Handshake heal — ext:ready fires ONCE at sandbox boot; if THIS host
+  // mounted after it (dev HMR remounts the parent while the iframe
+  // survives), we'd deadlock on "waiting for source". Ping until ready:
+  // a booted sandbox replies with a fresh ext:ready (handler above),
+  // an un-booted one ignores us and announces itself normally.
+  React.useEffect(() => {
+    const t = window.setInterval(() => {
+      if (readyRef.current) {
+        window.clearInterval(t);
+        return;
+      }
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: "ext:ping" },
+        window.location.origin,
+      );
+    }, 400);
+    return () => window.clearInterval(t);
+  }, []);
+
   React.useEffect(() => {
     push();
   }, [push]);

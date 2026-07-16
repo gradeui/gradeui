@@ -478,14 +478,23 @@ externalImports entry before save_screen accepts the import.
 Still queued from this block: comments passing through flow navigation
 (thread-set swap on goto — the F1 TODO in shared-screen.tsx).
 
-## BUG→QUEUED — comment pins invisible on BL shares (16 Jul, confirmed live)
+## BUG→FIXED (host overlay) — comment pins invisible on BL shares
 
-Comments save + the share chrome shows the toggle, but pins never paint
-on BrightLocal screens: the ext:* protocol has NO comment-pin channel
-(shared-screen.tsx says so at the ExternalIframeHost branch — inline
-pins are a Fast Frame inlineComments feature). Fix: ext:comment-pins
-push into the external sandbox, injecting pins into the live DOM
-anchored by data-gds-source-id (the agent already stamps these), parity
-with fast-sandbox. Bundle with the F1 comments-follow-navigation work.
-Ali'''s use case: capturing notes in meetings on shared prototypes.
+FIXED 16 Jul (late): the share view's external branch now mounts
+CanvasCommentPinsOverlay (the same host-side overlay Studio's
+ExternalDsMount uses — fixed-position pins anchored via the same-origin
+iframe's contentDocument, scale-aware, mounted OUTSIDE the camera's
+transformed div so position:fixed stays viewport-relative). Same gating
+as the fast branch: toggle on, entry screen only, faded during zoom
+gestures. Same pass also fixed SHARE PINCH-ZOOM on BL screens: the
+share view only listened for Fast Frame's grade:zoom-gesture
+(raw deltaY + coords) and dropped the external sandbox's
+ext:zoom-gesture (pre-multiplied factor) — the listener now takes both
+dialects, and the external sandbox forwards anchor coords so the zoom
+tracks the pointer.
+
+STILL QUEUED: the INLINE pin channel (ext:comment-pins push, pins in
+the live DOM like Fast Frame) + comments-follow-navigation (thread-set
+swap on goto) — bundle as the F1 comments package. Ali's use case:
+capturing notes in meetings on shared prototypes.
 

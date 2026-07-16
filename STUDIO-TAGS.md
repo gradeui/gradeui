@@ -94,6 +94,26 @@ data-grade-goto graph. A `flow` tag makes it addressable:
   walkthroughs, A/B by link. No screen duplication beyond the variant
   itself.
 
+### Flow-share presentation — prototype vs MAP (Ali, later same night)
+
+Sharing a flow (or any tag facet) is really sharing a SET of screens.
+Two presentation modes on the same share record:
+
+- **Prototype** (default, exists today): the entry screen, walkable via
+  the goto graph — the current share flow, scoped to members.
+- **Map**: the member screens ARRANGED on a canvas — auto-laid-out
+  tiles with arrows drawn from the data-grade-goto edges (the flow map
+  is already computed server-side; the edges are just parsed goto
+  targets). Click a tile → zoom into it and continue as the prototype.
+  Rendering many screens = STUDIO-CAPTURE posters with
+  promote-to-live-on-focus (the grid policy), NOT n live iframes; the
+  arrows + auto-layout are STUDIO-CANVAS vocabulary (a flow map is a
+  read-only canvas scene). A `?view=map` param on /s/<token> picks the
+  mode; the share chrome gets a Prototype ⇄ Map toggle.
+
+This makes the flow share double as the STAKEHOLDER OVERVIEW ("here's
+the whole journey at a glance") and the walkthrough, from one link.
+
 ## Storage
 
 - `designs.tags` — jsonb array of
