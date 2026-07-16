@@ -35,6 +35,8 @@ function HubHeroCard({
   // illustration-led heroes.
   mediaAspect = "4/3", // "4/3" | "square" | "video"
   dataHook,
+  // Pass-through (data-grade-goto etc.) — same rule as HubStatCard.
+  ...rest
 }) {
   const MEDIA_ASPECTS = {
     "4/3": "aspect-[4/3]",
@@ -50,6 +52,7 @@ function HubHeroCard({
       density="condensed"
       className="max-w-none px-6"
       dataHook={dataHook}
+      {...rest}
     >
       <CardContent>
         <div className="flex items-center gap-8">

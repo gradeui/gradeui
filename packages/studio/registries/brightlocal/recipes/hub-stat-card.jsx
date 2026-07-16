@@ -52,6 +52,10 @@ function HubStatCard({
   // the same place was noise).
   ctaHook,
   dataHook,
+  // Everything else (data-grade-goto for STUDIO-FLOWS navigation,
+  // data-* stamps, aria) rides through to the Card — user-land
+  // components must not swallow wire-contract attributes.
+  ...rest
 }) {
   // The whole card is a drill-down target (wire navigation per-screen;
   // the chevron is the named control for keyboard/AT users). No hover
@@ -62,6 +66,7 @@ function HubStatCard({
       density="condensed"
       className="max-w-none cursor-pointer"
       dataHook={dataHook}
+      {...rest}
     >
       <CardHeader>
         <div className="flex flex-col gap-2">

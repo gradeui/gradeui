@@ -306,3 +306,13 @@ share view carries chrome):
 Note: third consumer of the STUDIO-CAPTURE primitive (posters, exports,
 now OG).
 
+## QUEUED — inspector "Attributes" section (attribute adder)
+
+Ali (16 Jul): a generic add/edit-attribute control in the properties
+panel — first use case: stamping data-grade-goto="<screen>" on a
+selected element without the code view. Shape: an Attributes section in
+selection-inspector listing existing data-*/aria-* attrs with add/remove;
+writes via the source mutator (same literal-attr path as className);
+value field for goto should offer the project screen names as options.
+Pairs with STUDIO-FLOWS F1/F2.
+
