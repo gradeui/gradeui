@@ -347,3 +347,14 @@ recipes), versioned in git, zero DB surface. Also: comments must pass
 through flow navigation (thread-set swap on goto — the F1 TODO in
 shared-screen.tsx) — Ali confirmed wanting this.
 
+## BUG→QUEUED — comment pins invisible on BL shares (16 Jul, confirmed live)
+
+Comments save + the share chrome shows the toggle, but pins never paint
+on BrightLocal screens: the ext:* protocol has NO comment-pin channel
+(shared-screen.tsx says so at the ExternalIframeHost branch — inline
+pins are a Fast Frame inlineComments feature). Fix: ext:comment-pins
+push into the external sandbox, injecting pins into the live DOM
+anchored by data-gds-source-id (the agent already stamps these), parity
+with fast-sandbox. Bundle with the F1 comments-follow-navigation work.
+Ali'''s use case: capturing notes in meetings on shared prototypes.
+
