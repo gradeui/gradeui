@@ -224,6 +224,26 @@ people for the nav comparison?" is answered by the tag itself. Members
 update live because the share resolves the tag at view time — sending
 the link once and re-tagging screens IS the publish action.
 
+## Tag groups + viewer-side choice (Ali, 17 Jul — T2/T4 material)
+
+"Here are some layout and color options" / "Here are some Animation
+page transitions": share SEVERAL tags at once and let the VIEWER pick
+which set to look at — the share chrome grows a facet switcher (chips /
+menu over the scoped tags). The insight: canvas tools show everything
+at once; a tag-scoped share gives LESS distraction, and viewer-side
+facet choice gives back the breadth without the noise.
+
+Shape that falls out (no new storage concept needed):
+- `scope.tags: [{type,value}, …]` — the scope generalises from one tag
+  to a SET (OR membership). Viewer chrome renders the tags as a
+  switcher; picking one filters the flow map / member list live.
+- A NAMED set — Ali's "tag-group: Visual and Animation choices" — is
+  exactly T4's saved preset: a preset IS a named tag group. Share the
+  preset = share its tag set with a title. So tag-group isn't a new
+  taxonomy layer; it's a name over scope.tags, stored with the presets.
+- Pairs with the Prototype ⇄ Map toggle: the map view PARTITIONED by
+  the chosen facet is the "here are your options" stakeholder screen.
+
 ## Open questions
 
 - Does `section` group-by replace or compose with the canvas's spatial

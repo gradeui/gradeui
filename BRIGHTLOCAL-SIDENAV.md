@@ -249,6 +249,36 @@ split for the 32px line, rail ml-6.
 
 ## Status log
 
+- 2026-07-17 — **Rename shipped + tags T1 + T2 share slice + F1
+  cross-fade** (one session):
+  - Nav-id rename DONE (see the DONE block above): repo 7928474, DB
+    via scripts/rename-nav-ids-supabase.mjs, harness-verified.
+  - mcp-server saveScreen state-clobber FIXED (fa9796c — merges over
+    existing designs.state; was dropping state.tags). Server rebuilt;
+    **needs the usual MCP restart**.
+  - Tags T1 SHIPPED (33dec48 + f9a35a5): list view / group-by /
+    filters / bulk tag / datalist autocomplete / chart-ramp colours;
+    view prefs in projects.view_prefs (migration 0022, APPLIED) +
+    localStorage mirror.
+  - T2 first slice SHIPPED (50878b1): share_links.scope (migration
+    0023, APPLIED) — share a tag (live membership) or an explicit
+    screen set; /s + /e scope their flow maps; mint from group header
+    / multi-select. Queued next: scope.tags sets + viewer-side facet
+    switcher + named presets-as-tag-groups (STUDIO-TAGS "Tag groups").
+  - STUDIO-FLOWS F1 cross-fade SHIPPED (e72c57d): View Transitions on
+    goto swaps in the external sandbox (flushSync commit, 200ms fade,
+    slide variants via data-grade-transition, reduced-motion safe).
+    Queued: host-driven swaps (Back/flow bar) + Fast Frame parity.
+  - Tweaker lock DOCUMENTED (sidecar + rules/15): tweaker={false} +
+    hard-set props = locked A/B variant screens; dataset pinning.
+  - Live screens tagged (section/status/flow) as T1 seed data.
+  - STILL QUEUED from today: share-chrome tag surface + per-screen
+    toolbar/version dropdown (design block), spacebar-pan on share
+    with live screens (diagnosis in task: iframe swallows keydown —
+    forward Space as messages from both sandboxes), PageHeader mobile
+    + Keyword Rankings card-header responsive fix (flex-row hardcoded),
+    screen-info panel restyle, list-view rich rows (posters).
+
 - 2026-07-16 (night) — **Proposal module joins the sidecar pattern**
   (Ali: "our single proposal.jsx circumvents the platform/studio
   pattern" — correct, fixed):
