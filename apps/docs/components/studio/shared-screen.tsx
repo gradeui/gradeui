@@ -488,6 +488,49 @@ export function SharedScreen({
     setFocusedPaneId(null);
     fit();
   }, [fit]);
+
+  // Pane-LOCAL navigation: a goto inside a focused pane swaps THAT
+  // pane's screen in place — the row stays, siblings stay put (walking
+  // variant A's nav while B sits alongside is the point of multiview;
+  // the old full-screen walk collapsed the row — "SADFACE", Ali).
+  // Targets resolve against the scoped members only (same privacy rule
+  // as the flow map). Per-pane ← chip pops; the cross-fade rides along
+  // because the goto click armed the transition inside that iframe.
+  const [paneStacks, setPaneStacks] = React.useState<
+    Record<string, { id: string; appSource: string }[]>
+  >({});
+  const paneGoto = React.useCallback(
+    (paneId: string, target: string) => {
+      const t = target.trim();
+      if (!t) return;
+      const match = t.toLowerCase().startsWith("screen:")
+        ? scopedMembers.find((s) => s.id === t.slice("screen:".length))
+        : scopedMembers.find(
+            (s) => s.name.trim().toLowerCase() === t.toLowerCase(),
+          );
+      if (!match) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[flows] pane goto "${target}" did not resolve within the scoped set`,
+        );
+        return;
+      }
+      setPaneStacks((prev) => ({
+        ...prev,
+        [paneId]: [
+          ...(prev[paneId] ?? []),
+          { id: match.id, appSource: match.appSource },
+        ],
+      }));
+    },
+    [scopedMembers],
+  );
+  const panePop = React.useCallback((paneId: string) => {
+    setPaneStacks((prev) => ({
+      ...prev,
+      [paneId]: (prev[paneId] ?? []).slice(0, -1),
+    }));
+  }, []);
   React.useEffect(() => {
     setPan({ x: 0, y: 0 });
   }, [viewportId]);
@@ -1337,7 +1380,16 @@ export function SharedScreen({
                     : "transform 340ms ease",
               }}
             >
-              {scopedMembers.map((m) => (
+              {scopedMembers.map((m) => {
+                const paneStack = paneStacks[m.id] ?? [];
+                const paneTop =
+                  paneStack.length > 0 ? paneStack[paneStack.length - 1] : null;
+                const paneSource = paneTop?.appSource ?? m.appSource;
+                const paneName = paneTop
+                  ? (scopedMembers.find((s) => s.id === paneTop.id)?.name ??
+                    m.name)
+                  : m.name;
+                return (
                 <div
                   key={m.id}
                   className={cn(
@@ -1356,11 +1408,21 @@ export function SharedScreen({
                   style={{ width: paneSize.w }}
                 >
                   <div
-                    className="flex items-center px-1"
+                    className="flex items-center gap-1.5 px-1"
                     style={{ height: PANE_LABEL_H }}
                   >
+                    {paneStack.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => panePop(m.id)}
+                        title="Back"
+                        className="inline-flex items-center rounded-full border border-border/60 bg-background/80 px-2 py-1 text-xs text-foreground shadow-sm backdrop-blur-md transition hover:bg-foreground/10"
+                      >
+                        ←
+                      </button>
+                    )}
                     <span className="inline-flex items-center rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur-md">
-                      {m.name}
+                      {paneName}
                     </span>
                   </div>
                   <div
@@ -1369,14 +1431,15 @@ export function SharedScreen({
                   >
                     {isExternal ? (
                       <ExternalIframeHost
-                        appSource={m.appSource}
+                        appSource={paneSource}
                         mode={mode}
                         registryId={shareRegistry.id}
-                        // Interactive only while focused — a goto from
-                        // the focused pane walks the flow full-screen
-                        // (flow stack); Back lands home on the row.
+                        // Interactive only while focused — a goto swaps
+                        // THIS pane in place (row + siblings stay).
                         onGoto={
-                          focusedPaneId === m.id ? resolveGoto : undefined
+                          focusedPaneId === m.id
+                            ? (t) => paneGoto(m.id, t)
+                            : undefined
                         }
                         className="block rounded-[28px] ring-1 ring-border/40"
                         style={{
@@ -1387,12 +1450,14 @@ export function SharedScreen({
                       />
                     ) : (
                       <FastIframeHost
-                        appSource={m.appSource}
+                        appSource={paneSource}
                         theme={activeTheme}
                         mode={mode}
                         motion={motionOn}
                         onGoto={
-                          focusedPaneId === m.id ? resolveGoto : undefined
+                          focusedPaneId === m.id
+                            ? (t) => paneGoto(m.id, t)
+                            : undefined
                         }
                         className="block rounded-[28px] ring-1 ring-border/40"
                         style={{
@@ -1417,7 +1482,8 @@ export function SharedScreen({
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : isExternal ? (
           // External registry — the ext:* kernel instead of Fast Frame.
