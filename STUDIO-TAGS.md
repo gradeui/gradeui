@@ -243,6 +243,15 @@ Shape that falls out (no new storage concept needed):
   taxonomy layer; it's a name over scope.tags, stored with the presets.
 - Pairs with the Prototype ⇄ Map toggle: the map view PARTITIONED by
   the chosen facet is the "here are your options" stakeholder screen.
+- MEMBER TAGS RIDE THE SHARE (Ali, 17 Jul: "do other tags go with it?
+  could you order by other tags inside the share?"): today /s strips
+  members to {id, name, appSource}; include `tags` and the compare-row
+  chrome can offer viewer-side ORDER BY / GROUP BY over any facet the
+  members carry — e.g. a flow share ordered by `section`, or clustered
+  into labelled runs along the row (wider gap between groups, group
+  name pill above each run). Same registry-less facet inference as the
+  rail (collectTagFacets). This is the 1D-row sibling of the map view's
+  partitioning; one control, two presentations.
 
 ## Open questions
 
