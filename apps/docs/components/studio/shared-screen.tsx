@@ -1309,14 +1309,17 @@ export function SharedScreen({
                 <div
                   key={m.id}
                   className={cn(
-                    "relative shrink-0 transition-[opacity,filter,transform] duration-300",
-                    // Focused sibling treatment — dimmed, desaturated
-                    // AND slightly shrunk; hovering breathes it back
-                    // (grow + colour + opacity) so a dulled pane reads
-                    // as "tap me", not "broken" (Ali).
+                    "relative shrink-0 transition-opacity duration-300",
+                    // Focused sibling treatment — monochrome + a gentle
+                    // dim, hover restores opacity only. NO scale and no
+                    // filter animation on hover: transform/filter on an
+                    // iframe-sized element re-rasters every frame (the
+                    // jerky hover); opacity is compositor-cheap. Blend
+                    // modes auditioned and declined for the same
+                    // processor bill (Ali called it).
                     focusedPaneId &&
                       focusedPaneId !== m.id &&
-                      "scale-[0.97] opacity-30 saturate-0 hover:scale-100 hover:opacity-70 hover:saturate-100",
+                      "opacity-70 saturate-0 hover:opacity-95",
                   )}
                   style={{ width: paneSize.w }}
                 >
