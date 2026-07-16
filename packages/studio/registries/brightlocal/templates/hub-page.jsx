@@ -128,6 +128,7 @@ export default function App() {
               icon={Grid3x3}
               title="Local Search Grid"
               metricKey="localSearchGrid"
+              goto="Local Search Grid"
               ctaHook="hub-lsg-cta"
               dataHook="hub-lsg-card"
             />
