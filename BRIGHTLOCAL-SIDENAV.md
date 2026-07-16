@@ -249,6 +249,33 @@ split for the 32px line, rail ml-6.
 
 ## Status log
 
+- 2026-07-17 (later) — **Compare row: scoped shares are multiview**
+  (Ali: "the screens sit SIDE by SIDE… as many iframes as needed"):
+  - Scoped shares open as N live panes in a row — ONE wide artboard to
+    the camera (resolveDeviceSize returns row dims; Fit/zoom/pan/pinch
+    unchanged). Opens in Fit. 21ff723 → 0875100.
+  - Tap a pane → camera glides to it IN PLACE, siblings dim
+    (opacity-70 + saturate-0 static, hover restores opacity only —
+    scale/filter hover re-rastered iframes, the jerky hover). Esc /
+    "← All screens" / chrome zoom-out return to the fitted row. Scope
+    name in the breadcrumb = member dropdown (glide to any pane).
+  - Pane-local goto: links inside a focused pane swap THAT pane
+    (per-pane stack + back chip); the row never collapses. Targets
+    resolve within scoped members only. F1 cross-fade rides per pane.
+  - Tag rename shipped (group-header pencil, bulk rewrite; shares
+    scoped to the old value do NOT follow yet — T2 registry). Tag
+    display is ALWAYS the human string as typed. Duplicates inherit
+    tags except flow (live share membership = leak risk).
+  - Per-shell tweak stash (keyed by dataHook — sessionStorage is
+    tab-wide across same-origin iframes, one pane's tweaks painted
+    all) + share-toolbar "Reset tweaks" (clears stash keys, reloads).
+  - Test shares live: /s/2da2464c… (flow, 3 panes, renamed tag),
+    /s/82f94612… (hub A/B explicit set).
+  - QUEUED from the demo pass: per-pane open-full-screen (needs embed
+    ?screen= param or on-demand single share — pair with F1 pushState),
+    stable URL per tag (mint-once), viewer-side facet switcher for
+    multi-tag scopes, share full-screen toggle.
+
 - 2026-07-17 — **Rename shipped + tags T1 + T2 share slice + F1
   cross-fade** (one session):
   - Nav-id rename DONE (see the DONE block above): repo 7928474, DB
