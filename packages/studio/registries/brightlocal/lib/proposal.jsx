@@ -534,21 +534,37 @@ export const PAGE_LAYERS = {
 // for the browser TAB's lifetime, so a stitched walkthrough stays
 // coherent, while a fresh viewer (new tab) still opens the authored
 // look. Sandboxed iframes without storage fall back to module scope.
-const TWEAKS_KEY = "bl-proposal-session-tweaks";
-let SESSION_TWEAKS = null;
-try {
-  SESSION_TWEAKS = JSON.parse(
-    window.sessionStorage.getItem(TWEAKS_KEY) || "null",
-  );
-} catch {
-  /* storage unavailable — module scope only */
+// KEYED PER SHELL (dataHook): sessionStorage is shared across every
+// same-origin iframe in the tab, so a single key painted one pane's
+// tweaks onto EVERY pane of a side-by-side compare share (Ali, 17 Jul
+// — "apply to one, applies to all"). Per-hook keys give each named
+// shell (rankings-app-layout, hub-app-layout, …) its own stash; the
+// cost is that a tweak no longer follows a flow hop between screens
+// with DIFFERENT hooks — per-screen isolation won. Screens sharing the
+// default "app-layout" hook still share a stash. The share toolbar's
+// "Reset tweaks" clears every key under this prefix.
+const TWEAKS_KEY_PREFIX = "bl-proposal-session-tweaks";
+const SESSION_TWEAKS_BY_HOOK = {}; // module-scope fast path
+function loadSessionTweaks(hook) {
+  if (SESSION_TWEAKS_BY_HOOK[hook] !== undefined)
+    return SESSION_TWEAKS_BY_HOOK[hook];
+  try {
+    return JSON.parse(
+      window.sessionStorage.getItem(`${TWEAKS_KEY_PREFIX}:${hook}`) || "null",
+    );
+  } catch {
+    return null; /* storage unavailable — module scope only */
+  }
 }
-function stashSessionTweaks(next) {
-  SESSION_TWEAKS = next;
+function stashSessionTweaks(hook, next) {
+  SESSION_TWEAKS_BY_HOOK[hook] = next;
   try {
     if (next && Object.keys(next).length > 0)
-      window.sessionStorage.setItem(TWEAKS_KEY, JSON.stringify(next));
-    else window.sessionStorage.removeItem(TWEAKS_KEY);
+      window.sessionStorage.setItem(
+        `${TWEAKS_KEY_PREFIX}:${hook}`,
+        JSON.stringify(next),
+      );
+    else window.sessionStorage.removeItem(`${TWEAKS_KEY_PREFIX}:${hook}`);
   } catch {
     /* fine — module scope carries it */
   }
@@ -728,15 +744,18 @@ export function AppLayoutShell({
   // with each screen's tree. Reload still resets to the authored look
   // (session-local semantics kept). Controlled mode bypasses the stash.
   const [ownTweaks, setOwnTweaksState] = React.useState(
-    () => SESSION_TWEAKS ?? {},
+    () => loadSessionTweaks(dataHook) ?? {},
   );
-  const setOwnTweaks = React.useCallback((updater) => {
-    setOwnTweaksState((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      stashSessionTweaks(next);
-      return next;
-    });
-  }, []);
+  const setOwnTweaks = React.useCallback(
+    (updater) => {
+      setOwnTweaksState((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        stashSessionTweaks(dataHook, next);
+        return next;
+      });
+    },
+    [dataHook],
+  );
   const tweaks = controlledTweaks ?? ownTweaks;
   const setTweaks = onTweaksChange ?? setOwnTweaks;
   ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset } = {

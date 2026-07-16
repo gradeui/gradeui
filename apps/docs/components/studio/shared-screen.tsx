@@ -31,6 +31,7 @@ import {
   Monitor,
   Play,
   Pause,
+  RotateCcw,
 } from "lucide-react";
 import { CanvasCommentPinsOverlay } from "@/components/studio/canvas-comment-pins-overlay";
 import { FastIframeHost } from "@/components/studio/fast-frame";
@@ -975,6 +976,37 @@ export function SharedScreen({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
+
+            {/* Reset tweaks — clears every shell's session tweak stash
+                (the Alt+T demo layer) and reloads to the AUTHORED look.
+                The share page and its sandbox iframes are same-origin,
+                so the toolbar can clear the iframes' sessionStorage
+                directly. External registries only — the tweaker is
+                registry-module chrome. */}
+            {isExternal && (
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    const doomed: string[] = [];
+                    for (let i = 0; i < window.sessionStorage.length; i++) {
+                      const k = window.sessionStorage.key(i);
+                      if (k && k.includes("session-tweaks")) doomed.push(k);
+                    }
+                    doomed.forEach((k) => window.sessionStorage.removeItem(k));
+                  } catch {
+                    /* storage unavailable — reload alone still resets
+                       module-scope stashes */
+                  }
+                  window.location.reload();
+                }}
+                title="Reset tweaks — back to the authored look"
+                aria-label="Reset tweaks"
+                className={iconBtn}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
             )}
 
             {/* Light / dark */}
