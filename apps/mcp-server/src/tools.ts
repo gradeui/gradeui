@@ -24,7 +24,7 @@ import {
   relevantComponentNames,
   renderComponentRefsBlock,
 } from "@gradeui/studio/playbook";
-import { COMPONENT_CONTRACTS } from "@gradeui/ui/contracts";
+import { contractsForRegistry } from "./registry-contracts";
 import type { McpEnv } from "./supabase";
 import {
   listProjects,
@@ -792,18 +792,20 @@ export function registerGradeTools(
       },
     },
     async ({ projectId, jsx, name, screenId, makeActive, expectedUpdatedAt }) => {
-      await assertProject(sb, env.ownerUserId, projectId);
+      const { registryId } = await assertProject(sb, env.ownerUserId, projectId);
 
       // Conformance gate — the deterministic seed of the eval ladder. Block
       // on error-severity violations so broken screens never land; warnings
-      // and info pass through (logged in the success note).
-      const report = validateAgainstContract(jsx, {
-        contracts: COMPONENT_CONTRACTS,
-      });
+      // and info pass through (logged in the success note). Contracts are
+      // resolved through the PROJECT'S registry (BYODS) — a BrightLocal
+      // screen validates against BrightLocal's contracts, never gradeui's
+      // name-colliding ones.
+      const { registry, contracts } = contractsForRegistry(registryId);
+      const report = validateAgainstContract(jsx, { contracts });
       const errors = report.violations.filter((v) => v.severity === "error");
       if (errors.length > 0) {
         return errorText(
-          `Not saved — ${errors.length} contract violation(s). Fix the JSX and call save_screen again:\n\n${formatViolations(
+          `Not saved — ${errors.length} contract violation(s) against the "${registry.id}" registry's contracts. Fix the JSX and call save_screen again:\n\n${formatViolations(
             report,
           )}`,
         );

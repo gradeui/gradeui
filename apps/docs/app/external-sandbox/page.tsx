@@ -115,6 +115,24 @@ export default function ExternalSandboxPage() {
       }
     };
 
+    /** Fallback namespace for a preview-vocab package that failed to
+     *  load: any property access throws a named, actionable error, so a
+     *  chart screen fails with "recharts failed to load — reload" while
+     *  every non-chart screen renders untouched. */
+    function unavailable(label: string): Record<string, unknown> {
+      return new Proxy(
+        {},
+        {
+          get(_t, k) {
+            if (k === "then" || k === "__esModule" || k === "default") return undefined;
+            throw new Error(
+              `"${label}" failed to load from esm.sh — reload the preview to retry.`,
+            );
+          },
+        },
+      );
+    }
+
     async function loadModules() {
       const [react, jsx, jsxDev, reactDom, reactDomClient, ds, lucide, motion, recharts, confetti, icons] =
         await Promise.all([
@@ -127,8 +145,20 @@ export default function ExternalSandboxPage() {
           importUrl("https://esm.sh/lucide-react@0.475.0?external=react"),
           importUrl("https://esm.sh/motion@12.29.2/react?external=react"),
           // Preview-vocab packages the system prompt licenses (rules 6/6a).
-          importUrl("https://esm.sh/recharts@3.7.0?external=react,react-dom"),
-          importUrl("https://esm.sh/canvas-confetti@1.9.3"),
+          // BEST-EFFORT with a lazy-throwing fallback: these are only
+          // needed by screens that actually chart/celebrate, but they
+          // used to load as hard Promise.all members — one esm.sh flake
+          // on recharts killed EVERY screen, chart or not ("Failed to
+          // fetch dynamically imported module: esm.sh/recharts", July
+          // 2026, a sidebar screen with zero charts). Failure now
+          // resolves to a proxy that throws a named error only if the
+          // screen actually touches the package.
+          importUrl("https://esm.sh/recharts@3.7.0?external=react,react-dom").catch(
+            () => unavailable("recharts"),
+          ),
+          importUrl("https://esm.sh/canvas-confetti@1.9.3").catch(
+            () => unavailable("canvas-confetti"),
+          ),
           // Companion packages (icons etc.) — best-effort; a DS without
           // them just resolves to an empty namespace.
           ...Object.keys(REGISTRY.runtime?.dependencies ?? {}).map((name) =>

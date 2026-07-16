@@ -160,6 +160,25 @@ export function findComponentOpenTag(
  * mutation; the chip's single-shot lifecycle prevents this in
  * practice but the null is the safe failure).
  */
+/** Guard for sourceId-based lookups: a click on a USER-LAND wrapper
+ *  component (e.g. AppLayoutShell — defined in-file, rendering a DS
+ *  compound as its root) captures the sourceId of the wrapper's
+ *  INTERNAL root tag (<GlobalLayout> inside the function definition),
+ *  not the usage site. Mutating that tag silently no-ops — the prop
+ *  lands in the DS component's rest-spread as a meaningless DOM attr
+ *  ("the switches don't do anything", July 2026). If the sourceId hit
+ *  isn't the component the inspector believes is selected, discard it
+ *  so the caller falls back to the first `<ComponentName>` in source
+ *  order — in-file wrapper components typically have exactly one
+ *  usage site, so first-match is correct there.
+ */
+function matchTagForComponent<T extends { componentName: string }>(
+  tag: T | null,
+  componentName: string,
+): T | null {
+  return tag && tag.componentName === componentName ? tag : null;
+}
+
 export function findComponentOpenTagBySourceId(
   source: string,
   sourceId: string
@@ -476,8 +495,10 @@ export function updateComponentProp(
   // pattern in `readComponentProp`.)
   const ensured = sourceId ? injectSourceIds(source) : source;
   const tag = sourceId
-    ? findComponentOpenTagBySourceId(ensured, sourceId) ??
-      findComponentOpenTag(ensured, componentName)
+    ? matchTagForComponent(
+        findComponentOpenTagBySourceId(ensured, sourceId),
+        componentName,
+      ) ?? findComponentOpenTag(ensured, componentName)
     : findComponentOpenTag(ensured, componentName);
   if (!tag) return source;
   source = ensured;
@@ -621,8 +642,10 @@ export function setInlineStyle(
 ): string {
   const ensured = sourceId ? injectSourceIds(source) : source;
   const tag = sourceId
-    ? findComponentOpenTagBySourceId(ensured, sourceId) ??
-      findComponentOpenTag(ensured, componentName)
+    ? matchTagForComponent(
+        findComponentOpenTagBySourceId(ensured, sourceId),
+        componentName,
+      ) ?? findComponentOpenTag(ensured, componentName)
     : findComponentOpenTag(ensured, componentName);
   if (!tag) return source;
   source = ensured;
@@ -725,8 +748,10 @@ export function readComponentProp(
   // here matches the one `prepareAppSource` used to label the DOM.
   const ensured = sourceId ? injectSourceIds(source) : source;
   const tag = sourceId
-    ? findComponentOpenTagBySourceId(ensured, sourceId) ??
-      findComponentOpenTag(ensured, componentName)
+    ? matchTagForComponent(
+        findComponentOpenTagBySourceId(ensured, sourceId),
+        componentName,
+      ) ?? findComponentOpenTag(ensured, componentName)
     : findComponentOpenTag(ensured, componentName);
   if (!tag) return undefined;
 

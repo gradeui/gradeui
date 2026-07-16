@@ -106,15 +106,17 @@ export async function createProject(
 /** Guard: the project exists, isn't soft-deleted, and (if user-owned)
  *  belongs to the configured owner. Keeps a stray projectId from writing
  *  screens into someone else's project even though the service role
- *  technically could. */
+ *  technically could. Returns the project's `registry_id` so callers can
+ *  resolve the right design-system contracts (BYODS) without a second
+ *  round-trip. */
 export async function assertProject(
   sb: SupabaseClient,
   ownerUserId: string,
   projectId: string,
-): Promise<void> {
+): Promise<{ registryId: string | null }> {
   const { data, error } = await sb
     .from("projects")
-    .select("id, owner_type, owner_id, deleted_at")
+    .select("id, owner_type, owner_id, deleted_at, registry_id")
     .eq("id", projectId)
     .maybeSingle();
   if (error) throw error;
@@ -125,6 +127,7 @@ export async function assertProject(
       `Project ${projectId} is not owned by the configured GRADE_OWNER_USER_ID — refusing to write to it.`,
     );
   }
+  return { registryId: (data.registry_id as string | null) ?? null };
 }
 
 // ─── Theme (on the `projects` row) ─────────────────────────────────────

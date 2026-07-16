@@ -135,7 +135,21 @@ function parsePropLine(line) {
 
   if (design === "knob" && PLUMBING_NAMES.has(name)) design = "plumbing";
 
-  return { name, spec: { kind, values, design, optional: optional || undefined, description } };
+  // SUBCOMPONENT props: sidecars for compound families (Sidebar, Card…)
+  // list every subcomponent's props on the root, prefixing the
+  // description with the subcomponent name ("SidebarAccountDropdown:
+  // User's display name"). Those must never be REQUIRED on the root
+  // contract — the validator was rejecting valid <Sidebar> usage for
+  // missing SidebarAccountDropdown props (email/senderName/…, July
+  // 2026). Force optional + plumbing so they're recorded, hidden from
+  // the panel, and never block a save.
+  let forcedOptional = optional;
+  if (description && /^[A-Z][A-Za-z0-9]+:/.test(description)) {
+    forcedOptional = true;
+    if (design === "knob") design = "plumbing";
+  }
+
+  return { name, spec: { kind, values, design, optional: forcedOptional || undefined, description } };
 }
 
 function firstBodyLine(md) {

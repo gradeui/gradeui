@@ -38,6 +38,21 @@ import { BRIGHTLOCAL_PREVIEW_THEME_FULL } from "./brightlocal/preview-theme.gene
 // distillation). Drop a new .md there + `node
 // scripts/generate-registry-rules.mjs` to extend the harness.
 
+// Tailwind v4 border-color compat (shadcn v4 template rule). BL's dist
+// components use bare `border` utilities and rely on their preset's
+// base reset mapping default border color to the token; the extracted
+// @theme sheet carries `--color-border` but NOT the base reset, so v4's
+// default (currentColor) rendered every border BLACK in the sandbox
+// (July 2026, the SidebarPopoverMenu screenshot). Appended here rather
+// than hand-editing the generated theme file.
+const BRIGHTLOCAL_V4_BASE_COMPAT = `
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-border, currentColor);
+  }
+}
+`;
+
 export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
   id: "brightlocal",
   name: "BrightLocal Design System",
@@ -130,6 +145,6 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
     // @utility sections — px-section-md etc. are how Card gets its
     // padding; @theme alone rendered every component flush (the "cards
     // have no padding" bug).
-    previewThemeCss: BRIGHTLOCAL_PREVIEW_THEME_FULL,
+    previewThemeCss: BRIGHTLOCAL_PREVIEW_THEME_FULL + BRIGHTLOCAL_V4_BASE_COMPAT,
   },
 };

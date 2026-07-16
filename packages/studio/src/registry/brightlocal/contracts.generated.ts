@@ -163,6 +163,117 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "variant": "default"
     }
   },
+  "AppLayoutShell": {
+    "name": "AppLayoutShell",
+    "description": "Layout-exploration wrapper over the GlobalLayout compound family. This is",
+    "props": {
+      "flush": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Cancel GlobalLayout's baked-in p-section-sm and the scroll viewport's p-1 (string literals in the dist, not prop-overridable — see rules/90-audit.md). (default true)"
+      },
+      "stickyHeader": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Pin the content header to the top of the scroll viewport (bg-background, border-b). Requires flush, otherwise it sticks 24px down inside the padding. (default false)"
+      },
+      "pinnedSidebar": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Lock the sidebar to the viewport edge, full height (top 0 / 100dvh). The DS default offsets it by --ds-section-padding-y-sm, which is wrong once flush. (default true)"
+      },
+      "sidebarTone": {
+        "kind": "enum",
+        "values": [
+          "default",
+          "white",
+          "subtle",
+          "dark",
+          "brand"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Re-skin the sidebar by re-pointing the --sidebar-* CSS variables on its container. Pure token swap; component internals untouched. (default \"default\")"
+      },
+      "contentMaxWidth": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Max width of the content column (passed to GlobalLayoutContent; default the DS's breakpoint-lg). Note the DS's ContentHeader hardcodes its own breakpoint-lg cap, so only the body follows a custom value."
+      },
+      "sidebarFrame": {
+        "kind": "enum",
+        "values": [
+          "flush",
+          "floating"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "How the sidebar sits against the screen edge (desktop only). \"flush\" = hard against it; \"floating\" = lifted off a little (12px margin + 16px radius — presets in SIDEBAR_FRAMES, tweak them in code). (default \"floating\")"
+      },
+      "pageLayers": {
+        "kind": "enum",
+        "values": [
+          "default",
+          "tinted"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Page-wide layer treatment: re-points the canvas + card tokens on the layout root. \"tinted\" = subtlest green-grey canvas (neutral-100), WHITE cards, muted drops to neutral-50. Presets in PAGE_LAYERS — tweak in code. (default \"default\")"
+      },
+      "sidebarBorder": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional 1px border color around the sidebar container. Any CSS color; tokens welcome (\"var(--sidebar-border)\")."
+      },
+      "mobileTone": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Carry the sidebar tone onto the mobile Sheet overlay too (scoped style targeting its data-sidebar/data-mobile marks — the Sheet portals outside the shell's tree). Off = mobile keeps the default light tone. (default true)"
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name stamped through to the underlying GlobalLayout parts. (default \"app-layout\")"
+      },
+      "sidebar": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Slot: the Sidebar compound to render inside GlobalLayoutSidebar."
+      },
+      "header": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Slot: content for the (optionally sticky) GlobalLayoutContentHeader."
+      },
+      "mobileBar": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Slot: mobile top bar (SidebarTrigger + Logo, lg:hidden). Rendered first in the content column so it sits above the page header below lg."
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Slot: page content rendered inside GlobalLayoutContent."
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Merged onto GlobalLayout after the flush classes."
+      }
+    }
+  },
   "AspectRatio": {
     "name": "AspectRatio",
     "description": "src=\"/image.jpg\"",
@@ -209,13 +320,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "src": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "AvatarImage: The image source URL"
       },
       "alt": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "AvatarImage: Alternative text for the image for accessibility"
       }
@@ -294,19 +405,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "asChild": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "BreadcrumbLink: Render as a different element (Radix Slot pattern)"
       },
       "href": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "BreadcrumbLink: URL the breadcrumb link navigates to"
       },
       "srLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "BreadcrumbEllipsis: Screen-reader-only label for the ellipsis. (default \"More\")"
       }
@@ -521,7 +632,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "center",
           "right"
         ],
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "CardHeader: Content alignment within the header. Use `\"center\"` for status screens with an illustration above heading and description. (default \"left\")"
       },
@@ -531,7 +642,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "small",
           "default"
         ],
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "CardTitle: Title text size. (default \"default\")"
       }
@@ -611,7 +722,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "hideWhenDisabled": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "CarouselPrevious: Hide the button instead of disabling it when there are no previous slides (default false)"
       },
@@ -647,6 +758,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "children": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "CentredLayoutHeader: Header content (e.g., Header component with Logo)"
       }
     }
@@ -725,13 +837,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "hideLabel": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ChartTooltip: Hide the tooltip label"
       },
       "hideIndicator": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ChartTooltip: Hide the color indicator"
       },
@@ -743,13 +855,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "nameKey": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ChartTooltip: Key to use for the series name"
       },
       "labelKey": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ChartTooltip: Key to use for the label"
       },
@@ -761,7 +873,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "labelClassName": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ChartTooltipContent: Additional CSS class for the label"
       },
@@ -773,7 +885,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "hideIcon": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ChartLegendContent: Hide the series icon in the legend"
       },
@@ -785,12 +897,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "dataKey": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "ChartLegendContent:"
       },
       "color": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ChartLegendContent:"
       }
@@ -977,31 +1090,31 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "error": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxTrigger: Accessible label for the combobox trigger. Use either aria-label or aria-labelledby for accessibility. / \"aria-label\"?: string; / ID reference to a label element that provides the accessible name / \"aria-labelledby\"?: string; / Whether the combobox trigger has an error state"
       },
       "trackingEl": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxTrigger: Tracking element identifier for analytics"
       },
       "trackingLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxTrigger: Tracking label for analytics context"
       },
       "placeholder": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxValue: Placeholder text when no value is selected"
       },
       "className": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxValue: Custom className"
       },
@@ -1019,19 +1132,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "sideOffset": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxContent: Distance in px between the trigger and the popover. (default 4)"
       },
       "avoidCollisions": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxContent: When true, Radix avoids collisions with the viewport/boundaries by flipping and/or shifting the popover to keep it in view. Set to false to disable collision handling and force the requested position. (default true)"
       },
       "hideList": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxContent: Hide the list area (and the input border). Useful for async search where you want to hide results until a minimum character count."
       },
@@ -1043,13 +1156,14 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "debounceMs": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxInput: Debounce delay in milliseconds for the `onValueChange` callback. The input display updates immediately; only the callback is debounced. Useful for async search to avoid firing API calls on every keystroke. @example 300"
       },
       "items": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "ComboboxVirtualList: Array of items to virtualise. Memoize with useMemo to avoid re-registering labels on every render."
       },
       "getItemValue": {
@@ -1072,13 +1186,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "estimateSize": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxVirtualList: Estimated item height in pixels. (default 36)"
       },
       "overscan": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxVirtualList: Number of items to render above and below the visible area. (default 5)"
       },
@@ -1090,19 +1204,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "label": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxItem: Display label - if not provided, inferred from children text content. Required when children are React elements (not plain text) to enable label-based search and trigger display."
       },
       "highlight": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxItem: Text to highlight in the item (typically the search query)"
       },
       "highlightClassName": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxItem: Class name for highlighted text"
       },
@@ -1120,7 +1234,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "loadingText": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ComboboxLoading: Loading text displayed next to the spinner. (default \"Loading...\")"
       }
@@ -1155,30 +1269,31 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "debounceMs": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "CommandInput: Debounce delay in milliseconds for the `onValueChange` callback. The input display updates immediately; only the callback is debounced. Useful for async filtering to avoid firing on every keystroke. @example 300"
       },
       "clearSearchAriaLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "CommandInput: Accessible label for the clear button. (default \"Clear) search\""
       },
       "selected": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "CommandItem: Whether the item is selected (shows checkmark)"
       },
       "value": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "CommandVirtualItem: Unique value identifying this item."
       },
       "disabled": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "CommandVirtualItem: Whether this item is disabled."
       },
@@ -1191,11 +1306,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "items": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "CommandVirtualList: Array of items to render. Memoize to avoid re-registration on every render."
       },
       "getItemValue": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "CommandVirtualList: Extract a unique string value from each item."
       },
       "getItemLabel": {
@@ -1212,19 +1329,20 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "estimateSize": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "CommandVirtualList: Estimated item height in px for the virtualiser. (default 44)"
       },
       "overscan": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "CommandVirtualList: Number of items to render outside the visible viewport. (default 5)"
       },
       "children": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "CommandVirtualList: Render function called for each visible item."
       },
       "renderEmpty": {
@@ -1235,7 +1353,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "className": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "CommandVirtualList: Accessible label for the listbox. Required for a11y — describes the list's purpose to screen readers. / \"aria-label\": string; / Additional CSS classes for the scroll container."
       }
@@ -1267,19 +1385,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "inset": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ContextMenuItem: Whether to add left padding for alignment with other items"
       },
       "trackingEl": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ContextMenuItem: Tracking element identifier for analytics"
       },
       "trackingLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ContextMenuItem: Tracking label for analytics context"
       }
@@ -1355,30 +1473,32 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "height": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "VirtualizedDataTable: Height of the scroll container in pixels. Required — virtualization needs a bounded viewport. Pass a CSS value via `className` instead if you need responsive heights (e.g. `className=\"h-[80vh]\"`), and omit this prop."
       },
       "estimateSize": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "VirtualizedDataTable: Estimated height of a single row in pixels. The virtualizer uses this for initial layout before measuring real DOM nodes. (default 48)"
       },
       "overscan": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "VirtualizedDataTable: Number of rows to render outside the visible viewport. Higher values reduce blank-flash on fast scrolling at the cost of more DOM nodes. (default 5)"
       },
       "column": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "DataTableColumnHeader: TanStack column instance (from the `header` render slot)."
       },
       "title": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "DataTableColumnHeader: Header label."
       },
       "align": {
@@ -1389,36 +1509,38 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "placeholder": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DataTableSearch: Input placeholder. (default \"Search...\")"
       },
       "clearSearchAriaLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DataTableSearch: Accessible label for the clear button. (default \"Clear) search\""
       },
       "showRowCount": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DataTablePagination: Show the row count text in the default (non-compositional) layout. Ignored when `children` are provided — use `DataTablePaginationRowCount` instead. (default true)"
       },
       "selectAllAriaLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DataTableSelectAllCheckbox: Accessible label for the select-all checkbox. (default \"Select) all\""
       },
       "row": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "DataTableSelectRowCheckbox: TanStack row instance."
       },
       "children": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "DataTableToolbar: Toolbar contents — typically `DataTableToolbarLeft` and `DataTableToolbarRight`."
       }
     }
@@ -1517,25 +1639,25 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "error": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DatePickerTrigger: Whether the trigger has an error state"
       },
       "triggerLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DatePickerTrigger: Accessible label for the trigger button. (default \"Select) date\" (single) or \"Select date range\" (range)"
       },
       "contentLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DatePickerContent: Accessible label for the date picker popover. (default \"Date) picker\" (single) or \"Date range picker\" (range)"
       },
       "closeOnSelect": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DatePickerCalendar: Whether to close the popover when a date is selected (single mode only) (default true)"
       },
@@ -1547,7 +1669,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "className": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DatePickerPresets: Additional class name"
       }
@@ -1607,19 +1729,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "trackingEl": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DialogContent: Tracking element identifier for analytics"
       },
       "trackingLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DialogContent: Tracking label for analytics context"
       },
       "closeLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DialogContent: Accessible label for the close button. (default \"Close\")"
       }
@@ -1792,13 +1914,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "trackingEl": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DrawerContent: Tracking element identifier for analytics"
       },
       "trackingLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DrawerContent: Tracking label for analytics context"
       }
@@ -1840,35 +1962,37 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "trackingEl": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DropdownMenuCheckboxItem: Tracking element identifier for analytics"
       },
       "trackingLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DropdownMenuCheckboxItem: Tracking label for analytics context"
       },
       "inset": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DropdownMenuItem: Indent the item (for hierarchical menus)"
       },
       "avatar": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "DropdownMenuTriggerAvatar: Avatar slot - expects an Avatar component"
       },
       "title": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "DropdownMenuTriggerAvatar: Main text/title displayed next to avatar"
       },
       "description": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DropdownMenuTriggerAvatar: Description text displayed below title"
       },
@@ -1907,7 +2031,8 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "htmlFor": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "FieldLabel: Required htmlFor attribute for linking label with input"
       },
       "children": {
@@ -2045,19 +2170,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "disabled": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "HoverCardTrigger: Whether the trigger is disabled"
       },
       "trackingEl": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "HoverCardTrigger: Optional analytics element identifier"
       },
       "trackingLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "HoverCardTrigger: Optional analytics label context"
       }
@@ -2109,43 +2234,43 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "trackingEl": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputChipInput: Tracking element identifier for analytics"
       },
       "trackingLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputChipInput: Tracking label for analytics context"
       },
       "placeholder": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputChipInput: Placeholder text for the input"
       },
       "error": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputChipInput: Whether the input has an error state"
       },
       "inputId": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputChipInput: ID for the input element (for label association)"
       },
       "className": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputChipItems: Custom className for the container"
       },
       "dataHookPrefix": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputChipItems: Data hook prefix for chips"
       }
@@ -2191,7 +2316,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "asChild": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputGroupButton:"
       }
@@ -2244,25 +2369,25 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "loading": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputListItems: Shows skeleton placeholder rows instead of the item list."
       },
       "skeletonCount": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputListItems: Number of skeleton rows to render in the loading state. (default 5)"
       },
       "disabled": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputListItems: Disables all remove buttons in the list."
       },
       "error": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputListInput: Applies an error style to the input."
       }
@@ -2359,7 +2484,8 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "index": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "InputOTPSlot: The index of the slot in the OTP input"
       }
     }
@@ -2446,19 +2572,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "groupClassName": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputPasswordField: Additional class name for the InputGroup wrapper"
       },
       "showLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputPasswordField: Accessible label for the toggle button when password is hidden. (default \"Show) password\""
       },
       "hideLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "InputPasswordField: Accessible label for the toggle button when password is visible. (default \"Hide) password\""
       }
@@ -2613,7 +2739,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "asChild": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "Item: Render as the child element instead of `<li>`. Useful when the item is wrapped by another element (e.g. `<motion.li>`)."
       }
@@ -2789,13 +2915,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "checked": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "MenubarCheckboxItem:"
       },
       "closeOnSelect": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "MenubarCheckboxItem:"
       },
@@ -2807,13 +2933,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "disabled": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "MenubarItem:"
       },
       "inset": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "MenubarItem:"
       }
@@ -2863,24 +2989,25 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "isActive": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "PaginationButton: Whether this page is the current page"
       },
       "page": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "PaginationLink: Page number to display"
       },
       "disabled": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "PaginationPrevious: Whether the previous button is disabled (on first page)"
       },
       "srLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "PaginationEllipsis: Screen-reader-only label for the ellipsis. (default \"More) pages\""
       }
@@ -2916,7 +3043,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "asChild": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "PopoverTrigger: Change the default rendered element for the one passed as a child, merging their props and behavior."
       },
@@ -2933,7 +3060,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "sideOffset": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "PopoverContent: The distance in pixels from the anchor."
       },
@@ -2945,13 +3072,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "alignOffset": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "PopoverContent: An offset in pixels from the \"start\" or \"end\" alignment options."
       },
       "avoidCollisions": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "PopoverContent: When true, overrides side and align to prevent collisions with boundary edges."
       },
@@ -2963,7 +3090,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "hideWhenDetached": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "PopoverContent: Whether to hide content when the trigger becomes fully occluded."
       }
@@ -3150,7 +3277,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "withHandle": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "ResizableHandle: Show a visible drag handle indicator"
       }
@@ -3202,13 +3329,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "maxHeight": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SelectContent: Maximum height of the dropdown in pixels. Constrains the dropdown height and shows scroll indicators when content overflows. The dropdown uses the smaller of this value and the available viewport space."
       },
       "placeholder": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SelectTrigger: Placeholder text when no value is selected"
       },
@@ -3219,13 +3346,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "error": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SelectTrigger: Whether the select trigger has an error state"
       },
       "selectLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SelectTrigger: Accessible label for the select trigger. Priority: aria-label > selectLabel > placeholder > \"Select an option\" (default \"Select) an option\""
       }
@@ -3281,13 +3408,14 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "className": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SeparatorWithText: Additional CSS classes"
       },
       "children": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "SeparatorWithText: Text content to display between separators"
       }
     }
@@ -3324,7 +3452,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "bottom",
           "left"
         ],
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SheetContent: Side from which the sheet slides in (default \"right\")"
       },
@@ -3335,19 +3463,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "trackingEl": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SheetContent: Tracking element identifier for analytics"
       },
       "trackingLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SheetContent: Tracking label for analytics context"
       },
       "closeLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SheetContent: Accessible label for the close button. (default \"Close\")"
       }
@@ -3397,7 +3525,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "embedded": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "DEPRECATED: No longer needed. The Sidebar now always uses inline layout for desktop and Sheet overlay for mobile. Remove this prop."
       },
@@ -3416,11 +3544,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "name": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "SidebarAccountDropdown: User's display name"
       },
       "email": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "SidebarAccountDropdown: User's email address"
       },
       "avatar": {
@@ -3455,7 +3585,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "isActive": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarCollapseIcon: Whether the icon is in active/open state"
       },
@@ -3467,13 +3597,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "separator": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarFooter: Whether to render a separator at the top of the footer. (default true)"
       },
       "asChild": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarGroupAction: Render as a different element (Radix Slot pattern)"
       },
@@ -3485,7 +3615,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "isOpen": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarGroupLabel: Whether the collapsible section is open"
       },
@@ -3503,29 +3633,31 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "senderName": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "SidebarInboxItem: Sender or person name"
       },
       "title": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "SidebarInboxItem: Notification title"
       },
       "description": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarInboxItem: Preview description text"
       },
       "timestamp": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarInboxItem: Timestamp string"
       },
       "showOnHover": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarMenuAction: Show action only on hover"
       },
@@ -3537,13 +3669,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "defaultOpen": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarMenuCollapsible: Whether the collapsible is open by default"
       },
       "open": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarMenuCollapsible: Controlled open state"
       },
@@ -3555,7 +3687,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "className": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarMenuCollapsible: Additional CSS classes"
       },
@@ -3567,13 +3699,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "showIcon": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarMenuSkeleton: Show icon skeleton placeholder"
       },
       "groupTitle": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarPopoverMenu: Group title displayed at the top of the menu. (default \"Teams\")"
       },
@@ -3585,30 +3717,31 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "shortcut": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarPopoverMenu:"
       },
       "triggerAriaLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarPopoverTrigger: Accessible label for the trigger button. (default \"Switch) workspace\""
       },
       "toggleAriaLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarRail: Accessible label and tooltip for the rail toggle. (default \"Toggle) Sidebar\""
       },
       "label": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "SidebarSwitcher: Label displayed in the trigger"
       },
       "triggerClassName": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SidebarSwitcher: Additional CSS classes for the trigger"
       }
@@ -3758,28 +3891,31 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "children": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "SplitLayoutHeader: Header content (e.g., Header component with Logo)"
       },
       "sticky": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SplitLayoutContentLeft: Pins the column to the viewport on desktop (≥lg) so it stays visible while the sibling column grows beyond one screen. Applies `sticky top-0 h-screen self-start`. (default false)"
       },
       "flush": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SplitLayoutContentRight: Removes padding so content can fill edge-to-edge. Use with `SplitLayoutImage` for full-bleed imagery. (default false)"
       },
       "src": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "SplitLayoutImage: Image source URL"
       },
       "alt": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "SplitLayoutImage: Alt text for the image"
       },
       "objectFit": {
@@ -3790,7 +3926,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "objectPosition": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "SplitLayoutImage: CSS object-position value controlling the focal point of the image. (default \"center\") @example \"top\", \"center\", \"left 30%\""
       }
@@ -3860,54 +3996,55 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "stepId": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
+        "optional": true,
         "description": "StepperItem: Id of the step this item represents (must match an `id` in `steps`)."
       },
       "completed": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "StepperItem: Force the completed state regardless of the active step."
       },
       "error": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "StepperItem: Mark the step as errored (shows the error indicator)."
       },
       "disabled": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "StepperItem: Disable interaction with the step."
       },
       "loading": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "StepperItem: Show a loading spinner in the indicator while this step is active."
       },
       "asChild": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "StepperTrigger: Render as the child element instead of a button (Radix Slot pattern). Note: the disabled state is not applied automatically when `asChild` is true — the consumer must handle disabled styling/behavior on the child."
       },
       "completedLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "StepperIndicator: Screen-reader label appended when the step is completed. (default \"Completed\")"
       },
       "errorLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "StepperIndicator: Screen-reader label appended when the step has an error. (default \"Error\")"
       },
       "loadingLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "StepperIndicator: Screen-reader label appended while the step is loading. (default \"Loading\")"
       }
@@ -3986,7 +4123,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "right",
           "center"
         ],
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "TableHead: Text alignment for the header cell. (default \"left\")"
       }
@@ -4186,6 +4323,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "value": {
         "kind": "string",
         "design": "plumbing",
+        "optional": true,
         "description": "ToggleGroupItem: Unique value for the toggle item (REQUIRED)"
       },
       "ariaLabel": {
@@ -4292,25 +4430,25 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       },
       "trackingEl": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "TooltipContent: Optional analytics element identifier"
       },
       "trackingLabel": {
         "kind": "string",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "TooltipContent: Optional analytics label context"
       },
       "hideArrow": {
         "kind": "boolean",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "TooltipContent: Hide the tooltip arrow"
       },
       "skipDelayDuration": {
         "kind": "number",
-        "design": "knob",
+        "design": "plumbing",
         "optional": true,
         "description": "TooltipProvider:"
       }
