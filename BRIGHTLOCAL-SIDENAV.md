@@ -506,3 +506,23 @@ the live DOM like Fast Frame) + comments-follow-navigation (thread-set
 swap on goto) — bundle as the F1 comments package. Ali's use case:
 capturing notes in meetings on shared prototypes.
 
+
+## QUEUED FIRST (17 Jul) — nav id rename: no cryptic abbreviations
+
+Ali (16 Jul, wrap): "it's precisely that shit where things get
+shortened" — our own IA ids commit the sin we audit BL for. Rename to
+full words, one pass, repo + DB together (model: the
+scripts/rename-rds-to-gds.py precedent — single sweep, no migration):
+  rk-positions→rankings-positions, rk-table→rankings-table,
+  rk-keywords→rankings-keyword-groups, rk-competitors→
+  rankings-competitors, rk-settings→rankings-settings (+ rk-general/
+  rk-search/rk-advanced/rk-alerts → rankings-*), lp-*→
+  location-profile-* (lp-hours→location-profile-hours etc.),
+  lsg-*→local-search-grid-* (incl. generated keyword rows
+  lsg-kw-N→local-search-grid-keyword-N in buildProposalSections),
+  cit-*→citations-*, ai-*→ai-insights-*.
+Touchpoints: PROPOSAL_SECTIONS + buildProposalSections (proposal.jsx),
+templates/hub-page.jsx navLinks, rules/15, sidecars (proposal-sidebar,
+stat-card examples), and the THREE live screens' activeId + navLinks
+in Supabase (Brightlocal Vision - Share). Regen lib/templates/rules/
+sidecars + contracts, rebuild mcp-server, verify via the harness.
