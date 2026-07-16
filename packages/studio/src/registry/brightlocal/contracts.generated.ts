@@ -231,7 +231,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "boolean",
         "design": "knob",
         "optional": true,
-        "description": "Render the hidden ShellTweakerPanel (bottom-right corner hover / Alt+T): session-local overrides of the look knobs for stakeholder demos; literal props stay the authored truth. (default true)"
+        "description": "Render the hidden ShellTweakerPanel (bottom-right corner hover / Alt+T): session-local overrides of the look knobs for stakeholder demos; literal props stay the authored truth. Set FALSE to lock a screen to its authored props (comparison variants, hard-set client data) — no panel, no override layer, viewers can't flip it. (default true)"
       },
       "pageLayers": {
         "kind": "enum",

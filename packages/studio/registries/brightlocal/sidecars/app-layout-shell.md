@@ -9,7 +9,8 @@ props:
   - contentMaxWidth?: string — Max width of the content column (passed to GlobalLayoutContent; default the DS's breakpoint-lg). Note the DS's ContentHeader hardcodes its own breakpoint-lg cap, so only the body follows a custom value.
   - sidebarFrame? (flush | floating) — How the sidebar sits against the screen edge (desktop only). "flush" = hard against it; "floating" = lifted off a little (12px margin + 16px radius — presets in SIDEBAR_FRAMES, tweak them in code). (default "floating")
   - sidebarShadow? (frame | none | sm | md | lg) — Sidebar drop shadow on Tailwind's scale, independent of the frame. "frame" (default) defers to the frame preset (floating ships shadow-sm). (default "frame")
-  - tweaker?: boolean — Render the hidden ShellTweakerPanel (bottom-right corner hover / Alt+T): session-local overrides of the look knobs for stakeholder demos; literal props stay the authored truth. (default true)
+  - tweaker?: boolean — Render the hidden ShellTweakerPanel (bottom-right corner hover / Alt+T): session-local overrides of the look knobs for stakeholder demos; literal props stay the authored truth. Set FALSE to lock a screen to its authored props (comparison variants, hard-set client data) — no panel, no override layer, viewers can't flip it. (default true)
+  - tweaks? / onTweaksChange? — Controlled override pair (advanced): pass a tweaks object to hard-set the tweaker's override layer from the screen instead of the panel; with onTweaksChange omitted the overrides are frozen. Prefer plain authored props + tweaker={false} unless you specifically need the override layer.
   - pageLayers? (default | raised) — Page-wide layer treatment: re-points the canvas + card tokens on the layout root. "raised" = subtlest green-grey canvas (neutral-50), WHITE elevated cards, muted up to neutral-100. Presets in PAGE_LAYERS — tweak in code. (default "raised")
   - sidebarBorder?: string — Optional 1px border color around the sidebar container. Any CSS color; tokens welcome ("var(--sidebar-border)").
   - dataset?: string — Named dataset (lib/data/*.json) applied via a nested ProposalDataProvider around the shell; "default" mounts nothing. Also a ShellTweakerPanel row (Alt+T switches live, session-only). (default "default")
@@ -50,6 +51,21 @@ import { AppLayoutShell, ProposalSidebar, PageHeader } from "@brightlocal/propos
 The sticky header sits at z-30 — page content may use z-indexes up to
 z-20 and stays underneath; the tweaker (z-50) and portalled overlays
 stay above.
+
+LOCKED VARIANTS (A/B comparisons): to author "Nav White vs Nav Brand"
+style screen pairs, duplicate the screen, hard-set the differing knobs
+as plain props, and set tweaker={false} on BOTH so the screens stay
+locked to their authored look (no Alt+T, no override layer — the
+authored props are exactly what every viewer sees, in Studio, shares
+and embeds). Hard-set data the same way: dataset="northside-dental"
+with tweaker={false} pins the client too.
+
+```jsx
+// Screen "Nav — Brand":
+<AppLayoutShell sidebarTone="brand" tweaker={false} …>
+// Screen "Nav — White" (the duplicate):
+<AppLayoutShell sidebarTone="white" tweaker={false} …>
+```
 
 Selection note: the shell passes data-slot="app-layout-shell" to
 GlobalLayout, whose inner div spreads rest props AFTER its own
