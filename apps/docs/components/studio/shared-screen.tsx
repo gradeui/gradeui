@@ -1150,7 +1150,11 @@ export function SharedScreen({
               "block",
               framed ? "shrink-0" : "h-full w-full",
               (framed || effectiveZoom < 1) &&
-                "rounded-xl ring-1 ring-border/40",
+                // Concentric with the proposal shell's floating sidenav:
+                // inner radius 16px (rounded-2xl) + its 12px inset = 28px
+                // outer — the canvas curve hugs the panel's curve instead
+                // of cutting across it (Ali, 16 Jul; global share change).
+                "rounded-[28px] ring-1 ring-border/40",
             )}
             style={{
               width: deviceSize?.w,
@@ -1208,7 +1212,11 @@ export function SharedScreen({
               // Card treatment when framed as an artboard, or sitting
               // "in space" (zoomed out).
               (framed || effectiveZoom < 1) &&
-                "rounded-xl ring-1 ring-border/40",
+                // Concentric with the proposal shell's floating sidenav:
+                // inner radius 16px (rounded-2xl) + its 12px inset = 28px
+                // outer — the canvas curve hugs the panel's curve instead
+                // of cutting across it (Ali, 16 Jul; global share change).
+                "rounded-[28px] ring-1 ring-border/40",
             )}
             style={{
               width: deviceSize?.w,
