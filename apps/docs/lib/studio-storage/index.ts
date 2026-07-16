@@ -36,6 +36,7 @@ export type {
   ProjectSnapshot,
   ScreenRevision,
   ShareLink,
+  ShareScope,
   ShareViewport,
   ShareViewportSpec,
   StudioEvent,

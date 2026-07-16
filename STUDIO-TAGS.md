@@ -158,10 +158,24 @@ the whole journey at a glance") and the walkthrough, from one link.
 
 - **T0 — substrate**: `designs.tags` + `projects.tag_defs` +
   adapter/type plumbing + tag editor in the inspector. No rail changes.
+  SHIPPED f60db6b (tags only; tag_defs registry still open).
 - **T1 — the rail**: list view, group-by, filter bar, bulk tagging.
-- **T2 — flows**: flow type with entry/order/tagAlias, share-a-flow
-  (share_links.flow + scoped flow map in /s and /e), flow-scoped goto
-  resolution.
+  SHIPPED 17 Jul (33dec48 + follow-ups): grid ⇄ list toggle, group-by
+  single-cardinality types, faceted filter chips, bulk type:value bar,
+  datalist autocomplete of the project vocabulary, chart-ramp tag
+  colours (per-TYPE via tagTypeColor), view prefs persisted per project
+  (projects.view_prefs, migration 0022 + localStorage mirror).
+  Still open from the T1 spec: drag-between-groups rewrites the tag.
+- **T2 — flows**: flow type with entry/order/tagAlias, share-a-flow,
+  flow-scoped goto resolution. FIRST SLICE SHIPPED 17 Jul:
+  `share_links.scope` jsonb (migration 0023) — { tag } (members resolve
+  at view time — re-tagging updates the link) or { screens } (explicit
+  ad-hoc set, "share these two", no tag ceremony); /s AND /e filter
+  their flow maps to members (entry always included; out-of-scope goto
+  targets don't resolve). Mint from the list view: Share on a group
+  header (entry = the tag's entry:true member, else first) or Share on
+  the multi-select bar. Still open: tagAlias flow-scoped goto
+  resolution, stable-URL-per-tag (mint-once + regenerate), map view.
 - **T3 — agent**: MCP tag params + filters; harness flow context.
 - **T4 — views**: saved filter/group presets per project; the F2 flow
   bar consuming flow membership.
@@ -185,6 +199,16 @@ the decision points, deliberately NOT decided yet:
   is small — one mechanism, presentation-level distinction;
 - (c) comparisons as their own rail section (a VIEW over (a) or (b)).
 Current lean: (b) + display hint. Decide at T2 kickoff.
+
+Also from the same riff (Ali): tags read technical — bare values ("White
+VS Black", "General Layout Variants and Options") already work via the
+`label` facet, but a real TAG EDITOR (the ProjectTagDef registry — it
+already carries `description` per value) is where human-friendly naming
++ descriptions live. And: a comparison tag could trigger a Playwright
+CAPTURE of its share canvas ("IMAGINE THAT") — that's the share-OG
+pipeline (BRIGHTLOCAL-SIDENAV.md "QUEUED — share-link OG images")
+pointed at a scoped share's map view: fourth consumer of the
+STUDIO-CAPTURE primitive.
 
 Implication for `share_links.flow`: name the column `share_links.tag`
 (type+value) from the start — flow is just the first tag type shares

@@ -101,6 +101,12 @@ interface ShareLinkRow {
   } | null;
   revoked: boolean;
   expires_at: number | null;
+  /** Scope to a screen set (STUDIO-TAGS T2) — tag-resolved at view
+   *  time, or an explicit id set. Null = whole-project flow map. */
+  scope: {
+    tag?: { type: string; value: string };
+    screens?: string[];
+  } | null;
 }
 
 export default async function SharePage({
@@ -114,7 +120,7 @@ export default async function SharePage({
 
   const { data: link } = await supabase
     .from("share_links")
-    .select("token, project_id, design_id, revision_id, mode, color_mode, viewports, revoked, expires_at")
+    .select("token, project_id, design_id, revision_id, mode, color_mode, viewports, revoked, expires_at, scope")
     .eq("token", token)
     .maybeSingle();
 
@@ -180,16 +186,40 @@ export default async function SharePage({
     .select("id, name, state")
     .eq("project_id", share.project_id)
     .order("position", { ascending: true });
+  // Scope (STUDIO-TAGS T2): a scoped share exposes only its member
+  // screens — tag members resolve HERE, at view time, so re-tagging
+  // screens updates what the link shows without re-minting; explicit
+  // id sets are frozen. The entry screen is always a member. Unscoped
+  // = the whole project (original behaviour). Out-of-scope goto
+  // targets simply don't resolve — WIP screens can't be reached from
+  // a client link even if a stray goto points at them.
+  const scope = share.scope;
+  const inScope = (r: { id: string; state: unknown }): boolean => {
+    if (!scope) return true;
+    if (r.id === share.design_id) return true;
+    if (scope.screens?.includes(r.id)) return true;
+    if (scope.tag) {
+      const tags = (r.state as {
+        tags?: { type: string; value: string }[] | null;
+      } | null)?.tags;
+      return (tags ?? []).some(
+        (t) => t.type === scope.tag!.type && t.value === scope.tag!.value,
+      );
+    }
+    return false;
+  };
   const flowScreens = ((flowRows ?? []) as {
     id: string;
     name: string;
     state: unknown;
-  }[]).map((r) => ({
-    id: r.id,
-    name: r.name,
-    appSource:
-      ((r.state as { appSource?: string | null } | null)?.appSource ?? null),
-  }));
+  }[])
+    .filter(inScope)
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      appSource:
+        ((r.state as { appSource?: string | null } | null)?.appSource ?? null),
+    }));
 
   const { data: project } = await supabase
     .from("projects")

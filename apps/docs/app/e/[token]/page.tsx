@@ -314,7 +314,7 @@ export default async function EmbedPage({
   const { data: link, error: linkError } = await supabase
     .from("share_links")
     .select(
-      "token, project_id, design_id, revision_id, mode, color_mode, revoked, expires_at",
+      "token, project_id, design_id, revision_id, mode, color_mode, revoked, expires_at, scope",
     )
     .eq("token", token)
     .maybeSingle();
@@ -388,16 +388,38 @@ export default async function EmbedPage({
     .select("id, name, state")
     .eq("project_id", share.project_id)
     .order("position", { ascending: true });
+  // Scope (STUDIO-TAGS T2) — same member filter as /s/[token]: a
+  // scoped share's embed exposes only member screens (tag resolved at
+  // view time, explicit ids frozen, entry always included).
+  const scope = (share as unknown as {
+    scope: { tag?: { type: string; value: string }; screens?: string[] } | null;
+  }).scope;
+  const inScope = (r: { id: string; state: unknown }): boolean => {
+    if (!scope) return true;
+    if (r.id === share.design_id) return true;
+    if (scope.screens?.includes(r.id)) return true;
+    if (scope.tag) {
+      const tags = (r.state as {
+        tags?: { type: string; value: string }[] | null;
+      } | null)?.tags;
+      return (tags ?? []).some(
+        (t) => t.type === scope.tag!.type && t.value === scope.tag!.value,
+      );
+    }
+    return false;
+  };
   const flowScreens = ((flowRows ?? []) as {
     id: string;
     name: string;
     state: unknown;
-  }[]).map((r) => ({
-    id: r.id,
-    name: r.name,
-    appSource:
-      ((r.state as { appSource?: string | null } | null)?.appSource ?? null),
-  }));
+  }[])
+    .filter(inScope)
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      appSource:
+        ((r.state as { appSource?: string | null } | null)?.appSource ?? null),
+    }));
   const isExternalRegistry = Boolean(registryId) && registryId !== "gradeui";
 
   // The "live URL" / capture variant — flat render, no iframe, explicit

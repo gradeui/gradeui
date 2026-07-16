@@ -30,9 +30,11 @@ import {
   ListFilter,
   Plus,
   Rows3,
+  Share2,
   Tags,
   X,
 } from "lucide-react";
+import type { ShareScope } from "@/lib/studio-storage";
 import {
   Badge,
   Button,
@@ -55,6 +57,7 @@ import {
 } from "@/lib/studio-designs";
 import {
   groupDesigns,
+  tagTypeColor,
   type ProjectViewPrefs,
   type TagFacet,
   type ViewFilter,
@@ -236,9 +239,18 @@ export function ScreensViewBar({
           key={`${f.type}:${f.value}`}
           type="button"
           onClick={() => toggleFilter(f)}
-          className="group flex items-center gap-1 rounded-full bg-muted px-2 h-5 text-[10px] text-foreground hover:bg-muted/70"
+          // Facet chips carry their type's chart-ramp accent — a tinted
+          // wash + dot, so same-type chips (OR group) read as one hue.
+          className="group flex items-center gap-1.5 rounded-full px-2 h-5 text-[10px] text-foreground hover:opacity-80"
+          style={{
+            backgroundColor: `color-mix(in oklab, ${tagTypeColor(f.type)} 14%, transparent)`,
+          }}
           title="Remove filter"
         >
+          <span
+            className="size-1.5 rounded-full"
+            style={{ backgroundColor: tagTypeColor(f.type) }}
+          />
           {formatTag(f)}
           <X className="size-2.5 opacity-50 group-hover:opacity-100" />
         </button>
@@ -274,6 +286,14 @@ interface ScreensListViewProps {
   onOpen: (id: string) => void;
   /** Bulk-apply a tag to the selected screens. */
   onBulkTag?: (ids: string[], tag: DesignTag, single: boolean) => void;
+  /** Mint a scoped share (STUDIO-TAGS T2) — from a group header ("share
+   *  this tag", members resolve live) or the multi-select ("share these
+   *  two", frozen set). */
+  onShareScope?: (
+    scope: ShareScope,
+    entryDesignId: string,
+    label: string,
+  ) => void;
   hidden?: boolean;
 }
 
@@ -283,6 +303,7 @@ export function ScreensListView({
   facets,
   onOpen,
   onBulkTag,
+  onShareScope,
   hidden = false,
 }: ScreensListViewProps) {
   const groups = useMemo(
@@ -350,9 +371,20 @@ export function ScreensListView({
         {groups.map((g) => {
           const key = g.value ?? " untagged";
           const isCollapsed = groupBy ? collapsed.has(key) : false;
+          // Share-this-tag entry point: the tag's entry-marked member
+          // (flow tags carry `entry: true`) opens the link, else the
+          // group's first screen. Untagged bucket has no tag to share.
+          const groupEntry =
+            groupBy &&
+            (g.designs.find((d) =>
+              (d.tags ?? []).some(
+                (t) => t.type === groupBy && t.value === g.value && t.entry,
+              ),
+            ) ?? g.designs[0]);
           return (
-            <div key={key} className="mb-1">
+            <div key={key} className="mb-1 group/section">
               {groupBy && (
+                <div className="flex items-center">
                 <button
                   type="button"
                   onClick={() => toggleGroup(key)}
@@ -364,6 +396,12 @@ export function ScreensListView({
                   ) : (
                     <ChevronDown className="size-3" />
                   )}
+                  {g.value && groupBy && (
+                    <span
+                      className="size-1.5 rounded-full"
+                      style={{ backgroundColor: tagTypeColor(groupBy) }}
+                    />
+                  )}
                   <span className={cn(!g.value && "italic")}>
                     {g.label}
                   </span>
@@ -371,6 +409,24 @@ export function ScreensListView({
                     {g.designs.length}
                   </span>
                 </button>
+                {onShareScope && g.value && groupEntry && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onShareScope(
+                        { tag: { type: groupBy, value: g.value! } },
+                        groupEntry.id,
+                        `${groupBy}:${g.value}`,
+                      )
+                    }
+                    className="mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity group-hover/section:opacity-100 hover:bg-muted hover:text-foreground [&_svg]:size-3"
+                    title={`Share ${groupBy}:${g.value} — members resolve live`}
+                    aria-label={`Share the ${g.value} group`}
+                  >
+                    <Share2 />
+                  </button>
+                )}
+                </div>
               )}
               {!isCollapsed &&
                 g.designs.map((d) => (
@@ -432,6 +488,29 @@ export function ScreensListView({
             <Plus className="size-3" />
             Tag
           </Button>
+          {onShareScope && (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-6 px-2 text-[11px]"
+              onClick={() => {
+                // List order, not click order — the first visible
+                // selected row is the entry screen the link opens on.
+                const ordered = designs
+                  .map((d) => d.id)
+                  .filter((id) => visibleSelected.has(id));
+                if (ordered.length === 0) return;
+                onShareScope(
+                  { screens: ordered },
+                  ordered[0],
+                  `${ordered.length} screen${ordered.length === 1 ? "" : "s"}`,
+                );
+              }}
+            >
+              <Share2 className="size-3" />
+              Share
+            </Button>
+          )}
           <Button
             size="sm"
             variant="ghost"
@@ -506,9 +585,16 @@ function ScreenListRow({
         {(design.tags ?? []).map((t) => (
           <span
             key={`${t.type}:${t.value}`}
-            className="shrink-0 rounded-full bg-muted px-1.5 py-px text-[9px] text-muted-foreground"
+            className="shrink-0 flex items-center gap-1 rounded-full px-1.5 py-px text-[9px] text-muted-foreground"
+            style={{
+              backgroundColor: `color-mix(in oklab, ${tagTypeColor(t.type)} 12%, transparent)`,
+            }}
             title={formatTag(t)}
           >
+            <span
+              className="size-1 rounded-full"
+              style={{ backgroundColor: tagTypeColor(t.type) }}
+            />
             {formatTag(t)}
           </span>
         ))}

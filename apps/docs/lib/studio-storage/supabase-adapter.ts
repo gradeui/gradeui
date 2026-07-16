@@ -76,6 +76,7 @@ import type {
   ProjectSnapshot,
   ScreenRevision,
   ShareLink,
+  ShareScope,
   ShareViewportSpec,
   StudioEvent,
   StudioStorage,
@@ -367,6 +368,8 @@ interface ShareLinkRow {
   revoked: boolean;
   expires_at: number | null;
   created_at: number;
+  /** Scope to a screen set (STUDIO-TAGS T2) — see ShareScope. */
+  scope: ShareScope | null;
 }
 function rowToShareLink(r: ShareLinkRow): ShareLink {
   // The column is NOT NULL with a preset default, so a missing/empty
@@ -392,11 +395,12 @@ function rowToShareLink(r: ShareLinkRow): ShareLink {
     revoked: r.revoked,
     expiresAt: r.expires_at ?? undefined,
     createdAt: r.created_at,
+    scope: r.scope ?? undefined,
   };
 }
 
 const SHARE_LINK_COLS =
-  "token, project_id, design_id, revision_id, mode, color_mode, viewports, created_by, revoked, expires_at, created_at";
+  "token, project_id, design_id, revision_id, mode, color_mode, viewports, created_by, revoked, expires_at, created_at, scope";
 
 interface NoteRow {
   project_id: string;
@@ -1061,6 +1065,7 @@ export class SupabaseStudioStorage implements StudioStorage {
     colorMode?: "light" | "dark";
     viewports?: { initialId: string; specs: ShareViewportSpec[] };
     revisionId?: string;
+    scope?: ShareScope;
   }): Promise<ShareLink> {
     const { data: userData } = await this.supabase.auth.getUser();
 
@@ -1085,6 +1090,7 @@ export class SupabaseStudioStorage implements StudioStorage {
         viewports: doc,
         revision_id: input.revisionId ?? null,
         created_by: userData.user?.id ?? null,
+        scope: input.scope ?? null,
       })
       .select(SHARE_LINK_COLS)
       .single();

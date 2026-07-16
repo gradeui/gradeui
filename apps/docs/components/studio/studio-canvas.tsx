@@ -112,7 +112,10 @@ import {
 import { useRotatingPhrase } from "@/lib/studio-loading-phrases";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { Design, DesignTag } from "@/lib/studio-designs";
-import type { CommentThreadWithMessages } from "@/lib/studio-storage";
+import type {
+  CommentThreadWithMessages,
+  ShareScope,
+} from "@/lib/studio-storage";
 import {
   collectTagFacets,
   filterDesigns,
@@ -185,6 +188,15 @@ interface StudioCanvasProps {
    *  rather than append. Same persist path as the inspector's
    *  onTagsChange. */
   onBulkTagDesigns?: (ids: string[], tag: DesignTag, single: boolean) => void;
+  /** Mint a SCOPED share (STUDIO-TAGS T2): a tag group ("share this
+   *  tag" — members resolve live) or an explicit selection ("share
+   *  these two"). entryDesignId = where the link opens; label is
+   *  dialog copy. */
+  onShareScope?: (
+    scope: ShareScope,
+    entryDesignId: string,
+    label: string,
+  ) => void;
   /** Which design is currently focused. In fit mode this is the only
    *  design with a mounted Sandpack; in all mode it's the highlighted
    *  tile and the target of chat + settings. */
@@ -377,6 +389,7 @@ export function StudioCanvas({
   viewPrefs,
   onViewPrefsChange,
   onBulkTagDesigns,
+  onShareScope,
   focusedId,
   onFocus,
   theme,
@@ -2228,6 +2241,7 @@ export function StudioCanvas({
             setZoom("fit");
           }}
           onBulkTag={onBulkTagDesigns}
+          onShareScope={onShareScope}
         />
       )}
 

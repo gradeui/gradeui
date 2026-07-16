@@ -151,6 +151,7 @@ import {
   type Project,
   type ProjectRulesFile,
   type ProjectSnapshot,
+  type ShareScope,
   type ShareViewport,
   type ShareViewportSpec,
   SHARE_VIEWPORT_PRESETS,
@@ -812,6 +813,11 @@ export default function StudioPage() {
     designId: string;
     initialId: string;
     specs: ShareSpecRow[];
+    /** Scope the share to a screen set (STUDIO-TAGS T2) — tag-resolved
+     *  or explicit ids. Undefined = whole-project share (the default).
+     *  `scopeLabel` is dialog copy only ("3 screens", "flow:walkthrough"). */
+    scope?: ShareScope;
+    scopeLabel?: string;
   } | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [customDraft, setCustomDraft] = useState({ label: "", w: "", h: "" });
@@ -841,6 +847,25 @@ export default function StudioPage() {
     },
     [activeProjectId],
   );
+  // Scoped share (STUDIO-TAGS T2): "share this tag" from a group
+  // header, or "share these N" from the list view's multi-select.
+  // Same dialog + mint path as a screen share; the scope rides the
+  // share row and the share view filters its flow map to members.
+  const handleShareScope = useCallback(
+    (scope: ShareScope, entryDesignId: string, scopeLabel: string) => {
+      if (!activeProjectId) return;
+      setCustomDraft({ label: "", w: "", h: "" });
+      setCreatedShare(null);
+      setPendingShare({
+        designId: entryDesignId,
+        initialId: "responsive",
+        specs: SHARE_VIEWPORT_PRESETS.map((s) => ({ ...s, enabled: true })),
+        scope,
+        scopeLabel,
+      });
+    },
+    [activeProjectId],
+  );
   const confirmShareScreen = useCallback(async () => {
     if (!pendingShare || !activeProjectId) return;
     setShareBusy(true);
@@ -862,6 +887,7 @@ export default function StudioPage() {
         designId: pendingShare.designId,
         colorMode: chromeIsDark ? "dark" : "light",
         viewports: { initialId: pendingShare.initialId, specs },
+        scope: pendingShare.scope,
       });
       const url = `${window.location.origin}/s/${link.token}`;
       await navigator.clipboard.writeText(url);
@@ -2989,8 +3015,19 @@ export default function StudioPage() {
         >
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Share screen</DialogTitle>
+              <DialogTitle>
+                {pendingShare.scope ? "Share screens" : "Share screen"}
+              </DialogTitle>
               <DialogDescription>
+                {pendingShare.scope && (
+                  <>
+                    Scoped to <strong>{pendingShare.scopeLabel}</strong> —
+                    only those screens are reachable from the link
+                    {pendingShare.scope.tag &&
+                      "; re-tagging screens updates it live"}
+                    .{" "}
+                  </>
+                )}
                 Choose which viewports the link exposes. Anything off is
                 hidden from the recipient&apos;s device menu — useful when a
                 viewport isn&apos;t designed yet.
@@ -3362,6 +3399,7 @@ export default function StudioPage() {
                 viewPrefs={viewPrefs}
                 onViewPrefsChange={handleViewPrefsChange}
                 onBulkTagDesigns={handleBulkTagDesigns}
+                onShareScope={handleShareScope}
                 focusedId={activeId}
                 onFocus={setActiveId}
                 view={view}
@@ -3932,6 +3970,7 @@ function StudioThemedCanvas({
   viewPrefs,
   onViewPrefsChange,
   onBulkTagDesigns,
+  onShareScope,
   focusedId,
   onFocus,
   view,
@@ -3981,6 +4020,11 @@ function StudioThemedCanvas({
   viewPrefs?: ProjectViewPrefs;
   onViewPrefsChange?: (prefs: ProjectViewPrefs) => void;
   onBulkTagDesigns?: (ids: string[], tag: DesignTag, single: boolean) => void;
+  onShareScope?: (
+    scope: ShareScope,
+    entryDesignId: string,
+    label: string,
+  ) => void;
   focusedId: string;
   onFocus: (id: string) => void;
   view: "preview" | "code" | "timeline";
@@ -4045,6 +4089,7 @@ function StudioThemedCanvas({
       viewPrefs={viewPrefs}
       onViewPrefsChange={onViewPrefsChange}
       onBulkTagDesigns={onBulkTagDesigns}
+      onShareScope={onShareScope}
       focusedId={focusedId}
       onFocus={onFocus}
       theme={theme}

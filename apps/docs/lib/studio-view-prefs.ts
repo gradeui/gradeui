@@ -99,6 +99,19 @@ export function saveLocalViewPrefs(
   }
 }
 
+/** Deterministic accent for a tag TYPE from the theme's chart ramp
+ *  (--chart-1…5) — Ali's "use the chart colours to bring some colour
+ *  to the filtering". Per-TYPE so a facet reads as one hue everywhere
+ *  (rows, filter chips, group headers); per-VALUE colour is the tag
+ *  registry's job (T2, open question in STUDIO-TAGS.md). */
+export function tagTypeColor(type: string): string {
+  let h = 0;
+  for (let i = 0; i < type.length; i++) {
+    h = (h * 31 + type.charCodeAt(i)) >>> 0;
+  }
+  return `var(--chart-${(h % 5) + 1})`;
+}
+
 // ─── Tag facets ────────────────────────────────────────────────────────
 
 export interface TagFacet {

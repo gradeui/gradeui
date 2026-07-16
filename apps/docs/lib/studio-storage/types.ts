@@ -330,6 +330,20 @@ export function shareViewportSize(
     : { w: spec.w, h: spec.h };
 }
 
+/**
+ * What a share EXPOSES beyond its entry screen (STUDIO-TAGS T2). One of:
+ *   - `tag`: members resolve at VIEW TIME by tag — re-tagging screens
+ *     updates what the link shows; the tag is the publish surface.
+ *   - `screens`: an explicit ad-hoc set ("share these two"), no tag
+ *     ceremony, frozen membership.
+ * Absent/undefined = whole-project flow map (today's behaviour). The
+ * entry screen (ShareLink.designId) is always a member.
+ */
+export interface ShareScope {
+  tag?: { type: string; value: string };
+  screens?: string[];
+}
+
 export interface ShareLink {
   token: string;
   projectId: string;
@@ -352,6 +366,8 @@ export interface ShareLink {
   revoked: boolean;
   expiresAt?: number;
   createdAt: number;
+  /** Scope to a screen set — tag-resolved or explicit. See ShareScope. */
+  scope?: ShareScope;
 }
 
 /**
@@ -520,6 +536,8 @@ export interface StudioStorage {
      *  initial id into the set. */
     viewports?: { initialId: string; specs: ShareViewportSpec[] };
     revisionId?: string;
+    /** Scope the share to a screen set (tag or explicit ids). */
+    scope?: ShareScope;
   }): Promise<ShareLink>;
 
   /** Every share link for a project (to list/manage/revoke). */
