@@ -111,6 +111,9 @@ export function StageBScreenInfo({
 }: StageBScreenInfoProps) {
   const effectiveStatus: DesignStatus = status ?? "draft";
 
+  // Brief "Copied ✓" feedback for the Flow link chip.
+  const [copiedFlowLink, setCopiedFlowLink] = React.useState(false);
+
   // Tick the "updated X ago" string every minute so the panel
   // stays fresh while the user lingers. Cheap — one setInterval
   // bumping a render counter.
@@ -164,6 +167,30 @@ export function StageBScreenInfo({
               <Badge variant="outline" className="max-w-full font-normal">
                 <span className="truncate">{projectName}</span>
               </Badge>
+            </PropertyList.Row>
+
+            {/* STUDIO-FLOWS: the screen's link handle. Clicking copies a
+                ready-to-paste goto prop/attribute — wire it onto a card
+                (goto prop) or any element (data-grade-goto) on ANOTHER
+                screen and shares/embeds navigate here. Name-based on
+                purpose (the authoring ergonomic; screen:<id> pinning is
+                the attribute-adder's job later). */}
+            <PropertyList.Row label="Flow link">
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard
+                    ?.writeText(`goto="${designName}"`)
+                    .then(() => {
+                      setCopiedFlowLink(true);
+                      window.setTimeout(() => setCopiedFlowLink(false), 1500);
+                    });
+                }}
+                title={`Copy goto="${designName}" — paste onto a card or element on another screen to link here`}
+                className="max-w-full truncate rounded border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-2xs text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                {copiedFlowLink ? "Copied ✓" : `goto="${designName}"`}
+              </button>
             </PropertyList.Row>
 
             <PropertyList.Row label="Revisions" value={revisions} />
