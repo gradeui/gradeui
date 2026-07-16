@@ -139,14 +139,17 @@ export const PROPOSAL_SECTIONS = [
       },
     ],
   },
+  // NOTE: no baked `active` flags in the default IA — which row is
+  // active is a PER-SCREEN statement (ProposalSidebar activeId). A
+  // screen without activeId highlights nothing (correct for landings);
+  // custom `sections` may still carry their own active flags.
   {
     id: "rankings",
     label: "Rankings",
     icon: TrendingUp,
-    active: true,
     sub: [
       { id: "rk-positions", label: "Positions" },
-      { id: "rk-table", label: "Rankings Table", active: true },
+      { id: "rk-table", label: "Rankings Table" },
       { id: "rk-keywords", label: "Keyword Groups" },
       { id: "rk-competitors", label: "Chosen Competitors" },
       {

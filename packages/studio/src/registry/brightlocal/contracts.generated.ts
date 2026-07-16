@@ -165,7 +165,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   },
   "AppLayoutShell": {
     "name": "AppLayoutShell",
-    "description": "Layout-exploration wrapper over the GlobalLayout compound family. This is",
+    "description": "Layout-exploration wrapper over the GlobalLayout compound family. IMPORT",
     "props": {
       "flush": {
         "kind": "boolean",
@@ -248,6 +248,12 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "design": "knob",
         "optional": true,
         "description": "Optional 1px border color around the sidebar container. Any CSS color; tokens welcome (\"var(--sidebar-border)\")."
+      },
+      "dataset": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Named dataset (lib/data/*.json) applied via a nested ProposalDataProvider around the shell; \"default\" mounts nothing. Also a ShellTweakerPanel row (Alt+T switches live, session-only). (default \"default\")"
       },
       "mobileTone": {
         "kind": "boolean",
@@ -2207,6 +2213,157 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       }
     }
   },
+  "HubHeroCard": {
+    "name": "HubHeroCard",
+    "description": "title=\"Get more from your local presence\"",
+    "props": {
+      "title": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Hero heading (TypographyH3)."
+      },
+      "description": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Supporting copy (muted, max-w-prose)."
+      },
+      "primaryCta": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Primary Button label. (default \"Get started\")"
+      },
+      "primaryHook": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "dataHook for the primary Button."
+      },
+      "secondaryCta": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional ghost Button label; omitted = no secondary."
+      },
+      "secondaryHook": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "dataHook for the secondary Button."
+      },
+      "media": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Right media slot (hidden below md). Default: a placeholder tile with a Sparkles mark."
+      },
+      "mediaAspect": {
+        "kind": "enum",
+        "values": [
+          "4/3",
+          "square",
+          "video"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Media proportion preset. (default \"4/3\")"
+      },
+      "goto": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Screen link (STUDIO-FLOWS); stamps data-grade-goto."
+      },
+      "transition": {
+        "kind": "enum",
+        "values": [
+          "fade",
+          "slide-left",
+          "slide-right",
+          "none"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Swap treatment for the goto."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name."
+      }
+    }
+  },
+  "HubStatCard": {
+    "name": "HubStatCard",
+    "description": "Ships in \"@brightlocal/proposal\" — never inline a copy.",
+    "props": {
+      "icon": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Icon component (from @brightlocal/icons), rendered in a neutral-50 tile."
+      },
+      "title": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Card title (CardTitle size=\"small\", semibold)."
+      },
+      "metricKey": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "DATA BINDING: key into data.metrics (\"reviews\", \"rankings\", \"citations\", \"localSearchGrid\", \"gbpManager\", \"websiteSeo\") — metric/delta/description read from the proposal data context at render position, so dataset switches re-skin the card live. PREFER this over literal values."
+      },
+      "metric": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Headline value (ReactNode). Wins over the bound value."
+      },
+      "delta": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Secondary Badge next to the metric (ReactNode). Wins over bound."
+      },
+      "description": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "CardDescription line. Wins over bound."
+      },
+      "goto": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Screen link (STUDIO-FLOWS): screen name or \"screen:<id>\" this card drills into; stamps data-grade-goto so shares/embeds navigate on click."
+      },
+      "transition": {
+        "kind": "enum",
+        "values": [
+          "fade",
+          "slide-left",
+          "slide-right",
+          "none"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Swap treatment for the goto (data on the link; stamps data-grade-transition)."
+      },
+      "ctaHook": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Names the drill-down chevron for QA/AT."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name."
+      }
+    }
+  },
   "InputChip": {
     "name": "InputChip",
     "description": "defaultValue={[",
@@ -2979,6 +3136,41 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       }
     }
   },
+  "PageHeader": {
+    "name": "PageHeader",
+    "description": "breadcrumbs={[{ label: \"Your Locations\", href: \"#\" }, { label: \"Location Hub\", href: \"#\" }]}",
+    "props": {
+      "title": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Page title (rendered as TypographyH2 — the current page; it never appears in the breadcrumb)."
+      },
+      "breadcrumbs": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Ancestor trail, MAX TWO ({label, href?}[]). Ancestors only — BreadcrumbPage is deliberately unused. (default [])"
+      },
+      "meta": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Muted row under the title. DEFAULT is data-bound: current location name + status Badge from the proposal data context (follows dataset switches). Pass null to suppress, any node to replace."
+      },
+      "actions": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Right-aligned actions (Buttons, menus). Rendered shrink-0 beside the title block."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name. (default \"page-header\")"
+      }
+    }
+  },
   "Pagination": {
     "name": "Pagination",
     "description": "))}",
@@ -3159,6 +3351,89 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "design": "knob",
         "optional": true,
         "description": "Whether the progress is in a disabled state When disabled, the component renders with 50% opacity"
+      }
+    }
+  },
+  "ProposalDataProvider": {
+    "name": "ProposalDataProvider",
+    "description": "The proposal DATA SEAM (\"switch the data and it would be magic\"). Shape",
+    "props": {
+      "dataset": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Named dataset from lib/data/*.json (\"harbour-co\", \"northside-dental\"); \"default\" = no patch. Applied between the defaults and the data prop."
+      },
+      "data": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Partial data object, deep-merged LAST (explicit data beats the dataset). Arrays replace wholesale."
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Subtree that reads the merged data via useProposalData()."
+      }
+    }
+  },
+  "ProposalSidebar": {
+    "name": "ProposalSidebar",
+    "description": "The proposal sidenav, shipped in \"@brightlocal/proposal\" (authored at",
+    "props": {
+      "activeId": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "WHICH PAGE THIS IS: the nav row id to highlight (\"rk-table\", \"lp-hours\", \"reviews\"); every collapsible on its trail opens. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page."
+      },
+      "sections": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Custom nav model (array of {id, label, icon, active?, goto?, transition?, sub?}). Default: buildProposalSections(data) — the proposal IA with keyword rows injected from data.keywords and goto links applied from data.navLinks. Pass only when a screen needs a DIFFERENT nav."
+      },
+      "accounts": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Switcher popover items ({label, icon}[]). (default PROPOSAL_ACCOUNTS)"
+      },
+      "accountLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Switcher trigger label. (default data.account.label from the proposal data context)"
+      },
+      "userName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Signed-in name in the footer dropdown. (default data.user.name)"
+      },
+      "userMeta": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Plan/trial line under the name (renders in the dist's `email` slot). (default data.user.meta)"
+      },
+      "userInitials": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "AvatarFallback initials. (default data.user.initials)"
+      },
+      "userMenuGroups": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "SidebarAccountDropdown menuGroups. (default Account/Billing/Addons/Support + Logout)"
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name. (default \"app-sidebar\")"
       }
     }
   },

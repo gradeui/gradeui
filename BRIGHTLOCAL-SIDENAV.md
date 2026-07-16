@@ -241,6 +241,34 @@ split for the 32px line, rail ml-6.
 
 ## Status log
 
+- 2026-07-16 (night) — **Proposal module joins the sidecar pattern**
+  (Ali: "our single proposal.jsx circumvents the platform/studio
+  pattern" — correct, fixed):
+  - Sidecars for every module export: app-layout-shell.md REWRITTEN
+    (import "@brightlocal/proposal", not copy-from-recipes; + dataset
+    prop), NEW proposal-sidebar.md, page-header.md, hub-stat-card.md,
+    hub-hero-card.md, proposal-data.md (provider + hook + shape
+    convention + don't-starve rule). 74 sidecars → 366 contract specs;
+    Studio retrieval/refs + inspector panels now cover the module.
+  - **Baked active flags removed from PROPOSAL_SECTIONS** — activeId is
+    the only active mechanism (a screen without it highlights nothing;
+    the bug: every proposal screen showed Rankings Table active). Old
+    in-file Location Hub screen patched in-project (flags stripped).
+  - mcp-server REBUILT with current contracts (white/subtle tones,
+    proposal components, externalImports incl. @brightlocal/proposal) —
+    **needs the MCP restart**, then create_screen/save_screen accept
+    module imports and validate against current enums. STILL OPEN:
+    create_screen/list_components REFS remain gradeui-playbook (the
+    known registry-awareness gap) — the STUDIO chat harness is the one
+    that leans proposal (rules/15 + sidecars); MCP-driven agents get
+    validation but should read the registry assets for guidance.
+  - In-project (Brightlocal Vision - Share): "Rankings Table" screen
+    created (dmrnyiy9g9f7o — stat row, filters, keyword table bound to
+    data.keywords, View Grid goto→LSG); navLinks wired across all
+    proposal screens (keyword rows → LSG, rk-table → Rankings Table);
+    hub-new-template refreshed from template; sticky-header z-30 fix
+    (shell beats page z — the LSG map nodes screenshot).
+
 - 2026-07-16 (latest) — **Active nav row + per-project nav links**
   (Ali: "set a navigation item to true for a page" + goto links that
   are stable per project but editable):
