@@ -166,6 +166,40 @@ the whole journey at a glance") and the walkthrough, from one link.
 - **T4 — views**: saved filter/group presets per project; the F2 flow
   bar consuming flow membership.
 
+## Comparisons as a tag-scoped share (Ali, 16 Jul — T2 material)
+
+The A/B use case, concrete: duplicate a screen, hard-code different
+shell tweaks in the source (`<AppLayoutShell sidebarTone="brand">` vs
+`"white"` — already works, the presets are props), tag both into a
+2-member set ("Nav White vs Nav Brand"), share the TAG. Tags travel
+with the share; because a share points at screens (not snapshots), the
+shared set live-updates as screens change. Great for: a flow, a few
+screens, A-vs-B decisions.
+
+Tag-proliferation worry (Ali: "what I don't want is so many tags") —
+the decision points, deliberately NOT decided yet:
+- (a) built-in `compare` type — single purpose, keeps `section` clean;
+- (b) reuse `flow` mechanics — a comparison IS a small ordered set
+  with variants (tagAlias already covers A/B answering one target);
+  share chrome renders "A vs B" instead of a walkthrough when the set
+  is small — one mechanism, presentation-level distinction;
+- (c) comparisons as their own rail section (a VIEW over (a) or (b)).
+Current lean: (b) + display hint. Decide at T2 kickoff.
+
+Implication for `share_links.flow`: name the column `share_links.tag`
+(type+value) from the start — flow is just the first tag type shares
+scope to.
+
+STABLE URL PER TAG (Ali, same night): a tag's share link should be the
+"one consistent share-screens place" — mint AT MOST ONE live share per
+(project, tag); re-sharing the tag returns the SAME url (with an
+explicit "regenerate" to rotate the token when you actually want to
+revoke). List the share url against the tag wherever the tag renders
+(rail group header, filter chip menu, tag editor) so "where do I send
+people for the nav comparison?" is answered by the tag itself. Members
+update live because the share resolves the tag at view time — sending
+the link once and re-tagging screens IS the publish action.
+
 ## Open questions
 
 - Does `section` group-by replace or compose with the canvas's spatial

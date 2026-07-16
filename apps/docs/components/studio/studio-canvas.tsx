@@ -111,8 +111,18 @@ import {
 } from "@/lib/data-array-mutator";
 import { useRotatingPhrase } from "@/lib/studio-loading-phrases";
 import type { GeneratedTheme } from "@/lib/themes";
-import type { Design } from "@/lib/studio-designs";
+import type { Design, DesignTag } from "@/lib/studio-designs";
 import type { CommentThreadWithMessages } from "@/lib/studio-storage";
+import {
+  collectTagFacets,
+  filterDesigns,
+  DEFAULT_VIEW_PREFS,
+  type ProjectViewPrefs,
+} from "@/lib/studio-view-prefs";
+import {
+  ScreensListView,
+  ScreensViewBar,
+} from "@/components/studio/screens-list-view";
 import { DesignBreadcrumb } from "@/components/studio/design-breadcrumb";
 import { GradeMark } from "@/components/grade-mark";
 import { REFERENCE_LAYOUTS } from "@gradeui/studio/playbook";
@@ -164,6 +174,17 @@ interface StudioCanvasProps {
   /** All designs the user has open. The canvas renders all of them in
    *  "all" mode and just the focused one in "fit" mode. */
   designs: Design[];
+  /** Screens-rail organisation (STUDIO-TAGS T1): grid ⇄ list, group-by,
+   *  filters. Owned + persisted by the page (per project); the canvas
+   *  renders the controls and applies the transforms. Undefined = the
+   *  defaults (grid, ungrouped, unfiltered) with the bar still shown. */
+  viewPrefs?: ProjectViewPrefs;
+  onViewPrefsChange?: (prefs: ProjectViewPrefs) => void;
+  /** Bulk-apply a tag from the list view's multi-select. `single` =
+   *  replace the design's existing tag of that type (folder semantics)
+   *  rather than append. Same persist path as the inspector's
+   *  onTagsChange. */
+  onBulkTagDesigns?: (ids: string[], tag: DesignTag, single: boolean) => void;
   /** Which design is currently focused. In fit mode this is the only
    *  design with a mounted Sandpack; in all mode it's the highlighted
    *  tile and the target of chat + settings. */
@@ -353,6 +374,9 @@ interface StudioCanvasProps {
 
 export function StudioCanvas({
   designs,
+  viewPrefs,
+  onViewPrefsChange,
+  onBulkTagDesigns,
   focusedId,
   onFocus,
   theme,
@@ -447,6 +471,26 @@ export function StudioCanvas({
   useEffect(() => {
     if (zoom === "all" && !hasEnteredAll) setHasEnteredAll(true);
   }, [zoom, hasEnteredAll]);
+
+  // Screens-rail organisation (STUDIO-TAGS T1). Controlled from the
+  // page when provided; the fallback keeps every existing callsite
+  // working with the old grid-only behaviour.
+  const effectiveViewPrefs = viewPrefs ?? DEFAULT_VIEW_PREFS;
+  const tagFacets = useMemo(() => collectTagFacets(designs), [designs]);
+  const visibleDesigns = useMemo(
+    () => filterDesigns(designs, effectiveViewPrefs.filters),
+    [designs, effectiveViewPrefs.filters],
+  );
+  // The tile grid mounts lazily on first GRID visit — the list view
+  // must not pay for iframes it never shows (the list IS the
+  // many-screens memory fix), so a session that lives in list view
+  // never boots a tile.
+  const [hasEnteredGridAll, setHasEnteredGridAll] = useState(false);
+  useEffect(() => {
+    if (zoom === "all" && effectiveViewPrefs.view === "grid" && !hasEnteredGridAll) {
+      setHasEnteredGridAll(true);
+    }
+  }, [zoom, effectiveViewPrefs.view, hasEnteredGridAll]);
 
   // Select-mode lives on the canvas (not FocusedFrame) so that the
   // toggle button can be rendered in the header, above its sibling
@@ -2133,9 +2177,22 @@ export function StudioCanvas({
           designId={focusedId}
         />
       )}
-      {hasEnteredAll && (
+      {/* Screens-rail organisation bar (STUDIO-TAGS T1) — grid ⇄ list,
+          group-by, filters. All view only; renders whenever the project
+          home is showing so the toggle is discoverable even before the
+          first tag exists. */}
+      {!isFit && onViewPrefsChange && (
+        <ScreensViewBar
+          prefs={effectiveViewPrefs}
+          onPrefsChange={onViewPrefsChange}
+          facets={tagFacets}
+          totalCount={designs.length}
+          visibleCount={visibleDesigns.length}
+        />
+      )}
+      {hasEnteredGridAll && (
         <TileGrid
-          designs={designs}
+          designs={visibleDesigns}
           focusedId={focusedId}
           onFocus={onFocus}
           onExpand={(id) => {
@@ -2153,9 +2210,24 @@ export function StudioCanvas({
           fidelity={fidelity}
           mediaUrlsByDesign={mediaUrlsByDesign}
           mediaOverridesByDesign={mediaOverridesByDesign}
-          hidden={isFit}
+          hidden={isFit || effectiveViewPrefs.view === "list"}
           rendererMode={rendererMode}
           addTile={gridAddTile}
+        />
+      )}
+      {/* Compact list — text rows, zero iframes (the many-screens
+          memory fix). Unmount when hidden is fine: there's no boot
+          cost to save, unlike the tile grid. */}
+      {!isFit && effectiveViewPrefs.view === "list" && (
+        <ScreensListView
+          designs={visibleDesigns}
+          groupBy={effectiveViewPrefs.groupBy}
+          facets={tagFacets}
+          onOpen={(id) => {
+            onFocus(id);
+            setZoom("fit");
+          }}
+          onBulkTag={onBulkTagDesigns}
         />
       )}
 

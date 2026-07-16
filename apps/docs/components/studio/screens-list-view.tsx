@@ -1,0 +1,505 @@
+"use client";
+
+/**
+ * Screens-rail organisation views (STUDIO-TAGS T1).
+ *
+ * Two exports, both consumed by StudioCanvas's All view:
+ *
+ *   - `ScreensViewBar` — the thin control strip: grid ⇄ list toggle,
+ *     group-by picker (single-cardinality tag types only — "folders"),
+ *     and the faceted filter (OR within a type, AND across types),
+ *     rendered as a menu + removable chips.
+ *
+ *   - `ScreensListView` — the compact list: text rows (name, tag chips,
+ *     status badge), collapsible groups with counts, multi-select with
+ *     a bulk-tag bar. NO live iframes — with 20+ screens this is also
+ *     the memory fix: the thumbnail grid boots a renderer per tile,
+ *     the list boots none.
+ *
+ * View state (view / groupBy / filters) is OWNED BY THE PAGE and
+ * persisted per project (localStorage `grade-studio-view:<projectId>` +
+ * `projects.view_prefs` jsonb) — these components are controlled.
+ */
+
+import { useMemo, useState } from "react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
+  ListFilter,
+  Plus,
+  Rows3,
+  Tags,
+  X,
+} from "lucide-react";
+import {
+  Badge,
+  Button,
+  Checkbox,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@gradeui/ui";
+import { cn } from "@/lib/utils";
+import {
+  designStatusLabel,
+  formatTag,
+  parseTagInput,
+  type Design,
+  type DesignTag,
+} from "@/lib/studio-designs";
+import {
+  groupDesigns,
+  type ProjectViewPrefs,
+  type TagFacet,
+  type ViewFilter,
+} from "@/lib/studio-view-prefs";
+
+// ─── View bar ─────────────────────────────────────────────────────────
+
+interface ScreensViewBarProps {
+  prefs: ProjectViewPrefs;
+  onPrefsChange: (prefs: ProjectViewPrefs) => void;
+  /** Observed facets across ALL designs (pre-filter) — drives both the
+   *  group-by picker (single-cardinality types) and the filter menu. */
+  facets: TagFacet[];
+  /** Shown as "n of m" when filters hide screens. */
+  totalCount: number;
+  visibleCount: number;
+  className?: string;
+}
+
+export function ScreensViewBar({
+  prefs,
+  onPrefsChange,
+  facets,
+  totalCount,
+  visibleCount,
+  className,
+}: ScreensViewBarProps) {
+  const groupable = facets.filter((f) => f.single);
+  const hasFilter = (f: ViewFilter) =>
+    prefs.filters.some((x) => x.type === f.type && x.value === f.value);
+  const toggleFilter = (f: ViewFilter) => {
+    onPrefsChange({
+      ...prefs,
+      filters: hasFilter(f)
+        ? prefs.filters.filter((x) => !(x.type === f.type && x.value === f.value))
+        : [...prefs.filters, f],
+    });
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 flex-wrap border-b border-border bg-muted/20 px-3 py-1.5",
+        className,
+      )}
+    >
+      {/* Grid ⇄ list. Two explicit buttons rather than a ToggleGroup so
+          the active state can't be deselected into "no view". */}
+      <div className="flex items-center rounded-md border border-border overflow-hidden">
+        {(
+          [
+            { value: "grid", icon: LayoutGrid, label: "Thumbnail grid" },
+            { value: "list", icon: Rows3, label: "Compact list" },
+          ] as const
+        ).map(({ value, icon: Icon, label }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => onPrefsChange({ ...prefs, view: value })}
+            aria-pressed={prefs.view === value}
+            title={label}
+            className={cn(
+              "flex h-6 w-7 items-center justify-center transition-colors [&_svg]:size-3.5",
+              prefs.view === value
+                ? "bg-background text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+            )}
+          >
+            <Icon />
+          </button>
+        ))}
+      </div>
+
+      {/* Group by — folders as a view. Only offered for types where a
+          screen carries at most one value; a multi-valued type has no
+          single home per screen. List view only: the grid keeps its
+          spatial flow. */}
+      {prefs.view === "list" && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "flex items-center gap-1 rounded-md px-2 h-6 text-[11px] transition-colors",
+                prefs.groupBy
+                  ? "text-foreground bg-muted"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+              )}
+            >
+              <Tags className="size-3.5" />
+              {prefs.groupBy ? `Group: ${prefs.groupBy}` : "Group by"}
+              <ChevronDown className="size-3" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem
+              onClick={() => onPrefsChange({ ...prefs, groupBy: null })}
+            >
+              {!prefs.groupBy && <Check className="size-3.5" />}
+              None (position order)
+            </DropdownMenuItem>
+            {groupable.length > 0 && <DropdownMenuSeparator />}
+            {groupable.map((f) => (
+              <DropdownMenuItem
+                key={f.type}
+                onClick={() => onPrefsChange({ ...prefs, groupBy: f.type })}
+              >
+                {prefs.groupBy === f.type && <Check className="size-3.5" />}
+                {f.type}
+                <span className="ml-auto text-[10px] text-muted-foreground">
+                  {f.values.length} value{f.values.length === 1 ? "" : "s"}
+                </span>
+              </DropdownMenuItem>
+            ))}
+            {groupable.length === 0 && (
+              <DropdownMenuItem disabled>
+                Tag screens to group them
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      {/* Filter — faceted. The menu lists every observed type:value with
+          counts; active facets render as removable chips beside it. */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "flex items-center gap-1 rounded-md px-2 h-6 text-[11px] transition-colors",
+              prefs.filters.length
+                ? "text-foreground bg-muted"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+            )}
+          >
+            <ListFilter className="size-3.5" />
+            Filter
+            <ChevronDown className="size-3" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="max-h-80 overflow-auto">
+          {facets.length === 0 && (
+            <DropdownMenuItem disabled>
+              Tag screens to filter them
+            </DropdownMenuItem>
+          )}
+          {facets.map((f, i) => (
+            <div key={f.type}>
+              {i > 0 && <DropdownMenuSeparator />}
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {f.type}
+              </DropdownMenuLabel>
+              {f.values.map(({ value, count }) => (
+                <DropdownMenuCheckboxItem
+                  key={value}
+                  checked={hasFilter({ type: f.type, value })}
+                  onCheckedChange={() => toggleFilter({ type: f.type, value })}
+                  // Keep the menu open while composing a multi-facet
+                  // filter — closing per click makes AND-across-types
+                  // a chore.
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {value}
+                  <span className="ml-auto pl-3 text-[10px] text-muted-foreground">
+                    {count}
+                  </span>
+                </DropdownMenuCheckboxItem>
+              ))}
+            </div>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Active facet chips. OR within a type, AND across — the chip
+          groups read that way naturally (same-type chips adjacent). */}
+      {prefs.filters.map((f) => (
+        <button
+          key={`${f.type}:${f.value}`}
+          type="button"
+          onClick={() => toggleFilter(f)}
+          className="group flex items-center gap-1 rounded-full bg-muted px-2 h-5 text-[10px] text-foreground hover:bg-muted/70"
+          title="Remove filter"
+        >
+          {formatTag(f)}
+          <X className="size-2.5 opacity-50 group-hover:opacity-100" />
+        </button>
+      ))}
+      {prefs.filters.length > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => onPrefsChange({ ...prefs, filters: [] })}
+            className="text-[10px] text-muted-foreground hover:text-foreground"
+          >
+            Clear
+          </button>
+          <span className="ml-auto text-[10px] text-muted-foreground">
+            {visibleCount} of {totalCount}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── List view ────────────────────────────────────────────────────────
+
+interface ScreensListViewProps {
+  /** Already filtered by the page/canvas (the bar's filters). */
+  designs: Design[];
+  groupBy: string | null;
+  /** Facets over ALL designs — bulk apply needs cardinality (single
+   *  types replace, multi append). */
+  facets: TagFacet[];
+  /** Open a screen (same action as clicking a grid tile). */
+  onOpen: (id: string) => void;
+  /** Bulk-apply a tag to the selected screens. */
+  onBulkTag?: (ids: string[], tag: DesignTag, single: boolean) => void;
+  hidden?: boolean;
+}
+
+export function ScreensListView({
+  designs,
+  groupBy,
+  facets,
+  onOpen,
+  onBulkTag,
+  hidden = false,
+}: ScreensListViewProps) {
+  const groups = useMemo(
+    () => groupDesigns(designs, groupBy),
+    [designs, groupBy],
+  );
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [tagDraft, setTagDraft] = useState("");
+
+  // Selection survives filter changes only for still-visible designs —
+  // acting on hidden rows would be a silent surprise.
+  const visibleSelected = useMemo(() => {
+    const visible = new Set(designs.map((d) => d.id));
+    return new Set([...selected].filter((id) => visible.has(id)));
+  }, [designs, selected]);
+
+  const toggleGroup = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const toggleRow = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const commitBulk = () => {
+    const tag = parseTagInput(tagDraft);
+    if (!tag || !onBulkTag || visibleSelected.size === 0) return;
+    const facet = facets.find((f) => f.type === tag.type);
+    // Unknown type: single by default only for the built-in folder facet.
+    const single = facet ? facet.single : tag.type === "section";
+    onBulkTag([...visibleSelected], tag, single);
+    setTagDraft("");
+  };
+
+  return (
+    <div
+      data-lenis-prevent
+      className={cn(
+        "flex-1 min-h-0 overflow-auto bg-muted/20 flex flex-col",
+        hidden && "hidden",
+      )}
+      style={{ overscrollBehavior: "contain" }}
+    >
+      <div className="flex-1 p-2">
+        {groups.map((g) => {
+          const key = g.value ?? " untagged";
+          const isCollapsed = groupBy ? collapsed.has(key) : false;
+          return (
+            <div key={key} className="mb-1">
+              {groupBy && (
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(key)}
+                  className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-left text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                  aria-expanded={!isCollapsed}
+                >
+                  {isCollapsed ? (
+                    <ChevronRight className="size-3" />
+                  ) : (
+                    <ChevronDown className="size-3" />
+                  )}
+                  <span className={cn(!g.value && "italic")}>
+                    {g.label}
+                  </span>
+                  <span className="text-[10px] font-normal">
+                    {g.designs.length}
+                  </span>
+                </button>
+              )}
+              {!isCollapsed &&
+                g.designs.map((d) => (
+                  <ScreenListRow
+                    key={d.id}
+                    design={d}
+                    indent={Boolean(groupBy)}
+                    selected={visibleSelected.has(d.id)}
+                    selectable={Boolean(onBulkTag)}
+                    onToggleSelect={() => toggleRow(d.id)}
+                    onOpen={() => onOpen(d.id)}
+                  />
+                ))}
+            </div>
+          );
+        })}
+        {designs.length === 0 && (
+          <div className="px-3 py-8 text-center text-xs text-muted-foreground">
+            No screens match the active filters.
+          </div>
+        )}
+      </div>
+
+      {/* Bulk-tag bar — docks to the bottom of the list while a
+          selection exists. type:value grammar, same parser as the
+          inspector's Tags editor. */}
+      {visibleSelected.size > 0 && onBulkTag && (
+        <div className="sticky bottom-0 flex items-center gap-2 border-t border-border bg-background/95 px-3 py-2 backdrop-blur">
+          <span className="text-[11px] text-muted-foreground shrink-0">
+            {visibleSelected.size} selected
+          </span>
+          <input
+            value={tagDraft}
+            onChange={(e) => setTagDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitBulk();
+              }
+            }}
+            placeholder="section:rankings — type:value, Enter to apply"
+            className="h-6 flex-1 min-w-0 rounded border border-border bg-background px-2 text-[11px] outline-none focus:border-primary/50"
+          />
+          <Button
+            size="sm"
+            variant="secondary"
+            className="h-6 px-2 text-[11px]"
+            disabled={!parseTagInput(tagDraft)}
+            onClick={commitBulk}
+          >
+            <Plus className="size-3" />
+            Tag
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 px-2 text-[11px]"
+            onClick={() => setSelected(new Set())}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ScreenListRowProps {
+  design: Design;
+  indent: boolean;
+  selected: boolean;
+  selectable: boolean;
+  onToggleSelect: () => void;
+  onOpen: () => void;
+}
+
+function ScreenListRow({
+  design,
+  indent,
+  selected,
+  selectable,
+  onToggleSelect,
+  onOpen,
+}: ScreenListRowProps) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      className={cn(
+        "group flex items-center gap-2 rounded px-2 py-1.5 cursor-pointer transition-colors",
+        indent && "ml-4",
+        selected ? "bg-primary/10" : "hover:bg-muted/60",
+        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
+      )}
+    >
+      {selectable && (
+        <span
+          // Intercept BOTH click + keydown so toggling never opens.
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          className={cn(
+            "shrink-0 transition-opacity",
+            selected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+          )}
+        >
+          <Checkbox
+            checked={selected}
+            onCheckedChange={onToggleSelect}
+            aria-label={`Select ${design.name}`}
+            className="size-3.5"
+          />
+        </span>
+      )}
+      <span className="min-w-0 flex-1 truncate text-xs text-foreground">
+        {design.name}
+      </span>
+      <span className="flex items-center gap-1 overflow-hidden">
+        {(design.tags ?? []).map((t) => (
+          <span
+            key={`${t.type}:${t.value}`}
+            className="shrink-0 rounded-full bg-muted px-1.5 py-px text-[9px] text-muted-foreground"
+            title={formatTag(t)}
+          >
+            {formatTag(t)}
+          </span>
+        ))}
+      </span>
+      <Badge
+        variant="outline"
+        className="shrink-0 h-4 px-1.5 text-[9px] font-normal text-muted-foreground"
+      >
+        {designStatusLabel(design.status)}
+      </Badge>
+    </div>
+  );
+}

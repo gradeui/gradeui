@@ -125,7 +125,16 @@ import {
   starterMotionSource,
   type Design,
   type DesignKind,
+  type DesignTag,
 } from "@/lib/studio-designs";
+import {
+  applyTagToSet,
+  DEFAULT_VIEW_PREFS,
+  loadLocalViewPrefs,
+  normalizeViewPrefs,
+  saveLocalViewPrefs,
+  type ProjectViewPrefs,
+} from "@/lib/studio-view-prefs";
 import {
   useUndoHistory,
   pruneHistoryStorage,
@@ -455,6 +464,83 @@ export default function StudioPage() {
   useEffect(() => {
     setActiveProjectRegistry(activeProjectRegistryId);
   }, [activeProjectRegistryId]);
+
+  // Screens-rail view prefs (STUDIO-TAGS T1): grid ⇄ list, group-by,
+  // filters. Hydrates ON PROJECT SWITCH — cloud value (projects.view_prefs,
+  // migration 0022) wins so the organisation follows the user across
+  // devices, localStorage (`grade-studio-view:<id>`, same hydrate/write
+  // pattern as `grade-ds-section`) covers local-only mode + the gap
+  // before the first cloud write. `projectsRef` keeps the effect off the
+  // projects array — refreshing the list must not clobber in-flight
+  // toggles.
+  const [viewPrefs, setViewPrefs] = useState<ProjectViewPrefs>(
+    DEFAULT_VIEW_PREFS,
+  );
+  const projectsForPrefsRef = useRef(projects);
+  useEffect(() => {
+    projectsForPrefsRef.current = projects;
+  }, [projects]);
+  useEffect(() => {
+    if (!activeProjectId) {
+      setViewPrefs(DEFAULT_VIEW_PREFS);
+      return;
+    }
+    const cloud = projectsForPrefsRef.current.find(
+      (p) => p.id === activeProjectId,
+    )?.viewPrefs;
+    setViewPrefs(
+      cloud
+        ? normalizeViewPrefs(cloud)
+        : (loadLocalViewPrefs(activeProjectId) ?? DEFAULT_VIEW_PREFS),
+    );
+  }, [activeProjectId]);
+
+  // Persist: localStorage synchronously (instant, never fails loudly),
+  // cloud write debounced — composing a multi-facet filter is a burst of
+  // clicks and shouldn't hammer updateProject. Fire-and-forget with a
+  // console.warn on failure (never swallow write errors silently — the
+  // STUDIO-PERSISTENCE rule — but a view pref isn't worth a toast when
+  // the localStorage mirror has it).
+  const viewPrefsSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const handleViewPrefsChange = useCallback(
+    (next: ProjectViewPrefs) => {
+      setViewPrefs(next);
+      if (!activeProjectId) return;
+      saveLocalViewPrefs(activeProjectId, next);
+      if (viewPrefsSaveTimer.current) clearTimeout(viewPrefsSaveTimer.current);
+      const projectId = activeProjectId;
+      viewPrefsSaveTimer.current = setTimeout(() => {
+        storage.updateProject(projectId, { viewPrefs: next }).catch((err) => {
+          console.warn("[studio] view_prefs cloud save failed", err);
+        });
+      }, 600);
+    },
+    [activeProjectId, storage],
+  );
+
+  // Bulk tagging from the list view's multi-select — same persist path
+  // as the inspector's onTagsChange: patch the designs, autosave's
+  // content signature does the rest. `single` types replace the
+  // design's existing tag of that type (folder semantics).
+  const handleBulkTagDesigns = useCallback(
+    (ids: string[], tag: DesignTag, single: boolean) => {
+      const idSet = new Set(ids);
+      setDesigns((ds) =>
+        ds.map((d) =>
+          idSet.has(d.id)
+            ? {
+                ...d,
+                tags: applyTagToSet(d.tags, tag, single),
+                updatedAt: Date.now(),
+              }
+            : d,
+        ),
+      );
+    },
+    [],
+  );
 
   // Project preview CSS — enabled .css rules files, concatenated, pushed
   // to the globalThis store the frame hosts subscribe to. These files
@@ -3256,6 +3342,9 @@ export default function StudioPage() {
               >
               <StudioThemedCanvas
                 designs={visibleDesigns}
+                viewPrefs={viewPrefs}
+                onViewPrefsChange={handleViewPrefsChange}
+                onBulkTagDesigns={handleBulkTagDesigns}
                 focusedId={activeId}
                 onFocus={setActiveId}
                 view={view}
@@ -3823,6 +3912,9 @@ function StudioRail({
  */
 function StudioThemedCanvas({
   designs,
+  viewPrefs,
+  onViewPrefsChange,
+  onBulkTagDesigns,
   focusedId,
   onFocus,
   view,
@@ -3868,6 +3960,10 @@ function StudioThemedCanvas({
   onCanvasModeChange,
 }: {
   designs: Design[];
+  /** Screens-rail organisation (STUDIO-TAGS T1) — see StudioCanvasProps. */
+  viewPrefs?: ProjectViewPrefs;
+  onViewPrefsChange?: (prefs: ProjectViewPrefs) => void;
+  onBulkTagDesigns?: (ids: string[], tag: DesignTag, single: boolean) => void;
   focusedId: string;
   onFocus: (id: string) => void;
   view: "preview" | "code" | "timeline";
@@ -3929,6 +4025,9 @@ function StudioThemedCanvas({
   return (
     <StudioCanvas
       designs={designs}
+      viewPrefs={viewPrefs}
+      onViewPrefsChange={onViewPrefsChange}
+      onBulkTagDesigns={onBulkTagDesigns}
       focusedId={focusedId}
       onFocus={onFocus}
       theme={theme}

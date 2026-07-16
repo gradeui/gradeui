@@ -24,6 +24,7 @@
 
 import type { UIMessage } from "ai";
 import type { Design } from "@/lib/studio-designs";
+import type { ProjectViewPrefs } from "@/lib/studio-view-prefs";
 import type {
   Comment,
   CommentThread,
@@ -129,6 +130,12 @@ export interface Project {
    *  brief). Editable in Project Settings; keep them terse — every
    *  char is prompt tokens on every turn. */
   rulesFiles?: ProjectRulesFile[];
+  /** Screens-rail organisation (STUDIO-TAGS T1): grid ⇄ list, group-by
+   *  tag type, filter facets. Cloud-persisted (migration 0022) so the
+   *  user's organisation follows them across devices; localStorage
+   *  mirrors it for the local adapter / instant hydrate. Unset = the
+   *  defaults (thumbnail grid, no grouping, no filters). */
+  viewPrefs?: ProjectViewPrefs;
 }
 
 export interface ProjectRulesFile {
@@ -399,7 +406,7 @@ export interface StudioStorage {
     patch: Partial<
       Pick<
         Project,
-        "name" | "description" | "context" | "dos" | "donts" | "registryId" | "rulesFiles"
+        "name" | "description" | "context" | "dos" | "donts" | "registryId" | "rulesFiles" | "viewPrefs"
       >
     >,
   ): Promise<Project>;

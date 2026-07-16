@@ -81,6 +81,7 @@ import type {
   StudioStorage,
 } from "./types";
 import { SHARE_VIEWPORT_PRESETS, VersionConflictError } from "./types";
+import type { ProjectViewPrefs } from "@/lib/studio-view-prefs";
 
 /** Public bucket holding user assets (migration 0014). Public so the
  *  permanent getPublicUrl works in screens + shares without signing. */
@@ -242,6 +243,7 @@ interface ProjectRow {
   donts: string[] | null;
   registry_id: string | null;
   rules_files: ProjectRulesFile[] | null;
+  view_prefs: ProjectViewPrefs | null;
   owner_type: "user" | "team";
   owner_id: string;
   active_design_id: string | null;
@@ -255,9 +257,9 @@ interface ProjectRow {
  *  are only needed by loadProject). Kept as a const so listProjects
  *  and the mutation methods select an identical shape. */
 const PROJECT_META_COLS =
-  "id, name, description, context, dos, donts, registry_id, rules_files, owner_type, owner_id, created_at, updated_at";
+  "id, name, description, context, dos, donts, registry_id, rules_files, view_prefs, owner_type, owner_id, created_at, updated_at";
 const PROJECT_FULL_COLS =
-  "id, name, description, context, dos, donts, registry_id, rules_files, owner_type, owner_id, active_design_id, theme_draft_json, theme_variants_json, created_at, updated_at";
+  "id, name, description, context, dos, donts, registry_id, rules_files, view_prefs, owner_type, owner_id, active_design_id, theme_draft_json, theme_variants_json, created_at, updated_at";
 
 // ─── Screen / message / note rows ─────────────────────────────────
 
@@ -434,6 +436,7 @@ function rowToProject(r: ProjectRow, access: ResourceAccess[]): Project {
     donts: r.donts ?? [],
     registryId: r.registry_id ?? undefined,
     rulesFiles: r.rules_files?.length ? r.rules_files : undefined,
+    viewPrefs: r.view_prefs ?? undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     owner: { type: r.owner_type, id: r.owner_id } as Subject,
@@ -664,7 +667,7 @@ export class SupabaseStudioStorage implements StudioStorage {
     patch: Partial<
       Pick<
         Project,
-        "name" | "description" | "context" | "dos" | "donts" | "registryId" | "rulesFiles"
+        "name" | "description" | "context" | "dos" | "donts" | "registryId" | "rulesFiles" | "viewPrefs"
       >
     >,
   ): Promise<Project> {
@@ -686,6 +689,11 @@ export class SupabaseStudioStorage implements StudioStorage {
     }
     if (patch.rulesFiles !== undefined) {
       update.rules_files = patch.rulesFiles.length ? patch.rulesFiles : null;
+    }
+    if (patch.viewPrefs !== undefined) {
+      // Defaults are representable as null — no reason to store a blob
+      // that says "grid, ungrouped, unfiltered".
+      update.view_prefs = patch.viewPrefs ?? null;
     }
     if (patch.registryId !== undefined) {
       // Empty string = "clear back to the deployment default".
