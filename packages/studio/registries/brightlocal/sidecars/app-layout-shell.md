@@ -39,7 +39,7 @@ import { AppLayoutShell, ProposalSidebar, PageHeader } from "@brightlocal/propos
     stickyHeader
     pinnedSidebar
     sidebarTone="white"
-    sidebar={<ProposalSidebar activeId="rk-table" />}
+    sidebar={<ProposalSidebar activeId="rankings-table" />}
     header={<PageHeader breadcrumbs={[…]} title="Page title" />}
   >
     <GlobalLayoutContentBody dataHook="page-body">…</GlobalLayoutContentBody>

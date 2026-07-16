@@ -3385,7 +3385,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "WHICH PAGE THIS IS: the nav row id to highlight (\"rk-table\", \"lp-hours\", \"reviews\"); every collapsible on its trail opens. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page."
+        "description": "WHICH PAGE THIS IS: the nav row id to highlight (\"rankings-table\", \"location-profile-hours\", \"reviews\"); every collapsible on its trail opens. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page."
       },
       "sections": {
         "kind": "string",

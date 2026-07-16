@@ -21,7 +21,7 @@ import { ProposalDataProvider, useProposalData } from "@brightlocal/proposal";
 const SCREEN_DATA = {
   location: { name: "ACME Plumbing Co. — Chicago Eastside", status: "Active" },
   keywords: ["plumber near me", "emergency drain cleaning", "water heater repair"],
-  navLinks: { "rk-table": "Rankings Table" },
+  navLinks: { "rankings-table": "Rankings Table" },
 };
 
 export default function App() {

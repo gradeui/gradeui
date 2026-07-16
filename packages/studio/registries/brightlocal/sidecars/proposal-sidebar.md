@@ -2,7 +2,7 @@
 name: ProposalSidebar
 import: "@brightlocal/proposal"
 props:
-  - activeId?: string — WHICH PAGE THIS IS: the nav row id to highlight ("rk-table", "lp-hours", "reviews"); every collapsible on its trail opens. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page.
+  - activeId?: string — WHICH PAGE THIS IS: the nav row id to highlight ("rankings-table", "location-profile-hours", "reviews"); every collapsible on its trail opens. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page.
   - sections? — Custom nav model (array of {id, label, icon, active?, goto?, transition?, sub?}). Default: buildProposalSections(data) — the proposal IA with keyword rows injected from data.keywords and goto links applied from data.navLinks. Pass only when a screen needs a DIFFERENT nav.
   - accounts? — Switcher popover items ({label, icon}[]). (default PROPOSAL_ACCOUNTS)
   - accountLabel?: string — Switcher trigger label. (default data.account.label from the proposal data context)
@@ -23,7 +23,7 @@ DATA: `data.navLinks` maps row id → screen name (or { goto, transition })
 and `data.keywords` feeds the Local Search Grid rows.
 
 ```jsx
-<ProposalSidebar activeId="lp-hours" />
+<ProposalSidebar activeId="location-profile-hours" />
 ```
 
 Do NOT rebuild the sidebar from Sidebar primitives on proposal screens —

@@ -113,11 +113,11 @@ export const PROPOSAL_SECTIONS = [
     label: "AI Insights",
     icon: Sparkles,
     sub: [
-      { id: "ai-website-content", label: "Website and Content" },
-      { id: "ai-gbp", label: "Google Business Profile" },
-      { id: "ai-reviews", label: "Reviews" },
-      { id: "ai-citations", label: "Citations" },
-      { id: "ai-export", label: "Export Report" },
+      { id: "ai-insights-website-content", label: "Website and Content" },
+      { id: "ai-insights-google-business-profile", label: "Google Business Profile" },
+      { id: "ai-insights-reviews", label: "Reviews" },
+      { id: "ai-insights-citations", label: "Citations" },
+      { id: "ai-insights-export", label: "Export Report" },
     ],
   },
   { id: "setup-tasks", label: "Set-up Tasks", icon: ListChecks },
@@ -126,21 +126,21 @@ export const PROPOSAL_SECTIONS = [
     label: "Location Profile",
     icon: Building,
     sub: [
-      { id: "lp-connect", label: "Connect to Listing Platforms" },
+      { id: "location-profile-connect", label: "Connect to Listing Platforms" },
       {
-        id: "lp-core",
+        id: "location-profile-core",
         label: "Core Information",
         sub: [
-          { id: "lp-general", label: "General Settings" },
-          { id: "lp-business", label: "Business Details" },
-          { id: "lp-gbt", label: "Google Business Tracking" },
-          { id: "lp-categories", label: "Categories" },
-          { id: "lp-hours", label: "Opening Hours" },
-          { id: "lp-about", label: "About the Business" },
-          { id: "lp-additional", label: "Additional Data" },
-          { id: "lp-images", label: "Image Management" },
-          { id: "lp-cb-data", label: "Citation Builder Data" },
-          { id: "lp-alerts", label: "Email Alerts" },
+          { id: "location-profile-general", label: "General Settings" },
+          { id: "location-profile-business", label: "Business Details" },
+          { id: "location-profile-google-business-tracking", label: "Google Business Tracking" },
+          { id: "location-profile-categories", label: "Categories" },
+          { id: "location-profile-hours", label: "Opening Hours" },
+          { id: "location-profile-about", label: "About the Business" },
+          { id: "location-profile-additional", label: "Additional Data" },
+          { id: "location-profile-images", label: "Image Management" },
+          { id: "location-profile-citation-builder-data", label: "Citation Builder Data" },
+          { id: "location-profile-alerts", label: "Email Alerts" },
         ],
       },
     ],
@@ -154,18 +154,18 @@ export const PROPOSAL_SECTIONS = [
     label: "Rankings",
     icon: TrendingUp,
     sub: [
-      { id: "rk-positions", label: "Positions" },
-      { id: "rk-table", label: "Rankings Table" },
-      { id: "rk-keywords", label: "Keyword Groups" },
-      { id: "rk-competitors", label: "Chosen Competitors" },
+      { id: "rankings-positions", label: "Positions" },
+      { id: "rankings-table", label: "Rankings Table" },
+      { id: "rankings-keyword-groups", label: "Keyword Groups" },
+      { id: "rankings-competitors", label: "Chosen Competitors" },
       {
-        id: "rk-settings",
+        id: "rankings-settings",
         label: "Settings",
         sub: [
-          { id: "rk-general", label: "General Settings" },
-          { id: "rk-search", label: "Search Settings" },
-          { id: "rk-advanced", label: "Advanced Settings" },
-          { id: "rk-alerts", label: "Email Alerts" },
+          { id: "rankings-general", label: "General Settings" },
+          { id: "rankings-search", label: "Search Settings" },
+          { id: "rankings-advanced", label: "Advanced Settings" },
+          { id: "rankings-alerts", label: "Email Alerts" },
         ],
       },
     ],
@@ -178,8 +178,8 @@ export const PROPOSAL_SECTIONS = [
     // buildProposalSections below (Harry: keywords come from the JSON).
     // This static fallback only renders if sections are used raw.
     sub: [
-      { id: "lsg-add", label: "Add more keywords", paid: true },
-      { id: "lsg-settings", label: "Settings" },
+      { id: "local-search-grid-add", label: "Add more keywords", paid: true },
+      { id: "local-search-grid-settings", label: "Settings" },
     ],
   },
   {
@@ -187,10 +187,10 @@ export const PROPOSAL_SECTIONS = [
     label: "Citations",
     icon: Link,
     sub: [
-      { id: "cit-live", label: "Live Citations" },
-      { id: "cit-pending", label: "Pending Citations" },
-      { id: "cit-competitor", label: "Competitor Citations" },
-      { id: "cit-builder", label: "Citation Builder", paid: true },
+      { id: "citations-live", label: "Live Citations" },
+      { id: "citations-pending", label: "Pending Citations" },
+      { id: "citations-competitor", label: "Competitor Citations" },
+      { id: "citations-builder", label: "Citation Builder", paid: true },
     ],
   },
   { id: "reviews", label: "Reviews", icon: Star },
@@ -207,8 +207,8 @@ export const PROPOSAL_SECTIONS = [
  *    project data, not module structure, so links can change over time
  *    without touching the IA. Value is a screen name string, or
  *    { goto, transition } for a transition preset:
- *      "navLinks": { "rk-table": "Rankings Table",
- *                    "lp-hours": { "goto": "Opening Hours", "transition": "slide-left" } }
+ *      "navLinks": { "rankings-table": "Rankings Table",
+ *                    "location-profile-hours": { "goto": "Opening Hours", "transition": "slide-left" } }
  *  ProposalSidebar calls this with the context data by default; screens
  *  with a custom nav can call it themselves or pass `sections` raw. */
 export function buildProposalSections(data) {
@@ -235,7 +235,7 @@ export function buildProposalSections(data) {
         ? {
             ...section,
             sub: [
-              ...keywords.map((kw, i) => ({ id: `lsg-kw-${i}`, label: kw })),
+              ...keywords.map((kw, i) => ({ id: `local-search-grid-keyword-${i}`, label: kw })),
               ...section.sub,
             ],
           }
@@ -976,7 +976,7 @@ export function ProposalSidebar({
   // Pass `sections` to opt out.
   sections,
   // WHICH ROW IS ACTIVE — the per-screen knob ("this page is Opening
-  // Hours"): pass the nav row's id (activeId="lp-hours") and the row
+  // Hours"): pass the nav row's id (activeId="location-profile-hours") and the row
   // highlights + every collapsible on its trail opens. Overrides the
   // IA's baked flags; omit for the default (Rankings Table).
   activeId,
