@@ -526,3 +526,21 @@ templates/hub-page.jsx navLinks, rules/15, sidecars (proposal-sidebar,
 stat-card examples), and the THREE live screens' activeId + navLinks
 in Supabase (Brightlocal Vision - Share). Regen lib/templates/rules/
 sidecars + contracts, rebuild mcp-server, verify via the harness.
+
+## Final entries (16 Jul, session close)
+
+- Tweak persistence hardened: sessionStorage stash (152e45d) — survives
+  sandbox remounts + any number of hops; tab-scoped (fresh viewer =
+  authored look). Ali confirming across many pages; if any hop drops
+  the colour, note WHICH hop.
+- Breadcrumbs on Rankings Table + Local Search Grid repointed (in
+  Supabase) from the name "Location Hub" (the OLD in-file hub — no
+  stash, authored-look always) to screen:dmrnwiqjdknxy (module hub).
+  Retire the old hub when the new-template one becomes homepage.
+- CodeSandbox export fixed (823ca90): chat-export-npm ships lib modules
+  as src/*.jsx + aliases imports. Re-export; never "install" the fake
+  package.
+- Nav-id rename queued FIRST (map above): full words, no acronyms —
+  incl. cit-* → citations-* ("a ct-table is a citation-table").
+- Tags: T0 SHIPPED (f60db6b) — editor in right panel → Layout tab →
+  screen info, `type:value` syntax. Ali testing next; T1 = rail views.
