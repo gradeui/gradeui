@@ -474,7 +474,23 @@ export default function ExternalSandboxPage() {
     document.head.appendChild(twScript);
 
     setStatus("loading design system…");
-    void loadModulesWithRetry().then((m) => {
+    /** GRID CONCURRENCY GUARD: the project grid mounts many of these
+     *  iframes at once and they all race esm.sh for the same uncached
+     *  DS module — parallel first-fetches flake ("Failed to fetch
+     *  dynamically imported module: …ui-components…", July 2026, on
+     *  localhost AND live) while a single screen loads fine. Same-origin
+     *  frames share the Web Locks API, so serialize the boot: the first
+     *  frame warms the HTTP cache, the rest reuse it near-instantly.
+     *  No-op where Web Locks is unavailable. */
+    const loadModulesSerialized = (): Promise<Awaited<ReturnType<typeof loadModules>>> =>
+      typeof navigator !== "undefined" && navigator.locks?.request
+        ? (navigator.locks.request(
+            "grade-ext-module-boot",
+            () => loadModulesWithRetry(),
+          ) as Promise<Awaited<ReturnType<typeof loadModules>>>)
+        : loadModulesWithRetry();
+
+    void loadModulesSerialized().then((m) => {
       if (disposed) return;
       modules = m as never;
       setStatus("ready — waiting for source");
