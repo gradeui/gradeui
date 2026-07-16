@@ -3039,6 +3039,44 @@ export interface BuildSandpackFilesArgs {
   extraFiles?: Record<string, string>;
 }
 
+// ─── Registry lib modules (STUDIO-FLOWS M0 — @brightlocal/proposal) ────
+// Sandpack/CodeSandbox parity for runtime.libModules: the specifier
+// isn't a real npm package, so the same SOURCE ships as a FILE in the
+// file map and the screen's import is aliased to it. An exported
+// sandbox is then screen + one lib file, runs as-is — the one-to-one
+// copy stays one-to-one, just two files instead of one.
+
+/** "@brightlocal/proposal" → "brightlocal-proposal" (file stem). */
+function libModuleStem(spec: string): string {
+  return spec.replace(/^@/, "").replace(/\//g, "-");
+}
+
+/** The registry's lib modules as Sandpack files ("/brightlocal-proposal.jsx"). */
+function registryLibFiles(): Record<string, string> {
+  const mods = ACTIVE_REGISTRY.runtime?.libModules ?? {};
+  const files: Record<string, string> = {};
+  for (const [spec, source] of Object.entries(mods)) {
+    files[`/${libModuleStem(spec)}.jsx`] = source;
+  }
+  return files;
+}
+
+/** Alias lib-module imports to the mounted file: `from
+ *  "@brightlocal/proposal"` → `from "./brightlocal-proposal"`. Bare
+ *  string replace on the specifier inside quotes — idempotent, and a
+ *  no-op for registries without lib modules. */
+export function rewriteRegistryLibImports(code: string): string {
+  const mods = ACTIVE_REGISTRY.runtime?.libModules ?? {};
+  let out = code;
+  for (const spec of Object.keys(mods)) {
+    out = out.replace(
+      new RegExp(`(from\\s*["'])${escapeRe(spec)}(["'])`, "g"),
+      `$1./${libModuleStem(spec)}$2`,
+    );
+  }
+  return out;
+}
+
 /**
  * Build the complete Sandpack files object — entry, styles, index.html,
  * App, and every inlined component file. Spread directly into
@@ -3074,7 +3112,14 @@ export function buildSandpackFiles({
   // The rewrite is idempotent, so re-running it after prepareAppSource
   // already ran is a no-op.
   const normalized = appSourceIsPrepared ? appSource : prepareAppSource(appSource);
-  const prepared = rewriteLocalComponentImports(normalized);
+  // Lib-module aliasing AFTER the barrel rewrite — the specifiers are
+  // registry lib modules ("@brightlocal/proposal"), not DS subpaths, so
+  // the barrel consolidation must not have eaten them (it only matches
+  // DS_PKG subpaths; different scope-path shape — safe either order,
+  // but this reads as the pipeline's tail).
+  const prepared = rewriteRegistryLibImports(
+    rewriteLocalComponentImports(normalized),
+  );
 
   // NOTE: no `...componentFiles` spread. The Sandpack iframe now
   // installs `@gradeui/ui` from npm (see PLAYGROUND_DEPENDENCIES) and
@@ -3108,6 +3153,10 @@ export function buildSandpackFiles({
     "/external-ds-css.ts": EXTERNAL_DS ? EXTERNAL_DS_CSS_BOOTSTRAP_TSX : "export {};",
     "/theme-options.tsx": buildPlaygroundThemeOptionsTsx(mode, components, themeSignature),
     "/styles.css": buildPlaygroundStylesCss(lightVars, darkVars, fontFaces),
+    // Registry lib modules as files (STUDIO-FLOWS M0) — the aliased
+    // import above resolves to these. Empty spread for registries
+    // without lib modules (gradeui today).
+    ...registryLibFiles(),
     ...(extraFiles ?? {}),
   };
 }

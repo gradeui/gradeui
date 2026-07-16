@@ -17,6 +17,10 @@
  * Protocol (deliberately tiny, v0 + selection):
  *   parent → iframe: { type: "ext:source", source, mode, css? } — render this
  *                    (css = project overrides, upserted as the last <style>)
+ *   parent → iframe: { type: "ext:precompile", sources }   — flow siblings to
+ *                    idle-compile into the compile cache AFTER the current
+ *                    screen's ext:rendered, so a goto swap is paint-only
+ *                    (STUDIO-FLOWS F1 "instant linkage")
  *   parent → iframe: { type: "ext:select-mode", on }       — arm/disarm the selection agent
  *   parent → iframe: { type: "ext:clear-selection" }       — drop the persistent ring
  *   parent → iframe: { type: "grade:select-by-source-id", id } — breadcrumb
@@ -107,6 +111,74 @@ export default function ExternalSandboxPage() {
     let pendingSource: { source: string; mode: string } | null = null;
     let modules: Record<string, unknown> | null = null;
     let rendering = false;
+
+    // ─── Compile cache (STUDIO-FLOWS F1 "instant linkage") ─────────────
+    // sucrase output keyed by a hash of the EXACT source string the host
+    // pushes (ids already injected — the host runs injectSourceIds before
+    // both ext:source and ext:precompile, so keys line up). render()
+    // checks it first; ext:precompile fills it during idle time so a
+    // flow navigation swap skips the compile entirely. Bounded FIFO —
+    // flows are small, but grids/regens shouldn't grow it unchecked.
+    const COMPILE_CACHE_MAX = 48;
+    const compileCache = new Map<string, string>();
+    const hashSource = (s: string): string => {
+      // FNV-1a, 32-bit — cheap, deterministic, collision-safe enough for
+      // a cache whose worst failure is a stale entry keyed alongside the
+      // string LENGTH (length folds into the key to cut collisions).
+      let h = 0x811c9dc5;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+      }
+      return `${s.length}:${(h >>> 0).toString(36)}`;
+    };
+    const compile = (source: string): string => {
+      const key = hashSource(source);
+      const hit = compileCache.get(key);
+      if (hit !== undefined) return hit;
+      const { code } = sucraseModule.transform(source, {
+        transforms: ["typescript", "jsx", "imports"],
+        production: true,
+      });
+      if (compileCache.size >= COMPILE_CACHE_MAX) {
+        const oldest = compileCache.keys().next().value;
+        if (oldest !== undefined) compileCache.delete(oldest);
+      }
+      compileCache.set(key, code);
+      return code;
+    };
+
+    // Precompile queue — sources arrive via ext:precompile any time, but
+    // compilation waits until the CURRENT screen has painted (the note's
+    // "idle-compiles flow siblings AFTER ext:rendered") and then runs one
+    // source per idle slice so it never contends with interaction.
+    let precompileQueue: string[] = [];
+    let hasRenderedOnce = false;
+    let precompileScheduled = false;
+    const scheduleIdle = (fn: () => void) =>
+      typeof (window as Window & { requestIdleCallback?: unknown })
+        .requestIdleCallback === "function"
+        ? window.requestIdleCallback(fn, { timeout: 2000 })
+        : window.setTimeout(fn, 250);
+    const drainPrecompileQueue = () => {
+      precompileScheduled = false;
+      if (disposed || precompileQueue.length === 0) return;
+      const next = precompileQueue.shift()!;
+      try {
+        compile(next);
+      } catch {
+        // A sibling that doesn't compile is the SIBLING's problem — it
+        // will surface as ext:error if the viewer actually navigates
+        // there. Never let it break the current screen.
+      }
+      if (precompileQueue.length > 0) schedulePrecompile();
+    };
+    const schedulePrecompile = () => {
+      if (precompileScheduled || !hasRenderedOnce || precompileQueue.length === 0)
+        return;
+      precompileScheduled = true;
+      scheduleIdle(drainPrecompileQueue);
+    };
 
     const post = (msg: Record<string, unknown>) => {
       try {
@@ -208,8 +280,65 @@ export default function ExternalSandboxPage() {
       });
     }
 
-    function makeRequire(m: NonNullable<typeof modules>) {
+    // ─── Registry lib modules (@brightlocal/proposal — STUDIO-FLOWS M0) ─
+    // Shared user-land components (AppLayoutShell, ProposalSidebar,
+    // HubStatCard, …) ship in the registry bundle as SOURCE STRINGS
+    // (runtime.libModules: specifier → JSX source). Each is compiled with
+    // the same sucrase config as a screen and executed through the same
+    // require, then registered here so screen code can
+    // `import { AppLayoutShell } from "@brightlocal/proposal"`.
+    //
+    // NOTE (deviation from the build note's blob-URL import-map sketch):
+    // screens are compiled to CommonJS and resolve imports through
+    // makeRequire SYNCHRONOUSLY — a blob-URL ES module can't satisfy a
+    // synchronous require, and the DS module isn't in the import map
+    // anyway (it's dynamic-imported with retry + Web-Locks
+    // serialisation). Materialising the lib namespaces at boot — after
+    // loadModules, BEFORE ext:ready invites the first screen — gives the
+    // exact "registered before screen modules load" guarantee with none
+    // of the map plumbing.
+    const libNamespaces = new Map<string, Record<string, unknown>>();
+    function requireLib(
+      spec: string,
+      m: NonNullable<typeof modules>,
+      seen: Set<string> = new Set(),
+    ): Record<string, unknown> {
+      const cached = libNamespaces.get(spec);
+      if (cached) return cached;
+      if (seen.has(spec))
+        throw new Error(`lib module cycle at "${spec}"`);
+      seen.add(spec);
+      const source = REGISTRY.runtime?.libModules?.[spec];
+      if (source === undefined)
+        throw new Error(`external-sandbox: unknown module "${spec}"`);
+      const mm = m as Record<string, any>;
+      const code = compile(source);
+      const mod = { exports: {} as Record<string, unknown> };
+      new Function("module", "exports", "require", "React", code)(
+        mod,
+        mod.exports,
+        makeRequire(m, seen),
+        mm.react,
+      );
+      libNamespaces.set(spec, mod.exports);
+      return mod.exports;
+    }
+    const bootLibModules = (m: NonNullable<typeof modules>) => {
+      for (const spec of Object.keys(REGISTRY.runtime?.libModules ?? {})) {
+        try {
+          requireLib(spec, m);
+        } catch (e) {
+          // A broken lib module should fail the SCREENS that import it
+          // (named error via makeRequire below), not the whole boot.
+          // eslint-disable-next-line no-console
+          console.warn(`[external-sandbox] lib module "${spec}" failed:`, e);
+        }
+      }
+    };
+
+    function makeRequire(m: NonNullable<typeof modules>, libSeen?: Set<string>) {
       const companions = Object.keys(REGISTRY.runtime?.dependencies ?? {});
+      const libSpecs = Object.keys(REGISTRY.runtime?.libModules ?? {});
       return (p: string): unknown => {
         if (p === "react") return m.react;
         if (p === "react/jsx-runtime") return m.jsx;
@@ -221,6 +350,10 @@ export default function ExternalSandboxPage() {
         if (p === "recharts") return m.recharts;
         if (p === "canvas-confetti") return m.confetti;
         if (p === REGISTRY.package.name || p.startsWith(`${REGISTRY.package.name}/`)) return guarded(m.ds as never, REGISTRY.package.name);
+        // Registry lib modules BEFORE companions — "@brightlocal/proposal"
+        // shares the "@brightlocal/" prefix with the icons companion on a
+        // prefix match, but lib specs match exactly.
+        if (libSpecs.includes(p)) return guarded(requireLib(p, m, libSeen) as never, p);
         const companion = companions.find((c) => p === c || p.startsWith(`${c}/`));
         if (companion) return guarded((m.icons ?? {}) as never, companion);
         if (p.endsWith(".css")) return {};
@@ -245,10 +378,9 @@ export default function ExternalSandboxPage() {
       try {
         document.documentElement.classList.toggle("dark", mode === "dark");
         const m = modules as Record<string, any>;
-        const { code } = m.sucrase.transform(source, {
-          transforms: ["typescript", "jsx", "imports"],
-          production: true,
-        });
+        // Compile-cache first (F1): a precompiled flow sibling — or any
+        // previously rendered screen (Back) — skips sucrase entirely.
+        const code = compile(source);
         const mod = { exports: {} as Record<string, unknown> };
         // React rides as an AMBIENT parameter, not just via require:
         // sucrase compiles JSX to React.createElement, and screens that
@@ -287,6 +419,9 @@ export default function ExternalSandboxPage() {
         reactRoot!.render(m.react.createElement(App));
         setStatus("");
         post({ type: "ext:rendered" });
+        // First paint done — flow siblings may now idle-compile (F1).
+        hasRenderedOnce = true;
+        schedulePrecompile();
         // Paint settles a frame later — report the fresh height then.
         requestAnimationFrame(() =>
           post({
@@ -389,10 +524,19 @@ export default function ExternalSandboxPage() {
     };
 
     const onMessage = (e: MessageEvent) => {
-      const d = e.data as { type?: string; source?: string; mode?: string; on?: boolean; css?: string; id?: string } | null;
+      const d = e.data as { type?: string; source?: string; sources?: unknown; mode?: string; on?: boolean; css?: string; id?: string } | null;
       if (d?.type === "ext:source" && typeof d.source === "string") {
         if (typeof d.css === "string") applyProjectCss(d.css);
         void render(d.source, d.mode ?? "light");
+      } else if (d?.type === "ext:precompile" && Array.isArray(d.sources)) {
+        // Replace, don't append — the host re-posts the CURRENT flow
+        // set on every change; stale siblings would only waste idle
+        // time. Already-cached sources drop out via the cache check in
+        // compile(); the queue defers until after ext:rendered.
+        precompileQueue = d.sources.filter(
+          (s): s is string => typeof s === "string" && s.length > 0,
+        );
+        schedulePrecompile();
       } else if (d?.type === "ext:select-mode") {
         if (d.on) installAgent();
         else teardownAgent();
@@ -532,6 +676,10 @@ export default function ExternalSandboxPage() {
     void loadModulesSerialized().then((m) => {
       if (disposed) return;
       modules = m as never;
+      // Registry lib modules materialise BEFORE ext:ready invites the
+      // first screen push — screens importing "@brightlocal/proposal"
+      // must resolve it synchronously (STUDIO-FLOWS M0).
+      bootLibModules(modules!);
       setStatus("ready — waiting for source");
       post({ type: "ext:ready" });
       // Standalone-preview handoff — parity with /fast-sandbox. Studio's

@@ -544,6 +544,20 @@ export function EmbedScreen({
     },
     [flowScreens],
   );
+  // F1 "instant linkage" — same derivation as SharedScreen: the OTHER
+  // flow screens' sources, forwarded as ext:precompile so a goto swap
+  // is paint-only. Only when the project actually has siblings.
+  const precompileSources = React.useMemo<string[] | undefined>(() => {
+    if (!flowScreens || flowScreens.length < 2) return undefined;
+    const sources = flowScreens
+      .map((s) => s.appSource)
+      .filter(
+        (src): src is string =>
+          typeof src === "string" && src.length > 0 && src !== currentSource,
+      );
+    return sources.length > 0 ? sources : undefined;
+  }, [flowScreens, currentSource]);
+
   // Escape pops one screen. The embed has no other parent-realm Escape
   // consumer (selection/inspector Escapes live inside the iframe realm).
   React.useEffect(() => {
@@ -700,6 +714,8 @@ export function EmbedScreen({
         // Flow navigation (STUDIO-FLOWS) — [data-grade-goto] clicks
         // resolve + push via the stack above.
         onGoto={resolveGoto}
+        // F1: idle-compile flow siblings ("instant linkage").
+        precompileSources={precompileSources}
         onRendered={() => setExtReady("1")}
         // null = "error cleared" (retry succeeded) — only real messages
         // stamp the error state; a later ext:rendered flips it to "1".

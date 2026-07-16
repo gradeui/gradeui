@@ -30,6 +30,7 @@ import {
   BRIGHTLOCAL_RULES_FILES,
 } from "./brightlocal/rules.generated";
 import { BRIGHTLOCAL_TEMPLATES } from "./brightlocal/templates.generated";
+import { BRIGHTLOCAL_LIB_MODULES } from "./brightlocal/lib.generated";
 import { BRIGHTLOCAL_PREVIEW_CSS } from "./brightlocal/preview-css.generated";
 import { BRIGHTLOCAL_PREVIEW_THEME_FULL } from "./brightlocal/preview-theme.generated";
 
@@ -103,7 +104,10 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
       "Field",
       "Typography",
     ],
-    externalImports: ["@brightlocal/icons"],
+    // "@brightlocal/proposal" is the registry's shared user-land module
+    // (runtime.libModules below) — licensed here so the model may import
+    // it and validators don't flag the specifier.
+    externalImports: ["@brightlocal/icons", "@brightlocal/proposal"],
     sidecars: BRIGHTLOCAL_SIDECARS,
     // Serialisable contract specs (sidecar transform, dist-grounded) —
     // the settings panel renders BL's OWN variant/size scales from
@@ -177,6 +181,12 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
       "@brightlocal/icons": "2.3.1",
     },
     previewCss: BRIGHTLOCAL_PREVIEW_CSS,
+    // Shared user-land component modules (STUDIO-FLOWS M0 — "the
+    // verbosity killer"): @brightlocal/proposal carries AppLayoutShell +
+    // presets, ProposalSidebar, PageHeader, HubStatCard/HubHeroCard,
+    // ShellTweakerPanel, and the ProposalDataProvider binding seam.
+    // Authored in registries/brightlocal/lib/proposal.jsx.
+    libModules: BRIGHTLOCAL_LIB_MODULES,
     // FULL preset extraction: the @theme block PLUS the preset's
     // @utility sections — px-section-md etc. are how Card gets its
     // padding; @theme alone rendered every component flush (the "cards

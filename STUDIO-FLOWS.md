@@ -108,6 +108,16 @@ Studio) — never a broken screen.
 
 ## F1/F2 build notes (16 Jul evening — Ali's priorities, build-ready)
 
+> STATUS (16 Jul, late): **F1 precompile BUILT** (compile cache +
+> ext:precompile in the external sandbox; precompileSources on
+> ExternalIframeHost; share/embed wired). **@brightlocal/proposal M0
+> BUILT** — via `runtime.libModules` + boot-time require registration
+> rather than the blob-URL import map (screens are CJS-compiled;
+> require is synchronous), Sandpack parity via file mount + import
+> alias, hub-page.jsx migrated, plus a ProposalDataProvider data seam.
+> Transitions (cross-fade / View Transitions) still open — the lib
+> already stamps data-grade-transition. Detail: BRIGHTLOCAL-SIDENAV.md.
+
 **F1 precompile ("instant linkage"):** new `ext:precompile { sources }`
 message; external sandbox keeps a compile cache keyed by source hash,
 idle-compiles flow siblings AFTER the current screen's ext:rendered;

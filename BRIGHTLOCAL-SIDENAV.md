@@ -241,6 +241,24 @@ split for the 32px line, rail ml-6.
 
 ## Status log
 
+- 2026-07-16 (evening) — STUDIO-FLOWS **F1 precompile** + **@brightlocal/
+  proposal M0** built (see the BUILT block above for the file map).
+  F1: external sandbox owns a bounded FIFO compile cache (FNV-1a keyed
+  on the exact pushed source, ids included); ext:precompile queues flow
+  siblings and idle-compiles them AFTER the current screen's
+  ext:rendered; render() reads the cache first, so goto swaps (and
+  Back) skip sucrase. Host: `precompileSources?: string[]` on
+  ExternalIframeHost (injectSourceIds-matched, re-posted on change);
+  share view + embed derive it from flowScreens (2+, current excluded).
+  Transitions NOT implemented yet — but the lib components already
+  stamp data-grade-transition from `transition` props/nav-data fields,
+  so F1's cross-fade can read them off the clicked element. Verified:
+  docs + studio tsc clean for touched files (pre-existing scaffold
+  .jsx errors and stale .next validator errors unrelated); lib +
+  migrated template compile-and-render smoke-tested through the exact
+  sandbox pipeline (sucrase CJS + stubbed require + renderToStaticMarkup)
+  incl. goto stamps and data-provider deep-merge patching.
+
 - 2026-07-15 — File created. MCP registry-validation fix written; awaiting
   server restart, then save the switcher+submenus screen and preview.
 - 2026-07-15 (final round) — AppLayoutShell knob set now: flush,
@@ -318,9 +336,9 @@ Pairs with STUDIO-FLOWS F1/F2.
 
 ## QUEUED — STUDIO-FLOWS F1 (Ali: instant linkage + view transitions)
 
-1. PRECOMPILE flow targets: on share/embed load, idle-compile every
-   goto-referenced sibling (sucrase output cached per screen id) so a
-   navigation swap is paint-only. "I want instant linkage."
+1. ~~PRECOMPILE flow targets~~ — BUILT 16 Jul (see status log): compile
+   cache + ext:precompile in the external sandbox, precompileSources on
+   ExternalIframeHost, share + embed pass flow siblings when 2+.
 2. Cross-fade on swap (double-buffer: hold old screen until new one
    stamps rendered, 200ms fade), then View Transitions API inside the
    sandbox document for element-level morphs (match by data-hook).
@@ -333,19 +351,52 @@ system-prompt stitching should PIN it for hub/dashboard asks).
 Clobber guard shipped in supabase-adapter saveProject (bulk upsert now
 version-filtered per design).
 
-## QUEUED — shared REGISTRY module: @brightlocal/proposal (Ali, 16 Jul)
+## BUILT (M0, 16 Jul) — shared REGISTRY module: @brightlocal/proposal
 
 Registry-scoped (NOT project-scoped — Ali runs play projects + share
-projects on the same registry and needs one source of truth): shared
-user-land components (AppLayoutShell, the proposal sidenav, PageHeader,
-HubStatCard/HubHeroCard) live in packages/studio/registries/brightlocal/lib/,
-compile into the registry, and are exposed to screens via the sandbox
-import map as "@brightlocal/proposal". Screens then import instead of
-carrying in-file copies. Sandpack parity: the same source ships as a
-file in chat-sandpack's file map. Edited in the repo (regen like
-recipes), versioned in git, zero DB surface. Also: comments must pass
-through flow navigation (thread-set swap on goto — the F1 TODO in
-shared-screen.tsx) — Ali confirmed wanting this.
+projects on the same registry and needs one source of truth). SHIPPED:
+
+- **Authoring home:** `packages/studio/registries/brightlocal/lib/proposal.jsx`
+  — AppLayoutShell (+ SIDEBAR_TONES/FRAMES/SHADOWS, PAGE_LAYERS presets,
+  controlled-tweaks pair `tweaks`/`onTweaksChange`), ProposalSidebar
+  (SECTIONS-driven three-level nav; account/user rows resolve props →
+  data context), PageHeader (breadcrumbs/title/meta/actions slots),
+  HubStatCard, HubHeroCard (both take `goto`/`transition` — stamps
+  data-grade-goto/-transition), ShellTweakerPanel (standalone export;
+  prototype chrome, not layout), and the **proposal data seam**:
+  `ProposalDataProvider` / `useProposalData` / `PROPOSAL_DATA`
+  (context default IS the demo data — zero setup; partial objects
+  deep-merge recursively, so `{metrics:{reviews:{metric:"4.9"}}}`
+  patches one value; Harry's "switch the data and it would be magic").
+- **Compile:** `scripts/generate-registry-lib.mjs` →
+  `src/registry/brightlocal/lib.generated.ts` → `runtime.libModules` on
+  the registry (new `RegistryRuntime.libModules` field in types.ts).
+  `@brightlocal/proposal` added to `externalImports`.
+- **External sandbox:** lib modules compile + register at boot, BEFORE
+  ext:ready invites the first screen — makeRequire resolves the
+  specifier synchronously (deviation from the blob-URL sketch, by
+  design: screens are CJS-compiled, require is synchronous).
+- **Sandpack parity:** same source mounts as `/brightlocal-proposal.jsx`
+  in buildSandpackFiles; `rewriteRegistryLibImports` aliases the import.
+  Exported sandbox = screen + one lib file.
+- **Templates:** hub-page.jsx migrated — ~140 lines, just the page,
+  reads metrics/location from `useProposalData()`. Other templates
+  migrate on their next touch; saved screens with in-file copies keep
+  working unchanged (migrate on regen — update propagation applies only
+  to importing screens).
+- **Generation:** new rules file `rules/15-proposal-module.md` pins the
+  import as the default scaffold for hub/dashboard asks + documents the
+  canonical skeleton and the "no in-file copies" rule.
+
+Update semantics (Ali's question, confirmed): editing proposal.jsx +
+regen updates EVERY screen that imports the module, on every surface
+(Studio, share, embed, Sandpack) at next load. In-file-copy screens are
+frozen until migrated. NOTE: mcp-server validation needs its usual
+`pnpm -F @gradeui/mcp-server build` + restart to learn the new
+externalImports entry before save_screen accepts the import.
+
+Still queued from this block: comments passing through flow navigation
+(thread-set swap on goto — the F1 TODO in shared-screen.tsx).
 
 ## BUG→QUEUED — comment pins invisible on BL shares (16 Jul, confirmed live)
 

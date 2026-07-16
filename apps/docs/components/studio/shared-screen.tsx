@@ -206,6 +206,21 @@ export function SharedScreen({
     () => setFlowStack((prev) => prev.slice(0, -1)),
     [],
   );
+  // F1 "instant linkage": the OTHER flow screens' sources, forwarded to
+  // the external host as ext:precompile so the sandbox warms its compile
+  // cache during idle time and a goto swap is paint-only. Only worth the
+  // message when the project actually has siblings (2+ screens); the
+  // currently rendered source is excluded (render() caches it anyway).
+  const precompileSources = React.useMemo<string[] | undefined>(() => {
+    if (!flowScreens || flowScreens.length < 2) return undefined;
+    const sources = flowScreens
+      .map((s) => s.appSource)
+      .filter(
+        (src): src is string =>
+          typeof src === "string" && src.length > 0 && src !== currentSource,
+      );
+    return sources.length > 0 ? sources : undefined;
+  }, [flowScreens, currentSource]);
 
   // The project's own theme — the default treatment the share opens on.
   const projectTheme = React.useMemo<GeneratedTheme>(() => {
@@ -1106,6 +1121,9 @@ export function SharedScreen({
             // Flow navigation (STUDIO-FLOWS) — clicks on [data-grade-goto]
             // inside the screen resolve + push here.
             onGoto={resolveGoto}
+            // F1: idle-compile the flow siblings so navigation swaps are
+            // paint-only ("instant linkage").
+            precompileSources={precompileSources}
             // Responsive only — feeds the content-height artboard above.
             onContentHeight={activeSpec.responsive ? setContentH : undefined}
             className={cn(

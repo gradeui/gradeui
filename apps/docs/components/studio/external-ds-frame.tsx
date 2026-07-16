@@ -60,6 +60,13 @@ export interface ExternalIframeHostProps {
    *  project's screen list, which is the consumer's knowledge (the
    *  share view / embed hold the flow map). */
   onGoto?: (target: string) => void;
+  /** Flow-sibling sources to idle-compile ahead of navigation
+   *  (STUDIO-FLOWS F1 "instant linkage"). The host forwards them as
+   *  ext:precompile after ext:ready; the sandbox compiles them into its
+   *  cache AFTER the current screen paints, so a goto swap is
+   *  paint-only. Pass the OTHER flow screens' appSources (the share
+   *  view / embed do, when the project has 2+). */
+  precompileSources?: string[];
   /** Exposed iframe ref so wrapping chrome (the comment-pins overlay)
    *  can reach contentDocument. */
   iframeRef?: React.MutableRefObject<HTMLIFrameElement | null>;
@@ -87,6 +94,7 @@ export function ExternalIframeHost({
   onRendered,
   onContentHeight,
   onGoto,
+  precompileSources,
   iframeRef: externalIframeRef,
   registryId: registryIdProp,
   rawSource = false,
@@ -134,6 +142,25 @@ export function ExternalIframeHost({
     );
   }, [appSource, mode, rawSource, projectCss]);
 
+  // Flow-sibling precompile (STUDIO-FLOWS F1) — forward the OTHER flow
+  // screens' sources so the sandbox can warm its compile cache during
+  // idle time. Same source-id injection as push(): the cache is keyed on
+  // the exact string a future ext:source will carry, so the two must run
+  // the same finalise step.
+  const pushPrecompile = React.useCallback(() => {
+    if (!readyRef.current || !precompileSources || precompileSources.length === 0)
+      return;
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: "ext:precompile",
+        sources: precompileSources.map((s) =>
+          rawSource ? s : injectSourceIds(s),
+        ),
+      },
+      window.location.origin,
+    );
+  }, [precompileSources, rawSource]);
+
   React.useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (e.source !== iframeRef.current?.contentWindow) return;
@@ -142,6 +169,7 @@ export function ExternalIframeHost({
         readyRef.current = true;
         onError?.(null);
         push();
+        pushPrecompile();
         // Replay select-mode state — the iframe may have (re)booted
         // after the parent last broadcast it.
         if (selectModeRef.current) {
@@ -174,7 +202,13 @@ export function ExternalIframeHost({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [push, onSelect, onClearSelection, onZoomBy, onError, onRendered, onContentHeight, onGoto]);
+  }, [push, pushPrecompile, onSelect, onClearSelection, onZoomBy, onError, onRendered, onContentHeight, onGoto]);
+
+  // Re-forward when the flow set changes after boot (screens saved /
+  // renamed while a share is open). Harmless pre-ready: guarded inside.
+  React.useEffect(() => {
+    pushPrecompile();
+  }, [pushPrecompile]);
 
   // Mirror select-mode into the iframe whenever it flips.
   React.useEffect(() => {
