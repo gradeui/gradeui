@@ -316,3 +316,20 @@ writes via the source mutator (same literal-attr path as className);
 value field for goto should offer the project screen names as options.
 Pairs with STUDIO-FLOWS F1/F2.
 
+## QUEUED — STUDIO-FLOWS F1 (Ali: instant linkage + view transitions)
+
+1. PRECOMPILE flow targets: on share/embed load, idle-compile every
+   goto-referenced sibling (sucrase output cached per screen id) so a
+   navigation swap is paint-only. "I want instant linkage."
+2. Cross-fade on swap (double-buffer: hold old screen until new one
+   stamps rendered, 200ms fade), then View Transitions API inside the
+   sandbox document for element-level morphs (match by data-hook).
+3. Browser history: pushState + popstate with ?screen=<id> so the
+   browser Back button works and flow positions deep-link.
+4. Comment-thread swap on navigation (TODO F1 in shared-screen.tsx).
+Also queued: promote the AppLayoutShell scaffold as the default hub-page
+example in the agent harness (retrieval already carries the recipe;
+system-prompt stitching should PIN it for hub/dashboard asks).
+Clobber guard shipped in supabase-adapter saveProject (bulk upsert now
+version-filtered per design).
+

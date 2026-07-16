@@ -811,13 +811,41 @@ export class SupabaseStudioStorage implements StudioStorage {
       // like a successful save, and the user's manual edits vanished on
       // reload while agent edits persisted. Throw like the project update
       // above so failures surface instead of eating the user's work.
-      const { error: designsError } = await this.supabase
+      // THE CLOBBER GUARD (July 2026 — "stop the clobber once and for
+      // all"): this bulk upsert used to write EVERY design in the open
+      // tab's in-memory snapshot, stale ones included — so an MCP (or
+      // second-tab) edit landed in the DB and was then silently flattened
+      // by the next project-level autosave from a tab that had never
+      // seen it. Guard: fetch the live updated_at per design and skip
+      // any row whose snapshot version is NOT newer than the DB's — a
+      // stale, unedited screen never overwrites fresher external work,
+      // while screens genuinely edited in this tab (their updatedAt was
+      // bumped at edit time) still save. Granular saveScreen() already
+      // has the stricter expectedUpdatedAt guard; this brings the bulk
+      // path into line.
+      const { data: liveRows } = await this.supabase
         .from("designs")
-        .upsert(
-          designs.map((d, i) => designToRow(project.id, d, i)),
-          { onConflict: "id" },
-        );
-      if (designsError) throw designsError;
+        .select("id, updated_at")
+        .eq("project_id", project.id);
+      const liveVersion = new Map(
+        ((liveRows ?? []) as { id: string; updated_at: number }[]).map(
+          (r) => [r.id, r.updated_at],
+        ),
+      );
+      const rows = designs
+        .map((d, i) => ({ d, i }))
+        .filter(({ d }) => {
+          const live = liveVersion.get(d.id);
+          // New screen (no live row) or snapshot strictly newer → write.
+          return live === undefined || (d.updatedAt ?? 0) > live;
+        })
+        .map(({ d, i }) => designToRow(project.id, d, i));
+      if (rows.length > 0) {
+        const { error: designsError } = await this.supabase
+          .from("designs")
+          .upsert(rows, { onConflict: "id" });
+        if (designsError) throw designsError;
+      }
     }
 
     // 4. Messages + notes — replace per surviving screen. Cheap for a
