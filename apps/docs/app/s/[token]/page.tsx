@@ -208,18 +208,55 @@ export default async function SharePage({
     }
     return false;
   };
+  // Member ORDER (compare row reads left → right): an explicit set
+  // keeps its authored array order; a tag scope honours the tag's
+  // per-screen `order` (flow tags) with position as the tiebreak.
+  const memberSort = (
+    a: { id: string; state: unknown },
+    b: { id: string; state: unknown },
+  ): number => {
+    if (!scope) return 0;
+    if (scope.screens) {
+      return scope.screens.indexOf(a.id) - scope.screens.indexOf(b.id);
+    }
+    if (scope.tag) {
+      const orderOf = (r: { state: unknown }) => {
+        const t = (
+          (r.state as { tags?: { type: string; value: string; order?: number }[] | null } | null)
+            ?.tags ?? []
+        ).find(
+          (x) => x.type === scope.tag!.type && x.value === scope.tag!.value,
+        );
+        return typeof t?.order === "number"
+          ? t.order
+          : Number.MAX_SAFE_INTEGER;
+      };
+      return orderOf(a) - orderOf(b);
+    }
+    return 0;
+  };
   const flowScreens = ((flowRows ?? []) as {
     id: string;
     name: string;
     state: unknown;
   }[])
     .filter(inScope)
+    .sort(memberSort)
     .map((r) => ({
       id: r.id,
       name: r.name,
       appSource:
         ((r.state as { appSource?: string | null } | null)?.appSource ?? null),
     }));
+  // Row annotation: the tag ("walkthrough", "compare:nav-tone") or the
+  // set size. `label`-typed tags read prefix-less, matching the editor.
+  const scopeLabel = scope
+    ? scope.tag
+      ? scope.tag.type === "label"
+        ? scope.tag.value
+        : `${scope.tag.type}:${scope.tag.value}`
+      : `${flowScreens.length} screens`
+    : undefined;
 
   const { data: project } = await supabase
     .from("projects")
@@ -367,6 +404,8 @@ export default async function SharePage({
       registryId={projectRow?.registry_id ?? null}
       projectCss={projectCss}
       flowScreens={flowScreens}
+      scoped={Boolean(scope)}
+      scopeLabel={scopeLabel}
     />
   );
 }

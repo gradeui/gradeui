@@ -119,6 +119,8 @@ export function SharedScreen({
   registryId = null,
   projectCss = "",
   flowScreens,
+  scoped = false,
+  scopeLabel,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -150,6 +152,16 @@ export function SharedScreen({
    *  stack; Back (chip / Escape) pops. The token stays the address of
    *  the FLOW, not the position — no URL change. */
   flowScreens?: { id: string; name: string; appSource: string | null }[];
+  /** True when the share is SCOPED to a screen set (STUDIO-TAGS T2:
+   *  share a tag / share these N). Scoped shares open on the COMPARE
+   *  ROW — every member side by side as live panes on the camera
+   *  canvas; clicking a pane focuses it (pushes the flow stack, so
+   *  Back returns to the row). flowScreens is already filtered to
+   *  members server-side. */
+  scoped?: boolean;
+  /** Human name for the scope ("flow:proposal-walkthrough",
+   *  "3 screens") — the row's annotation label. */
+  scopeLabel?: string;
 }) {
   // Seed the preview-css store BEFORE the frame hosts push source —
   // Studio's page-level effect does this in the editor; the share view
@@ -280,6 +292,31 @@ export function SharedScreen({
   const isFixedDevice = Boolean(activeSize);
   const ActiveIcon = iconForSpec(activeSpec);
 
+  // ─── Compare row (STUDIO-TAGS T2: scoped shares) ──────────────────
+  // A scoped share's HOME is all members side by side — live panes in
+  // one row that the camera treats as a single wide artboard (Fit /
+  // zoom / pan machinery unchanged). Clicking a pane FOCUSES it via
+  // the flow stack — the entire single-screen path (Back chip, gotos,
+  // Escape) applies to a focused member for free; popping the stack
+  // lands back on the row.
+  const scopedMembers = React.useMemo(
+    () =>
+      scoped && flowScreens
+        ? flowScreens.filter(
+            (s): s is { id: string; name: string; appSource: string } =>
+              typeof s.appSource === "string" && s.appSource.length > 0,
+          )
+        : [],
+    [scoped, flowScreens],
+  );
+  const compare = scopedMembers.length >= 2 && flowStack.length === 0;
+  const PANE_GAP = 48;
+  const PANE_LABEL_H = 44;
+  // Pane artboard: the share's device spec, or a desktop default for
+  // "responsive" (a fill viewport is meaningless × N — panes scroll
+  // internally instead, like any live screen).
+  const paneSize = activeSize ?? { w: 1280, h: 800 };
+
   // Responsive content-height artboard — identical behaviour to the
   // focused canvas: the same-origin iframe reports its rendered
   // scrollHeight; a page meaningfully taller than the viewer's window
@@ -295,6 +332,16 @@ export function SharedScreen({
   }, [viewportId, flowTop]);
   const resolveDeviceSize = React.useCallback(
     (canvas: { w: number; h: number }) => {
+      // Compare row: the artboard IS the row — N panes + gaps wide,
+      // one pane (+ label strip) tall. Fit frames all members at once.
+      if (compare) {
+        return {
+          w:
+            scopedMembers.length * paneSize.w +
+            (scopedMembers.length - 1) * PANE_GAP,
+          h: paneSize.h + PANE_LABEL_H,
+        };
+      }
       if (activeSize) return activeSize;
       if (
         contentH !== null &&
@@ -306,7 +353,8 @@ export function SharedScreen({
       }
       return undefined;
     },
-    [activeSize, contentH],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeSize, contentH, compare, scopedMembers.length, paneSize.w, paneSize.h],
   );
 
   // Zoom + Fit — the shared artboard-zoom implementation (also drives
@@ -336,6 +384,15 @@ export function SharedScreen({
   // True whenever an artboard is framed — a fixed device preset OR the
   // responsive content-height artboard. Drives the card layout below.
   const framed = Boolean(deviceSize);
+
+  // The compare row lands in Fit — the whole set framed at once is the
+  // "here are your options" moment; 100% of an N-pane row would open
+  // on one corner. Re-fit on member-count changes; leaving compare
+  // (focusing a pane) keeps the user's zoom.
+  React.useEffect(() => {
+    if (compare && canvasEl) fit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compare, scopedMembers.length, canvasEl]);
 
   // ─── Imperative camera session — SAME pattern as the focused canvas
   // (FocusedFastMount). Pinch/pan write a translate+scale straight to
@@ -1076,7 +1133,11 @@ export function SharedScreen({
         {effectiveZoom < 1 && (
           <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2">
             <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur-md">
-              <span className="font-medium text-foreground">{currentScreenName}</span>
+              <span className="font-medium text-foreground">
+                {compare
+                  ? (scopeLabel ?? `${scopedMembers.length} screens`)
+                  : currentScreenName}
+              </span>
               <span className="opacity-40">·</span>
               <span className="tabular-nums">
                 {fitMode ? "Fit" : `${Math.round(effectiveZoom * 100)}%`}
@@ -1123,7 +1184,89 @@ export function SharedScreen({
                 : undefined
             }
           >
-          {isExternal ? (
+          {compare ? (
+            // ─── Compare row (scoped share home) — every member as a
+            // live pane, side by side. The row carries the zoom
+            // transform (panes render at natural size inside it); a
+            // click-shield over each pane focuses it via the flow
+            // stack, so panes never swallow pan/zoom gestures and a
+            // stray click can't navigate a variant. ─────────────────
+            <div
+              className="flex items-start"
+              style={{
+                width: deviceSize?.w,
+                height: deviceSize?.h,
+                gap: PANE_GAP,
+                transform: `scale(${effectiveZoom})`,
+                transformOrigin: "top left",
+                transition:
+                  fitMode || artboard.gesturing || imperativeGesturing
+                    ? undefined
+                    : "transform 340ms cubic-bezier(0.33, 1.08, 0.68, 1)",
+              }}
+            >
+              {scopedMembers.map((m) => (
+                <div
+                  key={m.id}
+                  className="relative shrink-0"
+                  style={{ width: paneSize.w }}
+                >
+                  <div
+                    className="flex items-center px-1"
+                    style={{ height: PANE_LABEL_H }}
+                  >
+                    <span className="inline-flex items-center rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur-md">
+                      {m.name}
+                    </span>
+                  </div>
+                  <div
+                    className="relative"
+                    style={{ width: paneSize.w, height: paneSize.h }}
+                  >
+                    {isExternal ? (
+                      <ExternalIframeHost
+                        appSource={m.appSource}
+                        mode={mode}
+                        registryId={shareRegistry.id}
+                        className="block rounded-[28px] ring-1 ring-border/40"
+                        style={{
+                          width: paneSize.w,
+                          height: paneSize.h,
+                          boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.35)",
+                        }}
+                      />
+                    ) : (
+                      <FastIframeHost
+                        appSource={m.appSource}
+                        theme={activeTheme}
+                        mode={mode}
+                        motion={motionOn}
+                        className="block rounded-[28px] ring-1 ring-border/40"
+                        style={{
+                          width: paneSize.w,
+                          height: paneSize.h,
+                          boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.35)",
+                        }}
+                      />
+                    )}
+                    {/* Focus shield — the pane's single interaction from
+                        the row is "look closer". Focus = push the flow
+                        stack; the single-screen path (gotos, Back,
+                        Escape) takes over from there. */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFlowStack([{ id: m.id, appSource: m.appSource }])
+                      }
+                      className="absolute inset-0 cursor-zoom-in rounded-[28px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                      aria-label={`Focus ${m.name}`}
+                      title={`Focus ${m.name}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isExternal ? (
           // External registry — the ext:* kernel instead of Fast Frame.
           // Theme prop intentionally absent (the DS's own tokens ride
           // inside the sandbox via runtime.previewCss; the toolbar's
@@ -1260,6 +1403,7 @@ export function SharedScreen({
             toggle on, entry screen only (threads are keyed by
             design_id), faded while a zoom gesture settles. */}
         {isExternal &&
+          !compare &&
           showComments &&
           flowStack.length === 0 &&
           threads.length > 0 && (
