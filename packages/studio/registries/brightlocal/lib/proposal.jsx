@@ -793,11 +793,14 @@ export function AppLayoutShell({
             dataHook={`${dataHook}-header`}
             // The header owns its padding — it must render identically
             // sticky or not; stickiness only adds surface + border +
-            // pinning.
+            // pinning. z-30: shell chrome must beat PAGE z-indexes
+            // (screens use up to z-20 — the LSG map nodes painted over
+            // the header at z-10, 16 Jul screenshot) while staying
+            // under the tweaker (z-50) and portalled overlays.
             className={[
               "pt-6 pb-4",
               stickyHeader
-                ? "bg-background sticky top-0 z-10 border-b"
+                ? "bg-background sticky top-0 z-30 border-b"
                 : "",
             ]
               .filter(Boolean)
