@@ -507,7 +507,27 @@ swap on goto) — bundle as the F1 comments package. Ali's use case:
 capturing notes in meetings on shared prototypes.
 
 
-## QUEUED FIRST (17 Jul) — nav id rename: no cryptic abbreviations
+## DONE (16 Jul) — nav id rename: no cryptic abbreviations
+
+SHIPPED: repo sweep in 7928474 (proposal.jsx, hub-page +
+sidebar-switcher templates, rules/15, sidecars; regen + mcp-server
+rebuild) + DB sweep via `scripts/rename-nav-ids-supabase.mjs` (the
+rename-rds-to-gds pattern: checked-in one-off, dry-run then --write,
+optimistic-concurrency guarded, patches state.appSource ONLY so
+state.tags survives). 6 live screens touched, 61 replacements incl.
+dataHooks the queued map missed (rk-sidebar/-page-header/-page-body/
+-app-layout, lsg-sidebar/-provider/-page-header/-page-body/-app-layout).
+Harness-verified (sucrase CJS + stubbed require + renderToStaticMarkup):
+new activeId renders the active row + trail, OLD id matches nothing,
+keyword rows are local-search-grid-keyword-N, live Rankings Table
+screen renders with zero old tokens and intact goto stamps.
+
+FOUND EN ROUTE (queued): mcp-server saveScreen replaces `state`
+WHOLESALE ({appSource, status, kind}) — it would DROP state.tags (T0!)
+on any tagged screen it saves. Fix: read-merge existing state. Original
+map kept below for the record.
+
+### The original queue entry
 
 Ali (16 Jul, wrap): "it's precisely that shit where things get
 shortened" — our own IA ids commit the sin we audit BL for. Rename to
