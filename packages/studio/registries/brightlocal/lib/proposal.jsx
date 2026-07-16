@@ -527,9 +527,32 @@ export const PAGE_LAYERS = {
   },
 };
 
-// Session tweak stash — survives navigation (module scope), dies with
-// the sandbox (reload = authored look). See AppLayoutShell's seeding.
+// Session tweak stash — survives navigation AND sandbox iframe
+// remounts (some layout flips re-create the iframe, which wiped the
+// module-scope stash after the first hop — Ali, 16 Jul). Module scope
+// is the fast path; sessionStorage is the durable one: tweaks stick
+// for the browser TAB's lifetime, so a stitched walkthrough stays
+// coherent, while a fresh viewer (new tab) still opens the authored
+// look. Sandboxed iframes without storage fall back to module scope.
+const TWEAKS_KEY = "bl-proposal-session-tweaks";
 let SESSION_TWEAKS = null;
+try {
+  SESSION_TWEAKS = JSON.parse(
+    window.sessionStorage.getItem(TWEAKS_KEY) || "null",
+  );
+} catch {
+  /* storage unavailable — module scope only */
+}
+function stashSessionTweaks(next) {
+  SESSION_TWEAKS = next;
+  try {
+    if (next && Object.keys(next).length > 0)
+      window.sessionStorage.setItem(TWEAKS_KEY, JSON.stringify(next));
+    else window.sessionStorage.removeItem(TWEAKS_KEY);
+  } catch {
+    /* fine — module scope carries it */
+  }
+}
 
 // ─── ShellTweakerPanel — hidden, session-local demo controls ─────────
 // Stakeholder-demo layer: reveals in the bottom-right corner (hover the
@@ -710,7 +733,7 @@ export function AppLayoutShell({
   const setOwnTweaks = React.useCallback((updater) => {
     setOwnTweaksState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      SESSION_TWEAKS = next;
+      stashSessionTweaks(next);
       return next;
     });
   }, []);
