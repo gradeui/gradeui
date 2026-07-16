@@ -333,6 +333,20 @@ export default function ExternalSandboxPage() {
     // would only misfire on them ("card-header" has no suffix entry →
     // unknown). Legacy instance-named parts keep the resolver.
     const partsAreComponents = Boolean(REGISTRY.selection.nameAttribute);
+    // …except the registry's declared ALIASES: slot values that don't
+    // kebab→Pascal into a real export ("sidebar-container" is stamped
+    // by GlobalLayoutSidebar). Alias first, then the component-shaped
+    // default — so the resolved name always matches a real source tag
+    // and the mutator's tag guard passes.
+    const partAliases = REGISTRY.selection.partAliases ?? {};
+    const kebabToPascal = (kebab: string): string =>
+      kebab
+        .split(/-+/)
+        .filter(Boolean)
+        .map((seg) => seg.charAt(0).toUpperCase() + seg.slice(1))
+        .join("");
+    const resolveAliasedComponentName = (part: string): string | undefined =>
+      partAliases[part] ?? kebabToPascal(part);
     const installAgent = () => {
       if (agent) return;
       agent = installStudioSelectionAgent({
@@ -341,7 +355,7 @@ export default function ExternalSandboxPage() {
         partAttribute: REGISTRY.selection.partAttribute,
         nameAttribute: REGISTRY.selection.nameAttribute,
         resolveComponentName: partsAreComponents
-          ? undefined
+          ? resolveAliasedComponentName
           : resolveComponentName,
         reportSelected: (selection: SelectionPayload) =>
           post({ type: "ext:select", selection }),

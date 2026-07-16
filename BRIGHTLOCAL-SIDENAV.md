@@ -268,3 +268,13 @@ split for the 32px line, rail ml-6.
   blocks/ + sidecar bodies, so templates/ is safe. Still pending: save the
   same JSX as a screen in "Brightlocal - DS" for live preview (needs the
   MCP server restart first).
+
+## Inspector correctness pass (16 Jul 2026)
+
+- **Slot aliases** — `global-layout.js` breaks BL's "data-slot = component name" convention (shortened slots, verified in 2.20.0 dist). Added `selection.partAliases` to the registry contract (`types.ts` + `brightlocal.ts`) and threaded it through the external sandbox's resolver: `sidebar-container→GlobalLayoutSidebar`, `content-wrapper→GlobalLayoutContent`, `content-header/body/actions→GlobalLayoutContent*`, `mobile-header→GlobalLayoutMobileHeader`, `global-container→GlobalLayout`. Clicking the sidebar aside now resolves to a REAL source tag, so className/prop writes pass the mutator's tag guard instead of no-opping.
+- **Subcomponent contracts** — the panel looks contracts up by clicked name (`BreadcrumbLink`), but sidecars folded sub props onto the root with a name prefix → parts showed no props. `generate-brightlocal-contracts.mjs` now splits them back out: +292 contracts (all props optional — panel-driving, never save-blocking). Clicking a breadcrumb link now shows `href`/`asChild`.
+- **Needs**: docs dev-server picks these up on reload; the MCP server needs `pnpm -F @gradeui/mcp-server build` + restart to validate with the new contracts (existing screens unaffected — all new props optional).
+
+## OPEN — registry-centric token layer (fill picker / TokenField)
+
+The inspector's PROP layer is registry-aware (contracts); the STYLE layer is not — the Fill picker and TokenField offer gradeui tokens even on BrightLocal projects. Needed: the registry seam described in STUDIO-FILLS/STUDIO-TOKENFIELD feeding BL's `--ds-*` palette (and its Tailwind class vocabulary) into the token picker + className editing. Until then, BL styling edits via the panel should use the className field with BL-valid classes.

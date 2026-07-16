@@ -114,6 +114,22 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
       accordion: "Accordion", alert: "Alert", progress: "Progress",
       slider: "Slider", stepper: "Stepper", chip: "Chip", rating: "Rating",
     },
+    // global-layout.js breaks the "slot = component name" convention the
+    // rest of the library follows — it stamps SHORTENED slots (verified
+    // against the 2.20.0 dist, July 2026). Map them to the export whose
+    // root element carries them so selection, contract lookup, and the
+    // source mutator's tag guard all agree. `global-container` is
+    // GlobalLayout's INTERNAL max-width div (not an export) — aliased to
+    // its owner so clicking it edits the GlobalLayout tag.
+    partAliases: {
+      "sidebar-container": "GlobalLayoutSidebar",
+      "content-wrapper": "GlobalLayoutContent",
+      "content-header": "GlobalLayoutContentHeader",
+      "content-body": "GlobalLayoutContentBody",
+      "content-actions": "GlobalLayoutContentActions",
+      "mobile-header": "GlobalLayoutMobileHeader",
+      "global-container": "GlobalLayout",
+    },
   },
   prompt: {
     extraRules: BRIGHTLOCAL_RULES,

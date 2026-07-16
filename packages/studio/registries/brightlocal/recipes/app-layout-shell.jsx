@@ -53,7 +53,7 @@ function sidebarTone(bg, fg, accent, accentFg, border) {
 
 const SIDEBAR_TONES = {
   default: {},
-  // Pure white panel — pairs with pageLayers "tinted" (white nav +
+  // Pure white panel — pairs with pageLayers "raised" (white nav +
   // white cards on the green-grey canvas) and the flush frame's
   // default border.
   white: sidebarTone(
@@ -98,12 +98,25 @@ const SIDEBAR_FRAMES = {
   // pinned top/height, which MUST stay inline style — the DS sets those
   // inline on the aside, and classes can't beat inline styles.
   flush: { margin: 0, classes: "" },
-  floating: { margin: 12, classes: "m-3 overflow-hidden rounded-2xl" },
+  // shadow-sm lifts the panel off a near-white canvas — with the
+  // 50-step tint, the border alone doesn't carry the elevation.
+  floating: { margin: 12, classes: "m-3 overflow-hidden rounded-2xl shadow-sm" },
+};
+
+// Sidebar shadow presets — Tailwind's scale, switchable independently
+// of the frame. "frame" = whatever the frame preset ships (floating's
+// shadow-sm); anything else replaces it.
+const SIDEBAR_SHADOWS = {
+  frame: null,
+  none: "",
+  sm: "shadow-sm",
+  md: "shadow-md",
+  lg: "shadow-lg",
 };
 
 // Page layer presets — the page-side counterpart of SIDEBAR_TONES:
 // re-point the PAGE tokens (canvas + card surface) on the layout root.
-// "tinted": canvas on the subtlest green-grey (BL's neutral ramp is
+// "raised": canvas on the subtlest green-grey (BL's neutral ramp is
 // green-tinted), cards lift to WHITE. Both var prefixes for the same
 // reason as the sidebar tones (utilities read --color-*; :root
 // indirections resolve where DEFINED). backgroundColor paints the
@@ -114,7 +127,7 @@ const PAGE_LAYERS = {
   // Canvas at neutral-50 (#fcfdfc — the faintest tint; neutral-100
   // read too strong), cards pure white, muted UP to neutral-100 so
   // filled surfaces sit between card and canvas.
-  tinted: {
+  raised: {
     backgroundColor: "var(--ds-tailwind-colors-neutral-50)",
     "--background": "var(--ds-tailwind-colors-neutral-50)",
     "--color-background": "var(--ds-tailwind-colors-neutral-50)",
@@ -136,7 +149,7 @@ function AppLayoutShell({
   // Sidebar locked to the viewport edge, full height. The DS default
   // offsets it by --ds-section-padding-y-sm, which is wrong once flush.
   pinnedSidebar = true,
-  sidebarTone = "default", // "default" | "white" | "subtle" | "dark" | "brand"
+  sidebarTone = "white", // "default" | "white" | "subtle" | "dark" | "brand"
   // Carry the tone onto the MOBILE Sheet too. The Sheet portals to
   // document.body — outside this tree — so container-level vars can't
   // reach it; a scoped <style> targeting its data-sidebar/data-mobile
@@ -152,12 +165,15 @@ function AppLayoutShell({
   // How the sidebar sits against the screen edge (desktop only — the
   // aside is hidden below lg). Presets in SIDEBAR_FRAMES above.
   sidebarFrame = "floating", // "flush" | "floating"
+  // Sidebar drop shadow — overrides the frame's own. Presets in
+  // SIDEBAR_SHADOWS. "frame" (default) defers to the frame preset.
+  sidebarShadow = "frame", // "frame" | "none" | "sm" | "md" | "lg"
   // Optional 1px border around the sidebar container. Any CSS color —
   // tokens welcome: "var(--sidebar-border)", "var(--ds-tailwind-colors-neutral-200)".
   sidebarBorder,
   // Page-wide layer treatment — canvas + card surface. Presets in
-  // PAGE_LAYERS above. "tinted" = green-grey canvas, white cards.
-  pageLayers = "default", // "default" | "tinted"
+  // PAGE_LAYERS above. "raised" = green-grey canvas, white cards.
+  pageLayers = "raised", // "default" | "raised"
   sidebar,
   header,
   // Mobile top bar slot (hamburger + logo). Rendered FIRST inside the
@@ -169,9 +185,19 @@ function AppLayoutShell({
   dataHook = "app-layout",
 }) {
   const flushClasses = flush
-    ? "[&>[data-radix-scroll-area-viewport]]:p-0! [&_[data-slot=app-layout-shell]]:p-0!"
+    ? // Zero the baked padding for the desktop flush layout, but put a
+      // uniform p-4 BACK below lg — the sidebar is hidden there and the
+      // content column was hugging the screen edges on tablet/mobile.
+      "[&>[data-radix-scroll-area-viewport]]:p-0! [&_[data-slot=app-layout-shell]]:p-0! [&_[data-slot=app-layout-shell]]:max-lg:p-4!"
     : "";
   const frame = SIDEBAR_FRAMES[sidebarFrame] ?? SIDEBAR_FRAMES.flush;
+  const shadowOverride = SIDEBAR_SHADOWS[sidebarShadow] ?? null;
+  const frameClasses =
+    shadowOverride === null
+      ? frame.classes
+      : [frame.classes.replace(/\bshadow-\w+\b/g, "").trim(), shadowOverride]
+          .filter(Boolean)
+          .join(" ");
   // Pinned/flush sidebars get a border BY DEFAULT — without a
   // containing edge the horizontal rules float on the page. Floating
   // frames have their own boundary (radius + lift). Explicit
@@ -181,6 +207,15 @@ function AppLayoutShell({
     (sidebarFrame === "flush" ? "var(--sidebar-border)" : undefined);
   const tone = SIDEBAR_TONES[sidebarTone] ?? {};
   const layers = PAGE_LAYERS[pageLayers] ?? {};
+  // Tinted layers earn the floating-panel card treatment page-wide:
+  // filled cards are already WHITE (the layer re-points --card) — the
+  // shadow lifts them off the near-white canvas, same as the floating
+  // sidebar frame. Border softens to the light hairline. Scoped <style>
+  // because a box-shadow can't ride a token swap.
+  const layerCss =
+    pageLayers === "raised"
+      ? `[data-slot="card"]{box-shadow:0 1px 3px 0 rgb(0 0 0/0.06),0 1px 2px -1px rgb(0 0 0/0.06);border-color:var(--ds-tailwind-colors-neutral-100)}`
+      : "";
   const mobileToneCss =
     mobileTone && Object.keys(tone).length > 0
       ? `[data-sidebar="sidebar"][data-mobile="true"]{${Object.entries(tone)
@@ -205,7 +240,7 @@ function AppLayoutShell({
       // inside resolves against them.
       style={layers}
     >
-      {mobileToneCss ? <style>{mobileToneCss}</style> : null}
+      {mobileToneCss || layerCss ? <style>{mobileToneCss + layerCss}</style> : null}
       <GlobalLayoutSidebar
         dataHook={`${dataHook}-sidebar`}
         // Tailwind for everything static (py-4 breathing room, frame
@@ -214,7 +249,7 @@ function AppLayoutShell({
         // values, and tone/border-color are dynamic.
         className={[
           "pt-4",
-          frame.classes,
+          frameClasses,
           borderColor ? (sidebarFrame === "flush" ? "border-r" : "border") : "",
         ]
           .filter(Boolean)

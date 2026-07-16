@@ -14,7 +14,6 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@brightlocal/ui-components/breadcrumb";
 import { Badge } from "@brightlocal/ui-components/badge";
@@ -23,7 +22,9 @@ import { TypographyH2 } from "@brightlocal/ui-components/typography";
 <GlobalLayoutContentHeader dataHook="page-header">
   <div className="flex w-full flex-wrap items-end justify-between gap-4">
     <div className="flex min-w-0 flex-col gap-1">
-      {/* Trail: ancestors as links, current page as BreadcrumbPage. */}
+      {/* Trail RULE: ANCESTORS ONLY, max two — the current page never
+          appears in the breadcrumb (the title below IS the current
+          page). BreadcrumbPage is deliberately unused. */}
       <Breadcrumb dataHook="page-breadcrumb">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -32,10 +33,6 @@ import { TypographyH2 } from "@brightlocal/ui-components/typography";
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink href="#">Blackberry Farm Park</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Monitor Reviews</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

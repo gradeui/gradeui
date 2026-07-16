@@ -1,6 +1,10 @@
-// Sidebar Switcher — App shell with an account switcher (SidebarSwitcher) at the top and per-section collapsible submenus.
+// Hub Page — Location hub: sidebar shell + hub header + a responsive grid of HubStatCards (icon, title, description, metric, CTA) linking into each module.
 //
-// Sidebar proposal (July 2026): SidebarSwitcher in the header driving a
+// Composed FROM the registry's own parts (July 2026): the
+// sidebar-switcher template's AppLayoutShell (white sidebar + raised
+// layers by default) and recipes/hub-stat-card.jsx — this template is
+// the canonical hub-screen starting point. SidebarSwitcher in the
+// header driving a
 // SidebarPopoverMenu of accounts, and each nav section rendered as a
 // SidebarMenuCollapsible whose bordered submenu expands for the selected
 // section. Composed the way blocks-sidebar--default and
@@ -19,8 +23,13 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
+  Button,
   Card,
   CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
   Chip,
   GlobalLayout,
   GlobalLayoutContent,
@@ -50,6 +59,7 @@ import {
   SidebarSwitcher,
   SidebarTrigger,
   TypographyH2,
+  TypographyH3,
 } from "@brightlocal/ui-components";
 import {
   BarChart3,
@@ -530,6 +540,115 @@ function NavSection({ section }) {
   );
 }
 
+// ─── HubStatCard (in-file — canonical copy: recipes/hub-stat-card.jsx) ───
+// ─── The canonical arrangement ──────────────────────────────────────
+// icon → title → description → metric (+ optional delta chip) → CTA.
+// `metric` and `delta` accept ReactNodes so screens can pass richer
+// values (a formatted number, a sparkline) without changing the seam.
+function HubStatCard({
+  icon: Icon,
+  title,
+  description,
+  metric,
+  delta,
+  cta = "View",
+  ctaHook,
+  dataHook,
+}) {
+  // The whole card is a drill-down target — hover lifts it a step
+  // above the resting layer shadow. Wire navigation per-screen (the
+  // CTA carries the same destination for keyboard/AT users).
+  return (
+    <Card
+      density="condensed"
+      className="max-w-none cursor-pointer transition-shadow hover:shadow-md"
+      dataHook={dataHook}
+    >
+      <CardHeader>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            {/* Icon tile pinned to neutral-50 — the faintest step, so
+                it reads on BOTH a raised white card and a regular
+                default/filled card without riding the muted token
+                (which the raised layer bumps to neutral-100). */}
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-neutral-50)]">
+              <Icon className="size-4" />
+            </div>
+            {/* DS scale reference (2.20.0): CardTitle default =
+                text-2xl font-medium (too big here); size="small" =
+                text-base — the sanctioned smaller title. Weight bumped
+                to semibold; size stays on their scale. */}
+            <CardTitle size="small" className="font-semibold">
+              {title}
+            </CardTitle>
+          </div>
+          <CardDescription>{description}</CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-baseline gap-2">
+          <span className="text-5xl font-semibold tracking-tight">
+            {metric}
+          </span>
+          {/* Badge, NOT Chip — BL's Chip always renders a remove ✕
+              (it's a dismissible input); Badge is the read-only
+              status/delta component. */}
+          {delta ? <Badge variant="secondary">{delta}</Badge> : null}
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button variant="secondary" size="sm" dataHook={ctaHook}>
+          {cta}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+// ─── HubHeroCard (in-file — canonical copy: recipes/hub-hero-card.jsx) ───
+function HubHeroCard({
+  title,
+  description,
+  primaryCta = "Get started",
+  primaryHook,
+  secondaryCta,
+  secondaryHook,
+  media,
+  dataHook,
+}) {
+  return (
+    <Card density="condensed" className="max-w-none" dataHook={dataHook}>
+      <CardContent>
+        <div className="flex items-center gap-8">
+          {/* Copy column */}
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-3 py-4">
+            <TypographyH3>{title}</TypographyH3>
+            <p className="text-muted-foreground max-w-prose text-sm">
+              {description}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button dataHook={primaryHook}>{primaryCta}</Button>
+              {secondaryCta ? (
+                <Button variant="ghost" dataHook={secondaryHook}>
+                  {secondaryCta}
+                </Button>
+              ) : null}
+            </div>
+          </div>
+          {/* Media column — hidden below md */}
+          <div className="hidden w-2/5 shrink-0 self-stretch md:block">
+            {media ?? (
+              <div className="flex h-full min-h-40 items-center justify-center rounded-lg border border-[var(--ds-tailwind-colors-neutral-100)] bg-[var(--ds-tailwind-colors-neutral-50)]">
+                <Sparkles className="text-muted-foreground size-6" />
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function App() {
   const sidebar = (
     <Sidebar dataHook="app-sidebar">
@@ -650,13 +769,9 @@ export default function App() {
           <BreadcrumbItem>
             <BreadcrumbLink href="#">Your Locations</BreadcrumbLink>
           </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="#">Blackberry Farm Park</BreadcrumbLink>
-          </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <TypographyH2 dataHook="page-title">Monitor Reviews</TypographyH2>
+      <TypographyH2 dataHook="page-title">Location Hub</TypographyH2>
       <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
         <span>Blackberry Farm Park — Lewes, BN8 6JD</span>
         <Badge dataHook="location-status">Active</Badge>
@@ -673,7 +788,7 @@ export default function App() {
         flush={true}
         stickyHeader={true}
         pinnedSidebar={true}
-        sidebarTone="default"
+        sidebarTone="white"
         sidebar={sidebar}
         header={header}
         mobileBar={
@@ -687,18 +802,78 @@ export default function App() {
         dataHook="app-layout"
       >
         <GlobalLayoutContentBody dataHook="page-body">
-          <Card variant="filled" className="max-w-none" dataHook="content-placeholder">
-            <CardContent>
-              <p className="text-muted-foreground py-16 text-center text-sm">
-                Content region — tall on purpose so the sticky header and
-                pinned sidebar are visible while scrolling.
-              </p>
-              {/* Height-only spacer — an earlier bg-muted version painted a
-                  huge neutral-100 rectangle that read as "the canvas is
-                  too strong". */}
-              <div className="h-[1200px]" />
-            </CardContent>
-          </Card>
+          <HubHeroCard
+            title="Get more from your local presence"
+            description="AI Insights reviews your listings, rankings and reviews together and tells you the three things to fix first."
+            primaryCta="Run AI Insights"
+            primaryHook="hub-hero-primary"
+            secondaryCta="See how it works"
+            secondaryHook="hub-hero-secondary"
+            dataHook="hub-hero-card"
+          />
+          {/* Tracks own the sizing — Card bakes max-w-[400px], hence
+              max-w-none inside HubStatCard. */}
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <HubStatCard
+              icon={Star}
+              title="Reviews"
+              description="Monitor and respond across 30+ sites"
+              metric="4.3"
+              delta="+0.2 this month"
+              cta="Monitor Reviews"
+              ctaHook="hub-reviews-cta"
+              dataHook="hub-reviews-card"
+            />
+            <HubStatCard
+              icon={TrendingUp}
+              title="Rankings"
+              description="Local search positions for tracked keywords"
+              metric="12"
+              delta="↑ 3 places"
+              cta="View Rankings"
+              ctaHook="hub-rankings-cta"
+              dataHook="hub-rankings-card"
+            />
+            <HubStatCard
+              icon={Link}
+              title="Citations"
+              description="Live listings across the citation network"
+              metric="86"
+              cta="View Citations"
+              ctaHook="hub-citations-cta"
+              dataHook="hub-citations-card"
+            />
+            <HubStatCard
+              icon={Grid3x3}
+              title="Local Search Grid"
+              description="Map-grid visibility for your keywords"
+              metric="5"
+              delta="keywords tracked"
+              cta="Open Grid"
+              ctaHook="hub-lsg-cta"
+              dataHook="hub-lsg-card"
+            />
+            <HubStatCard
+              icon={Store}
+              title="GBP Manager"
+              description="Posts, Q&A and profile updates"
+              metric="3"
+              delta="pending posts"
+              cta="Manage Profile"
+              ctaHook="hub-gbp-cta"
+              dataHook="hub-gbp-card"
+            />
+            <HubStatCard
+              icon={Globe}
+              title="Website SEO"
+              description="On-site health and optimisation"
+              metric="78"
+              delta="site score"
+              cta="View Report"
+              ctaHook="hub-seo-cta"
+              dataHook="hub-seo-card"
+            />
+          </div>
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

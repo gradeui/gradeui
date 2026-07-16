@@ -196,7 +196,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         ],
         "design": "knob",
         "optional": true,
-        "description": "Re-skin the sidebar by re-pointing the --sidebar-* CSS variables on its container. Pure token swap; component internals untouched. (default \"default\")"
+        "description": "Re-skin the sidebar by re-pointing the --sidebar-* CSS variables on its container. Pure token swap; component internals untouched. (default \"white\")"
       },
       "contentMaxWidth": {
         "kind": "string",
@@ -214,15 +214,28 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "How the sidebar sits against the screen edge (desktop only). \"flush\" = hard against it; \"floating\" = lifted off a little (12px margin + 16px radius — presets in SIDEBAR_FRAMES, tweak them in code). (default \"floating\")"
       },
+      "sidebarShadow": {
+        "kind": "enum",
+        "values": [
+          "frame",
+          "none",
+          "sm",
+          "md",
+          "lg"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Sidebar drop shadow on Tailwind's scale, independent of the frame. \"frame\" (default) defers to the frame preset (floating ships shadow-sm). (default \"frame\")"
+      },
       "pageLayers": {
         "kind": "enum",
         "values": [
           "default",
-          "tinted"
+          "raised"
         ],
         "design": "knob",
         "optional": true,
-        "description": "Page-wide layer treatment: re-points the canvas + card tokens on the layout root. \"tinted\" = subtlest green-grey canvas (neutral-100), WHITE cards, muted drops to neutral-50. Presets in PAGE_LAYERS — tweak in code. (default \"default\")"
+        "description": "Page-wide layer treatment: re-points the canvas + card tokens on the layout root. \"raised\" = subtlest green-grey canvas (neutral-50), WHITE elevated cards, muted up to neutral-100. Presets in PAGE_LAYERS — tweak in code. (default \"raised\")"
       },
       "sidebarBorder": {
         "kind": "string",
@@ -4493,5 +4506,2808 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "description": "Allows getting a ref to the component instance. Once the component unmounts, React will set `ref.current` to `null` (or call the ref with `null` if you passed a callback ref). @see {@link https://react.dev/learn/referencing-values-with-refs#refs-and-the-dom React Docs}"
       }
     }
+  },
+  "AccordionItem": {
+    "name": "AccordionItem",
+    "description": "Part of Accordion.",
+    "props": {}
+  },
+  "AccordionTrigger": {
+    "name": "AccordionTrigger",
+    "description": "Part of Accordion.",
+    "props": {}
+  },
+  "AccordionContent": {
+    "name": "AccordionContent",
+    "description": "Part of Accordion.",
+    "props": {
+      "forceMount": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Force mounting of the content when true"
+      }
+    }
+  },
+  "AlertDialogTrigger": {
+    "name": "AlertDialogTrigger",
+    "description": "Part of AlertDialog.",
+    "props": {}
+  },
+  "AlertDialogContent": {
+    "name": "AlertDialogContent",
+    "description": "Part of AlertDialog.",
+    "props": {}
+  },
+  "AlertDialogHeader": {
+    "name": "AlertDialogHeader",
+    "description": "Part of AlertDialog.",
+    "props": {}
+  },
+  "AlertDialogFooter": {
+    "name": "AlertDialogFooter",
+    "description": "Part of AlertDialog.",
+    "props": {}
+  },
+  "AlertDialogTitle": {
+    "name": "AlertDialogTitle",
+    "description": "Part of AlertDialog.",
+    "props": {}
+  },
+  "AlertDialogDescription": {
+    "name": "AlertDialogDescription",
+    "description": "Part of AlertDialog.",
+    "props": {}
+  },
+  "AlertDialogAction": {
+    "name": "AlertDialogAction",
+    "description": "Part of AlertDialog.",
+    "props": {}
+  },
+  "AlertDialogCancel": {
+    "name": "AlertDialogCancel",
+    "description": "Part of AlertDialog.",
+    "props": {}
+  },
+  "AlertTitle": {
+    "name": "AlertTitle",
+    "description": "Part of Alert.",
+    "props": {}
+  },
+  "AlertDescription": {
+    "name": "AlertDescription",
+    "description": "Part of Alert.",
+    "props": {}
+  },
+  "AlertSuccess": {
+    "name": "AlertSuccess",
+    "description": "Part of Alert.",
+    "props": {}
+  },
+  "AlertInfo": {
+    "name": "AlertInfo",
+    "description": "Part of Alert.",
+    "props": {}
+  },
+  "AlertDestructive": {
+    "name": "AlertDestructive",
+    "description": "Part of Alert.",
+    "props": {}
+  },
+  "AlertWarning": {
+    "name": "AlertWarning",
+    "description": "Part of Alert.",
+    "props": {}
+  },
+  "AvatarImage": {
+    "name": "AvatarImage",
+    "description": "Part of Avatar.",
+    "props": {
+      "src": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "The image source URL"
+      },
+      "alt": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Alternative text for the image for accessibility"
+      }
+    }
+  },
+  "AvatarFallback": {
+    "name": "AvatarFallback",
+    "description": "Part of Avatar.",
+    "props": {}
+  },
+  "BreadcrumbList": {
+    "name": "BreadcrumbList",
+    "description": "Part of Breadcrumb.",
+    "props": {}
+  },
+  "BreadcrumbItem": {
+    "name": "BreadcrumbItem",
+    "description": "Part of Breadcrumb.",
+    "props": {}
+  },
+  "BreadcrumbLink": {
+    "name": "BreadcrumbLink",
+    "description": "Part of Breadcrumb.",
+    "props": {
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Render as a different element (Radix Slot pattern)"
+      },
+      "href": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "URL the breadcrumb link navigates to"
+      }
+    }
+  },
+  "BreadcrumbPage": {
+    "name": "BreadcrumbPage",
+    "description": "Part of Breadcrumb.",
+    "props": {}
+  },
+  "BreadcrumbSeparator": {
+    "name": "BreadcrumbSeparator",
+    "description": "Part of Breadcrumb.",
+    "props": {}
+  },
+  "BreadcrumbEllipsis": {
+    "name": "BreadcrumbEllipsis",
+    "description": "Part of Breadcrumb.",
+    "props": {
+      "srLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Screen-reader-only label for the ellipsis. (default \"More\")"
+      }
+    }
+  },
+  "CalloutHeading": {
+    "name": "CalloutHeading",
+    "description": "Part of Callout.",
+    "props": {}
+  },
+  "CalloutCitation": {
+    "name": "CalloutCitation",
+    "description": "Part of Callout.",
+    "props": {}
+  },
+  "CardHeader": {
+    "name": "CardHeader",
+    "description": "Part of Card.",
+    "props": {
+      "align": {
+        "kind": "enum",
+        "values": [
+          "left",
+          "center",
+          "right"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Content alignment within the header. Use `\"center\"` for status screens with an illustration above heading and description. (default \"left\")"
+      }
+    }
+  },
+  "CardFooter": {
+    "name": "CardFooter",
+    "description": "Part of Card.",
+    "props": {}
+  },
+  "CardTitle": {
+    "name": "CardTitle",
+    "description": "Part of Card.",
+    "props": {
+      "size": {
+        "kind": "enum",
+        "values": [
+          "small",
+          "default"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Title text size. (default \"default\")"
+      }
+    }
+  },
+  "CardAction": {
+    "name": "CardAction",
+    "description": "Part of Card.",
+    "props": {}
+  },
+  "CardDescription": {
+    "name": "CardDescription",
+    "description": "Part of Card.",
+    "props": {}
+  },
+  "CardMedia": {
+    "name": "CardMedia",
+    "description": "Part of Card.",
+    "props": {}
+  },
+  "CardContent": {
+    "name": "CardContent",
+    "description": "Part of Card.",
+    "props": {}
+  },
+  "CarouselContent": {
+    "name": "CarouselContent",
+    "description": "Part of Carousel.",
+    "props": {}
+  },
+  "CarouselItem": {
+    "name": "CarouselItem",
+    "description": "Part of Carousel.",
+    "props": {}
+  },
+  "CarouselPrevious": {
+    "name": "CarouselPrevious",
+    "description": "Part of Carousel.",
+    "props": {
+      "variant": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Visual style variant of the button (default \"outline\")"
+      },
+      "size": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Size variant of the button (default \"default\")"
+      },
+      "hideWhenDisabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Hide the button instead of disabling it when there are no previous slides (default false)"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible label for the previous slide button. (default \"Previous) slide\""
+      }
+    }
+  },
+  "CarouselNext": {
+    "name": "CarouselNext",
+    "description": "Part of Carousel.",
+    "props": {}
+  },
+  "CarouselDots": {
+    "name": "CarouselDots",
+    "description": "Part of Carousel.",
+    "props": {}
+  },
+  "CentredLayoutHeader": {
+    "name": "CentredLayoutHeader",
+    "description": "Part of CentredLayout.",
+    "props": {
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Header content (e.g., Header component with Logo)"
+      }
+    }
+  },
+  "CentredLayoutContent": {
+    "name": "CentredLayoutContent",
+    "description": "Part of CentredLayout.",
+    "props": {}
+  },
+  "ChartTooltip": {
+    "name": "ChartTooltip",
+    "description": "Part of ChartContainer.",
+    "props": {
+      "hideLabel": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Hide the tooltip label"
+      },
+      "hideIndicator": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Hide the color indicator"
+      },
+      "indicator": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Style of the color indicator"
+      },
+      "nameKey": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Key to use for the series name"
+      },
+      "labelKey": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Key to use for the label"
+      }
+    }
+  },
+  "ChartTooltipContent": {
+    "name": "ChartTooltipContent",
+    "description": "Part of ChartContainer.",
+    "props": {
+      "labelFormatter": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Custom label formatter function"
+      },
+      "labelClassName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Additional CSS class for the label"
+      },
+      "formatter": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Custom value formatter function"
+      }
+    }
+  },
+  "CollapsibleTrigger": {
+    "name": "CollapsibleTrigger",
+    "description": "Part of Collapsible.",
+    "props": {}
+  },
+  "CollapsibleContent": {
+    "name": "CollapsibleContent",
+    "description": "Part of Collapsible.",
+    "props": {}
+  },
+  "ComboboxTrigger": {
+    "name": "ComboboxTrigger",
+    "description": "Part of Combobox.",
+    "props": {
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the combobox trigger. Use either aria-label or aria-labelledby for accessibility. / \"aria-label\"?: string; / ID reference to a label element that provides the accessible name / \"aria-labelledby\"?: string; / Whether the combobox trigger has an error state"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      }
+    }
+  },
+  "ComboboxContent": {
+    "name": "ComboboxContent",
+    "description": "Part of Combobox.",
+    "props": {
+      "align": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Alignment of the popover relative to trigger"
+      },
+      "side": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Which side of the trigger to render the popover. Only vertical positioning is supported — the dropdown spans the full trigger width. (default \"bottom\")"
+      },
+      "sideOffset": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Distance in px between the trigger and the popover. (default 4)"
+      },
+      "avoidCollisions": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When true, Radix avoids collisions with the viewport/boundaries by flipping and/or shifting the popover to keep it in view. Set to false to disable collision handling and force the requested position. (default true)"
+      },
+      "hideList": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Hide the list area (and the input border). Useful for async search where you want to hide results until a minimum character count."
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible label for the options popover. (default \"Options\")"
+      }
+    }
+  },
+  "ComboboxInput": {
+    "name": "ComboboxInput",
+    "description": "Part of Combobox.",
+    "props": {
+      "debounceMs": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Debounce delay in milliseconds for the `onValueChange` callback. The input display updates immediately; only the callback is debounced. Useful for async search to avoid firing API calls on every keystroke. @example 300"
+      }
+    }
+  },
+  "ComboboxList": {
+    "name": "ComboboxList",
+    "description": "Part of Combobox.",
+    "props": {}
+  },
+  "ComboboxVirtualList": {
+    "name": "ComboboxVirtualList",
+    "description": "Part of Combobox.",
+    "props": {
+      "items": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Array of items to virtualise. Memoize with useMemo to avoid re-registering labels on every render."
+      },
+      "getItemValue": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Extract the string value for each item (used for selection and keyboard navigation). Auto-inferred for items with a `value` string property."
+      },
+      "getItemLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Extract a display label for filtering and trigger display. Defaults to `getItemValue`. Only used when `shouldFilter` is true on the parent Combobox."
+      },
+      "getItemKeywords": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Extract additional keywords to match against when filtering. The item label is always included automatically — these are extras (e.g. ISO codes, abbreviations) that should be searchable without appearing in the trigger display."
+      },
+      "estimateSize": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Estimated item height in pixels. (default 36)"
+      },
+      "overscan": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Number of items to render above and below the visible area. (default 5)"
+      },
+      "renderEmpty": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Content to render when no items match the filter"
+      }
+    }
+  },
+  "ComboboxEmpty": {
+    "name": "ComboboxEmpty",
+    "description": "Part of Combobox.",
+    "props": {}
+  },
+  "ComboboxGroup": {
+    "name": "ComboboxGroup",
+    "description": "Part of Combobox.",
+    "props": {}
+  },
+  "ComboboxItem": {
+    "name": "ComboboxItem",
+    "description": "Part of Combobox.",
+    "props": {
+      "label": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Display label - if not provided, inferred from children text content. Required when children are React elements (not plain text) to enable label-based search and trigger display."
+      },
+      "highlight": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Text to highlight in the item (typically the search query)"
+      },
+      "highlightClassName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Class name for highlighted text"
+      },
+      "keywords": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Additional keywords to match against when filtering. The item label is always included automatically."
+      },
+      "onSelect": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback fired when the item is activated (clicked or chosen via keyboard). Fires on every activation, including when the item is being deselected (toggled off). Always receives the item's own value, not the resulting combobox value — use `Combobox`'s `onValueChange` for selection state. @param value - The value of the activated item"
+      }
+    }
+  },
+  "ComboboxSeparator": {
+    "name": "ComboboxSeparator",
+    "description": "Part of Combobox.",
+    "props": {}
+  },
+  "ComboboxValue": {
+    "name": "ComboboxValue",
+    "description": "Part of Combobox.",
+    "props": {
+      "placeholder": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Placeholder text when no value is selected"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Custom className"
+      }
+    }
+  },
+  "ComboboxLoading": {
+    "name": "ComboboxLoading",
+    "description": "Part of Combobox.",
+    "props": {
+      "loadingText": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Loading text displayed next to the spinner. (default \"Loading...\")"
+      }
+    }
+  },
+  "CommandEmpty": {
+    "name": "CommandEmpty",
+    "description": "Part of Command.",
+    "props": {}
+  },
+  "CommandGroup": {
+    "name": "CommandGroup",
+    "description": "Part of Command.",
+    "props": {}
+  },
+  "CommandInput": {
+    "name": "CommandInput",
+    "description": "Part of Command.",
+    "props": {
+      "onClear": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback when clear button is clicked"
+      },
+      "debounceMs": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Debounce delay in milliseconds for the `onValueChange` callback. The input display updates immediately; only the callback is debounced. Useful for async filtering to avoid firing on every keystroke. @example 300"
+      },
+      "clearSearchAriaLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the clear button. (default \"Clear) search\""
+      }
+    }
+  },
+  "CommandItem": {
+    "name": "CommandItem",
+    "description": "Part of Command.",
+    "props": {
+      "selected": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the item is selected (shows checkmark)"
+      }
+    }
+  },
+  "CommandList": {
+    "name": "CommandList",
+    "description": "Part of Command.",
+    "props": {}
+  },
+  "CommandSeparator": {
+    "name": "CommandSeparator",
+    "description": "Part of Command.",
+    "props": {}
+  },
+  "CommandShortcut": {
+    "name": "CommandShortcut",
+    "description": "Part of Command.",
+    "props": {}
+  },
+  "CommandVirtualItem": {
+    "name": "CommandVirtualItem",
+    "description": "Part of Command.",
+    "props": {
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Unique value identifying this item."
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether this item is disabled."
+      },
+      "onSelect": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback when the item is activated (click or Enter)."
+      }
+    }
+  },
+  "CommandVirtualList": {
+    "name": "CommandVirtualList",
+    "description": "Part of Command.",
+    "props": {
+      "items": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Array of items to render. Memoize to avoid re-registration on every render."
+      },
+      "getItemValue": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Extract a unique string value from each item."
+      },
+      "getItemLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Extract a display label for filtering. Defaults to `getItemValue`."
+      },
+      "getItemKeywords": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Extra searchable keywords per item."
+      },
+      "estimateSize": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Estimated item height in px for the virtualiser. (default 44)"
+      },
+      "overscan": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Number of items to render outside the visible viewport. (default 5)"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Render function called for each visible item."
+      },
+      "renderEmpty": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Content rendered when the filtered list is empty."
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the listbox. Required for a11y — describes the list's purpose to screen readers. / \"aria-label\": string; / Additional CSS classes for the scroll container."
+      }
+    }
+  },
+  "ContextMenuTrigger": {
+    "name": "ContextMenuTrigger",
+    "description": "Part of ContextMenu.",
+    "props": {}
+  },
+  "ContextMenuContent": {
+    "name": "ContextMenuContent",
+    "description": "Part of ContextMenu.",
+    "props": {}
+  },
+  "ContextMenuItem": {
+    "name": "ContextMenuItem",
+    "description": "Part of ContextMenu.",
+    "props": {
+      "inset": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether to add left padding for alignment with other items"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      }
+    }
+  },
+  "ContextMenuCheckboxItem": {
+    "name": "ContextMenuCheckboxItem",
+    "description": "Part of ContextMenu.",
+    "props": {}
+  },
+  "ContextMenuRadioGroup": {
+    "name": "ContextMenuRadioGroup",
+    "description": "Part of ContextMenu.",
+    "props": {}
+  },
+  "ContextMenuLabel": {
+    "name": "ContextMenuLabel",
+    "description": "Part of ContextMenu.",
+    "props": {}
+  },
+  "ContextMenuSeparator": {
+    "name": "ContextMenuSeparator",
+    "description": "Part of ContextMenu.",
+    "props": {}
+  },
+  "ContextMenuShortcut": {
+    "name": "ContextMenuShortcut",
+    "description": "Part of ContextMenu.",
+    "props": {}
+  },
+  "ContextMenuSub": {
+    "name": "ContextMenuSub",
+    "description": "Part of ContextMenu.",
+    "props": {}
+  },
+  "VirtualizedDataTable": {
+    "name": "VirtualizedDataTable",
+    "description": "Part of DataTable.",
+    "props": {
+      "height": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Height of the scroll container in pixels. Required — virtualization needs a bounded viewport. Pass a CSS value via `className` instead if you need responsive heights (e.g. `className=\"h-[80vh]\"`), and omit this prop."
+      },
+      "estimateSize": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Estimated height of a single row in pixels. The virtualizer uses this for initial layout before measuring real DOM nodes. (default 48)"
+      },
+      "overscan": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Number of rows to render outside the visible viewport. Higher values reduce blank-flash on fast scrolling at the cost of more DOM nodes. (default 5)"
+      }
+    }
+  },
+  "useDataTable": {
+    "name": "useDataTable",
+    "description": "Part of DataTable.",
+    "props": {}
+  },
+  "DataTableColumnHeader": {
+    "name": "DataTableColumnHeader",
+    "description": "Part of DataTable.",
+    "props": {
+      "column": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "TanStack column instance (from the `header` render slot)."
+      },
+      "title": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Header label."
+      },
+      "align": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Alignment — should match the cell's alignment. (default \"left\")"
+      }
+    }
+  },
+  "DataTableSearch": {
+    "name": "DataTableSearch",
+    "description": "Part of DataTable.",
+    "props": {
+      "placeholder": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Input placeholder. (default \"Search...\")"
+      },
+      "clearSearchAriaLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the clear button. (default \"Clear) search\""
+      }
+    }
+  },
+  "DataTablePagination": {
+    "name": "DataTablePagination",
+    "description": "Part of DataTable.",
+    "props": {
+      "showRowCount": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Show the row count text in the default (non-compositional) layout. Ignored when `children` are provided — use `DataTablePaginationRowCount` instead. (default true)"
+      }
+    }
+  },
+  "DataTablePaginationRowCount": {
+    "name": "DataTablePaginationRowCount",
+    "description": "Part of DataTable.",
+    "props": {}
+  },
+  "DataTablePaginationNav": {
+    "name": "DataTablePaginationNav",
+    "description": "Part of DataTable.",
+    "props": {
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible label for the nav landmark. (default \"Table) pagination\""
+      }
+    }
+  },
+  "DataTableSelectAllCheckbox": {
+    "name": "DataTableSelectAllCheckbox",
+    "description": "Part of DataTable.",
+    "props": {
+      "selectAllAriaLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the select-all checkbox. (default \"Select) all\""
+      }
+    }
+  },
+  "DataTableSelectRowCheckbox": {
+    "name": "DataTableSelectRowCheckbox",
+    "description": "Part of DataTable.",
+    "props": {
+      "row": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "TanStack row instance."
+      }
+    }
+  },
+  "DataTableToolbar": {
+    "name": "DataTableToolbar",
+    "description": "Part of DataTable.",
+    "props": {
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Toolbar contents — typically `DataTableToolbarLeft` and `DataTableToolbarRight`."
+      }
+    }
+  },
+  "DataTableToolbarLeft": {
+    "name": "DataTableToolbarLeft",
+    "description": "Part of DataTable.",
+    "props": {}
+  },
+  "DataTableToolbarRight": {
+    "name": "DataTableToolbarRight",
+    "description": "Part of DataTable.",
+    "props": {}
+  },
+  "DatePickerTrigger": {
+    "name": "DatePickerTrigger",
+    "description": "Part of DatePickerRoot.",
+    "props": {
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the trigger has an error state"
+      },
+      "triggerLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the trigger button. (default \"Select) date\" (single) or \"Select date range\" (range)"
+      }
+    }
+  },
+  "DatePickerContent": {
+    "name": "DatePickerContent",
+    "description": "Part of DatePickerRoot.",
+    "props": {
+      "contentLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the date picker popover. (default \"Date) picker\" (single) or \"Date range picker\" (range)"
+      }
+    }
+  },
+  "DatePickerCalendar": {
+    "name": "DatePickerCalendar",
+    "description": "Part of DatePickerRoot.",
+    "props": {
+      "closeOnSelect": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether to close the popover when a date is selected (single mode only) (default true)"
+      }
+    }
+  },
+  "DatePickerPresets": {
+    "name": "DatePickerPresets",
+    "description": "Part of DatePickerRoot.",
+    "props": {
+      "presets": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Array of preset options (default DEFAULT_DATE_PRESETS)"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Additional class name"
+      }
+    }
+  },
+  "DialogTrigger": {
+    "name": "DialogTrigger",
+    "description": "Part of Dialog.",
+    "props": {}
+  },
+  "DialogPortal": {
+    "name": "DialogPortal",
+    "description": "Part of Dialog.",
+    "props": {}
+  },
+  "DialogClose": {
+    "name": "DialogClose",
+    "description": "Part of Dialog.",
+    "props": {}
+  },
+  "DialogOverlay": {
+    "name": "DialogOverlay",
+    "description": "Part of Dialog.",
+    "props": {}
+  },
+  "DialogContent": {
+    "name": "DialogContent",
+    "description": "Part of Dialog.",
+    "props": {
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "closeLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the close button. (default \"Close\")"
+      }
+    }
+  },
+  "DialogHeader": {
+    "name": "DialogHeader",
+    "description": "Part of Dialog.",
+    "props": {}
+  },
+  "DialogFooter": {
+    "name": "DialogFooter",
+    "description": "Part of Dialog.",
+    "props": {}
+  },
+  "DialogTitle": {
+    "name": "DialogTitle",
+    "description": "Part of Dialog.",
+    "props": {}
+  },
+  "DialogDescription": {
+    "name": "DialogDescription",
+    "description": "Part of Dialog.",
+    "props": {}
+  },
+  "DrawerTrigger": {
+    "name": "DrawerTrigger",
+    "description": "Part of Drawer.",
+    "props": {}
+  },
+  "DrawerPortal": {
+    "name": "DrawerPortal",
+    "description": "Part of Drawer.",
+    "props": {}
+  },
+  "DrawerClose": {
+    "name": "DrawerClose",
+    "description": "Part of Drawer.",
+    "props": {}
+  },
+  "DrawerOverlay": {
+    "name": "DrawerOverlay",
+    "description": "Part of Drawer.",
+    "props": {}
+  },
+  "DrawerContent": {
+    "name": "DrawerContent",
+    "description": "Part of Drawer.",
+    "props": {
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      }
+    }
+  },
+  "DrawerHeader": {
+    "name": "DrawerHeader",
+    "description": "Part of Drawer.",
+    "props": {}
+  },
+  "DrawerFooter": {
+    "name": "DrawerFooter",
+    "description": "Part of Drawer.",
+    "props": {}
+  },
+  "DrawerTitle": {
+    "name": "DrawerTitle",
+    "description": "Part of Drawer.",
+    "props": {}
+  },
+  "DrawerDescription": {
+    "name": "DrawerDescription",
+    "description": "Part of Drawer.",
+    "props": {}
+  },
+  "DropdownMenuTrigger": {
+    "name": "DropdownMenuTrigger",
+    "description": "Part of DropdownMenu.",
+    "props": {}
+  },
+  "DropdownMenuContent": {
+    "name": "DropdownMenuContent",
+    "description": "Part of DropdownMenu.",
+    "props": {}
+  },
+  "DropdownMenuGroup": {
+    "name": "DropdownMenuGroup",
+    "description": "Part of DropdownMenu.",
+    "props": {}
+  },
+  "DropdownMenuSeparator": {
+    "name": "DropdownMenuSeparator",
+    "description": "Part of DropdownMenu.",
+    "props": {}
+  },
+  "DropdownMenuItem": {
+    "name": "DropdownMenuItem",
+    "description": "Part of DropdownMenu.",
+    "props": {
+      "inset": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Indent the item (for hierarchical menus)"
+      }
+    }
+  },
+  "DropdownMenuCheckboxItem": {
+    "name": "DropdownMenuCheckboxItem",
+    "description": "Part of DropdownMenu.",
+    "props": {
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      }
+    }
+  },
+  "DropdownMenuRadioGroup": {
+    "name": "DropdownMenuRadioGroup",
+    "description": "Part of DropdownMenu.",
+    "props": {}
+  },
+  "DropdownMenuLabel": {
+    "name": "DropdownMenuLabel",
+    "description": "Part of DropdownMenu.",
+    "props": {}
+  },
+  "DropdownMenuShortcut": {
+    "name": "DropdownMenuShortcut",
+    "description": "Part of DropdownMenu.",
+    "props": {}
+  },
+  "DropdownMenuSub": {
+    "name": "DropdownMenuSub",
+    "description": "Part of DropdownMenu.",
+    "props": {}
+  },
+  "DropdownMenuSubContent": {
+    "name": "DropdownMenuSubContent",
+    "description": "Part of DropdownMenu.",
+    "props": {}
+  },
+  "DropdownMenuSubTrigger": {
+    "name": "DropdownMenuSubTrigger",
+    "description": "Part of DropdownMenu.",
+    "props": {}
+  },
+  "FieldLabel": {
+    "name": "FieldLabel",
+    "description": "Part of Field.",
+    "props": {
+      "htmlFor": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Required htmlFor attribute for linking label with input"
+      }
+    }
+  },
+  "FieldDescription": {
+    "name": "FieldDescription",
+    "description": "Part of Field.",
+    "props": {}
+  },
+  "FieldError": {
+    "name": "FieldError",
+    "description": "Part of Field.",
+    "props": {
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Error message to display as children"
+      },
+      "errors": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Array of error objects from form libraries (e.g., react-hook-form) Each error object should have a message property"
+      }
+    }
+  },
+  "FieldErrorIcon": {
+    "name": "FieldErrorIcon",
+    "description": "Part of Field.",
+    "props": {
+      "icon": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Custom icon component to render instead of the default AlertCircle. Pass a BrightLocal icon component (not an element). (default AlertCircle)"
+      }
+    }
+  },
+  "FieldGroup": {
+    "name": "FieldGroup",
+    "description": "Part of Field.",
+    "props": {}
+  },
+  "FieldLegend": {
+    "name": "FieldLegend",
+    "description": "Part of Field.",
+    "props": {
+      "variant": {
+        "kind": "enum",
+        "values": [
+          "default",
+          "box"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Visual style variant of the legend (default \"legend\")"
+      }
+    }
+  },
+  "FieldSet": {
+    "name": "FieldSet",
+    "description": "Part of Field.",
+    "props": {}
+  },
+  "FieldContent": {
+    "name": "FieldContent",
+    "description": "Part of Field.",
+    "props": {}
+  },
+  "GlobalLayoutSidebar": {
+    "name": "GlobalLayoutSidebar",
+    "description": "Part of GlobalLayout.",
+    "props": {
+      "width": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Width of the sidebar (default: 224px)"
+      }
+    }
+  },
+  "GlobalLayoutContent": {
+    "name": "GlobalLayoutContent",
+    "description": "Part of GlobalLayout.",
+    "props": {}
+  },
+  "GlobalLayoutContentActions": {
+    "name": "GlobalLayoutContentActions",
+    "description": "Part of GlobalLayout.",
+    "props": {}
+  },
+  "GlobalLayoutContentHeader": {
+    "name": "GlobalLayoutContentHeader",
+    "description": "Part of GlobalLayout.",
+    "props": {}
+  },
+  "GlobalLayoutContentBody": {
+    "name": "GlobalLayoutContentBody",
+    "description": "Part of GlobalLayout.",
+    "props": {}
+  },
+  "GlobalLayoutMobileHeader": {
+    "name": "GlobalLayoutMobileHeader",
+    "description": "Part of GlobalLayout.",
+    "props": {
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible label for the mobile navigation toolbar. (default \"Mobile) navigation\""
+      }
+    }
+  },
+  "HoverCardTrigger": {
+    "name": "HoverCardTrigger",
+    "description": "Part of HoverCard.",
+    "props": {
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the trigger is disabled"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional analytics element identifier"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional analytics label context"
+      }
+    }
+  },
+  "HoverCardContent": {
+    "name": "HoverCardContent",
+    "description": "Part of HoverCard.",
+    "props": {}
+  },
+  "InputChipInput": {
+    "name": "InputChipInput",
+    "description": "Part of InputChip.",
+    "props": {
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "placeholder": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Placeholder text for the input"
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the input has an error state"
+      },
+      "inputId": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "ID for the input element (for label association)"
+      }
+    }
+  },
+  "InputChipItems": {
+    "name": "InputChipItems",
+    "description": "Part of InputChip.",
+    "props": {
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Custom className for the container"
+      },
+      "dataHookPrefix": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Data hook prefix for chips"
+      }
+    }
+  },
+  "InputGroupInput": {
+    "name": "InputGroupInput",
+    "description": "Part of InputGroup.",
+    "props": {}
+  },
+  "InputGroupAddon": {
+    "name": "InputGroupAddon",
+    "description": "Part of InputGroup.",
+    "props": {}
+  },
+  "InputGroupButton": {
+    "name": "InputGroupButton",
+    "description": "Part of InputGroup.",
+    "props": {
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "size": {
+        "kind": "enum",
+        "values": [
+          "default",
+          "sm",
+          "lg",
+          "icon",
+          "icon-xs",
+          "icon-sm",
+          "icon-lg"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Size variant for the button. Options: \"default\" | \"sm\" | \"lg\" | \"icon\" | \"icon-xs\" | \"icon-sm\" | \"icon-lg\""
+      }
+    }
+  },
+  "InputListItems": {
+    "name": "InputListItems",
+    "description": "Part of InputList.",
+    "props": {
+      "loading": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Shows skeleton placeholder rows instead of the item list."
+      },
+      "skeletonCount": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Number of skeleton rows to render in the loading state. (default 5)"
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Disables all remove buttons in the list."
+      }
+    }
+  },
+  "InputListInput": {
+    "name": "InputListInput",
+    "description": "Part of InputList.",
+    "props": {
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Applies an error style to the input."
+      }
+    }
+  },
+  "InputListAddButton": {
+    "name": "InputListAddButton",
+    "description": "Part of InputList.",
+    "props": {}
+  },
+  "useInputListContext": {
+    "name": "useInputListContext",
+    "description": "Part of InputList.",
+    "props": {}
+  },
+  "InputOTPGroup": {
+    "name": "InputOTPGroup",
+    "description": "Part of InputOTP.",
+    "props": {}
+  },
+  "InputOTPSlot": {
+    "name": "InputOTPSlot",
+    "description": "Part of InputOTP.",
+    "props": {
+      "index": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "The index of the slot in the OTP input"
+      }
+    }
+  },
+  "InputOTPSeparator": {
+    "name": "InputOTPSeparator",
+    "description": "Part of InputOTP.",
+    "props": {}
+  },
+  "InputPasswordField": {
+    "name": "InputPasswordField",
+    "description": "Part of InputPasswordRoot.",
+    "props": {
+      "groupClassName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Additional class name for the InputGroup wrapper"
+      },
+      "showLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the toggle button when password is hidden. (default \"Show) password\""
+      },
+      "hideLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the toggle button when password is visible. (default \"Hide) password\""
+      }
+    }
+  },
+  "InputPasswordStrength": {
+    "name": "InputPasswordStrength",
+    "description": "Part of InputPasswordRoot.",
+    "props": {}
+  },
+  "InputPasswordToggle": {
+    "name": "InputPasswordToggle",
+    "description": "Part of InputPasswordRoot.",
+    "props": {}
+  },
+  "Item": {
+    "name": "Item",
+    "description": "Part of List.",
+    "props": {
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Render as the child element instead of `<li>`. Useful when the item is wrapped by another element (e.g. `<motion.li>`)."
+      },
+      "variant": {
+        "kind": "enum",
+        "values": [
+          "default",
+          "filled",
+          "outline",
+          "loading"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Visual style of the item row. - `default` — plain row without background or border - `filled` — card background (default) - `outline` — bordered row on page background - `loading` — skeleton placeholder (default \"filled\")"
+      }
+    }
+  },
+  "ItemMedia": {
+    "name": "ItemMedia",
+    "description": "Part of List.",
+    "props": {}
+  },
+  "ItemContent": {
+    "name": "ItemContent",
+    "description": "Part of List.",
+    "props": {}
+  },
+  "ItemTitle": {
+    "name": "ItemTitle",
+    "description": "Part of List.",
+    "props": {}
+  },
+  "ItemDescription": {
+    "name": "ItemDescription",
+    "description": "Part of List.",
+    "props": {}
+  },
+  "ItemActions": {
+    "name": "ItemActions",
+    "description": "Part of List.",
+    "props": {}
+  },
+  "ItemSubheader": {
+    "name": "ItemSubheader",
+    "description": "Part of List.",
+    "props": {}
+  },
+  "MapTypeId": {
+    "name": "MapTypeId",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapLocationPin": {
+    "name": "MapLocationPin",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapGridPin": {
+    "name": "MapGridPin",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapClusterPin": {
+    "name": "MapClusterPin",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "mapGridPinColorMap": {
+    "name": "mapGridPinColorMap",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "clusterPinHexColors": {
+    "name": "clusterPinHexColors",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "createClusterPinSvg": {
+    "name": "createClusterPinSvg",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "createClusterPinElement": {
+    "name": "createClusterPinElement",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapControlButton": {
+    "name": "MapControlButton",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapLoadingState": {
+    "name": "MapLoadingState",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapErrorState": {
+    "name": "MapErrorState",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapLegend": {
+    "name": "MapLegend",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapLegendItem": {
+    "name": "MapLegendItem",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapPopover": {
+    "name": "MapPopover",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapPopoverAnchor": {
+    "name": "MapPopoverAnchor",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MapPopoverContent": {
+    "name": "MapPopoverContent",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "useMapStyles": {
+    "name": "useMapStyles",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "useMapPopoverClick": {
+    "name": "useMapPopoverClick",
+    "description": "Part of MAP_STYLES.",
+    "props": {}
+  },
+  "MenubarMenu": {
+    "name": "MenubarMenu",
+    "description": "Part of Menubar.",
+    "props": {}
+  },
+  "MenubarTrigger": {
+    "name": "MenubarTrigger",
+    "description": "Part of Menubar.",
+    "props": {}
+  },
+  "MenubarContent": {
+    "name": "MenubarContent",
+    "description": "Part of Menubar.",
+    "props": {}
+  },
+  "MenubarItem": {
+    "name": "MenubarItem",
+    "description": "Part of Menubar.",
+    "props": {
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "inset": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      }
+    }
+  },
+  "MenubarCheckboxItem": {
+    "name": "MenubarCheckboxItem",
+    "description": "Part of Menubar.",
+    "props": {
+      "checked": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "closeOnSelect": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true
+      },
+      "onCheckedChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true
+      }
+    }
+  },
+  "MenubarRadioGroup": {
+    "name": "MenubarRadioGroup",
+    "description": "Part of Menubar.",
+    "props": {}
+  },
+  "MenubarLabel": {
+    "name": "MenubarLabel",
+    "description": "Part of Menubar.",
+    "props": {}
+  },
+  "MenubarSeparator": {
+    "name": "MenubarSeparator",
+    "description": "Part of Menubar.",
+    "props": {}
+  },
+  "MenubarShortcut": {
+    "name": "MenubarShortcut",
+    "description": "Part of Menubar.",
+    "props": {}
+  },
+  "MenubarSub": {
+    "name": "MenubarSub",
+    "description": "Part of Menubar.",
+    "props": {}
+  },
+  "NavigationMenuList": {
+    "name": "NavigationMenuList",
+    "description": "Part of NavigationMenu.",
+    "props": {}
+  },
+  "NavigationMenuItem": {
+    "name": "NavigationMenuItem",
+    "description": "Part of NavigationMenu.",
+    "props": {}
+  },
+  "NavigationMenuTrigger": {
+    "name": "NavigationMenuTrigger",
+    "description": "Part of NavigationMenu.",
+    "props": {}
+  },
+  "NavigationMenuContent": {
+    "name": "NavigationMenuContent",
+    "description": "Part of NavigationMenu.",
+    "props": {}
+  },
+  "NavigationMenuViewport": {
+    "name": "NavigationMenuViewport",
+    "description": "Part of NavigationMenu.",
+    "props": {}
+  },
+  "NavigationMenuIndicator": {
+    "name": "NavigationMenuIndicator",
+    "description": "Part of NavigationMenu.",
+    "props": {}
+  },
+  "PaginationContent": {
+    "name": "PaginationContent",
+    "description": "Part of Pagination.",
+    "props": {}
+  },
+  "PaginationItem": {
+    "name": "PaginationItem",
+    "description": "Part of Pagination.",
+    "props": {}
+  },
+  "PaginationLink": {
+    "name": "PaginationLink",
+    "description": "Part of Pagination.",
+    "props": {
+      "page": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Page number to display"
+      }
+    }
+  },
+  "PaginationPrevious": {
+    "name": "PaginationPrevious",
+    "description": "Part of Pagination.",
+    "props": {
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the previous button is disabled (on first page)"
+      }
+    }
+  },
+  "PaginationNext": {
+    "name": "PaginationNext",
+    "description": "Part of Pagination.",
+    "props": {}
+  },
+  "PaginationEllipsis": {
+    "name": "PaginationEllipsis",
+    "description": "Part of Pagination.",
+    "props": {
+      "srLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Screen-reader-only label for the ellipsis. (default \"More) pages\""
+      }
+    }
+  },
+  "PopoverTrigger": {
+    "name": "PopoverTrigger",
+    "description": "Part of Popover.",
+    "props": {
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Change the default rendered element for the one passed as a child, merging their props and behavior."
+      }
+    }
+  },
+  "PopoverContent": {
+    "name": "PopoverContent",
+    "description": "Part of Popover.",
+    "props": {
+      "side": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "The preferred side of the anchor to render against. Will be reversed when collisions occur."
+      },
+      "sideOffset": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "The distance in pixels from the anchor."
+      },
+      "align": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "The preferred alignment against the anchor. May change when collisions occur."
+      },
+      "alignOffset": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "An offset in pixels from the \"start\" or \"end\" alignment options."
+      },
+      "avoidCollisions": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "When true, overrides side and align to prevent collisions with boundary edges."
+      },
+      "sticky": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "The sticky behavior on the align axis. \"partial\" keeps content in boundary as long as trigger is at least partially in boundary."
+      },
+      "hideWhenDetached": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether to hide content when the trigger becomes fully occluded."
+      }
+    }
+  },
+  "RadioGroupItem": {
+    "name": "RadioGroupItem",
+    "description": "Part of RadioGroup.",
+    "props": {}
+  },
+  "ResizablePanel": {
+    "name": "ResizablePanel",
+    "description": "Part of ResizablePanelGroup.",
+    "props": {}
+  },
+  "ResizableHandle": {
+    "name": "ResizableHandle",
+    "description": "Part of ResizablePanelGroup.",
+    "props": {
+      "withHandle": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Show a visible drag handle indicator"
+      }
+    }
+  },
+  "ScrollBar": {
+    "name": "ScrollBar",
+    "description": "Part of ScrollArea.",
+    "props": {
+      "orientation": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "The orientation of the scrollbar (default \"vertical\")"
+      }
+    }
+  },
+  "SelectTrigger": {
+    "name": "SelectTrigger",
+    "description": "Part of Select.",
+    "props": {
+      "placeholder": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Placeholder text when no value is selected"
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the select trigger has an error state"
+      },
+      "selectLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the select trigger. Priority: aria-label > selectLabel > placeholder > \"Select an option\" (default \"Select) an option\""
+      }
+    }
+  },
+  "SelectValue": {
+    "name": "SelectValue",
+    "description": "Part of Select.",
+    "props": {}
+  },
+  "SelectContent": {
+    "name": "SelectContent",
+    "description": "Part of Select.",
+    "props": {
+      "maxHeight": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Maximum height of the dropdown in pixels. Constrains the dropdown height and shows scroll indicators when content overflows. The dropdown uses the smaller of this value and the available viewport space."
+      }
+    }
+  },
+  "SelectItem": {
+    "name": "SelectItem",
+    "description": "Part of Select.",
+    "props": {}
+  },
+  "SelectGroup": {
+    "name": "SelectGroup",
+    "description": "Part of Select.",
+    "props": {}
+  },
+  "SelectLabel": {
+    "name": "SelectLabel",
+    "description": "Part of Select.",
+    "props": {}
+  },
+  "SelectSeparator": {
+    "name": "SelectSeparator",
+    "description": "Part of Select.",
+    "props": {}
+  },
+  "SeparatorWithText": {
+    "name": "SeparatorWithText",
+    "description": "Part of Separator.",
+    "props": {
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Additional CSS classes"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Text content to display between separators"
+      }
+    }
+  },
+  "SheetTrigger": {
+    "name": "SheetTrigger",
+    "description": "Part of Sheet.",
+    "props": {}
+  },
+  "SheetPortal": {
+    "name": "SheetPortal",
+    "description": "Part of Sheet.",
+    "props": {}
+  },
+  "SheetClose": {
+    "name": "SheetClose",
+    "description": "Part of Sheet.",
+    "props": {}
+  },
+  "SheetOverlay": {
+    "name": "SheetOverlay",
+    "description": "Part of Sheet.",
+    "props": {}
+  },
+  "SheetContent": {
+    "name": "SheetContent",
+    "description": "Part of Sheet.",
+    "props": {
+      "side": {
+        "kind": "enum",
+        "values": [
+          "top",
+          "right",
+          "bottom",
+          "left"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Side from which the sheet slides in (default \"right\")"
+      },
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking element identifier for analytics"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Tracking label for analytics context"
+      },
+      "closeLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the close button. (default \"Close\")"
+      }
+    }
+  },
+  "SheetHeader": {
+    "name": "SheetHeader",
+    "description": "Part of Sheet.",
+    "props": {}
+  },
+  "SheetFooter": {
+    "name": "SheetFooter",
+    "description": "Part of Sheet.",
+    "props": {}
+  },
+  "SheetTitle": {
+    "name": "SheetTitle",
+    "description": "Part of Sheet.",
+    "props": {}
+  },
+  "SheetDescription": {
+    "name": "SheetDescription",
+    "description": "Part of Sheet.",
+    "props": {}
+  },
+  "SidebarAccountDropdown": {
+    "name": "SidebarAccountDropdown",
+    "description": "Part of Sidebar.",
+    "props": {
+      "name": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "User's display name"
+      },
+      "email": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "User's email address"
+      },
+      "avatar": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Avatar element (use DS Avatar component)"
+      },
+      "menuGroups": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Menu items to render. Each group is separated by a divider."
+      },
+      "onClick": {
+        "kind": "string",
+        "design": "event",
+        "optional": true
+      },
+      "icon": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      }
+    }
+  },
+  "SidebarCollapseIcon": {
+    "name": "SidebarCollapseIcon",
+    "description": "Part of Sidebar.",
+    "props": {
+      "type": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Icon type variant (default SidebarCollapseIconType.CARET)"
+      },
+      "isActive": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the icon is in active/open state"
+      }
+    }
+  },
+  "SidebarContent": {
+    "name": "SidebarContent",
+    "description": "Part of Sidebar.",
+    "props": {
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Accessible label for the sidebar navigation landmark. Override for i18n. (default \"Sidebar\")"
+      }
+    }
+  },
+  "SidebarFooter": {
+    "name": "SidebarFooter",
+    "description": "Part of Sidebar.",
+    "props": {
+      "separator": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether to render a separator at the top of the footer. (default true)"
+      }
+    }
+  },
+  "SidebarGroup": {
+    "name": "SidebarGroup",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarGroupAction": {
+    "name": "SidebarGroupAction",
+    "description": "Part of Sidebar.",
+    "props": {
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Render as a different element (Radix Slot pattern)"
+      }
+    }
+  },
+  "SidebarGroupContent": {
+    "name": "SidebarGroupContent",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarGroupLabel": {
+    "name": "SidebarGroupLabel",
+    "description": "Part of Sidebar.",
+    "props": {
+      "size": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Size variant (default SidebarGroupLabelSize.SM)"
+      },
+      "isOpen": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the collapsible section is open"
+      },
+      "onToggle": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback when collapsible is toggled"
+      },
+      "onAction": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback when action is triggered"
+      }
+    }
+  },
+  "SidebarHeader": {
+    "name": "SidebarHeader",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarHeaderButton": {
+    "name": "SidebarHeaderButton",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarInboxItem": {
+    "name": "SidebarInboxItem",
+    "description": "Part of Sidebar.",
+    "props": {
+      "senderName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Sender or person name"
+      },
+      "title": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Notification title"
+      },
+      "description": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Preview description text"
+      },
+      "timestamp": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Timestamp string"
+      }
+    }
+  },
+  "SidebarInput": {
+    "name": "SidebarInput",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarInset": {
+    "name": "SidebarInset",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarMenu": {
+    "name": "SidebarMenu",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarMenuAction": {
+    "name": "SidebarMenuAction",
+    "description": "Part of Sidebar.",
+    "props": {
+      "showOnHover": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Show action only on hover"
+      }
+    }
+  },
+  "SidebarMenuBadge": {
+    "name": "SidebarMenuBadge",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarMenuButton": {
+    "name": "SidebarMenuButton",
+    "description": "Part of Sidebar.",
+    "props": {
+      "tooltip": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Tooltip content to show when sidebar is collapsed"
+      }
+    }
+  },
+  "SidebarMenuCollapsible": {
+    "name": "SidebarMenuCollapsible",
+    "description": "Part of Sidebar.",
+    "props": {
+      "defaultOpen": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Whether the collapsible is open by default"
+      },
+      "open": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Controlled open state"
+      },
+      "onOpenChange": {
+        "kind": "string",
+        "design": "event",
+        "optional": true,
+        "description": "Callback when open state changes"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Additional CSS classes"
+      },
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      }
+    }
+  },
+  "SidebarMenuCollapsibleContent": {
+    "name": "SidebarMenuCollapsibleContent",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarMenuCollapsibleTrigger": {
+    "name": "SidebarMenuCollapsibleTrigger",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarMenuItem": {
+    "name": "SidebarMenuItem",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarMenuSkeleton": {
+    "name": "SidebarMenuSkeleton",
+    "description": "Part of Sidebar.",
+    "props": {
+      "showIcon": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Show icon skeleton placeholder"
+      }
+    }
+  },
+  "SidebarMenuSub": {
+    "name": "SidebarMenuSub",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarMenuSubButton": {
+    "name": "SidebarMenuSubButton",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarMenuSubItem": {
+    "name": "SidebarMenuSubItem",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarPopoverMenu": {
+    "name": "SidebarPopoverMenu",
+    "description": "Part of Sidebar.",
+    "props": {
+      "groupTitle": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Group title displayed at the top of the menu. (default \"Teams\")"
+      },
+      "items": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Items to render in the menu"
+      },
+      "shortcut": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true
+      }
+    }
+  },
+  "SidebarPopoverMenuItem": {
+    "name": "SidebarPopoverMenuItem",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarPopoverTrigger": {
+    "name": "SidebarPopoverTrigger",
+    "description": "Part of Sidebar.",
+    "props": {
+      "triggerAriaLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label for the trigger button. (default \"Switch) workspace\""
+      }
+    }
+  },
+  "SidebarProvider": {
+    "name": "SidebarProvider",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarRail": {
+    "name": "SidebarRail",
+    "description": "Part of Sidebar.",
+    "props": {
+      "toggleAriaLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Accessible label and tooltip for the rail toggle. (default \"Toggle) Sidebar\""
+      }
+    }
+  },
+  "SidebarSeparator": {
+    "name": "SidebarSeparator",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "SidebarSwitcher": {
+    "name": "SidebarSwitcher",
+    "description": "Part of Sidebar.",
+    "props": {
+      "label": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Label displayed in the trigger"
+      },
+      "triggerClassName": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Additional CSS classes for the trigger"
+      }
+    }
+  },
+  "SidebarTrigger": {
+    "name": "SidebarTrigger",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "useSidebar": {
+    "name": "useSidebar",
+    "description": "Part of Sidebar.",
+    "props": {}
+  },
+  "sonner": {
+    "name": "sonner",
+    "description": "Part of Sonner.",
+    "props": {}
+  },
+  "SplitLayoutHeader": {
+    "name": "SplitLayoutHeader",
+    "description": "Part of SplitLayout.",
+    "props": {
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Header content (e.g., Header component with Logo)"
+      }
+    }
+  },
+  "SplitLayoutContentLeft": {
+    "name": "SplitLayoutContentLeft",
+    "description": "Part of SplitLayout.",
+    "props": {
+      "sticky": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Pins the column to the viewport on desktop (≥lg) so it stays visible while the sibling column grows beyond one screen. Applies `sticky top-0 h-screen self-start`. (default false)"
+      }
+    }
+  },
+  "SplitLayoutContentRight": {
+    "name": "SplitLayoutContentRight",
+    "description": "Part of SplitLayout.",
+    "props": {
+      "flush": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Removes padding so content can fill edge-to-edge. Use with `SplitLayoutImage` for full-bleed imagery. (default false)"
+      }
+    }
+  },
+  "StepperNav": {
+    "name": "StepperNav",
+    "description": "Part of Stepper.",
+    "props": {}
+  },
+  "StepperItem": {
+    "name": "StepperItem",
+    "description": "Part of Stepper.",
+    "props": {
+      "stepId": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Id of the step this item represents (must match an `id` in `steps`)."
+      },
+      "completed": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Force the completed state regardless of the active step."
+      },
+      "error": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Mark the step as errored (shows the error indicator)."
+      },
+      "disabled": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Disable interaction with the step."
+      },
+      "loading": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Show a loading spinner in the indicator while this step is active."
+      }
+    }
+  },
+  "StepperTrigger": {
+    "name": "StepperTrigger",
+    "description": "Part of Stepper.",
+    "props": {
+      "asChild": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Render as the child element instead of a button (Radix Slot pattern). Note: the disabled state is not applied automatically when `asChild` is true — the consumer must handle disabled styling/behavior on the child."
+      }
+    }
+  },
+  "StepperIndicator": {
+    "name": "StepperIndicator",
+    "description": "Part of Stepper.",
+    "props": {
+      "completedLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Screen-reader label appended when the step is completed. (default \"Completed\")"
+      },
+      "errorLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Screen-reader label appended when the step has an error. (default \"Error\")"
+      },
+      "loadingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Screen-reader label appended while the step is loading. (default \"Loading\")"
+      }
+    }
+  },
+  "StepperSeparator": {
+    "name": "StepperSeparator",
+    "description": "Part of Stepper.",
+    "props": {}
+  },
+  "StepperContent": {
+    "name": "StepperContent",
+    "description": "Part of Stepper.",
+    "props": {}
+  },
+  "StepperTitle": {
+    "name": "StepperTitle",
+    "description": "Part of Stepper.",
+    "props": {}
+  },
+  "StepperDescription": {
+    "name": "StepperDescription",
+    "description": "Part of Stepper.",
+    "props": {}
+  },
+  "TableHeader": {
+    "name": "TableHeader",
+    "description": "Part of Table.",
+    "props": {}
+  },
+  "TableBody": {
+    "name": "TableBody",
+    "description": "Part of Table.",
+    "props": {}
+  },
+  "TableFooter": {
+    "name": "TableFooter",
+    "description": "Part of Table.",
+    "props": {}
+  },
+  "TableHead": {
+    "name": "TableHead",
+    "description": "Part of Table.",
+    "props": {
+      "align": {
+        "kind": "enum",
+        "values": [
+          "left",
+          "right",
+          "center"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Text alignment for the header cell. (default \"left\")"
+      }
+    }
+  },
+  "TableRow": {
+    "name": "TableRow",
+    "description": "Part of Table.",
+    "props": {}
+  },
+  "TableCell": {
+    "name": "TableCell",
+    "description": "Part of Table.",
+    "props": {
+      "size": {
+        "kind": "enum",
+        "values": [
+          "default",
+          "md",
+          "lg"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Size variant for cell height/padding (default \"default\")"
+      }
+    }
+  },
+  "TableCaption": {
+    "name": "TableCaption",
+    "description": "Part of Table.",
+    "props": {}
+  },
+  "TabsList": {
+    "name": "TabsList",
+    "description": "Part of Tabs.",
+    "props": {}
+  },
+  "TabsTrigger": {
+    "name": "TabsTrigger",
+    "description": "Part of Tabs.",
+    "props": {}
+  },
+  "TabsContent": {
+    "name": "TabsContent",
+    "description": "Part of Tabs.",
+    "props": {}
+  },
+  "ToggleGroupItem": {
+    "name": "ToggleGroupItem",
+    "description": "Part of ToggleGroup.",
+    "props": {
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Unique value for the toggle item (REQUIRED)"
+      },
+      "ariaLabel": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "ARIA label for accessibility (required when no text content)"
+      }
+    }
+  },
+  "TooltipProvider": {
+    "name": "TooltipProvider",
+    "description": "Part of Tooltip.",
+    "props": {
+      "skipDelayDuration": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true
+      }
+    }
+  },
+  "TooltipTrigger": {
+    "name": "TooltipTrigger",
+    "description": "Part of Tooltip.",
+    "props": {}
+  },
+  "TooltipContent": {
+    "name": "TooltipContent",
+    "description": "Part of Tooltip.",
+    "props": {
+      "trackingEl": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional analytics element identifier"
+      },
+      "trackingLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Optional analytics label context"
+      },
+      "hideArrow": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Hide the tooltip arrow"
+      }
+    }
+  },
+  "TypographyH2": {
+    "name": "TypographyH2",
+    "description": "Part of TypographyH1.",
+    "props": {}
+  },
+  "TypographyH3": {
+    "name": "TypographyH3",
+    "description": "Part of TypographyH1.",
+    "props": {}
+  },
+  "TypographyH4": {
+    "name": "TypographyH4",
+    "description": "Part of TypographyH1.",
+    "props": {}
+  },
+  "TypographyP": {
+    "name": "TypographyP",
+    "description": "Part of TypographyH1.",
+    "props": {}
+  },
+  "TypographyBlockquote": {
+    "name": "TypographyBlockquote",
+    "description": "Part of TypographyH1.",
+    "props": {}
+  },
+  "TypographyInlineCode": {
+    "name": "TypographyInlineCode",
+    "description": "Part of TypographyH1.",
+    "props": {}
+  },
+  "TypographyCode": {
+    "name": "TypographyCode",
+    "description": "Part of TypographyH1.",
+    "props": {}
+  },
+  "TypographyLead": {
+    "name": "TypographyLead",
+    "description": "Part of TypographyH1.",
+    "props": {}
+  },
+  "TypographyLarge": {
+    "name": "TypographyLarge",
+    "description": "Part of TypographyH1.",
+    "props": {}
+  },
+  "TypographySmall": {
+    "name": "TypographySmall",
+    "description": "Part of TypographyH1.",
+    "props": {}
+  },
+  "TypographyMuted": {
+    "name": "TypographyMuted",
+    "description": "Part of TypographyH1.",
+    "props": {}
   }
 } as const;

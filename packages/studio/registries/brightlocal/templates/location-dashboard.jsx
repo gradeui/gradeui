@@ -172,10 +172,6 @@ export default function LocationDashboard() {
                 <BreadcrumbItem>
                   <BreadcrumbLink href="#">All locations</BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Bailiffscourt Hotel &amp; Spa</BreadcrumbPage>
-                </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
             <Button variant="outline" dataHook="date-scope-button">

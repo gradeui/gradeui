@@ -83,6 +83,8 @@ function parseFrontmatter(md) {
   const out = { props: [] };
   const name = fm.match(/^name:\s*(.+)$/m);
   if (name) out.name = name[1].trim();
+  const subs = fm.match(/^subcomponents:\s*\[([^\]]*)\]/m);
+  if (subs) out.subcomponents = subs[1].split(",").map((s) => s.trim()).filter(Boolean);
   const variants = fm.match(/^variants:\s*\[([^\]]*)\]/m);
   if (variants) out.variants = variants[1].split(",").map((s) => s.trim()).filter(Boolean);
   const sizes = fm.match(/^sizes:\s*\[([^\]]*)\]/m);
@@ -143,19 +145,63 @@ function parsePropLine(line) {
   // missing SidebarAccountDropdown props (email/senderName/…, July
   // 2026). Force optional + plumbing so they're recorded, hidden from
   // the panel, and never block a save.
+  // Design BEFORE the prefix-forcing below — buildSubSpecs uses this to
+  // restore knob-ness on the SUB contract (where the
+  // "SidebarAccountDropdown: …"-prefixed props actually belong).
+  const unforcedDesign = design;
   let forcedOptional = optional;
   if (description && /^[A-Z][A-Za-z0-9]+:/.test(description)) {
     forcedOptional = true;
     if (design === "knob") design = "plumbing";
   }
 
-  return { name, spec: { kind, values, design, optional: forcedOptional || undefined, description } };
+  return {
+    name,
+    unforcedDesign,
+    spec: { kind, values, design, optional: forcedOptional || undefined, description },
+  };
 }
 
 function firstBodyLine(md) {
   const body = md.replace(/^---\n[\s\S]*?\n---\n?/, "");
   const line = body.split("\n").map((l) => l.trim()).find((l) => l && !/^[#<`\/{]/.test(l) && !/^(import|export|const|let|return)\b/.test(l)); // prose only — example-only bodies yield undefined
   return line || undefined;
+}
+
+/** SUBCOMPONENT CONTRACTS: the panel looks contracts up by the CLICKED
+ *  component's name (data-slot → "BreadcrumbLink"), but sidecars fold
+ *  every subcomponent's props onto the ROOT with a "BreadcrumbLink: …"
+ *  description prefix — so clicking a part showed nothing (July 2026,
+ *  Ali's breadcrumb report). Split the prefixed props back out into one
+ *  contract per name in the sidecar's `subcomponents:` list. Every prop
+ *  is forced optional (contracts drive the PANEL; requiredness already
+ *  proved too eager at the root — same rationale as forcedOptional
+ *  below) and the prefix is stripped from the description. Subs with no
+ *  prefixed props still get an EMPTY contract so the panel recognises
+ *  the part instead of drawing a blank. */
+function buildSubSpecs(fm) {
+  if (!fm.subcomponents?.length) return {};
+  const subs = {};
+  for (const s of fm.subcomponents) {
+    subs[s] = {
+      name: s,
+      description: `Part of ${fm.name}.`,
+      props: {},
+    };
+  }
+  for (const line of fm.props) {
+    const parsed = parsePropLine(line);
+    if (!parsed?.spec.description) continue;
+    const m = parsed.spec.description.match(/^([A-Z][A-Za-z0-9]+):\s*(.*)$/);
+    if (!m || !subs[m[1]]) continue;
+    subs[m[1]].props[parsed.name] = {
+      ...parsed.spec,
+      design: parsed.unforcedDesign,
+      optional: true,
+      description: m[2] || undefined,
+    };
+  }
+  return subs;
 }
 
 function buildSpec(fm, md) {
@@ -199,6 +245,7 @@ function buildSpec(fm, md) {
 function main() {
   const files = readdirSync(SIDECAR_DIR).filter((f) => f.endsWith(".md")).sort();
   const specs = {};
+  const subSpecs = {};
   for (const f of files) {
     const md = readFileSync(join(SIDECAR_DIR, f), "utf-8");
     const fm = parseFrontmatter(md);
@@ -207,7 +254,17 @@ function main() {
       continue;
     }
     specs[fm.name] = buildSpec(fm, md);
+    Object.assign(subSpecs, buildSubSpecs(fm));
   }
+  // Subcomponent contracts land SECOND and never shadow a dedicated
+  // sidecar (a name with its own .md keeps its reviewed contract).
+  let subCount = 0;
+  for (const [name, spec] of Object.entries(subSpecs)) {
+    if (specs[name]) continue;
+    specs[name] = spec;
+    subCount++;
+  }
+  console.log(`+ ${subCount} subcomponent contracts (from subcomponents: lists)`);
 
   const json = JSON.stringify(specs, (_k, v) => v, 2)
     // Drop keys serialised as undefined-free already by JSON; nothing to do.

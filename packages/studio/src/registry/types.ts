@@ -205,6 +205,18 @@ export interface RegistrySelection {
    *  longest-suffix-first. Absent = the attribute value is already a
    *  kebab-case component name (gradeui). */
   partSuffixMap?: Readonly<Record<string, string>>;
+  /** Exceptions to "part value is the component name": slot values that
+   *  DON'T kebab→Pascal into a real export, mapped to the export whose
+   *  root element stamps them. BrightLocal's global-layout.js is the
+   *  motivating case — it stamps shortened slots ("sidebar-container"
+   *  on GlobalLayoutSidebar's aside, "content-wrapper" on
+   *  GlobalLayoutContent) while the rest of the library stamps true
+   *  component names. Without the alias, selection resolves a
+   *  fabricated component ("SidebarContainer"), the contract lookup
+   *  misses, and the source mutator's tag guard (correctly) refuses to
+   *  write — inspector edits silently no-op. Checked BEFORE the
+   *  kebab→Pascal default. */
+  partAliases?: Readonly<Record<string, string>>;
 }
 
 export interface DesignSystemRegistry {
