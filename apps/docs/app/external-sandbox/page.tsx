@@ -152,6 +152,15 @@ export default function ExternalSandboxPage() {
     // compilation waits until the CURRENT screen has painted (the note's
     // "idle-compiles flow siblings AFTER ext:rendered") and then runs one
     // source per idle slice so it never contends with interaction.
+    // F1 cross-fade (STUDIO-FLOWS): a goto click arms a view transition
+    // for the render that follows. Armed state EXPIRES (2.5s) and is
+    // consumed on use, so authoring edits / streamed re-renders never
+    // fade — only navigation does. Host-driven swaps without a click
+    // (flow-bar jumps, browser Back) don't fade yet: that needs a
+    // `transition` field on ext:source (queued with F1 history work).
+    let gotoTransitionAt = 0;
+    let gotoTransitionHint: string | null = null;
+
     let precompileQueue: string[] = [];
     let hasRenderedOnce = false;
     let precompileScheduled = false;
@@ -416,7 +425,58 @@ export default function ExternalSandboxPage() {
           reactRoot = m.reactDomClient.createRoot(host);
           rootHost = host;
         }
-        reactRoot!.render(m.react.createElement(App));
+        const commitNewScreen = () => {
+          reactRoot!.render(m.react.createElement(App));
+        };
+        // F1 cross-fade: a render landing inside the goto-armed window
+        // IS the navigation swap — animate it via the View Transitions
+        // API. The sandbox is ONE document (goto swaps re-render in
+        // place, they never replace the iframe), so the API applies
+        // directly; it captures painted PIXELS, so canvas/map content
+        // fades correctly where a DOM clone would blank. "none" opts a
+        // link out; named hints (slide-left/slide-right) map to the CSS
+        // in this page's <style>. No-VT browsers fall back to the
+        // instant swap.
+        const sinceGoto = Date.now() - gotoTransitionAt;
+        const hint =
+          gotoTransitionAt > 0 && sinceGoto < 2500
+            ? (gotoTransitionHint ?? "cross-fade")
+            : null;
+        gotoTransitionAt = 0;
+        gotoTransitionHint = null;
+        const startVT = (
+          document as Document & {
+            startViewTransition?: (cb: () => void) => { finished: Promise<void> };
+          }
+        ).startViewTransition?.bind(document);
+        if (
+          hasRenderedOnce &&
+          hint &&
+          hint !== "none" &&
+          startVT &&
+          typeof (m.reactDom as { flushSync?: (cb: () => void) => void })
+            ?.flushSync === "function"
+        ) {
+          document.documentElement.dataset.gradeTransition = hint;
+          const vt = startVT(() => {
+            // flushSync: React 19 commits async by default — without it
+            // the API's "new" capture would still show the OLD screen.
+            (m.reactDom as { flushSync: (cb: () => void) => void }).flushSync(
+              commitNewScreen,
+            );
+            // Page-nav semantics: a goto lands at the top of the page.
+            window.scrollTo(0, 0);
+          });
+          void vt.finished
+            .catch(() => {
+              /* interrupted transition (rapid goto) — fine, next render wins */
+            })
+            .finally(() => {
+              delete document.documentElement.dataset.gradeTransition;
+            });
+        } else {
+          commitNewScreen();
+        }
         setStatus("");
         post({ type: "ext:rendered" });
         // First paint done — flow siblings may now idle-compile (F1).
@@ -580,7 +640,19 @@ export default function ExternalSandboxPage() {
       if (!el) return;
       e.preventDefault();
       e.stopPropagation();
-      post({ type: "ext:goto", target: el.getAttribute("data-grade-goto") });
+      // F1 cross-fade: ARM a transition for the source swap that
+      // follows — the host echoes this goto back as ext:source within
+      // ms (precompiled siblings render paint-only), and render()
+      // consumes the armed state. data-grade-transition on the clicked
+      // element (stamped by lib components from `transition` props /
+      // nav-data fields) tunes it; absent = the default cross-fade.
+      gotoTransitionAt = Date.now();
+      gotoTransitionHint = el.getAttribute("data-grade-transition");
+      post({
+        type: "ext:goto",
+        target: el.getAttribute("data-grade-goto"),
+        transition: gotoTransitionHint,
+      });
     };
     document.addEventListener("click", onGotoClick, true);
 
@@ -777,6 +849,29 @@ export default function ExternalSandboxPage() {
           error strip / snag UI is the surface for that). Dev-only
           element; no-op in production builds. */}
       <style>{`nextjs-portal { display: none !important; }`}</style>
+      {/* F1 goto transitions (STUDIO-FLOWS). Default = 200ms cross-fade
+          (the doc's number); data-grade-transition on <html> — stamped
+          by render() for the duration of the swap — selects the slide
+          variants. Keyframes prefixed gds- per the token namespace. */}
+      <style>{`
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+          animation-duration: 200ms;
+          animation-timing-function: ease;
+        }
+        @keyframes gds-vt-slide-out-left { to { transform: translateX(-24px); opacity: 0; } }
+        @keyframes gds-vt-slide-in-left { from { transform: translateX(24px); opacity: 0; } }
+        @keyframes gds-vt-slide-out-right { to { transform: translateX(24px); opacity: 0; } }
+        @keyframes gds-vt-slide-in-right { from { transform: translateX(-24px); opacity: 0; } }
+        html[data-grade-transition="slide-left"]::view-transition-old(root) { animation-name: gds-vt-slide-out-left; }
+        html[data-grade-transition="slide-left"]::view-transition-new(root) { animation-name: gds-vt-slide-in-left; }
+        html[data-grade-transition="slide-right"]::view-transition-old(root) { animation-name: gds-vt-slide-out-right; }
+        html[data-grade-transition="slide-right"]::view-transition-new(root) { animation-name: gds-vt-slide-in-right; }
+        @media (prefers-reduced-motion: reduce) {
+          ::view-transition-old(root),
+          ::view-transition-new(root) { animation: none; }
+        }
+      `}</style>
       <div ref={rootRef} id="root" />
       {status ? (
         <div
