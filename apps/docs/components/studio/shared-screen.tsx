@@ -1295,22 +1295,28 @@ export function SharedScreen({
                 gap: PANE_GAP,
                 transform: `scale(${effectiveZoom})`,
                 transformOrigin: "top left",
+                // MUST match the camera wrapper's curve exactly — the
+                // wrapper animates translate (pan) while this animates
+                // scale, and a mismatched pair (ease vs overshoot)
+                // reads as a boomerang swing on every focus/zoom.
                 transition:
                   fitMode || artboard.gesturing || imperativeGesturing
                     ? undefined
-                    : "transform 340ms cubic-bezier(0.33, 1.08, 0.68, 1)",
+                    : "transform 340ms ease",
               }}
             >
               {scopedMembers.map((m) => (
                 <div
                   key={m.id}
                   className={cn(
-                    "relative shrink-0 transition-[opacity,filter] duration-300",
-                    // Focused sibling treatment — everything else fades
-                    // back (Ali: "fade back to monochrome / opacity").
+                    "relative shrink-0 transition-[opacity,filter,transform] duration-300",
+                    // Focused sibling treatment — dimmed, desaturated
+                    // AND slightly shrunk; hovering breathes it back
+                    // (grow + colour + opacity) so a dulled pane reads
+                    // as "tap me", not "broken" (Ali).
                     focusedPaneId &&
                       focusedPaneId !== m.id &&
-                      "opacity-30 saturate-0",
+                      "scale-[0.97] opacity-30 saturate-0 hover:scale-100 hover:opacity-70 hover:saturate-100",
                   )}
                   style={{ width: paneSize.w }}
                 >

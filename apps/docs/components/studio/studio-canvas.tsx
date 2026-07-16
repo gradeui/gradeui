@@ -197,6 +197,9 @@ interface StudioCanvasProps {
     entryDesignId: string,
     label: string,
   ) => void;
+  /** Rename a tag value across all screens carrying it (group-header
+   *  pencil in the list view). */
+  onRenameTagValue?: (type: string, from: string, to: string) => void;
   /** Which design is currently focused. In fit mode this is the only
    *  design with a mounted Sandpack; in all mode it's the highlighted
    *  tile and the target of chat + settings. */
@@ -390,6 +393,7 @@ export function StudioCanvas({
   onViewPrefsChange,
   onBulkTagDesigns,
   onShareScope,
+  onRenameTagValue,
   focusedId,
   onFocus,
   theme,
@@ -2242,6 +2246,7 @@ export function StudioCanvas({
           }}
           onBulkTag={onBulkTagDesigns}
           onShareScope={onShareScope}
+          onRenameTag={onRenameTagValue}
         />
       )}
 

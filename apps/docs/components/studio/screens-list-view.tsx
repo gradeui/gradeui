@@ -28,6 +28,7 @@ import {
   ChevronRight,
   LayoutGrid,
   ListFilter,
+  Pencil,
   Plus,
   Rows3,
   Share2,
@@ -294,6 +295,11 @@ interface ScreensListViewProps {
     entryDesignId: string,
     label: string,
   ) => void;
+  /** Rename a tag VALUE across every screen that carries it (the T1
+   *  bulk-update path — group-header pencil). NOTE: shares scoped to
+   *  the old value keep pointing at it until the T2 registry owns
+   *  rename propagation. */
+  onRenameTag?: (type: string, from: string, to: string) => void;
   hidden?: boolean;
 }
 
@@ -304,8 +310,14 @@ export function ScreensListView({
   onOpen,
   onBulkTag,
   onShareScope,
+  onRenameTag,
   hidden = false,
 }: ScreensListViewProps) {
+  // Inline group-header rename (tag-value rewrite across members).
+  const [renamingGroup, setRenamingGroup] = useState<{
+    value: string;
+    draft: string;
+  } | null>(null);
   const groups = useMemo(
     () => groupDesigns(designs, groupBy),
     [designs, groupBy],
@@ -402,13 +414,52 @@ export function ScreensListView({
                       style={{ backgroundColor: tagTypeColor(groupBy) }}
                     />
                   )}
-                  <span className={cn(!g.value && "italic")}>
-                    {g.label}
-                  </span>
+                  {renamingGroup && renamingGroup.value === g.value ? (
+                    <input
+                      autoFocus
+                      value={renamingGroup.draft}
+                      onChange={(e) =>
+                        setRenamingGroup({
+                          value: g.value!,
+                          draft: e.target.value,
+                        })
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") {
+                          const to = renamingGroup.draft.trim();
+                          if (to && to !== g.value && groupBy && onRenameTag) {
+                            onRenameTag(groupBy, g.value!, to);
+                          }
+                          setRenamingGroup(null);
+                        } else if (e.key === "Escape") {
+                          setRenamingGroup(null);
+                        }
+                      }}
+                      onBlur={() => setRenamingGroup(null)}
+                      className="w-40 border-b border-primary bg-transparent text-[11px] outline-none"
+                    />
+                  ) : (
+                    <span className={cn(!g.value && "italic")}>{g.label}</span>
+                  )}
                   <span className="text-[10px] font-normal">
                     {g.designs.length}
                   </span>
                 </button>
+                {onRenameTag && g.value && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRenamingGroup({ value: g.value!, draft: g.value! })
+                    }
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity group-hover/section:opacity-100 hover:bg-muted hover:text-foreground [&_svg]:size-3"
+                    title={`Rename "${g.value}" on every tagged screen`}
+                    aria-label={`Rename tag ${g.value}`}
+                  >
+                    <Pencil />
+                  </button>
+                )}
                 {onShareScope && g.value && groupEntry && (
                   <button
                     type="button"

@@ -559,6 +559,33 @@ export default function StudioPage() {
     [],
   );
 
+  // Rename a tag VALUE across every screen that carries it — the T1
+  // bulk-update path (group-header pencil). Same persist route as any
+  // tag edit: patch the designs, autosave does the rest. If a screen
+  // already carries the TARGET value the old one just drops (dedupe).
+  // KNOWN GAP until the T2 registry owns rename propagation: shares
+  // scoped to the old value keep pointing at it.
+  const handleRenameTagValue = useCallback(
+    (type: string, from: string, to: string) => {
+      setDesigns((ds) =>
+        ds.map((d) => {
+          const tags = d.tags ?? [];
+          if (!tags.some((t) => t.type === type && t.value === from)) return d;
+          const hasTarget = tags.some(
+            (t) => t.type === type && t.value === to,
+          );
+          const next = hasTarget
+            ? tags.filter((t) => !(t.type === type && t.value === from))
+            : tags.map((t) =>
+                t.type === type && t.value === from ? { ...t, value: to } : t,
+              );
+          return { ...d, tags: next, updatedAt: Date.now() };
+        }),
+      );
+    },
+    [],
+  );
+
   // Project preview CSS — enabled .css rules files, concatenated, pushed
   // to the globalThis store the frame hosts subscribe to. These files
   // override the design system's CSS inside every preview iframe (e.g.
@@ -3412,6 +3439,7 @@ export default function StudioPage() {
                 onViewPrefsChange={handleViewPrefsChange}
                 onBulkTagDesigns={handleBulkTagDesigns}
                 onShareScope={handleShareScope}
+                onRenameTagValue={handleRenameTagValue}
                 focusedId={activeId}
                 onFocus={setActiveId}
                 view={view}
@@ -3983,6 +4011,7 @@ function StudioThemedCanvas({
   onViewPrefsChange,
   onBulkTagDesigns,
   onShareScope,
+  onRenameTagValue,
   focusedId,
   onFocus,
   view,
@@ -4037,6 +4066,7 @@ function StudioThemedCanvas({
     entryDesignId: string,
     label: string,
   ) => void;
+  onRenameTagValue?: (type: string, from: string, to: string) => void;
   focusedId: string;
   onFocus: (id: string) => void;
   view: "preview" | "code" | "timeline";
@@ -4102,6 +4132,7 @@ function StudioThemedCanvas({
       onViewPrefsChange={onViewPrefsChange}
       onBulkTagDesigns={onBulkTagDesigns}
       onShareScope={onShareScope}
+      onRenameTagValue={onRenameTagValue}
       focusedId={focusedId}
       onFocus={onFocus}
       theme={theme}
