@@ -69,7 +69,7 @@ function HubStatCard({
                 it reads on BOTH a raised white card and a regular
                 default/filled card without riding the muted token
                 (which the raised layer bumps to neutral-100). */}
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
               <Icon className="size-4" />
             </div>
             {/* DS scale reference (2.20.0): CardTitle default =

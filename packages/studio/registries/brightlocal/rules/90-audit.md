@@ -28,3 +28,7 @@ BrightLocal DS audit log — known gaps between their docs, the npm package (2.2
 
 The theme remaps the whole weight scale one step down: `--ds-font-weight-normal: 300`, `medium: 400`, `semibold: 500`, `bold: 600`. Consequence: DS defaults like CardDescription's `font-normal` paint at 300 — visibly light/thin, especially in Inter at text-sm. For body copy that should read as regular weight, use `font-medium` (= 400). Deliberate at token level, but worth an upstream conversation about whether description text should sit at 300. PROPOSAL DECISION (same day): every proposal screen re-points the ramp to the standard scale (normal=400 … bold=700) via BRIGHTLOCAL_WEIGHT_RAMP_FIX appended to the registry previewThemeCss — weight utilities mean what they say, no per-component overrides needed. The upstream recommendation is to ship that ramp.
 
+## Card border token is transparent (16 Jul 2026)
+
+`--ds-colors-card-border-light` maps to `base-transparent` — the filled Card's `border border-card-border` renders NO visible border by default. Figma's card border is `base/border` (= neutral-200, #E6EDE8), i.e. the semantic `--border` token, not `--card-border`. Proposal screens paint `border-color: var(--border)` on cards via the raised layer. Upstream ask: point card-border at base/border (or document the transparent default).
+

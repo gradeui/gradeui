@@ -329,14 +329,17 @@ function AppLayoutShell({
     (sidebarFrame === "flush" ? "var(--sidebar-border)" : undefined);
   const tone = SIDEBAR_TONES[sidebarTone] ?? {};
   const layers = PAGE_LAYERS[pageLayers] ?? {};
-  // Raised layers: cards are WHITE (the layer re-points --card) with a
-  // softened hairline border and NO shadow — matches their Figma, where
-  // card elevation is border-only. Shadows stay a SIDEBAR treatment
-  // (SIDEBAR_SHADOWS / the floating frame). Scoped <style> because the
-  // border-color can't ride the --card token swap.
+  // Raised layers: cards are WHITE (the layer re-points --card) with
+  // base/border (semantic --border → neutral-200 #E6EDE8, .dark flips
+  // it) and NO shadow — matches their Figma, where card elevation is
+  // border-only. NEEDED because the DS's own card-border token is
+  // TRANSPARENT (filled cards ship borderless — rules/90-audit.md).
+  // Shadows stay a SIDEBAR treatment (SIDEBAR_SHADOWS / the floating
+  // frame). Scoped <style> because border-color can't ride the --card
+  // token swap.
   const layerCss =
     pageLayers === "raised"
-      ? `[data-slot="card"]{border-color:light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))}`
+      ? `[data-slot="card"]{border-color:var(--border)}`
       : "";
   // color-scheme wiring for the ld() pairs above — .dark flips them.
   const schemeCss = ":root{color-scheme:light}.dark{color-scheme:dark}";

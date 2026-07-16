@@ -88,7 +88,8 @@ const ACCOUNTS = [
 ];
 
 // ─── Nav model — the new IA (July 2026). Three levels: section →
-// item → leaf. `paid` marks $ add-ons; `active` opens the trail.
+// item → leaf. `paid` marks add-ons in the IA data (not rendered —
+// the '$' marker was spreadsheet notation, not UI); `active` opens the trail.
 const SECTIONS = [
   {
     id: "ai-insights",
@@ -350,7 +351,7 @@ function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
   return (
     <div className="group fixed right-0 bottom-0 z-50 p-3" data-slot="shell-tweaker">
       {open ? (
-        <div className="w-64 rounded-xl border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] p-3 shadow-lg">
+        <div className="w-64 rounded-xl border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] p-3 shadow-lg">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold">Shell tweaks</span>
             <span className="flex items-center gap-2">
@@ -399,7 +400,7 @@ function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
         <button
           onClick={() => setOpen(true)}
           aria-label="Open shell tweaks (Alt+T)"
-          className="flex size-9 items-center justify-center rounded-full border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100"
+          className="flex size-9 items-center justify-center rounded-full border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100"
         >
           <SlidersHorizontal className="size-4" />
         </button>
@@ -484,14 +485,17 @@ function AppLayoutShell({
     (sidebarFrame === "flush" ? "var(--sidebar-border)" : undefined);
   const tone = SIDEBAR_TONES[sidebarTone] ?? {};
   const layers = PAGE_LAYERS[pageLayers] ?? {};
-  // Raised layers: cards are WHITE (the layer re-points --card) with a
-  // softened hairline border and NO shadow — matches their Figma, where
-  // card elevation is border-only. Shadows stay a SIDEBAR treatment
-  // (SIDEBAR_SHADOWS / the floating frame). Scoped <style> because the
-  // border-color can't ride the --card token swap.
+  // Raised layers: cards are WHITE (the layer re-points --card) with
+  // base/border (semantic --border → neutral-200 #E6EDE8, .dark flips
+  // it) and NO shadow — matches their Figma, where card elevation is
+  // border-only. NEEDED because the DS's own card-border token is
+  // TRANSPARENT (filled cards ship borderless — rules/90-audit.md).
+  // Shadows stay a SIDEBAR treatment (SIDEBAR_SHADOWS / the floating
+  // frame). Scoped <style> because border-color can't ride the --card
+  // token swap.
   const layerCss =
     pageLayers === "raised"
-      ? `[data-slot="card"]{border-color:light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))}`
+      ? `[data-slot="card"]{border-color:var(--border)}`
       : "";
   // color-scheme wiring for the ld() pairs above — .dark flips them.
   const schemeCss = ":root{color-scheme:light}.dark{color-scheme:dark}";
@@ -579,10 +583,6 @@ function AppLayoutShell({
 }
 
 
-function PaidMark() {
-  return <span className="ml-auto pl-2 text-xs opacity-60">$</span>;
-}
-
 /* Sub rows. A row with its own `sub` renders a NESTED disclosure —
    trigger restyled via twMerge (h-7 px-2 rounded-md text-sm) to sit in
    the sub rhythm instead of the top-level pill. NOTE: the nested
@@ -617,7 +617,6 @@ function SubRows({ items }) {
           isActive={item.active}
         >
           <span>{item.label}</span>
-          {item.paid ? <PaidMark /> : null}
         </SidebarMenuSubButton>
       </SidebarMenuSubItem>
     ),
@@ -699,7 +698,7 @@ function HubStatCard({
                 it reads on BOTH a raised white card and a regular
                 default/filled card without riding the muted token
                 (which the raised layer bumps to neutral-100). */}
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
               <Icon className="size-4" />
             </div>
             {/* DS scale reference (2.20.0): CardTitle default =
@@ -792,7 +791,7 @@ function HubHeroCard({
               aspect preset so real media and the placeholder agree. */}
           <div className={`hidden w-2/5 shrink-0 md:block ${aspect}`}>
             {media ?? (
-              <div className="flex h-full w-full items-center justify-center rounded-lg border border-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
+              <div className="flex h-full w-full items-center justify-center rounded-lg border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
                 <Sparkles className="text-muted-foreground size-6" />
               </div>
             )}
