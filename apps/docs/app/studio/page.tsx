@@ -2665,6 +2665,7 @@ export default function StudioPage() {
       selection={selectionByDesign[activeId] ?? null}
       onSourceChange={handleSourceMutation}
       designName={activeDesign.name}
+      designId={activeDesign.id}
       designCreatedAt={activeDesign.createdAt}
       designUpdatedAt={activeDesign.updatedAt}
       designStatus={activeDesign.status}

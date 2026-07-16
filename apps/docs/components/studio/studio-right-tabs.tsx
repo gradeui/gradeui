@@ -157,6 +157,8 @@ export interface StudioRightTabsProps {
   selection: StudioSelection | null;
   onSourceChange: (next: string) => void;
   designName?: string;
+  /** Active design id — the stable flow-link handle (STUDIO-FLOWS). */
+  designId?: string;
   // Stage B metadata — forwarded straight through to the
   // screen-info panel. Optional on this surface so the few non-
   // studio consumers of the tabs (if any) don't have to thread
@@ -198,6 +200,7 @@ export function StudioRightTabs({
   selection,
   onSourceChange,
   designName,
+  designId,
   designCreatedAt,
   designUpdatedAt,
   designStatus,
@@ -270,6 +273,7 @@ export function StudioRightTabs({
           selection={selection}
           onSourceChange={onSourceChange}
           designName={designName ?? "Untitled"}
+          designId={designId}
           designCreatedAt={designCreatedAt}
           designUpdatedAt={designUpdatedAt}
           designStatus={designStatus}

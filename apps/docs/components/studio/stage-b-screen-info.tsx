@@ -53,6 +53,10 @@ export interface StageBScreenInfoProps {
   appSource: string | null;
   /** Display name for the screen. */
   designName: string;
+  /** Active design id. The Flow link chip copies the screen:<id> form —
+   *  ids survive renames (screens WILL be renamed) and stay unique
+   *  across same-named screens/projects. */
+  designId?: string;
   /** Creation timestamp in epoch ms. Optional for legacy designs
    *  pre-dating the field. */
   createdAt?: number;
@@ -101,6 +105,7 @@ function formatRelative(epoch: number): string {
 export function StageBScreenInfo({
   appSource,
   designName,
+  designId,
   createdAt,
   updatedAt,
   status,
@@ -172,24 +177,24 @@ export function StageBScreenInfo({
             {/* STUDIO-FLOWS: the screen's link handle. Clicking copies a
                 ready-to-paste goto prop/attribute — wire it onto a card
                 (goto prop) or any element (data-grade-goto) on ANOTHER
-                screen and shares/embeds navigate here. Name-based on
-                purpose (the authoring ergonomic; screen:<id> pinning is
-                the attribute-adder's job later). */}
+                screen and shares/embeds navigate here. ID form on
+                purpose: ids survive renames (screens WILL be renamed);
+                hand-typed names still resolve. */}
             <PropertyList.Row label="Flow link">
               <button
                 type="button"
                 onClick={() => {
                   void navigator.clipboard
-                    ?.writeText(`goto="${designName}"`)
+                    ?.writeText(`goto="screen:${designId ?? designName}"`)
                     .then(() => {
                       setCopiedFlowLink(true);
                       window.setTimeout(() => setCopiedFlowLink(false), 1500);
                     });
                 }}
-                title={`Copy goto="${designName}" — paste onto a card or element on another screen to link here`}
+                title={`Copy goto="screen:${designId ?? designName}" (${designName}) — paste onto a card or element on another screen to link here`}
                 className="max-w-full truncate rounded border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-2xs text-muted-foreground hover:bg-muted hover:text-foreground"
               >
-                {copiedFlowLink ? "Copied ✓" : `goto="${designName}"`}
+                {copiedFlowLink ? "Copied ✓" : `screen:${designId ?? designName}`}
               </button>
             </PropertyList.Row>
 

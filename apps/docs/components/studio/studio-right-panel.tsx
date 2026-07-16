@@ -56,6 +56,8 @@ export interface StudioRightPanelProps {
   onRequestSettingsUndock?: () => void;
   // Stage B metadata — surfaced by the screen-info panel.
   designName: string;
+  /** Active design id — the stable flow-link handle (STUDIO-FLOWS). */
+  designId?: string;
   designCreatedAt?: number;
   designUpdatedAt?: number;
   designStatus?: DesignStatus;
@@ -86,6 +88,7 @@ export function StudioRightPanel({
   onSourceChange,
   onRequestSettingsUndock,
   designName,
+  designId,
   designCreatedAt,
   designUpdatedAt,
   designStatus,
@@ -177,6 +180,7 @@ export function StudioRightPanel({
           <StageBScreenInfo
             appSource={appSource}
             designName={designName}
+            designId={designId}
             createdAt={designCreatedAt}
             updatedAt={designUpdatedAt}
             status={designStatus}
