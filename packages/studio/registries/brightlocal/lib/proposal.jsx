@@ -1093,7 +1093,15 @@ export function PageHeader({
             <BreadcrumbList>
               {breadcrumbs.map((crumb) => (
                 <BreadcrumbItem key={crumb.label}>
-                  <BreadcrumbLink href={crumb.href ?? "#"}>
+                  {/* crumb.goto — screen link (STUDIO-FLOWS): ancestors
+                      are usually other screens in the flow, so crumbs
+                      navigate in shares/embeds. {label, href?, goto?,
+                      transition?}. */}
+                  <BreadcrumbLink
+                    href={crumb.href ?? "#"}
+                    data-grade-goto={crumb.goto}
+                    data-grade-transition={crumb.transition}
+                  >
                     {crumb.label}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
