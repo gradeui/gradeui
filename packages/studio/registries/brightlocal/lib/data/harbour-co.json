@@ -11,7 +11,8 @@
     "name": "Harbour & Co",
     "address": "Brighton Marina, BN2 5WA",
     "phone": "01273 555 018",
-    "status": "Active"
+    "status": "Active",
+    "rating": { "value": 4.7, "count": 342 }
   },
   "keywords": [
     "seafood restaurant brighton",
@@ -21,32 +22,200 @@
     "restaurant with sea view"
   ],
   "aiInsights": {
-    "summary": "Visibility is excellent — the wins now are content freshness and photo coverage.",
+    "lastUpdated": "15th Jul 2026 at 8:14 AM UTC",
+    "updatesLeft": 2,
+    "counts": { "insights": 3, "recommendations": 7 },
+    "tone": "standard",
+    "atAGlance": [
+      "Publish the spring menu as a What's New post — the profile has been quiet for three weeks.",
+      "Sharpen the menu page title to capture “seafood restaurant Brighton” searches.",
+      "Keep photo reviews flowing — they outperform text three-to-one for you."
+    ],
+    "summaries": {
+      "concise": "Visibility is excellent — the wins now are content freshness and photo coverage.",
+      "standard": "Visibility is excellent — you hold a top-five map position for “seafood restaurant brighton” and your profile, reviews and citations are all in strong shape. The wins now are freshness: publish the spring menu as a GBP post, sharpen the menu page title, and lean into photo reviews to keep the profile lively through the summer season.",
+      "detailed": "Your local presence is in excellent shape: a top-five map position for “seafood restaurant brighton”, a 4.7 rating across 342 reviews, 132 live citations with consistent NAP details, and a near-complete Google Business Profile. What is left is freshness. No GBP post has gone out in three weeks, the menu page title is still generic, and photo reviews — which outperform text three-to-one for you — arrive only when diners think of it. Publish the spring menu as a What's New post, work “seafood restaurant Brighton” into the menu page title and meta description, and prompt for photos in the follow-up email, and the profile stays as lively as the restaurant through the summer season."
+    },
     "items": [
       {
         "id": "ins-1",
         "area": "gbp-manager",
+        "areaLabel": "GBP",
         "severity": "medium",
-        "title": "No GBP posts in 3 weeks",
-        "action": "Publish the spring menu as a What's New post."
+        "title": "Keep your profile fresh with a steady posting rhythm",
+        "insight": "GBP activity is a freshness signal Google weighs for prominent, established profiles like yours. No post has gone out in three weeks — your longest gap this year — while your profile completeness, categories and NAP alignment are all near-perfect. When everything else is strong, posting rhythm is the difference between holding a top-five map position and drifting.",
+        "recommendation": "Publish the spring menu now, then put posting on a fortnightly rhythm so gaps never stretch past two weeks. Seasonal offers make easy, high-engagement material.",
+        "action": "Publish the spring menu as a What's New post.",
+        "actions": [
+          {
+            "text": "Publish the spring menu as a What's New post.",
+            "links": [{ "label": "Go to GBP Manager", "area": "gbp-manager" }]
+          },
+          {
+            "text": "Schedule a fortnightly post slot so gaps never stretch past two weeks."
+          },
+          {
+            "text": "Add the private-dining offer as an Offer post ahead of summer bookings."
+          }
+        ]
       },
       {
         "id": "ins-2",
         "area": "website-seo",
+        "areaLabel": "Web Performance",
         "severity": "medium",
-        "title": "Menu page title tag is generic",
-        "action": "Include 'seafood restaurant Brighton' in the title."
+        "title": "Sharpen the menu page title to capture “seafood restaurant Brighton”",
+        "insight": "The menu page ranks for your strongest query but its title tag is generic (“Menu — Harbour & Co”), so it earns fewer clicks than its position deserves. Titles are the single highest-leverage on-page element for click-through, and “seafood restaurant brighton” is your top tracked keyword.",
+        "recommendation": "Work the target phrase into the menu page title, then mirror it in the H1 and meta description so the snippet reads as one coherent result.",
+        "action": "Include 'seafood restaurant Brighton' in the title.",
+        "actions": [
+          {
+            "text": "Include 'seafood restaurant Brighton' in the title.",
+            "links": [{ "label": "Go to Website SEO", "area": "website-seo" }]
+          },
+          {
+            "text": "Mirror the phrase in the H1 and meta description (140 to 160 characters)."
+          }
+        ]
       },
       {
         "id": "ins-3",
         "area": "reviews",
+        "areaLabel": "Reviews",
         "severity": "low",
-        "title": "Photo reviews outperform text 3:1",
-        "action": "Prompt diners for photos in the follow-up email."
+        "title": "Lean into photo reviews to keep outperforming",
+        "insight": "Your photo reviews outperform text-only reviews three-to-one for engagement, and Google increasingly surfaces photo-rich profiles in the map pack. With a 4.7 average across 342 reviews the fundamentals are excellent — the opportunity is steering the review stream toward the format that works hardest for you.",
+        "recommendation": "Prompt for photos at the moment diners are happiest — the follow-up email — and showcase the best of them where prospects will see them.",
+        "action": "Prompt diners for photos in the follow-up email.",
+        "actions": [
+          {
+            "text": "Prompt diners for photos in the follow-up email.",
+            "links": [{ "label": "Go to Reviews", "area": "reviews" }]
+          },
+          {
+            "text": "Feature the best photo reviews on the homepage carousel."
+          }
+        ]
       }
     ]
   },
+  "foundation": {
+    "websiteContent": {
+      "score": 91,
+      "subMetrics": [
+        { "label": "Conversion UX", "score": 88 },
+        { "label": "Keyword coverage", "score": 78 },
+        { "label": "Page optimization", "score": 92 },
+        { "label": "Technical health", "score": 96 },
+        { "label": "Local intent & linking", "score": 90 }
+      ]
+    },
+    "gbp": {
+      "score": 82,
+      "subMetrics": [
+        { "label": "Activity & freshness", "score": 58 },
+        { "label": "Conversion tracking", "score": 85 },
+        { "label": "Profile completeness", "score": 97 },
+        { "label": "NAP alignment", "score": 94 },
+        { "label": "Category & service accuracy", "score": 90 }
+      ]
+    },
+    "reviews": {
+      "score": 89,
+      "subMetrics": [
+        { "label": "Review volume", "score": 84 },
+        { "label": "Average rating", "score": 94 },
+        { "label": "Recency & velocity", "score": 88 }
+      ]
+    },
+    "citations": {
+      "score": 92,
+      "subMetrics": [
+        { "label": "Core coverage", "score": 90 },
+        { "label": "NAP consistency", "score": 94 }
+      ]
+    }
+  },
+  "visibility": {
+    "keyword": "seafood restaurant brighton",
+    "googleMaps": {
+      "score": 76,
+      "avgRank": 4.8,
+      "avgRankDelta": 1.0,
+      "topThreeShare": 46,
+      "topThreeShareDelta": 8
+    },
+    "organic": { "score": 81 }
+  },
+  "competitors": [
+    {
+      "avgRank": 1.9,
+      "name": "The Salt Quay",
+      "rating": 4.6,
+      "reviewCount": 1840,
+      "categories": ["Seafood restaurant"],
+      "links": 8200,
+      "authority": 52
+    },
+    {
+      "avgRank": 2.7,
+      "name": "Pearl & Oyster Rooms",
+      "rating": 4.5,
+      "reviewCount": 1260,
+      "categories": ["Seafood restaurant", "Oyster bar"],
+      "links": 5400,
+      "authority": 47
+    },
+    {
+      "avgRank": 3.6,
+      "name": "Marina Catch Kitchen",
+      "rating": 4.4,
+      "reviewCount": 930,
+      "categories": ["Seafood restaurant"],
+      "links": 2100,
+      "authority": 39
+    },
+    {
+      "avgRank": 4.8,
+      "name": "Harbour & Co",
+      "rating": 4.7,
+      "reviewCount": 342,
+      "categories": ["Seafood restaurant"],
+      "links": 1150,
+      "authority": 33,
+      "self": true
+    },
+    {
+      "avgRank": 7.4,
+      "name": "The Fisherman's Rest",
+      "rating": 4.3,
+      "reviewCount": 610,
+      "categories": ["Fish & chips restaurant"],
+      "links": 480,
+      "authority": 24
+    }
+  ],
   "metrics": {
+    "aiWebsiteContent": {
+      "metric": "91",
+      "delta": "/100",
+      "description": "Weakest: Keyword coverage (78/100)"
+    },
+    "aiGoogleBusinessProfile": {
+      "metric": "82",
+      "delta": "/100",
+      "description": "Weakest: Activity & freshness (58/100)"
+    },
+    "aiReviews": {
+      "metric": "89",
+      "delta": "/100",
+      "description": "Weakest: Review volume (84/100)"
+    },
+    "aiCitations": {
+      "metric": "92",
+      "delta": "/100",
+      "description": "Weakest: Core coverage (90/100)"
+    },
     "reviews": {
       "metric": "4.7",
       "delta": "+0.1 this month"

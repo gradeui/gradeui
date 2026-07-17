@@ -101,6 +101,8 @@ export const PROPOSAL_DATA = {
     address: "Lewes, BN8 6JD",
     phone: "01273 400 123",
     status: "Active",
+    // Header rating chip (real summary page: "★ 5.0 (12 reviews)").
+    rating: { value: 4.3, count: 128 },
   },
   // Tracked keywords — feed the Local Search Grid nav sub-items (via
   // buildProposalSections) and any keyword table/grid a screen renders.
@@ -216,62 +218,281 @@ export const PROPOSAL_DATA = {
     "ai-insights-citations": "screen:dmrouize7iinr", // AI Insights - Citations
     "ai-insights-export": "screen:dmrouizhd7lcw", // AI Insights - Export Report
   },
-  // AI Insights — the headline featureset. A dataset section of its
-  // own: `summary` is the one-liner surfaces quote (hero, hub);
-  // `items` are "the three things to fix first" — area matches a nav
-  // section id, severity drives any status treatment. Refine the shape
-  // against the real product output when it lands; the JSON is the
-  // contract and screens bind through useProposalData().aiInsights.
+  // ─── AI Insights (shape matched to the LIVE summary page, 17 Jul) ──
+  // The hero: greeting + prose summary + counts + Location Score donut.
+  // TEXT VARIES, NUMBERS DON'T (Ali): `summaries` holds the prose in
+  // multiple tones/verbosities, `tone` picks one, and the provider
+  // surfaces the resolved string at `summary` — so screens bind ONE key
+  // and switching version is a one-key patch:
+  //   <ProposalDataProvider data={{ aiInsights: { tone: "concise" } }}>
+  // `summary` is DERIVED — author text in `summaries`, never here.
+  // `items` match the FULL old-platform AI Insights page (which also
+  // backs the new summary page's per-card sidebar): title is
+  // outcome-phrased; `area` is the nav row id the card drills through
+  // to (via navLinks); `areaLabel` is the old-platform label ("Web
+  // Performance" ↔ the "Website and content" card — the interim
+  // old/new naming is modelled, not fudged); `insight` is the long
+  // diagnostic paragraph, `recommendation` the summary paragraph;
+  // `actions` is the "Show all N actions" list — each action is
+  // { text, links?: [{ label, area? }] } because DEEP LINKS BELONG TO
+  // ACTIONS (the live page attaches "Go to Active Sync" etc. per
+  // action, sometimes two). The sidebar card's single CTA = the first
+  // link found across actions. `action` mirrors actions[0].text for
+  // existing screens. `atAGlance` is the 3-bullet executive summary;
+  // `counts` feeds "5 insights · 26 recommendations" (recommendations
+  // = total actions); `updatesLeft` is the regeneration quota chip.
   aiInsights: {
-    summary:
-      "Your listings are strong, but reviews velocity dropped and two citations conflict.",
+    lastUpdated: "14/07/26",
+    updatesLeft: 3,
+    counts: { insights: 3, recommendations: 8 },
+    tone: "standard",
+    atAGlance: [
+      "Catch up the six unanswered reviews — reply speed is the fastest visibility win available.",
+      "Sync opening hours to the two conflicting citations so Google stops seeing mixed signals.",
+      "Add LocalBusiness schema to the location page to unlock map-pack eligibility.",
+    ],
+    summaries: {
+      concise:
+        "Your listings are strong, but reviews velocity dropped and two citations conflict.",
+      standard:
+        "Your Google Business Profile is complete and your listings are in good shape, which gives you a solid base. The fastest wins now are catching up review replies, fixing the two citations with conflicting hours, and adding LocalBusiness schema so you can push into the map pack for “campsite lewes” searches across Lewes and the South Downs.",
+      detailed:
+        "Your Google Business Profile is complete, NAP details are consistent across 86 live listings, and rankings climbed three places this month — a solid base. Reviews are the soft spot: velocity dropped and six reviews sit unanswered, which Google reads as fading engagement. Two citations still show conflicting opening hours, and your location page is missing LocalBusiness schema. Work through those in order — replies first, then citations, then schema — and you should push into the map pack for “campsite lewes” searches across Lewes and the South Downs.",
+    },
     items: [
       {
         id: "ins-1",
         area: "reviews",
+        areaLabel: "Reviews",
         severity: "high",
-        title: "Review replies are 9 days behind",
+        title: "Catch up review replies to protect your rating",
+        insight:
+          "Review signals matter for both rankings and conversions. Six reviews across Google and Yelp have sat unanswered for nine days, and your reply rate this quarter is down to 60 percent. Google reads slowing engagement as declining quality, and prospective guests read silence as indifference — while nearby parks with faster reply times are appearing more often across local results.",
+        recommendation:
+          "Clear the backlog, then put replies on a 48-hour clock: templates for the common cases, a follow-up email that asks recent guests for a review while their stay is fresh.",
         action: "Respond to 6 unanswered reviews on Google and Yelp.",
+        actions: [
+          {
+            text: "Respond to 6 unanswered reviews on Google and Yelp.",
+            links: [{ label: "Go to Reviews", area: "reviews" }],
+          },
+          {
+            text: "Turn on reply templates so new reviews get answered within 48 hours.",
+          },
+          {
+            text: "Send a follow-up email to recent guests asking for a review.",
+          },
+        ],
       },
       {
         id: "ins-2",
         area: "citations",
+        areaLabel: "Citations",
         severity: "medium",
-        title: "Conflicting opening hours on 2 citations",
+        title: "Fix conflicting opening hours on 2 citations",
+        insight:
+          "Citations are consistent listings of your name, address and phone across directories — and two of yours (Bing and Apple) currently show last season's opening hours. Conflicting details dilute the trust signals your 86 consistent listings have earned, and guests who arrive to a closed gate leave reviews you don't want.",
+        recommendation:
+          "Sync hours from the Location Profile to the two conflicting citations, then re-run tracking to confirm the fix has propagated everywhere.",
         action: "Sync hours from the Location Profile to Bing and Apple.",
+        actions: [
+          {
+            text: "Sync hours from the Location Profile to Bing and Apple.",
+            links: [{ label: "Go to Citations", area: "citations" }],
+          },
+          {
+            text: "Re-run Citation Tracker to confirm the fixes have propagated.",
+          },
+        ],
       },
       {
         id: "ins-3",
         area: "website-seo",
+        areaLabel: "Web Performance",
         severity: "low",
-        title: "Location page is missing LocalBusiness schema",
-        action: "Add structured data to lift map-pack eligibility.",
+        title: "Add LocalBusiness schema to lift map-pack eligibility",
+        insight:
+          "Your location page has no LocalBusiness JSON-LD, so Google is inferring your name, address and opening hours instead of being told them. Structured data is a core local signal that helps Google confirm who and where you are — parks that carry it are more eligible for map-pack placement and richer results.",
+        recommendation:
+          "Add LocalBusiness schema (name, address, phone, geo, openingHours) to the location page, validate it, and extend to FAQPage schema while you're in the markup.",
+        action: "Add structured data to the location page.",
+        actions: [
+          {
+            text: "Add structured data to the location page.",
+            links: [{ label: "Go to Website SEO", area: "website-seo" }],
+          },
+          {
+            text: "Validate the markup in Google's Rich Results test.",
+          },
+          {
+            text: "Add the campsite FAQ as FAQPage schema while you're in there.",
+          },
+        ],
       },
     ],
   },
+  // ─── Location Score model (from the live "How your location score is
+  // calculated" popover): overall = 50% foundation + 50% visibility;
+  // foundation = Website 30% + GBP 30% + Reviews 20% + Citations 20%;
+  // visibility = Google Maps 60% + Organic 40%. The ONLY authored
+  // numbers are the module scores below — foundation/visibility/overall
+  // come from computeLocationScore(data), so a dataset can never ship
+  // an incoherent donut. Keys here mirror foundation/visibility keys.
+  scoreModel: {
+    locationScore: { foundation: 0.5, visibility: 0.5 },
+    foundation: {
+      websiteContent: 0.3,
+      gbp: 0.3,
+      reviews: 0.2,
+      citations: 0.2,
+    },
+    visibility: { googleMaps: 0.6, organic: 0.4 },
+  },
+  // ─── "Build your foundation" — the four module cards. Each: /100
+  // score + ordered sub-metric bars (labels straight from the live
+  // page). `label` is the NEW summary-page card name, `insightsLabel`
+  // the OLD AI-Insights sidebar name, `area` the nav row the card
+  // links through to (Reviews, Citations… pages) via navLinks.
+  foundation: {
+    websiteContent: {
+      label: "Website and content",
+      insightsLabel: "Web Performance",
+      area: "website-seo",
+      score: 78,
+      subMetrics: [
+        { label: "Conversion UX", score: 70 },
+        { label: "Keyword coverage", score: 72 },
+        { label: "Page optimization", score: 82 },
+        { label: "Technical health", score: 85 },
+        { label: "Local intent & linking", score: 68 },
+      ],
+    },
+    gbp: {
+      label: "Google Business Profile",
+      insightsLabel: "GBP",
+      area: "gbp-manager",
+      score: 74,
+      subMetrics: [
+        { label: "Activity & freshness", score: 60 },
+        { label: "Conversion tracking", score: 65 },
+        { label: "Profile completeness", score: 92 },
+        { label: "NAP alignment", score: 85 },
+        { label: "Category & service accuracy", score: 70 },
+      ],
+    },
+    reviews: {
+      label: "Reviews",
+      insightsLabel: "Reviews",
+      area: "reviews",
+      score: 72,
+      subMetrics: [
+        { label: "Review volume", score: 68 },
+        { label: "Average rating", score: 86 },
+        { label: "Recency & velocity", score: 55 },
+      ],
+    },
+    citations: {
+      label: "Citations",
+      insightsLabel: "Citations",
+      area: "citations",
+      score: 81,
+      subMetrics: [
+        { label: "Core coverage", score: 79 },
+        { label: "NAP consistency", score: 83 },
+      ],
+    },
+  },
+  // ─── "Your visibility" — the two channel scores + the map block's
+  // stat strip (per selected keyword). Deltas are signed numbers;
+  // render direction from the sign (live page: "↗ 1.2" chip, "— 0").
+  visibility: {
+    keyword: "campsite lewes",
+    googleMaps: {
+      label: "Google Maps",
+      score: 58,
+      avgRank: 12.0,
+      avgRankDelta: 3.0,
+      topThreeShare: 24,
+      topThreeShareDelta: 6,
+    },
+    organic: { label: "Organic", score: 47 },
+  },
+  // ─── Competitors table (live page columns: avg rank, business
+  // name + rating + review count, categories, links, authority).
+  // `self: true` marks the location's own row for highlight.
+  competitors: [
+    {
+      avgRank: 3.2,
+      name: "Heathfield Meadows Holiday Park",
+      rating: 4.6,
+      reviewCount: 210,
+      categories: ["Holiday park"],
+      links: 1240,
+      authority: 38,
+    },
+    {
+      avgRank: 4.8,
+      name: "South Downs Glamping Co",
+      rating: 4.9,
+      reviewCount: 156,
+      categories: ["Glampsite", "Campsite"],
+      links: 620,
+      authority: 29,
+    },
+    {
+      avgRank: 6.1,
+      name: "Ouse Valley Caravan Club Site",
+      rating: 4.4,
+      reviewCount: 402,
+      categories: ["Caravan park"],
+      links: 3100,
+      authority: 44,
+    },
+    {
+      avgRank: 9.7,
+      name: "Firle Camping Fields",
+      rating: 4.7,
+      reviewCount: 88,
+      categories: ["Campsite"],
+      links: 140,
+      authority: 17,
+    },
+    {
+      avgRank: 12.0,
+      name: "Blackberry Farm Park",
+      rating: 4.3,
+      reviewCount: 128,
+      categories: ["Holiday park"],
+      links: 310,
+      authority: 22,
+      self: true,
+    },
+  ],
   metrics: {
     // AI Insights home — one stat per sub page (Export Report is an
-    // action, not a stat). Values tie back to aiInsights.items so the
-    // numbers tell one coherent story across the section.
+    // action, not a stat). SAME DATA POINTS as the summary page (Ali,
+    // 17 Jul): metric = foundation.<module>.score, description = the
+    // weakest sub-metric. Every dataset MUST patch these four alongside
+    // foundation so the landing and the drill-downs never disagree.
     aiWebsiteContent: {
-      metric: "72",
-      delta: "↑ 4 this month",
-      description: "AI content score across your location pages",
+      metric: "78",
+      delta: "/100",
+      description: "Weakest: Local intent & linking (68/100)",
     },
     aiGoogleBusinessProfile: {
-      metric: "84%",
-      delta: "2 gaps found",
-      description: "Profile completeness and optimisation",
+      metric: "74",
+      delta: "/100",
+      description: "Weakest: Activity & freshness (60/100)",
     },
     aiReviews: {
-      metric: "6",
-      delta: "need replies",
-      description: "Unanswered reviews with AI-drafted responses",
+      metric: "72",
+      delta: "/100",
+      description: "Weakest: Recency & velocity (55/100)",
     },
     aiCitations: {
-      metric: "2",
-      delta: "conflicts",
-      description: "Citations with conflicting business details",
+      metric: "81",
+      delta: "/100",
+      description: "Weakest: Core coverage (79/100)",
     },
     reviews: {
       metric: "4.3",
@@ -305,7 +526,45 @@ export const PROPOSAL_DATA = {
   },
 };
 
-const ProposalDataContext = React.createContext(PROPOSAL_DATA);
+// ─── Location Score rollup ───────────────────────────────────────────
+// The donut + its two sub-scores are ARITHMETIC, never authored: the
+// weights live in data.scoreModel (captured from the live "How your
+// location score is calculated" popover) and the only authored numbers
+// are the module scores. Verified against the live product: -1 Studios
+// (.3×25 + .3×38 + .2×32 + .2×59 → 37; .6×2 + .4×0 → 1; midpoint 19).
+export function computeLocationScore(data = PROPOSAL_DATA) {
+  const w = data.scoreModel ?? PROPOSAL_DATA.scoreModel;
+  const weigh = (weights, source) =>
+    Math.round(
+      Object.entries(weights).reduce(
+        (acc, [key, wt]) => acc + (source?.[key]?.score ?? 0) * wt,
+        0,
+      ),
+    );
+  const foundation = weigh(w.foundation, data.foundation);
+  const visibility = weigh(w.visibility, data.visibility);
+  const overall = Math.round(
+    foundation * w.locationScore.foundation +
+      visibility * w.locationScore.visibility,
+  );
+  return { overall, foundation, visibility };
+}
+
+// Tone/verbosity resolution — TEXT VARIES, NUMBERS DON'T. The provider
+// surfaces summaries[tone] at aiInsights.summary after every merge, so
+// screens bind one key and a one-key tone patch re-voices the page.
+// To change the TEXT of a variant, patch `summaries.<tone>` — summary
+// itself is derived and never authored.
+function resolveProposalData(d) {
+  const ai = d.aiInsights;
+  const resolved = ai?.summaries?.[ai?.tone];
+  if (resolved == null || resolved === ai.summary) return d;
+  return { ...d, aiInsights: { ...ai, summary: resolved } };
+}
+
+const ProposalDataContext = React.createContext(
+  resolveProposalData(PROPOSAL_DATA),
+);
 
 /** Recursive merge: plain objects merge key-by-key over the defaults,
  *  so `{ metrics: { reviews: { metric: "4.9" } } }` patches ONE value
@@ -342,7 +601,9 @@ export function ProposalDataProvider({ dataset, data, children }) {
       // eslint-disable-next-line no-console
       console.warn(`[proposal] unknown dataset "${dataset}" — using defaults`);
     }
-    return mergeProposalData(mergeProposalData(parent, named), data);
+    return resolveProposalData(
+      mergeProposalData(mergeProposalData(parent, named), data),
+    );
   }, [parent, dataset, data]);
   return (
     <ProposalDataContext.Provider value={merged}>

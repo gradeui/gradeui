@@ -11,7 +11,8 @@
     "name": "Northside Dental",
     "address": "Manchester, M4 4BF",
     "phone": "0161 832 4477",
-    "status": "Needs attention"
+    "status": "Needs attention",
+    "rating": { "value": 3.6, "count": 214 }
   },
   "keywords": [
     "dentist manchester",
@@ -21,32 +22,209 @@
     "dental implants cost uk"
   ],
   "aiInsights": {
-    "summary": "Three issues are holding back the map pack: reviews, NAP conflicts and a slow site.",
+    "lastUpdated": "15th Jul 2026 at 11:30 AM UTC",
+    "updatesLeft": 1,
+    "counts": { "insights": 3, "recommendations": 9 },
+    "tone": "standard",
+    "atAGlance": [
+      "Rebuild the Google rating — recent negatives pushed it below 4.0 and the map pack follows ratings.",
+      "Push the M4 4BF address to the twelve citations still showing the old practice.",
+      "Fix mobile speed on the booking page (currently scoring 41) to stop losing patients before the form loads."
+    ],
+    "summaries": {
+      "concise": "Three issues are holding back the map pack: reviews, NAP conflicts and a slow site.",
+      "standard": "Three issues are holding the practice out of the map pack. Your Google rating slipped below 4.0, twelve citations still carry the old practice address, and the booking page is slow on mobile. Fix them in that order — reviews move the needle fastest — and you should recover the five places lost this month for “dentist manchester” searches.",
+      "detailed": "The practice has slipped five places this month for “dentist manchester” searches, and three issues explain it. First, your Google rating fell below 4.0 — recent unhappy reviews are outweighing a quiet stream of positives, and Google reads the trend as declining quality. Second, twelve citations still carry the old practice address, so NAP conflicts are diluting the local signals the new M4 4BF address should be earning. Third, the booking page scores 41 for mobile speed, which costs you both rankings and patients who give up before the form loads. Trigger the review campaign to recent happy patients, run Citation Builder to push the correct address everywhere, and compress the booking page's hero images — in that order — and the map pack is recoverable this quarter."
+    },
     "items": [
       {
         "id": "ins-1",
         "area": "reviews",
+        "areaLabel": "Reviews",
         "severity": "high",
-        "title": "Rating fell below 4.0 on Google",
-        "action": "Trigger the review campaign to recent happy patients."
+        "title": "Rebuild your Google rating to get back in the map pack",
+        "insight": "Your Google rating fell below 4.0 this month (3.6 across 214 reviews) — a threshold many patients filter by and a signal Google weighs for map-pack placement. Recent unhappy reviews are outweighing a quiet stream of positives, and your recency and velocity score of 28 confirms the flow has stalled. Competing practices near you average 4.5 and higher.",
+        "recommendation": "Restart volume from patients most likely to be positive — recent happy appointments — while containing damage with prompt, professional replies to every negative. A steady stream of fresh positives moves a 3.6 faster than anything else.",
+        "action": "Trigger the review campaign to recent happy patients.",
+        "actions": [
+          {
+            "text": "Trigger the review campaign to recent happy patients.",
+            "links": [{ "label": "Go to Get Reviews", "area": "reviews" }]
+          },
+          {
+            "text": "Reply to every review under 4 stars with a recovery offer.",
+            "links": [{ "label": "Go to Reputation Manager", "area": "reviews" }]
+          },
+          {
+            "text": "Add a review ask to the post-appointment SMS flow."
+          }
+        ]
       },
       {
         "id": "ins-2",
         "area": "citations",
+        "areaLabel": "Citations",
         "severity": "high",
-        "title": "Old practice address on 12 citations",
-        "action": "Run Citation Builder to push the M4 4BF address."
+        "title": "Push the new M4 4BF address to every citation",
+        "insight": "Twelve citations still carry the old practice address, so Google sees two conflicting locations for one practice — NAP consistency scores just 26. Conflicting addresses dilute every local signal the new M4 4BF site should be earning and can surface the wrong directions to patients. This is the likeliest cause of the five map-pack places lost this month.",
+        "recommendation": "Push the correct address everywhere at once rather than fixing listings one by one, suppress the duplicates, and verify propagation before expecting rankings to respond.",
+        "action": "Run Citation Builder to push the M4 4BF address.",
+        "actions": [
+          {
+            "text": "Run Citation Builder to push the M4 4BF address.",
+            "links": [{ "label": "Go to Citation Builder", "area": "citations" }]
+          },
+          {
+            "text": "Suppress the two duplicate listings still showing the old practice.",
+            "links": [{ "label": "Go to Active Sync" }]
+          },
+          {
+            "text": "Re-run Citation Tracker in two weeks to confirm propagation.",
+            "links": [{ "label": "Go to Citation Tracker", "area": "citations" }]
+          }
+        ]
       },
       {
         "id": "ins-3",
         "area": "website-seo",
+        "areaLabel": "Web Performance",
         "severity": "medium",
-        "title": "Mobile page speed scores 41",
-        "action": "Compress hero images on the booking page."
+        "title": "Speed up the booking page to stop losing mobile patients",
+        "insight": "The booking page scores 41 for mobile page speed — technical health is the weakest of your website sub-metrics — and most “dentist manchester” searches happen on a phone. Slow loads cost you twice: Google demotes slow pages in mobile results, and patients give up before the booking form appears.",
+        "recommendation": "The hero images are the bulk of the payload — compress them first, then defer everything below the fold and non-essential scripts. This is an afternoon of work for a measurable rankings and conversion lift.",
+        "action": "Compress hero images on the booking page.",
+        "actions": [
+          {
+            "text": "Compress hero images on the booking page.",
+            "links": [{ "label": "Go to Website SEO", "area": "website-seo" }]
+          },
+          {
+            "text": "Lazy-load the reviews widget below the fold."
+          },
+          {
+            "text": "Defer the booking widget script until interaction."
+          }
+        ]
       }
     ]
   },
+  "foundation": {
+    "websiteContent": {
+      "score": 58,
+      "subMetrics": [
+        { "label": "Conversion UX", "score": 60 },
+        { "label": "Keyword coverage", "score": 48 },
+        { "label": "Page optimization", "score": 62 },
+        { "label": "Technical health", "score": 41 },
+        { "label": "Local intent & linking", "score": 55 }
+      ]
+    },
+    "gbp": {
+      "score": 54,
+      "subMetrics": [
+        { "label": "Activity & freshness", "score": 48 },
+        { "label": "Conversion tracking", "score": 50 },
+        { "label": "Profile completeness", "score": 72 },
+        { "label": "NAP alignment", "score": 38 },
+        { "label": "Category & service accuracy", "score": 60 }
+      ]
+    },
+    "reviews": {
+      "score": 45,
+      "subMetrics": [
+        { "label": "Review volume", "score": 48 },
+        { "label": "Average rating", "score": 72 },
+        { "label": "Recency & velocity", "score": 28 }
+      ]
+    },
+    "citations": {
+      "score": 36,
+      "subMetrics": [
+        { "label": "Core coverage", "score": 44 },
+        { "label": "NAP consistency", "score": 26 }
+      ]
+    }
+  },
+  "visibility": {
+    "keyword": "dentist manchester",
+    "googleMaps": {
+      "score": 21,
+      "avgRank": 24.3,
+      "avgRankDelta": -5.0,
+      "topThreeShare": 4,
+      "topThreeShareDelta": -3
+    },
+    "organic": { "score": 32 }
+  },
+  "competitors": [
+    {
+      "avgRank": 3.1,
+      "name": "City Centre Dental Works",
+      "rating": 4.8,
+      "reviewCount": 590,
+      "categories": ["Dentist"],
+      "links": 2100,
+      "authority": 41
+    },
+    {
+      "avgRank": 4.6,
+      "name": "Ancoats Smile Studio",
+      "rating": 4.9,
+      "reviewCount": 320,
+      "categories": ["Dentist", "Cosmetic dentist"],
+      "links": 780,
+      "authority": 28
+    },
+    {
+      "avgRank": 7.2,
+      "name": "Northern Quarter Dental",
+      "rating": 4.7,
+      "reviewCount": 410,
+      "categories": ["Dentist"],
+      "links": 1500,
+      "authority": 35
+    },
+    {
+      "avgRank": 11.8,
+      "name": "Deansgate Dental & Implant Clinic",
+      "rating": 4.5,
+      "reviewCount": 150,
+      "categories": ["Dental implants provider"],
+      "links": 240,
+      "authority": 19
+    },
+    {
+      "avgRank": 24.3,
+      "name": "Northside Dental",
+      "rating": 3.6,
+      "reviewCount": 214,
+      "categories": ["Dentist"],
+      "links": 90,
+      "authority": 12,
+      "self": true
+    }
+  ],
   "metrics": {
+    "aiWebsiteContent": {
+      "metric": "58",
+      "delta": "/100",
+      "description": "Weakest: Technical health (41/100)"
+    },
+    "aiGoogleBusinessProfile": {
+      "metric": "54",
+      "delta": "/100",
+      "description": "Weakest: NAP alignment (38/100)"
+    },
+    "aiReviews": {
+      "metric": "45",
+      "delta": "/100",
+      "description": "Weakest: Recency & velocity (28/100)"
+    },
+    "aiCitations": {
+      "metric": "36",
+      "delta": "/100",
+      "description": "Weakest: NAP consistency (26/100)"
+    },
     "reviews": {
       "metric": "3.6",
       "delta": "−0.2 this month"

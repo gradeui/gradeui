@@ -1,0 +1,391 @@
+{
+  "user": {
+    "name": "Alastair Driver",
+    "meta": "Owner",
+    "initials": "AD"
+  },
+  "location": {
+    "name": "-1 Studios",
+    "reference": "1STUDIOS-NW16TZ",
+    "address": "London, NW1 6TZ",
+    "phone": "0203 488 2915",
+    "status": "Needs attention",
+    "rating": { "value": 5.0, "count": 12 }
+  },
+  "keywords": [
+    "recording studio",
+    "podcast studio",
+    "event venue marylebone",
+    "recording studio marylebone",
+    "podcast studio near baker street"
+  ],
+  "aiInsights": {
+    "lastUpdated": "1st Jul 2026 at 9:52 AM UTC",
+    "updatesLeft": 1,
+    "counts": { "insights": 5, "recommendations": 26 },
+    "tone": "standard",
+    "atAGlance": [
+      "Fix critical site basics (titles, meta descriptions, canonicals, robots and sitemap, viewport, H1s) so Google can find and trust your pages. Right now competitors consistently rank higher across the area.",
+      "Strengthen on-site local signals and GBP details (consistent NAP, LocalBusiness and Service schema, clear internal links and CTAs) to boost nearby searches and conversions.",
+      "Get a steady flow of new Google reviews and expand citations and links. With only 12 Google reviews, you are behind market leaders and miss Local Pack clicks."
+    ],
+    "summaries": {
+      "concise": "Foundations first: fix site fundamentals, strengthen local signals, align GBP, restart reviews, and close citation gaps.",
+      "standard": "Your Google Business Profile is set up correctly and clearly reflects your recording services, which gives you a solid starting point. The fastest wins now are to fix core site fundamentals so Google can crawl and index your pages, strengthen your local signals (name, address, phone, schema, internal links), align your GBP content with your services, restart a steady flow of Google reviews, and close citation and backlink gaps so you can show up more often for “recording studio” searches across Marylebone and central London.",
+      "detailed": "Your Google Business Profile is set up correctly and clearly reflects your recording services, which gives you a solid starting point — and your 5.0 rating, though built on only 12 reviews, is an asset competitors cannot easily match. Everything else needs foundations. The site is missing core fundamentals (13 of 13 pages lack meta descriptions, 10 lack title tags, robots.txt returns 403 with no sitemap), so Google struggles to crawl and index your pages at all. Local signals are thin: detected NAP on key pages is 0 percent, schema coverage is 0 percent, and the main navigation links none of your four service pages. GBP content is not yet aligned with the services you actually sell, review flow has stalled at roughly one per month, and citation and backlink coverage trails every studio above you in the rankings. Work through those in order and you should show up more often for “recording studio” searches across Marylebone and central London."
+    },
+    "items": [
+      {
+        "id": "ins-1",
+        "area": "website-seo",
+        "areaLabel": "Web Performance",
+        "severity": "high",
+        "title": "Fix site fundamentals so Google can crawl, index, and rank your pages",
+        "insight": "Your website's foundations are holding back visibility. Your Health Score is 19.4 out of 100 with major gaps: 13 of 13 pages are missing meta descriptions, 10 of 13 are missing title tags (and 3 are too short), 13 of 13 have no canonical tags (a canonical tells Google the preferred URL), robots.txt returns 403 with no XML sitemap, the viewport meta tag is missing on all 13 pages which hurts mobile-first indexing, and the H1 structure is broken (11 pages have no H1, while /hire has up to 15 H1s). These issues reduce indexation, mobile relevance, and click-through. In local search results for non branded terms like “recording studio,” you currently do not appear, while competitors such as Mav Music and Mastering The Mix consistently show near the top across the area. Fixing these site wide basics is a high-impact way to compete for generic searches.",
+        "recommendation": "Create site wide templates for titles and meta descriptions, add self-referencing canonicals, fix robots and sitemap, add a global viewport tag, and use one clear H1 per page. Normalize duplicate URLs (/home to /) to consolidate signals. These changes improve crawlability, mobile relevance, and click-through, helping you rank for non branded searches across Marylebone and central London.",
+        "action": "Add global head elements for title, meta description, and rel=canonical, and fill unique, keyword-relevant values on all 13 indexable pages (aim titles around 50 to 60 characters and descriptions 140 to 160).",
+        "actions": [
+          {
+            "text": "Add global head elements for title, meta description, and rel=canonical, and fill unique, keyword-relevant values on all 13 indexable pages (aim titles around 50 to 60 characters and descriptions 140 to 160)."
+          },
+          {
+            "text": "Serve a valid robots.txt (200 OK) that references your XML sitemap. Generate /sitemap.xml for all indexable URLs and submit it in Google Search Console and Bing Webmaster Tools."
+          },
+          {
+            "text": "301 redirect https://www.minus1.co/home to https://www.minus1.co/ and update any internal links pointing to /home."
+          },
+          {
+            "text": "Add a global meta viewport tag (width=device-width, initial-scale=1) and verify responsive behavior on mobile."
+          },
+          {
+            "text": "Enforce one descriptive H1 per page. On /hire and /hire-1 demote extra H1s to H2 or H3, and add missing H1s aligned to target queries such as “Recording studio in Marylebone.”"
+          },
+          {
+            "text": "Track ranking movement for key non branded terms like “recording studio,” “podcast studio,” and “event venue Marylebone” using Local Search Grid.",
+            "links": [{ "label": "Go to Local Search Grid", "area": "local-search-grid" }]
+          }
+        ]
+      },
+      {
+        "id": "ins-2",
+        "area": "website-seo",
+        "areaLabel": "Web Performance",
+        "severity": "medium",
+        "title": "Strengthen your local signals (NAP, schema, internal links) to boost nearby searches and better Maps answers",
+        "insight": "Detected NAP (name, address, phone) on key pages is 0 percent and schema coverage is 0 percent (no LocalBusiness or Service JSON-LD). Your homepage links cover only 1 of 4 service pages and the main navigation links 0 of 4, which weakens authority flow. Conversion cues are light (limited CTAs, no click-to-call, and few forms). These are core local signals that help Google confirm who and where you are and which services you offer. Competitors that outrank you in the area, like Soho Sonic Studios and Soho Square Studios, benefit from stronger overall prominence. Aligning your local signals will help close this gap and improve how Google's AI in Maps describes your business.",
+        "recommendation": "Add a consistent NAP block site wide, implement LocalBusiness schema (including openingHours) and Service schema on service pages, strengthen internal links from the homepage and main navigation to all service URLs, and add clear CTAs with click-to-call. Publish an FAQ page with schema to power Google's AI answers about pricing, parking, and podcast facilities.",
+        "action": "Place a consistent NAP block (matching your GBP) in the global footer. Add a clickable tel: link in the mobile header and a visible booking or inquiry CTA on every service page.",
+        "actions": [
+          {
+            "text": "Place a consistent NAP block (matching your GBP) in the global footer. Add a clickable tel: link in the mobile header and a visible booking or inquiry CTA on every service page."
+          },
+          {
+            "text": "Add JSON-LD: LocalBusiness (name, address, phone, URL, openingHours) site wide, and Service schema on /hire, /hire-1, /membersbooking, and /membersbooking-1 with serviceType (Recording studio hire, Podcast studio, Event venue) and areaServed."
+          },
+          {
+            "text": "Improve internal linking: from the homepage and main navigation, link to all four service URLs using descriptive anchors such as “Recording Studio Hire,” “Podcast and Content Studio,” “Event Venue Hire,” and “Members Booking.”"
+          },
+          {
+            "text": "Create a clear FAQ page that answers common pre-booking questions (rates, parking or vehicle access, late hours, equipment add-ons) and add FAQPage schema."
+          },
+          {
+            "text": "Monitor gains for hyperlocal terms like “recording studio Marylebone” and “podcast studio near Baker Street” using Local Rank Tracker and Local Search Grid.",
+            "links": [
+              { "label": "Go to Local Rank Tracker", "area": "rankings" },
+              { "label": "Go to Local Search Grid", "area": "local-search-grid" }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ins-3",
+        "area": "gbp-manager",
+        "areaLabel": "GBP",
+        "severity": "medium",
+        "title": "Align your GBP categories and content with your services to earn more local results",
+        "insight": "GBP category alignment is a major factor in whether you appear in local results. Your primary category is set to Recording studio, which matches your core service and mirrors top performers like Soho Sonic Studios, Soho Square Studios, and BBC Maida Vale Studios. You also market photoshoots, and Photography studio appears as an additional category option. Ensuring your categories, GBP Services, photos, and regular Posts reflect studio hire, podcast or content production, DJ or rehearsal, and event venue hire strengthens relevance. Your current visibility across the area is low compared to these competitors, so sharpening GBP alignment is a lever you can control.",
+        "recommendation": "Keep Recording Studio as your primary GBP category and add Photography Studio as an additional category if you actively offer photoshoots. Build out GBP Services to match what you offer, keep photos fresh, and publish regular Google Posts to showcase sessions and events.",
+        "action": "Confirm you have management access to your GBP, keep the primary category as Recording Studio, and add Photography Studio as an additional category if it reflects live services.",
+        "actions": [
+          {
+            "text": "Confirm you have management access to your GBP, keep the primary category as Recording Studio, and add Photography Studio as an additional category if it reflects live services.",
+            "links": [{ "label": "Go to Active Sync" }]
+          },
+          {
+            "text": "Audit GBP Services and add any missing services that mirror your site: Recording studio hire, Podcast or content studio, Event venue hire, and DJ or rehearsal support. Use the same naming on your site and in GBP.",
+            "links": [{ "label": "Go to Active Sync" }]
+          },
+          {
+            "text": "Upload new photo sets monthly that show the space, equipment, behind-the-scenes moments, and event setups to increase engagement."
+          },
+          {
+            "text": "Publish regular Google Posts highlighting sessions, listening parties, and seasonal offers. Repurpose content from your /hire pages for efficiency.",
+            "links": [{ "label": "Go to Google Business Profile Post Scheduler", "area": "gbp-manager" }]
+          },
+          {
+            "text": "Use Local Search Grid to track how often you appear in local results for “recording studio” and “podcast studio” around Marylebone and Fitzrovia.",
+            "links": [{ "label": "Go to Local Search Grid", "area": "local-search-grid" }]
+          }
+        ]
+      },
+      {
+        "id": "ins-4",
+        "area": "reviews",
+        "areaLabel": "Reviews",
+        "severity": "medium",
+        "title": "Increase your Google review flow to build trust and win more clicks",
+        "insight": "Review signals matter a lot for both rankings and conversions. You currently have 12 Google reviews with a perfect 5.0 average. The last review was about two months ago and your recent pace is roughly one new review about every 30 days. Meanwhile, peers like Mastering The Mix and Soho Square Studios appear more often across local results. A steady stream of authentic, service-specific reviews can improve your visibility and convince more people to book.",
+        "recommendation": "Run a Google-first review program that asks recent clients to leave detailed feedback mentioning the specific service and location, for example “recording session in Marylebone.” Reply to every review to show active management and care.",
+        "action": "Launch an email and SMS review request workflow to recent studio, podcast, and event bookings. Send a gentle reminder to non-responders after a few days.",
+        "actions": [
+          {
+            "text": "Launch an email and SMS review request workflow to recent studio, podcast, and event bookings. Send a gentle reminder to non-responders after a few days.",
+            "links": [{ "label": "Go to Get Reviews", "area": "reviews" }]
+          },
+          {
+            "text": "Use short templates that encourage specifics, like session type, gear used, parking, or late hours, without scripting exact keywords. This helps relevance and the summaries shown by Google's AI in Maps.",
+            "links": [{ "label": "Go to Get Reviews", "area": "reviews" }]
+          },
+          {
+            "text": "Reply to 100 percent of new Google reviews within a few days. Thank happy customers, address concerns offline when needed, and reference policies or equipment where helpful.",
+            "links": [{ "label": "Go to Reputation Manager", "area": "reviews" }]
+          },
+          {
+            "text": "Track review flow and ratings monthly, and benchmark against Soho Sonic Studios and Soho Square Studios in Reputation Manager.",
+            "links": [{ "label": "Go to Reputation Manager", "area": "reviews" }]
+          }
+        ]
+      },
+      {
+        "id": "ins-5",
+        "area": "citations",
+        "areaLabel": "Citations",
+        "severity": "medium",
+        "title": "Close citation gaps and earn quality local and industry backlinks to raise authority",
+        "insight": "Citations, which are consistent listings of your name, address, and phone across directories, and backlinks, which are links from other websites, both build trust and local presence. Citation data shows large gaps, with nearly half of general directories showing no listing found. Some existing listings match your name but not the full NAP, so none are fully consistent. Your website authority trails leaders like BBC Maida Vale Studios and Angel Studios, who tend to appear more often across the area. Cleaning up listings and adding a handful of high-quality local and industry links will lift trust and improve your eligibility for local results.",
+        "recommendation": "Create missing top tier and industry citations, fix NAP inconsistencies on existing listings, then pursue 5 to 10 high-quality local or industry backlinks such as features, event listings, and partnerships to raise authority and Local Pack eligibility.",
+        "action": "Tier 1, high priority: ensure accurate, consistent listings on Google, Apple Maps, Bing, Facebook, and Yelp, and sync your core NAP across these networks.",
+        "actions": [
+          {
+            "text": "Tier 1, high priority: ensure accurate, consistent listings on Google, Apple Maps, Bing, Facebook, and Yelp, and sync your core NAP across these networks.",
+            "links": [{ "label": "Go to Active Sync" }]
+          },
+          {
+            "text": "Use Citation Tracker to find and fix inconsistent existing listings, especially those shown as having a listing but with no matching NAP details. Update every field to match your GBP exactly.",
+            "links": [{ "label": "Go to Citation Tracker", "area": "citations" }]
+          },
+          {
+            "text": "Tier 2, industry specific: create listings on competitor-proven directories where you are missing, for example productionbase.co.uk, theknowledgeonline.com, showcase-music.com, and zipcube.com.",
+            "links": [{ "label": "Go to Citation Builder", "area": "citations" }]
+          },
+          {
+            "text": "Tier 3, local directories: launch a Citation Builder campaign for regional sites seen in competitor footprints, such as citymaps.uk, mapcarta.com, and reviewbritain.com, to expand coverage.",
+            "links": [{ "label": "Go to Citation Builder", "area": "citations" }]
+          },
+          {
+            "text": "Backlinks: pitch session write-ups or live videos to London creative blogs and local news, list public events on eventbrite.com, and collaborate with brands for case studies that link back to /hire. Prioritize dofollow links in editorial content."
+          },
+          {
+            "text": "Track changes for “recording studio Marylebone” and “podcast studio near me” in Local Search Grid to connect authority gains to visibility.",
+            "links": [{ "label": "Go to Local Search Grid", "area": "local-search-grid" }]
+          }
+        ]
+      }
+    ]
+  },
+  "foundation": {
+    "websiteContent": {
+      "score": 25,
+      "subMetrics": [
+        { "label": "Conversion UX", "score": 35 },
+        { "label": "Keyword coverage", "score": 0 },
+        { "label": "Page optimization", "score": 50 },
+        { "label": "Technical health", "score": 55 },
+        { "label": "Local intent & linking", "score": 5 }
+      ]
+    },
+    "gbp": {
+      "score": 38,
+      "subMetrics": [
+        { "label": "Activity & freshness", "score": 25 },
+        { "label": "Conversion tracking", "score": 50 },
+        { "label": "Profile completeness", "score": 80 },
+        { "label": "NAP alignment", "score": 50 },
+        { "label": "Category & service accuracy", "score": 0 }
+      ]
+    },
+    "reviews": {
+      "score": 32,
+      "subMetrics": [
+        { "label": "Review volume", "score": 2 },
+        { "label": "Average rating", "score": 100 },
+        { "label": "Recency & velocity", "score": 0 }
+      ]
+    },
+    "citations": {
+      "score": 59,
+      "subMetrics": [
+        { "label": "Core coverage", "score": 35 },
+        { "label": "NAP consistency", "score": 83 }
+      ]
+    }
+  },
+  "visibility": {
+    "keyword": "recording studio",
+    "googleMaps": {
+      "score": 2,
+      "avgRank": 17.8,
+      "avgRankDelta": 1.2,
+      "topThreeShare": 0,
+      "topThreeShareDelta": 0
+    },
+    "organic": { "score": 0 }
+  },
+  "competitors": [
+    {
+      "avgRank": 4.9,
+      "name": "BBC Maida Vale Studios",
+      "rating": 4.5,
+      "reviewCount": 339,
+      "categories": ["Recording studio"],
+      "links": 435784519,
+      "authority": 95
+    },
+    {
+      "avgRank": 7,
+      "name": "The Sound Company",
+      "rating": 5.0,
+      "reviewCount": 44,
+      "categories": ["Recording studio"],
+      "links": 749,
+      "authority": 29
+    },
+    {
+      "avgRank": 7.9,
+      "name": "AIR Studios",
+      "rating": 4.9,
+      "reviewCount": 156,
+      "categories": ["Recording studio", "Music producer"],
+      "links": 5726,
+      "authority": 49
+    },
+    {
+      "avgRank": 8.5,
+      "name": "Soho Sonic Studios",
+      "rating": 4.9,
+      "reviewCount": 83,
+      "categories": ["Recording studio", "Rehearsal studio"],
+      "links": 273,
+      "authority": 18
+    },
+    {
+      "avgRank": 9.4,
+      "name": "AudioHaus Recording Studio West London Notting Hill",
+      "rating": 4.9,
+      "reviewCount": 94,
+      "categories": ["Recording studio"],
+      "links": 5,
+      "authority": 5
+    },
+    {
+      "avgRank": 10.4,
+      "name": "Select Recording Studios",
+      "rating": 5.0,
+      "reviewCount": 381,
+      "categories": ["Recording studio", "Music producer"],
+      "links": 6627,
+      "authority": 26
+    },
+    {
+      "avgRank": 12.1,
+      "name": "JBJ Recording Studio",
+      "rating": 4.8,
+      "reviewCount": 32,
+      "categories": ["Recording studio", "Music producer", "Rehearsal studio"],
+      "links": 52,
+      "authority": 13
+    },
+    {
+      "avgRank": 13.1,
+      "name": "RAK Recording Studios",
+      "rating": 4.8,
+      "reviewCount": 81,
+      "categories": ["Recording studio"],
+      "links": 1287,
+      "authority": 40
+    },
+    {
+      "avgRank": 13.4,
+      "name": "PIRATE.COM - Rehearsal & Recording Studios",
+      "rating": 4.5,
+      "reviewCount": 334,
+      "categories": ["Recording studio", "Rehearsal studio"],
+      "links": 549213,
+      "authority": 47
+    },
+    {
+      "avgRank": 14.1,
+      "name": "Denmark Street Studios",
+      "rating": 4.8,
+      "reviewCount": 25,
+      "categories": ["Recording studio", "Rehearsal studio"],
+      "links": 125,
+      "authority": 16
+    },
+    {
+      "avgRank": 17.8,
+      "name": "-1 Studios",
+      "rating": 5.0,
+      "reviewCount": 12,
+      "categories": ["Recording studio", "Podcast studio"],
+      "links": 2,
+      "authority": 3,
+      "self": true
+    }
+  ],
+  "metrics": {
+    "aiWebsiteContent": {
+      "metric": "25",
+      "delta": "/100",
+      "description": "Weakest: Keyword coverage (0/100)"
+    },
+    "aiGoogleBusinessProfile": {
+      "metric": "38",
+      "delta": "/100",
+      "description": "Weakest: Category & service accuracy (0/100)"
+    },
+    "aiReviews": {
+      "metric": "32",
+      "delta": "/100",
+      "description": "Weakest: Recency & velocity (0/100)"
+    },
+    "aiCitations": {
+      "metric": "59",
+      "delta": "/100",
+      "description": "Weakest: Core coverage (35/100)"
+    },
+    "reviews": {
+      "metric": "5.0",
+      "delta": "12 reviews"
+    },
+    "rankings": {
+      "metric": "18",
+      "delta": "↑ 1 this month"
+    },
+    "citations": {
+      "metric": "35"
+    },
+    "localSearchGrid": {
+      "metric": "5",
+      "delta": "keywords tracked"
+    },
+    "gbpManager": {
+      "metric": "0",
+      "delta": "posts this month"
+    },
+    "websiteSeo": {
+      "metric": "25",
+      "delta": "site score"
+    }
+  }
+}
