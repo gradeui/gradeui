@@ -232,7 +232,11 @@ function SubRows({ items, activeId }) {
   return items.map((item) => (
     <SidebarMenuSubItem key={item.id} dataHook={`sub-item-${item.id}`}>
       <SidebarMenuSubButton
-        className="h-auto min-h-7 w-full py-1 [&>span:last-of-type]:whitespace-normal!"
+        // cursor-pointer select-none: the DS sub button is an <a>
+        // without href, so browsers default to a TEXT cursor and
+        // selectable label — read as broken, not navigational (Ali,
+        // 18 Jul). Nav rows are controls: pointer, never selectable.
+        className="h-auto min-h-7 w-full cursor-pointer select-none py-1 [&>span:last-of-type]:whitespace-normal!"
         dataHook={`sub-btn-${item.id}`}
         isActive={
           activeId
@@ -265,7 +269,8 @@ function NavSection({ section, activeId }) {
         // main rows. PROPOSED REGISTRY CHANGE: if BL adopt it, this is
         // SidebarMenuButtonSize.SM as the app-nav default.
         size="sm"
-        className="px-4 [&>span:last-of-type]:whitespace-normal!"
+        // Same cursor discipline as the sub rows.
+        className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
         dataHook={`nav-${section.id}`}
         isActive={inSection}
         data-grade-goto={section.goto}
