@@ -10,6 +10,7 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbSeparator,
   Button,
   Card,
   CardContent,
@@ -114,23 +115,30 @@ export function PageHeader({
         {breadcrumbs.length > 0 ? (
           <Breadcrumb dataHook={`${dataHook}-breadcrumb`}>
             <BreadcrumbList>
-              {breadcrumbs.map((crumb) => (
-                <BreadcrumbItem key={crumb.label}>
-                  {/* crumb.goto — screen link (STUDIO-FLOWS): ancestors
-                      are usually other screens in the flow, so crumbs
-                      navigate in shares/embeds. {label, href?, goto?,
-                      transition?}. */}
-                  <BreadcrumbLink
-                    href={crumb.href ?? "#"}
-                    data-grade-goto={crumb.goto}
-                    data-grade-transition={crumb.transition}
-                    // Wrap BETWEEN crumbs, never inside one — a crumb
-                    // breaking word-per-line reads as layout failure.
-                    className="whitespace-nowrap"
-                  >
-                    {crumb.label}
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
+              {breadcrumbs.map((crumb, i) => (
+                <React.Fragment key={crumb.label}>
+                  {/* Separator BETWEEN crumbs — the DS's Breadcrumb is
+                      shadcn-family: separators are explicit siblings,
+                      not auto-inserted (they were silently missing —
+                      Ali, 18 Jul). */}
+                  {i > 0 ? <BreadcrumbSeparator /> : null}
+                  <BreadcrumbItem>
+                    {/* crumb.goto — screen link (STUDIO-FLOWS):
+                        ancestors are usually other screens in the flow,
+                        so crumbs navigate in shares/embeds. {label,
+                        href?, goto?, transition?}. */}
+                    <BreadcrumbLink
+                      href={crumb.href ?? "#"}
+                      data-grade-goto={crumb.goto}
+                      data-grade-transition={crumb.transition}
+                      // Wrap BETWEEN crumbs, never inside one — a crumb
+                      // breaking word-per-line reads as layout failure.
+                      className="whitespace-nowrap"
+                    >
+                      {crumb.label}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                </React.Fragment>
               ))}
             </BreadcrumbList>
           </Breadcrumb>
