@@ -41,6 +41,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  Skeleton,
   TypographyH2,
   TypographyH3,
   TypographyMuted,
@@ -52,13 +53,17 @@ import {
   ChevronRight,
   Globe,
   Grid3x3,
+  ImageOff,
   Info,
   Link,
   ListChecks,
+  MapPin,
+  Phone,
   SlidersHorizontal,
   Sparkles,
   Star,
   Store,
+  Tag,
   TrendingUp,
 } from "@brightlocal/icons";
 import { useProposalData } from "@brightlocal/proposal-data";
@@ -115,7 +120,17 @@ export function PageHeader({
         {breadcrumbs.length > 0 ? (
           <Breadcrumb dataHook={`${dataHook}-breadcrumb`}>
             <BreadcrumbList>
-              {breadcrumbs.map((crumb, i) => (
+              {breadcrumbs
+                // DATA-BOUND crumb: { bind: "location" } resolves to the
+                // CURRENT location's name at render position — "All
+                // Locations > Blackberry Farm Park" follows dataset
+                // switches with zero per-screen wiring (Ali, 18 Jul).
+                .map((crumb) =>
+                  crumb.bind === "location"
+                    ? { ...crumb, label: data.location.name }
+                    : crumb,
+                )
+                .map((crumb, i) => (
                 <React.Fragment key={crumb.label}>
                   {/* Separator BETWEEN crumbs — the DS's Breadcrumb is
                       shadcn-family: separators are explicit siblings,
@@ -139,7 +154,7 @@ export function PageHeader({
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                 </React.Fragment>
-              ))}
+                ))}
             </BreadcrumbList>
           </Breadcrumb>
         ) : null}
@@ -452,3 +467,126 @@ export function HubHeroCard({
   );
 }
 
+
+// ─── LocationCard — the All Locations grid tile ───────────────────────
+// Mirrors the live platform's location card (18 Jul screenshot): photo
+// (or the No-photo placeholder on the green-tinted neutral wash), name,
+// then icon rows — place, category, phone. Rows self-skip when the
+// data lacks a field (the client's real list is patchy). `goto` /
+// `transition` stamp the flow attributes on the whole card;
+// `loading` renders the skeleton state instead (same footprint, no
+// layout shift when the real card lands).
+export function LocationCard({
+  // Either a `location` object ({ name, city, postcode, category,
+  // phone, photo? }) or individual props; the object wins field-wise.
+  location,
+  name,
+  city,
+  postcode,
+  category,
+  phone,
+  photo,
+  goto,
+  transition,
+  loading = false,
+  dataHook = "location-card",
+  className,
+  ...rest
+}) {
+  const loc = location ?? {};
+  const vName = loc.name ?? name;
+  const vCity = loc.city ?? city;
+  const vPostcode = loc.postcode ?? postcode;
+  const vCategory = loc.category ?? category;
+  const vPhone = loc.phone ?? phone;
+  const vPhoto = loc.photo ?? photo;
+  if (loading) {
+    return <LocationCardSkeleton dataHook={`${dataHook}-skeleton`} />;
+  }
+  return (
+    <Card
+      {...rest}
+      variant="filled"
+      dataHook={dataHook}
+      data-grade-goto={goto}
+      data-grade-transition={transition}
+      className={[
+        "max-w-none",
+        goto ? "cursor-pointer transition-shadow hover:shadow-md" : "",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <CardContent className="flex flex-col gap-4">
+        {/* Photo / placeholder — fixed aspect so card heights align
+            regardless of photo availability. */}
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg bg-[var(--ds-tailwind-colors-neutral-100)]">
+          {vPhoto ? (
+            <img
+              src={vPhoto}
+              alt={vName}
+              className="absolute inset-0 size-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--ds-tailwind-colors-neutral-500)]">
+              <ImageOff className="size-8" />
+              <span className="text-sm">No photo available</span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-3">
+          <TypographyH3
+            dataHook={`${dataHook}-name`}
+            className="text-xl leading-snug"
+          >
+            {vName}
+          </TypographyH3>
+          <div className="flex flex-col gap-2 text-sm text-[var(--ds-tailwind-colors-neutral-600)]">
+            {vCity ? (
+              <span className="flex items-center gap-2.5">
+                <MapPin className="size-4 shrink-0" />
+                {[vCity, vPostcode].filter(Boolean).join(", ")}
+              </span>
+            ) : null}
+            {vCategory ? (
+              <span className="flex items-center gap-2.5">
+                <Tag className="size-4 shrink-0" />
+                {vCategory}
+              </span>
+            ) : null}
+            {vPhone ? (
+              <span className="flex items-center gap-2.5">
+                <Phone className="size-4 shrink-0" />
+                {vPhone}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Skeleton twin — identical footprint (photo block, name line, three
+// rows) so a loading grid doesn't shift when data lands.
+export function LocationCardSkeleton({ dataHook = "location-card-skeleton" }) {
+  return (
+    <Card variant="filled" dataHook={dataHook} className="max-w-none">
+      <CardContent className="flex flex-col gap-4">
+        <Skeleton
+          dataHook={`${dataHook}-photo`}
+          className="aspect-[16/9] w-full rounded-lg"
+        />
+        <div className="flex flex-col gap-3">
+          <Skeleton dataHook={`${dataHook}-name`} className="h-6 w-2/3" />
+          <div className="flex flex-col gap-2">
+            <Skeleton dataHook={`${dataHook}-row-1`} className="h-4 w-1/2" />
+            <Skeleton dataHook={`${dataHook}-row-2`} className="h-4 w-2/5" />
+            <Skeleton dataHook={`${dataHook}-row-3`} className="h-4 w-1/3" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
