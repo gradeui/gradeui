@@ -126,6 +126,7 @@ export function SharedScreen({
   scopeLabel,
   scopeTagType,
   entryDesignId,
+  shareToken,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -180,6 +181,9 @@ export function SharedScreen({
   /** The entry screen's design id — scopes the single-view pins to the
    *  entry (threads may span every member on scoped shares). */
   entryDesignId?: string | null;
+  /** The share's URL token — the capability the viewer-pin route
+   *  validates. Present = signed-in viewers can CREATE pins. */
+  shareToken?: string;
 }) {
   // Seed the preview-css store BEFORE the frame hosts push source —
   // Studio's page-level effect does this in the editor; the share view
@@ -936,6 +940,105 @@ export function SharedScreen({
   const entryThreads = entryDesignId
     ? (threadsByDesign.get(entryDesignId) ?? [])
     : threads;
+
+  // ─── Viewer-side PIN CREATION (Ali: "these are the tools I need so
+  // people can start interacting") ─────────────────────────────────────
+  // Pin mode arms the sandbox selection agent (single view: the live
+  // screen; compare: the FOCUSED pane); a pick opens the composer; the
+  // post goes through /api/shares/[token]/comments — the server route
+  // that validates the capability token + scope and writes with the
+  // service role (RLS correctly refuses outsiders client-side).
+  const [pinMode, setPinMode] = React.useState(false);
+  const [pendingPin, setPendingPin] = React.useState<{
+    designId: string;
+    anchorId: string;
+    anchorKind: "source" | "instance";
+    label: string;
+    componentName?: string;
+  } | null>(null);
+  const [pinText, setPinText] = React.useState("");
+  const [postingPin, setPostingPin] = React.useState(false);
+  // Outside commenters aren't in the server-rendered user list — carry
+  // them locally so their avatar/name shows on the pin immediately.
+  const [extraUsers, setExtraUsers] = React.useState<User[]>([]);
+  const handlePinPick = React.useCallback(
+    (sel: unknown, designId: string | null | undefined) => {
+      if (!designId) return;
+      const s = sel as {
+        sourceId?: string;
+        instanceId?: string;
+        anchorSourceId?: string;
+        componentName?: string;
+        part?: string;
+        tag?: string;
+      } | null;
+      if (!s) return;
+      const anchor = s.sourceId
+        ? { id: s.sourceId, kind: "source" as const }
+        : s.instanceId
+          ? { id: s.instanceId, kind: "instance" as const }
+          : s.anchorSourceId
+            ? { id: s.anchorSourceId, kind: "source" as const }
+            : null;
+      if (!anchor) return;
+      setPendingPin({
+        designId,
+        anchorId: anchor.id,
+        anchorKind: anchor.kind,
+        label: s.componentName || s.part || s.tag || "element",
+        componentName: s.componentName,
+      });
+      setPinMode(false); // one pick per arm — the composer takes over
+    },
+    [],
+  );
+  const handlePostPin = React.useCallback(async () => {
+    if (!pendingPin || !pinText.trim() || !shareToken) return;
+    setPostingPin(true);
+    try {
+      const res = await fetch(`/api/shares/${shareToken}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          designId: pendingPin.designId,
+          anchorId: pendingPin.anchorId,
+          anchorKind: pendingPin.anchorKind,
+          elementLabel: pendingPin.label,
+          componentName: pendingPin.componentName,
+          body: pinText.trim(),
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        thread?: CommentThreadWithMessages["thread"];
+        comments?: CommentThreadWithMessages["comments"];
+        author?: User;
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.thread) {
+        throw new Error(data?.error ?? `pin failed (${res.status})`);
+      }
+      setThreads((prev) => [
+        ...prev,
+        { thread: data.thread!, comments: data.comments ?? [] },
+      ]);
+      if (data.author) {
+        setExtraUsers((prev) =>
+          prev.some((u) => u.id === data.author!.id)
+            ? prev
+            : [...prev, data.author!],
+        );
+      }
+      setActiveThreadId(data.thread.id);
+      setShowComments(true);
+      setPendingPin(null);
+      setPinText("");
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[share] pin failed:", err);
+    } finally {
+      setPostingPin(false);
+    }
+  }, [pendingPin, pinText, shareToken]);
   const [showComments, setShowComments] = React.useState(true);
   const [activeThreadId, setActiveThreadId] = React.useState<string | null>(
     null,
@@ -943,8 +1046,10 @@ export function SharedScreen({
   const [replyText, setReplyText] = React.useState("");
   const [posting, setPosting] = React.useState(false);
   const getCommentUser = React.useCallback(
-    (id: string) => commentUsers.find((u) => u.id === id),
-    [commentUsers],
+    (id: string) =>
+      commentUsers.find((u) => u.id === id) ??
+      extraUsers.find((u) => u.id === id),
+    [commentUsers, extraUsers],
   );
   const activeThread =
     threads.find((t) => t.thread.id === activeThreadId) ?? null;
@@ -1407,6 +1512,32 @@ export function SharedScreen({
             </button>
             )}
 
+            {/* New pin — viewer-side comment creation. Signed-in only
+                (the unsigned path is the reply drawer's sign-in-and-
+                return link); in compare, focus a pane first so the pick
+                has one target screen. */}
+            {viewer && shareToken && (
+              <button
+                type="button"
+                onClick={() => setPinMode((v) => !v)}
+                disabled={compare && !focusedPaneId}
+                aria-pressed={pinMode}
+                title={
+                  compare && !focusedPaneId
+                    ? "Focus a screen first, then pin"
+                    : pinMode
+                      ? "Click an element to pin a comment"
+                      : "New pin — click an element to comment on it"
+                }
+                className={cn(
+                  iconBtn,
+                  pinMode && "bg-foreground/10 text-foreground",
+                  compare && !focusedPaneId && "opacity-40",
+                )}
+              >
+                <MessageSquare className="h-4 w-4" />
+              </button>
+            )}
             {hasComments && (
               <button
                 type="button"
@@ -1694,6 +1825,12 @@ export function SharedScreen({
                         // Comment pins anchor via contentDocument — one
                         // overlay per pane, mounted outside the camera.
                         iframeRef={paneIframeRef(m.id)}
+                        // Pin mode: the focused pane's agent captures a
+                        // pick for the composer.
+                        selectMode={pinMode && focusedPaneId === m.id}
+                        onSelect={(sel) =>
+                          handlePinPick(sel, paneTop?.id ?? m.id)
+                        }
                         // Interactive only while focused — a goto swaps
                         // THIS pane in place (row + siblings stay).
                         onGoto={
@@ -1727,6 +1864,10 @@ export function SharedScreen({
                         activeCommentThreadId={activeThreadId}
                         onCommentPinClick={(id) =>
                           setActiveThreadId((cur) => (cur === id ? null : id))
+                        }
+                        selectMode={pinMode && focusedPaneId === m.id}
+                        onSelect={(sel) =>
+                          handlePinPick(sel, paneTop?.id ?? m.id)
                         }
                         onGoto={
                           focusedPaneId === m.id
@@ -1772,6 +1913,11 @@ export function SharedScreen({
             appSource={currentSource}
             mode={mode}
             registryId={shareRegistry.id}
+            // Viewer pin creation — pin mode arms the sandbox agent.
+            selectMode={pinMode}
+            onSelect={(sel) =>
+              handlePinPick(sel, flowTop?.id ?? entryDesignId)
+            }
             // Comment pins — host-side overlay below needs contentDocument
             // (same-origin /external-sandbox, same pattern as Studio's
             // ExternalDsMount). The ext protocol has no inline-pin channel
@@ -1820,6 +1966,11 @@ export function SharedScreen({
             theme={activeTheme}
             mode={mode}
             motion={motionOn}
+            // Viewer pin creation — same arming as the external branch.
+            selectMode={pinMode}
+            onSelect={(sel) =>
+              handlePinPick(sel, flowTop?.id ?? entryDesignId)
+            }
             // Flow navigation — same wire contract as the external host
             // (grade:goto / ext:goto, STUDIO-FLOWS two-agent rule).
             onGoto={resolveGoto}
@@ -2068,6 +2219,59 @@ export function SharedScreen({
               to leave comments — you&apos;ll come straight back here.
             </div>
           )}
+        </div>
+      )}
+
+      {/* New-pin composer — opens after a pin-mode pick. Fixed
+          bottom-right (same neighbourhood as the reply drawer), names
+          the picked element, posts through the share-token route. */}
+      {pendingPin && (
+        <div className="fixed bottom-4 right-4 z-[75] flex w-80 flex-col gap-2 rounded-xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur-md">
+          <div className="flex items-center justify-between gap-2">
+            <span className="truncate text-xs font-medium text-foreground">
+              New comment on{" "}
+              <span className="text-muted-foreground">{pendingPin.label}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingPin(null);
+                setPinText("");
+              }}
+              aria-label="Cancel pin"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <textarea
+            autoFocus
+            value={pinText}
+            onChange={(e) => setPinText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                void handlePostPin();
+              } else if (e.key === "Escape") {
+                setPendingPin(null);
+                setPinText("");
+              }
+            }}
+            rows={3}
+            placeholder="Say the thing…"
+            className="w-full resize-none rounded-md border border-border/60 bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary/50"
+          />
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void handlePostPin()}
+              disabled={!pinText.trim() || postingPin}
+              className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background transition hover:opacity-90 disabled:opacity-40"
+            >
+              <Send className="h-3 w-3" />
+              {postingPin ? "Pinning…" : "Pin comment"}
+            </button>
+          </div>
         </div>
       )}
     </div>

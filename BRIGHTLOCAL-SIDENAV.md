@@ -247,6 +247,30 @@ split for the 32px line, rail ml-6.
 - Embed registry-awareness (/e/[token]) — scoped above.
 - mcp-server dev-mode contract reload — scoped above.
 
+## DESIGN NOTE (18 Jul, ~4am) — where does a viewer's comment LIVE?
+
+Decided tonight (shipped in the viewer-pin route): comments stay
+ATTACHED TO SCREENS — share-attached comments would fragment feedback
+per link (three links to one screen = three conversations that can't
+see each other; re-minting orphans feedback). The pin sits ON the
+element, so the metaphor holds ("I commented on this button", like a
+Doc comment lives on the sentence, not the sharing email).
+
+The share becomes PROVENANCE, not ownership: the pin route knows the
+token — one additive column (comment_threads.share_token or a detail
+on the audit event) records which link collected the feedback,
+filterable in Studio later ("what did the Friday link say?").
+
+OPEN (Ali's bag of snakes — decide at the F2 comments pass, not now):
+- FLOW/SHARE-LEVEL comments — "this journey feels long" has no element
+  home. A distinct comment KIND (no anchor, panel not pin), visible in
+  the share/flow context it was made in. Maybe surfaced per Ali as a
+  setting: "flow-level comments" vs "screen-level comments".
+- Whether flow-made pins should default to visible-only-in-flows
+  (Ali's instinct) — provenance filtering may give this for free
+  without a second attachment model (a VIEW over provenance, same
+  trick as tags: one storage, many lenses).
+
 ## NEXT SESSION (REFRESHED 18 Jul ~3am, after the late-night burst)
 
 Ali's day: daily meeting from tag shares (Friday link live + unfurling

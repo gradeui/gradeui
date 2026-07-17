@@ -427,6 +427,7 @@ export default async function SharePage({
       scopeLabel={scopeLabel}
       scopeTagType={scopeTagType}
       entryDesignId={share.design_id}
+      shareToken={token}
     />
   );
 }
