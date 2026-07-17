@@ -735,6 +735,7 @@ export default function ExternalSandboxPage() {
     // multiplicative factors coalesced to one post per frame.
     let zoomAcc = 1;
     let zoomRaf: number | null = null;
+    let zoomTimer: ReturnType<typeof setTimeout> | null = null;
     // Anchor coords ride along (iframe-local, like Fast Frame's
     // grade:zoom-gesture) so the share view can zoom about the POINTER
     // instead of the centre — without them the external share pinch
@@ -747,14 +748,27 @@ export default function ExternalSandboxPage() {
       zoomAcc *= Math.exp(-e.deltaY * 0.01);
       zoomX = e.clientX;
       zoomY = e.clientY;
-      if (zoomRaf === null) {
-        zoomRaf = requestAnimationFrame(() => {
-          zoomRaf = null;
-          const factor = zoomAcc;
-          zoomAcc = 1;
-          if (factor !== 1)
-            post({ type: "ext:zoom-gesture", factor, clientX: zoomX, clientY: zoomY });
-        });
+      // THE WEDGE (Ali's flaky pinch, repro'd: dies after a goto,
+      // intermittently): rAF callbacks are suppressed while a view
+      // transition holds rendering (and in hidden tabs). A pinch in
+      // that window scheduled a frame that never ran, zoomRaf stayed
+      // non-null, and EVERY later gesture was swallowed — while
+      // preventDefault above still blocked the browser's own zoom, so
+      // it read as dead. The timer backstop flushes if the frame
+      // doesn't run within 50ms; either path clears both handles.
+      const flushZoom = () => {
+        if (zoomRaf !== null) cancelAnimationFrame(zoomRaf);
+        if (zoomTimer !== null) clearTimeout(zoomTimer);
+        zoomRaf = null;
+        zoomTimer = null;
+        const factor = zoomAcc;
+        zoomAcc = 1;
+        if (factor !== 1)
+          post({ type: "ext:zoom-gesture", factor, clientX: zoomX, clientY: zoomY });
+      };
+      if (zoomRaf === null && zoomTimer === null) {
+        zoomRaf = requestAnimationFrame(flushZoom);
+        zoomTimer = setTimeout(flushZoom, 50);
       }
     };
     window.addEventListener("wheel", onWheel, { passive: false });
@@ -906,6 +920,7 @@ export default function ExternalSandboxPage() {
       if (onStandaloneStorage)
         window.removeEventListener("storage", onStandaloneStorage);
       if (zoomRaf !== null) cancelAnimationFrame(zoomRaf);
+      if (zoomTimer !== null) clearTimeout(zoomTimer);
       heightRo.disconnect();
       teardownAgent();
       reactRoot?.unmount();
