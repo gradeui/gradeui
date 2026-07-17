@@ -250,6 +250,29 @@ export const PROPOSAL_DATA = {
     ],
   },
   metrics: {
+    // AI Insights home — one stat per sub page (Export Report is an
+    // action, not a stat). Values tie back to aiInsights.items so the
+    // numbers tell one coherent story across the section.
+    aiWebsiteContent: {
+      metric: "72",
+      delta: "↑ 4 this month",
+      description: "AI content score across your location pages",
+    },
+    aiGoogleBusinessProfile: {
+      metric: "84%",
+      delta: "2 gaps found",
+      description: "Profile completeness and optimisation",
+    },
+    aiReviews: {
+      metric: "6",
+      delta: "need replies",
+      description: "Unanswered reviews with AI-drafted responses",
+    },
+    aiCitations: {
+      metric: "2",
+      delta: "conflicts",
+      description: "Citations with conflicting business details",
+    },
     reviews: {
       metric: "4.3",
       delta: "+0.2 this month",
