@@ -123,7 +123,6 @@ export default async function OgImage({
   let title = "Shared prototype";
   let brand = "Grade";
   let brandLogo: ((height: number) => React.ReactNode) | undefined;
-  let kicker = "PROTOTYPE";
   let footer = "";
   let accent = CHART_HEX[0];
   let memberCount: number | null = null;
@@ -172,7 +171,6 @@ export default async function OgImage({
       footer = projectRow?.name ?? "";
 
       if (share.scope) {
-        kicker = "SHARED SCREENS";
         if (share.scope.tag) {
           title = share.scope.tag.value; // human string, exactly as typed
           accent = tagHex(share.scope.tag.type);
@@ -206,7 +204,7 @@ export default async function OgImage({
   // Editorial type: Poppins 700 for the title, 500 for the furniture.
   // Subsets fetched per exact text (a few KB); null → default font.
   const displayTitle = displayText(title);
-  const uiText = `${brand}${kicker}${footer}0123456789 screens·live prototypeMade with Grade`;
+  const uiText = `${brand}${footer}0123456789 screensMade with Grade`;
   const [titleFont, uiFont] = await Promise.all([
     poppins(displayTitle, 700),
     poppins(uiText, 500),
@@ -255,27 +253,17 @@ export default async function OgImage({
               {/* Real mark when the registry has one; wordmark otherwise. */}
               {brandLogo ? brandLogo(36) : brand}
             </div>
+            {/* Just the facet dot — the tag's colour as a quiet accent;
+                the old SHARED SCREENS kicker labelled the obvious. */}
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: 10,
-                fontSize: 20,
-                color: "#8a8a86",
-                letterSpacing: 3,
+                width: 14,
+                height: 14,
+                borderRadius: 99,
+                backgroundColor: accent,
               }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  width: 12,
-                  height: 12,
-                  borderRadius: 99,
-                  backgroundColor: accent,
-                }}
-              />
-              {kicker}
-            </div>
+            />
           </div>
           <div
             style={{
@@ -287,8 +275,22 @@ export default async function OgImage({
           />
         </div>
 
-        {/* Title block */}
+        {/* Title block — the PROJECT as a proper eyebrow over the share
+            title (it was whispering in the footer). */}
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {footer ? (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 32,
+                fontWeight: 500,
+                color: "#6b6b67",
+                letterSpacing: -0.5,
+              }}
+            >
+              {footer}
+            </div>
+          ) : null}
           <div
             style={{
               display: "flex",
@@ -303,15 +305,7 @@ export default async function OgImage({
             {displayTitle}
           </div>
           {memberCount !== null && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                fontSize: 26,
-                color: "#6b6b67",
-              }}
-            >
+            <div style={{ display: "flex" }}>
               <div
                 style={{
                   display: "flex",
@@ -321,26 +315,26 @@ export default async function OgImage({
                   borderRadius: 99,
                   border: "2px solid #e7e7e3",
                   backgroundColor: "#ffffff",
+                  fontSize: 26,
+                  color: "#6b6b67",
                 }}
               >
                 {memberCount} screen{memberCount === 1 ? "" : "s"}
               </div>
-              <div style={{ display: "flex" }}>live prototype</div>
             </div>
           )}
         </div>
 
-        {/* Footer: project + maker's mark */}
+        {/* Footer: maker's mark only — the project moved up top. */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
+            justifyContent: "flex-end",
             fontSize: 22,
             color: "#8a8a86",
           }}
         >
-          <div style={{ display: "flex" }}>{footer}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             Made with Grade
           </div>
