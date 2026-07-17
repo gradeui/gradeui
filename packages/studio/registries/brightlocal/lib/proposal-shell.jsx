@@ -581,9 +581,10 @@ export function AppLayoutShell({
            icons overpowered the sm rows). Lucide sets stroke-width as
            a presentation attribute on the svg root, so CSS here wins.
              --gds-nav-icon-size    (default 16px)
-             --gds-nav-icon-stroke  (default 1; bump to 1.25/1.5 if it
-                                     reads wispy on low-DPI) */
-        '[data-gds-shell-sidebar] [data-hook^="nav-"]:not([data-hook^="nav-item-"]) svg{width:var(--gds-nav-icon-size,16px);height:var(--gds-nav-icon-size,16px);stroke-width:var(--gds-nav-icon-stroke,1)}' +
+             --gds-nav-icon-stroke  (default 1.5 — stroke 1 at 16px
+                                     read wispy/awful; lucide's native
+                                     2 is heavy at this size) */
+        '[data-gds-shell-sidebar] [data-hook^="nav-"]:not([data-hook^="nav-item-"]) svg{width:var(--gds-nav-icon-size,16px);height:var(--gds-nav-icon-size,16px);stroke-width:var(--gds-nav-icon-stroke,1.5)}' +
         "[data-gds-shell-sidebar] *{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--gds-sidebar-scrollbar,rgb(0 0 0/0.18)) transparent}" +
         "[data-gds-shell-sidebar] [data-radix-scroll-area-thumb],[data-gds-shell-sidebar] [data-slot=scroll-area-thumb]{background-color:var(--gds-sidebar-scrollbar,rgb(0 0 0/0.18))}" +
         "[data-gds-shell-sidebar] [data-radix-scroll-area-scrollbar],[data-gds-shell-sidebar] [data-slot=scroll-area-scrollbar]{background:transparent}"
