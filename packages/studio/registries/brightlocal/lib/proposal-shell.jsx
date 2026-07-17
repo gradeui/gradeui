@@ -498,8 +498,8 @@ export function AppLayoutShell({
   const navVars =
     navDensity === "comfortable"
       ? {
-          "--gds-nav-row-py": "6px",
-          "--gds-nav-sub-py": "6px",
+          "--gds-nav-row-py": "8px",
+          "--gds-nav-sub-py": "7px",
           "--gds-nav-icon-size": "20px",
           "--gds-nav-icon-stroke": "1.5",
         }
@@ -563,10 +563,10 @@ export function AppLayoutShell({
              --gds-nav-font-size  label size, BOTH levels (default 14px
                                   — the size="sm" variants dropped subs
                                   to 12px, too small)
-             --gds-nav-row-py     main row block padding (default 5px →
-                                  ~30px rows; DS default 32px read
-                                  chunky, sm's 28px too tight)
-             --gds-nav-sub-py     sub row block padding (default 4px)
+             --gds-nav-row-py     main row block padding (default 6px →
+                                  ~32px rows; round 2 — 5px/30px "too
+                                  small", Ali). comfortable = 8px/36px
+             --gds-nav-sub-py     sub row block padding (default 5px)
              --gds-nav-sub-pl     sub label left padding (default 20px:
                                   rail 24px + border + 20px ≈ 45px —
                                   lines subs up with the main LABEL,
@@ -575,8 +575,8 @@ export function AppLayoutShell({
            utility slot above are coming) without losing readability.
            The :not guards nav-item-* (the <li> hooks share the nav-
            prefix). height:auto beats the size variant's fixed h-7. */
-        '[data-gds-shell-sidebar] [data-hook^="nav-"]:not([data-hook^="nav-item-"]){height:auto;min-height:calc(20px + 2*var(--gds-nav-row-py,5px));padding-block:var(--gds-nav-row-py,5px);font-size:var(--gds-nav-font-size,0.875rem)}' +
-        '[data-gds-shell-sidebar] [data-hook^="sub-btn-"]{height:auto;min-height:calc(20px + 2*var(--gds-nav-sub-py,4px));padding-block:var(--gds-nav-sub-py,4px);padding-left:var(--gds-nav-sub-pl,20px);font-size:var(--gds-nav-font-size,0.875rem)}' +
+        '[data-gds-shell-sidebar] [data-hook^="nav-"]:not([data-hook^="nav-item-"]){height:auto;min-height:calc(20px + 2*var(--gds-nav-row-py,6px));padding-block:var(--gds-nav-row-py,6px);font-size:var(--gds-nav-font-size,0.875rem)}' +
+        '[data-gds-shell-sidebar] [data-hook^="sub-btn-"]{border-radius:var(--gds-nav-row-radius,9999px);height:auto;min-height:calc(20px + 2*var(--gds-nav-sub-py,5px));padding-block:var(--gds-nav-sub-py,5px);padding-left:var(--gds-nav-sub-pl,20px);font-size:var(--gds-nav-font-size,0.875rem)}' +
         /* Nav icons — 16px / stroke 1 at the compact row size (20px
            icons overpowered the sm rows). Lucide sets stroke-width as
            a presentation attribute on the svg root, so CSS here wins.

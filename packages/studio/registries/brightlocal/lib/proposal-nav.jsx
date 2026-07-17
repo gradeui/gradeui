@@ -289,7 +289,10 @@ function NavSection({ section, activeId }) {
       {section.sub && inSection ? (
         <SidebarMenuSub
           variant={SidebarMenuSubVariant.BORDER}
-          className="ml-6 items-stretch pr-2"
+          // pr-0: keep overriding the DS's baked overflow pr-10, but
+          // ZERO it — the previous pr-2 left sub rows 8px short of the
+          // main rows' right edge (measured live, Ali 18 Jul).
+          className="ml-6 items-stretch pr-0"
         >
           <SubRows items={section.sub} activeId={activeId} />
         </SidebarMenuSub>
