@@ -44,14 +44,19 @@ export async function generateMetadata({
   const title = `${screen} — ${proj} · Grade`;
   // Unfurl copy (Ali, July 2026): the description names the SHARE, not
   // the product — the site-wide OG pitch read as an advert on client
-  // shares. The og:image stays the default until the per-share capture
-  // ships (see BRIGHTLOCAL-SIDENAV.md "share-link OG images").
+  // shares. og:image comes from the sibling opengraph-image.tsx (the
+  // COVER SHEET — request-time render, registry wordmark + tag title).
   const description = `${screen}: ${proj} : GradeUI`;
   return {
     title,
     description,
     openGraph: { title, description },
-    twitter: { title, description },
+    // card must be RESTATED: this twitter object REPLACES the root
+    // layout's (which set summary_large_image) — dropping it fell back
+    // to the tiny-thumbnail "summary" card, and platforms honouring
+    // the hint refused to show the 1200×630 cover (the live-site
+    // no-og:image SADFACE, 18 Jul).
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 
