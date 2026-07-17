@@ -347,10 +347,13 @@ The board, in rough order of value:
    (view-transition-name on the active nav row; unmatched degrades to
    fades); Fast Frame parity (goto fade + mode fade + names);
    host-driven swap fades (Back chip).
-5. **Capture pipeline trio** (#21 — "nice but far from essential"):
-   embed ?screen= param → per-pane full-screen + Download/COPY PNG
-   (ClipboardItem), OG v2 moody screenshot corner, poster thumbs.
-   One serverless capture route unlocks all (preview-serverless.ts).
+5. **Full-screen + capture trio** (#21): OPEN-IN-FULL-SCREEN button
+   (Ali, session close) — hide all chrome + browser Fullscreen API +
+   obvious exit (Esc + floating chip); seed exists (shared-screen
+   chromeVisible toggle). Per-pane variant via embed ?screen= param —
+   the same key that unlocks per-pane screenshot + Download/COPY PNG
+   (ClipboardItem), OG v2 moody corner, poster thumbs. One serverless
+   capture route unlocks all (preview-serverless.ts).
 6. **Share toolbar + version dropdown design block** (#11) — incl. the
    milestone worms (per-member revision pinning on scoped shares).
 7. **Tag registry T2 leftovers** — projects.tag_defs storage
