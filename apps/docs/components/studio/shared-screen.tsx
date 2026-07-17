@@ -736,13 +736,26 @@ export function SharedScreen({
       if (e.code === "Space") setSpaceHeld(false);
     };
     const blur = () => setSpaceHeld(false);
+    // Space FORWARDED from the prototype iframes (grade:space /
+    // ext:space, both renderer dialects): once a viewer clicks into a
+    // live screen the iframe owns keyboard focus and the window
+    // listeners above go deaf — the sandboxes post the key out instead
+    // ("spacebar drag doesn't work — stuck on live screens", Ali).
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data as { type?: string; down?: boolean } | null;
+      if (d?.type === "grade:space" || d?.type === "ext:space") {
+        setSpaceHeld(Boolean(d.down));
+      }
+    };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     window.addEventListener("blur", blur);
+    window.addEventListener("message", onMessage);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", blur);
+      window.removeEventListener("message", onMessage);
     };
   }, []);
 

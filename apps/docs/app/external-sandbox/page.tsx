@@ -656,6 +656,36 @@ export default function ExternalSandboxPage() {
     };
     document.addEventListener("click", onGotoClick, true);
 
+    // Space-hold forwarding — same contract as Fast Frame's grade:space
+    // (ext:* dialect): the share view's grab-hand pan arms on Space,
+    // but a viewer who clicked into the prototype focused THIS
+    // document, so the parent never hears the key. Down/up forwarded;
+    // blur posts an up so a mid-hold focus change can't wedge the grab
+    // hand; editable targets keep their spaces.
+    const spaceGuard = (e: KeyboardEvent) => {
+      if (e.code !== "Space") return false;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)
+      )
+        return false;
+      return true;
+    };
+    const onSpaceDown = (e: KeyboardEvent) => {
+      if (!spaceGuard(e) || e.repeat) return;
+      e.preventDefault();
+      post({ type: "ext:space", down: true });
+    };
+    const onSpaceUp = (e: KeyboardEvent) => {
+      if (!spaceGuard(e)) return;
+      post({ type: "ext:space", down: false });
+    };
+    const onSpaceBlur = () => post({ type: "ext:space", down: false });
+    window.addEventListener("keydown", onSpaceDown);
+    window.addEventListener("keyup", onSpaceUp);
+    window.addEventListener("blur", onSpaceBlur);
+
     // Pinch / ctrl+wheel over the screen — the parent owns the camera,
     // so forward the gesture out (the fast sandbox's grade:zoom-gesture
     // pattern). Same math as useZoomGestures: exponential mapping,
@@ -826,6 +856,9 @@ export default function ExternalSandboxPage() {
       disposed = true;
       window.removeEventListener("message", onMessage);
       document.removeEventListener("click", onGotoClick, true);
+      window.removeEventListener("keydown", onSpaceDown);
+      window.removeEventListener("keyup", onSpaceUp);
+      window.removeEventListener("blur", onSpaceBlur);
       window.removeEventListener("wheel", onWheel);
       if (onStandaloneStorage)
         window.removeEventListener("storage", onStandaloneStorage);

@@ -1505,6 +1505,43 @@ export default function FastSandboxPage() {
     };
     document.addEventListener("click", onGotoClick, true);
 
+    // Space-hold forwarding — the share view's grab-hand pan arms on
+    // Space, but once the viewer has clicked INTO the prototype this
+    // document owns keyboard focus and the parent never hears the key
+    // ("stuck on live screens", Ali 17 Jul). Forward down/up (and blur
+    // as an up, so a mid-hold focus change can't wedge the grab hand);
+    // skip editable targets so typing spaces in prototype inputs still
+    // works. preventDefault stops the iframe's own Space-scroll while
+    // the parent pans. Deliberately NOT mirrored in the Sandpack agent:
+    // share surfaces never mount Sandpack (fast/external only).
+    const spaceGuard = (e: KeyboardEvent) => {
+      if (e.code !== "Space") return false;
+      const t = e.target as HTMLElement | null;
+      if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable))
+        return false;
+      return true;
+    };
+    const postSpace = (down: boolean) => {
+      try {
+        window.parent.postMessage({ type: "grade:space", down }, "*");
+      } catch {
+        /* parent gone — drop */
+      }
+    };
+    const onSpaceDown = (e: KeyboardEvent) => {
+      if (!spaceGuard(e) || e.repeat) return;
+      e.preventDefault();
+      postSpace(true);
+    };
+    const onSpaceUp = (e: KeyboardEvent) => {
+      if (!spaceGuard(e)) return;
+      postSpace(false);
+    };
+    const onSpaceBlur = () => postSpace(false);
+    window.addEventListener("keydown", onSpaceDown);
+    window.addEventListener("keyup", onSpaceUp);
+    window.addEventListener("blur", onSpaceBlur);
+
     // Pinch / ctrl+wheel forwarding — browsers report a trackpad pinch
     // as a `wheel` event with `ctrlKey: true`. The parent's artboard
     // zoom can't see gestures that start over THIS document (the
@@ -1654,6 +1691,9 @@ export default function FastSandboxPage() {
     return () => {
       window.removeEventListener("message", handleMessage);
       document.removeEventListener("click", onGotoClick, true);
+      window.removeEventListener("keydown", onSpaceDown);
+      window.removeEventListener("keyup", onSpaceUp);
+      window.removeEventListener("blur", onSpaceBlur);
       window.removeEventListener("wheel", onPinchWheel);
       if (onStorage) window.removeEventListener("storage", onStorage);
       window.removeEventListener("resize", renderPins);
