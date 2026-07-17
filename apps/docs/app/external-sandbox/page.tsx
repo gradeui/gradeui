@@ -400,9 +400,18 @@ export default function ExternalSandboxPage() {
           lastRenderedMode !== mode;
         lastRenderedSource = source;
         lastRenderedMode = mode;
-        if (!isModeFlip) {
+        // Scheme chrome = class + the DOCUMENT's own background. The
+        // document default is white, and at fractional camera scales a
+        // subpixel sliver of it peeks past the screen's painted bg on
+        // rounded/scaled edges — grating in dark mode (Ali, 18 Jul).
+        const applyModeChrome = () => {
           document.documentElement.classList.toggle("dark", mode === "dark");
-        }
+          document.documentElement.style.backgroundColor =
+            mode === "dark" ? "#09090b" : "#ffffff";
+          document.documentElement.style.colorScheme =
+            mode === "dark" ? "dark" : "light";
+        };
+        if (!isModeFlip) applyModeChrome();
         const m = modules as Record<string, any>;
         // Compile-cache first (F1): a precompiled flow sibling — or any
         // previously rendered screen (Back) — skips sucrase entirely.
@@ -480,12 +489,7 @@ export default function ExternalSandboxPage() {
           const vt = startVT(() => {
             // Mode flips toggle the scheme INSIDE the capture window so
             // the fade blends old scheme → new scheme.
-            if (isModeFlip) {
-              document.documentElement.classList.toggle(
-                "dark",
-                mode === "dark",
-              );
-            }
+            if (isModeFlip) applyModeChrome();
             // flushSync: React 19 commits async by default — without it
             // the API's "new" capture would still show the OLD screen.
             (m.reactDom as { flushSync: (cb: () => void) => void }).flushSync(
