@@ -299,6 +299,41 @@ LEARNED: Slack caches unfurls per exact URL ~indefinitely — URLs
 pasted before a metadata deploy keep the stale card; append ?x=1 to
 force a re-scrape. New shares unfurl correctly first time.
 
+SHIPPED IN THE 4AM BURST (the viewer-interaction stack — Ali: "all the
+other tools have it, so it has to be in here"):
+- Multiview comment pins (cbea555): /s fetches threads for ALL scoped
+  members; per-pane overlays (ref map), pins follow pane-local
+  navigation; single view scoped to entryThreads.
+- Sign-in-and-return (cbea555): reply drawer's unsigned state links
+  /sign-in?next=<share path> — Google OAuth round-trips back to the
+  exact URL. Identity only; shares stay token-scoped.
+- VIEWER PIN CREATION (7afaa1d): New Pin chrome button → sandbox
+  selection agent pick (single view or focused pane) → composer →
+  POST /api/shares/[token]/comments — server route validates signed-in
+  user + live token + scope membership, writes with service role
+  (comment_threads RLS rightly refuses outsiders client-side).
+  Optimistic pin + local author cache. anchorSourceId fallback
+  (272153a) means pins land on module components everywhere.
+- PROVENANCE + STAY-IN-FLOW (af53d6c, 61affb5): comment_threads.
+  share_token (migration 0024, APPLIED) stamps the link a thread was
+  collected through; the share view fetches Studio-authored (null)
+  + own-token threads only — one client's flow feedback never leaks
+  into another's. Studio sees all. Design note above has the full
+  reasoning (screen-attached home, share as lens).
+- Also: comments-on-module-internals (be355b5 + 272153a), keyless
+  keydown crash (a9be65c), unfurl card fix (a37892e), dark sliver
+  killed both layers (1f05c41 + 41b04e0), sidebar scrollbar
+  gutter/thin/tone-aware + overrideable via --gds-sidebar-scrollbar,
+  mode-flip VT fade, persistent-nav view-transition-names (1ee8e0f).
+MIGRATIONS APPLIED: 0022, 0023, 0024. Untested by Ali (5h sleep won):
+viewer pin end-to-end on live; first OUTSIDE commenter will confirm
+the users-row-on-signup assumption.
+NEW OPEN from the burst: F2 comments display (provenance badge +
+"collected via <link>" filter in Studio; flow-level no-anchor comments
+— design note above); per-row pin precision inside module components
+(needs lib-internal ids — registry-editor territory); viewer pin
+UX polish (pin-mode cursor/hint, composer placement near click).
+
 The board, in rough order of value:
 
 1. **Jumpy menu** (UNDIAGNOSED — need Ali's repro: which menu, what
