@@ -125,6 +125,7 @@ export function SharedScreen({
   scoped = false,
   scopeLabel,
   scopeTagType,
+  entryDesignId,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -176,6 +177,9 @@ export function SharedScreen({
   /** The scope tag's TYPE — colour only (chart-ramp facet accent),
    *  never viewer copy. */
   scopeTagType?: string;
+  /** The entry screen's design id — scopes the single-view pins to the
+   *  entry (threads may span every member on scoped shares). */
+  entryDesignId?: string | null;
 }) {
   // Seed the preview-css store BEFORE the frame hosts push source —
   // Studio's page-level effect does this in the editor; the share view
@@ -622,6 +626,20 @@ export function SharedScreen({
       [paneId]: (prev[paneId] ?? []).slice(0, -1),
     }));
   }, []);
+  // Per-pane iframe refs — the comment-pin overlays anchor into each
+  // pane's contentDocument (same-origin), one overlay per member.
+  // Stable ref objects per id, minted on demand.
+  const paneIframeRefs = React.useRef(
+    new Map<string, React.MutableRefObject<HTMLIFrameElement | null>>(),
+  );
+  const paneIframeRef = React.useCallback((id: string) => {
+    let r = paneIframeRefs.current.get(id);
+    if (!r) {
+      r = { current: null };
+      paneIframeRefs.current.set(id, r);
+    }
+    return r;
+  }, []);
   React.useEffect(() => {
     setPan({ x: 0, y: 0 });
   }, [viewportId]);
@@ -903,6 +921,21 @@ export function SharedScreen({
   const { user: viewer } = useSupabaseAuth();
   const [threads, setThreads] = React.useState(commentThreads);
   const hasComments = threads.length > 0;
+  // Scoped shares carry threads for EVERY member (server fetches all) —
+  // group by screen so each compare pane shows only ITS pins, and the
+  // single view shows only the entry's.
+  const threadsByDesign = React.useMemo(() => {
+    const map = new Map<string, CommentThreadWithMessages[]>();
+    for (const t of threads) {
+      const arr = map.get(t.thread.designId) ?? [];
+      arr.push(t);
+      map.set(t.thread.designId, arr);
+    }
+    return map;
+  }, [threads]);
+  const entryThreads = entryDesignId
+    ? (threadsByDesign.get(entryDesignId) ?? [])
+    : threads;
   const [showComments, setShowComments] = React.useState(true);
   const [activeThreadId, setActiveThreadId] = React.useState<string | null>(
     null,
@@ -1658,6 +1691,9 @@ export function SharedScreen({
                         appSource={paneSource}
                         mode={mode}
                         registryId={shareRegistry.id}
+                        // Comment pins anchor via contentDocument — one
+                        // overlay per pane, mounted outside the camera.
+                        iframeRef={paneIframeRef(m.id)}
                         // Interactive only while focused — a goto swaps
                         // THIS pane in place (row + siblings stay).
                         onGoto={
@@ -1678,6 +1714,20 @@ export function SharedScreen({
                         theme={activeTheme}
                         mode={mode}
                         motion={motionOn}
+                        // Inline pins (fast dialect) — threads follow the
+                        // pane's CURRENT screen, so pane-local navigation
+                        // carries its comments along.
+                        commentThreads={
+                          showComments
+                            ? threadsByDesign.get(paneTop?.id ?? m.id)
+                            : undefined
+                        }
+                        inlineComments
+                        getCommentUser={getCommentUser}
+                        activeCommentThreadId={activeThreadId}
+                        onCommentPinClick={(id) =>
+                          setActiveThreadId((cur) => (cur === id ? null : id))
+                        }
                         onGoto={
                           focusedPaneId === m.id
                             ? (t) => paneGoto(m.id, t)
@@ -1780,7 +1830,7 @@ export function SharedScreen({
             // TODO(F1): swap thread sets on navigation (STUDIO-FLOWS
             // "Comments … across a flow").
             commentThreads={
-              showComments && flowStack.length === 0 ? threads : undefined
+              showComments && flowStack.length === 0 ? entryThreads : undefined
             }
             getCommentUser={getCommentUser}
             // Inline mode — pins are injected into the iframe's live DOM by
@@ -1848,6 +1898,37 @@ export function SharedScreen({
             ("I still haven't seen comments"). Same gating as fast:
             toggle on, entry screen only (threads are keyed by
             design_id), faded while a zoom gesture settles. */}
+        {/* Compare row (external): one pin overlay PER PANE, anchored
+            into that pane's contentDocument. Threads follow each pane's
+            CURRENT screen (pane-local navigation carries its comments).
+            Multiview meeting notes — Ali, 18 Jul, "I'd really like
+            that a lot". */}
+        {isExternal &&
+          compare &&
+          showComments &&
+          scopedMembers.map((m) => {
+            const paneStack = paneStacks[m.id] ?? [];
+            const paneTopId =
+              paneStack.length > 0
+                ? paneStack[paneStack.length - 1].id
+                : m.id;
+            const paneThreads = threadsByDesign.get(paneTopId) ?? [];
+            if (paneThreads.length === 0) return null;
+            return (
+              <CanvasCommentPinsOverlay
+                key={m.id}
+                iframeRef={paneIframeRef(m.id)}
+                threads={paneThreads}
+                activeThreadId={activeThreadId}
+                onPinClick={(id) =>
+                  setActiveThreadId((cur) => (cur === id ? null : id))
+                }
+                getUser={getCommentUser}
+                visible={!(artboard.gesturing || imperativeGesturing)}
+              />
+            );
+          })}
+
         {isExternal &&
           !compare &&
           showComments &&
@@ -1855,7 +1936,7 @@ export function SharedScreen({
           threads.length > 0 && (
             <CanvasCommentPinsOverlay
               iframeRef={extIframeRef}
-              threads={threads}
+              threads={entryThreads}
               activeThreadId={activeThreadId}
               onPinClick={(id) =>
                 setActiveThreadId((cur) => (cur === id ? null : id))
@@ -1967,8 +2048,24 @@ export function SharedScreen({
               </div>
             </div>
           ) : (
+            // The full round trip exists: /sign-in?next=… → OAuth
+            // (Google/email per NEXT_PUBLIC_GRADE_AUTH_PROVIDERS) →
+            // /auth/callback?next=… → back to THIS exact share URL,
+            // drawer restorable, viewer signed in. Signing in grants
+            // COMMENT ability only — shares stay capability-scoped by
+            // token; a signed-in outsider gets no project access.
             <div className="border-t border-border/60 px-3 py-2 text-xs text-muted-foreground">
-              Sign in to reply.
+              <a
+                href={`/sign-in?next=${encodeURIComponent(
+                  typeof window !== "undefined"
+                    ? window.location.pathname
+                    : "/",
+                )}`}
+                className="font-medium text-foreground underline underline-offset-2 hover:opacity-80"
+              >
+                Sign in
+              </a>{" "}
+              to leave comments — you&apos;ll come straight back here.
             </div>
           )}
         </div>

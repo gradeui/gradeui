@@ -311,7 +311,14 @@ export default async function SharePage({
         "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, created_by, resolved_by, resolved_at, created_at",
       )
       .eq("project_id", share.project_id)
-      .eq("design_id", share.design_id)
+      // Scoped shares surface pins on EVERY member pane (multiview
+      // meeting notes — Ali, 18 Jul); unscoped keeps entry-only.
+      .in(
+        "design_id",
+        scope && flowScreens.length
+          ? flowScreens.map((s) => s.id)
+          : [share.design_id],
+      )
       .eq("status", "open")
       .order("created_at", { ascending: true });
     const threadRows = (threadData ?? []) as ThreadRow[];
@@ -419,6 +426,7 @@ export default async function SharePage({
       scoped={Boolean(scope)}
       scopeLabel={scopeLabel}
       scopeTagType={scopeTagType}
+      entryDesignId={share.design_id}
     />
   );
 }
