@@ -731,6 +731,12 @@ export function AppLayoutShell({
   tweaks: controlledTweaks,
   onTweaksChange,
   dataHook = "app-layout",
+  // Pass-through (data-gds-source-id et al.): Studio injects anchor ids
+  // onto the SCREEN's JSX elements — a module component that swallows
+  // unknown props strands those ids outside the DOM, and comment pins
+  // silently never anchor (Ali, 17 Jul). Spread onto the root like the
+  // cards already do.
+  ...rest
 }) {
   // ─── Tweaker override layer (see ShellTweakerPanel): literal props
   // are the AUTHORED look; tweaks shadow them for this session only.
@@ -807,6 +813,7 @@ export function AppLayoutShell({
       : "";
   const shell = (
     <GlobalLayout
+      {...rest}
       dataHook={dataHook}
       // Selection stamp: GlobalLayout's inner div spreads rest props
       // AFTER its own data-slot, so this overrides "global-layout" and
@@ -1021,6 +1028,8 @@ export function ProposalSidebar({
     [{ label: "Logout" }],
   ],
   dataHook = "app-sidebar",
+  // Anchor-id pass-through — see AppLayoutShell's rest note.
+  ...rest
 }) {
   const data = useProposalData();
   sections = sections ?? buildProposalSections(data);
@@ -1029,7 +1038,7 @@ export function ProposalSidebar({
   userMeta = userMeta ?? data.user.meta;
   userInitials = userInitials ?? data.user.initials;
   return (
-    <Sidebar dataHook={dataHook}>
+    <Sidebar {...rest} dataHook={dataHook}>
       {/* Logo-only header; the account switcher lives in the STUCK
           footer with the signed-in row. pb-3 overrides the DS's
           hardcoded pb-9; pl-6 keeps the logo on the tightened 24px
@@ -1127,6 +1136,8 @@ export function PageHeader({
   meta,
   actions,
   dataHook = "page-header",
+  // Anchor-id pass-through — see AppLayoutShell's rest note.
+  ...rest
 }) {
   const data = useProposalData();
   const resolvedMeta =
@@ -1149,6 +1160,7 @@ export function PageHeader({
     // underneath — instead of crushing the title column against the
     // actions (the word-per-line breadcrumb wrap, 17 Jul screenshot).
     <div
+      {...rest}
       data-hook={dataHook}
       className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
     >
