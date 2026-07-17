@@ -2230,6 +2230,15 @@ export function StudioCanvas({
           onRenameValue={onRenameTagValue}
           onRenameType={onRenameTagType}
           onDeleteValue={onDeleteTagValue}
+          // Close the manager first — the share dialog takes the stage.
+          onShareTag={
+            onShareScope
+              ? (scope, entry, label) => {
+                  setTagManagerOpen(false);
+                  onShareScope(scope, entry, label);
+                }
+              : undefined
+          }
         />
       )}
       {hasEnteredGridAll && (

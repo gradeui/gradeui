@@ -16,7 +16,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Share2, Trash2 } from "lucide-react";
 import {
   Badge,
   Dialog,
@@ -40,6 +40,14 @@ interface TagManagerDialogProps {
   onRenameType?: (from: string, to: string) => void;
   /** Remove a type:value from every carrying screen. */
   onDeleteValue: (type: string, value: string) => void;
+  /** Share a tag ITSELF — the universal entry point (group headers only
+   *  exist for single-value types; flow tags and labels have no other
+   *  home). scope/entry/label match the page's handleShareScope. */
+  onShareTag?: (
+    scope: { tag: { type: string; value: string } },
+    entryDesignId: string,
+    label: string,
+  ) => void;
 }
 
 type EditTarget =
@@ -54,7 +62,24 @@ export function TagManagerDialog({
   onRenameValue,
   onRenameType,
   onDeleteValue,
+  onShareTag,
 }: TagManagerDialogProps) {
+  // Entry screen for a tag share: the member marked entry (flow tags),
+  // else the first member with source, else the first member.
+  const entryFor = (type: string, value: string): string | null => {
+    const members = designs.filter((d) =>
+      (d.tags ?? []).some((t) => t.type === type && t.value === value),
+    );
+    if (members.length === 0) return null;
+    const marked = members.find((d) =>
+      (d.tags ?? []).some(
+        (t) => t.type === type && t.value === value && t.entry,
+      ),
+    );
+    return (
+      (marked ?? members.find((d) => d.appSource) ?? members[0]).id
+    );
+  };
   const facets = useMemo(() => collectTagFacets(designs), [designs]);
   const [editing, setEditing] = useState<EditTarget>(null);
   const [draft, setDraft] = useState("");
@@ -180,6 +205,25 @@ export function TagManagerDialog({
                     </span>
                     {!isEditing && (
                       <>
+                        {onShareTag && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const entry = entryFor(facet.type, value);
+                              if (entry) {
+                                onShareTag(
+                                  { tag: { type: facet.type, value } },
+                                  entry,
+                                  value,
+                                );
+                              }
+                            }}
+                            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted hover:text-foreground [&_svg]:size-3"
+                            title="Share this tag — one link, members resolve live"
+                          >
+                            <Share2 />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() =>
