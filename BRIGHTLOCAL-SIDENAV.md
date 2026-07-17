@@ -304,6 +304,15 @@ OPEN (Ali's bag of snakes — decide at the F2 comments pass, not now):
   wrong).
 - HARNESS LEARNING: React 19 SSR emits a <link rel="preload"> per
   <img> — count `<img` tags, not URL occurrences.
+- SCREEN_VT OFF (Ali): goto swaps are instant — the const in
+  external-sandbox render() flips it back. Mode-flip fade kept.
+- OPEN BUG (parked, Ali will repro): pinch/ctrl+wheel zoom on shares
+  is FLAKY — sometimes works. Note for the debug session: the zoom
+  forwarder coalesces via requestAnimationFrame (external-sandbox
+  onWheel); if the sandbox doc's rAF stalls (hidden tab, wedged VT,
+  heavy main thread) the pending zoomRaf swallows every later gesture
+  while still preventDefault-ing — "dead zoom" symptom. Consider
+  posting immediately (no rAF) or a setTimeout fallback.
 - NEXT: Ali picks real datasets (has a BL login) → populate AI
   Insights + section landings with linked-data content.
 

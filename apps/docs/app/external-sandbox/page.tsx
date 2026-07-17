@@ -464,8 +464,12 @@ export default function ExternalSandboxPage() {
         // in this page's <style>. No-VT browsers fall back to the
         // instant swap.
         const sinceGoto = Date.now() - gotoTransitionAt;
+        // SCREEN_VT kill switch (Ali, 18 Jul): goto swaps are INSTANT
+        // for now — flip back to true to restore the F1 cross-fade /
+        // slide hints. Mode flips keep their fade (independent, loved).
+        const SCREEN_VT = false;
         const hint =
-          gotoTransitionAt > 0 && sinceGoto < 2500
+          SCREEN_VT && gotoTransitionAt > 0 && sinceGoto < 2500
             ? (gotoTransitionHint ?? "cross-fade")
             : isModeFlip
               ? "cross-fade"
