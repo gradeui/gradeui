@@ -52,10 +52,8 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuCollapsible,
-  SidebarMenuCollapsibleContent,
-  SidebarMenuCollapsibleTrigger,
   SidebarMenuItem,
+  SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarMenuSubVariant,
@@ -956,92 +954,69 @@ export function AppLayoutShell({
   );
 }
 
-/* Sub rows. A row with its own `sub` renders a NESTED disclosure —
-   trigger restyled via twMerge (h-7 px-2 rounded-md text-sm) to sit in
-   the sub rhythm instead of the top-level pill. NOTE: the nested
-   SidebarMenuCollapsible renders its own <li>, so it is NOT wrapped in
-   SidebarMenuSubItem (li>li). */
-/* Active resolution: an explicit activeId (per-screen prop) overrides
-   the IA's baked `active` flags entirely — the id names the row, and
-   every collapsible on the trail to it opens. No activeId = legacy
-   behaviour (the flags in the sections data). */
+/* NAV MODEL v2 (Ali, 18 Jul): NO accordions. Every row — top-level or
+   sub — is a plain page LINK; the nav discloses by NAVIGATION, not by
+   chrome: landing inside a section is what reveals its sub rows.
+
+   Sub rows — FLAT, max ONE level. Rows that still carry a deeper `sub`
+   in the IA data render as links to their own page and their children
+   stay OFF the nav (level 3 belongs on-page — header tabs, the open
+   Harry question). A level-3 activeId highlights its level-2 parent
+   (subtreeHas), so deep pages still read as "you are here". */
 function SubRows({ items, activeId }) {
-  return items.map((item) =>
-    item.sub ? (
-      <SidebarMenuCollapsible
-        key={item.id}
-        dataHook={`collapsible-${item.id}`}
-        defaultOpen={activeId ? subtreeHas(item, activeId) : item.active}
+  return items.map((item) => (
+    <SidebarMenuSubItem key={item.id} dataHook={`sub-item-${item.id}`}>
+      <SidebarMenuSubButton
+        className="h-auto min-h-7 w-full py-1 [&>span:last-of-type]:whitespace-normal!"
+        dataHook={`sub-btn-${item.id}`}
+        isActive={
+          activeId
+            ? item.id === activeId || subtreeHas(item, activeId)
+            : item.active
+        }
+        data-grade-goto={item.goto}
+        data-grade-transition={item.transition}
       >
-        <SidebarMenuCollapsibleTrigger
-          size="sm"
-          className="h-7 rounded-md px-2 text-sm font-normal [&>span:last-of-type]:whitespace-normal!"
-        >
-          <span>{item.label}</span>
-        </SidebarMenuCollapsibleTrigger>
-        <SidebarMenuCollapsibleContent
-          variant={SidebarMenuSubVariant.BORDER}
-          className="ml-2 items-stretch pr-0"
-        >
-          <SubRows items={item.sub} activeId={activeId} />
-        </SidebarMenuCollapsibleContent>
-      </SidebarMenuCollapsible>
-    ) : (
-      <SidebarMenuSubItem key={item.id} dataHook={`sub-item-${item.id}`}>
-        <SidebarMenuSubButton
-          className="h-auto min-h-7 w-full py-1 [&>span:last-of-type]:whitespace-normal!"
-          dataHook={`sub-btn-${item.id}`}
-          isActive={activeId ? item.id === activeId : item.active}
-          data-grade-goto={item.goto}
-          data-grade-transition={item.transition}
-        >
-          <span>{item.label}</span>
-        </SidebarMenuSubButton>
-      </SidebarMenuSubItem>
-    ),
-  );
+        <span>{item.label}</span>
+      </SidebarMenuSubButton>
+    </SidebarMenuSubItem>
+  ));
 }
 
+/* Top-level: always a page link (goto from navLinks/data — a section
+   without a mapped screen simply doesn't navigate yet). The section
+   row highlights while you're ANYWHERE inside it; its sub list renders
+   only then — contextual expansion, one section open at a time, driven
+   by where the viewer IS. */
 function NavSection({ section, activeId }) {
-  if (!section.sub) {
-    return (
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          className="px-4 [&>span:last-of-type]:whitespace-normal!"
-          dataHook={`nav-${section.id}`}
-          isActive={activeId ? section.id === activeId : section.active}
-          data-grade-goto={section.goto}
-          data-grade-transition={section.transition}
-        >
-          <section.icon className="size-5" />
-          <span>{section.label}</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    );
-  }
+  const inSection = activeId
+    ? section.id === activeId || subtreeHas(section, activeId)
+    : Boolean(section.active);
   return (
-    <SidebarMenuCollapsible
-      dataHook={`collapsible-${section.id}`}
-      defaultOpen={activeId ? subtreeHas(section, activeId) : section.active}
-    >
-      <SidebarMenuCollapsibleTrigger
+    <SidebarMenuItem dataHook={`nav-item-${section.id}`}>
+      <SidebarMenuButton
         className="px-4 [&>span:last-of-type]:whitespace-normal!"
-        tooltip={section.label}
+        dataHook={`nav-${section.id}`}
+        isActive={inSection}
+        data-grade-goto={section.goto}
+        data-grade-transition={section.transition}
       >
         <section.icon className="size-5" />
         <span>{section.label}</span>
-      </SidebarMenuCollapsibleTrigger>
+      </SidebarMenuButton>
       {/* ml-6: rail ≈ the icon centreline with the px-4/px-4 inset
           split. pr-2 overrides the variant's baked pr-10 — 40px of
           dead right padding per level was the truncation driver.
           items-stretch + w-full make sub rows span the full width. */}
-      <SidebarMenuCollapsibleContent
-        variant={SidebarMenuSubVariant.BORDER}
-        className="ml-6 items-stretch pr-2"
-      >
-        <SubRows items={section.sub} activeId={activeId} />
-      </SidebarMenuCollapsibleContent>
-    </SidebarMenuCollapsible>
+      {section.sub && inSection ? (
+        <SidebarMenuSub
+          variant={SidebarMenuSubVariant.BORDER}
+          className="ml-6 items-stretch pr-2"
+        >
+          <SubRows items={section.sub} activeId={activeId} />
+        </SidebarMenuSub>
+      ) : null}
+    </SidebarMenuItem>
   );
 }
 

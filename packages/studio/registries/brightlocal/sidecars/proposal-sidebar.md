@@ -2,7 +2,7 @@
 name: ProposalSidebar
 import: "@brightlocal/proposal"
 props:
-  - activeId?: string — WHICH PAGE THIS IS: the nav row id to highlight ("rankings-table", "location-profile-hours", "reviews"); every collapsible on its trail opens. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page.
+  - activeId?: string — WHICH PAGE THIS IS: the nav row id to highlight ("rankings-table", "location-profile-hours", "reviews"). Nav model v2: no accordions — the active section's sub rows render (one level max; a level-3 id highlights its level-2 parent), all other sections show top-level links only. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page.
   - sections? — Custom nav model (array of {id, label, icon, active?, goto?, transition?, sub?}). Default: buildProposalSections(data) — the proposal IA with keyword rows injected from data.keywords and goto links applied from data.navLinks. Pass only when a screen needs a DIFFERENT nav.
   - accounts? — Switcher popover items ({label, icon}[]). (default PROPOSAL_ACCOUNTS)
   - accountLabel?: string — Switcher trigger label. (default data.account.label from the proposal data context)
