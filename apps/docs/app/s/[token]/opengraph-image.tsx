@@ -125,7 +125,7 @@ export default async function OgImage({
   let brandLogo: ((height: number) => React.ReactNode) | undefined;
   let footer = "";
   let accent = CHART_HEX[0];
-  let memberCount: number | null = null;
+  let scopedSet = false;
 
   if (supabase) {
     const { data: link } = await supabase
@@ -170,29 +170,16 @@ export default async function OgImage({
       brandLogo = brandEntry?.logo;
       footer = projectRow?.name ?? "";
 
+      // NO member count on the cover (Ali): platform unfurl caches make
+      // any number a potential lie against what the viewer finds; the
+      // count-free "Screens" pill never has discrepancies — and skips a
+      // designs query per scrape.
       if (share.scope) {
+        scopedSet = true;
         if (share.scope.tag) {
           title = share.scope.tag.value; // human string, exactly as typed
           accent = tagHex(share.scope.tag.type);
-          // Count members: tag scopes resolve live.
-          const { data: rows } = await supabase
-            .from("designs")
-            .select("id, state")
-            .eq("project_id", share.project_id);
-          memberCount = ((rows ?? []) as { id: string; state: unknown }[]).filter(
-            (r) =>
-              r.id === share.design_id ||
-              ((r.state as { tags?: { type: string; value: string }[] | null } | null)
-                ?.tags ?? []).some(
-                (t) =>
-                  t.type === share.scope!.tag!.type &&
-                  t.value === share.scope!.tag!.value,
-              ),
-          ).length;
         } else if (share.scope.screens) {
-          memberCount = new Set(
-            [...share.scope.screens, share.design_id].filter(Boolean),
-          ).size;
           title = designRow?.name ?? "Shared screens";
         }
       } else {
@@ -204,7 +191,7 @@ export default async function OgImage({
   // Editorial type: Poppins 700 for the title, 500 for the furniture.
   // Subsets fetched per exact text (a few KB); null → default font.
   const displayTitle = displayText(title);
-  const uiText = `${brand}${footer}0123456789 screensMade with Grade`;
+  const uiText = `${brand}${footer}ScreensMade with Grade`;
   const [titleFont, uiFont] = await Promise.all([
     poppins(displayTitle, 700),
     poppins(uiText, 500),
@@ -253,17 +240,6 @@ export default async function OgImage({
               {/* Real mark when the registry has one; wordmark otherwise. */}
               {brandLogo ? brandLogo(36) : brand}
             </div>
-            {/* Just the facet dot — the tag's colour as a quiet accent;
-                the old SHARED SCREENS kicker labelled the obvious. */}
-            <div
-              style={{
-                display: "flex",
-                width: 14,
-                height: 14,
-                borderRadius: 99,
-                backgroundColor: accent,
-              }}
-            />
           </div>
           <div
             style={{
@@ -304,13 +280,16 @@ export default async function OgImage({
           >
             {displayTitle}
           </div>
-          {memberCount !== null && (
+          {/* Count-free set pill — the facet dot lives HERE now (it read
+              as a random floater alone in the corner), colouring the
+              label it belongs to. */}
+          {scopedSet && (
             <div style={{ display: "flex" }}>
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
+                  gap: 10,
                   padding: "6px 18px",
                   borderRadius: 99,
                   border: "2px solid #e7e7e3",
@@ -319,7 +298,16 @@ export default async function OgImage({
                   color: "#6b6b67",
                 }}
               >
-                {memberCount} screen{memberCount === 1 ? "" : "s"}
+                <div
+                  style={{
+                    display: "flex",
+                    width: 10,
+                    height: 10,
+                    borderRadius: 99,
+                    backgroundColor: accent,
+                  }}
+                />
+                Screens
               </div>
             </div>
           )}
