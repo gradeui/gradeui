@@ -462,6 +462,18 @@ split for the 32px line, rail ml-6.
 
 The inspector's PROP layer is registry-aware (contracts); the STYLE layer is not — the Fill picker and TokenField offer gradeui tokens even on BrightLocal projects. Needed: the registry seam described in STUDIO-FILLS/STUDIO-TOKENFIELD feeding BL's `--ds-*` palette (and its Tailwind class vocabulary) into the token picker + className editing. Until then, BL styling edits via the panel should use the className field with BL-valid classes.
 
+## SHIPPED (17 Jul) — share OG cover sheet (typographic); Playwright capture still queued for v2
+
+`/s/[token]/opengraph-image.tsx` — next/og ImageResponse at request
+time (no browser, no storage): registry wordmark (brightlocal →
+"BrightLocal"), kicker with tag-accent dot (fixed hexes mirroring the
+tagTypeColor hash INDEX), share title (scope tag value as typed /
+screen name), member-count pill for scoped shares, project footer,
+"Made with Grade". Degrades to a plain branded card on any failure.
+V2 (Ali): the entry screen AS A SCREENSHOT bottom-right, "moody" —
+needs the capture pipeline below (ImageResponse embeds an <img> once a
+capture URL exists; same plumbing as the per-pane screenshot task).
+
 ## QUEUED — share-link OG images via Playwright capture of the embed
 
 Problem: /s/<token> generateMetadata sets title only; scrapers fall back
