@@ -69,6 +69,9 @@ interface PinPosition {
   threadId: string;
   top: number;
   left: number;
+  /** Provenance: collected through a share (vivid pin) vs authored in
+   *  Studio (muted grey pin). */
+  fromShare: boolean;
 }
 
 export function CanvasCommentPinsOverlay({
@@ -151,6 +154,7 @@ export function CanvasCommentPinsOverlay({
           threadId: t.thread.id,
           top: iframeRect.top + r.top * scale,
           left: iframeRect.left + r.left * scale,
+          fromShare: Boolean(t.thread.shareToken),
         });
       }
       setPositions(next);
@@ -221,6 +225,7 @@ export function CanvasCommentPinsOverlay({
             avatarUrl={author?.avatarUrl}
             avatarTone={author ? toneForUserId(author.id) : undefined}
             label={label}
+            muted={!p.fromShare}
           />
         );
       })}

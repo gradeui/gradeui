@@ -59,6 +59,10 @@ interface CanvasCommentPinProps {
   /** Legacy text label (sequential number, single letter). Only
    *  used as a fallback when no `authorName` is provided. */
   label?: string;
+  /** PROVENANCE tint (Ali, 18 Jul): share/flow-collected threads read
+   *  VIVID (the feedback you're gathering); Studio-authored ones read
+   *  QUIET grey (your own annotations). muted = no shareToken. */
+  muted?: boolean;
 }
 
 const PIN_SIZE = 28; // px — 24px avatar + 4px teardrop pointer
@@ -72,7 +76,14 @@ export function CanvasCommentPin({
   avatarUrl,
   avatarTone,
   label,
+  muted = false,
 }: CanvasCommentPinProps) {
+  // Provenance palette: vivid = collected through a share; muted grey
+  // = authored in Studio.
+  const pinColor = muted ? "#71717a" : "#3b82f6";
+  const pinGlow = muted
+    ? "rgba(113, 113, 122, 0.5)"
+    : "rgba(59, 130, 246, 0.5)";
   const initials = React.useMemo(() => {
     const source = authorName ?? label ?? "";
     const parts = source.trim().split(/\s+/).slice(0, 2);
@@ -103,13 +114,14 @@ export function CanvasCommentPin({
         // "point" of the teardrop sits on the anchored element's
         // top-left corner. Mirrors Figma's comment pin shape.
         borderRadius: "9999px 9999px 9999px 0",
-        // Focus-blue rim — stub colour; will swap to var(--selected)
-        // in the same pass as the pin design refresh + cursor work.
-        background: "#3b82f6",
+        // Provenance colour (vivid share-blue / quiet studio-grey) —
+        // token swap (var(--selected)) still queued with the pin
+        // design refresh.
+        background: pinColor,
         padding: 0,
         border: active ? "2px solid white" : "none",
         boxShadow: active
-          ? "0 0 0 2px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.5)"
+          ? `0 0 0 2px ${pinColor}, 0 4px 12px ${pinGlow}`
           : "0 2px 6px rgba(0, 0, 0, 0.25)",
         cursor: "pointer",
         transition:
