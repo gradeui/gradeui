@@ -616,9 +616,16 @@ export default function ExternalSandboxPage() {
     };
 
     const onMessage = (e: MessageEvent) => {
-      const d = e.data as { type?: string; source?: string; sources?: unknown; mode?: string; on?: boolean; css?: string; id?: string } | null;
+      const d = e.data as { type?: string; source?: string; sources?: unknown; mode?: string; on?: boolean; css?: string; id?: string; tweakScope?: string | null } | null;
       if (d?.type === "ext:source" && typeof d.source === "string") {
         if (typeof d.css === "string") applyProjectCss(d.css);
+        // Tweak-stash scope (host-named): the registry lib reads this
+        // global to key its session tweak stash — one scope per share
+        // session (tweaks follow the walkthrough) or per compare pane
+        // (isolation even between duplicate screens). Set BEFORE
+        // render so the shell's mount initializer sees it.
+        (window as Window & { __gdsTweakScope?: string | null }).__gdsTweakScope =
+          typeof d.tweakScope === "string" ? d.tweakScope : null;
         void render(d.source, d.mode ?? "light");
       } else if (d?.type === "ext:ping") {
         // Handshake heal: ext:ready is posted ONCE at boot — if the

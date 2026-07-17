@@ -1870,6 +1870,9 @@ export function SharedScreen({
                         // Comment pins anchor via contentDocument — one
                         // overlay per pane, mounted outside the camera.
                         iframeRef={paneIframeRef(m.id)}
+                        // Per-PANE tweak scope — isolation even between
+                        // duplicate screens sharing a dataHook.
+                        tweakScope={`pane-${m.id}`}
                         // Pin mode: the focused pane's agent captures a
                         // pick for the composer.
                         selectMode={pinMode && focusedPaneId === m.id}
@@ -1958,6 +1961,10 @@ export function SharedScreen({
             appSource={currentSource}
             mode={mode}
             registryId={shareRegistry.id}
+            // ONE tweak scope for the whole share session — tweaks
+            // follow the walkthrough across gotos/screens (Ali: "a
+            // single screen shared should always maintain the tweaks").
+            tweakScope="share-session"
             // Viewer pin creation — pin mode arms the sandbox agent.
             selectMode={pinMode}
             onSelect={(sel) =>

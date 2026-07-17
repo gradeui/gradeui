@@ -67,6 +67,10 @@ export interface ExternalIframeHostProps {
    *  paint-only. Pass the OTHER flow screens' appSources (the share
    *  view / embed do, when the project has 2+). */
   precompileSources?: string[];
+  /** Tweak-stash scope forwarded on ext:source — see the push() note.
+   *  Single share: one constant per session; compare pane: member id;
+   *  omitted: per-dataHook fallback inside the lib. */
+  tweakScope?: string;
   /** Exposed iframe ref so wrapping chrome (the comment-pins overlay)
    *  can reach contentDocument. */
   iframeRef?: React.MutableRefObject<HTMLIFrameElement | null>;
@@ -95,6 +99,7 @@ export function ExternalIframeHost({
   onContentHeight,
   onGoto,
   precompileSources,
+  tweakScope,
   iframeRef: externalIframeRef,
   registryId: registryIdProp,
   rawSource = false,
@@ -137,10 +142,16 @@ export function ExternalIframeHost({
         source: rawSource ? appSource : injectSourceIds(appSource),
         mode,
         css: projectCss,
+        // Tweak-stash SCOPE — the host names it because only the host
+        // knows the surface: a single share passes one constant (tweaks
+        // follow the whole walkthrough); compare panes pass their
+        // member id (isolation even between DUPLICATE screens sharing
+        // a dataHook); absent = the lib's per-dataHook fallback.
+        tweakScope: tweakScope ?? null,
       },
       window.location.origin,
     );
-  }, [appSource, mode, rawSource, projectCss]);
+  }, [appSource, mode, rawSource, projectCss, tweakScope]);
 
   // Flow-sibling precompile (STUDIO-FLOWS F1) — forward the OTHER flow
   // screens' sources so the sandbox can warm its compile cache during

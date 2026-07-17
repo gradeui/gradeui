@@ -561,26 +561,46 @@ export const PAGE_LAYERS = {
 // "Reset tweaks" clears every key under this prefix.
 const TWEAKS_KEY_PREFIX = "bl-proposal-session-tweaks";
 const SESSION_TWEAKS_BY_HOOK = {}; // module-scope fast path
+// SCOPE resolution: the HOST names the stash scope when it knows the
+// surface (window.__gdsTweakScope, set by the sandbox on ext:source):
+//   - single share → one constant per session: tweaks FOLLOW the
+//     walkthrough across every screen/goto ("a single screen shared
+//     should always maintain the tweaks" — Ali, 18 Jul);
+//   - compare pane → the pane's member id: isolation even between
+//     DUPLICATE screens sharing a dataHook (per-hook keys leaked
+//     between comparison duplicates);
+//   - no host hint (Studio, Sandpack, standalone) → per-dataHook.
+function tweakScopeKey(hook) {
+  try {
+    const scoped = window.__gdsTweakScope;
+    if (typeof scoped === "string" && scoped) return scoped;
+  } catch {
+    /* no window / cross-realm — fall through */
+  }
+  return hook;
+}
 function loadSessionTweaks(hook) {
-  if (SESSION_TWEAKS_BY_HOOK[hook] !== undefined)
-    return SESSION_TWEAKS_BY_HOOK[hook];
+  const key = tweakScopeKey(hook);
+  if (SESSION_TWEAKS_BY_HOOK[key] !== undefined)
+    return SESSION_TWEAKS_BY_HOOK[key];
   try {
     return JSON.parse(
-      window.sessionStorage.getItem(`${TWEAKS_KEY_PREFIX}:${hook}`) || "null",
+      window.sessionStorage.getItem(`${TWEAKS_KEY_PREFIX}:${key}`) || "null",
     );
   } catch {
     return null; /* storage unavailable — module scope only */
   }
 }
 function stashSessionTweaks(hook, next) {
-  SESSION_TWEAKS_BY_HOOK[hook] = next;
+  const key = tweakScopeKey(hook);
+  SESSION_TWEAKS_BY_HOOK[key] = next;
   try {
     if (next && Object.keys(next).length > 0)
       window.sessionStorage.setItem(
-        `${TWEAKS_KEY_PREFIX}:${hook}`,
+        `${TWEAKS_KEY_PREFIX}:${key}`,
         JSON.stringify(next),
       );
-    else window.sessionStorage.removeItem(`${TWEAKS_KEY_PREFIX}:${hook}`);
+    else window.sessionStorage.removeItem(`${TWEAKS_KEY_PREFIX}:${key}`);
   } catch {
     /* fine — module scope carries it */
   }
