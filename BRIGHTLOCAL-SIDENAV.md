@@ -273,6 +273,41 @@ OPEN (Ali's bag of snakes — decide at the F2 comments pass, not now):
 
 ## NEXT SESSION (REFRESHED 18 Jul ~3am, after the late-night burst)
 
+### DAYTIME 18 Jul (nav model v2 → pages) — SHIPPED, don't re-do
+- Nav model v2 (25): top-level rows NAVIGATE (no accordions/chevrons),
+  subs contextual (visible only inside their section), max 1 sub level.
+  Rules in rules/15; blank starter at templates/hub-blank.jsx.
+- Module SPLIT (335f3b1): proposal.jsx is now a BARREL over
+  proposal-data / proposal-shell / proposal-nav / proposal-page.
+- 11 top-level LANDINGS live (scripts/create-landing-pages.mjs),
+  tagged section:"Top-Level Pages"; DEFAULT navLinks in proposal-data
+  wire every top-level row (+ rankings-table). "Your Locations" →
+  "All Locations" everywhere.
+- ALL LOCATIONS page live (86e157f + scripts/build-all-locations.mjs):
+  LocationCard/LocationCardSkeleton in proposal-page, data.locations
+  (7 dirty-data demo entries) in proposal-data, search + Card/Table
+  toggle + CONDITIONAL pagination (renders only >1 page — deliberate
+  deviation from the live product). Cards goto "Location Hub - New
+  Template".
+- BREADCRUMBS: separators interleaved + all crumbs linked (cbbd46a);
+  crumb `{ bind: "location" }` resolves the REAL location name from
+  data at render (86e157f) — landings + hubs rewired in DB. HARNESS
+  INVARIANT (Ali, after separators went missing twice): separators
+  === crumbs - 1, asserted in create-ai-insights-pages.mjs; copy that
+  check into every future screen-builder script.
+- AI INSIGHTS subs (45806a2 + scripts/create-ai-insights-pages.mjs):
+  five placeholders "AI Insights - <label>", tagged
+  section:"AI Insights"; DEFAULT navLinks wire the sub rows. NOTE the
+  AI Insights LANDING was retagged section:"AI Insights" per Ali's
+  instruction — section is single-cardinality, so it LEFT the
+  Top-Level Pages group (flagged to him; swap back if grouping looks
+  wrong).
+- HARNESS LEARNING: React 19 SSR emits a <link rel="preload"> per
+  <img> — count `<img` tags, not URL occurrences.
+- NEXT: Ali picks real datasets (has a BL login) → populate AI
+  Insights + section landings with linked-data content.
+
+
 Ali's day: daily meeting from tag shares (Friday link live + unfurling
 — see Slack-cache note below), then SCREEN BUILDING on the BrightLocal
 product: rules, linked-data content, screens. Before MCP-driven screen
