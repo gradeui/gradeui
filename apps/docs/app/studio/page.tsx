@@ -915,6 +915,15 @@ export default function StudioPage() {
   const handleShareScope = useCallback(
     (scope: ShareScope, entryDesignId: string, scopeLabel: string) => {
       if (!activeProjectId) return;
+      // A selection of ONE is just a screen share: scoping to a single
+      // member kills every goto (nothing else is reachable), which
+      // reads as broken links, not privacy (Ali, 18 Jul, live repro:
+      // '[flows] goto target did not resolve'). Fall through to the
+      // classic unscoped share — same screen, flow map intact.
+      if (scope.screens && scope.screens.length === 1) {
+        handleShareScreen(entryDesignId);
+        return;
+      }
       setCustomDraft({ label: "", w: "", h: "" });
       setCreatedShare(null);
       setPendingShare({
@@ -958,7 +967,7 @@ export default function StudioPage() {
           });
       }
     },
-    [activeProjectId, storage],
+    [activeProjectId, storage, handleShareScreen],
   );
   const confirmShareScreen = useCallback(async () => {
     if (!pendingShare || !activeProjectId) return;
