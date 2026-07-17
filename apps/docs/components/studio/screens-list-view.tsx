@@ -236,25 +236,58 @@ export function ScreensViewBar({
       {/* Active facet chips. OR within a type, AND across — the chip
           groups read that way naturally (same-type chips adjacent). */}
       {prefs.filters.map((f) => (
-        <button
+        // Facet chips carry their type's chart-ramp accent. Chip BODY
+        // click flips polarity (include ⇄ exclude — "not set:Friday"
+        // hides an archived milestone from the working view); the ×
+        // removes. Excluded chips read hollow + "not".
+        <span
           key={`${f.type}:${f.value}`}
-          type="button"
-          onClick={() => toggleFilter(f)}
-          // Facet chips carry their type's chart-ramp accent — a tinted
-          // wash + dot, so same-type chips (OR group) read as one hue.
-          className="group flex items-center gap-1.5 rounded-full px-2 h-5 text-[10px] text-foreground hover:opacity-80"
-          style={{
-            backgroundColor: `color-mix(in oklab, ${tagTypeColor(f.type)} 14%, transparent)`,
-          }}
-          title="Remove filter"
+          className={cn(
+            "group flex items-center gap-1.5 rounded-full px-2 h-5 text-[10px] text-foreground",
+            f.exclude && "border border-dashed border-border text-muted-foreground",
+          )}
+          style={
+            f.exclude
+              ? undefined
+              : {
+                  backgroundColor: `color-mix(in oklab, ${tagTypeColor(f.type)} 14%, transparent)`,
+                }
+          }
         >
-          <span
-            className="size-1.5 rounded-full"
-            style={{ backgroundColor: tagTypeColor(f.type) }}
-          />
-          {formatTag(f)}
-          <X className="size-2.5 opacity-50 group-hover:opacity-100" />
-        </button>
+          <button
+            type="button"
+            onClick={() =>
+              onPrefsChange({
+                ...prefs,
+                filters: prefs.filters.map((x) =>
+                  x.type === f.type && x.value === f.value
+                    ? { ...x, exclude: x.exclude ? undefined : true }
+                    : x,
+                ),
+              })
+            }
+            className="flex items-center gap-1.5 hover:opacity-80"
+            title={
+              f.exclude
+                ? "Excluding — click to include instead"
+                : "Click to EXCLUDE screens with this tag"
+            }
+          >
+            <span
+              className={cn("size-1.5 rounded-full", f.exclude && "opacity-40")}
+              style={{ backgroundColor: tagTypeColor(f.type) }}
+            />
+            {f.exclude ? `not ${formatTag(f)}` : formatTag(f)}
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleFilter(f)}
+            title="Remove filter"
+            className="flex items-center"
+          >
+            <X className="size-2.5 opacity-50 hover:opacity-100" />
+          </button>
+        </span>
       ))}
       {prefs.filters.length > 0 && (
         <>

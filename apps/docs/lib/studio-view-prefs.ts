@@ -23,6 +23,10 @@ import type { Design, DesignTag } from "@/lib/studio-designs";
 export interface ViewFilter {
   type: string;
   value: string;
+  /** Polarity: true = HIDE screens carrying this tag (Ali's "history
+   *  of my own making" — archive a milestone set by tag, then exclude
+   *  it from the working view). Absent = include (the default). */
+  exclude?: boolean;
 }
 
 export interface ProjectViewPrefs {
@@ -162,20 +166,33 @@ export function collectTagFacets(designs: readonly Design[]): TagFacet[] {
   }));
 }
 
-/** OR within a type, AND across types. No filters = everything. */
+/** Includes: OR within a type, AND across types. Excludes: a screen
+ *  carrying ANY excluded tag is hidden, evaluated before includes —
+ *  "everything except the archived Friday set" needs no include at
+ *  all. No filters = everything. */
 export function filterDesigns<T extends Pick<Design, "tags">>(
   designs: readonly T[],
   filters: readonly ViewFilter[],
 ): T[] {
   if (!filters.length) return [...designs];
   const byType = new Map<string, Set<string>>();
+  const excluded: ViewFilter[] = [];
   for (const f of filters) {
+    if (f.exclude) {
+      excluded.push(f);
+      continue;
+    }
     let s = byType.get(f.type);
     if (!s) byType.set(f.type, (s = new Set()));
     s.add(f.value);
   }
   return designs.filter((d) => {
     const tags = d.tags ?? [];
+    for (const x of excluded) {
+      if (tags.some((t) => t.type === x.type && t.value === x.value)) {
+        return false;
+      }
+    }
     for (const [type, values] of byType) {
       if (!tags.some((t) => t.type === type && values.has(t.value))) {
         return false;

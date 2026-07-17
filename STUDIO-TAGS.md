@@ -253,6 +253,26 @@ Shape that falls out (no new storage concept needed):
   rail (collectTagFacets). This is the 1D-row sibling of the map view's
   partitioning; one control, two presentations.
 
+## Milestone tags — history of your own making (Ali, 17 Jul night)
+
+The workflow that emerged prepping the first client presentation:
+tag a set (`set:Friday 17 July`), share the tag (stable URL), then
+DUPLICATE the members and keep working on the copies — the tagged
+originals freeze as a milestone "forever in the past". Works TODAY
+with zero new machinery: duplicate-to-freeze + the stable tag URL +
+exclude filters (shipped same night: filter chips flip polarity, so
+the working view hides archived sets with `not set:Friday…`).
+
+The can of worms deliberately NOT opened (Ali: "massive can of
+worms!!!"): doing this properly means pinning a SCOPED share to
+per-member REVISIONS (share_links.revision_id pins one screen only),
+i.e. version selection at share time and access control over which
+version a link exposes. The revision spine exists (0009); the design
+belongs with the share-toolbar/version-dropdown block and the tag
+registry (a `milestone: true` TagDef could make archive semantics —
+auto-exclude from default views, lock members — first-class). Decide
+when duplicates start hurting (storage/clutter), not before.
+
 ## Open questions
 
 - Does `section` group-by replace or compose with the canvas's spatial
