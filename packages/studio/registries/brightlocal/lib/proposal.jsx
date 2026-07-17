@@ -478,6 +478,7 @@ export const SIDEBAR_TONES = {
     colorScheme: "dark",
     scrollbarColor:
       "var(--ds-tailwind-colors-neutral-700) transparent" /* Firefox */,
+    "--gds-sidebar-scrollbar": "var(--ds-tailwind-colors-neutral-700)",
   },
   brand: {
     ...sidebarTone(
@@ -490,6 +491,7 @@ export const SIDEBAR_TONES = {
     colorScheme: "dark",
     scrollbarColor:
       "var(--ds-tailwind-colors-green-800) transparent" /* Firefox */,
+    "--gds-sidebar-scrollbar": "var(--ds-tailwind-colors-green-800)",
   },
 };
 
@@ -847,7 +849,21 @@ export function AppLayoutShell({
       // inside resolves against them.
       style={layers}
     >
-      <style>{schemeCss + mobileToneCss + layerCss}</style>
+      {/* Sidebar scrollbar discipline (Ali, 18 Jul — "pushes content in
+          and is the wrong color"): scrollbar-gutter reserves the rail
+          so content never shifts when overflow appears; thin width;
+          the thumb colour rides the tone (--gds-sidebar-scrollbar from
+          dark/brand presets, quiet default otherwise). Covers native
+          scrollbars AND Radix ScrollArea thumbs — we can't know which
+          the DS uses per surface, so both are addressed. */}
+      <style>{
+        schemeCss +
+        mobileToneCss +
+        layerCss +
+        "[data-gds-shell-sidebar] *{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--gds-sidebar-scrollbar,rgb(0 0 0/0.18)) transparent}" +
+        "[data-gds-shell-sidebar] [data-radix-scroll-area-thumb],[data-gds-shell-sidebar] [data-slot=scroll-area-thumb]{background-color:var(--gds-sidebar-scrollbar,rgb(0 0 0/0.18))}" +
+        "[data-gds-shell-sidebar] [data-radix-scroll-area-scrollbar],[data-gds-shell-sidebar] [data-slot=scroll-area-scrollbar]{background:transparent}"
+      }</style>
       {tweaker ? (
         <ShellTweakerPanel authored={authored} tweaks={tweaks} setTweaks={setTweaks} />
       ) : null}
@@ -864,6 +880,8 @@ export function AppLayoutShell({
         ]
           .filter(Boolean)
           .join(" ")}
+        // Scope hook for the scrollbar CSS in the shell <style> above.
+        data-gds-shell-sidebar=""
         style={{
           ...(pinnedSidebar && flush
             ? {
