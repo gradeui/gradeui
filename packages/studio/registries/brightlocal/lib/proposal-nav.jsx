@@ -232,6 +232,9 @@ function SubRows({ items, activeId }) {
   return items.map((item) => (
     <SidebarMenuSubItem key={item.id} dataHook={`sub-item-${item.id}`}>
       <SidebarMenuSubButton
+        // size="sm" — the sub button's MD default rendered LARGER text
+        // than the size="sm" mains (inverted hierarchy — Ali, 18 Jul).
+        size="sm"
         // cursor-pointer select-none: the DS sub button is an <a>
         // without href, so browsers default to a TEXT cursor and
         // selectable label — read as broken, not navigational (Ali,
@@ -372,7 +375,9 @@ export function ProposalSidebar({
       <SidebarContent dataHook="sidebar-content" className="gap-0 pt-1 pr-2">
         <SidebarGroup className="px-2 py-1">
           <SidebarGroupContent>
-            <SidebarMenu className="gap-0">
+            {/* gap-1 (4px) between rows — gap-0 read as one solid
+                block once the rows went size="sm" (Ali, 18 Jul). */}
+            <SidebarMenu className="gap-1">
               {sections.map((section) => (
                 <NavSection key={section.id} section={section} activeId={activeId} />
               ))}
