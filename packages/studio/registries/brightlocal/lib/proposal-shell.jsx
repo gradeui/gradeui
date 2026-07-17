@@ -297,6 +297,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     // Named datasets — flips the WHOLE interface's data live (account,
     // user, location, metrics) via a nested ProposalDataProvider in
     // AppLayoutShell. The meeting trick: Alt+T, switch client.
+    { key: "navDensity", label: "Nav density", values: ["compact", "comfortable"] },
     { key: "dataset", label: "Data", values: ["default", ...Object.keys(DATASETS)] },
   ];
   const live = { ...authored, ...tweaks };
@@ -378,6 +379,11 @@ export function AppLayoutShell({
   stickyHeader = false,
   pinnedSidebar = true,
   sidebarTone = "white",
+  // Nav density — "compact" (the fitted look: 30px rows, 16px/1 icons)
+  // or "comfortable" (DS-ish: roomier rows, 20px/1.5 icons). Small vs
+  // large menus is a real product question (Ali) — so it's a shell
+  // knob AND a tweaker row, implemented as the --gds-nav-* variables.
+  navDensity = "compact",
   // Carry the tone onto the MOBILE Sheet too. The Sheet portals to
   // document.body — outside this tree — so container-level vars can't
   // reach it; a scoped <style> targeting its data-sidebar/data-mobile
@@ -438,7 +444,7 @@ export function AppLayoutShell({
   // are the AUTHORED look; tweaks shadow them for this session only.
   // Reassigning the params keeps every downstream reference
   // (tone/frame/shadow/layers/sticky) reading the LIVE values.
-  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset };
+  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset, navDensity };
   // SESSION MEMORY: seed from the module-scope stash (below) so tweaks —
   // colours, frame, DATASET — persist across flow navigation and screen
   // switches: the lib module is compiled once per sandbox boot and its
@@ -460,7 +466,7 @@ export function AppLayoutShell({
   );
   const tweaks = controlledTweaks ?? ownTweaks;
   const setTweaks = onTweaksChange ?? setOwnTweaks;
-  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset } = {
+  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset, navDensity } = {
     ...authored,
     ...tweaks,
   });
@@ -487,6 +493,17 @@ export function AppLayoutShell({
     sidebarBorder ??
     (sidebarFrame === "flush" ? "var(--sidebar-border)" : undefined);
   const tone = SIDEBAR_TONES[sidebarTone] ?? {};
+  // Density presets re-point the --gds-nav-* variables the shell's
+  // scoped <style> consumes; compact = the CSS defaults (empty).
+  const navVars =
+    navDensity === "comfortable"
+      ? {
+          "--gds-nav-row-py": "6px",
+          "--gds-nav-sub-py": "6px",
+          "--gds-nav-icon-size": "20px",
+          "--gds-nav-icon-stroke": "1.5",
+        }
+      : {};
   const layers = PAGE_LAYERS[pageLayers] ?? {};
   // Raised layers: cards are WHITE (the layer re-points --card) with
   // base/border (semantic --border → neutral-200 #E6EDE8, .dark flips
@@ -540,6 +557,33 @@ export function AppLayoutShell({
         schemeCss +
         mobileToneCss +
         layerCss +
+        /* NAV RHYTHM (Ali + Harry, 18 Jul) — deliberate DS override,
+           variable-driven so the values are tunable per screen/theme
+           without touching the module again:
+             --gds-nav-font-size  label size, BOTH levels (default 14px
+                                  — the size="sm" variants dropped subs
+                                  to 12px, too small)
+             --gds-nav-row-py     main row block padding (default 5px →
+                                  ~30px rows; DS default 32px read
+                                  chunky, sm's 28px too tight)
+             --gds-nav-sub-py     sub row block padding (default 4px)
+             --gds-nav-sub-pl     sub label left padding (default 20px:
+                                  rail 24px + border + 20px ≈ 45px —
+                                  lines subs up with the main LABEL,
+                                  which sits at px-4 + icon + gap = 44px)
+           Rationale: fit more nav in less height (promo banner below,
+           utility slot above are coming) without losing readability.
+           The :not guards nav-item-* (the <li> hooks share the nav-
+           prefix). height:auto beats the size variant's fixed h-7. */
+        '[data-gds-shell-sidebar] [data-hook^="nav-"]:not([data-hook^="nav-item-"]){height:auto;min-height:calc(20px + 2*var(--gds-nav-row-py,5px));padding-block:var(--gds-nav-row-py,5px);font-size:var(--gds-nav-font-size,0.875rem)}' +
+        '[data-gds-shell-sidebar] [data-hook^="sub-btn-"]{height:auto;min-height:calc(20px + 2*var(--gds-nav-sub-py,4px));padding-block:var(--gds-nav-sub-py,4px);padding-left:var(--gds-nav-sub-pl,20px);font-size:var(--gds-nav-font-size,0.875rem)}' +
+        /* Nav icons — 16px / stroke 1 at the compact row size (20px
+           icons overpowered the sm rows). Lucide sets stroke-width as
+           a presentation attribute on the svg root, so CSS here wins.
+             --gds-nav-icon-size    (default 16px)
+             --gds-nav-icon-stroke  (default 1; bump to 1.25/1.5 if it
+                                     reads wispy on low-DPI) */
+        '[data-gds-shell-sidebar] [data-hook^="nav-"]:not([data-hook^="nav-item-"]) svg{width:var(--gds-nav-icon-size,16px);height:var(--gds-nav-icon-size,16px);stroke-width:var(--gds-nav-icon-stroke,1)}' +
         "[data-gds-shell-sidebar] *{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--gds-sidebar-scrollbar,rgb(0 0 0/0.18)) transparent}" +
         "[data-gds-shell-sidebar] [data-radix-scroll-area-thumb],[data-gds-shell-sidebar] [data-slot=scroll-area-thumb]{background-color:var(--gds-sidebar-scrollbar,rgb(0 0 0/0.18))}" +
         "[data-gds-shell-sidebar] [data-radix-scroll-area-scrollbar],[data-gds-shell-sidebar] [data-slot=scroll-area-scrollbar]{background:transparent}"
@@ -571,6 +615,7 @@ export function AppLayoutShell({
             : {}),
           ...(borderColor ? { borderColor } : {}),
           ...tone,
+          ...navVars,
         }}
       >
         {sidebar}
