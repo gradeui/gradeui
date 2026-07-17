@@ -116,6 +116,9 @@ export async function POST(
       component_name: body.componentName ?? null,
       created_by: user.id,
       revision_id: (rev as { id: string } | null)?.id ?? null,
+      // Provenance: this thread was collected THROUGH this link (and
+      // therefore in whatever visual context the link presents).
+      share_token: token,
     })
     .select(
       "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, created_by, resolved_by, resolved_at, created_at",

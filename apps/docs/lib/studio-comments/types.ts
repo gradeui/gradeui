@@ -91,6 +91,13 @@ export interface CommentThread {
    *  we know who resolved it (audit + filter UI). */
   resolvedBy?: string;
   resolvedAt?: number;
+  /** PROVENANCE (migration 0024): the share link this thread was
+   *  created THROUGH — and therefore the visual context (flow scope,
+   *  variant knobs, dataset) the commenter was looking at. Undefined =
+   *  authored in Studio. Drives "collected via the Friday link"
+   *  filtering + Ali's created-in-flows-marked-as-such rule; display
+   *  lands with the F2 comments pass. */
+  shareToken?: string;
 }
 
 /** A single message inside a thread — including the thread's
