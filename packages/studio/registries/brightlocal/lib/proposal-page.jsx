@@ -1,0 +1,446 @@
+// @brightlocal/proposal-page — page furniture: PageHeader and the
+// card family (StatCard, HubStatCard, HubHeroCard). Split out of
+// proposal.jsx (18 Jul); the barrel re-exports.
+import * as React from "react";
+import {
+  Avatar,
+  AvatarFallback,
+  Badge,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  GlobalLayout,
+  GlobalLayoutContent,
+  GlobalLayoutContentHeader,
+  GlobalLayoutSidebar,
+  Logo,
+  Sidebar,
+  SidebarAccountDropdown,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarMenuSubVariant,
+  SidebarPopoverMenu,
+  SidebarSwitcher,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  TypographyH2,
+  TypographyH3,
+  TypographyMuted,
+} from "@brightlocal/ui-components";
+import {
+  BarChart3,
+  Briefcase,
+  Building,
+  ChevronRight,
+  Globe,
+  Grid3x3,
+  Info,
+  Link,
+  ListChecks,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  Store,
+  TrendingUp,
+} from "@brightlocal/icons";
+import { useProposalData } from "@brightlocal/proposal-data";
+
+// ─── PageHeader — the composed page header ────────────────────────────
+// There is NO PageHeader component in the DS — the page header IS this
+// composition (recipe: page-header-with-breadcrumbs.jsx; upstream note:
+// it should be a component). Trail RULE: ANCESTORS ONLY, max two — the
+// current page never appears in the breadcrumb (the H2 IS the current
+// page); BreadcrumbPage is deliberately unused. `meta` renders in the
+// muted row under the title; `actions` right-aligns (buttons, menus).
+export function PageHeader({
+  breadcrumbs = [],
+  title,
+  // Muted row under the title. DEFAULT is data-bound: the current
+  // location (name + status badge) from the proposal data context —
+  // reads at render position, so it follows dataset switches. Pass
+  // `meta={null}` to suppress, or any node to replace.
+  meta,
+  actions,
+  dataHook = "page-header",
+  // Anchor-id pass-through — see AppLayoutShell's rest note.
+  ...rest
+}) {
+  const data = useProposalData();
+  const resolvedMeta =
+    meta === undefined ? (
+      <>
+        <span>{data.location.name}</span>
+        <Badge dataHook="location-status">{data.location.status}</Badge>
+      </>
+    ) : (
+      meta
+    );
+  return (
+    // w-full is LOAD-BEARING: inside GlobalLayoutContentHeader the
+    // header block otherwise spans content width only, and
+    // justify-between has nothing to distribute — actions hugged the
+    // title (16 Jul screenshot). flex-1/ml-auto belt-and-braces so the
+    // actions pin to the far right even in odd flex parents.
+    // RESPONSIVE: a single row only from sm up. Below that the header
+    // STACKS — crumbs/title/meta first, actions on their own row
+    // underneath — instead of crushing the title column against the
+    // actions (the word-per-line breadcrumb wrap, 17 Jul screenshot).
+    <div
+      {...rest}
+      // Persistent region across goto swaps — see the sidebar's
+      // view-transition-name note.
+      style={{ viewTransitionName: "gds-page-header", ...(rest?.style ?? {}) }}
+      data-hook={dataHook}
+      className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+    >
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {breadcrumbs.length > 0 ? (
+          <Breadcrumb dataHook={`${dataHook}-breadcrumb`}>
+            <BreadcrumbList>
+              {breadcrumbs.map((crumb) => (
+                <BreadcrumbItem key={crumb.label}>
+                  {/* crumb.goto — screen link (STUDIO-FLOWS): ancestors
+                      are usually other screens in the flow, so crumbs
+                      navigate in shares/embeds. {label, href?, goto?,
+                      transition?}. */}
+                  <BreadcrumbLink
+                    href={crumb.href ?? "#"}
+                    data-grade-goto={crumb.goto}
+                    data-grade-transition={crumb.transition}
+                    // Wrap BETWEEN crumbs, never inside one — a crumb
+                    // breaking word-per-line reads as layout failure.
+                    className="whitespace-nowrap"
+                  >
+                    {crumb.label}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
+        ) : null}
+        <TypographyH2 dataHook={`${dataHook}-title`}>{title}</TypographyH2>
+        {resolvedMeta ? (
+          <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
+            {resolvedMeta}
+          </div>
+        ) : null}
+      </div>
+      {actions ? (
+        // Stacked (mobile): a wrapping full-width row under the title.
+        // Row (sm+): pinned right as before (ml-auto only from sm so
+        // the stacked row isn't shoved right).
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:ml-auto">
+          {actions}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ─── HubStatCard ──────────────────────────────────────────────────────
+// The canonical arrangement: icon → title → chevron (drill-down) →
+// description → metric (+ delta). `metric` and `delta` accept
+// ReactNodes so screens can pass richer values (a formatted number, a
+// sparkline) without changing the seam.
+export function HubStatCard({
+  icon: Icon,
+  title,
+  // Data binding: name a key in data.metrics ("reviews", "rankings",
+  // …) and the card reads metric/delta/description from the proposal
+  // data context AT RENDER POSITION — so it follows dataset switches
+  // (tweaker or provider). Explicit props win over the bound values.
+  metricKey,
+  description,
+  metric,
+  delta,
+  // Screen link (STUDIO-FLOWS): name of the screen this card drills
+  // into — stamps data-grade-goto; shares/embeds navigate on click.
+  // `transition` picks the swap treatment (data on the link).
+  goto,
+  transition,
+  // ctaHook names the chevron (the card's single drill-down control —
+  // footer CTAs were dropped once the chevron landed; two buttons to
+  // the same place was noise).
+  ctaHook,
+  dataHook,
+  // Everything else (data-* stamps, aria) rides through to the Card —
+  // user-land components must not swallow wire-contract attributes.
+  ...rest
+}) {
+  const data = useProposalData();
+  const bound = metricKey ? data.metrics?.[metricKey] : undefined;
+  metric = metric ?? bound?.metric;
+  delta = delta ?? bound?.delta;
+  description = description ?? bound?.description;
+  // The whole card is a drill-down target (wire navigation per-screen;
+  // the chevron is the named control for keyboard/AT users). No hover
+  // treatment — resting state stays border-only per the Figma, and the
+  // chevron's own hover carries the affordance.
+  return (
+    <Card
+      density="condensed"
+      className="max-w-none cursor-pointer"
+      dataHook={dataHook}
+      data-grade-goto={goto}
+      data-grade-transition={transition}
+      {...rest}
+    >
+      <CardHeader>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            {/* Icon tile pinned to neutral-50 — the faintest step, so
+                it reads on BOTH a raised white card and a regular
+                default/filled card without riding the muted token
+                (which the raised layer bumps to neutral-100). */}
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
+              <Icon className="size-4" />
+            </div>
+            {/* DS scale reference (2.20.0): CardTitle default =
+                text-2xl font-medium (too big here); size="small" =
+                text-base — the sanctioned smaller title. Weight bumped
+                to semibold; size stays on their scale. */}
+            <CardTitle size="small" className="font-semibold">
+              {title}
+            </CardTitle>
+            {/* Drill-down affordance — mirrors the whole-card click
+                target for pointer users and gives AT/keyboard a
+                focusable control. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              className="ml-auto shrink-0"
+              ariaLabel={`Open ${typeof title === "string" ? title : "module"}`}
+              dataHook={ctaHook ? `${ctaHook}-chevron` : undefined}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+          <CardDescription>{description}</CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-baseline gap-2">
+          <span className="text-5xl font-semibold tracking-tight">
+            {metric}
+          </span>
+          {/* Badge, NOT Chip — BL's Chip always renders a remove ✕
+              (it's a dismissible input); Badge is the read-only
+              status/delta component. */}
+          {delta ? <Badge variant="secondary">{delta}</Badge> : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── StatCard — the compact metric tile ───────────────────────────────
+// The consistency-critical primitive: label → value (+delta badge /
+// trend icon) → optional info tooltip. INHERITS FROM CARD (variant
+// "filled", condensed density) and owns its anatomy — never hand-roll
+// Card + pt-6 for a stat tile (BL's Card already pads content; the
+// shadcn pt-6 idiom double-pads and reads as an oversized top gap).
+//
+// ONE tone knob for consistency: it colors the value, the trend icon
+// AND the delta badge together. Presets only — no per-part styling.
+const STAT_TONES = {
+  default: {
+    value: "",
+    icon: "text-muted-foreground",
+    badge: "border-transparent bg-success-background text-success-foreground",
+  },
+  success: {
+    value: "text-emerald-600",
+    icon: "text-emerald-600",
+    badge: "border-transparent bg-success-background text-success-foreground",
+  },
+  destructive: {
+    value: "text-rose-600",
+    icon: "text-rose-600",
+    badge: "border-transparent bg-destructive/10 text-destructive",
+  },
+  neutral: { value: "", icon: "text-muted-foreground", badge: "" },
+};
+
+export function StatCard({
+  // Small uppercase label above the value ("Average Position").
+  label,
+  // Data binding: key into data.metrics — value/delta read from the
+  // proposal data context at render position (dataset switches reach
+  // the tile). Explicit props win.
+  metricKey,
+  value,
+  // Small Badge beside the value ("+4.2% vs last month", "improving").
+  delta,
+  // ONE knob: colors value + trend icon + delta badge as a set.
+  tone = "default", // "default" | "success" | "destructive" | "neutral"
+  // Optional trend icon rendered after the value (TrendingUp/Down).
+  icon: IconCmp,
+  // Info tooltip text — renders the ghost (i) button top-right.
+  info,
+  // Card level: "page" sits on the canvas (white card on the raised
+  // layer); "nested" sits ON another card — steps down to the
+  // neutral-50 tier with a border so a stat row can live at the top of
+  // a bigger module card.
+  level = "page", // "page" | "nested"
+  // Screen link (STUDIO-FLOWS) — stamps data-grade-goto/-transition.
+  goto,
+  transition,
+  dataHook,
+  // Layout-only className (grid placement); pass-through for data-*.
+  className,
+  ...rest
+}) {
+  const data = useProposalData();
+  const bound = metricKey ? data.metrics?.[metricKey] : undefined;
+  value = value ?? bound?.metric;
+  delta = delta ?? bound?.delta;
+  const t = STAT_TONES[tone] ?? STAT_TONES.default;
+  return (
+    <Card
+      variant="filled"
+      density="condensed"
+      dataHook={dataHook}
+      data-grade-goto={goto}
+      data-grade-transition={transition}
+      className={[
+        "max-w-none",
+        level === "nested"
+          ? "border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]"
+          : "",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      {...rest}
+    >
+      <CardContent>
+        <div className="flex items-start justify-between gap-2">
+          <TypographyMuted className="text-xs font-semibold uppercase">
+            {label}
+          </TypographyMuted>
+          {info ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconOnly
+                    className="-mt-1 -mr-1 size-7 shrink-0"
+                    ariaLabel={`About ${typeof label === "string" ? label : "this metric"}`}
+                    dataHook={dataHook ? `${dataHook}-info` : undefined}
+                  >
+                    <Info className="text-muted-foreground size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{info}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : null}
+        </div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className={`text-3xl font-bold tracking-tight ${t.value}`}>
+            {value}
+          </span>
+          {delta ? (
+            tone === "neutral" ? (
+              <Badge variant="secondary">{delta}</Badge>
+            ) : (
+              <Badge className={t.badge}>{delta}</Badge>
+            )
+          ) : null}
+          {IconCmp ? <IconCmp className={`size-5 self-center ${t.icon}`} /> : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── HubHeroCard ──────────────────────────────────────────────────────
+export function HubHeroCard({
+  title,
+  description,
+  primaryCta = "Get started",
+  primaryHook,
+  secondaryCta,
+  secondaryHook,
+  media,
+  // Media proportion presets — Tailwind aspect utilities. "4/3" is the
+  // default (video read too letterboxy at w-2/5); "square" for
+  // illustration-led heroes.
+  mediaAspect = "4/3", // "4/3" | "square" | "video"
+  // Screen link (STUDIO-FLOWS) — stamps data-grade-goto/-transition.
+  goto,
+  transition,
+  dataHook,
+  // Pass-through — same rule as HubStatCard.
+  ...rest
+}) {
+  const MEDIA_ASPECTS = {
+    "4/3": "aspect-[4/3]",
+    square: "aspect-square",
+    video: "aspect-video",
+  };
+  const aspect = MEDIA_ASPECTS[mediaAspect] ?? MEDIA_ASPECTS["4/3"];
+  // condensed density bakes px-3 on the card — too tight for a hero.
+  // px-6 wins the merge (same utility group); vertical rhythm stays
+  // condensed.
+  return (
+    <Card
+      density="condensed"
+      className="max-w-none px-6"
+      dataHook={dataHook}
+      data-grade-goto={goto}
+      data-grade-transition={transition}
+      {...rest}
+    >
+      <CardContent>
+        <div className="flex items-center gap-8">
+          {/* Copy column */}
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-3 py-4">
+            <TypographyH3>{title}</TypographyH3>
+            <p className="text-muted-foreground max-w-prose text-sm">
+              {description}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button dataHook={primaryHook}>{primaryCta}</Button>
+              {secondaryCta ? (
+                <Button variant="ghost" dataHook={secondaryHook}>
+                  {secondaryCta}
+                </Button>
+              ) : null}
+            </div>
+          </div>
+          {/* Media column — hidden below md; proportion owned by the
+              aspect preset so real media and the placeholder agree. */}
+          <div className={`hidden w-2/5 shrink-0 md:block ${aspect}`}>
+            {media ?? (
+              <div className="flex h-full w-full items-center justify-center rounded-lg border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]">
+                <Sparkles className="text-muted-foreground size-6" />
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+

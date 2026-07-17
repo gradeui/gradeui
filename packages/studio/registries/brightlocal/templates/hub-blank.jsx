@@ -62,7 +62,10 @@ export default function App() {
           header={
             <PageHeader
               dataHook="blank-page-header"
-              breadcrumbs={[{ label: "Your Locations", goto: "Location Hub" }]}
+              breadcrumbs={[
+                { label: "All Locations", goto: "All Locations" },
+                { label: "Location Hub", goto: "Location Hub - New Template" },
+              ]}
               // ← SET ME: the page's name.
               title="Section title"
             />

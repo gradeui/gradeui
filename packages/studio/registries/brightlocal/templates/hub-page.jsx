@@ -79,7 +79,7 @@ export default function App() {
           // data-bound (location name + status from useProposalData,
           // read at render position so dataset switches reach it).
           <PageHeader
-            breadcrumbs={[{ label: "Your Locations", href: "#" }]}
+            breadcrumbs={[{ label: "All Locations", goto: "All Locations" }]}
             title="Location Hub"
             dataHook="page-header"
           />
