@@ -14,6 +14,94 @@ import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/service";
 
+/**
+ * DELETE — a viewer removes their OWN comment (Ali, 18 Jul: "I need to
+ * be able to delete my comments in the share flow"). Same capability
+ * shape as POST: signed-in + live token + the comment's thread belongs
+ * to this share's project, and STRICTLY author-only. The thread
+ * auto-deletes when its last comment goes (the pin disappears).
+ */
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ token: string }> },
+) {
+  const { token } = await params;
+  const user = await getServerUser();
+  if (!user) {
+    return NextResponse.json({ error: "sign-in required" }, { status: 401 });
+  }
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    return NextResponse.json({ error: "not configured" }, { status: 503 });
+  }
+  const commentId = new URL(req.url).searchParams.get("commentId");
+  if (!commentId) {
+    return NextResponse.json({ error: "bad request" }, { status: 400 });
+  }
+
+  const { data: link } = await supabase
+    .from("share_links")
+    .select("project_id, revoked, expires_at")
+    .eq("token", token)
+    .maybeSingle();
+  const share = link as {
+    project_id: string;
+    revoked: boolean;
+    expires_at: number | null;
+  } | null;
+  if (
+    !share ||
+    share.revoked ||
+    (share.expires_at && share.expires_at < Date.now())
+  ) {
+    return NextResponse.json({ error: "share not found" }, { status: 404 });
+  }
+
+  const { data: commentRow } = await supabase
+    .from("comments")
+    .select("id, thread_id, author_id")
+    .eq("id", commentId)
+    .maybeSingle();
+  const comment = commentRow as {
+    id: string;
+    thread_id: string;
+    author_id: string;
+  } | null;
+  if (!comment) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+  if (comment.author_id !== user.id) {
+    return NextResponse.json({ error: "not your comment" }, { status: 403 });
+  }
+  const { data: threadRow } = await supabase
+    .from("comment_threads")
+    .select("id, project_id")
+    .eq("id", comment.thread_id)
+    .maybeSingle();
+  const thread = threadRow as { id: string; project_id: string } | null;
+  if (!thread || thread.project_id !== share.project_id) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+
+  const { error: dErr } = await supabase
+    .from("comments")
+    .delete()
+    .eq("id", comment.id);
+  if (dErr) {
+    return NextResponse.json({ error: dErr.message }, { status: 500 });
+  }
+  const { count } = await supabase
+    .from("comments")
+    .select("id", { count: "exact", head: true })
+    .eq("thread_id", thread.id);
+  let threadDeleted = false;
+  if (!count) {
+    await supabase.from("comment_threads").delete().eq("id", thread.id);
+    threadDeleted = true;
+  }
+  return NextResponse.json({ deleted: true, threadDeleted });
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ token: string }> },

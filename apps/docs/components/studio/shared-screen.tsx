@@ -996,6 +996,44 @@ export function SharedScreen({
     },
     [],
   );
+  // Delete OWN comment (author-only, route-enforced). Local state
+  // mirrors the server rule: the thread goes when its last comment
+  // does, and the drawer closes if it was showing that thread.
+  const handleDeleteComment = React.useCallback(
+    async (commentId: string) => {
+      if (!shareToken) return;
+      try {
+        const res = await fetch(
+          `/api/shares/${shareToken}/comments?commentId=${encodeURIComponent(commentId)}`,
+          { method: "DELETE" },
+        );
+        const data = (await res.json().catch(() => null)) as {
+          deleted?: boolean;
+          threadDeleted?: boolean;
+          error?: string;
+        } | null;
+        if (!res.ok || !data?.deleted) {
+          throw new Error(data?.error ?? `delete failed (${res.status})`);
+        }
+        setThreads((prev) =>
+          prev
+            .map((t) => ({
+              ...t,
+              comments: t.comments.filter((c) => c.id !== commentId),
+            }))
+            .filter((t) => t.comments.length > 0),
+        );
+        if (data.threadDeleted) {
+          setActiveThreadId((cur) => cur); // recomputed via activeThread lookup
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn("[share] delete comment failed:", err);
+      }
+    },
+    [shareToken],
+  );
+
   const handlePostPin = React.useCallback(async () => {
     if (!pendingPin || !pinText.trim() || !shareToken) return;
     setPostingPin(true);
@@ -2161,8 +2199,9 @@ export function SharedScreen({
           <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
             {activeThread.comments.map((c) => {
               const u = getCommentUser(c.authorId);
+              const mine = viewer?.id === c.authorId;
               return (
-                <div key={c.id} className="flex gap-2">
+                <div key={c.id} className="group/comment flex gap-2">
                   <Avatar size="xs">
                     {u?.avatarUrl && (
                       <AvatarImage src={u.avatarUrl} alt={u?.name ?? ""} />
@@ -2179,6 +2218,20 @@ export function SharedScreen({
                       {c.body}
                     </div>
                   </div>
+                  {/* Own comments are retractable — author-only,
+                      enforced by the share route. Empty threads clean
+                      themselves up (pin disappears). */}
+                  {mine && shareToken && (
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteComment(c.id)}
+                      title="Delete your comment"
+                      aria-label="Delete your comment"
+                      className="h-5 w-5 shrink-0 self-start rounded flex items-center justify-center text-muted-foreground opacity-0 transition-opacity group-hover/comment:opacity-100 hover:bg-muted hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
               );
             })}
