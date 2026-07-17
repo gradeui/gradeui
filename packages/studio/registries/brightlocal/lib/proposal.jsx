@@ -16,3 +16,5 @@ export * from "@brightlocal/proposal-data";
 export * from "@brightlocal/proposal-shell";
 export * from "@brightlocal/proposal-nav";
 export * from "@brightlocal/proposal-page";
+export * from "@brightlocal/score-donut";
+export * from "@brightlocal/mini-stat";

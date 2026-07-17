@@ -109,7 +109,42 @@ scoreModel: { locationScore, foundation, visibility }   // weights, defaults onl
    the AI Insights landing) must mirror `foundation.<module>.score` — every
    dataset patches the two together. The landing, summary page, and
    drill-downs can never disagree.
-6. **Harry's shortcut is the architecture**: capture what their system
+6. **Tone control is a MODELLED PRODUCT FEATURE** (Ali, 17 Jul), not a
+   demo tweak: a Concise/Standard/Detailed segmented pill in the hero of
+   both the AI Insights landing and Location Summary. Screen-level
+   `useState` + a nested `ProposalDataProvider data={{ aiInsights: { tone } }}`
+   stacked inside the shell's dataset provider — the seam derives
+   `summary`, so only text changes. `ToneSwitcher` (data-hook
+   `tone-switcher`) is currently duplicated per screen; promote to
+   `@brightlocal/proposal` if a third screen wants it.
+7. **Promoted lib components** (17 Jul): `ScoreDonut` (`lib/score-donut.jsx`,
+   Figma-fat ring — stroke defaults to ~15% of size; band colours red <40 /
+   amber <70 / green) and `MiniStat`/`MiniStatStrip` (`lib/mini-stat.jsx`,
+   the "small insights" tiles). Both ship in `@brightlocal/proposal`; both
+   have sidecars + contracts so they're inspectable in Studio. Never
+   hand-roll a donut or stat tile again. Remaining hand-rolled donuts
+   (Location Summary, drill-downs, hub) still to be swept onto the lib.
+8. **`--bl-surface-muted` = #f2f7f3** (Ali, 17 Jul): the tile surface is a
+   NEUTRAL (BrightLocal's neutrals carry a warm green cast — it is NOT
+   green-50). Hex lives ONLY as the var fallback in `lib/mini-stat.jsx`;
+   override the var from the project's custom.css / theme. Mint further
+   `--bl-*` component tokens the same way.
+9. **Hero composition on the landing** (Ali, 17 Jul): PageHeader carries the
+   "AI Insights" title + the ToneSwitcher (its `actions` slot); the card
+   does NOT repeat the title — its CardHeader is "Location score" with
+   Last-updated in `CardAction`. Body: 4-col `gap-4` grid, donut 1fr /
+   summary 3fr (paragraph left-aligns with tile 2), MiniStat strip below.
+   No At-a-Glance, no counts/badge meta row. `atAGlance` stays in the seam
+   (the old-platform reference screen still binds it).
+10. **Card padding via `density="condensed"`**, never `p-*` classNames —
+    the DS Card bakes py-8/px-8 at default density and padding overrides
+    are deny-listed (CLASSNAME_OVERRIDES.md). Density is the knob.
+11. **MCP saves must merge `designs.state`** — tags & friends live as
+    sibling keys of `appSource` (STUDIO-TAGS T0). The fix is in
+    `apps/mcp-server/src/designs.ts`; a stale running server binary
+    clobbers tags on save — rebuild + restart the gradeui-dev MCP server
+    if tags start dying again.
+12. **Harry's shortcut is the architecture**: capture what their system
    generates into JSON, and let presentation recombine it
    (Insight+Recommendation+Actions → Insight+Actions, tone shifts, etc.).
    No LLM processing pipeline needed while prototyping.
@@ -164,10 +199,8 @@ chip.
 
 ## Next week — candidate workstreams
 
-1. **Tone/verbosity switching in the UI** — a control on the summary/landing
-   hero that patches `aiInsights.tone` live (the seam already supports it);
-   decide whether the control is a demo tweak or a modelled product feature
-   (the "settings on the AI summary page" idea).
+1. ~~**Tone/verbosity switching in the UI**~~ — DONE (17 Jul): shipped as a
+   modelled product feature on the landing + summary heroes (decision #6).
 2. **Generate flow** — what does "Generate insights" do in the prototype?
    (Fake a regenerate: cycle datasets, decrement `updatesLeft`, update
    `lastUpdated`.)

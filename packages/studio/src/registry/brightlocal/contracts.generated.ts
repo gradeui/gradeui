@@ -3121,6 +3121,52 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       }
     }
   },
+  "MiniStat": {
+    "name": "MiniStat",
+    "description": "Ships in \"@brightlocal/proposal\" — never inline a copy. MiniStatStrip is the",
+    "props": {
+      "icon": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Icon component (from @brightlocal/icons), top-right of the tile."
+      },
+      "title": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Tile label (small semibold), top-left."
+      },
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Headline number (ReactNode)."
+      },
+      "valuePrefix": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Leading node beside the number (e.g. a filled review star)."
+      },
+      "delta": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Green ↗ chip beside the number (string/number). Omit for no movement."
+      },
+      "caption": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Muted line under the number. Prefer OMITTING on dense heroes (Ali, 17 Jul)."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name (default \"mini-stat\")."
+      }
+    }
+  },
   "NavigationMenu": {
     "name": "NavigationMenu",
     "props": {
@@ -3362,7 +3408,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "Named dataset from lib/data/*.json (\"harbour-co\", \"northside-dental\"); \"default\" = no patch. Applied between the defaults and the data prop."
+        "description": "Named dataset from lib/data/*.json (\"harbour-co\", \"northside-dental\", \"minus-one-studios\"); \"default\" = no patch. Applied between the defaults and the data prop."
       },
       "data": {
         "kind": "string",
@@ -3385,7 +3431,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "WHICH PAGE THIS IS: the nav row id to highlight (\"rankings-table\", \"location-profile-hours\", \"reviews\"); every collapsible on its trail opens. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page."
+        "description": "WHICH PAGE THIS IS: the nav row id to highlight (\"rankings-table\", \"location-profile-hours\", \"reviews\"). Nav model v2: no accordions — the active section's sub rows render (one level max; a level-3 id highlights its level-2 parent), all other sections show top-level links only. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page."
       },
       "sections": {
         "kind": "string",
@@ -3574,6 +3620,46 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "design": "plumbing",
         "optional": true,
         "description": "ResizableHandle: Show a visible drag handle indicator"
+      }
+    }
+  },
+  "ScoreDonut": {
+    "name": "ScoreDonut",
+    "description": "Ships in \"@brightlocal/proposal\" — never inline a copy.",
+    "props": {
+      "value": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Score 0–100 (drives arc + centred number). ALWAYS from computeLocationScore(data) or a module score — never author it."
+      },
+      "size": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Outer px (default 110). Number auto-hides under 60 so the same component serves mini (22) and hero (168) sizes."
+      },
+      "stroke": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Ring thickness; defaults to ~15% of size (the Figma ring weight). Don't thin it back to 10."
+      },
+      "label": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Muted caption above the donut. Omit when a CardHeader already names it (Ali, 17 Jul)."
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name (default \"score-donut\")."
       }
     }
   },
