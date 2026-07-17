@@ -347,6 +347,16 @@ function resolveAnchor(
   if (selection.instanceId !== undefined) {
     return { id: selection.instanceId, kind: "instance" };
   }
+  // Nearest-ancestor fallback (registry-module screens): DS internals
+  // carry no id of their own — anchor the thread to the enclosing
+  // module component (the sidebar itself, the header) instead of
+  // silently refusing the composer. Comment-only; never drives edits.
+  const anchor = (
+    selection as StudioSelection & { anchorSourceId?: string }
+  ).anchorSourceId;
+  if (anchor !== undefined) {
+    return { id: anchor, kind: "source" };
+  }
   return null;
 }
 

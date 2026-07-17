@@ -94,6 +94,15 @@ export type SelectionPayload = {
    *  the same component appears multiple times in source (`.map()`
    *  loops). Undefined when the click landed on a non-DS element. */
   sourceId?: string;
+  /** ANCHOR fallback: the nearest ancestor's `data-gds-source-id` when
+   *  the clicked element has none of its own. On registry-module
+   *  screens (BrightLocal proposal) the injected ids live on the
+   *  module components' ROOTS — DS internals the user actually clicks
+   *  (menu rows, slot wrappers) carry nothing, which silently killed
+   *  the comment composer ("comment on the sidebar", 18 Jul). Used by
+   *  COMMENT anchoring only — the mutator/panel keep reading sourceId,
+   *  so an ancestor id can never cause a mis-targeted edit. */
+  anchorSourceId?: string;
   /** The element's EFFECTIVE computed style for the properties the
    *  inspector's style groups care about. Read off the live DOM node so
    *  the inspector can show a baked-in default (e.g. a Card's `rounded-xl`
@@ -609,6 +618,24 @@ export function installStudioSelectionAgent(
       /* detached node — leave computedStyle undefined */
     }
 
+    // Comment-anchor fallback: nearest ancestor carrying a source id
+    // (self included — when sourceId exists they're identical). See
+    // the anchorSourceId field doc.
+    let anchorSourceId: string | undefined = sourceId;
+    if (!anchorSourceId) {
+      let anchorNode: Element | null = el;
+      while (anchorNode) {
+        const id = anchorNode.getAttribute
+          ? anchorNode.getAttribute("data-gds-source-id")
+          : null;
+        if (id) {
+          anchorSourceId = id;
+          break;
+        }
+        anchorNode = anchorNode.parentElement;
+      }
+    }
+
     return {
       tag: el.tagName ? el.tagName.toLowerCase() : "",
       text,
@@ -624,6 +651,7 @@ export function installStudioSelectionAgent(
       mediaSourceJson,
       instanceId,
       sourceId,
+      anchorSourceId,
       mediaAlt,
       chain,
       computedStyle,
