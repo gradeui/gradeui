@@ -81,7 +81,9 @@ export default function App() {
           className="space-y-6"
         >
           <InsightsSummary />
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {/* 2x2 for now (Ali) — four across read cramped; revisit
+              when the cards carry sparklines. */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <HubStatCard
               icon={Globe}
               title="Website and Content"

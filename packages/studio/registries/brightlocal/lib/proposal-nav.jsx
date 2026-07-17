@@ -260,6 +260,11 @@ function NavSection({ section, activeId }) {
   return (
     <SidebarMenuItem dataHook={`nav-item-${section.id}`}>
       <SidebarMenuButton
+        // size="sm" — the DS's own knob (28px row vs the 32px default).
+        // Ali + Harry: default vertical padding read too chunky on the
+        // main rows. PROPOSED REGISTRY CHANGE: if BL adopt it, this is
+        // SidebarMenuButtonSize.SM as the app-nav default.
+        size="sm"
         className="px-4 [&>span:last-of-type]:whitespace-normal!"
         dataHook={`nav-${section.id}`}
         isActive={inSection}
