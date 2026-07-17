@@ -1055,7 +1055,17 @@ export function ProposalSidebar({
   userMeta = userMeta ?? data.user.meta;
   userInitials = userInitials ?? data.user.initials;
   return (
-    <Sidebar {...rest} dataHook={dataHook}>
+    // view-transition-name (STUDIO-FLOWS F1.5): a STABLE name shared by
+    // every screen's sidebar means goto swaps treat the nav as the SAME
+    // element — it persists while the page content cross-fades, instead
+    // of re-fading with everything else. Must be unique per document
+    // per state (one sidebar per screen — safe); a duplicate would
+    // abort the whole transition back to a hard cut.
+    <Sidebar
+      {...rest}
+      style={{ viewTransitionName: "gds-sidebar", ...(rest?.style ?? {}) }}
+      dataHook={dataHook}
+    >
       {/* Logo-only header; the account switcher lives in the STUCK
           footer with the signed-in row. pb-3 overrides the DS's
           hardcoded pb-9; pl-6 keeps the logo on the tightened 24px
@@ -1178,6 +1188,9 @@ export function PageHeader({
     // actions (the word-per-line breadcrumb wrap, 17 Jul screenshot).
     <div
       {...rest}
+      // Persistent region across goto swaps — see the sidebar's
+      // view-transition-name note.
+      style={{ viewTransitionName: "gds-page-header", ...(rest?.style ?? {}) }}
       data-hook={dataHook}
       className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
     >
