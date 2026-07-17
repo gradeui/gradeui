@@ -247,42 +247,59 @@ split for the 32px line, rail ml-6.
 - Embed registry-awareness (/e/[token]) — scoped above.
 - mcp-server dev-mode contract reload — scoped above.
 
-## NEXT SESSION (written at close, 17 Jul late — Ali presents tomorrow, then builds screens)
+## NEXT SESSION (REFRESHED 18 Jul ~3am, after the late-night burst)
 
-Ali's day: presentation from a handful of tag shares, then SCREEN
-BUILDING on the BrightLocal product. Before MCP-driven screen work:
-restart the gradeui-dev MCP once (dist is current: saveScreen merge
-fix + latest contracts incl. tweaker/locked-variant props).
+Ali's day: daily meeting from tag shares (Friday link live + unfurling
+— see Slack-cache note below), then SCREEN BUILDING on the BrightLocal
+product: rules, linked-data content, screens. Before MCP-driven screen
+work: restart the gradeui-dev MCP once (dist current: saveScreen merge
+fix + latest contracts).
+
+SHIPPED AFTER THE ORIGINAL BOARD (late 17 Jul → 3am 18 Jul), so
+don't re-do: tag manager dialog (rename value/type, delete-everywhere,
+counts — e88aa14) + SHARE-A-TAG from any manager value row (the
+universal entry: flow tags/labels had NO ui path — 5b6ab87) + stable
+URL recall on tag shares ("Existing link", 0479a86); exclude filters
+(chip click flips include⇄exclude — c86d650); rich list rows with lazy
+LIVE thumbnails (e88aa14); milestone-tags pattern doc'd (STUDIO-TAGS);
+OG cover sheet (Poppins, real BL mark, live re-render, count-free
+Screens pill) + twitter card fix (a37892e — the page metadata was
+CLOBBERING the root summary_large_image); dark-mode trifecta:
+tone-aware scrollbars (color-scheme islands), smooth light⇄dark VT
+fade (host + sandbox), subpixel white sliver killed at BOTH layers
+(document bg + iframe box, 1f05c41 + 41b04e0); persistent nav across
+gotos (view-transition-name gds-sidebar/gds-page-header — 1ee8e0f);
+keyless-keydown crash guard (a9be65c); Design.description SEAM.
+
+LEARNED: Slack caches unfurls per exact URL ~indefinitely — URLs
+pasted before a metadata deploy keep the stale card; append ?x=1 to
+force a re-scrape. New shares unfurl correctly first time.
 
 The board, in rough order of value:
 
 1. **Jumpy menu** (UNDIAGNOSED — need Ali's repro: which menu, what
-   action, dark tone only?). Reported alongside the scrollbar fix;
-   scrollbar shipped (color-scheme dark islands, 2ebfe8a), jump not.
-2. **Screen description UI** — the seam shipped (Design.description
-   → designs.state, adapter-mapped, 2ebfe8a); needs the textarea row
-   in StageBScreenInfo (same persist wiring as status/tags) + the
-   detail line in the rich list rows + maybe the share cover.
+   action, dark tone only?).
+2. **Screen description UI** — seam shipped; needs the textarea row in
+   StageBScreenInfo (same wiring as status/tags), the detail line in
+   the rich rows, maybe the share cover.
 3. **Compare-row polish pass** (#22) — "grouping and interaction isn't
-   quite right"; gather Ali's specifics from presentation use first.
-4. **Capture pipeline trio** (#21 — Ali: "nice but far from
-   essential"): embed ?screen= param → per-pane full-screen + Download
-   PNG + COPY PNG TO CLIPBOARD (ClipboardItem image/png — "fancy pants
-   shit"), OG v2 moody screenshot corner, poster thumbs for big
-   projects. One serverless capture route unlocks all of it
-   (preview-serverless.ts exists).
-5. **Share toolbar + version dropdown design block** (#11) — now
-   includes the milestone worms (per-member revision pinning on scoped
-   shares, STUDIO-TAGS "Milestone tags").
-6. **VT parity sweep** — Fast Frame goto cross-fade + mode-flip fade
-   (external has both); host-driven swap fades (Back chip, member
-   dropdown / focus are camera moves and fine).
-7. **Tag registry T2 leftovers** — projects.tag_defs (descriptions,
-   strict, milestone semantics), rename propagation into share scopes,
-   per-value colour overrides. Manager v1 shipped (e88aa14).
-8. **Screen-info panel restyle** (#16) + inspector tag row alignment.
-9. **Infra niceties**: mcp-server dev-mode contract reload (kill the
-   rebuild ritual), add apps/mcp-server to the CI build filter.
+   quite right"; gather Ali's specifics from real meeting use first.
+4. **Transitions next notch** — active-row SLIDE between screens
+   (view-transition-name on the active nav row; unmatched degrades to
+   fades); Fast Frame parity (goto fade + mode fade + names);
+   host-driven swap fades (Back chip).
+5. **Capture pipeline trio** (#21 — "nice but far from essential"):
+   embed ?screen= param → per-pane full-screen + Download/COPY PNG
+   (ClipboardItem), OG v2 moody screenshot corner, poster thumbs.
+   One serverless capture route unlocks all (preview-serverless.ts).
+6. **Share toolbar + version dropdown design block** (#11) — incl. the
+   milestone worms (per-member revision pinning on scoped shares).
+7. **Tag registry T2 leftovers** — projects.tag_defs storage
+   (descriptions, strict, milestone semantics), rename propagation
+   into share scopes, per-value colours.
+8. **Screen-info panel restyle** (#16).
+9. **Infra**: mcp-server dev-mode contract reload, apps/mcp-server in
+   the CI build filter.
 
 ## Status log
 
