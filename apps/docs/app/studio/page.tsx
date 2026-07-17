@@ -565,6 +565,37 @@ export default function StudioPage() {
   // already carries the TARGET value the old one just drops (dedupe).
   // KNOWN GAP until the T2 registry owns rename propagation: shares
   // scoped to the old value keep pointing at it.
+  // Tag manager operations (same persist path as every tag edit —
+  // patch designs, autosave carries it): delete-everywhere and
+  // whole-TYPE rename. Value rename below predates the manager (the
+  // group-header pencil shares it).
+  const handleDeleteTagValue = useCallback((type: string, value: string) => {
+    setDesigns((ds) =>
+      ds.map((d) => {
+        const tags = d.tags ?? [];
+        if (!tags.some((t) => t.type === type && t.value === value)) return d;
+        return {
+          ...d,
+          tags: tags.filter((t) => !(t.type === type && t.value === value)),
+          updatedAt: Date.now(),
+        };
+      }),
+    );
+  }, []);
+  const handleRenameTagType = useCallback((from: string, to: string) => {
+    setDesigns((ds) =>
+      ds.map((d) => {
+        const tags = d.tags ?? [];
+        if (!tags.some((t) => t.type === from)) return d;
+        return {
+          ...d,
+          tags: tags.map((t) => (t.type === from ? { ...t, type: to } : t)),
+          updatedAt: Date.now(),
+        };
+      }),
+    );
+  }, []);
+
   const handleRenameTagValue = useCallback(
     (type: string, from: string, to: string) => {
       setDesigns((ds) =>
@@ -3488,6 +3519,8 @@ export default function StudioPage() {
                 onBulkTagDesigns={handleBulkTagDesigns}
                 onShareScope={handleShareScope}
                 onRenameTagValue={handleRenameTagValue}
+                onRenameTagType={handleRenameTagType}
+                onDeleteTagValue={handleDeleteTagValue}
                 focusedId={activeId}
                 onFocus={setActiveId}
                 view={view}
@@ -4060,6 +4093,8 @@ function StudioThemedCanvas({
   onBulkTagDesigns,
   onShareScope,
   onRenameTagValue,
+  onRenameTagType,
+  onDeleteTagValue,
   focusedId,
   onFocus,
   view,
@@ -4115,6 +4150,8 @@ function StudioThemedCanvas({
     label: string,
   ) => void;
   onRenameTagValue?: (type: string, from: string, to: string) => void;
+  onRenameTagType?: (from: string, to: string) => void;
+  onDeleteTagValue?: (type: string, value: string) => void;
   focusedId: string;
   onFocus: (id: string) => void;
   view: "preview" | "code" | "timeline";
@@ -4181,6 +4218,8 @@ function StudioThemedCanvas({
       onBulkTagDesigns={onBulkTagDesigns}
       onShareScope={onShareScope}
       onRenameTagValue={onRenameTagValue}
+      onRenameTagType={onRenameTagType}
+      onDeleteTagValue={onDeleteTagValue}
       focusedId={focusedId}
       onFocus={onFocus}
       theme={theme}

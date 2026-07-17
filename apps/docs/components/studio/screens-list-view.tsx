@@ -21,7 +21,11 @@
  * `projects.view_prefs` jsonb) — these components are controlled.
  */
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { FastIframeHost } from "@/components/studio/fast-frame";
+import { ExternalIframeHost } from "@/components/studio/external-ds-frame";
+import { useActiveRegistry } from "@/lib/use-active-registry";
+import type { GeneratedTheme } from "@/lib/themes";
 import {
   Check,
   ChevronDown,
@@ -69,6 +73,8 @@ import {
 interface ScreensViewBarProps {
   prefs: ProjectViewPrefs;
   onPrefsChange: (prefs: ProjectViewPrefs) => void;
+  /** Open the tag manager (the single management surface). */
+  onManageTags?: () => void;
   /** Observed facets across ALL designs (pre-filter) — drives both the
    *  group-by picker (single-cardinality types) and the filter menu. */
   facets: TagFacet[];
@@ -81,6 +87,7 @@ interface ScreensViewBarProps {
 export function ScreensViewBar({
   prefs,
   onPrefsChange,
+  onManageTags,
   facets,
   totalCount,
   visibleCount,
@@ -290,19 +297,34 @@ export function ScreensViewBar({
         </span>
       ))}
       {prefs.filters.length > 0 && (
-        <>
-          <button
-            type="button"
-            onClick={() => onPrefsChange({ ...prefs, filters: [] })}
-            className="text-[10px] text-muted-foreground hover:text-foreground"
-          >
-            Clear
-          </button>
-          <span className="ml-auto text-[10px] text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => onPrefsChange({ ...prefs, filters: [] })}
+          className="text-[10px] text-muted-foreground hover:text-foreground"
+        >
+          Clear
+        </button>
+      )}
+      <div className="ml-auto flex items-center gap-2">
+        {prefs.filters.length > 0 && (
+          <span className="text-[10px] text-muted-foreground">
             {visibleCount} of {totalCount}
           </span>
-        </>
-      )}
+        )}
+        {/* The tag manager — ONE place to see/rename/delete everything
+            (the answer to "not really intuitive"). */}
+        {onManageTags && (
+          <button
+            type="button"
+            onClick={onManageTags}
+            className="flex items-center gap-1 rounded-md px-2 h-6 text-[11px] text-muted-foreground transition-colors hover:text-foreground hover:bg-muted/60"
+            title="Manage tags — rename or delete across every screen"
+          >
+            <Tags className="size-3.5" />
+            Manage
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -333,7 +355,88 @@ interface ScreensListViewProps {
    *  the old value keep pointing at it until the T2 registry owns
    *  rename propagation. */
   onRenameTag?: (type: string, from: string, to: string) => void;
+  /** Theme + mode for the row thumbnails (same treatment as the grid
+   *  tiles). Omit both to render text-only rows. */
+  theme?: GeneratedTheme;
+  mode?: "light" | "dark";
   hidden?: boolean;
+}
+
+/** Row thumbnail — a LIVE mini render (Ali: "I didn't get my nice
+ *  preview"). Lazy: mounts only once the row scrolls into view, and
+ *  stays mounted after (boot is the expensive part). Fine at today's
+ *  screen counts; STUDIO-CAPTURE posters replace the live mounts when
+ *  projects grow. Non-interactive by design — the row handles clicks. */
+const THUMB_W = 200;
+const THUMB_H = 125;
+const THUMB_VIEWPORT_W = 1280;
+function RowThumb({
+  appSource,
+  theme,
+  mode,
+}: {
+  appSource: string | null;
+  theme?: GeneratedTheme;
+  mode?: "light" | "dark";
+}) {
+  const registry = useActiveRegistry();
+  const isExternal = registry.id !== "gradeui";
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || visible) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setVisible(true);
+      },
+      { rootMargin: "160px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visible]);
+
+  const scale = THUMB_W / THUMB_VIEWPORT_W;
+  const viewportH = THUMB_H / scale;
+  const hostStyle: React.CSSProperties = {
+    width: THUMB_VIEWPORT_W,
+    height: viewportH,
+    transform: `scale(${scale})`,
+    transformOrigin: "top left",
+  };
+  return (
+    <div
+      ref={ref}
+      className="pointer-events-none relative shrink-0 overflow-hidden rounded-lg bg-muted/40 ring-1 ring-border/60"
+      style={{ width: THUMB_W, height: THUMB_H }}
+      aria-hidden
+    >
+      {visible && appSource ? (
+        isExternal ? (
+          <ExternalIframeHost
+            appSource={appSource}
+            mode={mode ?? "light"}
+            registryId={registry.id}
+            className="block"
+            style={hostStyle}
+          />
+        ) : theme ? (
+          <FastIframeHost
+            appSource={appSource}
+            theme={theme}
+            mode={mode ?? "light"}
+            className="block"
+            style={hostStyle}
+          />
+        ) : null
+      ) : null}
+      {!appSource && (
+        <div className="flex h-full items-center justify-center text-[9px] text-muted-foreground">
+          empty
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ScreensListView({
@@ -344,6 +447,8 @@ export function ScreensListView({
   onBulkTag,
   onShareScope,
   onRenameTag,
+  theme,
+  mode,
   hidden = false,
 }: ScreensListViewProps) {
   // Inline group-header rename (tag-value rewrite across members).
@@ -522,6 +627,8 @@ export function ScreensListView({
                     selectable={Boolean(onBulkTag)}
                     onToggleSelect={() => toggleRow(d.id)}
                     onOpen={() => onOpen(d.id)}
+                    theme={theme}
+                    mode={mode}
                   />
                 ))}
             </div>
@@ -616,8 +723,14 @@ interface ScreenListRowProps {
   selectable: boolean;
   onToggleSelect: () => void;
   onOpen: () => void;
+  theme?: GeneratedTheme;
+  mode?: "light" | "dark";
 }
 
+/** Rich row (Ali's spec): live thumbnail, double-stacked name +
+ *  details, status — "really nice rows". Card-height targets also fix
+ *  the clunky tap: the whole card opens, the checkbox zone is padded
+ *  and always visible once anything is selected. */
 function ScreenListRow({
   design,
   indent,
@@ -625,6 +738,8 @@ function ScreenListRow({
   selectable,
   onToggleSelect,
   onOpen,
+  theme,
+  mode,
 }: ScreenListRowProps) {
   return (
     <div
@@ -638,19 +753,22 @@ function ScreenListRow({
         }
       }}
       className={cn(
-        "group flex items-center gap-2 rounded px-2 py-1.5 cursor-pointer transition-colors",
+        "group mb-1.5 flex cursor-pointer items-center gap-3 rounded-xl border bg-background p-2 pr-3 transition-colors",
         indent && "ml-4",
-        selected ? "bg-primary/10" : "hover:bg-muted/60",
-        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
+        selected
+          ? "border-primary/50 bg-primary/5"
+          : "border-border hover:border-primary/40",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
       )}
     >
       {selectable && (
         <span
-          // Intercept BOTH click + keydown so toggling never opens.
+          // Padded intercept zone — toggling must never open (the old
+          // 14px hover-only checkbox was the clunk).
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
           className={cn(
-            "shrink-0 transition-opacity",
+            "flex shrink-0 items-center justify-center self-stretch pl-1 pr-0.5 transition-opacity",
             selected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           )}
         >
@@ -658,37 +776,41 @@ function ScreenListRow({
             checked={selected}
             onCheckedChange={onToggleSelect}
             aria-label={`Select ${design.name}`}
-            className="size-3.5"
           />
         </span>
       )}
-      <span className="min-w-0 flex-1 truncate text-xs text-foreground">
-        {design.name}
-      </span>
-      <span className="flex items-center gap-1 overflow-hidden">
-        {(design.tags ?? []).map((t) => (
-          <span
-            key={`${t.type}:${t.value}`}
-            className="shrink-0 flex items-center gap-1 rounded-full px-1.5 py-px text-[9px] text-muted-foreground"
-            style={{
-              backgroundColor: `color-mix(in oklab, ${tagTypeColor(t.type)} 12%, transparent)`,
-            }}
-            title={formatTag(t)}
+      <RowThumb appSource={design.appSource} theme={theme} mode={mode} />
+      {/* Stacked header + details. */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <span className="truncate text-sm font-medium text-foreground">
+          {design.name}
+        </span>
+        <div className="flex items-center gap-1.5 overflow-hidden">
+          <Badge
+            variant="outline"
+            className="h-4 shrink-0 px-1.5 text-[9px] font-normal text-muted-foreground"
           >
+            {designStatusLabel(design.status)}
+          </Badge>
+          {(design.tags ?? []).map((t) => (
             <span
-              className="size-1 rounded-full"
-              style={{ backgroundColor: tagTypeColor(t.type) }}
-            />
-            {formatTag(t)}
-          </span>
-        ))}
-      </span>
-      <Badge
-        variant="outline"
-        className="shrink-0 h-4 px-1.5 text-[9px] font-normal text-muted-foreground"
-      >
-        {designStatusLabel(design.status)}
-      </Badge>
+              key={`${t.type}:${t.value}`}
+              className="flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[9px] text-muted-foreground"
+              style={{
+                backgroundColor: `color-mix(in oklab, ${tagTypeColor(t.type)} 12%, transparent)`,
+              }}
+              title={formatTag(t)}
+            >
+              <span
+                className="size-1 rounded-full"
+                style={{ backgroundColor: tagTypeColor(t.type) }}
+              />
+              {formatTag(t)}
+            </span>
+          ))}
+        </div>
+      </div>
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 }

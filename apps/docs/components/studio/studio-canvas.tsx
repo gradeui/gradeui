@@ -126,6 +126,7 @@ import {
   ScreensListView,
   ScreensViewBar,
 } from "@/components/studio/screens-list-view";
+import { TagManagerDialog } from "@/components/studio/tag-manager";
 import { DesignBreadcrumb } from "@/components/studio/design-breadcrumb";
 import { GradeMark } from "@/components/grade-mark";
 import { REFERENCE_LAYOUTS } from "@gradeui/studio/playbook";
@@ -198,8 +199,13 @@ interface StudioCanvasProps {
     label: string,
   ) => void;
   /** Rename a tag value across all screens carrying it (group-header
-   *  pencil in the list view). */
+   *  pencil in the list view + the tag manager). */
   onRenameTagValue?: (type: string, from: string, to: string) => void;
+  /** Tag manager operations — rename a whole TYPE / delete a value
+   *  everywhere. Providing these (with onRenameTagValue) enables the
+   *  Manage button + dialog. */
+  onRenameTagType?: (from: string, to: string) => void;
+  onDeleteTagValue?: (type: string, value: string) => void;
   /** Which design is currently focused. In fit mode this is the only
    *  design with a mounted Sandpack; in all mode it's the highlighted
    *  tile and the target of chat + settings. */
@@ -394,6 +400,8 @@ export function StudioCanvas({
   onBulkTagDesigns,
   onShareScope,
   onRenameTagValue,
+  onRenameTagType,
+  onDeleteTagValue,
   focusedId,
   onFocus,
   theme,
@@ -503,6 +511,8 @@ export function StudioCanvas({
   // many-screens memory fix), so a session that lives in list view
   // never boots a tile.
   const [hasEnteredGridAll, setHasEnteredGridAll] = useState(false);
+  // Tag manager dialog (the single management surface).
+  const [tagManagerOpen, setTagManagerOpen] = useState(false);
   useEffect(() => {
     if (zoom === "all" && effectiveViewPrefs.view === "grid" && !hasEnteredGridAll) {
       setHasEnteredGridAll(true);
@@ -2202,9 +2212,24 @@ export function StudioCanvas({
         <ScreensViewBar
           prefs={effectiveViewPrefs}
           onPrefsChange={onViewPrefsChange}
+          onManageTags={
+            onRenameTagValue && onDeleteTagValue
+              ? () => setTagManagerOpen(true)
+              : undefined
+          }
           facets={tagFacets}
           totalCount={designs.length}
           visibleCount={visibleDesigns.length}
+        />
+      )}
+      {onRenameTagValue && onDeleteTagValue && (
+        <TagManagerDialog
+          open={tagManagerOpen}
+          onOpenChange={setTagManagerOpen}
+          designs={designs}
+          onRenameValue={onRenameTagValue}
+          onRenameType={onRenameTagType}
+          onDeleteValue={onDeleteTagValue}
         />
       )}
       {hasEnteredGridAll && (
@@ -2240,6 +2265,8 @@ export function StudioCanvas({
           designs={visibleDesigns}
           groupBy={effectiveViewPrefs.groupBy}
           facets={tagFacets}
+          theme={theme}
+          mode={mode}
           onOpen={(id) => {
             onFocus(id);
             setZoom("fit");
