@@ -73,6 +73,9 @@ interface ThreadRow {
   resolved_by: string | null;
   resolved_at: number | null;
   created_at: number;
+  /** Provenance (migration 0024) — the link the thread was collected
+   *  through; null = authored in Studio. */
+  share_token: string | null;
 }
 interface CommentRow {
   id: string;
@@ -308,9 +311,14 @@ export default async function SharePage({
     const { data: threadData } = await supabase
       .from("comment_threads")
       .select(
-        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, created_by, resolved_by, resolved_at, created_at",
+        "id, project_id, design_id, anchor_id, anchor_kind, element_label, component_name, status, created_by, resolved_by, resolved_at, created_at, share_token",
       )
       .eq("project_id", share.project_id)
+      // VISIBILITY (Ali: "these stay within the flow"): Studio-authored
+      // pins (no provenance) show on every share; pins COLLECTED
+      // through a link show only on THAT link — feedback from one
+      // client's flow never leaks into another client's view.
+      .or(`share_token.is.null,share_token.eq.${token}`)
       // Scoped shares surface pins on EVERY member pane (multiview
       // meeting notes — Ali, 18 Jul); unscoped keeps entry-only.
       .in(
@@ -378,6 +386,7 @@ export default async function SharePage({
             resolvedBy: t.resolved_by ?? undefined,
             resolvedAt: t.resolved_at ?? undefined,
             createdAt: t.created_at,
+            shareToken: t.share_token ?? undefined,
           },
           comments: (byThread.get(t.id) ?? []).map((c) => ({
             id: c.id,
