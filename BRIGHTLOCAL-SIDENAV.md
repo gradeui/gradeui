@@ -249,6 +249,26 @@ split for the 32px line, rail ml-6.
 
 ## Status log
 
+- 2026-07-17 (close) — **Session sealed, ready to ship.** Everything
+  committed through cbe8afb (viewer-side Arrange/group-by in the
+  compare row — member tags now ride the share payload). Ali's plan:
+  tomorrow is SCREEN-MAKING for the BrightLocal product only; the
+  sharing/tweaks toolkit is considered feature-complete for that work:
+  - SHARE: tag shares (LIVE membership — tag a new screen, it appears
+    in the link) + selection shares (frozen sets); compare row with
+    focus/dim, pane-local goto + cross-fade, scope dropdown, zoom-out,
+    Arrange by member facets. Test links: /s/2da2464c… (flow),
+    /s/82f94612… (hub A/B).
+  - TWEAKS: authored props = permanent + travel; tweaker={false} =
+    locked variants; Alt+T = session-only, PER SHELL (dataHook-keyed),
+    reload → authored; toolbar Reset clears all stashes.
+  - REMEMBER before MCP-driven screen work: restart the gradeui-dev
+    MCP once (picks up the saveScreen state-MERGE fix — without it a
+    save via MCP clobbers state.tags — plus current contracts).
+  - Next session's board: spacebar-pan forwarding (diagnosed),
+    per-pane full-screen, stable URL per tag, PageHeader mobile,
+    list rich rows, panel restyle.
+
 - 2026-07-17 (later) — **Compare row: scoped shares are multiview**
   (Ali: "the screens sit SIDE by SIDE… as many iframes as needed"):
   - Scoped shares open as N live panes in a row — ONE wide artboard to
