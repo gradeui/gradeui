@@ -247,6 +247,43 @@ split for the 32px line, rail ml-6.
 - Embed registry-awareness (/e/[token]) — scoped above.
 - mcp-server dev-mode contract reload — scoped above.
 
+## NEXT SESSION (written at close, 17 Jul late — Ali presents tomorrow, then builds screens)
+
+Ali's day: presentation from a handful of tag shares, then SCREEN
+BUILDING on the BrightLocal product. Before MCP-driven screen work:
+restart the gradeui-dev MCP once (dist is current: saveScreen merge
+fix + latest contracts incl. tweaker/locked-variant props).
+
+The board, in rough order of value:
+
+1. **Jumpy menu** (UNDIAGNOSED — need Ali's repro: which menu, what
+   action, dark tone only?). Reported alongside the scrollbar fix;
+   scrollbar shipped (color-scheme dark islands, 2ebfe8a), jump not.
+2. **Screen description UI** — the seam shipped (Design.description
+   → designs.state, adapter-mapped, 2ebfe8a); needs the textarea row
+   in StageBScreenInfo (same persist wiring as status/tags) + the
+   detail line in the rich list rows + maybe the share cover.
+3. **Compare-row polish pass** (#22) — "grouping and interaction isn't
+   quite right"; gather Ali's specifics from presentation use first.
+4. **Capture pipeline trio** (#21 — Ali: "nice but far from
+   essential"): embed ?screen= param → per-pane full-screen + Download
+   PNG + COPY PNG TO CLIPBOARD (ClipboardItem image/png — "fancy pants
+   shit"), OG v2 moody screenshot corner, poster thumbs for big
+   projects. One serverless capture route unlocks all of it
+   (preview-serverless.ts exists).
+5. **Share toolbar + version dropdown design block** (#11) — now
+   includes the milestone worms (per-member revision pinning on scoped
+   shares, STUDIO-TAGS "Milestone tags").
+6. **VT parity sweep** — Fast Frame goto cross-fade + mode-flip fade
+   (external has both); host-driven swap fades (Back chip, member
+   dropdown / focus are camera moves and fine).
+7. **Tag registry T2 leftovers** — projects.tag_defs (descriptions,
+   strict, milestone semantics), rename propagation into share scopes,
+   per-value colour overrides. Manager v1 shipped (e88aa14).
+8. **Screen-info panel restyle** (#16) + inspector tag row alignment.
+9. **Infra niceties**: mcp-server dev-mode contract reload (kill the
+   rebuild ritual), add apps/mcp-server to the CI build filter.
+
 ## Status log
 
 - 2026-07-17 (close) — **Session sealed, ready to ship.** Everything
