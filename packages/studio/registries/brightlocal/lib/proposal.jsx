@@ -463,20 +463,34 @@ export const SIDEBAR_TONES = {
     ld("var(--ds-tailwind-colors-neutral-900)", "var(--ds-tailwind-colors-neutral-50)"),
     ld("var(--ds-colors-sidebar-border-light)", "var(--ds-colors-sidebar-border-dark)"),
   ),
-  dark: sidebarTone(
-    "var(--ds-tailwind-colors-neutral-900)",
-    "var(--ds-tailwind-colors-neutral-200)",
-    "var(--ds-tailwind-colors-neutral-800)",
-    "var(--ds-tailwind-colors-neutral-50)",
-    "var(--ds-colors-sidebar-border-dark)",
-  ),
-  brand: sidebarTone(
-    "var(--ds-tailwind-colors-green-950)",
-    "var(--ds-tailwind-colors-green-200)",
-    "var(--ds-tailwind-colors-green-900)",
-    "var(--ds-tailwind-colors-green-100)",
-    "var(--ds-colors-sidebar-border-dark)",
-  ),
+  dark: {
+    ...sidebarTone(
+      "var(--ds-tailwind-colors-neutral-900)",
+      "var(--ds-tailwind-colors-neutral-200)",
+      "var(--ds-tailwind-colors-neutral-800)",
+      "var(--ds-tailwind-colors-neutral-50)",
+      "var(--ds-colors-sidebar-border-dark)",
+    ),
+    // Dark panels are dark ISLANDS: declare it so NATIVE UI follows —
+    // the light scrollbar on the dark sidenav (Ali, 17 Jul) was the
+    // browser still painting light-scheme chrome. light-dark() tokens
+    // inside the subtree flip too, which is exactly right here.
+    colorScheme: "dark",
+    scrollbarColor:
+      "var(--ds-tailwind-colors-neutral-700) transparent" /* Firefox */,
+  },
+  brand: {
+    ...sidebarTone(
+      "var(--ds-tailwind-colors-green-950)",
+      "var(--ds-tailwind-colors-green-200)",
+      "var(--ds-tailwind-colors-green-900)",
+      "var(--ds-tailwind-colors-green-100)",
+      "var(--ds-colors-sidebar-border-dark)",
+    ),
+    colorScheme: "dark",
+    scrollbarColor:
+      "var(--ds-tailwind-colors-green-800) transparent" /* Firefox */,
+  },
 };
 
 // Frame presets — how the sidebar sits against the screen edge.
@@ -808,7 +822,10 @@ export function AppLayoutShell({
   const mobileToneCss =
     mobileTone && Object.keys(tone).length > 0
       ? `[data-sidebar="sidebar"][data-mobile="true"]{${Object.entries(tone)
-          .map(([k, v]) => `${k === "backgroundColor" ? "background-color" : k}:${v}`)
+          // Generic camelCase→kebab (backgroundColor, colorScheme,
+          // scrollbarColor…) — the old backgroundColor special-case
+          // silently emitted invalid properties for any new tone key.
+          .map(([k, v]) => `${k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}:${v}`)
           .join(";")}}`
       : "";
   const shell = (

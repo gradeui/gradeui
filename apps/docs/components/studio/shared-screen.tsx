@@ -15,6 +15,7 @@
  */
 
 import * as React from "react";
+import * as ReactDOM from "react-dom";
 import {
   Sun,
   Moon,
@@ -274,6 +275,23 @@ export function SharedScreen({
 
   const [activeThemeId, setActiveThemeId] = React.useState(projectTheme.id);
   const [mode, setMode] = React.useState<"light" | "dark">(initialMode);
+  // Smooth light ⇄ dark ("flashy do da" → View Transition): the HOST
+  // chrome fades via a VT here, and the SANDBOX fades its own document
+  // when the mode-only source push arrives (external-sandbox render()).
+  // flushSync so the new scheme is painted inside the capture window;
+  // no-VT browsers keep the instant flip.
+  const setModeSmooth = React.useCallback((next: "light" | "dark") => {
+    const doc = document as Document & {
+      startViewTransition?: (cb: () => void) => unknown;
+    };
+    if (doc.startViewTransition) {
+      doc.startViewTransition(() => {
+        ReactDOM.flushSync(() => setMode(next));
+      });
+    } else {
+      setMode(next);
+    }
+  }, []);
   const [chromeVisible, setChromeVisible] = React.useState(true);
   // Motion toggle. true = animate (still respects the viewer's OS
   // reduced-motion, reduce-only); false = force still. Forwarded to
@@ -1240,7 +1258,7 @@ export function SharedScreen({
             <div className="flex items-center rounded-md border border-border/60 p-0.5">
               <button
                 type="button"
-                onClick={() => setMode("light")}
+                onClick={() => setModeSmooth("light")}
                 aria-pressed={mode === "light"}
                 title="Light"
                 className={cn(
@@ -1254,7 +1272,7 @@ export function SharedScreen({
               </button>
               <button
                 type="button"
-                onClick={() => setMode("dark")}
+                onClick={() => setModeSmooth("dark")}
                 aria-pressed={mode === "dark"}
                 title="Dark"
                 className={cn(

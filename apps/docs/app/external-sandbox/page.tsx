@@ -160,6 +160,11 @@ export default function ExternalSandboxPage() {
     // `transition` field on ext:source (queued with F1 history work).
     let gotoTransitionAt = 0;
     let gotoTransitionHint: string | null = null;
+    // Mode-flip fade: light ⇄ dark re-themes used to hard-flash
+    // ("flashy do da"); a same-source render with a different mode
+    // rides the same View Transition kernel as the goto cross-fade.
+    let lastRenderedSource: string | null = null;
+    let lastRenderedMode: string | null = null;
 
     let precompileQueue: string[] = [];
     let hasRenderedOnce = false;
@@ -385,7 +390,19 @@ export default function ExternalSandboxPage() {
       }
       rendering = true;
       try {
-        document.documentElement.classList.toggle("dark", mode === "dark");
+        // Mode-only flip? (same source, different mode — the share
+        // toolbar's light/dark toggle). Detected BEFORE the trackers
+        // update; the class toggle is deferred into the transition
+        // callback below so the fade captures the old scheme.
+        const isModeFlip =
+          hasRenderedOnce &&
+          lastRenderedSource === source &&
+          lastRenderedMode !== mode;
+        lastRenderedSource = source;
+        lastRenderedMode = mode;
+        if (!isModeFlip) {
+          document.documentElement.classList.toggle("dark", mode === "dark");
+        }
         const m = modules as Record<string, any>;
         // Compile-cache first (F1): a precompiled flow sibling — or any
         // previously rendered screen (Back) — skips sucrase entirely.
@@ -441,7 +458,9 @@ export default function ExternalSandboxPage() {
         const hint =
           gotoTransitionAt > 0 && sinceGoto < 2500
             ? (gotoTransitionHint ?? "cross-fade")
-            : null;
+            : isModeFlip
+              ? "cross-fade"
+              : null;
         gotoTransitionAt = 0;
         gotoTransitionHint = null;
         const startVT = (
@@ -459,13 +478,22 @@ export default function ExternalSandboxPage() {
         ) {
           document.documentElement.dataset.gradeTransition = hint;
           const vt = startVT(() => {
+            // Mode flips toggle the scheme INSIDE the capture window so
+            // the fade blends old scheme → new scheme.
+            if (isModeFlip) {
+              document.documentElement.classList.toggle(
+                "dark",
+                mode === "dark",
+              );
+            }
             // flushSync: React 19 commits async by default — without it
             // the API's "new" capture would still show the OLD screen.
             (m.reactDom as { flushSync: (cb: () => void) => void }).flushSync(
               commitNewScreen,
             );
-            // Page-nav semantics: a goto lands at the top of the page.
-            window.scrollTo(0, 0);
+            // Page-nav semantics: a goto lands at the top of the page —
+            // but a mode flip stays exactly where the viewer is.
+            if (!isModeFlip) window.scrollTo(0, 0);
           });
           void vt.finished
             .catch(() => {
