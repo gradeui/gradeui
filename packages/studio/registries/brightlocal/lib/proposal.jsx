@@ -1144,9 +1144,13 @@ export function PageHeader({
     // justify-between has nothing to distribute — actions hugged the
     // title (16 Jul screenshot). flex-1/ml-auto belt-and-braces so the
     // actions pin to the far right even in odd flex parents.
+    // RESPONSIVE: a single row only from sm up. Below that the header
+    // STACKS — crumbs/title/meta first, actions on their own row
+    // underneath — instead of crushing the title column against the
+    // actions (the word-per-line breadcrumb wrap, 17 Jul screenshot).
     <div
       data-hook={dataHook}
-      className="flex w-full min-w-0 items-start justify-between gap-4"
+      className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {breadcrumbs.length > 0 ? (
@@ -1162,6 +1166,9 @@ export function PageHeader({
                     href={crumb.href ?? "#"}
                     data-grade-goto={crumb.goto}
                     data-grade-transition={crumb.transition}
+                    // Wrap BETWEEN crumbs, never inside one — a crumb
+                    // breaking word-per-line reads as layout failure.
+                    className="whitespace-nowrap"
                   >
                     {crumb.label}
                   </BreadcrumbLink>
@@ -1178,7 +1185,12 @@ export function PageHeader({
         ) : null}
       </div>
       {actions ? (
-        <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>
+        // Stacked (mobile): a wrapping full-width row under the title.
+        // Row (sm+): pinned right as before (ml-auto only from sm so
+        // the stacked row isn't shoved right).
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:ml-auto">
+          {actions}
+        </div>
       ) : null}
     </div>
   );
