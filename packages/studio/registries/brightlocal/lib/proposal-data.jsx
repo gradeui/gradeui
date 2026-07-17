@@ -198,6 +198,13 @@ export const PROPOSAL_DATA = {
     "google-analytics": "Google Analytics",
     "agency-tools": "Agency Tools",
     "rankings-table": "Rankings Table",
+    // AI Insights sub pages — screen names carry the section prefix so
+    // they never clash with the top-level Reviews/Citations landings.
+    "ai-insights-website-content": "AI Insights - Website and Content",
+    "ai-insights-google-business-profile": "AI Insights - Google Business Profile",
+    "ai-insights-reviews": "AI Insights - Reviews",
+    "ai-insights-citations": "AI Insights - Citations",
+    "ai-insights-export": "AI Insights - Export Report",
   },
   // AI Insights — the headline featureset. A dataset section of its
   // own: `summary` is the one-liner surfaces quote (hero, hub);
