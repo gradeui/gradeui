@@ -93,8 +93,13 @@ export const PROPOSAL_ACCOUNTS = [
 export const PROPOSAL_DATA = {
   account: { label: "Acme Local Agency" },
   user: { name: "Joe Bloggs", meta: "Trial: 14 days left", initials: "JB" },
+  // NAP discipline (Ali, 18 Jul): `name` is the NAME ONLY — address
+  // and phone are separate fields. Breadcrumbs bind name; the header
+  // meta composes name + address; never mash address into name.
   location: {
-    name: "Blackberry Farm Park — Lewes, BN8 6JD",
+    name: "Blackberry Farm Park",
+    address: "Lewes, BN8 6JD",
+    phone: "01273 400 123",
     status: "Active",
   },
   // Tracked keywords — feed the Local Search Grid nav sub-items (via

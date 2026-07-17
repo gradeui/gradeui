@@ -92,7 +92,12 @@ export function PageHeader({
   const resolvedMeta =
     meta === undefined ? (
       <>
-        <span>{data.location.name}</span>
+        {/* NAP discipline: name is the name ONLY; the meta row COMPOSES
+            name + address for display. Crumbs bind bare name. */}
+        <span>
+          {data.location.name}
+          {data.location.address ? ` — ${data.location.address}` : ""}
+        </span>
         <Badge dataHook="location-status">{data.location.status}</Badge>
       </>
     ) : (
@@ -489,6 +494,10 @@ export function LocationCard({
   goto,
   transition,
   loading = false,
+  // DS Card density — "condensed" (py-3/px-3) matches the live
+  // platform's tighter tiles; the default Card py-8/px-8 read bloated
+  // in a grid (Ali, 18 Jul). Pass "default" to get the roomy card.
+  density = "condensed",
   dataHook = "location-card",
   className,
   ...rest
@@ -507,6 +516,7 @@ export function LocationCard({
     <Card
       {...rest}
       variant="filled"
+      density={density}
       dataHook={dataHook}
       data-grade-goto={goto}
       data-grade-transition={transition}
@@ -572,7 +582,12 @@ export function LocationCard({
 // rows) so a loading grid doesn't shift when data lands.
 export function LocationCardSkeleton({ dataHook = "location-card-skeleton" }) {
   return (
-    <Card variant="filled" dataHook={dataHook} className="max-w-none">
+    <Card
+      variant="filled"
+      density="condensed"
+      dataHook={dataHook}
+      className="max-w-none"
+    >
       <CardContent className="flex flex-col gap-4">
         <Skeleton
           dataHook={`${dataHook}-photo`}

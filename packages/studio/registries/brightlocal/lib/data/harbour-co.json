@@ -1,8 +1,16 @@
 {
-  "account": { "label": "Harbour & Co" },
-  "user": { "name": "Sofia Marsh", "meta": "Pro — annual", "initials": "SM" },
+  "account": {
+    "label": "Harbour & Co"
+  },
+  "user": {
+    "name": "Sofia Marsh",
+    "meta": "Pro — annual",
+    "initials": "SM"
+  },
   "location": {
-    "name": "Harbour & Co — Brighton Marina, BN2 5WA",
+    "name": "Harbour & Co",
+    "address": "Brighton Marina, BN2 5WA",
+    "phone": "01273 555 018",
     "status": "Active"
   },
   "keywords": [
@@ -39,11 +47,28 @@
     ]
   },
   "metrics": {
-    "reviews": { "metric": "4.7", "delta": "+0.1 this month" },
-    "rankings": { "metric": "5", "delta": "↑ 1 place" },
-    "citations": { "metric": "132" },
-    "localSearchGrid": { "metric": "8", "delta": "keywords tracked" },
-    "gbpManager": { "metric": "1", "delta": "pending post" },
-    "websiteSeo": { "metric": "91", "delta": "site score" }
+    "reviews": {
+      "metric": "4.7",
+      "delta": "+0.1 this month"
+    },
+    "rankings": {
+      "metric": "5",
+      "delta": "↑ 1 place"
+    },
+    "citations": {
+      "metric": "132"
+    },
+    "localSearchGrid": {
+      "metric": "8",
+      "delta": "keywords tracked"
+    },
+    "gbpManager": {
+      "metric": "1",
+      "delta": "pending post"
+    },
+    "websiteSeo": {
+      "metric": "91",
+      "delta": "site score"
+    }
   }
 }

@@ -7,7 +7,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 
-const ROOT = "/sessions/bold-optimistic-fermat/mnt/gradeui";
+const ROOT = process.env.GRADEUI_ROOT ?? "/sessions/bold-optimistic-fermat/mnt/gradeui";
 const PROJECT = "47e40175-0d55-4d21-960b-26bdf6b01282";
 
 const ALL_LOCATIONS_SOURCE = `// All Locations — the account's location list (root of the breadcrumb

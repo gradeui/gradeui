@@ -1,8 +1,16 @@
 {
-  "account": { "label": "Northside Dental Group" },
-  "user": { "name": "Priya Shah", "meta": "Agency plan", "initials": "PS" },
+  "account": {
+    "label": "Northside Dental Group"
+  },
+  "user": {
+    "name": "Priya Shah",
+    "meta": "Agency plan",
+    "initials": "PS"
+  },
   "location": {
-    "name": "Northside Dental — Manchester, M4 4BF",
+    "name": "Northside Dental",
+    "address": "Manchester, M4 4BF",
+    "phone": "0161 832 4477",
     "status": "Needs attention"
   },
   "keywords": [
@@ -39,11 +47,28 @@
     ]
   },
   "metrics": {
-    "reviews": { "metric": "3.6", "delta": "−0.2 this month" },
-    "rankings": { "metric": "24", "delta": "↓ 5 places" },
-    "citations": { "metric": "41" },
-    "localSearchGrid": { "metric": "3", "delta": "keywords tracked" },
-    "gbpManager": { "metric": "7", "delta": "pending posts" },
-    "websiteSeo": { "metric": "58", "delta": "site score" }
+    "reviews": {
+      "metric": "3.6",
+      "delta": "−0.2 this month"
+    },
+    "rankings": {
+      "metric": "24",
+      "delta": "↓ 5 places"
+    },
+    "citations": {
+      "metric": "41"
+    },
+    "localSearchGrid": {
+      "metric": "3",
+      "delta": "keywords tracked"
+    },
+    "gbpManager": {
+      "metric": "7",
+      "delta": "pending posts"
+    },
+    "websiteSeo": {
+      "metric": "58",
+      "delta": "site score"
+    }
   }
 }
