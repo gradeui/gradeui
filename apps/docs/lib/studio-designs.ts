@@ -117,6 +117,11 @@ export interface Design {
    *  adapter maps state fields EXPLICITLY, so this is threaded through
    *  DesignState / rowToDesign / designToRow there. */
   tags?: DesignTag[];
+  /** Free-form screen description ("what this screen is / decisions
+   *  it carries"). Persisted inside designs.state jsonb — mapped
+   *  EXPLICITLY in the supabase adapter's rowToDesign/designToRow,
+   *  same as tags. Shown in the screen info panel + rich list rows. */
+  description?: string;
 }
 
 /**

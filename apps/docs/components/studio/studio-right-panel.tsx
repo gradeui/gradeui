@@ -73,6 +73,8 @@ export interface StudioRightPanelProps {
   /** Project-wide "type:value" vocabulary for the tag input's
    *  autocomplete (see StageBScreenInfo.tagSuggestions). */
   tagSuggestions?: string[];
+  designDescription?: string;
+  onDescriptionChange?: (description: string) => void;
   // ─── Display section (persistent, top of panel) ──────────────────
   // Canvas-wide view controls lifted out of the canvas toolbar. The
   // page owns the state; this panel renders the picker at the top of
@@ -104,6 +106,8 @@ export function StudioRightPanel({
   designTags,
   onTagsChange,
   tagSuggestions,
+  designDescription,
+  onDescriptionChange,
   viewportWidth,
   onViewportChange,
   zoomState,
@@ -199,6 +203,8 @@ export function StudioRightPanel({
             tags={designTags}
             onTagsChange={onTagsChange}
             tagSuggestions={tagSuggestions}
+            description={designDescription}
+            onDescriptionChange={onDescriptionChange}
           />
         );
     }

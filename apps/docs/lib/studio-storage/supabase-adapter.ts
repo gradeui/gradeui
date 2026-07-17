@@ -278,6 +278,9 @@ interface DesignState {
   /** Typed tags (STUDIO-TAGS T0) — see DesignTag in
    *  lib/studio-designs.ts. Absent/empty = untagged. */
   tags?: DesignTag[] | null;
+  /** Free-form screen description — shown stacked under the name in
+   *  the rich list rows + the screen info panel. */
+  description?: string | null;
 }
 
 interface DesignRow {
@@ -298,6 +301,7 @@ function rowToDesign(r: DesignRow): Design {
     status: r.state?.status ?? undefined,
     kind: r.state?.kind ?? undefined,
     tags: r.state?.tags?.length ? r.state.tags : undefined,
+    description: r.state?.description?.trim() ? r.state.description : undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -318,6 +322,7 @@ function designToRow(
       status: d.status ?? null,
       kind: d.kind ?? null,
       tags: d.tags?.length ? d.tags : null,
+      description: d.description?.trim() ? d.description : null,
     },
     position,
     created_at: d.createdAt ?? now,

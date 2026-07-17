@@ -785,6 +785,11 @@ function ScreenListRow({
         <span className="truncate text-sm font-medium text-foreground">
           {design.name}
         </span>
+        {design.description && (
+          <span className="line-clamp-1 text-xs text-muted-foreground">
+            {design.description}
+          </span>
+        )}
         <div className="flex items-center gap-1.5 overflow-hidden">
           <Badge
             variant="outline"

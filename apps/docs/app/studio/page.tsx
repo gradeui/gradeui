@@ -2923,6 +2923,20 @@ export default function StudioPage() {
         )
       }
       tagSuggestions={tagSuggestions}
+      designDescription={activeDesign.description}
+      onDescriptionChange={(desc) =>
+        setDesigns((ds) =>
+          ds.map((d) =>
+            d.id === activeId
+              ? {
+                  ...d,
+                  description: desc.trim() ? desc : undefined,
+                  updatedAt: Date.now(),
+                }
+              : d,
+          ),
+        )
+      }
       tab={rightTab}
       onTabChange={setRightTab}
       viewportWidth={viewportWidth}

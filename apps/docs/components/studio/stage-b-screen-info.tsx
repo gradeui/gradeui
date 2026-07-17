@@ -88,6 +88,10 @@ export interface StageBScreenInfoProps {
   /** Replace the active design's tag set. Same persist path as
    *  onStatusChange (setDesigns → autosave). */
   onTagsChange?: (tags: DesignTag[]) => void;
+  /** Free-form screen description — persists like status/tags (patch
+   *  the design, autosave carries it). Shown in the rich list rows. */
+  description?: string;
+  onDescriptionChange?: (description: string) => void;
   className?: string;
 }
 
@@ -129,6 +133,8 @@ export function StageBScreenInfo({
   onStatusChange,
   tags,
   onTagsChange,
+  description,
+  onDescriptionChange,
   tagSuggestions,
   className,
 }: StageBScreenInfoProps) {
@@ -142,6 +148,19 @@ export function StageBScreenInfo({
   const openSuggestions = (tagSuggestions ?? []).filter(
     (s) => !applied.has(s),
   );
+
+  // Description — draft-buffered (commit on blur / Cmd+Enter) so every
+  // keystroke doesn't hit the autosave signature. Re-seeds on screen
+  // switch via the key on the textarea below.
+  const [descDraft, setDescDraft] = React.useState(description ?? "");
+  React.useEffect(() => {
+    setDescDraft(description ?? "");
+  }, [designId, description]);
+  const commitDesc = () => {
+    if (!onDescriptionChange) return;
+    const next = descDraft.trim();
+    if (next !== (description ?? "")) onDescriptionChange(next);
+  };
 
   // Tags editor (STUDIO-TAGS T0) — chips + a small add input.
   // "type:value" syntax ("section:rankings", "flow:walkthrough");
@@ -242,6 +261,28 @@ export function StageBScreenInfo({
                 {copiedFlowLink ? "Copied ✓" : `screen:${designId ?? designName}`}
               </button>
             </PropertyList.Row>
+
+            {/* Description — what this screen is / the decision it
+                carries. Feeds the rich list rows' detail line. */}
+            {onDescriptionChange && (
+              <PropertyList.Row label="Description">
+                <textarea
+                  key={designId}
+                  value={descDraft}
+                  onChange={(e) => setDescDraft(e.target.value)}
+                  onBlur={commitDesc}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      commitDesc();
+                    }
+                  }}
+                  rows={2}
+                  placeholder="What this screen shows…"
+                  className="w-full resize-none rounded-md border border-border/60 bg-transparent px-2 py-1 text-xs text-foreground outline-none placeholder:text-muted-foreground/60 focus:border-primary/50"
+                />
+              </PropertyList.Row>
+            )}
 
             {/* Tags (STUDIO-TAGS T0) — typed facets. Chips show
                 type:value; click ✕ to remove; the input adds on

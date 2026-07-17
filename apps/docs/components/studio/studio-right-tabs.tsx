@@ -176,6 +176,8 @@ export interface StudioRightTabsProps {
   /** Project-wide "type:value" vocabulary for the tag input's
    *  autocomplete (see StageBScreenInfo.tagSuggestions). */
   tagSuggestions?: string[];
+  designDescription?: string;
+  onDescriptionChange?: (description: string) => void;
   // ─── Display section (forwarded to StudioRightPanel) ─────────────
   // Canvas-wide view controls lifted out of the canvas toolbar. The
   // page owns the state; the tabs shell just threads them to the
@@ -216,6 +218,8 @@ export function StudioRightTabs({
   designTags,
   onTagsChange,
   tagSuggestions,
+  designDescription,
+  onDescriptionChange,
   viewportWidth,
   onViewportChange,
   zoomState,
@@ -292,6 +296,8 @@ export function StudioRightTabs({
           designTags={designTags}
           onTagsChange={onTagsChange}
           tagSuggestions={tagSuggestions}
+          designDescription={designDescription}
+          onDescriptionChange={onDescriptionChange}
           viewportWidth={viewportWidth}
           onViewportChange={onViewportChange}
           zoomState={zoomState}
