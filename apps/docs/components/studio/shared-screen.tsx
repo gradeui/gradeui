@@ -1665,7 +1665,7 @@ export function SharedScreen({
                             ? (t) => paneGoto(m.id, t)
                             : undefined
                         }
-                        className="block rounded-[28px] ring-1 ring-border/40"
+                        className="block rounded-[28px] ring-1 ring-border/40 bg-white dark:bg-[#09090b]"
                         style={{
                           width: paneSize.w,
                           height: paneSize.h,
@@ -1683,7 +1683,7 @@ export function SharedScreen({
                             ? (t) => paneGoto(m.id, t)
                             : undefined
                         }
-                        className="block rounded-[28px] ring-1 ring-border/40"
+                        className="block rounded-[28px] ring-1 ring-border/40 bg-white dark:bg-[#09090b]"
                         style={{
                           width: paneSize.w,
                           height: paneSize.h,
@@ -1743,7 +1743,7 @@ export function SharedScreen({
                 // inner radius 16px (rounded-2xl) + its 12px inset = 28px
                 // outer — the canvas curve hugs the panel's curve instead
                 // of cutting across it (Ali, 16 Jul; global share change).
-                "rounded-[28px] ring-1 ring-border/40",
+                "rounded-[28px] ring-1 ring-border/40 bg-white dark:bg-[#09090b]",
             )}
             style={{
               width: deviceSize?.w,
@@ -1805,7 +1805,7 @@ export function SharedScreen({
                 // inner radius 16px (rounded-2xl) + its 12px inset = 28px
                 // outer — the canvas curve hugs the panel's curve instead
                 // of cutting across it (Ali, 16 Jul; global share change).
-                "rounded-[28px] ring-1 ring-border/40",
+                "rounded-[28px] ring-1 ring-border/40 bg-white dark:bg-[#09090b]",
             )}
             style={{
               width: deviceSize?.w,
