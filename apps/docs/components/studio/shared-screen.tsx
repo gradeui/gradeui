@@ -154,7 +154,14 @@ export function SharedScreen({
    *  element resolves against this list and pushes onto an in-memory
    *  stack; Back (chip / Escape) pops. The token stays the address of
    *  the FLOW, not the position — no URL change. */
-  flowScreens?: { id: string; name: string; appSource: string | null }[];
+  flowScreens?: {
+    id: string;
+    name: string;
+    appSource: string | null;
+    /** Member tags (STUDIO-TAGS) — feed the compare row's viewer-side
+     *  group-by. Absent on older payloads; everything degrades. */
+    tags?: { type: string; value: string; order?: number }[];
+  }[];
   /** True when the share is SCOPED to a screen set (STUDIO-TAGS T2:
    *  share a tag / share these N). Scoped shares open on the COMPARE
    *  ROW — every member side by side as live panes on the camera
@@ -305,11 +312,17 @@ export function SharedScreen({
   // the flow stack — the entire single-screen path (Back chip, gotos,
   // Escape) applies to a focused member for free; popping the stack
   // lands back on the row.
-  const scopedMembers = React.useMemo(
+  type ScopedMember = {
+    id: string;
+    name: string;
+    appSource: string;
+    tags?: { type: string; value: string; order?: number }[];
+  };
+  const scopedMembers = React.useMemo<ScopedMember[]>(
     () =>
       scoped && flowScreens
         ? flowScreens.filter(
-            (s): s is { id: string; name: string; appSource: string } =>
+            (s): s is ScopedMember =>
               typeof s.appSource === "string" && s.appSource.length > 0,
           )
         : [],
@@ -324,6 +337,66 @@ export function SharedScreen({
   // "responsive" (a fill viewport is meaningless × N — panes scroll
   // internally instead, like any live screen).
   const paneSize = activeSize ?? { w: 1280, h: 800 };
+
+  // Viewer-side GROUP BY (STUDIO-TAGS "member tags ride the share"):
+  // arrange the row by any facet the members carry — the 1D sibling of
+  // the map view's partitioning. Viewer-local state, never persisted;
+  // the share's own order stays the default. The scope's own type is
+  // excluded (every member matches it — grouping by it is a no-op).
+  const [rowGroupBy, setRowGroupBy] = React.useState<string | null>(null);
+  const memberFacetTypes = React.useMemo(() => {
+    const types = new Map<string, Set<string>>();
+    for (const m of scopedMembers) {
+      for (const t of m.tags ?? []) {
+        if (t.type === scopeTagType) continue;
+        let s = types.get(t.type);
+        if (!s) types.set(t.type, (s = new Set()));
+        s.add(t.value);
+      }
+    }
+    return [...types.keys()];
+  }, [scopedMembers, scopeTagType]);
+  const GROUP_GAP = 240;
+  const GROUP_LABEL_H = rowGroupBy ? 48 : 0;
+  const rowGroups = React.useMemo<
+    { label: string | null; panes: ScopedMember[] }[]
+  >(() => {
+    if (!rowGroupBy) return [{ label: null, panes: scopedMembers }];
+    const groups = new Map<string, ScopedMember[]>();
+    const untagged: ScopedMember[] = [];
+    for (const m of scopedMembers) {
+      const t = (m.tags ?? []).find((x) => x.type === rowGroupBy);
+      if (!t) {
+        untagged.push(m);
+        continue;
+      }
+      const arr = groups.get(t.value);
+      if (arr) arr.push(m);
+      else groups.set(t.value, [m]);
+    }
+    const out = [...groups.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([label, panes]) => ({ label: label as string | null, panes }));
+    if (untagged.length) out.push({ label: "Untagged", panes: untagged });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowGroupBy, scopedMembers]);
+  // Arranged x-offset per pane — one source of truth for BOTH the
+  // row's width math and the focus camera.
+  const paneOffsets = React.useMemo(() => {
+    const map = new Map<string, number>();
+    let x = 0;
+    rowGroups.forEach((g, gi) => {
+      if (gi > 0) x += GROUP_GAP;
+      g.panes.forEach((m, pi) => {
+        if (pi > 0) x += PANE_GAP;
+        map.set(m.id, x);
+        x += paneSize.w;
+      });
+    });
+    return { map, totalW: x };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowGroups, paneSize.w]);
 
   // Responsive content-height artboard — identical behaviour to the
   // focused canvas: the same-origin iframe reports its rendered
@@ -340,14 +413,13 @@ export function SharedScreen({
   }, [viewportId, flowTop]);
   const resolveDeviceSize = React.useCallback(
     (canvas: { w: number; h: number }) => {
-      // Compare row: the artboard IS the row — N panes + gaps wide,
-      // one pane (+ label strip) tall. Fit frames all members at once.
+      // Compare row: the artboard IS the row — the arranged panes
+      // (incl. group gaps + label strip when grouped) as one artboard.
+      // Fit frames the whole arrangement at once.
       if (compare) {
         return {
-          w:
-            scopedMembers.length * paneSize.w +
-            (scopedMembers.length - 1) * PANE_GAP,
-          h: paneSize.h + PANE_LABEL_H,
+          w: paneOffsets.totalW,
+          h: paneSize.h + PANE_LABEL_H + GROUP_LABEL_H,
         };
       }
       if (activeSize) return activeSize;
@@ -362,7 +434,7 @@ export function SharedScreen({
       return undefined;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeSize, contentH, compare, scopedMembers.length, paneSize.w, paneSize.h],
+    [activeSize, contentH, compare, paneOffsets.totalW, GROUP_LABEL_H, paneSize.h],
   );
 
   // Zoom + Fit — the shared artboard-zoom implementation (also drives
@@ -400,7 +472,7 @@ export function SharedScreen({
   React.useEffect(() => {
     if (compare && canvasEl) fit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compare, scopedMembers.length, canvasEl]);
+  }, [compare, scopedMembers.length, rowGroupBy, canvasEl]);
 
   // ─── Imperative camera session — SAME pattern as the focused canvas
   // (FocusedFastMount). Pinch/pan write a translate+scale straight to
@@ -465,24 +537,25 @@ export function SharedScreen({
   }, [compare]);
   const focusPane = React.useCallback(
     (id: string) => {
-      const idx = scopedMembers.findIndex((m) => m.id === id);
-      if (idx < 0 || !canvasEl || !deviceSize) return;
+      const offset = paneOffsets.map.get(id);
+      if (offset === undefined || !canvasEl || !deviceSize) return;
       setFocusedPaneId(id);
       // Frame the pane with breathing room, never past 100%. Camera
       // home is the row centre, so panning to a pane is the offset
-      // between the row centre and that pane's centre, scaled.
+      // between the row centre and that pane's centre, scaled. The
+      // offset map is arrangement-aware (group-by reflows honoured).
       const margin = 96;
       const z = Math.min(
         (canvasEl.clientWidth - margin) / paneSize.w,
         (canvasEl.clientHeight - margin) / (paneSize.h + PANE_LABEL_H),
         1,
       );
-      const paneCenterX = idx * (paneSize.w + PANE_GAP) + paneSize.w / 2;
+      const paneCenterX = offset + paneSize.w / 2;
       pickZoom(z);
       setPan({ x: (deviceSize.w / 2 - paneCenterX) * z, y: 0 });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scopedMembers, canvasEl, deviceSize, paneSize.w, paneSize.h, pickZoom],
+    [paneOffsets, canvasEl, deviceSize, paneSize.w, paneSize.h, pickZoom],
   );
   const unfocusPanes = React.useCallback(() => {
     setFocusedPaneId(null);
@@ -985,6 +1058,60 @@ export function SharedScreen({
                   {currentScreenName}
                 </span>
               )}
+              {/* Arrange — viewer-side group-by over the members' OWN
+                  tags (the 1D partition; nothing persisted, the share's
+                  order stays the default). Only offered when members
+                  actually carry other facets. */}
+              {compare && memberFacetTypes.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="ml-0.5 inline-flex h-6 shrink-0 items-center gap-1 self-center rounded-md px-1.5 text-xs text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground"
+                      title="Arrange the screens by one of their tags"
+                    >
+                      {rowGroupBy ? `By ${rowGroupBy}` : "Arrange"}
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="z-[80] w-48 border-border/60 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/65"
+                  >
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setRowGroupBy(null);
+                        setFocusedPaneId(null);
+                      }}
+                      className="gap-2 focus:bg-foreground/10 focus:text-foreground"
+                    >
+                      <span className="flex-1">Shared order</span>
+                      {!rowGroupBy && (
+                        <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      )}
+                    </DropdownMenuItem>
+                    {memberFacetTypes.map((type) => (
+                      <DropdownMenuItem
+                        key={type}
+                        onClick={() => {
+                          setRowGroupBy(type);
+                          setFocusedPaneId(null);
+                        }}
+                        className="gap-2 focus:bg-foreground/10 focus:text-foreground"
+                      >
+                        <span
+                          className="size-1.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: tagTypeColor(type) }}
+                        />
+                        <span className="flex-1 truncate">Group by {type}</span>
+                        {rowGroupBy === type && (
+                          <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               {/* Zoom out — back to the fitted row (same as Esc). */}
               {compare && (
                 <button
@@ -1411,7 +1538,7 @@ export function SharedScreen({
               style={{
                 width: deviceSize?.w,
                 height: deviceSize?.h,
-                gap: PANE_GAP,
+                gap: GROUP_GAP,
                 transform: `scale(${effectiveZoom})`,
                 transformOrigin: "top left",
                 // MUST match the camera wrapper's curve exactly — the
@@ -1424,7 +1551,29 @@ export function SharedScreen({
                     : "transform 340ms ease",
               }}
             >
-              {scopedMembers.map((m) => {
+              {rowGroups.map((group) => (
+                <div key={group.label ?? "*"} className="flex flex-col">
+                  {/* Group label strip — only when the viewer picked a
+                      group-by facet. Dot carries the facet's chart hue. */}
+                  {rowGroupBy && (
+                    <div
+                      className="flex items-center px-1"
+                      style={{ height: GROUP_LABEL_H }}
+                    >
+                      <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 py-1.5 text-sm font-semibold text-foreground shadow-sm backdrop-blur-md">
+                        <span
+                          className="size-2 rounded-full"
+                          style={{ backgroundColor: tagTypeColor(rowGroupBy) }}
+                        />
+                        {group.label}
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {group.panes.length}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-start" style={{ gap: PANE_GAP }}>
+              {group.panes.map((m) => {
                 const paneStack = paneStacks[m.id] ?? [];
                 const paneTop =
                   paneStack.length > 0 ? paneStack[paneStack.length - 1] : null;
@@ -1528,6 +1677,9 @@ export function SharedScreen({
                 </div>
                 );
               })}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : isExternal ? (
           // External registry — the ext:* kernel instead of Fast Frame.

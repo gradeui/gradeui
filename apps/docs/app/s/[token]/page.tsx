@@ -247,6 +247,12 @@ export default async function SharePage({
       name: r.name,
       appSource:
         ((r.state as { appSource?: string | null } | null)?.appSource ?? null),
+      // Member tags ride the share (STUDIO-TAGS): the compare row's
+      // viewer-side group-by reads facets off the members themselves.
+      tags:
+        ((r.state as {
+          tags?: { type: string; value: string; order?: number }[] | null;
+        } | null)?.tags ?? undefined),
     }));
   // Row annotation: ALWAYS the human-readable name — the tag VALUE
   // exactly as the author typed it (the type: grammar is authoring
