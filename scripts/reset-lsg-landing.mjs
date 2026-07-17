@@ -170,8 +170,8 @@ export default function App() {
     ["renders", html.length > 1500],
     ["LSG subs visible (v2 contextual — keyword rows)", html.includes("campsite lewes")],
     ["sibling subs hidden", !html.includes("Rankings Table")],
-    ["top-level goto wired from DEFAULT navLinks", /data-grade-goto="Citations"/.test(html)],
-    ["breadcrumb: bound location name (bare NAP name)", /data-grade-goto="Location Hub - New Template"[^>]*>Blackberry Farm Park</.test(html)],
+    ["top-level goto wired from DEFAULT navLinks", /data-grade-goto="screen:dmrotrh931z64"/.test(html)], // Citations
+    ["breadcrumb: bound location name (bare NAP name)", /data-grade-goto="(screen:dmrnwiqjdknxy|Location Hub - New Template)"[^>]*>Blackberry Farm Park</.test(html)],
     // Structural invariant (Ali): separators === crumbs - 1, forever.
     [
       "breadcrumb separators = crumbs - 1",

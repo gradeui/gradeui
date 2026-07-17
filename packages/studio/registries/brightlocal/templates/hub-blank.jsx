@@ -63,8 +63,11 @@ export default function App() {
             <PageHeader
               dataHook="blank-page-header"
               breadcrumbs={[
-                { label: "All Locations", goto: "All Locations" },
-                { label: "Location Hub", goto: "Location Hub - New Template" },
+                // goto by ID — ids survive renames; names are only a
+                // hand-authoring fallback. These are the canonical
+                // BrightLocal share-project screens.
+                { label: "All Locations", goto: "screen:dmrotrgstba3l" }, // All Locations
+                { bind: "location", goto: "screen:dmrnwiqjdknxy" }, // Location Hub - New Template
               ]}
               // ← SET ME: the page's name.
               title="Section title"

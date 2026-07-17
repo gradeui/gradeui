@@ -177,11 +177,11 @@ export default function App() {
     ["renders", html.length > 1500],
     ["AI Insights subs visible (v2 contextual)", html.includes("Website and Content") && html.includes("Export Report")],
     ["sibling subs hidden", !html.includes("Rankings Table")],
-    ["sub goto wired from DEFAULT navLinks", /data-grade-goto="AI Insights - Citations"/.test(html)],
-    ["export sub goto wired", /data-grade-goto="AI Insights - Export Report"/.test(html)],
-    ["top-level goto still wired", /data-grade-goto="Citations"/.test(html)],
+    ["sub goto wired from DEFAULT navLinks", /data-grade-goto="screen:dmrouize7iinr"/.test(html)], // AI Insights - Citations
+    ["export sub goto wired", /data-grade-goto="screen:dmrouizhd7lcw"/.test(html)], // AI Insights - Export Report
+    ["top-level goto still wired", /data-grade-goto="screen:dmrotrh931z64"/.test(html)], // Citations
     ["breadcrumb: bound location name", html.includes("Blackberry Farm Park")],
-    ["breadcrumb: AI Insights crumb links home", /data-grade-goto="AI Insights"/.test(html)],
+    ["breadcrumb: AI Insights crumb links home", /data-grade-goto="screen:dmrotrgwxijez"|data-grade-goto="AI Insights"/.test(html)],
     // Separators are explicit siblings in shadcn-family breadcrumbs and
     // have gone silently missing TWICE (Ali). Structural invariant:
     // separators === crumbs - 1, forever.

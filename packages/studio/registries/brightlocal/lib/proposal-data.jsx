@@ -190,26 +190,31 @@ export const PROPOSAL_DATA = {
   // the "Top-Level Pages" tagged screens in the project. Per-project /
   // per-screen navLinks deep-merge OVER these, so overriding one row
   // never costs the rest.
+  // GOTO BY ID (Ali, 18 Jul): "screen:<id>" pins the exact screen — ids
+  // survive renames (a name-keyed link broke the day Local Search Grid
+  // was renamed). Names still resolve as a fallback for hand-authored
+  // links, but DEFAULT wiring is ids. The name rides alongside as a
+  // comment — update both if a landing is ever re-minted.
   navLinks: {
-    "ai-insights": "AI Insights",
-    "setup-tasks": "Set-up Tasks",
-    "location-profile": "Location Profile",
-    rankings: "Rankings",
-    "local-search-grid": "Local Search Grid",
-    citations: "Citations",
-    reviews: "Reviews",
-    "gbp-manager": "GBP Manager",
-    "website-seo": "Website SEO",
-    "google-analytics": "Google Analytics",
-    "agency-tools": "Agency Tools",
-    "rankings-table": "Rankings Table",
+    "ai-insights": "screen:dmrotrgwxijez", // AI Insights
+    "setup-tasks": "screen:dmrotrh1eilb0", // Set-up Tasks
+    "location-profile": "screen:dmrotrh3wgcq1", // Location Profile
+    rankings: "screen:dmrotrh6rulhk", // Rankings
+    "local-search-grid": "screen:dmroutf7bsndb", // Local Search Grid
+    citations: "screen:dmrotrh931z64", // Citations
+    reviews: "screen:dmrotrhbcxk66", // Reviews
+    "gbp-manager": "screen:dmrotrhwtj0wc", // GBP Manager
+    "website-seo": "screen:dmrotrhz8gp49", // Website SEO
+    "google-analytics": "screen:dmrotri1gb3rf", // Google Analytics
+    "agency-tools": "screen:dmrotri3pxlio", // Agency Tools
+    "rankings-table": "screen:dmrnyiy9g9f7o", // Rankings Table
     // AI Insights sub pages — screen names carry the section prefix so
     // they never clash with the top-level Reviews/Citations landings.
-    "ai-insights-website-content": "AI Insights - Website and Content",
-    "ai-insights-google-business-profile": "AI Insights - Google Business Profile",
-    "ai-insights-reviews": "AI Insights - Reviews",
-    "ai-insights-citations": "AI Insights - Citations",
-    "ai-insights-export": "AI Insights - Export Report",
+    "ai-insights-website-content": "screen:dmrouiz2ajnqw", // AI Insights - Website and Content
+    "ai-insights-google-business-profile": "screen:dmrouiz5q03hr", // AI Insights - Google Business Profile
+    "ai-insights-reviews": "screen:dmrouizaw0c9u", // AI Insights - Reviews
+    "ai-insights-citations": "screen:dmrouize7iinr", // AI Insights - Citations
+    "ai-insights-export": "screen:dmrouizhd7lcw", // AI Insights - Export Report
   },
   // AI Insights — the headline featureset. A dataset section of its
   // own: `summary` is the one-liner surfaces quote (hero, hub);
