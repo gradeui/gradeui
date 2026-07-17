@@ -2042,6 +2042,10 @@ export default function StudioPage() {
   // CodeMirror inside Sandpack panels also pass through.
   useEffect(() => {
     function handler(e: KeyboardEvent) {
+      // Synthetic keydowns from extensions/autofill arrive with NO
+      // `key` — crashed this handler the moment the share dialog
+      // focused (Ali, 17 Jul, "reshare tag"). Not our event; ignore.
+      if (typeof e.key !== "string") return;
       // ⌘⇧⌥A — open the SuperAdminSheet. Deliberately a four-modifier
       // chord so it can't be hit by accident. Open even from inputs
       // since it's a chrome action, not an editing action.
@@ -2326,6 +2330,9 @@ export default function StudioPage() {
       );
       const cmd = e.metaKey || e.ctrlKey;
       if (!cmd) return;
+      // Extension/autofill keydowns can arrive keyless — see the
+      // shortcut handler above.
+      if (typeof e.key !== "string") return;
       const key = e.key.toLowerCase();
       // Redo: cmd+shift+z OR cmd+y. Both are common bindings; supporting
       // both means muscle memory from either platform works.
