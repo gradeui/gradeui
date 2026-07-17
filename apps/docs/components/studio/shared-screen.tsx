@@ -40,6 +40,10 @@ import { ExternalIframeHost } from "@/components/studio/external-ds-frame";
 import { getActiveRegistry, getRegistryById } from "@/lib/active-registry";
 import { setProjectPreviewCss } from "@/lib/project-preview-css";
 import { tagTypeColor } from "@/lib/studio-view-prefs";
+
+// Viewer-side Arrange (group-by in the compare row) — built, then
+// benched as half-baked pending the compare-row polish pass (#22).
+const ARRANGE_ENABLED = false;
 import { GradeLogo } from "@/components/grade-logo";
 import {
   DropdownMenu,
@@ -1229,9 +1233,12 @@ export function SharedScreen({
               )}
               {/* Arrange — viewer-side group-by over the members' OWN
                   tags (the 1D partition; nothing persisted, the share's
-                  order stays the default). Only offered when members
-                  actually carry other facets. */}
-              {compare && memberFacetTypes.length > 0 && (
+                  order stays the default). DISABLED for now (Ali, 18
+                  Jul: "half baked") — the reflow works but the
+                  interaction isn't presentation-grade; re-enable with
+                  the #22 compare-row polish pass. Machinery
+                  (rowGroupBy/rowGroups/paneOffsets) stays live. */}
+              {ARRANGE_ENABLED && compare && memberFacetTypes.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button

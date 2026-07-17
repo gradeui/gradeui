@@ -341,16 +341,18 @@ The board, in rough order of value:
 2. **Screen description UI** — seam shipped; needs the textarea row in
    StageBScreenInfo (same wiring as status/tags), the detail line in
    the rich rows, maybe the share cover.
-3. **Compare-row polish pass** (#22) — "grouping and interaction isn't
-   quite right"; gather Ali's specifics from real meeting use first.
+3. **Compare-row polish pass** (#22) — NOTE: viewer Arrange
+   (group-by) is BENCHED behind ARRANGE_ENABLED=false in shared-screen
+   (Ali: "half baked"); machinery stays live, re-enable + polish here.
 4. **Transitions next notch** — active-row SLIDE between screens
    (view-transition-name on the active nav row; unmatched degrades to
    fades); Fast Frame parity (goto fade + mode fade + names);
    host-driven swap fades (Back chip).
-5. **Full-screen + capture trio** (#21): OPEN-IN-FULL-SCREEN button
-   (Ali, session close) — hide all chrome + browser Fullscreen API +
-   obvious exit (Esc + floating chip); seed exists (shared-screen
-   chromeVisible toggle). Per-pane variant via embed ?screen= param —
+5. **Chrome-hide + capture trio** (#21): a proper "open clean" mode —
+   hide ALL share chrome with an obvious way back (Esc + floating
+   chip); seed exists (shared-screen chromeVisible toggle). Browser
+   Fullscreen API optional garnish ("worth playing with"), not the
+   essence. Per-pane variant via embed ?screen= param —
    the same key that unlocks per-pane screenshot + Download/COPY PNG
    (ClipboardItem), OG v2 moody corner, poster thumbs. One serverless
    capture route unlocks all (preview-serverless.ts).
