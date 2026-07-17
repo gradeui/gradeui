@@ -856,6 +856,9 @@ export default function StudioPage() {
     token: string;
     url: string;
     stale: boolean;
+    /** True when this is an EXISTING tag-scope link recalled into the
+     *  dialog (stable-URL-per-tag) rather than one minted just now. */
+    recalled?: boolean;
   } | null>(null);
   const markShareStale = useCallback(
     () => setCreatedShare((c) => (c && !c.stale ? { ...c, stale: true } : c)),
@@ -890,8 +893,41 @@ export default function StudioPage() {
         scope,
         scopeLabel,
       });
+      // STABLE URL PER TAG (STUDIO-TAGS): a tag's share link is "the one
+      // consistent place" — if a live link already exists for this exact
+      // tag scope, RECALL it into the dialog instead of leaving the user
+      // to mint a duplicate. The existing createdShare affordances give
+      // copy-again + Regenerate (which revokes + re-mints) for free.
+      // Explicit screen sets stay mint-per-share (frozen membership is
+      // the point). Best-effort: a failed lookup just means the old
+      // behaviour.
+      if (scope.tag) {
+        void storage
+          .listShareLinks(activeProjectId)
+          .then((links) => {
+            const existing = links.find(
+              (l) =>
+                !l.revoked &&
+                (!l.expiresAt || l.expiresAt > Date.now()) &&
+                l.scope?.tag &&
+                l.scope.tag.type === scope.tag!.type &&
+                l.scope.tag.value === scope.tag!.value,
+            );
+            if (existing) {
+              setCreatedShare({
+                token: existing.token,
+                url: `${window.location.origin}/s/${existing.token}`,
+                stale: false,
+                recalled: true,
+              });
+            }
+          })
+          .catch(() => {
+            /* lookup is a convenience — minting fresh still works */
+          });
+      }
     },
-    [activeProjectId],
+    [activeProjectId, storage],
   );
   const confirmShareScreen = useCallback(async () => {
     if (!pendingShare || !activeProjectId) return;
@@ -3278,6 +3314,14 @@ export default function StudioPage() {
                     to apply them (the old link is revoked).
                   </p>
                 )}
+                {createdShare.recalled && !createdShare.stale && (
+                  <p className="text-[11px] text-muted-foreground">
+                    This tag already has a live link — it&apos;s the one
+                    consistent place for this set (membership updates as
+                    you re-tag). Change options and regenerate only if
+                    you want to revoke it.
+                  </p>
+                )}
               </div>
             )}
             <DialogFooter>
@@ -3298,7 +3342,11 @@ export default function StudioPage() {
                     {createdShare ? "Regenerating…" : "Creating…"}
                   </>
                 ) : createdShare ? (
-                  createdShare.stale ? "Regenerate link" : "Link created"
+                  createdShare.stale
+                    ? "Regenerate link"
+                    : createdShare.recalled
+                      ? "Existing link"
+                      : "Link created"
                 ) : (
                   "Create link"
                 )}
