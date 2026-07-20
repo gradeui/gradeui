@@ -299,6 +299,39 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       }
     }
   },
+  "AreaInsights": {
+    "name": "AreaInsights",
+    "description": "Ships in \"@brightlocal/proposal\" — never inline a copy. `InsightCard` is",
+    "props": {
+      "areaId": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "DATA BINDING: filters aiInsights.items to this area (\"website-seo\" | \"gbp-manager\" | \"reviews\" | \"citations\"). Match the score strip's module via foundation[moduleKey].area so diagnosis and fixes stay in lockstep."
+      },
+      "actionStyle": {
+        "kind": "enum",
+        "values": [
+          "accordion",
+          "list"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "How each insight's actions render. \"accordion\" (default) = one collapsible row per action, progressive-disclosure (Lighthouse-style). \"list\" = the flat numbered list. Threaded down to every InsightCard."
+      },
+      "title": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Section heading. (default \"Actions & Insights\")"
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name. (default \"area-insights\")"
+      }
+    }
+  },
   "AspectRatio": {
     "name": "AspectRatio",
     "description": "src=\"/image.jpg\"",
@@ -2138,6 +2171,29 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "variant": "full"
     }
   },
+  "GlossaryText": {
+    "name": "GlossaryText",
+    "description": "Ships in \"@brightlocal/proposal\" — never inline a copy. To add a term,",
+    "props": {
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "A plain STRING of prose. Non-string children pass straight through untouched, so it's safe to wrap conditionally."
+      },
+      "once": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Annotate only the FIRST use of each term (default true; matches the glossary's \"expand on first use\" rule). Pass false to annotate every occurrence."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance prefix for the per-term data-hooks. (default \"glossary\")"
+      }
+    }
+  },
   "Header": {
     "name": "Header",
     "description": "aria-label=\"Header with navigation example\"",
@@ -2795,6 +2851,37 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       }
     }
   },
+  "InsightAction": {
+    "name": "InsightAction",
+    "description": "))}",
+    "props": {
+      "item": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "The parent insight (aiInsights.items[]); used for stable dataHooks."
+      },
+      "action": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "One entry from item.actions[]: { text, label?, where?, links?, cta? }."
+      },
+      "index": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Zero-based position within item.actions (numbers the row, keys the accordion value + dataHooks)."
+      },
+      "style": {
+        "kind": "enum",
+        "values": [
+          "accordion",
+          "list"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "\"accordion\" (default) renders a collapsible AccordionItem — MUST be rendered inside an <Accordion>. \"list\" renders a flat numbered row for ActionList's panel."
+      }
+    }
+  },
   "Label": {
     "name": "Label",
     "description": "Email",
@@ -3167,6 +3254,57 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       }
     }
   },
+  "ModuleScoreCard": {
+    "name": "ModuleScoreCard",
+    "description": "Ships in \"@brightlocal/proposal\" — never inline a copy. The score is",
+    "props": {
+      "moduleKey": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "DATA BINDING: which foundation module to render (\"websiteContent\" | \"gbp\" | \"reviews\" | \"citations\"). Reads label, summary, score, subMetrics and the derived weight note from the proposal data context at render position, so dataset switches re-skin it live. This is the ONLY required prop."
+      },
+      "variant": {
+        "kind": "enum",
+        "values": [
+          "bars",
+          "donuts"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Sub-score data viz. \"bars\" (default) = thin labelled bars, two-column. \"donuts\" = a row of mini score rings (Google Lighthouse-style), spread evenly across the width whatever the count."
+      },
+      "donutSize": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Ring diameter in px for the \"donuts\" viz (default 72). Keep >= 60 so the score value stays visible."
+      },
+      "title": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "CardTitle text. Set it PER SUBPAGE; falls back to the module's data label."
+      },
+      "description": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "CardDescription text. Set per subpage; falls back to the module's data summary. Runs through GlossaryText either way."
+      },
+      "icon": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Icon component (from @brightlocal/icons) for the header. Defaults per module (Globe / Store / Star / Link)."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name. (default \"module-score-card\")"
+      }
+    }
+  },
   "NavigationMenu": {
     "name": "NavigationMenu",
     "props": {
@@ -3201,7 +3339,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "plumbing",
         "optional": true,
-        "description": "Muted row under the title. DEFAULT is data-bound: current location name + status Badge from the proposal data context (follows dataset switches). Pass null to suppress, any node to replace."
+        "description": "Muted row under the title. EXPLICIT-ONLY: omitted (or null) renders nothing; pass any node to render it. (The old data-bound NAP + status Badge default was dropped — the location already leads the breadcrumb.) (default none)"
       },
       "actions": {
         "kind": "string",

@@ -5,6 +5,8 @@
 //   proposal-shell.jsx  AppLayoutShell + ShellTweakerPanel + presets
 //   proposal-nav.jsx    PROPOSAL_SECTIONS + ProposalSidebar (nav model v2)
 //   proposal-page.jsx   PageHeader + StatCard/HubStatCard/HubHeroCard
+//   proposal-insights.jsx  ModuleScoreCard + AreaInsights/InsightCard
+//   proposal-glossary.jsx  GlossaryText/GlossaryTerm (inline jargon)
 //
 // Screens keep importing "@brightlocal/proposal" — this file re-exports
 // the lot, so nothing downstream changes. Edit a sibling, re-run
@@ -16,5 +18,7 @@ export * from "@brightlocal/proposal-data";
 export * from "@brightlocal/proposal-shell";
 export * from "@brightlocal/proposal-nav";
 export * from "@brightlocal/proposal-page";
+export * from "@brightlocal/proposal-insights";
+export * from "@brightlocal/proposal-glossary";
 export * from "@brightlocal/score-donut";
 export * from "@brightlocal/mini-stat";

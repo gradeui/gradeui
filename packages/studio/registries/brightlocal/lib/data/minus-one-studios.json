@@ -43,24 +43,31 @@
         "title": "Fix site fundamentals so Google can crawl, index, and rank your pages",
         "insight": "Your website's foundations are holding back visibility. Your Health Score is 19.4 out of 100 with major gaps: 13 of 13 pages are missing meta descriptions, 10 of 13 are missing title tags (and 3 are too short), 13 of 13 have no canonical tags (a canonical tells Google the preferred URL), robots.txt returns 403 with no XML sitemap, the viewport meta tag is missing on all 13 pages which hurts mobile-first indexing, and the H1 structure is broken (11 pages have no H1, while /hire has up to 15 H1s). These issues reduce indexation, mobile relevance, and click-through. In local search results for non branded terms like “recording studio,” you currently do not appear, while competitors such as Mav Music and Mastering The Mix consistently show near the top across the area. Fixing these site wide basics is a high-impact way to compete for generic searches.",
         "recommendation": "Create site wide templates for titles and meta descriptions, add self-referencing canonicals, fix robots and sitemap, add a global viewport tag, and use one clear H1 per page. Normalize duplicate URLs (/home to /) to consolidate signals. These changes improve crawlability, mobile relevance, and click-through, helping you rank for non branded searches across Marylebone and central London.",
+        "actionsSummary": "These fixes give Google the basic information it needs to find, read and trust your pages.",
         "action": "Add global head elements for title, meta description, and rel=canonical, and fill unique, keyword-relevant values on all 13 indexable pages (aim titles around 50 to 60 characters and descriptions 140 to 160).",
         "actions": [
           {
+            "label": "Add titles, meta & canonicals",
             "text": "Add global head elements for title, meta description, and rel=canonical, and fill unique, keyword-relevant values on all 13 indexable pages (aim titles around 50 to 60 characters and descriptions 140 to 160)."
           },
           {
+            "label": "Fix robots.txt & sitemap",
             "text": "Serve a valid robots.txt (200 OK) that references your XML sitemap. Generate /sitemap.xml for all indexable URLs and submit it in Google Search Console and Bing Webmaster Tools."
           },
           {
+            "label": "Redirect duplicate home URL",
             "text": "301 redirect https://www.minus1.co/home to https://www.minus1.co/ and update any internal links pointing to /home."
           },
           {
+            "label": "Add mobile viewport tag",
             "text": "Add a global meta viewport tag (width=device-width, initial-scale=1) and verify responsive behavior on mobile."
           },
           {
+            "label": "Fix H1 structure",
             "text": "Enforce one descriptive H1 per page. On /hire and /hire-1 demote extra H1s to H2 or H3, and add missing H1s aligned to target queries such as “Recording studio in Marylebone.”"
           },
           {
+            "label": "Track non-branded rankings",
             "text": "Track ranking movement for key non branded terms like “recording studio,” “podcast studio,” and “event venue Marylebone” using Local Search Grid.",
             "links": [{ "label": "Go to Local Search Grid", "area": "local-search-grid" }]
           }
@@ -74,21 +81,27 @@
         "title": "Strengthen your local signals (NAP, schema, internal links) to boost nearby searches and better Maps answers",
         "insight": "Detected NAP (name, address, phone) on key pages is 0 percent and schema coverage is 0 percent (no LocalBusiness or Service JSON-LD). Your homepage links cover only 1 of 4 service pages and the main navigation links 0 of 4, which weakens authority flow. Conversion cues are light (limited CTAs, no click-to-call, and few forms). These are core local signals that help Google confirm who and where you are and which services you offer. Competitors that outrank you in the area, like Soho Sonic Studios and Soho Square Studios, benefit from stronger overall prominence. Aligning your local signals will help close this gap and improve how Google's AI in Maps describes your business.",
         "recommendation": "Add a consistent NAP block site wide, implement LocalBusiness schema (including openingHours) and Service schema on service pages, strengthen internal links from the homepage and main navigation to all service URLs, and add clear CTAs with click-to-call. Publish an FAQ page with schema to power Google's AI answers about pricing, parking, and podcast facilities.",
+        "actionsSummary": "These steps tell Google clearly who you are, where you are and what you offer, so you show up for nearby searches.",
         "action": "Place a consistent NAP block (matching your GBP) in the global footer. Add a clickable tel: link in the mobile header and a visible booking or inquiry CTA on every service page.",
         "actions": [
           {
+            "label": "Add NAP, click-to-call & CTAs",
             "text": "Place a consistent NAP block (matching your GBP) in the global footer. Add a clickable tel: link in the mobile header and a visible booking or inquiry CTA on every service page."
           },
           {
+            "label": "Add LocalBusiness & Service schema",
             "text": "Add JSON-LD: LocalBusiness (name, address, phone, URL, openingHours) site wide, and Service schema on /hire, /hire-1, /membersbooking, and /membersbooking-1 with serviceType (Recording studio hire, Podcast studio, Event venue) and areaServed."
           },
           {
+            "label": "Link to all service pages",
             "text": "Improve internal linking: from the homepage and main navigation, link to all four service URLs using descriptive anchors such as “Recording Studio Hire,” “Podcast and Content Studio,” “Event Venue Hire,” and “Members Booking.”"
           },
           {
+            "label": "Publish an FAQ page",
             "text": "Create a clear FAQ page that answers common pre-booking questions (rates, parking or vehicle access, late hours, equipment add-ons) and add FAQPage schema."
           },
           {
+            "label": "Monitor hyperlocal rankings",
             "text": "Monitor gains for hyperlocal terms like “recording studio Marylebone” and “podcast studio near Baker Street” using Local Rank Tracker and Local Search Grid.",
             "links": [
               { "label": "Go to Local Rank Tracker", "area": "rankings" },
@@ -105,24 +118,30 @@
         "title": "Align your GBP categories and content with your services to earn more local results",
         "insight": "GBP category alignment is a major factor in whether you appear in local results. Your primary category is set to Recording studio, which matches your core service and mirrors top performers like Soho Sonic Studios, Soho Square Studios, and BBC Maida Vale Studios. You also market photoshoots, and Photography studio appears as an additional category option. Ensuring your categories, GBP Services, photos, and regular Posts reflect studio hire, podcast or content production, DJ or rehearsal, and event venue hire strengthens relevance. Your current visibility across the area is low compared to these competitors, so sharpening GBP alignment is a lever you can control.",
         "recommendation": "Keep Recording Studio as your primary GBP category and add Photography Studio as an additional category if you actively offer photoshoots. Build out GBP Services to match what you offer, keep photos fresh, and publish regular Google Posts to showcase sessions and events.",
+        "actionsSummary": "These steps make your Google listing match what you actually sell, so you appear for the right local searches.",
         "action": "Confirm you have management access to your GBP, keep the primary category as Recording Studio, and add Photography Studio as an additional category if it reflects live services.",
         "actions": [
           {
+            "label": "Set GBP categories",
             "text": "Confirm you have management access to your GBP, keep the primary category as Recording Studio, and add Photography Studio as an additional category if it reflects live services.",
             "links": [{ "label": "Go to Active Sync" }]
           },
           {
+            "label": "Complete GBP services",
             "text": "Audit GBP Services and add any missing services that mirror your site: Recording studio hire, Podcast or content studio, Event venue hire, and DJ or rehearsal support. Use the same naming on your site and in GBP.",
             "links": [{ "label": "Go to Active Sync" }]
           },
           {
+            "label": "Add fresh photos monthly",
             "text": "Upload new photo sets monthly that show the space, equipment, behind-the-scenes moments, and event setups to increase engagement."
           },
           {
+            "label": "Publish Google Posts",
             "text": "Publish regular Google Posts highlighting sessions, listening parties, and seasonal offers. Repurpose content from your /hire pages for efficiency.",
             "links": [{ "label": "Go to Google Business Profile Post Scheduler", "area": "gbp-manager" }]
           },
           {
+            "label": "Track local visibility",
             "text": "Use Local Search Grid to track how often you appear in local results for “recording studio” and “podcast studio” around Marylebone and Fitzrovia.",
             "links": [{ "label": "Go to Local Search Grid", "area": "local-search-grid" }]
           }
@@ -136,21 +155,26 @@
         "title": "Increase your Google review flow to build trust and win more clicks",
         "insight": "Review signals matter a lot for both rankings and conversions. You currently have 12 Google reviews with a perfect 5.0 average. The last review was about two months ago and your recent pace is roughly one new review about every 30 days. Meanwhile, peers like Mastering The Mix and Soho Square Studios appear more often across local results. A steady stream of authentic, service-specific reviews can improve your visibility and convince more people to book.",
         "recommendation": "Run a Google-first review program that asks recent clients to leave detailed feedback mentioning the specific service and location, for example “recording session in Marylebone.” Reply to every review to show active management and care.",
+        "actionsSummary": "These steps bring in a steady, natural flow of new Google reviews to build trust and win more clicks.",
         "action": "Launch an email and SMS review request workflow to recent studio, podcast, and event bookings. Send a gentle reminder to non-responders after a few days.",
         "actions": [
           {
+            "label": "Launch review request workflow",
             "text": "Launch an email and SMS review request workflow to recent studio, podcast, and event bookings. Send a gentle reminder to non-responders after a few days.",
             "links": [{ "label": "Go to Get Reviews", "area": "reviews" }]
           },
           {
+            "label": "Use specific review prompts",
             "text": "Use short templates that encourage specifics, like session type, gear used, parking, or late hours, without scripting exact keywords. This helps relevance and the summaries shown by Google's AI in Maps.",
             "links": [{ "label": "Go to Get Reviews", "area": "reviews" }]
           },
           {
+            "label": "Reply to every review",
             "text": "Reply to 100 percent of new Google reviews within a few days. Thank happy customers, address concerns offline when needed, and reference policies or equipment where helpful.",
             "links": [{ "label": "Go to Reputation Manager", "area": "reviews" }]
           },
           {
+            "label": "Track review flow monthly",
             "text": "Track review flow and ratings monthly, and benchmark against Soho Sonic Studios and Soho Square Studios in Reputation Manager.",
             "links": [{ "label": "Go to Reputation Manager", "area": "reviews" }]
           }
@@ -164,28 +188,35 @@
         "title": "Close citation gaps and earn quality local and industry backlinks to raise authority",
         "insight": "Citations, which are consistent listings of your name, address, and phone across directories, and backlinks, which are links from other websites, both build trust and local presence. Citation data shows large gaps, with nearly half of general directories showing no listing found. Some existing listings match your name but not the full NAP, so none are fully consistent. Your website authority trails leaders like BBC Maida Vale Studios and Angel Studios, who tend to appear more often across the area. Cleaning up listings and adding a handful of high-quality local and industry links will lift trust and improve your eligibility for local results.",
         "recommendation": "Create missing top tier and industry citations, fix NAP inconsistencies on existing listings, then pursue 5 to 10 high-quality local or industry backlinks such as features, event listings, and partnerships to raise authority and Local Pack eligibility.",
+        "actionsSummary": "These steps get your business listed accurately across the web and earn links that lift your local authority.",
         "action": "Tier 1, high priority: ensure accurate, consistent listings on Google, Apple Maps, Bing, Facebook, and Yelp, and sync your core NAP across these networks.",
         "actions": [
           {
+            "label": "Fix Tier 1 listings",
             "text": "Tier 1, high priority: ensure accurate, consistent listings on Google, Apple Maps, Bing, Facebook, and Yelp, and sync your core NAP across these networks.",
             "links": [{ "label": "Go to Active Sync" }]
           },
           {
+            "label": "Fix inconsistent NAP listings",
             "text": "Use Citation Tracker to find and fix inconsistent existing listings, especially those shown as having a listing but with no matching NAP details. Update every field to match your GBP exactly.",
             "links": [{ "label": "Go to Citation Tracker", "area": "citations" }]
           },
           {
+            "label": "Add industry directories",
             "text": "Tier 2, industry specific: create listings on competitor-proven directories where you are missing, for example productionbase.co.uk, theknowledgeonline.com, showcase-music.com, and zipcube.com.",
             "links": [{ "label": "Go to Citation Builder", "area": "citations" }]
           },
           {
+            "label": "Add local directories",
             "text": "Tier 3, local directories: launch a Citation Builder campaign for regional sites seen in competitor footprints, such as citymaps.uk, mapcarta.com, and reviewbritain.com, to expand coverage.",
             "links": [{ "label": "Go to Citation Builder", "area": "citations" }]
           },
           {
+            "label": "Earn local backlinks",
             "text": "Backlinks: pitch session write-ups or live videos to London creative blogs and local news, list public events on eventbrite.com, and collaborate with brands for case studies that link back to /hire. Prioritize dofollow links in editorial content."
           },
           {
+            "label": "Track authority gains",
             "text": "Track changes for “recording studio Marylebone” and “podcast studio near me” in Local Search Grid to connect authority gains to visibility.",
             "links": [{ "label": "Go to Local Search Grid", "area": "local-search-grid" }]
           }
@@ -196,6 +227,7 @@
   "foundation": {
     "websiteContent": {
       "score": 25,
+      "summary": "Your site is missing core fundamentals — most pages lack titles and meta descriptions, there's no valid sitemap, and on-site local signals are thin. Fixing these basics is the fastest route to ranking.",
       "subMetrics": [
         { "label": "Conversion UX", "score": 35 },
         { "label": "Keyword coverage", "score": 0 },
@@ -206,6 +238,7 @@
     },
     "gbp": {
       "score": 38,
+      "summary": "Your profile is live and reflects your services, but categories aren't aligned to what you actually sell and activity has stalled — so you're under-showing in the Map Pack.",
       "subMetrics": [
         { "label": "Activity & freshness", "score": 25 },
         { "label": "Conversion tracking", "score": 50 },
@@ -216,6 +249,7 @@
     },
     "reviews": {
       "score": 32,
+      "summary": "A strong 5.0 rating, but built on only 12 reviews with almost no recent flow — too thin to compete with market leaders for Local Pack clicks.",
       "subMetrics": [
         { "label": "Review volume", "score": 2 },
         { "label": "Average rating", "score": 100 },
@@ -224,6 +258,7 @@
     },
     "citations": {
       "score": 59,
+      "summary": "Your name, address and phone are largely consistent, but core directory coverage is patchy and trails every studio ranking above you — easy authority left on the table.",
       "subMetrics": [
         { "label": "Core coverage", "score": 35 },
         { "label": "NAP consistency", "score": 83 }

@@ -78,10 +78,11 @@ import { useProposalData } from "@brightlocal/proposal-data";
 export function PageHeader({
   breadcrumbs = [],
   title,
-  // Muted row under the title. DEFAULT is data-bound: the current
-  // location (name + status badge) from the proposal data context —
-  // reads at render position, so it follows dataset switches. Pass
-  // `meta={null}` to suppress, or any node to replace.
+  // Muted row under the title. EXPLICIT-ONLY — pass any node to render
+  // it; omitted (or null) renders nothing. Previously defaulted to a
+  // data-bound NAP line + status Badge from the proposal data context;
+  // that default was dropped — the location already leads the crumb, so
+  // the row was redundant (Ali, 20 Jul).
   meta,
   actions,
   dataHook = "page-header",
@@ -89,20 +90,6 @@ export function PageHeader({
   ...rest
 }) {
   const data = useProposalData();
-  const resolvedMeta =
-    meta === undefined ? (
-      <>
-        {/* NAP discipline: name is the name ONLY; the meta row COMPOSES
-            name + address for display. Crumbs bind bare name. */}
-        <span>
-          {data.location.name}
-          {data.location.address ? ` — ${data.location.address}` : ""}
-        </span>
-        <Badge dataHook="location-status">{data.location.status}</Badge>
-      </>
-    ) : (
-      meta
-    );
   return (
     // w-full is LOAD-BEARING: inside GlobalLayoutContentHeader the
     // header block otherwise spans content width only, and
@@ -126,6 +113,13 @@ export function PageHeader({
           <Breadcrumb dataHook={`${dataHook}-breadcrumb`}>
             <BreadcrumbList>
               {breadcrumbs
+                // Trail is ANCESTORS ONLY, max two (the H2 is the current
+                // page). Enforced here, not just documented — a screen
+                // passing a three-deep "All Locations > … > …" trail is
+                // clamped to the DEEPEST two (nearest the current page),
+                // so the immediate parent always survives the trim (Ali,
+                // 20 Jul).
+                .slice(-2)
                 // DATA-BOUND crumb: { bind: "location" } resolves to the
                 // CURRENT location's name at render position — "All
                 // Locations > Blackberry Farm Park" follows dataset
@@ -164,9 +158,9 @@ export function PageHeader({
           </Breadcrumb>
         ) : null}
         <TypographyH2 dataHook={`${dataHook}-title`}>{title}</TypographyH2>
-        {resolvedMeta ? (
+        {meta ? (
           <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
-            {resolvedMeta}
+            {meta}
           </div>
         ) : null}
       </div>

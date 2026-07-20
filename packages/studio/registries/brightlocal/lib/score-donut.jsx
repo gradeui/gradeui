@@ -59,9 +59,21 @@ export function ScoreDonut({
         />
       </svg>
       {size >= 60 ? (
+        // Font SCALES with the ring so the value never overflows the
+        // inner circle — a fixed text-4xl overran the smaller mini rings
+        // (esp. a 3-digit "100"). ~0.3× diameter fits 2–3 digits with
+        // room for "/100" beneath (Ali, 20 Jul).
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-4xl font-semibold leading-none">{value}</span>
-          <span className="text-xs text-[var(--ds-tailwind-colors-neutral-500)]">
+          <span
+            className="font-semibold leading-none"
+            style={{ fontSize: Math.round(size * 0.3) }}
+          >
+            {value}
+          </span>
+          <span
+            className="leading-none text-[var(--ds-tailwind-colors-neutral-500)]"
+            style={{ fontSize: Math.max(10, Math.round(size * 0.13)) }}
+          >
             /100
           </span>
         </div>

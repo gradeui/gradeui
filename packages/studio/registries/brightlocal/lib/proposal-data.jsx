@@ -358,6 +358,12 @@ export const PROPOSAL_DATA = {
       label: "Website and content",
       insightsLabel: "Web Performance",
       area: "website-seo",
+      // summary — the one-line "what this category is / how it's doing"
+      // shown under the title on the AI Insights sub-page's score strip.
+      // These defaults are category-descriptive (dataset-agnostic); a
+      // dataset overrides with location-specific, score-aware copy.
+      summary:
+        "How well your site is built for search and conversion — technical health, page optimisation and the on-site signals that help you rank and convert.",
       score: 78,
       subMetrics: [
         { label: "Conversion UX", score: 70 },
@@ -371,6 +377,8 @@ export const PROPOSAL_DATA = {
       label: "Google Business Profile",
       insightsLabel: "GBP",
       area: "gbp-manager",
+      summary:
+        "The strength of your Google Business Profile — completeness, accuracy and the freshness signals that drive Map Pack visibility.",
       score: 74,
       subMetrics: [
         { label: "Activity & freshness", score: 60 },
@@ -384,6 +392,8 @@ export const PROPOSAL_DATA = {
       label: "Reviews",
       insightsLabel: "Reviews",
       area: "reviews",
+      summary:
+        "Your review footprint — volume, rating and how steadily new reviews arrive to build trust and win Local Pack clicks.",
       score: 72,
       subMetrics: [
         { label: "Review volume", score: 68 },
@@ -395,6 +405,8 @@ export const PROPOSAL_DATA = {
       label: "Citations",
       insightsLabel: "Citations",
       area: "citations",
+      summary:
+        "Where your business is listed across the web, and how consistent your name, address and phone are across those listings.",
       score: 81,
       subMetrics: [
         { label: "Core coverage", score: 79 },
