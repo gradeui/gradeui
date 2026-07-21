@@ -10,7 +10,10 @@
     "address": "London, NW1 6TZ",
     "phone": "0203 488 2915",
     "status": "Needs attention",
-    "rating": { "value": 5.0, "count": 12 }
+    "rating": {
+      "value": 5.0,
+      "count": 12
+    }
   },
   "keywords": [
     "recording studio",
@@ -22,7 +25,10 @@
   "aiInsights": {
     "lastUpdated": "1st Jul 2026 at 9:52 AM UTC",
     "updatesLeft": 1,
-    "counts": { "insights": 5, "recommendations": 26 },
+    "counts": {
+      "insights": 5,
+      "recommendations": 26
+    },
     "tone": "standard",
     "atAGlance": [
       "Fix critical site basics (titles, meta descriptions, canonicals, robots and sitemap, viewport, H1s) so Google can find and trust your pages. Right now competitors consistently rank higher across the area.",
@@ -69,7 +75,12 @@
           {
             "label": "Track non-branded rankings",
             "text": "Track ranking movement for key non branded terms like “recording studio,” “podcast studio,” and “event venue Marylebone” using Local Search Grid.",
-            "links": [{ "label": "Go to Local Search Grid", "area": "local-search-grid" }]
+            "links": [
+              {
+                "label": "Go to Local Search Grid",
+                "area": "local-search-grid"
+              }
+            ]
           }
         ]
       },
@@ -104,8 +115,14 @@
             "label": "Monitor hyperlocal rankings",
             "text": "Monitor gains for hyperlocal terms like “recording studio Marylebone” and “podcast studio near Baker Street” using Local Rank Tracker and Local Search Grid.",
             "links": [
-              { "label": "Go to Local Rank Tracker", "area": "rankings" },
-              { "label": "Go to Local Search Grid", "area": "local-search-grid" }
+              {
+                "label": "Go to Local Rank Tracker",
+                "area": "rankings"
+              },
+              {
+                "label": "Go to Local Search Grid",
+                "area": "local-search-grid"
+              }
             ]
           }
         ]
@@ -124,12 +141,20 @@
           {
             "label": "Set GBP categories",
             "text": "Confirm you have management access to your GBP, keep the primary category as Recording Studio, and add Photography Studio as an additional category if it reflects live services.",
-            "links": [{ "label": "Go to Active Sync" }]
+            "links": [
+              {
+                "label": "Go to Active Sync"
+              }
+            ]
           },
           {
             "label": "Complete GBP services",
             "text": "Audit GBP Services and add any missing services that mirror your site: Recording studio hire, Podcast or content studio, Event venue hire, and DJ or rehearsal support. Use the same naming on your site and in GBP.",
-            "links": [{ "label": "Go to Active Sync" }]
+            "links": [
+              {
+                "label": "Go to Active Sync"
+              }
+            ]
           },
           {
             "label": "Add fresh photos monthly",
@@ -138,12 +163,22 @@
           {
             "label": "Publish Google Posts",
             "text": "Publish regular Google Posts highlighting sessions, listening parties, and seasonal offers. Repurpose content from your /hire pages for efficiency.",
-            "links": [{ "label": "Go to Google Business Profile Post Scheduler", "area": "gbp-manager" }]
+            "links": [
+              {
+                "label": "Go to Google Business Profile Post Scheduler",
+                "area": "gbp-manager"
+              }
+            ]
           },
           {
             "label": "Track local visibility",
             "text": "Use Local Search Grid to track how often you appear in local results for “recording studio” and “podcast studio” around Marylebone and Fitzrovia.",
-            "links": [{ "label": "Go to Local Search Grid", "area": "local-search-grid" }]
+            "links": [
+              {
+                "label": "Go to Local Search Grid",
+                "area": "local-search-grid"
+              }
+            ]
           }
         ]
       },
@@ -161,22 +196,42 @@
           {
             "label": "Launch review request workflow",
             "text": "Launch an email and SMS review request workflow to recent studio, podcast, and event bookings. Send a gentle reminder to non-responders after a few days.",
-            "links": [{ "label": "Go to Get Reviews", "area": "reviews" }]
+            "links": [
+              {
+                "label": "Go to Get Reviews",
+                "area": "reviews"
+              }
+            ]
           },
           {
             "label": "Use specific review prompts",
             "text": "Use short templates that encourage specifics, like session type, gear used, parking, or late hours, without scripting exact keywords. This helps relevance and the summaries shown by Google's AI in Maps.",
-            "links": [{ "label": "Go to Get Reviews", "area": "reviews" }]
+            "links": [
+              {
+                "label": "Go to Get Reviews",
+                "area": "reviews"
+              }
+            ]
           },
           {
             "label": "Reply to every review",
             "text": "Reply to 100 percent of new Google reviews within a few days. Thank happy customers, address concerns offline when needed, and reference policies or equipment where helpful.",
-            "links": [{ "label": "Go to Reputation Manager", "area": "reviews" }]
+            "links": [
+              {
+                "label": "Go to Reputation Manager",
+                "area": "reviews"
+              }
+            ]
           },
           {
             "label": "Track review flow monthly",
             "text": "Track review flow and ratings monthly, and benchmark against Soho Sonic Studios and Soho Square Studios in Reputation Manager.",
-            "links": [{ "label": "Go to Reputation Manager", "area": "reviews" }]
+            "links": [
+              {
+                "label": "Go to Reputation Manager",
+                "area": "reviews"
+              }
+            ]
           }
         ]
       },
@@ -194,22 +249,41 @@
           {
             "label": "Fix Tier 1 listings",
             "text": "Tier 1, high priority: ensure accurate, consistent listings on Google, Apple Maps, Bing, Facebook, and Yelp, and sync your core NAP across these networks.",
-            "links": [{ "label": "Go to Active Sync" }]
+            "links": [
+              {
+                "label": "Go to Active Sync"
+              }
+            ]
           },
           {
             "label": "Fix inconsistent NAP listings",
             "text": "Use Citation Tracker to find and fix inconsistent existing listings, especially those shown as having a listing but with no matching NAP details. Update every field to match your GBP exactly.",
-            "links": [{ "label": "Go to Citation Tracker", "area": "citations" }]
+            "links": [
+              {
+                "label": "Go to Citation Tracker",
+                "area": "citations"
+              }
+            ]
           },
           {
             "label": "Add industry directories",
             "text": "Tier 2, industry specific: create listings on competitor-proven directories where you are missing, for example productionbase.co.uk, theknowledgeonline.com, showcase-music.com, and zipcube.com.",
-            "links": [{ "label": "Go to Citation Builder", "area": "citations" }]
+            "links": [
+              {
+                "label": "Go to Citation Builder",
+                "area": "citations"
+              }
+            ]
           },
           {
             "label": "Add local directories",
             "text": "Tier 3, local directories: launch a Citation Builder campaign for regional sites seen in competitor footprints, such as citymaps.uk, mapcarta.com, and reviewbritain.com, to expand coverage.",
-            "links": [{ "label": "Go to Citation Builder", "area": "citations" }]
+            "links": [
+              {
+                "label": "Go to Citation Builder",
+                "area": "citations"
+              }
+            ]
           },
           {
             "label": "Earn local backlinks",
@@ -218,7 +292,12 @@
           {
             "label": "Track authority gains",
             "text": "Track changes for “recording studio Marylebone” and “podcast studio near me” in Local Search Grid to connect authority gains to visibility.",
-            "links": [{ "label": "Go to Local Search Grid", "area": "local-search-grid" }]
+            "links": [
+              {
+                "label": "Go to Local Search Grid",
+                "area": "local-search-grid"
+              }
+            ]
           }
         ]
       }
@@ -229,40 +308,89 @@
       "score": 25,
       "summary": "Your site is missing core fundamentals — most pages lack titles and meta descriptions, there's no valid sitemap, and on-site local signals are thin. Fixing these basics is the fastest route to ranking.",
       "subMetrics": [
-        { "label": "Conversion UX", "score": 35 },
-        { "label": "Keyword coverage", "score": 0 },
-        { "label": "Page optimization", "score": 50 },
-        { "label": "Technical health", "score": 55 },
-        { "label": "Local intent & linking", "score": 5 }
-      ]
+        {
+          "label": "Conversion UX",
+          "score": 35
+        },
+        {
+          "label": "Keyword coverage",
+          "score": 0
+        },
+        {
+          "label": "Page optimization",
+          "score": 50
+        },
+        {
+          "label": "Technical health",
+          "score": 55
+        },
+        {
+          "label": "Local intent & linking",
+          "score": 5
+        }
+      ],
+      "lede": "Your site is missing core fundamentals."
     },
     "gbp": {
       "score": 38,
       "summary": "Your profile is live and reflects your services, but categories aren't aligned to what you actually sell and activity has stalled — so you're under-showing in the Map Pack.",
       "subMetrics": [
-        { "label": "Activity & freshness", "score": 25 },
-        { "label": "Conversion tracking", "score": 50 },
-        { "label": "Profile completeness", "score": 80 },
-        { "label": "NAP alignment", "score": 50 },
-        { "label": "Category & service accuracy", "score": 0 }
-      ]
+        {
+          "label": "Activity & freshness",
+          "score": 25
+        },
+        {
+          "label": "Conversion tracking",
+          "score": 50
+        },
+        {
+          "label": "Profile completeness",
+          "score": 80
+        },
+        {
+          "label": "NAP alignment",
+          "score": 50
+        },
+        {
+          "label": "Category & service accuracy",
+          "score": 0
+        }
+      ],
+      "lede": "Live and accurate, but inactive."
     },
     "reviews": {
       "score": 32,
       "summary": "A strong 5.0 rating, but built on only 12 reviews with almost no recent flow — too thin to compete with market leaders for Local Pack clicks.",
       "subMetrics": [
-        { "label": "Review volume", "score": 2 },
-        { "label": "Average rating", "score": 100 },
-        { "label": "Recency & velocity", "score": 0 }
-      ]
+        {
+          "label": "Review volume",
+          "score": 2
+        },
+        {
+          "label": "Average rating",
+          "score": 100
+        },
+        {
+          "label": "Recency & velocity",
+          "score": 0
+        }
+      ],
+      "lede": "Great rating, far too few reviews."
     },
     "citations": {
       "score": 59,
       "summary": "Your name, address and phone are largely consistent, but core directory coverage is patchy and trails every studio ranking above you — easy authority left on the table.",
       "subMetrics": [
-        { "label": "Core coverage", "score": 35 },
-        { "label": "NAP consistency", "score": 83 }
-      ]
+        {
+          "label": "Core coverage",
+          "score": 35
+        },
+        {
+          "label": "NAP consistency",
+          "score": 83
+        }
+      ],
+      "lede": "Mostly consistent, with key gaps."
     }
   },
   "visibility": {
@@ -274,7 +402,9 @@
       "topThreeShare": 0,
       "topThreeShareDelta": 0
     },
-    "organic": { "score": 0 }
+    "organic": {
+      "score": 0
+    }
   },
   "competitors": [
     {
@@ -282,7 +412,9 @@
       "name": "BBC Maida Vale Studios",
       "rating": 4.5,
       "reviewCount": 339,
-      "categories": ["Recording studio"],
+      "categories": [
+        "Recording studio"
+      ],
       "links": 435784519,
       "authority": 95
     },
@@ -291,7 +423,9 @@
       "name": "The Sound Company",
       "rating": 5.0,
       "reviewCount": 44,
-      "categories": ["Recording studio"],
+      "categories": [
+        "Recording studio"
+      ],
       "links": 749,
       "authority": 29
     },
@@ -300,7 +434,10 @@
       "name": "AIR Studios",
       "rating": 4.9,
       "reviewCount": 156,
-      "categories": ["Recording studio", "Music producer"],
+      "categories": [
+        "Recording studio",
+        "Music producer"
+      ],
       "links": 5726,
       "authority": 49
     },
@@ -309,7 +446,10 @@
       "name": "Soho Sonic Studios",
       "rating": 4.9,
       "reviewCount": 83,
-      "categories": ["Recording studio", "Rehearsal studio"],
+      "categories": [
+        "Recording studio",
+        "Rehearsal studio"
+      ],
       "links": 273,
       "authority": 18
     },
@@ -318,7 +458,9 @@
       "name": "AudioHaus Recording Studio West London Notting Hill",
       "rating": 4.9,
       "reviewCount": 94,
-      "categories": ["Recording studio"],
+      "categories": [
+        "Recording studio"
+      ],
       "links": 5,
       "authority": 5
     },
@@ -327,7 +469,10 @@
       "name": "Select Recording Studios",
       "rating": 5.0,
       "reviewCount": 381,
-      "categories": ["Recording studio", "Music producer"],
+      "categories": [
+        "Recording studio",
+        "Music producer"
+      ],
       "links": 6627,
       "authority": 26
     },
@@ -336,7 +481,11 @@
       "name": "JBJ Recording Studio",
       "rating": 4.8,
       "reviewCount": 32,
-      "categories": ["Recording studio", "Music producer", "Rehearsal studio"],
+      "categories": [
+        "Recording studio",
+        "Music producer",
+        "Rehearsal studio"
+      ],
       "links": 52,
       "authority": 13
     },
@@ -345,7 +494,9 @@
       "name": "RAK Recording Studios",
       "rating": 4.8,
       "reviewCount": 81,
-      "categories": ["Recording studio"],
+      "categories": [
+        "Recording studio"
+      ],
       "links": 1287,
       "authority": 40
     },
@@ -354,7 +505,10 @@
       "name": "PIRATE.COM - Rehearsal & Recording Studios",
       "rating": 4.5,
       "reviewCount": 334,
-      "categories": ["Recording studio", "Rehearsal studio"],
+      "categories": [
+        "Recording studio",
+        "Rehearsal studio"
+      ],
       "links": 549213,
       "authority": 47
     },
@@ -363,7 +517,10 @@
       "name": "Denmark Street Studios",
       "rating": 4.8,
       "reviewCount": 25,
-      "categories": ["Recording studio", "Rehearsal studio"],
+      "categories": [
+        "Recording studio",
+        "Rehearsal studio"
+      ],
       "links": 125,
       "authority": 16
     },
@@ -372,7 +529,10 @@
       "name": "Minus 1 Studios",
       "rating": 5.0,
       "reviewCount": 12,
-      "categories": ["Recording studio", "Podcast studio"],
+      "categories": [
+        "Recording studio",
+        "Podcast studio"
+      ],
       "links": 2,
       "authority": 3,
       "self": true

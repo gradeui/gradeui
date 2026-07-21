@@ -80,7 +80,9 @@ export const PROPOSAL_SECTIONS = [
     label: "AI Insights",
     icon: Sparkles,
     sub: [
-      { id: "ai-insights-website-content", label: "Website and Content" },
+      // "Website" — renamed from "Website and Content" everywhere in the
+      // UI (snags list, Ali 21 Jul); the row ID stays for wiring stability.
+      { id: "ai-insights-website-content", label: "Website" },
       { id: "ai-insights-google-business-profile", label: "Google Business Profile" },
       { id: "ai-insights-reviews", label: "Reviews" },
       { id: "ai-insights-citations", label: "Citations" },
