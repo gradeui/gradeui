@@ -179,6 +179,12 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Pin the content header to the top of the scroll viewport (bg-background, border-b). Requires flush, otherwise it sticks 24px down inside the padding. (default false)"
       },
+      "headerBackground": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "The header renders as a FULL-BLEED band (background spans the whole content area, edge-to-edge right of the sidebar) while its content stays aligned with the body. This className paints the band's surface; unset = transparent (page background shows, no visible change). Pass a bg utility or scope class for a distinct header surface. (default none)"
+      },
       "pinnedSidebar": {
         "kind": "boolean",
         "design": "knob",

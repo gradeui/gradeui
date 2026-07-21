@@ -4,6 +4,7 @@ import: "@brightlocal/proposal"
 props:
   - flush?: boolean — Cancel GlobalLayout's baked-in p-section-sm and the scroll viewport's p-1 (string literals in the dist, not prop-overridable — see rules/90-audit.md). (default true)
   - stickyHeader?: boolean — Pin the content header to the top of the scroll viewport (bg-background, border-b). Requires flush, otherwise it sticks 24px down inside the padding. (default false)
+  - headerBackground?: string — The header renders as a FULL-BLEED band (background spans the whole content area, edge-to-edge right of the sidebar) while its content stays aligned with the body. This className paints the band's surface; unset = transparent (page background shows, no visible change). Pass a bg utility or scope class for a distinct header surface. (default none)
   - pinnedSidebar?: boolean — Lock the sidebar to the viewport edge, full height (top 0 / 100dvh). The DS default offsets it by --ds-section-padding-y-sm, which is wrong once flush. (default true)
   - sidebarTone? (default | white | subtle | dark | brand) — Re-skin the sidebar by re-pointing the --sidebar-* CSS variables on its container. Pure token swap; component internals untouched. (default "white")
   - contentMaxWidth?: string — Max width of the content column (passed to GlobalLayoutContent; default the DS's breakpoint-lg). Note the DS's ContentHeader hardcodes its own breakpoint-lg cap, so only the body follows a custom value.

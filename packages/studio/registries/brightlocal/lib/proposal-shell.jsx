@@ -415,6 +415,13 @@ export function AppLayoutShell({
   dataset = "default",
   sidebar,
   header,
+  // Header BAND background. The header spans the full content-area width
+  // (edge-to-edge, right of the sidebar) while its CONTENT stays aligned
+  // with the body; this className paints the band's surface. Default
+  // (unset) = transparent → the page background shows through (no visible
+  // change). Pass a bg utility (or a scope class) for a distinct header
+  // surface — a future tweaker knob will drive it (Ali, 21 Jul).
+  headerBackground,
   // Mobile top bar slot (hamburger + logo). Rendered FIRST inside the
   // content column so it sits ABOVE the page header below lg — passing
   // it via children put it underneath (July 2026 screenshot).
@@ -629,22 +636,28 @@ export function AppLayoutShell({
         {header ? (
           <GlobalLayoutContentHeader
             dataHook={`${dataHook}-header`}
-            // The header owns its padding — it must render identically
-            // sticky or not; stickiness only adds surface + border +
-            // pinning. z-30: shell chrome must beat PAGE z-indexes
-            // (screens use up to z-20 — the LSG map nodes painted over
-            // the header at z-10, 16 Jul screenshot) while staying
-            // under the tweaker (z-50) and portalled overlays.
+            // FULL-BLEED BAND (Ali, 21 Jul): -mx-6/px-6 net-zero the
+            // content column's 24px gutters, and max-w-none lifts the
+            // DS's 1024px cap — so the header's BACKGROUND spans the whole
+            // content area (edge-to-edge, right of the sidebar). The inner
+            // measure below re-caps + re-aligns the CONTENT to match the
+            // body. z-30: shell chrome must beat PAGE z-indexes (screens
+            // use up to z-20 — the LSG map nodes painted over the header at
+            // z-10, 16 Jul) while staying under the tweaker (z-50).
             className={[
-              "pt-6 pb-4",
-              stickyHeader
-                ? "bg-background sticky top-0 z-30 border-b"
-                : "",
+              "-mx-6 max-w-none px-6 pt-6 pb-4",
+              stickyHeader ? "sticky top-0 z-30 border-b" : "",
+              // Band surface: explicit headerBackground wins; else the
+              // sticky default (bg-background ≈ page bg); else transparent.
+              headerBackground || (stickyHeader ? "bg-background" : ""),
             ]
               .filter(Boolean)
               .join(" ")}
           >
-            {header}
+            {/* Inner measure — matches GlobalLayoutContentBody (max-w
+                1024px, left-aligned), so the title/description line up
+                exactly with the body content. */}
+            <div className="w-full max-w-[1024px]">{header}</div>
           </GlobalLayoutContentHeader>
         ) : null}
         {children}
