@@ -3589,17 +3589,29 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Custom nav model (array of {id, label, icon, active?, goto?, transition?, sub?}). Default: buildProposalSections(data) — the proposal IA with keyword rows injected from data.keywords and goto links applied from data.navLinks. Pass only when a screen needs a DIFFERENT nav."
       },
+      "locationHomeGoto": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Screen the top \"current location\" House row links to (shows data.location.name). (default \"screen:dmrnwiqjdknxy\" — the Location Hub)"
+      },
+      "allLocationsGoto": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Screen the footer \"All Locations\" row links to. (default \"screen:dmrotrgstba3l\" — All Locations)"
+      },
       "accounts": {
         "kind": "string",
         "design": "plumbing",
         "optional": true,
-        "description": "Switcher popover items ({label, icon}[]). (default PROPOSAL_ACCOUNTS)"
+        "description": "(LEGACY) former account-switcher popover items; the switcher was replaced by the \"All Locations\" nav row, so this is unused. (default PROPOSAL_ACCOUNTS)"
       },
       "accountLabel": {
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "Switcher trigger label. (default data.account.label from the proposal data context)"
+        "description": "(LEGACY) former switcher trigger label; unused now. (default data.account.label)"
       },
       "userName": {
         "kind": "string",

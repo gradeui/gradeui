@@ -35,8 +35,6 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarMenuSubVariant,
-  SidebarPopoverMenu,
-  SidebarSwitcher,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -52,7 +50,9 @@ import {
   ChevronRight,
   Globe,
   Grid3x3,
+  House,
   Info,
+  LayoutGrid,
   Link,
   ListChecks,
   SlidersHorizontal,
@@ -317,6 +317,11 @@ export function ProposalSidebar({
   // highlights + every collapsible on its trail opens. Overrides the
   // IA's baked flags; omit for the default (Rankings Table).
   activeId,
+  // The current location's home (the House row at the very top) and the
+  // "All Locations" footer row link here. Defaults are this proposal's
+  // screen ids; override per-screen (or when the registry is reused).
+  locationHomeGoto = "screen:dmrnwiqjdknxy",
+  allLocationsGoto = "screen:dmrotrgstba3l",
   accounts = PROPOSAL_ACCOUNTS,
   // Account/user rows resolve PROPS FIRST, then the proposal data
   // context — so a screen wrapped in ProposalDataProvider re-skins the
@@ -381,6 +386,20 @@ export function ProposalSidebar({
             {/* gap-1 (4px) between rows — gap-0 read as one solid
                 block once the rows went size="sm" (Ali, 18 Jul). */}
             <SidebarMenu className="gap-1">
+              {/* Current location — a House row at the very top; shows
+                  the bound location name and links to its hub (Ali,
+                  21 Jul). Sits ABOVE the sections. */}
+              <SidebarMenuItem dataHook="nav-item-current-location">
+                <SidebarMenuButton
+                  size="sm"
+                  className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
+                  dataHook="nav-current-location"
+                  data-grade-goto={locationHomeGoto}
+                >
+                  <House className="size-5" />
+                  <span>{data.location.name}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               {sections.map((section) => (
                 <NavSection key={section.id} section={section} activeId={activeId} />
               ))}
@@ -399,21 +418,22 @@ export function ProposalSidebar({
         data-hook="sidebar-footer"
         className="border-sidebar-border flex shrink-0 flex-col gap-0.5 border-t px-2 py-1.5"
       >
-        {/* Account switcher — full-width row above the signed-in user.
-            No trigger icon — the label carries it; the popover items
-            keep theirs for scanability. */}
-        <SidebarSwitcher
-          dataHook="account-switcher"
-          label={accountLabel}
-          triggerAriaLabel="Switch account"
-          triggerClassName="w-full px-2 py-1 [&>span]:flex-1 [&>span]:text-left [&>svg:last-child]:size-3 [&>svg:last-child]:opacity-100"
-        >
-          <SidebarPopoverMenu
-            dataHook="account-switcher-menu"
-            groupTitle="Accounts"
-            items={accounts}
-          />
-        </SidebarSwitcher>
+        {/* All Locations — a STANDARD nav row (replaced the account
+            switcher dropdown, Ali 21 Jul). Sits above the signed-in
+            user; links back to the locations list. */}
+        <SidebarMenu>
+          <SidebarMenuItem dataHook="nav-item-all-locations">
+            <SidebarMenuButton
+              size="sm"
+              className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
+              dataHook="nav-all-locations"
+              data-grade-goto={allLocationsGoto}
+            >
+              <LayoutGrid className="size-5" />
+              <span>All Locations</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
         <SidebarMenu>
           {/* The dropdown trigger inherits SidebarMenuButton's baked
               px-6 (rounded-full nav sizing) — comically wide in a
