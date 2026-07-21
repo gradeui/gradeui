@@ -141,11 +141,11 @@ export const PROPOSAL_SECTIONS = [
     id: "local-search-grid",
     label: "Local Search Grid",
     icon: Grid3x3,
-    // Keyword rows are DATA-DRIVEN — injected from data.keywords by
-    // buildProposalSections below (Harry: keywords come from the JSON).
-    // This static fallback only renders if sections are used raw.
+    // Fixed sub-nav (21 Jul): the dynamic per-keyword rows were dropped
+    // — Browse / Edit / Settings instead.
     sub: [
-      { id: "local-search-grid-add", label: "Add more keywords", paid: true },
+      { id: "local-search-grid-browse", label: "Browse Keywords" },
+      { id: "local-search-grid-edit", label: "Edit Keywords" },
       { id: "local-search-grid-settings", label: "Settings" },
     ],
   },
@@ -167,9 +167,7 @@ export const PROPOSAL_SECTIONS = [
   { id: "agency-tools", label: "Agency Tools", icon: Briefcase },
 ];
 
-/** The proposal IA with data-driven rows injected:
- *  - Local Search Grid's keyword sub-items come from `data.keywords`,
- *    ahead of the section's static rows (Add more / Settings).
+/** The proposal IA with data-driven links applied:
  *  - `data.navLinks` wires goto targets onto nav rows BY ID — per
  *    project data, not module structure, so links can change over time
  *    without touching the IA. Value is a screen name string, or
@@ -179,7 +177,6 @@ export const PROPOSAL_SECTIONS = [
  *  ProposalSidebar calls this with the context data by default; screens
  *  with a custom nav can call it themselves or pass `sections` raw. */
 export function buildProposalSections(data) {
-  const keywords = data?.keywords ?? [];
   const links = data?.navLinks ?? {};
   const applyLinks = (item) => {
     const link = links[item.id];
@@ -196,19 +193,7 @@ export function buildProposalSections(data) {
       ? { ...patched, sub: patched.sub.map(applyLinks) }
       : patched;
   };
-  return PROPOSAL_SECTIONS.map((section) => {
-    const withKeywords =
-      section.id === "local-search-grid"
-        ? {
-            ...section,
-            sub: [
-              ...keywords.map((kw, i) => ({ id: `local-search-grid-keyword-${i}`, label: kw })),
-              ...section.sub,
-            ],
-          }
-        : section;
-    return applyLinks(withKeywords);
-  });
+  return PROPOSAL_SECTIONS.map(applyLinks);
 }
 
 /** Does this item's subtree contain the id? Drives the open trail when
@@ -353,6 +338,11 @@ export function ProposalSidebar({
   userName = userName ?? data.user.name;
   userMeta = userMeta ?? data.user.meta;
   userInitials = userInitials ?? data.user.initials;
+  // The All Locations page is an ACCOUNT context — no location is
+  // selected — so it drops the whole location nav (scope requirement,
+  // Ali 21 Jul). Signalled by its activeId; no extra prop or per-screen
+  // wiring needed.
+  const isAllLocations = activeId === "all-locations";
   return (
     // view-transition-name (STUDIO-FLOWS F1.5): a STABLE name shared by
     // every screen's sidebar means goto swaps treat the nav as the SAME
@@ -386,23 +376,43 @@ export function ProposalSidebar({
             {/* gap-1 (4px) between rows — gap-0 read as one solid
                 block once the rows went size="sm" (Ali, 18 Jul). */}
             <SidebarMenu className="gap-1">
-              {/* Current location — a House row at the very top; shows
-                  the bound location name and links to its hub (Ali,
-                  21 Jul). Sits ABOVE the sections. */}
-              <SidebarMenuItem dataHook="nav-item-current-location">
-                <SidebarMenuButton
-                  size="sm"
-                  className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
-                  dataHook="nav-current-location"
-                  data-grade-goto={locationHomeGoto}
-                >
-                  <House className="size-5" />
-                  <span>{data.location.name}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {sections.map((section) => (
-                <NavSection key={section.id} section={section} activeId={activeId} />
-              ))}
+              {/* All Locations page → account context: just an "All
+                  Locations" row, no location nav. Every other screen →
+                  the current-location House row + the sections. */}
+              {isAllLocations ? (
+                <SidebarMenuItem dataHook="nav-item-all-locations-top">
+                  <SidebarMenuButton
+                    size="sm"
+                    className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
+                    dataHook="nav-all-locations-top"
+                    isActive
+                    data-grade-goto={allLocationsGoto}
+                  >
+                    <LayoutGrid className="size-5" />
+                    <span>All Locations</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ) : (
+                <>
+                  {/* Current location — a House row at the very top;
+                      shows the bound location name and links to its hub
+                      (Ali, 21 Jul). Sits ABOVE the sections. */}
+                  <SidebarMenuItem dataHook="nav-item-current-location">
+                    <SidebarMenuButton
+                      size="sm"
+                      className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
+                      dataHook="nav-current-location"
+                      data-grade-goto={locationHomeGoto}
+                    >
+                      <House className="size-5" />
+                      <span>{data.location.name}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {sections.map((section) => (
+                    <NavSection key={section.id} section={section} activeId={activeId} />
+                  ))}
+                </>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -420,20 +430,23 @@ export function ProposalSidebar({
       >
         {/* All Locations — a STANDARD nav row (replaced the account
             switcher dropdown, Ali 21 Jul). Sits above the signed-in
-            user; links back to the locations list. */}
-        <SidebarMenu>
-          <SidebarMenuItem dataHook="nav-item-all-locations">
-            <SidebarMenuButton
-              size="sm"
-              className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
-              dataHook="nav-all-locations"
-              data-grade-goto={allLocationsGoto}
-            >
-              <LayoutGrid className="size-5" />
-              <span>All Locations</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+            user; links back to the locations list. Hidden ON the All
+            Locations page itself — there it's the top nav row instead. */}
+        {!isAllLocations ? (
+          <SidebarMenu>
+            <SidebarMenuItem dataHook="nav-item-all-locations">
+              <SidebarMenuButton
+                size="sm"
+                className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
+                dataHook="nav-all-locations"
+                data-grade-goto={allLocationsGoto}
+              >
+                <LayoutGrid className="size-5" />
+                <span>All Locations</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        ) : null}
         <SidebarMenu>
           {/* The dropdown trigger inherits SidebarMenuButton's baked
               px-6 (rounded-full nav sizing) — comically wide in a

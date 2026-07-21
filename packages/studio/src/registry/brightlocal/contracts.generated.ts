@@ -3581,7 +3581,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "WHICH PAGE THIS IS: the nav row id to highlight (\"rankings-table\", \"location-profile-hours\", \"reviews\"). Nav model v2: no accordions — the active section's sub rows render (one level max; a level-3 id highlights its level-2 parent), all other sections show top-level links only. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page."
+        "description": "WHICH PAGE THIS IS: the nav row id to highlight (\"rankings-table\", \"location-profile-hours\", \"reviews\"). Nav model v2: no accordions — the active section's sub rows render (one level max; a level-3 id highlights its level-2 parent), all other sections show top-level links only. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page. SPECIAL VALUE \"all-locations\" → ACCOUNT context: the whole location nav (current-location House row + sections + footer All Locations row) is dropped and the sidebar shows only an \"All Locations\" row at the top — use it on the All Locations screen."
       },
       "sections": {
         "kind": "string",
