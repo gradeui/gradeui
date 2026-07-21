@@ -155,7 +155,7 @@ export const PROPOSAL_DATA = {
     },
     {
       id: "minus-one-studios",
-      name: "-1 Studios",
+      name: "Minus 1 Studios",
       city: "London",
       postcode: "NW1 6TZ",
       category: "Recording studio",
