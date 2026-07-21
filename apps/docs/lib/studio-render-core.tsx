@@ -73,6 +73,28 @@ import { cn } from "@/lib/utils";
 // pre-bundled module object here — the whole point is that there's no
 // runtime npm fetch.
 
+// ─── Registry vocab extensions ────────────────────────────────────────
+//
+// Seam for bundling an EXTERNAL registry's vocabulary into a consumer
+// WITHOUT weighing down every other surface that imports this core. The
+// MCP preview View registers the brightlocal vocab through this
+// (preview-view/brightlocal-vocab.ts) — its bundle inlines the DS npm
+// package and the registry lib modules, then answers for the
+// "@brightlocal/*" specifiers here. `knows` must be cheap and
+// side-effect-free (it gates the esm.sh pre-resolve); `resolve` may
+// lazily compile (lib modules) and throw a descriptive error.
+
+export interface ImportResolverExtension {
+  knows(spec: string): boolean;
+  resolve(spec: string): unknown;
+}
+
+const RESOLVER_EXTENSIONS: ImportResolverExtension[] = [];
+
+export function registerImportResolver(ext: ImportResolverExtension): void {
+  if (!RESOLVER_EXTENSIONS.includes(ext)) RESOLVER_EXTENSIONS.push(ext);
+}
+
 export function resolveImport(path: string): unknown {
   if (path.endsWith(".css")) return {};
 
@@ -112,6 +134,12 @@ export function resolveImport(path: string): unknown {
   }
 
   if (/^\.\.?\/components\/ui\//.test(path)) return { ...GradeuiUi, ...GradeuiComposer };
+
+  // Registered registry vocabularies (e.g. brightlocal in the MCP View)
+  // answer BEFORE the CDN tier — their specifiers must never hit esm.sh.
+  for (const ext of RESOLVER_EXTENSIONS) {
+    if (ext.knows(path)) return ext.resolve(path);
+  }
 
   if (CDN_CACHE.has(path)) {
     const entry = CDN_CACHE.get(path);
@@ -168,6 +196,7 @@ function isKnownSpecifier(spec: string): boolean {
   if (KNOWN_TIER_1.has(spec)) return true;
   if (spec === "@gradeui/ui" || spec.startsWith("@gradeui/ui/")) return true;
   if (/^\.\.?\/components\/ui\//.test(spec)) return true;
+  for (const ext of RESOLVER_EXTENSIONS) if (ext.knows(spec)) return true;
   return false;
 }
 
@@ -253,6 +282,27 @@ export function healMissingLucideImports(source: string): string {
 export interface CompileResult {
   Component: React.ComponentType | null;
   error: Error | null;
+}
+
+/** Compile + execute a MODULE (registry lib module — no default-export
+ *  requirement) and return its exports namespace. Same sucrase config as
+ *  `compile`; the resolver defaults to `resolveImport` and is overridable
+ *  so a vocab extension can inject a cycle-guarded resolver. */
+export function compileModule(
+  source: string,
+  resolver: (path: string) => unknown = resolveImport,
+): Record<string, unknown> {
+  const { code } = sucraseTransform(source, {
+    transforms: ["jsx", "typescript", "imports"],
+    jsxRuntime: "automatic",
+    production: true,
+    filePath: "/lib-module.tsx",
+  });
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval
+  const fn = new Function("module", "exports", "require", code);
+  const shim = { exports: {} as Record<string, unknown> };
+  fn(shim, shim.exports, resolver);
+  return shim.exports;
 }
 
 export function compile(source: string): CompileResult {

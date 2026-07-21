@@ -83,6 +83,29 @@ await esbuild.build({
   define: { "process.env.NODE_ENV": '"production"' },
   minify: true,
   logLevel: "warning",
+  plugins: [
+    // virtual:tailwind-browser → the vendored Tailwind v4 browser build as
+    // TEXT. brightlocal-vocab evals it at activation to JIT-compile the
+    // registry's utilities in-sandbox (CSP blocks the CDN route external-
+    // sandbox's sibling page uses same-origin). Keep the vendored file in
+    // lockstep with /external-sandbox — same compiler, same output.
+    {
+      name: "virtual-tailwind-browser",
+      setup(build) {
+        build.onResolve({ filter: /^virtual:tailwind-browser$/ }, () => ({
+          path: "tailwind-browser",
+          namespace: "virtual-text",
+        }));
+        build.onLoad({ filter: /.*/, namespace: "virtual-text" }, () => ({
+          contents: fs.readFileSync(
+            path.join(docs, "public", "vendor", "tailwindcss-browser-4.3.0.js"),
+            "utf8",
+          ),
+          loader: "text",
+        }));
+      },
+    },
+  ],
 });
 
 // 3. Assemble one self-contained HTML document.

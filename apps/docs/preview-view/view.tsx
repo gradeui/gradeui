@@ -26,6 +26,13 @@ import {
   RenderErrorBoundary,
 } from "@/lib/studio-render-core";
 import { GradeLogo } from "@/components/grade-logo";
+// BrightLocal vocabulary — side-effect import registers the resolver for
+// "@brightlocal/*" specifiers (the shared-demo registry). CSS activates
+// only when a brightlocal screen actually arrives.
+import {
+  isBrightlocalSource,
+  activateBrightlocalCss,
+} from "./brightlocal-vocab";
 import {
   generateTheme,
   themeToCSSVars,
@@ -242,6 +249,10 @@ function PreviewShell() {
     }
     let cancelled = false;
     const src = healMissingLucideImports(payload.appSource);
+    // BrightLocal screen → inject the registry's token CSS + boot the
+    // bundled Tailwind v4 browser build (idempotent) BEFORE the render,
+    // so first paint already has the DS's utilities.
+    if (isBrightlocalSource(src)) activateBrightlocalCss();
     void preResolveUnknownImports(src).then(() => {
       if (cancelled) return;
       setCompiled(compile(src));
@@ -275,6 +286,14 @@ function PreviewShell() {
   // to embed-screen.tsx's: draft → generateTheme, anything else →
   // builtInThemes[defaultThemeId].
   React.useEffect(() => {
+    // BrightLocal screens are themed by the REGISTRY's own token CSS
+    // (activateBrightlocalCss) — Grade's generated theme vars must not
+    // repaint them (both define --background/--primary/…). Drop any
+    // previously-applied Grade vars and stand down.
+    if (payload?.appSource && isBrightlocalSource(payload.appSource)) {
+      document.getElementById("gds-theme-vars")?.remove();
+      return;
+    }
     const draft = payload?.themeDraftJson;
     let theme = builtInThemes[defaultThemeId];
     if (draft) {
@@ -288,7 +307,7 @@ function PreviewShell() {
     // Custom uploaded faces — same contract as every other surface: the
     // vars name the family, the @font-face tag materialises it.
     injectFontFaces(theme.typography.fontFaces);
-  }, [payload?.themeDraftJson, mode]);
+  }, [payload?.appSource, payload?.themeDraftJson, mode]);
 
   // Live frame resolution for the footer + host panel sizing.
   React.useEffect(() => {

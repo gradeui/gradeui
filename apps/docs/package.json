@@ -118,6 +118,8 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@brightlocal/icons": "2.3.1",
+    "@brightlocal/ui-components": "2.20.0",
     "@modelcontextprotocol/ext-apps": "^1.7.4",
     "@tailwindcss/cli": "^4.1.0",
     "@tailwindcss/postcss": "^4.1.0",
