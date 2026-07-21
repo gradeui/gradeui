@@ -19,7 +19,6 @@ import {
   CardTitle,
   GlobalLayout,
   GlobalLayoutContent,
-  GlobalLayoutContentHeader,
   GlobalLayoutSidebar,
   Logo,
   Sidebar,
@@ -156,9 +155,12 @@ export const SIDEBAR_TONES = {
 };
 
 // Frame presets — how the sidebar sits against the screen edge.
-// "flush" = hard against it; "floating" = lifted off it a little
-// (margin + rounded corners). Values live HERE as presets, not as
-// free-text instance props — tweak the preset, every screen follows.
+// "flush" = hard against the viewport edge; "floating" = lifted off it
+// a little (margin + rounded corners); "attached" = LIVES WITH THE
+// CONTENT — no viewport pinning, the sidebar sits in-flow inside the
+// (centred, max-width-capped) layout container, exactly the DS default
+// look. Values live HERE as presets, not as free-text instance props —
+// tweak the preset, every screen follows.
 export const SIDEBAR_FRAMES = {
   // `classes` = the Tailwind for the preset; `margin` also feeds the
   // pinned top/height, which MUST stay inline style — the DS sets those
@@ -167,6 +169,9 @@ export const SIDEBAR_FRAMES = {
   // shadow-sm lifts the panel off a near-white canvas — with the
   // 50-step tint, the border alone doesn't carry the elevation.
   floating: { margin: 12, classes: "m-3 overflow-hidden rounded-2xl shadow-sm" },
+  // In-flow: positioning comes from the DS layout itself. The pinned
+  // top/height overrides are skipped for this frame (see `pinned`).
+  attached: { margin: 0, classes: "" },
 };
 
 // Sidebar shadow presets — Tailwind's scale, switchable independently
@@ -290,7 +295,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
   }, []);
   const ROWS = [
     { key: "sidebarTone", label: "Sidebar tone", values: ["default", "white", "subtle", "dark", "brand"] },
-    { key: "sidebarFrame", label: "Frame", values: ["flush", "floating"] },
+    { key: "sidebarFrame", label: "Frame", values: ["flush", "floating", "attached"] },
     { key: "sidebarShadow", label: "Shadow", values: ["frame", "none", "sm", "md", "lg"] },
     { key: "pageLayers", label: "Page layers", values: ["default", "raised"] },
     { key: "stickyHeader", label: "Sticky header", values: [true, false] },
@@ -393,12 +398,12 @@ export function AppLayoutShell({
   // breakpoint-lg and centres within the column, so pinning the
   // sidebar to the edge does NOT make content run full-bleed — this
   // knob just makes that cap adjustable ("1280px", "none", …).
-  // NOTE: GlobalLayoutContentHeader hardcodes its own breakpoint-lg
-  // max-width in the dist, so only the body follows a custom value.
+  // The header band is shell-owned (a sibling of GlobalLayoutContent),
+  // so this knob affects the BODY only; the band always spans the column.
   contentMaxWidth,
   // How the sidebar sits against the screen edge (desktop only — the
   // aside is hidden below lg). Presets in SIDEBAR_FRAMES.
-  sidebarFrame = "floating", // "flush" | "floating"
+  sidebarFrame = "floating", // "flush" | "floating" | "attached"
   // Sidebar drop shadow — overrides the frame's own. Presets in
   // SIDEBAR_SHADOWS. "frame" (default) defers to the frame preset.
   sidebarShadow = "frame", // "frame" | "none" | "sm" | "md" | "lg"
@@ -485,6 +490,9 @@ export function AppLayoutShell({
       "[&>[data-radix-scroll-area-viewport]]:p-0! [&_[data-slot=app-layout-shell]]:p-0! [&_[data-slot=app-layout-shell]]:max-lg:p-4!"
     : "";
   const frame = SIDEBAR_FRAMES[sidebarFrame] ?? SIDEBAR_FRAMES.flush;
+  // "attached" lives with the content — never viewport-pinned, whatever
+  // pinnedSidebar says (the pin is what detaches it in the first place).
+  const pinned = pinnedSidebar && sidebarFrame !== "attached";
   const shadowOverride = SIDEBAR_SHADOWS[sidebarShadow] ?? null;
   const frameClasses =
     shadowOverride === null
@@ -492,13 +500,13 @@ export function AppLayoutShell({
       : [frame.classes.replace(/\bshadow-\w+\b/g, "").trim(), shadowOverride]
           .filter(Boolean)
           .join(" ");
-  // Pinned/flush sidebars get a border BY DEFAULT — without a
+  // Pinned/flush/attached sidebars get a border BY DEFAULT — without a
   // containing edge the horizontal rules float on the page. Floating
   // frames have their own boundary (radius + lift). Explicit
   // sidebarBorder overrides; "transparent" opts out.
   const borderColor =
     sidebarBorder ??
-    (sidebarFrame === "flush" ? "var(--sidebar-border)" : undefined);
+    (sidebarFrame === "floating" ? undefined : "var(--sidebar-border)");
   const tone = SIDEBAR_TONES[sidebarTone] ?? {};
   // Density presets re-point the --gds-nav-* variables the shell's
   // scoped <style> consumes; compact = the CSS defaults (empty).
@@ -547,7 +555,7 @@ export function AppLayoutShell({
       // centres the WHOLE app at max-width breakpoint-xl, guttering the
       // sidebar away from the edge on wide screens. maxWidth is a real
       // prop, so pinned mode disables it.
-      maxWidth={pinnedSidebar && flush ? "none" : undefined}
+      maxWidth={pinned && flush ? "none" : undefined}
       // Layer vars + canvas paint land on GlobalLayout's inner div via
       // its rest-spread; every bg-background / bg-card / bg-muted
       // inside resolves against them.
@@ -615,7 +623,7 @@ export function AppLayoutShell({
         // Scope hook for the scrollbar CSS in the shell <style> above.
         data-gds-shell-sidebar=""
         style={{
-          ...(pinnedSidebar && flush
+          ...(pinned && flush
             ? {
                 top: frame.margin,
                 height: `calc(100dvh - ${2 * frame.margin}px)`,
@@ -628,57 +636,45 @@ export function AppLayoutShell({
       >
         {sidebar}
       </GlobalLayoutSidebar>
-      <GlobalLayoutContent
-        dataHook={`${dataHook}-content`}
-        maxWidth={contentMaxWidth}
-      >
+      {/* OUR content column (Ali, 21 Jul: "we control it directly" — no
+          more negative-margin hacks against DS classes). The header band
+          is a SIBLING of GlobalLayoutContent, so it spans the column
+          edge-to-edge BY CONSTRUCTION; the DS's padded content wrapper
+          only wraps the page body. PageHeader's `align` still owns where
+          the content lands inside the band ("center" = capped + centred,
+          matching the body; "justify" = fills it). */}
+      <div className="flex min-w-0 flex-1 flex-col">
         {mobileBar}
         {header ? (
-          <GlobalLayoutContentHeader
-            dataHook={`${dataHook}-header`}
-            // UNCAP THE DS HEADER (Ali, 21 Jul — measured). The DS's
-            // GlobalLayoutContentHeader hardcodes max-w-[1024px] and, unlike
-            // GlobalLayoutContentBody, does NOT centre it (no mx-auto) — so
-            // at wide viewports the header sat LEFT while the body sat
-            // CENTRED (the misalignment in the 21 Jul screenshot). A plain
-            // `max-w-none` loses to the DS class in the cascade, so we force
-            // it with `!max-w-none`: the header now fills the whole content
-            // column (like the band). Where the CONTENT lands inside it is
-            // PageHeader's `align` job — "center" (default) re-caps +
-            // centres to line up with the body, "justify" fills the column.
-            // z-30: shell chrome must beat PAGE z-indexes (screens use up to
-            // z-20 — LSG map nodes painted over the header at z-10, 16 Jul)
-            // while staying under the tweaker (z-50).
+          <header
+            data-hook={`${dataHook}-header`}
             className={[
-              // -mx-6/px-6 net-zero the content column's 24px gutters so
-              // the band's BACKGROUND truly reaches the container edges
-              // (dropped in the uncap rewrite; a visible headerBackground
-              // exposed the 24px strips — Ali, 21 Jul). px-6 restores the
-              // inset so PageHeader's centring math is unchanged.
-              // !w-[calc(100%+3rem)]: the DS bakes w-full into
-              // ContentHeader, so the negative margins only SHIFT the band
-              // left — the right edge fell 48px short (measured 224→1392
-              // in a 224→1440 wrapper). The calc restores the two gutters
-              // the margins cancel.
-              "-mx-6 !w-[calc(100%+3rem)] !max-w-none px-6 pt-6 pb-4",
+              // Same inset as the DS content wrapper (px-section-xs =
+              // 24px), so the band's inner measure lines up with the
+              // body without any width games.
+              "px-6 pt-6 pb-4",
+              // z-30: shell chrome must beat PAGE z-indexes (screens
+              // use up to z-20 — the LSG map painted over the header at
+              // z-10, 16 Jul) while staying under the tweaker (z-50).
               stickyHeader ? "sticky top-0 z-30 border-b" : "",
               // Band surface: explicit headerBackground wins; else the
-              // sticky default (bg-background ≈ page bg); else transparent.
-              // Now spans the full column, so a headerBackground reads as a
-              // true full-width band with the content still centred inside.
+              // sticky default (bg-background ≈ page bg); else
+              // transparent.
               headerBackground || (stickyHeader ? "bg-background" : ""),
             ]
               .filter(Boolean)
               .join(" ")}
           >
-            {/* Block passthrough so PageHeader's mx-auto centres in a clean
-                block context (content-header itself is a flex row). The
-                CONTENT cap + alignment lives on PageHeader's `align`. */}
-            <div className="w-full">{header}</div>
-          </GlobalLayoutContentHeader>
+            {header}
+          </header>
         ) : null}
-        {children}
-      </GlobalLayoutContent>
+        <GlobalLayoutContent
+          dataHook={`${dataHook}-content`}
+          maxWidth={contentMaxWidth}
+        >
+          {children}
+        </GlobalLayoutContent>
+      </div>
     </GlobalLayout>
   );
   // Named dataset (authored prop or live tweak) — nested provider wins

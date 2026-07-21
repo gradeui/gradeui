@@ -183,7 +183,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "The header band spans the FULL content column (the DS caps GlobalLayoutContentHeader at breakpoint-lg and left-aligns it; the shell forces `!max-w-none` so it fills the column, then PageHeader's `align` centres the CONTENT to match the body). This className paints the band's surface; unset = transparent (page background shows, no visible change). Pass a bg utility or scope class for a distinct full-width header surface. (default none)"
+        "description": "The header band is a SHELL-OWNED element (a sibling of the DS content wrapper), so it spans the content column edge-to-edge by construction; PageHeader's `align` decides where the content lands inside it (\"center\" = capped + centred to match the body). This className paints the band's surface; unset = transparent (page background shows, no visible change). Pass a bg utility or scope class for a distinct full-width header surface. (default none)"
       },
       "pinnedSidebar": {
         "kind": "boolean",
@@ -214,11 +214,12 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "enum",
         "values": [
           "flush",
-          "floating"
+          "floating",
+          "attached"
         ],
         "design": "knob",
         "optional": true,
-        "description": "How the sidebar sits against the screen edge (desktop only). \"flush\" = hard against it; \"floating\" = lifted off a little (12px margin + 16px radius — presets in SIDEBAR_FRAMES, tweak them in code). (default \"floating\")"
+        "description": "How the sidebar sits (desktop only). \"flush\" = pinned hard against the viewport edge; \"floating\" = pinned but lifted off a little (12px margin + 16px radius); \"attached\" = LIVES WITH THE CONTENT — no viewport pinning, in-flow inside the centred layout container (the DS-default look). Presets in SIDEBAR_FRAMES. (default \"floating\")"
       },
       "sidebarShadow": {
         "kind": "enum",
