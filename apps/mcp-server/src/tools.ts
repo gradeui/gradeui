@@ -998,7 +998,7 @@ export function registerGradeTools(
           colorMode: z
             .enum(["light", "dark"])
             .optional()
-            .describe("Theme mode (default dark)"),
+            .describe("Theme mode (default light)"),
           refresh: z
             .boolean()
             .optional()
@@ -1020,6 +1020,24 @@ export function registerGradeTools(
           : r.fromStored
             ? `"${r.screen.name}" — stored poster (${r.mode}; refresh: true re-renders).`
             : `"${r.screen.name}" — live render, ${r.w}×${r.h} ${r.mode}.`;
+        // Ship the PNG to the image PANEL too — the widget's primary path
+        // reads structuredContent.imageDataUri; without it every panel sat
+        // on the poster self-load (and 404-looped when the mode slot
+        // mismatched — the "Rendering…" panel, Ali, 21 Jul). Same
+        // capability gate as preview_screen: structuredContent is never
+        // added to model context on apps-capable hosts, but non-renderer
+        // hosts would dump the multi-hundred-KB base64 into the visible
+        // result, so only attach when the client negotiated the ui
+        // extension.
+        const clientCaps = server.server.getClientCapabilities() as
+          | { extensions?: Record<string, unknown> }
+          | undefined;
+        const clientName = server.server.getClientVersion()?.name ?? "";
+        const knownNonRenderer = /cowork|claude[ _-]?code/i.test(clientName);
+        const uiSupported =
+          Boolean(opts.appPanel) &&
+          Boolean(clientCaps?.extensions?.["io.modelcontextprotocol/ui"]) &&
+          !knownNonRenderer;
         return {
           content: [
             { type: "image" as const, data: r.shot.base64, mimeType: "image/png" },
@@ -1032,6 +1050,19 @@ export function registerGradeTools(
                 `\nLive embed: ${r.url}`,
             },
           ],
+          ...(uiSupported
+            ? {
+                structuredContent: {
+                  name: r.screen.name,
+                  screenId,
+                  width: r.w,
+                  height: r.h,
+                  mode: r.mode,
+                  imageDataUri: `data:image/png;base64,${r.shot.base64}`,
+                  embedUrl: r.url,
+                },
+              }
+            : {}),
         };
       },
     );

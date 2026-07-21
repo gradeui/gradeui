@@ -32,7 +32,13 @@
 //     the panel now renders the real interactive screen (the /e/<token>
 //     embed) on tool-result instead of the PNG; the poster self-load is the
 //     instant placeholder, and a toggle drops back to the static image.
-export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview-v6";
+// v7: poster slot default now matches the SERVER's capture default (light).
+//     The old `colorMode || "dark"` polled latest-dark.png for calls that
+//     omitted colorMode while the capture uploaded latest-light.png —
+//     twelve 404 probes and a panel stuck on "Rendering…" (Ali, 21 Jul).
+//     preview_image also ships the PNG as structuredContent.imageDataUri
+//     now, so an apps-capable host paints instantly without polling.
+export const PREVIEW_RESOURCE_URI = "ui://gradeui-mcp/preview-v7";
 
 /**
  * Bake the Supabase Storage poster base URL into the template.
@@ -236,7 +242,10 @@ export const PREVIEW_TEMPLATE_HTML = `<!DOCTYPE html>
     // Gate on "painted" ONLY -- a tool-result without an image payload must
     // never block the poster path (that race froze iOS on "Rendering...").
     if (state.painted || !state.args) return;
-    var mode = state.args.colorMode || "dark";
+    // Default must MATCH the server's capture default (colorMode ?? "light"
+    // in tools.ts) — "dark" here polled a poster slot the capture never
+    // wrote when the call omitted colorMode.
+    var mode = state.args.colorMode || "light";
     var src = state.posterBase + "/" + state.args.screenId +
       "/latest-" + mode + ".png?v=" + Date.now();
     var probe = new Image();
