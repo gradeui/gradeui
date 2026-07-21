@@ -3335,6 +3335,18 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Ancestor trail, MAX TWO ({label, href?}[]). Ancestors only — BreadcrumbPage is deliberately unused. (default [])"
       },
+      "description": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Subtitle line under the H2 (muted, measured). Every proposal page should carry one. String or node. (default none)"
+      },
+      "lastUpdated": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Timestamp shown muted beneath the description. Pass \"auto\" to BIND data.aiInsights.lastUpdated (the AI Insights pages own it — it was removed from the AreaInsights header so it lives in ONE place); any other string renders literally; omit to hide."
+      },
       "meta": {
         "kind": "string",
         "design": "plumbing",

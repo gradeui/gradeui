@@ -4,10 +4,12 @@ import: "@brightlocal/proposal"
 props:
   - title — Page title (rendered as TypographyH2 — the current page; it never appears in the breadcrumb).
   - breadcrumbs? — Ancestor trail, MAX TWO ({label, href?}[]). Ancestors only — BreadcrumbPage is deliberately unused. (default [])
+  - description? — Subtitle line under the H2 (muted, measured). Every proposal page should carry one. String or node. (default none)
+  - lastUpdated?: string — Timestamp shown muted beneath the description. Pass "auto" to BIND data.aiInsights.lastUpdated (the AI Insights pages own it — it was removed from the AreaInsights header so it lives in ONE place); any other string renders literally; omit to hide.
   - meta? — Muted row under the title. EXPLICIT-ONLY: omitted (or null) renders nothing; pass any node to render it. (The old data-bound NAP + status Badge default was dropped — the location already leads the breadcrumb.) (default none)
   - actions? — Right-aligned actions (Buttons, menus). Rendered shrink-0 beside the title block.
   - dataHook?: string — Instance name. (default "page-header")
-when_to_use: The page header for every proposal screen — breadcrumb trail above, H2 title, optional meta row below, actions right. Pass to AppLayoutShell's `header` slot (padding + sticky behaviour are the SHELL's job — this component renders identically sticky or not). There is NO PageHeader in the BL package; this composition (upstream ask - it should be a component) ships in "@brightlocal/proposal".
+when_to_use: The page header for every proposal screen — breadcrumb trail above (extra space to the H1), H2 title, a description subtitle, an optional "Last updated" line, actions right. Pass to AppLayoutShell's `header` slot (padding + sticky behaviour are the SHELL's job — this component renders identically sticky or not). There is NO PageHeader in the BL package; this composition (upstream ask - it should be a component) ships in "@brightlocal/proposal".
 composes_with: [AppLayoutShell, ProposalSidebar, Breadcrumb, Badge]
 ---
 

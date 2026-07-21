@@ -68,6 +68,24 @@ import {
 } from "@brightlocal/icons";
 import { useProposalData } from "@brightlocal/proposal-data";
 
+// ─── formatDate — just the date, no time/UTC noise ────────────────────
+// The dataset stores a pre-formatted string ("1st Jul 2026 at 9:52 AM
+// UTC"); we only want "July 1, 2026". Regex-parse (never `new Date` on
+// that non-standard string — engines disagree) and reformat. Anything
+// we can't parse is returned untouched, so this never breaks a render.
+const MONTHS = {
+  jan: "January", feb: "February", mar: "March", apr: "April",
+  may: "May", jun: "June", jul: "July", aug: "August",
+  sep: "September", oct: "October", nov: "November", dec: "December",
+};
+export function formatDate(value) {
+  if (!value || typeof value !== "string") return value ?? null;
+  const m = value.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,})\s+(\d{4})/);
+  if (!m) return value;
+  const month = MONTHS[m[2].slice(0, 3).toLowerCase()];
+  return month ? `${month} ${parseInt(m[1], 10)}, ${m[3]}` : value;
+}
+
 // ─── PageHeader — the composed page header ────────────────────────────
 // There is NO PageHeader component in the DS — the page header IS this
 // composition (recipe: page-header-with-breadcrumbs.jsx; upstream note:
@@ -78,6 +96,16 @@ import { useProposalData } from "@brightlocal/proposal-data";
 export function PageHeader({
   breadcrumbs = [],
   title,
+  // Subtitle under the H2 — every proposal page should carry one
+  // (Ali, 20 Jul). String or node.
+  description,
+  // Timestamp shown muted beneath the description. Pass "auto" to BIND
+  // data.aiInsights.lastUpdated — the AI Insights pages own it now; it
+  // was removed from the AreaInsights header so it lives in ONE place.
+  // Any other string renders literally; omit to hide. ("auto" is a
+  // STRING because the contract types this prop as a string — a boolean
+  // fails save validation.)
+  lastUpdated,
   // Muted row under the title. EXPLICIT-ONLY — pass any node to render
   // it; omitted (or null) renders nothing. Previously defaulted to a
   // data-bound NAP line + status Badge from the proposal data context;
@@ -90,6 +118,10 @@ export function PageHeader({
   ...rest
 }) {
   const data = useProposalData();
+  const bindLastUpdated = lastUpdated === "auto" || lastUpdated === true;
+  const lastUpdatedValue = bindLastUpdated
+    ? (data.aiInsights?.lastUpdated ?? null)
+    : lastUpdated || null;
   return (
     // w-full is LOAD-BEARING: inside GlobalLayoutContentHeader the
     // header block otherwise spans content width only, and
@@ -108,9 +140,10 @@ export function PageHeader({
       data-hook={dataHook}
       className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex min-w-0 flex-1 flex-col">
         {breadcrumbs.length > 0 ? (
-          <Breadcrumb dataHook={`${dataHook}-breadcrumb`}>
+          // mb-4: breathing room between the trail and the H1 (Ali, 20 Jul).
+          <Breadcrumb dataHook={`${dataHook}-breadcrumb`} className="mb-4">
             <BreadcrumbList>
               {breadcrumbs
                 // Trail is ANCESTORS ONLY, max two (the H2 is the current
@@ -158,8 +191,23 @@ export function PageHeader({
           </Breadcrumb>
         ) : null}
         <TypographyH2 dataHook={`${dataHook}-title`}>{title}</TypographyH2>
-        {meta ? (
-          <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
+        {description ? (
+          // mt-3 + a measure so the description reads as a subtitle with
+          // air around it, not crammed under the H1 (Ali, 20 Jul).
+          <p
+            data-hook={`${dataHook}-description`}
+            className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground"
+          >
+            {description}
+          </p>
+        ) : null}
+        {lastUpdatedValue || meta ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            {lastUpdatedValue ? (
+              <span data-hook={`${dataHook}-last-updated`}>
+                Last updated: {formatDate(lastUpdatedValue)}
+              </span>
+            ) : null}
             {meta}
           </div>
         ) : null}

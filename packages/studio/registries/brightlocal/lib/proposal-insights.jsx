@@ -456,17 +456,15 @@ export function AreaInsights({
   dataHook = "area-insights",
 }) {
   const data = useProposalData();
-  const { items, lastUpdated } = data.aiInsights;
+  const { items } = data.aiInsights;
   const areaItems = items.filter((i) => i.area === areaId);
   return (
     <div className="space-y-4" data-hook={dataHook}>
-      <div className="space-y-0.5">
-        <TypographyH3 className="flex items-center gap-2">
-          <Sparkles className="size-4 text-[var(--ds-tailwind-colors-green-600)]" />
-          {title}
-        </TypographyH3>
-        <TypographyMuted>Last updated: {lastUpdated}</TypographyMuted>
-      </div>
+      {/* "Last updated" now lives ONLY in the PageHeader (Ali, 20 Jul). */}
+      <TypographyH3 className="flex items-center gap-2">
+        <Sparkles className="size-4 text-[var(--ds-tailwind-colors-green-600)]" />
+        {title}
+      </TypographyH3>
       {areaItems.length > 0 ? (
         areaItems.map((item) => (
           <InsightCard key={item.id} item={item} actionStyle={actionStyle} />
