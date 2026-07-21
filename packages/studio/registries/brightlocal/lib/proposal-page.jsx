@@ -111,7 +111,7 @@ export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
       {...rest}
       className={["font-semibold", className].filter(Boolean).join(" ")}
       style={{
-        color: "var(--bl-card-link, var(--ds-tailwind-colors-green-800))",
+        color: "var(--bl-card-link, var(--ds-tailwind-colors-green-950))",
         ...(rest?.style ?? {}),
       }}
     >

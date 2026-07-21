@@ -185,6 +185,42 @@ export const SIDEBAR_SHADOWS = {
   lg: "shadow-lg",
 };
 
+// Header surface presets — the band's colour, tweaker-switchable. Dark
+// surfaces also re-point the TEXT tokens (title/muted/breadcrumb all
+// resolve through --foreground/--muted-foreground) so the header stays
+// readable — a bg swap alone would leave near-black text on dark green.
+export const HEADER_SURFACES = {
+  none: null, // transparent — page background shows through
+  white: {
+    style: { backgroundColor: "var(--ds-tailwind-colors-base-white)" },
+  },
+  subtle: {
+    style: { backgroundColor: "var(--ds-tailwind-colors-neutral-100)" },
+  },
+  dark: {
+    style: {
+      backgroundColor: "var(--ds-tailwind-colors-neutral-900)",
+      color: "var(--ds-tailwind-colors-base-white)",
+      "--foreground": "var(--ds-tailwind-colors-base-white)",
+      "--color-foreground": "var(--ds-tailwind-colors-base-white)",
+      "--muted-foreground": "var(--ds-tailwind-colors-neutral-400)",
+      "--color-muted-foreground": "var(--ds-tailwind-colors-neutral-400)",
+      borderColor: "rgb(255 255 255 / 0.12)",
+    },
+  },
+  brand: {
+    style: {
+      backgroundColor: "var(--ds-tailwind-colors-green-900)",
+      color: "var(--ds-tailwind-colors-base-white)",
+      "--foreground": "var(--ds-tailwind-colors-base-white)",
+      "--color-foreground": "var(--ds-tailwind-colors-base-white)",
+      "--muted-foreground": "var(--ds-tailwind-colors-green-200)",
+      "--color-muted-foreground": "var(--ds-tailwind-colors-green-200)",
+      borderColor: "rgb(255 255 255 / 0.12)",
+    },
+  },
+};
+
 // Page layer presets — the page-side counterpart of SIDEBAR_TONES:
 // re-point the PAGE tokens (canvas + card surface) on the layout root.
 // "raised": canvas on the subtlest green-grey (BL's neutral ramp is
@@ -300,6 +336,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     { key: "pageLayers", label: "Page layers", values: ["default", "raised"] },
     { key: "stickyHeader", label: "Sticky header", values: [true, false] },
     { key: "headerBorder", label: "Header border", values: [true, false] },
+    { key: "headerSurface", label: "Header", values: ["none", "white", "subtle", "dark", "brand"] },
     // Named datasets — flips the WHOLE interface's data live (account,
     // user, location, metrics) via a nested ProposalDataProvider in
     // AppLayoutShell. The meeting trick: Alt+T, switch client.
@@ -429,6 +466,11 @@ export function AppLayoutShell({
   // change). Pass a bg utility (or a scope class) for a distinct header
   // surface — a future tweaker knob will drive it (Ali, 21 Jul).
   headerBackground,
+  // Named band surface (HEADER_SURFACES preset): "none" | "white" |
+  // "subtle" | "dark" | "brand". The canonical colour knob — dark
+  // presets also flip the header's text tokens. Beats headerBackground
+  // when set; also a tweaker row (Alt+T). (Ali, 21 Jul)
+  headerSurface = "none",
   // Header band bottom border, independent of stickiness. Unset = auto
   // (border only while sticky — the band needs an edge when content
   // scrolls beneath it); true/false forces it on/off (Ali, 21 Jul).
@@ -462,7 +504,7 @@ export function AppLayoutShell({
   // are the AUTHORED look; tweaks shadow them for this session only.
   // Reassigning the params keeps every downstream reference
   // (tone/frame/shadow/layers/sticky) reading the LIVE values.
-  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, headerBorder, dataset, navDensity };
+  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, headerBorder, headerSurface, dataset, navDensity };
   // SESSION MEMORY: seed from the module-scope stash (below) so tweaks —
   // colours, frame, DATASET — persist across flow navigation and screen
   // switches: the lib module is compiled once per sandbox boot and its
@@ -484,7 +526,7 @@ export function AppLayoutShell({
   );
   const tweaks = controlledTweaks ?? ownTweaks;
   const setTweaks = onTweaksChange ?? setOwnTweaks;
-  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, headerBorder, dataset, navDensity } = {
+  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, headerBorder, headerSurface, dataset, navDensity } = {
     ...authored,
     ...tweaks,
   });
@@ -679,13 +721,17 @@ export function AppLayoutShell({
               // Border: explicit headerBorder wins; unset = auto (border
               // while sticky, since content scrolls beneath the band).
               (headerBorder ?? stickyHeader) ? "border-b" : "",
-              // Band surface: explicit headerBackground wins; else the
-              // sticky default (bg-background ≈ page bg); else
-              // transparent.
-              headerBackground || (stickyHeader ? "bg-background" : ""),
+              // Band surface: a named headerSurface preset wins (style
+              // below carries bg + text tokens); else headerBackground
+              // (custom class escape hatch); else the sticky default
+              // (bg-background ≈ page bg); else transparent.
+              !HEADER_SURFACES[headerSurface]
+                ? headerBackground || (stickyHeader ? "bg-background" : "")
+                : "",
             ]
               .filter(Boolean)
               .join(" ")}
+            style={HEADER_SURFACES[headerSurface]?.style}
           >
             {header}
           </header>

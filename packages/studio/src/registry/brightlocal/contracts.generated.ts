@@ -185,6 +185,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Header band bottom border, independent of stickiness. Unset = auto (border only while sticky); true/false forces it on/off. Also a tweaker row (Alt+T)."
       },
+      "headerSurface": {
+        "kind": "enum",
+        "values": [
+          "none",
+          "white",
+          "subtle",
+          "dark",
+          "brand"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Named band colour preset (HEADER_SURFACES) — THE canonical header-colour knob; dark presets also re-point the header's text tokens (--foreground/--muted-foreground) so titles/crumbs stay readable. Beats headerBackground when set. Also a tweaker row. (default \"none\")"
+      },
       "headerBackground": {
         "kind": "string",
         "design": "knob",
