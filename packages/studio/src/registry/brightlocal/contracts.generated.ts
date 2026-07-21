@@ -177,7 +177,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "boolean",
         "design": "knob",
         "optional": true,
-        "description": "Pin the content header to the top of the scroll viewport (bg-background, border-b). Requires flush, otherwise it sticks 24px down inside the padding. (default false)"
+        "description": "Pin the content header to the top of the scroll viewport (bg-background, border-b unless headerBorder says otherwise). Requires flush, otherwise it sticks 24px down inside the padding. (default false)"
+      },
+      "headerBorder": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Header band bottom border, independent of stickiness. Unset = auto (border only while sticky); true/false forces it on/off. Also a tweaker row (Alt+T)."
       },
       "headerBackground": {
         "kind": "string",
@@ -219,7 +225,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         ],
         "design": "knob",
         "optional": true,
-        "description": "How the sidebar sits (desktop only). \"flush\" = pinned hard against the viewport edge; \"floating\" = pinned but lifted off a little (12px margin + 16px radius); \"attached\" = LIVES WITH THE CONTENT — no viewport pinning, in-flow inside the centred layout container (the DS-default look). Presets in SIDEBAR_FRAMES. (default \"floating\")"
+        "description": "How the sidebar sits (desktop only). \"flush\" = pinned hard against the viewport edge (border-r by default); \"floating\" = pinned but lifted off a little (12px margin + 16px radius); \"attached\" = LIVES WITH THE CONTENT — no viewport pinning, in-flow inside the centred layout container, BORDERLESS by default. Presets in SIDEBAR_FRAMES; explicit sidebarBorder overrides any frame. (default \"floating\")"
       },
       "sidebarShadow": {
         "kind": "enum",

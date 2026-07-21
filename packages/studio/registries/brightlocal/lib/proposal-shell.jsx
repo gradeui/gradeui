@@ -299,6 +299,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     { key: "sidebarShadow", label: "Shadow", values: ["frame", "none", "sm", "md", "lg"] },
     { key: "pageLayers", label: "Page layers", values: ["default", "raised"] },
     { key: "stickyHeader", label: "Sticky header", values: [true, false] },
+    { key: "headerBorder", label: "Header border", values: [true, false] },
     // Named datasets — flips the WHOLE interface's data live (account,
     // user, location, metrics) via a nested ProposalDataProvider in
     // AppLayoutShell. The meeting trick: Alt+T, switch client.
@@ -427,6 +428,10 @@ export function AppLayoutShell({
   // change). Pass a bg utility (or a scope class) for a distinct header
   // surface — a future tweaker knob will drive it (Ali, 21 Jul).
   headerBackground,
+  // Header band bottom border, independent of stickiness. Unset = auto
+  // (border only while sticky — the band needs an edge when content
+  // scrolls beneath it); true/false forces it on/off (Ali, 21 Jul).
+  headerBorder,
   // Mobile top bar slot (hamburger + logo). Rendered FIRST inside the
   // content column so it sits ABOVE the page header below lg — passing
   // it via children put it underneath (July 2026 screenshot).
@@ -456,7 +461,7 @@ export function AppLayoutShell({
   // are the AUTHORED look; tweaks shadow them for this session only.
   // Reassigning the params keeps every downstream reference
   // (tone/frame/shadow/layers/sticky) reading the LIVE values.
-  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset, navDensity };
+  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, headerBorder, dataset, navDensity };
   // SESSION MEMORY: seed from the module-scope stash (below) so tweaks —
   // colours, frame, DATASET — persist across flow navigation and screen
   // switches: the lib module is compiled once per sandbox boot and its
@@ -478,7 +483,7 @@ export function AppLayoutShell({
   );
   const tweaks = controlledTweaks ?? ownTweaks;
   const setTweaks = onTweaksChange ?? setOwnTweaks;
-  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, dataset, navDensity } = {
+  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, headerBorder, dataset, navDensity } = {
     ...authored,
     ...tweaks,
   });
@@ -500,13 +505,13 @@ export function AppLayoutShell({
       : [frame.classes.replace(/\bshadow-\w+\b/g, "").trim(), shadowOverride]
           .filter(Boolean)
           .join(" ");
-  // Pinned/flush/attached sidebars get a border BY DEFAULT — without a
-  // containing edge the horizontal rules float on the page. Floating
-  // frames have their own boundary (radius + lift). Explicit
-  // sidebarBorder overrides; "transparent" opts out.
+  // Pinned/flush sidebars get a border BY DEFAULT — without a containing
+  // edge the horizontal rules float on the page. Floating frames have
+  // their own boundary (radius + lift); ATTACHED is borderless (it lives
+  // with the content — Ali, 21 Jul). Explicit sidebarBorder overrides.
   const borderColor =
     sidebarBorder ??
-    (sidebarFrame === "floating" ? undefined : "var(--sidebar-border)");
+    (sidebarFrame === "flush" ? "var(--sidebar-border)" : undefined);
   const tone = SIDEBAR_TONES[sidebarTone] ?? {};
   // Density presets re-point the --gds-nav-* variables the shell's
   // scoped <style> consumes; compact = the CSS defaults (empty).
@@ -656,7 +661,10 @@ export function AppLayoutShell({
               // z-30: shell chrome must beat PAGE z-indexes (screens
               // use up to z-20 — the LSG map painted over the header at
               // z-10, 16 Jul) while staying under the tweaker (z-50).
-              stickyHeader ? "sticky top-0 z-30 border-b" : "",
+              stickyHeader ? "sticky top-0 z-30" : "",
+              // Border: explicit headerBorder wins; unset = auto (border
+              // while sticky, since content scrolls beneath the band).
+              (headerBorder ?? stickyHeader) ? "border-b" : "",
               // Band surface: explicit headerBackground wins; else the
               // sticky default (bg-background ≈ page bg); else
               // transparent.
@@ -671,6 +679,12 @@ export function AppLayoutShell({
         <GlobalLayoutContent
           dataHook={`${dataHook}-content`}
           maxWidth={contentMaxWidth}
+          // Vertical breathing room for the page body — the flush shell
+          // cancels the DS's outer padding, which left content sitting
+          // hard against the header band (Ali, 21 Jul). Top is modest
+          // (the band carries pb-4); the bottom covers the "no padding
+          // at bottom of page" snag for every screen at once.
+          className="pt-6 pb-12"
         >
           {children}
         </GlobalLayoutContent>
