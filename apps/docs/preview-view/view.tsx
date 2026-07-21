@@ -33,6 +33,14 @@ import {
   isBrightlocalSource,
   activateBrightlocalCss,
 } from "./brightlocal-vocab";
+
+/** Registry decision for a payload: the project's registryId is
+ *  authoritative; the import sniff only covers payloads from an older
+ *  server that didn't send it. */
+function isBrightlocalPayload(p: ScreenPayload): boolean {
+  if (p.registryId) return p.registryId === "brightlocal";
+  return isBrightlocalSource(p.appSource);
+}
 import {
   generateTheme,
   themeToCSSVars,
@@ -154,6 +162,11 @@ type ScreenPayload = {
   /** The project's saved theme draft (ThemeInput JSON). Generated +
    *  applied client-side, exactly like the share / embed views. */
   themeDraftJson?: string | null;
+  /** The PROJECT's design-system registry ("brightlocal" | "gradeui" |
+   *  null). Authoritative — a brightlocal project renders with the
+   *  brightlocal vocab + CSS and never Grade's. Source-sniffing is only
+   *  the fallback for payloads from an older server. */
+  registryId?: string | null;
   name?: string;
   /** BARE mode (preview_screen_scaled v7): no header, no footer, no 4:3
    *  frame — the screen renders edge-to-edge filling the viewport. Used
@@ -249,10 +262,10 @@ function PreviewShell() {
     }
     let cancelled = false;
     const src = healMissingLucideImports(payload.appSource);
-    // BrightLocal screen → inject the registry's token CSS + boot the
+    // BrightLocal project → inject the registry's token CSS + boot the
     // bundled Tailwind v4 browser build (idempotent) BEFORE the render,
     // so first paint already has the DS's utilities.
-    if (isBrightlocalSource(src)) activateBrightlocalCss();
+    if (isBrightlocalPayload(payload)) activateBrightlocalCss();
     void preResolveUnknownImports(src).then(() => {
       if (cancelled) return;
       setCompiled(compile(src));
@@ -286,11 +299,11 @@ function PreviewShell() {
   // to embed-screen.tsx's: draft → generateTheme, anything else →
   // builtInThemes[defaultThemeId].
   React.useEffect(() => {
-    // BrightLocal screens are themed by the REGISTRY's own token CSS
+    // BrightLocal projects are themed by the REGISTRY's own token CSS
     // (activateBrightlocalCss) — Grade's generated theme vars must not
     // repaint them (both define --background/--primary/…). Drop any
     // previously-applied Grade vars and stand down.
-    if (payload?.appSource && isBrightlocalSource(payload.appSource)) {
+    if (payload && isBrightlocalPayload(payload)) {
       document.getElementById("gds-theme-vars")?.remove();
       return;
     }
@@ -307,7 +320,7 @@ function PreviewShell() {
     // Custom uploaded faces — same contract as every other surface: the
     // vars name the family, the @font-face tag materialises it.
     injectFontFaces(theme.typography.fontFaces);
-  }, [payload?.appSource, payload?.themeDraftJson, mode]);
+  }, [payload?.appSource, payload?.registryId, payload?.themeDraftJson, mode]);
 
   // Live frame resolution for the footer + host panel sizing.
   React.useEffect(() => {
@@ -544,6 +557,7 @@ window.addEventListener("message", (event: MessageEvent) => {
       mode?: "light" | "dark";
       themeVars?: Record<string, string>;
       themeDraftJson?: string | null;
+      registryId?: string | null;
       embedUrl?: string | null;
       name?: string;
       bare?: boolean;
@@ -555,6 +569,7 @@ window.addEventListener("message", (event: MessageEvent) => {
         mode: sc.mode,
         themeVars: sc.themeVars,
         themeDraftJson: sc.themeDraftJson ?? null,
+        registryId: sc.registryId ?? null,
         name: sc.name,
         // v7 bare mode — this cherry-pick is exactly where the flag got
         // dropped the first time; keep it in sync with ScreenPayload.
@@ -595,6 +610,7 @@ window.addEventListener("resize", reportSize);
     theme?: "light" | "dark";
     themeVars?: Record<string, string>;
     themeDraftJson?: string | null;
+    registryId?: string | null;
     embedUrl?: string;
     name?: string;
   },
@@ -604,6 +620,7 @@ window.addEventListener("resize", reportSize);
     mode: opts?.theme ?? opts?.mode,
     themeVars: opts?.themeVars,
     themeDraftJson: opts?.themeDraftJson ?? null,
+    registryId: opts?.registryId ?? null,
     embedUrl: opts?.embedUrl ?? null,
     name: opts?.name,
   });

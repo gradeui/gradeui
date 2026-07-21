@@ -402,7 +402,9 @@ export function registerGradeTools(
         },
       },
       async ({ projectId, screenId, width, height, colorMode }) => {
-        await assertProject(sb, env.ownerUserId, projectId);
+        // registryId rides into structuredContent so the View renders with
+        // the PROJECT's design system (brightlocal ≠ gradeui vocab/CSS).
+        const { registryId } = await assertProject(sb, env.ownerUserId, projectId);
         const screen = await getScreen(sb, projectId, screenId);
         if (!screen) {
           return errorText(
@@ -449,6 +451,7 @@ export function registerGradeTools(
             appSource: screen.state?.appSource ?? "",
             embedUrl: url,
             themeDraftJson,
+            registryId,
             // v7: the renderer bundle drops its own header/footer/4:3
             // frame and renders edge-to-edge — the shell owns chrome at
             // 1:1 (the double-chrome fix). Requires the preview-view
@@ -1065,7 +1068,9 @@ export function registerGradeTools(
         },
       },
       async ({ projectId, screenId, width, height, colorMode, refresh }) => {
-        await assertProject(sb, env.ownerUserId, projectId);
+        // registryId → structuredContent, so the inline View renders with
+        // the PROJECT's design system rather than sniffing the source.
+        const { registryId } = await assertProject(sb, env.ownerUserId, projectId);
         const screen = await getScreen(sb, projectId, screenId);
         if (!screen) {
           return errorText(
@@ -1249,6 +1254,7 @@ export function registerGradeTools(
                   appSource: screen.state?.appSource ?? "",
                   embedUrl: url,
                   themeDraftJson,
+                  registryId,
                 },
               }
             : {}),

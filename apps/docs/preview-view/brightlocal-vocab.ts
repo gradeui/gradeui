@@ -111,7 +111,13 @@ export function isBrightlocalSource(source: string): boolean {
 
 let cssActivated = false;
 
-/** Inject the brightlocal CSS stack (idempotent):
+/** Swap the document onto the brightlocal CSS stack (idempotent):
+ *  0. DISABLE the two bundled gradeui sheets (#gds-full-css /
+ *     #gds-ui-css) — this registry ships ZERO gradeui CSS, exactly like
+ *     /external-sandbox. The widget chrome's utility classes are then
+ *     re-emitted by the brightlocal Tailwind build below (it JIT-compiles
+ *     every class in the document), so the chrome keeps its layout on the
+ *     registry's tokens.
  *  1. token CSS (runtime.previewCss — the DS's own :root variables),
  *  2. the Tailwind v4 source as <style type="text/tailwindcss">,
  *  3. the vendored Tailwind browser build, eval'd once — it compiles the
@@ -120,6 +126,11 @@ let cssActivated = false;
 export function activateBrightlocalCss(): void {
   if (cssActivated) return;
   cssActivated = true;
+
+  for (const id of ["gds-full-css", "gds-ui-css", "gds-theme-vars"]) {
+    const el = document.getElementById(id);
+    if (el instanceof HTMLStyleElement) el.disabled = true;
+  }
 
   const tokens = document.createElement("style");
   tokens.id = "bl-tokens";
