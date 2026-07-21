@@ -4,7 +4,7 @@ import: "@brightlocal/proposal"
 props:
   - activeId?: string — WHICH PAGE THIS IS: the nav row id to highlight ("rankings-table", "location-profile-hours", "reviews"). Nav model v2: no accordions — the active section's sub rows render (one level max; a level-3 id highlights its level-2 parent), all other sections show top-level links only. Overrides the IA's baked flags. An id matching no row (hub landing) renders nothing active. Always set on a screen that represents a specific page. SPECIAL VALUE "all-locations" → ACCOUNT context: the whole location nav (current-location House row + sections + footer All Locations row) is dropped and the sidebar shows only an "All Locations" row at the top — use it on the All Locations screen.
   - sections? — Custom nav model (array of {id, label, icon, active?, goto?, transition?, sub?}). Default: buildProposalSections(data) — the proposal IA with keyword rows injected from data.keywords and goto links applied from data.navLinks. Pass only when a screen needs a DIFFERENT nav.
-  - locationHomeGoto?: string — Screen the top "current location" House row links to (shows data.location.name). (default "screen:dmrnwiqjdknxy" — the Location Hub)
+  - locationHomeGoto?: string — Screen the top "current location" House row links to (shows data.location.name). (default "screen:dmrurue2wmp9u" — UI Vision - Location Hub)
   - allLocationsGoto?: string — Screen the footer "All Locations" row links to. (default "screen:dmrotrgstba3l" — All Locations)
   - accounts? — (LEGACY) former account-switcher popover items; the switcher was replaced by the "All Locations" nav row, so this is unused. (default PROPOSAL_ACCOUNTS)
   - accountLabel?: string — (LEGACY) former switcher trigger label; unused now. (default data.account.label)

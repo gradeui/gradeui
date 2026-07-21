@@ -305,7 +305,7 @@ export function ProposalSidebar({
   // The current location's home (the House row at the very top) and the
   // "All Locations" footer row link here. Defaults are this proposal's
   // screen ids; override per-screen (or when the registry is reused).
-  locationHomeGoto = "screen:dmrnwiqjdknxy",
+  locationHomeGoto = "screen:dmrurue2wmp9u", // UI Vision - Location Hub
   allLocationsGoto = "screen:dmrotrgstba3l",
   accounts = PROPOSAL_ACCOUNTS,
   // Account/user rows resolve PROPS FIRST, then the proposal data
