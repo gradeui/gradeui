@@ -183,7 +183,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "The header renders as a FULL-BLEED band (background spans the whole content area, edge-to-edge right of the sidebar) while its content stays aligned with the body. This className paints the band's surface; unset = transparent (page background shows, no visible change). Pass a bg utility or scope class for a distinct header surface. (default none)"
+        "description": "The header band spans the FULL content column (the DS caps GlobalLayoutContentHeader at breakpoint-lg and left-aligns it; the shell forces `!max-w-none` so it fills the column, then PageHeader's `align` centres the CONTENT to match the body). This className paints the band's surface; unset = transparent (page background shows, no visible change). Pass a bg utility or scope class for a distinct full-width header surface. (default none)"
       },
       "pinnedSidebar": {
         "kind": "boolean",
@@ -3364,6 +3364,16 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "design": "plumbing",
         "optional": true,
         "description": "Right-aligned actions (Buttons, menus). Rendered shrink-0 beside the title block."
+      },
+      "align": {
+        "kind": "enum",
+        "values": [
+          "center",
+          "justify"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Where the header CONTENT sits inside the full-width band the shell paints. \"center\" (default) caps it at the DS content width (--breakpoint-lg) and CENTRES it, so it lines up exactly with the body (GlobalLayoutContent centres the same way — a left-aligned header drifts right of the body at wide viewports; this is the fix). \"justify\" drops the cap so crumbs/title pin hard-left and actions hard-right at the column edges (full-width toolbar look). Almost every page wants \"center\". (default \"center\")"
       },
       "dataHook": {
         "kind": "string",

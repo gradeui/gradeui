@@ -636,30 +636,35 @@ export function AppLayoutShell({
         {header ? (
           <GlobalLayoutContentHeader
             dataHook={`${dataHook}-header`}
-            // FULL-BLEED BAND (Ali, 21 Jul): -mx-6/px-6 net-zero the
-            // content column's 24px gutters, and max-w-none lifts the
-            // DS's 1024px cap — so the header's BACKGROUND spans the whole
-            // content area (edge-to-edge, right of the sidebar). The inner
-            // measure below re-caps + re-aligns the CONTENT to match the
-            // body. z-30: shell chrome must beat PAGE z-indexes (screens
-            // use up to z-20 — the LSG map nodes painted over the header at
-            // z-10, 16 Jul) while staying under the tweaker (z-50).
+            // UNCAP THE DS HEADER (Ali, 21 Jul — measured). The DS's
+            // GlobalLayoutContentHeader hardcodes max-w-[1024px] and, unlike
+            // GlobalLayoutContentBody, does NOT centre it (no mx-auto) — so
+            // at wide viewports the header sat LEFT while the body sat
+            // CENTRED (the misalignment in the 21 Jul screenshot). A plain
+            // `max-w-none` loses to the DS class in the cascade, so we force
+            // it with `!max-w-none`: the header now fills the whole content
+            // column (like the band). Where the CONTENT lands inside it is
+            // PageHeader's `align` job — "center" (default) re-caps +
+            // centres to line up with the body, "justify" fills the column.
+            // z-30: shell chrome must beat PAGE z-indexes (screens use up to
+            // z-20 — LSG map nodes painted over the header at z-10, 16 Jul)
+            // while staying under the tweaker (z-50).
             className={[
-              "-mx-6 max-w-none px-6 pt-6 pb-4",
+              "w-full !max-w-none pt-6 pb-4",
               stickyHeader ? "sticky top-0 z-30 border-b" : "",
               // Band surface: explicit headerBackground wins; else the
               // sticky default (bg-background ≈ page bg); else transparent.
+              // Now spans the full column, so a headerBackground reads as a
+              // true full-width band with the content still centred inside.
               headerBackground || (stickyHeader ? "bg-background" : ""),
             ]
               .filter(Boolean)
               .join(" ")}
           >
-            {/* Inner measure — capped by the SAME token the DS caps the
-                content with (--breakpoint-lg = 64rem/1024px; the DS's
-                ContentHeader/Body both use the lg breakpoint), so the
-                header content lines up with the body and follows the
-                token if it ever changes — never a hardcoded drift. */}
-            <div className="w-full max-w-[var(--breakpoint-lg)]">{header}</div>
+            {/* Block passthrough so PageHeader's mx-auto centres in a clean
+                block context (content-header itself is a flex row). The
+                CONTENT cap + alignment lives on PageHeader's `align`. */}
+            <div className="w-full">{header}</div>
           </GlobalLayoutContentHeader>
         ) : null}
         {children}

@@ -113,6 +113,18 @@ export function PageHeader({
   // the row was redundant (Ali, 20 Jul).
   meta,
   actions,
+  // How the header CONTENT sits inside the full-bleed band the shell
+  // paints (AppLayoutShell renders the header edge-to-edge; this decides
+  // where its content lands within it):
+  //   "center"  — capped at the DS content width (--breakpoint-lg) and
+  //               CENTRED, so it lines up with the body, which the DS's
+  //               GlobalLayoutContent also caps + centres. This is the
+  //               default and the right choice for almost every page.
+  //   "justify" — no cap: crumbs/title hard-left, actions hard-right at
+  //               the band edges (full-width toolbar look).
+  // (Ali, 21 Jul — the body is centred, so a left-aligned header cap
+  // drifted right of it; centring here is the auto-margin that fixes it.)
+  align = "center",
   dataHook = "page-header",
   // Anchor-id pass-through — see AppLayoutShell's rest note.
   ...rest
@@ -138,7 +150,15 @@ export function PageHeader({
       // view-transition-name note.
       style={{ viewTransitionName: "gds-page-header", ...(rest?.style ?? {}) }}
       data-hook={dataHook}
-      className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+      className={[
+        "flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4",
+        // "center" caps + centres to match the body; "justify" fills the
+        // band edge-to-edge. mx-auto is the load-bearing bit — the DS
+        // body is centred, so without it the header drifts left of it.
+        align === "justify" ? "" : "mx-auto max-w-[var(--breakpoint-lg)]",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <div className="flex min-w-0 flex-1 flex-col">
         {breadcrumbs.length > 0 ? (
