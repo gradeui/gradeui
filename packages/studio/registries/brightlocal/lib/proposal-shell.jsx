@@ -654,10 +654,12 @@ export function AppLayoutShell({
               .filter(Boolean)
               .join(" ")}
           >
-            {/* Inner measure — matches GlobalLayoutContentBody (max-w
-                1024px, left-aligned), so the title/description line up
-                exactly with the body content. */}
-            <div className="w-full max-w-[1024px]">{header}</div>
+            {/* Inner measure — capped by the SAME token the DS caps the
+                content with (--breakpoint-lg = 64rem/1024px; the DS's
+                ContentHeader/Body both use the lg breakpoint), so the
+                header content lines up with the body and follows the
+                token if it ever changes — never a hardcoded drift. */}
+            <div className="w-full max-w-[var(--breakpoint-lg)]">{header}</div>
           </GlobalLayoutContentHeader>
         ) : null}
         {children}
