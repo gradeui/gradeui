@@ -97,6 +97,29 @@ export function formatDate(value) {
   return `${day}${ordinal(day)} ${month}, ${m[3]}`;
 }
 
+// ─── CardTitleLink — the clickable-card title treatment ───────────────
+// Feature cards whose WHOLE card is a link (hub cards, module cards)
+// title in the brand's clickable colour. ONE token seam: the colour
+// reads `--bl-card-link` first (re-point it in a theme/scope to restyle
+// every clickable title at once) and falls back to the dark brand green
+// (Ali, 21 Jul: link colour, "much darker" than green-600).
+export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
+  return (
+    <CardTitle
+      size="small"
+      dataHook={dataHook}
+      {...rest}
+      className={["font-semibold", className].filter(Boolean).join(" ")}
+      style={{
+        color: "var(--bl-card-link, var(--ds-tailwind-colors-green-800))",
+        ...(rest?.style ?? {}),
+      }}
+    >
+      {children}
+    </CardTitle>
+  );
+}
+
 // ─── PageHeader — the composed page header ────────────────────────────
 // There is NO PageHeader component in the DS — the page header IS this
 // composition (recipe: page-header-with-breadcrumbs.jsx; upstream note:

@@ -650,7 +650,12 @@ export function AppLayoutShell({
             // z-20 — LSG map nodes painted over the header at z-10, 16 Jul)
             // while staying under the tweaker (z-50).
             className={[
-              "w-full !max-w-none pt-6 pb-4",
+              // -mx-6/px-6 net-zero the content column's 24px gutters so
+              // the band's BACKGROUND truly reaches the container edges
+              // (dropped in the uncap rewrite; a visible headerBackground
+              // exposed the 24px strips — Ali, 21 Jul). px-6 restores the
+              // inset so PageHeader's centring math is unchanged.
+              "-mx-6 !max-w-none px-6 pt-6 pb-4",
               stickyHeader ? "sticky top-0 z-30 border-b" : "",
               // Band surface: explicit headerBackground wins; else the
               // sticky default (bg-background ≈ page bg); else transparent.

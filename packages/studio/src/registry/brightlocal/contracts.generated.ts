@@ -641,6 +641,28 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "variant": "primary"
     }
   },
+  "CardTitleLink": {
+    "name": "CardTitleLink",
+    "props": {
+      "children": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Title text (the feature name)."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name."
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Merged after the base classes."
+      }
+    }
+  },
   "Card": {
     "name": "Card",
     "props": {
@@ -3609,7 +3631,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "Screen the top \"current location\" House row links to (shows data.location.name). (default \"screen:dmrnwiqjdknxy\" — the Location Hub)"
+        "description": "Screen the top \"current location\" House row links to (shows data.location.name). (default \"screen:dmrurue2wmp9u\" — UI Vision - Location Hub)"
       },
       "allLocationsGoto": {
         "kind": "string",
