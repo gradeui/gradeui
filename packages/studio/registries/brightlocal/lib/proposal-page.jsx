@@ -78,12 +78,23 @@ const MONTHS = {
   may: "May", jun: "June", jul: "July", aug: "August",
   sep: "September", oct: "October", nov: "November", dec: "December",
 };
+// "12th July, 2026" — day-with-ordinal first (snags list, Ali 21 Jul:
+// "note date format"). Ordinals: 11th/12th/13th are the teens exception.
+function ordinal(day) {
+  const teens = day % 100;
+  if (teens >= 11 && teens <= 13) return "th";
+  const last = day % 10;
+  return last === 1 ? "st" : last === 2 ? "nd" : last === 3 ? "rd" : "th";
+}
+
 export function formatDate(value) {
   if (!value || typeof value !== "string") return value ?? null;
   const m = value.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,})\s+(\d{4})/);
   if (!m) return value;
   const month = MONTHS[m[2].slice(0, 3).toLowerCase()];
-  return month ? `${month} ${parseInt(m[1], 10)}, ${m[3]}` : value;
+  if (!month) return value;
+  const day = parseInt(m[1], 10);
+  return `${day}${ordinal(day)} ${month}, ${m[3]}`;
 }
 
 // ─── PageHeader — the composed page header ────────────────────────────
