@@ -303,7 +303,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     // Named datasets — flips the WHOLE interface's data live (account,
     // user, location, metrics) via a nested ProposalDataProvider in
     // AppLayoutShell. The meeting trick: Alt+T, switch client.
-    { key: "navDensity", label: "Nav density", values: ["compact", "comfortable"] },
+    { key: "navDensity", label: "Nav density", values: ["compact", "comfortable", "expansive"] },
     { key: "dataset", label: "Data", values: ["default", ...Object.keys(DATASETS)] },
   ];
   const live = { ...authored, ...tweaks };
@@ -385,10 +385,11 @@ export function AppLayoutShell({
   stickyHeader = false,
   pinnedSidebar = true,
   sidebarTone = "white",
-  // Nav density — "compact" (the fitted look: 30px rows, 16px/1 icons)
-  // or "comfortable" (DS-ish: roomier rows, 20px/1.5 icons). Small vs
-  // large menus is a real product question (Ali) — so it's a shell
-  // knob AND a tweaker row, implemented as the --gds-nav-* variables.
+  // Nav density — "compact" (the fitted look: 30px rows, 16px/1 icons),
+  // "comfortable" (DS-ish: roomier rows, 20px/1.5 icons), or "expansive"
+  // (the LIVE product's generous nav: ~48px rows, 15px labels, 20px
+  // icons). Small vs large menus is a real product question (Ali) — so
+  // it's a shell knob AND a tweaker row, via the --gds-nav-* variables.
   navDensity = "compact",
   // Carry the tone onto the MOBILE Sheet too. The Sheet portals to
   // document.body — outside this tree — so container-level vars can't
@@ -515,15 +516,28 @@ export function AppLayoutShell({
   const tone = SIDEBAR_TONES[sidebarTone] ?? {};
   // Density presets re-point the --gds-nav-* variables the shell's
   // scoped <style> consumes; compact = the CSS defaults (empty).
-  const navVars =
-    navDensity === "comfortable"
-      ? {
-          "--gds-nav-row-py": "8px",
-          "--gds-nav-sub-py": "7px",
-          "--gds-nav-icon-size": "20px",
-          "--gds-nav-icon-stroke": "1.5",
-        }
-      : {};
+  // Density presets re-point the --gds-nav-* variables the shell's
+  // scoped <style> consumes; "compact" = the CSS defaults (empty).
+  // "expansive" mirrors the LIVE BrightLocal nav's generous rhythm
+  // (~48px rows, 15px labels, 20px icons — Ali, 21 Jul).
+  const NAV_DENSITIES = {
+    compact: {},
+    comfortable: {
+      "--gds-nav-row-py": "8px",
+      "--gds-nav-sub-py": "7px",
+      "--gds-nav-icon-size": "20px",
+      "--gds-nav-icon-stroke": "1.5",
+    },
+    expansive: {
+      "--gds-nav-font-size": "0.9375rem",
+      "--gds-nav-row-py": "14px",
+      "--gds-nav-sub-py": "10px",
+      "--gds-nav-sub-pl": "24px",
+      "--gds-nav-icon-size": "20px",
+      "--gds-nav-icon-stroke": "1.5",
+    },
+  };
+  const navVars = NAV_DENSITIES[navDensity] ?? {};
   const layers = PAGE_LAYERS[pageLayers] ?? {};
   // Raised layers: cards are WHITE (the layer re-points --card) with
   // base/border (semantic --border → neutral-200 #E6EDE8, .dark flips

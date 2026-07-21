@@ -262,6 +262,17 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Optional 1px border color around the sidebar container. Any CSS color; tokens welcome (\"var(--sidebar-border)\")."
       },
+      "navDensity": {
+        "kind": "enum",
+        "values": [
+          "compact",
+          "comfortable",
+          "expansive"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Nav rhythm via the --gds-nav-* variables. \"compact\" = fitted 30px rows/16px icons; \"comfortable\" = roomier rows, 20px icons; \"expansive\" = the LIVE product's generous nav (~48px rows, 15px labels, 20px icons). Also a tweaker row. (default \"compact\")"
+      },
       "dataset": {
         "kind": "string",
         "design": "knob",
