@@ -655,7 +655,12 @@ export function AppLayoutShell({
               // (dropped in the uncap rewrite; a visible headerBackground
               // exposed the 24px strips — Ali, 21 Jul). px-6 restores the
               // inset so PageHeader's centring math is unchanged.
-              "-mx-6 !max-w-none px-6 pt-6 pb-4",
+              // !w-[calc(100%+3rem)]: the DS bakes w-full into
+              // ContentHeader, so the negative margins only SHIFT the band
+              // left — the right edge fell 48px short (measured 224→1392
+              // in a 224→1440 wrapper). The calc restores the two gutters
+              // the margins cancel.
+              "-mx-6 !w-[calc(100%+3rem)] !max-w-none px-6 pt-6 pb-4",
               stickyHeader ? "sticky top-0 z-30 border-b" : "",
               // Band surface: explicit headerBackground wins; else the
               // sticky default (bg-background ≈ page bg); else transparent.
