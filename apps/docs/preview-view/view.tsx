@@ -189,8 +189,51 @@ function deliverScreen(p: ScreenPayload): void {
   else pendingPayload = p;
 }
 
-// Links can't navigate from inside the sandboxed panel — ask the host.
+/** send() with a deadline — some hosts silently IGNORE ui/* requests
+ *  they don't implement (observed: request-display-mode + open-link in
+ *  the desktop app, 21 Jul 2026); the promise then hangs forever and the
+ *  control looks dead. A timeout turns "host ignored us" into a
+ *  rejection the caller can fall back from. */
+function sendT(method: string, params: unknown, ms = 700): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const t = setTimeout(() => {
+      if (!done) {
+        done = true;
+        reject(new Error(`host timeout: ${method}`));
+      }
+    }, ms);
+    send(method, params).then(
+      (r) => {
+        if (!done) {
+          done = true;
+          clearTimeout(t);
+          resolve(r);
+        }
+      },
+      (e) => {
+        if (!done) {
+          done = true;
+          clearTimeout(t);
+          reject(e);
+        }
+      },
+    );
+  });
+}
+
+// Open a link: direct window.open FIRST (we're inside a user gesture —
+// works when the panel's sandbox allows popups, returns null when
+// blocked), and only then ask the host. Never both, so no double-open
+// on hosts where each path works.
 function openExternal(url: string): void {
+  let w: Window | null = null;
+  try {
+    w = window.open(url, "_blank", "noopener");
+  } catch {
+    /* sandbox threw — fall through to the host */
+  }
+  if (w) return;
   send("ui/open-link", { url }).catch(() => {
     /* host declined / no handler — nothing else we can do from here */
   });
@@ -198,11 +241,25 @@ function openExternal(url: string): void {
 
 // Ask the host to switch the panel between inline and fullscreen. We
 // declared both in `availableDisplayModes` at init, so a capable host
-// honours this; hosts without support reject and we leave the icon as-is
-// (no optimistic flip, so the control never lies about the real mode). The
-// host may also report the mode authoritatively via host-context.
+// honours this. A host that IGNORES the request (sendT timeout) gets the
+// NATIVE fallback: take this document itself fullscreen via the
+// Fullscreen API — needs the iframe's allow="fullscreen", so it can
+// still fail, in which case the icon stays as-is (no optimistic flip, so
+// the control never lies about the real mode). Escape exits native
+// fullscreen without us — the fullscreenchange listener below keeps the
+// icon honest.
+if (typeof document !== "undefined") {
+  document.addEventListener("fullscreenchange", () => {
+    pushDisplayMode?.(document.fullscreenElement ? "fullscreen" : "inline");
+  });
+}
 function requestDisplayMode(mode: "inline" | "fullscreen"): void {
-  send("ui/request-display-mode", { mode })
+  // Already in NATIVE fullscreen → plain exit, no host round-trip.
+  if (document.fullscreenElement) {
+    void document.exitFullscreen().catch(() => {});
+    return;
+  }
+  sendT("ui/request-display-mode", { mode })
     .then((result) => {
       const applied =
         (result &&
@@ -213,7 +270,11 @@ function requestDisplayMode(mode: "inline" | "fullscreen"): void {
         pushDisplayMode?.(applied);
     })
     .catch(() => {
-      /* host without display-mode support — leave the icon as-is */
+      if (mode === "fullscreen" && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {
+          /* host + native both unavailable — leave the icon as-is */
+        });
+      }
     });
 }
 

@@ -264,6 +264,24 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
       pending[id] = { resolve: resolve, reject: reject };
     });
   }
+  // send() with a deadline. Some hosts silently IGNORE ui/* requests they
+  // don't implement (observed: request-display-mode + open-link in the
+  // desktop app, 21 Jul 2026) — the promise then hangs forever and the
+  // button looks dead. A timeout turns "host ignored us" into a rejection
+  // the caller can fall back from.
+  function sendT(method, params, ms) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var t = setTimeout(function () {
+        if (!done) { done = true; reject(new Error("host timeout: " + method)); }
+      }, ms || 700);
+      send(method, params).then(function (r) {
+        if (!done) { done = true; clearTimeout(t); resolve(r); }
+      }, function (e) {
+        if (!done) { done = true; clearTimeout(t); reject(e); }
+      });
+    });
+  }
   function notify(method, params) {
     window.parent.postMessage({ jsonrpc: "2.0", method: method, params: params }, "*");
   }
@@ -329,9 +347,24 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
     var b = document.getElementById("fs-btn");
     b.hidden = false;
     updateFsBtn();
+    // NATIVE fallback path: when the host ignores request-display-mode
+    // (sendT timeout), take the panel document itself fullscreen via the
+    // Fullscreen API — needs the iframe's allow="fullscreen", so it can
+    // still fail; then we hide the button rather than lie. Escape exits
+    // native fullscreen without us — sync the icon from the event.
+    document.addEventListener("fullscreenchange", function () {
+      state.displayMode = document.fullscreenElement ? "fullscreen" : "inline";
+      updateFsBtn();
+      setTimeout(applyFit, 50);
+    });
     b.onclick = function () {
+      // Already in NATIVE fullscreen → plain exit, no host round-trip.
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(function () {});
+        return;
+      }
       var next = state.displayMode === "fullscreen" ? "inline" : "fullscreen";
-      send("ui/request-display-mode", { mode: next }).then(function (r) {
+      sendT("ui/request-display-mode", { mode: next }, 700).then(function (r) {
         var applied = (r && r.displayMode) || (r && r.mode) || next;
         if (applied === "inline" || applied === "fullscreen") {
           state.displayMode = applied;
@@ -340,8 +373,17 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
         mark("fs:" + state.displayMode);
         setTimeout(applyFit, 50);
       }).catch(function () {
-        mark("fs✗ (host lacks display-mode)");
-        b.hidden = true;
+        if (next === "fullscreen" && document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().then(function () {
+            mark("fs:native");
+          }).catch(function () {
+            mark("fs✗ (host+native)");
+            b.hidden = true;
+          });
+        } else {
+          mark("fs✗ (host lacks display-mode)");
+          b.hidden = true;
+        }
       });
     };
   }
@@ -467,7 +509,15 @@ export const PREVIEW_SCALED_HTML = `<!DOCTYPE html>
       var openBtn = document.getElementById("open-btn");
       openBtn.hidden = false;
       openBtn.onclick = function () {
+        // Direct window.open FIRST (we're inside a user gesture; works
+        // when the panel's sandbox allows popups) — returns null when
+        // blocked, and only then do we fall back to asking the host.
+        // Never both: no double-open on hosts where each path works.
+        var w = null;
+        try { w = window.open(sc.embedUrl, "_blank", "noopener"); } catch (e) {}
+        if (w) { mark("open:direct"); return; }
         send("ui/open-link", { url: sc.embedUrl });
+        mark("open:host");
       };
     }
     wireFullscreen();
