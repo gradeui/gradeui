@@ -14,7 +14,9 @@
       "value": 5.0,
       "count": 12
     },
-    "website": "www.minus1.co"
+    "website": "www.minus1.co",
+    "category": "Recording studio",
+    "photo": "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=800&q=60"
   },
   "keywords": [
     "recording studio",
@@ -583,5 +585,21 @@
       "metric": "25",
       "delta": "site score"
     }
+  },
+  "provenance": {
+    "location": "brightlocal-source",
+    "keywords": "brightlocal-source",
+    "aiInsights": "brightlocal-source",
+    "aiInsights.summaries": "proposed",
+    "aiInsights.atAGlance": "proposed",
+    "aiInsights.items[].actions[].label": "proposed",
+    "aiInsights.items[].actionsSummary": "proposed",
+    "foundation": "brightlocal-source",
+    "foundation.*.lede": "proposed",
+    "foundation.*.summary": "proposed",
+    "foundation.*.subMetrics": "proposed",
+    "visibility": "brightlocal-source",
+    "competitors": "brightlocal-source",
+    "metrics": "proposed"
   }
 }

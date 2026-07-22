@@ -90,6 +90,34 @@ export const PROPOSAL_ACCOUNTS = [
 // stay possible. This is deliberately NOT a fetching layer — it's a
 // binding seam; real data arrives by swapping the object.
 
+// ─── Dataset-derived locations ───────────────────────────────────────
+// The All Locations grid LOOPS THROUGH THE DATASETS (Ali, 22 Jul): one
+// entry per lib/data/*.json, so every dataset-backed location is
+// clickable-with-data BY CONSTRUCTION and adding a dataset file adds a
+// location. The entry carries `dataset: <name>` — LocationCard stashes
+// it on click (see selectSessionDataset). Address "Town, POSTCODE"
+// splits on the last comma.
+function splitAddress(addr = "") {
+  const i = addr.lastIndexOf(",");
+  return i > 0
+    ? { city: addr.slice(0, i).trim(), postcode: addr.slice(i + 1).trim() }
+    : { city: addr, postcode: "" };
+}
+export function datasetLocations() {
+  return Object.entries(DATASETS).map(([key, d]) => {
+    const loc = d.location ?? {};
+    return {
+      id: key,
+      name: loc.name,
+      ...splitAddress(loc.address),
+      category: loc.category,
+      phone: loc.phone,
+      photo: loc.photo,
+      dataset: key,
+    };
+  });
+}
+
 export const PROPOSAL_DATA = {
   account: { label: "Acme Local Agency" },
   user: { name: "Joe Bloggs", meta: "Trial: 14 days left", initials: "JB" },
@@ -127,6 +155,14 @@ export const PROPOSAL_DATA = {
   // that's a beach volleyball club) — great for demoing data-quality
   // stories. photo optional → the card's No-photo placeholder.
   locations: [
+    // Dataset-backed locations FIRST — derived from lib/data/*.json so
+    // the list and the datasets can never drift (Ali, 22 Jul).
+    ...datasetLocations(),
+    // Then the client's REAL dirty-data comedy from their live
+    // screenshot (duplicate cafés categorised as dog walkers, a roofing
+    // company that's a beach volleyball club) — kept for demoing
+    // data-quality stories. No datasets (yet): clicking navigates but
+    // keeps the current data; give one a lib/data JSON to activate it.
     {
       id: "blackberry-farm",
       name: "Blackberry Farm Park",
@@ -152,37 +188,6 @@ export const PROPOSAL_DATA = {
       postcode: "2000",
       category: "Dog walker",
       phone: "+61 2 9251 8683",
-    },
-    {
-      id: "harbour-co",
-      name: "Harbour & Co",
-      city: "Brighton Marina",
-      postcode: "BN2 5WA",
-      category: "Seafood restaurant",
-      phone: "01273 555 018",
-      // Clicking this card stashes its dataset (session tweak layer) so
-      // the hub — and every screen after — shows THIS location.
-      dataset: "harbour-co",
-    },
-    {
-      id: "northside-dental",
-      name: "Northside Dental",
-      city: "Manchester",
-      postcode: "M4 4BF",
-      category: "Dentist",
-      phone: "0161 832 4477",
-      dataset: "northside-dental",
-    },
-    {
-      id: "minus-one-studios",
-      name: "Minus 1 Studios",
-      city: "London",
-      postcode: "NW1 6TZ",
-      category: "Recording studio",
-      phone: "0203 488 2915",
-      dataset: "minus-one-studios",
-      photo:
-        "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=800&q=60",
     },
     {
       id: "first-capital-sa",

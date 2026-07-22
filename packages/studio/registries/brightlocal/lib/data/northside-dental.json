@@ -12,7 +12,11 @@
     "address": "Manchester, M4 4BF",
     "phone": "0161 832 4477",
     "status": "Needs attention",
-    "rating": { "value": 3.6, "count": 214 }
+    "rating": {
+      "value": 3.6,
+      "count": 214
+    },
+    "category": "Dentist"
   },
   "keywords": [
     "dentist manchester",
@@ -24,7 +28,10 @@
   "aiInsights": {
     "lastUpdated": "15th Jul 2026 at 11:30 AM UTC",
     "updatesLeft": 1,
-    "counts": { "insights": 3, "recommendations": 9 },
+    "counts": {
+      "insights": 3,
+      "recommendations": 9
+    },
     "tone": "standard",
     "atAGlance": [
       "Rebuild the Google rating — recent negatives pushed it below 4.0 and the map pack follows ratings.",
@@ -49,11 +56,21 @@
         "actions": [
           {
             "text": "Trigger the review campaign to recent happy patients.",
-            "links": [{ "label": "Go to Get Reviews", "area": "reviews" }]
+            "links": [
+              {
+                "label": "Go to Get Reviews",
+                "area": "reviews"
+              }
+            ]
           },
           {
             "text": "Reply to every review under 4 stars with a recovery offer.",
-            "links": [{ "label": "Go to Reputation Manager", "area": "reviews" }]
+            "links": [
+              {
+                "label": "Go to Reputation Manager",
+                "area": "reviews"
+              }
+            ]
           },
           {
             "text": "Add a review ask to the post-appointment SMS flow."
@@ -72,15 +89,29 @@
         "actions": [
           {
             "text": "Run Citation Builder to push the M4 4BF address.",
-            "links": [{ "label": "Go to Citation Builder", "area": "citations" }]
+            "links": [
+              {
+                "label": "Go to Citation Builder",
+                "area": "citations"
+              }
+            ]
           },
           {
             "text": "Suppress the two duplicate listings still showing the old practice.",
-            "links": [{ "label": "Go to Active Sync" }]
+            "links": [
+              {
+                "label": "Go to Active Sync"
+              }
+            ]
           },
           {
             "text": "Re-run Citation Tracker in two weeks to confirm propagation.",
-            "links": [{ "label": "Go to Citation Tracker", "area": "citations" }]
+            "links": [
+              {
+                "label": "Go to Citation Tracker",
+                "area": "citations"
+              }
+            ]
           }
         ]
       },
@@ -96,7 +127,12 @@
         "actions": [
           {
             "text": "Compress hero images on the booking page.",
-            "links": [{ "label": "Go to Website SEO", "area": "website-seo" }]
+            "links": [
+              {
+                "label": "Go to Website SEO",
+                "area": "website-seo"
+              }
+            ]
           },
           {
             "text": "Lazy-load the reviews widget below the fold."
@@ -112,36 +148,81 @@
     "websiteContent": {
       "score": 58,
       "subMetrics": [
-        { "label": "Conversion UX", "score": 60 },
-        { "label": "Keyword coverage", "score": 48 },
-        { "label": "Page optimization", "score": 62 },
-        { "label": "Technical health", "score": 41 },
-        { "label": "Local intent & linking", "score": 55 }
+        {
+          "label": "Conversion UX",
+          "score": 60
+        },
+        {
+          "label": "Keyword coverage",
+          "score": 48
+        },
+        {
+          "label": "Page optimization",
+          "score": 62
+        },
+        {
+          "label": "Technical health",
+          "score": 41
+        },
+        {
+          "label": "Local intent & linking",
+          "score": 55
+        }
       ]
     },
     "gbp": {
       "score": 54,
       "subMetrics": [
-        { "label": "Activity & freshness", "score": 48 },
-        { "label": "Conversion tracking", "score": 50 },
-        { "label": "Profile completeness", "score": 72 },
-        { "label": "NAP alignment", "score": 38 },
-        { "label": "Category & service accuracy", "score": 60 }
+        {
+          "label": "Activity & freshness",
+          "score": 48
+        },
+        {
+          "label": "Conversion tracking",
+          "score": 50
+        },
+        {
+          "label": "Profile completeness",
+          "score": 72
+        },
+        {
+          "label": "NAP alignment",
+          "score": 38
+        },
+        {
+          "label": "Category & service accuracy",
+          "score": 60
+        }
       ]
     },
     "reviews": {
       "score": 45,
       "subMetrics": [
-        { "label": "Review volume", "score": 48 },
-        { "label": "Average rating", "score": 72 },
-        { "label": "Recency & velocity", "score": 28 }
+        {
+          "label": "Review volume",
+          "score": 48
+        },
+        {
+          "label": "Average rating",
+          "score": 72
+        },
+        {
+          "label": "Recency & velocity",
+          "score": 28
+        }
       ]
     },
     "citations": {
       "score": 36,
       "subMetrics": [
-        { "label": "Core coverage", "score": 44 },
-        { "label": "NAP consistency", "score": 26 }
+        {
+          "label": "Core coverage",
+          "score": 44
+        },
+        {
+          "label": "NAP consistency",
+          "score": 26
+        }
       ]
     }
   },
@@ -154,7 +235,9 @@
       "topThreeShare": 4,
       "topThreeShareDelta": -3
     },
-    "organic": { "score": 32 }
+    "organic": {
+      "score": 32
+    }
   },
   "competitors": [
     {
@@ -162,7 +245,9 @@
       "name": "City Centre Dental Works",
       "rating": 4.8,
       "reviewCount": 590,
-      "categories": ["Dentist"],
+      "categories": [
+        "Dentist"
+      ],
       "links": 2100,
       "authority": 41
     },
@@ -171,7 +256,10 @@
       "name": "Ancoats Smile Studio",
       "rating": 4.9,
       "reviewCount": 320,
-      "categories": ["Dentist", "Cosmetic dentist"],
+      "categories": [
+        "Dentist",
+        "Cosmetic dentist"
+      ],
       "links": 780,
       "authority": 28
     },
@@ -180,7 +268,9 @@
       "name": "Northern Quarter Dental",
       "rating": 4.7,
       "reviewCount": 410,
-      "categories": ["Dentist"],
+      "categories": [
+        "Dentist"
+      ],
       "links": 1500,
       "authority": 35
     },
@@ -189,7 +279,9 @@
       "name": "Deansgate Dental & Implant Clinic",
       "rating": 4.5,
       "reviewCount": 150,
-      "categories": ["Dental implants provider"],
+      "categories": [
+        "Dental implants provider"
+      ],
       "links": 240,
       "authority": 19
     },
@@ -198,7 +290,9 @@
       "name": "Northside Dental",
       "rating": 3.6,
       "reviewCount": 214,
-      "categories": ["Dentist"],
+      "categories": [
+        "Dentist"
+      ],
       "links": 90,
       "authority": 12,
       "self": true
@@ -248,5 +342,8 @@
       "metric": "58",
       "delta": "site score"
     }
+  },
+  "provenance": {
+    "*": "proposed"
   }
 }

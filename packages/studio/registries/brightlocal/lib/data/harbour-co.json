@@ -12,7 +12,11 @@
     "address": "Brighton Marina, BN2 5WA",
     "phone": "01273 555 018",
     "status": "Active",
-    "rating": { "value": 4.7, "count": 342 }
+    "rating": {
+      "value": 4.7,
+      "count": 342
+    },
+    "category": "Seafood restaurant"
   },
   "keywords": [
     "seafood restaurant brighton",
@@ -24,7 +28,10 @@
   "aiInsights": {
     "lastUpdated": "15th Jul 2026 at 8:14 AM UTC",
     "updatesLeft": 2,
-    "counts": { "insights": 3, "recommendations": 7 },
+    "counts": {
+      "insights": 3,
+      "recommendations": 7
+    },
     "tone": "standard",
     "atAGlance": [
       "Publish the spring menu as a What's New post — the profile has been quiet for three weeks.",
@@ -49,7 +56,12 @@
         "actions": [
           {
             "text": "Publish the spring menu as a What's New post.",
-            "links": [{ "label": "Go to GBP Manager", "area": "gbp-manager" }]
+            "links": [
+              {
+                "label": "Go to GBP Manager",
+                "area": "gbp-manager"
+              }
+            ]
           },
           {
             "text": "Schedule a fortnightly post slot so gaps never stretch past two weeks."
@@ -71,7 +83,12 @@
         "actions": [
           {
             "text": "Include 'seafood restaurant Brighton' in the title.",
-            "links": [{ "label": "Go to Website SEO", "area": "website-seo" }]
+            "links": [
+              {
+                "label": "Go to Website SEO",
+                "area": "website-seo"
+              }
+            ]
           },
           {
             "text": "Mirror the phrase in the H1 and meta description (140 to 160 characters)."
@@ -90,7 +107,12 @@
         "actions": [
           {
             "text": "Prompt diners for photos in the follow-up email.",
-            "links": [{ "label": "Go to Reviews", "area": "reviews" }]
+            "links": [
+              {
+                "label": "Go to Reviews",
+                "area": "reviews"
+              }
+            ]
           },
           {
             "text": "Feature the best photo reviews on the homepage carousel."
@@ -103,36 +125,81 @@
     "websiteContent": {
       "score": 91,
       "subMetrics": [
-        { "label": "Conversion UX", "score": 88 },
-        { "label": "Keyword coverage", "score": 78 },
-        { "label": "Page optimization", "score": 92 },
-        { "label": "Technical health", "score": 96 },
-        { "label": "Local intent & linking", "score": 90 }
+        {
+          "label": "Conversion UX",
+          "score": 88
+        },
+        {
+          "label": "Keyword coverage",
+          "score": 78
+        },
+        {
+          "label": "Page optimization",
+          "score": 92
+        },
+        {
+          "label": "Technical health",
+          "score": 96
+        },
+        {
+          "label": "Local intent & linking",
+          "score": 90
+        }
       ]
     },
     "gbp": {
       "score": 82,
       "subMetrics": [
-        { "label": "Activity & freshness", "score": 58 },
-        { "label": "Conversion tracking", "score": 85 },
-        { "label": "Profile completeness", "score": 97 },
-        { "label": "NAP alignment", "score": 94 },
-        { "label": "Category & service accuracy", "score": 90 }
+        {
+          "label": "Activity & freshness",
+          "score": 58
+        },
+        {
+          "label": "Conversion tracking",
+          "score": 85
+        },
+        {
+          "label": "Profile completeness",
+          "score": 97
+        },
+        {
+          "label": "NAP alignment",
+          "score": 94
+        },
+        {
+          "label": "Category & service accuracy",
+          "score": 90
+        }
       ]
     },
     "reviews": {
       "score": 89,
       "subMetrics": [
-        { "label": "Review volume", "score": 84 },
-        { "label": "Average rating", "score": 94 },
-        { "label": "Recency & velocity", "score": 88 }
+        {
+          "label": "Review volume",
+          "score": 84
+        },
+        {
+          "label": "Average rating",
+          "score": 94
+        },
+        {
+          "label": "Recency & velocity",
+          "score": 88
+        }
       ]
     },
     "citations": {
       "score": 92,
       "subMetrics": [
-        { "label": "Core coverage", "score": 90 },
-        { "label": "NAP consistency", "score": 94 }
+        {
+          "label": "Core coverage",
+          "score": 90
+        },
+        {
+          "label": "NAP consistency",
+          "score": 94
+        }
       ]
     }
   },
@@ -145,7 +212,9 @@
       "topThreeShare": 46,
       "topThreeShareDelta": 8
     },
-    "organic": { "score": 81 }
+    "organic": {
+      "score": 81
+    }
   },
   "competitors": [
     {
@@ -153,7 +222,9 @@
       "name": "The Salt Quay",
       "rating": 4.6,
       "reviewCount": 1840,
-      "categories": ["Seafood restaurant"],
+      "categories": [
+        "Seafood restaurant"
+      ],
       "links": 8200,
       "authority": 52
     },
@@ -162,7 +233,10 @@
       "name": "Pearl & Oyster Rooms",
       "rating": 4.5,
       "reviewCount": 1260,
-      "categories": ["Seafood restaurant", "Oyster bar"],
+      "categories": [
+        "Seafood restaurant",
+        "Oyster bar"
+      ],
       "links": 5400,
       "authority": 47
     },
@@ -171,7 +245,9 @@
       "name": "Marina Catch Kitchen",
       "rating": 4.4,
       "reviewCount": 930,
-      "categories": ["Seafood restaurant"],
+      "categories": [
+        "Seafood restaurant"
+      ],
       "links": 2100,
       "authority": 39
     },
@@ -180,7 +256,9 @@
       "name": "Harbour & Co",
       "rating": 4.7,
       "reviewCount": 342,
-      "categories": ["Seafood restaurant"],
+      "categories": [
+        "Seafood restaurant"
+      ],
       "links": 1150,
       "authority": 33,
       "self": true
@@ -190,7 +268,9 @@
       "name": "The Fisherman's Rest",
       "rating": 4.3,
       "reviewCount": 610,
-      "categories": ["Fish & chips restaurant"],
+      "categories": [
+        "Fish & chips restaurant"
+      ],
       "links": 480,
       "authority": 24
     }
@@ -239,5 +319,8 @@
       "metric": "91",
       "delta": "site score"
     }
+  },
+  "provenance": {
+    "*": "proposed"
   }
 }
