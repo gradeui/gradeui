@@ -379,7 +379,13 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
             </span>
           </div>
           {ROWS.map((row) => (
-            <div key={row.key} className="mb-3 last:mb-0">
+            // Rule above each section (except the first — the panel
+            // title already separates it) so the groups read at a
+            // glance (Ali, 22 Jul).
+            <div
+              key={row.key}
+              className="mb-3 border-t border-[var(--border)] pt-2.5 first:border-t-0 first:pt-0 last:mb-0"
+            >
               {/* Section header: 12px semibold in full foreground so it
                   reads as a HEADER above the 11px chips, not another
                   chip-weight line (Ali, 22 Jul). "tweaked" stays small
@@ -399,8 +405,8 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
                     onClick={() => set(row.key, v)}
                     className={
                       live[row.key] === v
-                        ? "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-50))] px-2 py-0.5 text-[11px] text-[light-dark(white,var(--ds-tailwind-colors-neutral-900))]"
-                        : "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))] px-2 py-0.5 text-[11px] text-[light-dark(var(--ds-tailwind-colors-neutral-600),var(--ds-tailwind-colors-neutral-300))]"
+                        ? "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-50))] px-2 py-0.5 text-[11px] text-[light-dark(white,var(--ds-tailwind-colors-neutral-900))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-700),var(--ds-tailwind-colors-neutral-200))]"
+                        : "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))] px-2 py-0.5 text-[11px] text-[light-dark(var(--ds-tailwind-colors-neutral-600),var(--ds-tailwind-colors-neutral-300))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-700))] hover:text-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-100))]"
                     }
                   >
                     {v === true ? "on" : v === false ? "off" : v}
