@@ -382,8 +382,13 @@ export default function ExternalSandboxPage() {
         // prefix match, but lib specs match exactly.
         if (libSpecs.includes(p)) return guarded(requireLib(p, m, libSeen) as never, p);
         const companion = companions.find((c) => p === c || p.startsWith(`${c}/`));
-        if (companion)
-          return guarded((m.companions[companion] ?? {}) as never, companion);
+        if (companion) {
+          // `modules` is a loose Record (line ~112), so narrow the
+          // companions map before indexing — indexing `unknown` is the
+          // type error that broke the Vercel build (23 Jul).
+          const map = (m.companions ?? {}) as Record<string, unknown>;
+          return guarded((map[companion] ?? {}) as never, companion);
+        }
         if (p.endsWith(".css")) return {};
         throw new Error(`external-sandbox: unknown module "${p}"`);
       };
