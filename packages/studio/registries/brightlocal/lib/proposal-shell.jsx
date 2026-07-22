@@ -949,6 +949,16 @@ export function AppLayoutShell({
            rotate AND eases the colour. */
         "[data-slot=accordion-trigger]>svg{transition:transform 200ms,color 120ms ease}" +
         "[data-slot=accordion-trigger]:hover>svg{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700))}" +
+        /* ILLUSTRATION TINT SEAM — @brightlocal/illustrations bakes its
+           palette as fill ATTRIBUTES (ink #111412, accent #2AE855,
+           paper #FFFEFD); CSS beats presentation attributes, so a
+           [data-bl-illo-tint] wrapper re-points each role via custom
+           props (StatusBanner tints the robot to its band this way —
+           the mock's monochrome maroon robot). Unset props fall back
+           to the original palette. */
+        "[data-bl-illo-tint] svg [fill='#111412']{fill:var(--bl-illo-ink,#111412)}" +
+        "[data-bl-illo-tint] svg [fill='#2AE855']{fill:var(--bl-illo-accent,#2AE855)}" +
+        "[data-bl-illo-tint] svg [fill='#FFFEFD']{fill:var(--bl-illo-paper,#FFFEFD)}" +
         "[data-slot=card]{--ds-section-padding-x-md:16px;--ds-section-padding-y-md:16px}" +
         "@media (min-width:1024px){[data-slot=card]{--ds-section-padding-x-md:24px;--ds-section-padding-y-md:24px}}"
       }</style>

@@ -77,6 +77,7 @@ export function scoreBand(score) {
         "bg-[var(--ds-tailwind-colors-red-100)] text-[var(--ds-tailwind-colors-red-700)]",
       surfaceClass: "bg-[var(--ds-tailwind-colors-red-50)]",
       headlineClass: "text-[var(--ds-tailwind-colors-red-900)]",
+      ink: "var(--ds-tailwind-colors-red-900)",
       arc: "var(--ds-tailwind-colors-red-900)",
       track: "var(--ds-tailwind-colors-red-200)",
       headline: "This location's overall score is low. We'll help you fix it.",
@@ -90,6 +91,7 @@ export function scoreBand(score) {
         "bg-[var(--ds-tailwind-colors-amber-100)] text-[var(--ds-tailwind-colors-amber-700)]",
       surfaceClass: "bg-[var(--ds-tailwind-colors-amber-50)]",
       headlineClass: "text-[var(--ds-tailwind-colors-amber-900)]",
+      ink: "var(--ds-tailwind-colors-amber-900)",
       arc: "var(--ds-tailwind-colors-amber-700)",
       track: "var(--ds-tailwind-colors-amber-200)",
       headline:
@@ -103,6 +105,7 @@ export function scoreBand(score) {
       "bg-[var(--ds-tailwind-colors-green-100)] text-[var(--ds-tailwind-colors-green-700)]",
     surfaceClass: "bg-[var(--ds-tailwind-colors-green-50)]",
     headlineClass: "text-[var(--ds-tailwind-colors-green-900)]",
+      ink: "var(--ds-tailwind-colors-green-900)",
     arc: "var(--ds-tailwind-colors-green-700)",
     track: "var(--ds-tailwind-colors-green-200)",
     headline:
@@ -157,7 +160,21 @@ export function StatusBanner({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="shrink-0" aria-hidden>
+      {/* Band-tinted robot (Ali, 23 Jul: "can we override the
+          colours?") — the illustration tint seam in the shell re-points
+          the baked fills; ink AND accent go monochrome band-ink (the
+          mock's maroon robot), paper goes transparent so the banner
+          tint shows through the line art. */}
+      <div
+        className="shrink-0"
+        aria-hidden
+        data-bl-illo-tint=""
+        style={{
+          "--bl-illo-ink": band.ink,
+          "--bl-illo-accent": band.ink,
+          "--bl-illo-paper": "transparent",
+        }}
+      >
         {illustration ?? <RobotAiA size={88} />}
       </div>
       <div className="flex min-w-0 flex-col items-start gap-2">
