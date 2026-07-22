@@ -359,8 +359,15 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
       {open ? (
         <div className="w-64 rounded-xl border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] p-3 shadow-lg">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold">Shell tweaks</span>
-            <span className="flex items-center gap-2">
+            <span className="flex items-baseline gap-2">
+              <span className="text-sm font-semibold">Shell tweaks</span>
+              {/* Discoverability: the toggle shortcut, right where you
+                  learn it (Ali, 22 Jul — it existed but nothing said so). */}
+              <kbd className="rounded border border-[var(--border)] px-1 py-px font-mono text-[10px] text-muted-foreground">
+                Alt+T
+              </kbd>
+            </span>
+            <span className="flex items-center gap-1">
               {dirty ? (
                 <button
                   onClick={() => setTweaks({})}
@@ -372,7 +379,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close shell tweaks"
-                className="text-muted-foreground text-sm leading-none"
+                className="text-muted-foreground -mr-1 rounded-md px-1.5 py-0.5 text-sm leading-none transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-700))] hover:text-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-100))]"
               >
                 {"×"}
               </button>
@@ -381,10 +388,11 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
           {ROWS.map((row) => (
             // Rule above each section (except the first — the panel
             // title already separates it) so the groups read at a
-            // glance (Ali, 22 Jul).
+            // glance. -mx-3/px-3 cancel the panel's padding so the rule
+            // runs EDGE TO EDGE (Ali, 22 Jul).
             <div
               key={row.key}
-              className="mb-3 border-t border-[var(--border)] pt-2.5 first:border-t-0 first:pt-0 last:mb-0"
+              className="-mx-3 mb-3 border-t border-[var(--border)] px-3 pt-2.5 first:border-t-0 first:pt-0 last:mb-0"
             >
               {/* Section header: 12px semibold in full foreground so it
                   reads as a HEADER above the 11px chips, not another
