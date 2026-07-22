@@ -396,19 +396,31 @@ export function ProposalSidebar({
                 </SidebarMenuItem>
               ) : (
                 <>
-                  {/* Current location — a House row at the very top;
-                      shows the bound location name and links to its hub
-                      (Ali, 21 Jul). Sits ABOVE the sections. */}
+                  {/* Current location — a MINI CARD at the very top
+                      (snag 5, Ali 22 Jul): name on the first line,
+                      "Town, Postcode" small beneath — the same two-line
+                      shape as the signed-in block. Boxed with the
+                      sidebar border token so it rides every tone. The
+                      data-hook deliberately does NOT start with "nav-"
+                      so the shell's nav-rhythm CSS (fixed row heights)
+                      leaves it alone. */}
                   <SidebarMenuItem dataHook="nav-item-current-location">
-                    <SidebarMenuButton
-                      size="sm"
-                      className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
-                      dataHook="nav-current-location"
+                    <button
+                      type="button"
+                      data-hook="location-home-card"
                       data-grade-goto={locationHomeGoto}
+                      className="border-sidebar-border hover:bg-sidebar-accent mb-1 flex w-full cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors"
                     >
-                      <House className="size-5" />
-                      <span>{data.location.name}</span>
-                    </SidebarMenuButton>
+                      <House className="mt-0.5 size-4 shrink-0" />
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm font-semibold leading-snug">
+                          {data.location.name}
+                        </span>
+                        <span className="truncate text-xs leading-snug opacity-70">
+                          {data.location.address}
+                        </span>
+                      </span>
+                    </button>
                   </SidebarMenuItem>
                   {sections.map((section) => (
                     <NavSection key={section.id} section={section} activeId={activeId} />
@@ -428,26 +440,29 @@ export function ProposalSidebar({
           ask: SidebarFooter needs a non-portalling/sticky option. */}
       <div
         data-hook="sidebar-footer"
-        className="border-sidebar-border flex shrink-0 flex-col gap-0.5 border-t px-2 py-1.5"
+        className="border-sidebar-border flex shrink-0 flex-col border-t px-2 pt-2 pb-1.5"
       >
         {/* All Locations — a STANDARD nav row (replaced the account
             switcher dropdown, Ali 21 Jul). Sits above the signed-in
-            user; links back to the locations list. Hidden ON the All
+            user with its own breathing room and a rule between it and
+            the user block (snag 6, Ali 22 Jul). Hidden ON the All
             Locations page itself — there it's the top nav row instead. */}
         {!isAllLocations ? (
-          <SidebarMenu>
-            <SidebarMenuItem dataHook="nav-item-all-locations">
-              <SidebarMenuButton
-                size="sm"
-                className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
-                dataHook="nav-all-locations"
-                data-grade-goto={allLocationsGoto}
-              >
-                <LayoutGrid className="size-5" />
-                <span>All Locations</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+          <div className="border-sidebar-border mb-1.5 border-b pb-2">
+            <SidebarMenu>
+              <SidebarMenuItem dataHook="nav-item-all-locations">
+                <SidebarMenuButton
+                  size="sm"
+                  className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
+                  dataHook="nav-all-locations"
+                  data-grade-goto={allLocationsGoto}
+                >
+                  <LayoutGrid className="size-5" />
+                  <span>All Locations</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </div>
         ) : null}
         <SidebarMenu>
           {/* The dropdown trigger inherits SidebarMenuButton's baked
