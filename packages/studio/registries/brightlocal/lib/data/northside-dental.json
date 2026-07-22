@@ -11,7 +11,7 @@
     "name": "Northside Dental",
     "address": "Manchester, M4 4BF",
     "phone": "0161 832 4477",
-    "status": "Needs attention",
+    "status": "Active",
     "rating": {
       "value": 3.6,
       "count": 214

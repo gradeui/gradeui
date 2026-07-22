@@ -9,7 +9,7 @@
     "reference": "1STUDIOS-NW16TZ",
     "address": "London, NW1 6TZ",
     "phone": "0203 488 2915",
-    "status": "Needs attention",
+    "status": "Active",
     "rating": {
       "value": 5.0,
       "count": 12
@@ -588,6 +588,7 @@
   },
   "provenance": {
     "location": "brightlocal-source",
+    "location.status": "proposed",
     "keywords": "brightlocal-source",
     "aiInsights": "brightlocal-source",
     "aiInsights.summaries": "proposed",

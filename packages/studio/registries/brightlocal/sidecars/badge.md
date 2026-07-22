@@ -8,14 +8,13 @@ props:
   - dataHook: string — REQUIRED (renders data-hook; kebab-case {context}-{componentType}, e.g. "settings-save-button")
   - trackingEl?: string — Tracking element identifier for analytics
   - trackingLabel?: string — Tracking label for analytics context
-when_to_use: Displaying a status label (active/inactive, new, draft) Showing a count or numeric indicator Non-interactive categorical labels Do NOT use for: removable tags (use Chip); interactive elements (use Button). Use Chip when the user can remove/dismiss the tag — Badge is non-interactive. Use Button for interactive status toggles. VARIANT SEMANTICS — "primary" IS the green SUCCESS badge (bg-success-background); there is no variant named success/warning. Status mapping across the proposal: Active → primary, anything else (Needs attention, Paused, …) → outline. "outline" carries its own bg-background fill (not transparent), so it stays legible over photos — LocationCard overlays the status pill on the location photo this way. Never hand-roll badge colours with utility classes; pick a variant.
+when_to_use: Displaying a status label (active/inactive, new, draft) Showing a count or numeric indicator Non-interactive categorical labels Do NOT use for: removable tags (use Chip); interactive elements (use Button). Use Chip when the user can remove/dismiss the tag — Badge is non-interactive. Use Button for interactive status toggles. VARIANT SEMANTICS — "primary" IS the green SUCCESS badge (bg-success-background); there is no variant named success/warning. Status mapping across the proposal: Active → primary, any other status → outline. "Active" is the ONLY location status VERIFIED on the live product — never invent status strings (no "Needs attention", "Paused", …) in datasets or screens until Ali verifies them on live. "outline" carries its own bg-background fill (not transparent), so it stays legible over photos — LocationCard overlays the status pill on the location photo this way. Never hand-roll badge colours with utility classes; pick a variant.
 composes_with: [Chip, Button]
 aliases: [tag, chip, pill, label, status indicator]
 ---
 
 ```jsx
-<Badge variant="primary" dataHook="status-badge">Active</Badge>   {/* green success */}
-<Badge variant="outline">Needs attention</Badge>                  {/* neutral, bg-filled */}
+<Badge variant="primary" dataHook="status-badge">Active</Badge>   {/* green success — the only verified location status */}
 <Badge variant="secondary">Draft</Badge>
 <Badge variant="destructive">Error</Badge>
 ```
