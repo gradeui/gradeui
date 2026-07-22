@@ -935,6 +935,12 @@ export function AppLayoutShell({
         ":root{--bl-card-link:var(--ds-tailwind-colors-green-800);--bl-card-link-hover:var(--ds-tailwind-colors-green-700)}" +
         "[data-bl-link]{transition:color 120ms ease}" +
         "[data-bl-link]:hover,[data-grade-goto]:hover [data-bl-link]{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700));text-decoration:underline;text-underline-offset:3px}" +
+        /* Inside DS accordion triggers the BUTTON already underlines on
+           hover (its own offset) — our span underline at 3px doubled it
+           (Ali, 22 Jul). Suppress OURS there (the button's propagated
+           line is THE line) and let the colour shift ride row hover. */
+        "[data-slot=accordion-trigger]:hover [data-bl-link]{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700))}" +
+        "[data-slot=accordion-trigger] [data-bl-link]:hover,[data-slot=accordion-trigger]:hover [data-bl-link]{text-decoration:none}" +
         "[data-slot=card]{--ds-section-padding-x-md:16px;--ds-section-padding-y-md:16px}" +
         "@media (min-width:1024px){[data-slot=card]{--ds-section-padding-x-md:24px;--ds-section-padding-y-md:24px}}"
       }</style>
