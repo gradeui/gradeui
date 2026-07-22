@@ -179,9 +179,19 @@ export function StatusBanner({
       </div>
       <div className="flex min-w-0 flex-col items-start gap-2">
         <ScoreStatusPill score={score} dataHook={`${dataHook}-pill`} />
+        {/* SEMI-BOLD explicitly via the token (Ali, 23 Jul) — inline
+            weight so no ramp/utility drift can bolden it (BL's shipped
+            ramp maps font-semibold to 500 without our fix; and a
+            missing 600 face would let font-synthesis fake a heavier
+            one — if this still READS bold somewhere, suspect a local
+            Poppins install or an unloaded 600 face on that machine). */}
         <p
-          className={["text-pretty text-2xl font-semibold leading-snug", band.headlineClass].join(" ")}
-          style={{ fontFamily: "var(--ds-font-font-display, Poppins)" }}
+          className={["text-pretty text-2xl leading-snug", band.headlineClass].join(" ")}
+          style={{
+            fontFamily: "var(--ds-font-font-display, Poppins)",
+            fontWeight: "var(--ds-font-weight-semibold, 600)",
+            fontSynthesisWeight: "none",
+          }}
         >
           {headline ?? band.headline}
         </p>
