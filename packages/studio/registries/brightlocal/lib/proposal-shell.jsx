@@ -212,6 +212,11 @@ export const HEADER_SURFACES = {
     style: {
       backgroundColor: "var(--ds-tailwind-colors-neutral-900)",
       color: "var(--ds-tailwind-colors-base-white)",
+      // Dark band = dark ISLAND (same rule as the sidebar tones): declare
+      // the scheme so every light-dark() token inside flips — the help
+      // icon's hover, focus rings, native UI all get dark treatment
+      // (Ali, 22 Jul).
+      colorScheme: "dark",
       "--foreground": "var(--ds-tailwind-colors-base-white)",
       "--color-foreground": "var(--ds-tailwind-colors-base-white)",
       "--muted-foreground": "var(--ds-tailwind-colors-neutral-400)",
@@ -223,6 +228,7 @@ export const HEADER_SURFACES = {
     style: {
       backgroundColor: "var(--ds-tailwind-colors-green-900)",
       color: "var(--ds-tailwind-colors-base-white)",
+      colorScheme: "dark",
       "--foreground": "var(--ds-tailwind-colors-base-white)",
       "--color-foreground": "var(--ds-tailwind-colors-base-white)",
       "--muted-foreground": "var(--ds-tailwind-colors-green-200)",
