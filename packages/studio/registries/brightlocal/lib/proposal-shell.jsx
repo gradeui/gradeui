@@ -911,6 +911,33 @@ export function AppLayoutShell({
           mirroring BL's .dark token list, instead of hand-rolling
           per-surface (Ali, 22 Jul: unreadable "Add Client"). */}
       <style>{".dark{--color-background:var(--background);--color-foreground:var(--foreground);--color-card:var(--card);--color-card-foreground:var(--card-foreground);--color-card-border:var(--card-border);--color-popover:var(--popover);--color-popover-foreground:var(--popover-foreground);--color-primary:var(--primary);--color-primary-foreground:var(--primary-foreground);--color-secondary:var(--secondary);--color-secondary-foreground:var(--secondary-foreground);--color-muted:var(--muted);--color-muted-foreground:var(--muted-foreground);--color-accent:var(--accent);--color-accent-foreground:var(--accent-foreground);--color-destructive:var(--destructive);--color-destructive-foreground:var(--destructive-foreground);--color-border:var(--border);--color-input:var(--input);--color-ring:var(--ring);--color-ring-offset:var(--ring-offset);--color-link:var(--link);--color-link-visited:var(--link-visited);--color-outline:var(--outline);--color-brand-primary-foreground:var(--brand-primary-foreground);--color-destructive-20:var(--destructive-20);--color-destructive-40:var(--destructive-40);--color-success-background:var(--success-background);--color-success-foreground:var(--success-foreground);--color-info-background:var(--info-background);--color-info-foreground:var(--info-foreground);--color-warning-background:var(--warning-background);--color-warning-foreground:var(--warning-foreground);--color-chart-1:var(--chart-1);--color-chart-2:var(--chart-2);--color-chart-3:var(--chart-3);--color-chart-4:var(--chart-4);--color-chart-5:var(--chart-5);--color-sidebar-background:var(--sidebar-background);--color-sidebar-foreground:var(--sidebar-foreground);--color-sidebar-primary:var(--sidebar-primary);--color-sidebar-primary-foreground:var(--sidebar-primary-foreground);--color-sidebar-accent:var(--sidebar-accent);--color-sidebar-accent-foreground:var(--sidebar-accent-foreground);--color-sidebar-border:var(--sidebar-border);--color-sidebar-ring:var(--sidebar-ring);--color-loading-gradient-from:var(--loading-gradient-from);--color-loading-gradient-to:var(--loading-gradient-to);--color-alpha-5:var(--alpha-5);--color-alpha-10:var(--alpha-10);--color-alpha-20:var(--alpha-20);--color-alpha-30:var(--alpha-30);--color-alpha-40:var(--alpha-40);--color-alpha-50:var(--alpha-50);--color-alpha-60:var(--alpha-60);--color-alpha-70:var(--alpha-70);--color-alpha-80:var(--alpha-80);--color-alpha-90:var(--alpha-90)}"}</style>
+      {/* CLICKABLE-LINK TOKENS — the one definition site for the
+          --bl-card-link seam every clickable text reads (CardTitleLink,
+          accordion action rows, Learn/Read more). Base green-800
+          (#006918) — ASSUMPTION (Ali, 22 Jul: "nudge the link colour
+          greener" from green-950; 900 is a near-invisible step, 800 is
+          the visible nudge; go 700 if it should be greener still).
+          Hover: green-700 + underline — 800→900 is imperceptible, so
+          the hover pair BRIGHTENS one step instead of darkening.
+          [data-bl-link] elements get the hover directly AND via a
+          hovered [data-grade-goto] ancestor (whole-card links light
+          their title). Unlayered CSS beats the utility classes. */}
+      {/* CARD PADDING — the one place to tune it (Ali, 22 Jul: "change
+          it in one place"). DS default-density cards read the
+          RESPONSIVE section tokens (16px base / 24px ≥1024 / 32px
+          ≥1280); re-declaring them SCOPED to [data-slot=card] caps the
+          top step at 24px without touching other section-md consumers
+          (GlobalLayout etc.) or condensed cards (px-3/py-3 literals).
+          The BL sheet has no Tailwind --spacing var to point at, so
+          the values mirror the DS's own px steps. Vars inherit into
+          CardHeader/CardContent, which carry the px utilities. */}
+      <style>{
+        ":root{--bl-card-link:var(--ds-tailwind-colors-green-800);--bl-card-link-hover:var(--ds-tailwind-colors-green-700)}" +
+        "[data-bl-link]{transition:color 120ms ease}" +
+        "[data-bl-link]:hover,[data-grade-goto]:hover [data-bl-link]{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700));text-decoration:underline;text-underline-offset:3px}" +
+        "[data-slot=card]{--ds-section-padding-x-md:16px;--ds-section-padding-y-md:16px}" +
+        "@media (min-width:1024px){[data-slot=card]{--ds-section-padding-x-md:24px;--ds-section-padding-y-md:24px}}"
+      }</style>
       <style>{
         schemeCss +
         mobileToneCss +

@@ -107,23 +107,26 @@ export function formatDate(value) {
 // title in the brand's clickable colour. ONE token seam: the colour
 // reads `--bl-card-link` first (re-point it in a theme/scope to restyle
 // every clickable title at once) and falls back to the dark brand green
-// (Ali, 21 Jul: link colour, "much darker" than green-600).
-// ASSUMPTION (Ali to verify): green-950 is the "branded green" for ALL
-// clickable text — the snag sheet still lists "card heading link color"
-// as NOT DONE, which may mean a brighter ramp step is wanted. The
-// accordion action rows (proposal-insights.jsx) read the same seam, so
-// re-pointing this ONE token restyles everything at once.
+// (Ali, 21 Jul: link colour, "much darker" than green-600; 22 Jul:
+// "nudge it greener" — the shell now DEFINES --bl-card-link as
+// green-800 with a green-700 + underline hover; see the CLICKABLE-LINK
+// TOKENS style block in proposal-shell.jsx, the one place to retune).
+// Colour is a CLASS (not inline style) so the shell's [data-bl-link]
+// hover rule can take over; data-bl-link opts the title into that
+// hover — directly or via a hovered [data-grade-goto] ancestor card.
 export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
   return (
     <CardTitle
       size="small"
       dataHook={dataHook}
+      data-bl-link=""
       {...rest}
-      className={["font-semibold", className].filter(Boolean).join(" ")}
-      style={{
-        color: "var(--bl-card-link, var(--ds-tailwind-colors-green-950))",
-        ...(rest?.style ?? {}),
-      }}
+      className={[
+        "font-semibold text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       {children}
     </CardTitle>

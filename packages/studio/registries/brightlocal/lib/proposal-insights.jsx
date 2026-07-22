@@ -355,7 +355,10 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
             link colour (--bl-card-link, same seam as CardTitleLink) so
             the rows READ clickable (snag, Ali 22 Jul). */}
         <span className="flex w-full items-start gap-3 pr-2 text-left">
-          <span className="flex-1 text-sm font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]">
+          <span
+            data-bl-link=""
+            className="flex-1 text-sm font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]"
+          >
             {actionLabel(action)}
           </span>
         </span>
@@ -373,8 +376,9 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
             </GlossaryText>{" "}
             <button
               type="button"
+              data-bl-link=""
               data-hook={`insight-${item.id}-action-${index}-learn-more`}
-              className="font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))] hover:underline"
+              className="font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]"
             >
               Learn more.
             </button>
