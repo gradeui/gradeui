@@ -340,19 +340,41 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  const ROWS = [
-    { key: "sidebarTone", label: "Sidebar tone", values: ["default", "white", "subtle", "dark", "brand"] },
-    { key: "sidebarFrame", label: "Frame", values: ["flush", "floating", "attached"] },
-    { key: "sidebarShadow", label: "Shadow", values: ["frame", "none", "sm", "md", "lg"] },
-    { key: "pageLayers", label: "Page layers", values: ["default", "raised"] },
-    { key: "stickyHeader", label: "Sticky header", values: [true, false] },
-    { key: "headerBorder", label: "Header border", values: [true, false] },
-    { key: "headerSurface", label: "Header", values: ["none", "white", "subtle", "dark", "brand"] },
-    // Named datasets — flips the WHOLE interface's data live (account,
-    // user, location, metrics) via a nested ProposalDataProvider in
-    // AppLayoutShell. The meeting trick: Alt+T, switch client.
-    { key: "navDensity", label: "Nav density", values: ["compact", "comfortable", "expansive"] },
-    { key: "dataset", label: "Data", values: ["default", ...Object.keys(DATASETS)] },
+  // Knobs GROUPED by the surface they affect (Ali, 22 Jul): everything
+  // sidebar-ish together, everything header-ish together, then page +
+  // data. `display` renames a stored value for the UI only — the prop
+  // value is unchanged (sidebarShadow "frame" READS as "auto": it means
+  // "defer to the frame preset", which on floating equals sm and on
+  // flush equals none — that's why it looked like a duplicate).
+  const GROUPS = [
+    {
+      title: "Sidebar",
+      rows: [
+        { key: "sidebarTone", label: "Tone", values: ["default", "white", "subtle", "dark", "brand"] },
+        { key: "sidebarFrame", label: "Frame", values: ["flush", "floating", "attached"] },
+        { key: "sidebarShadow", label: "Shadow", values: ["frame", "none", "sm", "md", "lg"], display: { frame: "auto" } },
+        { key: "navDensity", label: "Nav density", values: ["compact", "comfortable", "expansive"] },
+      ],
+    },
+    {
+      title: "Header",
+      rows: [
+        { key: "headerSurface", label: "Surface", values: ["none", "white", "subtle", "dark", "brand"] },
+        { key: "headerBorder", label: "Border", values: [true, false] },
+        { key: "stickyHeader", label: "Sticky", values: [true, false] },
+      ],
+    },
+    {
+      title: "Page",
+      rows: [{ key: "pageLayers", label: "Layers", values: ["default", "raised"] }],
+    },
+    {
+      // Named datasets — flips the WHOLE interface's data live (account,
+      // user, location, metrics) via a nested ProposalDataProvider in
+      // AppLayoutShell. The meeting trick: open the tweaker, switch client.
+      title: "Data",
+      rows: [{ key: "dataset", label: "Dataset", values: ["default", ...Object.keys(DATASETS)] }],
+    },
   ];
   const live = { ...authored, ...tweaks };
   const dirty = Object.keys(tweaks).length > 0;
@@ -394,42 +416,44 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
               </button>
             </span>
           </div>
-          {ROWS.map((row) => (
-            // Rule above each section (except the first — the panel
-            // title already separates it) so the groups read at a
-            // glance. -mx-3/px-3 cancel the panel's padding so the rule
-            // runs EDGE TO EDGE (Ali, 22 Jul).
+          {GROUPS.map((group) => (
+            // Edge-to-edge rule above each GROUP (except the first —
+            // the panel title already separates it); -mx-3/px-3 cancel
+            // the panel padding (Ali, 22 Jul).
             <div
-              key={row.key}
+              key={group.title}
               className="-mx-3 mb-3 border-t border-[var(--border)] px-3 pt-2.5 first:border-t-0 first:pt-0 last:mb-0"
             >
-              {/* Section header: 12px semibold in full foreground so it
-                  reads as a HEADER above the 11px chips, not another
-                  chip-weight line (Ali, 22 Jul). "tweaked" stays small
-                  and muted. */}
-              <div className="mb-1 flex items-baseline justify-between">
-                <span className="text-xs font-semibold text-[light-dark(var(--ds-tailwind-colors-neutral-800),var(--ds-tailwind-colors-neutral-100))]">
-                  {row.label}
-                </span>
-                {tweaks[row.key] !== undefined ? (
-                  <span className="text-muted-foreground text-[11px]">tweaked</span>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {row.values.map((v) => (
-                  <button
-                    key={String(v)}
-                    onClick={() => set(row.key, v)}
-                    className={
-                      live[row.key] === v
-                        ? "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-50))] px-2 py-0.5 text-[11px] text-[light-dark(white,var(--ds-tailwind-colors-neutral-900))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-700),var(--ds-tailwind-colors-neutral-200))]"
-                        : "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))] px-2 py-0.5 text-[11px] text-[light-dark(var(--ds-tailwind-colors-neutral-600),var(--ds-tailwind-colors-neutral-300))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-700))] hover:text-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-100))]"
-                    }
-                  >
-                    {v === true ? "on" : v === false ? "off" : v}
-                  </button>
-                ))}
-              </div>
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {group.title}
+              </p>
+              {group.rows.map((row) => (
+                <div key={row.key} className="mb-2.5 last:mb-0">
+                  <div className="mb-1 flex items-baseline justify-between">
+                    <span className="text-xs font-medium text-[light-dark(var(--ds-tailwind-colors-neutral-800),var(--ds-tailwind-colors-neutral-100))]">
+                      {row.label}
+                    </span>
+                    {tweaks[row.key] !== undefined ? (
+                      <span className="text-muted-foreground text-[11px]">tweaked</span>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {row.values.map((v) => (
+                      <button
+                        key={String(v)}
+                        onClick={() => set(row.key, v)}
+                        className={
+                          live[row.key] === v
+                            ? "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-50))] px-2 py-0.5 text-[11px] text-[light-dark(white,var(--ds-tailwind-colors-neutral-900))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-700),var(--ds-tailwind-colors-neutral-200))]"
+                            : "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))] px-2 py-0.5 text-[11px] text-[light-dark(var(--ds-tailwind-colors-neutral-600),var(--ds-tailwind-colors-neutral-300))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-700))] hover:text-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-100))]"
+                        }
+                      >
+                        {v === true ? "on" : v === false ? "off" : (row.display?.[v] ?? v)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
         </div>
