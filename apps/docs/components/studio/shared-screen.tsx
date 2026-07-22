@@ -200,11 +200,26 @@ export function SharedScreen({
   // History, not a sitemap: an in-memory stack of visited screens.
   // Empty stack = the share's own screen (the entry the token names).
   // A click on an author-wired [data-grade-goto] element resolves
-  // against the flow map and pushes; Back (chip / Escape) pops. No URL
-  // change — the token stays the address of the flow, not the position.
+  // against the flow map and pushes; Back (chip / Escape) pops. The URL
+  // never changes — the token stays the address of the flow, not the
+  // position — but each push ALSO adds a same-URL history entry stamped
+  // with the flow depth, so the BROWSER back button pops the flow
+  // exactly like the chip (snag, Ali 22 Jul: "make the actual browser
+  // back button work"). Forward re-walks the remembered path.
   const [flowStack, setFlowStack] = React.useState<
     { id: string; appSource: string }[]
   >([]);
+  // The full visited line (survives pops) — lets the FORWARD button
+  // restore entries the popstate handler sliced off.
+  const flowPathRef = React.useRef<{ id: string; appSource: string }[]>([]);
+  // Live mirror of flowStack.length so event handlers can stamp history
+  // WITHOUT side effects inside the state updater (StrictMode runs
+  // updaters twice in dev — a pushState in there duplicated entries and
+  // made the first Back press a no-op).
+  const flowDepthRef = React.useRef(0);
+  React.useEffect(() => {
+    flowDepthRef.current = flowStack.length;
+  }, [flowStack]);
   const flowTop = flowStack.length > 0 ? flowStack[flowStack.length - 1] : null;
   // currentSource feeds BOTH renderer branches below — navigation is
   // just "source push with a different screen" (swap is what every
@@ -237,14 +252,81 @@ export function SharedScreen({
         return;
       }
       const src = match.appSource;
-      setFlowStack((prev) => [...prev, { id: match.id, appSource: src }]);
+      const entry = { id: match.id, appSource: src };
+      // Side effects OUT here (never in the updater — StrictMode runs
+      // updaters twice): truncate any forward branch, record the new
+      // line, and mirror the depth into a same-URL history entry
+      // (spread the existing state so Next's router entries survive).
+      const nextDepth = flowDepthRef.current + 1;
+      flowPathRef.current = [
+        ...flowPathRef.current.slice(0, flowDepthRef.current),
+        entry,
+      ];
+      try {
+        // Stamp the CURRENT entry lazily before pushing — the mount
+        // effect's replaceState loses a race with Next's router, which
+        // re-stamps history.state during hydration; push time is after
+        // all that, so this marker sticks.
+        if (typeof window.history.state?.blFlowDepth !== "number") {
+          window.history.replaceState(
+            { ...(window.history.state ?? {}), blFlowDepth: flowDepthRef.current },
+            "",
+          );
+        }
+        window.history.pushState(
+          { ...(window.history.state ?? {}), blFlowDepth: nextDepth },
+          "",
+        );
+      } catch {
+        /* history unavailable (SSR/sandboxed) — chip/Esc still work */
+      }
+      flowDepthRef.current = nextDepth;
+      setFlowStack((prev) => [...prev, entry]);
     },
     [flowScreens],
   );
-  const popFlow = React.useCallback(
-    () => setFlowStack((prev) => prev.slice(0, -1)),
-    [],
-  );
+  const popFlow = React.useCallback(() => {
+    // Route through real history so the browser's own back/forward and
+    // the chip stay one system: back() fires popstate, and THAT handler
+    // slices the stack. Direct-slice fallback if our depth marker is
+    // missing (history unavailable or an un-stamped entry).
+    if (
+      typeof window !== "undefined" &&
+      typeof window.history.state?.blFlowDepth === "number" &&
+      window.history.state.blFlowDepth > 0
+    ) {
+      window.history.back();
+      return;
+    }
+    setFlowStack((prev) => prev.slice(0, -1));
+  }, []);
+  // Depth 0 marker for the entry the share opened on + the popstate
+  // bridge: browser Back lands on a lower-depth entry → slice to it;
+  // Forward lands on a higher one → restore from the remembered path.
+  React.useEffect(() => {
+    try {
+      if (typeof window.history.state?.blFlowDepth !== "number") {
+        window.history.replaceState(
+          { ...(window.history.state ?? {}), blFlowDepth: 0 },
+          "",
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+    const onPopState = (e: PopStateEvent) => {
+      const depth = (e.state as { blFlowDepth?: number } | null)?.blFlowDepth;
+      if (typeof depth !== "number") return;
+      setFlowStack((prev) => {
+        if (depth < prev.length) return prev.slice(0, depth);
+        if (depth > prev.length && flowPathRef.current.length >= depth)
+          return flowPathRef.current.slice(0, depth);
+        return prev;
+      });
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
   // External-renderer iframe — the comment-pins overlay reads its
   // contentDocument (same-origin) to anchor pins by data-gds-source-id.
   const extIframeRef = React.useRef<HTMLIFrameElement | null>(null);
