@@ -113,6 +113,7 @@ export function datasetLocations() {
       category: loc.category,
       phone: loc.phone,
       photo: loc.photo,
+      status: loc.status,
       dataset: key,
     };
   });

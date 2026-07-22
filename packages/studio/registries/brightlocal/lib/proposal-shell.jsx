@@ -217,30 +217,6 @@ export const SIDEBAR_SHADOWS = {
 // surfaces also re-point the TEXT tokens (title/muted/breadcrumb all
 // resolve through --foreground/--muted-foreground) so the header stays
 // readable — a bg swap alone would leave near-black text on dark green.
-// Component tokens for a DARK band: colorScheme only flips light-dark()
-// values, but BL's semantic tokens (--border/--input/--accent/
-// --secondary/--muted) are static light values — an outline Button on a
-// dark band otherwise renders light-theme chrome (the "Add Client"
-// button, Ali 22 Jul). Ramp tokens only; both var prefixes as ever.
-function headerDarkTokens(border, accent, accentFg) {
-  return {
-    "--border": border,
-    "--color-border": border,
-    "--input": border,
-    "--color-input": border,
-    "--accent": accent,
-    "--color-accent": accent,
-    "--accent-foreground": accentFg,
-    "--color-accent-foreground": accentFg,
-    "--secondary": accent,
-    "--color-secondary": accent,
-    "--secondary-foreground": accentFg,
-    "--color-secondary-foreground": accentFg,
-    "--muted": accent,
-    "--color-muted": accent,
-  };
-}
-
 export const HEADER_SURFACES = {
   none: null, // transparent — page background shows through
   white: {
@@ -249,62 +225,33 @@ export const HEADER_SURFACES = {
   subtle: {
     style: { backgroundColor: "var(--ds-tailwind-colors-neutral-100)" },
   },
+  // Dark surfaces are FENCED with the DS's own dark mode (Ali, 22 Jul:
+  // "not hand rolling dark mode buttons"): the band carries the `dark`
+  // class, so BL's native `.dark { --border/--accent/--secondary/… }`
+  // block re-points EVERY semantic token for everything inside — no
+  // per-token re-pointing here. We only choose the band's background
+  // (pure ramp tokens) + declare colorScheme (BL's .dark doesn't).
   dark: {
+    className: "dark",
     style: {
       backgroundColor: "var(--ds-tailwind-colors-neutral-900)",
-      color: "var(--ds-tailwind-colors-base-white)",
-      // Dark band = dark ISLAND (same rule as the sidebar tones): declare
-      // the scheme so every light-dark() token inside flips — the help
-      // icon's hover, focus rings, native UI all get dark treatment
-      // (Ali, 22 Jul).
       colorScheme: "dark",
-      "--foreground": "var(--ds-tailwind-colors-base-white)",
-      "--color-foreground": "var(--ds-tailwind-colors-base-white)",
-      "--muted-foreground": "var(--ds-tailwind-colors-neutral-400)",
-      "--color-muted-foreground": "var(--ds-tailwind-colors-neutral-400)",
-      borderColor: "var(--ds-tailwind-colors-neutral-700)",
-      ...headerDarkTokens(
-        "var(--ds-tailwind-colors-neutral-700)",
-        "var(--ds-tailwind-colors-neutral-800)",
-        "var(--ds-tailwind-colors-neutral-50)",
-      ),
     },
   },
-  // Brand pair — TOKENS ONLY (Ali, 22 Jul): brand = green-900,
-  // brand-dark = green-950, matching the sidebar tones of the same
-  // names so the surfaces read as one family and can layer.
+  // Brand pair — TOKENS ONLY: brand = green-900, brand-dark =
+  // green-950, matching the sidebar tones of the same names.
   brand: {
+    className: "dark",
     style: {
       backgroundColor: "var(--ds-tailwind-colors-green-900)",
-      color: "var(--ds-tailwind-colors-base-white)",
       colorScheme: "dark",
-      "--foreground": "var(--ds-tailwind-colors-base-white)",
-      "--color-foreground": "var(--ds-tailwind-colors-base-white)",
-      "--muted-foreground": "var(--ds-tailwind-colors-green-200)",
-      "--color-muted-foreground": "var(--ds-tailwind-colors-green-200)",
-      borderColor: "var(--ds-tailwind-colors-green-700)",
-      ...headerDarkTokens(
-        "var(--ds-tailwind-colors-green-700)",
-        "var(--ds-tailwind-colors-green-800)",
-        "var(--ds-tailwind-colors-green-50)",
-      ),
     },
   },
   "brand-dark": {
+    className: "dark",
     style: {
       backgroundColor: "var(--ds-tailwind-colors-green-950)",
-      color: "var(--ds-tailwind-colors-base-white)",
       colorScheme: "dark",
-      "--foreground": "var(--ds-tailwind-colors-base-white)",
-      "--color-foreground": "var(--ds-tailwind-colors-base-white)",
-      "--muted-foreground": "var(--ds-tailwind-colors-green-200)",
-      "--color-muted-foreground": "var(--ds-tailwind-colors-green-200)",
-      borderColor: "var(--ds-tailwind-colors-green-800)",
-      ...headerDarkTokens(
-        "var(--ds-tailwind-colors-green-800)",
-        "var(--ds-tailwind-colors-green-900)",
-        "var(--ds-tailwind-colors-green-100)",
-      ),
     },
   },
 };
@@ -1047,6 +994,8 @@ export function AppLayoutShell({
               !HEADER_SURFACES[headerSurface]
                 ? headerBackground || (stickyHeader ? "bg-background" : "")
                 : "",
+              // Dark surfaces fence the band with the DS's .dark scope.
+              HEADER_SURFACES[headerSurface]?.className ?? "",
             ]
               .filter(Boolean)
               .join(" ")}
