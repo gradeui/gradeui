@@ -941,6 +941,14 @@ export function AppLayoutShell({
            line is THE line) and let the colour shift ride row hover. */
         "[data-slot=accordion-trigger]:hover [data-bl-link]{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700))}" +
         "[data-slot=accordion-trigger] [data-bl-link]:hover,[data-slot=accordion-trigger]:hover [data-bl-link]{text-decoration:none}" +
+        /* Chevron follows the row (Ali, 22 Jul): the DS trigger bakes a
+           muted ChevronDown (stroke = currentColor), so colour is ours
+           to set. ASSUMPTION: rest stays DS-muted for hierarchy; hover
+           joins the label at green-700. Make it green-800 always by
+           adding a non-:hover rule here. transition keeps the DS's
+           rotate AND eases the colour. */
+        "[data-slot=accordion-trigger]>svg{transition:transform 200ms,color 120ms ease}" +
+        "[data-slot=accordion-trigger]:hover>svg{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700))}" +
         "[data-slot=card]{--ds-section-padding-x-md:16px;--ds-section-padding-y-md:16px}" +
         "@media (min-width:1024px){[data-slot=card]{--ds-section-padding-x-md:24px;--ds-section-padding-y-md:24px}}"
       }</style>
