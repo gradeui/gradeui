@@ -6,9 +6,11 @@ props:
   - size?: number — Outer px (default 110). Number auto-hides under 60 so the same component serves mini (22) and hero (168) sizes.
   - stroke?: number — Ring thickness; defaults to ~15% of size (the Figma ring weight). Don't thin it back to 10.
   - label? — Muted caption above the donut. Omit when a CardHeader already names it (Ali, 17 Jul).
+  - color?: string — Override the arc colour (any CSS colour; tokens). Omit for the classic score-band colour. Pair with scoreBand(score).arc for the v2 status-tinted ring.
+  - trackColor?: string — Override the track (default neutral-100). scoreBand(score).track for the v2 tinted track.
   - className?: string
   - dataHook?: string — Instance name (default "score-donut").
-when_to_use: THE Location Score ring — any screen showing a /100 score as a donut (hero, module drill-downs, hub). Colour bands are shared convention (red <40 / amber <70 / green). Pure SVG, no chart library. Never hand-roll the circle; import from "@brightlocal/proposal".
+when_to_use: THE Location Score ring — any screen showing a /100 score as a donut (hero, module drill-downs, hub). Colour bands are shared convention (red <40 / amber <70 / green); the centred value renders in Poppins (display font), matching the live product. Pure SVG, no chart library. Never hand-roll the circle; import from "@brightlocal/proposal".
 composes_with: [Card, MiniStat, HubHeroCard]
 ---
 

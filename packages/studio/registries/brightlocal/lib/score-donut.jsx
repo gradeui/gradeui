@@ -19,13 +19,18 @@ export const scoreColor = (score) =>
 
 /** Donut arc + centred value. `showValue` auto-hides under 60px so the
  *  same component serves hero (110–140) and inline mini (22) sizes.
- *  `label` renders the muted caption above ("Location Score"). */
+ *  `label` renders the muted caption above ("Location Score").
+ *  `color` / `trackColor` override the score-band arc + neutral track
+ *  (v2 status-tinted rings — e.g. red-900 arc on red-200 track); omit
+ *  for the classic scoreColor treatment. */
 export function ScoreDonut({
   value,
   size = 110,
   // Ring fatness matched to the Figma donut (17 Jul): ~15% of size,
   // not the skinny 10px hand-roll it replaced.
   stroke = Math.round((size ?? 110) * 0.15),
+  color,
+  trackColor,
   label,
   className = "",
   dataHook = "score-donut",
@@ -45,7 +50,7 @@ export function ScoreDonut({
           r={r}
           fill="none"
           strokeWidth={stroke}
-          className="stroke-[var(--ds-tailwind-colors-neutral-100)]"
+          stroke={trackColor ?? "var(--ds-tailwind-colors-neutral-100)"}
         />
         <circle
           cx={size / 2}
@@ -54,7 +59,7 @@ export function ScoreDonut({
           fill="none"
           strokeWidth={stroke}
           strokeLinecap="round"
-          stroke={scoreColor(value)}
+          stroke={color ?? scoreColor(value)}
           strokeDasharray={`${(value / 100) * c} ${c}`}
         />
       </svg>
@@ -62,11 +67,15 @@ export function ScoreDonut({
         // Font SCALES with the ring so the value never overflows the
         // inner circle — a fixed text-4xl overran the smaller mini rings
         // (esp. a 3-digit "100"). ~0.3× diameter fits 2–3 digits with
-        // room for "/100" beneath (Ali, 20 Jul).
+        // room for "/100" beneath (Ali, 20 Jul). Poppins — the score is
+        // DISPLAY type, matching the live product's donuts (Ali, 22 Jul).
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span
             className="font-semibold leading-none"
-            style={{ fontSize: Math.round(size * 0.3) }}
+            style={{
+              fontSize: Math.round(size * 0.3),
+              fontFamily: "var(--ds-font-font-display, Poppins)",
+            }}
           >
             {value}
           </span>

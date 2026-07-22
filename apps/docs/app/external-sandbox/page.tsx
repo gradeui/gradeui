@@ -221,7 +221,22 @@ export default function ExternalSandboxPage() {
     }
 
     async function loadModules() {
-      const [react, jsx, jsxDev, reactDom, reactDomClient, ds, lucide, motion, recharts, confetti, icons] =
+      // Companion packages (icons, illustrations, …) — best-effort; a DS
+      // without one just resolves that name to an empty namespace. Kicked
+      // off BEFORE the fixed await so everything still loads in parallel.
+      // Namespaces are kept PER NAME — the old single `icons` slot
+      // silently dropped every companion after the first AND resolved
+      // every companion specifier to the icons namespace (fine with one
+      // companion, wrong the day @brightlocal/illustrations arrived).
+      const companionNames = Object.keys(REGISTRY.runtime?.dependencies ?? {});
+      const companionsPromise = Promise.all(
+        companionNames.map((name) =>
+          importUrl(
+            `https://esm.sh/${name}@${REGISTRY.runtime!.dependencies![name]}?external=react,react-dom`
+          ).catch(() => ({})),
+        ),
+      );
+      const [react, jsx, jsxDev, reactDom, reactDomClient, ds, lucide, motion, recharts, confetti] =
         await Promise.all([
           importUrl(ESM.react),
           importUrl(ESM.jsx),
@@ -246,20 +261,18 @@ export default function ExternalSandboxPage() {
           importUrl("https://esm.sh/canvas-confetti@1.9.3").catch(
             () => unavailable("canvas-confetti"),
           ),
-          // Companion packages (icons etc.) — best-effort; a DS without
-          // them just resolves to an empty namespace.
-          ...Object.keys(REGISTRY.runtime?.dependencies ?? {}).map((name) =>
-            importUrl(
-              `https://esm.sh/${name}@${REGISTRY.runtime!.dependencies![name]}?external=react,react-dom`
-            ).catch(() => ({})),
-          ),
         ]);
+      const companionMods = await companionsPromise;
+      const companions: Record<string, unknown> = {};
+      companionNames.forEach((name, i) => {
+        companions[name] = companionMods[i];
+      });
       // sucrase is BUNDLED (static import above), not esm.sh-fetched: it
       // has no React coupling, and a third-party CDN fetch for the
       // compiler took the whole renderer down in prod ("Failed to fetch
       // dynamically imported module: esm.sh/sucrase"). Only React + the
       // DS module + preview vocab stay external (isolation requires it).
-      return { react, jsx, jsxDev, reactDom, reactDomClient, sucrase: sucraseModule, ds, lucide, motion, recharts, confetti, icons };
+      return { react, jsx, jsxDev, reactDom, reactDomClient, sucrase: sucraseModule, ds, lucide, motion, recharts, confetti, companions };
     }
 
     /** esm.sh fetches flake under parallel load (grid mounts a dozen
@@ -369,7 +382,8 @@ export default function ExternalSandboxPage() {
         // prefix match, but lib specs match exactly.
         if (libSpecs.includes(p)) return guarded(requireLib(p, m, libSeen) as never, p);
         const companion = companions.find((c) => p === c || p.startsWith(`${c}/`));
-        if (companion) return guarded((m.icons ?? {}) as never, companion);
+        if (companion)
+          return guarded((m.companions[companion] ?? {}) as never, companion);
         if (p.endsWith(".css")) return {};
         throw new Error(`external-sandbox: unknown module "${p}"`);
       };

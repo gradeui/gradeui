@@ -29,6 +29,7 @@
 
 import * as BrightlocalUi from "@brightlocal/ui-components";
 import * as BrightlocalIcons from "@brightlocal/icons";
+import * as BrightlocalIllustrations from "@brightlocal/illustrations";
 import { BRIGHTLOCAL_REGISTRY } from "@gradeui/studio/registry";
 import { externalTwCss } from "@/lib/external-ds-preview";
 import {
@@ -42,6 +43,7 @@ import tailwindBrowserSource from "virtual:tailwind-browser";
 
 const DS_PKG = BRIGHTLOCAL_REGISTRY.package.name; // "@brightlocal/ui-components"
 const ICONS_PKG = "@brightlocal/icons";
+const ILLUSTRATIONS_PKG = "@brightlocal/illustrations";
 const LIB_MODULES: Readonly<Record<string, string>> =
   BRIGHTLOCAL_REGISTRY.runtime?.libModules ?? {};
 
@@ -82,6 +84,8 @@ function resolveBrightlocal(
   if (path === DS_PKG || path.startsWith(`${DS_PKG}/`)) return BrightlocalUi;
   if (path === ICONS_PKG || path.startsWith(`${ICONS_PKG}/`))
     return BrightlocalIcons;
+  if (path === ILLUSTRATIONS_PKG || path.startsWith(`${ILLUSTRATIONS_PKG}/`))
+    return BrightlocalIllustrations;
   if (path in LIB_MODULES) return requireLib(path, seen);
   return undefined;
 }
@@ -92,6 +96,8 @@ registerImportResolver({
     spec.startsWith(`${DS_PKG}/`) ||
     spec === ICONS_PKG ||
     spec.startsWith(`${ICONS_PKG}/`) ||
+    spec === ILLUSTRATIONS_PKG ||
+    spec.startsWith(`${ILLUSTRATIONS_PKG}/`) ||
     spec in LIB_MODULES,
   resolve: (spec) => {
     const hit = resolveBrightlocal(spec);

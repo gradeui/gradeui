@@ -23,6 +23,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
+  Badge,
   Button,
   Card,
   CardContent,
@@ -32,7 +33,18 @@ import {
   TypographyH3,
   TypographyMuted,
 } from "@brightlocal/ui-components";
-import { ArrowRight, Globe, Link, Sparkles, Star, Store } from "@brightlocal/icons";
+import {
+  ArrowRight,
+  CircleAlert,
+  CircleCheck,
+  Globe,
+  Link,
+  Sparkles,
+  Star,
+  Store,
+  TriangleAlert,
+} from "@brightlocal/icons";
+import { RobotAiA } from "@brightlocal/illustrations";
 import { useProposalData } from "@brightlocal/proposal-data";
 import { ScoreDonut, scoreColor } from "@brightlocal/score-donut";
 import { GlossaryText } from "@brightlocal/proposal-glossary";
@@ -47,6 +59,119 @@ const MODULE_ICONS = {
   reviews: Star,
   citations: Link,
 };
+
+// ─── Score status band — the shared low/fair/good vocabulary ──────────
+// Thresholds mirror scoreColor (<40 / <70) so pill, banner and donut
+// always agree. "Needs attention" and "Average" are VERIFIED labels
+// from the live product's AI insights cards (Ali's mock, 22 Jul);
+// ASSUMPTION (Ali to verify): "Good" for the green band, and the fair/
+// good headline copy (patterned on the verified low one), until seen
+// on live.
+export function scoreBand(score) {
+  if (score < 40)
+    return {
+      id: "low",
+      label: "Needs attention",
+      Icon: CircleAlert,
+      pillClass:
+        "bg-[var(--ds-tailwind-colors-red-100)] text-[var(--ds-tailwind-colors-red-700)]",
+      surfaceClass: "bg-[var(--ds-tailwind-colors-red-50)]",
+      headlineClass: "text-[var(--ds-tailwind-colors-red-900)]",
+      arc: "var(--ds-tailwind-colors-red-900)",
+      track: "var(--ds-tailwind-colors-red-200)",
+      headline: "This location's overall score is low. We'll help you fix it.",
+    };
+  if (score < 70)
+    return {
+      id: "fair",
+      label: "Average",
+      Icon: TriangleAlert,
+      pillClass:
+        "bg-[var(--ds-tailwind-colors-amber-100)] text-[var(--ds-tailwind-colors-amber-700)]",
+      surfaceClass: "bg-[var(--ds-tailwind-colors-amber-50)]",
+      headlineClass: "text-[var(--ds-tailwind-colors-amber-900)]",
+      arc: "var(--ds-tailwind-colors-amber-700)",
+      track: "var(--ds-tailwind-colors-amber-200)",
+      headline:
+        "This location's overall score is fair. We'll help you improve it.",
+    };
+  return {
+    id: "good",
+    label: "Good",
+    Icon: CircleCheck,
+    pillClass:
+      "bg-[var(--ds-tailwind-colors-green-100)] text-[var(--ds-tailwind-colors-green-700)]",
+    surfaceClass: "bg-[var(--ds-tailwind-colors-green-50)]",
+    headlineClass: "text-[var(--ds-tailwind-colors-green-900)]",
+    arc: "var(--ds-tailwind-colors-green-700)",
+    track: "var(--ds-tailwind-colors-green-200)",
+    headline:
+      "This location's overall score is good. We'll help you make it even better.",
+  };
+}
+
+// ─── ScoreStatusPill — the band as a Badge ────────────────────────────
+// A real DS Badge (Ali, 22 Jul: "the pill components should just be
+// badges") with the band's SOFT tint over the top — the upstream Badge
+// has no soft red/amber variants (only solid destructive), so the tint
+// rides className through Badge's tailwind-merge. UPSTREAM ASK: soft
+// status variants on Badge; when they land, swap the override for the
+// variant and delete pillClass.
+export function ScoreStatusPill({
+  score,
+  dataHook = "score-status-pill",
+  className = "",
+}) {
+  const band = scoreBand(score);
+  const Icon = band.Icon;
+  return (
+    <Badge
+      variant="secondary"
+      dataHook={dataHook}
+      className={[band.pillClass, className].filter(Boolean).join(" ")}
+    >
+      <Icon className="size-3.5" />
+      {band.label}
+    </Badge>
+  );
+}
+
+// ─── StatusBanner — the illustrated status strip ──────────────────────
+// Tinted panel + illustration + band pill + big display-type status
+// line. Sits at the top of the AI Insights v2 At-a-Glance card and is
+// EXPORTED because the hub wants "something similar" (Ali, 22 Jul).
+// Robot illustration by default (@brightlocal/illustrations); pass
+// `illustration` to swap it, `headline` to override the band copy.
+export function StatusBanner({
+  score,
+  headline,
+  illustration,
+  dataHook = "status-banner",
+  className = "",
+}) {
+  const band = scoreBand(score);
+  return (
+    <div
+      data-hook={dataHook}
+      className={["flex items-center gap-6 rounded-xl p-5", band.surfaceClass, className]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <div className="shrink-0" aria-hidden>
+        {illustration ?? <RobotAiA size={88} />}
+      </div>
+      <div className="flex min-w-0 flex-col items-start gap-2">
+        <ScoreStatusPill score={score} dataHook={`${dataHook}-pill`} />
+        <p
+          className={["text-pretty text-2xl font-semibold leading-snug", band.headlineClass].join(" ")}
+          style={{ fontFamily: "var(--ds-font-font-display, Poppins)" }}
+        >
+          {headline ?? band.headline}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // ─── ModuleScoreCard — the section overview ───────────────────────────
 // Binds foundation[moduleKey]. Header row: icon + title + colour-coded

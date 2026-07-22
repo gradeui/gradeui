@@ -2497,6 +2497,24 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       }
     }
   },
+  "Illustration": {
+    "name": "Illustration",
+    "description": "73 spot illustrations — kebab-case file → PascalCase export. The ones",
+    "props": {
+      "variant": {
+        "kind": "enum",
+        "values": [
+          "dark",
+          "light",
+          "bright",
+          "white"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Surface-type palette. Default suits light surfaces; \"dark\"/\"white\" for dark bands."
+      }
+    }
+  },
   "InputChip": {
     "name": "InputChip",
     "description": "defaultValue={[",
@@ -3410,7 +3428,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "plumbing",
         "optional": true,
-        "description": "Ancestor trail, MAX TWO ({label, href?}[]). Ancestors only — BreadcrumbPage is deliberately unused. (default [])"
+        "description": "Ancestor trail, MAX TWO ({label, href?}[]). Ancestors only — BreadcrumbPage is deliberately unused. Crumb-less pages (the trail's root, e.g. All Locations) still RESERVE the trail row's height (invisible spacer) so the header band matches every other page and nothing jumps on navigation. (default [])"
       },
       "description": {
         "kind": "string",
@@ -3904,6 +3922,18 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "design": "plumbing",
         "optional": true,
         "description": "Muted caption above the donut. Omit when a CardHeader already names it (Ali, 17 Jul)."
+      },
+      "color": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Override the arc colour (any CSS colour; tokens). Omit for the classic score-band colour. Pair with scoreBand(score).arc for the v2 status-tinted ring."
+      },
+      "trackColor": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Override the track (default neutral-100). scoreBand(score).track for the v2 tinted track."
       },
       "className": {
         "kind": "string",
@@ -4657,6 +4687,41 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "design": "knob",
         "optional": true,
         "description": "LAYOUT ONLY (grid placement) — never restyle the tile."
+      }
+    }
+  },
+  "StatusBanner": {
+    "name": "StatusBanner",
+    "description": "Band labels: \"Needs attention\" / \"Average\" are VERIFIED from the live",
+    "props": {
+      "score": {
+        "kind": "number",
+        "design": "knob",
+        "description": "0–100; drives the band via scoreBand (thresholds mirror scoreColor — <40 low/red, <70 fair/amber, else good/green)."
+      },
+      "headline": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Override the band's default status line (\"This location's overall score is low. We'll help you fix it.\" etc.)."
+      },
+      "illustration": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Override the default <RobotAiA size={88} /> with any node (an @brightlocal/illustrations component, usually)."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name. (default \"status-banner\")"
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Merged onto the tinted panel."
       }
     }
   },

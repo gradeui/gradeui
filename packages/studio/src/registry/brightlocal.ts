@@ -179,6 +179,10 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
       // ui-components' own heavy deps (radix, framer-motion, recharts,
       // …) arrive transitively.
       "@brightlocal/icons": "2.3.1",
+      // Illustrations: 73 spot illustrations + the Globey mascot set,
+      // named PascalCase exports ({ RobotAiA } etc.), size default 250,
+      // variant "dark"|"light"|"bright"|"white". (Ali, 22 Jul.)
+      "@brightlocal/illustrations": "0.5.0",
     },
     previewCss: BRIGHTLOCAL_PREVIEW_CSS,
     // Shared user-land component modules (STUDIO-FLOWS M0 — "the
