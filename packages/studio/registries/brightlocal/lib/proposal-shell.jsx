@@ -388,7 +388,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
   return (
     <div className="group fixed right-0 bottom-0 z-50 p-3" data-slot="shell-tweaker">
       {open ? (
-        <div className="w-80 rounded-xl border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] p-3 shadow-lg">
+        <div className="w-96 rounded-xl border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] p-3 shadow-lg">
           <div className="mb-2 flex items-center justify-between">
             <span className="flex items-baseline gap-2">
               <span className="text-sm font-semibold">Shell tweaks</span>
