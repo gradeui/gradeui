@@ -934,13 +934,13 @@ export function AppLayoutShell({
       <style>{
         ":root{--bl-card-link:var(--ds-tailwind-colors-green-800);--bl-card-link-hover:var(--ds-tailwind-colors-green-700)}" +
         "[data-bl-link]{transition:color 120ms ease}" +
-        "[data-bl-link]:hover,[data-grade-goto]:hover [data-bl-link]{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700));text-decoration:underline;text-underline-offset:3px}" +
-        /* Inside DS accordion triggers the BUTTON already underlines on
-           hover (its own offset) — our span underline at 3px doubled it
-           (Ali, 22 Jul). Suppress OURS there (the button's propagated
-           line is THE line) and let the colour shift ride row hover. */
+        /* Hover = COLOUR SHIFT ONLY — the underline that used to ride
+           along here was "real nasty" on card titles (Ali, 23 Jul) and
+           is gone from the shared rule. Inline text links that want a
+           hover underline carry their own hover:underline class;
+           accordion rows get the DS trigger's own underline. */
+        "[data-bl-link]:hover,[data-grade-goto]:hover [data-bl-link]{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700))}" +
         "[data-slot=accordion-trigger]:hover [data-bl-link]{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700))}" +
-        "[data-slot=accordion-trigger] [data-bl-link]:hover,[data-slot=accordion-trigger]:hover [data-bl-link]{text-decoration:none}" +
         /* Chevron follows the row (Ali, 22 Jul): the DS trigger bakes a
            muted ChevronDown (stroke = currentColor), so colour is ours
            to set. ASSUMPTION: rest stays DS-muted for hierarchy; hover

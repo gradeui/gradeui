@@ -505,7 +505,7 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
               type="button"
               data-bl-link=""
               data-hook={`insight-${item.id}-action-${index}-learn-more`}
-              className="font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]"
+              className="font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))] hover:underline"
             >
               Learn more.
             </button>
