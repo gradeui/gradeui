@@ -641,7 +641,8 @@ function ensureDatasetClickListener() {
 
 export function LocationCard({
   // Either a `location` object ({ name, city, postcode, category,
-  // phone, photo? }) or individual props; the object wins field-wise.
+  // phone, photo?, status? }) or individual props; the object wins
+  // field-wise.
   location,
   name,
   city,
@@ -649,6 +650,7 @@ export function LocationCard({
   category,
   phone,
   photo,
+  status,
   goto,
   transition,
   loading = false,
@@ -678,6 +680,7 @@ export function LocationCard({
   const vCategory = loc.category ?? category;
   const vPhone = loc.phone ?? phone;
   const vPhoto = loc.photo ?? photo;
+  const vStatus = loc.status ?? status;
   if (loading) {
     return <LocationCardSkeleton dataHook={`${dataHook}-skeleton`} />;
   }
@@ -714,6 +717,18 @@ export function LocationCard({
               <span className="text-sm">No photo available</span>
             </div>
           )}
+          {/* Status pill ON the image, top-right — live-site parity.
+              primary = the DS's green success badge; outline carries its
+              own bg-background fill so it stays legible over photos. */}
+          {vStatus ? (
+            <Badge
+              variant={vStatus === "Active" ? "primary" : "outline"}
+              dataHook={`${dataHook}-status`}
+              className="absolute right-3 top-3"
+            >
+              {vStatus}
+            </Badge>
+          ) : null}
         </div>
         <div className="flex flex-col gap-3">
           <TypographyH3
