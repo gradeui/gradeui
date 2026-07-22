@@ -216,12 +216,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "default",
           "white",
           "subtle",
+          "muted",
           "dark",
           "brand"
         ],
         "design": "knob",
         "optional": true,
-        "description": "Re-skin the sidebar by re-pointing the --sidebar-* CSS variables on its container. Pure token swap; component internals untouched. (default \"white\")"
+        "description": "Re-skin the sidebar by re-pointing the --sidebar-* CSS variables on its container. \"muted\" is one step darker than \"subtle\" (neutral-200) — the depth step for sitting a tone below the page background. Pure token swap; component internals untouched. (default \"white\")"
       },
       "contentMaxWidth": {
         "kind": "string",
@@ -263,11 +264,14 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "enum",
         "values": [
           "default",
-          "raised"
+          "raised",
+          "outline",
+          "subtle",
+          "white"
         ],
         "design": "knob",
         "optional": true,
-        "description": "CARD treatment (tweaker: Page → Cards): re-points the canvas + card tokens on the layout root. \"raised\" = subtlest green-grey canvas (neutral-50), WHITE elevated cards, muted up to neutral-100. Presets in PAGE_LAYERS — tweak in code. (default \"raised\")"
+        "description": "CARD treatment (tweaker: Page → Cards). outline = transparent cards + border; subtle = faint tinted cards; white = white elevated cards — these three touch card tokens ONLY (canvas is pageBackground's job). Legacy: \"raised\" = white cards + tinted canvas combo; \"default\" = DS stock. (default \"raised\")"
       },
       "pageBackground": {
         "kind": "enum",

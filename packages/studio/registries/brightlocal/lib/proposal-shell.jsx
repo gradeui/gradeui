@@ -122,6 +122,15 @@ export const SIDEBAR_TONES = {
     ld("var(--ds-tailwind-colors-neutral-900)", "var(--ds-tailwind-colors-neutral-50)"),
     ld("var(--ds-colors-sidebar-border-light)", "var(--ds-colors-sidebar-border-dark)"),
   ),
+  // One step darker than "subtle" — the "depth" step so the sidebar can
+  // sit a tone below whatever the page background is (Ali, 22 Jul).
+  muted: sidebarTone(
+    ld("var(--ds-tailwind-colors-neutral-200)", "var(--ds-tailwind-colors-neutral-900)"),
+    ld("var(--ds-tailwind-colors-neutral-700)", "var(--ds-tailwind-colors-neutral-300)"),
+    ld("var(--ds-tailwind-colors-neutral-300)", "var(--ds-tailwind-colors-neutral-800)"),
+    ld("var(--ds-tailwind-colors-neutral-900)", "var(--ds-tailwind-colors-neutral-50)"),
+    ld("var(--ds-colors-sidebar-border-light)", "var(--ds-colors-sidebar-border-dark)"),
+  ),
   dark: {
     ...sidebarTone(
       "var(--ds-tailwind-colors-neutral-900)",
@@ -232,6 +241,27 @@ export const HEADER_SURFACES = {
 // mid-tree var swap.
 export const PAGE_LAYERS = {
   default: {},
+  // ── Card-only treatments (Ali, 22 Jul): these touch the CARD tokens
+  // only — the canvas is the Background knob's job (pageBackground).
+  // "outline" = transparent cards, border carries the shape;
+  // "subtle"  = faint tinted cards;
+  // "white"   = white elevated cards.
+  outline: {
+    "--card": "transparent",
+    "--color-card": "transparent",
+  },
+  subtle: {
+    "--card": ld("var(--ds-tailwind-colors-neutral-50)", "var(--ds-tailwind-colors-neutral-900)"),
+    "--color-card": ld("var(--ds-tailwind-colors-neutral-50)", "var(--ds-tailwind-colors-neutral-900)"),
+    "--muted": ld("var(--ds-tailwind-colors-neutral-100)", "var(--ds-tailwind-colors-neutral-800)"),
+    "--color-muted": ld("var(--ds-tailwind-colors-neutral-100)", "var(--ds-tailwind-colors-neutral-800)"),
+  },
+  white: {
+    "--card": ld("var(--ds-tailwind-colors-base-white)", "var(--ds-tailwind-colors-neutral-900)"),
+    "--color-card": ld("var(--ds-tailwind-colors-base-white)", "var(--ds-tailwind-colors-neutral-900)"),
+    "--muted": ld("var(--ds-tailwind-colors-neutral-100)", "var(--ds-tailwind-colors-neutral-800)"),
+    "--color-muted": ld("var(--ds-tailwind-colors-neutral-100)", "var(--ds-tailwind-colors-neutral-800)"),
+  },
   // Canvas at neutral-50 (#fcfdfc — the faintest tint; neutral-100
   // read too strong), cards pure white, muted UP to neutral-100 so
   // filled surfaces sit between card and canvas.
@@ -370,7 +400,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     {
       title: "Sidebar",
       rows: [
-        { key: "sidebarTone", label: "Tone", values: ["default", "white", "subtle", "dark", "brand"] },
+        { key: "sidebarTone", label: "Tone", values: ["default", "white", "subtle", "muted", "dark", "brand"] },
         { key: "sidebarFrame", label: "Frame", values: ["flush", "floating", "attached"] },
         { key: "sidebarShadow", label: "Shadow", values: ["frame", "none", "sm", "md", "lg"], display: { frame: "auto" } },
         { key: "navDensity", label: "Nav density", values: ["compact", "comfortable", "expansive"] },
@@ -387,9 +417,12 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     {
       title: "Page",
       rows: [
-        // pageLayers is REALLY the card treatment (raised = white cards
-        // on the tinted canvas) — labelled accordingly (Ali, 22 Jul).
-        { key: "pageLayers", label: "Cards", values: ["default", "raised"], display: { default: "flat", raised: "raised" } },
+        // pageLayers is REALLY the card treatment — labelled accordingly.
+        // outline = transparent + border; subtle = tinted; white =
+        // elevated white. ("default"/"raised" remain valid authored
+        // values; raised = white cards + tinted canvas, the legacy
+        // combo.) (Ali, 22 Jul)
+        { key: "pageLayers", label: "Cards", values: ["outline", "subtle", "white"] },
         { key: "pageBackground", label: "Background", values: ["auto", "white", "subtle", "muted"] },
       ],
     },
@@ -679,7 +712,7 @@ export function AppLayoutShell({
   // Shadows stay a SIDEBAR treatment. Scoped <style> because
   // border-color can't ride the --card token swap.
   const layerCss =
-    pageLayers === "raised"
+    pageLayers !== "default"
       ? `[data-slot="card"]{border-color:var(--border)}`
       : "";
   // color-scheme wiring for the ld() pairs above — .dark flips them.
