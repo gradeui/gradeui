@@ -379,10 +379,18 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
             </span>
           </div>
           {ROWS.map((row) => (
-            <div key={row.key} className="mb-2 last:mb-0">
-              <div className="text-muted-foreground mb-1 flex items-center justify-between text-[11px]">
-                <span>{row.label}</span>
-                {tweaks[row.key] !== undefined ? <span>tweaked</span> : null}
+            <div key={row.key} className="mb-3 last:mb-0">
+              {/* Section header: 12px semibold in full foreground so it
+                  reads as a HEADER above the 11px chips, not another
+                  chip-weight line (Ali, 22 Jul). "tweaked" stays small
+                  and muted. */}
+              <div className="mb-1 flex items-baseline justify-between">
+                <span className="text-xs font-semibold text-[light-dark(var(--ds-tailwind-colors-neutral-800),var(--ds-tailwind-colors-neutral-100))]">
+                  {row.label}
+                </span>
+                {tweaks[row.key] !== undefined ? (
+                  <span className="text-muted-foreground text-[11px]">tweaked</span>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-1">
                 {row.values.map((v) => (
