@@ -318,6 +318,15 @@ function stashSessionTweaks(hook, next) {
 // link can play freely and reload always returns to the authored look.
 // Chips mark overridden knobs; Reset drops back to authored. Plain
 // elements on purpose — this is prototype chrome, not proposal UI.
+// Platform-aware shortcut label: the handler matches the PHYSICAL KeyT
+// with the modifier, which macOS calls Option — so the hint must say
+// "⌥T" there, not "Alt+T" (Ali, 22 Jul).
+const SHORTCUT_LABEL =
+  typeof navigator !== "undefined" &&
+  /Mac|iP(hone|ad|od)/.test(navigator.platform ?? navigator.userAgent ?? "")
+    ? "⌥T"
+    : "Alt+T";
+
 export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
   const [open, setOpen] = React.useState(false);
   React.useEffect(() => {
@@ -364,7 +373,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
               {/* Discoverability: the toggle shortcut, right where you
                   learn it (Ali, 22 Jul — it existed but nothing said so). */}
               <kbd className="rounded border border-[var(--border)] px-1 py-px font-mono text-[10px] text-muted-foreground">
-                Alt+T
+                {SHORTCUT_LABEL}
               </kbd>
             </span>
             <span className="flex items-center gap-1">
@@ -427,7 +436,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
       ) : (
         <button
           onClick={() => setOpen(true)}
-          aria-label="Open shell tweaks (Alt+T)"
+          aria-label={`Open shell tweaks (${SHORTCUT_LABEL})`}
           className="flex size-9 items-center justify-center rounded-full border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100"
         >
           <SlidersHorizontal className="size-4" />
