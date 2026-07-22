@@ -333,24 +333,31 @@ export async function screenshotEmbed(
             const v = stamped.getAttribute("data-grade-ready");
             return v === "1" || v === "error";
           }
-          // FALLBACK (non-flat pages, older deploys): real visible text,
-          // searched recursively through same-origin iframes. Height is
-          // NOT enough — the fast-sandbox iframe's empty dark shell has
-          // height long before the screen compiles into it (that's how a
-          // "passing" wait still captured a black poster on 2026-06-11).
-          const hasText = (doc: Document): boolean => {
-            if ((doc.body?.innerText ?? "").trim().length > 0) return true;
+          // FALLBACK (pages that haven't mounted the stamp yet, older
+          // deploys): real visible text INSIDE A NESTED IFRAME. The
+          // outer document's own text must NOT count — the share
+          // chrome's floating button and Next dev's "Compiling…" toast
+          // are outer text, and both produced blank captures by passing
+          // this wait before the screen iframe even mounted (2026-07-22,
+          // the brightlocal blank-poster pair). The screen ALWAYS
+          // renders inside an iframe on the /e/ routes, so iframe text
+          // is the only honest signal. Height is NOT enough either —
+          // the sandbox's empty shell has height long before the screen
+          // compiles into it (the 2026-06-11 black-poster saga).
+          const iframeHasText = (doc: Document): boolean => {
             for (const f of Array.from(doc.querySelectorAll("iframe"))) {
               try {
                 const inner = (f as HTMLIFrameElement).contentDocument;
-                if (inner && hasText(inner)) return true;
+                if (!inner) continue;
+                if ((inner.body?.innerText ?? "").trim().length > 0) return true;
+                if (iframeHasText(inner)) return true;
               } catch {
                 /* cross-origin frame — not ours */
               }
             }
             return false;
           };
-          return hasText(document);
+          return iframeHasText(document);
         },
         undefined,
         { timeout: 25_000, polling: 500 },
