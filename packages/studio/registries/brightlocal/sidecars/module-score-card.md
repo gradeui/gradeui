@@ -2,25 +2,25 @@
 name: ModuleScoreCard
 import: "@brightlocal/proposal"
 props:
-  - moduleKey — DATA BINDING: which foundation module to render ("websiteContent" | "gbp" | "reviews" | "citations"). Reads label, summary, score, subMetrics and the derived weight note from the proposal data context at render position, so dataset switches re-skin it live. This is the ONLY required prop.
-  - variant? (bars | donuts) — Sub-score data viz. "bars" (default) = thin labelled bars, two-column. "donuts" = a row of mini score rings (Google Lighthouse-style), spread evenly across the width whatever the count.
-  - donutSize?: number — Ring diameter in px for the "donuts" viz (default 72). Keep >= 60 so the score value stays visible.
-  - title?: string — CardTitle text. Set it PER SUBPAGE; falls back to the module's data label.
-  - description?: string — CardDescription text. Set per subpage; falls back to the module's data summary. Runs through GlossaryText either way.
-  - icon? — Icon component (from @brightlocal/icons) for the header. Defaults per module (Globe / Store / Star / Link).
+  - moduleKey — DATA BINDING: which foundation module to render ("websiteContent" | "gbp" | "reviews" | "citations"). Reads score + summary AND the module's aiInsights items (insight/recommendation counts) from the proposal data context at render position, so dataset switches re-skin it live. This is the ONLY required prop.
+  - variant? (bars | donuts) — PARKED. The sub-metric viz (bars / row of mini donuts) is temporarily UNRENDERED — Ali is designing its replacement (bar chart or per-metric badges). The prop is still accepted so existing screens don't break; it currently does nothing.
+  - donutSize?: number — PARKED with `variant` (accepted, unrendered).
+  - title?: string — Heading text. Defaults to "At a Glance" (Title Case) — the page H1 already names the module.
+  - description?: string — Summary text. Set per subpage; falls back to the module's data summary. Runs through GlossaryText either way.
   - dataHook?: string — Instance name. (default "module-score-card")
-when_to_use: The compact score strip at the TOP of an AI Insights sub-page (Website and Content / GBP / Reviews / Citations). Identity (icon + title) + one-line summary + a colour-coded /100 score (+ derived "N% of your Foundation score" note), then the sub-metric bars in a two-column grid. It is DELIBERATELY compact and diagnostic-only — the score is demoted so the actions lead the page; pair it with AreaInsights below (same module's `area`). The five sub-scores carry NO actions of their own — fixes live in AreaInsights, keyed to the whole area. Author the per-location `summary` in the dataset (score-aware); the lib defaults are generic per-category fallbacks.
+when_to_use: The At-a-Glance card at the TOP of an AI Insights sub-page (Website / GBP / Reviews / Citations) — matched to the LANDING page's glance card (Ali, 23 Jul) - large ScoreDonut (168) left; "At a Glance" + outline count Badges (Lightbulb "N insights", Check "N recommendations", scoped to THIS module's area) + glossaried text-sm summary right. NO icon (the Sparkles came off these cards) and NO weight note. Diagnostic-only — the actions lead the page; pair with AreaInsights below (same module's `area`). Author the per-location `summary` in the dataset (score-aware); the lib defaults are generic per-category fallbacks.
 composes_with: [AreaInsights, PageHeader, AppLayoutShell, ScoreDonut]
 ---
 
 ```jsx
-<GlobalLayoutContentBody className="space-y-6">
-  {/* section overview on top — bars (default) or donuts (Lighthouse) … */}
-  <ModuleScoreCard moduleKey="websiteContent" variant="donuts" dataHook="module-score-card" />
+<GlobalLayoutContentBody className="gap-4">
+  {/* glance card on top … */}
+  <ModuleScoreCard moduleKey="websiteContent" dataHook="module-score-card" />
   {/* … actions lead the body */}
   <AreaInsights areaId="website-seo" />
 </GlobalLayoutContentBody>
 ```
 
 Ships in "@brightlocal/proposal" — never inline a copy. The score is
-colour-banded (red <40 / amber <70 / green) via the shared `scoreColor`.
+never authored here — it binds foundation[moduleKey].score, colour-
+banded (red <40 / amber <70 / green) via the shared `scoreColor`.

@@ -3356,7 +3356,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "moduleKey": {
         "kind": "string",
         "design": "plumbing",
-        "description": "DATA BINDING: which foundation module to render (\"websiteContent\" | \"gbp\" | \"reviews\" | \"citations\"). Reads label, summary, score, subMetrics and the derived weight note from the proposal data context at render position, so dataset switches re-skin it live. This is the ONLY required prop."
+        "description": "DATA BINDING: which foundation module to render (\"websiteContent\" | \"gbp\" | \"reviews\" | \"citations\"). Reads score + summary AND the module's aiInsights items (insight/recommendation counts) from the proposal data context at render position, so dataset switches re-skin it live. This is the ONLY required prop."
       },
       "variant": {
         "kind": "enum",
@@ -3366,31 +3366,25 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         ],
         "design": "knob",
         "optional": true,
-        "description": "Sub-score data viz. \"bars\" (default) = thin labelled bars, two-column. \"donuts\" = a row of mini score rings (Google Lighthouse-style), spread evenly across the width whatever the count."
+        "description": "PARKED. The sub-metric viz (bars / row of mini donuts) is temporarily UNRENDERED — Ali is designing its replacement (bar chart or per-metric badges). The prop is still accepted so existing screens don't break; it currently does nothing."
       },
       "donutSize": {
         "kind": "number",
         "design": "knob",
         "optional": true,
-        "description": "Ring diameter in px for the \"donuts\" viz (default 72). Keep >= 60 so the score value stays visible."
+        "description": "PARKED with `variant` (accepted, unrendered)."
       },
       "title": {
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "CardTitle text. Set it PER SUBPAGE; falls back to the module's data label."
+        "description": "Heading text. Defaults to \"At a Glance\" (Title Case) — the page H1 already names the module."
       },
       "description": {
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "CardDescription text. Set per subpage; falls back to the module's data summary. Runs through GlossaryText either way."
-      },
-      "icon": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true,
-        "description": "Icon component (from @brightlocal/icons) for the header. Defaults per module (Globe / Store / Star / Link)."
+        "description": "Summary text. Set per subpage; falls back to the module's data summary. Runs through GlossaryText either way."
       },
       "dataHook": {
         "kind": "string",

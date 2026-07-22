@@ -30,35 +30,19 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  TypographyH3,
-  TypographyMuted,
 } from "@brightlocal/ui-components";
 import {
   ArrowRight,
+  Check,
   CircleAlert,
   CircleCheck,
-  Globe,
-  Link,
-  Sparkles,
-  Star,
-  Store,
+  Lightbulb,
   TriangleAlert,
 } from "@brightlocal/icons";
 import { RobotAiA } from "@brightlocal/illustrations";
 import { useProposalData } from "@brightlocal/proposal-data";
 import { ScoreDonut, scoreColor } from "@brightlocal/score-donut";
 import { GlossaryText } from "@brightlocal/proposal-glossary";
-
-// Icons for the AI Insights LANDING page module cards (per-module,
-// matching the sidebar). NOT used by ModuleScoreCard any more — the
-// At a Glance card leads with the SAME Sparkles icon on every feature
-// page (snag, Ali 22 Jul: per-page icon/colour drift read as broken).
-const MODULE_ICONS = {
-  websiteContent: Globe,
-  gbp: Store,
-  reviews: Star,
-  citations: Link,
-};
 
 // ─── Score status band — the shared low/fair/good vocabulary ──────────
 // Thresholds mirror scoreColor (<40 / <70) so pill, banner and donut
@@ -201,112 +185,80 @@ export function StatusBanner({
 }
 
 // ─── ModuleScoreCard — the section overview ───────────────────────────
-// Binds foundation[moduleKey]. Header row: icon + title + colour-coded
-// score (+ weight note), then the module summary, then the sub-metric
-// data viz. `variant` picks the viz:
-//   "bars"   — thin labelled bars, two-column (default; compact).
-//   "donuts" — a row of mini score donuts (Lighthouse-style).
+// The sub-page's At-a-Glance card, matched to the LANDING page's (Ali,
+// 23 Jul: "essentially the same as the page prior"): large donut left;
+// title + insight/recommendation count badges + glossaried summary
+// right. NO icon (the "star AI" Sparkles are gone from these cards)
+// and NO weight note. The sub-metric viz (the row of 5 donuts / bars)
+// is PARKED — Ali is designing its replacement (bar chart or badges);
+// `variant`/`donutSize` stay accepted so existing screens don't break,
+// but render nothing for now (ModuleScoreBars/Donuts kept below).
 export function ModuleScoreCard({
   // Foundation key: "websiteContent" | "gbp" | "reviews" | "citations".
   moduleKey,
-  // Sub-score data viz. "bars" (default) | "donuts".
+  // PARKED (accepted, currently unrendered — see header note).
   variant = "bars",
-  // Ring diameter for the "donuts" viz (px). Keep >= 60 so the value
-  // stays visible (ScoreDonut hides it below that).
   donutSize = 72,
   // CardTitle text — set it PER SUBPAGE (each AI Insights sub-page owns
-  // its heading). Falls back to the module's data label.
+  // its heading). Defaults to "At a Glance" (Title Case): the page H1
+  // already names the module.
   title,
-  // CardDescription text — set per subpage; falls back to the module's
-  // data summary. Runs through GlossaryText either way.
+  // Summary text — set per subpage; falls back to the module's data
+  // summary. Runs through GlossaryText either way.
   description,
-  // Override the default per-module icon.
-  icon,
   dataHook = "module-score-card",
   // data-* / anchor pass-through — same rule as the rest of the lib.
   ...rest
 }) {
   const data = useProposalData();
   const module = data.foundation[moduleKey];
-  // ONE icon for every At a Glance card (Sparkles, green — matching the
-  // Actions & Insights card below it): per-page module icons in varying
-  // colours read as inconsistency, not identity (snag, Ali 22 Jul). The
-  // module is already named by the page H1 and the sidebar.
-  // ASSUMPTION (Ali to verify): the snag named the inconsistency, not
-  // the fix — "same icon everywhere, AI-insights-branded" is MY read.
-  // The alternative (per-module icon matching the sidebar, colour
-  // unified) is one line: `icon ?? MODULE_ICONS[moduleKey]`.
-  const Icon = icon ?? Sparkles;
-  // Default "At a Glance" — Title Case for titles (snag, Ali 22 Jul).
-  // The top card of every sub-page is the module's at-a-glance view —
-  // the page H1 already names the module, so repeating it was noise.
   const cardTitle = title ?? "At a Glance";
   const cardDescription = description ?? module.summary;
-  // Weight is DERIVED from the score model (never authored twice), so
-  // the note can never drift from the donut maths.
-  const weight = data.scoreModel?.foundation?.[moduleKey];
-  const weightNote =
-    weight != null
-      ? `${Math.round(weight * 100)}% of your Foundation score`
-      : null;
+  // Counts scoped to THIS module's area — same semantics as the
+  // landing card's totals (insights = items, recommendations = their
+  // action rows).
+  const areaItems = data.aiInsights.items.filter(
+    (i) => i.area === module.area,
+  );
+  const insights = areaItems.length;
+  const recs = areaItems.reduce((n, i) => n + (i.actions?.length ?? 0), 0);
   return (
     <Card
       variant="filled"
-      // condensed trims the roomy default vertical padding that made the
-      // card top/bottom-heavy; px-6 restores comfortable side gutters
-      // (condensed bakes px-3). (Ali, 20 Jul.)
-      density="default" 
+      density="default"
       className="w-full max-w-none"
       dataHook={dataHook}
       {...rest}
     >
-      <CardContent className="flex flex-col gap-5">
-        {/* Identity + score. Summary sits UNDER the title so the score
-            column stays pinned top-right regardless of summary length. */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Icon className="size-4 shrink-0 text-[var(--ds-tailwind-colors-green-600)]" />
-              <CardTitle size="small" className="font-semibold">
-                {cardTitle}
-              </CardTitle>
+      <CardContent>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          <ScoreDonut
+            value={module.score}
+            size={168}
+            className="mx-auto lg:mx-0"
+            dataHook={`${dataHook}-score`}
+          />
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <CardTitle size="default">{cardTitle}</CardTitle>
+              <Badge variant="outline" dataHook={`${dataHook}-insights`}>
+                <Lightbulb className="size-3.5" />
+                {insights} insights
+              </Badge>
+              <Badge variant="outline" dataHook={`${dataHook}-recs`}>
+                <Check className="size-3.5" />
+                {recs} recommendations
+              </Badge>
             </div>
             {cardDescription ? (
-              // Real CardDescription (not a bare <p>) so title + summary
-              // are the DS's CardTitle/CardDescription pair on every
-              // subpage — consistent, and settable via the props above.
-              <CardDescription className="max-w-prose leading-relaxed">
+              <p className="max-w-prose text-pretty text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
                 <GlossaryText dataHook={`${dataHook}-summary-glossary`}>
                   {cardDescription}
                 </GlossaryText>
-              </CardDescription>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 flex-col items-center gap-1.5">
-            {/* The module score itself, in a donut — matches the
-                sub-metric rings so the header reads as one family, just
-                a size up (Ali, 20 Jul). */}
-            <ScoreDonut
-              value={module.score}
-              size={92}
-              dataHook={`${dataHook}-score`}
-            />
-            {weightNote ? (
-              <TypographyMuted className="max-w-[7rem] text-center text-xs leading-tight">
-                {weightNote}
-              </TypographyMuted>
+              </p>
             ) : null}
           </div>
         </div>
-        {variant === "donuts" ? (
-          <ModuleScoreDonuts
-            subMetrics={module.subMetrics}
-            donutSize={donutSize}
-            dataHook={dataHook}
-          />
-        ) : (
-          <ModuleScoreBars subMetrics={module.subMetrics} dataHook={dataHook} />
-        )}
       </CardContent>
     </Card>
   );
@@ -477,12 +429,10 @@ export function InsightCard({ item, actionStyle = "accordion" }) {
 export function InsightAction({ item, action, index, style = "accordion" }) {
   const where = actionWhere(action);
   if (style === "list") {
-    // No number — the actions are an unordered SET, not sequential
-    // steps; numbering implied a priority order that isn't real
-    // (Ali, 20 Jul).
     return (
       <div className="space-y-1.5">
         <p className="max-w-prose text-pretty text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
+          {`${index + 1}. `}
           <GlossaryText dataHook={`insight-${item.id}-action-${index}-glossary`}>
             {offsitePrefix(action) + action.text}
           </GlossaryText>
@@ -499,19 +449,19 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
         className="cursor-pointer"
         dataHook={`insight-${item.id}-action-${index}-trigger`}
       >
-        {/* No number (arbitrary order); items-start + no truncate so the
-            title wraps freely instead of being clipped (Ali, 20 Jul).
-            No closed-state where-badge either — it repeated on every row
-            and read as clutter (snag 30, Ali 21 Jul); the "where" is
-            revealed inside the open panel. Trigger text in the clickable
-            link colour (--bl-card-link, same seam as CardTitleLink) so
-            the rows READ clickable (snag, Ali 22 Jul). */}
+        {/* NUMBERED rows (Ali, 23 Jul) — "1." ahead of each action so
+            the list reads as a CHECKLIST. (Numbers were dropped 20 Jul
+            as implying priority order; the checklist read wins — order
+            is still arbitrary, the number is a handle, not a rank.)
+            items-start + no truncate so the title wraps freely; no
+            closed-state where-badge (snag 30); trigger text in the
+            clickable link colour so the rows READ clickable. */}
         <span className="flex w-full items-start gap-3 pr-2 text-left">
           <span
             data-bl-link=""
             className="flex-1 text-sm font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]"
           >
-            {actionLabel(action)}
+            {index + 1}. {actionLabel(action)}
           </span>
         </span>
       </AccordionTrigger>
@@ -607,10 +557,9 @@ export function AreaInsights({
     // "Last updated" lives ONLY in the PageHeader (Ali, 20 Jul).
     <Card className="w-full max-w-none" density="default" dataHook={dataHook}>
       <CardHeader>
-        <CardTitle size="default" className="flex items-center gap-2">
-          <Sparkles className="size-4 text-[var(--ds-tailwind-colors-green-600)]" />
-          {title}
-        </CardTitle>
+        {/* No icon — the "star AI" Sparkles came off these cards with
+            the sub-page At-a-Glance rework (Ali, 23 Jul). */}
+        <CardTitle size="default">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {areaItems.length > 0 ? (
