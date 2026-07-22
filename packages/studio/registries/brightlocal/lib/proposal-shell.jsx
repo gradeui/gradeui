@@ -148,7 +148,24 @@ export const SIDEBAR_TONES = {
       "var(--ds-tailwind-colors-neutral-700) transparent" /* Firefox */,
     "--gds-sidebar-scrollbar": "var(--ds-tailwind-colors-neutral-700)",
   },
+  // Brand pair — TOKENS ONLY, never mixed colours (Ali, 22 Jul):
+  // brand = green-900, brand-dark = green-950 (one ramp step). The pair
+  // lets two brand surfaces sit adjacent with visible depth between
+  // them (e.g. brand header + brand-dark sidebar, or vice versa).
   brand: {
+    ...sidebarTone(
+      "var(--ds-tailwind-colors-green-900)",
+      "var(--ds-tailwind-colors-green-100)",
+      "var(--ds-tailwind-colors-green-800)",
+      "var(--ds-tailwind-colors-green-50)",
+      "var(--ds-colors-sidebar-border-dark)",
+    ),
+    colorScheme: "dark",
+    scrollbarColor:
+      "var(--ds-tailwind-colors-green-700) transparent" /* Firefox */,
+    "--gds-sidebar-scrollbar": "var(--ds-tailwind-colors-green-700)",
+  },
+  "brand-dark": {
     ...sidebarTone(
       "var(--ds-tailwind-colors-green-950)",
       "var(--ds-tailwind-colors-green-200)",
@@ -224,9 +241,24 @@ export const HEADER_SURFACES = {
       borderColor: "rgb(255 255 255 / 0.12)",
     },
   },
+  // Brand pair — TOKENS ONLY (Ali, 22 Jul): brand = green-900,
+  // brand-dark = green-950, matching the sidebar tones of the same
+  // names so the surfaces read as one family and can layer.
   brand: {
     style: {
       backgroundColor: "var(--ds-tailwind-colors-green-900)",
+      color: "var(--ds-tailwind-colors-base-white)",
+      colorScheme: "dark",
+      "--foreground": "var(--ds-tailwind-colors-base-white)",
+      "--color-foreground": "var(--ds-tailwind-colors-base-white)",
+      "--muted-foreground": "var(--ds-tailwind-colors-green-200)",
+      "--color-muted-foreground": "var(--ds-tailwind-colors-green-200)",
+      borderColor: "rgb(255 255 255 / 0.12)",
+    },
+  },
+  "brand-dark": {
+    style: {
+      backgroundColor: "var(--ds-tailwind-colors-green-950)",
       color: "var(--ds-tailwind-colors-base-white)",
       colorScheme: "dark",
       "--foreground": "var(--ds-tailwind-colors-base-white)",
@@ -430,15 +462,16 @@ export const LOOK_PRESETS = {
     pageLayers: "white",
     pageBackground: "subtle",
   },
-  // The dark-header variant: deeper sidebar, dark band (its
-  // colorScheme flips the band's controls), same white cards.
+  // The BRAND variant (Ali, 22 Jul): brand sidebar (green-950) with the
+  // header a touch darker (brand-dark) so the two surfaces layer, same
+  // white cards.
   "heavy-depth": {
-    sidebarTone: "muted",
+    sidebarTone: "brand",
     sidebarFrame: "flush",
     sidebarShadow: "none",
     navDensity: "compact",
     stickyHeader: true,
-    headerSurface: "dark",
+    headerSurface: "brand-dark",
     pageLayers: "white",
     pageBackground: "subtle",
   },
@@ -472,7 +505,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     {
       title: "Sidebar",
       rows: [
-        { key: "sidebarTone", label: "Tone", values: ["default", "white", "subtle", "muted", "dark", "brand"] },
+        { key: "sidebarTone", label: "Tone", values: ["default", "white", "subtle", "muted", "dark", "brand", "brand-dark"] },
         { key: "sidebarFrame", label: "Frame", values: ["flush", "floating", "attached"] },
         { key: "sidebarShadow", label: "Shadow", values: ["frame", "none", "sm", "md", "lg"], display: { frame: "auto" } },
         { key: "navDensity", label: "Nav density", values: ["compact", "comfortable", "expansive"] },
@@ -481,7 +514,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     {
       title: "Header",
       rows: [
-        { key: "headerSurface", label: "Surface", values: ["none", "white", "subtle", "dark", "brand"] },
+        { key: "headerSurface", label: "Surface", values: ["none", "white", "subtle", "dark", "brand", "brand-dark"] },
         { key: "headerBorder", label: "Border", values: [true, false] },
         { key: "stickyHeader", label: "Sticky", values: [true, false] },
       ],

@@ -192,11 +192,12 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "white",
           "subtle",
           "dark",
-          "brand"
+          "brand",
+          "brand-dark"
         ],
         "design": "knob",
         "optional": true,
-        "description": "Named band colour preset (HEADER_SURFACES) — THE canonical header-colour knob; dark presets also re-point the header's text tokens (--foreground/--muted-foreground) so titles/crumbs stay readable. Beats headerBackground when set. Also a tweaker row. (default \"none\")"
+        "description": "Named band colour preset (HEADER_SURFACES) — THE canonical header-colour knob; dark presets also re-point the header's text tokens + colorScheme so titles/crumbs/controls stay readable. \"brand\" = green-900, \"brand-dark\" = green-950 (pure ramp tokens, matching the sidebar tones of the same names) — layer them for depth between adjacent surfaces. Beats headerBackground when set. Also a tweaker row. (default \"none\")"
       },
       "headerBackground": {
         "kind": "string",
@@ -218,7 +219,8 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
           "subtle",
           "muted",
           "dark",
-          "brand"
+          "brand",
+          "brand-dark"
         ],
         "design": "knob",
         "optional": true,
