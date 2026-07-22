@@ -171,7 +171,9 @@ export const SIDEBAR_FRAMES = {
   floating: { margin: 12, classes: "m-3 overflow-hidden rounded-2xl shadow-sm" },
   // In-flow: positioning comes from the DS layout itself. The pinned
   // top/height overrides are skipped for this frame (see `pinned`).
-  attached: { margin: 0, classes: "" },
+  // Rounded like floating (Ali, 21 Jul) — but no margin/lift/border;
+  // it reads as a soft panel sitting WITH the content.
+  attached: { margin: 0, classes: "overflow-hidden rounded-2xl" },
 };
 
 // Sidebar shadow presets — Tailwind's scale, switchable independently

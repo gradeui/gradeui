@@ -255,23 +255,30 @@ export function PageHeader({
             {description}
           </p>
         ) : null}
-        {lastUpdatedValue || meta ? (
+        {meta ? (
           <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            {lastUpdatedValue ? (
-              <span data-hook={`${dataHook}-last-updated`}>
-                Last updated: {formatDate(lastUpdatedValue)}
-              </span>
-            ) : null}
             {meta}
           </div>
         ) : null}
       </div>
-      {actions ? (
-        // Stacked (mobile): a wrapping full-width row under the title.
-        // Row (sm+): pinned right as before (ml-auto only from sm so
-        // the stacked row isn't shoved right).
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:ml-auto">
-          {actions}
+      {/* RIGHT column (Ali, 21 Jul): actions live top-right; "Last
+          updated" has a DEDICATED slot bottom-right — smaller text,
+          bottom-aligned so it sits level with the description line.
+          self-stretch makes justify-between real; on stacked mobile the
+          column becomes a plain wrapping row. */}
+      {actions || lastUpdatedValue ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:ml-auto sm:flex-col sm:items-end sm:justify-between sm:self-stretch">
+          {actions ? (
+            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+          ) : <span />}
+          {lastUpdatedValue ? (
+            <span
+              data-hook={`${dataHook}-last-updated`}
+              className="text-xs text-muted-foreground"
+            >
+              Last updated: {formatDate(lastUpdatedValue)}
+            </span>
+          ) : null}
         </div>
       ) : null}
     </div>
