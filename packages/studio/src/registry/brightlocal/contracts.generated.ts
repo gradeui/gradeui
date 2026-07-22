@@ -3434,6 +3434,12 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Right-aligned actions (Buttons, menus). Rendered shrink-0 beside the title block."
       },
+      "help": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Help/support entry top-right on every page (quiet \"?\" icon button opening a support popover). Pass help={false} to hide on a screen. (default true)"
+      },
       "align": {
         "kind": "enum",
         "values": [

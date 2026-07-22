@@ -37,6 +37,9 @@ import {
   SidebarMenuSubVariant,
   SidebarPopoverMenu,
   SidebarSwitcher,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -53,6 +56,7 @@ import {
   ChevronRight,
   Globe,
   Grid3x3,
+  HelpCircle,
   ImageOff,
   Info,
   Link,
@@ -159,6 +163,10 @@ export function PageHeader({
   // (Ali, 21 Jul — the body is centred, so a left-aligned header cap
   // drifted right of it; centring here is the auto-margin that fixes it.)
   align = "center",
+  // Help/support entry point top-right on EVERY page (snag 8, Ali 22
+  // Jul) — a quiet icon button opening a support popover. Pass
+  // help={false} to hide on a specific screen.
+  help = true,
   dataHook = "page-header",
   // Anchor-id pass-through — see AppLayoutShell's rest note.
   ...rest
@@ -266,11 +274,35 @@ export function PageHeader({
           bottom-aligned so it sits level with the description line.
           self-stretch makes justify-between real; on stacked mobile the
           column becomes a plain wrapping row. */}
-      {actions || lastUpdatedValue ? (
+      {actions || lastUpdatedValue || help ? (
         <div className="flex shrink-0 flex-wrap items-center gap-2 sm:ml-auto sm:flex-col sm:items-end sm:justify-between sm:self-stretch">
-          {actions ? (
-            <div className="flex flex-wrap items-center gap-2">{actions}</div>
-          ) : <span />}
+          <div className="flex flex-wrap items-center gap-2">
+            {actions}
+            {help ? (
+              // Deliberately quiet ("doesn't need to be mega bright"):
+              // muted icon, fills on hover.
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Help and support"
+                    data-hook={`${dataHook}-help`}
+                    className="text-muted-foreground hover:text-foreground rounded-full p-1.5 transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))]"
+                  >
+                    <HelpCircle className="size-[18px]" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-64 space-y-2 text-sm">
+                  <p className="font-semibold">Help &amp; support</p>
+                  <div className="flex flex-col gap-1.5 text-[var(--ds-tailwind-colors-neutral-600)]">
+                    <span className="cursor-pointer hover:text-[var(--ds-tailwind-colors-neutral-900)]">Search the help centre</span>
+                    <span className="cursor-pointer hover:text-[var(--ds-tailwind-colors-neutral-900)]">Contact support</span>
+                    <span className="cursor-pointer hover:text-[var(--ds-tailwind-colors-neutral-900)]">What's new</span>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : null}
+          </div>
           {lastUpdatedValue ? (
             <span
               data-hook={`${dataHook}-last-updated`}
