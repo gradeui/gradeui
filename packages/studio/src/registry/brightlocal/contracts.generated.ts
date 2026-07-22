@@ -267,7 +267,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         ],
         "design": "knob",
         "optional": true,
-        "description": "Page-wide layer treatment: re-points the canvas + card tokens on the layout root. \"raised\" = subtlest green-grey canvas (neutral-50), WHITE elevated cards, muted up to neutral-100. Presets in PAGE_LAYERS — tweak in code. (default \"raised\")"
+        "description": "CARD treatment (tweaker: Page → Cards): re-points the canvas + card tokens on the layout root. \"raised\" = subtlest green-grey canvas (neutral-50), WHITE elevated cards, muted up to neutral-100. Presets in PAGE_LAYERS — tweak in code. (default \"raised\")"
+      },
+      "pageBackground": {
+        "kind": "enum",
+        "values": [
+          "auto",
+          "white",
+          "subtle",
+          "muted"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "CANVAS colour on its own, independent of the card treatment. \"auto\" defers to the pageLayers preset; the rest re-point the page background (white / neutral-50 / neutral-100, dark-mode aware). Also a tweaker row (Page → Background). (default \"auto\")"
       },
       "sidebarBorder": {
         "kind": "string",

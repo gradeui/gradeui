@@ -246,6 +246,26 @@ export const PAGE_LAYERS = {
   },
 };
 
+// Page background presets — the CANVAS colour on its own, independent
+// of the card treatment (Ali, 22 Jul: "page background should be able
+// to be set"). "auto" defers to the Layers/Cards preset. Both var
+// prefixes for the same reason as PAGE_LAYERS; backgroundColor paints
+// the canvas directly.
+function pageBg(light, dark) {
+  const v = ld(light, dark);
+  return {
+    backgroundColor: v,
+    "--background": v,
+    "--color-background": v,
+  };
+}
+export const PAGE_BACKGROUNDS = {
+  auto: null,
+  white: pageBg("var(--ds-tailwind-colors-base-white)", "var(--ds-tailwind-colors-neutral-950)"),
+  subtle: pageBg("var(--ds-tailwind-colors-neutral-50)", "var(--ds-tailwind-colors-neutral-950)"),
+  muted: pageBg("var(--ds-tailwind-colors-neutral-100)", "var(--ds-tailwind-colors-neutral-900)"),
+};
+
 // Session tweak stash — survives navigation AND sandbox iframe
 // remounts (some layout flips re-create the iframe, which wiped the
 // module-scope stash after the first hop — Ali, 16 Jul). Module scope
@@ -366,7 +386,12 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
     },
     {
       title: "Page",
-      rows: [{ key: "pageLayers", label: "Layers", values: ["default", "raised"] }],
+      rows: [
+        // pageLayers is REALLY the card treatment (raised = white cards
+        // on the tinted canvas) — labelled accordingly (Ali, 22 Jul).
+        { key: "pageLayers", label: "Cards", values: ["default", "raised"], display: { default: "flat", raised: "raised" } },
+        { key: "pageBackground", label: "Background", values: ["auto", "white", "subtle", "muted"] },
+      ],
     },
     {
       // Named datasets — flips the WHOLE interface's data live (account,
@@ -445,7 +470,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
                         className={
                           live[row.key] === v
                             ? "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-50))] px-2 py-0.5 text-[11px] text-[light-dark(white,var(--ds-tailwind-colors-neutral-900))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-700),var(--ds-tailwind-colors-neutral-200))]"
-                            : "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))] px-2 py-0.5 text-[11px] text-[light-dark(var(--ds-tailwind-colors-neutral-600),var(--ds-tailwind-colors-neutral-300))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-700))] hover:text-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-100))]"
+                            : "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] px-2 py-0.5 text-[11px] text-[light-dark(var(--ds-tailwind-colors-neutral-600),var(--ds-tailwind-colors-neutral-300))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-200),var(--ds-tailwind-colors-neutral-600))] hover:text-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-50))]"
                         }
                       >
                         {v === true ? "on" : v === false ? "off" : (row.display?.[v] ?? v)}
@@ -508,7 +533,11 @@ export function AppLayoutShell({
   sidebarBorder,
   // Page-wide layer treatment — canvas + card surface. Presets in
   // PAGE_LAYERS. "raised" = green-grey canvas, white cards.
-  pageLayers = "raised", // "default" | "raised"
+  pageLayers = "raised",
+  // Canvas colour on its own — "auto" defers to the pageLayers preset;
+  // white/subtle/muted re-point the page background independently of
+  // the card treatment (tweaker: Page → Background). (Ali, 22 Jul)
+  pageBackground = "auto", // "default" | "raised"
   // Named dataset (lib/data/*.json) — "default" renders PROPOSAL_DATA;
   // anything else wraps the shell in a nested ProposalDataProvider, so
   // it also OVERRIDES any provider a screen mounted outside. A tweaker
@@ -561,7 +590,7 @@ export function AppLayoutShell({
   // are the AUTHORED look; tweaks shadow them for this session only.
   // Reassigning the params keeps every downstream reference
   // (tone/frame/shadow/layers/sticky) reading the LIVE values.
-  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, headerBorder, headerSurface, dataset, navDensity };
+  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, dataset, navDensity };
   // SESSION MEMORY: seed from the module-scope stash (below) so tweaks —
   // colours, frame, DATASET — persist across flow navigation and screen
   // switches: the lib module is compiled once per sandbox boot and its
@@ -583,7 +612,7 @@ export function AppLayoutShell({
   );
   const tweaks = controlledTweaks ?? ownTweaks;
   const setTweaks = onTweaksChange ?? setOwnTweaks;
-  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, stickyHeader, headerBorder, headerSurface, dataset, navDensity } = {
+  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, dataset, navDensity } = {
     ...authored,
     ...tweaks,
   });
@@ -637,7 +666,11 @@ export function AppLayoutShell({
     },
   };
   const navVars = NAV_DENSITIES[navDensity] ?? {};
-  const layers = PAGE_LAYERS[pageLayers] ?? {};
+  const layers = {
+    ...(PAGE_LAYERS[pageLayers] ?? {}),
+    // Background override wins over the layers preset's canvas colour.
+    ...(PAGE_BACKGROUNDS[pageBackground] ?? {}),
+  };
   // Raised layers: cards are WHITE (the layer re-points --card) with
   // base/border (semantic --border → neutral-200 #E6EDE8, .dark flips
   // it) and NO shadow — matches their Figma, where card elevation is
