@@ -155,63 +155,12 @@ export const PROPOSAL_DATA = {
   // that's a beach volleyball club) — great for demoing data-quality
   // stories. photo optional → the card's No-photo placeholder.
   locations: [
-    // Dataset-backed locations FIRST — derived from lib/data/*.json so
-    // the list and the datasets can never drift (Ali, 22 Jul).
+    // ONLY dataset-backed locations (Ali, 22 Jul): this is potentially
+    // the first screen a client sees — every card must open a fully
+    // populated hub. One entry per lib/data/*.json; to add a location,
+    // add a dataset (the capture workflow: browse the live product and
+    // scrape the location's data into a JSON, as with minus-one-studios).
     ...datasetLocations(),
-    // Then the client's REAL dirty-data comedy from their live
-    // screenshot (duplicate cafés categorised as dog walkers, a roofing
-    // company that's a beach volleyball club) — kept for demoing
-    // data-quality stories. No datasets (yet): clicking navigates but
-    // keeps the current data; give one a lib/data JSON to activate it.
-    {
-      id: "blackberry-farm",
-      name: "Blackberry Farm Park",
-      city: "Lewes",
-      postcode: "BN8 6JD",
-      category: "Holiday park",
-      phone: "01273 400 123",
-      photo:
-        "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800&q=60",
-    },
-    {
-      id: "cafe-sydney",
-      name: "!!!Cafe Sydney",
-      city: "Sydney",
-      postcode: "2000",
-      category: "Dog walker",
-      phone: "+61 2 9251 8683",
-    },
-    {
-      id: "cafe-sydney-2",
-      name: "!!!Cafe Sydney",
-      city: "Sydney",
-      postcode: "2000",
-      category: "Dog walker",
-      phone: "+61 2 9251 8683",
-    },
-    {
-      id: "first-capital-sa",
-      name: "1st Capital Certified Roofing - Austin Roofing Experts",
-      city: "San Antonio",
-      postcode: "78739",
-      category: "Beach volleyball club",
-      phone: "+1 512-360-8929",
-    },
-    {
-      id: "first-capital-austin",
-      name: "1st Capital Certified Roofing - Austin Roofing Experts",
-      city: "Austin",
-      postcode: "78739",
-      category: "Roofing contractor",
-      phone: "+1 512-360-8929",
-    },
-    {
-      id: "first-choice-storage",
-      name: "1st-Choice Storage",
-      city: "Auchbreck",
-      postcode: "L1 5BB",
-      phone: "023 9354 1231",
-    },
   ],
   // DEFAULT nav wiring (nav model v2, 18 Jul): every top-level row
   // links to its landing screen out of the box — canonical names match
