@@ -109,6 +109,7 @@ export function datasetLocations() {
     return {
       id: key,
       name: loc.name,
+      reference: loc.reference,
       ...splitAddress(loc.address),
       category: loc.category,
       phone: loc.phone,
