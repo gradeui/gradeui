@@ -298,7 +298,7 @@ export function InsightCard({ item, actionStyle = "accordion" }) {
           {item.title}
         </CardTitle>
         {item.actionsSummary ? (
-          <CardDescription className="leading-relaxed">
+          <CardDescription className="text-pretty leading-relaxed">
             <GlossaryText dataHook={`insight-${item.id}-summary-glossary`}>
               {item.actionsSummary}
             </GlossaryText>
@@ -330,7 +330,7 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
     // (Ali, 20 Jul).
     return (
       <div className="space-y-1.5">
-        <p className="max-w-prose text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
+        <p className="max-w-prose text-pretty text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
           <GlossaryText dataHook={`insight-${item.id}-action-${index}-glossary`}>
             {offsitePrefix(action) + action.text}
           </GlossaryText>
@@ -370,7 +370,9 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
               right. Off-site tasks lead with the web-developer line
               (offsitePrefix). "Learn more." is the novice-expansion
               affordance (snag 34) — stubbed until the copy exists. */}
-          <p className="max-w-prose text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
+          {/* text-pretty on the prose paragraphs — kills the hanging
+              one-word last line ("…should improve.") (Ali, 22 Jul). */}
+          <p className="max-w-prose text-pretty text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
             <GlossaryText dataHook={`insight-${item.id}-action-${index}-glossary`}>
               {offsitePrefix(action) + action.text}
             </GlossaryText>{" "}
@@ -386,7 +388,7 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
           <ActionWhere item={item} action={action} index={index} />
           {/* Close the loop: tell them what happens AFTER the fix
               (snag 33). */}
-          <p className="max-w-prose text-xs leading-relaxed text-[var(--ds-tailwind-colors-neutral-500)]">
+          <p className="max-w-prose text-pretty text-xs leading-relaxed text-[var(--ds-tailwind-colors-neutral-500)]">
             After you've done this, wait a week then check this page. Your
             {" "}{SCORE_NOUN[item.area] ?? "score"} should improve.
           </p>
