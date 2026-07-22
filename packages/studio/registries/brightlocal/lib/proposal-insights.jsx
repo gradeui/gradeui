@@ -23,7 +23,6 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  Badge,
   Button,
   Card,
   CardContent,
@@ -38,20 +37,15 @@ import { useProposalData } from "@brightlocal/proposal-data";
 import { ScoreDonut, scoreColor } from "@brightlocal/score-donut";
 import { GlossaryText } from "@brightlocal/proposal-glossary";
 
-// Default icon per foundation module — override with the `icon` prop.
+// Icons for the AI Insights LANDING page module cards (per-module,
+// matching the sidebar). NOT used by ModuleScoreCard any more — the
+// At a Glance card leads with the SAME Sparkles icon on every feature
+// page (snag, Ali 22 Jul: per-page icon/colour drift read as broken).
 const MODULE_ICONS = {
   websiteContent: Globe,
   gbp: Store,
   reviews: Star,
   citations: Link,
-};
-
-// Insight severity → the pill label + colour. `high` reads as the
-// action priority ("Priority"), not a scare word.
-const SEVERITY = {
-  high: { label: "Priority", color: "var(--ds-tailwind-colors-red-600)" },
-  medium: { label: "Medium", color: "var(--ds-tailwind-colors-amber-600)" },
-  low: { label: "Low", color: "var(--ds-tailwind-colors-neutral-500)" },
 };
 
 // ─── ModuleScoreCard — the section overview ───────────────────────────
@@ -82,11 +76,15 @@ export function ModuleScoreCard({
 }) {
   const data = useProposalData();
   const module = data.foundation[moduleKey];
-  const Icon = icon ?? MODULE_ICONS[moduleKey] ?? Globe;
-  // Default "At a glance" (snags, Ali 21 Jul): the top card of every
-  // sub-page is the module's at-a-glance view — the page H1 already
-  // names the module, so repeating it here was noise.
-  const cardTitle = title ?? "At a glance";
+  // ONE icon for every At a Glance card (Sparkles, green — matching the
+  // Actions & Insights card below it): per-page module icons in varying
+  // colours read as inconsistency, not identity (snag, Ali 22 Jul). The
+  // module is already named by the page H1 and the sidebar.
+  const Icon = icon ?? Sparkles;
+  // Default "At a Glance" — Title Case for titles (snag, Ali 22 Jul).
+  // The top card of every sub-page is the module's at-a-glance view —
+  // the page H1 already names the module, so repeating it was noise.
+  const cardTitle = title ?? "At a Glance";
   const cardDescription = description ?? module.summary;
   // Weight is DERIVED from the score model (never authored twice), so
   // the note can never drift from the donut maths.
@@ -112,7 +110,7 @@ export function ModuleScoreCard({
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-2">
             <div className="flex items-center gap-2">
-              <Icon className="size-4 shrink-0 text-[var(--ds-tailwind-colors-neutral-500)]" />
+              <Icon className="size-4 shrink-0 text-[var(--ds-tailwind-colors-green-600)]" />
               <CardTitle size="small" className="font-semibold">
                 {cardTitle}
               </CardTitle>
@@ -236,49 +234,40 @@ function actionLabel(a) {
   return dot > 0 ? t.slice(0, dot + 1) : t;
 }
 
-// The "where" affordance rendered inside an expanded action.
+// The "where" affordance rendered inside an expanded action — ONSITE
+// ONLY (deep-link buttons into BrightLocal). Off-site renders nothing
+// here: the "Make this change on your website" box was dropped (snag,
+// Ali 21 Jul) — off-site tasks PREPEND the web-developer instruction to
+// their body text instead (see offsitePrefix).
 function ActionWhere({ item, action, index }) {
   const where = actionWhere(action);
-  if (where === "onsite") {
-    const links = action.links?.length
-      ? action.links
-      : [{ label: action.cta?.label ?? "Fix in BrightLocal" }];
-    return (
-      <div className="flex flex-wrap gap-2">
-        {links.map((l) => (
-          <Button
-            key={l.label}
-            variant="outline"
-            size="sm"
-            dataHook={`insight-${item.id}-action-${index}-link`}
-          >
-            {l.label} <ArrowRight className="size-3.5" />
-          </Button>
-        ))}
-      </div>
-    );
-  }
-  // Off-site: BrightLocal can't make the change for them, so it's an
-  // instruction, not a button.
+  if (where !== "onsite") return null;
+  const links = action.links?.length
+    ? action.links
+    : [{ label: action.cta?.label ?? "Fix in BrightLocal" }];
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-dashed border-[var(--ds-tailwind-colors-neutral-200)] px-3 py-2 text-sm text-[var(--ds-tailwind-colors-neutral-600)]">
-      <Globe className="size-4 shrink-0 text-[var(--ds-tailwind-colors-neutral-400)]" />
-      Make this change on your website
+    <div className="flex flex-wrap gap-2">
+      {links.map((l) => (
+        <Button
+          key={l.label}
+          variant="outline"
+          size="sm"
+          dataHook={`insight-${item.id}-action-${index}-link`}
+        >
+          {l.label} <ArrowRight className="size-3.5" />
+        </Button>
+      ))}
     </div>
   );
 }
 
-// A small tag in the accordion trigger telling the user WHERE the fix
-// happens before they expand it.
-function WhereTag({ where, dataHook = "action-where" }) {
-  const onsite = where === "onsite";
-  // Pure DS Badge — no type overrides, so it matches every other Badge
-  // (the severity one included). Only `shrink-0` for layout (Ali, 20 Jul).
-  return (
-    <Badge variant="outline" className="shrink-0" dataHook={dataHook}>
-      {onsite ? "In BrightLocal" : "On your website"}
-    </Badge>
-  );
+// Off-site tasks lead the body text with who does the work — replacing
+// the old dashed "Make this change on your website" box (snag, Ali 21
+// Jul: "prepend this to the task description").
+function offsitePrefix(action) {
+  return actionWhere(action) === "offsite"
+    ? "Ask your web developer to do the following things. "
+    : "";
 }
 
 // ─── InsightCard — one actionable recommendation ──────────────────────
@@ -287,10 +276,10 @@ function WhereTag({ where, dataHook = "action-where" }) {
 //   "accordion" — each action a collapsible row (default; Lighthouse).
 //   "list"      — the flat numbered list (the original).
 export function InsightCard({ item, actionStyle = "accordion" }) {
-  // The default view is lean — title + actions. The diagnostic Insight
-  // is dropped for now; the Recommendation is opt-in behind "Tell me
-  // more" so it only lands on the screen when asked for (Ali, 20 Jul).
-  const [showRecommendation, setShowRecommendation] = React.useState(false);
+  // The view is lean — title + summary + actions. The diagnostic
+  // Insight was dropped earlier; "Tell me more" (the recommendation
+  // reveal) is GONE too — it was a recommendation for the whole task
+  // list, redundant repetition of the summary (snag, Ali 21 Jul).
   return (
     // NOT a Card any more: all insights share ONE "Actions & Insights"
     // card (AreaInsights) — this renders a SECTION within it. The
@@ -317,30 +306,6 @@ export function InsightCard({ item, actionStyle = "accordion" }) {
       ) : (
         <ActionAccordion item={item} />
       )}
-      {item.recommendation ? (
-        <div className="space-y-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            dataHook={`insight-${item.id}-tell-me-more`}
-            onClick={() => setShowRecommendation((v) => !v)}
-          >
-            {showRecommendation ? "Hide recommendation" : "Tell me more"}
-          </Button>
-          {showRecommendation ? (
-            <div className="space-y-1 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
-              <p className="text-xs font-medium uppercase text-[var(--ds-tailwind-colors-neutral-400)]">
-                Recommendation
-              </p>
-              <p className="max-w-prose text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
-                <GlossaryText dataHook={`insight-${item.id}-rec-glossary`}>
-                  {item.recommendation}
-                </GlossaryText>
-              </p>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -363,7 +328,7 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
       <div className="space-y-1.5">
         <p className="max-w-prose text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
           <GlossaryText dataHook={`insight-${item.id}-action-${index}-glossary`}>
-            {action.text}
+            {offsitePrefix(action) + action.text}
           </GlossaryText>
         </p>
         <ActionWhere item={item} action={action} index={index} />
@@ -372,14 +337,21 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
   }
   return (
     <AccordionItem value={`action-${index}`}>
-      <AccordionTrigger dataHook={`insight-${item.id}-action-${index}-trigger`}>
+      {/* cursor-pointer: the DS preflight leaves buttons on the default
+          cursor — a clickable row needs the hand (snag, Ali 22 Jul). */}
+      <AccordionTrigger
+        className="cursor-pointer"
+        dataHook={`insight-${item.id}-action-${index}-trigger`}
+      >
         {/* No number (arbitrary order); items-start + no truncate so the
             title wraps freely instead of being clipped (Ali, 20 Jul).
             No closed-state where-badge either — it repeated on every row
             and read as clutter (snag 30, Ali 21 Jul); the "where" is
-            revealed inside the open panel. */}
+            revealed inside the open panel. Trigger text in the clickable
+            link colour (--bl-card-link, same seam as CardTitleLink) so
+            the rows READ clickable (snag, Ali 22 Jul). */}
         <span className="flex w-full items-start gap-3 pr-2 text-left">
-          <span className="flex-1 text-sm font-medium">
+          <span className="flex-1 text-sm font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]">
             {actionLabel(action)}
           </span>
         </span>
@@ -388,11 +360,12 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
         <div className="space-y-3">
           {/* max-w-prose: full-width task text was an unreadable line
               length (snag 32) — wrap it and let whitespace live on the
-              right. "Learn more." is the novice-expansion affordance
-              (snag 34) — stubbed until the copy exists. */}
+              right. Off-site tasks lead with the web-developer line
+              (offsitePrefix). "Learn more." is the novice-expansion
+              affordance (snag 34) — stubbed until the copy exists. */}
           <p className="max-w-prose text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
             <GlossaryText dataHook={`insight-${item.id}-action-${index}-glossary`}>
-              {action.text}
+              {offsitePrefix(action) + action.text}
             </GlossaryText>{" "}
             <button
               type="button"

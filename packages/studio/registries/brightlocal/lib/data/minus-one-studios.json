@@ -1,7 +1,7 @@
 {
   "user": {
     "name": "Alastair Driver",
-    "meta": "Owner",
+    "meta": "Trial: 14 days left",
     "initials": "AD"
   },
   "location": {
@@ -92,10 +92,10 @@
         "area": "website-seo",
         "areaLabel": "Web Performance",
         "severity": "medium",
-        "title": "Strengthen your local signals (NAP, schema, internal links) to boost nearby searches and better Maps answers",
+        "title": "Strengthen your local signals to boost nearby searches and Maps answers",
         "insight": "Detected NAP (name, address, phone) on key pages is 0 percent and schema coverage is 0 percent (no LocalBusiness or Service JSON-LD). Your homepage links cover only 1 of 4 service pages and the main navigation links 0 of 4, which weakens authority flow. Conversion cues are light (limited CTAs, no click-to-call, and few forms). These are core local signals that help Google confirm who and where you are and which services you offer. Competitors that outrank you in the area, like Soho Sonic Studios and Soho Square Studios, benefit from stronger overall prominence. Aligning your local signals will help close this gap and improve how Google's AI in Maps describes your business.",
         "recommendation": "Add a consistent NAP block site wide, implement LocalBusiness schema (including openingHours) and Service schema on service pages, strengthen internal links from the homepage and main navigation to all service URLs, and add clear CTAs with click-to-call. Publish an FAQ page with schema to power Google's AI answers about pricing, parking, and podcast facilities.",
-        "actionsSummary": "These steps tell Google clearly who you are, where you are and what you offer, so you show up for nearby searches.",
+        "actionsSummary": "Your local signals include your NAP, schema and internal links. This tells search engines who you are, where you are and what you offer, so you show up for nearby searches.",
         "action": "Place a consistent NAP block (matching your GBP) in the global footer. Add a clickable tel: link in the mobile header and a visible booking or inquiry CTA on every service page.",
         "actions": [
           {
@@ -592,6 +592,7 @@
     "keywords": "brightlocal-source",
     "aiInsights": "brightlocal-source",
     "aiInsights.summaries": "proposed",
+    "user.meta": "brightlocal-source",
     "aiInsights.atAGlance": "proposed",
     "aiInsights.items[].actions[].label": "proposed",
     "aiInsights.items[].actionsSummary": "proposed",
