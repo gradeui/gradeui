@@ -412,6 +412,43 @@ const SHORTCUT_LABEL =
     ? "⌥T"
     : "Alt+T";
 
+// Named LOOK presets — one-click bundles of the shell knobs (Ali, 22
+// Jul: "defaults… maybe a dropdown in the header"). "current" = the
+// screen's AUTHORED props (clears look overrides, keeps any session
+// dataset). Values are look knobs only — retune them here and every
+// screen's preset follows.
+export const LOOK_PRESETS = {
+  // Today's canonical look: subtle flush sidebar, white band, white
+  // cards on the softest canvas.
+  "subtle-depth": {
+    sidebarTone: "subtle",
+    sidebarFrame: "flush",
+    sidebarShadow: "none",
+    navDensity: "compact",
+    stickyHeader: true,
+    headerSurface: "white",
+    pageLayers: "white",
+    pageBackground: "subtle",
+  },
+  // The dark-header variant: deeper sidebar, dark band (its
+  // colorScheme flips the band's controls), same white cards.
+  "heavy-depth": {
+    sidebarTone: "muted",
+    sidebarFrame: "flush",
+    sidebarShadow: "none",
+    navDensity: "compact",
+    stickyHeader: true,
+    headerSurface: "dark",
+    pageLayers: "white",
+    pageBackground: "subtle",
+  },
+};
+const PRESET_LABELS = {
+  current: "Current",
+  "subtle-depth": "Subtle Depth",
+  "heavy-depth": "Heavy Depth",
+};
+
 export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
   const [open, setOpen] = React.useState(false);
   React.useEffect(() => {
@@ -492,6 +529,45 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
               </kbd>
             </span>
             <span className="flex items-center gap-1">
+              {/* Preset dropdown — applies a LOOK bundle; the session
+                  dataset survives every preset switch. */}
+              <select
+                aria-label="Look preset"
+                data-hook="tweaker-preset"
+                value={(() => {
+                  const look = Object.fromEntries(
+                    Object.entries(tweaks).filter(([k]) => k !== "dataset"),
+                  );
+                  if (Object.keys(look).length === 0) return "current";
+                  for (const [name, vals] of Object.entries(LOOK_PRESETS)) {
+                    if (
+                      Object.keys(vals).length === Object.keys(look).length &&
+                      Object.entries(vals).every(([k, v]) => look[k] === v)
+                    )
+                      return name;
+                  }
+                  return "custom";
+                })()}
+                onChange={(e) => {
+                  const name = e.target.value;
+                  setTweaks((prev) => {
+                    const keepData =
+                      prev.dataset !== undefined ? { dataset: prev.dataset } : {};
+                    if (name === "current") return keepData;
+                    return { ...(LOOK_PRESETS[name] ?? {}), ...keepData };
+                  });
+                }}
+                className="mr-1 rounded-md border border-[var(--border)] bg-transparent px-1.5 py-0.5 text-[11px]"
+              >
+                {Object.entries(PRESET_LABELS).map(([v, label]) => (
+                  <option key={v} value={v}>
+                    {label}
+                  </option>
+                ))}
+                <option value="custom" disabled hidden>
+                  Custom
+                </option>
+              </select>
               {dirty ? (
                 <button
                   onClick={() => setTweaks({})}
