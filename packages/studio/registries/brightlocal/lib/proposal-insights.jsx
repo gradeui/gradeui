@@ -298,10 +298,11 @@ export function InsightCard({ item, actionStyle = "accordion" }) {
     // (snags 27–29, Ali 21 Jul).
     <div className="space-y-4" data-hook={`insight-${item.id}`}>
       <div className="min-w-0 space-y-1.5">
+        {/* NO GlossaryText in headings (Ali, 22 Jul) — dashed underlines
+            inside a bold title read as broken formatting. Terms get their
+            glossary treatment on first use in BODY text instead. */}
         <CardTitle size="small" className="font-semibold leading-snug">
-          <GlossaryText dataHook={`insight-${item.id}-title-glossary`}>
-            {item.title}
-          </GlossaryText>
+          {item.title}
         </CardTitle>
         {item.actionsSummary ? (
           <CardDescription className="leading-relaxed">
