@@ -1680,8 +1680,11 @@ export function SharedScreen({
             Escape does the same via the keyboard handler above. Floats
             top-left INSIDE the canvas area, above the iframe (z above
             the artboard, below the gesture shield at z-[60] is fine —
-            the shield only exists mid-gesture). */}
-        {flowStack.length > 0 && (
+            the shield only exists mid-gesture). HIDDEN in Responsive
+            (fill-the-window) mode — there it sits ON the app's own
+            chrome (Ali, 22 Jul); device modes keep it, the artboard's
+            surround gives it neutral ground. Esc still pops. */}
+        {flowStack.length > 0 && !activeSpec.responsive && (
           <div className="absolute left-3 top-3 z-[55]">
             <button
               type="button"
