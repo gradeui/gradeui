@@ -359,6 +359,35 @@ function stashSessionTweaks(hook, next) {
   }
 }
 
+// Session-selected DATASET — its own GLOBAL stash, deliberately NOT the
+// per-hook tweak stash: "which client am I looking at" is a property of
+// the whole walkthrough, while visual tweaks are per-pane (their
+// per-hook keys don't follow a goto between screens with different
+// dataHooks). A location card click stashes its dataset BEFORE the goto
+// fires; every shell mounted after reads it — so the data persists
+// across screens exactly like Ali expects tweaks to (22 Jul). Priority
+// in AppLayoutShell: explicit tweaker Data row > session-selected >
+// authored prop.
+const DATASET_KEY = "bl-proposal-session-dataset";
+let SESSION_DATASET; // module-scope fast path (same-iframe gotos)
+export function selectSessionDataset(dataset) {
+  if (!dataset) return;
+  SESSION_DATASET = dataset;
+  try {
+    window.sessionStorage.setItem(DATASET_KEY, dataset);
+  } catch {
+    /* storage unavailable — module scope carries it */
+  }
+}
+export function loadSessionDataset() {
+  if (SESSION_DATASET !== undefined) return SESSION_DATASET;
+  try {
+    return window.sessionStorage.getItem(DATASET_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // ─── ShellTweakerPanel — hidden, session-local demo controls ─────────
 // Stakeholder-demo layer: reveals in the bottom-right corner (hover the
 // corner, or Alt+T) and OVERRIDES the shell's look knobs at runtime.
@@ -878,8 +907,12 @@ export function AppLayoutShell({
   // over both the module default AND any provider the screen mounted
   // outside, which is exactly what a demo switch should do. "default"
   // mounts nothing, so an outer provider (or the defaults) shows through.
-  return dataset && dataset !== "default" ? (
-    <ProposalDataProvider dataset={dataset}>{shell}</ProposalDataProvider>
+  // Dataset priority: explicit tweaker Data row > session-selected
+  // (location-card click) > authored prop.
+  const effectiveDataset =
+    tweaks?.dataset !== undefined ? dataset : (loadSessionDataset() ?? dataset);
+  return effectiveDataset && effectiveDataset !== "default" ? (
+    <ProposalDataProvider dataset={effectiveDataset}>{shell}</ProposalDataProvider>
   ) : (
     shell
   );

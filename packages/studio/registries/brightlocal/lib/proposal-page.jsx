@@ -71,6 +71,7 @@ import {
   TrendingUp,
 } from "@brightlocal/icons";
 import { useProposalData } from "@brightlocal/proposal-data";
+import { selectSessionDataset } from "@brightlocal/proposal-shell";
 
 // ─── formatDate — just the date, no time/UTC noise ────────────────────
 // The dataset stores a pre-formatted string ("1st Jul 2026 at 9:52 AM
@@ -616,6 +617,28 @@ export function HubHeroCard({
 // `transition` stamp the flow attributes on the whole card;
 // `loading` renders the skeleton state instead (same footprint, no
 // layout shift when the real card lands).
+// ONE document-level capture listener: any click on (or inside) an
+// element carrying data-grade-dataset stashes that dataset for the
+// session. Capture phase = ordered before the sandbox goto listener
+// and independent of React's event delegation.
+let datasetClickListenerInstalled = false;
+function ensureDatasetClickListener() {
+  if (datasetClickListenerInstalled) return;
+  datasetClickListenerInstalled = true;
+  try {
+    document.addEventListener(
+      "click",
+      (e) => {
+        const el = e.target?.closest?.("[data-grade-dataset]");
+        if (el) selectSessionDataset(el.getAttribute("data-grade-dataset"));
+      },
+      true,
+    );
+  } catch {
+    /* no document (SSR) — the component call re-tries on mount render */
+  }
+}
+
 export function LocationCard({
   // Either a `location` object ({ name, city, postcode, category,
   // phone, photo? }) or individual props; the object wins field-wise.
@@ -638,6 +661,17 @@ export function LocationCard({
   ...rest
 }) {
   const loc = location ?? {};
+  // Optional per-location dataset (location.dataset or the `dataset`
+  // prop): clicking the card stashes it in the session layer BEFORE the
+  // goto fires, so the destination hub shows THE CLICKED location — the
+  // fix for "clicking a location loads the wrong one" (snag 4).
+  // Locations without a dataset just navigate. The write rides a NATIVE
+  // capture-phase listener on [data-grade-dataset] (installed once) —
+  // React's delegated onClick proved unreliable next to the sandbox's
+  // goto listener (verified 22 Jul: goto fired, onClick didn't).
+  const vDataset = loc.dataset ?? rest.dataset;
+  delete rest.dataset;
+  ensureDatasetClickListener();
   const vName = loc.name ?? name;
   const vCity = loc.city ?? city;
   const vPostcode = loc.postcode ?? postcode;
@@ -655,6 +689,7 @@ export function LocationCard({
       dataHook={dataHook}
       data-grade-goto={goto}
       data-grade-transition={transition}
+      data-grade-dataset={vDataset}
       className={[
         "max-w-none",
         goto ? "cursor-pointer transition-shadow hover:shadow-md" : "",

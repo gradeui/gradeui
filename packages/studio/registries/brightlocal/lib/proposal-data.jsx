@@ -154,12 +154,33 @@ export const PROPOSAL_DATA = {
       phone: "+61 2 9251 8683",
     },
     {
+      id: "harbour-co",
+      name: "Harbour & Co",
+      city: "Brighton Marina",
+      postcode: "BN2 5WA",
+      category: "Seafood restaurant",
+      phone: "01273 555 018",
+      // Clicking this card stashes its dataset (session tweak layer) so
+      // the hub — and every screen after — shows THIS location.
+      dataset: "harbour-co",
+    },
+    {
+      id: "northside-dental",
+      name: "Northside Dental",
+      city: "Manchester",
+      postcode: "M4 4BF",
+      category: "Dentist",
+      phone: "0161 832 4477",
+      dataset: "northside-dental",
+    },
+    {
       id: "minus-one-studios",
       name: "Minus 1 Studios",
       city: "London",
       postcode: "NW1 6TZ",
       category: "Recording studio",
       phone: "0203 488 2915",
+      dataset: "minus-one-studios",
       photo:
         "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=800&q=60",
     },
