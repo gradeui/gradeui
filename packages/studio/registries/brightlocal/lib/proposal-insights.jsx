@@ -28,6 +28,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardHeader,
   CardTitle,
   TypographyH3,
   TypographyMuted,
@@ -82,7 +83,10 @@ export function ModuleScoreCard({
   const data = useProposalData();
   const module = data.foundation[moduleKey];
   const Icon = icon ?? MODULE_ICONS[moduleKey] ?? Globe;
-  const cardTitle = title ?? module.label;
+  // Default "At a glance" (snags, Ali 21 Jul): the top card of every
+  // sub-page is the module's at-a-glance view — the page H1 already
+  // names the module, so repeating it here was noise.
+  const cardTitle = title ?? "At a glance";
   const cardDescription = description ?? module.summary;
   // Weight is DERIVED from the score model (never authored twice), so
   // the note can never drift from the donut maths.
@@ -283,81 +287,60 @@ function WhereTag({ where, dataHook = "action-where" }) {
 //   "accordion" — each action a collapsible row (default; Lighthouse).
 //   "list"      — the flat numbered list (the original).
 export function InsightCard({ item, actionStyle = "accordion" }) {
-  const sev = SEVERITY[item.severity] ?? SEVERITY.low;
   // The default view is lean — title + actions. The diagnostic Insight
   // is dropped for now; the Recommendation is opt-in behind "Tell me
   // more" so it only lands on the screen when asked for (Ali, 20 Jul).
   const [showRecommendation, setShowRecommendation] = React.useState(false);
   return (
-    // condensed density trims the top/bottom padding that made these
-    // cards tall; CardContent carries the internal rhythm (Ali, 20 Jul).
-    <Card className="w-full max-w-none" density="default" dataHook={`insight-${item.id}`}>
-      <CardContent className="space-y-4">
-        {/* The insight IS the card — its headline is the CardTitle and
-            the plain-language roll-up (item.actionsSummary, a recommended
-            LLM output field) is the CardDescription beneath it. The
-            Priority severity badge sits top-right; the area badge was
-            dropped — every card on a sub-page shares the area, so it just
-            repeated the section (Ali, 20 Jul). */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1.5">
-            <CardTitle size="small" className="font-semibold leading-snug">
-              <GlossaryText dataHook={`insight-${item.id}-title-glossary`}>
-                {item.title}
-              </GlossaryText>
-            </CardTitle>
-            {item.actionsSummary ? (
-              <CardDescription className="leading-relaxed">
-                <GlossaryText dataHook={`insight-${item.id}-summary-glossary`}>
-                  {item.actionsSummary}
-                </GlossaryText>
-              </CardDescription>
-            ) : null}
-          </div>
-          <Badge
-            variant="outline"
-            className="shrink-0"
-            dataHook={`insight-${item.id}-severity`}
-          >
-            <span style={{ color: sev.color }}>{sev.label}</span>
-          </Badge>
-        </div>
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase text-[var(--ds-tailwind-colors-neutral-400)]">
-            Actions ({item.actions.length})
-          </p>
-          {actionStyle === "list" ? (
-            <ActionList item={item} />
-          ) : (
-            <ActionAccordion item={item} />
-          )}
-        </div>
-        {item.recommendation ? (
-          <div className="space-y-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              dataHook={`insight-${item.id}-tell-me-more`}
-              onClick={() => setShowRecommendation((v) => !v)}
-            >
-              {showRecommendation ? "Hide recommendation" : "Tell me more"}
-            </Button>
-            {showRecommendation ? (
-              <div className="space-y-1 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
-                <p className="text-xs font-medium uppercase text-[var(--ds-tailwind-colors-neutral-400)]">
-                  Recommendation
-                </p>
-                <p className="text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
-                  <GlossaryText dataHook={`insight-${item.id}-rec-glossary`}>
-                    {item.recommendation}
-                  </GlossaryText>
-                </p>
-              </div>
-            ) : null}
-          </div>
+    // NOT a Card any more: all insights share ONE "Actions & Insights"
+    // card (AreaInsights) — this renders a SECTION within it. The
+    // Priority badge and the "ACTIONS (n)" grey heading are gone
+    // (snags 27–29, Ali 21 Jul).
+    <div className="space-y-4" data-hook={`insight-${item.id}`}>
+      <div className="min-w-0 space-y-1.5">
+        <CardTitle size="small" className="font-semibold leading-snug">
+          <GlossaryText dataHook={`insight-${item.id}-title-glossary`}>
+            {item.title}
+          </GlossaryText>
+        </CardTitle>
+        {item.actionsSummary ? (
+          <CardDescription className="leading-relaxed">
+            <GlossaryText dataHook={`insight-${item.id}-summary-glossary`}>
+              {item.actionsSummary}
+            </GlossaryText>
+          </CardDescription>
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+      {actionStyle === "list" ? (
+        <ActionList item={item} />
+      ) : (
+        <ActionAccordion item={item} />
+      )}
+      {item.recommendation ? (
+        <div className="space-y-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            dataHook={`insight-${item.id}-tell-me-more`}
+            onClick={() => setShowRecommendation((v) => !v)}
+          >
+            {showRecommendation ? "Hide recommendation" : "Tell me more"}
+          </Button>
+          {showRecommendation ? (
+            <div className="space-y-1 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
+              <p className="text-xs font-medium uppercase text-[var(--ds-tailwind-colors-neutral-400)]">
+                Recommendation
+              </p>
+              <p className="max-w-prose text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
+                <GlossaryText dataHook={`insight-${item.id}-rec-glossary`}>
+                  {item.recommendation}
+                </GlossaryText>
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -377,7 +360,7 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
     // (Ali, 20 Jul).
     return (
       <div className="space-y-1.5">
-        <p className="text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
+        <p className="max-w-prose text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
           <GlossaryText dataHook={`insight-${item.id}-action-${index}-glossary`}>
             {action.text}
           </GlossaryText>
@@ -390,32 +373,55 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
     <AccordionItem value={`action-${index}`}>
       <AccordionTrigger dataHook={`insight-${item.id}-action-${index}-trigger`}>
         {/* No number (arbitrary order); items-start + no truncate so the
-            title wraps freely instead of being clipped (Ali, 20 Jul). */}
+            title wraps freely instead of being clipped (Ali, 20 Jul).
+            No closed-state where-badge either — it repeated on every row
+            and read as clutter (snag 30, Ali 21 Jul); the "where" is
+            revealed inside the open panel. */}
         <span className="flex w-full items-start gap-3 pr-2 text-left">
           <span className="flex-1 text-sm font-medium">
             {actionLabel(action)}
-          </span>
-          <span className="mt-0.5 shrink-0">
-            <WhereTag
-              where={where}
-              dataHook={`insight-${item.id}-action-${index}-where`}
-            />
           </span>
         </span>
       </AccordionTrigger>
       <AccordionContent>
         <div className="space-y-3">
-          <p className="text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
+          {/* max-w-prose: full-width task text was an unreadable line
+              length (snag 32) — wrap it and let whitespace live on the
+              right. "Learn more." is the novice-expansion affordance
+              (snag 34) — stubbed until the copy exists. */}
+          <p className="max-w-prose text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-700)]">
             <GlossaryText dataHook={`insight-${item.id}-action-${index}-glossary`}>
               {action.text}
-            </GlossaryText>
+            </GlossaryText>{" "}
+            <button
+              type="button"
+              data-hook={`insight-${item.id}-action-${index}-learn-more`}
+              className="font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))] hover:underline"
+            >
+              Learn more.
+            </button>
           </p>
           <ActionWhere item={item} action={action} index={index} />
+          {/* Close the loop: tell them what happens AFTER the fix
+              (snag 33). */}
+          <p className="max-w-prose text-xs leading-relaxed text-[var(--ds-tailwind-colors-neutral-500)]">
+            After you've done this, wait a week then check this page. Your
+            {" "}{SCORE_NOUN[item.area] ?? "score"} should improve.
+          </p>
         </div>
       </AccordionContent>
     </AccordionItem>
   );
 }
+
+// Per-area noun for the post-action blurb — "your website score should
+// improve" on the Website page, sensible fallbacks elsewhere.
+const SCORE_NOUN = {
+  "website-seo": "website score",
+  "gbp-manager": "GBP score",
+  reviews: "reviews score",
+  citations: "citations score",
+};
 
 // Accordion actions (default) — progressive disclosure; each action is
 // an InsightAction row inside one Accordion.
@@ -459,23 +465,32 @@ export function AreaInsights({
   const { items } = data.aiInsights;
   const areaItems = items.filter((i) => i.area === areaId);
   return (
-    <div className="space-y-4" data-hook={dataHook}>
-      {/* "Last updated" now lives ONLY in the PageHeader (Ali, 20 Jul). */}
-      <TypographyH3 className="flex items-center gap-2">
-        <Sparkles className="size-4 text-[var(--ds-tailwind-colors-green-600)]" />
-        {title}
-      </TypographyH3>
-      {areaItems.length > 0 ? (
-        areaItems.map((item) => (
-          <InsightCard key={item.id} item={item} actionStyle={actionStyle} />
-        ))
-      ) : (
-        <Card className="w-full max-w-none" density="default" dataHook={`${dataHook}-empty`}>
-          <CardContent className="text-center text-sm text-[var(--ds-tailwind-colors-neutral-500)]">
+    // ONE card (snag 27, Ali 21 Jul): the "Actions & Insights" heading
+    // lives INSIDE the card, and every insight renders as a section
+    // within it, separated by rules — not a stack of separate cards.
+    // "Last updated" lives ONLY in the PageHeader (Ali, 20 Jul).
+    <Card className="w-full max-w-none" density="default" dataHook={dataHook}>
+      <CardHeader>
+        <CardTitle size="default" className="flex items-center gap-2">
+          <Sparkles className="size-4 text-[var(--ds-tailwind-colors-green-600)]" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {areaItems.length > 0 ? (
+          <div className="flex flex-col divide-y divide-[var(--ds-tailwind-colors-neutral-100)]">
+            {areaItems.map((item, i) => (
+              <div key={item.id} className={i === 0 ? "pb-6" : "py-6 last:pb-0"}>
+                <InsightCard item={item} actionStyle={actionStyle} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-sm text-[var(--ds-tailwind-colors-neutral-500)]">
             No open insights for this area — run Generate insights to refresh.
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
