@@ -217,6 +217,30 @@ export const SIDEBAR_SHADOWS = {
 // surfaces also re-point the TEXT tokens (title/muted/breadcrumb all
 // resolve through --foreground/--muted-foreground) so the header stays
 // readable — a bg swap alone would leave near-black text on dark green.
+// Component tokens for a DARK band: colorScheme only flips light-dark()
+// values, but BL's semantic tokens (--border/--input/--accent/
+// --secondary/--muted) are static light values — an outline Button on a
+// dark band otherwise renders light-theme chrome (the "Add Client"
+// button, Ali 22 Jul). Ramp tokens only; both var prefixes as ever.
+function headerDarkTokens(border, accent, accentFg) {
+  return {
+    "--border": border,
+    "--color-border": border,
+    "--input": border,
+    "--color-input": border,
+    "--accent": accent,
+    "--color-accent": accent,
+    "--accent-foreground": accentFg,
+    "--color-accent-foreground": accentFg,
+    "--secondary": accent,
+    "--color-secondary": accent,
+    "--secondary-foreground": accentFg,
+    "--color-secondary-foreground": accentFg,
+    "--muted": accent,
+    "--color-muted": accent,
+  };
+}
+
 export const HEADER_SURFACES = {
   none: null, // transparent — page background shows through
   white: {
@@ -238,7 +262,12 @@ export const HEADER_SURFACES = {
       "--color-foreground": "var(--ds-tailwind-colors-base-white)",
       "--muted-foreground": "var(--ds-tailwind-colors-neutral-400)",
       "--color-muted-foreground": "var(--ds-tailwind-colors-neutral-400)",
-      borderColor: "rgb(255 255 255 / 0.12)",
+      borderColor: "var(--ds-tailwind-colors-neutral-700)",
+      ...headerDarkTokens(
+        "var(--ds-tailwind-colors-neutral-700)",
+        "var(--ds-tailwind-colors-neutral-800)",
+        "var(--ds-tailwind-colors-neutral-50)",
+      ),
     },
   },
   // Brand pair — TOKENS ONLY (Ali, 22 Jul): brand = green-900,
@@ -253,7 +282,12 @@ export const HEADER_SURFACES = {
       "--color-foreground": "var(--ds-tailwind-colors-base-white)",
       "--muted-foreground": "var(--ds-tailwind-colors-green-200)",
       "--color-muted-foreground": "var(--ds-tailwind-colors-green-200)",
-      borderColor: "rgb(255 255 255 / 0.12)",
+      borderColor: "var(--ds-tailwind-colors-green-700)",
+      ...headerDarkTokens(
+        "var(--ds-tailwind-colors-green-700)",
+        "var(--ds-tailwind-colors-green-800)",
+        "var(--ds-tailwind-colors-green-50)",
+      ),
     },
   },
   "brand-dark": {
@@ -265,7 +299,12 @@ export const HEADER_SURFACES = {
       "--color-foreground": "var(--ds-tailwind-colors-base-white)",
       "--muted-foreground": "var(--ds-tailwind-colors-green-200)",
       "--color-muted-foreground": "var(--ds-tailwind-colors-green-200)",
-      borderColor: "rgb(255 255 255 / 0.12)",
+      borderColor: "var(--ds-tailwind-colors-green-800)",
+      ...headerDarkTokens(
+        "var(--ds-tailwind-colors-green-800)",
+        "var(--ds-tailwind-colors-green-900)",
+        "var(--ds-tailwind-colors-green-100)",
+      ),
     },
   },
 };
