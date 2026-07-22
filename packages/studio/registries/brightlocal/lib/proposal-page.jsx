@@ -209,7 +209,24 @@ export function PageHeader({
         .join(" ")}
     >
       <div className="flex min-w-0 flex-1 flex-col">
-        {breadcrumbs.length > 0 ? (
+        {breadcrumbs.length === 0 ? (
+          // CRUMB-LESS pages (All Locations — the trail's root) keep the
+          // breadcrumb row's FOOTPRINT so the header band is the same
+          // height on every page and nothing jumps on navigation (Ali,
+          // 22 Jul). Same components rendered invisible — the reserved
+          // height can never drift from the real trail's.
+          <Breadcrumb
+            aria-hidden
+            dataHook={`${dataHook}-breadcrumb-spacer`}
+            className="invisible mb-4 select-none"
+          >
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <span className="whitespace-nowrap">&nbsp;</span>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        ) : (
           // mb-4: breathing room between the trail and the H1 (Ali, 20 Jul).
           <Breadcrumb dataHook={`${dataHook}-breadcrumb`} className="mb-4">
             <BreadcrumbList>
@@ -257,7 +274,7 @@ export function PageHeader({
                 ))}
             </BreadcrumbList>
           </Breadcrumb>
-        ) : null}
+        )}
         <TypographyH2 dataHook={`${dataHook}-title`}>{title}</TypographyH2>
         {description ? (
           // mt-3 + a measure so the description reads as a subtitle with

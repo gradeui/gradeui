@@ -3,7 +3,7 @@ name: PageHeader
 import: "@brightlocal/proposal"
 props:
   - title — Page title (rendered as TypographyH2 — the current page; it never appears in the breadcrumb).
-  - breadcrumbs? — Ancestor trail, MAX TWO ({label, href?}[]). Ancestors only — BreadcrumbPage is deliberately unused. (default [])
+  - breadcrumbs? — Ancestor trail, MAX TWO ({label, href?}[]). Ancestors only — BreadcrumbPage is deliberately unused. Crumb-less pages (the trail's root, e.g. All Locations) still RESERVE the trail row's height (invisible spacer) so the header band matches every other page and nothing jumps on navigation. (default [])
   - description? — Subtitle line under the H2 (muted, measured). Every proposal page should carry one. String or node. (default none)
   - lastUpdated?: string — Timestamp shown muted beneath the description. Pass "auto" to BIND data.aiInsights.lastUpdated (the AI Insights pages own it — it was removed from the AreaInsights header so it lives in ONE place); any other string renders literally; omit to hide.
   - meta? — Muted row under the title. EXPLICIT-ONLY: omitted (or null) renders nothing; pass any node to render it. (The old data-bound NAP + status Badge default was dropped — the location already leads the breadcrumb.) (default none)
