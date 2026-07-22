@@ -1680,11 +1680,13 @@ export function SharedScreen({
             Escape does the same via the keyboard handler above. Floats
             top-left INSIDE the canvas area, above the iframe (z above
             the artboard, below the gesture shield at z-[60] is fine —
-            the shield only exists mid-gesture). HIDDEN in Responsive
-            (fill-the-window) mode — there it sits ON the app's own
-            chrome (Ali, 22 Jul); device modes keep it, the artboard's
-            surround gives it neutral ground. Esc still pops. */}
-        {flowStack.length > 0 && !activeSpec.responsive && (
+            the shield only exists mid-gesture). ONLY shown in device
+            mode WITH Fit on (Ali, 22 Jul): that's the one arrangement
+            where the scaled artboard leaves surround for the chip to
+            sit on. Responsive fills the window, and device+Free at
+            100% can too — both put the chip ON the app's own chrome.
+            Esc still pops everywhere. */}
+        {flowStack.length > 0 && !activeSpec.responsive && fitMode && (
           <div className="absolute left-3 top-3 z-[55]">
             <button
               type="button"
