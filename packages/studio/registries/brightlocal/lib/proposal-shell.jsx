@@ -462,17 +462,29 @@ export const LOOK_PRESETS = {
     pageLayers: "white",
     pageBackground: "subtle",
   },
-  // The BRAND variant (Ali, 22 Jul): brand sidebar (green-950) with the
-  // header a touch darker (brand-dark) so the two surfaces layer, same
-  // white cards.
+  // Heavy Depth (Ali's settings, 22 Jul): muted depth-step sidebar,
+  // brand-dark band, white cards on the muted canvas.
   "heavy-depth": {
-    sidebarTone: "brand",
+    sidebarTone: "muted",
     sidebarFrame: "flush",
     sidebarShadow: "none",
     navDensity: "compact",
     stickyHeader: true,
     headerSurface: "brand-dark",
     pageLayers: "white",
+    pageBackground: "muted",
+  },
+  // Live Site (Ali's settings, 22 Jul): mirrors the real BrightLocal
+  // product — attached in-flow sidebar, the large nav, no header band,
+  // outline cards on the soft canvas.
+  "live-site": {
+    sidebarTone: "default",
+    sidebarFrame: "attached",
+    sidebarShadow: "none",
+    navDensity: "expansive",
+    stickyHeader: false,
+    headerSurface: "none",
+    pageLayers: "outline",
     pageBackground: "subtle",
   },
 };
@@ -480,6 +492,7 @@ const PRESET_LABELS = {
   current: "Current",
   "subtle-depth": "Subtle Depth",
   "heavy-depth": "Heavy Depth",
+  "live-site": "Live Site",
 };
 
 export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
