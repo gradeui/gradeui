@@ -108,6 +108,11 @@ export function formatDate(value) {
 // reads `--bl-card-link` first (re-point it in a theme/scope to restyle
 // every clickable title at once) and falls back to the dark brand green
 // (Ali, 21 Jul: link colour, "much darker" than green-600).
+// ASSUMPTION (Ali to verify): green-950 is the "branded green" for ALL
+// clickable text — the snag sheet still lists "card heading link color"
+// as NOT DONE, which may mean a brighter ramp step is wanted. The
+// accordion action rows (proposal-insights.jsx) read the same seam, so
+// re-pointing this ONE token restyles everything at once.
 export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
   return (
     <CardTitle

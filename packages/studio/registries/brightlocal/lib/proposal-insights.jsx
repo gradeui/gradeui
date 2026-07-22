@@ -80,6 +80,10 @@ export function ModuleScoreCard({
   // Actions & Insights card below it): per-page module icons in varying
   // colours read as inconsistency, not identity (snag, Ali 22 Jul). The
   // module is already named by the page H1 and the sidebar.
+  // ASSUMPTION (Ali to verify): the snag named the inconsistency, not
+  // the fix — "same icon everywhere, AI-insights-branded" is MY read.
+  // The alternative (per-module icon matching the sidebar, colour
+  // unified) is one line: `icon ?? MODULE_ICONS[moduleKey]`.
   const Icon = icon ?? Sparkles;
   // Default "At a Glance" — Title Case for titles (snag, Ali 22 Jul).
   // The top card of every sub-page is the module's at-a-glance view —
