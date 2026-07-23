@@ -50,7 +50,6 @@ import {
   TypographyMuted,
 } from "@brightlocal/ui-components";
 import {
-  ArrowRight,
   BarChart3,
   Briefcase,
   Building,
@@ -811,103 +810,6 @@ export function LocationCardSkeleton({ dataHook = "location-card-skeleton" }) {
             <Skeleton dataHook={`${dataHook}-row-3`} className="h-4 w-1/3" />
           </div>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── MetricHubCard — the standard hub metric-card anatomy ─────────────
-// (Ali's mock, 23 Jul; promoted from the hub screen 23 Jul — Reviews +
-// Rankings wear it, Citations/GBP next.) Title + soft-green TREND pill;
-// circular drill arrow top-right (the whole card is the goto link, the
-// circle is its visual handle); muted stat label; BIG display-type
-// value + muted context + optional green delta; then children (the
-// data viz). Values should be DERIVED from the viz data where
-// possible, never authored twice.
-export function TrendPill({ children, dataHook = "trend-pill" }) {
-  // Soft green tint over Badge — same override pattern as
-  // ScoreStatusPill (the upstream Badge has no soft-green variant;
-  // swap for the variant when it lands).
-  return (
-    <Badge
-      variant="secondary"
-      dataHook={dataHook}
-      className="bg-[var(--ds-tailwind-colors-green-100)] text-[var(--ds-tailwind-colors-green-700)]"
-    >
-      <TrendingUp className="size-3.5" />
-      {children}
-    </Badge>
-  );
-}
-
-export function MetricHubCard({
-  title,
-  // Trend pill copy ("0.4 in last 7 days"); omit to hide the pill.
-  trend,
-  goto,
-  dataHook = "metric-hub-card",
-  // Stat block: muted label, big display value, muted context, green
-  // delta ("+1.2") — all optional except value.
-  label,
-  value,
-  context,
-  delta,
-  children,
-  ...rest
-}) {
-  return (
-    <Card
-      className="max-w-none cursor-pointer"
-      dataHook={dataHook}
-      data-grade-goto={goto}
-      {...rest}
-    >
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-3">
-          <span className="flex flex-wrap items-center gap-2.5">
-            <CardTitleLink>{title}</CardTitleLink>
-            {trend ? (
-              <TrendPill dataHook={`${dataHook}-trend`}>{trend}</TrendPill>
-            ) : null}
-          </span>
-          <span
-            aria-hidden
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--ds-tailwind-colors-neutral-100)] text-[var(--ds-tailwind-colors-neutral-700)]"
-          >
-            <ArrowRight className="size-4" />
-          </span>
-        </div>
-        {value != null ? (
-          <div className="flex flex-col gap-1">
-            {label ? (
-              <p className="text-sm text-[var(--ds-tailwind-colors-neutral-500)]">
-                {label}
-              </p>
-            ) : null}
-            <p className="flex flex-wrap items-baseline gap-x-2">
-              <span
-                className="text-4xl leading-none tabular-nums"
-                style={{
-                  fontFamily: "var(--ds-font-font-display, Poppins)",
-                  fontWeight: "var(--ds-font-weight-semibold, 600)",
-                }}
-              >
-                {value}
-              </span>
-              {context ? (
-                <span className="text-base text-[var(--ds-tailwind-colors-neutral-500)]">
-                  {context}
-                </span>
-              ) : null}
-              {delta ? (
-                <span className="text-base font-medium text-[var(--ds-tailwind-colors-green-600)]">
-                  {delta}
-                </span>
-              ) : null}
-            </p>
-          </div>
-        ) : null}
-        {children}
       </CardContent>
     </Card>
   );

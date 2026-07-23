@@ -3313,64 +3313,6 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       }
     }
   },
-  "MetricHubCard": {
-    "name": "MetricHubCard",
-    "description": "title=\"Reviews\"",
-    "props": {
-      "title": {
-        "kind": "string",
-        "design": "plumbing",
-        "description": "Card title (CardTitleLink treatment — text-xl semibold, hover link colour; the whole card is the link)."
-      },
-      "trend": {
-        "kind": "string",
-        "design": "knob",
-        "optional": true,
-        "description": "Soft-green TrendPill copy next to the title (\"0.4 in last 7 days\"). Omit to hide. TrendPill is also exported standalone."
-      },
-      "goto": {
-        "kind": "string",
-        "design": "knob",
-        "optional": true,
-        "description": "Screen link (\"screen:<id>\") stamped as data-grade-goto on the card; the circular arrow top-right is its visual handle."
-      },
-      "label": {
-        "kind": "string",
-        "design": "knob",
-        "optional": true,
-        "description": "Muted stat label above the value (\"Average rating\" / \"Average position\")."
-      },
-      "value": {
-        "kind": "string",
-        "design": "plumbing",
-        "description": "The BIG display-type stat (Poppins semibold, text-4xl, tabular). DERIVE it from the viz data where possible — never author it twice."
-      },
-      "context": {
-        "kind": "string",
-        "design": "knob",
-        "optional": true,
-        "description": "Muted text beside the value (\"12 total reviews\" / \"5 keywords tracked\")."
-      },
-      "delta": {
-        "kind": "string",
-        "design": "knob",
-        "optional": true,
-        "description": "Green delta beside the context (\"+1.2\")."
-      },
-      "children": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true,
-        "description": "The data viz below the stat block (bar rows, sparkline, …)."
-      },
-      "dataHook": {
-        "kind": "string",
-        "design": "plumbing",
-        "optional": true,
-        "description": "Instance name. (default \"metric-hub-card\")"
-      }
-    }
-  },
   "MiniStat": {
     "name": "MiniStat",
     "description": "Ships in \"@brightlocal/proposal\" — never inline a copy. MiniStatStrip is the",
@@ -7110,11 +7052,6 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   "MenubarSub": {
     "name": "MenubarSub",
     "description": "Part of Menubar.",
-    "props": {}
-  },
-  "TrendPill": {
-    "name": "TrendPill",
-    "description": "Part of MetricHubCard.",
     "props": {}
   },
   "NavigationMenuList": {
