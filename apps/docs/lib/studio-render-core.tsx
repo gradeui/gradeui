@@ -218,7 +218,15 @@ export async function preResolveUnknownImports(source: string): Promise<void> {
   await Promise.all(
     Array.from(found).map(async (spec) => {
       try {
-        const mod = await import(/* webpackIgnore: true */ `https://esm.sh/${spec}`);
+        // ?external=react,react-dom — the CDN module's own react imports
+        // stay BARE and resolve through the document importmap to the
+        // SAME esm.sh react@19 the sandbox renders with. Without it,
+        // esm.sh bundles a second React and any hook/context-using
+        // package (e.g. @vis.gl/react-google-maps' APIProvider) dies
+        // with invalid-hook-call. Harmless for react-free packages.
+        const mod = await import(
+          /* webpackIgnore: true */ `https://esm.sh/${spec}?external=react,react-dom`
+        );
         CDN_CACHE.set(spec, mod);
       } catch (err) {
         CDN_CACHE.set(spec, {

@@ -363,6 +363,58 @@ export default function ExternalSandboxPage() {
       }
     };
 
+    // ─── CDN tier — arbitrary npm packages via esm.sh ─────────────────
+    // The require above is SYNCHRONOUS against a fixed module set, so
+    // unknown bare specifiers (e.g. @vis.gl/react-google-maps on the
+    // LSG screen, 23 Jul) are pre-resolved ASYNC before a screen
+    // executes and served from this cache at require time.
+    // ?external=react,react-dom: the CDN module's react imports stay
+    // bare and resolve through THIS document's importmap to the same
+    // esm.sh react@19 the sandbox renders with — one React, hooks and
+    // context intact. Without it, esm.sh bundles a second React and
+    // provider/hook packages die with invalid-hook-call.
+    const cdnCache = new Map<string, unknown>();
+    const CDN_IMPORT_RE =
+      /(?:import\s+(?:\*\s+as\s+\w+|\{[^}]*\}|\w+(?:\s*,\s*\{[^}]*\})?)?\s*from\s+|import\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
+    async function preResolveCdn(source: string) {
+      const libSpecs = Object.keys(REGISTRY.runtime?.libModules ?? {});
+      const companions = Object.keys(REGISTRY.runtime?.dependencies ?? {});
+      const KNOWN = new Set([
+        "react", "react/jsx-runtime", "react/jsx-dev-runtime",
+        "react-dom", "react-dom/client", "lucide-react",
+        "motion", "motion/react", "recharts", "canvas-confetti",
+      ]);
+      const found = new Set<string>();
+      CDN_IMPORT_RE.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = CDN_IMPORT_RE.exec(source)) !== null) {
+        const p = match[1];
+        if (KNOWN.has(p)) continue;
+        if (p.startsWith(".") || p.startsWith("/")) continue;
+        if (p === REGISTRY.package.name || p.startsWith(`${REGISTRY.package.name}/`)) continue;
+        if (libSpecs.includes(p)) continue;
+        if (companions.some((c) => p === c || p.startsWith(`${c}/`))) continue;
+        if (p.endsWith(".css")) continue;
+        if (cdnCache.has(p)) continue;
+        found.add(p);
+      }
+      await Promise.all(
+        Array.from(found).map(async (p) => {
+          try {
+            const mod = await import(
+              /* webpackIgnore: true */ `https://esm.sh/${p}?external=react,react-dom`
+            );
+            cdnCache.set(p, mod);
+          } catch (err) {
+            // Leave unresolved — require throws its named error below,
+            // which surfaces in the render-error chip as before.
+            // eslint-disable-next-line no-console
+            console.warn(`[external-sandbox] CDN resolve failed for "${p}":`, err);
+          }
+        }),
+      );
+    }
+
     function makeRequire(m: NonNullable<typeof modules>, libSeen?: Set<string>) {
       const companions = Object.keys(REGISTRY.runtime?.dependencies ?? {});
       const libSpecs = Object.keys(REGISTRY.runtime?.libModules ?? {});
@@ -390,6 +442,9 @@ export default function ExternalSandboxPage() {
           return guarded((map[companion] ?? {}) as never, companion);
         }
         if (p.endsWith(".css")) return {};
+        // CDN tier (pre-resolved async before the screen executed).
+        const cdn = cdnCache.get(p);
+        if (cdn) return guarded(cdn as never, p);
         throw new Error(`external-sandbox: unknown module "${p}"`);
       };
     }
@@ -432,6 +487,10 @@ export default function ExternalSandboxPage() {
         };
         if (!isModeFlip) applyModeChrome();
         const m = modules as Record<string, any>;
+        // CDN pre-resolve BEFORE execution — require is synchronous, so
+        // unknown npm imports must already sit in cdnCache when the
+        // screen module runs.
+        await preResolveCdn(source);
         // Compile-cache first (F1): a precompiled flow sibling — or any
         // previously rendered screen (Back) — skips sucrase entirely.
         const code = compile(source);
