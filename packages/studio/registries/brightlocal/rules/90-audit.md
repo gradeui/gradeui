@@ -32,3 +32,14 @@ The theme remaps the whole weight scale one step down: `--ds-font-weight-normal:
 
 `--ds-colors-card-border-light` maps to `base-transparent` — the filled Card's `border border-card-border` renders NO visible border by default. Figma's card border is `base/border` (= neutral-200, #E6EDE8), i.e. the semantic `--border` token, not `--card-border`. Proposal screens paint `border-color: var(--border)` on cards via the raised layer. Upstream ask: point card-border at base/border (or document the transparent default).
 
+
+## Bing missing from the social icon set (23 Jul 2026)
+
+`@brightlocal/icons`' social-media family (~50 services, `-Original` +
+`-Neutral` treatments) has NO Bing mark — yet the legacy platform ships
+one via its icon font (`<span class="bl-icon medium bl-icon-se-bing">`,
+the `se-*` search-engine family). Consequence: a "Bing Places"
+connection row can't show its provider mark from the published package.
+Proposal fallback: lucide `Globe` in the neutral grey. Upstream ask:
+port the legacy `se-*` search-engine icons (Bing at minimum) into the
+social-media set.
