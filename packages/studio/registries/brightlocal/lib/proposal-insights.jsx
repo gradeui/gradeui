@@ -291,30 +291,29 @@ function SubMetricTiles({ subMetrics, dataHook }) {
           >
             <p className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
               {m.label}
-              {/* Info tip SEAM (Ali, 23 Jul: "'i' icons next to the
-                  titles with tooltips possibly?") — renders ONLY when
-                  the sub-metric carries a `description` in the data, so
-                  tiles stay clean until the copy is authored. */}
-              {m.description ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label={`About ${m.label}`}
-                      data-hook={`${dataHook}-metric-${m.label}-info`}
-                      className="inline-flex cursor-help text-muted-foreground/70 hover:text-muted-foreground"
-                    >
-                      <Info className="size-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    dataHook={`${dataHook}-metric-${m.label}-tip`}
-                    className="max-w-64"
+              {/* Info tip (Ali, 23 Jul: "'i' icons next to the titles
+                  with tooltips") — always shown; a sub-metric's
+                  `description` in the data replaces the PLACEHOLDER
+                  copy below when authored. */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`About ${m.label}`}
+                    data-hook={`${dataHook}-metric-${m.label}-info`}
+                    className="inline-flex cursor-help text-muted-foreground/70 hover:text-muted-foreground"
                   >
-                    {m.description}
-                  </TooltipContent>
-                </Tooltip>
-              ) : null}
+                    <Info className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent
+                  dataHook={`${dataHook}-metric-${m.label}-tip`}
+                  className="max-w-64"
+                >
+                  {m.description ??
+                    "Information about how this is calculated and what to do should go here"}
+                </TooltipContent>
+              </Tooltip>
             </p>
             <p className="mt-1 flex items-baseline gap-0.5">
               <span
