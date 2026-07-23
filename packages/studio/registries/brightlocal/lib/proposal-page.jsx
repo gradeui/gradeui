@@ -121,7 +121,11 @@ export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
       dataHook={dataHook}
       data-bl-link=""
       {...rest}
-      className={["font-semibold", className].filter(Boolean).join(" ")}
+      // text-xl semibold (Ali, 23 Jul) — the grid-card title scale:
+      // a step under the At-a-Glance/landing headings (text-2xl), a
+      // step over body. Overrides ride tailwind-merge past the size
+      // variant; pass className to override per-instance.
+      className={["text-xl font-semibold", className].filter(Boolean).join(" ")}
     >
       {children}
     </CardTitle>
