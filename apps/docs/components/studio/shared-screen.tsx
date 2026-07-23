@@ -1713,14 +1713,14 @@ export function SharedScreen({
             </button>
           </div>
         </header>
-      ) : (
-        /* Chrome-restore control, product-style (Ali, 23 Jul): a CIRCLE
+      ) : initialChromeHidden ? null : (
+        /* Chrome-restore control (non-fullscreen "." only): a CIRCLE
            that stays invisible until the pointer enters the top-right
-           corner hotspot — tweaker-style reveal, so a presentation
-           surface carries no standing chrome at all. Keyboard path
-           stays: "." toggles, and focusing the button reveals it. The
-           hotspot sits over the iframe, so corner hover registers in
-           the parent realm. */
+           corner hotspot — tweaker-style reveal. In ?fullscreen=1 mode
+           it doesn't exist AT ALL (Ali, 23 Jul: "it is just the real
+           app") — "." remains the one deliberate way back. The hotspot
+           sits over the iframe, so corner hover registers in the
+           parent realm. */
         <div className="group absolute right-0 top-0 z-[70] h-16 w-16">
           <button
             type="button"
