@@ -1063,7 +1063,24 @@ export function AppLayoutShell({
           the content lands inside the band ("center" = capped + centred,
           matching the body; "justify" = fills it). */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {mobileBar}
+        {mobileBar ? (
+          // The mobile bar rides the SAME surface as the header band
+          // (Ali, 23 Jul): this wrapper paints HEADER_SURFACES
+          // [headerSurface] — class (incl. the .dark fence) + style —
+          // so background, text, the hamburger AND the Logo all follow
+          // the band with zero per-screen wiring. (The Logo is pure
+          // currentColor on the brand-primary-foreground token, and the
+          // dark fence re-points that token, so it flips itself.)
+          <div
+            data-hook={`${dataHook}-mobilebar-surface`}
+            className={["lg:hidden", HEADER_SURFACES[headerSurface]?.className ?? ""]
+              .filter(Boolean)
+              .join(" ")}
+            style={HEADER_SURFACES[headerSurface]?.style}
+          >
+            {mobileBar}
+          </div>
+        ) : null}
         {header ? (
           <header
             data-hook={`${dataHook}-header`}

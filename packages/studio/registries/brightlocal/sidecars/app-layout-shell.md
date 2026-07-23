@@ -24,7 +24,7 @@ props:
   - dataHook?: string — Instance name stamped through to the underlying GlobalLayout parts. (default "app-layout")
   - sidebar? — Slot: the Sidebar compound to render inside GlobalLayoutSidebar.
   - header? — Slot: content for the (optionally sticky) GlobalLayoutContentHeader.
-  - mobileBar? — Slot: mobile top bar (SidebarTrigger + Logo, lg:hidden). Rendered first in the content column so it sits above the page header below lg.
+  - mobileBar? — Slot: mobile top bar (SidebarTrigger + Logo, lg:hidden). Rendered first in the content column so it sits above the page header below lg. The shell WRAPS it in the headerSurface treatment (same preset as the band, incl. the .dark fence), so its background/text/hamburger/Logo follow the band automatically — don't paint a surface in the slot markup.
   - children? — Slot: page content rendered inside GlobalLayoutContent.
   - className?: string — Merged onto GlobalLayout after the flush classes.
 ---
