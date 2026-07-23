@@ -400,10 +400,10 @@ function stashSessionTweaks(hook, next) {
 // authored prop.
 const DATASET_KEY = "bl-proposal-session-dataset";
 let SESSION_DATASET; // module-scope fast path (same-iframe gotos)
-// Google Maps DEMO key (Ali, 23 Jul — usage-limited, not sensitive).
-// ONE home so a demo-day key swap is a one-line change; both map
-// screens (LSG page, hub mini) import it from the barrel.
-export const GMAPS_DEMO_KEY = "AIzaSyCK4UsdiMXqtCMTso8UfFXtAMyb58jr6TM";
+// Google Maps key — the OFFICIAL gradeui key (Ali, 23 Jul; replaced
+// the throttle-prone demo key). ONE home so key swaps stay one-line;
+// both map screens (LSG page, hub mini) import it from the barrel.
+export const GMAPS_DEMO_KEY = "AIzaSyDYxqK_vv19DKmfVy4Rljh6Czo4GyvaX00";
 
 export function selectSessionDataset(dataset) {
   if (!dataset) return;
