@@ -813,6 +813,12 @@ export function SharedScreen({
     (factor: number, anchor: { kind: "client" | "iframe"; x: number; y: number } | null) => void
   >(() => {});
   pinchSessionRef.current = (factor, anchor) => {
+    // PRODUCT MODE (?fullscreen=1, Ali 23 Jul): zoom gestures are OFF —
+    // the share should behave like the real product, and a stray pinch
+    // or ctrl+wheel breaking the illusion is worse than losing the
+    // canvas trick. Deliberate zooming stays available via the toolbar
+    // once the chrome is shown with ".".
+    if (initialChromeHidden) return;
     const s = ensureSessionRef.current();
     if (!s) {
       zoomBy(factor); // responsive fill — no camera
@@ -1236,6 +1242,10 @@ export function SharedScreen({
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // PRODUCT MODE (?fullscreen=1): zoom keys (0–4, −/=) are off —
+      // same rationale as the pinch gate above. "." (chrome), C and M
+      // stay live.
+      const zoomKeysOff = initialChromeHidden;
       switch (e.key) {
         case ".":
           e.preventDefault();
@@ -1250,27 +1260,27 @@ export function SharedScreen({
           setMotionOn((v) => !v);
           break;
         case "0":
-          fit();
+          if (!zoomKeysOff) fit();
           break;
         case "1":
-          jump(1);
+          if (!zoomKeysOff) jump(1);
           break;
         case "2":
-          jump(0.9);
+          if (!zoomKeysOff) jump(0.9);
           break;
         case "3":
-          jump(0.75);
+          if (!zoomKeysOff) jump(0.75);
           break;
         case "4":
-          jump(0.5);
+          if (!zoomKeysOff) jump(0.5);
           break;
         case "-":
         case "_":
-          stepZoom(-1);
+          if (!zoomKeysOff) stepZoom(-1);
           break;
         case "=":
         case "+":
-          stepZoom(1);
+          if (!zoomKeysOff) stepZoom(1);
           break;
         case "Escape":
           // Focused compare pane first — Esc steps OUT one level:
@@ -1294,7 +1304,7 @@ export function SharedScreen({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // pickZoom / stepZoom / fit are stable useCallbacks from the hook.
-  }, [pickZoom, stepZoom, fit]);
+  }, [pickZoom, stepZoom, fit, initialChromeHidden]);
 
   const iconBtn =
     "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground";
