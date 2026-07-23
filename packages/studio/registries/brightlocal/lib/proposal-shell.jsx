@@ -441,6 +441,13 @@ const SHORTCUT_LABEL =
 // screen's AUTHORED props (clears look overrides, keeps any session
 // dataset). Values are look knobs only — retune them here and every
 // screen's preset follows.
+// Header band breathing room (tweaker: Header → Space). Values are the
+// band's own padding; px stays the DS content inset on both.
+export const HEADER_SPACES = {
+  default: "px-6 pt-6 pb-4",
+  spacious: "px-6 pt-10 pb-8",
+};
+
 export const LOOK_PRESETS = {
   // Today's canonical look: subtle flush sidebar, white band, white
   // cards on the softest canvas.
@@ -520,6 +527,7 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
       title: "Header",
       rows: [
         { key: "headerSurface", label: "Surface", values: ["none", "white", "subtle", "dark", "brand", "brand-dark"] },
+        { key: "headerSpace", label: "Space", values: ["default", "spacious"] },
         { key: "headerBorder", label: "Border", values: [true, false] },
         { key: "stickyHeader", label: "Sticky", values: [true, false] },
       ],
@@ -743,6 +751,10 @@ export function AppLayoutShell({
   // (border only while sticky — the band needs an edge when content
   // scrolls beneath it); true/false forces it on/off (Ali, 21 Jul).
   headerBorder,
+  // Band breathing room: "default" | "spacious" — spacious roughly
+  // doubles the vertical air for presentation looks. Also a tweaker
+  // row (Header → Space). (Ali, 23 Jul.)
+  headerSpace = "default",
   // Mobile top bar slot (hamburger + logo). Rendered FIRST inside the
   // content column so it sits ABOVE the page header below lg — passing
   // it via children put it underneath (July 2026 screenshot).
@@ -772,7 +784,7 @@ export function AppLayoutShell({
   // are the AUTHORED look; tweaks shadow them for this session only.
   // Reassigning the params keeps every downstream reference
   // (tone/frame/shadow/layers/sticky) reading the LIVE values.
-  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, dataset, navDensity };
+  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity };
   // SESSION MEMORY: seed from the module-scope stash (below) so tweaks —
   // colours, frame, DATASET — persist across flow navigation and screen
   // switches: the lib module is compiled once per sandbox boot and its
@@ -794,7 +806,7 @@ export function AppLayoutShell({
   );
   const tweaks = controlledTweaks ?? ownTweaks;
   const setTweaks = onTweaksChange ?? setOwnTweaks;
-  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, dataset, navDensity } = {
+  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity } = {
     ...authored,
     ...tweaks,
   });
@@ -1050,8 +1062,11 @@ export function AppLayoutShell({
             className={[
               // Same inset as the DS content wrapper (px-section-xs =
               // 24px), so the band's inner measure lines up with the
-              // body without any width games.
-              "px-6 pt-6 pb-4",
+              // body without any width games. Vertical air comes from
+              // the headerSpace preset (tweaker: Header → Space);
+              // ASSUMPTION (Ali to verify): spacious = pt-10/pb-8,
+              // roughly double the default — tune HEADER_SPACES.
+              HEADER_SPACES[headerSpace] ?? HEADER_SPACES.default,
               // z-30: shell chrome must beat PAGE z-indexes (screens
               // use up to z-20 — the LSG map painted over the header at
               // z-10, 16 Jul) while staying under the tweaker (z-50).

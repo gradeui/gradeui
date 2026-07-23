@@ -185,6 +185,16 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Header band bottom border, independent of stickiness. Unset = auto (border only while sticky); true/false forces it on/off. Also a tweaker row (Alt+T)."
       },
+      "headerSpace": {
+        "kind": "enum",
+        "values": [
+          "default",
+          "spacious"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Band breathing room: \"spacious\" roughly doubles the vertical padding (HEADER_SPACES presets) for presentation looks. Also a tweaker row (Header → Space). (default \"default\")"
+      },
       "headerSurface": {
         "kind": "enum",
         "values": [
@@ -3366,13 +3376,13 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         ],
         "design": "knob",
         "optional": true,
-        "description": "PARKED. The sub-metric viz (bars / row of mini donuts) is temporarily UNRENDERED — Ali is designing its replacement (bar chart or per-metric badges). The prop is still accepted so existing screens don't break; it currently does nothing."
+        "description": "LEGACY, ignored. The bars/donut-row experiments were superseded by the READ-ONLY sub-metric stat tiles (Ali's design, 23 Jul); accepted so older screens don't break."
       },
       "donutSize": {
         "kind": "number",
         "design": "knob",
         "optional": true,
-        "description": "PARKED with `variant` (accepted, unrendered)."
+        "description": "LEGACY with `variant` (accepted, ignored)."
       },
       "title": {
         "kind": "string",

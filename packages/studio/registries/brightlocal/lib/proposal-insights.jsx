@@ -479,9 +479,12 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
             closed-state where-badge (snag 30); trigger text in the
             clickable link colour so the rows READ clickable. */}
         <span className="flex w-full items-start gap-3 pr-2 text-left">
+          {/* font-sans: the DS trigger wraps rows in an H3, and BL's
+              base gives headings Poppins — action rows are checklist
+              BODY text, not display type (Ali, 23 Jul). */}
           <span
             data-bl-link=""
-            className="relative min-w-0 flex-1 pl-9 pt-0.5 text-sm font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]"
+            className="relative min-w-0 flex-1 pl-9 pt-0.5 font-sans text-sm font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]"
           >
             {/* Number CHIP (Ali, 23 Jul) — ABSOLUTE on purpose: hover
                 underlines still DRAW ACROSS atomic inlines, but skip
