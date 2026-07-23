@@ -609,6 +609,13 @@
     "keyword": "recording studio",
     "date": "July 23, 2026",
     "avgRank": 18,
+    "centre": {
+      "lat": 51.522337,
+      "lng": -0.164951
+    },
+    "latStep": 0.0072315,
+    "lngStep": 0.011622,
+    "zoom": 12.5,
     "address": "24-46 Lisson Grove, NW1 6TZ",
     "grid": [
       [
