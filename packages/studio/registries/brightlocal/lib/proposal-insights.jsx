@@ -30,18 +30,23 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@brightlocal/ui-components";
 import {
   ArrowRight,
   Check,
   CircleAlert,
   CircleCheck,
+  Info,
   Lightbulb,
   TriangleAlert,
 } from "@brightlocal/icons";
 import { RobotAiA } from "@brightlocal/illustrations";
 import { useProposalData } from "@brightlocal/proposal-data";
-import { ScoreDonut, scoreColor } from "@brightlocal/score-donut";
+import { ScoreDonut } from "@brightlocal/score-donut";
 import { GlossaryText } from "@brightlocal/proposal-glossary";
 
 // ─── Score status band — the shared low/fair/good vocabulary ──────────
@@ -188,15 +193,14 @@ export function StatusBanner({
 // The sub-page's At-a-Glance card, matched to the LANDING page's (Ali,
 // 23 Jul: "essentially the same as the page prior"): large donut left;
 // title + insight/recommendation count badges + glossaried summary
-// right. NO icon (the "star AI" Sparkles are gone from these cards)
-// and NO weight note. The sub-metric viz (the row of 5 donuts / bars)
-// is PARKED — Ali is designing its replacement (bar chart or badges);
-// `variant`/`donutSize` stay accepted so existing screens don't break,
-// but render nothing for now (ModuleScoreBars/Donuts kept below).
+// right; then the READ-ONLY sub-metric stat tiles (Ali's design, 23
+// Jul — see SubMetricTiles). NO icon (the "star AI" Sparkles are gone
+// from these cards) and NO weight note.
 export function ModuleScoreCard({
   // Foundation key: "websiteContent" | "gbp" | "reviews" | "citations".
   moduleKey,
-  // PARKED (accepted, currently unrendered — see header note).
+  // LEGACY, ignored — the bars/donut-row experiments were superseded by
+  // the stat tiles; accepted so older screens don't break.
   variant = "bars",
   donutSize = 72,
   // CardTitle text — set it PER SUBPAGE (each AI Insights sub-page owns
@@ -230,7 +234,7 @@ export function ModuleScoreCard({
       dataHook={dataHook}
       {...rest}
     >
-      <CardContent>
+      <CardContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <ScoreDonut
             value={module.score}
@@ -259,65 +263,75 @@ export function ModuleScoreCard({
             ) : null}
           </div>
         </div>
+        <SubMetricTiles subMetrics={module.subMetrics} dataHook={dataHook} />
       </CardContent>
     </Card>
   );
 }
 
-// Bars viz — diagnostic breakdown, two columns so the strip stays short.
-function ModuleScoreBars({ subMetrics, dataHook }) {
+// Read-only sub-metric STAT TILES (Ali's design, 23 Jul — replaces the
+// parked bars/donut-row experiments): label over a big display-type
+// value on a muted panel. Deliberately inert — they link to NOWHERE,
+// so they earn no colour banding, no hover, no drill ("hard to give
+// them a lot of prominence"); the accordion below is where action
+// happens. flex-1 spreads tiles evenly whatever the count (5 for
+// Website, fewer elsewhere), wrapping on narrow widths.
+// ASSUMPTION (Ali to verify): values in the system semibold (600) —
+// the mock reads a step bolder, but the donut values set the 600
+// precedent and mixing weights inside one card read worse.
+function SubMetricTiles({ subMetrics, dataHook }) {
   return (
-    <div className="grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
-      {subMetrics.map((m) => (
-        <div
-          key={m.label}
-          className="flex items-center gap-3"
-          data-hook={`${dataHook}-metric-${m.label}`}
-        >
-          <span className="w-40 shrink-0 truncate text-xs text-[var(--ds-tailwind-colors-neutral-600)]">
-            {m.label}
-          </span>
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--ds-tailwind-colors-neutral-100)]">
-            <div
-              className="h-full rounded-full"
-              // min 2% so a 0 score still shows a nub, not a void.
-              style={{
-                width: `${Math.max(m.score, 2)}%`,
-                backgroundColor: scoreColor(m.score),
-              }}
-            />
+    <TooltipProvider>
+      <div className="flex flex-wrap gap-4">
+        {subMetrics.map((m) => (
+          <div
+            key={m.label}
+            data-hook={`${dataHook}-metric-${m.label}`}
+            className="min-w-[10rem] flex-1 rounded-xl bg-muted px-4 py-3.5"
+          >
+            <p className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
+              {m.label}
+              {/* Info tip SEAM (Ali, 23 Jul: "'i' icons next to the
+                  titles with tooltips possibly?") — renders ONLY when
+                  the sub-metric carries a `description` in the data, so
+                  tiles stay clean until the copy is authored. */}
+              {m.description ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={`About ${m.label}`}
+                      data-hook={`${dataHook}-metric-${m.label}-info`}
+                      className="inline-flex cursor-help text-muted-foreground/70 hover:text-muted-foreground"
+                    >
+                      <Info className="size-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    dataHook={`${dataHook}-metric-${m.label}-tip`}
+                    className="max-w-64"
+                  >
+                    {m.description}
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
+            </p>
+            <p className="mt-1 flex items-baseline gap-0.5">
+              <span
+                className="text-3xl leading-none"
+                style={{
+                  fontFamily: "var(--ds-font-font-display, Poppins)",
+                  fontWeight: "var(--ds-font-weight-semibold, 600)",
+                }}
+              >
+                {m.score}
+              </span>
+              <span className="text-sm text-muted-foreground">/100</span>
+            </p>
           </div>
-          <span className="w-9 shrink-0 text-right text-xs font-medium tabular-nums">
-            {m.score}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Donuts viz — a row of mini score rings (Google Lighthouse-style).
-// `flex-1` spreads the rings evenly across the full width whatever the
-// count (2 → halves, 5 → fifths), so modules with fewer sub-metrics
-// (Citations, Reviews) don't leave a fixed grid half-empty. Wraps on
-// narrow widths via the per-cell min-width.
-function ModuleScoreDonuts({ subMetrics, donutSize = 72, dataHook }) {
-  return (
-    <div className="flex flex-wrap gap-4">
-      {subMetrics.map((m) => (
-        <div
-          key={m.label}
-          className="flex flex-1 flex-col items-center gap-2"
-          style={{ minWidth: donutSize }}
-          data-hook={`${dataHook}-metric-${m.label}`}
-        >
-          <ScoreDonut value={m.score} size={donutSize} dataHook={`${dataHook}-donut-${m.label}`} />
-          <span className="text-center text-xs leading-tight text-[var(--ds-tailwind-colors-neutral-600)]">
-            {m.label}
-          </span>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }
 
