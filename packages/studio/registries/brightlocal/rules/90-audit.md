@@ -43,3 +43,12 @@ connection row can't show its provider mark from the published package.
 Proposal fallback: lucide `Globe` in the neutral grey. Upstream ask:
 port the legacy `se-*` search-engine icons (Bing at minimum) into the
 social-media set.
+
+## LSG pins overlap at low zoom (23 Jul 2026)
+
+On the live platform's Local Search Grid, zooming the map out lets the
+rank pins COLLIDE/overlap — the pin size is fixed while the grid's
+geographic spacing shrinks. Proposal contract (RankGrid): derive pin
+size from the zoom level and clamp the map to default min/max zoom
+bounds so pins can never overlap. Upstream ask: same clamp + zoom-aware
+pin sizing on the live LSG map.

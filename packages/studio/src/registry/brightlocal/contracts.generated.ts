@@ -3804,6 +3804,56 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "variant": "simple"
     }
   },
+  "RankGrid": {
+    "name": "RankGrid",
+    "props": {
+      "grid": {
+        "kind": "string",
+        "design": "plumbing",
+        "description": "Rows of ranks (number | null), any rectangular shape; null = unranked/over-20 (renders \"-\"). Bind data.localSearchGrid.grid (brightlocal-source capture)."
+      },
+      "showLocationPin": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "The business MapLocationPin over the grid centre. HIDDEN by default; the LSG page opts in and pairs it with a toggle. (default false)"
+      },
+      "size": {
+        "kind": "enum",
+        "values": [
+          "full",
+          "mini"
+        ],
+        "design": "plumbing",
+        "optional": true,
+        "description": "Preset: \"full\" = DS 32px pins / 20px gaps (the LSG page); \"mini\" = 24px / 8px (hub card). pinSize/gap beat the preset."
+      },
+      "pinSize": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Explicit pin diameter in px (inline style — beats the DS size-8). The lever a zoom handler drives when the real map lands; the map must clamp zoom min/max so pins never overlap (live-product bug, see rules/90-audit.md)."
+      },
+      "gap": {
+        "kind": "number",
+        "design": "knob",
+        "optional": true,
+        "description": "Explicit grid gap in px."
+      },
+      "interactive": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "STATIC by default (decorative, pins aria-hidden). Interactive = pins become buttons with hover affordance and fire onPinClick — the seam for the DS MapPopover drill-down. (default false)"
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name. (default \"rank-grid\")"
+      }
+    }
+  },
   "Rating": {
     "name": "Rating",
     "description": "dataHook=\"rating\"",

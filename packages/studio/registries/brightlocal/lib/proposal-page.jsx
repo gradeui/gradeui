@@ -6,6 +6,8 @@ import {
   Avatar,
   AvatarFallback,
   Badge,
+  MapGridPin,
+  MapLocationPin,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -812,5 +814,104 @@ export function LocationCardSkeleton({ dataHook = "location-card-skeleton" }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ─── RankGrid — the Local Search Grid viz, and ONLY the viz ───────────
+// (Promoted 23 Jul with TWO real consumers — the LSG page's full view
+// and the hub card's mini — per the composability lesson: the lib gets
+// the CORE grid; selects/legend/zoom/toggles stay screen-side chrome.)
+// Data shape: rows of ranks, null = unranked/over-20 (renders "-").
+// Bands match the live legend via the DS pin variants: 1-3 strong /
+// 4-10 moderate / 11-20 weak / else unranked (red).
+// ZOOM CONTRACT (Ali, 23 Jul — for the real-map integration): pinSize
+// is the lever a zoom handler drives (size ∝ zoom step) and the map
+// must CLAMP zoom to sane min/max bounds — the live product lets pins
+// OVERLAP at low zoom (ledgered in rules/90-audit.md). Static surfaces
+// (this stand-in, hub minis) simply pass a fixed pinSize.
+export function rankVariant(rank) {
+  if (rank == null || rank > 20) return "unranked";
+  if (rank <= 3) return "strong";
+  if (rank <= 10) return "moderate";
+  return "weak";
+}
+
+export function RankGrid({
+  // rows of ranks (number | null), any rectangular shape.
+  grid = [],
+  // The business-location pin over the grid centre. Hidden by default
+  // (Ali, 23 Jul) — the LSG page opts in and pairs it with a toggle.
+  showLocationPin = false,
+  // "full" (LSG page: DS-default 32px pins) | "mini" (hub card: 24px,
+  // tighter gaps). Presets only — pinSize/gap below beat them.
+  size = "full",
+  // Explicit overrides (px). INLINE STYLE on purpose: numbers can't
+  // become Tailwind classes at runtime (the sandbox compiles source,
+  // not constructed strings), and style beats the pin's baked size-8.
+  pinSize,
+  gap,
+  // STATIC by default (Ali, 23 Jul): minis/posters are decorative —
+  // no cursor, no hover, pins aria-hidden. `interactive` is the full-
+  // page mode: pins become buttons with a hover affordance and fire
+  // onPinClick(rank, index) — the seam a screen wires to the DS
+  // MapPopover pattern (useMapPopoverClick) when pin drill-down lands.
+  interactive = false,
+  onPinClick,
+  dataHook = "rank-grid",
+  className = "",
+}) {
+  const cols = grid[0]?.length ?? 7;
+  const mini = size === "mini";
+  const pinPx = pinSize ?? (mini ? 24 : 32);
+  const gapPx = gap ?? (mini ? 8 : 20);
+  // Value text tracks the pin diameter (~1/3), floored for legibility.
+  const pinStyle =
+    pinPx === 32
+      ? undefined
+      : { width: pinPx, height: pinPx, fontSize: Math.max(9, Math.round(pinPx * 0.34)) };
+  return (
+    <div className={["relative inline-block", className].filter(Boolean).join(" ")}>
+      <div
+        data-hook={dataHook}
+        className="grid"
+        style={{
+          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+          gap: gapPx,
+        }}
+      >
+        {grid.flat().map((rank, i) =>
+          interactive ? (
+            <button
+              key={i}
+              type="button"
+              data-hook={`${dataHook}-pin-btn-${i}`}
+              className="cursor-pointer rounded-full transition-transform hover:scale-110 focus-visible:scale-110"
+              onClick={onPinClick ? () => onPinClick(rank, i) : undefined}
+            >
+              <MapGridPin
+                dataHook={`${dataHook}-pin-${i}`}
+                value={rank ?? "-"}
+                variant={rankVariant(rank)}
+                style={pinStyle}
+              />
+            </button>
+          ) : (
+            <MapGridPin
+              key={i}
+              aria-hidden
+              dataHook={`${dataHook}-pin-${i}`}
+              value={rank ?? "-"}
+              variant={rankVariant(rank)}
+              style={pinStyle}
+            />
+          ),
+        )}
+      </div>
+      {showLocationPin ? (
+        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full">
+          <MapLocationPin dataHook={`${dataHook}-location-pin`} animateIn />
+        </span>
+      ) : null}
+    </div>
   );
 }
