@@ -287,9 +287,9 @@ function SubMetricTiles({ subMetrics, dataHook }) {
           <div
             key={m.label}
             data-hook={`${dataHook}-metric-${m.label}`}
-            className="min-w-[10rem] flex-1 rounded-xl bg-muted px-4 py-3.5"
+            className="flex min-w-[10rem] flex-1 flex-col rounded-xl bg-muted px-4 py-3.5"
           >
-            <p className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
+            <p className="flex items-start gap-1 text-sm font-medium text-muted-foreground">
               {m.label}
               {/* Info tip (Ali, 23 Jul: "'i' icons next to the titles
                   with tooltips") — always shown; a sub-metric's
@@ -301,7 +301,7 @@ function SubMetricTiles({ subMetrics, dataHook }) {
                     type="button"
                     aria-label={`About ${m.label}`}
                     data-hook={`${dataHook}-metric-${m.label}-info`}
-                    className="inline-flex cursor-help text-muted-foreground/70 hover:text-muted-foreground"
+                    className="mt-0.5 inline-flex shrink-0 cursor-help text-muted-foreground/70 hover:text-muted-foreground"
                   >
                     <Info className="size-3.5" />
                   </button>
@@ -315,7 +315,10 @@ function SubMetricTiles({ subMetrics, dataHook }) {
                 </TooltipContent>
               </Tooltip>
             </p>
-            <p className="mt-1 flex items-baseline gap-0.5">
+            {/* mt-auto pins the value to the tile FLOOR — wrapped
+                labels (Local intent & linking) no longer push their
+                number out of line with the row (Ali, 23 Jul). */}
+            <p className="mt-auto flex items-baseline gap-0.5 pt-1">
               <span
                 className="text-3xl leading-none"
                 style={{
