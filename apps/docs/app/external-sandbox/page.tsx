@@ -1036,6 +1036,25 @@ export default function ExternalSandboxPage() {
           animation-duration: 200ms;
           animation-timing-function: ease;
         }
+        /* OPT-OUT pairs (Ali, 23 Jul: "don't want a cross fade on
+           titles"): the persistent chrome regions swap INSTANTLY —
+           no fade, no morph — while the page fades around them.
+           Their view-transition-name is what isolates them from the
+           root fade; animation:none is what stops their own. */
+        ::view-transition-group(gds-page-header),
+        ::view-transition-group(gds-sidebar) {
+          animation: none;
+        }
+        ::view-transition-old(gds-page-header),
+        ::view-transition-old(gds-sidebar) {
+          animation: none;
+          opacity: 0;
+        }
+        ::view-transition-new(gds-page-header),
+        ::view-transition-new(gds-sidebar) {
+          animation: none;
+          opacity: 1;
+        }
         @keyframes gds-vt-slide-out-left { to { transform: translateX(-24px); opacity: 0; } }
         @keyframes gds-vt-slide-in-left { from { transform: translateX(24px); opacity: 0; } }
         @keyframes gds-vt-slide-out-right { to { transform: translateX(24px); opacity: 0; } }
