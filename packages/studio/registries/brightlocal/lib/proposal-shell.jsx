@@ -818,7 +818,12 @@ export function AppLayoutShell({
     ? // Zero the baked padding for the desktop flush layout, but put a
       // uniform p-4 BACK below lg — the sidebar is hidden there and the
       // content column was hugging the screen edges on tablet/mobile.
-      "[&>[data-radix-scroll-area-viewport]]:p-0! [&_[data-slot=app-layout-shell]]:p-0! [&_[data-slot=app-layout-shell]]:max-lg:p-4!"
+      // Below lg the shell stays p-0 TOO — the old max-lg:p-4 inset the
+      // full-bleed header band + mobile bar off the viewport edges
+      // (Ali, 23 Jul screenshot). Body gutters below lg live on the DS
+      // content-wrapper instead, px-6 to MATCH the band's inner inset —
+      // band text and card edges share one measure at every width.
+      "[&>[data-radix-scroll-area-viewport]]:p-0! [&_[data-slot=app-layout-shell]]:p-0! [&_[data-slot=content-wrapper]]:max-lg:px-6!"
     : "";
   const frame = SIDEBAR_FRAMES[sidebarFrame] ?? SIDEBAR_FRAMES.flush;
   // "attached" lives with the content — never viewport-pinned, whatever
