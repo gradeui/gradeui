@@ -545,10 +545,18 @@ export default function ExternalSandboxPage() {
         // SCREEN_VT kill switch (Ali, 18 Jul): goto swaps are INSTANT
         // for now — flip back to true to restore the F1 cross-fade /
         // slide hints. Mode flips keep their fade (independent, loved).
-        const SCREEN_VT = false;
+        // Goto view transitions are OPT-IN PER ELEMENT (Ali, 23 Jul —
+        // the shared-map morph): only a clicked element carrying an
+        // explicit data-grade-transition gets one, so ordinary gotos
+        // stay instant (the blanket SCREEN_VT flag stays retired).
+        // Shared-element morphs ride on top: give the SAME
+        // view-transition-name to an element on both screens (e.g. the
+        // hub's mini map and the LSG page's map surface) and the
+        // browser morphs it across the swap while the root runs the
+        // named animation.
         const hint =
-          SCREEN_VT && gotoTransitionAt > 0 && sinceGoto < 2500
-            ? (gotoTransitionHint ?? "cross-fade")
+          gotoTransitionAt > 0 && sinceGoto < 2500 && gotoTransitionHint
+            ? gotoTransitionHint
             : isModeFlip
               ? "cross-fade"
               : null;
