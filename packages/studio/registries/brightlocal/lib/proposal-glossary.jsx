@@ -69,6 +69,13 @@ export const GLOSSARY = [
     definition:
       "How quickly new reviews come in over time. A steady trickle matters more than one big burst.",
   },
+  {
+    term: "SMS",
+    title: "SMS — text message",
+    pattern: "SMS",
+    definition:
+      "A plain text message sent to a mobile phone. In review campaigns it's an alternative to email for inviting customers to leave a review.",
+  },
 ];
 
 // PRODUCT NAMES are protected from glossary marking (Ali, 23 Jul):

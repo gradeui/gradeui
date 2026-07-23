@@ -6,4 +6,5 @@ Local-SEO glossary — use these terms correctly in generated copy:
 - Geo-grid = a map grid of ranking positions sampled at points around a location.
 - SoLV = Share of Local Voice — % of grid points where the business ranks top 3.
 - Review velocity = the rate of new reviews over time.
+- SMS = text message (review-request campaigns send invitations by SMS or email).
 In UI copy, expand an acronym on first use ("Google Business Profile (GBP)"), then use the acronym.
