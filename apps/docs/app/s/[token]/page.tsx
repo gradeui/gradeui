@@ -119,10 +119,31 @@ interface ShareLinkRow {
 
 export default async function SharePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { token } = await params;
+  // Presentation params (Ali, 23 Jul: "share the full screen version")
+  // — one MACRO plus granular switches:
+  //   ?fullscreen=1  = ui=off + view=responsive + zoom=fit
+  //   ?ui=off        open with the chrome hidden ("." brings it back)
+  //   ?view=<id>     open on a viewport from the share's set
+  //   ?zoom=fit      open Fit-scaled instead of 100%
+  // Individual params BEAT the macro, so fullscreen=1&view=desktop
+  // opens chrome-hidden Desktop at Fit.
+  const sp = (await searchParams) ?? {};
+  const one = (v: string | string[] | undefined) =>
+    ((Array.isArray(v) ? v[0] : v) ?? "").toLowerCase();
+  const fullscreen = ["1", "true", "on", "yes"].includes(one(sp.fullscreen));
+  const uiRaw = one(sp.ui);
+  const uiOff = uiRaw
+    ? ["off", "0", "hidden", "none"].includes(uiRaw)
+    : fullscreen;
+  const viewParam = one(sp.view) || (fullscreen ? "responsive" : "");
+  const zoomRaw = one(sp.zoom);
+  const zoomFit = zoomRaw ? zoomRaw === "fit" : fullscreen;
   const supabase = getServiceSupabase();
   if (!supabase) notFound();
 
@@ -410,10 +431,18 @@ export default async function SharePage({
   const viewportSpecs =
     docSpecs && docSpecs.length > 0 ? docSpecs : SHARE_VIEWPORT_PRESETS;
   const storedInitial = share.viewports?.initialId;
+  // ?view=<id> beats the stored initial — but only when it names a
+  // viewport the creator left in the set; a bad param falls back to
+  // the stored/default initial rather than specs[0].
+  const paramInitial =
+    viewParam && viewportSpecs.some((s) => s.id === viewParam)
+      ? viewParam
+      : null;
   const initialViewportId =
-    storedInitial && viewportSpecs.some((s) => s.id === storedInitial)
+    paramInitial ??
+    (storedInitial && viewportSpecs.some((s) => s.id === storedInitial)
       ? storedInitial
-      : viewportSpecs[0].id;
+      : viewportSpecs[0].id);
 
   return (
     <SharedScreen
@@ -437,6 +466,8 @@ export default async function SharePage({
       scopeTagType={scopeTagType}
       entryDesignId={share.design_id}
       shareToken={token}
+      initialChromeHidden={uiOff}
+      initialFit={zoomFit}
     />
   );
 }

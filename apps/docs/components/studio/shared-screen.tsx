@@ -131,6 +131,8 @@ export function SharedScreen({
   scopeTagType,
   entryDesignId,
   shareToken,
+  initialChromeHidden = false,
+  initialFit = false,
 }: {
   appSource: string | null;
   themeDraftJson: string | null;
@@ -188,6 +190,12 @@ export function SharedScreen({
   /** The share's URL token — the capability the viewer-pin route
    *  validates. Present = signed-in viewers can CREATE pins. */
   shareToken?: string;
+  /** ?fullscreen=1 — open with the chrome hidden (the "." toggle's
+   *  state; "." still brings it back). Server-parsed by /s/[token]. */
+  initialChromeHidden?: boolean;
+  /** ?fullscreen=1 — seed Fit so a device-viewport flip lands scaled
+   *  to the window instead of 100%. */
+  initialFit?: boolean;
 }) {
   // Seed the preview-css store BEFORE the frame hosts push source —
   // Studio's page-level effect does this in the editor; the share view
@@ -386,7 +394,7 @@ export function SharedScreen({
       setMode(next);
     }
   }, []);
-  const [chromeVisible, setChromeVisible] = React.useState(true);
+  const [chromeVisible, setChromeVisible] = React.useState(!initialChromeHidden);
   // Motion toggle. true = animate (still respects the viewer's OS
   // reduced-motion, reduce-only); false = force still. Forwarded to
   // FastIframeHost as the `motion` prop → grade:set-motion.
@@ -561,7 +569,11 @@ export function SharedScreen({
   // renderer with no remount flash.
   const shareRegistry = getRegistryById(registryId) ?? getActiveRegistry();
   const isExternal = shareRegistry.id !== "gradeui";
-  const artboard = useArtboardZoom({ deviceSize: resolveDeviceSize });
+  const artboard = useArtboardZoom({
+    deviceSize: resolveDeviceSize,
+    // 100% is the creator-framed default; ?fullscreen=1 seeds Fit.
+    defaultFit: initialFit,
+  });
   const {
     canvasRef: screenRef,
     canvasEl,
