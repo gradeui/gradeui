@@ -1314,7 +1314,13 @@ export function SharedScreen({
   return (
     <div
       className={cn(
-        "flex h-screen w-screen flex-col overflow-hidden bg-background",
+        // DYNAMIC viewport units (dvh/dvw), not vh/vw: in iOS
+        // STANDALONE (home-screen) mode the static units go stale on
+        // portrait↔landscape rotation — the layout stays sized to the
+        // previous orientation until reload (Ali's iPhone test, 23
+        // Jul). dv* re-resolve on rotate and also track Safari's
+        // collapsing toolbar in-browser.
+        "flex h-dvh w-dvw flex-col overflow-hidden bg-background",
         mode === "dark" && "dark",
       )}
       data-mode={mode}
