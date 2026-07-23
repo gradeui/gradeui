@@ -1714,15 +1714,24 @@ export function SharedScreen({
           </div>
         </header>
       ) : (
-        <button
-          type="button"
-          onClick={() => setChromeVisible(true)}
-          title="Show UI (press .)"
-          aria-label="Show UI"
-          className="absolute right-2 top-2 z-[70] inline-flex h-8 w-8 items-center justify-center rounded-md border border-border/60 bg-background/70 text-muted-foreground shadow-sm backdrop-blur-md hover:text-foreground"
-        >
-          <PanelTopOpen className="h-4 w-4" />
-        </button>
+        /* Chrome-restore control, product-style (Ali, 23 Jul): a CIRCLE
+           that stays invisible until the pointer enters the top-right
+           corner hotspot — tweaker-style reveal, so a presentation
+           surface carries no standing chrome at all. Keyboard path
+           stays: "." toggles, and focusing the button reveals it. The
+           hotspot sits over the iframe, so corner hover registers in
+           the parent realm. */
+        <div className="group absolute right-0 top-0 z-[70] h-16 w-16">
+          <button
+            type="button"
+            onClick={() => setChromeVisible(true)}
+            title="Show UI (press .)"
+            aria-label="Show UI"
+            className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-background/80 text-muted-foreground opacity-0 shadow-sm backdrop-blur-md transition-opacity duration-150 hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+          >
+            <PanelTopOpen className="h-4 w-4" />
+          </button>
+        </div>
       )}
 
       {/* ── Rendered screen — fills below the bar (never obscured). A
