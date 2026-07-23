@@ -310,8 +310,14 @@ function SubMetricTiles({ subMetrics, dataHook }) {
                   dataHook={`${dataHook}-metric-${m.label}-tip`}
                   className="max-w-64"
                 >
-                  {m.description ??
-                    "Information about how this is calculated and what to do should go here"}
+                  {/* Tip leads with the tile's own header (Ali, 23 Jul)
+                      — the icon is tiny, so the tip names what it's
+                      about before explaining it. */}
+                  <p className="font-semibold">{m.label}</p>
+                  <p className="mt-1">
+                    {m.description ??
+                      "Information about how this is calculated and what to do should go here"}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </p>
