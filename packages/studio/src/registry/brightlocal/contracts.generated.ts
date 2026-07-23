@@ -3846,6 +3846,12 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "STATIC by default (decorative, pins aria-hidden). Interactive = pins become buttons with hover affordance and fire onPinClick — the seam for the DS MapPopover drill-down. (default false)"
       },
+      "surface": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "The grid ALWAYS displays in its map context: a stand-in map surface (muted panel + dot texture) wraps it BY DEFAULT — pins never float bare on a card. Pass false ONLY when the screen supplies its own bigger canvas (the LSG page does — its legend/zoom/toggle chrome lives inside it). (default true)"
+      },
       "dataHook": {
         "kind": "string",
         "design": "plumbing",

@@ -857,6 +857,13 @@ export function RankGrid({
   // MapPopover pattern (useMapPopoverClick) when pin drill-down lands.
   interactive = false,
   onPinClick,
+  // The grid ALWAYS displays in its map context (Ali, 23 Jul): a
+  // stand-in surface (muted panel + dot texture, the LSG canvas look)
+  // wraps it BY DEFAULT — pins never float bare on a card. Opt out
+  // ONLY when the screen supplies its own bigger surface (the LSG page
+  // does: its legend/zoom/toggle chrome lives inside its canvas).
+  // Swaps for real map tiles when the Google Maps key lands.
+  surface = true,
   dataHook = "rank-grid",
   className = "",
 }) {
@@ -869,8 +876,8 @@ export function RankGrid({
     pinPx === 32
       ? undefined
       : { width: pinPx, height: pinPx, fontSize: Math.max(9, Math.round(pinPx * 0.34)) };
-  return (
-    <div className={["relative inline-block", className].filter(Boolean).join(" ")}>
+  const body = (
+    <div className="relative inline-block">
       <div
         data-hook={dataHook}
         className="grid"
@@ -912,6 +919,32 @@ export function RankGrid({
           <MapLocationPin dataHook={`${dataHook}-location-pin`} animateIn />
         </span>
       ) : null}
+    </div>
+  );
+  if (!surface) {
+    return className ? <div className={className}>{body}</div> : body;
+  }
+  return (
+    <div
+      data-hook={`${dataHook}-surface`}
+      className={[
+        "relative flex items-center justify-center overflow-hidden rounded-xl bg-[var(--ds-tailwind-colors-neutral-100)] p-4",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, var(--ds-tailwind-colors-neutral-300) 1px, transparent 1.4px)",
+          backgroundSize: "22px 22px",
+          opacity: 0.5,
+        }}
+      />
+      <div className="relative">{body}</div>
     </div>
   );
 }
