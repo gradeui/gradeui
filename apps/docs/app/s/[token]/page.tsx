@@ -57,6 +57,13 @@ export async function generateMetadata({
     // the hint refused to show the 1200×630 cover (the live-site
     // no-og:image SADFACE, 18 Jul).
     twitter: { card: "summary_large_image", title, description },
+    // Home-screen standalone (Ali, 23 Jul): a ?fullscreen=1 share added
+    // to an iPhone home screen launches with NO Safari chrome — the
+    // real-product illusion end to end. Inert for normal tab viewers.
+    // The icon takes the SCREEN's name; status bar stays default (safe
+    // over light and dark bands alike).
+    appleWebApp: { capable: true, title: screen, statusBarStyle: "default" },
+    other: { "mobile-web-app-capable": "yes" },
   };
 }
 
