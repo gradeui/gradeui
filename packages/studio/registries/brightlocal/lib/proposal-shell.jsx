@@ -941,6 +941,11 @@ export function AppLayoutShell({
            accordion rows get the DS trigger's own underline. */
         "[data-bl-link]:hover,[data-grade-goto]:hover [data-bl-link]{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700))}" +
         "[data-slot=accordion-trigger]:hover [data-bl-link]{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700))}" +
+        /* The trigger's own hover:underline decorates in the TRIGGER's
+           colour (dark foreground) while the label sits in link green —
+           a mismatched underline (Ali, 23 Jul). Match the decoration to
+           the hovered label colour. */
+        "[data-slot=accordion-trigger]:hover{text-decoration-color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700))}" +
         /* Chevron follows the row (Ali, 22 Jul): the DS trigger bakes a
            muted ChevronDown (stroke = currentColor), so colour is ours
            to set. ASSUMPTION: rest stays DS-muted for hierarchy; hover
