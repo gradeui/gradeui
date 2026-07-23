@@ -400,6 +400,11 @@ function stashSessionTweaks(hook, next) {
 // authored prop.
 const DATASET_KEY = "bl-proposal-session-dataset";
 let SESSION_DATASET; // module-scope fast path (same-iframe gotos)
+// Google Maps DEMO key (Ali, 23 Jul — usage-limited, not sensitive).
+// ONE home so a demo-day key swap is a one-line change; both map
+// screens (LSG page, hub mini) import it from the barrel.
+export const GMAPS_DEMO_KEY = "AIzaSyCK4UsdiMXqtCMTso8UfFXtAMyb58jr6TM";
+
 export function selectSessionDataset(dataset) {
   if (!dataset) return;
   SESSION_DATASET = dataset;
@@ -735,7 +740,10 @@ export function AppLayoutShell({
   // anything else wraps the shell in a nested ProposalDataProvider, so
   // it also OVERRIDES any provider a screen mounted outside. A tweaker
   // knob like the visual ones: authored here, overridable via Alt+T.
-  dataset = "default",
+  // minus-one-studios by DEFAULT (Ali, 23 Jul) — the real captured
+  // client is the baseline everywhere; "default" (the generic Joe
+  // Bloggs data) remains available via the tweaker's Data row.
+  dataset = "minus-one-studios",
   sidebar,
   header,
   // Header BAND background. The header spans the full content-area width

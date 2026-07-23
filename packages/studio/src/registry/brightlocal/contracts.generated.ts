@@ -318,7 +318,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "Named dataset (lib/data/*.json) applied via a nested ProposalDataProvider around the shell; \"default\" mounts nothing. Also a ShellTweakerPanel row (Alt+T switches live, session-only). (default \"default\")"
+        "description": "Named dataset (lib/data/*.json) applied via a nested ProposalDataProvider around the shell; \"default\" mounts nothing (generic demo data). Also a ShellTweakerPanel row (Alt+T switches live, session-only). (default \"minus-one-studios\" — the real captured client is the baseline)"
       },
       "mobileTone": {
         "kind": "boolean",

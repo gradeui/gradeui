@@ -346,5 +346,83 @@
   },
   "provenance": {
     "*": "proposed"
+  },
+  "localSearchGrid": {
+    "keyword": "dentist manchester",
+    "date": "July 23, 2026",
+    "avgRank": 15.8,
+    "address": "Manchester, M4 4BF",
+    "centre": {
+      "lat": 53.4841,
+      "lng": -2.2337
+    },
+    "latStep": 0.0072315,
+    "lngStep": 0.0121,
+    "zoom": 12.5,
+    "grid": [
+      [
+        null,
+        null,
+        null,
+        19,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        19,
+        16,
+        14,
+        17,
+        null,
+        null
+      ],
+      [
+        null,
+        15,
+        11,
+        9,
+        13,
+        18,
+        null
+      ],
+      [
+        18,
+        13,
+        8,
+        6,
+        10,
+        16,
+        null
+      ],
+      [
+        null,
+        16,
+        12,
+        9,
+        14,
+        19,
+        null
+      ],
+      [
+        null,
+        19,
+        17,
+        15,
+        18,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ]
   }
 }

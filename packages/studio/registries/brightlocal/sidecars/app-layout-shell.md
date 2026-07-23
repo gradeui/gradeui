@@ -19,7 +19,7 @@ props:
   - pageBackground? (auto | white | subtle | muted) — CANVAS colour on its own, independent of the card treatment. "auto" defers to the pageLayers preset; the rest re-point the page background (white / neutral-50 / neutral-100, dark-mode aware). Also a tweaker row (Page → Background). (default "auto")
   - sidebarBorder?: string — Optional 1px border color around the sidebar container. Any CSS color; tokens welcome ("var(--sidebar-border)").
   - navDensity? (compact | comfortable | expansive) — Nav rhythm via the --gds-nav-* variables. "compact" = fitted 30px rows/16px icons; "comfortable" = roomier rows, 20px icons; "expansive" = the LIVE product's generous nav (~48px rows, 15px labels, 20px icons). Also a tweaker row. (default "compact")
-  - dataset?: string — Named dataset (lib/data/*.json) applied via a nested ProposalDataProvider around the shell; "default" mounts nothing. Also a ShellTweakerPanel row (Alt+T switches live, session-only). (default "default")
+  - dataset?: string — Named dataset (lib/data/*.json) applied via a nested ProposalDataProvider around the shell; "default" mounts nothing (generic demo data). Also a ShellTweakerPanel row (Alt+T switches live, session-only). (default "minus-one-studios" — the real captured client is the baseline)
   - mobileTone?: boolean — Carry the sidebar tone onto the mobile Sheet overlay too (scoped style targeting its data-sidebar/data-mobile marks — the Sheet portals outside the shell's tree). Off = mobile keeps the default light tone. (default true)
   - dataHook?: string — Instance name stamped through to the underlying GlobalLayout parts. (default "app-layout")
   - sidebar? — Slot: the Sidebar compound to render inside GlobalLayoutSidebar.
