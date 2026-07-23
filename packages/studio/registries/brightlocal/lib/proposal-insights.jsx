@@ -459,20 +459,20 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
         <span className="flex w-full items-start gap-3 pr-2 text-left">
           <span
             data-bl-link=""
-            className="flex flex-1 items-start gap-2.5 text-sm font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]"
+            className="relative min-w-0 flex-1 pl-9 pt-0.5 text-sm font-medium text-[var(--bl-card-link,var(--ds-tailwind-colors-green-950))]"
           >
-            {/* Number CHIP (Ali, 23 Jul: "put them in a circle") —
-                INLINE-flex on purpose: atomic inlines don't receive the
-                trigger's propagated hover underline, so the line runs
-                under the label only, never through the circle. Colour
-                inherits the link seam (shifts with the row's hover). */}
+            {/* Number CHIP (Ali, 23 Jul) — ABSOLUTE on purpose: hover
+                underlines still DRAW ACROSS atomic inlines, but skip
+                out-of-flow boxes entirely, so the line can never touch
+                the circle. Digit sits in the standard muted foreground
+                (fixed — no hover shift), not the link green. */}
             <span
               aria-hidden
-              className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--ds-tailwind-colors-neutral-100)] text-xs font-semibold tabular-nums"
+              className="absolute left-0 top-0 inline-flex size-6 items-center justify-center rounded-full bg-[var(--ds-tailwind-colors-neutral-100)] text-xs font-semibold tabular-nums text-muted-foreground"
             >
               {index + 1}
             </span>
-            <span className="pt-0.5">{actionLabel(action)}</span>
+            {actionLabel(action)}
           </span>
         </span>
       </AccordionTrigger>
