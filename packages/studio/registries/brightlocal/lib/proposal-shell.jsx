@@ -462,7 +462,9 @@ export const LOOK_PRESETS = {
     pageBackground: "subtle",
   },
   // Heavy Depth (Ali's settings, 22 Jul): muted depth-step sidebar,
-  // brand-dark band, white cards on the muted canvas.
+  // brand-dark band, white cards on the muted canvas. The dark band
+  // gets the SPACIOUS header air (Ali, 23 Jul) — a coloured band wants
+  // more breathing room than the default white one.
   "heavy-depth": {
     sidebarTone: "muted",
     sidebarFrame: "flush",
@@ -470,6 +472,7 @@ export const LOOK_PRESETS = {
     navDensity: "compact",
     stickyHeader: true,
     headerSurface: "brand-dark",
+    headerSpace: "spacious",
     pageLayers: "white",
     pageBackground: "muted",
   },
