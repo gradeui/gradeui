@@ -71,10 +71,29 @@ export const GLOSSARY = [
   },
 ];
 
+// PRODUCT NAMES are protected from glossary marking (Ali, 23 Jul):
+// "Citation Tracker" was getting a dashed underline on "Citation" —
+// half-marking a tool name reads as an error, and the tool reference
+// already has its own deep-link button. These match FIRST and pass
+// through as plain text. Keep in sync with the live product's tool
+// names as new ones enter the copy.
+const PROTECTED_PHRASES = [
+  "Citation Tracker",
+  "Citation Builder",
+  "Local Rank Tracker",
+  "Local Search Grid",
+  "Local Search Audit",
+  "GBP Manager",
+  "Reputation Manager",
+];
+
 // One alternation over every term, matched whole-word and case-
-// insensitively. Stateful (/g) — reset lastIndex before each scan.
+// insensitively. PROTECTED phrases come FIRST in the alternation: at
+// the same start position the regex engine prefers earlier branches,
+// so "Citation Tracker" consumes the whole phrase before "citations?"
+// can claim the first word. Stateful (/g) — reset lastIndex per scan.
 const COMBINED = new RegExp(
-  `\\b(${GLOSSARY.map((g) => g.pattern).join("|")})\\b`,
+  `\\b(?:(${PROTECTED_PHRASES.join("|")})|(${GLOSSARY.map((g) => g.pattern).join("|")}))\\b`,
   "gi",
 );
 
@@ -125,7 +144,8 @@ export function GlossaryText({ children, once = true, dataHook = "glossary" }) {
   COMBINED.lastIndex = 0;
   while ((m = COMBINED.exec(text)) !== null) {
     const matchStr = m[0];
-    const entry = resolve(matchStr);
+    // m[1] = a protected product name — plain text, never glossaried.
+    const entry = m[1] ? undefined : resolve(matchStr);
     if (m.index > last) nodes.push(text.slice(last, m.index));
     if (entry && !(once && used.has(entry.term))) {
       used.add(entry.term);
