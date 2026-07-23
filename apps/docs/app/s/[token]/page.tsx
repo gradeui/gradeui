@@ -35,12 +35,30 @@ export async function generateMetadata({
     .maybeSingle();
   if (!link || link.revoked || !link.design_id)
     return { title: "Shared screen · Grade" };
-  const [{ data: design }, { data: project }] = await Promise.all([
-    supabase.from("designs").select("name").eq("id", link.design_id).maybeSingle(),
-    supabase.from("projects").select("name").eq("id", link.project_id).maybeSingle(),
-  ]);
+  const [{ data: design }, { data: project }, { data: iconAsset }] =
+    await Promise.all([
+      supabase.from("designs").select("name").eq("id", link.design_id).maybeSingle(),
+      supabase.from("projects").select("name").eq("id", link.project_id).maybeSingle(),
+      // PER-PROJECT app icon (Ali, 23 Jul) — a normal STUDIO-STORAGE
+      // asset marked enrichment.role = "app-icon" (the enrichment jsonb
+      // is the role seam until a dedicated projects column exists).
+      // Public bucket → permanent URL, safe in a <link> tag. Newest
+      // wins so re-uploading replaces the icon without cleanup.
+      supabase
+        .from("assets")
+        .select("path")
+        .eq("project_id", link.project_id)
+        .eq("enrichment->>role", "app-icon")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
   const screen = (design as { name: string } | null)?.name ?? "Screen";
   const proj = (project as { name: string } | null)?.name ?? "Grade";
+  const iconPath = (iconAsset as { path: string } | null)?.path;
+  const appIconUrl = iconPath
+    ? supabase.storage.from("user-assets").getPublicUrl(iconPath).data.publicUrl
+    : null;
   const title = `${screen} — ${proj} · Grade`;
   // Unfurl copy (Ali, July 2026): the description names the SHARE, not
   // the product — the site-wide OG pitch read as an advert on client
@@ -64,6 +82,12 @@ export async function generateMetadata({
     // over light and dark bands alike).
     appleWebApp: { capable: true, title: screen, statusBarStyle: "default" },
     other: { "mobile-web-app-capable": "yes" },
+    // The project's own app icon (asset-resolved above) — the share
+    // installs wearing the CLIENT's mark, not Grade's. No asset = the
+    // site defaults.
+    ...(appIconUrl
+      ? { icons: { apple: [{ url: appIconUrl, sizes: "512x512" }] } }
+      : {}),
   };
 }
 
