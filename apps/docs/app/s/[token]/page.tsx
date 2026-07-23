@@ -127,12 +127,14 @@ export default async function SharePage({
   const { token } = await params;
   // Presentation params (Ali, 23 Jul: "share the full screen version")
   // — one MACRO plus granular switches:
-  //   ?fullscreen=1  = ui=off + view=responsive + zoom=fit
+  //   ?fullscreen=1  = ui=off + view=responsive, zoom RESET to 100%
+  //                    (as close to the real product as possible —
+  //                    zoom gestures/keys are also locked in this mode)
   //   ?ui=off        open with the chrome hidden ("." brings it back)
   //   ?view=<id>     open on a viewport from the share's set
   //   ?zoom=fit      open Fit-scaled instead of 100%
-  // Individual params BEAT the macro, so fullscreen=1&view=desktop
-  // opens chrome-hidden Desktop at Fit.
+  // Individual params BEAT the macro, so fullscreen=1&zoom=fit opens
+  // chrome-hidden at Fit.
   const sp = (await searchParams) ?? {};
   const one = (v: string | string[] | undefined) =>
     ((Array.isArray(v) ? v[0] : v) ?? "").toLowerCase();
@@ -142,8 +144,9 @@ export default async function SharePage({
     ? ["off", "0", "hidden", "none"].includes(uiRaw)
     : fullscreen;
   const viewParam = one(sp.view) || (fullscreen ? "responsive" : "");
-  const zoomRaw = one(sp.zoom);
-  const zoomFit = zoomRaw ? zoomRaw === "fit" : fullscreen;
+  // 100% is the product truth — the macro does NOT seed Fit (Ali, 23
+  // Jul: "fullscreen should also reset the zoom to 100%").
+  const zoomFit = one(sp.zoom) === "fit";
   const supabase = getServiceSupabase();
   if (!supabase) notFound();
 
