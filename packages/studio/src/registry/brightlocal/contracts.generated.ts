@@ -266,6 +266,12 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Sidebar drop shadow on Tailwind's scale, independent of the frame. \"frame\" (default) defers to the frame preset (floating ships shadow-sm). NOTE: effectively a FLOATING-frame control — on flush the content panel is permanently above the sidebar (the depth model), so an aside shadow can never paint at that seam. (default \"frame\")"
       },
+      "seamShadow": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "The flush depth model's soft shadow on the content sheet's left edge (CONTENT_SEAM_SHADOW, brand-ink tinted). The depth ORDER is fixed (content always above on flush); this toggles only the shadow. Also a tweaker row (Sidebar → Seam shadow). (default true)"
+      },
       "tweaker": {
         "kind": "boolean",
         "design": "knob",

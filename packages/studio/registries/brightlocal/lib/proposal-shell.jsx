@@ -218,12 +218,12 @@ export const SIDEBAR_FRAMES = {
 // hidden and content is full-width, so the left-cast shadow just
 // bleeds offscreen — no gate needed.
 const SEAM_INK = "var(--ds-tailwind-colors-neutral-950)";
-// Round 3 of tuning (Ali, 24 Jul: "quite large and far too obvious"):
-// a whisper — 1px hairline edge + a 8px falloff at 6%/5%. This is THE
-// depth-tuning site; adjust the px reach / alphas here only.
+// Round 4 of tuning (Ali, 24 Jul): ONE soft layer — the 1px hairline
+// layer read as a hard line and is gone; slightly longer reach,
+// lighter still. This is THE depth-tuning site; adjust the px reach /
+// alpha here only. The seamShadow prop/tweak toggles it entirely.
 export const CONTENT_SEAM_SHADOW =
-  `-1px 0 3px -1px rgb(from ${SEAM_INK} r g b / 0.06), ` +
-  `-4px 0 8px -4px rgb(from ${SEAM_INK} r g b / 0.05)`;
+  `-6px 0 16px -6px rgb(from ${SEAM_INK} r g b / 0.05)`;
 
 // Sidebar shadow presets — Tailwind's scale, switchable independently
 // of the frame. "frame" = whatever the frame preset ships (floating's
@@ -554,6 +554,8 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
         { key: "sidebarTone", label: "Tone", values: ["default", "white", "subtle", "muted", "dark", "brand", "brand-dark"] },
         { key: "sidebarFrame", label: "Frame", values: ["flush", "floating", "attached"] },
         { key: "sidebarShadow", label: "Shadow", values: ["frame", "none", "sm", "md", "lg"], display: { frame: "auto" } },
+        // The flush depth model's content-edge shadow (Ali, 24 Jul).
+        { key: "seamShadow", label: "Seam shadow", values: [true, false] },
         { key: "navDensity", label: "Nav density", values: ["compact", "comfortable", "expansive"] },
       ],
     },
@@ -752,6 +754,11 @@ export function AppLayoutShell({
   // Sidebar drop shadow — overrides the frame's own. Presets in
   // SIDEBAR_SHADOWS. "frame" (default) defers to the frame preset.
   sidebarShadow = "frame", // "frame" | "none" | "sm" | "md" | "lg"
+  // The flush depth model's seam shadow (CONTENT_SEAM_SHADOW), on the
+  // content sheet's left edge. The DEPTH ORDER is not a knob — content
+  // is always above on flush — but the shadow itself toggles (Ali, 24
+  // Jul). Also a tweaker row (Sidebar → Seam shadow).
+  seamShadow = true,
   // Optional 1px border around the sidebar container. Any CSS color —
   // tokens welcome: "var(--sidebar-border)", "var(--ds-tailwind-colors-neutral-200)".
   sidebarBorder,
@@ -821,7 +828,7 @@ export function AppLayoutShell({
   // are the AUTHORED look; tweaks shadow them for this session only.
   // Reassigning the params keeps every downstream reference
   // (tone/frame/shadow/layers/sticky) reading the LIVE values.
-  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity };
+  const authored = { sidebarTone, sidebarFrame, sidebarShadow, seamShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity };
   // SESSION MEMORY: seed from the module-scope stash (below) so tweaks —
   // colours, frame, DATASET — persist across flow navigation and screen
   // switches: the lib module is compiled once per sandbox boot and its
@@ -843,7 +850,7 @@ export function AppLayoutShell({
   );
   const tweaks = controlledTweaks ?? ownTweaks;
   const setTweaks = onTweaksChange ?? setOwnTweaks;
-  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity } = {
+  ({ sidebarTone, sidebarFrame, sidebarShadow, seamShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity } = {
     ...authored,
     ...tweaks,
   });
@@ -1106,7 +1113,9 @@ export function AppLayoutShell({
           .filter(Boolean)
           .join(" ")}
         style={
-          sidebarFrame === "flush" ? { boxShadow: CONTENT_SEAM_SHADOW } : undefined
+          sidebarFrame === "flush" && seamShadow
+            ? { boxShadow: CONTENT_SEAM_SHADOW }
+            : undefined
         }
       >
         {mobileBar ? (
