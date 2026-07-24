@@ -528,6 +528,9 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
         { key: "sidebarTone", label: "Tone", values: ["default", "white", "subtle", "muted", "dark", "brand", "brand-dark"] },
         { key: "sidebarFrame", label: "Frame", values: ["flush", "floating", "attached"] },
         { key: "sidebarShadow", label: "Shadow", values: ["frame", "none", "sm", "md", "lg"], display: { frame: "auto" } },
+        // Content-over-sidebar depth flip (Ali, 24 Jul) — flush frame
+        // only; the knob no-ops on floating/attached (see the shell).
+        { key: "contentOverSidebar", label: "Content above", values: [true, false] },
         { key: "navDensity", label: "Nav density", values: ["compact", "comfortable", "expansive"] },
       ],
     },
@@ -726,6 +729,17 @@ export function AppLayoutShell({
   // Sidebar drop shadow — overrides the frame's own. Presets in
   // SIDEBAR_SHADOWS. "frame" (default) defers to the frame preset.
   sidebarShadow = "frame", // "frame" | "none" | "sm" | "md" | "lg"
+  // Flip the depth order at the sidebar seam (Ali, 24 Jul): the CONTENT
+  // panel sits above the sidebar and casts a soft shadow onto it —
+  // reads as an elevated sheet over the nav rail. FLUSH FRAME ONLY:
+  // floating carries its own lift (contradictory cues) and attached is
+  // in-flow with the content (no seam) — the knob silently no-ops on
+  // both. Mechanics: the aside is position:sticky (positioned, z auto);
+  // making the content column `relative` puts both in the positioned
+  // paint group where DOM ORDER wins — content is the later sibling, so
+  // it paints above with NO z-index and NO new stacking context (the
+  // sticky header's z-30 keeps working). Also a tweaker row.
+  contentOverSidebar = false,
   // Optional 1px border around the sidebar container. Any CSS color —
   // tokens welcome: "var(--sidebar-border)", "var(--ds-tailwind-colors-neutral-200)".
   sidebarBorder,
@@ -795,7 +809,7 @@ export function AppLayoutShell({
   // are the AUTHORED look; tweaks shadow them for this session only.
   // Reassigning the params keeps every downstream reference
   // (tone/frame/shadow/layers/sticky) reading the LIVE values.
-  const authored = { sidebarTone, sidebarFrame, sidebarShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity };
+  const authored = { sidebarTone, sidebarFrame, sidebarShadow, contentOverSidebar, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity };
   // SESSION MEMORY: seed from the module-scope stash (below) so tweaks —
   // colours, frame, DATASET — persist across flow navigation and screen
   // switches: the lib module is compiled once per sandbox boot and its
@@ -817,7 +831,7 @@ export function AppLayoutShell({
   );
   const tweaks = controlledTweaks ?? ownTweaks;
   const setTweaks = onTweaksChange ?? setOwnTweaks;
-  ({ sidebarTone, sidebarFrame, sidebarShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity } = {
+  ({ sidebarTone, sidebarFrame, sidebarShadow, contentOverSidebar, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity } = {
     ...authored,
     ...tweaks,
   });
@@ -1068,8 +1082,22 @@ export function AppLayoutShell({
           edge-to-edge BY CONSTRUCTION; the DS's padded content wrapper
           only wraps the page body. PageHeader's `align` still owns where
           the content lands inside the band ("center" = capped + centred,
-          matching the body; "justify" = fills it). */}
-      <div className="flex min-w-0 flex-1 flex-col">
+          matching the body; "justify" = fills it).
+          contentOverSidebar: `relative` alone lifts the column into the
+          positioned paint group above the sticky aside (DOM order — see
+          the prop comment); the layered left shadow falls onto the
+          sidebar. lg-only: below lg the aside is hidden and the shadow
+          would just bleed off the viewport edge. */}
+      <div
+        className={[
+          "flex min-w-0 flex-1 flex-col",
+          contentOverSidebar && sidebarFrame === "flush"
+            ? "relative lg:[box-shadow:-6px_0_12px_-6px_rgb(0_0_0/0.10),-20px_0_40px_-20px_rgb(0_0_0/0.10)]"
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         {mobileBar ? (
           // The mobile bar rides the SAME surface as the header band
           // (Ali, 23 Jul): this wrapper paints HEADER_SURFACES

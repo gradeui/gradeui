@@ -266,6 +266,12 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Sidebar drop shadow on Tailwind's scale, independent of the frame. \"frame\" (default) defers to the frame preset (floating ships shadow-sm). (default \"frame\")"
       },
+      "contentOverSidebar": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "Flip the depth order at the sidebar seam: the content panel sits ABOVE the sidebar and casts a soft left shadow onto it (an elevated sheet over the nav rail). FLUSH FRAME ONLY — silently no-ops on floating (has its own lift) and attached (in-flow, no seam). Desktop only (below lg the aside is hidden). Also a tweaker row (Sidebar → Content above). (default false)"
+      },
       "tweaker": {
         "kind": "boolean",
         "design": "knob",
