@@ -245,8 +245,18 @@ export const SIDEBAR_SHADOWS = {
 // readable — a bg swap alone would leave near-black text on dark green.
 export const HEADER_SURFACES = {
   none: null, // transparent — page background shows through
+  // GLASS (Ali, 24 Jul): 95% white + backdrop blur, so content ghosts
+  // through the sticky band as it scrolls beneath. Alpha derives from
+  // the token via CSS relative color (tokens-only rule); the -webkit-
+  // twin covers Safari. Harmless when the header isn't sticky —
+  // nothing passes underneath, it just reads as white.
   white: {
-    style: { backgroundColor: "var(--ds-tailwind-colors-base-white)" },
+    style: {
+      backgroundColor:
+        "rgb(from var(--ds-tailwind-colors-base-white) r g b / 0.95)",
+      backdropFilter: "blur(8px)",
+      WebkitBackdropFilter: "blur(8px)",
+    },
   },
   subtle: {
     style: { backgroundColor: "var(--ds-tailwind-colors-neutral-100)" },
