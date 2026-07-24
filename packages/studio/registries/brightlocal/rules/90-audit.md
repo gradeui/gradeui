@@ -52,3 +52,17 @@ geographic spacing shrinks. Proposal contract (RankGrid): derive pin
 size from the zoom level and clamp the map to default min/max zoom
 bounds so pins can never overlap. Upstream ask: same clamp + zoom-aware
 pin sizing on the live LSG map.
+
+## No drill-arrow affordance component in the DS (24 Jul 2026)
+
+Every clickable card in the proposal wears the same drill affordance —
+a circular arrow Button that flips to its hover state when the CARD is
+hovered (group/group-hover) — but the DS has no such component, and
+its Button has no icon size, so the anatomy is hand-rolled at every
+site: the hub screen's local DrillArrow (solid secondary), the AI
+Insights module cards' inline copy (same solid look), and
+LocationCard's module-private glass variant (white/70 + backdrop blur,
+for sitting on photography). Upstream ask: publish a drill-down arrow
+component in the DS library (solid + on-media/glass looks, plus an
+icon Button size). Ali: migrate ALL the local copies onto it as soon
+as it ships — the copies are deliberate stopgaps, not the design.

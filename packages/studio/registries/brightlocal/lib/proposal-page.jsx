@@ -754,7 +754,7 @@ export function LocationCard({
       data-grade-dataset={vDataset}
       className={[
         "max-w-none",
-        goto ? "group cursor-pointer transition-shadow hover:shadow-md" : "",
+        goto ? "group cursor-pointer transition-shadow hover:shadow-sm" : "",
         className,
       ]
         .filter(Boolean)
