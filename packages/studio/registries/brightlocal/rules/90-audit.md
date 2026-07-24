@@ -64,5 +64,8 @@ Insights module cards' inline copy (same solid look), and
 LocationCard's module-private glass variant (white/70 + backdrop blur,
 for sitting on photography). Upstream ask: publish a drill-down arrow
 component in the DS library (solid + on-media/glass looks, plus an
-icon Button size). Ali: migrate ALL the local copies onto it as soon
-as it ships — the copies are deliberate stopgaps, not the design.
+icon Button size). INTERIM (later on 24 Jul, after the standalone
+copies shipped to prod): the proposal lib now exports DrillArrow
+(variant "solid" | "glass") and every card uses it — hub, AI Insights
+modules, LocationCard. The upstream ask stands; when the DS ships its
+component, swap the ONE lib definition.

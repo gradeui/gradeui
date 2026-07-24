@@ -105,20 +105,26 @@ export function formatDate(value) {
   return `${day}${ordinal(day)} ${month}, ${m[3]}`;
 }
 
-// ─── DrillArrow — LocationCard's floating photo affordance ────────────
-// MODULE-PRIVATE on purpose (Ali, 24 Jul: "we dont need it to be
-// shared") — this is LocationCard's internal detail, not lib
-// vocabulary; the hub screen keeps its own screen-local copy with the
-// SOLID secondary look. This one is deliberately different (Ali: "the
-// overlay arrow is different"): GLASS — white-opacity fill + backdrop
-// blur — because it sits ON photography, where the solid secondary
-// tint clashes with whatever's underneath. Alpha rides the base-white
-// token (Tailwind /70 compiles to alpha-over-transparent — not a
-// colour mix); card hover firms it up to /85 via group-hover. Still a
-// real DS Button underneath (focus ring, svg sizing); decorative on
-// purpose: the card owns the click (pointer-events-none, aria-hidden,
-// tabIndex -1) — a live button would swallow the goto.
-function DrillArrow({ dataHook = "drill-arrow", className = "" }) {
+// ─── DrillArrow — THE clickable-card drill affordance ─────────────────
+// ONE concept, two looks (Ali, 24 Jul: "they are the same concept —
+// add affordance to a card"; promoted to the lib AFTER the standalone
+// copies shipped to prod, replacing the repeats):
+//   "solid" — secondary circle for card surfaces (hub cards, AI
+//             Insights module cards).
+//   "glass" — white/70 + backdrop blur for sitting ON photography
+//             (LocationCard's photo), where the solid tint clashes
+//             with whatever's underneath; firms to /85 on card hover.
+//             (Tailwind /70 compiles to alpha-over-transparent — not
+//             a colour mix.)
+// A REAL DS secondary Button so the solid hover state is the DS's own:
+// the parent card must be `group`, and group-hover mirrors the exact
+// hover class so hovering anywhere on the card moves the arrow to its
+// hover state. Decorative on purpose: the card owns the click
+// (pointer-events-none, aria-hidden, tabIndex -1) — a live button
+// would swallow the goto. STILL an upstream ask (see the ledger): the
+// DS library should ship this; this lib version is the single interim
+// definition every card now uses.
+export function DrillArrow({ variant = "solid", dataHook = "drill-arrow", className = "" }) {
   return (
     <Button
       variant="secondary"
@@ -127,8 +133,9 @@ function DrillArrow({ dataHook = "drill-arrow", className = "" }) {
       dataHook={dataHook}
       className={[
         "pointer-events-none size-9 shrink-0 rounded-full p-0",
-        "bg-(--ds-tailwind-colors-base-white)/70 backdrop-blur-sm",
-        "group-hover:bg-(--ds-tailwind-colors-base-white)/85",
+        variant === "glass"
+          ? "bg-(--ds-tailwind-colors-base-white)/70 backdrop-blur-sm group-hover:bg-(--ds-tailwind-colors-base-white)/85"
+          : "group-hover:bg-secondary/80",
         className,
       ]
         .filter(Boolean)
@@ -786,7 +793,7 @@ export function LocationCard({
               somewhere, same rule as the hub cards. */}
           {goto ? (
             <span className="absolute right-3 top-3">
-              <DrillArrow dataHook={`${dataHook}-drill-arrow`} />
+              <DrillArrow variant="glass" dataHook={`${dataHook}-drill-arrow`} />
             </span>
           ) : null}
         </div>
