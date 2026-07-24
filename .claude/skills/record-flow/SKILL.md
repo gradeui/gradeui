@@ -28,7 +28,7 @@ Step types (any step may add `"caption": "…"` for the teleprompter):
 | Step | Effect |
 |---|---|
 | `{ "dwell": 2500 }` | hold (talk-over pause). Lossless holds ONE screenshot — long pauses are ~free. |
-| `{ "click": "<css>", "waitFor": "<css proving next screen>" }` | **hovers the target for 700ms first** (the hover state — card shadow, arrow colour — gets a beat on camera, like a human would), then clicks; waits for the swap. VT handled automatically. Tune with `"hoverMs"` (0 = no hover). |
+| `{ "click": "<css>", "waitFor": "<css proving next screen>" }` | **hovers the target for 1.2s first** (the hover state — card shadow, arrow colour — gets a beat on camera, like a human would), then clicks; waits for the swap. VT handled automatically. Tune with `"hoverMs"` (0 = no hover). |
 | `{ "scrollBy": 500, "ms": 900 }` | human-eased partial scroll ("scroll down a bit"). |
 | `{ "scrollTo": "<css>", "ms": 900 }` | smooth-scroll an element into view (pre-click reveal). |
 | `{ "scroll": "top" | "bottom", "ms": 900 }` | smooth to an end. |

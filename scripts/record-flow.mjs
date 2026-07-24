@@ -215,7 +215,7 @@ for (const step of flow.steps) {
     // HOVER, then click (Ali, 24 Jul: "like a human would") — hold the
     // target's hover state (card shadow, arrow colour) on camera
     // before clicking. Opt out per step with "hoverMs": 0.
-    const hoverMs = step.hoverMs ?? 700;
+    const hoverMs = step.hoverMs ?? 1200;
     if (hoverMs > 0) {
       await iframe(page).locator(step.click).first().hover().catch(() => {});
       await sleep(hoverMs);
