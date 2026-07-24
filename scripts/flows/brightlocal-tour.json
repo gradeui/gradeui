@@ -163,14 +163,60 @@
     },
     {
       "key": "Alt+T",
-      "dwell": 2200,
-      "caption": "And the whole product is themeable, live."
+      "dwell": 1800,
+      "caption": "And the whole product is themeable, live \u2014 no code."
+    },
+    {
+      "select": "[data-hook=\"tweaker-preset\"]",
+      "value": "heavy-depth",
+      "dwell": 2600,
+      "caption": "Here's a darker, heavier look."
+    },
+    {
+      "key": "Alt+T",
+      "dwell": 1200
+    },
+    {
+      "scrollBy": 620,
+      "ms": 1000
+    },
+    {
+      "dwell": 1600
+    },
+    {
+      "scroll": "top",
+      "ms": 1000
+    },
+    {
+      "dwell": 1400
+    },
+    {
+      "key": "Alt+T",
+      "dwell": 1400
     },
     {
       "select": "[data-hook=\"tweaker-preset\"]",
       "value": "live-site",
-      "dwell": 4500,
-      "caption": "One switch re-skins the entire interface from the design tokens."
+      "dwell": 2600,
+      "caption": "And the live-site look \u2014 same content, new skin."
+    },
+    {
+      "key": "Alt+T",
+      "dwell": 1200
+    },
+    {
+      "scrollBy": 620,
+      "ms": 1000
+    },
+    {
+      "dwell": 1600
+    },
+    {
+      "scroll": "top",
+      "ms": 1000
+    },
+    {
+      "dwell": 1600
     }
   ]
 }
