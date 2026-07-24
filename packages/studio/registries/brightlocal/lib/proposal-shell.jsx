@@ -218,9 +218,12 @@ export const SIDEBAR_FRAMES = {
 // hidden and content is full-width, so the left-cast shadow just
 // bleeds offscreen — no gate needed.
 const SEAM_INK = "var(--ds-tailwind-colors-neutral-950)";
+// Round 3 of tuning (Ali, 24 Jul: "quite large and far too obvious"):
+// a whisper — 1px hairline edge + a 8px falloff at 6%/5%. This is THE
+// depth-tuning site; adjust the px reach / alphas here only.
 export const CONTENT_SEAM_SHADOW =
-  `-2px 0 6px -2px rgb(from ${SEAM_INK} r g b / 0.10), ` +
-  `-10px 0 20px -10px rgb(from ${SEAM_INK} r g b / 0.08)`;
+  `-1px 0 3px -1px rgb(from ${SEAM_INK} r g b / 0.06), ` +
+  `-4px 0 8px -4px rgb(from ${SEAM_INK} r g b / 0.05)`;
 
 // Sidebar shadow presets — Tailwind's scale, switchable independently
 // of the frame. "frame" = whatever the frame preset ships (floating's
