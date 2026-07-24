@@ -52,6 +52,7 @@ import {
   TypographyMuted,
 } from "@brightlocal/ui-components";
 import {
+  ArrowRight,
   BarChart3,
   Briefcase,
   Building,
@@ -102,6 +103,40 @@ export function formatDate(value) {
   if (!month) return value;
   const day = parseInt(m[1], 10);
   return `${day}${ordinal(day)} ${month}, ${m[3]}`;
+}
+
+// ─── DrillArrow — LocationCard's floating photo affordance ────────────
+// MODULE-PRIVATE on purpose (Ali, 24 Jul: "we dont need it to be
+// shared") — this is LocationCard's internal detail, not lib
+// vocabulary; the hub screen keeps its own screen-local copy with the
+// SOLID secondary look. This one is deliberately different (Ali: "the
+// overlay arrow is different"): GLASS — white-opacity fill + backdrop
+// blur — because it sits ON photography, where the solid secondary
+// tint clashes with whatever's underneath. Alpha rides the base-white
+// token (Tailwind /70 compiles to alpha-over-transparent — not a
+// colour mix); card hover firms it up to /85 via group-hover. Still a
+// real DS Button underneath (focus ring, svg sizing); decorative on
+// purpose: the card owns the click (pointer-events-none, aria-hidden,
+// tabIndex -1) — a live button would swallow the goto.
+function DrillArrow({ dataHook = "drill-arrow", className = "" }) {
+  return (
+    <Button
+      variant="secondary"
+      aria-hidden
+      tabIndex={-1}
+      dataHook={dataHook}
+      className={[
+        "pointer-events-none size-9 shrink-0 rounded-full p-0",
+        "bg-(--ds-tailwind-colors-base-white)/70 backdrop-blur-sm",
+        "group-hover:bg-(--ds-tailwind-colors-base-white)/85",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <ArrowRight className="size-4" />
+    </Button>
+  );
 }
 
 // ─── CardTitleLink — the clickable-card title treatment ───────────────
@@ -719,7 +754,7 @@ export function LocationCard({
       data-grade-dataset={vDataset}
       className={[
         "max-w-none",
-        goto ? "cursor-pointer transition-shadow hover:shadow-md" : "",
+        goto ? "group cursor-pointer transition-shadow hover:shadow-md" : "",
         className,
       ]
         .filter(Boolean)
@@ -746,7 +781,14 @@ export function LocationCard({
           {/* Status pill REMOVED (Ali, 24 Jul: "lose the badge") — the
               live-site parity pill read as noise on the tile. The
               status field still arrives in the data; nothing renders
-              it here any more. */}
+              it here any more. In its corner FLOATS the DrillArrow
+              (Ali's mock) — only when the card actually goes
+              somewhere, same rule as the hub cards. */}
+          {goto ? (
+            <span className="absolute right-3 top-3">
+              <DrillArrow dataHook={`${dataHook}-drill-arrow`} />
+            </span>
+          ) : null}
         </div>
         {/* +8px left/right/bottom on the text content (Ali's mock,
             24 Jul): the photo sits at the card padding, the words sit
