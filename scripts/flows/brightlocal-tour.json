@@ -169,7 +169,7 @@
     {
       "select": "[data-hook=\"tweaker-preset\"]",
       "value": "heavy-depth",
-      "dwell": 2600,
+      "dwell": 800,
       "caption": "Here's a darker, heavier look."
     },
     {
@@ -192,12 +192,12 @@
     },
     {
       "key": "Alt+T",
-      "dwell": 1400
+      "dwell": 1000
     },
     {
       "select": "[data-hook=\"tweaker-preset\"]",
       "value": "live-site",
-      "dwell": 2600,
+      "dwell": 800,
       "caption": "And the live-site look \u2014 same content, new skin."
     },
     {
