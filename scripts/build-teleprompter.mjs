@@ -6,6 +6,32 @@
 //   node scripts/build-teleprompter.mjs --flow=scripts/flows/brightlocal-tour.json --out=teleprompter.html [--wpm=150]
 // Controls: Space play/pause · ←/→ prev/next line · ↑/↓ speed · R restart · M mirror · F fullscreen · +/- font.
 import fs from "node:fs";
+import path from "node:path";
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+
+const require = createRequire(import.meta.url);
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+function resolveFfmpeg() {
+  try { return require("ffmpeg-static"); } catch {}
+  try {
+    const pnpm = path.join(REPO, "node_modules/.pnpm");
+    const dir = fs.readdirSync(pnpm).find((d) => d.startsWith("ffmpeg-static@"));
+    if (dir) { const b = path.join(pnpm, dir, "node_modules/ffmpeg-static/ffmpeg"); if (fs.existsSync(b)) return b; }
+  } catch {}
+  return "ffmpeg";
+}
+// Word-wrap to CHARS per line so burned captions never crop off the edges.
+function wrap(t, n = 34) {
+  const words = t.split(/\s+/); const out = []; let line = "";
+  for (const w of words) {
+    if ((line + " " + w).trim().length > n) { if (line) out.push(line); line = w; }
+    else line = (line + " " + w).trim();
+  }
+  if (line) out.push(line);
+  return out.join("\n");
+}
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => {
   const m = a.match(/^--([^=]+)(?:=(.*))?$/); return m ? [m[1], m[2] ?? true] : [a, true];
@@ -68,7 +94,37 @@ addEventListener('keydown',e=>{
 });
 render(); requestAnimationFrame(step);
 </script></body></html>`;
-fs.writeFileSync(args.out, html);
-console.log(`✅ ${args.out}  (${lines.length} lines, ~${Math.round(total)}s of narration @ ${WPM} wpm)`);
-console.log("   Per-line speaking estimates (use these as your minimum dwell times):");
-lines.forEach((t, i) => console.log(`   ${String(i + 1).padStart(2)}. ${durs[i].toFixed(1)}s  ${t.slice(0, 64)}${t.length > 64 ? "…" : ""}`));
+// Timestamp every output so re-runs never overwrite — newest is obvious.
+const d = new Date();
+const p2 = (n) => String(n).padStart(2, "0");
+const STAMP = `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
+const stampPath = (p) => p.replace(/(\.[^.]+)$/, `-${STAMP}$1`);
+const htmlOut = stampPath(args.out);
+fs.writeFileSync(htmlOut, html);
+
+// Speech-timed SRT (cumulative durations) with WRAPPED text so the
+// burned teleprompter video never crops off the sides.
+const tsSrt = (ms) => { ms = Math.max(0, ms); const p = (n, w = 2) => String(n).padStart(w, "0");
+  return `${p(Math.floor(ms / 3600000))}:${p(Math.floor((ms % 3600000) / 60000))}:${p(Math.floor((ms % 60000) / 1000))},${p(Math.floor(ms % 1000), 3)}`; };
+let acc = 0, srt = "";
+lines.forEach((t, i) => { const start = acc * 1000; acc += durs[i]; srt += `${i + 1}\n${tsSrt(start)} --> ${tsSrt(acc * 1000)}\n${wrap(t)}\n\n`; });
+const srtOut = stampPath(args.out.replace(/\.[^.]+$/, ".srt"));
+fs.writeFileSync(srtOut, srt);
+
+// Teleprompter VIDEO: dark bg + brand accent + centered wrapped captions,
+// each line held for its speaking time.
+const vidOut = stampPath(args.out.replace(/\.[^.]+$/, ".mp4"));
+const FFMPEG = resolveFfmpeg();
+await new Promise((res, rej) => {
+  const ff = spawn(FFMPEG, [
+    "-y", "-f", "lavfi", "-i", `color=c=0x0f1412:s=1280x720:d=${total.toFixed(2)}`,
+    "-vf", `drawbox=x=0:y=0:w=1280:h=6:color=0x2AE855:t=fill,subtitles=${path.basename(srtOut)}:force_style='FontName=Helvetica,Fontsize=34,PrimaryColour=&Hffffff&,Alignment=5,MarginL=80,MarginR=80,MarginV=40'`,
+    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", vidOut,
+  ], { stdio: "ignore", cwd: path.dirname(srtOut) });
+  ff.on("exit", (c) => (c === 0 ? res() : rej(new Error("ffmpeg teleprompter " + c))));
+});
+
+console.log(`✅ ${htmlOut}\n✅ ${vidOut}  (video)\n✅ ${srtOut}`);
+console.log(`   ${lines.length} lines, ~${Math.round(total)}s of narration @ ${WPM} wpm`);
+console.log("   Per-line speaking estimates (use as minimum dwell times):");
+lines.forEach((t, i) => console.log(`   ${String(i + 1).padStart(2)}. ${durs[i].toFixed(1)}s  ${t.slice(0, 60)}${t.length > 60 ? "…" : ""}`));

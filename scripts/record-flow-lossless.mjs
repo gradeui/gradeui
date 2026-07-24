@@ -106,7 +106,10 @@ const W = flow.w ?? 1280;
 const H = flow.h ?? 834;
 const DEVICE_W = W * 2;
 const DEVICE_H = H * 2;
-const OUT = args.out && args.out !== true ? args.out : `${flow.start}-flow-lossless.mp4`;
+const __d = new Date(); const __p = (n) => String(n).padStart(2, "0");
+const __STAMP = `${__d.getFullYear()}${__p(__d.getMonth()+1)}${__p(__d.getDate())}-${__p(__d.getHours())}${__p(__d.getMinutes())}${__p(__d.getSeconds())}`;
+const __stamp = (p) => p.replace(/(\.[^.]+)$/, `-${__STAMP}$1`);
+const OUT = __stamp(args.out && args.out !== true ? args.out : `${flow.start}-flow-lossless.mp4`);
 
 const mcp = JSON.parse(fs.readFileSync(path.join(REPO, ".mcp.json"), "utf8"));
 const KEY = mcp.mcpServers["gradeui-dev"].env.SUPABASE_SERVICE_ROLE_KEY;
