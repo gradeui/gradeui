@@ -400,7 +400,12 @@ export function ProposalSidebar({
                       (snag 5, Ali 22 Jul): name on the first line,
                       "Town, Postcode" small beneath — the same two-line
                       shape as the signed-in block. Boxed with the
-                      sidebar border token so it rides every tone. The
+                      sidebar border token so it rides every tone.
+                      ELEVATED off the sidebar surface (Ali, 24 Jul:
+                      flat-on-tint read unfinished): its own card
+                      surface + shadow-xs — light-dark() so the dark /
+                      brand tones (which declare colorScheme dark) get a
+                      lifted dark card instead of a white glare. The
                       data-hook deliberately does NOT start with "nav-"
                       so the shell's nav-rhythm CSS (fixed row heights)
                       leaves it alone. */}
@@ -409,7 +414,7 @@ export function ProposalSidebar({
                       type="button"
                       data-hook="location-home-card"
                       data-grade-goto={locationHomeGoto}
-                      className="border-sidebar-border hover:bg-sidebar-accent mb-1 flex w-full cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors"
+                      className="border-sidebar-border hover:bg-sidebar-accent mb-1 flex w-full cursor-pointer items-start gap-2.5 rounded-lg border bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-800))] px-3 py-2 text-left shadow-xs transition-colors"
                     >
                       <House className="mt-0.5 size-4 shrink-0" />
                       <span className="flex min-w-0 flex-col">
