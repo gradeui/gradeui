@@ -91,7 +91,7 @@ const SCALE = flow.scale ?? 2;
 const [VW, VH] = flow.viewport ?? [W * SCALE, H * SCALE];
 const __d = new Date(); const __p = (n) => String(n).padStart(2, "0");
 const __STAMP = `${__d.getFullYear()}${__p(__d.getMonth()+1)}${__p(__d.getDate())}-${__p(__d.getHours())}${__p(__d.getMinutes())}${__p(__d.getSeconds())}`;
-const __stamp = (p) => p.replace(/(\.[^.]+)$/, `-${__STAMP}$1`);
+const __stamp = (p) => { const e = path.extname(p), b = path.basename(p, e), d = path.dirname(p); const folder = path.join(d, `${b}-${__STAMP}`); fs.mkdirSync(folder, { recursive: true }); return path.join(folder, b + e); };
 const OUT = __stamp(args.out && args.out !== true ? args.out : `${flow.start}-flow.mp4`);
 
 const mcp = JSON.parse(fs.readFileSync(path.join(REPO, ".mcp.json"), "utf8"));
@@ -171,9 +171,10 @@ await installHiders(page);
 // teleprompter stays in sync as pacing changes. A step's `caption`
 // appears the moment that step begins.
 const captions = [];
+const sections = []; // { name, tMs } at each section marker
 for (const step of flow.steps) {
   // A "section" marker = a natural intersection: add a longer breath.
-  if (step.section) step.dwell = (step.dwell || 0) + (flow.sectionPause ?? 1500);
+  if (step.section) { sections.push({ name: step.section, tMs: Date.now() - navStart }); step.dwell = (step.dwell || 0) + (flow.sectionPause ?? 1500); }
   if (step.dwell) step.dwell = Math.round(step.dwell * DWELL_SCALE);
   if (step.caption) captions.push({ tMs: Date.now() - navStart, text: step.caption });
   // Keypress into the SCREEN (iframe window) — e.g. "Alt+T" opens the
@@ -262,6 +263,26 @@ await new Promise((res, rej) => {
 });
 fs.rmSync(rawDir, { recursive: true, force: true });
 console.log(`\n✅ ${OUT}\n✅ ${webmOut}\n   (${VW}x${VH}, head trimmed ${trim.toFixed(1)}s)`);
+
+// ── Per-section clips: cut the demo at each section marker so each
+// part can be dropped into a slide on its own. Re-encoded for exact cuts.
+if (sections.length) {
+  const trimMs = trim * 1000;
+  const durMs = flowEndMs - trimMs;
+  const dir = OUT.replace(/\.mp4$/, "") + "-sections";
+  fs.mkdirSync(dir, { recursive: true });
+  const slug = (x) => x.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  for (let i = 0; i < sections.length; i++) {
+    const start = Math.max(0, (sections[i].tMs - trimMs) / 1000);
+    const end = (i + 1 < sections.length ? sections[i + 1].tMs - trimMs : durMs) / 1000;
+    const out = path.join(dir, `${String(i + 1).padStart(2, "0")}-${slug(sections[i].name)}.mp4`);
+    await new Promise((res, rej) => {
+      const ff = spawn(FFMPEG, ["-y", "-ss", start.toFixed(3), "-to", end.toFixed(3), "-i", OUT, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", "-movflags", "+faststart", out], { stdio: "ignore" });
+      ff.on("exit", (c) => (c === 0 ? res() : rej(new Error("ffmpeg section " + c))));
+    });
+  }
+  console.log(`\u2705 ${dir}/  (${sections.length} section clips)`);
+}
 
 // ── Teleprompter: an SRT + a readable script + a standalone caption
 // video, all timed to THIS run (so re-pacing the flow re-syncs them). A

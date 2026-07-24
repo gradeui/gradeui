@@ -109,7 +109,7 @@ const DEVICE_W = W * 2;
 const DEVICE_H = H * 2;
 const __d = new Date(); const __p = (n) => String(n).padStart(2, "0");
 const __STAMP = `${__d.getFullYear()}${__p(__d.getMonth()+1)}${__p(__d.getDate())}-${__p(__d.getHours())}${__p(__d.getMinutes())}${__p(__d.getSeconds())}`;
-const __stamp = (p) => p.replace(/(\.[^.]+)$/, `-${__STAMP}$1`);
+const __stamp = (p) => { const e = path.extname(p), b = path.basename(p, e), d = path.dirname(p); const folder = path.join(d, `${b}-${__STAMP}`); fs.mkdirSync(folder, { recursive: true }); return path.join(folder, b + e); };
 const OUT = __stamp(args.out && args.out !== true ? args.out : `${flow.start}-flow-lossless.mp4`);
 
 const mcp = JSON.parse(fs.readFileSync(path.join(REPO, ".mcp.json"), "utf8"));
@@ -273,9 +273,10 @@ await rehide(page);
 console.log(`booted + settled in ${((Date.now() - bootStart) / 1000).toFixed(1)}s — capturing`);
 
 // ── drive the flow, emitting frames throughout at the target fps ──────
+const sections = []; // { name, frame } at each section marker
 for (const step of flow.steps) {
   // A "section" marker = a natural intersection: add a longer breath.
-  if (step.section) step.dwell = (step.dwell || 0) + (flow.sectionPause ?? 1500);
+  if (step.section) { sections.push({ name: step.section, frame }); step.dwell = (step.dwell || 0) + (flow.sectionPause ?? 1500); }
   if (step.dwell) step.dwell = Math.round(step.dwell * DWELL_SCALE);
   // KEYPRESS into the screen (iframe window) — e.g. "Alt+T" opens the
   // shell tweaker. Dispatched synthetically so it fires the app handler
@@ -447,6 +448,26 @@ await new Promise((res, rej) => {
 });
 
 if (!KEEP_FRAMES) fs.rmSync(framesDir, { recursive: true, force: true });
+
+// ── Per-section clips (lossless): cut the demo at each section marker so
+// each part drops into its own slide. Re-encoded qp0 to stay lossless.
+if (sections.length) {
+  const total = frame / FPS;
+  const dir = OUT.replace(/\.mp4$/, "") + "-sections";
+  fs.mkdirSync(dir, { recursive: true });
+  const slug = (x) => x.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  for (let i = 0; i < sections.length; i++) {
+    const start = sections[i].frame / FPS;
+    const end = i + 1 < sections.length ? sections[i + 1].frame / FPS : total;
+    const out = path.join(dir, `${String(i + 1).padStart(2, "0")}-${slug(sections[i].name)}.mp4`);
+    await new Promise((res, rej) => {
+      const ff = spawn(FFMPEG, ["-y", "-ss", start.toFixed(3), "-to", end.toFixed(3), "-i", OUT, "-c:v", "libx264", "-qp", "0", "-pix_fmt", "yuv444p", "-movflags", "+faststart", out], { stdio: "ignore" });
+      ff.on("exit", (c) => (c === 0 ? res() : rej(new Error("ffmpeg section " + c))));
+    });
+  }
+  console.log(`\u2705 ${dir}/  (${sections.length} lossless section clips)`);
+}
+
 
 const secs = frame / FPS;
 console.log(`\n✅ ${OUT}`);
