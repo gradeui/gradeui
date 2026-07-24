@@ -404,19 +404,24 @@ export function ProposalSidebar({
                       white-card + shadow + border cut was "way too
                       much"): bg-sidebar-accent is exactly that step in
                       EVERY tone (each tone defines its accent one step
-                      from its background), no border, no shadow. That
-                      spends the hover tint on the rest state — hover
-                      affordance is the cursor for now (ASSUMPTION, Ali
-                      to veto: add one if it feels dead). The data-hook
-                      deliberately does NOT start with "nav-" so the
-                      shell's nav-rhythm CSS (fixed row heights) leaves
-                      it alone. */}
+                      from its background), no border, no shadow. Hover
+                      is TEXT-ONLY, mirroring the nav rows' own hover
+                      pair (they go accent bg + accent-foreground text;
+                      the card's rest bg already spends the accent, so
+                      only the text half applies — Ali, 24 Jul).
+                      rounded-2xl: the nav rows are full pills (~15px
+                      corner arc on a 30px row); 16px matches that
+                      roundedness on this taller block without going
+                      full round (Ali: "not necessary full round").
+                      The data-hook deliberately does NOT start with
+                      "nav-" so the shell's nav-rhythm CSS (fixed row
+                      heights) leaves it alone. */}
                   <SidebarMenuItem dataHook="nav-item-current-location">
                     <button
                       type="button"
                       data-hook="location-home-card"
                       data-grade-goto={locationHomeGoto}
-                      className="bg-sidebar-accent mb-1 flex w-full cursor-pointer items-start gap-2.5 rounded-lg px-3 py-2 text-left transition-colors"
+                      className="bg-sidebar-accent hover:text-sidebar-accent-foreground mb-1 flex w-full cursor-pointer items-start gap-2.5 rounded-2xl px-3 py-2 text-left transition-colors"
                     >
                       <House className="mt-0.5 size-4 shrink-0" />
                       <span className="flex min-w-0 flex-col">
