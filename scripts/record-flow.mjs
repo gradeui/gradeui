@@ -287,6 +287,14 @@ if (sections.length) {
       ff.on("exit", (c) => (c === 0 ? res() : rej(new Error("ffmpeg section " + c))));
     });
   }
+  // Manifest of boundaries (seconds, post-trim) — join-sections.mjs
+  // uses it to tie contiguous sections into one clip from the master.
+  fs.writeFileSync(path.join(dir, "sections.json"), JSON.stringify(
+    sections.map((sec, i) => ({
+      n: i + 1, slug: slug(sec.name),
+      start: Math.max(0, (sec.tMs - trimMs) / 1000),
+      end: (i + 1 < sections.length ? sections[i + 1].tMs - trimMs : durMs) / 1000,
+    })), null, 2));
   console.log(`\u2705 ${dir}/  (${sections.length} section clips)`);
 }
 

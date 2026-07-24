@@ -37,6 +37,21 @@ Step types (any step may add `"caption": "…"` for the teleprompter):
 
 The scroll target is the largest `[data-radix-scroll-area-viewport]` inside the embed iframe.
 
+## Joining sections
+
+Both recorders write `sections.json` (boundaries in seconds) next to the
+per-section clips. To tie a contiguous run of sections into ONE clip —
+e.g. the AI Insights arc — cut it from the master (no concat seams):
+
+```bash
+node scripts/join-sections.mjs --dir=<run folder> --join=3-5
+# multiple groups: --join=1-2,7-9
+```
+
+Output lands in the sections dir as `NN-MM-<first>-to-<last>.mp4`. Runs
+made before `sections.json` existed still work — boundaries are derived
+from the section clips' own durations.
+
 ## Teleprompter
 
 Any step with `caption` makes the recorder emit, next to the mp4 (timed to the ACTUAL run so re-pacing re-syncs): `<name>.srt`, `<name>-script.txt` (readable), and `<name>-teleprompter.mp4` (your lines on a dark bg + brand accent, same duration). Or skip captions entirely and just talk over the clean demo.

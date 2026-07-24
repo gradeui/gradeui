@@ -346,12 +346,20 @@ for (const s of targets) {
           ([vw, vh]) =>
             [...document.querySelectorAll("iframe")].some((f) => {
               const r = f.getBoundingClientRect();
-              return (
-                Math.abs(r.x) < 1.5 &&
-                Math.abs(r.y) < 1.5 &&
-                Math.abs(r.width - vw) < 2 &&
-                Math.abs(r.height - vh) < 2
-              );
+              if (
+                Math.abs(r.x) >= 1.5 ||
+                Math.abs(r.y) >= 1.5 ||
+                Math.abs(r.width - vw) >= 2 ||
+                Math.abs(r.height - vh) >= 2
+              )
+                return false;
+              // The zoom transform can live on a wrapper INSIDE the
+              // frame (outer iframe full-size, content scaled into a
+              // rounded inset card) — require the inner document to
+              // fill the frame too.
+              const d = f.contentDocument;
+              const b = d && d.body && d.body.getBoundingClientRect();
+              return !!b && Math.abs(b.x) < 1.5 && Math.abs(b.width - vw) < 2;
             }),
           [w, h],
           { timeout: 6000 },
