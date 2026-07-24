@@ -314,6 +314,17 @@ for (const step of flow.steps) {
   // transition is guaranteed COMPLETE before the following dwell captures.
   if (step.click) {
     await rehide(page);          // clean VT snapshots (chrome out of the capture)
+    // HOVER, then click (Ali, 24 Jul: "like a human would") — the
+    // target's hover state (card drop shadow, arrow colour) gets a
+    // beat on camera before the click. The CSS fade-in lands across
+    // the first few real screenshots; the rest of the hold shows the
+    // settled hover state. Opt out per step with "hoverMs": 0.
+    const hoverMs = step.hoverMs ?? 700;
+    if (hoverMs > 0) {
+      await iframe(page).locator(step.click).first().hover().catch(() => {});
+      const hn = framesFor(hoverMs, 700);
+      for (let i = 0; i < hn; i++) await shoot();
+    }
     await armVT(iframe(page));   // patch + arm the VT hook in the sandbox frame
     await iframe(page).locator(step.click).first().click();
 

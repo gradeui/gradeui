@@ -212,6 +212,14 @@ for (const step of flow.steps) {
     await installHiders(page);
   }
   if (step.click) {
+    // HOVER, then click (Ali, 24 Jul: "like a human would") — hold the
+    // target's hover state (card shadow, arrow colour) on camera
+    // before clicking. Opt out per step with "hoverMs": 0.
+    const hoverMs = step.hoverMs ?? 700;
+    if (hoverMs > 0) {
+      await iframe(page).locator(step.click).first().hover().catch(() => {});
+      await sleep(hoverMs);
+    }
     await iframe(page).locator(step.click).first().click();
     if (step.waitFor) {
       await page.waitForFunction((sel) => {
