@@ -1044,7 +1044,7 @@ export function AppLayoutShell({
         /* CARD RADIUS — the one setting (Ali, 24 Jul: "20px for all
            the border radius … all the cards"; the DS default 14px was
            "such a weird number"). Every DS Card in the proposal reads
-           this; inner media (photos) carry their own 4px. */
+           this; inner media (photos) carry their own 8px. */
         "[data-slot=card]{border-radius:20px;--ds-section-padding-x-md:16px;--ds-section-padding-y-md:16px}" +
         "@media (min-width:1024px){[data-slot=card]{--ds-section-padding-x-md:24px;--ds-section-padding-y-md:24px}}"
       }</style>

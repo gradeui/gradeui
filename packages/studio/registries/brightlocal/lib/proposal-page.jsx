@@ -727,9 +727,10 @@ export function LocationCard({
     >
       <CardContent className="flex flex-col gap-4">
         {/* Photo / placeholder — fixed aspect so card heights align
-            regardless of photo availability. 4px radius (Ali, 24 Jul:
-            the inner-media radius against the 20px card). */}
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[4px] bg-[var(--ds-tailwind-colors-neutral-100)]">
+            regardless of photo availability. 8px inner-media radius
+            against the 20px card (Ali, 24 Jul — corrected from the
+            4px first cut). */}
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg bg-[var(--ds-tailwind-colors-neutral-100)]">
           {vPhoto ? (
             <img
               src={vPhoto}
@@ -796,7 +797,7 @@ export function LocationCardSkeleton({ dataHook = "location-card-skeleton" }) {
       <CardContent className="flex flex-col gap-4">
         <Skeleton
           dataHook={`${dataHook}-photo`}
-          className="aspect-[16/9] w-full rounded-[4px]"
+          className="aspect-[16/9] w-full rounded-lg"
         />
         <div className="flex flex-col gap-3 px-2 pb-2">
           <Skeleton dataHook={`${dataHook}-name`} className="h-6 w-2/3" />
