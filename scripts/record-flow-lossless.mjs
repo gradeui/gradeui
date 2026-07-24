@@ -471,6 +471,7 @@ if (sections.length) {
   const total = frame / FPS;
   const dir = OUT.replace(/\.mp4$/, "") + "-sections";
   fs.mkdirSync(dir, { recursive: true });
+  const slug = (x) => x.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   // Manifest of boundaries (seconds) — lets join-sections.mjs tie any
   // contiguous run of sections into one clip later without re-deriving.
   fs.writeFileSync(path.join(dir, "sections.json"), JSON.stringify(
@@ -479,7 +480,6 @@ if (sections.length) {
       start: sec.frame / FPS,
       end: (i + 1 < sections.length ? sections[i + 1].frame : frame) / FPS,
     })), null, 2));
-  const slug = (x) => x.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   for (let i = 0; i < sections.length; i++) {
     const start = sections[i].frame / FPS;
     const end = i + 1 < sections.length ? sections[i + 1].frame / FPS : total;
