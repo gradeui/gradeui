@@ -1,0 +1,244 @@
+{
+  "project": "47e40175-0d55-4d21-960b-26bdf6b01282",
+  "start": "dmrotrgstba3l",
+  "w": 1280,
+  "h": 834,
+  "steps": [
+    {
+      "section": "All Locations",
+      "dwell": 6160,
+      "caption": "We start at All Locations \u2014 every client and site in one account."
+    },
+    {
+      "click": "[data-hook=\"location-card-minus-one-studios\"]",
+      "waitFor": "[data-hook=\"hub-ai-insights\"]",
+      "section": "Location Hub",
+      "caption": "Open a location to land on its hub."
+    },
+    {
+      "dwell": 6160
+    },
+    {
+      "dwell": 6720
+    },
+    {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 5040
+    },
+    {
+      "scrollBy": 560,
+      "ms": 950
+    },
+    {
+      "dwell": 5600
+    },
+    {
+      "scroll": "top",
+      "ms": 1000
+    },
+    {
+      "dwell": 4480
+    },
+    {
+      "click": "[data-hook=\"hub-ai-insights\"]",
+      "waitFor": "[data-hook=\"ai-stat-website\"]",
+      "section": "AI Insights"
+    },
+    {
+      "dwell": 8400
+    },
+    {
+      "scrollBy": 460,
+      "ms": 950
+    },
+    {
+      "dwell": 3919
+    },
+    {
+      "scrollTo": "[data-hook=\"ai-stat-website\"]",
+      "ms": 900
+    },
+    {
+      "dwell": 3360
+    },
+    {
+      "click": "[data-hook=\"ai-stat-website\"]",
+      "waitFor": "[data-slot=\"accordion-trigger\"]",
+      "section": "Website"
+    },
+    {
+      "dwell": 8400
+    },
+    {
+      "scrollTo": "[data-slot=\"accordion-trigger\"]",
+      "ms": 1000
+    },
+    {
+      "dwell": 3919
+    },
+    {
+      "click": "[data-slot=\"accordion-trigger\"]"
+    },
+    {
+      "dwell": 7279
+    },
+    {
+      "scrollTo": ".decoration-dashed",
+      "ms": 900
+    },
+    {
+      "dwell": 3919
+    },
+    {
+      "click": ".decoration-dashed"
+    },
+    {
+      "dwell": 9800
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "dwell": 1959
+    },
+    {
+      "click": "[data-hook=\"sub-btn-ai-insights-google-business-profile\"]",
+      "section": "Google Business Profile"
+    },
+    {
+      "dwell": 8960
+    },
+    {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 5040
+    },
+    {
+      "scroll": "top",
+      "ms": 950
+    },
+    {
+      "dwell": 3639
+    },
+    {
+      "click": "[data-grade-goto=\"screen:dmrurue2wmp9u\"]:not([data-hook])",
+      "waitFor": "[data-hook=\"hub-ai-insights\"]",
+      "section": "Back to Hub"
+    },
+    {
+      "dwell": 6720
+    },
+    {
+      "scrollTo": "[data-hook=\"hub-local-search-grid\"]",
+      "ms": 1100
+    },
+    {
+      "dwell": 5040
+    },
+    {
+      "click": "[data-grade-transition=\"cross-fade\"]",
+      "section": "Local Search Grid"
+    },
+    {
+      "dwell": 14000
+    },
+    {
+      "scrollBy": 360,
+      "ms": 900,
+      "caption": "This is the geo-grid \u2014 the location's rank at every point on the map."
+    },
+    {
+      "dwell": 5040
+    },
+    {
+      "click": "[data-hook=\"lsg-zoom-in\"]",
+      "dwell": 3919
+    },
+    {
+      "click": "[data-hook=\"lsg-zoom-in\"]",
+      "dwell": 6160,
+      "caption": "We can zoom right in to street level."
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "dwell": 2240
+    },
+    {
+      "click": "[data-grade-goto=\"screen:dmrurue2wmp9u\"]:not([data-hook])",
+      "waitFor": "[data-hook=\"hub-ai-insights\"]",
+      "caption": "Back to the hub via the breadcrumb.",
+      "section": "Back to Hub"
+    },
+    {
+      "dwell": 6720
+    },
+    {
+      "key": "Alt+T",
+      "dwell": 5040,
+      "caption": "And the whole product is themeable, live \u2014 no code.",
+      "section": "Live theming"
+    },
+    {
+      "select": "[data-hook=\"tweaker-preset\"]",
+      "value": "heavy-depth",
+      "dwell": 2240,
+      "caption": "Here's a darker, heavier look."
+    },
+    {
+      "key": "Alt+T",
+      "dwell": 3360
+    },
+    {
+      "scrollBy": 620,
+      "ms": 1000
+    },
+    {
+      "dwell": 4480
+    },
+    {
+      "scroll": "top",
+      "ms": 1000
+    },
+    {
+      "dwell": 3919
+    },
+    {
+      "key": "Alt+T",
+      "dwell": 2800
+    },
+    {
+      "select": "[data-hook=\"tweaker-preset\"]",
+      "value": "live-site",
+      "dwell": 2240,
+      "caption": "And the live-site look \u2014 same content, new skin."
+    },
+    {
+      "key": "Alt+T",
+      "dwell": 3360
+    },
+    {
+      "scrollBy": 620,
+      "ms": 1000
+    },
+    {
+      "dwell": 4480
+    },
+    {
+      "scroll": "top",
+      "ms": 1000
+    },
+    {
+      "dwell": 4480
+    }
+  ],
+  "sectionPause": 3000
+}

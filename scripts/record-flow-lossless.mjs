@@ -81,6 +81,7 @@ const args = Object.fromEntries(
   }),
 );
 const BASE = (args.base || "http://localhost:3000").replace(/\/+$/, "");
+const DWELL_SCALE = Number(args["dwell-scale"]) || 1; // stretch pauses for talk-over
 const FPS = Math.max(1, Number(args.fps) || 30);
 const KEEP_FRAMES = Boolean(args["keep-frames"]);
 
@@ -275,6 +276,7 @@ console.log(`booted + settled in ${((Date.now() - bootStart) / 1000).toFixed(1)}
 for (const step of flow.steps) {
   // A "section" marker = a natural intersection: add a longer breath.
   if (step.section) step.dwell = (step.dwell || 0) + (flow.sectionPause ?? 1500);
+  if (step.dwell) step.dwell = Math.round(step.dwell * DWELL_SCALE);
   // KEYPRESS into the screen (iframe window) — e.g. "Alt+T" opens the
   // shell tweaker. Dispatched synthetically so it fires the app handler
   // without needing focus.
