@@ -273,6 +273,8 @@ console.log(`booted + settled in ${((Date.now() - bootStart) / 1000).toFixed(1)}
 
 // ── drive the flow, emitting frames throughout at the target fps ──────
 for (const step of flow.steps) {
+  // A "section" marker = a natural intersection: add a longer breath.
+  if (step.section) step.dwell = (step.dwell || 0) + (flow.sectionPause ?? 1500);
   // KEYPRESS into the screen (iframe window) — e.g. "Alt+T" opens the
   // shell tweaker. Dispatched synthetically so it fires the app handler
   // without needing focus.

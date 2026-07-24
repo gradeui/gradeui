@@ -171,6 +171,8 @@ await installHiders(page);
 // appears the moment that step begins.
 const captions = [];
 for (const step of flow.steps) {
+  // A "section" marker = a natural intersection: add a longer breath.
+  if (step.section) step.dwell = (step.dwell || 0) + (flow.sectionPause ?? 1500);
   if (step.caption) captions.push({ tMs: Date.now() - navStart, text: step.caption });
   // Keypress into the SCREEN (iframe window) — e.g. "Alt+T" opens the
   // shell tweaker (its keydown handler lives on the screen's window).
