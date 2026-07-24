@@ -33,6 +33,7 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
 import https from "node:https";
@@ -92,7 +93,12 @@ const [VW, VH] = flow.viewport ?? [W * SCALE, H * SCALE];
 const __d = new Date(); const __p = (n) => String(n).padStart(2, "0");
 const __STAMP = `${__d.getFullYear()}${__p(__d.getMonth()+1)}${__p(__d.getDate())}-${__p(__d.getHours())}${__p(__d.getMinutes())}${__p(__d.getSeconds())}`;
 const __stamp = (p) => { const e = path.extname(p), b = path.basename(p, e), d = path.dirname(p); const folder = path.join(d, `${b}-${__STAMP}`); fs.mkdirSync(folder, { recursive: true }); return path.join(folder, b + e); };
-const OUT = __stamp(args.out && args.out !== true ? args.out : `${flow.start}-flow.mp4`);
+// Default output home — every run nests as a timestamped folder in
+// ~/Desktop/brightlocal-videos/ (where Ali keeps the demo renders).
+// A bare --out=name.mp4 lands here too; an absolute --out is respected.
+const VIDEOS_DIR = path.join(os.homedir(), "Desktop", "brightlocal-videos");
+const __rawOut = args.out && args.out !== true ? String(args.out) : `${flow.start}-flow.mp4`;
+const OUT = __stamp(path.isAbsolute(__rawOut) ? __rawOut : path.join(VIDEOS_DIR, path.basename(__rawOut)));
 
 const mcp = JSON.parse(fs.readFileSync(path.join(REPO, ".mcp.json"), "utf8"));
 const KEY = mcp.mcpServers["gradeui-dev"].env.SUPABASE_SERVICE_ROLE_KEY;

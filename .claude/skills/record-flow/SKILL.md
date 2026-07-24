@@ -7,14 +7,16 @@ description: Record a walked FLOW of a gradeui Studio project (click links acros
 
 Two recorders, SAME flow-JSON format — iterate on the fast one, final-render on the pristine one:
 
-- **`scripts/record-flow.mjs`** — real-time Playwright capture (lossy VP8→h264). FAST (~1s per video-second). Captures view transitions natively. Use to iterate on choreography/pacing.
-- **`scripts/record-flow-lossless.mjs`** — frame-stepped, true 2×-native, **mathematically lossless** (h264 `qp0`/yuv444p). Deterministic view transitions via WAAPI scrubbing (pauses the `::view-transition-*` animations and seeks 1000/fps per frame). ~1.5s per video-second. Use for the final.
+- **`scripts/record-flow.mjs`** — real-time Playwright capture (lossy VP8→h264). FAST (~1s per video-second). Captures view transitions natively. Use to iterate on choreography/pacing. Drives **`/e/<token>?w=1280`** — the embed *scales* the 1280 layout up to fill a 2560 viewport, so a real-time capture comes out retina.
+- **`scripts/record-flow-lossless.mjs`** — frame-stepped, true 2×-native, **mathematically lossless** (h264 `qp0`/yuv444p). Deterministic view transitions via WAAPI scrubbing (pauses the `::view-transition-*` animations and seeks 1000/fps per frame). ~1.5s per video-second. Use for the final. Drives **`/s/<token>?fullscreen=1`** — the *share* route, because it loads the project's custom CSS from the rules area (e.g. the brightlocal rule that widens the sidebar so "Google Business Profile" doesn't wrap) which the `/e/` embed omits. It frame-steps at natural 1280 × deviceScaleFactor 2, so it doesn't need the embed's scale-up.
 
-Both: content laid out at **W×H = 1280×834** (H default is Ali's 834 minimum), captured at 2× → **2560×1668**. They hide chrome (Next "N" nub, flow Back chips), trim the loading head, and emit `.mp4` + `.webm`. ffmpeg comes from the `ffmpeg-static` devdep; Supabase key is read from `.mcp.json`. Dev server must be up (`pnpm dev`), or pass `--base=https://gradeui.com`.
+Both: content laid out at **W×H = 1280×834** (H default is Ali's 834 minimum), captured at 2× → **2560×1668**. They hide chrome (Next "N" nub, flow/share Back chips), trim the loading head, and emit `.mp4` + `.webm` in a **timestamped per-run folder** `<out>-<YYYYMMDD-HHMMSS>/`, with per-`section` clips under `…-sections/NN-<slug>.mp4`. ffmpeg comes from the `ffmpeg-static` devdep; Supabase key is read from `.mcp.json`. Dev server must be up (`pnpm dev`), or pass `--base=https://gradeui.com`. **Caveat:** the lossy recorder still uses `/e/`, which lacks the custom CSS — its sidebar can wrap even though the lossless (final) doesn't. To make the two identical, either fix `/e/` to inject the project's `.css` rules like `/s/` does, or point the lossy at `/s/` at 1280 (non-retina).
 
 ```bash
-node scripts/record-flow.mjs          --flow=scripts/flows/brightlocal-tour.json --out=~/Desktop/tour.mp4
-node scripts/record-flow-lossless.mjs --flow=scripts/flows/brightlocal-tour.json --out=~/Desktop/tour.mp4 --fps=60
+# Output nests as a timestamped folder in ~/Desktop/brightlocal-videos/ by
+# default (a bare --out name lands there too; an absolute --out is respected).
+node scripts/record-flow.mjs          --flow=scripts/flows/brightlocal-tour.json --out=tour.mp4
+node scripts/record-flow-lossless.mjs --flow=scripts/flows/brightlocal-tour.json --out=tour.mp4 --fps=30
 ```
 
 ## Flow JSON

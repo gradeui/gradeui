@@ -110,7 +110,12 @@ const DEVICE_H = H * 2;
 const __d = new Date(); const __p = (n) => String(n).padStart(2, "0");
 const __STAMP = `${__d.getFullYear()}${__p(__d.getMonth()+1)}${__p(__d.getDate())}-${__p(__d.getHours())}${__p(__d.getMinutes())}${__p(__d.getSeconds())}`;
 const __stamp = (p) => { const e = path.extname(p), b = path.basename(p, e), d = path.dirname(p); const folder = path.join(d, `${b}-${__STAMP}`); fs.mkdirSync(folder, { recursive: true }); return path.join(folder, b + e); };
-const OUT = __stamp(args.out && args.out !== true ? args.out : `${flow.start}-flow-lossless.mp4`);
+// Default output home — every run nests as a timestamped folder here
+// (Ali keeps all the demo renders in ~/Desktop/brightlocal-videos/).
+// A bare --out=name.mp4 lands here too; an absolute --out is respected as-is.
+const VIDEOS_DIR = path.join(os.homedir(), "Desktop", "brightlocal-videos");
+const __rawOut = args.out && args.out !== true ? String(args.out) : `${flow.start}-flow-lossless.mp4`;
+const OUT = __stamp(path.isAbsolute(__rawOut) ? __rawOut : path.join(VIDEOS_DIR, path.basename(__rawOut)));
 
 const mcp = JSON.parse(fs.readFileSync(path.join(REPO, ".mcp.json"), "utf8"));
 const KEY = mcp.mcpServers["gradeui-dev"].env.SUPABASE_SERVICE_ROLE_KEY;
@@ -215,7 +220,7 @@ const easeInOutQuad = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) 
 const framesFor = (ms, fallback) => Math.max(1, Math.round(((ms ?? fallback) / 1000) * FPS));
 
 const token = await ensureToken(flow.project, flow.start);
-const url = `${BASE}/e/${token}?w=${W}`;
+const url = `${BASE}/s/${token}?fullscreen=1`; // /s/ pulls the project custom CSS (sidebar width) the /e/ embed omits; lossless frame-steps at natural size so it doesn't need the embed scale-up.
 const framesDir = fs.mkdtempSync(path.join(os.tmpdir(), "grade-frames-"));
 console.log(`lossless frame-step · ${DEVICE_W}x${DEVICE_H} (2x of ${W}x${H}) · ${FPS}fps · ${url}`);
 console.log(`frames → ${framesDir}`);
