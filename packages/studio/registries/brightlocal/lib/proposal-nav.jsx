@@ -436,11 +436,13 @@ export function ProposalSidebar({
           PORTALS itself into the content scroll area (SidebarContent's
           mt-auto portal target), so with an overflowing nav it scrolls
           away with the content. A plain sibling of the scroll area is
-          always pinned. px-2 matches the nav groups' inset. Upstream
-          ask: SidebarFooter needs a non-portalling/sticky option. */}
+          always pinned. px-2 matches the nav groups' inset. pb-3: the
+          signed-in row sat too close to the viewport edge at pb-1.5
+          (Ali, 24 Jul). Upstream ask: SidebarFooter needs a
+          non-portalling/sticky option. */}
       <div
         data-hook="sidebar-footer"
-        className="border-sidebar-border flex shrink-0 flex-col border-t px-2 pt-2 pb-1.5"
+        className="border-sidebar-border flex shrink-0 flex-col border-t px-2 pt-2 pb-3"
       >
         {/* All Locations — a STANDARD nav row (replaced the account
             switcher dropdown, Ali 21 Jul). Sits above the signed-in
