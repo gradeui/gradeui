@@ -105,17 +105,15 @@ export function formatDate(value) {
 }
 
 // ─── CardTitleLink — the clickable-card title treatment ───────────────
-// Feature cards whose WHOLE card is a link (hub cards, module cards)
-// title in the brand's clickable colour. ONE token seam: the colour
-// reads `--bl-card-link` first (re-point it in a theme/scope to restyle
-// every clickable title at once) and falls back to the dark brand green
-// GREEN-AT-REST REMOVED (Ali, 22 Jul: "getting rid of the cards having
-// green header text… just too many colours") — titles sit in the
-// normal card foreground now, and CLICKABILITY reads through the hover
-// alone: data-bl-link gives the green-700 + underline treatment on
-// hover of the title OR of the whole [data-grade-goto] card (the
-// shell's CLICKABLE-LINK TOKENS rules). The --bl-card-link seam still
-// colours inline text links and accordion action rows at rest.
+// Feature cards whose WHOLE card is a link (hub cards, module cards).
+// GREEN-AT-REST REMOVED (Ali, 22 Jul: "just too many colours") and
+// GREEN-ON-HOVER REMOVED TOO (Ali, 24 Jul: the hover green "looks
+// unfinished" — a previous designer's suggestion). The title is plain
+// card foreground in every state; a clickable card's affordance is the
+// DrillArrow (a real secondary Button that moves to its hover state on
+// card hover, via group/group-hover) plus a hover shadow on the card —
+// see the hub screen. data-bl-link stays stamped: accordion rows and
+// the --bl-card-link seam for inline links still read it.
 export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
   return (
     <CardTitle
