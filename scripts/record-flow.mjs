@@ -275,7 +275,7 @@ if (sections.length) {
   for (let i = 0; i < sections.length; i++) {
     const start = Math.max(0, (sections[i].tMs - trimMs) / 1000);
     const end = (i + 1 < sections.length ? sections[i + 1].tMs - trimMs : durMs) / 1000;
-    const out = path.join(dir, `${String(i + 1).padStart(2, "0")}-${slug(sections[i].name)}.mp4`);
+    const out = path.join(dir, `${slug(sections[i].name)}-${String(i + 1).padStart(2, "0")}.mp4`);
     await new Promise((res, rej) => {
       const ff = spawn(FFMPEG, ["-y", "-ss", start.toFixed(3), "-to", end.toFixed(3), "-i", OUT, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", "-movflags", "+faststart", out], { stdio: "ignore" });
       ff.on("exit", (c) => (c === 0 ? res() : rej(new Error("ffmpeg section " + c))));
