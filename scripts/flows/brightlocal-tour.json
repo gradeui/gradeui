@@ -73,7 +73,7 @@
       "dwell": 3000
     },
     {
-      "scrollTo": "[data-slot=\"accordion-trigger\"]",
+      "scrollTo": "[data-hook^=\"insight-\"]",
       "ms": 1000
     },
     {

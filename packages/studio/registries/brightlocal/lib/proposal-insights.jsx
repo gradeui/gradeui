@@ -34,6 +34,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  TypographyH3,
+  TypographyMuted,
 } from "@brightlocal/ui-components";
 import {
   ArrowRight,
@@ -416,7 +418,12 @@ export function InsightCard({ item, actionStyle = "accordion" }) {
     // Priority badge and the "ACTIONS (n)" grey heading are gone
     // (snags 27–29, Ali 21 Jul).
     <div className="space-y-4" data-hook={`insight-${item.id}`}>
-      <div className="min-w-0 space-y-1.5">
+      {/* The insight's header + summary sit in a muted TILE — the same
+          surface as the At-a-Glance sub-metric tiles (Ali, 24 Jul:
+          "the header and description above those [the actions], not
+          the actions or numbered things"). Actions stay below, outside
+          the tile. */}
+      <div className="min-w-0 space-y-1.5 rounded-xl bg-muted px-4 py-3.5">
         {/* NO GlossaryText in headings (Ali, 22 Jul) — dashed underlines
             inside a bold title read as broken formatting. Terms get their
             glossary treatment on first use in BODY text instead. */}
@@ -579,6 +586,12 @@ export function AreaInsights({
   areaId,
   // Section heading — the page reframed around doing, not diagnosing.
   title = "Actions & Insights",
+  // Human noun for the intro line under the heading ("website",
+  // "reviews", "citations", "Google Business Profile") — completes
+  // "…how to improve your {areaLabel}."
+  areaLabel = null,
+  // Override the whole intro line when the template doesn't fit.
+  description = null,
   // "accordion" (default) | "list" — passed to each InsightCard.
   actionStyle = "accordion",
   dataHook = "area-insights",
@@ -586,32 +599,41 @@ export function AreaInsights({
   const data = useProposalData();
   const { items } = data.aiInsights;
   const areaItems = items.filter((i) => i.area === areaId);
+  const intro =
+    description ??
+    `Here's our insights and recommendations, with actions on how to improve${
+      areaLabel ? ` your ${areaLabel}` : ""
+    }.`;
   return (
-    // ONE card (snag 27, Ali 21 Jul): the "Actions & Insights" heading
-    // lives INSIDE the card, and every insight renders as a section
-    // within it, separated by rules — not a stack of separate cards.
-    // "Last updated" lives ONLY in the PageHeader (Ali, 20 Jul).
-    <Card className="w-full max-w-none" density="default" dataHook={dataHook}>
-      <CardHeader>
-        {/* No icon — the "star AI" Sparkles came off these cards with
-            the sub-page At-a-Glance rework (Ali, 23 Jul). */}
-        <CardTitle size="default">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {areaItems.length > 0 ? (
-          <div className="flex flex-col divide-y divide-[var(--ds-tailwind-colors-neutral-100)]">
-            {areaItems.map((item, i) => (
-              <div key={item.id} className={i === 0 ? "pb-6" : "py-6 last:pb-0"}>
-                <InsightCard item={item} actionStyle={actionStyle} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-sm text-[var(--ds-tailwind-colors-neutral-500)]">
-            No open insights for this area — run Generate insights to refresh.
-          </p>
-        )}
-      </CardContent>
-    </Card>
+    // Heading OUTSIDE the card (Ali, 24 Jul) — same section-intro
+    // anatomy as "Build your foundation" (H3 + muted line, content
+    // below), so every sub-page section reads the same way. The
+    // insights still share ONE card, each a ruled section within it
+    // (snag 27 holds inside the card); each insight's OWN header +
+    // summary sits in a muted tile (see InsightCard). No icon — the
+    // "star AI" Sparkles came off with the sub-page At-a-Glance rework
+    // (Ali, 23 Jul). "Last updated" lives ONLY in the PageHeader (Ali,
+    // 20 Jul).
+    <div className="space-y-1" data-hook={dataHook}>
+      <TypographyH3>{title}</TypographyH3>
+      <TypographyMuted>{intro}</TypographyMuted>
+      <Card className="mt-4 w-full max-w-none" density="default">
+        <CardContent>
+          {areaItems.length > 0 ? (
+            <div className="flex flex-col divide-y divide-[var(--ds-tailwind-colors-neutral-100)]">
+              {areaItems.map((item, i) => (
+                <div key={item.id} className={i === 0 ? "pb-6" : "py-6 last:pb-0"}>
+                  <InsightCard item={item} actionStyle={actionStyle} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-sm text-[var(--ds-tailwind-colors-neutral-500)]">
+              No open insights for this area — run Generate insights to refresh.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

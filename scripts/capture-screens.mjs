@@ -225,6 +225,22 @@ console.log(`${targets.length} screen(s) to capture, ${skipped} placeholder(s) s
 // Variant dirs are created on demand (themed runs nest per preset).
 const ensureDir = (d) => (fs.mkdirSync(d, { recursive: true }), d);
 
+// Wait for the sandbox to receive + render its source (used on first
+// load AND after a healing reload).
+async function waitForContent(page) {
+  await page
+    .waitForFunction(
+      () => {
+        const f = document.querySelector("iframe");
+        const d = f && f.contentDocument;
+        return d && d.body && (d.body.innerText || "").trim().length > 30;
+      },
+      { timeout: 30000 },
+    )
+    .catch(() => {});
+  await page.waitForTimeout(4500); // maps + fonts + double-buffer commit
+}
+
 // Toggle the shell tweaker (Alt+T, dispatched inside the screen iframe —
 // same synthetic-keydown the flow recorder uses) and pick a look preset.
 // Returns true if the preset was applied, false if this screen has no
@@ -281,18 +297,7 @@ for (const s of targets) {
     console.log(`  … ${s.prefix}-${s.slug}: slow load, retrying`);
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
   }
-  await page
-    .waitForFunction(
-      () => {
-        const f = document.querySelector("iframe");
-        const d = f && f.contentDocument;
-        return d && d.body && (d.body.innerText || "").trim().length > 30;
-      },
-      { timeout: 30000 },
-    )
-    .catch(() => {});
-  // settle: maps + fonts + the double-buffered preview commit
-  await page.waitForTimeout(4500);
+  await waitForContent(page);
   await hideChrome(page);
 
   const contentH = await page.evaluate(() => {
@@ -317,21 +322,56 @@ for (const s of targets) {
       await hideChrome(page);
     }
     const dir = theme ? `${OUT}/${theme}` : OUT;
-    const shot = async (sub, w, h, settle) => {
-      await page.setViewportSize({ width: w, height: h });
-      // A resize re-runs the share view's layout; a short settle sometimes
-      // caught it mid-relayout (inset frame / vertical offset). Reset the
-      // scroll area and give the relayout a full second to land.
-      await page
+    // Reset EVERY scroll area (main content AND the sidebar nav) so no
+    // shot inherits a scroll offset from a resize.
+    const resetScrolls = () =>
+      page
         .evaluate(() => {
-          const f = document.querySelector("iframe");
-          const d = f && f.contentDocument;
-          const v = d && d.querySelector("[data-radix-scroll-area-viewport]");
-          if (v) v.scrollTop = 0;
           document.scrollingElement && (document.scrollingElement.scrollTop = 0);
+          for (const f of document.querySelectorAll("iframe")) {
+            const d = f.contentDocument;
+            if (!d) continue;
+            d.querySelectorAll("[data-radix-scroll-area-viewport]").forEach((v) => (v.scrollTop = 0));
+          }
         })
         .catch(() => {});
-      await page.waitForTimeout(Math.max(settle, 1000));
+    // The share view MUST be full-bleed before a shot: some sandbox
+    // iframe fills the viewport exactly (a resize occasionally leaves a
+    // Fit-scaled inset frame or a vertical offset — the two corruption
+    // modes the verify pass caught). If it doesn't settle, a reload
+    // (plus re-applying the theme) heals the stuck state.
+    const waitFullBleed = (w, h) =>
+      page
+        .waitForFunction(
+          ([vw, vh]) =>
+            [...document.querySelectorAll("iframe")].some((f) => {
+              const r = f.getBoundingClientRect();
+              return (
+                Math.abs(r.x) < 1.5 &&
+                Math.abs(r.y) < 1.5 &&
+                Math.abs(r.width - vw) < 2 &&
+                Math.abs(r.height - vh) < 2
+              );
+            }),
+          [w, h],
+          { timeout: 6000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+    const shot = async (sub, w, h, settle) => {
+      await page.setViewportSize({ width: w, height: h });
+      await resetScrolls();
+      await page.waitForTimeout(Math.max(settle, 800));
+      if (!(await waitFullBleed(w, h))) {
+        console.log(`  … ${s.prefix}-${s.slug} [${sub}]: layout stuck, reloading to heal`);
+        await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
+        await waitForContent(page);
+        if (theme) await applyTheme(page, theme);
+        await resetScrolls();
+        await page.waitForTimeout(800);
+        if (!(await waitFullBleed(w, h)))
+          console.log(`  ⚠️ ${s.prefix}-${s.slug} [${sub}]: STILL not full-bleed after reload — check this shot`);
+      }
       await hideChrome(page);
       const p = path.join(ensureDir(`${dir}/${sub}`), `${s.prefix}-${s.slug}.png`);
       await page.screenshot({ path: p, type: "png" });
