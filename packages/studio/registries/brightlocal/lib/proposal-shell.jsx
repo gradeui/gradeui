@@ -901,10 +901,17 @@ export function AppLayoutShell({
   // "expansive" mirrors the LIVE BrightLocal nav's generous rhythm
   // (~48px rows, 15px labels, 20px icons — Ali, 21 Jul).
   const NAV_DENSITIES = {
+    // compact's row-px 12px lives in the CSS defaults: it matches the
+    // location card's px-3 so the icon columns line up (Ali, 24 Jul —
+    // px-4 rows left the House icon 4px out). The roomier densities
+    // pin the original 16px, and their sub-pl keeps the main↔sub
+    // label alignment at that inset.
     compact: {},
     comfortable: {
       "--gds-nav-row-py": "8px",
       "--gds-nav-sub-py": "7px",
+      "--gds-nav-row-px": "16px",
+      "--gds-nav-sub-pl": "20px",
       "--gds-nav-icon-size": "20px",
       "--gds-nav-icon-stroke": "1.5",
     },
@@ -912,6 +919,7 @@ export function AppLayoutShell({
       "--gds-nav-font-size": "0.9375rem",
       "--gds-nav-row-py": "14px",
       "--gds-nav-sub-py": "10px",
+      "--gds-nav-row-px": "16px",
       "--gds-nav-sub-pl": "24px",
       "--gds-nav-icon-size": "20px",
       "--gds-nav-icon-stroke": "1.5",
@@ -1058,8 +1066,15 @@ export function AppLayoutShell({
            utility slot above are coming) without losing readability.
            The :not guards nav-item-* (the <li> hooks share the nav-
            prefix). height:auto beats the size variant's fixed h-7. */
-        '[data-gds-shell-sidebar] [data-hook^="nav-"]:not([data-hook^="nav-item-"]){height:auto;min-height:calc(20px + 2*var(--gds-nav-row-py,6px));padding-block:var(--gds-nav-row-py,6px);font-size:var(--gds-nav-font-size,0.875rem)}' +
-        '[data-gds-shell-sidebar] [data-hook^="sub-btn-"]{border-radius:var(--gds-nav-row-radius,9999px);height:auto;min-height:calc(20px + 2*var(--gds-nav-sub-py,5px));padding-block:var(--gds-nav-sub-py,5px);padding-left:var(--gds-nav-sub-pl,20px);font-size:var(--gds-nav-font-size,0.875rem)}' +
+        /* --gds-nav-row-px (default 12px, compact) — row inline
+           padding; 12px matches the location card's px-3 so the icon
+           columns align (Ali, 24 Jul). The sub-pl default drops to
+           16px in step (main labels moved 4px left). ASSUMPTION (Ali
+           to eyeball): the sub RAIL line is DS-baked and doesn't
+           move with the inset — at compact it now sits 4px right of
+           the icon start; unnoticeable in testing but flagged. */
+        '[data-gds-shell-sidebar] [data-hook^="nav-"]:not([data-hook^="nav-item-"]){height:auto;min-height:calc(20px + 2*var(--gds-nav-row-py,6px));padding-block:var(--gds-nav-row-py,6px);padding-inline:var(--gds-nav-row-px,12px);font-size:var(--gds-nav-font-size,0.875rem)}' +
+        '[data-gds-shell-sidebar] [data-hook^="sub-btn-"]{border-radius:var(--gds-nav-row-radius,9999px);height:auto;min-height:calc(20px + 2*var(--gds-nav-sub-py,5px));padding-block:var(--gds-nav-sub-py,5px);padding-left:var(--gds-nav-sub-pl,16px);font-size:var(--gds-nav-font-size,0.875rem)}' +
         /* Nav icons — 16px / stroke 1 at the compact row size (20px
            icons overpowered the sm rows). Lucide sets stroke-width as
            a presentation attribute on the svg root, so CSS here wins.

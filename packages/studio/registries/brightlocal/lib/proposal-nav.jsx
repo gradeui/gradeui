@@ -359,10 +359,18 @@ export function ProposalSidebar({
     >
       {/* Logo-only header; the account switcher lives in the STUCK
           footer with the signed-in row. pb-3 overrides the DS's
-          hardcoded pb-9; pl-6 keeps the logo on the tightened 24px
-          icon line (groups px-2 + buttons px-4) — the DS default pl-8
-          assumed the airier inset. */}
-      <SidebarHeader dataHook="sidebar-header" className="pb-3 pl-6">
+          hardcoded pb-9. The left inset TRACKS the density's icon
+          line so the logo stays column-aligned with the nav icons at
+          any density (Ali, 24 Jul). The constant is 12px measured
+          from the LIVE chain — scroll-viewport pl 4px + group px-2
+          (8px) — plus the row's own --gds-nav-row-px (12px compact /
+          16px roomier). The old pl-6 approximation missed the
+          viewport's 4px and sat slightly off the line. */}
+      <SidebarHeader
+        dataHook="sidebar-header"
+        className="pb-3"
+        style={{ paddingLeft: "calc(12px + var(--gds-nav-row-px, 12px))" }}
+      >
         <Logo className="h-6" dataHook="sidebar-logo" />
       </SidebarHeader>
 
@@ -448,13 +456,16 @@ export function ProposalSidebar({
           PORTALS itself into the content scroll area (SidebarContent's
           mt-auto portal target), so with an overflowing nav it scrolls
           away with the content. A plain sibling of the scroll area is
-          always pinned. px-2 matches the nav groups' inset. pb-3: the
+          always pinned. px-3: the footer sits OUTSIDE the scroll area,
+          so unlike the nav groups (viewport pl 4px + group px-2) its
+          rows need the full 12px here to land on the same icon line
+          as the content rows — px-2 left them 4px short. pb-3: the
           signed-in row sat too close to the viewport edge at pb-1.5
           (Ali, 24 Jul). Upstream ask: SidebarFooter needs a
           non-portalling/sticky option. */}
       <div
         data-hook="sidebar-footer"
-        className="border-sidebar-border flex shrink-0 flex-col border-t px-2 pt-2 pb-3"
+        className="border-sidebar-border flex shrink-0 flex-col border-t px-3 pt-2 pb-3"
       >
         {/* All Locations — a STANDARD nav row (replaced the account
             switcher dropdown, Ali 21 Jul). Sits above the signed-in
