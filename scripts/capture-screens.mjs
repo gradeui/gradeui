@@ -2,8 +2,8 @@
 // screens, for slide decks / proposals / docs.
 //
 // For each BUILT screen it writes two PNGs:
-//   full/<NN>-<slug>@2x.png      — full content height (nothing crops)
-//   1280x900/<NN>-<slug>@2x.png  — fixed desktop frame (sidebar never
+//   full/<NN>-<slug>.png      — full content height (nothing crops)
+//   1280x900/<NN>-<slug>.png  — fixed desktop frame (sidebar never
 //                                  crops when dropped into a deck)
 // Empty PLACEHOLDER screens (the dashed "page content goes here" stub,
 // or the shared <EmptyPrototypePage/>) are skipped by default — pass
@@ -27,6 +27,46 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
 import https from "node:https";
+import zlib from "node:zlib";
+
+// Tag a PNG as 144 DPI (2x retina density) by inserting a pHYs chunk
+// after IHDR. Playwright writes 72-DPI PNGs; at 72 DPI Figma/design
+// tools import a 2560px shot oversized and it ends up scaled + soft.
+// 144 DPI is exactly what macOS retina screenshots carry, so tools
+// place it as a crisp 2x asset. Pixels are untouched — metadata only.
+// Portable (no `sips`). Strips any existing pHYs then inserts a fresh
+// one after IHDR — safe to re-run and safe on files that already carry
+// a density chunk.
+function setPngRetinaDpi(file) {
+  const ppm = Math.round(144 / 0.0254); // pixels per metre
+  const data = Buffer.alloc(9);
+  data.writeUInt32BE(ppm, 0);
+  data.writeUInt32BE(ppm, 4);
+  data.writeUInt8(1, 8); // unit = metre
+  const type = Buffer.from("pHYs");
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(zlib.crc32(Buffer.concat([type, data])) >>> 0, 0);
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(9, 0);
+  const phys = Buffer.concat([len, type, data, crc]);
+
+  const buf = fs.readFileSync(file);
+  const sig = buf.subarray(0, 8);
+  const chunks = [];
+  let off = 8;
+  while (off + 12 <= buf.length) {
+    const clen = buf.readUInt32BE(off);
+    const ctype = buf.toString("ascii", off + 4, off + 8);
+    const end = off + 12 + clen;
+    // Drop existing pHYs AND eXIf: Chromium's eXIf carries a 72-DPI
+    // resolution that Figma/macOS read with priority over pHYs, so it
+    // must go or the 144 tag is ignored and the shot imports oversized.
+    if (ctype !== "pHYs" && ctype !== "eXIf") chunks.push(buf.subarray(off, end));
+    off = end;
+  }
+  // IHDR is always the first chunk; place pHYs immediately after it.
+  fs.writeFileSync(file, Buffer.concat([sig, chunks[0], phys, ...chunks.slice(1)]));
+}
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(here, "..");
@@ -178,12 +218,16 @@ for (const s of targets) {
   });
   const fullH = Math.min(Math.max(contentH || 900, 640), 4000);
 
-  await page.screenshot({ path: `${OUT}/1280x900/${s.prefix}-${s.slug}@2x.png`, type: "png" });
+  const fixedPath = `${OUT}/1280x900/${s.prefix}-${s.slug}.png`;
+  await page.screenshot({ path: fixedPath, type: "png" });
+  setPngRetinaDpi(fixedPath);
 
   await page.setViewportSize({ width: 1280, height: fullH });
   await page.waitForTimeout(800);
   await hideChrome(page);
-  await page.screenshot({ path: `${OUT}/full/${s.prefix}-${s.slug}@2x.png`, type: "png" });
+  const fullPath = `${OUT}/full/${s.prefix}-${s.slug}.png`;
+  await page.screenshot({ path: fullPath, type: "png" });
+  setPngRetinaDpi(fullPath);
 
   manifest.push({ prefix: s.prefix, name: s.name, slug: s.slug, id: s.id, fullPx: `2560x${fullH * 2}` });
   console.log(`  ✓ ${s.prefix}-${s.slug}  (full 1280x${fullH})`);
