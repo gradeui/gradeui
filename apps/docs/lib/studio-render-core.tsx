@@ -24,6 +24,13 @@
 import * as React from "react";
 import * as ReactJsxRuntime from "react/jsx-runtime";
 import * as ReactJsxDevRuntime from "react/jsx-dev-runtime";
+// react-dom is Tier-1 (bundled), NOT Tier-2: screens import createPortal
+// (map-pin overlays), and an esm.sh copy would be a SECOND React renderer
+// instance — portals must come from the same copy that mounts the tree.
+// Also the MCP preview View's CSP is connect-src 'none', so for it the
+// CDN tier can never resolve anything.
+import * as ReactDom from "react-dom";
+import * as ReactDomClient from "react-dom/client";
 import { transform as sucraseTransform } from "sucrase";
 
 // ─── Static imports of every module the preview can reach for. ────────
@@ -101,6 +108,8 @@ export function resolveImport(path: string): unknown {
   if (path === "react") return React;
   if (path === "react/jsx-runtime") return ReactJsxRuntime;
   if (path === "react/jsx-dev-runtime") return ReactJsxDevRuntime;
+  if (path === "react-dom") return ReactDom;
+  if (path === "react-dom/client") return ReactDomClient;
 
   if (path === "@gradeui/ui" || path.startsWith("@gradeui/ui/")) {
     return { ...GradeuiUi, ...GradeuiComposer };
@@ -167,6 +176,8 @@ const KNOWN_TIER_1 = new Set<string>([
   "react",
   "react/jsx-runtime",
   "react/jsx-dev-runtime",
+  "react-dom",
+  "react-dom/client",
   "lucide-react",
   "recharts",
   "canvas-confetti",
@@ -306,10 +317,14 @@ export function compileModule(
     production: true,
     filePath: "/lib-module.tsx",
   });
+  // "React" in the compiled scope — parity with /external-sandbox (its
+  // executor does exactly this): screens/lib modules may use bare
+  // React.useState etc. without importing React, and must not depend on
+  // a window.React global the host page never sets.
   // eslint-disable-next-line @typescript-eslint/no-implied-eval
-  const fn = new Function("module", "exports", "require", code);
+  const fn = new Function("module", "exports", "require", "React", code);
   const shim = { exports: {} as Record<string, unknown> };
-  fn(shim, shim.exports, resolver);
+  fn(shim, shim.exports, resolver, React);
   return shim.exports;
 }
 
@@ -322,9 +337,9 @@ export function compile(source: string): CompileResult {
       filePath: "/App.tsx",
     });
     // eslint-disable-next-line @typescript-eslint/no-implied-eval
-    const fn = new Function("module", "exports", "require", code);
+    const fn = new Function("module", "exports", "require", "React", code);
     const shim = { exports: {} as Record<string, unknown> };
-    fn(shim, shim.exports, resolveImport);
+    fn(shim, shim.exports, resolveImport, React);
     const Component =
       ((shim.exports.default ?? shim.exports.App) as
         | React.ComponentType

@@ -112,11 +112,23 @@ await esbuild.build({
 const full = fs.readFileSync(path.join(distDir, "full.css"), "utf8");
 const comp = fs.readFileSync(path.join(distDir, "bundle.css"), "utf8");
 const js = fs.readFileSync(path.join(distDir, "bundle.js"), "utf8");
+// Fonts — the same families /external-sandbox loads from Google
+// (EXTERNAL_FONTS_URL in lib/external-ds-preview.ts), vendored as woff2
+// + inlined as data: URIs because the panel CSP blocks runtime fetches.
+// Own <style id> on purpose: brightlocal-vocab disables the gradeui
+// sheets when that registry activates, and the faces must survive it.
+const fontsDir = path.join(here, "fonts");
+const fonts = fs
+  .readFileSync(path.join(fontsDir, "fonts.css"), "utf8")
+  .replace(/url\(\.\/([^)]+\.woff2)\)/g, (_, file) => {
+    const b64 = fs.readFileSync(path.join(fontsDir, file)).toString("base64");
+    return `url(data:font/woff2;base64,${b64})`;
+  });
 // The two gradeui sheets carry ids so brightlocal-vocab can DISABLE them
 // when a brightlocal screen renders — that registry ships zero gradeui
 // CSS (parity with /external-sandbox); its bundled Tailwind build then
 // JIT-compiles every class in the document, widget chrome included.
-const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>Grade Preview</title><style id="gds-full-css">${full}</style><style id="gds-ui-css">${comp}</style></head><body><div id="root"></div><script>${js}</script></body></html>`;
+const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>Grade Preview</title><style id="gds-fonts-css">${fonts}</style><style id="gds-full-css">${full}</style><style id="gds-ui-css">${comp}</style></head><body><div id="root"></div><script>${js}</script></body></html>`;
 fs.writeFileSync(path.join(distDir, "mcp-view.html"), html);
 
 // 4. Emit as a TS module the MCP server bundles.

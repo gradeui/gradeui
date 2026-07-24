@@ -33,6 +33,11 @@ import {
   isBrightlocalSource,
   activateBrightlocalCss,
 } from "./brightlocal-vocab";
+// Map SDK stub — side-effect import. The panel's CSP can never load a
+// real Google map; this resolves "@vis.gl/react-google-maps" to inert
+// components that trip the screens' own gm_authFailure fallback
+// (wireframe grid) instead of killing the whole screen at import time.
+import "./visgl-offline-stub";
 
 /** Registry decision for a payload: the project's registryId is
  *  authoritative; the import sniff only covers payloads from an older
