@@ -2155,6 +2155,42 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       }
     }
   },
+  "EmptyPrototypePage": {
+    "name": "EmptyPrototypePage",
+    "description": "The standard blank-page state for pages this proposal doesn't",
+    "props": {
+      "title": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "Header line above the description. (default \"This feature isn't available yet\")"
+      },
+      "description": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Body copy under the header. Defaults to THIS proposal's standard explainer — which pages ARE built (All Locations, Location Home, AI Insights, and one page deep for the Location Grid), with those screen names in bold. NO em dashes (proposal copy rule). Pass any node to override per page."
+      },
+      "mascot": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "The open-eye Globey frame — any Globey SVG from @brightlocal/illustrations (GlobeyCalmOpen1, GlobeyWinkOpen1, GlobeyDownOpen1, …). Overridable per page. (default GlobeyCalmOpen1)"
+      },
+      "mascotClosed": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "The closed-eye frame used for the blink; pair it with a matching `mascot` face if you swap. (default GlobeyCalmClosed)"
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name stamped on the root. (default \"empty-prototype-page\")"
+      }
+    }
+  },
   "Field": {
     "name": "Field",
     "description": "function MyForm() {",

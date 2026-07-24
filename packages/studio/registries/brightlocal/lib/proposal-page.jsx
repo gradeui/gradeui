@@ -73,6 +73,10 @@ import {
   Tag,
   TrendingUp,
 } from "@brightlocal/icons";
+import {
+  GlobeyCalmOpen1,
+  GlobeyCalmClosed,
+} from "@brightlocal/illustrations";
 import { useProposalData } from "@brightlocal/proposal-data";
 import { selectSessionDataset } from "@brightlocal/proposal-shell";
 
@@ -858,6 +862,116 @@ export function LocationCardSkeleton({ dataHook = "location-card-skeleton" }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ─── EmptyPrototypePage — the standard "not available yet" state ──────
+// The blank-page fill for pages this proposal doesn't implement.
+// Promoted from the Set-up Tasks screen (Ali, 24 Jul — approved, then
+// "push it"). NO dashed outline: an SVG Globey mascot in a 4:3 zone, a
+// header, and descriptive copy. SVG (not the raster scene) so it stays
+// crisp at any size and flips itself in dark mode (the illustration
+// ships a light/dark twin). Gentle idle FLOAT + occasional BLINK, both
+// reduced-motion-gated. Defaults carry THIS project's standard copy so
+// every blank page inherits it DRY (`title` + `description`); the
+// mascot is overridable (Ali).
+//
+// NOTE: roll-out to the other blank pages is Ali-gated — do NOT swap
+// any screen's placeholder for this until told (he owns the timing).
+
+// Blink: swap the open eye-frame for the closed one on a randomised
+// timer (same viewBox → no layout shift). matchMedia gate skips it
+// under reduced motion.
+function GlobeyBlink({
+  open: Open = GlobeyCalmOpen1,
+  closed: Closed = GlobeyCalmClosed,
+  className,
+}) {
+  const [blinking, setBlinking] = React.useState(false);
+  React.useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    let t;
+    const loop = () => {
+      setBlinking(true);
+      t = setTimeout(() => {
+        setBlinking(false);
+        t = setTimeout(loop, 2600 + Math.random() * 2600); // 2.6–5.2s
+      }, 140);
+    };
+    t = setTimeout(loop, 1800 + Math.random() * 1800);
+    return () => clearTimeout(t);
+  }, []);
+  const Face = blinking ? Closed : Open;
+  return <Face className={className} aria-hidden />;
+}
+
+// Bold reference to a screen name inside the description (Ali chose
+// bold over links — a live link mid-demo is a footgun; the walkthrough
+// teaches the pattern by being clicked).
+function EmptyStateRef({ children }) {
+  return (
+    <span className="font-semibold text-[var(--ds-tailwind-colors-neutral-900)]">
+      {children}
+    </span>
+  );
+}
+
+export function EmptyPrototypePage({
+  title = "This feature isn't available yet",
+  // Default copy is project-level (what IS in the prototype) so every
+  // blank page shares it. NO EM DASHES (Ali). Override per page if a
+  // screen needs bespoke wording.
+  description = (
+    <>
+      This feature isn't available yet. <EmptyStateRef>All Locations</EmptyStateRef>,
+      the <EmptyStateRef>Location Home</EmptyStateRef>,{" "}
+      <EmptyStateRef>AI Insights</EmptyStateRef>, and one page deep for the{" "}
+      <EmptyStateRef>Location Grid</EmptyStateRef>.
+    </>
+  ),
+  mascot = GlobeyCalmOpen1,
+  mascotClosed = GlobeyCalmClosed,
+  dataHook = "empty-prototype-page",
+}) {
+  return (
+    <div
+      data-hook={dataHook}
+      className="flex min-h-[60vh] items-center justify-center py-6"
+    >
+      {/* Float keyframe, scoped + reduced-motion-gated. */}
+      <style>{
+        "@keyframes gds-empty-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}" +
+        "@media (prefers-reduced-motion:no-preference){[data-bl-empty-float]{animation:gds-empty-float 4.5s ease-in-out infinite}}"
+      }</style>
+      <div className="flex w-full max-w-md flex-col items-center gap-3 text-center">
+        {/* Mascot in a 4:3 zone on the softest brand-neutral wash. */}
+        <div className="flex aspect-[4/3] w-full max-w-[300px] items-center justify-center rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)]">
+          <span data-bl-empty-float className="inline-flex">
+            <GlobeyBlink open={mascot} closed={mascotClosed} className="h-40 w-auto" />
+          </span>
+        </div>
+        <div className="flex max-w-md flex-col gap-2">
+          {/* Mobile text overrides: title xl→2xl, body sm→base. */}
+          <h2
+            className="text-xl leading-snug text-[var(--ds-tailwind-colors-neutral-900)] sm:text-2xl"
+            style={{
+              fontFamily: "var(--ds-font-font-display, Poppins)",
+              fontWeight: "var(--ds-font-weight-semibold, 600)",
+            }}
+          >
+            {title}
+          </h2>
+          <p className="text-sm leading-relaxed text-[var(--ds-tailwind-colors-neutral-500)] sm:text-base">
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
