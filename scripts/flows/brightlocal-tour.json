@@ -1,0 +1,176 @@
+{
+  "project": "47e40175-0d55-4d21-960b-26bdf6b01282",
+  "start": "dmrurue2wmp9u",
+  "w": 1280,
+  "h": 834,
+  "steps": [
+    {
+      "dwell": 2400
+    },
+    {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 1800
+    },
+    {
+      "scrollBy": 560,
+      "ms": 950
+    },
+    {
+      "dwell": 2000
+    },
+    {
+      "scroll": "top",
+      "ms": 1000
+    },
+    {
+      "dwell": 1600
+    },
+    {
+      "click": "[data-hook=\"hub-ai-insights\"]",
+      "waitFor": "[data-hook=\"ai-stat-website\"]"
+    },
+    {
+      "dwell": 3000
+    },
+    {
+      "scrollBy": 460,
+      "ms": 950
+    },
+    {
+      "dwell": 1400
+    },
+    {
+      "scrollTo": "[data-hook=\"ai-stat-website\"]",
+      "ms": 900
+    },
+    {
+      "dwell": 1200
+    },
+    {
+      "click": "[data-hook=\"ai-stat-website\"]",
+      "waitFor": "[data-slot=\"accordion-trigger\"]"
+    },
+    {
+      "dwell": 3000
+    },
+    {
+      "scrollTo": "[data-slot=\"accordion-trigger\"]",
+      "ms": 1000
+    },
+    {
+      "dwell": 1400
+    },
+    {
+      "click": "[data-slot=\"accordion-trigger\"]"
+    },
+    {
+      "dwell": 2600
+    },
+    {
+      "scrollTo": ".decoration-dashed",
+      "ms": 900
+    },
+    {
+      "dwell": 1400
+    },
+    {
+      "click": ".decoration-dashed"
+    },
+    {
+      "dwell": 3500
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "dwell": 700
+    },
+    {
+      "click": "[data-hook=\"sub-btn-ai-insights-google-business-profile\"]"
+    },
+    {
+      "dwell": 3200
+    },
+    {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 1800
+    },
+    {
+      "scroll": "top",
+      "ms": 950
+    },
+    {
+      "dwell": 1300
+    },
+    {
+      "click": "[data-grade-goto=\"screen:dmrurue2wmp9u\"]:not([data-hook])",
+      "waitFor": "[data-hook=\"hub-ai-insights\"]"
+    },
+    {
+      "dwell": 2400
+    },
+    {
+      "scrollTo": "[data-hook=\"hub-local-search-grid\"]",
+      "ms": 1100
+    },
+    {
+      "dwell": 1800
+    },
+    {
+      "click": "[data-grade-transition=\"cross-fade\"]"
+    },
+    {
+      "dwell": 5000
+    },
+    {
+      "scrollBy": 360,
+      "ms": 900,
+      "caption": "This is the geo-grid \u2014 the location's rank at every point on the map."
+    },
+    {
+      "dwell": 1800
+    },
+    {
+      "click": "[data-hook=\"lsg-zoom-in\"]",
+      "dwell": 1400
+    },
+    {
+      "click": "[data-hook=\"lsg-zoom-in\"]",
+      "dwell": 2200,
+      "caption": "We can zoom right in to street level."
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "dwell": 800
+    },
+    {
+      "click": "[data-grade-goto=\"screen:dmrurue2wmp9u\"]:not([data-hook])",
+      "waitFor": "[data-hook=\"hub-ai-insights\"]",
+      "caption": "Back to the hub via the breadcrumb."
+    },
+    {
+      "dwell": 2400
+    },
+    {
+      "key": "Alt+T",
+      "dwell": 2200,
+      "caption": "And the whole product is themeable, live."
+    },
+    {
+      "select": "[data-hook=\"tweaker-preset\"]",
+      "value": "live-site",
+      "dwell": 4500,
+      "caption": "One switch re-skins the entire interface from the design tokens."
+    }
+  ]
+}
