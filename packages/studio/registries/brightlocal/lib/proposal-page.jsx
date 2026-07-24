@@ -727,8 +727,9 @@ export function LocationCard({
     >
       <CardContent className="flex flex-col gap-4">
         {/* Photo / placeholder — fixed aspect so card heights align
-            regardless of photo availability. */}
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg bg-[var(--ds-tailwind-colors-neutral-100)]">
+            regardless of photo availability. 4px radius (Ali, 24 Jul:
+            the inner-media radius against the 20px card). */}
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[4px] bg-[var(--ds-tailwind-colors-neutral-100)]">
           {vPhoto ? (
             <img
               src={vPhoto}
@@ -741,20 +742,15 @@ export function LocationCard({
               <span className="text-sm">No photo available</span>
             </div>
           )}
-          {/* Status pill ON the image, top-right — live-site parity.
-              primary = the DS's green success badge; outline carries its
-              own bg-background fill so it stays legible over photos. */}
-          {vStatus ? (
-            <Badge
-              variant={vStatus === "Active" ? "primary" : "outline"}
-              dataHook={`${dataHook}-status`}
-              className="absolute right-3 top-3"
-            >
-              {vStatus}
-            </Badge>
-          ) : null}
+          {/* Status pill REMOVED (Ali, 24 Jul: "lose the badge") — the
+              live-site parity pill read as noise on the tile. The
+              status field still arrives in the data; nothing renders
+              it here any more. */}
         </div>
-        <div className="flex flex-col gap-3">
+        {/* +8px left/right/bottom on the text content (Ali's mock,
+            24 Jul): the photo sits at the card padding, the words sit
+            a step further in. */}
+        <div className="flex flex-col gap-3 px-2 pb-2">
           <TypographyH3
             dataHook={`${dataHook}-name`}
             className="text-xl leading-snug"
@@ -800,9 +796,9 @@ export function LocationCardSkeleton({ dataHook = "location-card-skeleton" }) {
       <CardContent className="flex flex-col gap-4">
         <Skeleton
           dataHook={`${dataHook}-photo`}
-          className="aspect-[16/9] w-full rounded-lg"
+          className="aspect-[16/9] w-full rounded-[4px]"
         />
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 px-2 pb-2">
           <Skeleton dataHook={`${dataHook}-name`} className="h-6 w-2/3" />
           <div className="flex flex-col gap-2">
             <Skeleton dataHook={`${dataHook}-row-1`} className="h-4 w-1/2" />

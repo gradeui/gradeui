@@ -1041,7 +1041,11 @@ export function AppLayoutShell({
         "[data-bl-illo-tint] svg [fill='#111412']{fill:var(--bl-illo-ink,#111412)}" +
         "[data-bl-illo-tint] svg [fill='#2AE855']{fill:var(--bl-illo-accent,#2AE855)}" +
         "[data-bl-illo-tint] svg [fill='#FFFEFD']{fill:var(--bl-illo-paper,#FFFEFD)}" +
-        "[data-slot=card]{--ds-section-padding-x-md:16px;--ds-section-padding-y-md:16px}" +
+        /* CARD RADIUS — the one setting (Ali, 24 Jul: "20px for all
+           the border radius … all the cards"; the DS default 14px was
+           "such a weird number"). Every DS Card in the proposal reads
+           this; inner media (photos) carry their own 4px. */
+        "[data-slot=card]{border-radius:20px;--ds-section-padding-x-md:16px;--ds-section-padding-y-md:16px}" +
         "@media (min-width:1024px){[data-slot=card]{--ds-section-padding-x-md:24px;--ds-section-padding-y-md:24px}}"
       }</style>
       <style>{
