@@ -63,7 +63,11 @@
 //     classic paths). Chrome LEVEL is final per Ali's 2026-06-11 verdict
 //     (SCALED-PANEL-PLAN.md): slim bar stays, no Studio topbar takeover.
 //     ui-toolbar.ts (the unused interim lookalike) deleted the same day.
-export const PREVIEW_SCALED_URI = "ui://gradeui-mcp/preview-scaled-v12";
+import { PREVIEW_VIEW_HASH } from "./preview-view-html";
+
+// v12 is the TEMPLATE version (bump on shell changes); the bundle hash
+// busts host resource caches whenever the renderer bundle is rebuilt.
+export const PREVIEW_SCALED_URI = `ui://gradeui-mcp/preview-scaled-v12-${PREVIEW_VIEW_HASH}`;
 
 /**
  * srcdoc_probe — SCALED-PANEL-PLAN.md step 0. One question: does THIS

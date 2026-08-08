@@ -162,7 +162,12 @@ export function buildNpmSandboxFiles(params: {
   sharedModules?: Readonly<Record<string, string>> | null;
 }): Record<string, { content: string }> {
   const { appSource, theme, mode, sharedModules } = params;
-  const prepared = prepareAppSource(appSource);
+  // Studio's mutation pipeline persists data-gds-source-id stamps in
+  // saved screens — selection plumbing, meaningless in a handoff. Strip
+  // them so exported code reads clean.
+  const stripSourceIds = (code: string): string =>
+    code.replace(/\s+data-gds-source-id="[^"]*"/g, "");
+  const prepared = prepareAppSource(stripSourceIds(appSource));
   const rewritten = applyRegistryImportStyle(rewriteImportsToGradeui(prepared));
 
   // Apply the same per-theme tokenOverrides Studio uses in-page. The
@@ -191,6 +196,12 @@ export function buildNpmSandboxFiles(params: {
     private: true,
     dependencies: {
       [EXPORT_DS_PKG]: DS_EXPORT_VERSION,
+      // @radix-ui/react-popper's transitive dep — CodeSandbox's CRA
+      // runtime doesn't resolve it from nested node_modules ("Could not
+      // find module in path: '@floating-ui/react-dom'"), same class as
+      // the react-is workaround below. Any screen with Select/Popover/
+      // Dropdown hits it.
+      "@floating-ui/react-dom": "^2.0.0",
       ...(EXPORT_REGISTRY.runtime?.dependencies ?? {}),
       // Preview-vocab packages the prompt licenses (charts, animation,
       // rich text). gradeui gets these transitively via @gradeui/ui;
