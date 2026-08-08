@@ -558,6 +558,13 @@ export interface StudioStorage {
     projectId?: string;
   }): Promise<Asset[]>;
 
+  /** Project shared components ({name → raw JSX module source}) —
+   *  reusable modules screens import via "@project/components"
+   *  (shared_components table, migration 0025). Read-only here: authoring
+   *  goes through the MCP tools for now. Local mode has none (returns {})
+   *  — shared components are a cloud feature. */
+  listSharedComponentSources(projectId: string): Promise<Record<string, string>>;
+
   /** Upload a file to the user's library. Writes the bytes to the
    *  bucket + the metadata row, and returns the asset with a signed
    *  `url`. `projectId` optionally tags it to a project; origin +

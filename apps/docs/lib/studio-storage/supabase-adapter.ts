@@ -1148,6 +1148,27 @@ export class SupabaseStudioStorage implements StudioStorage {
       .publicUrl;
   }
 
+  async listSharedComponentSources(
+    projectId: string,
+  ): Promise<Record<string, string>> {
+    const { data, error } = await this.supabase
+      .from("shared_components")
+      .select("name, source")
+      .eq("project_id", projectId)
+      .is("deleted_at", null);
+    if (error) {
+      // Table missing = migration 0025 not applied yet — degrade to
+      // "no shared components" rather than breaking project load.
+      if ((error as { code?: string }).code === "42P01") return {};
+      throw error;
+    }
+    const out: Record<string, string> = {};
+    for (const r of (data ?? []) as { name: string; source: string }[]) {
+      out[r.name] = r.source;
+    }
+    return out;
+  }
+
   async uploadAsset(input: {
     file: File;
     type?: AssetType;

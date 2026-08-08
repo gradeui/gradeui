@@ -298,6 +298,23 @@ export default async function SharePage({
     }
     return 0;
   };
+  // Project shared components (shared_components table) — screens may
+  // import "@project/components"; the share renderer needs the sources.
+  let sharedModules: Record<string, string> | null = null;
+  {
+    const { data: componentRows, error: componentsError } = await supabase
+      .from("shared_components")
+      .select("name, source")
+      .eq("project_id", share.project_id)
+      .is("deleted_at", null);
+    if (!componentsError && componentRows && componentRows.length > 0) {
+      sharedModules = {};
+      for (const r of componentRows as { name: string; source: string }[]) {
+        sharedModules[r.name] = r.source;
+      }
+    }
+  }
+
   const flowScreens = ((flowRows ?? []) as {
     id: string;
     name: string;
@@ -480,6 +497,7 @@ export default async function SharePage({
 
   return (
     <SharedScreen
+      sharedModules={sharedModules}
       appSource={appSource}
       themeDraftJson={projectRow?.theme_draft_json ?? null}
       mode={share.color_mode}

@@ -346,6 +346,7 @@ function useCameraTimeline(
 
 export function EmbedScreen({
   appSource,
+  sharedModules = null,
   themeDraftJson,
   registryId = null,
   flowScreens,
@@ -375,6 +376,10 @@ export function EmbedScreen({
   viewportsMaxLoops = 0,
 }: {
   appSource: string | null;
+  /** Project shared components ({name → JSX module source}) — ride
+   *  every Fast Frame compile so screens can import
+   *  "@project/components". Fetched server-side by /e/[token]. */
+  sharedModules?: Readonly<Record<string, string>> | null;
   themeDraftJson: string | null;
   /** The share's PROJECT registry id (projects.registry_id) — same
    *  contract as SharedScreen. External registries (BYODS, e.g.
@@ -745,6 +750,7 @@ export function EmbedScreen({
       ) : (
         <FastIframeHost
           appSource={currentSource}
+          sharedModules={sharedModules}
           theme={effTheme}
           mode={effMode}
           motion={motion}
@@ -763,6 +769,7 @@ export function EmbedScreen({
   ) : (
     <FastIframeHost
       appSource={currentSource}
+      sharedModules={sharedModules}
       theme={effTheme}
       mode={effMode}
       motion={motion}

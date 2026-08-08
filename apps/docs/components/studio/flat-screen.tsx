@@ -32,6 +32,7 @@ import {
   compile,
   healMissingLucideImports,
   preResolveUnknownImports,
+  setProjectModules,
   FailurePanel,
   PreviewWrap,
   RenderErrorBoundary,
@@ -47,11 +48,15 @@ import type { GeneratedTheme, ThemeInput } from "@/lib/themes";
 
 export function FlatScreen({
   appSource,
+  sharedModules = null,
   themeDraftJson,
   mode = "light",
   motion,
 }: {
   appSource: string | null;
+  /** Project shared components ({name → JSX module source}) — resolved
+   *  when the screen imports "@project/components". */
+  sharedModules?: Readonly<Record<string, string>> | null;
   themeDraftJson: string | null;
   mode?: "light" | "dark";
   motion?: boolean;
@@ -95,6 +100,9 @@ export function FlatScreen({
       return;
     }
     let cancelled = false;
+    // Register shared components BEFORE compiling — the screen's
+    // "@project/components" import resolves from this set.
+    setProjectModules(sharedModules);
     const src = healMissingLucideImports(appSource);
     void preResolveUnknownImports(src).then(() => {
       if (cancelled) return;
@@ -103,7 +111,7 @@ export function FlatScreen({
     return () => {
       cancelled = true;
     };
-  }, [appSource]);
+  }, [appSource, sharedModules]);
 
   // Stamp the ready contract two RAFs after the outcome renders — first
   // real frame committed, fonts/images may still settle (the capture

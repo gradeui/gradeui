@@ -114,6 +114,7 @@ function ThemeSwatch({ theme }: { theme: GeneratedTheme }) {
 
 export function SharedScreen({
   appSource,
+  sharedModules = null,
   themeDraftJson,
   mode: initialMode = "light",
   viewportSpecs,
@@ -135,6 +136,8 @@ export function SharedScreen({
   initialFit = false,
 }: {
   appSource: string | null;
+  /** Project shared components ({name → JSX module source}). */
+  sharedModules?: Readonly<Record<string, string>> | null;
   themeDraftJson: string | null;
   mode?: "light" | "dark";
   /** The viewports this share EXPOSES, in menu order — the creator's
@@ -2020,6 +2023,7 @@ export function SharedScreen({
                     ) : (
                       <FastIframeHost
                         appSource={paneSource}
+                        sharedModules={sharedModules}
                         theme={activeTheme}
                         mode={mode}
                         motion={motionOn}
@@ -2139,6 +2143,7 @@ export function SharedScreen({
           ) : (
           <FastIframeHost
             appSource={currentSource}
+            sharedModules={sharedModules}
             theme={activeTheme}
             mode={mode}
             motion={motionOn}

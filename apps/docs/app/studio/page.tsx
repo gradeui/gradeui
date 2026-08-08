@@ -453,8 +453,39 @@ export default function StudioPage() {
   // through the StudioStorage adapter so swapping localStorage for
   // Supabase later is a one-file change.
   const storage = useMemo(() => getStudioStorage(), []);
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+
+  // Project shared components ({name → JSX module source}, from the
+  // shared_components table) — loaded per active project and forwarded
+  // to every renderer mount so screens can import "@project/components".
+  // Authoring goes through the MCP tools; reload the project to pick up
+  // component edits (same freshness model as the theme draft).
+  const [sharedModules, setSharedModules] = useState<Record<
+    string,
+    string
+  > | null>(null);
+  useEffect(() => {
+    if (!activeProjectId) {
+      setSharedModules(null);
+      return;
+    }
+    let cancelled = false;
+    storage
+      .listSharedComponentSources(activeProjectId)
+      .then((map) => {
+        if (cancelled) return;
+        setSharedModules(Object.keys(map).length > 0 ? map : null);
+      })
+      .catch((err) => {
+        console.warn("[studio] shared components load failed", err);
+        if (!cancelled) setSharedModules(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeProjectId, storage]);
 
   // Point the module-level registry override at the active project's
   // registryId (null = deployment default). This is THE per-project
@@ -3544,6 +3575,7 @@ export default function StudioPage() {
               >
               <StudioThemedCanvas
                 designs={visibleDesigns}
+                sharedModules={sharedModules}
                 viewPrefs={viewPrefs}
                 onViewPrefsChange={handleViewPrefsChange}
                 onBulkTagDesigns={handleBulkTagDesigns}
@@ -4168,6 +4200,7 @@ function StudioThemedCanvas({
   onCommentPinClick,
   getCommentUser,
   onCanvasModeChange,
+  sharedModules = null,
 }: {
   designs: Design[];
   /** Screens-rail organisation (STUDIO-TAGS T1) — see StudioCanvasProps. */
@@ -4237,12 +4270,16 @@ function StudioThemedCanvas({
    *  mode (select/comment/null) so the page can auto-switch the right
    *  panel tab. */
   onCanvasModeChange?: (mode: "select" | "comment" | null) => void;
+  /** Project shared components ({name → JSX module source}) — forwarded
+   *  to every renderer mount (shared_components table). */
+  sharedModules?: Readonly<Record<string, string>> | null;
 }) {
   const theme: GeneratedTheme = useGeneratedTheme();
   const [mode] = useThemeBuilderMode();
   return (
     <StudioCanvas
       designs={designs}
+      sharedModules={sharedModules}
       viewPrefs={viewPrefs}
       onViewPrefsChange={onViewPrefsChange}
       onBulkTagDesigns={onBulkTagDesigns}

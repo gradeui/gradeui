@@ -328,6 +328,107 @@ export function compileModule(
   return shim.exports;
 }
 
+// ─── Project shared components ────────────────────────────────────────
+//
+// Project-scoped reusable modules (shared_components table, migration
+// 0025) that screens import via ONE stable specifier. The host surface
+// (FlatScreen, the MCP View, the embed) calls setProjectModules() with
+// {name → raw JSX module source} BEFORE compiling the screen; the
+// resolver below answers the specifier with a LAZY namespace — each
+// component compiles on first property access via compileModule, so
+// unused components cost nothing and A-uses-B-uses-A only fails on a
+// true circular *initialization* access, not on mutual imports.
+
+export const PROJECT_COMPONENTS_SPECIFIER = "@project/components";
+
+let projectModuleSources: Readonly<Record<string, string>> = {};
+const projectModuleExports = new Map<
+  string,
+  Record<string, unknown> | "compiling"
+>();
+let projectNamespace: Record<string, unknown> | null = null;
+
+/** Replace the current render's shared-component sources ({name → JSX
+ *  module source}). Clears compiled caches so edits take effect on the
+ *  next compile. Pass null/{} to clear. */
+export function setProjectModules(
+  sources: Readonly<Record<string, string>> | null | undefined,
+): void {
+  projectModuleSources = sources ?? {};
+  projectModuleExports.clear();
+  projectNamespace = null;
+}
+
+function compileProjectModule(name: string): Record<string, unknown> {
+  const state = projectModuleExports.get(name);
+  if (state === "compiling") {
+    throw new Error(
+      `Shared component "${name}" is part of a circular initialization — ` +
+        `break the cycle by referencing the other component inside render, ` +
+        `not at module top level.`,
+    );
+  }
+  if (state) return state;
+  const source = projectModuleSources[name];
+  if (source == null) {
+    throw new Error(
+      `Unknown shared component "${name}" — not in this project's ` +
+        `shared_components (or the host didn't pass it to this render).`,
+    );
+  }
+  projectModuleExports.set(name, "compiling");
+  try {
+    const exports = compileModule(source, (path) =>
+      path === PROJECT_COMPONENTS_SPECIFIER
+        ? getProjectNamespace()
+        : resolveImport(path),
+    );
+    projectModuleExports.set(name, exports);
+    return exports;
+  } catch (err) {
+    projectModuleExports.delete(name);
+    throw err instanceof Error
+      ? new Error(`Shared component "${name}" failed to compile: ${err.message}`)
+      : err;
+  }
+}
+
+function getProjectNamespace(): Record<string, unknown> {
+  if (!projectNamespace) {
+    const ns: Record<string, unknown> = {};
+    for (const name of Object.keys(projectModuleSources)) {
+      Object.defineProperty(ns, name, {
+        enumerable: true,
+        configurable: true,
+        get: () => {
+          const exports = compileProjectModule(name);
+          return (exports[name] ?? exports.default) as unknown;
+        },
+      });
+    }
+    projectNamespace = ns;
+  }
+  return projectNamespace;
+}
+
+registerImportResolver({
+  // Always claim the specifier (even with no modules loaded) so the
+  // esm.sh pre-resolve never tries to fetch it from npm; resolve gives
+  // the actionable error instead.
+  knows: (spec) => spec === PROJECT_COMPONENTS_SPECIFIER,
+  resolve: () => {
+    if (Object.keys(projectModuleSources).length === 0) {
+      throw new Error(
+        `This screen imports "${PROJECT_COMPONENTS_SPECIFIER}" but no shared ` +
+          `components were loaded for this render — the host surface must ` +
+          `fetch the project's shared_components and call setProjectModules() ` +
+          `before compiling.`,
+      );
+    }
+    return getProjectNamespace();
+  },
+});
+
 export function compile(source: string): CompileResult {
   try {
     const { code } = sucraseTransform(source, {

@@ -422,6 +422,26 @@ export default async function EmbedPage({
     }));
   const isExternalRegistry = Boolean(registryId) && registryId !== "gradeui";
 
+  // Project shared components (shared_components table, migration 0025)
+  // — screens import them via "@project/components"; both renderers
+  // (FlatScreen direct-compile and the FastIframeHost inside
+  // EmbedScreen) need the sources. Table-missing (migration not yet
+  // applied) degrades to none rather than breaking every embed.
+  let sharedModules: Record<string, string> | null = null;
+  {
+    const { data: componentRows, error: componentsError } = await supabase
+      .from("shared_components")
+      .select("name, source")
+      .eq("project_id", share.project_id)
+      .is("deleted_at", null);
+    if (!componentsError && componentRows && componentRows.length > 0) {
+      sharedModules = {};
+      for (const r of componentRows as { name: string; source: string }[]) {
+        sharedModules[r.name] = r.source;
+      }
+    }
+  }
+
   // The "live URL" / capture variant — flat render, no iframe, explicit
   // data-grade-ready contract. Zoom/camera don't apply: a capture wants
   // the screen, not the presentation rig.
@@ -467,6 +487,7 @@ export default async function EmbedPage({
         <script src="/vendor/tailwindcss-browser-4.3.0.js" />
         <FlatScreen
           appSource={appSource}
+          sharedModules={sharedModules}
           themeDraftJson={themeDraftJson}
           mode={resolvedMode}
           motion={motion}
@@ -480,6 +501,7 @@ export default async function EmbedPage({
       {backdrop}
       <EmbedScreen
         appSource={appSource}
+        sharedModules={sharedModules}
         themeDraftJson={themeDraftJson}
         registryId={registryId}
         flowScreens={flowScreens}

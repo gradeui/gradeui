@@ -178,6 +178,10 @@ interface StudioCanvasProps {
   /** All designs the user has open. The canvas renders all of them in
    *  "all" mode and just the focused one in "fit" mode. */
   designs: Design[];
+  /** Project shared components ({name → JSX module source}) — forwarded
+   *  to every renderer mount so screens can import "@project/components"
+   *  (shared_components table). */
+  sharedModules?: Readonly<Record<string, string>> | null;
   /** Screens-rail organisation (STUDIO-TAGS T1): grid ⇄ list, group-by,
    *  filters. Owned + persisted by the page (per project); the canvas
    *  renders the controls and applies the transforms. Undefined = the
@@ -395,6 +399,7 @@ interface StudioCanvasProps {
 
 export function StudioCanvas({
   designs,
+  sharedModules = null,
   viewPrefs,
   onViewPrefsChange,
   onBulkTagDesigns,
@@ -1427,6 +1432,7 @@ export function StudioCanvas({
         appSource: focusedAppSource,
         theme,
         mode,
+        sharedModules,
       });
     } catch (err) {
       console.error("Failed to open in CodeSandbox (npm):", err);
@@ -2138,6 +2144,7 @@ export function StudioCanvas({
           Fit ↔ All flip. TileGrid is gated on `hasEnteredAll` so we
           don't pay the boot cost until the user actually opens it. */}
       <FocusedFrame
+        sharedModules={sharedModules}
         appSource={focusedAppSource}
         draftSource={draftSource}
         onSourceMutation={onSourceMutation}
@@ -2243,6 +2250,7 @@ export function StudioCanvas({
       )}
       {hasEnteredGridAll && (
         <TileGrid
+          sharedModules={sharedModules}
           designs={visibleDesigns}
           focusedId={focusedId}
           onFocus={onFocus}
@@ -2303,6 +2311,7 @@ export function StudioCanvas({
 // ─── Focused frame (fit mode) ─────────────────────────────────────────
 
 interface FocusedFrameProps {
+  sharedModules?: Readonly<Record<string, string>> | null;
   appSource: string | null;
   /** Speculative mid-stream draft — see StudioCanvasProps.draftSource.
    *  Fast renderer only; the Sandpack parity mount ignores it (its
@@ -2413,6 +2422,7 @@ interface FocusedFrameProps {
  * out of fit mode.
  */
 function FocusedFrame({
+  sharedModules = null,
   appSource,
   draftSource = null,
   onSourceMutation,
@@ -2487,8 +2497,9 @@ function FocusedFrame({
         appSourceIsPrepared: true,
         theme,
         mode,
+        sharedModules,
       }),
-    [preparedSource, theme, mode]
+    [preparedSource, theme, mode, sharedModules]
   );
 
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
@@ -2647,6 +2658,7 @@ function FocusedFrame({
       {effectiveRendererMode === "fast" ? (
         <FocusedFastMount
           appSource={appSource}
+          sharedModules={sharedModules}
           draftSource={draftSource}
           theme={theme}
           mode={mode}
@@ -2887,6 +2899,7 @@ function clientSideSourceKey(source: { kind: string; [key: string]: unknown }): 
 // ─── Tile grid (all mode) ──────────────────────────────────────────────
 
 interface TileGridProps {
+  sharedModules?: Readonly<Record<string, string>> | null;
   designs: Design[];
   focusedId: string;
   onFocus: (id: string) => void;
@@ -2929,6 +2942,7 @@ interface TileGridProps {
  * level) keeps the grid short enough to scroll through comfortably.
  */
 function TileGrid({
+  sharedModules = null,
   designs,
   focusedId,
   onFocus,
@@ -2975,6 +2989,7 @@ function TileGrid({
       >
         {designs.map((d) => (
           <ScreenTile
+            sharedModules={sharedModules}
             key={d.id}
             design={d}
             // The grid only ever renders at the project home (no screen
@@ -3023,6 +3038,7 @@ function TileGrid({
 }
 
 interface ScreenTileProps {
+  sharedModules?: Readonly<Record<string, string>> | null;
   design: Design;
   focused: boolean;
   onFocus: () => void;
@@ -3052,6 +3068,7 @@ interface ScreenTileProps {
  * corner re-enters fit mode on this tile specifically.
  */
 function ScreenTile({
+  sharedModules = null,
   design,
   focused,
   onExpand,
@@ -3080,8 +3097,9 @@ function ScreenTile({
         appSourceIsPrepared: true,
         theme,
         mode,
+        sharedModules,
       }),
-    [preparedSource, theme, mode]
+    [preparedSource, theme, mode, sharedModules]
   );
 
   // Measure the tile so we can pick a scale that fits a 1280×800
@@ -3259,6 +3277,7 @@ function ScreenTile({
           {rendererMode === "fast" ? (
             <TileFastMount
               appSource={appSource}
+              sharedModules={sharedModules}
               theme={theme}
               mode={mode}
               fidelity={fidelity}

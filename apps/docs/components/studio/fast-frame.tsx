@@ -76,6 +76,12 @@ const SANDBOX_URL = "/fast-sandbox";
 
 interface FastIframeHostProps {
   appSource: string | null;
+  /** Project shared components ({name → raw JSX module source}, from the
+   *  shared_components table) — ride every grade:fast-compile message so
+   *  the sandbox can resolve `import { X } from "@project/components"`.
+   *  The sandbox caches compiled modules and skips recompiles when the
+   *  map is content-identical. */
+  sharedModules?: Readonly<Record<string, string>> | null;
   /** Mid-stream speculative draft — auto-closed partial JSX from
    *  `lib/studio-stream-draft.ts`, present only while the chat is
    *  streaming with "Stream response text" on. Compiled with
@@ -184,6 +190,7 @@ interface FastIframeHostProps {
 
 export function FastIframeHost({
   appSource,
+  sharedModules = null,
   draftSource = null,
   theme,
   mode,
@@ -348,11 +355,19 @@ export function FastIframeHost({
   );
   useEffect(() => {
     if (!ready || !preparedSource) return;
-    postToSandbox({ type: "grade:fast-compile", source: preparedSource });
+    postToSandbox({
+      type: "grade:fast-compile",
+      source: preparedSource,
+      // Shared components ride every compile so a re-booted iframe
+      // (remounts, embed promotions) always has the full module set.
+      ...(sharedModules && Object.keys(sharedModules).length > 0
+        ? { modules: sharedModules }
+        : {}),
+    });
     // postToSandbox is stable-ish; deliberately excluded from deps so
     // we don't re-send on iframe ref identity thrashes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, preparedSource]);
+  }, [ready, preparedSource, sharedModules]);
 
   // Speculative draft compiles — best-effort renders of the partial
   // source while the model streams. Declared AFTER the appSource effect
@@ -373,9 +388,12 @@ export function FastIframeHost({
       type: "grade:fast-compile",
       source: preparedDraft,
       speculative: true,
+      ...(sharedModules && Object.keys(sharedModules).length > 0
+        ? { modules: sharedModules }
+        : {}),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, preparedDraft]);
+  }, [ready, preparedDraft, sharedModules]);
 
   // Theme updates. Serialize the var map once and push it over. Custom
   // uploaded faces ride along as a ready-made @font-face CSS string —
@@ -534,6 +552,8 @@ export function FastIframeHost({
 
 interface FocusedFastMountProps {
   appSource: string | null;
+  /** Project shared components — see FastIframeHost.sharedModules. */
+  sharedModules?: Readonly<Record<string, string>> | null;
   /** Speculative mid-stream draft — see FastIframeHost.draftSource. */
   draftSource?: string | null;
   theme: GeneratedTheme;
@@ -621,6 +641,7 @@ interface FocusedFastMountProps {
 
 export function FocusedFastMount({
   appSource,
+  sharedModules = null,
   draftSource = null,
   theme,
   mode,
@@ -1277,6 +1298,7 @@ export function FocusedFastMount({
     <FastIframeHost
       key={replayKey}
       appSource={appSource}
+      sharedModules={sharedModules}
       draftSource={draftSource}
       theme={theme}
       mode={mode}
@@ -1494,6 +1516,8 @@ export function FocusedFastMount({
 
 interface TileFastMountProps {
   appSource: string | null;
+  /** Project shared components — see FastIframeHost.sharedModules. */
+  sharedModules?: Readonly<Record<string, string>> | null;
   theme: GeneratedTheme;
   mode: "light" | "dark";
   fidelity?: "wireframe" | "full";
@@ -1514,6 +1538,7 @@ interface TileFastMountProps {
  */
 export function TileFastMount({
   appSource,
+  sharedModules = null,
   theme,
   mode,
   fidelity,
@@ -1524,6 +1549,7 @@ export function TileFastMount({
   return (
     <FastIframeHost
       appSource={appSource}
+      sharedModules={sharedModules}
       theme={theme}
       mode={mode}
       fidelity={fidelity}

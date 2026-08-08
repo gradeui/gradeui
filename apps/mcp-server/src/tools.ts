@@ -39,6 +39,13 @@ import {
   type ProjectGuidelines,
 } from "./designs";
 import {
+  listSharedComponents,
+  getSharedComponent,
+  saveSharedComponent,
+  deleteSharedComponent,
+  isMissingTable,
+} from "./shared-components";
+import {
   ensureShareLink,
   embedUrl,
   getStoredPreview,
@@ -452,6 +459,9 @@ export function registerGradeTools(
             embedUrl: url,
             themeDraftJson,
             registryId,
+            // Project shared components — the View registers these with
+            // the render core so "@project/components" imports resolve.
+            sharedComponents: await fetchSharedComponentSources(sb, projectId),
             // v7: the renderer bundle drops its own header/footer/4:3
             // frame and renders edge-to-edge — the shell owns chrome at
             // 1:1 (the double-chrome fix). Requires the preview-view
@@ -838,6 +848,231 @@ export function registerGradeTools(
         `Saved "${name ?? result.id}" — id: ${result.id} (position ${result.position}, ${
           result.created ? "new screen" : "updated"
         }) in project ${projectId}. Open it in Studio to see it render.${warnNote}`,
+      );
+    },
+  );
+
+  // ── shared components ─────────────────────────────────────────────────
+  //
+  // Project-scoped reusable JSX modules screens import via the stable
+  // "@project/components" specifier. Stored in the shared_components
+  // table (migration 0025); compiled at render time by the same kernels
+  // that compile screens. Table-missing errors (42P01) get an actionable
+  // message because migrations are applied manually.
+
+  /** {name → source} of a project's live shared components, for the
+   *  structuredContent channel. Missing table → empty (migration not
+   *  applied yet must not break previews). */
+  async function fetchSharedComponentSources(
+    client: SupabaseClient,
+    projectId: string,
+  ): Promise<Record<string, string>> {
+    try {
+      const rows = await listSharedComponents(client, projectId);
+      if (rows.length === 0) return {};
+      const out: Record<string, string> = {};
+      for (const meta of rows) {
+        const full = await getSharedComponent(client, projectId, meta.id);
+        if (full) out[full.name] = full.source;
+      }
+      return out;
+    } catch (err) {
+      if (isMissingTable(err)) return {};
+      throw err;
+    }
+  }
+
+  const MIGRATION_HINT =
+    "The shared_components table does not exist yet — apply apps/docs/supabase/migrations/0025_shared_components.sql in the Supabase SQL editor first.";
+
+  server.registerTool(
+    "save_shared_component",
+    {
+      title: "Save a shared component",
+      description:
+        'Create or update a project-scoped SHARED COMPONENT — a reusable JSX module (an AppLayout, a Stepper) that screens import via `import { Name } from "@project/components"` instead of copy-pasting. The source must `export` a component whose name matches `name` (compound sub-parts like AppLayout.Header live inside the module). It may import "@gradeui/ui", "lucide-react", the other allowed externals, and other shared components via "@project/components". Validated against the project registry\'s contracts like a screen. Omit componentId to create; pass it (with expectedUpdatedAt from get_shared_component) to update — screens pick the new version up on next render.',
+      inputSchema: {
+        projectId: z.string().describe("Project id (from list_projects)"),
+        name: z
+          .string()
+          .regex(/^[A-Z][A-Za-z0-9]*$/, "PascalCase component name")
+          .describe("PascalCase export/import name, e.g. AppLayout"),
+        jsx: z
+          .string()
+          .describe("Full module source. Must `export function <name>` (or const)."),
+        description: z
+          .string()
+          .optional()
+          .describe("One line on what it is for — shown in list_shared_components"),
+        componentId: z
+          .string()
+          .optional()
+          .describe("Existing component id to update in place; omit to create"),
+        expectedUpdatedAt: z
+          .number()
+          .optional()
+          .describe(
+            "The `updatedAt` from get_shared_component. On UPDATE, the write is refused (no overwrite) if the component changed since.",
+          ),
+      },
+    },
+    async ({ projectId, name, jsx, description, componentId, expectedUpdatedAt }) => {
+      const { registryId } = await assertProject(sb, env.ownerUserId, projectId);
+
+      // The module must actually export the declared name, or every
+      // importing screen breaks with a confusing undefined-component
+      // error at render time. Cheap static check, not a compile.
+      const exportRe = new RegExp(
+        `export\\s+(?:function|const|let|class)\\s+${name}\\b|export\\s*\\{[^}]*\\b${name}\\b`,
+      );
+      if (!exportRe.test(jsx)) {
+        return errorText(
+          `Not saved — the source does not export \`${name}\`. Add \`export function ${name}(...)\` (or \`export const ${name} = ...\`, or include it in an \`export { ... }\` list).`,
+        );
+      }
+
+      // Same conformance gate as screens: the component's own JSX must
+      // respect the project registry's contracts. (No App/default-export
+      // requirement — that is a screen rule, not a module rule.)
+      const { registry, contracts } = contractsForRegistry(registryId);
+      const report = validateAgainstContract(jsx, { contracts });
+      const errors = report.violations.filter((v) => v.severity === "error");
+      if (errors.length > 0) {
+        return errorText(
+          `Not saved — ${errors.length} contract violation(s) against the "${registry.id}" registry's contracts:\n\n${formatViolations(report)}`,
+        );
+      }
+
+      let result;
+      try {
+        result = await saveSharedComponent(sb, {
+          projectId,
+          name,
+          source: jsx,
+          description,
+          createdBy: env.ownerUserId,
+          componentId,
+          expectedUpdatedAt,
+        });
+      } catch (err) {
+        if (isMissingTable(err)) return errorText(MIGRATION_HINT);
+        throw err;
+      }
+
+      if (result.conflict) {
+        return errorText(
+          `Conflict: shared component ${result.id} changed since you loaded it (now version ${result.updatedAt}). NOT overwritten. Call get_shared_component again, re-apply your edit on the latest source, and retry with the new expectedUpdatedAt.`,
+        );
+      }
+      if (result.nameTaken) {
+        return errorText(
+          `Not saved — a live shared component named "${name}" already exists in this project. Use list_shared_components to find it and update it by componentId, or pick another name.`,
+        );
+      }
+      return text(
+        `Saved shared component "${name}" — id: ${result.id} (${
+          result.created ? "new" : "updated"
+        }, version ${result.updatedAt}) in project ${projectId}. Screens import it with: import { ${name} } from "@project/components" — existing screens pick the new version up on next render.`,
+      );
+    },
+  );
+
+  server.registerTool(
+    "list_shared_components",
+    {
+      title: "List a project's shared components",
+      description:
+        "List the project's live shared components (id, name, description, version — no source, use get_shared_component for that). These are importable in screens via \"@project/components\".",
+      inputSchema: {
+        projectId: z.string().describe("Project id (from list_projects)"),
+      },
+    },
+    async ({ projectId }) => {
+      await assertProject(sb, env.ownerUserId, projectId);
+      let rows;
+      try {
+        rows = await listSharedComponents(sb, projectId);
+      } catch (err) {
+        if (isMissingTable(err)) return errorText(MIGRATION_HINT);
+        throw err;
+      }
+      if (rows.length === 0) {
+        return text(
+          `No shared components in project ${projectId} yet. Create one with save_shared_component.`,
+        );
+      }
+      const lines = rows.map(
+        (r) =>
+          `- ${r.name} — id: ${r.id}, version: ${r.updatedAt}, ${r.sourceChars} chars${
+            r.description ? ` — ${r.description}` : ""
+          }`,
+      );
+      return text(
+        `Shared components in project ${projectId} (import from "@project/components"):\n${lines.join("\n")}`,
+      );
+    },
+  );
+
+  server.registerTool(
+    "get_shared_component",
+    {
+      title: "Get a shared component's source",
+      description:
+        "Fetch a shared component's full module source for editing. Edit the JSX, then call save_shared_component with the SAME componentId and this version as expectedUpdatedAt.",
+      inputSchema: {
+        projectId: z.string().describe("Project id"),
+        componentId: z.string().describe("Component id (from list_shared_components)"),
+      },
+    },
+    async ({ projectId, componentId }) => {
+      await assertProject(sb, env.ownerUserId, projectId);
+      let row;
+      try {
+        row = await getSharedComponent(sb, projectId, componentId);
+      } catch (err) {
+        if (isMissingTable(err)) return errorText(MIGRATION_HINT);
+        throw err;
+      }
+      if (!row) {
+        return errorText(
+          `No shared component "${componentId}" in project ${projectId}. See list_shared_components.`,
+        );
+      }
+      return text(
+        `Shared component "${row.name}" — id: ${row.id}\nversion (updatedAt): ${row.updatedAt} — pass this back to save_shared_component as expectedUpdatedAt so a concurrent edit isn't overwritten.${
+          row.description ? `\ndescription: ${row.description}` : ""
+        }\n\nSource (raw JSX module):\n\`\`\`jsx\n${row.source}\n\`\`\``,
+      );
+    },
+  );
+
+  server.registerTool(
+    "delete_shared_component",
+    {
+      title: "Delete a shared component",
+      description:
+        "Soft-delete a shared component (recoverable in the database; frees the name for reuse). Screens that import it will fail to render until they stop importing it — check usage first.",
+      inputSchema: {
+        projectId: z.string().describe("Project id"),
+        componentId: z.string().describe("Component id (from list_shared_components)"),
+      },
+    },
+    async ({ projectId, componentId }) => {
+      await assertProject(sb, env.ownerUserId, projectId);
+      let ok;
+      try {
+        ok = await deleteSharedComponent(sb, projectId, componentId);
+      } catch (err) {
+        if (isMissingTable(err)) return errorText(MIGRATION_HINT);
+        throw err;
+      }
+      if (!ok) {
+        return errorText(
+          `No live shared component "${componentId}" in project ${projectId} — nothing deleted.`,
+        );
+      }
+      return text(
+        `Deleted shared component ${componentId} (soft — recoverable in the database). Screens importing it will error until updated.`,
       );
     },
   );

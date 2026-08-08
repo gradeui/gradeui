@@ -204,6 +204,12 @@ function resolveImport(path: string): unknown {
   // in chat-sandpack.ts doesn't catch — route to the barrel.
   if (/^\.\.?\/components\/ui\//.test(path)) return { ...GradeuiUi, ...GradeuiComposer };
 
+  // Project shared components (shared_components table) — sources arrive
+  // on the grade:fast-compile message; each compiles lazily on first
+  // property access. Answers BEFORE the CDN tier so the specifier never
+  // hits esm.sh.
+  if (path === PROJECT_COMPONENTS_SPECIFIER) return resolveProjectComponents();
+
   // Tier-2 — esm.sh runtime fallback. Pre-resolve in compile() populates
   // CDN_CACHE before the synchronous render path reaches here, so the
   // map lookup is what makes this work. If we get to this branch with
@@ -279,7 +285,106 @@ function isKnownSpecifier(spec: string): boolean {
   if (KNOWN_TIER_1.has(spec)) return true;
   if (spec === "@gradeui/ui" || spec.startsWith("@gradeui/ui/")) return true;
   if (/^\.\.?\/components\/ui\//.test(spec)) return true;
+  if (spec === PROJECT_COMPONENTS_SPECIFIER) return true;
   return false;
+}
+
+// ─── Project shared components ────────────────────────────────────────
+//
+// Twin of the setProjectModules seam in lib/studio-render-core.tsx (this
+// file is the duplicate kernel — keep the two in sync). Sources arrive
+// as a {name → raw JSX module source} map on the grade:fast-compile
+// message; each module compiles lazily on first property access of the
+// merged namespace, so unused components cost nothing and mutual
+// imports only fail on true circular INITIALIZATION access.
+
+const PROJECT_COMPONENTS_SPECIFIER = "@project/components";
+
+let projectModuleSources: Readonly<Record<string, string>> = {};
+const projectModuleExports = new Map<
+  string,
+  Record<string, unknown> | "compiling"
+>();
+let projectNamespace: Record<string, unknown> | null = null;
+
+function setProjectModules(
+  sources: Readonly<Record<string, string>> | null | undefined,
+): void {
+  const next = sources ?? {};
+  // Cheap identity check: same names + same sources → keep compiled
+  // caches (re-renders of the same screen shouldn't recompile the lib).
+  const prevKeys = Object.keys(projectModuleSources);
+  const nextKeys = Object.keys(next);
+  const unchanged =
+    prevKeys.length === nextKeys.length &&
+    nextKeys.every((k) => projectModuleSources[k] === next[k]);
+  if (unchanged) return;
+  projectModuleSources = next;
+  projectModuleExports.clear();
+  projectNamespace = null;
+}
+
+function compileProjectModule(name: string): Record<string, unknown> {
+  const state = projectModuleExports.get(name);
+  if (state === "compiling") {
+    throw new Error(
+      `Shared component "${name}" is part of a circular initialization — ` +
+        `reference the other component inside render, not at module top level.`,
+    );
+  }
+  if (state) return state;
+  const source = projectModuleSources[name];
+  if (source == null) {
+    throw new Error(
+      `Unknown shared component "${name}" — not in this project's shared_components.`,
+    );
+  }
+  projectModuleExports.set(name, "compiling");
+  try {
+    const { code } = sucraseTransform(source, {
+      transforms: ["jsx", "typescript", "imports"],
+      jsxRuntime: "automatic",
+      production: true,
+      filePath: `/shared/${name}.tsx`,
+    });
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    const fn = new Function("module", "exports", "require", code);
+    const shim = { exports: {} as Record<string, unknown> };
+    fn(shim, shim.exports, resolveImport);
+    projectModuleExports.set(name, shim.exports);
+    return shim.exports;
+  } catch (err) {
+    projectModuleExports.delete(name);
+    throw err instanceof Error
+      ? new Error(`Shared component "${name}" failed to compile: ${err.message}`)
+      : err;
+  }
+}
+
+function resolveProjectComponents(): Record<string, unknown> {
+  if (Object.keys(projectModuleSources).length === 0) {
+    throw new Error(
+      `This screen imports "${PROJECT_COMPONENTS_SPECIFIER}" but no shared ` +
+        `components were passed with the compile request — the host must ` +
+        `include the project's shared_components as \`modules\` on the ` +
+        `grade:fast-compile message.`,
+    );
+  }
+  if (!projectNamespace) {
+    const ns: Record<string, unknown> = {};
+    for (const name of Object.keys(projectModuleSources)) {
+      Object.defineProperty(ns, name, {
+        enumerable: true,
+        configurable: true,
+        get: () => {
+          const exports = compileProjectModule(name);
+          return (exports[name] ?? exports.default) as unknown;
+        },
+      });
+    }
+    projectNamespace = ns;
+  }
+  return projectNamespace;
 }
 
 const IMPORT_SPEC_RE =
@@ -1022,6 +1127,12 @@ export default function FastSandboxPage() {
           const requestId =
             typeof data.requestId === "string" ? data.requestId : undefined;
           const speculative = data.speculative === true;
+          // Project shared components ride the compile message as a
+          // {name → source} map (omitted/null clears nothing on
+          // unchanged content — see setProjectModules identity check).
+          if (data.modules && typeof data.modules === "object") {
+            setProjectModules(data.modules as Record<string, string>);
+          }
           if (typeof source === "string")
             renderCompiled(source, requestId, speculative);
           break;

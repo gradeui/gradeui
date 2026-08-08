@@ -986,6 +986,12 @@ export class LocalStorageStudioStorage implements StudioStorage {
     return [];
   }
 
+  async listSharedComponentSources(): Promise<Record<string, string>> {
+    // Shared components are a cloud feature (shared_components table);
+    // local mode simply has none.
+    return {};
+  }
+
   async uploadAsset(): Promise<Asset> {
     throw new Error(
       "Uploading assets requires the cloud backend — sign in to upload.",

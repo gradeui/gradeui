@@ -24,6 +24,7 @@ import {
   PreviewWrap,
   FailurePanel,
   RenderErrorBoundary,
+  setProjectModules,
 } from "@/lib/studio-render-core";
 import { GradeLogo } from "@/components/grade-logo";
 // BrightLocal vocabulary — side-effect import registers the resolver for
@@ -172,6 +173,8 @@ type ScreenPayload = {
    *  brightlocal vocab + CSS and never Grade's. Source-sniffing is only
    *  the fallback for payloads from an older server. */
   registryId?: string | null;
+  /** Project shared components ({name → JSX module source}). */
+  sharedComponents?: Record<string, string> | null;
   name?: string;
   /** BARE mode (preview_screen_scaled v7): no header, no footer, no 4:3
    *  frame — the screen renders edge-to-edge filling the viewport. Used
@@ -327,6 +330,9 @@ function PreviewShell() {
       return;
     }
     let cancelled = false;
+    // Register project shared components BEFORE compiling — the
+    // screen's "@project/components" import resolves from this set.
+    setProjectModules(payload.sharedComponents ?? null);
     const src = healMissingLucideImports(payload.appSource);
     // BrightLocal project → inject the registry's token CSS + boot the
     // bundled Tailwind v4 browser build (idempotent) BEFORE the render,
@@ -342,7 +348,7 @@ function PreviewShell() {
     return () => {
       cancelled = true;
     };
-  }, [payload?.appSource]);
+  }, [payload?.appSource, payload?.sharedComponents]);
 
   // Toggling light/dark re-skins the rendered screen via the <html> class.
   React.useEffect(() => {

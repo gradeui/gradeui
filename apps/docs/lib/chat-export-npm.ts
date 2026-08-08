@@ -154,8 +154,14 @@ export function buildNpmSandboxFiles(params: {
   appSource: string;
   theme: GeneratedTheme;
   mode: "light" | "dark";
+  /** Project shared components ({name → JSX module source}) — exported
+   *  as src/shared/<Name>.jsx + a src/project-components.jsx barrel, with
+   *  the "@project/components" import rewritten to it, so the sandbox
+   *  runs standalone (Ali's requirement: exports must work in
+   *  CodeSandbox). */
+  sharedModules?: Readonly<Record<string, string>> | null;
 }): Record<string, { content: string }> {
-  const { appSource, theme, mode } = params;
+  const { appSource, theme, mode, sharedModules } = params;
   const prepared = prepareAppSource(appSource);
   const rewritten = applyRegistryImportStyle(rewriteImportsToGradeui(prepared));
 
@@ -406,6 +412,44 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   // buildSandpackFiles ("exported sandbox = screen + one lib file").
   // Lib sources get the same aliasing (lib-to-lib imports:
   // "@brightlocal/proposal" imports "@brightlocal/data").
+  // Shared components → real files + a barrel; the stable specifier is
+  // rewritten to the barrel path in the app AND in each shared source
+  // (they may import each other via the same specifier).
+  const sharedNames = Object.keys(sharedModules ?? {});
+  const rewriteShared = (code: string): string =>
+    sharedNames.length === 0
+      ? code
+      : code.replace(
+          /(from\s*["'])@project\/components(["'])/g,
+          "$1./project-components$2",
+        );
+  const rewriteSharedDeep = (code: string): string =>
+    sharedNames.length === 0
+      ? code
+      : code.replace(
+          /(from\s*["'])@project\/components(["'])/g,
+          "$1../project-components$2",
+        );
+  const sharedFiles: Record<string, { content: string }> = {};
+  if (sharedModules && sharedNames.length > 0) {
+    for (const name of sharedNames) {
+      sharedFiles[`src/shared/${name}.jsx`] = {
+        content: rewriteSharedDeep(
+          rewriteRegistryLibImports(
+            applyRegistryImportStyle(
+              rewriteImportsToGradeui(sharedModules[name]),
+            ),
+          ),
+        ),
+      };
+    }
+    sharedFiles["src/project-components.jsx"] = {
+      content: sharedNames
+        .map((n) => `export { ${n} } from "./shared/${n}";`)
+        .join("\n"),
+    };
+  }
+
   const libFiles: Record<string, { content: string }> = {};
   for (const [spec, source] of Object.entries(
     getActiveRegistry().runtime?.libModules ?? {},
@@ -421,8 +465,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     "tsconfig.json": { content: JSON.stringify(tsconfigJson, null, 2) },
     "public/index.html": { content: indexHtml },
     "src/index.tsx": { content: indexTsx },
-    "src/App.tsx": { content: rewriteRegistryLibImports(rewritten) },
+    "src/App.tsx": { content: rewriteShared(rewriteRegistryLibImports(rewritten)) },
     ...libFiles,
+    ...sharedFiles,
   };
 }
 
@@ -453,6 +498,7 @@ export function openInCodeSandboxNpm(params: {
   appSource: string;
   theme: GeneratedTheme;
   mode: "light" | "dark";
+  sharedModules?: Readonly<Record<string, string>> | null;
 }): void {
   if (typeof window === "undefined" || typeof document === "undefined") {
     throw new Error("openInCodeSandboxNpm requires a browser environment");

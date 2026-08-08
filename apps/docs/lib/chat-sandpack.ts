@@ -3037,6 +3037,11 @@ export interface BuildSandpackFilesArgs {
   /** Extra files to merge in after the defaults. Consumers can override
    *  any file (e.g. swap /App.tsx) or add new ones. */
   extraFiles?: Record<string, string>;
+  /** Project shared components ({name → raw JSX module source},
+   *  shared_components table). Mounted as /shared-<name>.jsx files with
+   *  the "@project/components" import aliased to a generated barrel —
+   *  the Sandpack twin of the Fast Frame modules channel. */
+  sharedModules?: Readonly<Record<string, string>> | null;
 }
 
 // ─── Registry lib modules (STUDIO-FLOWS M0 — @brightlocal/proposal) ────
@@ -3080,6 +3085,43 @@ export function rewriteRegistryLibImports(code: string): string {
   return out;
 }
 
+// ─── Project shared components (shared_components table) ──────────────
+// Sandpack twin of the Fast Frame "modules" channel: the specifier
+// "@project/components" isn't a real npm package, so each component
+// mounts as a file (/shared-<Name>.jsx) plus a generated barrel
+// (/project-components.jsx) re-exporting them all; the screen's import
+// is aliased to the barrel. Component sources get the same aliasing so
+// they can import each other via the same specifier.
+
+const PROJECT_COMPONENTS_SPEC = "@project/components";
+const PROJECT_COMPONENTS_BARREL = "/project-components";
+
+function rewriteSharedModuleImports(code: string): string {
+  return code.replace(
+    new RegExp(`(from\\s*["'])${escapeRe(PROJECT_COMPONENTS_SPEC)}(["'])`, "g"),
+    `$1.${PROJECT_COMPONENTS_BARREL}$2`,
+  );
+}
+
+function sharedModuleFiles(
+  sharedModules: Readonly<Record<string, string>> | null | undefined,
+): Record<string, string> {
+  const names = Object.keys(sharedModules ?? {});
+  if (!sharedModules || names.length === 0) return {};
+  const files: Record<string, string> = {};
+  for (const name of names) {
+    files[`/shared-${name}.jsx`] = rewriteSharedModuleImports(
+      rewriteRegistryLibImports(
+        rewriteLocalComponentImports(sharedModules[name]),
+      ),
+    );
+  }
+  files[`${PROJECT_COMPONENTS_BARREL}.jsx`] = names
+    .map((n) => `export { ${n} } from "./shared-${n}";`)
+    .join("\n");
+  return files;
+}
+
 /**
  * Build the complete Sandpack files object — entry, styles, index.html,
  * App, and every inlined component file. Spread directly into
@@ -3091,6 +3133,7 @@ export function buildSandpackFiles({
   mode,
   appSourceIsPrepared,
   extraFiles,
+  sharedModules,
 }: BuildSandpackFilesArgs): Record<string, string> {
   const lightVars = formatThemeVars(theme, "light");
   const darkVars = formatThemeVars(theme, "dark");
@@ -3120,8 +3163,10 @@ export function buildSandpackFiles({
   // the barrel consolidation must not have eaten them (it only matches
   // DS_PKG subpaths; different scope-path shape — safe either order,
   // but this reads as the pipeline's tail).
-  const prepared = rewriteRegistryLibImports(
-    rewriteLocalComponentImports(normalized),
+  // Shared-component aliasing rides the same tail — AFTER the barrel
+  // rewrite for the same reason as the registry lib aliasing.
+  const prepared = rewriteSharedModuleImports(
+    rewriteRegistryLibImports(rewriteLocalComponentImports(normalized)),
   );
 
   // NOTE: no `...componentFiles` spread. The Sandpack iframe now
@@ -3160,6 +3205,9 @@ export function buildSandpackFiles({
     // import above resolves to these. Empty spread for registries
     // without lib modules (gradeui today).
     ...registryLibFiles(),
+    // Project shared components as files + generated barrel — the
+    // aliased "@project/components" import resolves to these.
+    ...sharedModuleFiles(sharedModules),
     ...(extraFiles ?? {}),
   };
 }

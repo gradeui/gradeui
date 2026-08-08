@@ -208,6 +208,7 @@ Studio's preview iframe runs **one of two** in-iframe agents depending on the ac
 **The trap:** Adding a new `grade:*` message type? You must add the handler **in both files** if you want the protocol to work across renderers. Doing only one and switching renderers will silently fail with timeouts or no-op behaviour, because the iframe just sees an unknown `data.type` and skips it.
 
 Protocols currently handled in **both** places (keep them in sync):
+- `grade:fast-compile` carries an optional `modules` field — **project shared components** ({name → raw JSX module source}, from the `shared_components` table, migration 0025). The sandbox compiles each lazily and resolves `import { X } from "@project/components"` from them (see "Shared components" below).
 - `grade:select-mode` / `grade:clear-selection` / `grade:selected`
 - `grade:set-fidelity` (wireframe / full toggle)
 - `grade:set-motion` (global motion toggle — stamps `data-motion="off"` on `<html>`; lib/motion)
@@ -379,3 +380,19 @@ Things deliberately out of scope for v1 of highlight-and-comment, captured here 
 - `packages/studio/src/playbook/layouts/index.ts` — the authoritative `REFERENCE_LAYOUTS` registry + `MISSING_COMPONENTS` parking lot. The header comment in that file is the long-form authoring rulebook; this STUDIO.md gives you the orientation, that file gives you the line-by-line constraints.
 - `packages/studio/src/playbook/components/allowlist.ts` — `ALLOWED_COMPONENTS`, `ALLOWED_EXTERNAL_IMPORTS`, `PINNED_COMPONENTS`.
 - `packages/ui/MAP.md` — worked example of a pre-implementation design doc; same pattern works for any non-trivial new primitive.
+
+## Shared components (`@project/components`)
+
+Project-scoped reusable JSX modules — an `AppLayout`, a `Stepper` — stored in the `shared_components` table (migration `0025`), one component per row (`name` = the export/import name; compound sub-parts live inside the module). Screens import them via the ONE stable specifier `"@project/components"`. Authoring goes through the MCP tools (`save_shared_component` / `list` / `get` / `delete`); Studio loads them read-only per project (`listSharedComponentSources` on the storage adapters).
+
+Resolution per surface — the sources are DATA and must travel every channel the screen source travels:
+
+| Surface | Channel | Resolver |
+|---|---|---|
+| Studio canvas / live embed / share view | `sharedModules` prop → `FastIframeHost` → `modules` on `grade:fast-compile` | `fast-sandbox/page.tsx` lazy module cache (duplicate kernel — keep in sync with the core) |
+| Flat render (`/e/<token>?flat=1`, posters, `preview_image`) | `FlatScreen sharedModules` prop | `setProjectModules()` in `lib/studio-render-core.tsx` (the `registerImportResolver` seam) |
+| MCP interactive View | `structuredContent.sharedComponents` | same core seam via `preview-view/view.tsx` |
+| Sandpack (parity / BYODS-pinned) | `buildSandpackFiles({ sharedModules })` | mounted as `/shared-<Name>.jsx` + `/project-components.jsx` barrel; specifier rewritten to the barrel |
+| CodeSandbox export | `openInCodeSandboxNpm({ sharedModules })` | real files `src/shared/<Name>.jsx` + `src/project-components.jsx` |
+
+Both kernels resolve the namespace LAZILY (per-property compile with a cycle guard), so unused components cost nothing and mutual imports only fail on true circular initialization. Editing a shared component takes effect on next render — screens store no copy. Known gap: the standalone-HTML export (`chat-export.ts` data:-URL importmap) does not ship shared modules yet.
