@@ -761,8 +761,10 @@ export function EmbedScreen({
           // external host's ext:goto (STUDIO-FLOWS).
           onGoto={resolveGoto}
           // Navigation lands the next screen at the top (long forms
-          // otherwise keep the previous screen's scroll offset).
-          resetScrollKey={flowTop?.id ?? "entry"}
+          // otherwise keep the previous screen's scroll offset); the
+          // edit flash is off, an embed is a viewer.
+          navigationKey={flowTop?.id ?? "entry"}
+          flashEdits={false}
           className="block h-full w-full"
         />
       )}
@@ -782,8 +784,10 @@ export function EmbedScreen({
       // Flow navigation — grade:goto (STUDIO-FLOWS).
       onGoto={resolveGoto}
       // Navigation lands the next screen at the top (long forms
-      // otherwise keep the previous screen's scroll offset).
-      resetScrollKey={flowTop?.id ?? "entry"}
+      // otherwise keep the previous screen's scroll offset); the
+      // edit flash is off, an embed is a viewer.
+      navigationKey={flowTop?.id ?? "entry"}
+      flashEdits={false}
       className="block h-full w-full"
     />
   );

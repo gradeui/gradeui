@@ -66,25 +66,36 @@ changes; navigation is just "source push with a different screen".
 Unresolvable targets no-op with a console warn (and the toast in
 Studio) — never a broken screen.
 
-### Navigation lands at the top (8 Aug 2026)
+### Navigation is a page change, not an edit (8 Aug 2026)
 
-Because navigation is a source push into the SAME sandbox document, the
-new screen inherits whatever scroll position the old one had, and React
-can even carry the clicked goto button into the new tree, where the
-browser scrolls its new position into view. Long form screens therefore
-opened mid-page. The fix is protocol-level, not a parent-side scroll
-(that fires before the morph and loses):
+Because navigation is a source push into the SAME sandbox document, it
+inherited two edit-turn behaviours it should not have:
 
-- `FastIframeHost` takes a `resetScrollKey` prop, keyed on the FLOW
+- **Scroll**: the new screen kept the old screen's scroll position, and
+  React could carry the clicked goto button into the new tree, where
+  the browser scrolled its new position into view. Long forms opened
+  mid-page.
+- **Flash**: the STUDIO-EDITS changed-node pulse fired on arrival.
+  Sibling screens share chrome (same wizard rail, same field shapes),
+  so the edit-diff heuristic saw "an edit" and pulsed the title and
+  half the fields on every hop.
+
+The fix is protocol-level, not a parent-side scroll (that fires before
+the morph and loses):
+
+- `FastIframeHost` takes a `navigationKey` prop, keyed on the FLOW
   ENTRY id, never the source. When the key changes, the next
-  `grade:fast-compile` push carries a one-shot `resetScroll: true`.
-- The Fast sandbox scrolls its document to the top (and blurs the
-  carried focus) AFTER that compile's flushSync commit, so it wins over
-  any focus-into-view scrolling.
-- Wired by the share view (single frame + compare panes) and the embed.
-  Streamed EDITS keep their scroll position by design: the key does not
-  change when only the source does. Fast Frame only; share/embed flows
-  never run on Sandpack.
+  `grade:fast-compile` push carries a one-shot `navigation: true`.
+- The Fast sandbox treats that compile as a page change: it scrolls its
+  document to the top (and blurs the carried focus) AFTER the flushSync
+  commit, so it wins over any focus-into-view scrolling, and it skips
+  the changed-node flash.
+- Viewer surfaces go further: the share view (single frame + compare
+  panes) and the embed also pass `flashEdits={false}`, which disables
+  the flash wholesale. Nothing on a share or embed is ever an edit.
+- Streamed EDITS keep their scroll position and their flash by design:
+  the key does not change when only the source does. Fast Frame only;
+  share/embed flows never run on Sandpack.
 
 ## Showing the flow (the viewer's model)
 

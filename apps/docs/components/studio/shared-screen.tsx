@@ -2059,8 +2059,10 @@ export function SharedScreen({
                             : undefined
                         }
                         // Pane-local navigation lands the next screen at
-                        // the top, same as the single-frame branch.
-                        resetScrollKey={paneTop?.id ?? m.id}
+                        // the top, same as the single-frame branch; the
+                        // edit flash stays off (viewer surface).
+                        navigationKey={paneTop?.id ?? m.id}
+                        flashEdits={false}
                         className="block rounded-[28px] ring-1 ring-border/40 bg-white dark:bg-[#09090b]"
                         style={{
                           width: paneSize.w,
@@ -2166,10 +2168,13 @@ export function SharedScreen({
             // Flow navigation — same wire contract as the external host
             // (grade:goto / ext:goto, STUDIO-FLOWS two-agent rule).
             onGoto={resolveGoto}
-            // Navigating swaps the source in place; without this the new
-            // screen keeps the old scroll offset and long forms open
-            // mid-page (Ali's fullscreen iPad walkthrough, 8 Aug).
-            resetScrollKey={flowTop?.id ?? entryDesignId}
+            // Navigating swaps the source in place; the marker lands the
+            // new screen at the top instead of the old scroll offset
+            // (Ali's fullscreen iPad walkthrough, 8 Aug).
+            navigationKey={flowTop?.id ?? entryDesignId}
+            // A share is a viewer: no edits ever happen here, so the
+            // changed-node edit flash is off entirely.
+            flashEdits={false}
             // Comment threads stay bound to the ENTRY screen (threads are
             // keyed by design_id and fetched server-side for the token's
             // screen only) — hide the pins while navigated away so they

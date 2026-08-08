@@ -179,13 +179,21 @@ interface FastIframeHostProps {
    *  host does NOT resolve it — resolution needs the project's screen
    *  list, which the consumer (share view / embed) holds. */
   onGoto?: (target: string) => void;
-  /** Flow-navigation scroll reset (STUDIO-FLOWS): when this key CHANGES
-   *  (a goto push/pop swapped which screen is showing), the host scrolls
-   *  the same-origin iframe document back to the top, matching native
-   *  navigation. Key it on the flow entry id, NOT the source: source
-   *  changes also happen on live edits, where the double-buffered morph
-   *  deliberately preserves scroll position. */
-  resetScrollKey?: string | number | null;
+  /** Flow-navigation marker (STUDIO-FLOWS): when this key CHANGES (a
+   *  goto push/pop swapped which screen is showing), the next compile
+   *  push is flagged `navigation: true` and the sandbox treats it as a
+   *  page change, not an edit: scroll resets to the top after commit,
+   *  and the STUDIO-EDITS changed-node flash is skipped (sibling
+   *  screens share chrome, so the edit-diff heuristic would pulse the
+   *  title and fields on every hop). Key it on the flow entry id, NOT
+   *  the source: source changes also happen on live edits, where the
+   *  morph deliberately preserves scroll and flashes what changed. */
+  navigationKey?: string | number | null;
+  /** STUDIO-EDITS changed-node flash on sealed compiles. Default true
+   *  (the Studio canvas's "show me what the AI touched" affordance).
+   *  Viewer surfaces (share view, embed) pass false: nothing there is
+   *  ever an edit, so nothing should pulse. */
+  flashEdits?: boolean;
   /** Transparent sandbox document — the iframe page paints NO
    *  background, so the host shows through wherever the screen doesn't
    *  paint. Carried as ?transparent=1 on the sandbox URL (read at boot
@@ -219,7 +227,8 @@ export function FastIframeHost({
   onTrySandpack,
   onContentHeight,
   onGoto,
-  resetScrollKey,
+  navigationKey,
+  flashEdits = true,
   transparent = false,
   className,
   style,
@@ -227,28 +236,28 @@ export function FastIframeHost({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState(false);
 
-  // Flow-navigation scroll reset (see resetScrollKey docs). The mount
-  // run only records the key: mounting is not a navigation, and a fresh
-  // iframe starts at the top anyway. A parent-side scroll here is too
+  // Flow-navigation marker (see navigationKey docs). The mount run only
+  // records the key: mounting is not a navigation, and a fresh iframe
+  // starts at the top anyway. A parent-side scroll reset would be too
   // EARLY: the sandbox morphs the tree after the compile message lands,
   // and React can carry the focused element into the new tree, where
   // the browser scrolls it into view again (the mid-page landings on
   // Ali's iPad walkthrough, 8 Aug). So this effect only arms a flag;
-  // the compile push below carries it and the sandbox resets scroll
-  // AFTER the navigated tree commits. Declared before the compile
+  // the compile push below carries it and the sandbox handles the
+  // navigation AFTER the tree commits. Declared before the compile
   // effect on purpose: same-commit key + source changes must arm the
   // flag before the push fires.
-  const prevResetKeyRef = useRef<string | number | null | undefined>(undefined);
-  const pendingScrollResetRef = useRef(false);
+  const prevNavigationKeyRef = useRef<string | number | null | undefined>(undefined);
+  const pendingNavigationRef = useRef(false);
   useEffect(() => {
-    if (prevResetKeyRef.current === undefined) {
-      prevResetKeyRef.current = resetScrollKey ?? null;
+    if (prevNavigationKeyRef.current === undefined) {
+      prevNavigationKeyRef.current = navigationKey ?? null;
       return;
     }
-    if (prevResetKeyRef.current === (resetScrollKey ?? null)) return;
-    prevResetKeyRef.current = resetScrollKey ?? null;
-    pendingScrollResetRef.current = true;
-  }, [resetScrollKey]);
+    if (prevNavigationKeyRef.current === (navigationKey ?? null)) return;
+    prevNavigationKeyRef.current = navigationKey ?? null;
+    pendingNavigationRef.current = true;
+  }, [navigationKey]);
 
   // Stash the callbacks in refs so the message-listener effect's dep
   // array stays empty — new onSelect identities on every parent render
@@ -386,14 +395,16 @@ export function FastIframeHost({
   );
   useEffect(() => {
     if (!ready || !preparedSource) return;
-    // One-shot navigation marker (see resetScrollKey): the sandbox
-    // scrolls its document to the top after THIS compile commits.
-    const resetScroll = pendingScrollResetRef.current;
-    pendingScrollResetRef.current = false;
+    // One-shot navigation marker (see navigationKey): the sandbox
+    // scrolls to the top after THIS compile commits and skips the
+    // changed-node flash (page change, not an edit).
+    const navigation = pendingNavigationRef.current;
+    pendingNavigationRef.current = false;
     postToSandbox({
       type: "grade:fast-compile",
       source: preparedSource,
-      ...(resetScroll ? { resetScroll: true } : {}),
+      ...(navigation ? { navigation: true } : {}),
+      ...(flashEdits === false ? { flashEdits: false } : {}),
       // Shared components ride every compile so a re-booted iframe
       // (remounts, embed promotions) always has the full module set.
       ...(sharedModules && Object.keys(sharedModules).length > 0
@@ -403,7 +414,7 @@ export function FastIframeHost({
     // postToSandbox is stable-ish; deliberately excluded from deps so
     // we don't re-send on iframe ref identity thrashes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, preparedSource, sharedModules]);
+  }, [ready, preparedSource, sharedModules, flashEdits]);
 
   // Speculative draft compiles — best-effort renders of the partial
   // source while the model streams. Declared AFTER the appSource effect

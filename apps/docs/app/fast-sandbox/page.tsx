@@ -915,16 +915,18 @@ export default function FastSandboxPage() {
       source: string,
       requestId?: string,
       speculative = false,
-      resetScroll = false
+      opts: { navigation?: boolean; flashEdits?: boolean } = {}
     ) {
-      // Navigation push (STUDIO-FLOWS resetScroll): land the new screen
-      // at the top. Runs AFTER the flushSync commit so it wins over any
-      // focus-into-view scrolling from the tree swap. React can carry
-      // the focused element (the clicked goto button) across the morph,
-      // and the browser then scrolls its new position into view, which
-      // opened long forms mid-page.
+      // Navigation push (STUDIO-FLOWS `navigation: true`): a page
+      // change, not an edit. Land the new screen at the top, AFTER the
+      // flushSync commit so it wins over any focus-into-view scrolling
+      // from the tree swap (React can carry the clicked goto button
+      // across the morph, and the browser then scrolls its new position
+      // into view, which opened long forms mid-page). Navigation also
+      // suppresses the changed-node flash below.
+      const navigation = opts.navigation === true;
       const resetScrollNow = () => {
-        if (!resetScroll) return;
+        if (!navigation) return;
         (document.activeElement as HTMLElement | null)?.blur?.();
         window.scrollTo(0, 0);
         document.documentElement.scrollTop = 0;
@@ -1029,7 +1031,12 @@ export default function FastSandboxPage() {
             <Component />
           </RenderErrorBoundary>
         </PreviewWrap>,
-        { flashChanges: true }
+        // Flash is an EDITING affordance: skipped on navigation pushes
+        // (a page change is not an edit; sibling screens share chrome,
+        // so the edit-diff heuristic would pulse titles and fields on
+        // every hop) and skipped wholesale when the host opted out
+        // (share/embed viewers never edit at all).
+        { flashChanges: opts.flashEdits !== false && !navigation }
       );
       resetScrollNow();
       // Don't ack a failed render — the Fill flow must not start
@@ -1203,12 +1210,10 @@ export default function FastSandboxPage() {
             setProjectModules(data.modules as Record<string, string>);
           }
           if (typeof source === "string")
-            renderCompiled(
-              source,
-              requestId,
-              speculative,
-              data.resetScroll === true
-            );
+            renderCompiled(source, requestId, speculative, {
+              navigation: data.navigation === true,
+              flashEdits: data.flashEdits !== false,
+            });
           break;
         }
         case "grade:fast-theme": {
