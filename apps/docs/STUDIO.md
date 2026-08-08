@@ -399,5 +399,6 @@ Both kernels resolve the namespace LAZILY (per-property compile with a cycle gua
 
 ### Known limits + direction (Aug 2026)
 
+- **Stage 1 SHIPPED (Aug 2026)** — boundary selection + visibility. See [`STUDIO-COMPONENTS.md`](../../STUDIO-COMPONENTS.md) (repo root) for the full model, the three-wrapper sync rule, and the gotchas. Historical framing below predates it:
 - **Selection stops at the boundary.** `injectSourceIds` stamps only the screen's own source, so nodes INSIDE a shared component carry no `data-gds-source-id` and the pick inspector can't path into them. Direction (Figma instance/master model): Stage 1 = boundary semantics — clicking inside selects the usage tag, inspector shows a "Shared component" card (name/description/version + read-only View source), plus a Components list in the project rail next to Assets. Stage 2 = namespaced stamping inside modules + "enter the master" editing that writes to the component row (with the "affects every screen" framing). Settings-panel mutations inside a shared component are undefined until Stage 2 — the mutator only writes screen source.
 - **Authoring is MCP-first.** save/list/get/delete_shared_component; Studio reads only.
