@@ -1,12 +1,16 @@
 ---
 name: Switch
 import: "@gradeui/ui"
+element: button
 props:
   - checked?: boolean
   - onCheckedChange?: (checked: boolean) => void
   - defaultChecked?: boolean
   - disabled?: boolean
   - id?: string
+  - name?: string — form field name, posted via the hidden input
+  - value?: string — form value when on (default "on")
+  - required?: boolean — marks the hidden form input required
 when_to_use: Instant on/off setting ("Enable notifications", "Dark mode"). Commits on toggle — no submit button needed. For selecting-from-a-list use Checkbox. For a settings row (label + description on the left, Switch on the right) use Field layout="setting". For a prominent on/off presented as a whole selectable card, use SwitchCard.
 composes_with: [Label (via htmlFor), Field (layout="setting" settings row), SwitchCard (whole-card toggle), Card (settings rows)]
 aliases: [toggle, switch, on/off switch, ios toggle, toggle switch, switch control, react native switch]

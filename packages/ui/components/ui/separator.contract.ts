@@ -12,6 +12,7 @@ export const SeparatorContract = contract({
   description: "Light divider between sibling blocks in a Card, list, or header. For section-level partition use extra spacing instead.",
   import: "@gradeui/ui",
   aliases: ["divider","rule","hr","line","horizontal rule"],
+  element: "div",
   composesWith: ["Card (between CardHeader/Content/Footer)","navigation menus","any vertical stacks"],
   styleDefaults: {"Separator":"shrink-0 bg-border"},
   props: {

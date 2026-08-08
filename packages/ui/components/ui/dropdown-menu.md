@@ -11,7 +11,13 @@ props:
   - DropdownMenuSubContent: surface? (solid | translucent | glass | glass-strong) — same axis applied to nested submenu surfaces
   - DropdownMenuSubContent: size? "default" | "sm" | "xs" — match the parent content's size down the tree
   - DropdownMenuItem: onSelect?, disabled?, asChild?, inset?
-  - DropdownMenuCheckboxItem / DropdownMenuRadioItem: checked? / value, onCheckedChange? / onValueChange? (radio is on the group)
+  - DropdownMenuCheckboxItem: checked?: boolean — controlled checked state
+  - DropdownMenuCheckboxItem: onCheckedChange?: (checked: boolean) => void
+  - DropdownMenuCheckboxItem: disabled?: boolean
+  - DropdownMenuRadioGroup: value?: string — the selected radio item
+  - DropdownMenuRadioGroup: onValueChange?: (value: string) => void
+  - DropdownMenuRadioItem: value: string — what the group emits when picked
+  - DropdownMenuRadioItem: disabled?: boolean
   - DropdownMenuSub / DropdownMenuSubTrigger / DropdownMenuSubContent: nested menu — sub-trigger shows children, sub-content holds the deeper items
   - DropdownMenuSub: open?, defaultOpen?, onOpenChange? — nested-menu open state (Radix passthrough); pass `open` to compose a pre-opened submenu in static screens and captures
   - DropdownMenuShortcut: children — right-aligned kbd hint

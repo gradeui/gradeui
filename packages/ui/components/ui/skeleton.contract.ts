@@ -12,6 +12,7 @@ export const SkeletonContract = contract({
   description: "Loading placeholder for content whose shape you know. Set width/height via className to mimic the real content (e.g. \"h-4 w-32\"). Not a spinner — use it where the real thing will drop in.",
   import: "@gradeui/ui",
   aliases: ["placeholder","shimmer","loader","loading state","redacted","redacted placeholder","shimmer placeholder","content placeholder","lottie placeholder"],
+  element: "div",
   composesWith: ["Card","Avatar (inside a Skeleton for avatar loading)","any layout"],
   styleDefaults: {"Skeleton":"animate-pulse rounded-md bg-muted"},
   props: {

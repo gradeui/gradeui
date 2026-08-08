@@ -12,6 +12,7 @@ export const LabelContract = contract({
   description: "Every Input / Textarea / Checkbox / Switch / RadioGroup. Always use htmlFor so clicking the label focuses the control. Match `size` to the field it labels (size=\"xs\" label over a size=\"xs\" input).",
   import: "@gradeui/ui",
   aliases: ["label","form label","field label","caption"],
+  element: "label",
   composesWith: ["Input","Textarea","Checkbox","Switch","RadioGroup","Select"],
   styleDefaults: {"Label":"font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm"},
   variantDefaults: {"size":"default"},

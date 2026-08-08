@@ -12,6 +12,7 @@ export const InputContract = contract({
   description: "Any single-line text entry. Always pair with a Label for accessibility. Use startSlot/endSlot for icons, prefixes and units instead of hand-positioning absolute children; use size=\"sm\"/\"xs\" in dense tool panels.",
   import: "@gradeui/ui",
   aliases: ["text field","textbox","textfield","form field","text input","secure field","search field","url field","number field","textinput","text input field","react native textinput","unit input","input with icon"],
+  element: "input",
   composesWith: ["Label","Form","Card (in CardContent)","Button (form submit)"],
   styleDefaults: {"Input":"pointer-events-none absolute inset-y-0 left-0 flex items-center text-muted-foreground [&_svg]:size-3.5"},
   props: {

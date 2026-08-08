@@ -1,6 +1,7 @@
 ---
 name: Textarea
 import: "@gradeui/ui"
+element: textarea
 props:
   - size?: "default" | "sm" | "xs" — control density, mirrors Input. default = min-h-80 / text-sm; sm and xs shrink the min-height + padding for dense panels.
   - All native textarea HTML attrs (rows, value, onChange, placeholder, disabled)

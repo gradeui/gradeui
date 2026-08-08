@@ -13,6 +13,8 @@ export const TabsContract = contract({
   import: "@gradeui/ui",
   aliases: ["tabs","tab strip","tab bar","tab view","tabbed interface","pageviewcontroller","react native tab view","underlined tabs","page tabs","segment switcher","simple tabs"],
   subcomponents: ["TabsList","TabsTrigger","TabsContent"],
+  element: "div",
+  subcomponentElements: {"TabsTrigger":"button"},
   composesWith: ["Card (tabs inside a card body)","Dialog","TooltipProvider (required for tooltip prop)"],
   styleDefaults: {"TabsList":"inline-flex items-center text-muted-foreground justify-center rounded-lg bg-muted","TabsContent":"mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"},
   props: {
@@ -46,6 +48,11 @@ export const TabsContract = contract({
       schema: z.string().optional(),
       design: "content",
       description: "when set, wraps the trigger in the design-system Tooltip and auto-applies aria-label (useful for icon-only triggers); requires a TooltipProvider somewhere above the tabs",
+  },
+  "disabled": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "trigger shown but not selectable",
   },
   },
 });

@@ -12,6 +12,7 @@ export const CheckboxContract = contract({
   description: "Binary on/off tied to a list (select multiple, agree to terms). Single on/off that controls a setting is better with Switch. For a label + description row, wrap in Field. When each option should be a whole selectable card (label + description, selected state on the card surface), use CheckboxCard.",
   import: "@gradeui/ui",
   aliases: ["checkbox","tickbox","tick box","check","multi-select item"],
+  element: "button",
   composesWith: ["Label (via htmlFor)","Field (label + description row)","CheckboxCard (whole-card selectable option)","Card","Form rows","Table (for row selection)"],
   styleDefaults: {"Checkbox":"grid place-content-center text-current transition-none"},
   props: {
@@ -35,6 +36,21 @@ export const CheckboxContract = contract({
       schema: z.string().optional(),
       design: "plumbing",
       description: "bind a Label's htmlFor to this",
+  },
+  "name": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "form field name, posted via the hidden input",
+  },
+  "value": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "form value when checked (default \"on\")",
+  },
+  "required": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "marks the hidden form input required",
   },
   },
 });

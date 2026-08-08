@@ -1,6 +1,7 @@
 ---
 name: Separator
 import: "@gradeui/ui"
+element: div
 props:
   - orientation? ("horizontal" | "vertical") — default "horizontal"
   - decorative?: boolean (default true) — hide from a11y tree

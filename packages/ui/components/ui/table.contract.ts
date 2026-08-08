@@ -13,17 +13,24 @@ export const TableContract = contract({
   import: "@gradeui/ui",
   aliases: ["table","table view","data table","datatable","grid view","data grid","rows and columns"],
   subcomponents: ["TableHeader","TableBody","TableFooter","TableRow","TableHead","TableCell","TableCaption"],
+  element: "table",
   composesWith: ["Card (wrap the table)","Badge (inside TableCell for status)","Checkbox (row selection)","Button (row actions)"],
   styleDefaults: {"Table":"w-full caption-bottom text-sm","TableHeader":"[&_tr]:border-b","TableBody":"[&_tr:last-child]:border-0","TableFooter":"border-t bg-muted/50 font-medium [&>tr]:last:border-b-0","TableRow":"border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted","TableHead":"h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]","TableCell":"p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]","TableCaption":"mt-4 text-sm text-muted-foreground"},
   props: {
-  "Each": {
-      schema: z.unknown(),
-      design: "plumbing",
+  "colSpan": {
+      schema: z.number().optional(),
+      design: "knob",
+      description: "span multiple columns",
   },
-  "No": {
-      schema: z.unknown(),
-      design: "plumbing",
-      description: "styling follows the active theme tokens",
+  "rowSpan": {
+      schema: z.number().optional(),
+      design: "knob",
+      description: "span multiple rows",
+  },
+  "scope": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "a11y column/row header scope (\"col\" | \"row\")",
   },
   },
 });

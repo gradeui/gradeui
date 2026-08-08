@@ -12,6 +12,7 @@ export const ProgressContract = contract({
   description: "Determinate progress — file uploads, multi-step forms, quota meters. Indeterminate state → use Skeleton or animated Loader icon.",
   import: "@gradeui/ui",
   aliases: ["progress","progress view","progress indicator","progress bar","determinate progress","loading bar","completion bar"],
+  element: "div",
   composesWith: ["Card (as a section)","Badge (showing % next to it)","Label (describing what's loading)"],
   styleDefaults: {"Progress":"relative h-4 w-full overflow-hidden rounded-full bg-secondary"},
   props: {

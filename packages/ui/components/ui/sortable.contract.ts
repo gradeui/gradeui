@@ -37,10 +37,15 @@ export const SortableContract = contract({
       design: "knob",
       description: "disable drag on every item",
   },
-  "Sortable": {
-      schema: z.unknown(),
-      design: "plumbing",
+  "value": {
+      schema: z.union([z.string(), z.number()]).optional(),
+      design: "knob",
       description: "must match one entry in the parent `values` array (identity, not React key)",
+  },
+  "asChild": {
+      schema: z.boolean().optional(),
+      design: "plumbing",
+      description: "render as the child element via Radix Slot",
   },
   },
 });

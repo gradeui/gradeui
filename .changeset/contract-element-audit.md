@@ -1,0 +1,5 @@
+---
+"@gradeui/ui": patch
+---
+
+Contract audit fixes: components that forward rest-props to a DOM element now declare it (`element:` sidecar frontmatter → contract `element` field), so the Studio validator accepts that element's standard HTML attributes plus `on*` handlers — `<Button onClick>`, `<Input value onChange autoComplete>`, `<Card id>` and the rest of the native surface the docs always promised. The contract generator no longer leaks prose sidecar lines into prop names ("Each"/"No" on Card/Table), subcomponent tags (TableCell, TabsTrigger, InputGroupInput, …) now validate against their family contract instead of passing unchecked, Checkbox/Switch/Select gained their Radix form props (name/value/required), and the Field family's full export set (Field.Set, Field.Group, Field.Legend, Field.Separator, Field.Content, Field.Title, Field.Error) is now visible to Studio generation. ChartContainer bakes in touch defaults: `touch-action: none` on the SVG surface, selection/loupe/tap-highlight suppression reaching SVG text nodes, and tooltip dismissal on touchend.

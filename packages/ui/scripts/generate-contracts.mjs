@@ -208,9 +208,11 @@ function parseFrontmatter(raw) {
 function splitPropLine(line) {
   const raw = line.trim();
   if (!raw) return [];
-  const subPrefix = raw.match(/^([A-Z][A-Za-z0-9]*)\s*:\s+(.+)$/);
+  const subPrefix = raw.match(/^([A-Z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)?)\s*:\s+(.+)$/);
   const prefix =
-    subPrefix && !/^[A-Z][A-Za-z0-9]*\s*:\s+["'(]/.test(raw) ? subPrefix[1] : null;
+    subPrefix && !/^[A-Z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)?\s*:\s+["'(]/.test(raw)
+      ? subPrefix[1]
+      : null;
   const body = prefix ? subPrefix[2].trim() : raw;
 
   // Top-level split on a separator char, protecting (), [], {}, quotes.
@@ -288,10 +290,24 @@ function splitPropLine(line) {
   return segments.map((s) => (prefix ? `${prefix}: ${s}` : s));
 }
 
+// Prose guard — sidecar authors write documentation SENTENCES inside the
+// props list ("All native button HTML attrs (onClick, type, etc.)", "Each
+// subcomponent accepts native div HTML attrs", "No variants — styling
+// follows the active theme tokens"). Those lines are for readers and the
+// model prompt, not prop declarations — without this guard the first word
+// leaks into the contract as a prop named "Each" / "No" (caught live by
+// the July 2026 contract audit: the validator then rejected REAL props
+// while offering "Valid props: surface, Each"). Native-attr support is
+// declared machine-readably via the `element:` frontmatter key instead.
+// The lead word must be followed by whitespace — `note?: string` stays a
+// prop; `Note that…` is prose.
+const PROSE_LEADS =
+  /^(all|each|every|no|any|some|most|the|these|those|both|uses?|supports?|accepts?|see|note|renders?|wraps?|with|without)\s/i;
+
 function parsePropSignature(line, rootName) {
   let raw = line.trim();
   if (!raw) return null;
-  if (/^all\s/i.test(raw)) return null;
+  if (PROSE_LEADS.test(raw)) return null;
 
   // Strip subcomponent prefix (`Accordion:`, `AccordionItem:`,
   // `DialogTrigger:`, etc.) — these namespace which sub-export the
@@ -308,13 +324,17 @@ function parsePropSignature(line, rootName) {
   // <Tabs> itself. Root-prefixed (or unprefixed) lines keep their
   // declared requiredness — that's how <Code source> stays required.
   let forceOptional = false;
-  const subPrefix = raw.match(/^([A-Z][A-Za-z0-9]*)\s*:\s+(.+)$/);
-  if (subPrefix && !/^[A-Z][A-Za-z0-9]*\s*:\s+["'(]/.test(raw)) {
+  const subPrefix = raw.match(/^([A-Z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)?)\s*:\s+(.+)$/);
+  if (subPrefix && !/^[A-Z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)?\s*:\s+["'(]/.test(raw)) {
     // Guard against false positives like an enum-shape value that
     // happens to start uppercase — but in practice enums start with
     // `(` or `"`. The negative lookahead above keeps us safe.
     if (rootName && subPrefix[1] !== rootName) forceOptional = true;
     raw = subPrefix[2].trim();
+    // Prose hides behind subcomponent prefixes too ("DialogContent:
+    // accepts native div HTML attrs") — re-test after the strip, or
+    // the first word leaks as a prop exactly like the unprefixed case.
+    if (PROSE_LEADS.test(raw)) return null;
   }
 
   // Split description.
@@ -386,6 +406,19 @@ function parsePropSignature(line, rootName) {
   const name = nameMatch[1];
   const optional = Boolean(nameMatch[2]) || forceOptional;
   const tail = (nameMatch[4] ?? "").trim();
+
+  // Second prose net (for sentences the lead-word list misses): a line
+  // with no literal `?`, no `:` separator, and a tail that reads as
+  // running lowercase words is a sentence, not a signature. Real
+  // signatures either mark optionality, use a colon, or have a
+  // type-shaped tail (parens enum, quoted union, primitive) — all
+  // handled below before anything falls through to "unknown". Keyed on
+  // the EXPLICIT `?` (not the merged `optional`) because forceOptional
+  // is true for every sub-prefixed line — prose behind a prefix must
+  // still be droppable.
+  const sepWasColon = (nameMatch[3] ?? "").includes(":");
+  const proseTail =
+    !nameMatch[2] && !sepWasColon && /^[a-z][a-z-]*\s+[a-z]/.test(tail);
 
   // Parens enum.
   if (tail.startsWith("(") && tail.endsWith(")")) {
@@ -469,6 +502,7 @@ function parsePropSignature(line, rootName) {
   if (/^number\b/i.test(tail)) return { name, optional, kind: "number", defaultValue, description, raw };
   if (/^string\b/i.test(tail)) return { name, optional, kind: "string", defaultValue, description, raw };
 
+  if (proseTail) return null;
   return { name, optional, kind: "unknown", defaultValue, description, raw };
 }
 
@@ -663,6 +697,21 @@ function emitContract(componentName, fm, propLines, styleDefaults, variantDefaul
   const composesWith = Array.isArray(fm.composes_with) ? fm.composes_with : [];
   const subcomponents = Array.isArray(fm.subcomponents) ? fm.subcomponents : [];
   const importPath = fm.import ?? "@gradeui/ui";
+  // `element:` frontmatter — the intrinsic DOM element the component
+  // forwards its rest-props to. The validator uses it to accept the
+  // element's standard HTML attrs + on* handlers (the machine-readable
+  // twin of the "All native <x> HTML attrs" prose the guard above drops).
+  const element = typeof fm.element === "string" && fm.element.trim() ? fm.element.trim() : null;
+  // `subelements:` frontmatter — a list of `Name: element` pairs giving
+  // per-subcomponent element overrides for mixed-element families
+  // (InputGroup is a div but InputGroupInput forwards to an <input>).
+  const subcomponentElements = {};
+  if (Array.isArray(fm.subelements)) {
+    for (const entry of fm.subelements) {
+      const m = String(entry).match(/^([A-Z][A-Za-z0-9]*)\s*:\s*([a-z][a-z0-9-]*)$/);
+      if (m) subcomponentElements[m[1]] = m[2];
+    }
+  }
 
   // Empty props produce `props: {}` rather than `props: { , }`. JS
   // tolerates trailing-comma-in-empty-object only with an actual
@@ -699,7 +748,7 @@ export const ${componentName}Contract = contract({
   name: ${JSON.stringify(componentName)},
   description: ${description},
   import: ${JSON.stringify(importPath)},
-${aliases.length ? `  aliases: ${JSON.stringify(aliases)},\n` : ""}${subcomponents.length ? `  subcomponents: ${JSON.stringify(subcomponents)},\n` : ""}${composesWith.length ? `  composesWith: ${JSON.stringify(composesWith)},\n` : ""}${styleDefaultsBlock}${variantDefaultsBlock}${propsBlock}});
+${aliases.length ? `  aliases: ${JSON.stringify(aliases)},\n` : ""}${subcomponents.length ? `  subcomponents: ${JSON.stringify(subcomponents)},\n` : ""}${element ? `  element: ${JSON.stringify(element)},\n` : ""}${Object.keys(subcomponentElements).length ? `  subcomponentElements: ${JSON.stringify(subcomponentElements)},\n` : ""}${composesWith.length ? `  composesWith: ${JSON.stringify(composesWith)},\n` : ""}${styleDefaultsBlock}${variantDefaultsBlock}${propsBlock}});
 `;
 }
 

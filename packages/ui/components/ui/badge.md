@@ -1,6 +1,7 @@
 ---
 name: Badge
 import: "@gradeui/ui"
+element: div
 variants: [default, secondary, destructive, outline, highlight, success, warning, info, success-soft, warning-soft, destructive-soft, info-soft, highlight-soft, success-outline, warning-outline, destructive-outline, info-outline]
 props:
   - variant? (see list above)

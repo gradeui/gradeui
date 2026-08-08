@@ -1,6 +1,7 @@
 ---
 name: Card
 import: "@gradeui/ui"
+element: div
 subcomponents: [CardHeader, CardTitle, CardDescription, CardContent, CardFooter]
 props:
   - surface? (solid | translucent | glass | glass-strong) — what the card surface is *made of*. `solid` is the default opaque `bg-card`. `translucent` is ~82% opacity for menu sheets. `glass` is ~58% opacity + 14px blur + edge highlight for floating panels. `glass-strong` is ~42% + 24px blur for full-page overlays. Composes with `shadow-elevation-*` (depth) and `gds-aura-*` (state signal).

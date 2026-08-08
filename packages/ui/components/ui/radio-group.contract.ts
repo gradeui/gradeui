@@ -13,6 +13,7 @@ export const RadioGroupContract = contract({
   import: "@gradeui/ui",
   aliases: ["radio group","radio buttons","single-choice","pricing options","payment method","radio buttons","radio control","single-select"],
   subcomponents: ["RadioGroupItem"],
+  element: "div",
   composesWith: ["Label (paired with each item via htmlFor)","Field (label + description row)","RadioCard (whole-card selectable option)","Stack (vertical list)"],
   styleDefaults: {"RadioGroup":"grid gap-3"},
   props: {

@@ -240,11 +240,22 @@ export const ALLOWED_COMPONENTS = [
   // Field — inline composition: a bare control (Checkbox/RadioGroupItem/
   // Switch) + Field.Label + Field.Description (+ Field.Trailing). Wires
   // id / aria automatically. `layout="setting"` for the text-left,
-  // control-right settings row.
+  // control-right settings row. The full family: Field.Group stacks
+  // fields, Field.Set + Field.Legend group a related set, Field.Separator
+  // divides, Field.Error surfaces validation, Field.Title is the
+  // non-label heading, Field.Content wraps text next to a control. All
+  // are also reachable as dot-exports on Field (Field.Set === FieldSet).
   "Field",
   "FieldLabel",
+  "FieldTitle",
   "FieldDescription",
+  "FieldContent",
   "FieldTrailing",
+  "FieldGroup",
+  "FieldSet",
+  "FieldLegend",
+  "FieldSeparator",
+  "FieldError",
   // Selection cards — the WHOLE card is the control (focus + checked state
   // on the parent surface). RadioCard goes inside a RadioGroup; CheckboxCard
   // and SwitchCard stand alone. Pass `label` + `description` (+ `aside` for a

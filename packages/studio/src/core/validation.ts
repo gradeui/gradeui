@@ -37,9 +37,10 @@
  *   - Missing required props (a contract prop whose schema rejects undefined)
  *
  * What it CANNOT catch (deferred):
- *   - Sub-component props (`<Carousel.Slide duration={…} />`) — no contract
- *     for Carousel.Slide exists as a separate entry; only root components
- *     are in the registry today.
+ *   - Dot-form sub-component props (`<Carousel.Slide duration={…} />`) —
+ *     skipped entirely. Identifier-form subcomponents (`<TableCell>`)
+ *     DO resolve: each contract's `subcomponents` list maps them back to
+ *     the family contract's flattened prop bag.
  *   - Expression-valued props (`maxCount={someVar}`) — can't evaluate
  *     without running the code.
  *   - Contracts whose generator produced `z.unknown()` because the .md
@@ -133,6 +134,30 @@ export function validateAgainstContract(
   const violations: ValidationViolation[] = [];
   let componentsChecked = 0;
 
+  // Reverse index: subcomponent name → family contract. `<TableCell>`
+  // has no registry entry of its own, but table.md declares it in
+  // `subcomponents`, so it validates against the Table family's
+  // flattened prop bag instead of passing unchecked (the Tier-3 gap
+  // from the July 2026 contract audit). Real registry entries always
+  // win over an index hit.
+  //
+  // ONLY element-audited families take part — `element` (or a
+  // `subcomponentElements` map) is the marker that the family's bag +
+  // native-attr coverage is complete enough to enforce. Without the
+  // gate, families whose sidecars still hold unparseable prop prose
+  // (DropdownMenuCheckboxItem's `checked`, ChartTooltip's `content`)
+  // would flip from unchecked to strictly-rejected, making canonical
+  // documented patterns unsavable (caught by the Aug 2026 pre-push
+  // review). Un-audited families keep pre-existing behavior: their
+  // subcomponent tags pass unchecked.
+  const subIndex = new Map<string, ComponentContract>();
+  for (const c of Object.values(contracts)) {
+    if (!c.element && !c.subcomponentElements) continue;
+    for (const sub of c.subcomponents ?? []) {
+      if (!contracts[sub] && !subIndex.has(sub)) subIndex.set(sub, c);
+    }
+  }
+
   let sf: ts.SourceFile;
   try {
     sf = ts.createSourceFile(
@@ -167,9 +192,10 @@ export function validateAgainstContract(
         const column = pos.character + 1;
 
         if (isSubcomponent && skipSubcomponents) {
-          // Skip — no contract for Carousel.Slide etc. yet.
+          // Skip — no contract for dot-form Carousel.Slide etc. yet.
         } else {
-          const contract = contracts[componentName];
+          const direct = contracts[componentName];
+          const contract = direct ?? subIndex.get(componentName);
           if (!contract) {
             if (!skipUnknownComponents && looksLikeDsComponent(componentName)) {
               violations.push({
@@ -183,12 +209,26 @@ export function validateAgainstContract(
             }
           } else {
             componentsChecked++;
+            const viaSubcomponent = !direct;
             validateAttributes(
               node.attributes.properties,
               contract,
               componentName,
               sf,
               violations,
+              {
+                // Mixed-element families override per subcomponent
+                // (InputGroup is a div; InputGroupInput forwards to
+                // an <input>).
+                element: viaSubcomponent
+                  ? (contract.subcomponentElements?.[componentName] ??
+                    contract.element)
+                  : contract.element,
+                // The flattened bag can't express per-sub requiredness;
+                // demanding the ROOT's required props on a subcomponent
+                // tag would be wrong (e.g. Code's `source` on a child).
+                skipRequired: viaSubcomponent,
+              },
             );
           }
         }
@@ -273,8 +313,18 @@ function validateAttributes(
   componentName: string,
   sf: ts.SourceFile,
   violations: ValidationViolation[],
+  options: {
+    /** The intrinsic element whose standard HTML attrs are legal on this
+     *  tag (from the contract's `element` / `subcomponentElements`). */
+    element?: string;
+    /** True when the tag resolved via a family's `subcomponents` list —
+     *  the flattened bag's required props belong to the ROOT, so the
+     *  missing-required check must not run. */
+    skipRequired?: boolean;
+  } = {},
 ) {
   const seenProps = new Set<string>();
+  const { element, skipRequired = false } = options;
 
   for (const attr of attrs) {
     if (ts.isJsxSpreadAttribute(attr)) {
@@ -297,6 +347,34 @@ function validateAttributes(
     const column = pos.character + 1;
 
     if (!propContract) {
+      // Element-standard attrs: a contract that declares its rendered
+      // element (`element: "input"`) accepts that element's native
+      // attributes, `on*` event handlers, and Radix's `asChild` even
+      // though they aren't individually contracted — the docs promise
+      // "All native <x> HTML attrs" and the validator must not refuse
+      // what generation is taught to write (July 2026 contract audit).
+      // asChild rides the element gate (not the universal passthrough
+      // list) so contracts that DECLARE asChild keep schema validation
+      // and un-audited components keep flagging it.
+      if (element) {
+        if (propName === "asChild") continue;
+        // Native handlers are accepted — EXCEPT names suspiciously
+        // close to a CONTRACTED event prop, which are near-certainly
+        // typo'd callbacks (`onValueChagne`) that would silently never
+        // fire; let those fall through so suggestSimilar can flag them.
+        if (
+          EVENT_HANDLER_RE.test(propName) &&
+          !isLikelyEventTypo(propName, contract)
+        ) {
+          continue;
+        }
+        if (
+          !EVENT_HANDLER_RE.test(propName) &&
+          isNativeAttrForElement(element, propName)
+        ) {
+          continue;
+        }
+      }
       violations.push({
         severity: "error",
         kind: "unknown-prop",
@@ -343,6 +421,7 @@ function validateAttributes(
   // required. Anything that survives `safeParse(undefined)` is optional.
   // This is more reliable than checking `_def.typeName === "ZodOptional"`
   // because `.optional()` chains aren't always at the top level.
+  if (skipRequired) return;
   for (const [propName, propContract] of Object.entries(contract.props)) {
     if (seenProps.has(propName)) continue;
     // Skip plumbing / events / refs — never required in JSX-author terms.
@@ -415,6 +494,93 @@ function isReactPassthroughAttr(name: string): boolean {
   }
   if (name.startsWith("aria-") || name.startsWith("data-")) return true;
   return false;
+}
+
+/**
+ * Is this uncontracted `on*` name a likely typo of a CONTRACTED event
+ * prop (`onValueChagne` next to `onValueChange`)? Those must NOT ride
+ * the native-handler allowance — the callback would silently never
+ * fire at runtime. Uses the same similarity metric as suggestSimilar,
+ * restricted to `design: "event"` props so genuinely-native handlers
+ * (onClick, onPointerDown) stay accepted.
+ */
+function isLikelyEventTypo(
+  propName: string,
+  contract: ComponentContract,
+): boolean {
+  const lower = propName.toLowerCase();
+  for (const [name, pc] of Object.entries(contract.props)) {
+    if (pc.design !== "event") continue;
+    if (similarity(lower, name.toLowerCase()) >= 0.6) return true;
+  }
+  return false;
+}
+
+// ─── Element-standard HTML attributes ──────────────────────────────────
+//
+// When a contract declares its rendered `element`, these are the attrs
+// (React camelCase) accepted on top of the contracted props. Global attrs
+// apply to every element; the per-element sets add the form/media attrs
+// that matter in practice. An element with no entry (span, p, section, …)
+// gets the global set only — that's the right default for wrappers.
+
+const EVENT_HANDLER_RE = /^on[A-Z]/;
+
+const GLOBAL_HTML_ATTRS: ReadonlySet<string> = new Set([
+  "id", "title", "role", "tabIndex", "hidden", "lang", "dir", "draggable",
+  "slot", "spellCheck", "contentEditable", "accessKey", "autoCapitalize",
+  "autoCorrect", "autoFocus", "translate", "inputMode", "inert", "is",
+  "nonce", "part", "popover", "itemProp", "itemScope", "itemType",
+  "itemID", "itemRef", "suppressContentEditableWarning",
+  "suppressHydrationWarning",
+]);
+
+const ELEMENT_HTML_ATTRS: Readonly<Record<string, readonly string[]>> = {
+  button: [
+    "type", "name", "value", "disabled", "form", "formAction",
+    "formEncType", "formMethod", "formNoValidate", "formTarget",
+    "popoverTarget", "popoverTargetAction",
+  ],
+  input: [
+    "type", "name", "value", "defaultValue", "checked", "defaultChecked",
+    "placeholder", "required", "readOnly", "disabled", "autoComplete",
+    "maxLength", "minLength", "pattern", "min", "max", "step", "multiple",
+    "accept", "list", "size", "form", "capture", "enterKeyHint", "alt",
+    "src", "height", "width", "dirName",
+  ],
+  textarea: [
+    "name", "value", "defaultValue", "placeholder", "required", "readOnly",
+    "disabled", "autoComplete", "rows", "cols", "wrap", "maxLength",
+    "minLength", "form", "enterKeyHint", "dirName",
+  ],
+  // No "multiple" — the DS Select wraps Radix's single-select root, and
+  // blessing `multiple` would validate a silently-broken screen.
+  select: [
+    "name", "value", "defaultValue", "required", "disabled", "autoComplete",
+    "size", "form",
+  ],
+  label: ["htmlFor", "form"],
+  form: [
+    "action", "method", "encType", "target", "noValidate", "autoComplete",
+    "name", "acceptCharset", "rel",
+  ],
+  fieldset: ["disabled", "form", "name"],
+  a: ["href", "target", "rel", "download", "hrefLang", "referrerPolicy", "ping", "type"],
+  img: [
+    "src", "srcSet", "sizes", "alt", "loading", "decoding", "crossOrigin",
+    "referrerPolicy", "width", "height", "useMap", "fetchPriority",
+  ],
+  // Union of the table family (table/tr/td/th) — the whole family shares
+  // one flattened contract, so one set serves Table through TableCell.
+  // No "span": it belongs to <col>/<colgroup>, which no Table
+  // subcomponent renders — accepting it would swallow colSpan typos.
+  table: ["colSpan", "rowSpan", "scope", "headers", "abbr"],
+};
+
+function isNativeAttrForElement(element: string, name: string): boolean {
+  if (GLOBAL_HTML_ATTRS.has(name)) return true;
+  const specific = ELEMENT_HTML_ATTRS[element];
+  return specific ? specific.includes(name) : false;
 }
 
 /**

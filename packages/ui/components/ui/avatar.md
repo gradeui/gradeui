@@ -1,6 +1,7 @@
 ---
 name: Avatar
 import: "@gradeui/ui"
+element: span
 subcomponents: [AvatarImage, AvatarFallback]
 sizes: [2xs, xs, sm, md, lg, xl]
 props:

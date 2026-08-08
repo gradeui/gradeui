@@ -31,10 +31,15 @@ export const ChartContract = contract({
       design: "plumbing",
       description: "typically a single Recharts ResponsiveContainer or chart",
   },
-  "passes": {
+  "content": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "pair with `content={<ChartTooltipContent />}`",
+      description: "pair with `content={<ChartTooltipContent />}`; passes through to Recharts <Tooltip>",
+  },
+  "cursor": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "the hover crosshair/highlight; Recharts passthrough",
   },
   "indicator": {
       schema: z.enum(["dot", "line", "dashed"]).optional(),
@@ -54,10 +59,6 @@ export const ChartContract = contract({
   },
   "labelKey": {
       schema: z.unknown().optional(),
-      design: "plumbing",
-  },
-  "ChartLegend": {
-      schema: z.unknown(),
       design: "plumbing",
   },
   },

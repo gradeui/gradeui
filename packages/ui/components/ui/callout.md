@@ -1,6 +1,7 @@
 ---
 name: Callout
 import: "@gradeui/ui"
+element: div
 subcomponents: [CalloutTitle, CalloutDescription]
 variants: [default, destructive, success, warning, info]
 props:

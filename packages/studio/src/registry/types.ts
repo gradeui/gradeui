@@ -54,6 +54,17 @@ export interface RegistryContractSpec {
    *  defaultVariants equivalent) — lets the panel show the effective
    *  value instead of a blank control. */
   variantDefaults?: Readonly<Record<string, string>>;
+  /** Subcomponent names the validator resolves to this family contract
+   *  (`["TableRow", "TableCell"]`). Mirrors ComponentContract.subcomponents. */
+  subcomponents?: readonly string[];
+  /** The intrinsic DOM element the component forwards rest-props to —
+   *  the validator accepts that element's standard HTML attrs + `on*`
+   *  handlers on top of the declared props. Mirrors
+   *  ComponentContract.element. */
+  element?: string;
+  /** Per-subcomponent element overrides for mixed-element families.
+   *  Mirrors ComponentContract.subcomponentElements. */
+  subcomponentElements?: Readonly<Record<string, string>>;
 }
 
 /** One composed PATTERN from the design system — a block: a login

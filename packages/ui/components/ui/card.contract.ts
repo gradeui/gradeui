@@ -13,6 +13,7 @@ export const CardContract = contract({
   import: "@gradeui/ui",
   aliases: ["card","group box","groupbox","panel","tile","surface","glass card","frosted card","floating panel","hero card","ai suggestion card","dashboard tile","settings panel"],
   subcomponents: ["CardHeader","CardTitle","CardDescription","CardContent","CardFooter"],
+  element: "div",
   composesWith: ["Button (in CardFooter)","Badge","Separator","Avatar","Code","MediaSurface","any form controls"],
   styleDefaults: {"Card":"gds-card rounded-xl border text-card-foreground shadow","CardHeader":"flex flex-col space-y-1.5 p-6","CardTitle":"font-semibold leading-none tracking-tight","CardDescription":"text-sm text-muted-foreground","CardContent":"p-6 pt-0","CardFooter":"flex items-center p-6 pt-0"},
   props: {
@@ -20,10 +21,6 @@ export const CardContract = contract({
       schema: z.enum(["solid", "translucent", "glass", "glass-strong"]).optional(),
       design: "knob",
       description: "what the card surface is *made of*. `solid` is the default opaque `bg-card`. `translucent` is ~82% opacity for menu sheets. `glass` is ~58% opacity + 14px blur + edge highlight for floating panels. `glass-strong` is ~42% + 24px blur for full-page overlays. Composes with `shadow-elevation-*` (depth) and `gds-aura-*` (state signal).",
-  },
-  "Each": {
-      schema: z.unknown(),
-      design: "plumbing",
   },
   },
 });

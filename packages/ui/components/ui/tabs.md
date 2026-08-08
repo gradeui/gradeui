@@ -1,6 +1,9 @@
 ---
 name: Tabs
 import: "@gradeui/ui"
+element: div
+subelements:
+  - TabsTrigger: button
 subcomponents: [TabsList, TabsTrigger, TabsContent]
 sizes: [sm, md, lg]
 variants: [pill, underlined]
@@ -9,6 +12,7 @@ props:
   - TabsList: size? (sm | md | lg, default md) — t-shirt scale aligned with Button/ToggleGroup heights; cascades to every TabsTrigger via context so set it once on the list
   - TabsList: variant? (pill | underlined, default pill) — `pill` is the shadcn chip-on-muted look; `underlined` is the minimal text + bottom-border treatment (formerly the separate SimpleTabs component, collapsed into Tabs in May 2026). Cascades to triggers.
   - TabsTrigger: value: string — matches a TabsContent value; tooltip?: string — when set, wraps the trigger in the design-system Tooltip and auto-applies aria-label (useful for icon-only triggers); requires a TooltipProvider somewhere above the tabs
+  - TabsTrigger: disabled?: boolean — trigger shown but not selectable
   - TabsContent: value: string — matches a TabsTrigger value
 when_to_use: A small set of peer views within one surface (2–5 tabs). For primary nav use Side Menu/routing. For filters use a filter control, not tabs. Pick `variant="pill"` for app chrome (settings panels, in-card tab strips). Pick `variant="underlined"` for marketing/docs pages and browser-tab-style treatments.
 composes_with: [Card (tabs inside a card body), Dialog, TooltipProvider (required for tooltip prop)]

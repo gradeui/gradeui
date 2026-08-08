@@ -1,6 +1,7 @@
 ---
 name: Progress
 import: "@gradeui/ui"
+element: div
 props:
   - value?: number (0–100) — percent complete
   - max?: number (default 100)

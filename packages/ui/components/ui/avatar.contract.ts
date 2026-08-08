@@ -13,6 +13,7 @@ export const AvatarContract = contract({
   import: "@gradeui/ui",
   aliases: ["profile picture","user image","account image","avatar","person glyph","user avatar","profile image","react native avatar"],
   subcomponents: ["AvatarImage","AvatarFallback"],
+  element: "span",
   composesWith: ["Card (in CardHeader)","Table cells","Badge (placed next to for status)","Skeleton (loading state)","Message (in the avatar slot)"],
   styleDefaults: {"AvatarImage":"aspect-square h-full w-full"},
   props: {

@@ -12,6 +12,7 @@ export const BadgeContract = contract({
   description: "Compact status chips, counts, tags, pills. For higher-signal inline status → use Callout. For solid CTAs → Button. Soft/outline variants are quieter; solid variants are loud.",
   import: "@gradeui/ui",
   aliases: ["chip","tag","pill","label chip","badge","tag view","status pill","token","count badge"],
+  element: "div",
   composesWith: ["Card","Table (inside a cell)","Avatar (next to it)","anywhere inline"],
   props: {
   "variant": {

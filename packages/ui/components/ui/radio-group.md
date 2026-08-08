@@ -1,6 +1,7 @@
 ---
 name: RadioGroup
 import: "@gradeui/ui"
+element: div
 subcomponents: [RadioGroupItem]
 props:
   - RadioGroup: value?: string — controlled selection

@@ -69,6 +69,11 @@ function specToContract(spec: RegistryContractSpec): ComponentContract {
     variantDefaults: spec.variantDefaults
       ? { ...spec.variantDefaults }
       : undefined,
+    subcomponents: spec.subcomponents ? [...spec.subcomponents] : undefined,
+    element: spec.element,
+    subcomponentElements: spec.subcomponentElements
+      ? { ...spec.subcomponentElements }
+      : undefined,
   };
 }
 

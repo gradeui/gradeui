@@ -1,13 +1,22 @@
 ---
 name: Select
 import: "@gradeui/ui"
+subelements:
+  - SelectTrigger: button
+  - SelectValue: span
+  - SelectContent: div
+  - SelectItem: div
+  - SelectGroup: div
+  - SelectLabel: div
+  - SelectSeparator: div
 subcomponents: [SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel, SelectSeparator]
 props:
-  - Select: value?, onValueChange?, defaultValue?, disabled? — Radix root
+  - Select: value?, onValueChange?, defaultValue?, disabled?, name?, required?, autoComplete?, onOpenChange? — Radix root (renders no element itself, so no native-attr passthrough; name/required/autoComplete post via a hidden native select)
   - SelectTrigger: size?: "default" | "sm" | "xs" — control density; wraps the clickable control, nest SelectValue inside
   - SelectValue: placeholder?: string — text when nothing is selected
   - SelectContent: size?: "default" | "sm" | "xs" — menu density; cascades to every SelectItem inside via context so a compact trigger gets a compact menu. Accepts items via children.
   - SelectItem: value: string — required; content is the label. Inherits density from SelectContent.
+  - SelectItem: disabled?: boolean — item shown but not pickable
 when_to_use: Single-choice from 3+ known options. Fewer than 3 → RadioGroup. Huge list with search → use a Combobox (not in DS yet). Multi-select → not supported by this primitive. In dense tool panels, set size="xs" on BOTH the trigger and the content so the closed control and open menu match.
 composes_with: [Label (above SelectTrigger), Form, Card]
 aliases: [dropdown, combobox, picker, select, pop-up button, popup button, popup picker, picker view, rnpickerselect, react native picker, native picker]

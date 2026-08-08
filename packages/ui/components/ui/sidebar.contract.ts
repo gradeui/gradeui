@@ -40,11 +40,6 @@ export const SidebarContract = contract({
       design: "knob",
       description: "outer chrome treatment. `rail` (default) is the classic nav rail with a single right-border + tracked width via `--gds-sidebar-width`; drops cleanly into `<AppShellNav placement=\"side\">`. `panel` is a card-style floating sidebar with full border + rounded corners + parent-controlled width; use when the sidebar is one of several adjacent panes in a body row (e.g. Projects | Canvas | Settings). The compound children (Header/Content/Footer/Section/Item) are identical in both treatments.",
   },
-  "any": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
-      description: "brand / logo / org switcher; hides nothing when collapsed (centred)",
-  },
   "title": {
       schema: z.unknown().optional(),
       design: "plumbing",

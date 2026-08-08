@@ -696,6 +696,7 @@ notes: |
 ---
 name: Avatar
 import: "@gradeui/ui"
+element: span
 subcomponents: [AvatarImage, AvatarFallback]
 sizes: [2xs, xs, sm, md, lg, xl]
 props:
@@ -891,6 +892,7 @@ notes: |
 ---
 name: Badge
 import: "@gradeui/ui"
+element: div
 variants: [default, secondary, destructive, outline, highlight, success, warning, info, success-soft, warning-soft, destructive-soft, info-soft, highlight-soft, success-outline, warning-outline, destructive-outline, info-outline]
 props:
   - variant? (see list above)
@@ -1165,6 +1167,7 @@ import { ArrowRight, ChevronRight } from "lucide-react";
 ---
 name: Button
 import: "@gradeui/ui"
+element: button
 variants: [default, destructive, outline, secondary, ghost, link, raised]
 sizes: [2xs, xs, sm, md, lg]
 props:
@@ -1279,6 +1282,7 @@ aliases: [calendar, date grid, month view, scheduler grid, calendar view, multid
 ---
 name: Callout
 import: "@gradeui/ui"
+element: div
 subcomponents: [CalloutTitle, CalloutDescription]
 variants: [default, destructive, success, warning, info]
 props:
@@ -1327,6 +1331,7 @@ The previous `variant="highlight"` (yellow) was dropped in the Alert → Callout
 ---
 name: Card
 import: "@gradeui/ui"
+element: div
 subcomponents: [CardHeader, CardTitle, CardDescription, CardContent, CardFooter]
 props:
   - surface? (solid | translucent | glass | glass-strong) — what the card surface is *made of*. `solid` is the default opaque `bg-card`. `translucent` is ~82% opacity for menu sheets. `glass` is ~58% opacity + 14px blur + edge highlight for floating panels. `glass-strong` is ~42% + 24px blur for full-page overlays. Composes with `shadow-elevation-*` (depth) and `gds-aura-*` (state signal).
@@ -1590,9 +1595,11 @@ props:
   - ChartContainer: config: ChartConfig — `{ [seriesKey]: { label: string; color?: string; theme?: { light: string; dark: string } } }`; the keys here are the names you reference in your Recharts <Bar dataKey="…" /> calls
   - ChartContainer: id?: string — used for the inlined <style> tag
   - ChartContainer: children: React.ReactNode — typically a single Recharts ResponsiveContainer or chart
-  - ChartTooltip: passes through to Recharts <Tooltip> — pair with `content={<ChartTooltipContent />}`
+  - ChartTooltip: content?: ReactNode — pair with `content={<ChartTooltipContent />}`; passes through to Recharts <Tooltip>
+  - ChartTooltip: cursor?: boolean — the hover crosshair/highlight; Recharts passthrough
   - ChartTooltipContent: indicator? "dot" | "line" | "dashed"; hideLabel?, hideIndicator?, nameKey?, labelKey?
-  - ChartLegend / ChartLegendContent: pair the same way for the legend
+  - ChartLegend: content?: ReactNode — pair with `content={<ChartLegendContent />}`; passes through to Recharts <Legend>
+  - ChartLegendContent: nameKey?: string — config key override, mirrors ChartTooltipContent
 when_to_use: Reporting dashboards, single-purpose analytics cards (revenue, conversions, active users), or anywhere you'd otherwise hand-roll a Recharts setup. Bring the actual chart type from `recharts` — ChartContainer doesn't pick the chart shape for you, it themes whatever you nest. For sparkline-style decorative trends consider just rendering a small SVG line directly; ChartContainer is overkill for non-interactive ornament.
 composes_with: [Card (chart-in-a-card pattern), Tabs (multi-metric switcher), Recharts components (Bar, Line, Area, Pie, Radar from "recharts")]
 aliases: [chart, charts, graph, bar chart, line chart, area chart, recharts, analytics chart, swift chart, swiftui chart, victory chart, victory native]
@@ -1681,12 +1688,16 @@ No visible tick (selection reads from the card border + background), in a two-up
 ---
 name: Checkbox
 import: "@gradeui/ui"
+element: button
 props:
   - checked?: boolean | "indeterminate"
   - onCheckedChange?: (checked: boolean) => void
   - defaultChecked?: boolean
   - disabled?: boolean
   - id?: string — bind a Label's htmlFor to this
+  - name?: string — form field name, posted via the hidden input
+  - value?: string — form value when checked (default "on")
+  - required?: boolean — marks the hidden form input required
 when_to_use: Binary on/off tied to a list (select multiple, agree to terms). Single on/off that controls a setting is better with Switch. For a label + description row, wrap in Field. When each option should be a whole selectable card (label + description, selected state on the card surface), use CheckboxCard.
 composes_with: [Label (via htmlFor), Field (label + description row), CheckboxCard (whole-card selectable option), Card, Form rows, Table (for row selection)]
 aliases: [checkbox, tickbox, tick box, check, multi-select item]
@@ -2494,7 +2505,13 @@ props:
   - DropdownMenuSubContent: surface? (solid | translucent | glass | glass-strong) — same axis applied to nested submenu surfaces
   - DropdownMenuSubContent: size? "default" | "sm" | "xs" — match the parent content's size down the tree
   - DropdownMenuItem: onSelect?, disabled?, asChild?, inset?
-  - DropdownMenuCheckboxItem / DropdownMenuRadioItem: checked? / value, onCheckedChange? / onValueChange? (radio is on the group)
+  - DropdownMenuCheckboxItem: checked?: boolean — controlled checked state
+  - DropdownMenuCheckboxItem: onCheckedChange?: (checked: boolean) => void
+  - DropdownMenuCheckboxItem: disabled?: boolean
+  - DropdownMenuRadioGroup: value?: string — the selected radio item
+  - DropdownMenuRadioGroup: onValueChange?: (value: string) => void
+  - DropdownMenuRadioItem: value: string — what the group emits when picked
+  - DropdownMenuRadioItem: disabled?: boolean
   - DropdownMenuSub / DropdownMenuSubTrigger / DropdownMenuSubContent: nested menu — sub-trigger shows children, sub-content holds the deeper items
   - DropdownMenuSub: open?, defaultOpen?, onOpenChange? — nested-menu open state (Radix passthrough); pass `open` to compose a pre-opened submenu in static screens and captures
   - DropdownMenuShortcut: children — right-aligned kbd hint
@@ -2624,6 +2641,12 @@ Pass `surface="glass"` to BOTH the root content AND the sub-content — submenus
 ---
 name: Field
 import: "@gradeui/ui"
+element: div
+subelements:
+  - FieldLabel: label
+  - FieldSet: fieldset
+  - FieldLegend: legend
+subcomponents: [FieldLabel, FieldTitle, FieldDescription, FieldContent, FieldTrailing, FieldGroup, FieldSet, FieldLegend, FieldSeparator, FieldError]
 props:
   - orientation?: "vertical" | "horizontal" | "responsive" — vertical (default): label on top, control, then description (Input/Select/Textarea fields); horizontal: control + text in a row, placement follows DOM order (control first = checkbox row; control after text = settings row); responsive: vertical then horizontal at @md (needs a Field.Group ancestor)
   - layout?: "option" | "setting" — DEPRECATED alias; option → horizontal control-leading, setting → horizontal control-trailing. Prefer orientation
@@ -2988,6 +3011,13 @@ You're showing a hover preview of a code reference (a function name in docs, a s
 ---
 name: InputGroup
 import: "@gradeui/ui"
+element: div
+subelements:
+  - InputGroupInput: input
+  - InputGroupTextarea: textarea
+  - InputGroupButton: button
+  - InputGroupText: span
+subcomponents: [InputGroupInput, InputGroupTextarea, InputGroupAddon, InputGroupButton, InputGroupText]
 props:
   - InputGroup: <div> — the bordered wrapper. role=group. Focus/error styles react to the inner control via :has().
   - InputGroupInput: <input> props — the text control (data-slot=input-group-control). Borderless, fills the group.
@@ -3024,6 +3054,7 @@ aliases: [input group, input with icon, input addon, prefix suffix input, search
 ---
 name: Input
 import: "@gradeui/ui"
+element: input
 props:
   - type?: string (text | email | password | number | search | url | tel | date)
   - placeholder?: string — hint text shown while the input is empty. Model it explicitly (not just a native passthrough) so generated screens carry placeholders and the validator accepts them.
@@ -3070,6 +3101,7 @@ Sizes — `default` for forms, `sm` / `xs` for dense panels:
 ---
 name: Label
 import: "@gradeui/ui"
+element: label
 props:
   - htmlFor?: string — binds to the input's id
   - size?: "default" | "sm" | "xs" — text size, mirrors Input/Select/Textarea so a field and its label scale together. default = text-sm; xs = 11px for dense tool panels.
@@ -3998,6 +4030,7 @@ Note `PopoverAnchor` — the popover is pinned to the selected snippet, not to a
 ---
 name: Progress
 import: "@gradeui/ui"
+element: div
 props:
   - value?: number (0–100) — percent complete
   - max?: number (default 100)
@@ -4106,6 +4139,7 @@ No visible dot (selection reads from the card border + background), laid out in 
 ---
 name: RadioGroup
 import: "@gradeui/ui"
+element: div
 subcomponents: [RadioGroupItem]
 props:
   - RadioGroup: value?: string — controlled selection
@@ -4555,13 +4589,22 @@ aliases: [section, band, hero section, page section, content section, marketing 
 ---
 name: Select
 import: "@gradeui/ui"
+subelements:
+  - SelectTrigger: button
+  - SelectValue: span
+  - SelectContent: div
+  - SelectItem: div
+  - SelectGroup: div
+  - SelectLabel: div
+  - SelectSeparator: div
 subcomponents: [SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel, SelectSeparator]
 props:
-  - Select: value?, onValueChange?, defaultValue?, disabled? — Radix root
+  - Select: value?, onValueChange?, defaultValue?, disabled?, name?, required?, autoComplete?, onOpenChange? — Radix root (renders no element itself, so no native-attr passthrough; name/required/autoComplete post via a hidden native select)
   - SelectTrigger: size?: "default" | "sm" | "xs" — control density; wraps the clickable control, nest SelectValue inside
   - SelectValue: placeholder?: string — text when nothing is selected
   - SelectContent: size?: "default" | "sm" | "xs" — menu density; cascades to every SelectItem inside via context so a compact trigger gets a compact menu. Accepts items via children.
   - SelectItem: value: string — required; content is the label. Inherits density from SelectContent.
+  - SelectItem: disabled?: boolean — item shown but not pickable
 when_to_use: Single-choice from 3+ known options. Fewer than 3 → RadioGroup. Huge list with search → use a Combobox (not in DS yet). Multi-select → not supported by this primitive. In dense tool panels, set size="xs" on BOTH the trigger and the content so the closed control and open menu match.
 composes_with: [Label (above SelectTrigger), Form, Card]
 aliases: [dropdown, combobox, picker, select, pop-up button, popup button, popup picker, picker view, rnpickerselect, react native picker, native picker]
@@ -4640,6 +4683,7 @@ control, do NOT put a Slider, Input, Button, or link inside it. Static content o
 ---
 name: Separator
 import: "@gradeui/ui"
+element: div
 props:
   - orientation? ("horizontal" | "vertical") — default "horizontal"
   - decorative?: boolean (default true) — hide from a11y tree
@@ -5022,6 +5066,7 @@ DO NOT bypass `<Sidebar>` and compose an icon rail or projects pane from raw `<S
 ---
 name: Skeleton
 import: "@gradeui/ui"
+element: div
 props:
   - className?: string — required in practice; supply width/height utilities
   - All native div HTML attrs
@@ -5377,12 +5422,16 @@ Indicator on the leading edge:
 ---
 name: Switch
 import: "@gradeui/ui"
+element: button
 props:
   - checked?: boolean
   - onCheckedChange?: (checked: boolean) => void
   - defaultChecked?: boolean
   - disabled?: boolean
   - id?: string
+  - name?: string — form field name, posted via the hidden input
+  - value?: string — form value when on (default "on")
+  - required?: boolean — marks the hidden form input required
 when_to_use: Instant on/off setting ("Enable notifications", "Dark mode"). Commits on toggle — no submit button needed. For selecting-from-a-list use Checkbox. For a settings row (label + description on the left, Switch on the right) use Field layout="setting". For a prominent on/off presented as a whole selectable card, use SwitchCard.
 composes_with: [Label (via htmlFor), Field (layout="setting" settings row), SwitchCard (whole-card toggle), Card (settings rows)]
 aliases: [toggle, switch, on/off switch, ios toggle, toggle switch, switch control, react native switch]
@@ -5400,8 +5449,12 @@ aliases: [toggle, switch, on/off switch, ios toggle, toggle switch, switch contr
 ---
 name: Table
 import: "@gradeui/ui"
+element: table
 subcomponents: [TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell, TableCaption]
 props:
+  - TableCell: colSpan?: number — span multiple columns
+  - TableCell: rowSpan?: number — span multiple rows
+  - TableHead: scope?: string — a11y column/row header scope ("col" | "row")
   - Each subcomponent accepts native table HTML attrs
   - No variants — styling follows the active theme tokens
 when_to_use: Structured tabular data — rows × columns with alignment requirements. NOT a layout grid — for that use div+Tailwind grid utilities. Keep to <100 rows; larger datasets need virtualisation (not in DS).
@@ -5431,6 +5484,9 @@ aliases: [table, table view, data table, datatable, grid view, data grid, rows a
 ---
 name: Tabs
 import: "@gradeui/ui"
+element: div
+subelements:
+  - TabsTrigger: button
 subcomponents: [TabsList, TabsTrigger, TabsContent]
 sizes: [sm, md, lg]
 variants: [pill, underlined]
@@ -5439,6 +5495,7 @@ props:
   - TabsList: size? (sm | md | lg, default md) — t-shirt scale aligned with Button/ToggleGroup heights; cascades to every TabsTrigger via context so set it once on the list
   - TabsList: variant? (pill | underlined, default pill) — `pill` is the shadcn chip-on-muted look; `underlined` is the minimal text + bottom-border treatment (formerly the separate SimpleTabs component, collapsed into Tabs in May 2026). Cascades to triggers.
   - TabsTrigger: value: string — matches a TabsContent value; tooltip?: string — when set, wraps the trigger in the design-system Tooltip and auto-applies aria-label (useful for icon-only triggers); requires a TooltipProvider somewhere above the tabs
+  - TabsTrigger: disabled?: boolean — trigger shown but not selectable
   - TabsContent: value: string — matches a TabsTrigger value
 when_to_use: A small set of peer views within one surface (2–5 tabs). For primary nav use Side Menu/routing. For filters use a filter control, not tabs. Pick `variant="pill"` for app chrome (settings panels, in-card tab strips). Pick `variant="underlined"` for marketing/docs pages and browser-tab-style treatments.
 composes_with: [Card (tabs inside a card body), Dialog, TooltipProvider (required for tooltip prop)]
@@ -5490,6 +5547,7 @@ aliases: [tabs, tab strip, tab bar, tab view, tabbed interface, pageviewcontroll
 ---
 name: Textarea
 import: "@gradeui/ui"
+element: textarea
 props:
   - size?: "default" | "sm" | "xs" — control density, mirrors Input. default = min-h-80 / text-sm; sm and xs shrink the min-height + padding for dense panels.
   - All native textarea HTML attrs (rows, value, onChange, placeholder, disabled)

@@ -12,6 +12,7 @@ export const SwitchContract = contract({
   description: "Instant on/off setting (\"Enable notifications\", \"Dark mode\"). Commits on toggle — no submit button needed. For selecting-from-a-list use Checkbox. For a settings row (label + description on the left, Switch on the right) use Field layout=\"setting\". For a prominent on/off presented as a whole selectable card, use SwitchCard.",
   import: "@gradeui/ui",
   aliases: ["toggle","switch","on/off switch","ios toggle","toggle switch","switch control","react native switch"],
+  element: "button",
   composesWith: ["Label (via htmlFor)","Field (layout=\"setting\" settings row)","SwitchCard (whole-card toggle)","Card (settings rows)"],
   styleDefaults: {"Switch":"peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-xs outline-none transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input dark:data-[state=unchecked]:bg-input/80 h-6 w-11"},
   variantDefaults: {"size":"default"},
@@ -35,6 +36,21 @@ export const SwitchContract = contract({
   "id": {
       schema: z.string().optional(),
       design: "plumbing",
+  },
+  "name": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "form field name, posted via the hidden input",
+  },
+  "value": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "form value when on (default \"on\")",
+  },
+  "required": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "marks the hidden form input required",
   },
   },
 });

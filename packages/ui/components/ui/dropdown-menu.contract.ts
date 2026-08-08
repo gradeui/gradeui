@@ -71,9 +71,23 @@ export const DropdownMenuContract = contract({
       schema: z.unknown().optional(),
       design: "plumbing",
   },
-  "DropdownMenuCheckboxItem": {
-      schema: z.unknown(),
-      design: "plumbing",
+  "checked": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "controlled checked state",
+  },
+  "onCheckedChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+  },
+  "value": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "the selected radio item",
+  },
+  "onValueChange": {
+      schema: z.unknown().optional(),
+      design: "event",
   },
   "DropdownMenuSub": {
       schema: z.unknown(),

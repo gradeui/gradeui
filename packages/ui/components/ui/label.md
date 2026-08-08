@@ -1,6 +1,7 @@
 ---
 name: Label
 import: "@gradeui/ui"
+element: label
 props:
   - htmlFor?: string — binds to the input's id
   - size?: "default" | "sm" | "xs" — text size, mirrors Input/Select/Textarea so a field and its label scale together. default = text-sm; xs = 11px for dense tool panels.

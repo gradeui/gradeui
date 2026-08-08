@@ -7,9 +7,11 @@ props:
   - ChartContainer: config: ChartConfig — `{ [seriesKey]: { label: string; color?: string; theme?: { light: string; dark: string } } }`; the keys here are the names you reference in your Recharts <Bar dataKey="…" /> calls
   - ChartContainer: id?: string — used for the inlined <style> tag
   - ChartContainer: children: React.ReactNode — typically a single Recharts ResponsiveContainer or chart
-  - ChartTooltip: passes through to Recharts <Tooltip> — pair with `content={<ChartTooltipContent />}`
+  - ChartTooltip: content?: ReactNode — pair with `content={<ChartTooltipContent />}`; passes through to Recharts <Tooltip>
+  - ChartTooltip: cursor?: boolean — the hover crosshair/highlight; Recharts passthrough
   - ChartTooltipContent: indicator? "dot" | "line" | "dashed"; hideLabel?, hideIndicator?, nameKey?, labelKey?
-  - ChartLegend / ChartLegendContent: pair the same way for the legend
+  - ChartLegend: content?: ReactNode — pair with `content={<ChartLegendContent />}`; passes through to Recharts <Legend>
+  - ChartLegendContent: nameKey?: string — config key override, mirrors ChartTooltipContent
 when_to_use: Reporting dashboards, single-purpose analytics cards (revenue, conversions, active users), or anywhere you'd otherwise hand-roll a Recharts setup. Bring the actual chart type from `recharts` — ChartContainer doesn't pick the chart shape for you, it themes whatever you nest. For sparkline-style decorative trends consider just rendering a small SVG line directly; ChartContainer is overkill for non-interactive ornament.
 composes_with: [Card (chart-in-a-card pattern), Tabs (multi-metric switcher), Recharts components (Bar, Line, Area, Pie, Radar from "recharts")]
 aliases: [chart, charts, graph, bar chart, line chart, area chart, recharts, analytics chart, swift chart, swiftui chart, victory chart, victory native]

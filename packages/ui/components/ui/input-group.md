@@ -1,6 +1,13 @@
 ---
 name: InputGroup
 import: "@gradeui/ui"
+element: div
+subelements:
+  - InputGroupInput: input
+  - InputGroupTextarea: textarea
+  - InputGroupButton: button
+  - InputGroupText: span
+subcomponents: [InputGroupInput, InputGroupTextarea, InputGroupAddon, InputGroupButton, InputGroupText]
 props:
   - InputGroup: <div> — the bordered wrapper. role=group. Focus/error styles react to the inner control via :has().
   - InputGroupInput: <input> props — the text control (data-slot=input-group-control). Borderless, fills the group.

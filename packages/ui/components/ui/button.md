@@ -1,6 +1,7 @@
 ---
 name: Button
 import: "@gradeui/ui"
+element: button
 variants: [default, destructive, outline, secondary, ghost, link, raised]
 sizes: [2xs, xs, sm, md, lg]
 props:

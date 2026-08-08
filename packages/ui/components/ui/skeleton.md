@@ -1,6 +1,7 @@
 ---
 name: Skeleton
 import: "@gradeui/ui"
+element: div
 props:
   - className?: string — required in practice; supply width/height utilities
   - All native div HTML attrs

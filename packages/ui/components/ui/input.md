@@ -1,6 +1,7 @@
 ---
 name: Input
 import: "@gradeui/ui"
+element: input
 props:
   - type?: string (text | email | password | number | search | url | tel | date)
   - placeholder?: string — hint text shown while the input is empty. Model it explicitly (not just a native passthrough) so generated screens carry placeholders and the validator accepts them.

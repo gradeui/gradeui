@@ -42,21 +42,73 @@ const ChartContainer = React.forwardRef<
       typeof RechartsPrimitive.ResponsiveContainer
     >["children"]
   }
->(({ id, className, children, config, ...props }, ref) => {
+>(({ id, className, children, config, onTouchEnd, onTouchCancel, ...props }, ref) => {
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`
+  const containerRef = React.useRef<HTMLDivElement | null>(null)
+
+  const setRefs = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      containerRef.current = node
+      if (typeof ref === "function") ref(node)
+      else if (ref) ref.current = node
+    },
+    [ref]
+  )
+
+  // Recharts only clears its tooltip on mouseleave — on touch the cursor
+  // never "leaves", so the readout, cursor line and active dot persist
+  // after the finger lifts. Synthesise the leave: a bubbling mouseout is
+  // what React derives onMouseLeave from. Two constraints shape this:
+  //   - DEFERRED a macrotask: after a plain tap (no touchmove) browsers
+  //     fire compatibility mouse events (mouseover/mousemove/…/click)
+  //     AFTER touchend, and recharts re-activates the tooltip from
+  //     those. The timeout runs after that sequence, so the dismissal
+  //     wins for taps as well as scrubs.
+  //   - relatedTarget is the chart CONTAINER, not document.body — React
+  //     fires synthetic mouseleave on every fiber between the target
+  //     and the common ancestor with relatedTarget, so body would leak
+  //     spurious onMouseLeave to every React ancestor (closing hover
+  //     cards / menus that wrap the chart). The container stops the
+  //     chain inside the chart while still covering recharts' wrapper.
+  const dismissTooltip = React.useCallback(() => {
+    window.setTimeout(() => {
+      const container = containerRef.current
+      const wrapper = container?.querySelector(".recharts-wrapper")
+      wrapper?.dispatchEvent(
+        new MouseEvent("mouseout", { bubbles: true, relatedTarget: container })
+      )
+    }, 0)
+  }, [])
+  const handleTouchEnd = React.useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      onTouchEnd?.(event)
+      dismissTooltip()
+    },
+    [onTouchEnd, dismissTooltip]
+  )
+  const handleTouchCancel = React.useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      onTouchCancel?.(event)
+      dismissTooltip()
+    },
+    [onTouchCancel, dismissTooltip]
+  )
 
   return (
     <ChartContext.Provider value={{ config }}>
       <div
         data-chart={chartId}
-        ref={ref}
+        ref={setRefs}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
         className={cn(
           "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
           className
         )}
         {...props}
       >
+        <ChartTouchStyle id={chartId} />
         <ChartStyle id={chartId} config={config} />
         <RechartsPrimitive.ResponsiveContainer>
           {children}
@@ -66,6 +118,41 @@ const ChartContainer = React.forwardRef<
   )
 })
 ChartContainer.displayName = "Chart"
+
+/**
+ * Touch defaults every touch chart otherwise rediscovers by hand —
+ * perfect on desktop, subtly broken on a phone without them:
+ *
+ *   - `touch-action: pan-y` on the SVG surface: Safari otherwise claims
+ *     a horizontal scrub as a scroll and fires pointercancel mid-drag.
+ *     pan-y (not none) keeps vertical page scrolling alive — `none`
+ *     turns every full-width dashboard chart into a scroll dead-zone
+ *     the reader's thumb gets stuck on.
+ *   - selection / callout / tap-highlight suppression that reaches the
+ *     SVG `text` / `tspan` nodes: inline styles on the wrapper don't
+ *     cascade into them, so iOS shows the loupe on long-press.
+ *
+ * Emitted as real scoped CSS (not Tailwind arbitrary variants) so the
+ * rules hold in every consumer regardless of its Tailwind build.
+ */
+const ChartTouchStyle = ({ id }: { id: string }) => (
+  <style
+    dangerouslySetInnerHTML={{
+      __html: `
+[data-chart=${id}] .recharts-surface {
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+[data-chart=${id}] .recharts-surface text,
+[data-chart=${id}] .recharts-surface tspan {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+`,
+    }}
+  />
+)
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(

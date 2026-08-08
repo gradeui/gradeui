@@ -34,13 +34,5 @@ export const DialogContract = contract({
       design: "knob",
       description: "what the modal panel is *made of*. Defaults to `solid` (opaque `bg-background`). `glass` lets the page show through softly — pairs with rich backdrops or AI-suggestion modals.",
   },
-  "accepts": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
-  },
-  "used": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
-  },
   },
 });

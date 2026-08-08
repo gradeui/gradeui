@@ -207,8 +207,26 @@ export interface ComponentContract<P extends Record<string, PropContract> = Reco
    *  package). */
   import?: string;
   /** Subcomponents the consumer imports alongside (`AvatarImage`,
-   *  `DialogTrigger`). The model needs these in the same import line. */
+   *  `DialogTrigger`). The model needs these in the same import line.
+   *  The validator also resolves these names to THIS contract, so
+   *  `<TableCell>` validates against the Table family's flattened
+   *  prop bag instead of passing unchecked. */
   subcomponents?: string[];
+  /** The intrinsic DOM element the component renders and forwards its
+   *  rest-props to (`"button"`, `"input"`, `"div"`, …). Declaring it
+   *  tells the validator that the element's standard HTML attributes —
+   *  plus `on*` event handlers — are legal props even though they
+   *  aren't individually contracted. This is the machine-readable form
+   *  of the sidecar prose "All native `<x>` HTML attrs". Omitted →
+   *  only contracted props (and the universal `aria-*`/`data-*`/`key`/
+   *  `ref`/`className`/`style` passthroughs) are accepted. */
+  element?: string;
+  /** Per-subcomponent overrides of `element` for mixed-element families
+   *  (`{ InputGroupInput: "input", InputGroupTextarea: "textarea" }`).
+   *  When the validator resolves a subcomponent tag to this contract,
+   *  it uses the override's attribute set instead of the family
+   *  `element`'s. Keys are subcomponent names from `subcomponents`. */
+  subcomponentElements?: Record<string, string>;
   /** The component's own baked-in Tailwind classes, extracted from its
    *  SOURCE at generation time — keyed by exported part name ("Card",
    *  "CardHeader", "CardContent", "Button"). For cva-styled components

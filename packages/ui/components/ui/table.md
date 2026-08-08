@@ -1,8 +1,12 @@
 ---
 name: Table
 import: "@gradeui/ui"
+element: table
 subcomponents: [TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell, TableCaption]
 props:
+  - TableCell: colSpan?: number — span multiple columns
+  - TableCell: rowSpan?: number — span multiple rows
+  - TableHead: scope?: string — a11y column/row header scope ("col" | "row")
   - Each subcomponent accepts native table HTML attrs
   - No variants — styling follows the active theme tokens
 when_to_use: Structured tabular data — rows × columns with alignment requirements. NOT a layout grid — for that use div+Tailwind grid utilities. Keep to <100 rows; larger datasets need virtualisation (not in DS).
