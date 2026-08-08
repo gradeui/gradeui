@@ -19,6 +19,28 @@ The embed is **Fast Frame minus the editing chrome**, and the share stack alread
 
 So `grade-embed` is not a from-scratch build — it's **strip the chrome, harden the boundary, solve sizing, package for external hosts.**
 
+### Share-view presentation params (`/s/<token>?…`)
+
+The share view already ships a chrome-free presentation mode, driven by
+URL params (parsed in `apps/docs/app/s/[token]/page.tsx`; individual
+params beat the macro):
+
+- `?fullscreen=1` — the macro: chrome hidden, `view=responsive`, zoom
+  reset to 100% and locked. As of 8 Aug 2026 it also keeps the PLAIN
+  responsive fill for pages taller than the window (no content-height
+  artboard, no centring): the iframe document scrolls natively, so a
+  home-screen install feels like the real product. The route also
+  emits `apple-mobile-web-app` metadata plus the project's app icon
+  (see STUDIO-STORAGE.md), so `/s/<token>?fullscreen=1` added to an
+  iPhone/iPad home screen launches standalone with no browser chrome.
+- `?ui=off` — chrome hidden only ("." reveals it).
+- `?view=<id>` — open on a viewport from the share's set.
+- `?zoom=fit` — open Fit-scaled instead of 100%.
+- `?mode=dark|light` (8 Aug 2026) — force the colour mode for that
+  open, beating the share's stored `color_mode`. Per-request only,
+  nothing is written; carries across goto navigation because the mode
+  is share-view state and flow navigation never reloads the page.
+
 ## Two delivery modes (want both)
 
 ### 1. React component — `@gradeui/embed`

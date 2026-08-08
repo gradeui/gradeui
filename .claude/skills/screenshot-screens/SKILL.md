@@ -12,6 +12,11 @@ embed) is deliberate: it loads the project's **custom CSS from the
 rules area** — e.g. the brightlocal sidebar-width rule that stops
 "Google Business Profile" wrapping — which the embed omits. Share
 renders at natural viewport size, so no scale-up tricks are needed.
+(8 Aug 2026: fullscreen keeps the plain responsive fill for tall pages,
+so they render as natively scrolling documents starting at the top, not
+a centred content-height artboard. Full-height variants should use
+Playwright's `fullPage` capture or an explicit tall viewport.
+`?mode=dark|light` forces colour mode per run.)
 
 Three variants per screen:
 

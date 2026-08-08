@@ -86,6 +86,15 @@ Recommendation: **signed URLs.** Privacy-preserving by default, consistent with 
 ## What's built today
 
 - **Descriptor → stock/generated fill** — `media-fill.ts`, `@gradeui/media` source router, `/api/media/resolve-batch`, the `mediaUrls` / `__gradeMediaUrls` delivery channel, per-slot `mediaOverrides`. This is the *source* path; it stays.
+- **Per-project app icon** (23 Jul, first asset shipped 8 Aug) — an
+  `assets` row with `enrichment.role = "app-icon"` (512px PNG in the
+  public bucket; newest row wins, so re-uploading replaces without
+  cleanup). `/s/<token>`'s `generateMetadata` resolves it into the
+  `apple-touch-icon`, so a `?fullscreen=1` share installed on an
+  iPhone/iPad home screen wears the CLIENT's mark, not Grade's. The
+  `enrichment` jsonb is the role seam until a dedicated projects
+  column exists. Glint's icon is generated from the Wordmark G glyph
+  with the theme's champagne accent ramp.
 
 ## What's planned (this pillar)
 
