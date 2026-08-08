@@ -158,6 +158,7 @@ import {
   type Team,
   type User as StoredUser,
 } from "@/lib/studio-storage";
+import type { SharedComponent } from "@/lib/studio-storage/types";
 import { VersionConflictError } from "@/lib/studio-storage/types";
 import {
   ProjectsMenu,
@@ -165,6 +166,7 @@ import {
   type StylesSection,
 } from "@/components/studio/projects-menu";
 import { AssetBrowser } from "@/components/studio/asset-browser";
+import { SharedComponentsPage } from "@/components/studio/shared-components-page";
 import { RulesPage } from "@/components/studio/rules-page";
 import { GradeLoader } from "@/components/ui/grade-loader";
 import { ProjectHome } from "@/components/studio/project-home";
@@ -457,35 +459,68 @@ export default function StudioPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
-  // Project shared components ({name → JSX module source}, from the
-  // shared_components table) — loaded per active project and forwarded
-  // to every renderer mount so screens can import "@project/components".
-  // Authoring goes through the MCP tools; reload the project to pick up
-  // component edits (same freshness model as the theme draft).
-  const [sharedModules, setSharedModules] = useState<Record<
-    string,
-    string
-  > | null>(null);
+  // Project shared components (shared_components table) — loaded per
+  // active project. The RICH rows feed the Components rail section +
+  // the inspector's shared-component card; the derived {name → source}
+  // map below is the compatibility seam every renderer mount keeps
+  // consuming so screens can import "@project/components". Authoring
+  // goes through the MCP tools; reload the project to pick up edits
+  // (same freshness model as the theme draft).
+  const [sharedComponents, setSharedComponents] = useState<
+    SharedComponent[] | null
+  >(null);
   useEffect(() => {
     if (!activeProjectId) {
-      setSharedModules(null);
+      setSharedComponents(null);
       return;
     }
     let cancelled = false;
     storage
-      .listSharedComponentSources(activeProjectId)
-      .then((map) => {
+      .listSharedComponents(activeProjectId)
+      .then((rows) => {
         if (cancelled) return;
-        setSharedModules(Object.keys(map).length > 0 ? map : null);
+        setSharedComponents(rows.length > 0 ? rows : null);
       })
       .catch((err) => {
         console.warn("[studio] shared components load failed", err);
-        if (!cancelled) setSharedModules(null);
+        if (!cancelled) setSharedComponents(null);
       });
     return () => {
       cancelled = true;
     };
   }, [activeProjectId, storage]);
+  const sharedModules = useMemo(() => {
+    if (!sharedComponents || sharedComponents.length === 0) return null;
+    const map: Record<string, string> = {};
+    for (const c of sharedComponents) map[c.name] = c.source;
+    return map;
+  }, [sharedComponents]);
+  // "Used in N screens" — parse each design's @project/components import
+  // binding list (not a bare name scan, which false-positives on local
+  // identifiers; handles `X as Y` aliases). Counts every design kind
+  // that carries appSource, motions included.
+  const sharedComponentUsage = useMemo<Record<string, number>>(() => {
+    const counts: Record<string, number> = {};
+    if (!sharedComponents) return counts;
+    for (const c of sharedComponents) counts[c.name] = 0;
+    const importRe =
+      /import\s*\{([^}]*)\}\s*from\s*["']@project\/components["']/g;
+    for (const d of designs) {
+      const srcText = d.appSource;
+      if (!srcText || !srcText.includes("@project/components")) continue;
+      const imported = new Set<string>();
+      for (const m of srcText.matchAll(importRe)) {
+        for (const part of m[1].split(",")) {
+          const name = part.trim().split(/\s+as\s+/)[0];
+          if (name) imported.add(name);
+        }
+      }
+      for (const name of imported) {
+        if (name in counts) counts[name]++;
+      }
+    }
+    return counts;
+  }, [designs, sharedComponents]);
 
   // Point the module-level registry override at the active project's
   // registryId (null = deployment default). This is THE per-project
@@ -1249,7 +1284,8 @@ export default function StudioPage() {
         urlSection === "motions" ||
         urlSection === "styles" ||
         urlSection === "rules" ||
-        urlSection === "assets"
+        urlSection === "assets" ||
+        urlSection === "components"
       ) {
         setProjectSection(urlSection);
       }
@@ -3513,6 +3549,27 @@ export default function StudioPage() {
                   </div>
                 </div>
               )}
+              {/* Shared components page — the project's
+                  @project/components modules. Read-only list + source
+                  viewer; authoring goes through chat/MCP. */}
+              {projectSection === "components" && zoom === "all" && (
+                <div className="absolute inset-0 z-10 overflow-y-auto bg-muted/20 p-8">
+                  <div className="mx-auto max-w-5xl">
+                    <h2 className="text-lg font-semibold text-foreground">
+                      Shared components
+                    </h2>
+                    <p className="mb-6 mt-1 text-sm text-muted-foreground">
+                      Reusable modules screens import from
+                      &quot;@project/components&quot;. Edited via chat/MCP;
+                      changes apply to every screen on next render.
+                    </p>
+                    <SharedComponentsPage
+                      components={sharedComponents}
+                      usage={sharedComponentUsage}
+                    />
+                  </div>
+                </div>
+              )}
               {/* Rules page — the project's prompt-riding .md files:
                   registry house rules (toggleable) + project files (full
                   CRUD). Takes over the canvas like Assets. */}
@@ -3568,7 +3625,8 @@ export default function StudioPage() {
                   "h-full",
                   (projectSection === "assets" ||
                     projectSection === "styles" ||
-                    projectSection === "rules") &&
+                    projectSection === "rules" ||
+                    projectSection === "components") &&
                     zoom === "all" &&
                     "invisible",
                 )}

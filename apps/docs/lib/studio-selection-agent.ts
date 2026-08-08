@@ -61,6 +61,12 @@ export type SelectionPayload = {
   /** PascalCase component name derived from `part` — matches what the
    *  model is likely to have in the current JSX. */
   componentName?: string;
+  /** Set when the selection is a SHARED-COMPONENT boundary (Stage 1
+   *  sealed-instance semantics): the shared component's name from
+   *  data-gds-boundary. componentName carries the same value; part is
+   *  suppressed so the inspector doesn't treat the boundary as its
+   *  internal DS root. */
+  boundary?: string;
   /** Ancestor chain captured at click time, root → target. Last entry
    *  is the selected element itself. The inspector renders this as a
    *  breadcrumb (`AppShellMain[12] › Stack[34] › Row[35]`) so the user
@@ -398,6 +404,30 @@ export function installStudioSelectionAgent(
 
   function resolveSelectionTarget(el: Element | null): Element | null {
     if (!el) return null;
+    // Boundary rule (STUDIO.md shared components, Stage 1): a click
+    // ANYWHERE inside a shared component selects the usage site — the
+    // sealed-instance semantics of a Figma component instance. The
+    // boundary node is the component's own root, stamped by the
+    // kernels' boundary wrapper with data-gds-boundary=<Name> plus the
+    // usage tag's data-gds-source-id. Nested shared components: the
+    // OUTERMOST boundary wins (its usage lives in the SCREEN source;
+    // inner boundaries' usage sites live inside module source, which
+    // Stage 1 treats as sealed).
+    {
+      let boundary: Element | null =
+        (el.closest && el.closest("[data-gds-boundary]")) || null;
+      if (boundary) {
+        let outer: Element | null = boundary;
+        while (outer) {
+          boundary = outer;
+          outer =
+            (outer.parentElement &&
+              outer.parentElement.closest("[data-gds-boundary]")) ||
+            null;
+        }
+        return boundary;
+      }
+    }
     // Default: walk up to the nearest DS component (data-gds-part)
     // — the long-standing behavior that lets clicks anywhere inside
     // a Card / Button / etc. snap to the component root.
@@ -463,8 +493,18 @@ export function installStudioSelectionAgent(
     // own data-gds-part, there's no manifest-driven UI to render —
     // and that's correct, the TextEditRow + Spacing group still work
     // off `sourceId` / className.
-    const part = el.getAttribute(PART_ATTR) || undefined;
-    const componentName = part ? partToComponentName(part) : undefined;
+    const boundary = el.getAttribute("data-gds-boundary") || undefined;
+    // A boundary node is the shared component's root — it may ALSO
+    // carry a DS part attr (an AppShell root, say), but the selection's
+    // identity is the SHARED component, not the internal part.
+    const part = boundary
+      ? undefined
+      : el.getAttribute(PART_ATTR) || undefined;
+    const componentName = boundary
+      ? boundary
+      : part
+        ? partToComponentName(part)
+        : undefined;
 
     const rect = el.getBoundingClientRect();
     const rawText = (
@@ -648,6 +688,7 @@ export function installStudioSelectionAgent(
       },
       part,
       componentName,
+      boundary,
       mediaSourceJson,
       instanceId,
       sourceId,

@@ -80,6 +80,7 @@ import type {
   ShareViewportSpec,
   StudioEvent,
   StudioStorage,
+  SharedComponent,
 } from "./types";
 import { SHARE_VIEWPORT_PRESETS, VersionConflictError } from "./types";
 import type { ProjectViewPrefs } from "@/lib/studio-view-prefs";
@@ -1148,24 +1149,40 @@ export class SupabaseStudioStorage implements StudioStorage {
       .publicUrl;
   }
 
-  async listSharedComponentSources(
-    projectId: string,
-  ): Promise<Record<string, string>> {
+  async listSharedComponents(projectId: string): Promise<SharedComponent[]> {
     const { data, error } = await this.supabase
       .from("shared_components")
-      .select("name, source")
+      .select("id, name, source, description, updated_at")
       .eq("project_id", projectId)
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .order("name");
     if (error) {
       // Table missing = migration 0025 not applied yet — degrade to
       // "no shared components" rather than breaking project load.
-      if ((error as { code?: string }).code === "42P01") return {};
+      if ((error as { code?: string }).code === "42P01") return [];
       throw error;
     }
+    return ((data ?? []) as {
+      id: string;
+      name: string;
+      source: string;
+      description: string | null;
+      updated_at: number;
+    }[]).map((r) => ({
+      id: r.id,
+      name: r.name,
+      source: r.source,
+      description: r.description ?? null,
+      updatedAt: r.updated_at,
+    }));
+  }
+
+  async listSharedComponentSources(
+    projectId: string,
+  ): Promise<Record<string, string>> {
+    const rows = await this.listSharedComponents(projectId);
     const out: Record<string, string> = {};
-    for (const r of (data ?? []) as { name: string; source: string }[]) {
-      out[r.name] = r.source;
-    }
+    for (const r of rows) out[r.name] = r.source;
     return out;
   }
 

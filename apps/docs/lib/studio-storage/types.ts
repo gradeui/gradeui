@@ -387,6 +387,17 @@ export class VersionConflictError extends Error {
   }
 }
 
+/** One project shared component (shared_components table row, live).
+ *  `updatedAt` doubles as the version — the MCP save tools use it as
+ *  the compare-and-swap guard (expectedUpdatedAt). */
+export interface SharedComponent {
+  id: string;
+  name: string;
+  source: string;
+  description: string | null;
+  updatedAt: number;
+}
+
 export interface StudioStorage {
   /** List every project. Metadata only — call `loadProject` to get
    *  designs/chat/notes. */
@@ -564,6 +575,11 @@ export interface StudioStorage {
    *  goes through the MCP tools for now. Local mode has none (returns {})
    *  — shared components are a cloud feature. */
   listSharedComponentSources(projectId: string): Promise<Record<string, string>>;
+
+  /** Rich variant of the above — full rows (id, description, updatedAt
+   *  version) for the Studio-side list + inspector card. Mirrors the MCP
+   *  server's SharedComponentRow shape. Local mode returns []. */
+  listSharedComponents(projectId: string): Promise<SharedComponent[]>;
 
   /** Upload a file to the user's library. Writes the bytes to the
    *  bucket + the metadata row, and returns the asset with a signed

@@ -78,9 +78,14 @@ export function CanvasPathBar({ selection, className }: CanvasPathBarProps) {
   // argument doesn't win here: an empty bar with placeholder copy
   // is more visual noise than help. The user clicks in the canvas
   // to start; the bar reappears once a selection exists.
-  if (!selection?.chain || selection.chain.length === 0) return null;
+  const isBoundary = Boolean(selection?.boundary);
+  if (
+    (!selection?.chain || selection.chain.length === 0) &&
+    !isBoundary
+  )
+    return null;
 
-  const segments: SelectionChainSegment[] = selection.chain;
+  const segments: SelectionChainSegment[] = selection?.chain ?? [];
 
   return (
     <div
@@ -93,6 +98,20 @@ export function CanvasPathBar({ selection, className }: CanvasPathBarProps) {
     >
       <Breadcrumb className="min-w-0">
         <BreadcrumbList>
+          {/* Synthetic root crumb — the screen itself. Non-interactive:
+              "App" isn't a selectable node, it names the source the
+              chain lives in (App › OnboardingLayout › …). */}
+          <BreadcrumbItem>
+            <span className="text-muted-foreground/70">App</span>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          {/* Boundary selection with an empty chain (root-level shared
+              usage) — render the boundary name as the current crumb. */}
+          {segments.length === 0 && isBoundary ? (
+            <BreadcrumbItem>
+              <BreadcrumbPage>{selection?.boundary}</BreadcrumbPage>
+            </BreadcrumbItem>
+          ) : null}
           {segments.map((seg, i) => {
             const isLast = i === segments.length - 1;
             const label = labelForSegment(seg);

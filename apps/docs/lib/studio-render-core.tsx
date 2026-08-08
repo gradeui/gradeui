@@ -347,6 +347,7 @@ const projectModuleExports = new Map<
   Record<string, unknown> | "compiling"
 >();
 let projectNamespace: Record<string, unknown> | null = null;
+const projectWrapped = new Map<string, unknown>();
 
 /** Replace the current render's shared-component sources ({name → JSX
  *  module source}). Clears compiled caches so edits take effect on the
@@ -356,7 +357,46 @@ export function setProjectModules(
 ): void {
   projectModuleSources = sources ?? {};
   projectModuleExports.clear();
+  projectWrapped.clear();
   projectNamespace = null;
+}
+
+/** Boundary wrapper — twin of fast-sandbox/page.tsx's wrapWithBoundary
+ *  (keep in sync). Pins the usage tag's data-gds-source-id + the shared
+ *  component's name onto the component's real root node so the
+ *  selection agent's boundary snap (sealed-instance semantics) works
+ *  in every core-driven surface too. */
+function wrapWithBoundary(name: string, exported: unknown): unknown {
+  if (typeof exported !== "function") return exported;
+  const Component = exported as React.ComponentType<Record<string, unknown>>;
+  function SharedBoundary(props: Record<string, unknown>) {
+    const hostRef = React.useRef<HTMLDivElement | null>(null);
+    const sourceId = props["data-gds-source-id"];
+    React.useEffect(() => {
+      const host = hostRef.current;
+      if (!host) return;
+      const stamp = () => {
+        const el = host.firstElementChild as HTMLElement | null;
+        if (!el) return;
+        el.setAttribute("data-gds-boundary", name);
+        el.setAttribute("data-gds-name", name);
+        if (sourceId != null)
+          el.setAttribute("data-gds-source-id", String(sourceId));
+      };
+      stamp();
+      const mo = new MutationObserver(stamp);
+      mo.observe(host, { childList: true });
+      return () => mo.disconnect();
+    });
+    return (
+      <div style={{ display: "contents" }} ref={hostRef}>
+        <Component {...props} />
+      </div>
+    );
+  }
+  Object.assign(SharedBoundary, Component);
+  SharedBoundary.displayName = `Shared(${name})`;
+  return SharedBoundary;
 }
 
 function compileProjectModule(name: string): Record<string, unknown> {
@@ -401,8 +441,15 @@ function getProjectNamespace(): Record<string, unknown> {
         enumerable: true,
         configurable: true,
         get: () => {
+          const cached = projectWrapped.get(name);
+          if (cached) return cached;
           const exports = compileProjectModule(name);
-          return (exports[name] ?? exports.default) as unknown;
+          const wrapped = wrapWithBoundary(
+            name,
+            (exports[name] ?? exports.default) as unknown,
+          );
+          projectWrapped.set(name, wrapped);
+          return wrapped;
         },
       });
     }

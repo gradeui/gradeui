@@ -306,6 +306,7 @@ const projectModuleExports = new Map<
   Record<string, unknown> | "compiling"
 >();
 let projectNamespace: Record<string, unknown> | null = null;
+const projectWrapped = new Map<string, unknown>();
 
 function setProjectModules(
   sources: Readonly<Record<string, string>> | null | undefined,
@@ -321,7 +322,52 @@ function setProjectModules(
   if (unchanged) return;
   projectModuleSources = next;
   projectModuleExports.clear();
+  projectWrapped.clear();
   projectNamespace = null;
+}
+
+/**
+ * Boundary wrapper (STUDIO.md shared components, Stage 1): the screen
+ * stamps the USAGE tag (<OnboardingLayout data-gds-source-id="0">),
+ * but components that destructure props drop the attr before it
+ * reaches the DOM. This wrapper pins the usage id + the component
+ * name onto the component's own ROOT node (a real box — rect-safe for
+ * overlays), where the selection agent's boundary snap finds it. The
+ * display:contents host div has no box of its own; a MutationObserver
+ * re-stamps if React recreates the root.
+ */
+function wrapWithBoundary(name: string, exported: unknown): unknown {
+  if (typeof exported !== "function") return exported;
+  const Component = exported as React.ComponentType<Record<string, unknown>>;
+  function SharedBoundary(props: Record<string, unknown>) {
+    const hostRef = React.useRef<HTMLDivElement | null>(null);
+    const sourceId = props["data-gds-source-id"];
+    React.useEffect(() => {
+      const host = hostRef.current;
+      if (!host) return;
+      const stamp = () => {
+        const el = host.firstElementChild as HTMLElement | null;
+        if (!el) return;
+        el.setAttribute("data-gds-boundary", name);
+        el.setAttribute("data-gds-name", name);
+        if (sourceId != null)
+          el.setAttribute("data-gds-source-id", String(sourceId));
+      };
+      stamp();
+      const mo = new MutationObserver(stamp);
+      mo.observe(host, { childList: true });
+      return () => mo.disconnect();
+    });
+    return (
+      <div style={{ display: "contents" }} ref={hostRef}>
+        <Component {...props} />
+      </div>
+    );
+  }
+  // Compound parts (OnboardingLayout.Actions) survive the wrap.
+  Object.assign(SharedBoundary, Component);
+  SharedBoundary.displayName = `Shared(${name})`;
+  return SharedBoundary;
 }
 
 function compileProjectModule(name: string): Record<string, unknown> {
@@ -377,8 +423,15 @@ function resolveProjectComponents(): Record<string, unknown> {
         enumerable: true,
         configurable: true,
         get: () => {
+          const cached = projectWrapped.get(name);
+          if (cached) return cached;
           const exports = compileProjectModule(name);
-          return (exports[name] ?? exports.default) as unknown;
+          const wrapped = wrapWithBoundary(
+            name,
+            (exports[name] ?? exports.default) as unknown,
+          );
+          projectWrapped.set(name, wrapped);
+          return wrapped;
         },
       });
     }

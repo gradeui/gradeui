@@ -59,6 +59,7 @@ import type {
   ShareLink,
   StudioEvent,
   StudioStorage,
+  SharedComponent,
 } from "./types";
 
 const VERSION_KEY = "grade:studio:storage-version";
@@ -990,6 +991,10 @@ export class LocalStorageStudioStorage implements StudioStorage {
     // Shared components are a cloud feature (shared_components table);
     // local mode simply has none.
     return {};
+  }
+
+  async listSharedComponents(): Promise<SharedComponent[]> {
+    return [];
   }
 
   async uploadAsset(): Promise<Asset> {

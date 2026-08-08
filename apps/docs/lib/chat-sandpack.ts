@@ -93,6 +93,9 @@ export interface StudioSelection {
   rect: { x: number; y: number; width: number; height: number };
   part?: string;
   componentName?: string;
+  /** Shared-component boundary name (Stage 1 sealed-instance selection)
+   *  — set when the pick resolved to a @project/components usage. */
+  boundary?: string;
   /** Raw JSON of the picked element's `data-media-source` attribute (only
    *  set when the resolved selection is a `<MediaSurface>` with a `source`
    *  prop). The right panel reads this to surface a "Regenerate this slot"
@@ -3116,9 +3119,44 @@ function sharedModuleFiles(
       ),
     );
   }
-  files[`${PROJECT_COMPONENTS_BARREL}.jsx`] = names
-    .map((n) => `export { ${n} } from "./shared-${n}";`)
-    .join("\n");
+  // Barrel wraps each export in the boundary stamper — the Sandpack
+  // twin of the kernels' wrapWithBoundary (keep the three in sync).
+  files[`${PROJECT_COMPONENTS_BARREL}.jsx`] = [
+    `import * as React from "react";`,
+    ...names.map((n) => `import { ${n} as _${n} } from "./shared-${n}";`),
+    `function __wrapBoundary(name, Component) {`,
+    `  if (typeof Component !== "function") return Component;`,
+    `  function SharedBoundary(props) {`,
+    `    const hostRef = React.useRef(null);`,
+    `    const sourceId = props["data-gds-source-id"];`,
+    `    React.useEffect(() => {`,
+    `      const host = hostRef.current;`,
+    `      if (!host) return;`,
+    `      const stamp = () => {`,
+    `        const el = host.firstElementChild;`,
+    `        if (!el) return;`,
+    `        el.setAttribute("data-gds-boundary", name);`,
+    `        el.setAttribute("data-gds-name", name);`,
+    `        if (sourceId != null) el.setAttribute("data-gds-source-id", String(sourceId));`,
+    `      };`,
+    `      stamp();`,
+    `      const mo = new MutationObserver(stamp);`,
+    `      mo.observe(host, { childList: true });`,
+    `      return () => mo.disconnect();`,
+    `    });`,
+    `    return (`,
+    `      <div style={{ display: "contents" }} ref={hostRef}>`,
+    `        <Component {...props} />`,
+    `      </div>`,
+    `    );`,
+    `  }`,
+    `  Object.assign(SharedBoundary, Component);`,
+    `  return SharedBoundary;`,
+    `}`,
+    ...names.map(
+      (n) => `export const ${n} = __wrapBoundary(${JSON.stringify(n)}, _${n});`,
+    ),
+  ].join("\n");
   return files;
 }
 

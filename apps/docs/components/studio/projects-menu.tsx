@@ -47,6 +47,7 @@ import {
   Palette,
   Plus,
   Settings,
+  Package,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -78,7 +79,8 @@ export type ProjectSection =
   | "motions"
   | "styles"
   | "rules"
-  | "assets";
+  | "assets"
+  | "components";
 
 /** Sub-sections of the Design System ("styles") section — shown as
  *  indented rows under "Design System" when it's the active section. */
@@ -390,6 +392,18 @@ export function ProjectsMenu({
               onClick={() => onSelectSection?.("assets")}
             >
               Assets
+            </SidebarItem>
+            {/* Shared components — the project's @project/components
+                modules (shared_components table). "Shared" in the label
+                to avoid colliding with Design System's registry
+                Components sub-item. */}
+            <SidebarItem
+              asButton
+              active={activeSection === "components"}
+              icon={<Package />}
+              onClick={() => onSelectSection?.("components")}
+            >
+              Shared components
             </SidebarItem>
           </SidebarSection>
       </SidebarContent>

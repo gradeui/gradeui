@@ -83,6 +83,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  Badge,
 } from "@gradeui/ui";
 import {
   getRegistryComponentContract,
@@ -328,6 +329,12 @@ export function SelectionInspector({
 }: SelectionInspectorProps) {
   const part = selection?.part;
   const componentName = selection?.componentName;
+  // Shared-component boundary (Stage 1 sealed-instance semantics):
+  // the selection IS a @project/components usage. Render the shared
+  // card instead of the contract panel — internal parts are sealed,
+  // and prop edits against the screen source would mis-target (the
+  // usage tag carries only the shared component's own props).
+  const sharedBoundary = selection?.boundary;
   // The grid currently drives RAW TAILWIND on className. That's correct for a
   // plain div, but Stack/Row carry their layout as PROPS (gap="md", align=…),
   // so pointing the grid at them would shadow those props and misread existing
@@ -591,6 +598,29 @@ export function SelectionInspector({
   // the Spacing & layout group via Tailwind class parsing). Bail
   // only when neither is present (e.g. a click on a non-instrumented
   // element or before injection has run).
+  if (sharedBoundary) {
+    return (
+      <div className={cn("flex flex-col gap-3 p-3", className)}>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-sm font-medium text-foreground">
+            {sharedBoundary}
+          </span>
+          <Badge variant="secondary" rounded="full">
+            Shared component
+          </Badge>
+        </div>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          This is a project shared component — screens import it from
+          &quot;@project/components&quot; and every screen renders the same
+          module, so its internals are sealed here. Edit it via chat/MCP
+          (save_shared_component); changes apply to every screen on next
+          render. Source is viewable under Shared components in the
+          project rail.
+        </p>
+      </div>
+    );
+  }
+
   if ((!componentName || !part) && !selection?.sourceId) return null;
 
   // Routing rule for prop edits:
