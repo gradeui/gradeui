@@ -914,8 +914,22 @@ export default function FastSandboxPage() {
     async function renderCompiled(
       source: string,
       requestId?: string,
-      speculative = false
+      speculative = false,
+      resetScroll = false
     ) {
+      // Navigation push (STUDIO-FLOWS resetScroll): land the new screen
+      // at the top. Runs AFTER the flushSync commit so it wins over any
+      // focus-into-view scrolling from the tree swap. React can carry
+      // the focused element (the clicked goto button) across the morph,
+      // and the browser then scrolls its new position into view, which
+      // opened long forms mid-page.
+      const resetScrollNow = () => {
+        if (!resetScroll) return;
+        (document.activeElement as HTMLElement | null)?.blur?.();
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        if (document.body) document.body.scrollTop = 0;
+      };
       // Tier-2 fallback: pre-resolve any unknown import specifiers via
       // esm.sh BEFORE sucrase + require() run. Failures don't throw —
       // they land in CDN_CACHE marked with __cdn_error__ so the synchronous
@@ -933,6 +947,7 @@ export default function FastSandboxPage() {
         // final sealed fence) supersedes this draft anyway.
         if (speculative) return;
         commitAndSwap(<FailurePanel error={error} />);
+        resetScrollNow();
         // Also bubble up so the parent can mirror the failure state in
         // its own error surfaces if it wants to (e.g. header badge).
         window.parent.postMessage(
@@ -1016,6 +1031,7 @@ export default function FastSandboxPage() {
         </PreviewWrap>,
         { flashChanges: true }
       );
+      resetScrollNow();
       // Don't ack a failed render — the Fill flow must not start
       // collecting against the failure panel's DOM.
       if (!sealedFailed) {
@@ -1187,7 +1203,12 @@ export default function FastSandboxPage() {
             setProjectModules(data.modules as Record<string, string>);
           }
           if (typeof source === "string")
-            renderCompiled(source, requestId, speculative);
+            renderCompiled(
+              source,
+              requestId,
+              speculative,
+              data.resetScroll === true
+            );
           break;
         }
         case "grade:fast-theme": {

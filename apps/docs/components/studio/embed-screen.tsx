@@ -760,6 +760,9 @@ export function EmbedScreen({
           // Flow navigation — grade:goto, the Fast Frame twin of the
           // external host's ext:goto (STUDIO-FLOWS).
           onGoto={resolveGoto}
+          // Navigation lands the next screen at the top (long forms
+          // otherwise keep the previous screen's scroll offset).
+          resetScrollKey={flowTop?.id ?? "entry"}
           className="block h-full w-full"
         />
       )}
@@ -778,6 +781,9 @@ export function EmbedScreen({
       transparent={transparent}
       // Flow navigation — grade:goto (STUDIO-FLOWS).
       onGoto={resolveGoto}
+      // Navigation lands the next screen at the top (long forms
+      // otherwise keep the previous screen's scroll offset).
+      resetScrollKey={flowTop?.id ?? "entry"}
       className="block h-full w-full"
     />
   );

@@ -178,6 +178,14 @@ export default async function SharePage({
   // 100% is the product truth — the macro does NOT seed Fit (Ali, 23
   // Jul: "fullscreen should also reset the zoom to 100%").
   const zoomFit = one(sp.zoom) === "fit";
+  // ?mode=dark|light forces the colour mode for this open, beating the
+  // share's stored color_mode (Ali, 8 Aug: force the standalone iPad
+  // demo dark without minting a second link). Composes with the macro:
+  // ?fullscreen=1&mode=dark. Any other value falls back to the stored
+  // mode. Viewers with the chrome visible can still toggle afterwards.
+  const modeParam = one(sp.mode);
+  const forcedMode =
+    modeParam === "dark" || modeParam === "light" ? modeParam : null;
   const supabase = getServiceSupabase();
   if (!supabase) notFound();
 
@@ -500,7 +508,7 @@ export default async function SharePage({
       sharedModules={sharedModules}
       appSource={appSource}
       themeDraftJson={projectRow?.theme_draft_json ?? null}
-      mode={share.color_mode}
+      mode={forcedMode ?? share.color_mode}
       viewportSpecs={viewportSpecs}
       initialViewportId={initialViewportId}
       screenName={screenName}

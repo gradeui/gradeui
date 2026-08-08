@@ -546,7 +546,15 @@ export function SharedScreen({
         };
       }
       if (activeSize) return activeSize;
+      // ?fullscreen=1 keeps the PLAIN fill even for tall pages: the
+      // framed content-height artboard centres via the camera, which
+      // opens long forms mid-page and leaves no native scroll (Ali's
+      // iPad walkthrough, 8 Aug). Plain fill means the iframe document
+      // scrolls like the real product, and the sandbox's resetScroll
+      // handles goto navigation. Framing stays for chrome-on viewing,
+      // where Fit-the-whole-page is the point.
       if (
+        !initialChromeHidden &&
         contentH !== null &&
         canvas.w > 0 &&
         canvas.h > 0 &&
@@ -557,7 +565,7 @@ export function SharedScreen({
       return undefined;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeSize, contentH, compare, paneOffsets.totalW, GROUP_LABEL_H, paneSize.h],
+    [activeSize, contentH, compare, paneOffsets.totalW, GROUP_LABEL_H, paneSize.h, initialChromeHidden],
   );
 
   // Zoom + Fit — the shared artboard-zoom implementation (also drives
@@ -2050,6 +2058,9 @@ export function SharedScreen({
                             ? (t) => paneGoto(m.id, t)
                             : undefined
                         }
+                        // Pane-local navigation lands the next screen at
+                        // the top, same as the single-frame branch.
+                        resetScrollKey={paneTop?.id ?? m.id}
                         className="block rounded-[28px] ring-1 ring-border/40 bg-white dark:bg-[#09090b]"
                         style={{
                           width: paneSize.w,
@@ -2155,6 +2166,10 @@ export function SharedScreen({
             // Flow navigation — same wire contract as the external host
             // (grade:goto / ext:goto, STUDIO-FLOWS two-agent rule).
             onGoto={resolveGoto}
+            // Navigating swaps the source in place; without this the new
+            // screen keeps the old scroll offset and long forms open
+            // mid-page (Ali's fullscreen iPad walkthrough, 8 Aug).
+            resetScrollKey={flowTop?.id ?? entryDesignId}
             // Comment threads stay bound to the ENTRY screen (threads are
             // keyed by design_id and fetched server-side for the token's
             // screen only) — hide the pins while navigated away so they
