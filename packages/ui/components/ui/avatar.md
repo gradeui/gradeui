@@ -8,7 +8,7 @@ props:
   - size? (2xs | xs | sm | md | lg | xl) — t-shirt scale, 20px → 80px; default md (40px). xs for chat message rows, sm for comments/dense threads, lg/xl for profile headers. Prefer this over h-*/w-* className utilities.
   - AvatarImage: src, alt
   - AvatarFallback: tone? (muted | primary | violet | amber | emerald | sky | rose | plum | lime) — tinted bg/text pair. Reach for explicit tones when each author needs a stable colour mapping (chat avatars, comment threads, member lists); default muted.
-  - AvatarFallback: children — initials (or a small icon), rendered while the image loads or when it fails
+  - AvatarFallback: children — initials (or a small icon), rendered while the image loads or when it fails. Initials auto-scale with the avatar's size (~0.4 of the circle; md = 16px) — do NOT add text-* classes to correct their size.
 when_to_use: User/entity identity for PEOPLE — profile pictures, author rows, member lists, account headers. Circular by default; the AvatarFallback initials read as a person's name. Always include AvatarFallback so load failure doesn't leave a gap.
 composes_with: [Card (in CardHeader), Table cells, Badge (placed next to for status), Skeleton (loading state), Message (in the avatar slot)]
 aliases: [profile picture, user image, account image, avatar, person glyph, user avatar, profile image, react native avatar]

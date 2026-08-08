@@ -38,7 +38,7 @@ export const AvatarContract = contract({
   "children": {
       schema: z.unknown().optional(),
       design: "plumbing",
-      description: "initials (or a small icon), rendered while the image loads or when it fails",
+      description: "initials (or a small icon), rendered while the image loads or when it fails. Initials auto-scale with the avatar's size (~0.4 of the circle; md = 16px) — do NOT add text-* classes to correct their size.",
   },
   },
 });

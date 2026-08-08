@@ -21,6 +21,10 @@ import { cn } from "@/lib/utils";
  *          author needs a stable colour mapping (chat avatars, comment
  *          threads, member lists).
  *
+ * AvatarFallback type scales with the avatar's size (9px at 2xs up to
+ * 30px at xl; md keeps the 16px base) via a size context, so initials
+ * hold a ~0.4 ratio in every circle instead of inheriting 16px.
+ *
  * Both additions are backwards compatible — code that passed className
  * directly still works and overrides the variant defaults.
  */
@@ -50,6 +54,25 @@ const avatarSizes = cva(
   },
 );
 
+export type AvatarSize = NonNullable<VariantProps<typeof avatarSizes>["size"]>;
+
+// Fallback type per avatar size — ~0.4 of the circle diameter. Theme
+// scale steps where one lands close (they re-scale with the type theme);
+// arbitrary px only below the smallest step. md stays at the 16px base
+// so the default size renders exactly as before.
+const avatarFallbackTypes: Record<AvatarSize, string> = {
+  "2xs": "text-[9px]",
+  xs: "text-[10px]",
+  sm: "text-xs",
+  md: "text-base",
+  lg: "text-2xl",
+  xl: "text-3xl",
+};
+
+// Lets AvatarFallback know the size its Avatar was given without a prop
+// on every call site.
+const AvatarSizeContext = React.createContext<AvatarSize>("md");
+
 export interface AvatarProps
   extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>,
     VariantProps<typeof avatarSizes> {}
@@ -58,13 +81,15 @@ const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
   AvatarProps
 >(({ className, size, ...props }, ref) => (
-  <AvatarPrimitive.Root
-    ref={ref}
-    data-gds-part="avatar"
-    data-gds-size={size ?? "md"}
-    className={cn(avatarSizes({ size }), className)}
-    {...props}
-  />
+  <AvatarSizeContext.Provider value={size ?? "md"}>
+    <AvatarPrimitive.Root
+      ref={ref}
+      data-gds-part="avatar"
+      data-gds-size={size ?? "md"}
+      className={cn(avatarSizes({ size }), className)}
+      {...props}
+    />
+  </AvatarSizeContext.Provider>
 ));
 Avatar.displayName = AvatarPrimitive.Root.displayName;
 
@@ -125,15 +150,25 @@ export interface AvatarFallbackProps
 const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
   AvatarFallbackProps
->(({ className, tone, ...props }, ref) => (
-  <AvatarPrimitive.Fallback
-    ref={ref}
-    data-gds-part="avatar-fallback"
-    data-gds-tone={tone ?? "muted"}
-    className={cn(avatarFallbackTones({ tone }), className)}
-    {...props}
-  />
-));
+>(({ className, tone, ...props }, ref) => {
+  const size = React.useContext(AvatarSizeContext);
+  return (
+    <AvatarPrimitive.Fallback
+      ref={ref}
+      data-gds-part="avatar-fallback"
+      data-gds-tone={tone ?? "muted"}
+      className={cn(avatarFallbackTones({ tone }), avatarFallbackTypes[size], className)}
+      {...props}
+    />
+  );
+});
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
 
-export { Avatar, AvatarImage, AvatarFallback, avatarSizes, avatarFallbackTones };
+export {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  avatarSizes,
+  avatarFallbackTones,
+  avatarFallbackTypes,
+};
