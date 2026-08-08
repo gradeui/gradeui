@@ -29,7 +29,10 @@ const calloutVariants = cva(
   // and `*-deep` (text + icon) tokens — those are generated from the status
   // colour by the theme pipeline, so tweaking the brand feel only requires
   // changing the mapping in one place (lib/themes/oklch.ts).
-  "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4",
+  // The icon slot must be sized here: bare lucide icons default to 24px,
+  // which fills the 28px (pl-7) text inset and leaves no icon→title gap.
+  // 16px (h-4 w-4) restores the 12px breathing room the inset assumes.
+  "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:h-4 [&>svg]:w-4",
   {
     variants: {
       variant: {
