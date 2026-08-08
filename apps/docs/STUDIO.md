@@ -396,3 +396,8 @@ Resolution per surface — the sources are DATA and must travel every channel th
 | CodeSandbox export | `openInCodeSandboxNpm({ sharedModules })` | real files `src/shared/<Name>.jsx` + `src/project-components.jsx` |
 
 Both kernels resolve the namespace LAZILY (per-property compile with a cycle guard), so unused components cost nothing and mutual imports only fail on true circular initialization. Editing a shared component takes effect on next render — screens store no copy. Known gap: the standalone-HTML export (`chat-export.ts` data:-URL importmap) does not ship shared modules yet.
+
+### Known limits + direction (Aug 2026)
+
+- **Selection stops at the boundary.** `injectSourceIds` stamps only the screen's own source, so nodes INSIDE a shared component carry no `data-gds-source-id` and the pick inspector can't path into them. Direction (Figma instance/master model): Stage 1 = boundary semantics — clicking inside selects the usage tag, inspector shows a "Shared component" card (name/description/version + read-only View source), plus a Components list in the project rail next to Assets. Stage 2 = namespaced stamping inside modules + "enter the master" editing that writes to the component row (with the "affects every screen" framing). Settings-panel mutations inside a shared component are undefined until Stage 2 — the mutator only writes screen source.
+- **Authoring is MCP-first.** save/list/get/delete_shared_component; Studio reads only.
