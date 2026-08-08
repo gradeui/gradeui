@@ -2,7 +2,7 @@
 
 /**
  * DisplaySection — the persistent "Display" block at the top of the
- * Studio right panel. Hosts the two canvas-wide view controls that used
+ * Studio right panel. Hosts the canvas-wide view controls that used
  * to live in the canvas toolbar:
  *
  *   - Viewport — Mobile / Tablet / Desktop / Responsive. A controlled
@@ -14,6 +14,12 @@
  *     section is driven by the bridged `zoomState` (live readout) and
  *     `zoomApi` (mutation gestures). When the API isn't ready yet the
  *     trigger renders disabled.
+ *   - Mode — light/dark for the previewed screens (not the Studio
+ *     chrome). Read straight from ThemeBuilderProvider context via
+ *     useThemeBuilderMode() — no prop threading, since this section
+ *     only ever mounts inside the provider. This control used to live
+ *     in the Theme tab, which is currently hidden (SHOW_THEME_TAB in
+ *     studio-right-tabs.tsx).
  *
  * Header treatment mirrors CollapsibleSection in selection-inspector.tsx
  * (text-xs / font-medium header, px-3 pt-2.5 pb-1.5, edge-to-edge top
@@ -26,8 +32,10 @@ import {
   Check,
   ChevronDown,
   Monitor,
+  Moon,
   MoveHorizontal,
   Smartphone,
+  Sun,
   Tablet,
 } from "lucide-react";
 
@@ -41,6 +49,7 @@ import {
   ToggleGroupItem,
 } from "@gradeui/ui";
 import { cn } from "@/lib/utils";
+import { useThemeBuilderMode } from "@/components/theme-builder";
 import type { ViewportWidth } from "@/components/studio/sandpack-frame";
 
 const FIELD_LABEL = "text-2xs font-medium text-foreground/80";
@@ -180,6 +189,7 @@ export function DisplaySection({
   zoomState,
   zoomApi,
 }: DisplaySectionProps) {
+  const [mode, setMode] = useThemeBuilderMode();
   return (
     <section className="border-b border-border/60">
       <div className="flex w-full items-center gap-1.5 px-3 pt-2.5 pb-1.5">
@@ -223,6 +233,40 @@ export function DisplaySection({
             <div className="flex">
               <ZoomMenu zoomState={zoomState} zoomApi={zoomApi} />
             </div>
+          </div>
+          {/* Mode — light/dark preview toggle, same segmented icon
+              treatment as Viewport. */}
+          <div className="space-y-1">
+            <span className={FIELD_LABEL}>Mode</span>
+            <ToggleGroup
+              type="single"
+              variant="segmented"
+              size="2xs"
+              value={mode}
+              // Radix emits "" when the active item is re-clicked;
+              // ignore it so a mode is always selected.
+              onValueChange={(v: string) => {
+                if (v === "light" || v === "dark") setMode(v);
+              }}
+              className="w-full"
+            >
+              <ToggleGroupItem
+                value="light"
+                aria-label="Light mode"
+                title="Light · previewed screens only"
+                className="flex-1 [&_svg]:size-3.5"
+              >
+                <Sun className="h-3.5 w-3.5 shrink-0" />
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="dark"
+                aria-label="Dark mode"
+                title="Dark · previewed screens only"
+                className="flex-1 [&_svg]:size-3.5"
+              >
+                <Moon className="h-3.5 w-3.5 shrink-0" />
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
         </div>
       </div>
