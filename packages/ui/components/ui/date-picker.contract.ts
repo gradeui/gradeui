@@ -14,7 +14,7 @@ export const DatePickerContract = contract({
   aliases: ["datepicker","calendar input","date field","date range","datepickerios","react native date picker","calendar input field","date field control"],
   subcomponents: ["DateRangePicker"],
   composesWith: ["Label","Form","Card (in CardContent)","Button (form submit)"],
-  styleDefaults: {"DatePicker":"w-[280px] justify-start text-left font-normal data-[empty=true]:text-muted-foreground","DateRangePicker":"w-[300px] justify-start text-left font-normal data-[empty=true]:text-muted-foreground"},
+  styleDefaults: {"DatePicker":"h-9 w-[280px] justify-start text-left text-base font-normal md:text-sm data-[empty=true]:text-muted-foreground","DateRangePicker":"h-9 w-[300px] justify-start text-left text-base font-normal md:text-sm data-[empty=true]:text-muted-foreground"},
   props: {
   "value": {
       schema: z.unknown().optional(),

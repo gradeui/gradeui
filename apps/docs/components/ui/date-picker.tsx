@@ -108,7 +108,7 @@ function DatePicker({
           aria-label={ariaLabel ?? (value ? undefined : placeholder)}
           data-empty={!value}
           className={cn(
-            "w-[280px] justify-start text-left font-normal data-[empty=true]:text-muted-foreground",
+            "h-9 w-[280px] justify-start text-left text-base font-normal md:text-sm data-[empty=true]:text-muted-foreground",
             className
           )}
         >
@@ -159,7 +159,7 @@ function DateRangePicker({
           aria-label={ariaLabel ?? (hasFrom ? undefined : placeholder)}
           data-empty={!hasFrom}
           className={cn(
-            "w-[300px] justify-start text-left font-normal data-[empty=true]:text-muted-foreground",
+            "h-9 w-[300px] justify-start text-left text-base font-normal md:text-sm data-[empty=true]:text-muted-foreground",
             className
           )}
         >
