@@ -3,7 +3,7 @@
 How a theme expresses *all* of its type from a few mixable base styles, with per-step inherit-or-override for total flexibility, without breaking the deterministic `ThemeInput` contract.
 
 > Status: design doc / contract lock. Drafted 2026-06-18.
-> Sibling of [`STUDIO-THEMES.md`](./STUDIO-THEMES.md) (the theme is a `ThemeInput`) and [`THEME-MIGRATION.md`](./THEME-MIGRATION.md) (the `--text-*` ladder + at-will scale). This doc locks the typography sub-contract before the editor is built, so the UI isn't built on sand.
+> Sibling of [`STUDIO-THEMES.md`](./STUDIO-THEMES.md) (the theme is a `ThemeInput`) and [`THEME-MIGRATION.md`](../THEME-MIGRATION.md) (the `--text-*` ladder + at-will scale). This doc locks the typography sub-contract before the editor is built, so the UI isn't built on sand.
 
 ---
 

@@ -343,7 +343,7 @@ Everything in `lib/studio-storage/types.ts` (the `StudioStorage` interface, the 
 
 1. **This doc** — gets you the chrome + storage + users story.
 2. [STUDIO.md](./STUDIO.md) — gets you the model + Sandpack + system prompt story.
-3. [STUDIO-CHAT.md](../../STUDIO-CHAT.md) — generative UI in chat + tool-call protocol.
-4. [STUDIO-LEARNING.md](../../STUDIO-LEARNING.md) — retrieval + preference loop.
+3. [STUDIO-CHAT.md](../../design-docs/STUDIO-CHAT.md) — generative UI in chat + tool-call protocol.
+4. [STUDIO-LEARNING.md](../../design-docs/STUDIO-LEARNING.md) — retrieval + preference loop.
 
 Both layers (chrome here, model there) compose to make Studio work. Changes that touch both — adding a new entity, changing what the model knows about projects — should land notes in both docs.

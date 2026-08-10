@@ -1,6 +1,6 @@
 # STUDIO-CAPTURE.md — one capture primitive, three consumers
 
-This doc names the thing that sits underneath grid performance, static HTML export, and the live embed: a single **capture primitive** that turns a rendered Grade screen into a portable representation, and the three consumers that representation feeds. Sibling to [`STUDIO-EMBED.md`](./STUDIO-EMBED.md) (the live embed) and [`STUDIO.md`](./apps/docs/STUDIO.md) (the two-renderer model + `grade:*` bus).
+This doc names the thing that sits underneath grid performance, static HTML export, and the live embed: a single **capture primitive** that turns a rendered Grade screen into a portable representation, and the three consumers that representation feeds. Sibling to [`STUDIO-EMBED.md`](./STUDIO-EMBED.md) (the live embed) and [`STUDIO.md`](../apps/docs/STUDIO.md) (the two-renderer model + `grade:*` bus).
 
 If anyone asks "how does the grid hold hundreds of screens?", "how do we export a screen as HTML?", or "how do we embed a demo on an outside site?", the answer is: they are the same capture, packaged three ways.
 
@@ -128,7 +128,7 @@ grid (and shares, and og:images) loads before anything renders.
 - [`STUDIO-DIRECTOR.md`](./STUDIO-DIRECTOR.md) — D7 render pipeline; posters/loops are passes of it. Hosted (gradeui.com) render is D7 v3.
 - [`STUDIO-STORAGE.md`](./STUDIO-STORAGE.md) — the bucket + RLS these stored renders sit in (last-one-wins keying).
 - [`STUDIO-EMBED.md`](./STUDIO-EMBED.md) — the live embed (consumer 3), kernel extraction, sandbox security posture.
-- [`apps/docs/STUDIO.md`](./apps/docs/STUDIO.md) — two-renderer model + the `grade:*` bus (add `grade:capture` / `grade:captured` there when C0 lands).
+- [`apps/docs/STUDIO.md`](../apps/docs/STUDIO.md) — two-renderer model + the `grade:*` bus (add `grade:capture` / `grade:captured` there when C0 lands).
 - `apps/docs/components/studio/fast-frame.tsx` — `FastIframeHost`, the kernel to split.
 - `apps/docs/app/fast-sandbox/page.tsx` — the sandbox; capture lives here, alongside the existing `#screen=` standalone path.
 - `apps/docs/components/studio/studio-canvas.tsx` — the All-view grid + `TileFastMount`; where promote/demote lands.

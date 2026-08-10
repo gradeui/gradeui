@@ -2,7 +2,7 @@
 
 **Status:** design doc, no code yet. Phases X0–X4 at the bottom.
 **Owner surfaces:** `apps/docs/components/studio/studio-chat.tsx` (parser + apply), `packages/studio/src/playbook/prompts/system.ts` (the contract), `apps/docs/app/api/chat/route.ts` (QA), `apps/docs/lib/` (new `studio-edit-blocks.ts`).
-**Siblings:** [STUDIO.md](./apps/docs/STUDIO.md) (system prompt, fence parsing), [STUDIO-CHAT.md](./STUDIO-CHAT.md) (per-turn chat surfaces), [STUDIO-LEARNING.md](./STUDIO-LEARNING.md) (the preference loop these edits feed), [STUDIO-TOKENFIELD.md](./STUDIO-TOKENFIELD.md) + `lib/studio-source-mutator.ts` (the existing no-LLM mutation path this generalises).
+**Siblings:** [STUDIO.md](../apps/docs/STUDIO.md) (system prompt, fence parsing), [STUDIO-CHAT.md](./STUDIO-CHAT.md) (per-turn chat surfaces), [STUDIO-LEARNING.md](./STUDIO-LEARNING.md) (the preference loop these edits feed), [STUDIO-TOKENFIELD.md](./STUDIO-TOKENFIELD.md) + `lib/studio-source-mutator.ts` (the existing no-LLM mutation path this generalises).
 
 ## The problem
 

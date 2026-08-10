@@ -2,7 +2,7 @@
 
 > Single work item. Kick off a fresh session with: *"Implement the
 > sandbox origin split per SECURITY-SANDBOX-SPLIT.md."* Design
-> context lives in [STUDIO-CANVAS.md](./STUDIO-CANVAS.md) § "The
+> context lives in [STUDIO-CANVAS.md](./design-docs/STUDIO-CANVAS.md) § "The
 > sandbox origin"; this file is the actionable checklist.
 
 ## Why (threat model, one paragraph)

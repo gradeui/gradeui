@@ -3,7 +3,7 @@
 How Studio gets better with use, without fine-tuning the underlying LLM.
 
 > Status: design doc. Drafted 2026-05-20.
-> Companion to [`STUDIO.md`](./STUDIO.md) (the playbook), [`apps/docs/STUDIO.md`](./apps/docs/STUDIO.md) (the Studio app), and the skill-as-add-on architecture documented in `packages/skills/`.
+> Companion to [`STUDIO.md`](../packages/studio/README.md) (the playbook), [`apps/docs/STUDIO.md`](../apps/docs/STUDIO.md) (the Studio app), and the skill-as-add-on architecture documented in `packages/skills/`.
 
 **Terminology note** — "corpus" is the standard ML/IR term for the curated body of examples a retrieval system searches over. Throughout this doc, "the corpus" = the set of known-good layouts/sections/elements with their embeddings, metadata, and preference weights. Think of it as the system's memory of what good looks like for THIS audience.
 

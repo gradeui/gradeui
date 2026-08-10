@@ -3,7 +3,7 @@
 How the Studio chat surface goes from text channel to a rich generative-UI workspace.
 
 > Status: design doc. Drafted 2026-05-20.
-> Companion to [`STUDIO-LEARNING.md`](./STUDIO-LEARNING.md) (the corpus + preference loop), [`STUDIO.md`](./STUDIO.md) (the playbook), [`apps/docs/STUDIO.md`](./apps/docs/STUDIO.md) (the Studio app). This doc covers the *presentation layer*; the learning doc covers the *data flow*. They reference each other for individual features (`proposeLayouts`, etc.) — what renders is here, what it does is there.
+> Companion to [`STUDIO-LEARNING.md`](./STUDIO-LEARNING.md) (the corpus + preference loop), [`STUDIO.md`](../packages/studio/README.md) (the playbook), [`apps/docs/STUDIO.md`](../apps/docs/STUDIO.md) (the Studio app). This doc covers the *presentation layer*; the learning doc covers the *data flow*. They reference each other for individual features (`proposeLayouts`, etc.) — what renders is here, what it does is there.
 
 ---
 

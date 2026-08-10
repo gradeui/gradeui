@@ -4,7 +4,7 @@ Studio is the AI-driven page composer that lives at `gradeui.com/studio`. It let
 
 > **Sibling doc:** [STUDIO-SHELL.md](./STUDIO-SHELL.md) covers the chrome — layout (AppShell + body + Sheet), the data model (Project / Team / Org / User), the `StudioStorage` adapter + migration chain, permission resolver, URL history, impersonation / super-admin, and the Studio settings backend selector. This file (STUDIO.md) is about the *model* side: allow-list, Sandpack shims, selection bus, system prompt. If you're working on UI structure, identity, or persistence, go there first.
 >
-> **Canvas direction:** [`STUDIO-CANVAS.md`](../../STUDIO-CANVAS.md) (repo root) is the design doc for where the canvas goes next — the freeform object layer (screens / images / media placeholders / notes as a scene graph on the existing camera), AI placement via chat tool-calls, the live-frame/poster economics, bounded↔infinite bounds, and the **sandbox origin split** (the security prerequisite before any other-people's-code surface ships). If a task touches multi-object canvas work, camera-adjacent features, or sandbox isolation, read it first.
+> **Canvas direction:** [`STUDIO-CANVAS.md`](../../design-docs/STUDIO-CANVAS.md) (in `design-docs/`) is the design doc for where the canvas goes next — the freeform object layer (screens / images / media placeholders / notes as a scene graph on the existing camera), AI placement via chat tool-calls, the live-frame/poster economics, bounded↔infinite bounds, and the **sandbox origin split** (the security prerequisite before any other-people's-code surface ships). If a task touches multi-object canvas work, camera-adjacent features, or sandbox isolation, read it first.
 
 ## File layout
 
@@ -343,7 +343,7 @@ The dock **populates from the focused screen's source** — `extractCameraShots(
 
 Two views of the same data, toggled in the header: **Events** (foci-and-noodles — each shot a focus node, transitions as connectors) and **Timeline** (clips on a time ruler, sized to duration). Both are read-only today.
 
-Design model + roadmap live in [`STUDIO-DIRECTOR.md`](../../STUDIO-DIRECTOR.md) (foci-and-noodles, event-anchored camera, props-in-source ringfencing, the per-screen vs FlowCanvas scales). Next slices: parse `DemoStage` `SCRIPT` reveals into a second track, a scrub playhead that seeks the live preview, and per-event editing (or prompt-to-edit).
+Design model + roadmap live in [`STUDIO-DIRECTOR.md`](../../design-docs/STUDIO-DIRECTOR.md) (foci-and-noodles, event-anchored camera, props-in-source ringfencing, the per-screen vs FlowCanvas scales). Next slices: parse `DemoStage` `SCRIPT` reveals into a second track, a scrub playhead that seeks the live preview, and per-event editing (or prompt-to-edit).
 
 ## Theme selector — interim state (REVISIT)
 
@@ -357,7 +357,7 @@ What's in its place: a compact **theme dropdown at the top of the right panel** 
 - The dropdown only switches between registered themes; it exposes none of the builder (hues, type, shape, density). Fine for demos, not for actual theming work.
 - When the redesign lands, either flip `SHOW_THEME_TAB` back on with the new tab content, or replace the tab model entirely. `ThemeTabContent` + `ThemePickerSection` are kept intact in the codebase for that moment.
 - **Picking a theme wipes builder undo/redo** — by design: the pick goes through `builder.rebase(...)`, which sets a new history anchor (dirty dot / reset / undo are all defined relative to the picked theme, so the pick is a baseline change, not an edit). Harmless today because the builder controls are hidden so nothing creates history — but when they come back, guard the picker: disable it (or confirm-before-switch) while the builder is dirty, so a theme pick can't silently torch edits. Note the share view (`shared-screen.tsx`) doesn't have this problem because its picker is pure view state (`setActiveThemeId`) — there's no draft to lose. Alternative for the redesign: model the pick as a full-input history entry so undo survives theme switches, at the cost of re-anchoring logic for dirty/reset.
-- The broader theme contract/remix/community direction lives in [`STUDIO-THEMES.md`](../../STUDIO-THEMES.md) — the redesigned selector should be planned against that doc's `ThemeInput` model.
+- The broader theme contract/remix/community direction lives in [`STUDIO-THEMES.md`](../../design-docs/STUDIO-THEMES.md) — the redesigned selector should be planned against that doc's `ThemeInput` model.
 
 ## Future work / known limits
 
@@ -401,6 +401,6 @@ Both kernels resolve the namespace LAZILY (per-property compile with a cycle gua
 
 ### Known limits + direction (Aug 2026)
 
-- **Stage 1 SHIPPED (Aug 2026)** — boundary selection + visibility. See [`STUDIO-COMPONENTS.md`](../../STUDIO-COMPONENTS.md) (repo root) for the full model, the three-wrapper sync rule, and the gotchas. Historical framing below predates it:
+- **Stage 1 SHIPPED (Aug 2026)** — boundary selection + visibility. See [`STUDIO-COMPONENTS.md`](../../design-docs/STUDIO-COMPONENTS.md) (in `design-docs/`) for the full model, the three-wrapper sync rule, and the gotchas. Historical framing below predates it:
 - **Selection stops at the boundary.** `injectSourceIds` stamps only the screen's own source, so nodes INSIDE a shared component carry no `data-gds-source-id` and the pick inspector can't path into them. Direction (Figma instance/master model): Stage 1 = boundary semantics — clicking inside selects the usage tag, inspector shows a "Shared component" card (name/description/version + read-only View source), plus a Components list in the project rail next to Assets. Stage 2 = namespaced stamping inside modules + "enter the master" editing that writes to the component row (with the "affects every screen" framing). Settings-panel mutations inside a shared component are undefined until Stage 2 — the mutator only writes screen source.
 - **Authoring is MCP-first.** save/list/get/delete_shared_component; Studio reads only.
