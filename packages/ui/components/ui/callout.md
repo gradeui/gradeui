@@ -16,7 +16,7 @@ Renamed from `Alert` (May 2026). The old name implied modal/interruptive behavio
 
 Variant tokens come from theme (`--destructive-soft`, `--success-deep`, etc.) so they restyle with the active Grade theme.
 
-The icon slot sizes its direct `svg` child to 16px (`[&>svg]:h-4 [&>svg]:w-4`, Aug 2026): bare lucide icons default to 24px, which filled the 28px text inset and left no icon-to-title gap. Pass icons unsized; a size class on the icon itself loses to the slot.
+The icon slot sizes its direct `svg` child to 20px against a 32px text inset (Aug 2026): bare lucide icons default to 24px, which filled the inset and left no icon-to-title gap. Pass icons unsized; a size class on the icon itself loses to the slot. CalloutTitle sits at the description's text-sm size with font-semibold carrying the hierarchy.
 
 ```jsx
 <Callout variant="warning">
