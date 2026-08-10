@@ -43,7 +43,8 @@ survives any future slug rename.
   the status screen's "Go to dashboard" points at a screen that is not
   promoted yet.
 - **Wizard chrome** lives once in `app/onboarding/layout.tsx` +
-  `components/onboarding-layout.tsx`. Step pages carry only their form
+  `components/layouts/onboarding.tsx` (chrome components that back a
+  route layout live under `components/layouts/`). Step pages carry only their form
   column, so header, progress bar and step rail persist across
   navigations. The Owners rail entry and the automatic Back button
   branch on the stored business type (3a for SMLLC, else 3b).

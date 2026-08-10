@@ -23,7 +23,7 @@ import {
 import {
   OnboardingLayout,
   type WizardStep,
-} from "@/components/onboarding-layout";
+} from "@/components/layouts/onboarding";
 import { screenBySlug } from "@/lib/screens";
 
 /* The step rail, identical across all nine step screens in Studio. */

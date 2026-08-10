@@ -15,7 +15,7 @@ import {
 import { Info } from "lucide-react";
 // useFlowField imports by NAME: shared components' named exports are
 // first-class across all three renderer kernels (8 Aug).
-import { OnboardingLayout } from "@/components/onboarding-layout";
+import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { useFlowField } from "@/lib/flow-store";
 
 // Glint US onboarding — Step 1: business type selector. This choice

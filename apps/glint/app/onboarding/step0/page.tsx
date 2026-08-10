@@ -30,7 +30,7 @@ import {
   Grid,
 } from "@gradeui/ui";
 import { ShieldCheck, ChevronDown, Landmark } from "lucide-react";
-import { OnboardingLayout } from "@/components/onboarding-layout";
+import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore } from "@/lib/flow-store";
 
 // Glint US Business Account onboarding — Step 0 of the CCO data-capture

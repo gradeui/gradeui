@@ -22,7 +22,7 @@ import {
   Separator,
   Grid,
 } from "@gradeui/ui";
-import { OnboardingLayout } from "@/components/onboarding-layout";
+import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore } from "@/lib/flow-store";
 
 // Glint US onboarding — Step 4: Purpose and Intended Nature (PAIN), all

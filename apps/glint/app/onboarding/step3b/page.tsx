@@ -32,7 +32,7 @@ import {
   Badge,
 } from "@gradeui/ui";
 import { Upload, Plus, Info, Pencil } from "lucide-react";
-import { OnboardingLayout } from "@/components/onboarding-layout";
+import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore, US_STATES } from "@/lib/flow-store";
 
 // Glint US onboarding — Step 3b: beneficial owners (25%+, repeating

@@ -46,7 +46,7 @@ def transform(src: str, func: str, screen_name: str, design_id: str,
         names = [n.strip() for n in m.group(1).split(",") if n.strip()]
         lines = []
         if "OnboardingLayout" in names:
-            lines.append('import { OnboardingLayout } from "@/components/onboarding-layout";')
+            lines.append('import { OnboardingLayout } from "@/components/layouts/onboarding";')
         if "Wordmark" in names:
             lines.append('import { Wordmark } from "@/components/wordmark";')
         flow = [n for n in names if n in FLOW_NAMES]
@@ -78,7 +78,7 @@ def transform(src: str, func: str, screen_name: str, design_id: str,
         src = new
         if "OnboardingLayout." not in src:
             src = src.replace(
-                'import { OnboardingLayout } from "@/components/onboarding-layout";\n', "")
+                'import { OnboardingLayout } from "@/components/layouts/onboarding";\n', "")
 
     m2 = re.search(r"import\s*\{([^}]*)\}\s*from\s*\"lucide-react\";\n", src, re.S)
     if m2:

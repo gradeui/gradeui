@@ -21,7 +21,7 @@ import {
   Grid,
 } from "@gradeui/ui";
 import { BadgeCheck } from "lucide-react";
-import { OnboardingLayout } from "@/components/onboarding-layout";
+import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore } from "@/lib/flow-store";
 
 // Glint US onboarding — Step 6: certification and attestations. Moved

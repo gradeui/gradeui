@@ -24,7 +24,7 @@ import {
   Badge,
 } from "@gradeui/ui";
 import { Upload, Camera, FileText } from "lucide-react";
-import { OnboardingLayout } from "@/components/onboarding-layout";
+import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore, US_STATES } from "@/lib/flow-store";
 
 // Glint US onboarding — Step 3a: single-member LLC owner identity.

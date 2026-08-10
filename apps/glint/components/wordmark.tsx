@@ -1,27 +1,65 @@
 /**
- * Glint wordmark, ported verbatim from the Studio shared component
- * "Wordmark" (cmskbtl3gjif29, version 1786190695180): the six paths
- * lifted from glintpay.com/images/identity.svg (#logo, viewBox
- * 0 0 103 24), filled with an SVG gradient whose stops read
- * --ramp-accent-* so the mark re-themes with the palette.
+ * Glint wordmark, ported from the Studio shared component "Wordmark":
+ * the six paths lifted from glintpay.com/images/identity.svg (#logo,
+ * viewBox 0 0 103 24).
+ *
+ * METALS ARE PINNED, NOT THEMED (10 Aug 2026): the mark originally
+ * read --ramp-accent-*, but the theme's accent slot was re-hued to the
+ * action blue (gold accent hovers were illegible), which turned the
+ * logo blue. Brand metals are constants, so the gold ladder (the
+ * original accent ramp: hue 87 at 0.78 chroma) and the silver ladder
+ * (the indigo neutral ladder: hue 272) live here as literal OKLCH
+ * stops, exposed as Wordmark.METALS for other metal surfaces (wallet
+ * chips, tier badges). Keep in sync with the Studio Wordmark.
  *
  * cut picks the gradient band for the surface it sits on:
- *   "champagne": 100 -> 600 (site-faithful, for dark surfaces)
- *   "metal":     300 -> 700 (deeper camel-bronze, holds on light)
+ *   "champagne": gold 100 -> 600 (site-faithful, for dark surfaces)
+ *   "metal":     gold 300 -> 700 (deeper camel-bronze, holds on light)
  */
 
-const CUTS: Record<string, Array<[string, string]>> = {
+export const METALS = {
+  gold: {
+    50: "0.9850 0.0117 87",
+    100: "0.9550 0.0312 87",
+    200: "0.8950 0.0585 87",
+    300: "0.8200 0.0858 87",
+    400: "0.7200 0.1092 87",
+    500: "0.6100 0.1326 87",
+    600: "0.5100 0.1326 87",
+    700: "0.4150 0.1170 87",
+    800: "0.3250 0.0936 87",
+    900: "0.2450 0.0624 87",
+    950: "0.1700 0.0312 87",
+  },
+  silver: {
+    50: "0.9850 0.0067 272",
+    100: "0.9550 0.0180 272",
+    200: "0.8950 0.0338 272",
+    300: "0.8200 0.0495 272",
+    400: "0.7200 0.0630 272",
+    500: "0.6100 0.0765 272",
+    600: "0.5100 0.0765 272",
+    700: "0.4150 0.0675 272",
+    800: "0.3250 0.0540 272",
+    900: "0.2450 0.0360 272",
+    950: "0.1700 0.0180 272",
+  },
+} as const;
+
+type MetalStep = keyof typeof METALS.gold;
+
+const CUTS: Record<string, Array<[string, MetalStep]>> = {
   champagne: [
-    ["0%", "100"],
-    ["30%", "200"],
-    ["55%", "300"],
-    ["100%", "600"],
+    ["0%", 100],
+    ["30%", 200],
+    ["55%", 300],
+    ["100%", 600],
   ],
   metal: [
-    ["0%", "300"],
-    ["35%", "400"],
-    ["70%", "600"],
-    ["100%", "700"],
+    ["0%", 300],
+    ["35%", 400],
+    ["70%", 600],
+    ["100%", 700],
   ],
 };
 
@@ -48,7 +86,7 @@ export function Wordmark({
             <stop
               key={offset}
               offset={offset}
-              style={{ stopColor: `oklch(var(--ramp-accent-${step}))` }}
+              style={{ stopColor: `oklch(${METALS.gold[step]})` }}
             />
           ))}
         </linearGradient>
@@ -62,3 +100,7 @@ export function Wordmark({
     </svg>
   );
 }
+
+/** Metal ladders as a static for consumers that receive Wordmark via a
+ *  barrel (mirrors the Studio statics pattern). */
+Wordmark.METALS = METALS;

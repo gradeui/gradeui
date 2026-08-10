@@ -19,7 +19,7 @@ import {
   Row,
 } from "@gradeui/ui";
 import { Lock } from "lucide-react";
-import { OnboardingLayout } from "@/components/onboarding-layout";
+import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore, US_STATES } from "@/lib/flow-store";
 
 // Glint US onboarding — Step 7: review & submit. The recap is LIVE: it

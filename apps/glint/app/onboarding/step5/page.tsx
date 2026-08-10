@@ -6,7 +6,7 @@
 
 import { Button, Stack, Row, Badge, Callout, CalloutTitle, CalloutDescription } from "@gradeui/ui";
 import { Upload, FileText, CheckCircle2, Info } from "lucide-react";
-import { OnboardingLayout } from "@/components/onboarding-layout";
+import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore } from "@/lib/flow-store";
 
 // Hook access via FlowStore statics, kept as the Studio source had it
