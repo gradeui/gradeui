@@ -435,7 +435,40 @@ function resolveProjectComponents(): Record<string, unknown> {
         },
       });
     }
-    projectNamespace = ns;
+    // Named helper exports (hooks, utilities): any export that is NOT a
+    // module's name-matched component also resolves from the namespace,
+    // so `import { useFlowField } from "@project/components"` works.
+    // Module names shadow helpers; among helpers the first module (in
+    // name order) wins. Lazy: a helper miss compiles modules one by one
+    // until found, then caches. The three-kernels sync rule applies
+    // (fast-sandbox / studio-render-core / the Sandpack barrel, which
+    // gets the same semantics via `export *`).
+    const helperCache = new Map<string, unknown>();
+    const resolveHelper = (prop: string): unknown => {
+      if (prop === "__esModule" || prop === "then" || prop === "default")
+        return undefined;
+      if (helperCache.has(prop)) return helperCache.get(prop);
+      for (const name of Object.keys(projectModuleSources)) {
+        const exports = compileProjectModule(name);
+        if (prop in exports) {
+          const value = exports[prop];
+          helperCache.set(prop, value);
+          return value;
+        }
+      }
+      return undefined;
+    };
+    projectNamespace = new Proxy(ns, {
+      get(target, prop, receiver) {
+        if (typeof prop !== "string" || prop in target)
+          return Reflect.get(target, prop, receiver);
+        return resolveHelper(prop);
+      },
+      has(target, prop) {
+        if (Reflect.has(target, prop)) return true;
+        return typeof prop === "string" && resolveHelper(prop) !== undefined;
+      },
+    });
   }
   return projectNamespace;
 }

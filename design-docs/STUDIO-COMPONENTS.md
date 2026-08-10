@@ -46,9 +46,13 @@ The Figma instance/master model, instance half:
 
 Namespaced source-id stamping inside module sources (`OnboardingLayout:line:col`), breadcrumb paths INTO the component, and an explicit enter-the-master gesture that retargets mutations from the screen to the component row — with "editing this changes every screen" framing and the existing version guards. Hold until the editing semantics are deliberately chosen; settings-panel edits inside a shared component are undefined until then.
 
+## Named exports (8 Aug 2026)
+
+Shared modules can export more than their name-matched component: hooks and helpers (`export function useFlowField(...)` in a FlowStore module) resolve by name from `"@project/components"`. Semantics: module names always shadow helpers; among helpers the first module in name order wins; `default` never crosses the barrel. The Fast/render-core kernels implement this with a lazy Proxy fallthrough (a helper miss compiles modules one by one, then caches); the Sandpack barrel appends `export *` per module, where explicit component exports shadow stars and cross-module helper collisions drop as ESM-ambiguous names. Before this, helper exports silently resolved to `undefined` and importers crashed with "Cannot read properties of undefined (reading 'call')".
+
 ## Gotchas (learned the hard way, all on Aug 8 2026)
 
-1. **Three wrappers, one behavior**: `wrapWithBoundary` exists in fast-sandbox, studio-render-core, AND the Sandpack barrel generator (`chat-sandpack.ts sharedModuleFiles`). Change one → change all three.
+1. **Three wrappers, one behavior**: `wrapWithBoundary` exists in fast-sandbox, studio-render-core, AND the Sandpack barrel generator (`chat-sandpack.ts sharedModuleFiles`). Change one → change all three. The same rule covers the named-export fallthrough above.
 2. **The MCP panel bundle is frozen at build time**: `apps/mcp-server/src/preview-view-html.ts` inlines a compiled copy of studio-render-core. After render-core changes run `pnpm -F @gradeui/docs build:preview-view`. Resource URIs carry the bundle's content hash so host caches bust automatically — do not remove that.
 3. **Publish lag bites exports**: the CodeSandbox export installs `@gradeui/ui@latest` from npm. Screens using components newer than the last publish fail with "Element type is invalid: got undefined". Check `npm view @gradeui/ui time.modified` before debugging anything else.
 4. **`@floating-ui/react-dom`** must stay in the export package.json (CodeSandbox can't resolve radix-popper's transitive dep; any Select/Popover screen needs it).

@@ -3156,6 +3156,12 @@ function sharedModuleFiles(
     ...names.map(
       (n) => `export const ${n} = __wrapBoundary(${JSON.stringify(n)}, _${n});`,
     ),
+    // Named helper exports (hooks, utilities) ride through star
+    // re-exports: explicit component exports above shadow same-named
+    // stars, and cross-module helper collisions become ambiguous names
+    // that ESM silently drops (mirror the kernels' first-wins as
+    // closely as static ESM allows). Three-kernels sync rule.
+    ...names.map((n) => `export * from "./shared-${n}";`),
   ].join("\n");
   return files;
 }
