@@ -113,7 +113,13 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/dashboard",
     name: "Dashboard — logged-in home",
     id: "dmskex612bcy1",
-    promotedAt: 1786370953143,
+    promotedAt: 1786371566837,
+  },
+  {
+    slug: "/activity",
+    name: "Activity — history",
+    id: "dmsnba2xdvnc3",
+    promotedAt: 1786371183861,
   },
 ];
 

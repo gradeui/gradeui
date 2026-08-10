@@ -1,7 +1,7 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786370953143). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786371566837). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
 
 import {
@@ -11,12 +11,10 @@ import {
   Row,
   Grid,
   Card,
+  CardHeader,
+  CardTitle,
   CardContent,
   Button,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
   Table,
   TableHeader,
   TableBody,
@@ -24,45 +22,57 @@ import {
   TableHead,
   TableCell,
 } from "@gradeui/ui";
-import { Plus, Coins, Gem, ChevronRight } from "lucide-react";
+import { Plus, ChevronRight } from "lucide-react";
 import { Persona, type AssetKey } from "@/lib/persona";
 import { Market } from "@/lib/market";
+import { METALS } from "@/components/wordmark";
 
-// Mercury-pattern logged-in home, Glint-flavoured, for BUSINESS accounts.
-// The sidebar rail + sticky toolbar come from the route layout
-// (app/(product)/layout.tsx hosting components/layouts/app-chrome.tsx);
-// this page supplies only the scrolling content sections.
-// PERSONA-DRIVEN: identity and balances come from lib/persona. Balance
-// cards subscribe via Persona.useBalance, so future Buy/Sell flows can
-// adjust an asset's balance and the cards follow live. Transactions
-// stay local until those flows need to append to them.
-// SIMPLIFIED at Ali's request (10 Aug 2026): plain balance cards (Gold,
-// Silver, Fiat, his order, no charts); transaction rows carry no
-// colourisation or glyphs. ASSUMPTION: the Accounts card was folded
-// away because it duplicated the three balances; see the Studio
-// screen's revision history to restore it.
+// Mercury-pattern logged-in home for BUSINESS accounts. The chrome
+// comes from the (product) route layout; this page supplies only the
+// scrolling content sections.
+// PERSONA-DRIVEN: identity, balances and activity come from
+// lib/persona (Ridgeline Construction, the CEO's construction-company
+// ask). No welcome greeting: the page opens on the action row.
+// TOTAL BALANCE: "Balance" + the large combined number above the asset
+// cards, summing the three reactive balances. Card headers use
+// CardTitle with a trailing chevron button (inert until the wallet
+// screens join the app).
+// METAL BUTTONS: Buy Gold / Buy Silver wear the pinned metal ladders
+// as self-contained gradient pills; no icons.
+// HOLDINGS: metal cards show troy ounces at the latest LBMA price.
+// ACTIVITY: plain recent list; the tabbed filters live on /activity.
 
 const ASSET_ORDER: AssetKey[] = ["gold", "silver", "fiat"];
 
-interface Tx {
-  date: string;
-  name: string;
-  amount: number;
-  account: string;
-  method: string;
-}
+/* Self-contained metal treatments from the pinned ladders: gradient
+   surface, pale-metal text, soft metal border. Inline style because
+   the values are brand constants, deliberately outside the theme. */
+const METAL_BUTTON: Record<"gold" | "silver", React.CSSProperties> = {
+  gold: {
+    background: `linear-gradient(180deg, oklch(${METALS.gold[600]}) 0%, oklch(${METALS.gold[800]}) 100%)`,
+    color: `oklch(${METALS.gold[50]})`,
+    borderColor: `oklch(${METALS.gold[500]} / 0.45)`,
+  },
+  silver: {
+    background: `linear-gradient(180deg, oklch(${METALS.silver[500]}) 0%, oklch(${METALS.silver[700]}) 100%)`,
+    color: `oklch(${METALS.silver[50]})`,
+    borderColor: `oklch(${METALS.silver[400]} / 0.45)`,
+  },
+};
 
-const TXS: Tx[] = [
-  { date: "Aug 7", name: "Bought gold — 3.6 g", amount: -310.2, account: "Gold wallet ··5679", method: "Market order" },
-  { date: "Aug 6", name: "Sold silver — 26 oz", amount: 1050, account: "Silver wallet ··4102", method: "Market order" },
-  { date: "Aug 5", name: "USD deposit", amount: 8400, account: "Current ··2502", method: "Wire transfer" },
-  { date: "Aug 4", name: "Bought silver — 46 oz", amount: -1862.1, account: "Silver wallet ··4102", method: "Market order" },
-  { date: "Aug 2", name: "Bought gold — 14.4 g", amount: -1240.15, account: "Gold wallet ··5679", method: "Market order" },
-  { date: "Aug 1", name: "USD deposit", amount: 3200, account: "Current ··2502", method: "ACH" },
-];
-
-function fmtSigned(n: number) {
-  return `${n < 0 ? "−" : "+"}${Persona.fmtMoney(n)}`;
+/** The combined holdings figure, reactive across all three assets. */
+function TotalBalance() {
+  const [gold] = Persona.useBalance("gold");
+  const [silver] = Persona.useBalance("silver");
+  const [fiat] = Persona.useBalance("fiat");
+  return (
+    <Stack gap="xs">
+      <span className="text-sm font-medium text-muted-foreground">Balance</span>
+      <span className="text-4xl font-semibold text-foreground">
+        {Persona.fmtMoney(gold + silver + fiat)}
+      </span>
+    </Stack>
+  );
 }
 
 function BalanceCard({ asset }: { asset: AssetKey }) {
@@ -76,9 +86,21 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
       : Market.fmtOz(Market.toOunces(amount, asset));
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardHeader>
+        <Row justify="between" align="center">
+          <CardTitle>{meta.label}</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            aria-label={`Open ${meta.label}`}
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+        </Row>
+      </CardHeader>
+      <CardContent>
         <Stack gap="xs">
-          <span className="text-sm font-medium text-muted-foreground">{meta.label}</span>
           <span className="text-2xl font-semibold text-foreground">{Persona.fmtMoney(amount)}</span>
           <span className="text-sm text-muted-foreground">{detail}</span>
         </Stack>
@@ -87,106 +109,94 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
   );
 }
 
-function TxTable({ rows }: { rows: Tx[] }) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-24">Date</TableHead>
-          <TableHead>To/From</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
-          <TableHead>Account</TableHead>
-          <TableHead>Method</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((tx) => (
-          <TableRow key={`${tx.date}-${tx.name}`}>
-            <TableCell className="text-muted-foreground">{tx.date}</TableCell>
-            <TableCell>
-              <span className="font-medium text-foreground">{tx.name}</span>
-            </TableCell>
-            <TableCell className="text-right font-medium text-foreground">
-              {fmtSigned(tx.amount)}
-            </TableCell>
-            <TableCell className="text-muted-foreground">{tx.account}</TableCell>
-            <TableCell className="text-muted-foreground">{tx.method}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
-
 export default function DashboardPage() {
+  const activity = Persona.DEFAULT.activity;
   return (
     <>
-      {/* Welcome + product actions (no Send/Transfer — not in the verb set;
+      {/* Product actions (no Send/Transfer — not in the verb set;
           selling lives on the wallet screens) */}
       <Section pad="none" className="pt-8">
         <Container maxW="xl">
+          <Row gap="sm">
+            <Button size="md" className="rounded-full">
+              <Plus className="size-4" />
+              Deposit
+            </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              className="rounded-full border"
+              style={METAL_BUTTON.gold}
+            >
+              Buy Gold
+            </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              className="rounded-full border"
+              style={METAL_BUTTON.silver}
+            >
+              Buy Silver
+            </Button>
+          </Row>
+        </Container>
+      </Section>
+
+      {/* Balance — the combined figure above the asset cards */}
+      <Section pad="sm">
+        <Container maxW="xl">
           <Stack gap="lg">
-            <h1 className="text-2xl font-semibold text-foreground">
-              Welcome, {Persona.DEFAULT.owner}
-            </h1>
-            <Row gap="sm">
-              <Button size="md" className="rounded-full">
-                <Plus className="size-4" />
-                Deposit
-              </Button>
-              <Button variant="secondary" size="md" className="rounded-full">
-                <Coins className="size-4" />
-                Buy Gold
-              </Button>
-              <Button variant="secondary" size="md" className="rounded-full">
-                <Gem className="size-4" />
-                Buy Silver
-              </Button>
-            </Row>
+            <TotalBalance />
+            <Grid cols="3" gap="lg">
+              {ASSET_ORDER.map((asset) => (
+                <BalanceCard key={asset} asset={asset} />
+              ))}
+            </Grid>
           </Stack>
         </Container>
       </Section>
 
-      {/* Balances — one plain card per asset, no charts, live off Persona */}
-      <Section pad="sm">
-        <Container maxW="xl">
-          <Grid cols="3" gap="lg">
-            {ASSET_ORDER.map((asset) => (
-              <BalanceCard key={asset} asset={asset} />
-            ))}
-          </Grid>
-        </Container>
-      </Section>
-
-      {/* Activity */}
+      {/* Activity — recent only; filters live on /activity */}
       <Section pad="none" className="py-10">
         <Container maxW="xl">
           <Stack gap="md">
             <Row gap="sm" align="baseline">
               <h2 className="text-lg font-semibold text-foreground">Activity</h2>
-              <Button variant="link" size="sm">
+              <Button
+                variant="link"
+                size="sm"
+                data-grade-goto="Activity — history"
+              >
                 View all
                 <ChevronRight className="size-4" />
               </Button>
             </Row>
-            <Tabs defaultValue="recent">
-              <Stack gap="md">
-                <TabsList className="w-fit">
-                  <TabsTrigger value="recent">Recent</TabsTrigger>
-                  <TabsTrigger value="in">Monthly money in</TabsTrigger>
-                  <TabsTrigger value="out">Monthly money out</TabsTrigger>
-                </TabsList>
-                <TabsContent value="recent">
-                  <TxTable rows={TXS} />
-                </TabsContent>
-                <TabsContent value="in">
-                  <TxTable rows={TXS.filter((tx) => tx.amount > 0)} />
-                </TabsContent>
-                <TabsContent value="out">
-                  <TxTable rows={TXS.filter((tx) => tx.amount < 0)} />
-                </TabsContent>
-              </Stack>
-            </Tabs>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-24">Date</TableHead>
+                  <TableHead>To/From</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Account</TableHead>
+                  <TableHead>Method</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {activity.map((tx) => (
+                  <TableRow key={`${tx.date}-${tx.name}`}>
+                    <TableCell className="text-muted-foreground">{tx.date}</TableCell>
+                    <TableCell>
+                      <span className="font-medium text-foreground">{tx.name}</span>
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-foreground">
+                      {Persona.fmtSigned(tx.amount)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{tx.account}</TableCell>
+                    <TableCell className="text-muted-foreground">{tx.method}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </Stack>
         </Container>
       </Section>

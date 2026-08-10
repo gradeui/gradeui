@@ -54,7 +54,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { label: "Home", icon: House, target: "Dashboard — logged-in home" },
-  { label: "Activity", icon: List },
+  { label: "Activity", icon: List, target: "Activity — history" },
   { label: "Payments", icon: ArrowLeftRight },
   { label: "Bank Accounts", icon: Landmark },
 ];

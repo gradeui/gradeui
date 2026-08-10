@@ -16,6 +16,7 @@ import { AppChrome } from "@/components/layouts/app-chrome";
    screen (keep in step with lib/screens.ts and AppChrome's NAV). */
 const ACTIVE_BY_PATH: Record<string, string> = {
   "/dashboard": "Home",
+  "/activity": "Activity",
 };
 
 export default function ProductChrome({
