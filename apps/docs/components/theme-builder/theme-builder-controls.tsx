@@ -62,6 +62,7 @@ const PALETTE_SLOTS = [
 
 type SemanticKey = "success" | "warning" | "info" | "highlight" | "destructive";
 import { useThemeBuilder } from "./theme-builder-provider";
+import { TokenMapSection } from "./token-map-section";
 import {
   Section,
   Label,
@@ -84,6 +85,8 @@ export interface ThemeBuilderControlsProps {
     typography?: boolean;
     shape?: boolean;
     components?: boolean;
+    /** The semantic token to ramp-step mapping editor (token-map-section). */
+    tokens?: boolean;
   };
   /** Render each section flat (no collapse chevron). Default keeps the
    *  collapsible behaviour; the focused Design System sub-tabs pass false. */
@@ -439,6 +442,10 @@ export function ThemeBuilderControls({
             </div>
           </div>
         </Section>
+      )}
+
+      {show("tokens") && (
+        <TokenMapSection collapsible={collapsibleSections} />
       )}
 
       {show("typography") && (
