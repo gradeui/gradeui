@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "glint",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["-F", "@gradeui/glint", "dev"],
+      "port": 3010
+    },
+    {
+      "name": "docs",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["-F", "@gradeui/docs", "dev"],
+      "port": 3000
+    }
+  ]
+}

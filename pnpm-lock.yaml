@@ -434,6 +434,49 @@ importers:
         specifier: ^5
         version: 5.9.3
 
+  apps/glint:
+    dependencies:
+      '@gradeui/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      lucide-react:
+        specifier: ^0.562.0
+        version: 0.562.0(react@19.2.5)
+      next:
+        specifier: ^16.1.1
+        version: 16.2.4(@opentelemetry/api@1.9.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.5
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.5(react@19.2.5)
+    devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4.1.0
+        version: 4.3.0
+      '@types/node':
+        specifier: ^22
+        version: 22.19.17
+      '@types/react':
+        specifier: ^19
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.14)
+      postcss:
+        specifier: ^8
+        version: 8.5.15
+      tailwindcss:
+        specifier: ^4.1.0
+        version: 4.3.1
+      tailwindcss-animate:
+        specifier: ^1.0.7
+        version: 1.0.7(tailwindcss@4.3.1)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
   apps/mcp-server:
     dependencies:
       '@gradeui/studio':
@@ -487,7 +530,7 @@ importers:
         version: 4.3.1(vite@8.0.16(@types/node@22.19.17)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.4))
       astro:
         specifier: ^7.0.0
-        version: 7.0.0(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@22.19.17)(@vercel/blob@0.27.3)(jiti@2.7.0)(rollup@4.60.2)(tsx@4.22.4)
+        version: 7.0.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@22.19.17)(@vercel/blob@0.27.3)(jiti@2.7.0)(rollup@4.60.2)(tsx@4.22.4)
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -9071,9 +9114,9 @@ snapshots:
   '@astrojs/compiler-binding-linux-x64-musl@0.2.2':
     optional: true
 
-  '@astrojs/compiler-binding-wasm32-wasi@0.2.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
+  '@astrojs/compiler-binding-wasm32-wasi@0.2.2(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)':
     dependencies:
-      '@napi-rs/wasm-runtime': 1.1.5(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
+      '@napi-rs/wasm-runtime': 1.1.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
@@ -9085,7 +9128,7 @@ snapshots:
   '@astrojs/compiler-binding-win32-x64-msvc@0.2.2':
     optional: true
 
-  '@astrojs/compiler-binding@0.2.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
+  '@astrojs/compiler-binding@0.2.2(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)':
     optionalDependencies:
       '@astrojs/compiler-binding-darwin-arm64': 0.2.2
       '@astrojs/compiler-binding-darwin-x64': 0.2.2
@@ -9093,16 +9136,16 @@ snapshots:
       '@astrojs/compiler-binding-linux-arm64-musl': 0.2.2
       '@astrojs/compiler-binding-linux-x64-gnu': 0.2.2
       '@astrojs/compiler-binding-linux-x64-musl': 0.2.2
-      '@astrojs/compiler-binding-wasm32-wasi': 0.2.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
+      '@astrojs/compiler-binding-wasm32-wasi': 0.2.2(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)
       '@astrojs/compiler-binding-win32-arm64-msvc': 0.2.2
       '@astrojs/compiler-binding-win32-x64-msvc': 0.2.2
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
 
-  '@astrojs/compiler-rs@0.2.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
+  '@astrojs/compiler-rs@0.2.2(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)':
     dependencies:
-      '@astrojs/compiler-binding': 0.2.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
+      '@astrojs/compiler-binding': 0.2.2(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
@@ -12354,7 +12397,7 @@ snapshots:
       '@alloc/quick-lru': 5.2.0
       '@tailwindcss/node': 4.3.0
       '@tailwindcss/oxide': 4.3.0
-      postcss: 8.5.10
+      postcss: 8.5.15
       tailwindcss: 4.3.0
 
   '@tailwindcss/vite@4.3.1(vite@8.0.16(@types/node@22.19.17)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.4))':
@@ -13197,9 +13240,9 @@ snapshots:
 
   ast-types-flow@0.0.8: {}
 
-  astro@7.0.0(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@22.19.17)(@vercel/blob@0.27.3)(jiti@2.7.0)(rollup@4.60.2)(tsx@4.22.4):
+  astro@7.0.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@22.19.17)(@vercel/blob@0.27.3)(jiti@2.7.0)(rollup@4.60.2)(tsx@4.22.4):
     dependencies:
-      '@astrojs/compiler-rs': 0.2.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
+      '@astrojs/compiler-rs': 0.2.2(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)
       '@astrojs/internal-helpers': 0.10.0
       '@astrojs/markdown-satteri': 0.3.1
       '@astrojs/telemetry': 3.3.2
@@ -16495,7 +16538,7 @@ snapshots:
 
   postcss@8.4.31:
     dependencies:
-      nanoid: 3.3.11
+      nanoid: 3.3.15
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
@@ -17559,6 +17602,10 @@ snapshots:
   tailwindcss-animate@1.0.7(tailwindcss@4.3.0):
     dependencies:
       tailwindcss: 4.3.0
+
+  tailwindcss-animate@1.0.7(tailwindcss@4.3.1):
+    dependencies:
+      tailwindcss: 4.3.1
 
   tailwindcss@3.4.19(tsx@4.22.4):
     dependencies:

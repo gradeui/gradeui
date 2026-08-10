@@ -1,0 +1,31 @@
+/* ════════════════════════════════════════════════════════════════════
+   GLINT APP GLOBALS
+
+   The full design system stylesheet (Tailwind core, @gradeui/core
+   tokens, the native @theme blocks, the dark @custom-variant, component
+   rules and safelists) comes from the one canonical source:
+
+       @gradeui/ui/styles/globals.css
+
+   theme.css then overrides the default palette with the generated Glint
+   theme (:root light block + .dark block). Regenerate it after editing
+   theme/glint.theme.json with: pnpm -F @gradeui/glint gen:theme
+   ════════════════════════════════════════════════════════════════════ */
+
+@import "@gradeui/ui/styles/globals.css";
+@import "./theme.css";
+
+/* ── Source scanning ────────────────────────────────────────────────
+   v4 auto-detection covers this app's own tree; the explicit lines are
+   kept for determinism (mirrors apps/docs). Out-of-package paths MUST
+   be explicit. Paths are relative to this file. */
+@source "../app/**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
+@source "../lib/**/*.{ts,tsx}";
+/* Scan the workspace @gradeui/ui package so its component classes get
+   compiled into this app's Tailwind output: source for dev-mode edits,
+   dist for production parity. If this app is ever extracted from the
+   monorepo, point these three lines at node_modules/@gradeui/ui. */
+@source "../../../packages/ui/components/**/*.{ts,tsx}";
+@source "../../../packages/ui/lib/**/*.{ts,tsx}";
+@source "../../../packages/ui/dist/index.{js,mjs}";

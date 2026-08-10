@@ -1,0 +1,29 @@
+{
+  "name": "@gradeui/glint",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Glint US business accounts demo. Screens promoted from the Studio prototype into a locked, deployable Next.js app.",
+  "scripts": {
+    "dev": "next dev --port 3010",
+    "build": "next build",
+    "start": "next start",
+    "gen:theme": "tsx scripts/generate-theme.mts"
+  },
+  "dependencies": {
+    "@gradeui/ui": "workspace:*",
+    "lucide-react": "^0.562.0",
+    "next": "^16.1.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "postcss": "^8",
+    "tailwindcss": "^4.1.0",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5"
+  }
+}
