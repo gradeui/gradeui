@@ -1,7 +1,7 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786371566837). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786372281658). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
 
 import {
@@ -44,6 +44,11 @@ import { METALS } from "@/components/wordmark";
 
 const ASSET_ORDER: AssetKey[] = ["gold", "silver", "fiat"];
 
+/* Card chevron targets — assets gain one as their screens are built. */
+const CARD_TARGETS: Partial<Record<AssetKey, string>> = {
+  gold: "Gold — wallet",
+};
+
 /* Self-contained metal treatments from the pinned ladders: gradient
    surface, pale-metal text, soft metal border. Inline style because
    the values are brand constants, deliberately outside the theme. */
@@ -77,13 +82,19 @@ function TotalBalance() {
 
 function BalanceCard({ asset }: { asset: AssetKey }) {
   const [amount] = Persona.useBalance(asset);
+  /* Hooks run unconditionally; fiat reads unit.gold harmlessly (the
+     value is unused on the fiat branch below). */
+  const unitKey = (asset === "fiat" ? "unit.gold" : `unit.${asset}`) as
+    | "unit.gold"
+    | "unit.silver";
+  const [unit] = Persona.usePreference(unitKey);
   const meta = Persona.DEFAULT.balances[asset];
-  /* Metals show the holding at the latest LBMA price; fiat keeps its
-     account number. */
+  /* Metals show the holding in the persona's preferred unit (gold in
+     grams per the product); fiat keeps its account number. */
   const detail =
     asset === "fiat"
       ? meta.account
-      : Market.fmtOz(Market.toOunces(amount, asset));
+      : Market.fmtQty(Market.toQty(amount, asset, unit), unit);
   return (
     <Card>
       <CardHeader>
@@ -94,6 +105,7 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
             size="sm"
             iconOnly
             aria-label={`Open ${meta.label}`}
+            data-grade-goto={CARD_TARGETS[asset]}
           >
             <ChevronRight className="size-4" />
           </Button>

@@ -55,17 +55,28 @@ export function latest(asset: MetalKey) {
   return { date, usdPerG, usdPerOz: usdPerG * OZ };
 }
 
-/** USD balance -> troy ounces at the latest price. */
-export function toOunces(usd: number, asset: MetalKey): number {
-  return usd / latest(asset).usdPerOz;
+export type MetalUnit = "g" | "oz";
+
+/** USD balance -> quantity at the latest price, in "g" or "oz". */
+export function toQty(usd: number, asset: MetalKey, unit: MetalUnit): number {
+  const grams = usd / latest(asset).usdPerG;
+  return unit === "oz" ? grams / OZ : grams;
 }
 
-/** "48.28 oz" formatting for holdings. */
-export function fmtOz(n: number): string {
+/** "48.37 g" / "48.28 oz" formatting for holdings. */
+export function fmtQty(n: number, unit: MetalUnit): string {
   return `${n.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })} oz`;
+  })} ${unit}`;
+}
+
+/** Legacy ounce helpers (pre-preferences call sites). */
+export function toOunces(usd: number, asset: MetalKey): number {
+  return toQty(usd, asset, "oz");
+}
+export function fmtOz(n: number): string {
+  return fmtQty(n, "oz");
 }
 
 /** Namespace mirroring the Studio statics pattern. */
@@ -75,6 +86,8 @@ export const Market = {
   gold: GOLD_USD_PER_G,
   silver: SILVER_GBP_PER_G,
   latest,
+  toQty,
+  fmtQty,
   toOunces,
   fmtOz,
 };

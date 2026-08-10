@@ -7,7 +7,9 @@
  * CONSTRUCTION COMPANY (CEO request, 10 Aug 2026): Ridgeline
  * Construction holding treasury in gold and silver via Glint. One
  * persona for now; add records to PERSONAS and swap DEFAULT_PERSONA
- * when the demo needs more. Keep in sync with the Studio component.
+ * when the demo needs more. The cash asset displays as "USD" but its
+ * KEY stays "fiat" so stored balance overrides survive the rename.
+ * Keep in sync with the Studio component.
  *
  * BALANCES ARE REACTIVE: useBalance("gold") reads a FlowStore override
  * (key `bal.<asset>`) falling back to the persona default, so a future
@@ -39,12 +41,25 @@ export interface ActivityRow {
   method: string;
 }
 
+export type MetalUnit = "g" | "oz";
+export type AutoInvest = "none" | "gold" | "silver";
+
+/** Flat, namespaced preference keys: display units per metal plus the
+ *  autoInvest behaviour a USD deposit triggers (data only until the
+ *  deposit flow consumes it). */
+export interface PersonaPreferences {
+  "unit.gold": MetalUnit;
+  "unit.silver": MetalUnit;
+  autoInvest: AutoInvest;
+}
+
 export interface PersonaRecord {
   id: string;
   owner: string;
   business: string;
   businessMeta: string;
   account: string;
+  preferences: PersonaPreferences;
   balances: Record<AssetKey, BalanceMeta>;
   activity: ActivityRow[];
 }
@@ -56,10 +71,15 @@ export const PERSONAS: Record<string, PersonaRecord> = {
     business: "Ridgeline Construction",
     businessMeta: "Business account",
     account: "AD",
+    preferences: {
+      "unit.gold": "g",
+      "unit.silver": "oz",
+      autoInvest: "none",
+    },
     balances: {
       gold: { label: "Gold", amount: 6636.8, account: "Gold wallet ··5679" },
       silver: { label: "Silver", amount: 2984.15, account: "Silver wallet ··4102" },
-      fiat: { label: "Fiat", amount: 15210.4, account: "Current ··2502" },
+      fiat: { label: "USD", amount: 15210.4, account: "Current ··2502" },
     },
     activity: [
       { date: "Aug 7", name: "Bought gold — 3.6 g", amount: -310.2, account: "Gold wallet ··5679", method: "Market order" },
@@ -100,6 +120,24 @@ export function getBalance(asset: AssetKey): number {
   return getFlowField(`bal.${asset}`, DEFAULT_PERSONA.balances[asset].amount);
 }
 
+/** Reactive preference (e.g. "unit.gold", "autoInvest"): [value, set].
+ *  Reads the FlowStore override (key `pref.<key>`), falls back to the
+ *  persona default, so a future settings screen can flip units or
+ *  autoInvest and every surface follows. */
+export function usePreference<K extends keyof PersonaPreferences>(key: K) {
+  return useFlowField<PersonaPreferences[K]>(
+    `pref.${key}`,
+    DEFAULT_PERSONA.preferences[key],
+  );
+}
+
+/** Non-subscribing preference read. */
+export function getPreference<K extends keyof PersonaPreferences>(
+  key: K,
+): PersonaPreferences[K] {
+  return getFlowField(`pref.${key}`, DEFAULT_PERSONA.preferences[key]);
+}
+
 /** Namespace mirroring the Studio statics pattern (Persona.useBalance
  *  etc.), so promoted screens keep working with minimal edits. */
 export const Persona = {
@@ -107,6 +145,8 @@ export const Persona = {
   DEFAULT: DEFAULT_PERSONA,
   useBalance,
   getBalance,
+  usePreference,
+  getPreference,
   fmtMoney,
   fmtSigned,
 };
