@@ -255,17 +255,23 @@ export default function BeforeYouApplyPage() {
               onCheckedChange={(v) => setAttestSanctions(v === true)}
             />
             <FieldLabel className="font-normal leading-relaxed">
-              The business does not operate in or from a restricted or
-              sanctioned jurisdiction&nbsp;
-              <a href="#" className="underline underline-offset-2 hover:text-foreground">
-                (view list)
-              </a>
+              {/* One span child: keeps the link inline with the sentence
+                  (Field's label layout right-detaches a sibling anchor). */}
+              <span>
+                The business does not operate in or from a restricted or
+                sanctioned jurisdiction{" "}
+                <a href="#" className="underline underline-offset-2 hover:text-foreground">
+                  (view list)
+                </a>
+              </span>
             </FieldLabel>
           </Field>
 
           {/* Prohibited industries — cannabis / weapons / crypto live in the
-              Terms per the CCO decision (04 Aug); no NAICS codes. */}
-          <Field orientation="horizontal">
+              Terms per the CCO decision (04 Aug); no NAICS codes.
+              HIDDEN at Ali's request (10 Aug), not deleted: drop the
+              hidden class to restore the row. */}
+          <Field orientation="horizontal" className="hidden">
             <Checkbox
               checked={attestProhibited}
               onCheckedChange={(v) => setAttestProhibited(v === true)}
