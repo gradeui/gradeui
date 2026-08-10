@@ -25,6 +25,8 @@ This doc locks the contract first, so the UI and the catalog don't get built on 
 
 A `ThemeInput` (see `apps/docs/lib/themes/types.ts`) is the whole theme: hues, chroma, intensity, typography, radius, spacing, effects, component knobs, plus `id`/`name`/`description`. `generateTheme(input)` turns it into a `GeneratedTheme` (the resolved OKLCH ramps + CSS variables the renderer applies).
 
+Since 8 Aug 2026 the contract also carries `tokenOverrides`: per-mode remaps of any semantic token to a ramp step (or a pure OKLCH value), merged over the generator's tuned mode maps. Overrides store the STEP, not the colour, so a remapped theme still re-resolves when its hues change. The Styles panel's **Tokens** section (`token-map-section.tsx`) is the editor: every semantic token shows where it sits on the generated ramps ("background: neutral 50") and repicks by step. `tokenRefsForMode()` exposes the effective mapping so editors and the generator can never disagree.
+
 Two properties make `ThemeInput` the right contract:
 
 1. **Deterministic.** Same input → identical output, every time. We never store the *generated* theme — only the input. A variant is reproducible forever from a few hundred bytes of JSON, and a theme published today renders the same in six months. (This is also why the seed must stay deterministic — see "Constraints.")

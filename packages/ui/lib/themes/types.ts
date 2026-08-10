@@ -178,8 +178,8 @@ export interface ThemeRegistryEntry {
    legacy Grade + Paper themes. Phase 2 replaces them with GeneratedTheme.
    ───────────────────────────────────────────────────────────────────────── */
 
-import type { ModeName, OKLCHTriplet, Ramp } from "./oklch";
-export type { ModeName, OKLCHTriplet, Ramp } from "./oklch";
+import type { ModeName, OKLCHTriplet, Ramp, RampKey } from "./oklch";
+export type { ModeName, OKLCHTriplet, Ramp, RampKey } from "./oklch";
 
 /**
  * The CSS font-family string for each available font. Keys match the CSS
@@ -377,6 +377,45 @@ export type CardStyle = "flat" | "outlined" | "elevated" | "glass";
  * localStorage, exported as JSON, and shared via URL. The generator
  * consumes this and produces a full GeneratedTheme.
  */
+/** One semantic token's mapping: a step on one of the three theme ramps,
+ *  or an explicit OKLCH triplet for values outside them (pure white or
+ *  black surfaces). Structurally identical to the generator's internal
+ *  TokenRef, exported here so the Styles panel token editor and the
+ *  ThemeInput contract share one shape. */
+export type ThemeTokenRef =
+  | { source: "neutral" | "primary" | "accent"; step: RampKey }
+  | { source: "pure"; value: OKLCHTriplet };
+
+/** The remappable semantic tokens, in display order. Matches the
+ *  generator's per-mode TokenMap key for key. */
+export const SEMANTIC_TOKEN_KEYS = [
+  "background",
+  "foreground",
+  "card",
+  "cardForeground",
+  "popover",
+  "popoverForeground",
+  "primary",
+  "primaryForeground",
+  "secondary",
+  "secondaryForeground",
+  "muted",
+  "mutedForeground",
+  "superMutedForeground",
+  "accent",
+  "accentForeground",
+  "border",
+  "input",
+  "ring",
+] as const;
+export type SemanticTokenKey = (typeof SEMANTIC_TOKEN_KEYS)[number];
+
+/** Per-token remap set for one mode. Absent keys keep the mode map's
+ *  tuned default. */
+export type ThemeTokenOverrides = Partial<
+  Record<SemanticTokenKey, ThemeTokenRef>
+>;
+
 export interface ThemeInput {
   /** Stable id. For user themes: "user:<uuid>"; for built-ins: short slug. */
   id: string;
@@ -410,6 +449,17 @@ export interface ThemeInput {
 
   /** If true, the neutral ramp is pure gray regardless of neutral hue. */
   neutralPureGray?: boolean;
+
+  /**
+   * Token mapping seam (8 Aug 2026): remap any semantic token to a ramp
+   * step, or a pure OKLCH value, PER MODE (light and dark tune
+   * independently, exactly like the built-in maps). Merged over the
+   * mode's map by the generator, so an absent entry keeps the tuned
+   * default. This is the contract the Styles panel's token editor
+   * writes; ramp-shaped refs keep themes portable and regenerate
+   * cleanly when hues change.
+   */
+  tokenOverrides?: Partial<Record<ModeName, ThemeTokenOverrides>>;
 
   /**
    * Focus ring colour. By default the ring (`--ring`) rides the PRIMARY
@@ -499,6 +549,8 @@ export interface GeneratedColorsMode {
   secondaryForeground: OKLCHTriplet;
   muted: OKLCHTriplet;
   mutedForeground: OKLCHTriplet;
+  /** Quietest text tier: timestamps, ghost hints, fine print. */
+  superMutedForeground: OKLCHTriplet;
   accent: OKLCHTriplet;
   accentForeground: OKLCHTriplet;
   destructive: OKLCHTriplet;

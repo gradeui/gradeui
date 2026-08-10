@@ -44,6 +44,9 @@ import {
   type TypeScale,
   type TypeScalePreset,
   type ModularScaleId,
+  type ThemeTokenOverrides,
+  type SemanticTokenKey,
+  type ThemeTokenRef,
 } from "./types";
 import {
   GDS_MODULAR_SCALES,
@@ -120,6 +123,11 @@ interface TokenMap {
   secondaryForeground: TokenRef;
   muted: TokenRef;
   mutedForeground: TokenRef;
+  /** The quietest text tier (Ali, 8 Aug): timestamps, ghost hints,
+   *  fine print. Sits at the OLD mutedForeground step; mutedForeground
+   *  itself moved one step toward the foreground for firmer secondary
+   *  text (subtitles, field descriptions). */
+  superMutedForeground: TokenRef;
   accent: TokenRef;
   accentForeground: TokenRef;
   border: TokenRef;
@@ -145,7 +153,8 @@ const MODE_TOKENS: Record<ModeName, TokenMap> = {
     secondary: n(100),
     secondaryForeground: n(700),
     muted: n(100),
-    mutedForeground: n(500),
+    mutedForeground: n(600),
+    superMutedForeground: n(500),
     accent: a(600),
     accentForeground: a(50),
     border: n(200),
@@ -165,7 +174,8 @@ const MODE_TOKENS: Record<ModeName, TokenMap> = {
     secondary: n(100),
     secondaryForeground: n(700),
     muted: n(100),
-    mutedForeground: n(500),
+    mutedForeground: n(600),
+    superMutedForeground: n(500),
     accent: a(500),
     accentForeground: a(50),
     border: n(200),
@@ -185,7 +195,8 @@ const MODE_TOKENS: Record<ModeName, TokenMap> = {
     secondary: n(800),
     secondaryForeground: n(200),
     muted: n(800),
-    mutedForeground: n(400),
+    mutedForeground: n(300),
+    superMutedForeground: n(400),
     accent: a(400),
     accentForeground: a(950),
     border: n(800),
@@ -205,7 +216,8 @@ const MODE_TOKENS: Record<ModeName, TokenMap> = {
     secondary: n(900),
     secondaryForeground: n(300),
     muted: n(900),
-    mutedForeground: n(500),
+    mutedForeground: n(400),
+    superMutedForeground: n(500),
     accent: a(300),
     accentForeground: a(950),
     border: n(900),
@@ -213,6 +225,23 @@ const MODE_TOKENS: Record<ModeName, TokenMap> = {
     ring: p(300),
   },
 };
+
+/**
+ * The EFFECTIVE token map for a mode: the tuned built-ins with any
+ * ThemeInput.tokenOverrides merged over them. This is what the Styles
+ * panel's token editor displays ("background maps to neutral 50") and
+ * exactly what deriveColorsForMode resolves; keep both on this one
+ * function.
+ */
+export function tokenRefsForMode(
+  mode: ModeName,
+  overrides?: ThemeTokenOverrides
+): Record<SemanticTokenKey, ThemeTokenRef> {
+  return {
+    ...MODE_TOKENS[mode],
+    ...(overrides ?? {}),
+  } as Record<SemanticTokenKey, ThemeTokenRef>;
+}
 
 function resolveToken(
   ref: TokenRef,
@@ -229,9 +258,13 @@ function deriveColorsForMode(
    *  ring token resolves from THIS ramp at the mode-tuned step instead
    *  of the primary ramp — colour changes, per-mode contrast behaviour
    *  doesn't. */
-  ringRamp?: Ramp
+  ringRamp?: Ramp,
+  /** Token mapping seam - see ThemeInput.tokenOverrides. */
+  tokenOverrides?: ThemeTokenOverrides
 ): GeneratedColorsMode {
-  const map = MODE_TOKENS[mode];
+  // Token mapping seam: ThemeInput.tokenOverrides[mode] wins per key;
+  // everything else keeps the mode's tuned default.
+  const map = { ...MODE_TOKENS[mode], ...(tokenOverrides ?? {}) };
   // Fixed semantic colors don't change with the brand hue — they use the
   // light/dark set because the 4 modes split cleanly into "has light bg"
   // and "has dark bg" for contrast purposes.
@@ -251,6 +284,7 @@ function deriveColorsForMode(
     secondaryForeground: resolveToken(map.secondaryForeground, ramps),
     muted: resolveToken(map.muted, ramps),
     mutedForeground: resolveToken(map.mutedForeground, ramps),
+    superMutedForeground: resolveToken(map.superMutedForeground, ramps),
     accent: resolveToken(map.accent, ramps),
     accentForeground: resolveToken(map.accentForeground, ramps),
     border: resolveToken(map.border, ramps),
@@ -623,7 +657,7 @@ export function generateTheme(input: ThemeInput): GeneratedTheme {
 
   // 2. Derive semantic tokens for all four modes
   const colors = Object.fromEntries(
-    ALL_MODES.map((mode) => [mode, deriveColorsForMode(ramps, mode, ringRamp)])
+    ALL_MODES.map((mode) => [mode, deriveColorsForMode(ramps, mode, ringRamp, input.tokenOverrides?.[mode])])
   ) as Record<ModeName, GeneratedColorsMode>;
 
   // 2b. Role ramp families (THEME-MIGRATION.md B4, June 10 decision):

@@ -171,6 +171,7 @@
   --color-destructive-deep: oklch(var(--destructive-deep));
   --color-muted: oklch(var(--muted));
   --color-muted-foreground: oklch(var(--muted-foreground));
+  --color-super-muted-foreground: oklch(var(--super-muted-foreground));
   --color-accent: oklch(var(--accent));
   --color-accent-foreground: oklch(var(--accent-foreground));
   --color-popover: oklch(var(--popover));
@@ -516,6 +517,7 @@
    at full strength plus a sensible opacity ladder. */
 @source inline("bg-clip-text");
 @source inline("text-transparent");
+@source inline("text-super-muted-foreground");
 @source inline("bg-gradient-to-{t,tr,r,br,b,bl,l,tl}");
 @source inline("{from,via,to}-{background,foreground,card,card-foreground,muted,muted-foreground,primary,primary-foreground,secondary,accent,destructive,border,transparent,white,black}");
 @source inline("{from,via,to}-{background,foreground,muted,primary,secondary,accent,white,black}/{10,20,25,30,40,50,60,70,75,80,90}");
@@ -786,7 +788,8 @@
   --secondary: 0.955 0.0048 85;              /* neutral 100 */
   --secondary-foreground: 0.415 0.0180 85;  /* neutral 700 */
   --muted: 0.955 0.0048 85;
-  --muted-foreground: 0.610 0.0204 85;      /* neutral 500 */
+  --muted-foreground: 0.510 0.0204 85;      /* neutral 600 (firmed 8 Aug) */
+  --super-muted-foreground: 0.610 0.0204 85; /* neutral 500 — quietest text tier */
   --accent: 0.610 0.0306 85;                 /* warm cream accent */
   --accent-foreground: 0.985 0.0027 85;
   --destructive: 0.560 0.220 27;
@@ -1023,7 +1026,8 @@
   --secondary: 0.325 0.0144 85;             /* neutral 800 */
   --secondary-foreground: 0.895 0.0090 85;
   --muted: 0.325 0.0144 85;
-  --muted-foreground: 0.720 0.0168 85;
+  --muted-foreground: 0.820 0.0132 85;      /* neutral 300 (firmed 8 Aug) */
+  --super-muted-foreground: 0.720 0.0168 85; /* neutral 400 — quietest text tier */
   --accent: 0.720 0.0252 85;
   --accent-foreground: 0.170 0.0072 85;
   --destructive: 0.680 0.220 27;
@@ -1141,7 +1145,8 @@
   --secondary: 0.955 0.0032 175;            /* neutral 100 */
   --secondary-foreground: 0.415 0.012 175;  /* neutral 700 */
   --muted: 0.955 0.0032 175;
-  --muted-foreground: 0.610 0.0136 175;
+  --muted-foreground: 0.510 0.0136 175;     /* neutral 600 (firmed 8 Aug) */
+  --super-muted-foreground: 0.610 0.0136 175; /* neutral 500 — quietest text tier */
   --accent: 0.610 0.170 175;
   --accent-foreground: 0.985 0.015 175;
   --border: 0.895 0.006 175;
@@ -1167,7 +1172,8 @@
   --secondary: 0.325 0.0096 175;
   --secondary-foreground: 0.895 0.006 175;
   --muted: 0.325 0.0096 175;
-  --muted-foreground: 0.720 0.0112 175;
+  --muted-foreground: 0.820 0.0088 175;     /* neutral 300 (firmed 8 Aug) */
+  --super-muted-foreground: 0.720 0.0112 175; /* neutral 400 — quietest text tier */
   --accent: 0.720 0.140 175;
   --accent-foreground: 0.170 0.040 175;
   --border: 0.325 0.0096 175;
@@ -2121,6 +2127,7 @@ html[data-gds-streaming] body * {
     --popover-foreground: var(--bg-base);
     --muted: var(--fg-base);
     --muted-foreground: var(--bg-base);
+    --super-muted-foreground: var(--bg-base);
     --border: var(--bg-base);
     --input: var(--bg-base);
   }
@@ -2133,6 +2140,7 @@ html[data-gds-streaming] body * {
     --popover-foreground: var(--primary-foreground);
     --muted: var(--primary);
     --muted-foreground: var(--primary-foreground);
+    --super-muted-foreground: var(--primary-foreground);
     --border: var(--primary-foreground);
     --input: var(--primary-foreground);
   }
@@ -2145,6 +2153,7 @@ html[data-gds-streaming] body * {
     --popover-foreground: var(--accent-foreground);
     --muted: var(--accent);
     --muted-foreground: var(--accent-foreground);
+    --super-muted-foreground: var(--accent-foreground);
     --border: var(--accent-foreground);
     --input: var(--accent-foreground);
   }
@@ -2161,6 +2170,7 @@ html[data-gds-streaming] body * {
     --popover: var(--card);
     --popover-foreground: var(--card-foreground);
     --muted-foreground: var(--card-foreground);
+    --super-muted-foreground: var(--card-foreground);
   }
 }
 

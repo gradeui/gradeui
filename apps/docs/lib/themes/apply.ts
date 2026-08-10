@@ -46,6 +46,7 @@ function colorVars(c: GeneratedColorsMode): Record<string, string> {
     "--secondary-foreground": c.secondaryForeground,
     "--muted": c.muted,
     "--muted-foreground": c.mutedForeground,
+    "--super-muted-foreground": c.superMutedForeground,
     "--accent": c.accent,
     "--accent-foreground": c.accentForeground,
     "--destructive": c.destructive,

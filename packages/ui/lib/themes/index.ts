@@ -16,7 +16,7 @@ import type { GeneratedTheme, ThemeInput } from "./types";
 
 // Public re-exports
 export * from "./types";
-export { generateTheme } from "./generator";
+export { generateTheme, tokenRefsForMode } from "./generator";
 export {
   themeToCSSVars,
   applyThemeToRoot,
@@ -25,6 +25,12 @@ export {
   FONT_FACE_STYLE_ID,
 } from "./apply";
 export type { ModeName } from "./oklch";
+export { SEMANTIC_TOKEN_KEYS } from "./types";
+export type {
+  SemanticTokenKey,
+  ThemeTokenRef,
+  ThemeTokenOverrides,
+} from "./types";
 export { BUILT_IN_INPUTS, calmInput, energyInput } from "./inputs";
 export { generateThemeMarkdown, downloadThemeMarkdown } from "./export-md";
 export { oklchToHex, useOklchHexes, formatOklch } from "./oklch-to-hex";
