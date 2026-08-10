@@ -1,7 +1,7 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786370015216). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786370953143). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
 
 import {
@@ -26,6 +26,7 @@ import {
 } from "@gradeui/ui";
 import { Plus, Coins, Gem, ChevronRight } from "lucide-react";
 import { Persona, type AssetKey } from "@/lib/persona";
+import { Market } from "@/lib/market";
 
 // Mercury-pattern logged-in home, Glint-flavoured, for BUSINESS accounts.
 // The sidebar rail + sticky toolbar come from the route layout
@@ -67,13 +68,19 @@ function fmtSigned(n: number) {
 function BalanceCard({ asset }: { asset: AssetKey }) {
   const [amount] = Persona.useBalance(asset);
   const meta = Persona.DEFAULT.balances[asset];
+  /* Metals show the holding at the latest LBMA price; fiat keeps its
+     account number. */
+  const detail =
+    asset === "fiat"
+      ? meta.account
+      : Market.fmtOz(Market.toOunces(amount, asset));
   return (
     <Card>
       <CardContent className="pt-6">
         <Stack gap="xs">
           <span className="text-sm font-medium text-muted-foreground">{meta.label}</span>
           <span className="text-2xl font-semibold text-foreground">{Persona.fmtMoney(amount)}</span>
-          <span className="text-sm text-muted-foreground">{meta.account}</span>
+          <span className="text-sm text-muted-foreground">{detail}</span>
         </Stack>
       </CardContent>
     </Card>
@@ -151,13 +158,13 @@ export default function DashboardPage() {
         </Container>
       </Section>
 
-      {/* Transactions */}
+      {/* Activity */}
       <Section pad="none" className="py-10">
         <Container maxW="xl">
           <Stack gap="md">
             <Row gap="sm" align="baseline">
-              <h2 className="text-lg font-semibold text-foreground">Transactions</h2>
-              <Button variant="link" size="md">
+              <h2 className="text-lg font-semibold text-foreground">Activity</h2>
+              <Button variant="link" size="sm">
                 View all
                 <ChevronRight className="size-4" />
               </Button>
