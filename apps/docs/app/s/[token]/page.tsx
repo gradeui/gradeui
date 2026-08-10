@@ -11,6 +11,7 @@
 
 import { notFound } from "next/navigation";
 import { getServiceSupabase } from "@/lib/supabase/service";
+import { resolveProjectAppIconUrl } from "@/lib/project-app-icon";
 import { SharedScreen } from "@/components/studio/shared-screen";
 import type { CommentThreadWithMessages } from "@/lib/studio-storage";
 import { SHARE_VIEWPORT_PRESETS } from "@/lib/studio-storage";
@@ -35,30 +36,16 @@ export async function generateMetadata({
     .maybeSingle();
   if (!link || link.revoked || !link.design_id)
     return { title: "Shared screen · Grade" };
-  const [{ data: design }, { data: project }, { data: iconAsset }] =
+  const [{ data: design }, { data: project }, appIconUrl] =
     await Promise.all([
       supabase.from("designs").select("name").eq("id", link.design_id).maybeSingle(),
       supabase.from("projects").select("name").eq("id", link.project_id).maybeSingle(),
-      // PER-PROJECT app icon (Ali, 23 Jul) — a normal STUDIO-STORAGE
-      // asset marked enrichment.role = "app-icon" (the enrichment jsonb
-      // is the role seam until a dedicated projects column exists).
-      // Public bucket → permanent URL, safe in a <link> tag. Newest
-      // wins so re-uploading replaces the icon without cleanup.
-      supabase
-        .from("assets")
-        .select("path")
-        .eq("project_id", link.project_id)
-        .eq("enrichment->>role", "app-icon")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+      // PER-PROJECT app icon (Ali, 23 Jul) — shared with the embed
+      // route; see lib/project-app-icon.ts for the role seam.
+      resolveProjectAppIconUrl(supabase, link.project_id),
     ]);
   const screen = (design as { name: string } | null)?.name ?? "Screen";
   const proj = (project as { name: string } | null)?.name ?? "Grade";
-  const iconPath = (iconAsset as { path: string } | null)?.path;
-  const appIconUrl = iconPath
-    ? supabase.storage.from("user-assets").getPublicUrl(iconPath).data.publicUrl
-    : null;
   const title = `${screen} — ${proj} · Grade`;
   // Unfurl copy (Ali, July 2026): the description names the SHARE, not
   // the product — the site-wide OG pitch read as an advert on client

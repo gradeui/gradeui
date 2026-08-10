@@ -14,6 +14,7 @@
 
 import { notFound } from "next/navigation";
 import { getServiceSupabase } from "@/lib/supabase/service";
+import { resolveProjectAppIconUrl } from "@/lib/project-app-icon";
 import { EmbedScreen, type CameraShot } from "@/components/studio/embed-screen";
 import { FlatScreen } from "@/components/studio/flat-screen";
 
@@ -70,13 +71,24 @@ export async function generateMetadata({
     .maybeSingle();
   if (!link || link.revoked || !link.design_id)
     return { title: "Shared screen · Grade" };
-  const [{ data: design }, { data: project }] = await Promise.all([
+  const [{ data: design }, { data: project }, appIconUrl] = await Promise.all([
     supabase.from("designs").select("name").eq("id", link.design_id).maybeSingle(),
     supabase.from("projects").select("name").eq("id", link.project_id).maybeSingle(),
+    // Same conditional app icon as the share view: when the project has
+    // an app-icon asset, an embed opened directly (or added to a home
+    // screen) wears the client's mark; otherwise site defaults.
+    resolveProjectAppIconUrl(supabase, link.project_id),
   ]);
   const screen = (design as { name: string } | null)?.name ?? "Screen";
   const proj = (project as { name: string } | null)?.name ?? "Grade";
-  return { title: `${screen} — ${proj} · Grade` };
+  return {
+    title: `${screen} — ${proj} · Grade`,
+    appleWebApp: { capable: true, title: screen, statusBarStyle: "default" },
+    other: { "mobile-web-app-capable": "yes" },
+    ...(appIconUrl
+      ? { icons: { apple: [{ url: appIconUrl, sizes: "512x512" }] } }
+      : {}),
+  };
 }
 
 interface ShareLinkRow {

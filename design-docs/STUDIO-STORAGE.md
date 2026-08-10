@@ -93,8 +93,9 @@ Recommendation: **signed URLs.** Privacy-preserving by default, consistent with 
   `apple-touch-icon`, so a `?fullscreen=1` share installed on an
   iPhone/iPad home screen wears the CLIENT's mark, not Grade's. The
   `enrichment` jsonb is the role seam until a dedicated projects
-  column exists. Glint's icon is generated from the Wordmark G glyph
-  with the theme's champagne accent ramp.
+  column exists. Resolution is shared by /s/ and /e/ via
+  `apps/docs/lib/project-app-icon.ts`. Glint's icon is the official
+  glintpay.com favicon (512px).
 
 ## What's planned (this pillar)
 
