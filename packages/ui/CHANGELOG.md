@@ -1,5 +1,24 @@
 # @gradeui/ui
 
+## 4.3.0
+
+### Minor Changes
+
+- 181d634: Theme contract: token-to-ramp mapping seam, two-tier muted text, tighter vertical Field rhythm.
+
+  - `ThemeInput.tokenOverrides` remaps any semantic token to a ramp step (or a pure OKLCH value), per mode. The generator merges overrides over the mode's tuned map; `tokenRefsForMode()` exposes the effective mapping for editors. Overrides store the STEP, not the colour, so themes re-resolve when hues change.
+  - New `--super-muted-foreground` token + `text-super-muted-foreground` utility: the quietest text tier (timestamps, ghost hints, fine print), sitting at the old muted-foreground step. `muted-foreground` itself moves one step toward the foreground in every mode for firmer secondary text (light/superLight neutral 500 to 600, dark 400 to 300, superDark 500 to 400). Static stylesheet themes and scope remaps updated to match.
+  - Field: the label-to-control gap is now per orientation. Vertical (and the vertical phase of responsive) tightens to gap-2; horizontal rows keep gap-3.
+
+### Patch Changes
+
+- 2226830: AvatarFallback type now scales with the Avatar `size` prop (~0.4 of the circle diameter: 9px at 2xs up to 30px at xl) instead of inheriting the 16px base at every size. `md` keeps the 16px base, so default-size avatars render exactly as before; a `className` on the fallback still overrides the scaled size.
+- 3eff205: Calendar: the cell-size variable utilities used Tailwind v3 arbitrary syntax (`w-[--cell-size]`), which v4 silently drops, collapsing the month grid to content width (crammed day cells). Converted to v4 parenthetical syntax (`w-(--cell-size)`). DatePicker: the trigger aligns with the field family (h-9, text-sm) instead of Button's md sizing, so a picked date reads like every other field value.
+- 1f36c9d: Callout: size the icon slot to 16px (`[&>svg]:h-4 [&>svg]:w-4`). Bare lucide icons default to 24px, which filled the 28px text inset (`pl-7`) and left the icon flush against the title; sizing the slot restores the intended 12px icon→title gap. Applied to the docs vendored copy in the same pass.
+- 6f4bf6a: Callout: the title sits at the description's text-sm size with font-semibold carrying the hierarchy (letter-spacing left to the theme), and the icon slot grows to 20px against a 32px text inset. Selection cards (RadioCard / CheckboxCard): the rest-state ring falls back to `--super-muted-foreground` instead of `--border`, so the control reads as a control on near-white backgrounds while staying per-mode calibrated; the `--gds-selection-card-control` override seam is unchanged.
+- a0d89ad: Field controls read as one family. Input, SelectTrigger and Textarea adopt InputGroup's focus treatment (border-ring plus a 3px half-opacity ring halo) in place of three divergent styles, gain its `dark:bg-input/30` tinted surface for dark-mode parity, and SelectTrigger's default height drops from h-10 to h-9 so selects sit flush beside inputs in mixed field rows.
+- 7197150: Sweep the remaining Tailwind v3 arbitrary-variable utilities (`x-[--var]`), which v4 silently drops, to the v4 parenthetical form: chart tooltip/legend indicator colours (`bg-[--color-bg]` rendered transparent) and the Radix transform-origin on DropdownMenu, HoverCard, Popover and Tooltip (open/close animations scaled from centre instead of the trigger). Companion to the Calendar cell-size fix.
+
 ## 4.2.0
 
 ### Minor Changes
