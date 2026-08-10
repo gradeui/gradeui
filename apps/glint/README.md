@@ -26,6 +26,7 @@ source, or by explicitly re-promoting a screen (below).
 | `/onboarding/step6` | 6 Certification |
 | `/onboarding/step7` | 7 Review & submit |
 | `/status` | Application status |
+| `/dashboard` | Dashboard — logged-in home |
 | `/s/<designId>` | 307 redirect to the screen's route |
 
 `lib/screens.ts` is the registry tying each route to its Studio
@@ -84,7 +85,7 @@ survives any future slug rename.
 2. Transform it into a page:
 
    ```bash
-   python3 scripts/promote-screen.py /tmp/glint-screens/<file>.jsx app/<route>/page.tsx --func <Name>Page --name "<Studio screen name>" --id <designId> --version <updatedAt ms> [--step]
+   python3 scripts/promote-screen.py /tmp/glint-screens/<file>.jsx app/<route>/page.tsx --func <Name>Page --name "<Studio screen name>" --id <designId> --version <updatedAt ms> [--step | --unwrap AppChrome]
    ```
 
    `--step` unwraps the OnboardingLayout chrome (the route layout

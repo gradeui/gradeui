@@ -109,6 +109,12 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskh1lole59j",
     promotedAt: 1786357121180,
   },
+  {
+    slug: "/dashboard",
+    name: "Dashboard — logged-in home",
+    id: "dmskex612bcy1",
+    promotedAt: 1786370015216,
+  },
 ];
 
 const norm = (s: string) => s.trim().toLowerCase();

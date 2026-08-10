@@ -35,8 +35,32 @@ import sys
 FLOW_NAMES = {"FlowStore", "useFlowField", "getFlowField", "resetFlow", "US_STATES"}
 
 
+IMPORT_LINES = {
+    "OnboardingLayout": 'import { OnboardingLayout } from "@/components/layouts/onboarding";\n',
+    "AppChrome": 'import { AppChrome } from "@/components/layouts/app-chrome";\n',
+}
+
+
+def unwrap_chrome(src: str, name: str, problems: list[str]) -> str:
+    """Drop a <Name ...> wrapper element (the route layout provides the
+    chrome), keeping any Name.* compound uses. Same shape for
+    OnboardingLayout and AppChrome."""
+    new = re.sub(rf"^(\s*)<{name}[^>]*>\s*$", r"\1<>", src, flags=re.M)
+    if new == src:
+        problems.append(f"opening {name} wrapper not found")
+    src = new
+    new = re.sub(rf"^(\s*)</{name}>\s*$", r"\1</>", src, flags=re.M)
+    if new == src:
+        problems.append(f"closing {name} wrapper not found")
+    src = new
+    if f"{name}." not in src and name in IMPORT_LINES:
+        src = src.replace(IMPORT_LINES[name], "")
+    return src
+
+
 def transform(src: str, func: str, screen_name: str, design_id: str,
-              version: int, is_step: bool) -> tuple[str, list[str]]:
+              version: int, is_step: bool,
+              unwrap: str | None = None) -> tuple[str, list[str]]:
     problems: list[str] = []
 
     src = re.sub(r'\s*data-gds-source-id="\d+"', "", src)
@@ -47,13 +71,16 @@ def transform(src: str, func: str, screen_name: str, design_id: str,
         lines = []
         if "OnboardingLayout" in names:
             lines.append('import { OnboardingLayout } from "@/components/layouts/onboarding";')
+        if "AppChrome" in names:
+            lines.append('import { AppChrome } from "@/components/layouts/app-chrome";')
         if "Wordmark" in names:
             lines.append('import { Wordmark } from "@/components/wordmark";')
         flow = [n for n in names if n in FLOW_NAMES]
         if flow:
             lines.append(f'import {{ {", ".join(flow)} }} from "@/lib/flow-store";')
         unknown = [n for n in names
-                   if n not in FLOW_NAMES and n not in ("OnboardingLayout", "Wordmark")]
+                   if n not in FLOW_NAMES
+                   and n not in ("OnboardingLayout", "AppChrome", "Wordmark")]
         if unknown:
             problems.append(f"unknown @project/components imports {unknown}: "
                             "port those shared components first")
@@ -66,19 +93,9 @@ def transform(src: str, func: str, screen_name: str, design_id: str,
         if new == src:
             problems.append("STEPS block not found")
         src = new
-        new = re.sub(
-            r'^(\s*)<OnboardingLayout steps=\{STEPS\}[^>]*>\s*$',
-            r"\1<>", src, flags=re.M)
-        if new == src:
-            problems.append("opening OnboardingLayout wrapper not found")
-        src = new
-        new = re.sub(r"^(\s*)</OnboardingLayout>\s*$", r"\1</>", src, flags=re.M)
-        if new == src:
-            problems.append("closing OnboardingLayout wrapper not found")
-        src = new
-        if "OnboardingLayout." not in src:
-            src = src.replace(
-                'import { OnboardingLayout } from "@/components/layouts/onboarding";\n', "")
+        src = unwrap_chrome(src, "OnboardingLayout", problems)
+    if unwrap:
+        src = unwrap_chrome(src, unwrap, problems)
 
     m2 = re.search(r"import\s*\{([^}]*)\}\s*from\s*\"lucide-react\";\n", src, re.S)
     if m2:
@@ -121,10 +138,15 @@ def main() -> int:
                     help="designs.updated_at epoch ms of the source")
     ap.add_argument("--step", action="store_true",
                     help="screen is an /onboarding step (unwrap the chrome)")
+    ap.add_argument("--unwrap", metavar="COMPONENT",
+                    help="drop this chrome wrapper element (the route "
+                         "layout provides it), e.g. --unwrap AppChrome "
+                         "for product screens")
     args = ap.parse_args()
 
     out, problems = transform(args.input.read_text(), args.func, args.name,
-                              args.id, args.version, args.step)
+                              args.id, args.version, args.step,
+                              unwrap=args.unwrap)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(out)
     print(f"wrote {args.output} ({len(out)} chars)")
