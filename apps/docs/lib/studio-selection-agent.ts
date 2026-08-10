@@ -404,28 +404,51 @@ export function installStudioSelectionAgent(
 
   function resolveSelectionTarget(el: Element | null): Element | null {
     if (!el) return null;
-    // Boundary rule (STUDIO.md shared components, Stage 1): a click
-    // ANYWHERE inside a shared component selects the usage site — the
+    // Boundary rule (STUDIO.md shared components, Stage 1): a click on
+    // a shared component's OWN chrome selects the usage site — the
     // sealed-instance semantics of a Figma component instance. The
     // boundary node is the component's own root, stamped by the
     // kernels' boundary wrapper with data-gds-boundary=<Name> plus the
-    // usage tag's data-gds-source-id. Nested shared components: the
-    // OUTERMOST boundary wins (its usage lives in the SCREEN source;
-    // inner boundaries' usage sites live inside module source, which
-    // Stage 1 treats as sealed).
+    // usage tag's data-gds-source-id.
+    //
+    // Slot carve-out (Ali, 8 Aug: "locked out of editing anything"):
+    // children the SCREEN passes into a component's slot render inside
+    // the boundary's DOM subtree but still carry the screen's
+    // data-gds-source-id stamps — module internals never do (they stay
+    // unstamped until Stage 2's namespaced ids). So a stamped nearest
+    // ancestor inside the boundary that is not itself a boundary root
+    // means the click landed on screen-owned slot content: fall
+    // through to normal resolution so it selects and edits like any
+    // screen node. Unstamped clicks (the component's real chrome) seal
+    // to the nearest boundary whose ROOT carries a screen stamp — its
+    // usage tag lives in screen source — walking outward past
+    // module-internal (unstamped) boundaries, so nested shared
+    // components still seal to the screen-authored instance.
     {
-      let boundary: Element | null =
+      const boundary: Element | null =
         (el.closest && el.closest("[data-gds-boundary]")) || null;
       if (boundary) {
-        let outer: Element | null = boundary;
-        while (outer) {
-          boundary = outer;
-          outer =
-            (outer.parentElement &&
-              outer.parentElement.closest("[data-gds-boundary]")) ||
-            null;
+        const stamped: Element | null =
+          (el.closest && el.closest("[data-gds-source-id]")) || null;
+        const slotChild =
+          stamped !== null &&
+          stamped !== boundary &&
+          boundary.contains(stamped) &&
+          !stamped.hasAttribute("data-gds-boundary");
+        if (!slotChild) {
+          let sealed: Element = boundary;
+          let cur: Element | null = boundary;
+          while (cur) {
+            sealed = cur;
+            if (cur.hasAttribute("data-gds-source-id")) break;
+            cur =
+              (cur.parentElement &&
+                cur.parentElement.closest("[data-gds-boundary]")) ||
+              null;
+          }
+          return sealed;
         }
-        return boundary;
+        // Slot child: fall through to the default resolution below.
       }
     }
     // Default: walk up to the nearest DS component (data-gds-part)
