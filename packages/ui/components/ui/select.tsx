@@ -35,11 +35,11 @@ const selectTriggerVariants = cva(
   // placeholder as a span flagged with that attribute; the input-style
   // pseudo-element selector never matches, so ghost values rendered
   // through the placeholder were showing full-strength.
-  "flex w-full items-center justify-between rounded-md border border-input bg-background ring-offset-background data-[placeholder]:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+  "flex w-full items-center justify-between rounded-md border border-input bg-background dark:bg-input/30 data-[placeholder]:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
   {
     variants: {
       size: {
-        default: "h-10 px-3 py-2 text-sm",
+        default: "h-9 px-3 py-1 text-sm",
         sm: "h-8 px-2 py-1 text-sm",
         // Figma-density — tool panels (the Studio inspector, shader controls).
         xs: "h-7 px-2 py-0 text-xs",

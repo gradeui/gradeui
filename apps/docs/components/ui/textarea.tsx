@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  * px-3 / text-sm; `sm` and `xs` are for dense tool panels.
  */
 const textareaVariants = cva(
-  "flex w-full rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+  "flex w-full rounded-md border border-input bg-background dark:bg-input/30 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       size: {

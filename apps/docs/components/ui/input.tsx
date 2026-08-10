@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
  * rationale.
  */
 const inputVariants = cva(
-  "flex w-full rounded-md bg-transparent transition-colors file:border-0 file:bg-transparent file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+  "flex w-full rounded-md bg-transparent transition-colors file:border-0 file:bg-transparent file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       size: {
@@ -35,7 +35,7 @@ const inputVariants = cva(
       // plain text until focused (inspector readouts, the path bar). No
       // border, no shadow; the focus ring still confirms edit mode.
       variant: {
-        default: "border border-input",
+        default: "border border-input dark:bg-input/30",
         ghost: "border border-transparent bg-transparent shadow-none",
       },
     },
