@@ -404,20 +404,24 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         amount: 6636.8,
         account: accountLabel("gold"),
         vaults: [
-          { vault: "zurich", amount: 3318.4 },
-          { vault: "miami", amount: 1991.04 },
-          { vault: "saltlake", amount: 1327.36 },
+          { vault: "zurich", amount: 2891.44 },
+          { vault: "miami", amount: 2410.63 },
+          { vault: "saltlake", amount: 1334.73 },
         ],
       },
       silver: {
         label: "Silver",
         amount: 2984.15,
         account: accountLabel("silver"),
-        vaults: [
-          { vault: "zurich", amount: 1193.66 },
-          { vault: "miami", amount: 1044.45 },
-          { vault: "saltlake", amount: 746.04 },
-        ],
+        /* ONE VAULT (Ali, 11 Aug: "we wouldnt always have it in multiple
+           vaults, maybe silver could just have it in Salt Lake City").
+           It also fits the history: the 6 Aug sale of 510 g came out of
+           MIAMI, which closed that position, and the holding that remains
+           sits in Salt Lake City. So the breakdown reads as the result of
+           what the activity list shows rather than a tidy allocation.
+           Worth keeping as the single-entry case: it is what proves the
+           vault table renders one row, at 100%, with no divider under it. */
+        vaults: [{ vault: "saltlake", amount: 2984.15 }],
       },
       /* NO VAULTS ON CASH, and this is a decision rather than an
          oversight: the dollars sit in the Sutton Bank checking account,
@@ -428,7 +432,7 @@ export const PERSONAS: Record<string, PersonaRecord> = {
          number. vaultsFor("fiat") returns an empty array for exactly
          this reason, so a caller mapping all three assets needs no
          special case. */
-      fiat: { label: "USD", amount: 15210.4, account: accountLabel("fiat") },
+      fiat: { label: "USD", amount: 1842.6, account: accountLabel("fiat") },
     },
     /* Figures are consistent with Market's LBMA prices and its 0.9% fee,
        so a row's rate, quantity, fee and cash actually reconcile. The old

@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786471475200). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786472510107). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 940e4b447981
+// source-hash: c05b110907e4
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -179,17 +179,27 @@ function TotalBalance() {
 function BalanceCard({ asset }: { asset: AssetKey }) {
   const [amount] = Persona.useBalance(asset);
   /* fiat has no unit preference, so it borrows unit.gold and never reads
-     the value: its branch below shows routing and account numbers. The
-     annotation keeps the template literal a valid key. */
+     the value: its branch below shows the auto-invest setting. */
   const unitKey: "unit.gold" | "unit.silver" =
     asset === "fiat" ? "unit.gold" : `unit.${asset}`;
   const [unit] = Persona.usePreference(unitKey);
   const meta = Persona.DEFAULT.balances[asset];
-  /* Metals show the holding in the persona's preferred unit; the cash
-     account calls out its routing and account numbers. */
+  /* Metals show the holding in the persona's preferred unit.
+     THE CASH CARD SHOWS THE AUTO-INVEST SETTING (Ali, 11 Aug: "rather
+     than displaying the routing number and account, lets display what the
+     auto-invest setting is as this seems to be a big thing"). It is the
+     one line on this card a customer would act on: the routing and
+     account numbers are reference data, they belong on the USD wallet
+     screen where you go to set up a transfer, and they are still there.
+     Composed from the same AUTO_INVEST label map the control uses, so the
+     card and the toggle can never disagree about what "gold" is called. */
+  const [autoInvest] = Persona.usePreference("autoInvest");
+  const autoLabel = AUTO_INVEST.find((o) => o.value === autoInvest)?.label;
   const detail =
     asset === "fiat"
-      ? Accounts.identifiers("fiat")
+      ? autoInvest === "none"
+        ? "Auto-invest off"
+        : `Auto-invest to ${autoLabel}`
       : Market.fmtQty(Market.toQty(amount, asset, unit), unit);
   const target = CARD_TARGETS[asset];
   return (
@@ -198,7 +208,9 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
       data-grade-goto={target}
       aria-label={target ? `Open ${meta.label}` : undefined}
     >
-      <CardHeader className="pb-2 pl-6">
+      {/* pt-4 not the default pt-6 (Ali, 11 Aug): the title sits
+          closer to the card top so the figure below has the room. */}
+      <CardHeader className="pb-2 pl-6 pt-4">
         <Row justify="between" align="center">
           <Row gap="sm" align="center">
             <AssetMark asset={asset} />
@@ -215,8 +227,10 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
             >
               <span aria-hidden="true">
                 {/* Optical centring: a chevron's mass sits left of its
-                    box, so nudge it back at rest. */}
-                <ChevronRight className="size-4 translate-x-[2px]" />
+                    box, so nudge it back at rest. 1px, not 2 (Ali,
+                    11 Aug): 2px overshot and read as off-centre the
+                    other way. */}
+                <ChevronRight className="size-4 translate-x-[1px]" />
               </span>
             </Button>
           )}
@@ -290,7 +304,10 @@ export default function WalletsPage() {
       {/* Balance, with Auto-invest alongside it. pt-8 because this is
           the first band under the toolbar now that the actions have
           moved into the chrome. */}
-      <Section pad="sm" className="pt-8">
+      {/* pt-4, was pt-8 (Ali, 11 Aug: "quite large"). The actions are
+          in the toolbar now, so this band sits directly under it and
+          does not need a band-sized gap above it. */}
+      <Section pad="sm" className="pt-4">
         <Container maxW="xl">
           <Stack gap="lg">
             <Row justify="between" align="end" wrap gap="md">

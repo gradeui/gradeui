@@ -68,7 +68,12 @@ function GlintMark() {
 const NAV: NavItem[] = [
   { label: "Wallets", icon: GlintMark, target: "Dashboard — logged-in home" },
   { label: "Activity", icon: List, target: "Activity — history" },
-  { label: "Bank Accounts", icon: Landmark },
+  /* SINGULAR (Ali, 11 Aug). It is one screen showing the customer's TWO
+     accounts, their own linked personal bank account and the Glint account
+     at Sutton Bank, so "Bank Account" is the section and the screen lists
+     what is in it. No target yet: the screen is not built, and GotoBridge
+     treats a missing target as inert rather than dead-linking. */
+  { label: "Bank Account", icon: Landmark },
 ];
 
 function initials(name: string): string {

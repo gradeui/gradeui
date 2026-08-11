@@ -573,9 +573,19 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
       isSm && !active ? "font-normal" : "font-medium";
     // Inactive color at sm is muted-foreground to match its lighter
     // role; md keeps the foreground/80 default. Active is the same
-    // primary highlight in either size.
+    // highlight in either size.
+    //
+    // ACTIVE LABEL IS FOREGROUND, NOT PRIMARY (Ali, 11 Aug 2026: "the
+    // selected text should not be blue as its not readable"). It was
+    // text-primary on bg-primary/10, which is the action colour sitting on
+    // a 10% wash of itself: on a dark theme whose primary is a saturated
+    // mid-blue that is close to unreadable, and it fails contrast for the
+    // one row a user most needs to identify. The background tint now
+    // carries the state on its own, a little stronger to compensate, and
+    // the label takes full foreground. Note this also changes any ICON in
+    // the row, which inherits currentColor.
     const stateColor = active
-      ? "bg-primary/10 text-primary"
+      ? "bg-primary/15 text-foreground"
       : isSm
         ? "text-muted-foreground hover:bg-muted hover:text-foreground"
         : "text-foreground/80 hover:bg-muted hover:text-foreground";
