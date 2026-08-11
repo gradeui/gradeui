@@ -28,14 +28,34 @@ import { Textarea } from "./textarea";
  * default; height/padding driven by the group's own size classes).
  */
 
-function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
+/** The group's height scale, mirroring Input's own sizes. The size is
+ *  shared with the control inside (see InputGroupInput), so
+ *  `<InputGroup size="lg">` is all a call site needs. */
+type InputGroupSize = "lg" | "default" | "sm";
+
+const INPUT_GROUP_HEIGHT: Record<InputGroupSize, string> = {
+  lg: "h-11",
+  default: "h-9",
+  sm: "h-8",
+};
+
+const InputGroupSizeContext = React.createContext<InputGroupSize>("default");
+
+function InputGroup({
+  className,
+  size = "default",
+  ...props
+}: React.ComponentProps<"div"> & { size?: InputGroupSize }) {
   return (
+    <InputGroupSizeContext.Provider value={size}>
     <div
       data-slot="input-group"
+      data-size={size}
       role="group"
       className={cn(
         "group/input-group relative flex w-full items-center rounded-md border border-input shadow-xs transition-[color,box-shadow] outline-none dark:bg-input/30",
-        "h-9 min-w-0 has-[>textarea]:h-auto",
+        INPUT_GROUP_HEIGHT[size],
+        "min-w-0 has-[>textarea]:h-auto",
 
         // Variants based on alignment.
         "has-[>[data-align=inline-start]]:[&>input]:pl-2",
@@ -53,6 +73,7 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
       )}
       {...props}
     />
+    </InputGroupSizeContext.Provider>
   );
 }
 
@@ -149,11 +170,16 @@ function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
 
 function InputGroupInput({
   className,
+  size,
   ...props
 }: React.ComponentProps<typeof Input>) {
+  // Inherit the group's size so the control matches its shell; an
+  // explicit `size` on the control still wins.
+  const groupSize = React.useContext(InputGroupSizeContext);
   return (
     <Input
       data-slot="input-group-control"
+      size={size ?? groupSize}
       className={cn(
         "flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent",
         className

@@ -3024,6 +3024,7 @@ subelements:
 subcomponents: [InputGroupInput, InputGroupTextarea, InputGroupAddon, InputGroupButton, InputGroupText]
 props:
   - InputGroup: <div> — the bordered wrapper. role=group. Focus/error styles react to the inner control via :has().
+  - InputGroup: size?: "lg" | "default" | "sm" — group height (h-11 / h-9 / h-8). Shared with the control inside, so `<InputGroup size="lg">` sizes the whole field; an explicit size on InputGroupInput still wins.
   - InputGroupInput: <input> props — the text control (data-slot=input-group-control). Borderless, fills the group.
   - InputGroupTextarea: <textarea> props — multiline control; the group grows to fit.
   - InputGroupAddon: align?: "inline-start" | "inline-end" | "block-start" | "block-end" — a slot for icons / text / buttons. inline = beside the control; block = stacked above/below (toolbars, textareas).
@@ -3062,7 +3063,7 @@ element: input
 props:
   - type?: string (text | email | password | number | search | url | tel | date)
   - placeholder?: string — hint text shown while the input is empty. Model it explicitly (not just a native passthrough) so generated screens carry placeholders and the validator accepts them.
-  - size?: "default" | "sm" | "xs" — control density. `default` (h-9) for forms; `sm` (h-8) and `xs` (h-7) for dense tool panels like the inspector. NOTE: pre-unification scale — see Figma parity audit; due to migrate to the t-shirt scale (xs 24 | sm 28 | md 32 | lg 40, default→md).
+  - size?: "lg" | "default" | "sm" | "xs" | "2xs" — control density. `lg` (h-11, stays 16px text) for a prominent single-value field like an amount in a dialog; `default` (h-9) for forms; `sm` (h-8), `xs` (h-7) and `2xs` (h-6) for dense tool panels like the inspector. NOTE: pre-unification scale — see Figma parity audit; due to migrate to the t-shirt scale (xs 24 | sm 28 | md 32 | lg 40, default→md).
   - startSlot?: ReactNode — adornment rendered inside the leading edge (icon, prefix, currency symbol). Non-interactive by default so clicks focus the input.
   - endSlot?: ReactNode — adornment rendered inside the trailing edge (unit like "px", a clear button, a stepper). Same pointer rules as startSlot.
   - All native input HTML attrs (value, onChange, placeholder, disabled, required)

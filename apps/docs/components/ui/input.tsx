@@ -20,6 +20,11 @@ const inputVariants = cva(
   {
     variants: {
       size: {
+        // Prominent single-value fields — an amount in a dialog, a
+        // first field on a marketing form. Stays text-base at every
+        // width: it is the thing being read, and 16px keeps iOS from
+        // zooming on focus.
+        lg: "h-11 pl-4 pr-4 py-2 text-base file:text-sm",
         default: "h-9 pl-3 pr-3 py-1 text-base file:text-sm md:text-sm",
         sm: "h-8 pl-2 pr-2 py-1 text-sm file:text-xs",
         // Figma-density — tool panels (the Studio inspector). shadow-none
@@ -68,6 +73,7 @@ const SLOT_PADDING: Record<
   InputSize,
   { startPad: string; endPad: string; startInset: string; endInset: string }
 > = {
+  lg: { startPad: "pl-11", endPad: "pr-11", startInset: "pl-4", endInset: "pr-4" },
   default: { startPad: "pl-9", endPad: "pr-9", startInset: "pl-3", endInset: "pr-3" },
   sm: { startPad: "pl-7", endPad: "pr-6", startInset: "pl-2", endInset: "pr-2" },
   xs: { startPad: "pl-6", endPad: "pr-5", startInset: "pl-2", endInset: "pr-2" },
