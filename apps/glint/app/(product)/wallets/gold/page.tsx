@@ -14,12 +14,6 @@ import {
   CardTitle,
   CardContent,
   Button,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
@@ -29,6 +23,7 @@ import { Persona, type ActivityRow, fmtTxDate, txMethodLabel } from "@/lib/perso
 import { Market } from "@/lib/market";
 import { metalSolid } from "@/components/wordmark";
 import { MetalButton } from "@/components/metal-button";
+import { ActivityTable } from "@/components/activity-table";
 import { accountIdentifiers } from "@/lib/accounts";
 import { TradeFlow } from "@/components/trade-flow";
 
@@ -44,35 +39,6 @@ import { TradeFlow } from "@/components/trade-flow";
 const CHART_CONFIG = {
   price: { label: "USD", color: metalSolid("gold") },
 };
-
-function TxTable({ rows }: { rows: ActivityRow[] }) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-24">Date</TableHead>
-          <TableHead>To/From</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
-          <TableHead>Method</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((tx) => (
-          <TableRow key={`${fmtTxDate(tx.timestamp).day}-${tx.description}`}>
-            <TableCell className="text-muted-foreground">{fmtTxDate(tx.timestamp).day}</TableCell>
-            <TableCell>
-              <span className="font-medium text-foreground">{tx.description}</span>
-            </TableCell>
-            <TableCell className="text-right font-medium text-foreground">
-              {Persona.fmtSigned(tx.fiatAmount)}
-            </TableCell>
-            <TableCell className="text-muted-foreground">{txMethodLabel(tx)}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
 
 export default function GoldWalletPage() {
   const [amount] = Persona.useBalance("gold");
@@ -172,7 +138,10 @@ export default function GoldWalletPage() {
         <Container maxW="xl">
           <Stack gap="md">
             <h2 className="text-lg font-semibold text-foreground">Gold activity</h2>
-            <TxTable rows={goldActivity} />
+            {/* The shared activity table. The account column is dropped: this
+                screen IS the gold wallet, so repeating it every row is
+                noise. */}
+            <ActivityTable rows={goldActivity} hide={["account"]} />
           </Stack>
         </Container>
       </Section>

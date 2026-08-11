@@ -181,6 +181,45 @@ export const ALLOWED_COMPONENTS = [
   "SwatchGroup",
   "Progress",
   "Skeleton",
+
+  // ── Added 11 Aug 2026 ─────────────────────────────────────────────
+  // These are contracted, barrel-exported components that were simply
+  // never listed, so Studio could not emit them even though the design
+  // system ships them. Found while wiring an activity detail panel:
+  // Sheet is the obvious component for "open this record beside the
+  // list" and it was missing. Studio-only inspector chrome (FillPicker,
+  // GradientEditor, ShaderControls, ColorPicker, RivePlayer) stays out
+  // on purpose: those are Studio surfaces, not screen components.
+  "Sheet",
+  "SheetTrigger",
+  "SheetContent",
+  "SheetHeader",
+  "SheetTitle",
+  "SheetDescription",
+  "SheetFooter",
+  "SheetClose",
+  "Tooltip",
+  "TooltipTrigger",
+  "TooltipContent",
+  "TooltipProvider",
+  "Slider",
+  "Accordion",
+  "AccordionItem",
+  "AccordionTrigger",
+  "AccordionContent",
+  "ScrollArea",
+  "ScrollBar",
+  "Command",
+  "CommandInput",
+  "CommandList",
+  "CommandEmpty",
+  "CommandGroup",
+  "CommandItem",
+  "CommandSeparator",
+  "CommandShortcut",
+  "CommandDialog",
+  "Code",
+  "Banner",
   // Overlays
   "Dialog",
   "DialogTrigger",

@@ -539,7 +539,12 @@ function TableView<T>({
 
   return (
     <div
-      className="rounded-lg border border-border overflow-auto"
+      /* NO OUTER FRAME (Ali, 11 Aug). The Table primitive this wraps has
+         never drawn one, so the box was DataView's own invention and made
+         a table look like a card sitting inside the page rather than part
+         of it. The row hairlines already separate the data; the frame just
+         boxed it in. */
+      className="overflow-auto"
       data-gds-part="data-view-table"
       style={stickyHeader ? { maxHeight: "var(--gds-data-view-table-max-h, 28rem)" } : undefined}
     >
@@ -670,7 +675,7 @@ function TileView<T>({
 
   if (isEmpty) {
     return (
-      <div className="rounded-lg border border-border py-12 text-center text-sm text-muted-foreground">
+      <div className="py-12 text-center text-sm text-muted-foreground">
         {emptyMessage}
       </div>
     );

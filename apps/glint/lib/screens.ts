@@ -133,21 +133,21 @@ export const SCREENS: ScreenEntry[] = [
     name: "Dashboard — logged-in home",
     id: "dmskex612bcy1",
     promotedAt: 1786435743706,
-    sourceHash: "02330fd30a8d",
+    sourceHash: "168ee52d7502",
   },
   {
     slug: "/activity",
     name: "Activity — history",
     id: "dmsnba2xdvnc3",
     promotedAt: 1786371183861,
-    sourceHash: "3fa789864adc",
+    sourceHash: "5636bda68a1f",
   },
   {
     slug: "/wallets/gold",
     name: "Gold — wallet",
     id: "dmsnbpdvrz1qa",
     promotedAt: 1786435550819,
-    sourceHash: "98e2cdbcef46",
+    sourceHash: "d3956d3ed613",
   },
 ];
 

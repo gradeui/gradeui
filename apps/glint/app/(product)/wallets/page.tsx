@@ -15,18 +15,13 @@ import {
   CardTitle,
   CardContent,
   Button,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
 } from "@gradeui/ui";
 import { Plus, ChevronRight } from "lucide-react";
-import { Persona, type AssetKey, fmtTxDate, txMethodLabel } from "@/lib/persona";
+import { Persona, type AssetKey } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { accountIdentifiers, accountLabel } from "@/lib/accounts";
 import { MetalButton } from "@/components/metal-button";
+import { ActivityTable } from "@/components/activity-table";
 import { Wordmark, metalSolid } from "@/components/wordmark";
 import { TradeFlow } from "@/components/trade-flow";
 
@@ -200,32 +195,15 @@ export default function DashboardPage() {
                 <ChevronRight className="size-4" />
               </Button>
             </Row>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-24">Date</TableHead>
-                  <TableHead>To/From</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Method</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activity.map((tx) => (
-                  <TableRow key={`${fmtTxDate(tx.timestamp).day}-${tx.description}`}>
-                    <TableCell className="text-muted-foreground">{fmtTxDate(tx.timestamp).day}</TableCell>
-                    <TableCell>
-                      <span className="font-medium text-foreground">{tx.description}</span>
-                    </TableCell>
-                    <TableCell className="text-right font-medium text-foreground">
-                      {Persona.fmtSigned(tx.fiatAmount)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{accountLabel(tx.account)}</TableCell>
-                    <TableCell className="text-muted-foreground">{txMethodLabel(tx)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            {/* The shared activity table, trimmed to a recent list: no
+                filters (they live on /activity) and the narrower column
+                set a dashboard wants. Clicking a row opens the same
+                side sheet. */}
+            <ActivityTable
+              rows={activity}
+              limit={5}
+              hide={["type", "status"]}
+            />
           </Stack>
         </Container>
       </Section>
