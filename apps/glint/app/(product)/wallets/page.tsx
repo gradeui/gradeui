@@ -26,7 +26,7 @@ import { Plus, ChevronRight } from "lucide-react";
 import { Persona, type AssetKey } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { accountIdentifiers } from "@/lib/accounts";
-import { METALS } from "@/components/wordmark";
+import { MetalButton } from "@/components/metal-button";
 import { TradeFlow } from "@/components/trade-flow";
 
 // Mercury-pattern logged-in home for BUSINESS accounts. The chrome
@@ -51,22 +51,6 @@ const ASSET_ORDER: AssetKey[] = ["gold", "silver", "fiat"];
 /* Card chevron targets — assets gain one as their screens are built. */
 const CARD_TARGETS: Partial<Record<AssetKey, string>> = {
   gold: "Gold — wallet",
-};
-
-/* Self-contained metal treatments from the pinned ladders: gradient
-   surface, pale-metal text, soft metal border. Inline style because
-   the values are brand constants, deliberately outside the theme. */
-const METAL_BUTTON: Record<"gold" | "silver", React.CSSProperties> = {
-  gold: {
-    background: `linear-gradient(180deg, oklch(${METALS.gold[600]}) 0%, oklch(${METALS.gold[800]}) 100%)`,
-    color: `oklch(${METALS.gold[50]})`,
-    borderColor: `oklch(${METALS.gold[500]} / 0.45)`,
-  },
-  silver: {
-    background: `linear-gradient(180deg, oklch(${METALS.silver[500]}) 0%, oklch(${METALS.silver[700]}) 100%)`,
-    color: `oklch(${METALS.silver[50]})`,
-    borderColor: `oklch(${METALS.silver[400]} / 0.45)`,
-  },
 };
 
 /** The combined holdings figure, reactive across all three assets. */
@@ -140,24 +124,14 @@ export default function DashboardPage() {
               Deposit
             </Button>
             <TradeFlow metal="gold">
-              <Button
-                variant="secondary"
-                size="md"
-                className="rounded-full border"
-                style={METAL_BUTTON.gold}
-              >
+              <MetalButton metal="gold" variant="secondary" size="md">
                 Buy Gold
-              </Button>
+              </MetalButton>
             </TradeFlow>
             <TradeFlow metal="silver">
-              <Button
-                variant="secondary"
-                size="md"
-                className="rounded-full border"
-                style={METAL_BUTTON.silver}
-              >
+              <MetalButton metal="silver" variant="secondary" size="md">
                 Buy Silver
-              </Button>
+              </MetalButton>
             </TradeFlow>
           </Row>
         </Container>

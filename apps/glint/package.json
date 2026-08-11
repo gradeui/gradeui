@@ -25,6 +25,7 @@
     "postcss": "^8",
     "tailwindcss": "^4.1.0",
     "tailwindcss-animate": "^1.0.7",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }

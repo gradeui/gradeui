@@ -283,7 +283,12 @@ const SidebarFooter = React.forwardRef<HTMLDivElement, SidebarFooterProps>(
         data-collapsed={collapsed || undefined}
         className={cn(
           "shrink-0 border-t border-border",
-          collapsed ? "px-2 py-2" : "px-3 py-2",
+          // Same tuning seam as the header/content/section: an app can
+          // give the footer identity block more room without reaching
+          // past the component. Defaults are the previous values.
+          collapsed
+            ? "px-2 py-[var(--gds-sidebar-footer-py,0.5rem)]"
+            : "px-[var(--gds-sidebar-footer-px,0.75rem)] py-[var(--gds-sidebar-footer-py,0.5rem)]",
           className,
         )}
         {...props}
@@ -594,7 +599,19 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
     const body = (
       <>
         {icon && (
-          <span className="shrink-0 [&>svg]:h-4 [&>svg]:w-4" aria-hidden>
+          /* The glyph tracks the row size: a 16px icon in an md row
+             reads undersized against 14px text. sm rows keep 16px.
+             `:not([class*='size-'])` makes this a DEFAULT, not a pin —
+             pass any size-* on the icon itself and it wins. */
+          <span
+            className={cn(
+              "shrink-0",
+              isSm
+                ? "[&>svg:not([class*='size-'])]:size-4"
+                : "[&>svg:not([class*='size-'])]:size-5",
+            )}
+            aria-hidden
+          >
             {icon}
           </span>
         )}
@@ -851,7 +868,12 @@ const SidebarTreeItem = React.forwardRef<HTMLButtonElement, SidebarTreeItemProps
             )}
           </span>
           {icon && (
-            <span className="shrink-0 [&>svg]:h-4 [&>svg]:w-4" aria-hidden>
+            /* Tree rows sit at the md scale, so they match SidebarItem;
+               a size-* on the icon overrides this default. */
+            <span
+              className="shrink-0 [&>svg:not([class*='size-'])]:size-5"
+              aria-hidden
+            >
               {icon}
             </span>
           )}

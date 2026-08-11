@@ -27,7 +27,8 @@ import {
 import { AreaChart, Area, XAxis, YAxis } from "recharts";
 import { Persona, type ActivityRow } from "@/lib/persona";
 import { Market } from "@/lib/market";
-import { METALS } from "@/components/wordmark";
+import { metalSolid } from "@/components/wordmark";
+import { MetalButton } from "@/components/metal-button";
 import { accountIdentifiers } from "@/lib/accounts";
 import { TradeFlow } from "@/components/trade-flow";
 
@@ -40,16 +41,8 @@ import { TradeFlow } from "@/components/trade-flow";
 // shape with the other metal. The chrome (with the Back affordance in
 // the toolbar leading slot) comes from the (product) route layout.
 
-const GOLD = METALS.gold;
-
-const METAL_BUTTON: React.CSSProperties = {
-  background: `linear-gradient(180deg, oklch(${GOLD[600]}) 0%, oklch(${GOLD[800]}) 100%)`,
-  color: `oklch(${GOLD[50]})`,
-  borderColor: `oklch(${GOLD[500]} / 0.45)`,
-};
-
 const CHART_CONFIG = {
-  price: { label: "USD", color: `oklch(${GOLD[400]})` },
+  price: { label: "USD", color: metalSolid("gold") },
 };
 
 function TxTable({ rows }: { rows: ActivityRow[] }) {
@@ -158,13 +151,9 @@ export default function GoldWalletPage() {
                 </Stack>
                 <Row gap="sm">
                   <TradeFlow metal="gold">
-                    <Button
-                      size="md"
-                      className="rounded-full border"
-                      style={METAL_BUTTON}
-                    >
+                    <MetalButton metal="gold" size="md">
                       Buy Gold
-                    </Button>
+                    </MetalButton>
                   </TradeFlow>
                   <TradeFlow metal="gold" direction="sell">
                     <Button variant="ghost" size="md" className="rounded-full">

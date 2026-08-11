@@ -48,6 +48,73 @@ export const METALS = {
 
 type MetalStep = keyof typeof METALS.gold;
 
+/**
+ * The polished-metal button face, matching the iOS app's Buy Gold /
+ * Confirm buttons (Ali, 11 Aug 2026). Glint's designers specified "a
+ * 45 degree angle" without shipping the values, so this reconstructs
+ * it from the pinned ladders: a pale champagne corner sweeping to rich
+ * metal, four stops so the falloff reads like a polished surface
+ * rather than a flat ramp, with near-black label — the app puts dark
+ * type on the metal, not pale type on a dark fill.
+ *
+ * Single source of truth: every metal button (dashboard pills, wallet
+ * actions, the trade Confirm) styles itself from here, so the brand
+ * surface is changed in one place. Keep in sync with the Studio
+ * Wordmark shared component.
+ */
+export function metalSurface(metal: "gold" | "silver"): React.CSSProperties {
+  const m = METALS[metal];
+  return {
+    background: `linear-gradient(45deg, oklch(${m[100]}) 0%, oklch(${m[200]}) 30%, oklch(${m[300]}) 55%, oklch(${m[500]}) 100%)`,
+    color: `oklch(${m[950]})`,
+    borderColor: `oklch(${m[200]})`,
+  };
+}
+
+/**
+ * The single flat metal colour, for everything that is not a button
+ * face: chart strokes, dots, icons, a metal-tinted number. Step 400
+ * sits where each metal is most legible on the navy surfaces and
+ * lands on Glint's own flat metals — gold 400 next to --c-camel
+ * #d1b375, silver 400 next to --c-ceil #9aa2cb.
+ */
+export function metalSolid(metal: "gold" | "silver"): string {
+  return `oklch(${METALS[metal][400]})`;
+}
+
+export const METAL_SOLID = {
+  gold: metalSolid("gold"),
+  silver: metalSolid("silver"),
+} as const;
+
+/**
+ * The hover glint: a bright diagonal band that sweeps across the metal
+ * face, parked off the leading edge at rest. Returned as a background
+ * LAYER stacked over metalSurface's gradient, so the resting look is
+ * untouched and the sweep is a background-position transition — no
+ * pseudo-elements, so it works identically in Studio (where screens
+ * cannot add stylesheet rules) and in the app. MetalButton owns the
+ * hover state; call sites just use MetalButton.
+ */
+export function metalGlint(
+  metal: "gold" | "silver",
+  hovered: boolean,
+): React.CSSProperties {
+  const m = METALS[metal];
+  const base = metalSurface(metal);
+  const sheen = `linear-gradient(115deg, transparent 38%, oklch(${m[50]} / 0.75) 50%, transparent 62%)`;
+  return {
+    ...base,
+    background: `${sheen}, ${base.background}`,
+    backgroundSize: "260% 100%, 100% 100%",
+    backgroundPosition: hovered ? "100% 0, 0 0" : "-60% 0, 0 0",
+    backgroundRepeat: "no-repeat, no-repeat",
+    /* Sweep on the way in, snap back on the way out — a band sliding
+       backwards across the face reads as a glitch, not a glint. */
+    transition: hovered ? "background-position 700ms ease-out" : "none",
+  };
+}
+
 // The G glyph: the circular stroke + inner bar (paths 1 and 6 of the
 // full lockup, both within the 0..24 box).
 const G_RING = "M23.5886 12.9579H12.3089C12.2286 12.9579 12.1515 12.9898 12.0947 13.0466C12.0379 13.1034 12.006 13.1804 12.006 13.2607V15.453C12.006 15.5335 12.0379 15.6107 12.0946 15.6677C12.1514 15.7248 12.2284 15.7571 12.3089 15.7576H19.8551C19.11 17.3093 17.9209 18.6049 16.4385 19.4802C14.9561 20.3556 13.2472 20.7711 11.5284 20.6743C9.80955 20.5776 8.15814 19.9727 6.78345 18.9365C5.40877 17.9003 4.37269 16.4794 3.80652 14.8538C3.24036 13.2282 3.1696 11.4712 3.60321 9.80538C4.03682 8.13955 4.95529 6.63993 6.2422 5.49657C7.52911 4.35322 9.12654 3.61759 10.832 3.38293C12.5375 3.14827 14.2743 3.42513 15.8223 4.17844C15.8928 4.21358 15.9743 4.22001 16.0495 4.19636C16.1247 4.17272 16.1878 4.12085 16.2255 4.05166L17.4812 1.6904C17.5001 1.6546 17.5118 1.61541 17.5155 1.57508C17.5192 1.53475 17.5148 1.49408 17.5027 1.45544C17.4906 1.4168 17.4709 1.38094 17.4449 1.34994C17.4188 1.31894 17.3869 1.29342 17.3509 1.27485C15.6797 0.434106 13.8345 -0.00255657 11.9637 1.12599e-05C8.94152 0.0104511 6.03442 1.16024 3.82287 3.21981C1.61133 5.27939 0.258064 8.0972 0.0332741 11.1106C-0.191516 14.1241 0.728707 17.1115 2.61021 19.4763C4.49172 21.8411 7.19607 23.4093 10.1833 23.8679C10.7726 23.9566 11.3678 24.0007 11.9637 24C12.1522 24 12.3389 24 12.5255 23.9859H12.6065C15.4508 23.8328 18.1478 22.6732 20.2155 20.7145C22.2832 18.7558 23.5868 16.1256 23.8932 13.2942C23.8974 13.2518 23.8927 13.2089 23.8792 13.1684C23.8658 13.1279 23.844 13.0907 23.8153 13.0592C23.7866 13.0276 23.7516 13.0025 23.7125 12.9853C23.6734 12.9682 23.6312 12.9594 23.5886 12.9596V12.9579Z";
@@ -135,3 +202,4 @@ export function Wordmark({
 /** Metal ladders as a static for consumers that receive Wordmark via a
  *  barrel (mirrors the Studio statics pattern). */
 Wordmark.METALS = METALS;
+Wordmark.metalSurface = metalSurface;

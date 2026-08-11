@@ -1,7 +1,7 @@
 {
   "id": "glint",
   "name": "Glint",
-  "description": "Palette derived from glintpay.com's live CSS variables: indigo-navy neutral ladder (ink/mirage/burst, hue 272), electric action blue (#3d5cf5, hue 269 at 1.3x chroma), camel-to-champagne metal gold accent, cherry/malachite/usafa semantics, lilac highlight.",
+  "description": "Palette derived from glintpay.com's live CSS variables: indigo-navy neutral ladder (ink #0a0e1f / mirage #141b3d / burst #1f295c / astro #29367a, hue 272), electric action blue (--c-blue #3d5cf5, hue 269), cherry/malachite/usafa semantics, lilac highlight. Chroma re-anchored to those hexes on 11 Aug 2026 (Ali: the blue read dull next to the app): neutral 0.45 -> 0.85 so the navy surfaces match ink/mirage/burst/astro instead of sitting at half their chroma, primary 1.3 -> 1.35 so L 0.55 lands on #3d5cf5 exactly. Accent stays the metal gold (hue 87 at 0.78) here; the Studio copy of this theme has accent re-hued to the action blue. Density moved tight -> default (11 Aug). Card style flat -> elevated (11 Aug): flat paints the card with --muted, which the generator sets to the SAME value as --input and --border, so outlined inputs sitting on a card were invisible; elevated puts the card on --card, a step below the input chrome. Input chrome overridden to neutral 700 in dark mode (11 Aug): the generator maps card to n900 and muted/border/input all to n800, so an outlined field sitting on a card was one ramp step from its own background and read as no field at all.",
   "tagline": "Glint iOS",
   "hues": {
     "neutral": 272,
@@ -9,8 +9,8 @@
     "accent": 87
   },
   "chroma": {
-    "neutral": 0.45,
-    "primary": 1.3,
+    "neutral": 0.85,
+    "primary": 1.35,
     "accent": 0.78
   },
   "intensity": "default",
@@ -29,7 +29,7 @@
     "headingTracking": "-0.01em"
   },
   "spacing": {
-    "density": "tight"
+    "density": "default"
   },
   "radius": {
     "style": "soft"
@@ -41,6 +41,14 @@
   "components": {
     "buttonShape": "default",
     "inputStyle": "outlined",
-    "cardStyle": "flat"
+    "cardStyle": "elevated"
+  },
+  "tokenOverrides": {
+    "dark": {
+      "input": {
+        "source": "neutral",
+        "step": 700
+      }
+    }
   }
 }

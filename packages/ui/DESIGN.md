@@ -4962,7 +4962,7 @@ props:
   - SidebarSection: trailing?: ReactNode — **action(s) on the right edge of the header** — the canonical "+" / "..." slot (Notion's "+ Add page" next to Pages, Linear's "+" next to Favorites, Slack's "+" next to Channels). Pointer events isolated so a Button here doesn't toggle collapse.
   - SidebarSection: collapsible?: boolean — title acts as expand/collapse trigger with a **chevron indicator** (default true). Set `false` for a static, non-clickable header.
   - SidebarSection: defaultExpanded?: boolean — initial open state (default true)
-  - SidebarItem: icon?: ReactNode — leading icon
+  - SidebarItem: icon?: ReactNode — leading icon. Sized by the row: 20px at size md, 16px at size sm. That is a default, not a pin — put a size-* class on the icon itself (icon={<Home className="size-6" />}) to override it.
   - SidebarItem: badge?: ReactNode — trailing count / label (hidden when collapsed)
   - SidebarItem: active?: boolean — current route; adds aria-current="page"
   - SidebarItem: href?: string — renders as <a>; for routing use `asChild` with your link component

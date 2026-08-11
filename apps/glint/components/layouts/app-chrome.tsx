@@ -41,7 +41,7 @@ import {
   Avatar,
   AvatarFallback,
 } from "@gradeui/ui";
-import { Wallet, List, ArrowLeftRight, Landmark, Bell, EyeOff } from "lucide-react";
+import { List, Landmark, Bell, EyeOff } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { DEFAULT_PERSONA } from "@/lib/persona";
 
@@ -52,10 +52,17 @@ interface NavItem {
   target?: string;
 }
 
+/* Wallets wears the Glint G rather than a generic wallet glyph (Ali,
+   11 Aug). Rendered from Wordmark so the mark cannot drift; the same
+   artwork is also checked in as a standalone asset at
+   public/glint-mark.svg for anywhere that needs a plain file. */
+function GlintMark() {
+  return <Wordmark lockup="mark" />;
+}
+
 const NAV: NavItem[] = [
-  { label: "Wallets", icon: Wallet, target: "Dashboard — logged-in home" },
+  { label: "Wallets", icon: GlintMark, target: "Dashboard — logged-in home" },
   { label: "Activity", icon: List, target: "Activity — history" },
-  { label: "Payments", icon: ArrowLeftRight },
   { label: "Bank Accounts", icon: Landmark },
 ];
 
@@ -101,12 +108,26 @@ export function AppChrome({
         <Sidebar
           collapsed={collapsed}
           onCollapsedChange={setCollapsed}
+          /* No hover-out collapse arrow (Ali, 11 Aug): the rail still
+             collapses, but on the breakpoint, not a tiny target. */
+          collapsible={false}
           className="h-full"
+          /* Rail spacing, set through the component's own tuning vars
+             rather than padding overrides on each part. The header
+             height stays pinned to the Toolbar's 3rem so the two
+             bottom hairlines still run as one line. */
+          style={
+            {
+              "--gds-sidebar-header-height": "3rem",
+              "--gds-sidebar-section-px": "0.75rem",
+              "--gds-sidebar-section-gap": "0.375rem",
+              "--gds-sidebar-content-py": "1rem",
+              "--gds-sidebar-footer-px": "0.75rem",
+              "--gds-sidebar-footer-py": "1rem",
+            } as React.CSSProperties
+          }
         >
-          {/* Header height = Toolbar md height, so the hairlines align */}
-          <SidebarHeader
-            style={{ "--gds-sidebar-header-height": "3rem" } as React.CSSProperties}
-          >
+          <SidebarHeader>
             {collapsed ? (
               <Wordmark lockup="mark" className="h-5" />
             ) : (
@@ -123,7 +144,9 @@ export function AppChrome({
                 return (
                   <SidebarItem
                     key={item.label}
-                    icon={<Icon className="size-4" />}
+                    /* No size class: SidebarItem sizes the glyph to the
+                       row (20px at md). Pass size-* only to override. */
+                    icon={<Icon />}
                     active={isActive}
                     data-grade-goto={isActive ? undefined : item.target}
                   >

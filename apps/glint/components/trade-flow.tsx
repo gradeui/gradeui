@@ -87,21 +87,13 @@ import { CheckCircle2, ChevronRight, TrendingUp } from "lucide-react";
 import { Persona } from "@/lib/persona";
 import { Market, type MetalKey, type TradeDirection } from "@/lib/market";
 import { METALS } from "@/components/wordmark";
+import { MetalButton } from "@/components/metal-button";
 import { accountIdentifiers } from "@/lib/accounts";
 
 const METAL_LABEL: Record<MetalKey, string> = {
   gold: "Gold",
   silver: "Silver",
 };
-
-function metalButtonStyle(metal: MetalKey): React.CSSProperties {
-  const ladder = METALS[metal];
-  return {
-    background: `linear-gradient(180deg, oklch(${ladder[metal === "gold" ? 600 : 500]}) 0%, oklch(${ladder[metal === "gold" ? 800 : 700]}) 100%)`,
-    color: `oklch(${ladder[50]})`,
-    borderColor: `oklch(${ladder[metal === "gold" ? 500 : 400]} / 0.45)`,
-  };
-}
 
 /** Derived-field formatting: money to 2dp, metal to 4dp (the iOS app
  *  shows 4dp grams). Empty in, empty out, so clearing one field clears
@@ -437,14 +429,9 @@ export function TradeFlow({
               >
                 Back
               </Button>
-              <Button
-                size="lg"
-                className="rounded-full border"
-                style={metalButtonStyle(metal)}
-                onClick={confirm}
-              >
+              <MetalButton metal={metal} size="lg" onClick={confirm}>
                 {verb} {label}
-              </Button>
+              </MetalButton>
             </DialogFooter>
           </>
         )}
