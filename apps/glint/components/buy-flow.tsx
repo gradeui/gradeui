@@ -33,6 +33,15 @@
  * fee is Glint's, so it does not land in the customer's wallet. That
  * is why the new balance rises by slightly less than the amount spent.
  *
+ * THE RECEIPT IS A SNAPSHOT, not a recomputation (bug, 11 Aug): the
+ * done step used to derive its quantity from the live balances, and
+ * `valid` re-checks "amount <= fiat" — which is false once the order
+ * has already been paid for. Spending $10,000 of $15,210 left $5,210,
+ * the check failed, and the receipt read "You bought 0.00 g" even
+ * though the balances had moved correctly. An executed order is
+ * history: confirm() freezes it into `order` and the receipt renders
+ * only from that.
+ *
  * DONE: confirming MOVES THE PERSONA BALANCES through the reactive
  * setters, so the dashboard cards and the wallet screens update live.
  * Closing the dialog resets the flow.
@@ -102,6 +111,15 @@ export function BuyFlow({
   const [step, setStep] = React.useState<"form" | "review" | "done">("form");
   const [amountRaw, setAmountRaw] = React.useState("");
   const [qtyRaw, setQtyRaw] = React.useState("");
+  /** The executed order, frozen at confirm. The receipt reads ONLY
+   *  this — see the note at the top of this file. */
+  const [order, setOrder] = React.useState<{
+    qty: number;
+    cash: number;
+    fee: number;
+    nextMetal: number;
+    nextFiat: number;
+  } | null>(null);
   const [fiat, setFiat] = Persona.useBalance("fiat");
   const [metalBal, setMetalBal] = Persona.useBalance(metal);
   const [unit] = Persona.usePreference(
@@ -135,14 +153,18 @@ export function BuyFlow({
     setStep("form");
     setAmountRaw("");
     setQtyRaw("");
+    setOrder(null);
   };
 
   const confirm = () => {
     /* USD falls by the full amount; the wallet gains the metal bought
        (amount less the fee), both reactive so every subscribed balance
-       card follows immediately. */
-    setFiat(fiat - amount);
-    setMetalBal(metalBal + credited);
+       card follows immediately. Freeze the receipt BEFORE they move. */
+    const nextFiat = fiat - amount;
+    const nextMetal = metalBal + credited;
+    setOrder({ qty, cash: amount, fee, nextMetal, nextFiat });
+    setFiat(nextFiat);
+    setMetalBal(nextMetal);
     setStep("done");
   };
 
@@ -323,7 +345,7 @@ export function BuyFlow({
           </>
         )}
 
-        {step === "done" && (
+        {step === "done" && order && (
           <>
             <DialogHeader>
               <DialogTitle>
@@ -333,7 +355,8 @@ export function BuyFlow({
                 </Row>
               </DialogTitle>
               <DialogDescription>
-                You bought {Market.fmtQty(qty, unit)} of {label.toLowerCase()}.
+                You bought {Market.fmtQty(order.qty, unit)} of{" "}
+                {label.toLowerCase()} for {Persona.fmtMoney(order.cash)}.
               </DialogDescription>
             </DialogHeader>
             <Stack gap="sm">
@@ -342,8 +365,8 @@ export function BuyFlow({
                   New {label} balance
                 </span>
                 <span className="text-sm font-medium text-foreground">
-                  {Persona.fmtMoney(metalBal)} ·{" "}
-                  {Market.fmtQty(Market.toQty(metalBal, metal, unit), unit)}
+                  {Persona.fmtMoney(order.nextMetal)} ·{" "}
+                  {Market.fmtQty(Market.toQty(order.nextMetal, metal, unit), unit)}
                 </span>
               </Row>
               <Row justify="between">
@@ -351,7 +374,7 @@ export function BuyFlow({
                   New USD balance
                 </span>
                 <span className="text-sm font-medium text-foreground">
-                  {Persona.fmtMoney(fiat)}
+                  {Persona.fmtMoney(order.nextFiat)}
                 </span>
               </Row>
             </Stack>
