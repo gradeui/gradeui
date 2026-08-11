@@ -21,7 +21,6 @@ import {
   Stack,
   Grid,
   Row,
-  Badge,
 } from "@gradeui/ui";
 import { Upload, Camera, FileText } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
@@ -219,6 +218,11 @@ export default function OwnerIdentityPage() {
       <FieldSet>
         <FieldLegend>Verify your identity</FieldLegend>
         <Stack gap="md">
+          {/* Reassurance copy rides the header; no duration promise
+              (Ali, 10 Aug): we cannot say how long checks take. */}
+          <FieldDescription className="text-xs">
+            Both checks protect you against identity fraud.
+          </FieldDescription>
           <Row
             justify="between"
             align="center"
@@ -267,12 +271,6 @@ export default function OwnerIdentityPage() {
             </Button>
           </Row>
 
-          <Row gap="sm" align="center">
-            <Badge variant="secondary" rounded="full">Takes ~2 minutes</Badge>
-            <span className="text-sm text-muted-foreground">
-              Both checks protect you against identity fraud.
-            </span>
-          </Row>
         </Stack>
       </FieldSet>
 
@@ -282,6 +280,7 @@ export default function OwnerIdentityPage() {
         More than one owner?{" "}
         <Button
           variant="link"
+          size="sm"
           className="h-auto p-0"
           data-grade-goto="US Onboarding — 3b Owners & control"
         >
