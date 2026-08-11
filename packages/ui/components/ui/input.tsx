@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Eye as EyeIcon, EyeOff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -64,6 +65,24 @@ type InputProps = Omit<React.ComponentProps<"input">, "size"> & {
    *  ("px"), a clear button, a stepper. Same pointer rules as
    *  `startSlot`. */
   endSlot?: React.ReactNode;
+  /**
+   * Add the show/hide eye toggle to a `type="password"` field.
+   *
+   * Lives here rather than as a separate PasswordInput, or as an eye
+   * button hand-composed at each call site, because every password field
+   * in every product wants the same affordance and the same a11y
+   * labelling. One prop means a form gets it by typing one word.
+   *
+   * Ignored unless `type="password"`: on any other type there is nothing
+   * to reveal, and silently swapping a field's type would be worse than
+   * doing nothing. Revealing swaps the rendered type to "text", which is
+   * what every browser password manager expects.
+   *
+   * Composes with `endSlot`: the consumer's adornment renders first and
+   * the toggle sits outermost, so a field can carry both a unit and a
+   * reveal without the two fighting for the same corner.
+   */
+  revealable?: boolean;
 };
 
 // Reserved space + adornment inset per size, so the text never collides
@@ -81,11 +100,53 @@ const SLOT_PADDING: Record<
 };
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, size = "default", variant = "default", startSlot, endSlot, ...props }, ref) => {
+  (
+    {
+      className,
+      type,
+      size = "default",
+      variant = "default",
+      startSlot,
+      endSlot: endSlotProp,
+      revealable = false,
+      ...props
+    },
+    ref,
+  ) => {
+    const [revealed, setRevealed] = React.useState(false);
+    /* Only a password field has anything to reveal. Gating on the type
+       rather than on the prop alone means a stray `revealable` on a text
+       field renders nothing instead of a toggle that does nothing. */
+    const canReveal = revealable && type === "password";
+    const Eye = revealed ? EyeOff : EyeIcon;
+    const endSlot = canReveal ? (
+      <>
+        {endSlotProp}
+        {/* pointer-events-auto because the slot wrapper is
+            pointer-events-none by design (clicks pass through to focus
+            the field). type="button" so it cannot submit the form it
+            sits in, which is the classic bug with an in-field toggle. */}
+        <button
+          type="button"
+          onClick={() => setRevealed((v) => !v)}
+          className="pointer-events-auto -mr-1 inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          aria-label={revealed ? "Hide password" : "Show password"}
+          aria-pressed={revealed}
+        >
+          <Eye aria-hidden="true" />
+        </button>
+      </>
+    ) : (
+      endSlotProp
+    );
+    /* Revealing swaps the RENDERED type, which is what password managers
+       and screen readers key off; the caller's `type` prop is untouched,
+       so canReveal stays true while revealed. */
+    const renderedType = canReveal && revealed ? "text" : type;
     if (!startSlot && !endSlot) {
       return (
         <input
-          type={type}
+          type={renderedType}
           className={cn(inputVariants({ size, variant }), className)}
           ref={ref}
           {...props}
@@ -106,7 +167,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </span>
         ) : null}
         <input
-          type={type}
+          type={renderedType}
           ref={ref}
           className={cn(
             inputVariants({ size, variant }),

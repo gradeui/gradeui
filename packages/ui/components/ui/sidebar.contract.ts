@@ -40,6 +40,11 @@ export const SidebarContract = contract({
       design: "knob",
       description: "outer chrome treatment. `rail` (default) is the classic nav rail with a single right-border + tracked width via `--gds-sidebar-width`; drops cleanly into `<AppShellNav placement=\"side\">`. `panel` is a card-style floating sidebar with full border + rounded corners + parent-controlled width; use when the sidebar is one of several adjacent panes in a body row (e.g. Projects | Canvas | Settings). The compound children (Header/Content/Footer/Section/Item) are identical in both treatments.",
   },
+  "bordered": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "draw the OUTER edge: the right-hand rule in `rail`, the full outline in `panel` (default true). Set false where the rail's own `bg-card` already separates it from the content beside it and the rule reads as an artefact, which is typical on dark high-contrast themes. A borderless rail keeps its width transition and a borderless panel keeps its rounding and clipping. Controls the outer edge ONLY: the rules under SidebarHeader and above SidebarFooter are internal structure and stay.",
+  },
   "title": {
       schema: z.unknown().optional(),
       design: "plumbing",

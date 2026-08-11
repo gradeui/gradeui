@@ -2367,6 +2367,8 @@ props:
   - Dialog: open?, onOpenChange? — Radix controlled/uncontrolled pattern
   - DialogTrigger: asChild? (wrap a Button)
   - DialogContent: surface? (solid | translucent | glass | glass-strong) — what the modal panel is *made of*. Defaults to `solid` (opaque `bg-background`). `glass` lets the page show through softly — pairs with rich backdrops or AI-suggestion modals.
+  - DialogContent: bordered? (boolean, default true) — draw the hairline outline around the panel. Set false on dark, high-contrast surfaces where the shadow and the panel's own background already separate it from the page.
+  - DialogContent: showClose? (boolean, default true) — render the built-in close button. Set false when the dialog owns its own dismissal. Do NOT also put a Cancel in the footer while this is on: the X is the dismissal.
   - DialogContent: accepts native div HTML attrs
   - DialogFooter: used for action rows
 when_to_use: Modal interruptions — confirmations, focused forms, detail views, AI suggestion sheets. Dialog is the right primitive for Apple HIG / React Native "Alert" (modal) semantics. For non-blocking inline messaging use Callout; for transient notifications use Toaster (Sonner). Always include DialogTitle (a11y requirement).
@@ -3067,6 +3069,7 @@ props:
   - size?: "lg" | "default" | "sm" | "xs" | "2xs" — control density. `lg` (h-11, stays 16px text) for a prominent single-value field like an amount in a dialog; `default` (h-9) for forms; `sm` (h-8), `xs` (h-7) and `2xs` (h-6) for dense tool panels like the inspector. NOTE: pre-unification scale — see Figma parity audit; due to migrate to the t-shirt scale (xs 24 | sm 28 | md 32 | lg 40, default→md).
   - startSlot?: ReactNode — adornment rendered inside the leading edge (icon, prefix, currency symbol). Non-interactive by default so clicks focus the input.
   - endSlot?: ReactNode — adornment rendered inside the trailing edge (unit like "px", a clear button, a stepper). Same pointer rules as startSlot.
+  - revealable?: boolean — adds the show/hide eye toggle to a `type="password"` field, with the aria-label and aria-pressed wiring done. Ignored on any other type. THIS is the password field: do not hand-compose an eye button into endSlot, and do not reach for a separate PasswordInput, there isn't one. Composes with endSlot (the consumer's adornment renders first, the toggle sits outermost).
   - All native input HTML attrs (value, onChange, placeholder, disabled, required)
 when_to_use: Any single-line text entry. Always pair with a Label for accessibility. Use startSlot/endSlot for icons, prefixes and units instead of hand-positioning absolute children; use size="sm"/"xs" in dense tool panels.
 composes_with: [Label, Form, Card (in CardContent), Button (form submit)]
@@ -4954,6 +4957,7 @@ props:
   - Sidebar: onCollapsedChange?: (next: boolean) => void
   - Sidebar: collapsible?: boolean — show the affordance for the user to collapse (default true)
   - Sidebar: variant?: 'rail' | 'panel' — outer chrome treatment. `rail` (default) is the classic nav rail with a single right-border + tracked width via `--gds-sidebar-width`; drops cleanly into `<AppShellNav placement="side">`. `panel` is a card-style floating sidebar with full border + rounded corners + parent-controlled width; use when the sidebar is one of several adjacent panes in a body row (e.g. Projects | Canvas | Settings). The compound children (Header/Content/Footer/Section/Item) are identical in both treatments.
+  - Sidebar: bordered?: boolean — draw the OUTER edge: the right-hand rule in `rail`, the full outline in `panel` (default true). Set false where the rail's own `bg-card` already separates it from the content beside it and the rule reads as an artefact, which is typical on dark high-contrast themes. A borderless rail keeps its width transition and a borderless panel keeps its rounding and clipping. Controls the outer edge ONLY: the rules under SidebarHeader and above SidebarFooter are internal structure and stay.
   - SidebarHeader: any children — brand / logo / org switcher; hides nothing when collapsed (centred)
   - SidebarContent: any children — scrollable body
   - SidebarFooter: any children — user block, settings link, pinned chrome

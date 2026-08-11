@@ -113,6 +113,18 @@ export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
    * works in both treatments.
    */
   variant?: "rail" | "panel";
+  /**
+   * Draw the sidebar's OUTER edge: the right-hand rule in `"rail"`, the
+   * full outline in `"panel"`. Default true, which is the long-standing
+   * look. Set false where the rail's own `bg-card` already separates it
+   * from the content beside it and the rule reads as an artefact, which
+   * is typical on dark, high-contrast themes.
+   *
+   * This controls the outer edge ONLY. The rules under `SidebarHeader`
+   * and above `SidebarFooter` are internal structure and stay put; they
+   * are not part of this switch.
+   */
+  bordered?: boolean;
 }
 
 interface SidebarRootComponent
@@ -135,6 +147,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
       onCollapsedChange,
       collapsible = true,
       variant = "rail",
+      bordered = true,
       className,
       style,
       children,
@@ -164,12 +177,17 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
             className={cn(
               "relative flex h-full flex-col bg-card text-card-foreground",
               // Chrome is the only thing the variant changes. Rail
-              // hugs an adjacent surface with a single right border
-              // and a tracked width; panel floats as its own card
-              // and sizes from the parent flex/grid track.
+              // hugs an adjacent surface with a tracked width; panel
+              // floats as its own card and sizes from the parent
+              // flex/grid track. The outer edge each one draws is the
+              // `bordered` switch below, so a borderless rail keeps its
+              // width transition and a borderless panel keeps its
+              // rounding and clipping.
               isPanel
-                ? "w-full border border-border rounded-lg overflow-hidden"
-                : "border-r border-border transition-[width] duration-200 ease-out",
+                ? "w-full rounded-lg overflow-hidden"
+                : "transition-[width] duration-200 ease-out",
+              bordered &&
+                (isPanel ? "border border-border" : "border-r border-border"),
               className,
             )}
             style={

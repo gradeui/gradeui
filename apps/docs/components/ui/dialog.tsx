@@ -22,7 +22,12 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/90 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      // SCRIM (Ali, 11 Aug): lifted from /90 to /80. At /90 the page
+      // behind was all but gone, which read as a page transition rather
+      // than a panel over the page. /80 still carries the focus but
+      // leaves the backdrop legible. Dial this, not a per-dialog
+      // className: the scrim is one decision for the whole system.
+      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -60,6 +65,11 @@ export interface DialogContentProps
   /** Render the built-in close button. Set false when the dialog owns
    *  its own dismissal (or deliberately has none). */
   showClose?: boolean
+  /** Draw the hairline outline around the panel. Default true, which is
+   *  the long-standing look. Set false on dark, high-contrast surfaces
+   *  where the shadow and the panel's own background already separate it
+   *  from the page and the outline reads as an artefact. */
+  bordered?: boolean
 }
 
 const DialogContent = React.forwardRef<
@@ -73,6 +83,7 @@ const DialogContent = React.forwardRef<
       surface = "solid",
       layout = "sheet",
       showClose = true,
+      bordered = true,
       ...props
     },
     ref
@@ -91,9 +102,10 @@ const DialogContent = React.forwardRef<
         data-surface={surface}
         data-layout={layout}
         className={cn(
-          "fixed inset-0 z-50 grid content-start gap-4 overflow-y-auto border p-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-lg duration-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[85dvh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:p-8 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
+          "fixed inset-0 z-50 grid content-start gap-4 overflow-y-auto p-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-lg duration-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[85dvh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:p-8 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
           layout === "center" &&
             "inset-auto left-1/2 top-1/2 h-auto max-h-[85dvh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl",
+          bordered && "border",
           surfaceBg(surface, "bg-background"),
           SURFACE_CLASS[surface],
           className

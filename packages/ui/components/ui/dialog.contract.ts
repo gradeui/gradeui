@@ -14,7 +14,7 @@ export const DialogContract = contract({
   aliases: ["modal","popup","overlay","alert","system alert","alert dialog","modal dialog","confirm dialog","react native modal","rn alert","glass modal","frosted modal","ai suggestion modal"],
   subcomponents: ["DialogTrigger","DialogContent","DialogHeader","DialogTitle","DialogDescription","DialogFooter","DialogClose"],
   composesWith: ["Button (as DialogTrigger asChild","and inside DialogFooter)","Input/Textarea/Select inside DialogContent","Code (for changelog / diff modals)","MediaSurface (for image / preview modals)"],
-  styleDefaults: {"DialogOverlay":"fixed inset-0 z-50 bg-black/90 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0","DialogContent":"fixed inset-0 z-50 grid content-start gap-4 overflow-y-auto border p-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-lg duration-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[85dvh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:p-8 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95","DialogHeader":"flex flex-col space-y-1.5 text-center sm:text-left","DialogFooter":"flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2","DialogTitle":"text-lg font-semibold leading-none tracking-tight","DialogDescription":"text-sm text-muted-foreground"},
+  styleDefaults: {"DialogContent":"fixed inset-0 z-50 grid content-start gap-4 overflow-y-auto p-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-lg duration-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[85dvh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:p-8 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95","DialogHeader":"flex flex-col space-y-1.5 text-center sm:text-left","DialogFooter":"flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2","DialogTitle":"text-lg font-semibold leading-none tracking-tight","DialogDescription":"text-sm text-muted-foreground"},
   props: {
   "open": {
       schema: z.unknown().optional(),
@@ -33,6 +33,16 @@ export const DialogContract = contract({
       schema: z.enum(["solid", "translucent", "glass", "glass-strong"]).optional(),
       design: "knob",
       description: "what the modal panel is *made of*. Defaults to `solid` (opaque `bg-background`). `glass` lets the page show through softly — pairs with rich backdrops or AI-suggestion modals.",
+  },
+  "bordered": {
+      schema: z.enum(["boolean, default true"]).optional(),
+      design: "knob",
+      description: "draw the hairline outline around the panel. Set false on dark, high-contrast surfaces where the shadow and the panel's own background already separate it from the page.",
+  },
+  "showClose": {
+      schema: z.enum(["boolean, default true"]).optional(),
+      design: "knob",
+      description: "render the built-in close button. Set false when the dialog owns its own dismissal. Do NOT also put a Cancel in the footer while this is on: the X is the dismissal.",
   },
   },
 });

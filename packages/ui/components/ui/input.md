@@ -8,6 +8,7 @@ props:
   - size?: "lg" | "default" | "sm" | "xs" | "2xs" — control density. `lg` (h-11, stays 16px text) for a prominent single-value field like an amount in a dialog; `default` (h-9) for forms; `sm` (h-8), `xs` (h-7) and `2xs` (h-6) for dense tool panels like the inspector. NOTE: pre-unification scale — see Figma parity audit; due to migrate to the t-shirt scale (xs 24 | sm 28 | md 32 | lg 40, default→md).
   - startSlot?: ReactNode — adornment rendered inside the leading edge (icon, prefix, currency symbol). Non-interactive by default so clicks focus the input.
   - endSlot?: ReactNode — adornment rendered inside the trailing edge (unit like "px", a clear button, a stepper). Same pointer rules as startSlot.
+  - revealable?: boolean — adds the show/hide eye toggle to a `type="password"` field, with the aria-label and aria-pressed wiring done. Ignored on any other type. THIS is the password field: do not hand-compose an eye button into endSlot, and do not reach for a separate PasswordInput, there isn't one. Composes with endSlot (the consumer's adornment renders first, the toggle sits outermost).
   - All native input HTML attrs (value, onChange, placeholder, disabled, required)
 when_to_use: Any single-line text entry. Always pair with a Label for accessibility. Use startSlot/endSlot for icons, prefixes and units instead of hand-positioning absolute children; use size="sm"/"xs" in dense tool panels.
 composes_with: [Label, Form, Card (in CardContent), Button (form submit)]

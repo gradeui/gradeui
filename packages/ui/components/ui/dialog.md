@@ -6,6 +6,8 @@ props:
   - Dialog: open?, onOpenChange? — Radix controlled/uncontrolled pattern
   - DialogTrigger: asChild? (wrap a Button)
   - DialogContent: surface? (solid | translucent | glass | glass-strong) — what the modal panel is *made of*. Defaults to `solid` (opaque `bg-background`). `glass` lets the page show through softly — pairs with rich backdrops or AI-suggestion modals.
+  - DialogContent: bordered? (boolean, default true) — draw the hairline outline around the panel. Set false on dark, high-contrast surfaces where the shadow and the panel's own background already separate it from the page.
+  - DialogContent: showClose? (boolean, default true) — render the built-in close button. Set false when the dialog owns its own dismissal. Do NOT also put a Cancel in the footer while this is on: the X is the dismissal.
   - DialogContent: accepts native div HTML attrs
   - DialogFooter: used for action rows
 when_to_use: Modal interruptions — confirmations, focused forms, detail views, AI suggestion sheets. Dialog is the right primitive for Apple HIG / React Native "Alert" (modal) semantics. For non-blocking inline messaging use Callout; for transient notifications use Toaster (Sonner). Always include DialogTitle (a11y requirement).

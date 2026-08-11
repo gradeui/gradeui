@@ -1189,6 +1189,38 @@
     @apply border-border;
   }
 
+  /* BROWSER AUTOFILL (Ali, 11 Aug 2026: "looks horrid").
+     Chrome paints an autofilled field with its own pale blue
+     (rgb(232,240,254)) and its own near-black text, through the UA
+     stylesheet's :-webkit-autofill rule. On a dark theme that lands as a
+     lavender block with dark text in the middle of a dark form, and it
+     hits exactly the fields a browser knows how to fill (password,
+     phone, name) while leaving selects and checkboxes alone, so a form
+     ends up half one palette and half the other.
+
+     `background-color` cannot override it: the UA rule wins. The fix is
+     -webkit-background-clip: text, which clips that background to the
+     text glyphs, so the block fill disappears and the element's own
+     background shows through. That matters here because Grade inputs are
+     `bg-transparent` and sit on whatever surface hosts them, a card or
+     the page: painting an opaque colour over the autofill (the usual
+     `box-shadow: 0 0 0 1000px … inset` trick) would be wrong the moment
+     the field is on a card.
+
+     -webkit-text-fill-color is the other half: the UA sets it, so the
+     text stays dark unless it is reset to the theme's foreground. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: oklch(var(--foreground));
+    caret-color: oklch(var(--foreground));
+  }
+
   /* Smooth theme transitions */
   html {
     transition-property: background-color, border-color;

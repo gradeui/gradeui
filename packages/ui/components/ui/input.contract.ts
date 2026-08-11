@@ -14,7 +14,8 @@ export const InputContract = contract({
   aliases: ["text field","textbox","textfield","form field","text input","secure field","search field","url field","number field","textinput","text input field","react native textinput","unit input","input with icon"],
   element: "input",
   composesWith: ["Label","Form","Card (in CardContent)","Button (form submit)"],
-  styleDefaults: {"Input":"pointer-events-none absolute inset-y-0 left-0 flex items-center text-muted-foreground [&_svg]:size-3.5"},
+  styleDefaults: {"Input":"flex w-full rounded-md bg-transparent transition-colors file:border-0 file:bg-transparent file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"},
+  variantDefaults: {"size":"default","variant":"default"},
   props: {
   "type": {
       schema: z.string().optional(),
@@ -39,6 +40,11 @@ export const InputContract = contract({
       schema: z.unknown().optional(),
       design: "plumbing",
       description: "adornment rendered inside the trailing edge (unit like \"px\", a clear button, a stepper). Same pointer rules as startSlot.",
+  },
+  "revealable": {
+      schema: z.boolean().optional(),
+      design: "knob",
+      description: "adds the show/hide eye toggle to a `type=\"password\"` field, with the aria-label and aria-pressed wiring done. Ignored on any other type. THIS is the password field: do not hand-compose an eye button into endSlot, and do not reach for a separate PasswordInput, there isn't one. Composes with endSlot (the consumer's adornment renders first, the toggle sits outermost).",
   },
   },
 });
