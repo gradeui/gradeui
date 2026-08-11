@@ -97,6 +97,10 @@ function DirectInvest() {
           <ToggleGroupItem
             key={o.value}
             value={o.value}
+            /* Equal width so the control does not jitter as the label
+               changes: "Off" is half the width of "Silver", and a
+               segmented control whose segments resize reads as broken. */
+            className="min-w-16"
             /* The selected metal tints its LABEL with the flat brand
                colour rather than wearing the polished gradient face.
                The 45deg sweep is built for a 100px button; compressed
