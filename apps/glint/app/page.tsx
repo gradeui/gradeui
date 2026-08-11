@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "US Demo Landing"
-// (design dmskhheytm163, version 1786474270071). Registry: lib/screens.ts;
+// (design dmskhheytm163, version 1786475487279). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 6c72dcbc8d80
+// source-hash: e09e422c7b07
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -12,6 +12,7 @@ import {
   Section,
   Container,
   Stack,
+  Grid,
   Row,
   Card,
   CardHeader,
@@ -26,7 +27,7 @@ import { Wordmark } from "@/components/wordmark";
 import { FlowStore } from "@/lib/flow-store";
 
 // Glint US prototype demo landing, the jump-off hub for walking the
-// prototype. TWO cards, one per half of the product: the CCO onboarding
+// prototype. TWO cards SIDE BY SIDE, one per half of the product: the CCO onboarding
 // flow (section:OnboardingCCO) and the logged-in account. Each is a
 // whole-card goto to its entry screen plus quick-jump pills per screen.
 // The logged-in card came out on 8 Aug because that area was still being
@@ -69,10 +70,10 @@ const PRODUCT_JUMPS = [
 
 export default function DemoLandingPage() {
   return (
-    <Section pad="xl" className="min-h-screen">
-      <Container maxW="md">
-        <Stack gap="xl">
-          <Stack gap="md" align="center" className="pt-10 text-center">
+    <Section pad="lg" className="min-h-screen">
+      <Container maxW="lg">
+        <Stack gap="lg">
+          <Stack gap="md" align="center" className="pt-4 text-center">
             <Wordmark cut="metal" className="h-8" />
             <Stack gap="xs" align="center">
               <h1 className="text-3xl font-medium text-foreground">US Business Accounts Demo</h1>
@@ -80,6 +81,14 @@ export default function DemoLandingPage() {
             </Stack>
           </Stack>
 
+          {/* SIDE BY SIDE (Ali, 11 Aug: "I dont see the extra box on the
+              demo homepage"). It was there, one card below the other, and
+              the hero plus the first card filled the viewport, so the
+              second half of the product was a scroll away on the one
+              screen everybody opens first. Two columns from md, stacked
+              below it, and the hero gives back the padding it was
+              hoarding. */}
+          <Grid cols="2" gap="lg" className="items-start">
           <Card
             data-grade-goto="US Onboarding — 0 Before you apply"
             className="cursor-pointer transition-colors hover:border-primary/40"
@@ -186,6 +195,7 @@ export default function DemoLandingPage() {
               </Stack>
             </CardContent>
           </Card>
+          </Grid>
         </Stack>
       </Container>
     </Section>
