@@ -28,16 +28,19 @@ const badgeVariants = cva(
           "border-transparent bg-info text-white hover:bg-info/90",
         // Semantic soft variants — deep on-surface text over a tinted surface.
         // -soft / -deep re-voice per light/dark, so no dark: overrides needed.
-        "success-soft":
-          "border-success/30 bg-success-soft text-success-deep",
-        "warning-soft":
-          "border-warning/30 bg-warning-soft text-warning-deep",
+        // SOFT = tinted fill, NO ring (11 Aug). These carried a
+        // 30%-alpha status hairline, which on a dark surface reads as a
+        // hard bright outline around a chip whose fill is barely
+        // distinguishable from the card behind it — the tint says the
+        // status, the ring only adds noise. Light mode loses nothing:
+        // the fill was always doing the work.
+        "success-soft": "border-transparent bg-success-soft text-success-deep",
+        "warning-soft": "border-transparent bg-warning-soft text-warning-deep",
         "destructive-soft":
-          "border-destructive/30 bg-destructive-soft text-destructive-deep",
-        "info-soft":
-          "border-info/30 bg-info-soft text-info-deep",
+          "border-transparent bg-destructive-soft text-destructive-deep",
+        "info-soft": "border-transparent bg-info-soft text-info-deep",
         "highlight-soft":
-          "border-highlight/30 bg-highlight-soft text-highlight-deep",
+          "border-transparent bg-highlight-soft text-highlight-deep",
         // Outline variants - border + deep text, no fill
         "success-outline":
           "border-success/50 bg-transparent text-success-deep",

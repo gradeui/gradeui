@@ -131,9 +131,12 @@ export default function ReviewSubmitPage() {
     .filter(Boolean)
     .join(", ");
   const industry = INDUSTRY_LABELS[g("industry", C.industry)] ?? C.industry;
-  const contact = [g("bizEmail", C.email), g("bizPhone", C.phone)]
-    .filter(Boolean)
-    .join(" · ");
+  /* Email and phone are separate rows (Ali, 11 Aug): a recap is a list
+     of fields, and joining two of them into one line makes the pair
+     unreadable and unfixable — you cannot put an Edit next to half a
+     row. Address stays joined because an address IS one field. */
+  const email = g("bizEmail", C.email);
+  const phone = g("bizPhone", C.phone);
 
   const ownerName =
     [g("o1First", A.first), g("o1Last", A.last)].filter(Boolean).join(" ");
@@ -184,7 +187,8 @@ export default function ReviewSubmitPage() {
           <PropertyList.Row label="EIN">{tin}</PropertyList.Row>
           <PropertyList.Row label="Address">{address}</PropertyList.Row>
           <PropertyList.Row label="Industry">{industry}</PropertyList.Row>
-          <PropertyList.Row label="Contact">{contact}</PropertyList.Row>
+          <PropertyList.Row label="Email">{email}</PropertyList.Row>
+          <PropertyList.Row label="Phone">{phone}</PropertyList.Row>
         </PropertyList>
       </SectionCard>
 

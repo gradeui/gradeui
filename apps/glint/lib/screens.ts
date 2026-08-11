@@ -119,7 +119,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskh12cv6zuz",
     step: 8,
     promotedAt: 1786359134537,
-    sourceHash: "e79d5d976d39",
+    sourceHash: "68e111cc049c",
   },
   {
     slug: "/status",
@@ -133,7 +133,7 @@ export const SCREENS: ScreenEntry[] = [
     name: "Dashboard — logged-in home",
     id: "dmskex612bcy1",
     promotedAt: 1786435743706,
-    sourceHash: "bec335b7a7fe",
+    sourceHash: "f81a4f047342",
   },
   {
     slug: "/activity",

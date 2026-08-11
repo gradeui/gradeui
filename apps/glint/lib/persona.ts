@@ -118,10 +118,10 @@ export interface PersonaRecord {
 export const PERSONAS: Record<string, PersonaRecord> = {
   ridgeline: {
     id: "ridgeline",
-    owner: "Ali",
+    owner: "Wade",
     business: "Ridgeline Construction",
     businessMeta: "Business account",
-    account: "AD",
+    account: "WJ",
     /* The applying business. The invented values are UNISSUABLE on
        purpose, the same trick as the 00-prefixed routing numbers: an
        EIN prefix of 00 has never been issued by the IRS, SSN area 000
@@ -151,10 +151,10 @@ export const PERSONAS: Record<string, PersonaRecord> = {
       revenue: "1m-10m",
     },
     applicant: {
-      first: "Ali",
-      last: "Driver",
+      first: "Wade",
+      last: "Jones",
       middle: "",
-      email: "ali@ridgelineconstruction.com",
+      email: "wade@ridgelineconstruction.com",
       mobile: "(303) 555-0166",
       role: "owner",
       title: "Managing Member",
