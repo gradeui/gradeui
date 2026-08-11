@@ -131,7 +131,11 @@ export function AppChrome({
             {collapsed ? (
               <Wordmark lockup="mark" className="h-5" />
             ) : (
-              <div className="px-1">
+              /* The logotype's G and the rail's G share a left edge:
+                 SidebarHeader's own 12px + this 8px lands the wordmark
+                 exactly where a nav row's icon starts (section inset +
+                 the item's 8px). Both render at 20px tall. */
+              <div className="px-2">
                 <Wordmark className="h-5" />
               </div>
             )}
