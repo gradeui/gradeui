@@ -49,6 +49,7 @@ const ASSET_ORDER: AssetKey[] = ["gold", "silver", "fiat"];
 /* Card chevron targets — assets gain one as their screens are built. */
 const CARD_TARGETS: Partial<Record<AssetKey, string>> = {
   gold: "Gold — wallet",
+  silver: "Silver — wallet",
 };
 
 /** The Glint G in front of a card title, in the wallet's own colour:

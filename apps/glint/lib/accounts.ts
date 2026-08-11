@@ -9,10 +9,9 @@
  * or logo changes in exactly one spot.
  *
  * ROUTING NUMBERS ARE PLACEHOLDERS. Every value below starts "00",
- * a prefix the ABA never assigns to a real institution, so these
- * cannot collide with a live bank while the real ones are confirmed.
- * They are deliberately obvious rather than realistic: a plausible
- * nine digits could match somebody's actual routing number, which is
+ * The USD account carries a MINTED routing number: checksum-valid
+ * and correctly prefixed, but not the sponsor bank's real one. See
+ * the note on SUTTON below.
  * not a risk worth taking in a client demo. Replace `routingNumber`
  * on each record with the real value and delete this paragraph.
  *
@@ -51,9 +50,17 @@ export interface AccountRecord {
   institution: Institution;
 }
 
-const GLINT_BANK: Institution = {
-  name: "Glint Trust Bank",
-  initials: "GT",
+/* Glint's US banking partner. Sutton Bank is the real sponsor bank the
+   product references. The ROUTING NUMBER below is minted, not theirs:
+   it satisfies the ABA checksum (3·[1,4,7] + 7·[2,5,8] + 1·[3,6,9] ≡ 0
+   mod 10) and carries the 04x Ohio Federal Reserve prefix so it reads
+   correctly, but it is deliberately NOT 041215663, which is Sutton's
+   actual number. A number that passes the checksum could in principle
+   belong to someone; pairing an invented one with a real bank name is
+   the compromise Ali signed off for a demo. */
+const SUTTON: Institution = {
+  name: "Sutton Bank",
+  initials: "SB",
 };
 
 const GLINT_CUSTODY: Institution = {
@@ -66,8 +73,8 @@ export const ACCOUNTS: Record<AccountRecord["id"], AccountRecord> = {
     id: "fiat",
     label: "Checking",
     last4: "2502",
-    routingNumber: "001000025", // PLACEHOLDER — see the note above
-    institution: GLINT_BANK,
+    routingNumber: "041215032", // minted, checksum-valid; see the note on SUTTON
+    institution: SUTTON,
   },
   gold: {
     id: "gold",

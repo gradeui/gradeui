@@ -149,6 +149,13 @@ export const SCREENS: ScreenEntry[] = [
     promotedAt: 1786435550819,
     sourceHash: "0e2daeb09a6f",
   },
+  {
+    slug: "/wallets/silver",
+    name: "Silver — wallet",
+    id: "dmsoj5uvz94l3",
+    promotedAt: 1786435550819,
+    sourceHash: "8889965d2217",
+  },
 ];
 
 const norm = (s: string) => s.trim().toLowerCase();

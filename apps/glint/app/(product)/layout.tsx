@@ -22,6 +22,7 @@ const ACTIVE_BY_PATH: Record<string, string> = {
   "/activity": "Activity",
   /* A wallet detail keeps Wallets lit: it is a child of that section. */
   "/wallets/gold": "Wallets",
+  "/wallets/silver": "Wallets",
 };
 
 function BackToWallets() {
@@ -41,6 +42,7 @@ function BackToWallets() {
 /* Subpages get the Back affordance in the toolbar's leading slot. */
 const LEADING_BY_PATH: Record<string, React.ReactNode> = {
   "/wallets/gold": <BackToWallets />,
+  "/wallets/silver": <BackToWallets />,
 };
 
 export default function ProductChrome({
