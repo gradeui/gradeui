@@ -87,28 +87,36 @@ account", with a pill per product screen.
   trademarks: get artwork cleared before this goes anywhere public, then drop
   the files in and change nothing else.
 
-### Not done, and asked for
+### Done later the same evening
 
-- **`/wallets/usd` still needs the Glint mark in its card header and the
-  auto-invest toggle inside the card.** The "says Checking" half is fixed:
-  `Accounts.ALL.fiat.label` is now `"Glint USD"` and `type` carries
-  `"Checking"`, so the title reads correctly. The toggle wants extracting:
-  `AutoInvest` currently lives inside the dashboard screen only, so putting it
-  on a second screen means a new shared component + app twin + a `TWINS` entry,
-  not a copy.
-- **Back arrows on the wallet screens should be chevrons**, like the
-  onboarding back button. Two places: `BackToWallets` in
-  `app/(product)/layout.tsx`, and the `toolbarLeading` in each of the three
-  Studio wallet screens (promotion strips it, so the app copy is the one that
-  renders, but the Studio copy is what you see in Studio).
-- **Four twin pairs are still unguarded** (`FlowStore`, `Wordmark`,
-  `MetalButton`, `PhoneField`): no baseline recorded, so `check:twins` cannot
-  see drift on them. FlowStore is the one with real divergence, two bugs the
-  app copy fixed. Reconcile, then `check:twins --update --only <Name>`.
+- `/wallets/usd` now leads with the Glint mark and carries the auto-invest
+  toggle inside the balance card. The toggle came out into its own shared
+  component, `AutoInvestToggle` (your call), so the dashboard and the wallet
+  drive one preference; its `labelFor` static is where the option labels live,
+  which is what the dashboard's "Auto-invest to Gold" line reads.
+- The Glint account block is now IDENTICAL on the USD wallet and Bank
+  Accounts, by construction: both render `AccountDetails`, one shared
+  component that takes an account id. They had already drifted once, so this
+  is the fix rather than a diff.
+- Wallet back arrows are chevrons, in the app layout and in all three Studio
+  screens.
+- The rail's Bank Accounts row navigates (verified live). It needed the
+  `target`, which only landed with that batch.
+
+### Still open
+
+- **Four twin pairs are unguarded** (`FlowStore`, `Wordmark`, `MetalButton`,
+  `PhoneField`): no baseline recorded, so `check:twins` cannot see drift on
+  them. FlowStore is the one with real divergence, two bugs the app copy
+  fixed. Reconcile, then `check:twins --update --only <Name>`. Eleven of
+  fifteen pairs are in sync.
 - **The vault breakdown is not reactive**: `vaultsFor` reads the persona
   default while the headline balance is a live FlowStore read, so buying gold
-  moves the total and leaves the vault rows behind. Needs per-vault keys in one
-  coordinated change across Persona, TradeFlow and MetalWalletCard.
+  moves the total and leaves the vault rows behind. Needs per-vault keys in
+  one coordinated change across Persona, TradeFlow and MetalWalletCard.
+- **The dashboard loses five type annotations on every promotion** (ASSET_ORDER,
+  AssetMark, BalanceCard, the unitKey cast, the MetalUnit casts). Reapplied by
+  hand each time. Worth teaching promote-screen.py to carry a per-page patch.
 
 ### One new script
 

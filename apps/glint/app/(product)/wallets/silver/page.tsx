@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Silver — wallet"
-// (design dmsoj5uvz94l3, version 1786463143437). Registry: lib/screens.ts;
+// (design dmsoj5uvz94l3, version 1786474977774). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: f24ebbf98310
+// source-hash: adf752c1b8e0
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)

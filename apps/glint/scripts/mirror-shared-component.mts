@@ -28,9 +28,15 @@
  * Dev-time only: reads the service-role key from apps/docs/.env.local,
  * which never ships with this app.
  *
+ * --create INSERTS a component that does not exist yet, which the missing
+ * MCP tool would otherwise be the only way to do. It refuses if the name is
+ * already live, so it can never silently overwrite an existing module, and it
+ * mints the id exactly as apps/mcp-server does.
+ *
  * USAGE
  *   pnpm -F @gradeui/glint mirror:component -- --name Market --file /tmp/market.jsx
  *   pnpm -F @gradeui/glint mirror:component -- --name Market --file /tmp/market.jsx --dry
+ *   ... --name X --file /tmp/x.jsx --create --description "one line"
  *
  * AFTERWARDS
  *   1. Render a screen that uses it and LOOK at it.
@@ -48,6 +54,8 @@ const PROJECT_ID = "8e65f8f7-f995-4c47-bc39-8f68b42a86e4";
 /** The only names this will write. Mirrors the TWINS map in check-twins.mts. */
 const ALLOWED = new Set([
   "Accounts",
+  "AutoInvestToggle",
+  "AccountDetails",
   "Persona",
   "Market",
   "FlowStore",
@@ -69,6 +77,8 @@ function arg(flag: string): string | undefined {
 
 const name = arg("--name");
 const file = arg("--file");
+const description = arg("--description");
+const CREATE = process.argv.includes("--create");
 const DRY = process.argv.includes("--dry");
 
 if (!name || !file) {
@@ -148,6 +158,51 @@ const found = (await lookup.json()) as {
   description: string | null;
   updated_at: number;
 }[];
+if (CREATE) {
+  /* Refuse if it is already there: --create must never become a way to
+     overwrite a module by accident. Drop the flag to update one. */
+  if (found.length > 0) {
+    console.error(
+      `mirror-shared-component: "${name}" already exists (id ${found[0].id}). ` +
+        "Drop --create to update it.",
+    );
+    process.exit(1);
+  }
+  /* Same id shape apps/mcp-server/src/shared-components.ts mints. */
+  const newId =
+    "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const at = Date.now();
+  console.log(`${name}: creating id ${newId}, ${source.length} chars`);
+  if (DRY) {
+    console.log("--dry: nothing written.");
+    process.exit(0);
+  }
+  const ins = await fetch(`${url}/rest/v1/shared_components`, {
+    method: "POST",
+    headers: { ...headers, Prefer: "return=representation" },
+    body: JSON.stringify({
+      id: newId,
+      project_id: PROJECT_ID,
+      name,
+      source,
+      description: description ?? null,
+      created_at: at,
+      updated_at: at,
+    }),
+  });
+  if (!ins.ok) {
+    console.error(
+      `mirror-shared-component: create failed: ${ins.status} ${await ins.text()}`,
+    );
+    process.exit(1);
+  }
+  console.log(
+    `Created ${name} (${newId}), updated_at ${at}.\n` +
+      "NOW: add it to TWINS in check-twins.mts and COMPONENT_MODULES in\n" +
+      "promote-screen.py, write the app twin, then render a screen using it.",
+  );
+  process.exit(0);
+}
 if (found.length !== 1) {
   console.error(
     `mirror-shared-component: expected exactly one live "${name}", found ${found.length}.`,

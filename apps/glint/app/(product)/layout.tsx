@@ -11,7 +11,7 @@
 
 import { usePathname } from "next/navigation";
 import { Button } from "@gradeui/ui";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { AppChrome } from "@/components/layouts/app-chrome";
 
 /* Pathname -> sidebar nav label. Grows a row per promoted product
@@ -34,7 +34,13 @@ function BackToWallets() {
       className="rounded-full text-muted-foreground hover:text-foreground"
       data-grade-goto="Dashboard — logged-in home"
     >
-      <ArrowLeft className="size-4" />
+      {/* CHEVRON, not an arrow (Ali, 11 Aug: "back arrows on the wallet
+          screens should also use chevrons"), matching the onboarding back
+          button. THIS is the copy that renders in the app: promotion
+          strips the wrapper's props, so each Studio screen's own
+          toolbarLeading is what you see in Studio and this is what you see
+          here. Both were changed. */}
+      <ChevronLeft className="size-4" />
       Back
     </Button>
   );

@@ -113,6 +113,8 @@ const TWINS: Record<string, string> = {
   MetalPriceCard: "components/metal-price-card.tsx",
   MetalWalletCard: "components/metal-wallet-card.tsx",
   PhoneField: "components/phone-field.tsx",
+  AutoInvestToggle: "components/auto-invest-toggle.tsx",
+  AccountDetails: "components/account-details.tsx",
   AppChrome: "components/layouts/app-chrome.tsx",
   OnboardingLayout: "components/layouts/onboarding.tsx",
 };

@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786472510107). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786474975887). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: c05b110907e4
+// source-hash: 1fb3f6911340
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -23,13 +23,18 @@ import {
   ToggleGroupItem,
 } from "@gradeui/ui";
 import { AppChrome } from "@/components/layouts/app-chrome";
-import { Persona, type AssetKey, type AutoInvest } from "@/lib/persona";
-import { Market } from "@/lib/market";
+import {
+  Persona,
+  type AssetKey,
+  type PersonaPreferences,
+} from "@/lib/persona";
+import { Market, type MetalUnit } from "@/lib/market";
 import { Wordmark } from "@/components/wordmark";
 import { TradeFlow } from "@/components/trade-flow";
 import { Accounts } from "@/lib/accounts";
 import { MetalButton } from "@/components/metal-button";
 import { ActivityTable } from "@/components/activity-table";
+import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { Plus, ChevronRight } from "lucide-react";
 
 // Mercury-pattern logged-in home, Glint-flavoured, for BUSINESS accounts.
@@ -87,14 +92,6 @@ const CARD_TARGETS = {
   fiat: "USD — wallet",
 };
 
-/* What a USD deposit does on arrival. Values are the autoInvest
-   preference; "none" leaves the cash sitting in the USD wallet. */
-const AUTO_INVEST = [
-  { value: "gold", label: "Gold" },
-  { value: "silver", label: "Silver" },
-  { value: "none", label: "Off" },
-];
-
 /** The Glint G in front of a card title, in the wallet's own colour:
  *  the flat metal for gold and silver, the action blue for fiat. */
 function AssetMark({ asset }: { asset: AssetKey }) {
@@ -105,61 +102,12 @@ function AssetMark({ asset }: { asset: AssetKey }) {
   );
 }
 
-/** Auto-invest: the headline feature, on the page rather than behind a
- *  settings screen. Reads and writes the persona preference, so a demo
- *  can flip it live.
- *
- *  CALLED "Auto-invest" (Ali, 11 Aug, his pick over the "Direct Invest"
- *  I proposed). The label used to read "Direct Gold" while the control
- *  offers Gold, Silver and Off, so choosing Silver left a label naming
- *  the other metal. "Auto-invest" is metal-agnostic and matches the
- *  preference key, which is already autoInvest.
- *  TWO NAMES DO NOT MOVE WITH IT: the autoInvest preference key, and
- *  Persona's TX_METHOD_LABEL mapping of "direct-gold" to "Direct Gold".
- *  That second one is the name of the METHOD on an activity row, the
- *  thing that converted a deposit, and it keeps its product name. */
-function AutoInvest() {
-  const [mode, setMode] = Persona.usePreference("autoInvest");
-  return (
-    /* Label to the LEFT of the control, no explainer line above it: the
-       segment names the metal, so a sentence saying the same thing was
-       just noise. The metal tint stays on the LABEL and never touches
-       the track, which has its own surface. */
-    <Row gap="sm" align="center">
-      <span className="text-sm font-medium text-foreground">Auto-invest</span>
-      <ToggleGroup
-        type="single"
-        variant="segmented"
-        size="sm"
-        value={mode}
-        onValueChange={(v) => v && setMode(v as AutoInvest)}
-      >
-        {AUTO_INVEST.map((o) => (
-          <ToggleGroupItem
-            key={o.value}
-            value={o.value}
-            /* Equal width so the control does not jitter as the label
-               changes: "Off" is half the width of "Silver", and a
-               segmented control whose segments resize reads as broken. */
-            className="min-w-16"
-            /* The selected metal tints its LABEL with the flat brand
-               colour rather than wearing the polished gradient face.
-               The 45deg sweep is built for a 100px button; compressed
-               into a 50px segment it loses its travel and reads as flat
-               washed beige on the dark track. */
-            style={
-              mode === o.value && o.value !== "none"
-                ? { color: Wordmark.metalSolid(o.value) }
-                : undefined
-            }
-          >
-            {o.label}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-    </Row>
-  );
-}
+/* THE AUTO-INVEST CONTROL LIVES IN ITS OWN SHARED COMPONENT NOW (Ali,
+   11 Aug: "I'd extract the toggle group as a shared component on its
+   own"). It was defined here, and the Glint USD wallet card needed the
+   same control, so a second use would have been a paste. AutoInvestToggle
+   reads and writes the preference itself, so both surfaces show one value.
+   Its OPTIONS / labelFor statics are where the labels live. */
 
 /** The combined holdings figure, reactive across all three assets. */
 function TotalBalance() {
@@ -179,9 +127,11 @@ function TotalBalance() {
 function BalanceCard({ asset }: { asset: AssetKey }) {
   const [amount] = Persona.useBalance(asset);
   /* fiat has no unit preference, so it borrows unit.gold and never reads
-     the value: its branch below shows the auto-invest setting. */
-  const unitKey: "unit.gold" | "unit.silver" =
-    asset === "fiat" ? "unit.gold" : `unit.${asset}`;
+     the value: the cash card shows the auto-invest setting instead. The
+     cast is the annotation promotion drops. */
+  const unitKey = (asset === "fiat"
+    ? "unit.gold"
+    : `unit.${asset}`) as keyof PersonaPreferences;
   const [unit] = Persona.usePreference(unitKey);
   const meta = Persona.DEFAULT.balances[asset];
   /* Metals show the holding in the persona's preferred unit.
@@ -191,16 +141,19 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
      one line on this card a customer would act on: the routing and
      account numbers are reference data, they belong on the USD wallet
      screen where you go to set up a transfer, and they are still there.
-     Composed from the same AUTO_INVEST label map the control uses, so the
-     card and the toggle can never disagree about what "gold" is called. */
+     Composed from the control's own labelFor, so the card and the toggle
+     can never disagree about what "gold" is called. */
   const [autoInvest] = Persona.usePreference("autoInvest");
-  const autoLabel = AUTO_INVEST.find((o) => o.value === autoInvest)?.label;
+  const autoLabel = AutoInvestToggle.labelFor(autoInvest);
   const detail =
     asset === "fiat"
       ? autoInvest === "none"
         ? "Auto-invest off"
         : `Auto-invest to ${autoLabel}`
-      : Market.fmtQty(Market.toQty(amount, asset, unit), unit);
+      : Market.fmtQty(
+          Market.toQty(amount, asset, unit as MetalUnit),
+          unit as MetalUnit,
+        );
   const target = CARD_TARGETS[asset];
   return (
     <Card
@@ -312,7 +265,7 @@ export default function WalletsPage() {
           <Stack gap="lg">
             <Row justify="between" align="end" wrap gap="md">
               <TotalBalance />
-              <AutoInvest />
+              <AutoInvestToggle />
             </Row>
             <Grid cols="3" gap="lg">
               {ASSET_ORDER.map((asset) => (

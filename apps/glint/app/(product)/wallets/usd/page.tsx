@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "USD — wallet"
-// (design dmsou6g4wxv0l, version 1786469753966). Registry: lib/screens.ts;
+// (design dmsou6g4wxv0l, version 1786475182666). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 3f0749dec72e
+// source-hash: 02887a405f6d
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -18,13 +18,13 @@ import {
   CardTitle,
   CardContent,
   Button,
-  PropertyList,
-  Avatar,
-  AvatarFallback,
 } from "@gradeui/ui";
 import { Persona } from "@/lib/persona";
 import { Accounts } from "@/lib/accounts";
 import { ActivityTable } from "@/components/activity-table";
+import { Wordmark } from "@/components/wordmark";
+import { AutoInvestToggle } from "@/components/auto-invest-toggle";
+import { AccountDetails } from "@/components/account-details";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 
 // Glint USD wallet screen (Ali, 11 Aug 2026): the cash side of the three
@@ -94,15 +94,41 @@ export default function UsdWalletPage() {
               the taller details card beside it. */}
           <Card className="col-span-12 flex flex-col lg:col-span-5">
             <CardHeader>
+              {/* THE GLINT MARK LEADS THE TITLE (Ali, 11 Aug: this page
+                  "should be the same header as the previous screen"), the
+                  treatment the gold and silver wallet cards use. The mark
+                  is in the ACTION BLUE rather than a metal, the same
+                  colour this wallet's dashboard tile wears, because
+                  dollars have no metal of their own.
+                  The title now reads "Glint USD" because an account's
+                  label is its NAME; the KIND of account ("Checking") is
+                  its type, and that shows in the details card beside
+                  this one. */}
               <Row gap="sm" align="center" className="min-h-9">
+                <Wordmark
+                  lockup="mark"
+                  tone="current"
+                  className="size-5"
+                  style={{ color: "oklch(var(--primary))" }}
+                />
                 <CardTitle>{acct.label}</CardTitle>
               </Row>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col">
               <Stack gap="md" justify="between" className="flex-1">
-                <span className="text-4xl font-semibold tabular-nums text-foreground">
-                  {Persona.fmtMoney(amount)}
-                </span>
+                <Stack gap="lg">
+                  <span className="text-4xl font-semibold tabular-nums text-foreground">
+                    {Persona.fmtMoney(amount)}
+                  </span>
+                  {/* AUTO-INVEST INSIDE THE CARD (Ali, 11 Aug: "this
+                      should also have the auto-invest toggle inside the
+                      card"). It is the setting that decides what happens
+                      to this balance, so it belongs on the balance, not
+                      only on the dashboard. Same shared control as the
+                      dashboard, reading one preference, so flipping it
+                      either place moves both. */}
+                  <AutoInvestToggle />
+                </Stack>
                 <Row gap="sm">
                   <Button size="md" className="rounded-full">
                     <ArrowDownToLine className="size-4" />
@@ -124,39 +150,13 @@ export default function UsdWalletPage() {
               </Row>
             </CardHeader>
             <CardContent>
-              <Stack gap="md">
-                {/* The institution, with initials standing in until the
-                    client clears the bank's artwork (Accounts holds the
-                    logo slot). */}
-                <Row gap="sm" align="center">
-                  <Avatar size="sm">
-                    <AvatarFallback>{acct.institution.initials}</AvatarFallback>
-                  </Avatar>
-                  <Stack gap="none">
-                    <span className="text-sm font-medium text-foreground">
-                      {acct.institution.name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {acct.label} account
-                    </span>
-                  </Stack>
-                </Row>
-                <PropertyList divider>
-                  <PropertyList.Row label="Routing number">
-                    <span className="tabular-nums">{acct.routingNumber}</span>
-                  </PropertyList.Row>
-                  <PropertyList.Row label="Account number">
-                    {/* Full, unbroken, tabular: see the note at the top
-                        of this file. */}
-                    <span className="tabular-nums">
-                      {Accounts.numberFull(ASSET)}
-                    </span>
-                  </PropertyList.Row>
-                  <PropertyList.Row label="Account type">
-                    {acct.label}
-                  </PropertyList.Row>
-                </PropertyList>
-              </Stack>
+              {/* IDENTICAL TO THE BANK ACCOUNTS SCREEN, by construction
+                  (Ali, 11 Aug: "the Glint account details should be
+                  IDENTICAL on the wallet USD screen and the Bank accounts
+                  screen"). This card used to hand-build the same block, and
+                  the two had already drifted: this one showed the wallet's
+                  NAME in the account type row. One component, both screens. */}
+              <AccountDetails id={ASSET} />
             </CardContent>
           </Card>
         </Container>

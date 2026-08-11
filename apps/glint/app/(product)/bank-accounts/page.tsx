@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Bank Accounts"
-// (design dmsp02q871y5u, version 1786474192541). Registry: lib/screens.ts;
+// (design dmsp02q871y5u, version 1786475181972). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: d75c87bd4639
+// source-hash: 262b3a02c3bc
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -27,8 +27,10 @@ import {
   DropdownMenuSeparator,
 } from "@gradeui/ui";
 import { Persona } from "@/lib/persona";
-import { Accounts, type AccountRecord } from "@/lib/accounts";
+import { Accounts } from "@/lib/accounts";
 import { ActivityTable } from "@/components/activity-table";
+import { AutoInvestToggle } from "@/components/auto-invest-toggle";
+import { AccountDetails } from "@/components/account-details";
 import { MoreHorizontal } from "lucide-react";
 
 // Bank Accounts screen (Ali, 11 Aug 2026): the two accounts behind every
@@ -71,64 +73,17 @@ import { MoreHorizontal } from "lucide-react";
 const GLINT = "fiat";
 const LINKED = "external";
 
-/** The institution's mark: a SQUARE tile, small radius, hairline border
- *  (Ali, 11 Aug, and "those avatars should be a little bigger"). It was
- *  an Avatar, which is the wrong primitive twice over: Avatar is round
- *  and it is for PEOPLE, so a bank's square logo arrived cropped into a
- *  circle. A tile is what every banking app shows an institution in.
- *
- *  Falls back to the institution's initials when a record has no logo
- *  file, which is how it looked before the real artwork landed and how it
- *  will look for any bank added later. Both marks are the banks' own site
- *  icons; see the provenance note in Accounts, including the trademark
- *  caveat. object-contain, so a logo of any aspect fits inside the square
- *  rather than being stretched to it. */
-function BankMark({ account }: { account: AccountRecord }) {
-  const { logo, name, initials } = account.institution;
-  return (
-    /* A LIGHT PLATE, deliberately not a theme surface. Bank marks are
-       drawn for print and for white headers: Sutton's is navy on black,
-       which on this dark theme sank into the tile and read as a smudge.
-       Every banking app puts third-party logos on a light plate for
-       exactly this reason, so the plate is part of the mark, not part of
-       the theme, and it stays light in both modes. */
-    <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-white p-1">
-      {logo ? (
-        <img src={logo} alt={name} className="size-full object-contain" />
-      ) : (
-        <span className="text-sm font-medium text-muted-foreground">
-          {initials}
-        </span>
-      )}
-    </div>
-  );
-}
-
-/** Routing + account number + type, the three rows both cards share, so
- *  the pair cannot drift into two different orders or two different
- *  labels. The rows ABOVE and BELOW differ per card: that is the point. */
-function AccountRows({ id }: { id: AccountRecord["id"] }) {
-  const account = Accounts.ALL[id];
-  return (
-    <>
-      <PropertyList.Row label="Routing number">
-        <span className="tabular-nums">{account.routingNumber}</span>
-      </PropertyList.Row>
-      <PropertyList.Row label="Account number">
-        {/* Unbroken: ten digits grouped in fours leave a two-digit orphan
-            that reads as a rendering bug, so tabular figures do the work
-            of making a long run checkable instead. */}
-        <span className="tabular-nums">{Accounts.numberFull(id)}</span>
-      </PropertyList.Row>
-      <PropertyList.Row label="Account type">{account.type}</PropertyList.Row>
-    </>
-  );
-}
+/* THE MARK TILE AND THE IDENTIFIER ROWS BOTH MOVED INTO AccountDetails,
+   the shared component both this screen and the USD wallet now render, so
+   the two cannot say different things about the same account. What stays
+   here is what differs per card: the titles, the descriptions, the
+   overflow menu, and the auto-invest row passed in as an extra. */
 
 export default function BankAccountsPage() {
-  const linked = Accounts.ALL[LINKED];
-  const glint = Accounts.ALL[GLINT];
-  const company = Persona.DEFAULT.company;
+  /* No account record read here any more: AccountDetails takes an id and
+     reads its own. Live preference, not the persona default: the toggle on two other screens writes
+     this, and a stale line here would contradict them. Gold by default. */
+  const [autoInvest] = Persona.usePreference("autoInvest");
   /* Deposits only: see TRANSFERS above. activityFor("fiat") returns both
      legs of every cash movement, so the filter is what makes this list
      the transfers rather than the wallet's history. */
@@ -200,36 +155,25 @@ export default function BankAccountsPage() {
               </Row>
             </CardHeader>
             <CardContent>
-              {/* The institution, above the numbers it issued. */}
-              <Row gap="sm" align="center" className="pb-4">
-                <BankMark account={linked} />
-                <Stack gap="none">
-                  {/* NO LAST FOUR HERE (Ali, 11 Aug: "redundant as we
-                      have them explictly listed anyway"). The full number
-                      is four rows below, so the masked form was the same
-                      fact stated worse, twice on one card. */}
-                  <span className="text-sm font-medium text-foreground">
-                    {linked.label}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {linked.institution.name}
-                  </span>
-                </Stack>
-              </Row>
-              <PropertyList divider>
-                <PropertyList.Row label="Account holder">
-                  {company.legalName}
+              <AccountDetails id={LINKED}>
+                {/* WHAT HAPPENS TO THE MONEY, not when the account was
+                    connected (Ali, 11 Aug: "we dont need to know when the
+                    Linked account was linked, so instead let's put in what
+                    the auto-invest is"). Right: the link date is filing,
+                    while auto-invest is the setting that decides what a
+                    deposit pulled from this account turns into. Read live
+                    off the preference, so flipping the toggle on the
+                    dashboard or the USD wallet moves this line too, and
+                    named by the control's own labelFor so the two cannot
+                    disagree. An EXTRA row, passed as children, so
+                    AccountDetails stays a statement of the account and
+                    knows nothing about auto-invest. */}
+                <PropertyList.Row label="Auto-invest">
+                  {autoInvest === "none"
+                    ? "Off"
+                    : `To ${AutoInvestToggle.labelFor(autoInvest)}`}
                 </PropertyList.Row>
-                <AccountRows id={LINKED} />
-                {/* Guarded because `linkedOn` is optional on the record:
-                    only an external account has one. A TS-only guard, and
-                    so one of the annotations a re-promotion drops. */}
-                {linked.linkedOn ? (
-                  <PropertyList.Row label="Linked">
-                    {Persona.fmtTxDate(linked.linkedOn).day}
-                  </PropertyList.Row>
-                ) : null}
-              </PropertyList>
+              </AccountDetails>
             </CardContent>
           </Card>
 
@@ -245,45 +189,11 @@ export default function BankAccountsPage() {
               </Stack>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col">
-              {/* SUTTON'S MARK, not Glint's (Ali, 11 Aug: "the glint
-                  account would actually have the sutton bank logo").
-                  Right: the account is Glint's product, but the bank
-                  holding the money is Sutton, and the mark answers the
-                  same question on both cards, which bank the numbers
-                  below belong to. The Glint G is on the card title's
-                  wording and all over the rest of the app. */}
-              <Row gap="sm" align="center" className="pb-4">
-                <BankMark account={glint} />
-                <Stack gap="none">
-                  {/* NO LAST FOUR HERE (Ali, 11 Aug: "redundant as we
-                      have them explictly listed anyway"). The full number
-                      is four rows below, so the masked form was the same
-                      fact stated worse, twice on one card. */}
-                  <span className="text-sm font-medium text-foreground">
-                    {glint.label}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {glint.institution.name}
-                  </span>
-                </Stack>
-              </Row>
               {/* Flex column so the funding line sits at the BOTTOM of the
                   card, level with the last row of the taller list beside
                   it, rather than floating in the middle. */}
               <Stack gap="lg" justify="between" className="flex-1">
-                <PropertyList divider>
-                  <PropertyList.Row label="Account holder">
-                    {/* The holder off the record, which for this account
-                        is Glint rather than the customer. It carried a
-                        second "for the benefit of" line naming the
-                        customer, the FBO wording a pooled account
-                        normally shows; Ali cut it (11 Aug: "I didnt ask
-                        for that"). The holder name is the fact; the
-                        arrangement behind it is not this card's job. */}
-                    {glint.holder ?? company.legalName}
-                  </PropertyList.Row>
-                  <AccountRows id={GLINT} />
-                </PropertyList>
+                <AccountDetails id={GLINT} />
                 <p className="text-xs text-muted-foreground">
                   Send a domestic wire or ACH to these details to fund your
                   Glint USD wallet.

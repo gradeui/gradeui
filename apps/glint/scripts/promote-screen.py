@@ -97,6 +97,8 @@ COMPONENT_MODULES = {
     "MetalWalletCard": "@/components/metal-wallet-card",
     "TradeFlow": "@/components/trade-flow",
     "PhoneField": "@/components/phone-field",
+    "AutoInvestToggle": "@/components/auto-invest-toggle",
+    "AccountDetails": "@/components/account-details",
 }
 
 # BuyFlow is deliberately absent. TradeFlow superseded it and there is no
