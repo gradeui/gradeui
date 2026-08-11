@@ -19,6 +19,16 @@ export const CheckboxCardContract = contract({
       design: "plumbing",
       description: "standard checkbox state",
   },
+  "defaultChecked": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "standard checkbox state",
+  },
+  "onCheckedChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+      description: "standard checkbox state",
+  },
   "label": {
       schema: z.unknown().optional(),
       design: "plumbing",

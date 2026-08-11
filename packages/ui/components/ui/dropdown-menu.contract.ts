@@ -89,8 +89,8 @@ export const DropdownMenuContract = contract({
       schema: z.unknown().optional(),
       design: "event",
   },
-  "DropdownMenuSub": {
-      schema: z.unknown(),
+  "nested": {
+      schema: z.unknown().optional(),
       design: "plumbing",
       description: "sub-trigger shows children, sub-content holds the deeper items",
   },

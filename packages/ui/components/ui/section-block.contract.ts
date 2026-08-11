@@ -58,6 +58,11 @@ export const SectionBlockContract = contract({
       design: "plumbing",
       description: "string or `{ text, variant, href, onClick }` config",
   },
+  "cta2": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "string or `{ text, variant, href, onClick }` config",
+  },
   "backgroundImage": {
       schema: z.string().optional(),
       design: "content",

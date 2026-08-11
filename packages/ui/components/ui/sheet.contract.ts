@@ -51,9 +51,5 @@ export const SheetContract = contract({
       design: "plumbing",
       description: "usually set a width (right/left) or height (top/bottom)",
   },
-  "SheetTitle": {
-      schema: z.unknown(),
-      design: "plumbing",
-  },
   },
 });

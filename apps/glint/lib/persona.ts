@@ -408,7 +408,7 @@ export function fmtMoney(n: number): string {
 
 /** Signed variant for activity rows: −$310.20 / +$1,050.00. */
 export function fmtSigned(n: number): string {
-  return `${n < 0 ? "−" : "+"}${fmtMoney(n)}`;
+  return `${n < 0 ? "-" : "+"}${fmtMoney(n)}`;
 }
 
 /** Reactive balance for an asset: [amount, setAmount]. */

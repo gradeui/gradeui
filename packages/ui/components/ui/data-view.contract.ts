@@ -30,8 +30,18 @@ export const DataViewContract = contract({
       description: "defaults to row.id",
   },
   "view": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
+      schema: z.enum(["table", "cards", "grid"]).optional(),
+      design: "knob",
+      description: "controlled or uncontrolled view",
+  },
+  "defaultView": {
+      schema: z.enum(["table", "cards", "grid"]).optional(),
+      design: "knob",
+      description: "controlled or uncontrolled view",
+  },
+  "onViewChange": {
+      schema: z.enum(["table", "cards", "grid"]).optional(),
+      design: "event",
       description: "controlled or uncontrolled view",
   },
   "views": {
@@ -40,8 +50,18 @@ export const DataViewContract = contract({
       description: "allowed views; one entry = single view, no toggle",
   },
   "activeId": {
-      schema: z.unknown().optional(),
-      design: "plumbing",
+      schema: z.string().optional(),
+      design: "content",
+      description: "the selected row; click emits it",
+  },
+  "defaultActiveId": {
+      schema: z.string().optional(),
+      design: "content",
+      description: "the selected row; click emits it",
+  },
+  "onActiveChange": {
+      schema: z.string().optional(),
+      design: "event",
       description: "the selected row; click emits it",
   },
   "sorting": {
@@ -49,9 +69,29 @@ export const DataViewContract = contract({
       design: "plumbing",
       description: "TanStack SortingState",
   },
+  "defaultSorting": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "TanStack SortingState",
+  },
+  "onSortingChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+      description: "TanStack SortingState",
+  },
   "columnVisibility": {
       schema: z.unknown().optional(),
       design: "plumbing",
+      description: "which fields show",
+  },
+  "defaultColumnVisibility": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "which fields show",
+  },
+  "onColumnVisibilityChange": {
+      schema: z.unknown().optional(),
+      design: "event",
       description: "which fields show",
   },
   "stickyHeader": {

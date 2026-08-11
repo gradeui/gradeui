@@ -51,5 +51,15 @@ export const SelectionCardContract = contract({
       design: "plumbing",
       description: "renders as a CheckboxPrimitive.Root.",
   },
+  "defaultChecked": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "renders as a CheckboxPrimitive.Root.",
+  },
+  "onCheckedChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+      description: "renders as a CheckboxPrimitive.Root.",
+  },
   },
 });

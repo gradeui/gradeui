@@ -19,6 +19,16 @@ export const SwitchCardContract = contract({
       design: "plumbing",
       description: "standard switch state",
   },
+  "defaultChecked": {
+      schema: z.unknown().optional(),
+      design: "plumbing",
+      description: "standard switch state",
+  },
+  "onCheckedChange": {
+      schema: z.unknown().optional(),
+      design: "event",
+      description: "standard switch state",
+  },
   "label": {
       schema: z.unknown().optional(),
       design: "plumbing",

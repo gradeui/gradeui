@@ -215,6 +215,26 @@ function splitPropLine(line) {
       : null;
   const body = prefix ? subPrefix[2].trim() : raw;
 
+  // ALIAS GROUPS: `activeId? / defaultActiveId? / onActiveChange? — …`
+  // Sidecars document a controlled/uncontrolled/callback trio on one
+  // line because they are one concept. The name matcher downstream only
+  // reads the FIRST name, so the other two were documented but absent
+  // from the contract — and the Studio validator rejects what is not in
+  // the contract, so a screen using `onActiveChange` failed with
+  // "unknown prop" against a prop the component genuinely has. Expand
+  // the group into one signature per name, sharing the description.
+  const aliasGroup = body.match(
+    /^((?:[A-Za-z_$][A-Za-z0-9_$]*\??\s*\/\s*)+[A-Za-z_$][A-Za-z0-9_$]*\??)(\s*(?:[—:-]\s*.*)?)$/,
+  );
+  if (aliasGroup) {
+    const tail = aliasGroup[2] ?? "";
+    return aliasGroup[1]
+      .split("/")
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .map((n) => (prefix ? `${prefix}: ${n}${tail}` : `${n}${tail}`));
+  }
+
   // Top-level split on a separator char, protecting (), [], {}, quotes.
   // `boundary` (optional) must match the TRIMMED start of the chunk
   // following a separator for the split to count — this is how prose

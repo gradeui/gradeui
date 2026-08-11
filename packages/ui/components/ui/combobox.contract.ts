@@ -23,20 +23,16 @@ export const ComboboxContract = contract({
       schema: z.unknown().optional(),
       design: "plumbing",
   },
-  "ComboboxGroup": {
-      schema: z.unknown(),
-      design: "plumbing",
-  },
   "divider": {
       schema: z.unknown().optional(),
       design: "plumbing",
   },
-  "ComboboxChips": {
-      schema: z.unknown(),
+  "multiple-select": {
+      schema: z.unknown().optional(),
       design: "plumbing",
   },
-  "ComboboxValue": {
-      schema: z.unknown(),
+  "lower-level": {
+      schema: z.unknown().optional(),
       design: "plumbing",
   },
   "useComboboxAnchor": {

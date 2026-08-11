@@ -27,6 +27,8 @@ After running: add or refresh the screen's entry in lib/screens.ts
 in the screen may need light prop annotations to pass strict TS.
 """
 
+from __future__ import annotations  # PEP 604 unions on Python 3.9
+
 import argparse
 import pathlib
 import re
