@@ -147,7 +147,7 @@ export const SCREENS: ScreenEntry[] = [
     name: "Gold — wallet",
     id: "dmsnbpdvrz1qa",
     promotedAt: 1786435550819,
-    sourceHash: "d3956d3ed613",
+    sourceHash: "0e2daeb09a6f",
   },
 ];
 

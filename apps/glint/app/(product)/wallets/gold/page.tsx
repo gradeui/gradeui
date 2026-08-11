@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+
 // Promoted from Studio screen "Gold — wallet"
 // (design dmsnbpdvrz1qa, version 1786435550819). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
@@ -17,10 +19,12 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ToggleGroup,
+  ToggleGroupItem,
 } from "@gradeui/ui";
 import { AreaChart, Area, XAxis, YAxis } from "recharts";
 import { Persona, type ActivityRow, fmtTxDate, txMethodLabel } from "@/lib/persona";
-import { Market } from "@/lib/market";
+import { Market, type Range } from "@/lib/market";
 import { metalSolid } from "@/components/wordmark";
 import { MetalButton } from "@/components/metal-button";
 import { ActivityTable } from "@/components/activity-table";
@@ -41,6 +45,10 @@ const CHART_CONFIG = {
 };
 
 export default function GoldWalletPage() {
+  /* RANGE (Ali, 11 Aug): 1M is the floor because LBMA publishes one
+     auction price a day, so the app's 1D and 1W would be invented; 5Y
+     is the ceiling he asked for. Market thins the points per range. */
+  const [range, setRange] = React.useState<Range>("1M");
   const [amount] = Persona.useBalance("gold");
   const [unit] = Persona.usePreference("unit.gold");
   const meta = Persona.DEFAULT.balances.gold;
@@ -48,7 +56,7 @@ export default function GoldWalletPage() {
   const price = unit === "oz" ? latest.usdPerOz : latest.usdPerG;
   /* Chart the month of auctions in the preferred unit, in the metal's
      own colour (the pinned ladder, not the theme primary). */
-  const series = Market.gold.map(([d, usdPerG]) => ({
+  const series = Market.series("gold", range).map(([d, usdPerG]: [string, number]) => ({
     d,
     price:
       Math.round((unit === "oz" ? usdPerG * Market.OZ : usdPerG) * 100) / 100,
@@ -76,6 +84,20 @@ export default function GoldWalletPage() {
                     LBMA PM auction · {latest.date}
                   </span>
                 </Stack>
+                <ToggleGroup
+                  type="single"
+                  variant="segmented"
+                  size="sm"
+                  value={range}
+                  onValueChange={(v) => v && setRange(v as Range)}
+                  className="w-fit"
+                >
+                  {Market.RANGES.map((r) => (
+                    <ToggleGroupItem key={r} value={r} className="min-w-12">
+                      {Market.RANGE_LABEL[r]}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
                 <ChartContainer config={CHART_CONFIG} className="h-[180px] w-full">
                   <AreaChart data={series} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
                     <defs>
