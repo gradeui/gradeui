@@ -19,7 +19,8 @@ import {
   TableHead,
   TableCell,
 } from "@gradeui/ui";
-import { Persona, type ActivityRow } from "@/lib/persona";
+import { Persona, type ActivityRow, fmtTxDate, txMethodLabel } from "@/lib/persona";
+import { accountLabel } from "@/lib/accounts";
 
 // Glint Activity screen: the full activity history for the persona.
 // The tabbed filters live HERE, not on the Dashboard (whose Activity
@@ -42,16 +43,16 @@ function TxTable({ rows }: { rows: ActivityRow[] }) {
       </TableHeader>
       <TableBody>
         {rows.map((tx) => (
-          <TableRow key={`${tx.date}-${tx.name}`}>
-            <TableCell className="text-muted-foreground">{tx.date}</TableCell>
+          <TableRow key={`${fmtTxDate(tx.timestamp).day}-${tx.description}`}>
+            <TableCell className="text-muted-foreground">{fmtTxDate(tx.timestamp).day}</TableCell>
             <TableCell>
-              <span className="font-medium text-foreground">{tx.name}</span>
+              <span className="font-medium text-foreground">{tx.description}</span>
             </TableCell>
             <TableCell className="text-right font-medium text-foreground">
-              {Persona.fmtSigned(tx.amount)}
+              {Persona.fmtSigned(tx.fiatAmount)}
             </TableCell>
-            <TableCell className="text-muted-foreground">{tx.account}</TableCell>
-            <TableCell className="text-muted-foreground">{tx.method}</TableCell>
+            <TableCell className="text-muted-foreground">{accountLabel(tx.account)}</TableCell>
+            <TableCell className="text-muted-foreground">{txMethodLabel(tx)}</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -77,10 +78,10 @@ export default function ActivityPage() {
                 <TxTable rows={rows} />
               </TabsContent>
               <TabsContent value="in">
-                <TxTable rows={rows.filter((tx) => tx.amount > 0)} />
+                <TxTable rows={rows.filter((tx) => tx.fiatAmount > 0)} />
               </TabsContent>
               <TabsContent value="out">
-                <TxTable rows={rows.filter((tx) => tx.amount < 0)} />
+                <TxTable rows={rows.filter((tx) => tx.fiatAmount < 0)} />
               </TabsContent>
             </Stack>
           </Tabs>

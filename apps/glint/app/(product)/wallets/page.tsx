@@ -23,9 +23,9 @@ import {
   TableCell,
 } from "@gradeui/ui";
 import { Plus, ChevronRight } from "lucide-react";
-import { Persona, type AssetKey } from "@/lib/persona";
+import { Persona, type AssetKey, fmtTxDate, txMethodLabel } from "@/lib/persona";
 import { Market } from "@/lib/market";
-import { accountIdentifiers } from "@/lib/accounts";
+import { accountIdentifiers, accountLabel } from "@/lib/accounts";
 import { MetalButton } from "@/components/metal-button";
 import { Wordmark, metalSolid } from "@/components/wordmark";
 import { TradeFlow } from "@/components/trade-flow";
@@ -212,16 +212,16 @@ export default function DashboardPage() {
               </TableHeader>
               <TableBody>
                 {activity.map((tx) => (
-                  <TableRow key={`${tx.date}-${tx.name}`}>
-                    <TableCell className="text-muted-foreground">{tx.date}</TableCell>
+                  <TableRow key={`${fmtTxDate(tx.timestamp).day}-${tx.description}`}>
+                    <TableCell className="text-muted-foreground">{fmtTxDate(tx.timestamp).day}</TableCell>
                     <TableCell>
-                      <span className="font-medium text-foreground">{tx.name}</span>
+                      <span className="font-medium text-foreground">{tx.description}</span>
                     </TableCell>
                     <TableCell className="text-right font-medium text-foreground">
-                      {Persona.fmtSigned(tx.amount)}
+                      {Persona.fmtSigned(tx.fiatAmount)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{tx.account}</TableCell>
-                    <TableCell className="text-muted-foreground">{tx.method}</TableCell>
+                    <TableCell className="text-muted-foreground">{accountLabel(tx.account)}</TableCell>
+                    <TableCell className="text-muted-foreground">{txMethodLabel(tx)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

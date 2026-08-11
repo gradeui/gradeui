@@ -40,12 +40,118 @@ export interface BalanceMeta {
   account: string;
 }
 
+export type TxKind = "exchange-buy" | "exchange-sell" | "spend" | "deposit";
+export type TxType = "exchange" | "card" | "deposit" | "withdrawal";
+export type TxStatus = "completed" | "pending" | "failed" | "reversed";
+export type TxMethod = "market-order" | "card" | "wire" | "ach";
+
+/** One row of activity. Rich enough to drive both the table and the
+ *  transaction detail view, which is the shape the real app shows:
+ *  description, amount in metal AND cash, type, rate, status. */
 export interface ActivityRow {
-  date: string;
-  name: string;
-  amount: number;
-  account: string;
-  method: string;
+  /** Stable id. DataView keys rows on String(row.id), so it must be
+   *  present and unique or the active row collides across rows. */
+  id: string;
+  kind: TxKind;
+  /** Row title, and the detail view's Description. Card rows carry the
+   *  acquirer string exactly as the network sends it. */
+  description: string;
+  /** Second line: the merchant locality, or how the order was placed. */
+  subtitle?: string;
+  /** ISO 8601, NOT a display string: the table sorts on the raw value,
+   *  and ISO sorts lexicographically the same way it sorts in time. */
+  timestamp: string;
+  /** Where the merchant is. Stored as parts, never "Denver, USA":
+   *  the row composes them, so a table can show one and a detail view
+   *  can show both. */
+  merchant?: { city: string; country: string };
+  /** Signed grams of metal moved; null for cash-only rows. */
+  metalAmount: number | null;
+  metal: "gold" | "silver" | null;
+  /** Signed USD. Negative is money out. Always present. */
+  fiatAmount: number;
+  /** USD per gram at execution; null for cash-only rows. */
+  rate: number | null;
+  type: TxType;
+  status: TxStatus;
+  /** The ACCOUNT ITSELF, not its label. accountLabel(id) renders
+   *  "Gold wallet ··5679" at display time; storing that string would
+   *  bake a number into every row and make a wallet filter a substring
+   *  match rather than an equality check. */
+  account: AssetKey;
+  method: TxMethod;
+  /** The instrument, when the method is a card. Name and last four are
+   *  separate fields, composed for display. */
+  card?: { name: string; last4: string };
+  fee?: number;
+  feeNote?: string;
+  reference?: string;
+}
+
+export const TX_TYPE_LABEL: Record<TxType, string> = {
+  exchange: "Exchange",
+  card: "Card payment",
+  deposit: "Deposit",
+  withdrawal: "Withdrawal",
+};
+
+export const TX_METHOD_LABEL: Record<TxMethod, string> = {
+  "market-order": "Market order",
+  card: "Card",
+  wire: "Wire transfer",
+  ach: "ACH",
+};
+
+export const TX_STATUS_LABEL: Record<TxStatus, string> = {
+  completed: "Completed",
+  pending: "Pending",
+  failed: "Failed",
+  reversed: "Reversed",
+};
+
+/** "+7.1283 g" / "-0.1597 g" */
+export function fmtGrams(n: number): string {
+  return `${n < 0 ? "-" : "+"}${Math.abs(n).toLocaleString("en-US", {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  })} g`;
+}
+
+/** Split so a cell can stack the day over the time, or join them. */
+export function fmtTxDate(iso: string) {
+  const d = new Date(iso);
+  const day = d.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const time = d.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return { day, time, full: `${day} at ${time}` };
+}
+
+/** The method as shown: the card instrument when there is one, else
+ *  the plain method label. Composed here so no screen concatenates. */
+export function txMethodLabel(row: ActivityRow): string {
+  if (row.card) return `${row.card.name} ··${row.card.last4}`;
+  return TX_METHOD_LABEL[row.method];
+}
+
+/** Where a card transaction happened, composed from its parts. */
+export function txPlace(row: ActivityRow): string {
+  if (!row.merchant) return "";
+  return [row.merchant.city, row.merchant.country].filter(Boolean).join(", ");
+}
+
+/** "1 g = $140.2856" */
+export function fmtRate(rate: number): string {
+  return `1 g = $${rate.toLocaleString("en-US", {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  })}`;
 }
 
 export type MetalUnit = "g" | "oz";
@@ -181,13 +287,111 @@ export const PERSONAS: Record<string, PersonaRecord> = {
       silver: { label: "Silver", amount: 2984.15, account: accountLabel("silver") },
       fiat: { label: "USD", amount: 15210.4, account: accountLabel("fiat") },
     },
+    /* Figures are consistent with Market's LBMA prices (gold $139.0343/g,
+       silver $2.0569/g) and its 0.9% fee, so a row's rate, quantity and
+       cash actually reconcile. The old rows were priced at roughly $86/g
+       and no longer matched anything the product quotes. */
     activity: [
-      { date: "Aug 7", name: "Bought gold — 3.6 g", amount: -310.2, account: accountLabel("gold"), method: "Market order" },
-      { date: "Aug 6", name: "Sold silver — 26 oz", amount: 1050, account: accountLabel("silver"), method: "Market order" },
-      { date: "Aug 5", name: "USD deposit", amount: 8400, account: accountLabel("fiat"), method: "Wire transfer" },
-      { date: "Aug 4", name: "Bought silver — 46 oz", amount: -1862.1, account: accountLabel("silver"), method: "Market order" },
-      { date: "Aug 2", name: "Bought gold — 14.4 g", amount: -1240.15, account: accountLabel("gold"), method: "Market order" },
-      { date: "Aug 1", name: "USD deposit", amount: 3200, account: accountLabel("fiat"), method: "ACH" },
+      {
+        id: "tx-20260811-1110",
+        kind: "exchange-buy",
+        description: "Exchange USD to Gold",
+        subtitle: "Market order",
+        timestamp: "2026-08-11T11:10:00",
+        metalAmount: 7.1283,
+        metal: "gold",
+        fiatAmount: -1000,
+        rate: 140.2856,
+        type: "exchange",
+        status: "completed",
+        account: "gold",
+        method: "market-order",
+        fee: 8.92,
+        reference: "GX-4471-0083",
+      },
+      {
+        id: "tx-20260810-0834",
+        kind: "spend",
+        description: "FREENOW* DY46BQ-2",
+        merchant: { city: "Denver", country: "USA" },
+        timestamp: "2026-08-10T08:34:00",
+        metalAmount: -0.1597,
+        metal: "gold",
+        fiatAmount: -22.2,
+        rate: 139.0343,
+        type: "card",
+        status: "pending",
+        account: "gold",
+        method: "card",
+        card: { name: "Glint Mastercard", last4: "4417" },
+        reference: "GC-8820-4417",
+      },
+      {
+        id: "tx-20260806-1542",
+        kind: "exchange-sell",
+        description: "Exchange Silver to USD",
+        subtitle: "Market order",
+        timestamp: "2026-08-06T15:42:00",
+        metalAmount: -510,
+        metal: "silver",
+        fiatAmount: 1039.58,
+        rate: 2.0384,
+        type: "exchange",
+        status: "completed",
+        account: "silver",
+        method: "market-order",
+        fee: 9.44,
+        reference: "GX-4390-0117",
+      },
+      {
+        id: "tx-20260805-0902",
+        kind: "deposit",
+        description: "Deposit from Ridgeline Construction",
+        subtitle: "Wire transfer",
+        timestamp: "2026-08-05T09:02:00",
+        metalAmount: null,
+        metal: null,
+        fiatAmount: 8400,
+        rate: null,
+        type: "deposit",
+        status: "completed",
+        account: "fiat",
+        method: "wire",
+        reference: "WT-2026-08-0551",
+      },
+      {
+        id: "tx-20260802-1015",
+        kind: "exchange-buy",
+        description: "Exchange USD to Gold",
+        subtitle: "Market order",
+        timestamp: "2026-08-02T10:15:00",
+        metalAmount: 8.8402,
+        metal: "gold",
+        fiatAmount: -1240.15,
+        rate: 140.2856,
+        type: "exchange",
+        status: "completed",
+        account: "gold",
+        method: "market-order",
+        fee: 11.06,
+        reference: "GX-4318-0092",
+      },
+      {
+        id: "tx-20260801-0741",
+        kind: "deposit",
+        description: "Deposit from Ridgeline Construction",
+        subtitle: "ACH",
+        timestamp: "2026-08-01T07:41:00",
+        metalAmount: null,
+        metal: null,
+        fiatAmount: 3200,
+        rate: null,
+        type: "deposit",
+        status: "completed",
+        account: "fiat",
+        method: "ach",
+        reference: "AC-2026-08-0117",
+      },
     ],
   },
 };

@@ -28,19 +28,26 @@ const badgeVariants = cva(
           "border-transparent bg-info text-white hover:bg-info/90",
         // Semantic soft variants — deep on-surface text over a tinted surface.
         // -soft / -deep re-voice per light/dark, so no dark: overrides needed.
-        // SOFT = tinted fill, NO ring (11 Aug). These carried a
-        // 30%-alpha status hairline, which on a dark surface reads as a
-        // hard bright outline around a chip whose fill is barely
-        // distinguishable from the card behind it — the tint says the
-        // status, the ring only adds noise. Light mode loses nothing:
-        // the fill was always doing the work.
-        "success-soft": "border-transparent bg-success-soft text-success-deep",
-        "warning-soft": "border-transparent bg-warning-soft text-warning-deep",
+        // SOFT = STATUS AS TEXT, no chip (Ali, 11 Aug). These used to be
+        // a saturated dark fill plus vivid text, which on a dark card
+        // reads as a warning label stuck to the surface — garish next to
+        // calm content, and the two colours fight each other. Colour on
+        // the glyphs alone says the same thing quietly, and it matches
+        // what the product does: the Glint app's activity list renders
+        // "Pending" as plain green text, not a pill.
+        //
+        // Padding is dropped with the fill so these align as text in a
+        // row rather than sitting in an invisible box. For a chip WITH a
+        // surface, use the solid variants (`success`, `destructive`) or
+        // `outline`; the name is kept because these remain the quiet end
+        // of the status scale.
+        "success-soft": "border-transparent bg-transparent px-0 text-success-deep",
+        "warning-soft": "border-transparent bg-transparent px-0 text-warning-deep",
         "destructive-soft":
-          "border-transparent bg-destructive-soft text-destructive-deep",
-        "info-soft": "border-transparent bg-info-soft text-info-deep",
+          "border-transparent bg-transparent px-0 text-destructive-deep",
+        "info-soft": "border-transparent bg-transparent px-0 text-info-deep",
         "highlight-soft":
-          "border-transparent bg-highlight-soft text-highlight-deep",
+          "border-transparent bg-transparent px-0 text-highlight-deep",
         // Outline variants - border + deep text, no fill
         "success-outline":
           "border-success/50 bg-transparent text-success-deep",

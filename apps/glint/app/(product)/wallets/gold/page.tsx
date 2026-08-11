@@ -25,7 +25,7 @@ import {
   ChartTooltipContent,
 } from "@gradeui/ui";
 import { AreaChart, Area, XAxis, YAxis } from "recharts";
-import { Persona, type ActivityRow } from "@/lib/persona";
+import { Persona, type ActivityRow, fmtTxDate, txMethodLabel } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { metalSolid } from "@/components/wordmark";
 import { MetalButton } from "@/components/metal-button";
@@ -58,15 +58,15 @@ function TxTable({ rows }: { rows: ActivityRow[] }) {
       </TableHeader>
       <TableBody>
         {rows.map((tx) => (
-          <TableRow key={`${tx.date}-${tx.name}`}>
-            <TableCell className="text-muted-foreground">{tx.date}</TableCell>
+          <TableRow key={`${fmtTxDate(tx.timestamp).day}-${tx.description}`}>
+            <TableCell className="text-muted-foreground">{fmtTxDate(tx.timestamp).day}</TableCell>
             <TableCell>
-              <span className="font-medium text-foreground">{tx.name}</span>
+              <span className="font-medium text-foreground">{tx.description}</span>
             </TableCell>
             <TableCell className="text-right font-medium text-foreground">
-              {Persona.fmtSigned(tx.amount)}
+              {Persona.fmtSigned(tx.fiatAmount)}
             </TableCell>
-            <TableCell className="text-muted-foreground">{tx.method}</TableCell>
+            <TableCell className="text-muted-foreground">{txMethodLabel(tx)}</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -88,7 +88,7 @@ export default function GoldWalletPage() {
       Math.round((unit === "oz" ? usdPerG * Market.OZ : usdPerG) * 100) / 100,
   }));
   const goldActivity = Persona.DEFAULT.activity.filter((tx) =>
-    tx.account === Persona.DEFAULT.balances.gold.account,
+    tx.account === "gold",
   );
   return (
     <>
