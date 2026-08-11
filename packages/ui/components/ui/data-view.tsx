@@ -574,13 +574,34 @@ function TableView<T>({
                     )}
                   >
                     {canSort ? (
+                      /* THE ARROW IS A STATE, NOT A DECORATION (11 Aug).
+                         Every sortable header used to carry a permanent
+                         up-down glyph, so a table of six sortable columns
+                         showed six arrows and none of them told you which
+                         sort was actually applied. Now: the SORTED column
+                         keeps its arrow, pointing the way it sorts; the
+                         rest reveal a neutral one on hover or keyboard
+                         focus, which is when the affordance is relevant. */
                       <button
                         type="button"
-                        className="inline-flex items-center gap-1 text-left font-medium hover:text-foreground"
+                        className="group/sort inline-flex items-center gap-1 text-left font-medium hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
                         onClick={header.column.getToggleSortingHandler()}
+                        aria-label={
+                          typeof col?.header === "string"
+                            ? `Sort by ${col.header}`
+                            : "Sort"
+                        }
                       >
                         {typeof col?.header !== "undefined" ? col.header : null}
-                        <SortIcon className={sort ? "h-3 w-3 text-foreground" : "h-3 w-3 text-muted-foreground"} />
+                        <SortIcon
+                          aria-hidden
+                          className={cn(
+                            "h-3 w-3 transition-opacity",
+                            sort
+                              ? "text-foreground opacity-100"
+                              : "text-muted-foreground opacity-0 group-hover/sort:opacity-100 group-focus-visible/sort:opacity-100",
+                          )}
+                        />
                       </button>
                     ) : (
                       col?.header ?? null

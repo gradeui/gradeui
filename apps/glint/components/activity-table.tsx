@@ -18,10 +18,17 @@
  * stacked over time, because the minute matters when two orders land on
  * the same day.
  *
- * COMPOSITION, NOT CONCATENATION: rows store entities (account "gold",
- * card { name, last4 }); cells compose display strings via accountLabel
- * and txMethodLabel, and type/status render through the label maps.
- * Re-wording a status is one line in lib/persona.ts.
+ * COMPOSITION, NOT CONCATENATION: rows store entities (method
+ * "market-order", card { name, last4 }); cells compose display strings
+ * via txMethodLabel, and status renders through the label map, so
+ * re-wording is one line in lib/persona.ts.
+ *
+ * COLUMNS (Ali, 11 Aug): Description, Amount, Status, Type, Date. There
+ * is no Account column and no account on the row: every wallet here
+ * belongs to the same customer, and a wallet screen filters on `metal`.
+ * The kind column ("Exchange") went too, because the description
+ * already says "Exchange USD to Gold", and the description's subtitle
+ * no longer repeats the method it sits next to.
  *
  * CLICKING A ROW opens the item in a SIDE SHEET, the way Mercury opens
  * a transaction: the list stays put behind it, so you keep your place
@@ -31,8 +38,7 @@
  * The props are the surface differences, and nothing else:
  *   filters  the All / Money in / Money out tabs. The full history
  *            wants them; a recent list under a dashboard does not.
- *   hide     column keys to drop. A wallet screen already knows the
- *            account; a compact list drops type and status.
+ *   hide     column keys to drop. A compact list drops status.
  *   limit    trims to the first N rows for a recent list.
  *
  * CHECKBOX SELECTION is deliberately absent: DataView has an active row
@@ -67,11 +73,9 @@ import {
   fmtTxDate,
   txMethodLabel,
   txPlace,
-  TX_TYPE_LABEL,
   TX_STATUS_LABEL,
   type ActivityRow,
 } from "@/lib/persona";
-import { accountLabel } from "@/lib/accounts";
 
 /** Metal moved on top, cash underneath, the way the app reads.
  *  Cash-only rows show cash alone. */
@@ -112,9 +116,11 @@ function buildColumns(
             <span className="font-medium text-foreground hover:underline">
               {row.description}
             </span>
-            <span className="text-xs text-muted-foreground">
-              {txPlace(row) || row.subtitle || ""}
-            </span>
+            {txPlace(row) && (
+              <span className="text-xs text-muted-foreground">
+                {txPlace(row)}
+              </span>
+            )}
           </Stack>
         </button>
       ),
@@ -125,14 +131,6 @@ function buildColumns(
       align: "end",
       sortable: true,
       cell: (row: ActivityRow) => <AmountCell row={row} />,
-    },
-    {
-      key: "type",
-      header: "Type",
-      sortable: true,
-      cell: (row: ActivityRow) => (
-        <span className="text-muted-foreground">{TX_TYPE_LABEL[row.type]}</span>
-      ),
     },
     {
       key: "status",
@@ -151,18 +149,9 @@ function buildColumns(
       ),
     },
     {
-      key: "account",
-      header: "Account",
-      sortable: true,
-      cell: (row: ActivityRow) => (
-        <span className="text-muted-foreground">
-          {accountLabel(row.account)}
-        </span>
-      ),
-    },
-    {
       key: "method",
-      header: "Method",
+      header: "Type",
+      sortable: true,
       cell: (row: ActivityRow) => (
         <span className="text-muted-foreground">{txMethodLabel(row)}</span>
       ),
@@ -217,7 +206,7 @@ function TxSheet({
             <SheetHeader>
               <SheetTitle>{row.description}</SheetTitle>
               <SheetDescription>
-                {txPlace(row) || row.subtitle || accountLabel(row.account)}
+                {txPlace(row) || row.subtitle || txMethodLabel(row)}
               </SheetDescription>
             </SheetHeader>
 
@@ -236,9 +225,6 @@ function TxSheet({
 
             <PropertyList divider>
               <PropertyList.Row label="Date">{d?.full}</PropertyList.Row>
-              <PropertyList.Row label="Type">
-                {TX_TYPE_LABEL[row.type]}
-              </PropertyList.Row>
               {row.rate != null && (
                 <PropertyList.Row label="Rate">
                   {fmtRate(row.rate)}
@@ -249,10 +235,7 @@ function TxSheet({
                   {fmtMoney(row.fee)}
                 </PropertyList.Row>
               )}
-              <PropertyList.Row label="Account">
-                {accountLabel(row.account)}
-              </PropertyList.Row>
-              <PropertyList.Row label="Method">
+              <PropertyList.Row label="Type">
                 {txMethodLabel(row)}
               </PropertyList.Row>
               <PropertyList.Row label="Status">
@@ -315,6 +298,7 @@ export function ActivityTable({
         data={data}
         columns={columns}
         views={["table"]}
+        defaultSorting={[{ id: "timestamp", desc: true }]}
         stickyHeader
         emptyMessage="Nothing here yet."
       />

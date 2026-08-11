@@ -91,9 +91,9 @@ const DialogContent = React.forwardRef<
         data-surface={surface}
         data-layout={layout}
         className={cn(
-          "fixed inset-0 z-50 grid content-start gap-4 overflow-y-auto border p-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-lg duration-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[85dvh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:p-8 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
+          "fixed inset-0 z-50 grid content-start gap-4 overflow-y-auto border p-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-lg duration-200 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[85dvh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:p-8 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
           layout === "center" &&
-            "inset-auto left-1/2 top-1/2 h-auto max-h-[85dvh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg",
+            "inset-auto left-1/2 top-1/2 h-auto max-h-[85dvh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl",
           surfaceBg(surface, "bg-background"),
           SURFACE_CLASS[surface],
           className

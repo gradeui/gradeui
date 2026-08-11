@@ -83,12 +83,25 @@ import {
   Row,
   Separator,
 } from "@gradeui/ui";
-import { CheckCircle2, ChevronRight, TrendingUp } from "lucide-react";
+import { CheckCircle2, ChevronRight } from "lucide-react";
 import { Persona } from "@/lib/persona";
 import { Market, type MetalKey, type TradeDirection } from "@/lib/market";
-import { METALS } from "@/components/wordmark";
+import { Wordmark, metalSolid } from "@/components/wordmark";
 import { MetalButton } from "@/components/metal-button";
 import { accountIdentifiers } from "@/lib/accounts";
+
+/** The Glint G in the metal's flat brand colour, the same mark the
+ *  wallet cards lead their titles with. */
+function MetalMark({ metal }: { metal: MetalKey }) {
+  return (
+    <Wordmark
+      lockup="mark"
+      tone="current"
+      className="size-5"
+      style={{ color: metalSolid(metal) }}
+    />
+  );
+}
 
 const METAL_LABEL: Record<MetalKey, string> = {
   gold: "Gold",
@@ -134,8 +147,6 @@ export function TradeFlow({
   const selling = direction === "sell";
   const label = METAL_LABEL[metal];
   const verb = selling ? "Sell" : "Buy";
-  const fiatMeta = Persona.DEFAULT.balances.fiat;
-  const metalMeta = Persona.DEFAULT.balances[metal];
   const amount = Number.parseFloat(amountRaw);
   const qtyTyped = Number.parseFloat(qtyRaw);
   const held = Market.toQty(metalBal, metal, unit);
@@ -216,29 +227,6 @@ export function TradeFlow({
     setStep("done");
   };
 
-  const walletRow = (
-    <Row
-      justify="between"
-      align="center"
-      className="min-h-14 rounded-md border border-input px-4 py-2"
-    >
-      <Stack gap="none" className="min-w-0">
-        <span className="truncate text-sm font-medium text-foreground">
-          USD{" "}
-          <span className="font-normal text-muted-foreground">
-            {fiatMeta.account}
-          </span>
-        </span>
-        <span className="truncate text-xs text-muted-foreground">
-          {accountIdentifiers("fiat")}
-        </span>
-      </Stack>
-      <span className="shrink-0 text-sm font-medium text-foreground">
-        {Persona.fmtMoney(fiat)}
-      </span>
-    </Row>
-  );
-
   const amountField = (
     <Field>
       <FieldLabel>Amount</FieldLabel>
@@ -299,17 +287,14 @@ export function TradeFlow({
           <>
             <DialogHeader>
               <DialogTitle>
-                {verb} {label}
+                <Row gap="sm" align="center">
+                  <MetalMark metal={metal} />
+                  {verb} {label}
+                </Row>
               </DialogTitle>
-              <DialogDescription>
-                {selling
-                  ? "A one-time market order into your USD account."
-                  : "A one-time market order from your USD account."}
-              </DialogDescription>
             </DialogHeader>
             <Stack gap="md">
               <Callout>
-                <TrendingUp />
                 <CalloutTitle>Current rate</CalloutTitle>
                 <CalloutDescription>
                   1 {unit} = {Persona.fmtMoney(dealRate)}
@@ -325,10 +310,6 @@ export function TradeFlow({
               {selling ? (
                 <>
                   {quantityField}
-                  <Field>
-                    <FieldLabel>Destination</FieldLabel>
-                    {walletRow}
-                  </Field>
                   {amountField}
                   <p className="text-sm leading-relaxed text-muted-foreground">
                     It can take up to three working days for funds to clear in
@@ -337,10 +318,6 @@ export function TradeFlow({
                 </>
               ) : (
                 <>
-                  <Field>
-                    <FieldLabel>Wallet</FieldLabel>
-                    {walletRow}
-                  </Field>
                   {amountField}
                   {quantityField}
                 </>
@@ -371,12 +348,12 @@ export function TradeFlow({
         {step === "review" && (
           <>
             <DialogHeader>
-              <DialogTitle>Review order</DialogTitle>
-              <DialogDescription>
-                {selling
-                  ? `Sell ${label.toLowerCase()} into ${fiatMeta.account}`
-                  : `Buy ${label.toLowerCase()} from ${fiatMeta.account}`}
-              </DialogDescription>
+              <DialogTitle>
+                <Row gap="sm" align="center">
+                  <MetalMark metal={metal} />
+                  Review order
+                </Row>
+              </DialogTitle>
             </DialogHeader>
             <Stack gap="md">
               <Stack gap="none">
@@ -395,13 +372,13 @@ export function TradeFlow({
                 <Row justify="between">
                   <span className="text-sm text-muted-foreground">From</span>
                   <span className="text-sm font-medium text-foreground">
-                    {selling ? metalMeta.account : `USD · ${fiatMeta.account}`}
+                    {selling ? label : "USD"}
                   </span>
                 </Row>
                 <Row justify="between">
                   <span className="text-sm text-muted-foreground">To</span>
                   <span className="text-sm font-medium text-foreground">
-                    {selling ? `USD · ${fiatMeta.account}` : metalMeta.account}
+                    {selling ? "USD" : label}
                   </span>
                 </Row>
                 <Row justify="between">

@@ -54,7 +54,7 @@ export default function GoldWalletPage() {
       Math.round((unit === "oz" ? usdPerG * Market.OZ : usdPerG) * 100) / 100,
   }));
   const goldActivity = Persona.DEFAULT.activity.filter((tx) =>
-    tx.account === "gold",
+    tx.metal === "gold",
   );
   return (
     <>

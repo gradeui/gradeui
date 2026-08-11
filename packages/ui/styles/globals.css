@@ -298,6 +298,9 @@
   --color-surface-glass-strong: var(--surface-glass-strong);
 
   /* -- Radius — pinned to the theme's --radius base. -- */
+  /* xl was the one step NOT tied to the theme's radius, so a rounder
+     or sharper theme moved every corner except the largest. */
+  --radius-xl: calc(var(--radius) + 4px);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);

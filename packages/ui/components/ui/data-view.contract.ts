@@ -13,6 +13,7 @@ export const DataViewContract = contract({
   import: "@gradeui/ui",
   aliases: ["data view","data table","datatable","data grid","dataview","table view","card view","grid view","list view","gallery","records list","master list","tanstack table","sortable table","column visibility","pinned column","frozen column","sticky header","view switcher"],
   composesWith: ["Table","Card","Badge","Avatar","ToggleGroup","DropdownMenu","PropertyList","Combobox"],
+  styleDefaults: {"TableView":"h-3 w-3 transition-opacity"},
   props: {
   "data": {
       schema: z.unknown(),

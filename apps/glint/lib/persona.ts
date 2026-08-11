@@ -74,11 +74,6 @@ export interface ActivityRow {
   rate: number | null;
   type: TxType;
   status: TxStatus;
-  /** The ACCOUNT ITSELF, not its label. accountLabel(id) renders
-   *  "Gold wallet ··5679" at display time; storing that string would
-   *  bake a number into every row and make a wallet filter a substring
-   *  match rather than an equality check. */
-  account: AssetKey;
   method: TxMethod;
   /** The instrument, when the method is a card. Name and last four are
    *  separate fields, composed for display. */
@@ -296,7 +291,6 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         id: "tx-20260811-1110",
         kind: "exchange-buy",
         description: "Exchange USD to Gold",
-        subtitle: "Market order",
         timestamp: "2026-08-11T11:10:00",
         metalAmount: 7.1283,
         metal: "gold",
@@ -304,33 +298,14 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         rate: 140.2856,
         type: "exchange",
         status: "completed",
-        account: "gold",
         method: "market-order",
         fee: 8.92,
         reference: "GX-4471-0083",
       },
       {
-        id: "tx-20260810-0834",
-        kind: "spend",
-        description: "FREENOW* DY46BQ-2",
-        merchant: { city: "Denver", country: "USA" },
-        timestamp: "2026-08-10T08:34:00",
-        metalAmount: -0.1597,
-        metal: "gold",
-        fiatAmount: -22.2,
-        rate: 139.0343,
-        type: "card",
-        status: "pending",
-        account: "gold",
-        method: "card",
-        card: { name: "Glint Mastercard", last4: "4417" },
-        reference: "GC-8820-4417",
-      },
-      {
         id: "tx-20260806-1542",
         kind: "exchange-sell",
         description: "Exchange Silver to USD",
-        subtitle: "Market order",
         timestamp: "2026-08-06T15:42:00",
         metalAmount: -510,
         metal: "silver",
@@ -338,7 +313,6 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         rate: 2.0384,
         type: "exchange",
         status: "completed",
-        account: "silver",
         method: "market-order",
         fee: 9.44,
         reference: "GX-4390-0117",
@@ -347,7 +321,6 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         id: "tx-20260805-0902",
         kind: "deposit",
         description: "Deposit from Ridgeline Construction",
-        subtitle: "Wire transfer",
         timestamp: "2026-08-05T09:02:00",
         metalAmount: null,
         metal: null,
@@ -355,7 +328,6 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         rate: null,
         type: "deposit",
         status: "completed",
-        account: "fiat",
         method: "wire",
         reference: "WT-2026-08-0551",
       },
@@ -363,7 +335,6 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         id: "tx-20260802-1015",
         kind: "exchange-buy",
         description: "Exchange USD to Gold",
-        subtitle: "Market order",
         timestamp: "2026-08-02T10:15:00",
         metalAmount: 8.8402,
         metal: "gold",
@@ -371,7 +342,6 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         rate: 140.2856,
         type: "exchange",
         status: "completed",
-        account: "gold",
         method: "market-order",
         fee: 11.06,
         reference: "GX-4318-0092",
@@ -380,7 +350,6 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         id: "tx-20260801-0741",
         kind: "deposit",
         description: "Deposit from Ridgeline Construction",
-        subtitle: "ACH",
         timestamp: "2026-08-01T07:41:00",
         metalAmount: null,
         metal: null,
@@ -388,7 +357,6 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         rate: null,
         type: "deposit",
         status: "completed",
-        account: "fiat",
         method: "ach",
         reference: "AC-2026-08-0117",
       },
