@@ -1,8 +1,12 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — 0 Before you apply"
-// (design dmskgw2pk2r1x, version 1786358340226). Registry: lib/screens.ts;
+// (design dmskgw2pk2r1x, version 1786469048975). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: f2ae74b1b1b1
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   Button,
@@ -13,10 +17,6 @@ import {
   FieldDescription,
   FieldSet,
   FieldLegend,
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  InputGroupText,
   Select,
   SelectTrigger,
   SelectValue,
@@ -29,9 +29,11 @@ import {
   Stack,
   Grid,
 } from "@gradeui/ui";
-import { ShieldCheck, ChevronDown, Landmark } from "lucide-react";
+import { ShieldCheck, Landmark } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore } from "@/lib/flow-store";
+import { PhoneField } from "@/components/phone-field";
+import { Persona } from "@/lib/persona";
 
 // Glint US Business Account onboarding — Step 0 of the CCO data-capture
 // spec (05 Aug 2026): pre-application. Covers the "Account Setup and
@@ -43,18 +45,67 @@ import { FlowStore } from "@/lib/flow-store";
 // FLOW STATE (FlowStore): every field stores, so the application keeps
 // its answers across navigation. The password deliberately does NOT
 // store, even in a prototype.
+//
+// PHONE NUMBERS go through PhoneField, which stores the COUNTRY and the
+// NATIONAL NUMBER under separate keys (applicantMobileCountry +
+// applicantMobile, contactPhoneCountry + contactPhone) and owns the
+// FlowStore wiring for both, so nothing on this screen reads them.
 const useFlowField = FlowStore.useField;
 
+/* The human filling this application in, Wade Jones of Ridgeline
+   Construction. Every persona value below is passed as the field hook's
+   FALLBACK, never as an assignment: the flow store is read first, so a
+   value the applicant typed always wins and a prefill only fills the
+   gap. It also means a walked wizard shows the demo persona instead of
+   handing the browser a page of empty inputs to autofill with whoever is
+   sitting in front of it, which is the bug this fixes.
+
+   NOTHING HERE REFORMATS ANYTHING, on purpose: the persona already
+   stores each value in the exact shape its field expects. Selects get
+   the option VALUE and not its label ("owner", "sms"), the mobile is the
+   NATIONAL number with no dial code because PhoneField holds the country
+   separately, and the booleans are booleans. Reformatting on the way in
+   is how one of these fails silently. */
+const A = Persona.DEFAULT.applicant;
+
 export default function BeforeYouApplyPage() {
-  const [email, setEmail] = useFlowField("applicantEmail", "");
-  const [twoFactor, setTwoFactor] = useFlowField("twoFactor", "sms");
-  const [mobile, setMobile] = useFlowField("applicantMobile", "");
-  const [role, setRole] = useFlowField("applicantRole", "");
-  const [hasAccount, setHasAccount] = useFlowField("hasGlintAccount", false);
-  const [contactName, setContactName] = useFlowField("contactName", "");
-  const [contactPhone, setContactPhone] = useFlowField("contactPhone", "");
-  const [contactEmail, setContactEmail] = useFlowField("contactEmail", "");
-  const [contactConsent, setContactConsent] = useFlowField("contactConsent", true);
+  const [email, setEmail] = useFlowField("applicantEmail", A.email);
+  const [twoFactor, setTwoFactor] = useFlowField("twoFactor", A.twoFactor);
+  const [role, setRole] = useFlowField("applicantRole", A.role);
+  const [hasAccount, setHasAccount] = useFlowField(
+    "hasGlintAccount",
+    A.hasPersonalAccount,
+  );
+  /* The contact for the application IS the applicant (Ali, 11 Aug), so
+     the three contact fields read from the same applicant block. The
+     name goes through Persona.fullName() rather than joining first and
+     last here, so the composition lives in one place. */
+  const [contactName, setContactName] = useFlowField(
+    "contactName",
+    Persona.fullName(),
+  );
+  const [contactEmail, setContactEmail] = useFlowField(
+    "contactEmail",
+    A.email,
+  );
+  /* ONE CONSENT PER CHANNEL (Ali, 11 Aug). A single "by phone or email"
+     tick cannot be honoured: a customer who is happy to be emailed and
+     does not want to be called has no way to say so, and the stored
+     value cannot answer "may we ring them". Two keys, two sentences,
+     each about its own channel. No persona equivalent exists for either,
+     so both keep the opted-in default this screen already carried. */
+  const [consentEmail, setConsentEmail] = useFlowField(
+    "contactConsentEmail",
+    true,
+  );
+  const [consentPhone, setConsentPhone] = useFlowField(
+    "contactConsentPhone",
+    true,
+  );
+  /* The three attestations stay FALSE. An attestation is an act by the
+     applicant, not a fact about them, and the persona holds no answer to
+     any of them: prefilling a tick would be inventing a legal statement
+     nobody made. */
   const [attestSanctions, setAttestSanctions] = useFlowField("attestSanctions", false);
   const [attestProhibited, setAttestProhibited] = useFlowField("attestProhibited", false);
   const [attestChecks, setAttestChecks] = useFlowField("attestChecks", false);
@@ -102,11 +153,16 @@ export default function BeforeYouApplyPage() {
           </Field>
 
           <Grid cols="2" gap="md">
+            {/* The ONLY field on this screen with nothing prefilled, and
+                that is deliberate: a password is a secret the applicant
+                chooses, the persona holds none, and it is the one field
+                the comment at the top says never stores. */}
             <Field>
               <FieldLabel>Password</FieldLabel>
               <Input type="password" autoComplete="new-password" />
               <FieldDescription className="text-xs">
-                At least 12 characters.
+                At least 12 characters. Choose this yourself, we never fill it
+                in for you.
               </FieldDescription>
             </Field>
             <Field>
@@ -127,25 +183,18 @@ export default function BeforeYouApplyPage() {
             </Field>
           </Grid>
 
-          <Field>
-            <FieldLabel>Mobile number</FieldLabel>
-            <InputGroup>
-              <InputGroupAddon align="inline-start">
-                <InputGroupText>🇺🇸</InputGroupText>
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
-              </InputGroupAddon>
-              <InputGroupInput
-                placeholder="(555) 000-0000"
-                inputMode="tel"
-                autoComplete="tel"
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-              />
-            </InputGroup>
-            <FieldDescription className="text-xs">
-              Used for sign-in codes and to verify your identity.
-            </FieldDescription>
-          </Field>
+          {/* PhoneField owns the country + number pair, so the flag on
+              show always matches the stored country. This field used to
+              be an addon holding a hardcoded US flag and a decorative
+              chevron, which is how a UK number sat under a US flag. */}
+          <PhoneField
+            label="Mobile number"
+            description="Used for sign-in codes and to verify your identity."
+            countryKey="applicantMobileCountry"
+            numberKey="applicantMobile"
+            defaultCountry="us"
+            defaultNumber={A.mobile}
+          />
 
           <Field>
             <FieldLabel>Your role at the business</FieldLabel>
@@ -204,39 +253,58 @@ export default function BeforeYouApplyPage() {
           <Field>
             <FieldLabel>Contact name</FieldLabel>
             <Input
-              placeholder="Full name"
               autoComplete="name"
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
             />
+            <FieldDescription className="text-xs">
+              We&rsquo;ve filled in your name. Change it if someone else at the
+              business should handle our questions.
+            </FieldDescription>
           </Field>
           <Grid cols="2" gap="md">
-            <Field>
-              <FieldLabel>Contact phone</FieldLabel>
-              <Input
-                placeholder="(555) 000-0000"
-                inputMode="tel"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-              />
-            </Field>
+            {/* The same component as the applicant's number, by design,
+                and prefilled from the same applicant record: the contact
+                for this application is the applicant. Change either and
+                only that one changes, because the two PhoneFields hold
+                separate flow-store key pairs. */}
+            <PhoneField
+              label="Contact phone"
+              description="The best number to reach this person during working hours."
+              countryKey="contactPhoneCountry"
+              numberKey="contactPhone"
+              defaultCountry="us"
+              defaultNumber={A.mobile}
+            />
             <Field>
               <FieldLabel>Contact email</FieldLabel>
               <Input
                 type="email"
-                placeholder="name@company.com"
                 value={contactEmail}
                 onChange={(e) => setContactEmail(e.target.value)}
               />
+              <FieldDescription className="text-xs">
+                Where we send questions and requests for documents.
+              </FieldDescription>
             </Field>
           </Grid>
+          {/* Two ticks, one per channel: see the note on the hooks. */}
           <Field orientation="horizontal">
             <Checkbox
-              checked={contactConsent}
-              onCheckedChange={(v) => setContactConsent(v === true)}
+              checked={consentEmail}
+              onCheckedChange={(v) => setConsentEmail(v === true)}
             />
             <FieldLabel className="font-normal leading-relaxed">
-              Glint may contact me about this application by phone or email
+              Glint may email me about this application
+            </FieldLabel>
+          </Field>
+          <Field orientation="horizontal">
+            <Checkbox
+              checked={consentPhone}
+              onCheckedChange={(v) => setConsentPhone(v === true)}
+            />
+            <FieldLabel className="font-normal leading-relaxed">
+              Glint may call me about this application
             </FieldLabel>
           </Field>
         </Stack>

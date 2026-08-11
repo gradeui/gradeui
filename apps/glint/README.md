@@ -91,17 +91,62 @@ survives any future slug rename.
    python3 scripts/promote-screen.py /tmp/glint-screens/<file>.jsx app/<route>/page.tsx --func <Name>Page --name "<Studio screen name>" --id <designId> --version <updatedAt ms> [--step | --unwrap AppChrome]
    ```
 
-   `--step` unwraps the OnboardingLayout chrome (the route layout
-   provides it). Screens outside the wizard keep their full layout.
+   `--step` unwraps the OnboardingLayout chrome and `--unwrap AppChrome`
+   the product shell, in both cases because the route layout
+   (`app/onboarding/layout.tsx`, `app/(product)/layout.tsx`) provides it.
+   `/` and `/status` sit under neither layout and keep their own. Confirm
+   the choice against what the page actually contains: no flag where the
+   layout supplies the chrome gives you a doubled shell.
 
 3. Add or refresh the entry in `lib/screens.ts` (slug, name, id, step,
    `promotedAt` = the version you promoted), then re-baseline the drift
-   guard: `pnpm -F @gradeui/glint check:promotions --update`.
+   guard: `pnpm -F @gradeui/glint check:promotions --update`. The guard
+   reads the `source-hash` the generated page carries, so step 2 is what
+   actually clears drift; `--update` only brings the registry's record
+   along.
 
 4. `pnpm -F @gradeui/glint build`. Strict TS may want light prop
    annotations on untyped helper components inside the screen.
 
 5. Check the page in the browser (`pnpm -F @gradeui/glint dev`).
+
+### Re-promoting every screen
+
+Run once on 11 Aug 2026, when the `// source-hash:` stamp landed. All 16
+pages had been generated before the stamp existed, so every one reported
+`~ legacy` and the guard was one-sided across the whole app.
+Re-promoting is what stamps a page, so a full sweep is the only way to
+clear that, and is worth repeating whenever the header or the signature
+rule changes.
+
+Derive the 16 commands, never hand-write them. Each page's own header
+carries its design id and its `export default function` name,
+`lib/screens.ts` carries the name and step, and the dump's
+`manifest.json` carries the `updatedAt` for `--version`. Match a page to
+a screen by the design id **in its header**, because a slug is not a
+path under the `(product)` group. Count the flags off the registry:
+nine `/onboarding/*` screens take `--step` (step3a and step3b share
+step 4), the five under `(product)` take `--unwrap AppChrome`, and `/`
+plus `/status` take neither.
+
+Then classify each page's diff, or a sweep buries real drift in its own
+noise. Snapshot the pages first if the working tree is dirty, so the
+comparison is against the copy the app was actually running:
+
+| Diff | Means |
+|---|---|
+| header only (version line + stamp) | the app copy was already in sync. The expected result |
+| body changed | the two copies had really diverged, and the sweep is the only reason anyone noticed |
+
+Read every body-changed diff before keeping it. A fresh promotion is
+Studio's version of the screen, which is right when Studio was ahead and
+a **regression** when the app was. The first sweep hit both: it reverted
+`/activity` off the shared `ActivityTable` back to an inlined table, and
+put hard-coded persona values back into `/status`, because those two
+Studio screens were the stale side. Fix that in Studio and promote
+again; do not hand-edit the page. Body-changed pages also lose their
+type annotations, since the Studio source is plain JSX, so step 4 above
+always follows a sweep.
 
 Shared components ported so far: `OnboardingLayout`, `AppChrome`,
 `Wordmark` (+ the pinned metal ladders), `FlowStore`, `Persona`,
@@ -114,7 +159,7 @@ Studio twin: both carry a header note saying so.
 
 **Studio first, then promote** (Ali, 11 Aug 2026). Screen and shared-
 component changes are made in the Studio project and promoted down into
-this app — not typed into `app/**/page.tsx` directly, even for a small
+this app, not typed into `app/**/page.tsx` directly, even for a small
 fix reported against the running app. Studio is the drafting space; an
 app-side edit makes Studio the stale copy and the divergence only shows
 up later. Design-system changes are the exception: `packages/ui` reaches
@@ -124,23 +169,66 @@ package (plus the docs twin) and need `pnpm -F @gradeui/ui build`.
 Studio and this app hold two copies of every screen, and editing one
 does not touch the other. A screen changed in Studio after promotion
 silently orphans the copy here, and the only symptom is "these look
-different" days later — which is exactly how the wallets card chevron
+different" days later, which is exactly how the wallets card chevron
 ended up a ghost button here and an outline circle in Studio.
 
 ```bash
 pnpm -F @gradeui/glint check:promotions
 ```
 
-It hashes each live Studio screen and compares against the `sourceHash`
-recorded in `lib/screens.ts` at promotion time, printing a line per
-screen and exiting non-zero if any drifted. `--warn` never fails,
-`--update` re-baselines after you promote.
+The check is **two-sided**: it hashes each live Studio screen and
+compares that against the `// source-hash:` stamp in the promoted page's
+own header, which `scripts/promote-screen.py` writes when it generates
+the page. One line per screen, non-zero exit if any drifted. `--warn`
+never fails; `--update` re-baselines the record in `lib/screens.ts`.
+
+### Why it reads the page, not just a stored baseline
+
+The first version compared live Studio against a `sourceHash` field in
+`lib/screens.ts`. Both sides of that comparison were Studio, so
+`--update` re-blessed the baseline against whatever Studio held at that
+moment: run it without re-promoting and a stale app copy sat under a
+green tick, permanently. That is how the gold wallet diverged. Studio's
+activity filter had moved to `tx.account === "gold"` while the page here
+still read `tx.metal === "gold"`, and the guard reported all 15 screens
+matching.
+
+The hash now lives in the generated page, so the only way to move the
+app side of the comparison is to run `promote-screen.py` again, which is
+the step that was being skipped. `source_signature` in that script is a
+deliberate port of `sourceSignature` in `check-promotions.mts`: change
+one, change the other.
+
+Reading the output:
+
+| Mark | Means |
+|---|---|
+| `✓` | the page's stamp matches the live Studio screen |
+| `✗ STALE` | Studio moved since this page was generated. Re-promote it. `--update` cannot clear this, by design |
+| `~ legacy` | the page predates the stamp, so the check falls back to `lib/screens.ts` and is one-sided again for that screen. Re-promoting stamps it |
+| `·` | legacy, and no baseline in the registry either |
+| `!` | no page under `app/` carries that design id |
+| `?` | no such design in the Studio project |
+
+No page reports `~ legacy` today: every one was promoted before the
+stamp existed, and the sweep above stamped all 16 in one pass. A page
+promoted by an older copy of the script would report it again, and stays
+that way until it is next promoted. Pages are matched to registry
+entries **by the design id in their own header**, never by a slug to
+path table: `/wallets/usd` lives at `app/(product)/wallets/usd/page.tsx`
+because of the route group, and a hand-written mapping would rot the
+first time a screen moved in or out of one.
+
+What the guard does not prove: that nobody hand-edited a page after
+promotion. It proves the page was generated from the source Studio holds
+now. Hand edits are what the "Studio first" rule above exists to
+prevent, and they leave no trace here.
 
 It compares SOURCE, not timestamps: `designs.updated_at` moves whenever
 anything writes the row (a tag script, opening the canvas), so a
 timestamp check flagged 13 of 14 screens when exactly one had really
 changed. Studio's `data-gds-source-id` stamps and whitespace are
-normalised away before hashing for the same reason — a canvas save adds
+normalised away before hashing for the same reason: a canvas save adds
 them, an MCP save strips them, and neither changes a pixel.
 
 ## Deploying to Vercel

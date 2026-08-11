@@ -1,8 +1,12 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — 6 Certification"
-// (design dmskh0ixi1gdj, version 1786358341154). Registry: lib/screens.ts;
+// (design dmskh0ixi1gdj, version 1786468880697). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: 9546c5104b52
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   Button,
@@ -23,6 +27,7 @@ import {
 import { BadgeCheck } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore } from "@/lib/flow-store";
+import { Persona } from "@/lib/persona";
 
 // Glint US onboarding — Step 6: certification and attestations. Moved
 // here from Step 3b (CCO, 05 Aug) so ONE certification covers every
@@ -42,16 +47,42 @@ import { FlowStore } from "@/lib/flow-store";
 // PERSON record, many roles).
 const useFlowField = FlowStore.useField;
 
+/* The human applying, the same alias step 7 uses. A PREFILL IS A
+   FALLBACK: every persona value below sits in the fallback position of a
+   FlowStore read, so the store is consulted FIRST and a value the
+   applicant typed on an earlier step always wins. The persona already
+   stores each value in the exact format its field expects (a title is
+   the free text this input holds, a name is the parts this screen
+   joins), so nothing here reformats anything. It also stops the browser
+   filling an empty field with whoever is sitting at the keyboard, which
+   was the actual bug: the demo signer was being replaced by the
+   reviewer. */
+const A = Persona.DEFAULT.applicant;
+
 export default function CertificationPage() {
-  const seededName =
-    [FlowStore.get("o1First", ""), FlowStore.get("o1Last", "")]
-      .filter(Boolean)
-      .join(" ") || "";
+  /* The signer's name, from the owner details step 3 wrote, falling back
+     to the persona applicant so an unvisited walkthrough still certifies
+     as Wade Jones. */
+  const seededName = [
+    FlowStore.get("o1First", A.first),
+    FlowStore.get("o1Last", A.last),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  /* WHAT IS DELIBERATELY NOT PREFILLED, and why it is a decision rather
+     than a gap: boCertified, accuracyConfirmed and signature stay empty.
+     Those three are the applicant's OWN ACT. Pre-ticking a certification
+     or typing a name into the signature field would put consent on the
+     record that nobody gave, and this screen exists precisely to be the
+     auditable moment that consent happened. Name and title prefill
+     because they are facts ABOUT the signer; the assent is not a fact,
+     it is an act, and only the applicant can perform it. */
   const [boCertified, setBoCertified] = useFlowField("boCertified", false);
   const [certName, setCertName] = useFlowField("certName", seededName);
   const [certRole, setCertRole] = useFlowField(
     "certRole",
-    FlowStore.get("cpTitle", ""),
+    FlowStore.get("cpTitle", A.title),
   );
   const [accuracy, setAccuracy] = useFlowField("accuracyConfirmed", false);
   const [signature, setSignature] = useFlowField("signature", "");
@@ -126,7 +157,13 @@ export default function CertificationPage() {
         <Stack gap="md">
           <Field>
             <FieldLabel>Type your full legal name to sign</FieldLabel>
+            {/* The seeded name is the PLACEHOLDER here and never the
+                value: it tells the applicant what to type without typing
+                it for them. autoComplete is off because this is the one
+                field the browser must not fill, for the same reason we
+                do not prefill it ourselves. */}
             <Input
+              autoComplete="off"
               placeholder={seededName || "Your full legal name"}
               className="h-14 text-lg italic"
               value={signature}

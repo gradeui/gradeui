@@ -1,169 +1,77 @@
 "use client";
 
-import * as React from "react";
-
 // Promoted from Studio screen "Silver — wallet"
-// (design dmsoj5uvz94l3, version 1786435550819). Registry: lib/screens.ts;
+// (design dmsoj5uvz94l3, version 1786463143437). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: f24ebbf98310
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   Section,
   Container,
   Stack,
-  Row,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
   Button,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ToggleGroup,
-  ToggleGroupItem,
 } from "@gradeui/ui";
-import { AreaChart, Area, XAxis, YAxis } from "recharts";
-import { Persona, type ActivityRow, fmtTxDate, txMethodLabel } from "@/lib/persona";
-import { Market, type Range } from "@/lib/market";
-import { metalSolid } from "@/components/wordmark";
-import { MetalButton } from "@/components/metal-button";
+import { Persona } from "@/lib/persona";
+import { MetalPriceCard } from "@/components/metal-price-card";
+import { MetalWalletCard } from "@/components/metal-wallet-card";
 import { ActivityTable } from "@/components/activity-table";
-import { accountIdentifiers } from "@/lib/accounts";
-import { TradeFlow } from "@/components/trade-flow";
 
-// Glint Silver wallet screen: the desktop gold view. Two cards up top:
-// the LBMA gold price (latest per-ounce figure + the last month of
-// settled auctions charted from lib/market, the shared price source)
-// and the associated account (balance, holding, wallet number,
-// metal-dressed Buy button). Below: all gold activity, the persona
-// rows filtered to the gold wallet. The silver screen will be this
-// shape with the other metal. The chrome (with the Back affordance in
-// the toolbar leading slot) comes from the (product) route layout.
+// Glint Silver wallet screen (Ali, 11 Aug 2026): the desktop silver
+// view. Holding card and price card side by side, then all silver
+// activity.
+//
+// THIS SCREEN IS ONE LINE OF METAL (Ali, 11 Aug). It is now identical to
+// the Gold wallet screen apart from the METAL const below, which is the
+// point: this file used to be a paste of the gold one and still carried
+// gold's header comment ("the desktop gold view", "the LBMA gold price",
+// "all gold activity"), gold's Y-axis padding, which squashed the silver
+// line into a tenth of the card height with the axis running below zero,
+// and a {/* All gold activity */} comment over the silver table. All of
+// that lived in the duplication. Change MetalPriceCard or
+// MetalWalletCard, not this file, for anything visual.
+//
+// WALLET CARD LEADS, ON THE LEFT (Ali, 11 Aug). The holding is what you
+// came to the screen for; the price is context for it. The narrower card
+// takes the left 5 columns and the chart the right 7, so the page still
+// reads as one asymmetric pair rather than two equal blocks.
+//
+// ACTIVITY: Persona.activityFor(METAL) is the shared wallet filter, so
+// the three wallet screens cannot disagree about which rows belong to a
+// wallet. Silver has exactly ONE row today, the 6 Aug sale into USD; if
+// this list needs to look busier for a demo the fix is more silver rows
+// in Persona, not anything here.
+// The SHARED ActivityTable is the same component the Activity screen and
+// the Dashboard use. No hide list: there has never been an "account"
+// column, so the hide={["account"]} this screen used to pass did nothing.
+//
+// Reached from the dashboard's Silver card, or from Wallets in the rail;
+// the toolbar leading slot carries the Back affordance.
 
-const CHART_CONFIG = {
-  price: { label: "USD", color: metalSolid("silver") },
-};
+const METAL = "silver";
 
 export default function SilverWalletPage() {
-  /* RANGE (Ali, 11 Aug): 1M is the floor because LBMA publishes one
-     auction price a day, so the app's 1D and 1W would be invented; 5Y
-     is the ceiling he asked for. Market thins the points per range. */
-  const [range, setRange] = React.useState<Range>("1M");
-  const [amount] = Persona.useBalance("silver");
-  const [unit] = Persona.usePreference("unit.silver");
-  const meta = Persona.DEFAULT.balances.silver;
-  const latest = Market.latest("silver");
-  const price = unit === "oz" ? latest.usdPerOz : latest.usdPerG;
-  /* Chart the month of auctions in the preferred unit, in the metal's
-     own colour (the pinned ladder, not the theme primary). */
-  const series = Market.series("silver", range).map(([d, usdPerG]: [string, number]) => ({
-    d,
-    price:
-      Math.round((unit === "oz" ? usdPerG * Market.OZ : usdPerG) * 100) / 100,
-  }));
-  const silverActivity = Persona.DEFAULT.activity.filter((tx) =>
-    tx.metal === "silver",
-  );
+  const label = Persona.DEFAULT.balances[METAL].label;
   return (
     <>
-      {/* Price + account, side by side */}
+      {/* Holding + price, side by side */}
       <Section pad="none" className="pt-8">
         <Container maxW="xl" grid className="gap-6">
-          <Card className="col-span-12 lg:col-span-7">
-            <CardHeader>
-              <CardTitle>Silver price</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Stack gap="md">
-                <Stack gap="none">
-                  <span className="text-2xl font-semibold text-foreground">
-                    {Persona.fmtMoney(price)}
-                    <span className="text-sm font-normal text-muted-foreground"> /{unit}</span>
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    LBMA auction · {latest.date}
-                  </span>
-                </Stack>
-                <ToggleGroup
-                  type="single"
-                  variant="segmented"
-                  size="sm"
-                  value={range}
-                  onValueChange={(v) => v && setRange(v as Range)}
-                  className="w-fit"
-                >
-                  {Market.RANGES.map((r) => (
-                    <ToggleGroupItem key={r} value={r} className="min-w-12">
-                      {Market.RANGE_LABEL[r]}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-                <ChartContainer config={CHART_CONFIG} className="h-[180px] w-full">
-                  <AreaChart data={series} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
-                    <defs>
-                      <linearGradient id="fillSilverPrice" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--color-price)" stopOpacity={0.25} />
-                        <stop offset="100%" stopColor="var(--color-price)" stopOpacity={0.02} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="d" hide />
-                    <YAxis hide domain={["dataMin - 2", "dataMax + 1"]} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                    <Area
-                      dataKey="price"
-                      type="monotone"
-                      stroke="var(--color-price)"
-                      strokeWidth={2}
-                      fill="url(#fillSilverPrice)"
-                    />
-                  </AreaChart>
-                </ChartContainer>
-              </Stack>
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-12 lg:col-span-5">
-            <CardHeader>
-              <CardTitle>Silver wallet</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Stack gap="md">
-                <Stack gap="xs">
-                  <span className="text-2xl font-semibold text-foreground">{Persona.fmtMoney(amount)}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {Market.fmtQty(Market.toQty(amount, "silver", unit), unit)} held
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {meta.account} · {accountIdentifiers("silver")}
-                  </span>
-                </Stack>
-                <Row gap="sm">
-                  <TradeFlow metal="silver">
-                    <MetalButton metal="silver" size="md">
-                      Buy Silver
-                    </MetalButton>
-                  </TradeFlow>
-                  <TradeFlow metal="silver" direction="sell">
-                    <Button variant="ghost" size="md" className="rounded-full">
-                      Sell
-                    </Button>
-                  </TradeFlow>
-                </Row>
-              </Stack>
-            </CardContent>
-          </Card>
+          <MetalWalletCard metal={METAL} className="col-span-12 lg:col-span-5" />
+          <MetalPriceCard metal={METAL} className="col-span-12 lg:col-span-7" />
         </Container>
       </Section>
 
-      {/* All gold activity */}
+      {/* Every row that moves this wallet */}
       <Section pad="none" className="py-10">
         <Container maxW="xl">
           <Stack gap="md">
-            <h2 className="text-lg font-semibold text-foreground">Silver activity</h2>
-            {/* The shared activity table. The account column is dropped: this
-                screen IS the gold wallet, so repeating it every row is
-                noise. */}
-            <ActivityTable rows={silverActivity} hide={["account"]} />
+            <h2 className="text-lg font-semibold text-foreground">
+              {label} activity
+            </h2>
+            <ActivityTable rows={Persona.activityFor(METAL)} />
           </Stack>
         </Container>
       </Section>

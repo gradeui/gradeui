@@ -1,8 +1,12 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — 1 Business type"
-// (design dmskgweh31a0m, version 1786356816160). Registry: lib/screens.ts;
+// (design dmskgweh31a0m, version 1786468838006). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: 02cbc1474ccd
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   Button,
@@ -17,6 +21,7 @@ import { Info } from "lucide-react";
 // first-class across all three renderer kernels (8 Aug).
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { useFlowField } from "@/lib/flow-store";
+import { Persona } from "@/lib/persona";
 
 // Glint US onboarding — Step 1: business type selector. This choice
 // drives all conditional logic downstream (3a vs 3b). The selection is
@@ -26,10 +31,24 @@ import { useFlowField } from "@/lib/flow-store";
 // Trusts and retirement plans (Step 3c) are out of scope for this
 // build, so no trust option is offered here.
 
+/* The applying company, the same shorthand step 7 uses. What it feeds
+   below are FALLBACKS, not forced values: useFlowField reads the store
+   first, so a choice the user made still wins on the way back through
+   the wizard. Every persona value is ALREADY stored in the format its
+   field expects, so nothing here reformats one: entityType is the
+   RadioCard option value ("smllc"), not its label. Prefilling matters
+   because an empty field invites the browser to autofill the reviewer's
+   own details instead of the demo persona's. */
+const C = Persona.DEFAULT.company;
+
 export default function BusinessTypePage() {
-  const [businessType, setBusinessType] = useFlowField(
+  /* PROMOTION ANNOTATION (not a Studio change): the store field is
+     widened to `string` because C.entityType is a literal union in the
+     typed persona, and RadioGroup's onValueChange hands back a plain
+     string. */
+  const [businessType, setBusinessType] = useFlowField<string>(
     "businessType",
-    "smllc",
+    C.entityType,
   );
   return (
     <>

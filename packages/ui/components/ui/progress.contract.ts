@@ -25,6 +25,11 @@ export const ProgressContract = contract({
       schema: z.number().optional(),
       design: "knob",
   },
+  "tone": {
+      schema: z.enum(["primary", "accent", "muted"]).optional(),
+      design: "knob",
+      description: "fill colour of the bar (default \"primary\"). Reach for \"accent\" when the bar is LARGE, a full-width wizard header bar in the action colour reads as competing with the page's actual actions rather than as progress. \"muted\" for a purely informational gauge (quota, storage) where brand colour over-signals. Use this prop; do NOT tint the indicator with a child selector from outside.",
+  },
   "className": {
       schema: z.string().optional(),
       design: "plumbing",

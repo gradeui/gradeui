@@ -1,8 +1,12 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — 3a Owner identity"
-// (design dmskgxyctfxci, version 1786359134179). Registry: lib/screens.ts;
+// (design dmskgxyctfxci, version 1786468890238). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: 73966c79e2d8
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   Button,
@@ -25,6 +29,7 @@ import {
 import { Upload, Camera, FileText } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore, US_STATES } from "@/lib/flow-store";
+import { Persona } from "@/lib/persona";
 
 // Glint US onboarding — Step 3a: single-member LLC owner identity.
 // Shown when Business Type = SMLLC: the single owner holds 100% of the
@@ -39,19 +44,33 @@ import { FlowStore, US_STATES } from "@/lib/flow-store";
 // later and the person you typed here is already Owner 1 there.
 const useFlowField = FlowStore.useField;
 
+/* Shorthand for the human applying. Every persona value below is a
+   FALLBACK on the field hook, never a forced value: FlowStore is read
+   first, so anything the user has typed wins and the persona only fills
+   a key nobody has touched. The values are already stored in the exact
+   format each field expects, the state code lowercase to match
+   US_STATES, the date of birth as MM/DD/YYYY, the two selects as their
+   option values, so nothing here reformats. Same idiom as step 7's
+   C / A shorthands. */
+const A = Persona.DEFAULT.applicant;
+
 export default function OwnerIdentityPage() {
-  const [first, setFirst] = useFlowField("o1First", "");
-  const [middle, setMiddle] = useFlowField("o1Middle", "");
-  const [last, setLast] = useFlowField("o1Last", "");
-  const [dob, setDob] = useFlowField("o1Dob", "");
-  const [citizenship, setCitizenship] = useFlowField("o1Citizenship", "us");
-  const [street, setStreet] = useFlowField("o1Street", "");
-  const [city, setCity] = useFlowField("o1City", "");
-  const [state, setState] = useFlowField("o1State", "");
-  const [zip, setZip] = useFlowField("o1Zip", "");
-  const [ssn, setSsn] = useFlowField("o1Ssn", "");
-  const [phone, setPhone] = useFlowField("o1Phone", "");
-  const [taxResidence, setTaxResidence] = useFlowField("o1TaxResidence", "us");
+  const [first, setFirst] = useFlowField("o1First", A.first);
+  /* A.middle is an empty string: this persona has no middle name on
+     record, and the field is optional, so it prefills to blank. */
+  const [middle, setMiddle] = useFlowField("o1Middle", A.middle);
+  const [last, setLast] = useFlowField("o1Last", A.last);
+  const [dob, setDob] = useFlowField("o1Dob", A.dob);
+  const [citizenship, setCitizenship] = useFlowField("o1Citizenship", A.citizenship);
+  const [street, setStreet] = useFlowField("o1Street", A.address.street);
+  const [city, setCity] = useFlowField("o1City", A.address.city);
+  const [state, setState] = useFlowField("o1State", A.address.state);
+  const [zip, setZip] = useFlowField("o1Zip", A.address.zip);
+  const [ssn, setSsn] = useFlowField("o1Ssn", A.ssn);
+  /* "Personal phone" is the applicant's own mobile, so A.mobile, not
+     the company's cell. */
+  const [phone, setPhone] = useFlowField("o1Phone", A.mobile);
+  const [taxResidence, setTaxResidence] = useFlowField("o1TaxResidence", A.taxResidence);
 
   return (
     <>
@@ -280,10 +299,9 @@ export default function OwnerIdentityPage() {
         More than one owner?{" "}
         <Button
           variant="link"
-          size="sm"
           className="h-auto p-0"
           data-grade-goto="US Onboarding — 3b Owners & control"
-        >
+        size="sm">
           Add beneficial owners instead
         </Button>
       </p>

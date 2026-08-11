@@ -1,8 +1,12 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — Application status"
-// (design dmskh1lole59j, version 1786357121180). Registry: lib/screens.ts;
+// (design dmskh1lole59j, version 1786466510196). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: f376fadbb6f3
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   AppShell,
@@ -30,8 +34,8 @@ import {
   Flag,
   Clock,
 } from "lucide-react";
+import { Persona } from "@/lib/persona";
 import { Wordmark } from "@/components/wordmark";
-import { DEFAULT_PERSONA } from "@/lib/persona";
 
 // Glint US onboarding — post-submit application status. Customer-facing
 // view of the spec's status model (DRAFT → SUBMITTED → IN_REVIEW →
@@ -41,6 +45,22 @@ import { DEFAULT_PERSONA } from "@/lib/persona";
 // account chip) without the step rail. "Go to dashboard" gotos the
 // project's existing Dashboard screen.
 
+// WHO THIS PAGE CONFIRMS comes from Persona, never from a literal: a
+// visitor completes the wizard as the persona's business, so the name
+// and the account initials here have to be the same record the wizard
+// prefilled from. Hard-coding them is how this page ended up confirming
+// a different company than the one just submitted.
+
+// THE REFERENCE (GLT-2026-08341) AND THE SUBMIT TIME STAY LITERAL, and
+// that is a gap rather than an oversight: Persona holds activity
+// references (GX / DG / WT / AC) but nothing for an APPLICATION, and no
+// submitted timestamp. Minting Persona fields for them would put values
+// in the record with no wizard field behind them, so they stay on the
+// screen. If they should follow the persona, the record needs an
+// application block first.
+
+// PROMOTION ANNOTATION, not a Studio change: strict TS needs prop types
+// on an untyped helper. Types only, no logic or markup touched.
 function TimelineItem({
   icon: Icon,
   title,
@@ -94,7 +114,9 @@ export default function ApplicationStatusPage() {
               <Wordmark cut="metal" className="h-5" />
               <Row gap="sm" align="center" className="rounded-full bg-muted/60 py-1 pl-1 pr-2">
                 <Avatar size="sm">
-                  <AvatarFallback tone="primary">{DEFAULT_PERSONA.account}</AvatarFallback>
+                  <AvatarFallback tone="primary">
+                    {Persona.DEFAULT.account}
+                  </AvatarFallback>
                 </Avatar>
                 <ChevronDown className="h-4 w-4 text-foreground/50" />
               </Row>
@@ -116,8 +138,10 @@ export default function ApplicationStatusPage() {
                 </h1>
                 <p className="text-muted-foreground">
                   We received your application for{" "}
-                  <span className="text-foreground">{DEFAULT_PERSONA.company.legalName}</span> on
-                  August 8, 2026 at 9:32 AM ET.
+                  <span className="text-foreground">
+                    {Persona.DEFAULT.company.legalName}
+                  </span>{" "}
+                  on August 8, 2026 at 9:32 AM ET.
                 </p>
                 <Badge variant="secondary" rounded="full">
                   Reference GLT-2026-08341

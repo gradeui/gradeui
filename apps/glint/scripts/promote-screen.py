@@ -19,7 +19,9 @@ get_screen). The transform:
      <OnboardingLayout.Actions> which rides on context
   4. drops lucide icons that were only used by STEPS
   5. renames App to --func
-  6. prepends "use client" + a provenance header
+  6. prepends "use client" + a provenance header, including the
+     `// source-hash:` stamp scripts/check-promotions.mts reads to tell
+     whether this page is still the current promotion of that screen
 
 After running: add or refresh the screen's entry in lib/screens.ts
 (slug, name, id, step, promotedAt = --version), then
@@ -30,6 +32,7 @@ in the screen may need light prop annotations to pass strict TS.
 from __future__ import annotations  # PEP 604 unions on Python 3.9
 
 import argparse
+import hashlib
 import pathlib
 import re
 import sys
@@ -37,26 +40,146 @@ import sys
 FLOW_NAMES = {"FlowStore", "useFlowField", "getFlowField", "resetFlow", "US_STATES"}
 
 
-IMPORT_LINES = {
-    "OnboardingLayout": 'import { OnboardingLayout } from "@/components/layouts/onboarding";\n',
-    "AppChrome": 'import { AppChrome } from "@/components/layouts/app-chrome";\n',
+def source_signature(src: str) -> str:
+    """The drift guard's signature of a Studio source.
+
+    A PORT of `sourceSignature` in scripts/check-promotions.mts, and it
+    has to stay one: the guard compares the hash stamped into a promoted
+    page against the hash it computes from the live Studio screen, so the
+    two implementations must normalise identically. Change one, change
+    the other.
+
+      - `data-gds-source-id="N"` goes, because a canvas save stamps those
+        in and an MCP save strips them, and neither changes a pixel.
+      - whitespace runs collapse, so reformatting is not a change.
+
+    WHY THE PAGE CARRIES THIS (11 Aug 2026): the guard used to compare
+    live Studio against a `sourceHash` field in lib/screens.ts, and both
+    sides of that comparison were Studio. Running `check:promotions
+    --update` without re-promoting re-blessed the baseline against
+    whatever Studio held at that moment, and a stale app copy sat under a
+    green tick indefinitely. That is how the gold wallet diverged, with
+    Studio filtering on `tx.account` while the page here still read
+    `tx.metal`, and the guard reporting all 15 screens matching. Stamping
+    the signature into the generated page means the only way to move the
+    app side of the comparison is to generate the page again.
+    """
+    normalised = re.sub(r'\s*data-gds-source-id="\d+"', "", src)
+    normalised = re.sub(r"\s+", " ", normalised).strip()
+    return hashlib.sha256(normalised.encode("utf-8")).hexdigest()[:12]
+
+
+# Studio shared-component name -> the app module holding its ported twin.
+#
+# ONE TABLE, deliberately. This used to be two: a dict of import lines
+# that nothing read for most names, and a hand-written if-chain plus a
+# literal tuple of "known" names in the rewriter. Adding a mapping to one
+# and not the others either kept flagging a name that now resolved fine
+# or silently stopped flagging one that did not. Everything below is
+# derived from this dict, so there is one place to edit.
+#
+# The app twins expose the SAME namespaces the Studio modules do
+# (Persona.fmtMoney, Accounts.identifiers, Wordmark.metalSolid, ...), so
+# promotion is a pure import rewrite: no call site inside the screen body
+# is touched. Where the app also exports the underlying helpers by name,
+# those stay for the app's own hand-written code. If you add a shared
+# component, port it into the module named here and add its line.
+COMPONENT_MODULES = {
+    "OnboardingLayout": "@/components/layouts/onboarding",
+    "AppChrome": "@/components/layouts/app-chrome",
+    "Wordmark": "@/components/wordmark",
+    "Persona": "@/lib/persona",
+    "Market": "@/lib/market",
+    "Accounts": "@/lib/accounts",
+    "ActivityTable": "@/components/activity-table",
+    "MetalButton": "@/components/metal-button",
+    "MetalPriceCard": "@/components/metal-price-card",
+    "MetalWalletCard": "@/components/metal-wallet-card",
+    "TradeFlow": "@/components/trade-flow",
+    "PhoneField": "@/components/phone-field",
 }
+
+# BuyFlow is deliberately absent. TradeFlow superseded it and there is no
+# app-side twin, so a screen importing BuyFlow should keep landing in the
+# `unknown` list: promoting it needs a decision (retarget to TradeFlow
+# with direction="buy", or retire the Studio module), not a rewrite.
+
+
+def opening_tag_span(src: str, name: str) -> tuple[int, int] | None:
+    """Span of `<Name ...>`, including a MULTI-LINE prop list, or None.
+
+    Scans for the `>` that closes the opening tag while tracking JSX
+    expression-container depth, so a prop holding an element does not end
+    the tag early. This replaced a regex (`<Name[^>]*>` anchored to one
+    line) that silently corrupted every screen whose chrome took a prop
+    like toolbarLeading={<Button ...>Back</Button>}: `[^>]*` crosses
+    newlines, so it ran to the `>` closing the nested <Button> and
+    swallowed the props in between, leaving orphaned JSX in the promoted
+    page. It matched on the LINE, so it only ever worked when the whole
+    opening tag fitted on one.
+    """
+    start = src.find(f"<{name}")
+    if start == -1:
+        return None
+    depth = 0
+    for i in range(start + 1 + len(name), len(src)):
+        c = src[i]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+        elif c == ">" and depth == 0:
+            return start, i + 1
+    return None
 
 
 def unwrap_chrome(src: str, name: str, problems: list[str]) -> str:
     """Drop a <Name ...> wrapper element (the route layout provides the
     chrome), keeping any Name.* compound uses. Same shape for
-    OnboardingLayout and AppChrome."""
-    new = re.sub(rf"^(\s*)<{name}[^>]*>\s*$", r"\1<>", src, flags=re.M)
-    if new == src:
+    OnboardingLayout and AppChrome.
+
+    Props on the wrapper go with it, which is the intended behaviour: the
+    route layout is what supplies them now. For AppChrome that means the
+    screen's own toolbarLeading Back button is dropped in favour of the
+    layout's, so the two cannot disagree.
+    """
+    span = opening_tag_span(src, name)
+    if span is None:
         problems.append(f"opening {name} wrapper not found")
-    src = new
+    else:
+        line_start = src.rfind("\n", 0, span[0]) + 1
+        indent = src[line_start:span[0]]
+        src = src[:line_start] + indent + "<>" + src[span[1]:]
     new = re.sub(rf"^(\s*)</{name}>\s*$", r"\1</>", src, flags=re.M)
     if new == src:
         problems.append(f"closing {name} wrapper not found")
     src = new
-    if f"{name}." not in src and name in IMPORT_LINES:
-        src = src.replace(IMPORT_LINES[name], "")
+    # With the wrapper gone the name may be unused. Compound uses keep it
+    # alive: --step drops <OnboardingLayout> but keeps
+    # <OnboardingLayout.Actions>, which rides on context.
+    #
+    # The import block has ALREADY been rewritten and grouped by module by
+    # the time this runs, so this drops the name from whichever grouped
+    # line holds it rather than matching a whole literal import line (the
+    # shape this used before COMPONENT_MODULES replaced the per-name
+    # IMPORT_LINES table). The line goes too if that was its only name.
+    if f"{name}." not in src and f"<{name}" not in src:
+        module = COMPONENT_MODULES.get(name)
+        if module:
+            pattern = rf'import \{{([^}}]*)\}} from "{re.escape(module)}";\n'
+            m = re.search(pattern, src)
+            if m:
+                kept = [
+                    n.strip()
+                    for n in m.group(1).split(",")
+                    if n.strip() and n.strip() != name
+                ]
+                line = (
+                    f'import {{ {", ".join(kept)} }} from "{module}";\n'
+                    if kept
+                    else ""
+                )
+                src = src[: m.start()] + line + src[m.end():]
     return src
 
 
@@ -65,27 +188,36 @@ def transform(src: str, func: str, screen_name: str, design_id: str,
               unwrap: str | None = None) -> tuple[str, list[str]]:
     problems: list[str] = []
 
+    # Signed BEFORE any rewriting, so the stamp describes the Studio
+    # source that came in rather than the page that goes out.
+    stamp = source_signature(src)
+
     src = re.sub(r'\s*data-gds-source-id="\d+"', "", src)
 
     m = re.search(r'import\s*\{([^}]*)\}\s*from\s*"@project/components";\n', src)
     if m:
         names = [n.strip() for n in m.group(1).split(",") if n.strip()]
-        lines = []
-        if "OnboardingLayout" in names:
-            lines.append('import { OnboardingLayout } from "@/components/layouts/onboarding";')
-        if "AppChrome" in names:
-            lines.append('import { AppChrome } from "@/components/layouts/app-chrome";')
-        if "Wordmark" in names:
-            lines.append('import { Wordmark } from "@/components/wordmark";')
-        flow = [n for n in names if n in FLOW_NAMES]
-        if flow:
-            lines.append(f'import {{ {", ".join(flow)} }} from "@/lib/flow-store";')
-        unknown = [n for n in names
-                   if n not in FLOW_NAMES
-                   and n not in ("OnboardingLayout", "AppChrome", "Wordmark")]
+        # Group by target module so several names from one file share an
+        # import line, which is what FlowStore's five names need and what
+        # any future multi-export module will need too. Dict order is
+        # insertion order, so the emitted lines follow the order the names
+        # appeared in the Studio import.
+        by_module: dict[str, list[str]] = {}
+        for n in names:
+            module = "@/lib/flow-store" if n in FLOW_NAMES else COMPONENT_MODULES.get(n)
+            if module:
+                by_module.setdefault(module, []).append(n)
+        lines = [
+            f'import {{ {", ".join(ns)} }} from "{module}";'
+            for module, ns in by_module.items()
+        ]
+        unknown = [
+            n for n in names if n not in FLOW_NAMES and n not in COMPONENT_MODULES
+        ]
         if unknown:
             problems.append(f"unknown @project/components imports {unknown}: "
-                            "port those shared components first")
+                            "port those shared components first, then add "
+                            "them to COMPONENT_MODULES")
         src = src.replace(m.group(0), "\n".join(lines) + "\n")
     elif "@project/components" in src:
         problems.append("unmatched @project/components import shape")
@@ -124,7 +256,11 @@ def transform(src: str, func: str, screen_name: str, design_id: str,
         '"use client";\n\n'
         f'// Promoted from Studio screen "{screen_name}"\n'
         f"// (design {design_id}, version {version}). Registry: lib/screens.ts;\n"
-        "// re-promotion workflow: apps/glint/README.md.\n\n"
+        "// re-promotion workflow: apps/glint/README.md.\n"
+        f"// source-hash: {stamp}\n"
+        "// (the drift guard's signature of the Studio source this page was\n"
+        "// built from, so check:promotions measures Studio against THIS copy\n"
+        "// and not against a baseline that --update can rewrite.)\n\n"
     )
     return header + src.lstrip("\n"), problems
 

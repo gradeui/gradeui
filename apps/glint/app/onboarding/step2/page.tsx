@@ -1,8 +1,12 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — 2 Business details"
-// (design dmskgx7qs2sud, version 1786359190532). Registry: lib/screens.ts;
+// (design dmskgx7qs2sud, version 1786469114497). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: 12bf29e77385
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   Button,
@@ -30,8 +34,9 @@ import {
 import { Send, ChevronDown } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore, US_STATES } from "@/lib/flow-store";
+import { Persona } from "@/lib/persona";
 
-// Glint US onboarding — Step 2: common application fields (all entity
+// Glint US onboarding, Step 2: common application fields (all entity
 // types). Contact details live in Step 0. US rules carried into copy:
 // no P.O. Box or registered-agent (CMRA) addresses (FIN-2009-R003),
 // TIN formats, single-field phone. NAICS deliberately NOT used (CCO 04
@@ -42,35 +47,56 @@ import { FlowStore, US_STATES } from "@/lib/flow-store";
 // SMLLC goes to 3a (single-owner CIP), everything else to 3b.
 const useFlowField = FlowStore.useField;
 
+/* The applying company, aliased once, exactly as step 7 does it. Every
+   persona value below is passed as the field hook's FALLBACK, never as a
+   forced value: FlowStore is read first, so a value the user typed still
+   wins and the prefill only ever fills a field nobody has touched. The
+   persona already stores each value in the format its field expects, so
+   NOTHING here reformats: lowercase state codes for the two state
+   Selects, MM/DD/YYYY for the DatePicker, and option VALUES rather than
+   labels for industry, employees and revenue. Reformatting any of them
+   is how a prefill fails silently.
+   NOT PREFILLED, because the persona holds no equivalent: the alternate
+   mailing address and the registered-agent address. Both stay off. */
+const C = Persona.DEFAULT.company;
+
 export default function BusinessDetailsPage() {
-  const [businessType] = useFlowField("businessType", "smllc");
-  const [legalName, setLegalName] = useFlowField("legalName", "");
-  const [hasDba, setHasDba] = useFlowField("hasDba", false);
-  const [dbaName, setDbaName] = useFlowField("dbaName", "");
-  const [formationState, setFormationState] = useFlowField("formationState", "");
-  const [formationDate, setFormationDate] = useFlowField("formationDate", "");
-  const [bizStreet, setBizStreet] = useFlowField("bizStreet", "");
-  const [bizCity, setBizCity] = useFlowField("bizCity", "");
-  const [bizState, setBizState] = useFlowField("bizState", "");
-  const [bizZip, setBizZip] = useFlowField("bizZip", "");
+  const [businessType] = useFlowField("businessType", C.entityType);
+  const [legalName, setLegalName] = useFlowField("legalName", C.legalName);
+  const [hasDba, setHasDba] = useFlowField("hasDba", C.usesDba);
+  const [dbaName, setDbaName] = useFlowField("dbaName", C.dba);
+  const [formationState, setFormationState] = useFlowField(
+    "formationState",
+    C.formationState,
+  );
+  const [formationDate, setFormationDate] = useFlowField(
+    "formationDate",
+    C.formationDate,
+  );
+  const [bizStreet, setBizStreet] = useFlowField("bizStreet", C.address.street);
+  const [bizCity, setBizCity] = useFlowField("bizCity", C.address.city);
+  const [bizState, setBizState] = useFlowField("bizState", C.address.state);
+  const [bizZip, setBizZip] = useFlowField("bizZip", C.address.zip);
   const [mailElsewhere, setMailElsewhere] = useFlowField("mailElsewhere", false);
   const [mailingAddress, setMailingAddress] = useFlowField("mailingAddress", "");
   const [hasAgent, setHasAgent] = useFlowField("hasRegisteredAgent", false);
   const [agentAddress, setAgentAddress] = useFlowField("agentAddress", "");
-  const [bizTin, setBizTin] = useFlowField("bizTin", "");
-  const [industry, setIndustry] = useFlowField("industry", "");
-  const [bizPhone, setBizPhone] = useFlowField("bizPhone", "");
-  const [bizCell, setBizCell] = useFlowField("bizCell", "");
-  const [bizEmail, setBizEmail] = useFlowField("bizEmail", "");
-  const [bizSite, setBizSite] = useFlowField("bizSite", "");
-  const [employees, setEmployees] = useFlowField("employees", "");
-  const [revenue, setRevenue] = useFlowField("revenue", "");
+  const [bizTin, setBizTin] = useFlowField("bizTin", C.ein);
+  const [industry, setIndustry] = useFlowField("industry", C.industry);
+  const [bizPhone, setBizPhone] = useFlowField("bizPhone", C.phone);
+  const [bizCell, setBizCell] = useFlowField("bizCell", C.cell);
+  const [bizEmail, setBizEmail] = useFlowField("bizEmail", C.email);
+  const [bizSite, setBizSite] = useFlowField("bizSite", C.website);
+  const [employees, setEmployees] = useFlowField("employees", C.employees);
+  const [revenue, setRevenue] = useFlowField("revenue", C.revenue);
 
   const nextScreen =
     businessType === "smllc"
       ? "US Onboarding — 3a Owner identity"
       : "US Onboarding — 3b Owners & control";
 
+  /* Initials come from the persona too, so the chrome names the same
+     applicant the fields do. The hardcoded "JA" was the older identity. */
   return (
     <>
       <h1 className="text-3xl font-medium text-foreground">
@@ -250,44 +276,63 @@ export default function BusinessDetailsPage() {
 
       <Separator className="my-4" />
 
-      <Field>
-        <FieldLabel>Business Taxpayer Identification Number</FieldLabel>
-        <Input
-          placeholder="XX-XXXXXXX"
-          inputMode="numeric"
-          value={bizTin}
-          onChange={(e) => setBizTin(e.target.value)}
-        />
-        <FieldDescription className="text-xs">
-          Usually your EIN (XX-XXXXXXX). Single-member LLCs may use the
-          owner&rsquo;s SSN (XXX-XX-XXXX); ITINs start with a 9.
-        </FieldDescription>
-      </Field>
-
-      <Field>
-        <FieldLabel>Industry</FieldLabel>
-        <Select value={industry || undefined} onValueChange={setIndustry}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select industry" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="metals">Precious metals &amp; jewellery</SelectItem>
-            <SelectItem value="services">Professional services</SelectItem>
-            <SelectItem value="software">Software &amp; technology</SelectItem>
-            <SelectItem value="retail">Retail &amp; e-commerce</SelectItem>
-            <SelectItem value="manufacturing">Manufacturing</SelectItem>
-            <SelectItem value="construction">Construction &amp; real estate</SelectItem>
-            <SelectItem value="hospitality">Hospitality &amp; food service</SelectItem>
-            <SelectItem value="cannabis">Cannabis (not supported)</SelectItem>
-            <SelectItem value="weapons">Weapons (not supported)</SelectItem>
-            <SelectItem value="crypto">Cryptocurrency (not supported)</SelectItem>
-          </SelectContent>
-        </Select>
-        <FieldDescription className="text-xs">
-          Cannabis, weapons and cryptocurrency businesses can&rsquo;t open a
-          Glint account. See our Terms.
-        </FieldDescription>
-      </Field>
+      {/* Paired side by side (Ali, 11 Aug): two short fields that read as
+          one row about how the business is classified, using the same
+          Grid cols="2" gap="md" construct as the formation pair above
+          rather than a second pattern. Top-aligned on purpose: both carry
+          a FieldDescription and the two run to different lengths, so the
+          inputs line up and only the help text below them differs in
+          height.
+          WHAT THE RENDER ACTUALLY SHOWS, checked at three widths: at 1280
+          and wider the TIN label fits on one line and the two inputs sit
+          level. Below roughly 1100 that label wraps to two lines and
+          drops its input a line under the Industry select, which is the
+          one width where this row reads ragged. Left as is rather than
+          fixed, because both fixes cost more than the wrap: shortening a
+          label that carries the spec's own wording, or forcing the two
+          labels to a matching height, which is the second layout pattern
+          we agreed not to invent. If the wrap does matter, shorten the
+          label: every regulatory detail is already in the description
+          sitting under it. */}
+      <Grid cols="2" gap="md">
+        <Field>
+          <FieldLabel>Business Taxpayer Identification Number</FieldLabel>
+          <Input
+            placeholder="XX-XXXXXXX"
+            inputMode="numeric"
+            value={bizTin}
+            onChange={(e) => setBizTin(e.target.value)}
+          />
+          <FieldDescription className="text-xs">
+            Usually your EIN (XX-XXXXXXX). Single-member LLCs may use the
+            owner&rsquo;s SSN (XXX-XX-XXXX); ITINs start with a 9.
+          </FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel>Industry</FieldLabel>
+          <Select value={industry || undefined} onValueChange={setIndustry}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select industry" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="metals">Precious metals &amp; jewellery</SelectItem>
+              <SelectItem value="services">Professional services</SelectItem>
+              <SelectItem value="software">Software &amp; technology</SelectItem>
+              <SelectItem value="retail">Retail &amp; e-commerce</SelectItem>
+              <SelectItem value="manufacturing">Manufacturing</SelectItem>
+              <SelectItem value="construction">Construction &amp; real estate</SelectItem>
+              <SelectItem value="hospitality">Hospitality &amp; food service</SelectItem>
+              <SelectItem value="cannabis">Cannabis (not supported)</SelectItem>
+              <SelectItem value="weapons">Weapons (not supported)</SelectItem>
+              <SelectItem value="crypto">Cryptocurrency (not supported)</SelectItem>
+            </SelectContent>
+          </Select>
+          <FieldDescription className="text-xs">
+            Cannabis, weapons and cryptocurrency businesses can&rsquo;t open a
+            Glint account. See our Terms.
+          </FieldDescription>
+        </Field>
+      </Grid>
 
       <Separator className="my-4" />
 
@@ -345,7 +390,7 @@ export default function BusinessDetailsPage() {
         </FieldDescription>
       </Field>
 
-      {/* Size indicators — support risk-based limits and monitoring
+      {/* Size indicators: they support risk-based limits and monitoring
           thresholds. Revenue bands are an assumption; spec asks only for
           a "rough size indicator". */}
       <Grid cols="2" gap="md">

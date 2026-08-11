@@ -30,14 +30,20 @@ export interface ScreenEntry {
   /** 1-based wizard step for /onboarding screens (rail + progress). */
   step?: number;
   /** designs.updated_at (epoch ms) of the promoted source. Provenance
-   *  only — a metadata write bumps it without changing a pixel, which
-   *  is why drift is detected by `sourceHash`, not by this. */
+   *  only: a metadata write bumps it without changing a pixel, which is
+   *  why drift is detected by hashing the source, not by this. */
   promotedAt: number;
   /** Signature of the Studio appSource this copy was promoted from, as
    *  `scripts/check-promotions.mts` computes it (source-id stamps and
-   *  whitespace normalised away). `pnpm -F @gradeui/glint
-   *  check:promotions` compares it against the live screen and fails
-   *  when Studio has moved on. Re-baseline with --update. */
+   *  whitespace normalised away).
+   *
+   *  A RECORD, not the baseline. `pnpm -F @gradeui/glint
+   *  check:promotions` compares live Studio against the
+   *  `// source-hash:` stamp in the promoted page itself, because a
+   *  field here can be re-blessed by `--update` with nobody having
+   *  re-promoted, which is exactly how a stale app copy hid under a
+   *  green tick. This is the fallback for pages promoted before that
+   *  stamp existed. `--update` keeps it current. */
   sourceHash?: string;
 }
 
@@ -46,7 +52,7 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/",
     name: "US Demo Landing",
     id: "dmskhheytm163",
-    promotedAt: 1786361077708,
+    promotedAt: 1786434368815,
     sourceHash: "8b7e0a0d75f8",
   },
   {
@@ -54,48 +60,48 @@ export const SCREENS: ScreenEntry[] = [
     name: "US Onboarding — 0 Before you apply",
     id: "dmskgw2pk2r1x",
     step: 1,
-    promotedAt: 1786358340226,
-    sourceHash: "af3870289208",
+    promotedAt: 1786469048975,
+    sourceHash: "f2ae74b1b1b1",
   },
   {
     slug: "/onboarding/step1",
     name: "US Onboarding — 1 Business type",
     id: "dmskgweh31a0m",
     step: 2,
-    promotedAt: 1786356816160,
-    sourceHash: "8fd2671ebd20",
+    promotedAt: 1786468838006,
+    sourceHash: "02cbc1474ccd",
   },
   {
     slug: "/onboarding/step2",
     name: "US Onboarding — 2 Business details",
     id: "dmskgx7qs2sud",
     step: 3,
-    promotedAt: 1786359190532,
-    sourceHash: "d3e5c05c417d",
+    promotedAt: 1786469114497,
+    sourceHash: "12bf29e77385",
   },
   {
     slug: "/onboarding/step3a",
     name: "US Onboarding — 3a Owner identity",
     id: "dmskgxyctfxci",
     step: 4,
-    promotedAt: 1786359134179,
-    sourceHash: "478cdb1981d2",
+    promotedAt: 1786468890238,
+    sourceHash: "73966c79e2d8",
   },
   {
     slug: "/onboarding/step3b",
     name: "US Onboarding — 3b Owners & control",
     id: "dmskgyvzc1nmh",
     step: 4,
-    promotedAt: 1786359134361,
-    sourceHash: "2e72d0d979f6",
+    promotedAt: 1786468958015,
+    sourceHash: "a44d7d043206",
   },
   {
     slug: "/onboarding/step4",
     name: "US Onboarding — 4 Expected activity",
     id: "dmskgzm7d7xvt",
     step: 5,
-    promotedAt: 1786358341034,
-    sourceHash: "a200f13f1184",
+    promotedAt: 1786469074449,
+    sourceHash: "1bd9816fe619",
   },
   {
     slug: "/onboarding/step5",
@@ -110,51 +116,58 @@ export const SCREENS: ScreenEntry[] = [
     name: "US Onboarding — 6 Certification",
     id: "dmskh0ixi1gdj",
     step: 7,
-    promotedAt: 1786358341154,
-    sourceHash: "0a8ba805a66f",
+    promotedAt: 1786468880697,
+    sourceHash: "9546c5104b52",
   },
   {
     slug: "/onboarding/step7",
     name: "US Onboarding — 7 Review & submit",
     id: "dmskh12cv6zuz",
     step: 8,
-    promotedAt: 1786359134537,
+    promotedAt: 1786453677404,
     sourceHash: "68e111cc049c",
   },
   {
     slug: "/status",
     name: "US Onboarding — Application status",
     id: "dmskh1lole59j",
-    promotedAt: 1786357121180,
-    sourceHash: "9fb2fd12bb2b",
+    promotedAt: 1786466510196,
+    sourceHash: "f376fadbb6f3",
   },
   {
     slug: "/wallets",
     name: "Dashboard — logged-in home",
     id: "dmskex612bcy1",
-    promotedAt: 1786435743706,
-    sourceHash: "92e1f0633314",
+    promotedAt: 1786463799728,
+    sourceHash: "f626c9d9c231",
   },
   {
     slug: "/activity",
     name: "Activity — history",
     id: "dmsnba2xdvnc3",
-    promotedAt: 1786371183861,
-    sourceHash: "5636bda68a1f",
+    promotedAt: 1786466428485,
+    sourceHash: "8206941d6c64",
   },
   {
     slug: "/wallets/gold",
     name: "Gold — wallet",
     id: "dmsnbpdvrz1qa",
-    promotedAt: 1786435550819,
-    sourceHash: "0e2daeb09a6f",
+    promotedAt: 1786463098596,
+    sourceHash: "7b53ab4fd3be",
   },
   {
     slug: "/wallets/silver",
     name: "Silver — wallet",
     id: "dmsoj5uvz94l3",
-    promotedAt: 1786435550819,
-    sourceHash: "8889965d2217",
+    promotedAt: 1786463143437,
+    sourceHash: "f24ebbf98310",
+  },
+  {
+    slug: "/wallets/usd",
+    name: "USD — wallet",
+    id: "dmsou6g4wxv0l",
+    promotedAt: 1786469753966,
+    sourceHash: "3f0749dec72e",
   },
 ];
 

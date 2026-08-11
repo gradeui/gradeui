@@ -1,8 +1,12 @@
 "use client";
 
 // Promoted from Studio screen "US Demo Landing"
-// (design dmskhheytm163, version 1786361077708). Registry: lib/screens.ts;
+// (design dmskhheytm163, version 1786434368815). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: 8b7e0a0d75f8
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   Section,

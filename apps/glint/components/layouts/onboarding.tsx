@@ -45,7 +45,7 @@ import {
   Avatar,
   AvatarFallback,
 } from "@gradeui/ui";
-import { ChevronDown, HelpCircle, ArrowLeft } from "lucide-react";
+import { ChevronDown, ChevronLeft, HelpCircle } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { useFlowField } from "@/lib/flow-store";
 
@@ -104,7 +104,7 @@ function StepRail({
   return (
     <Stack gap="lg">
       <div className="text-4xl font-medium">
-        <span className="text-primary">{current}</span>
+        <span className="text-accent">{current}</span>
         <span className="text-foreground/40"> / {steps.length}</span>
       </div>
       <Stack gap="xs">
@@ -174,8 +174,14 @@ export function OnboardingLayout({
             </Container>
           </Section>
           {/* Fill-only progress riding the header's border-b hairline. */}
+          {/* ACCENT, NOT PRIMARY (Ali, 11 Aug: "the progress bar is too
+              strong"). Full-bleed across the header it is a large area of
+              colour, and at that size the action blue competes with the
+              page's actual actions instead of reading as progress. A real
+              Progress prop, not a [&>*]:bg-accent reach-through. */}
           <Progress
             value={progress}
+            tone="accent"
             className="absolute inset-x-0 -bottom-px h-1 rounded-none bg-transparent"
           />
         </AppShellHeader>
@@ -193,7 +199,7 @@ export function OnboardingLayout({
                   {/* Mobile step strip, replaces the rail below md */}
                   <Row gap="sm" align="center" className="md:hidden">
                     <span className="text-sm font-medium">
-                      <span className="text-primary">{current}</span>
+                      <span className="text-accent">{current}</span>
                       <span className="text-foreground/40"> / {steps.length}</span>
                     </span>
                     <span className="text-sm text-foreground/60">·</span>
@@ -241,7 +247,12 @@ OnboardingLayout.Actions = function OnboardingLayoutActions({
         className="rounded-full text-muted-foreground hover:text-foreground"
         data-grade-goto={backTarget}
       >
-        <ArrowLeft className="h-4 w-4" />
+        {/* CHEVRON, NOT AN ARROW (Ali, 11 Aug). The wizard Back moves one
+            step within a sequence, which is what a chevron says; an arrow
+            reads as leaving for somewhere else. The product screens keep
+            their arrow precisely because their Back DOES leave, out of a
+            wallet detail and back to Wallets. */}
+        <ChevronLeft className="h-4 w-4" />
         Back
       </Button>
       <Row justify="end">{children}</Row>

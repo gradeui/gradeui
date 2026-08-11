@@ -19,6 +19,10 @@
  *   Step 0: applicantEmail, twoFactor, applicantMobile, applicantRole,
  *     hasGlintAccount, contactName, contactPhone, contactEmail,
  *     contactConsent, attestSanctions, attestProhibited, attestChecks
+ *   Phone PAIRS (PhoneField owns both halves of each; the country is a
+ *     separate key so changing it is never string surgery on a number
+ *     the user typed): applicantMobileCountry + applicantMobile,
+ *     contactPhoneCountry + contactPhone
  *   Step 1: businessType (smllc | mmllc | partnership | corporation)
  *   Step 2: legalName, hasDba, dbaName, formationState, formationDate,
  *     bizStreet, bizCity, bizState, bizZip, mailElsewhere,

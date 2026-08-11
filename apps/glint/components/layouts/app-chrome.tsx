@@ -13,15 +13,16 @@
  * hairlines run as one continuous line across rail + main.
  *
  * MOBILE: below the md breakpoint the rail auto-collapses to the icon
- * rail (nav stays reachable; labels move to hover tooltips). The manual
- * collapse affordance still works at any width; crossing the breakpoint
- * re-applies the responsive default. Collapsed, the header shows the G
- * mark (Wordmark lockup="mark") and the footer drops to the avatar.
+ * rail (nav stays reachable; labels move to hover tooltips). There is NO
+ * manual collapse affordance: collapsible={false} removed it, so the
+ * breakpoint is the only thing that collapses the rail. Collapsed, the
+ * header shows the G mark (Wordmark lockup="mark") and the footer drops
+ * to the avatar.
  *
  * DEMO NAVIGATION: nav items with a known target carry data-grade-goto
- * (resolved by GotoBridge through the screen registry); the active item
- * renders without one. Targets stay inert until their screens are
- * promoted and registered.
+ * (resolved by GotoBridge through the screen registry), INCLUDING the
+ * lit one, so a wallet detail can get back to Wallets. Targets stay
+ * inert until their screens are promoted and registered.
  */
 
 import * as React from "react";
@@ -115,11 +116,19 @@ export function AppChrome({
           /* No hover-out collapse arrow (Ali, 11 Aug): the rail still
              collapses, but on the breakpoint, not a tiny target. */
           collapsible={false}
+          /* NO RAIL BORDER (Ali, 11 Aug). On this dark theme the rail's
+             own bg-card already separates it from the content beside it
+             and the hairline read as an artefact. A real Sidebar prop,
+             not a border-0 override: the rail keeps its width
+             transition, and it is one word to put the edge back. The
+             rules inside the rail, under the header and above the
+             footer, are internal structure and stay. */
+          bordered={false}
           className="h-full"
           /* Rail spacing, set through the component's own tuning vars
              rather than padding overrides on each part. The header
-             height stays pinned to the Toolbar's 3rem so the two
-             bottom hairlines still run as one line. */
+             height stays pinned to the Toolbar's 3rem so those two
+             hairlines still sit on the same baseline. */
           style={
             {
               "--gds-sidebar-header-height": "3rem",
@@ -148,15 +157,26 @@ export function AppChrome({
             <SidebarSection collapsible={false}>
               {NAV.map((item) => {
                 const Icon = item.icon;
-                const isActive = item.label === active;
                 return (
                   <SidebarItem
                     key={item.label}
                     /* No size class: SidebarItem sizes the glyph to the
                        row (20px at md). Pass size-* only to override. */
                     icon={<Icon />}
-                    active={isActive}
-                    data-grade-goto={isActive ? undefined : item.target}
+                    active={item.label === active}
+                    /* THE LIT ITEM IS STILL A LINK (Ali, 11 Aug: "from
+                       wallets/gold, I cant press on Wallets in the
+                       sidenav"). This used to read
+                       {isActive ? undefined : item.target}, which
+                       conflated the SECTION you are in with the SCREEN
+                       you are on: a wallet detail passes
+                       active="Wallets" so the rail shows where you are,
+                       and that silently removed the only route back to
+                       the wallets index. `active` now does styling
+                       alone. On the index itself the link points at the
+                       route you are already on, which the router treats
+                       as a no-op. */
+                    data-grade-goto={item.target}
                   >
                     {item.label}
                   </SidebarItem>

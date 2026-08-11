@@ -223,11 +223,27 @@ export function toQty(usd: number, asset: MetalKey, unit: MetalUnit): number {
   return unit === "oz" ? grams / OZ : grams;
 }
 
-/** "48.37 g" / "48.28 oz" formatting for holdings. */
+/**
+ * "47.7350 g" / "1.5347 oz" formatting for every quantity in the app.
+ *
+ * FOUR DECIMAL PLACES EVERYWHERE (Ali, 11 Aug: "It should be 4dp
+ * everywhere"). It used to be 2dp, which had two costs. Figures stopped
+ * adding up on screen: the per-vault breakdown rounded each slice
+ * independently to 23.87 + 14.32 + 9.55 against a 47.73 total. And it was
+ * too coarse for the fraction of a gram a small order buys, which is why
+ * TradeFlow had grown its OWN 4dp formatter beside this one. 4dp is what
+ * the activity rows always showed (+59.8778 g), so this makes one
+ * precision for the whole app instead of three.
+ *
+ * No `dp` parameter on purpose: a knob here is how the app ended up with
+ * different precisions in different places. If one surface ever genuinely
+ * needs a coarser figure, round the VALUE at that call site so the
+ * intent is visible there.
+ */
 export function fmtQty(n: number, unit: MetalUnit): string {
   return `${n.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
   })} ${unit}`;
 }
 

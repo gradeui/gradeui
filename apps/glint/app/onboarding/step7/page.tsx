@@ -1,8 +1,12 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — 7 Review & submit"
-// (design dmskh12cv6zuz, version 1786359134537). Registry: lib/screens.ts;
+// (design dmskh12cv6zuz, version 1786453677404). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: 68e111cc049c
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   Button,
@@ -21,13 +25,13 @@ import {
 import { Lock } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore, US_STATES } from "@/lib/flow-store";
-import { DEFAULT_PERSONA } from "@/lib/persona";
+import { Persona } from "@/lib/persona";
 
 // Glint US onboarding — Step 7: review & submit. The recap is LIVE: it
-// reads every FlowStore key the earlier steps wrote, with the original
-// sample values as fallbacks so an unvisited walkthrough still reads
-// well. Edit links goto the owning step. Submission creates the audit
-// trail: who submitted what, and when.
+// reads every FlowStore key the earlier steps wrote, with the PERSONA
+// as the fallback so an unvisited walkthrough still reads well — and
+// reads as the right company. Edit links goto the owning step.
+// Submission creates the audit trail: who submitted what, and when.
 const useFlowField = FlowStore.useField;
 
 const TYPE_LABELS: Record<string, string> = {
@@ -96,8 +100,8 @@ function SectionCard({
 }
 
 /* Shorthands: the applying company and the human applying. */
-const C = DEFAULT_PERSONA.company;
-const A = DEFAULT_PERSONA.applicant;
+const C = Persona.DEFAULT.company;
+const A = Persona.DEFAULT.applicant;
 
 export default function ReviewSubmitPage() {
   const g = FlowStore.get;
@@ -226,7 +230,7 @@ export default function ReviewSubmitPage() {
                   <Badge variant="success-soft" rounded="full">ID verified</Badge>
                 </Row>
               </PropertyList.Row>
-              <PropertyList.Row label="Priya Nair">
+              <PropertyList.Row label="Dana Whitlock">
                 <Row gap="sm" align="center" wrap>
                   <span>35%</span>
                   <Badge variant="success-soft" rounded="full">ID verified</Badge>

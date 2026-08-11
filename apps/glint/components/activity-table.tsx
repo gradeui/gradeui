@@ -68,6 +68,7 @@ import {
   type DataViewColumn,
 } from "@gradeui/ui";
 import { Info } from "lucide-react";
+import { vaultLabel, vaultLocation } from "@/lib/accounts";
 import {
   fmtMoney,
   fmtSigned,
@@ -110,7 +111,13 @@ function buildColumns(): DataViewColumn<ActivityRow>[] {
         <Stack gap="none">
           <span className="font-medium text-foreground">{row.description}</span>
           <span className="text-xs text-muted-foreground">
-            {[txMethodLabel(row), txPlace(row)].filter(Boolean).join(" · ")}
+            {[
+              txMethodLabel(row),
+              row.vault ? vaultLabel(row.vault) : "",
+              txPlace(row),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </span>
         </Stack>
       ),
@@ -220,6 +227,14 @@ function TxSheet({
               <PropertyList.Row label="Type">
                 {txMethodLabel(row)}
               </PropertyList.Row>
+              {/* The full city and country here, where there is room for
+                  it. A cash row has no vault and drops the whole row
+                  rather than showing an empty one. */}
+              {row.vault && (
+                <PropertyList.Row label="Vault">
+                  {vaultLocation(row.vault)}
+                </PropertyList.Row>
+              )}
               <PropertyList.Row label="Status">
                 {TX_STATUS_LABEL[row.status]}
               </PropertyList.Row>

@@ -15,14 +15,14 @@ import { ArrowLeft } from "lucide-react";
 import { AppChrome } from "@/components/layouts/app-chrome";
 
 /* Pathname -> sidebar nav label. Grows a row per promoted product
-   screen (keep in step with lib/screens.ts and AppChrome's NAV).
-   Wallet pages map to no nav item on purpose. */
+   screen (keep in step with lib/screens.ts and AppChrome's NAV). */
 const ACTIVE_BY_PATH: Record<string, string> = {
   "/wallets": "Wallets",
   "/activity": "Activity",
   /* A wallet detail keeps Wallets lit: it is a child of that section. */
   "/wallets/gold": "Wallets",
   "/wallets/silver": "Wallets",
+  "/wallets/usd": "Wallets",
 };
 
 function BackToWallets() {
@@ -43,6 +43,7 @@ function BackToWallets() {
 const LEADING_BY_PATH: Record<string, React.ReactNode> = {
   "/wallets/gold": <BackToWallets />,
   "/wallets/silver": <BackToWallets />,
+  "/wallets/usd": <BackToWallets />,
 };
 
 export default function ProductChrome({

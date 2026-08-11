@@ -1,8 +1,12 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — 3b Owners & control"
-// (design dmskgyvzc1nmh, version 1786359134361). Registry: lib/screens.ts;
+// (design dmskgyvzc1nmh, version 1786468958015). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: a44d7d043206
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   Button,
@@ -34,6 +38,7 @@ import {
 import { Upload, Plus, Info, Pencil } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore, US_STATES } from "@/lib/flow-store";
+import { Persona } from "@/lib/persona";
 
 // Glint US onboarding — Step 3b: beneficial owners (25%+, repeating
 // group of 0 to 4) and the Control Person, for multi-member LLCs,
@@ -50,11 +55,35 @@ import { FlowStore, US_STATES } from "@/lib/flow-store";
 // person drive live conditionals.
 const useFlowField = FlowStore.useField;
 
-function AddressFields({ prefix }: { prefix: string }) {
-  const [street, setStreet] = useFlowField(`${prefix}Street`, "");
-  const [city, setCity] = useFlowField(`${prefix}City`, "");
-  const [state, setState] = useFlowField(`${prefix}State`, "");
-  const [zip, setZip] = useFlowField(`${prefix}Zip`, "");
+/* The human applying, from the demo persona. Every value below is a
+   FALLBACK passed to useFlowField, so the store is read first and
+   anything the user typed still wins. The persona already stores each
+   value in the exact format its field expects, state codes lowercase to
+   match the US_STATES option values, the date as MM/DD/YYYY, the SSN
+   with its hyphens, so nothing here reformats: pass it straight
+   through. Owner 1 IS this person (the o1* keys are shared with 3a, one
+   PERSON record per spec 9.2). The SECOND beneficial owner on this
+   screen and the separate control person have no persona record, so
+   their fields stay blank rather than being invented. */
+const A = Persona.DEFAULT.applicant;
+
+/* `defaults` is that person's persona address, or nothing. Owner 1
+   passes the applicant's address and prefills; the separate control
+   person passes nothing and stays blank, because unticking "same person
+   as Owner 1" means it is somebody the persona does not describe. */
+function AddressFields({
+  prefix,
+  defaults,
+}: {
+  prefix: string;
+  // Optional: the control-person call site passes none. Annotation only.
+  defaults?: { street?: string; city?: string; state?: string; zip?: string };
+}) {
+  const d = defaults ?? {};
+  const [street, setStreet] = useFlowField(`${prefix}Street`, d.street ?? "");
+  const [city, setCity] = useFlowField(`${prefix}City`, d.city ?? "");
+  const [state, setState] = useFlowField(`${prefix}State`, d.state ?? "");
+  const [zip, setZip] = useFlowField(`${prefix}Zip`, d.zip ?? "");
   return (
     <Stack gap="md">
       <Field>
@@ -105,18 +134,30 @@ export default function OwnersControlPage() {
     "controlSameAsOwner",
     true,
   );
-  const [first, setFirst] = useFlowField("o1First", "Jordan");
-  const [middle, setMiddle] = useFlowField("o1Middle", "");
-  const [last, setLast] = useFlowField("o1Last", "Avery");
-  const [dob, setDob] = useFlowField("o1Dob", "");
+  /* Owner 1 is the persona applicant, Wade Jones, replacing the older
+     Jordan Avery literals these fallbacks carried. An empty field is
+     what let Chrome autofill the reviewer's own details instead. */
+  const [first, setFirst] = useFlowField("o1First", A.first);
+  const [middle, setMiddle] = useFlowField("o1Middle", A.middle);
+  const [last, setLast] = useFlowField("o1Last", A.last);
+  const [dob, setDob] = useFlowField("o1Dob", A.dob);
+  /* No persona ownership figure exists, so the 40% this screen already
+     carried stands: it is the multi-owner split that reads alongside the
+     35% second owner below. */
   const [pct, setPct] = useFlowField("ownershipPct", 40);
-  const [ssn, setSsn] = useFlowField("o1Ssn", "");
+  const [ssn, setSsn] = useFlowField("o1Ssn", A.ssn);
+  /* The separate control person is deliberately blank: these fields only
+     appear once "same person as Owner 1" is unticked, which asserts a
+     different human, and the persona has no second person to name. */
   const [cpFirst, setCpFirst] = useFlowField("cpFirst", "");
   const [cpMiddle, setCpMiddle] = useFlowField("cpMiddle", "");
   const [cpLast, setCpLast] = useFlowField("cpLast", "");
   const [cpDob, setCpDob] = useFlowField("cpDob", "");
   const [cpSsn, setCpSsn] = useFlowField("cpSsn", "");
-  const [cpTitle, setCpTitle] = useFlowField("cpTitle", "CEO");
+  /* The title DOES prefill: with "same person as Owner 1" ticked, the
+     control person is the applicant, so this is his title. Step 7 already
+     recaps cpTitle with the same persona fallback. */
+  const [cpTitle, setCpTitle] = useFlowField("cpTitle", A.title);
 
   const ownerName = [first, last].filter(Boolean).join(" ") || "Owner 1";
 
@@ -214,7 +255,7 @@ export default function OwnersControlPage() {
                   </Field>
                 </Grid>
 
-                <AddressFields prefix="o1" />
+                <AddressFields prefix="o1" defaults={A.address} />
 
                 <Field>
                   <FieldLabel>SSN or ITIN</FieldLabel>
@@ -284,7 +325,7 @@ export default function OwnersControlPage() {
 
           {/* A completed entry, collapsed — the other state of the group. */}
           <Card>
-            <CardContent>
+            <CardContent className="pt-6">
               <Row justify="between" align="center" wrap gap="md">
                 <Stack gap="none">
                   <span className="text-sm font-medium text-foreground">Priya Nair</span>
@@ -318,7 +359,7 @@ export default function OwnersControlPage() {
 
       <Stack gap="none">
         <h2 className="text-xl font-medium text-foreground">Control person</h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-base">
           Always required: one individual with significant responsibility to
           manage or direct the business, such as a CEO, President, Managing
           Member or General Partner.

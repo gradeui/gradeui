@@ -48,8 +48,17 @@ surfaces through `packages/ui/dist`, so they need `pnpm -F @gradeui/ui build`.
   concerned.
 - **`check:promotions` compares SOURCE, not timestamps.** `designs.updated_at`
   moves on any metadata write, so a timestamp check cries wolf; it hashes the
-  live Studio source against `sourceHash` in `lib/screens.ts`, normalising away
-  `data-gds-source-id` stamps and whitespace.
+  live Studio source, normalising away `data-gds-source-id` stamps and
+  whitespace.
+- **The comparison is two-sided, and that matters.** It measures live Studio
+  against the `// source-hash:` stamp `promote-screen.py` writes into the
+  generated page, not against `sourceHash` in `lib/screens.ts`. The registry
+  field was both sides of the old comparison, so `--update` without a
+  re-promotion re-blessed a stale app copy: that is how the gold wallet ended
+  up filtering on `tx.metal` here while Studio filtered on `tx.account`, with
+  the guard reporting all 15 screens matching. Pages promoted before 11 Aug
+  2026 carry no stamp and report `~ legacy` (registry fallback, one-sided)
+  until they are next promoted.
 - **Figures must reconcile against `lib/market.ts`** (LBMA prices + the 0.9%
   fee). The activity rows do: $8,400 buys 59.8778 g at $140.2856/g, fee $74.93.
 - **No em or en dashes in the interface.** Ali is firm on this.

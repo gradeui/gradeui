@@ -222,7 +222,13 @@ export function Wordmark({
   );
 }
 
-/** Metal ladders as a static for consumers that receive Wordmark via a
- *  barrel (mirrors the Studio statics pattern). */
+/** Metal ladders and helpers as statics for consumers that receive
+ *  Wordmark via a barrel (mirrors the Studio statics pattern). All FOUR
+ *  are attached: metalSolid and metalGlint were missing here while the
+ *  Studio twin carried them, so a promoted screen calling
+ *  Wordmark.metalSolid("gold") got undefined and threw. The named
+ *  exports above stay: they are what the app's own code uses. */
 Wordmark.METALS = METALS;
 Wordmark.metalSurface = metalSurface;
+Wordmark.metalSolid = metalSolid;
+Wordmark.metalGlint = metalGlint;

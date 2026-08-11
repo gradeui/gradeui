@@ -3,14 +3,18 @@
 // Promoted from Studio screen "US Onboarding — 5 Documents"
 // (design dmskh01pnwn8w, version 1786358563148). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: ccb9b512097b
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import { Button, Stack, Row, Badge, Callout, CalloutTitle, CalloutDescription } from "@gradeui/ui";
 import { Upload, FileText, CheckCircle2, Info } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore } from "@/lib/flow-store";
 
-// Hook access via FlowStore statics, kept as the Studio source had it
-// (the app's flow-store exports useFlowField directly too).
+// Hook access via FlowStore statics: the "@project/components" barrel
+// exposes only name-matched exports (kernel limitation, chip filed).
 const useFlowField = FlowStore.useField;
 
 // Glint US onboarding — Step 5: document uploads, conditional on entity

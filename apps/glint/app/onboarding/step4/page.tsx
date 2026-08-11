@@ -1,8 +1,12 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — 4 Expected activity"
-// (design dmskgzm7d7xvt, version 1786358341034). Registry: lib/screens.ts;
+// (design dmskgzm7d7xvt, version 1786469074449). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
+// source-hash: 1bd9816fe619
+// (the drift guard's signature of the Studio source this page was
+// built from, so check:promotions measures Studio against THIS copy
+// and not against a baseline that --update can rewrite.)
 
 import {
   Button,
@@ -24,8 +28,9 @@ import {
 } from "@gradeui/ui";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore } from "@/lib/flow-store";
+import { Persona } from "@/lib/persona";
 
-// Glint US onboarding — Step 4: Purpose and Intended Nature (PAIN), all
+// Glint US onboarding, Step 4: Purpose and Intended Nature (PAIN), all
 // paths. Forward-looking answers set the account's expected-behaviour
 // baseline for AML transaction monitoring. Banded ranges per the spec.
 // Cross-border and crypto route to enhanced due diligence. The
@@ -66,16 +71,83 @@ const COUNTRIES = [
   { value: "other", label: "Other" },
 ];
 
+/* PERSONA PREFILL, the same idiom as step 7's recap. `P` is the demo
+   persona record, and every value read off it is passed as the field's
+   FALLBACK, never assigned into the store: useFlowField reads the store
+   first, so a value the user picked or typed still wins. Persona values
+   are already stored in the exact format each field expects (option
+   VALUES, not labels; lowercase state codes; MM/DD/YYYY dates), so
+   nothing here reformats them, and nothing should start to.
+   NO COMPANY OR APPLICANT ALIAS on this screen, unlike step 7: it asks
+   no identity questions at all, so the only thing it takes off those
+   blocks is the header chip's initials.
+   WHAT THE PERSONA ACTUALLY ANSWERS HERE is the rails, below. The volume
+   band, the transaction count, the sources of funds and the three risk
+   switches have no persona field, so they keep literal defaults, matched
+   to the fallbacks step 7's recap uses so the two screens agree. */
+const P = Persona.DEFAULT;
+
+/* The rails this persona has really moved money on: its two deposit rows
+   carry method "wire" and "ach", already the option VALUES both pickers
+   use, so the set drops in with no mapping. Ordered by the option list
+   and INTERSECTED with it, so a method with no matching option cannot
+   leak into a picker as a value it has no label for: the exchange rows
+   carry "market-order" and "direct-gold", which are how an order was
+   placed and not a way to fund an account.
+   ASSUMPTION: onboarding asks what the account WILL do while the rows
+   are what it has done, which for a single demo persona is the same
+   story. No card row exists, so "Card payments" stays unpicked. */
+// Annotation only: widened to string so the option values below (plain
+// strings) can be tested against it. The persona types method narrowly.
+const DEPOSIT_METHODS = new Set<string>(
+  P.activity.filter((tx) => tx.type === "deposit").map((tx) => tx.method),
+);
+// Annotation only: the option lists above are {value,label} pairs.
+const personaRails = (options: { value: string; label: string }[]) =>
+  options.map((o) => o.value).filter((v) => DEPOSIT_METHODS.has(v));
+const PERSONA_TX_TYPES = personaRails(TRANSACTION_TYPES);
+const PERSONA_FUNDING = personaRails(FUNDING_SOURCES);
+
 export default function ExpectedActivityPage() {
+  /* Literal, not persona: the persona holds no stated account purpose.
+     "gold" is the answer its whole story implies (it holds gold and
+     silver, and its autoInvest preference is "gold"), and it is the
+     value step 7 falls back to, so the recap agrees. */
   const [purpose, setPurpose] = useFlowField("accountPurpose", "gold");
+  /* Literal, not persona: company.revenue is ANNUAL turnover for the
+     business, a different question from money in and out through this
+     account, and its band values ("1m-10m") are not this select's
+     options. Deriving a monthly figure from it, or from the seven-row
+     activity window, would be inventing one. Both match step 7. */
   const [volume, setVolume] = useFlowField("monthlyVolume", "50-200k");
   const [txCount, setTxCount] = useFlowField("monthlyCount", "25-100");
-  const [txTypes, setTxTypes] = useFlowField("transactionTypes", ["ach", "wire"]);
-  const [funding, setFunding] = useFlowField("fundingSources", ["ach"]);
+  const [txTypes, setTxTypes] = useFlowField(
+    "transactionTypes",
+    PERSONA_TX_TYPES,
+  );
+  const [funding, setFunding] = useFlowField("fundingSources", PERSONA_FUNDING);
   const [thirdPartyName, setThirdPartyName] = useFlowField("thirdPartyName", "");
-  const [sourcesOfFunds, setSourcesOfFunds] = useFlowField("sourcesOfFunds", ["revenue"]);
-  const [crossBorder, setCrossBorder] = useFlowField("crossBorder", true);
-  const [countries, setCountries] = useFlowField("crossBorderCountries", ["uk"]);
+  /* Literal, not persona: nothing in the persona states where the money
+     comes from. Business revenue is the honest reading for a trading
+     construction company, but it is a reading, not a stored value. */
+  const [sourcesOfFunds, setSourcesOfFunds] = useFlowField("sourcesOfFunds", [
+    "revenue",
+  ]);
+  /* ASSUMPTION, and a deliberate change: the persona holds NO
+     cross-border facts, so this defaults OFF and the country list
+     defaults empty. It used to default on with United Kingdom picked, a
+     value nothing in the persona backs, while step 7's recap falls back
+     to crossBorder false: the untouched walkthrough showed "United
+     Kingdom" here and "Cross-border: No" on review. The Zurich vault is
+     Glint's custody of metal, not a payment this customer sends, and the
+     country options do not include Switzerland. Flip these two back if
+     the demo wants to walk the enhanced due diligence path. */
+  const [crossBorder, setCrossBorder] = useFlowField("crossBorder", false);
+  // Annotation only: an inline [] infers never[], MultiSelect wants string[].
+  const [countries, setCountries] = useFlowField<string[]>(
+    "crossBorderCountries",
+    [],
+  );
   const [crypto, setCrypto] = useFlowField("cryptoActivity", false);
   const [cryptoDetail, setCryptoDetail] = useFlowField("cryptoDetail", "");
   const [cash, setCash] = useFlowField("cashIntensive", false);
@@ -127,7 +199,7 @@ export default function ExpectedActivityPage() {
         </Field>
         <Field>
           <FieldLabel>Expected transactions per month</FieldLabel>
-          {/* Count bands are an assumption — the spec asks for value AND
+          {/* Count bands are an assumption: the spec asks for value AND
               count but bands only for value. */}
           <Select value={txCount} onValueChange={setTxCount}>
             <SelectTrigger>
@@ -166,7 +238,9 @@ export default function ExpectedActivityPage() {
       </Field>
 
       {/* Conditional: only when third-party/government funding selected;
-          triggers a business risk-rating flag. */}
+          triggers a business risk-rating flag. Left EMPTY on purpose:
+          the persona names no third-party payer, and inventing one would
+          put a fictional organisation into a risk field. */}
       {thirdParty && (
         <Field>
           <FieldLabel>Third-party or government funding source</FieldLabel>
@@ -231,8 +305,9 @@ export default function ExpectedActivityPage() {
         <Switch checked={crypto} onCheckedChange={setCrypto} />
       </Field>
 
-      {/* Conditional on the crypto flag — routes to enhanced due
-          diligence, not standard processing. */}
+      {/* Conditional on the crypto flag, routes to enhanced due
+          diligence, not standard processing. Left EMPTY: the persona
+          holds no crypto activity to describe. */}
       {crypto && (
         <Field>
           <FieldLabel>Tell us about the crypto activity</FieldLabel>

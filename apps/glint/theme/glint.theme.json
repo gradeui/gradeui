@@ -6,12 +6,12 @@
   "hues": {
     "neutral": 272,
     "primary": 269,
-    "accent": 87
+    "accent": 269
   },
   "chroma": {
     "neutral": 0.85,
     "primary": 1.35,
-    "accent": 0.78
+    "accent": 1.35
   },
   "intensity": "default",
   "semantics": {
@@ -52,6 +52,10 @@
       "primaryForeground": {
         "source": "primary",
         "step": 50
+      },
+      "primary": {
+        "source": "primary",
+        "step": 500
       }
     }
   },
