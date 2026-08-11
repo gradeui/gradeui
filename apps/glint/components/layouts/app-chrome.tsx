@@ -80,6 +80,29 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
+/**
+ * PAGE SLOTS: a screen puts content into a region of the chrome toolbar.
+ *
+ *     <AppChrome.Slot region="leading">...</AppChrome.Slot>
+ *
+ * A Slot lives in the screen's BODY and renders nothing there. It has to,
+ * rather than being a prop on AppChrome: promotion strips the wrapper and
+ * its props, because app/(product)/layout.tsx supplies the chrome here, so
+ * a prop set on the screen renders in Studio and vanishes in the app.
+ *
+ * Children are captured when the Slot mounts and are not an effect
+ * dependency, which is what prevents a re-render loop. So a Slot's content
+ * does not update when the screen re-renders: if it needs to show changing
+ * state, put a component inside and let that hold the state.
+ *
+ * Mirrors the Studio AppChrome shared component. Change both.
+ */
+type SlotRegion = "leading" | "center" | "trailing";
+
+const SlotContext = React.createContext<
+  ((key: string, region: SlotRegion, node: React.ReactNode) => void) | null
+>(null);
+
 export function AppChrome({
   active = "Wallets",
   business = DEFAULT_PERSONA.business,
@@ -95,6 +118,30 @@ export function AppChrome({
   toolbarLeading?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  /* Registered page slots, keyed so a screen can contribute more than
+     one and so a remount replaces rather than duplicates. */
+  const [slots, setSlots] = React.useState<
+    Record<string, { region: SlotRegion; node: React.ReactNode }>
+  >({});
+  const registerSlot = React.useCallback(
+    (key: string, region: SlotRegion, node: React.ReactNode) => {
+      setSlots((prev) => {
+        if (node === null) {
+          if (!(key in prev)) return prev;
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        }
+        return { ...prev, [key]: { region, node } };
+      });
+    },
+    [],
+  );
+  const slotsIn = (region: SlotRegion) =>
+    Object.entries(slots)
+      .filter(([, v]) => v.region === region)
+      .map(([key, v]) => <React.Fragment key={key}>{v.node}</React.Fragment>);
+
   /* Responsive default: collapsed below md, expanded above. The user
      can still toggle manually; a breakpoint crossing re-applies the
      media default. */
@@ -203,12 +250,40 @@ export function AppChrome({
 
       <AppShellMain className="h-full min-h-0 overflow-y-auto">
         {/* Sticky page toolbar; leading is the subpage back-button slot */}
+        {/* THE TOOLBAR SHARES THE PAGE'S GUTTER (Ali, 11 Aug: "that
+            toolbar needs the same padding as the content below"). Putting
+            page actions in the toolbar is what exposed it: the toolbar's
+            own px put them 16px from the edge while every content band
+            starts at the Container's gutter.
+            These are Container's OWN gutter classes, copied so the two
+            track together at every breakpoint. KNOWN LIMIT: Container also
+            caps at max-w-[96rem] and centres beyond it, which this does
+            not, so above ~1536px the toolbar and the content drift apart
+            again. Rebuilding the toolbar around a real Container was tried
+            and collapsed its three-region layout, so this is the honest
+            90% fix rather than a broken 100%. */}
         <Toolbar
           sticky
           aria-label="Page toolbar"
-          leading={toolbarLeading}
+          className="px-4 md:px-6 lg:px-8"
+          /* Back (from the layout) first, then the screen's own slot. */
+          leading={
+            toolbarLeading || slotsIn("leading").length ? (
+              <Row gap="sm">
+                {toolbarLeading}
+                {slotsIn("leading")}
+              </Row>
+            ) : null
+          }
+          center={
+            slotsIn("center").length ? (
+              <Row gap="sm">{slotsIn("center")}</Row>
+            ) : null
+          }
           trailing={
             <Row gap="sm">
+              {/* Before the utility cluster, so it stays rightmost. */}
+              {slotsIn("trailing")}
               <Button variant="ghost" size="md" iconOnly aria-label="Hide balances">
                 <EyeOff className="size-4" />
               </Button>
@@ -224,8 +299,32 @@ export function AppChrome({
             </Row>
           }
         />
-        {children}
+        <SlotContext.Provider value={registerSlot}>
+          {children}
+        </SlotContext.Provider>
       </AppShellMain>
     </AppShell>
   );
 }
+
+/** Compound part: see PAGE SLOTS above. region defaults to "leading";
+ *  id lets one screen fill the same region twice. */
+AppChrome.Slot = function AppChromeSlot({
+  region = "leading",
+  id,
+  children,
+}: {
+  region?: SlotRegion;
+  id?: string;
+  children?: React.ReactNode;
+}) {
+  const register = React.useContext(SlotContext);
+  const key = id ?? region;
+  React.useEffect(() => {
+    register?.(key, region, children);
+    return () => register?.(key, region, null);
+    /* `children` is deliberately NOT a dependency: see the note above. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [register, key, region]);
+  return null;
+};

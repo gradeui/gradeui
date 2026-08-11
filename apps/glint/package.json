@@ -10,7 +10,9 @@
     "gen:theme": "tsx scripts/generate-theme.mts",
     "check:promotions": "tsx scripts/check-promotions.mts",
     "check:twins": "tsx scripts/check-twins.mts",
-    "mirror:component": "tsx scripts/mirror-shared-component.mts"
+    "mirror:component": "tsx scripts/mirror-shared-component.mts",
+    "write:screen": "tsx scripts/write-screen.mts",
+    "read:component": "tsx scripts/read-shared-component.mts"
   },
   "dependencies": {
     "@gradeui/ui": "workspace:*",

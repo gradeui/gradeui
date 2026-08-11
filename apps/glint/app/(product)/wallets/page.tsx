@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786463799728). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786471475200). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: f626c9d9c231
+// source-hash: 940e4b447981
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -22,6 +22,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@gradeui/ui";
+import { AppChrome } from "@/components/layouts/app-chrome";
 import { Persona, type AssetKey, type AutoInvest } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { Wordmark } from "@/components/wordmark";
@@ -177,14 +178,12 @@ function TotalBalance() {
 
 function BalanceCard({ asset }: { asset: AssetKey }) {
   const [amount] = Persona.useBalance(asset);
-  /* ASSUMPTION (annotation, not a rewrite): the template literal widens
-     to "unit.fiat", which is not a preference key, so the key is cast
-     rather than branched. That keeps the call exactly what Studio emits:
-     fiat asks for an absent key, gets undefined, and never reads it (the
-     fiat branch below shows routing and account numbers, not a unit). */
-  const [unit] = Persona.usePreference(
-    `unit.${asset}` as "unit.gold" | "unit.silver",
-  );
+  /* fiat has no unit preference, so it borrows unit.gold and never reads
+     the value: its branch below shows routing and account numbers. The
+     annotation keeps the template literal a valid key. */
+  const unitKey: "unit.gold" | "unit.silver" =
+    asset === "fiat" ? "unit.gold" : `unit.${asset}`;
+  const [unit] = Persona.usePreference(unitKey);
   const meta = Persona.DEFAULT.balances[asset];
   /* Metals show the holding in the persona's preferred unit; the cash
      account calls out its routing and account numbers. */
@@ -234,39 +233,64 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
 }
 
 export default function WalletsPage() {
+  /* ORDER IS BUY GOLD, BUY SILVER, THEN DEPOSIT (Ali, 11 Aug). The
+     metals are what the product is for; funding is the thing you do so
+     you can do them, so Deposit is secondary and comes last. It led the
+     row before, which read as "fund your account" being the point.
+
+     THE ACTIONS CANNOT LIVE IN THE TOOLBAR, though Ali asked whether they
+     could and it was tried. The toolbar belongs to the CHROME, and the
+     chrome is shared: promotion strips the <AppChrome> wrapper from this
+     screen because apps/glint/app/(product)/layout.tsx supplies it, and
+     `--unwrap` takes the wrapper's PROPS with it by design. So a
+     toolbarLeading set here renders in Studio and vanishes in the app.
+     Supplying them from the route layout instead would mean authoring the
+     same three buttons twice, once in this screen and once in app-only
+     glue with no Studio twin, which is exactly the drift that has bitten
+     this project. If they should ever be sticky, the honest fix is a real
+     page-actions slot on AppChrome that the layout can forward, not a
+     second copy. */
   const activity = Persona.DEFAULT.activity;
   return (
     <>
-      {/* Product actions (no Send/Transfer, not in the verb set;
-          selling lives on the wallet screens) */}
-      <Section pad="none" className="pt-8">
-        <Container maxW="xl">
-          <Row gap="sm">
-            <Button size="md" className="rounded-full">
-              <Plus className="size-4" />
-              Deposit
-            </Button>
-            {/* NO variant ON A MetalButton: it sets background, color
-                and borderColor as an INLINE style, and an inline style
-                beats a variant's classes, so the pill renders the same
-                metal face whichever variant is passed. Passing one only
-                implied it did something. */}
-            <TradeFlow metal="gold">
-              <MetalButton metal="gold" size="md">
-                Buy Gold
-              </MetalButton>
-            </TradeFlow>
-            <TradeFlow metal="silver">
-              <MetalButton metal="silver" size="md">
-                Buy Silver
-              </MetalButton>
-            </TradeFlow>
-          </Row>
-        </Container>
-      </Section>
+      {/* THE ACTIONS RENDER IN THE TOOLBAR, not here. AppChrome.Slot
+          registers them into the chrome and renders nothing in place, so
+          they sit up top and stay there while this page scrolls.
+          IT HAS TO BE A SLOT IN THE BODY, not a prop on AppChrome:
+          promotion strips the wrapper and its props (the route layout
+          supplies the chrome in the app), so a toolbarLeading set here
+          would render in Studio and vanish in the app. That was tried. */}
+      <AppChrome.Slot region="leading">
+        <Row gap="sm">
+          {/* NO variant ON A MetalButton: it sets background, color and
+              borderColor as an INLINE style, and an inline style beats a
+              variant's classes, so the pill renders the same metal face
+              whichever variant is passed. Passing one only implied it did
+              something. */}
+          <TradeFlow metal="gold">
+            <MetalButton metal="gold" size="sm">
+              Buy Gold
+            </MetalButton>
+          </TradeFlow>
+          <TradeFlow metal="silver">
+            <MetalButton metal="silver" size="sm">
+              Buy Silver
+            </MetalButton>
+          </TradeFlow>
+          {/* Deposit IS a real Button, so `variant` is not dead here the
+              way it is on a MetalButton: secondary demotes it behind the
+              two metal pills. Inert, no deposit flow in the demo. */}
+          <Button variant="secondary" size="sm" className="rounded-full">
+            <Plus className="size-4" />
+            Deposit
+          </Button>
+        </Row>
+      </AppChrome.Slot>
 
-      {/* Balance, with Auto-invest alongside it */}
-      <Section pad="sm">
+      {/* Balance, with Auto-invest alongside it. pt-8 because this is
+          the first band under the toolbar now that the actions have
+          moved into the chrome. */}
+      <Section pad="sm" className="pt-8">
         <Container maxW="xl">
           <Stack gap="lg">
             <Row justify="between" align="end" wrap gap="md">

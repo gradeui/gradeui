@@ -105,6 +105,52 @@ COMPONENT_MODULES = {
 # with direction="buy", or retire the Studio module), not a rewrite.
 
 
+def comment_spans(src: str) -> list[tuple[int, int]]:
+    """(start, end) of every // and /* */ comment, so a search can skip them.
+
+    Deliberately simple: it does not track strings, so a "//" inside a string
+    literal would be mistaken for a comment start. That is acceptable here
+    because the only caller is looking for a JSX tag, and a tag name inside a
+    string is not a tag either, so both readings skip it.
+    """
+    spans: list[tuple[int, int]] = []
+    i, n = 0, len(src)
+    while i < n:
+        if src.startswith("//", i):
+            end = src.find("\n", i)
+            end = n if end == -1 else end
+            spans.append((i, end))
+            i = end
+        elif src.startswith("/*", i):
+            end = src.find("*/", i + 2)
+            end = n if end == -1 else end + 2
+            spans.append((i, end))
+            i = end
+        else:
+            i += 1
+    return spans
+
+
+def find_outside_comments(src: str, needle: str) -> int:
+    """Index of the first `needle` that is NOT inside a comment, or -1.
+
+    WHY (11 Aug 2026): unwrap_chrome used a plain str.find for the opening
+    tag, and a screen whose COMMENT mentioned "<AppChrome>" in prose had that
+    mention rewritten to "<>" instead of the real element. The element then
+    survived, the tree was unbalanced, and the promoted page failed to parse
+    with "Identifier expected" pointing at the closing fragment, which is a
+    long way from the cause. Comments are the one place a tag name appears as
+    text rather than as syntax, so they are skipped.
+    """
+    spans = comment_spans(src)
+    at = src.find(needle)
+    while at != -1:
+        if not any(lo <= at < hi for lo, hi in spans):
+            return at
+        at = src.find(needle, at + 1)
+    return -1
+
+
 def opening_tag_span(src: str, name: str) -> tuple[int, int] | None:
     """Span of `<Name ...>`, including a MULTI-LINE prop list, or None.
 
@@ -118,7 +164,19 @@ def opening_tag_span(src: str, name: str) -> tuple[int, int] | None:
     page. It matched on the LINE, so it only ever worked when the whole
     opening tag fitted on one.
     """
-    start = src.find(f"<{name}")
+    # The tag must END here: `<AppChrome ` or `<AppChrome>` and NOT
+    # `<AppChrome.Actions>`. A compound part is a different element that
+    # lives in the body and must survive the unwrap, so matching it as the
+    # wrapper would delete the wrong thing.
+    start = -1
+    at = find_outside_comments(src, f"<{name}")
+    while at != -1:
+        after = src[at + 1 + len(name) : at + 2 + len(name)]
+        if after in ("", " ", "\n", "\t", ">", "/"):
+            start = at
+            break
+        at = find_outside_comments(src[at + 1 :], f"<{name}")
+        at = -1 if at == -1 else at + 1
     if start == -1:
         return None
     depth = 0
@@ -150,10 +208,11 @@ def unwrap_chrome(src: str, name: str, problems: list[str]) -> str:
         line_start = src.rfind("\n", 0, span[0]) + 1
         indent = src[line_start:span[0]]
         src = src[:line_start] + indent + "<>" + src[span[1]:]
-    new = re.sub(rf"^(\s*)</{name}>\s*$", r"\1</>", src, flags=re.M)
-    if new == src:
+    close_at = find_outside_comments(src, f"</{name}>")
+    if close_at == -1:
         problems.append(f"closing {name} wrapper not found")
-    src = new
+    else:
+        src = src[:close_at] + "</>" + src[close_at + len(name) + 3:]
     # With the wrapper gone the name may be unused. Compound uses keep it
     # alive: --step drops <OnboardingLayout> but keeps
     # <OnboardingLayout.Actions>, which rides on context.
