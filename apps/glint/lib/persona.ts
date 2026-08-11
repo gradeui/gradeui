@@ -43,7 +43,7 @@ export interface BalanceMeta {
 export type TxKind = "exchange-buy" | "exchange-sell" | "spend" | "deposit";
 export type TxType = "exchange" | "card" | "deposit" | "withdrawal";
 export type TxStatus = "completed" | "pending" | "failed" | "reversed";
-export type TxMethod = "market-order" | "card" | "wire" | "ach";
+export type TxMethod = "market-order" | "direct-gold" | "card" | "wire" | "ach";
 
 /** One row of activity. Rich enough to drive both the table and the
  *  transaction detail view, which is the shape the real app shows:
@@ -92,6 +92,10 @@ export const TX_TYPE_LABEL: Record<TxType, string> = {
 
 export const TX_METHOD_LABEL: Record<TxMethod, string> = {
   "market-order": "Market order",
+  /* Direct Gold: money landing in the USD wallet is converted to metal
+     automatically, so a deposit is followed by a purchase the customer
+     did not place by hand. Driven by the autoInvest preference. */
+  "direct-gold": "Direct Gold",
   card: "Card",
   wire: "Wire transfer",
   ach: "ACH",
@@ -275,7 +279,7 @@ export const PERSONAS: Record<string, PersonaRecord> = {
     preferences: {
       "unit.gold": "g",
       "unit.silver": "g",
-      autoInvest: "none",
+      autoInvest: "gold",
     },
     balances: {
       gold: { label: "Gold", amount: 6636.8, account: accountLabel("gold") },
@@ -318,10 +322,10 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         reference: "GX-4390-0117",
       },
       {
-        id: "tx-20260805-0902",
+        id: "tx-20260811-1420",
         kind: "deposit",
-        description: "Deposit from Ridgeline Construction",
-        timestamp: "2026-08-05T09:02:00",
+        description: "Deposit to USD",
+        timestamp: "2026-08-11T14:20:00",
         metalAmount: null,
         metal: null,
         fiatAmount: 8400,
@@ -330,6 +334,21 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         status: "completed",
         method: "wire",
         reference: "WT-2026-08-0551",
+      },
+      {
+        id: "tx-20260805-090300-dg",
+        kind: "exchange-buy",
+        description: "Exchange USD to Gold",
+        timestamp: "2026-08-11T14:21:00",
+        metalAmount: 59.8778,
+        metal: "gold",
+        fiatAmount: -8400,
+        rate: 140.2856,
+        type: "exchange",
+        status: "completed",
+        method: "direct-gold",
+        fee: 74.93,
+        reference: "DG-2026-08-0551",
       },
       {
         id: "tx-20260802-1015",
@@ -349,7 +368,7 @@ export const PERSONAS: Record<string, PersonaRecord> = {
       {
         id: "tx-20260801-0741",
         kind: "deposit",
-        description: "Deposit from Ridgeline Construction",
+        description: "Deposit to USD",
         timestamp: "2026-08-01T07:41:00",
         metalAmount: null,
         metal: null,
@@ -359,6 +378,21 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         status: "completed",
         method: "ach",
         reference: "AC-2026-08-0117",
+      },
+      {
+        id: "tx-20260801-074200-dg",
+        kind: "exchange-buy",
+        description: "Exchange USD to Gold",
+        timestamp: "2026-08-01T07:42:00",
+        metalAmount: 22.8106,
+        metal: "gold",
+        fiatAmount: -3200,
+        rate: 140.2856,
+        type: "exchange",
+        status: "completed",
+        method: "direct-gold",
+        fee: 28.54,
+        reference: "DG-2026-08-0117",
       },
     ],
   },

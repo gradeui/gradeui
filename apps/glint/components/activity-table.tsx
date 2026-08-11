@@ -23,7 +23,10 @@
  * via txMethodLabel, and status renders through the label map, so
  * re-wording is one line in lib/persona.ts.
  *
- * COLUMNS (Ali, 11 Aug): Description, Amount, Status, Type, Date. There
+ * COLUMNS (Ali, 11 Aug): Description, Amount, Status, Date. The TYPE
+ * sits under the description rather than in its own column, where it
+ * reads as what the row IS ("Direct Gold", "Wire transfer") instead of
+ * a value to scan across. There
  * is no Account column and no account on the row: every wallet here
  * belongs to the same customer, and a wallet screen filters on `metal`.
  * The kind column ("Exchange") went too, because the description
@@ -106,9 +109,9 @@ function buildColumns(): DataViewColumn<ActivityRow>[] {
       cell: (row: ActivityRow) => (
         <Stack gap="none">
           <span className="font-medium text-foreground">{row.description}</span>
-          {txPlace(row) && (
-            <span className="text-xs text-muted-foreground">{txPlace(row)}</span>
-          )}
+          <span className="text-xs text-muted-foreground">
+            {[txMethodLabel(row), txPlace(row)].filter(Boolean).join(" · ")}
+          </span>
         </Stack>
       ),
     },
@@ -133,14 +136,6 @@ function buildColumns(): DataViewColumn<ActivityRow>[] {
         >
           {TX_STATUS_LABEL[row.status]}
         </span>
-      ),
-    },
-    {
-      key: "method",
-      header: "Type",
-      sortable: true,
-      cell: (row: ActivityRow) => (
-        <span className="text-muted-foreground">{txMethodLabel(row)}</span>
       ),
     },
     {

@@ -15,9 +15,11 @@ import {
   CardTitle,
   CardContent,
   Button,
+  ToggleGroup,
+  ToggleGroupItem,
 } from "@gradeui/ui";
 import { Plus, ChevronRight } from "lucide-react";
-import { Persona, type AssetKey } from "@/lib/persona";
+import { Persona, type AssetKey, type AutoInvest } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { accountIdentifiers, accountLabel } from "@/lib/accounts";
 import { MetalButton } from "@/components/metal-button";
@@ -59,6 +61,59 @@ function AssetMark({ asset }: { asset: AssetKey }) {
     asset === "fiat" ? "oklch(var(--primary))" : metalSolid(asset);
   return (
     <Wordmark lockup="mark" tone="current" className="size-5" style={{ color }} />
+  );
+}
+
+/* What a USD deposit does on arrival. Values are the autoInvest
+   preference; "none" leaves the cash sitting in the USD wallet. */
+const AUTO_INVEST: { value: AutoInvest; label: string }[] = [
+  { value: "gold", label: "Gold" },
+  { value: "silver", label: "Silver" },
+  { value: "none", label: "Off" },
+];
+
+/** Direct Gold: the headline feature, on the page rather than behind a
+ *  settings screen (Ali, 11 Aug: "this is apparently the number one
+ *  feature"). Reads and writes the persona preference, so a demo can
+ *  flip it live, and it is why the activity list shows a deposit
+ *  followed a minute later by a purchase nobody placed by hand. */
+function DirectInvest() {
+  const [mode, setMode] = Persona.usePreference("autoInvest");
+  return (
+    /* Label to the LEFT of the control, no explainer line above it: the
+       segment names the metal, so a sentence saying the same thing was
+       just noise. The metal tint stays on the LABEL and never touches
+       the track, which has its own surface. */
+    <Row gap="sm" align="center">
+      <span className="text-sm font-medium text-foreground">Direct Gold</span>
+      <ToggleGroup
+        type="single"
+        variant="segmented"
+        size="sm"
+        value={mode}
+        onValueChange={(v) => v && setMode(v as AutoInvest)}
+      >
+        {AUTO_INVEST.map((o) => (
+          <ToggleGroupItem
+            key={o.value}
+            value={o.value}
+            /* The selected metal tints its LABEL with the flat brand
+               colour rather than wearing the polished gradient face.
+               The 45deg sweep is built for a 100px button; compressed
+               into a 50px segment it loses its travel and reads as flat
+               washed beige on the dark track. The flat colour says the
+               same thing and stays legible. */
+            style={
+              mode === o.value && o.value !== "none"
+                ? { color: metalSolid(o.value as "gold" | "silver") }
+                : undefined
+            }
+          >
+            {o.label}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </Row>
   );
 }
 
@@ -170,7 +225,10 @@ export default function DashboardPage() {
       <Section pad="sm">
         <Container maxW="xl">
           <Stack gap="lg">
-            <TotalBalance />
+            <Row justify="between" align="end" wrap gap="md">
+              <TotalBalance />
+              <DirectInvest />
+            </Row>
             <Grid cols="3" gap="lg">
               {ASSET_ORDER.map((asset) => (
                 <BalanceCard key={asset} asset={asset} />
