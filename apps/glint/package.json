@@ -7,7 +7,8 @@
     "dev": "next dev --port 3010",
     "build": "next build",
     "start": "next start",
-    "gen:theme": "tsx scripts/generate-theme.mts"
+    "gen:theme": "tsx scripts/generate-theme.mts",
+    "check:promotions": "tsx scripts/check-promotions.mts"
   },
   "dependencies": {
     "@gradeui/ui": "workspace:*",

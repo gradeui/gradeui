@@ -35,10 +35,26 @@ const stackVariants = cva("gds-stack flex flex-col", {
       end: "items-end",
       stretch: "items-stretch",
     },
+    /**
+     * Main-axis (vertical) distribution. Added to mirror Row's `justify`
+     * so consumers stop reaching for `flex flex-col justify-end` inline
+     * on absolute-positioned heroes, footer pinning, etc. Default `start`
+     * keeps the historical behaviour (children pack to the top) and the
+     * full distribution scale matches CSS `justify-content`.
+     */
+    justify: {
+      start: "justify-start",
+      center: "justify-center",
+      end: "justify-end",
+      between: "justify-between",
+      around: "justify-around",
+      evenly: "justify-evenly",
+    },
   },
   defaultVariants: {
     gap: "md",
     align: "stretch",
+    justify: "start",
   },
 });
 
@@ -52,13 +68,13 @@ export interface StackProps
 }
 
 const Stack = React.forwardRef<HTMLDivElement, StackProps>(
-  ({ className, gap, align, asChild = false, ...props }, ref) => {
+  ({ className, gap, align, justify, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "div";
     return (
       <Comp
         ref={ref}
         data-gds-part="stack"
-        className={cn(stackVariants({ gap, align, className }))}
+        className={cn(stackVariants({ gap, align, justify, className }))}
         {...props}
       />
     );

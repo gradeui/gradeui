@@ -72,6 +72,7 @@ survives any future slug rename.
 | `pnpm -F @gradeui/glint dev` | dev server on port 3010 |
 | `pnpm -F @gradeui/glint build` | production build (type gate) |
 | `pnpm -F @gradeui/glint gen:theme` | regenerate app/theme.css from the ThemeInput |
+| `pnpm -F @gradeui/glint check:promotions` | has any Studio screen moved on since it was promoted? |
 
 ## Promoting a screen from Studio
 
@@ -94,7 +95,8 @@ survives any future slug rename.
    provides it). Screens outside the wizard keep their full layout.
 
 3. Add or refresh the entry in `lib/screens.ts` (slug, name, id, step,
-   `promotedAt` = the version you promoted).
+   `promotedAt` = the version you promoted), then re-baseline the drift
+   guard: `pnpm -F @gradeui/glint check:promotions --update`.
 
 4. `pnpm -F @gradeui/glint build`. Strict TS may want light prop
    annotations on untyped helper components inside the screen.
@@ -107,6 +109,39 @@ Shared components ported so far: `OnboardingLayout`, `AppChrome`,
 one-time port into `components/` or `lib/` and a mapping line in
 `scripts/promote-screen.py`. Keep the ported copy in sync with its
 Studio twin: both carry a header note saying so.
+
+## Staying in step with Studio
+
+**Studio first, then promote** (Ali, 11 Aug 2026). Screen and shared-
+component changes are made in the Studio project and promoted down into
+this app — not typed into `app/**/page.tsx` directly, even for a small
+fix reported against the running app. Studio is the drafting space; an
+app-side edit makes Studio the stale copy and the divergence only shows
+up later. Design-system changes are the exception: `packages/ui` reaches
+both surfaces through `packages/ui/dist`, so those are edited in the
+package (plus the docs twin) and need `pnpm -F @gradeui/ui build`.
+
+Studio and this app hold two copies of every screen, and editing one
+does not touch the other. A screen changed in Studio after promotion
+silently orphans the copy here, and the only symptom is "these look
+different" days later — which is exactly how the wallets card chevron
+ended up a ghost button here and an outline circle in Studio.
+
+```bash
+pnpm -F @gradeui/glint check:promotions
+```
+
+It hashes each live Studio screen and compares against the `sourceHash`
+recorded in `lib/screens.ts` at promotion time, printing a line per
+screen and exiting non-zero if any drifted. `--warn` never fails,
+`--update` re-baselines after you promote.
+
+It compares SOURCE, not timestamps: `designs.updated_at` moves whenever
+anything writes the row (a tag script, opening the canvas), so a
+timestamp check flagged 13 of 14 screens when exactly one had really
+changed. Studio's `data-gds-source-id` stamps and whitespace are
+normalised away before hashing for the same reason — a canvas save adds
+them, an MCP save strips them, and neither changes a pixel.
 
 ## Deploying to Vercel
 

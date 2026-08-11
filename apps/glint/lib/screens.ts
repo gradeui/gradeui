@@ -29,8 +29,16 @@ export interface ScreenEntry {
   id: string;
   /** 1-based wizard step for /onboarding screens (rail + progress). */
   step?: number;
-  /** designs.updated_at (epoch ms) of the promoted source. */
+  /** designs.updated_at (epoch ms) of the promoted source. Provenance
+   *  only — a metadata write bumps it without changing a pixel, which
+   *  is why drift is detected by `sourceHash`, not by this. */
   promotedAt: number;
+  /** Signature of the Studio appSource this copy was promoted from, as
+   *  `scripts/check-promotions.mts` computes it (source-id stamps and
+   *  whitespace normalised away). `pnpm -F @gradeui/glint
+   *  check:promotions` compares it against the live screen and fails
+   *  when Studio has moved on. Re-baseline with --update. */
+  sourceHash?: string;
 }
 
 export const SCREENS: ScreenEntry[] = [
@@ -39,6 +47,7 @@ export const SCREENS: ScreenEntry[] = [
     name: "US Demo Landing",
     id: "dmskhheytm163",
     promotedAt: 1786361077708,
+    sourceHash: "8b7e0a0d75f8",
   },
   {
     slug: "/onboarding/step0",
@@ -46,6 +55,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskgw2pk2r1x",
     step: 1,
     promotedAt: 1786358340226,
+    sourceHash: "af3870289208",
   },
   {
     slug: "/onboarding/step1",
@@ -53,6 +63,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskgweh31a0m",
     step: 2,
     promotedAt: 1786356816160,
+    sourceHash: "8fd2671ebd20",
   },
   {
     slug: "/onboarding/step2",
@@ -60,6 +71,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskgx7qs2sud",
     step: 3,
     promotedAt: 1786359190532,
+    sourceHash: "d3e5c05c417d",
   },
   {
     slug: "/onboarding/step3a",
@@ -67,6 +79,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskgxyctfxci",
     step: 4,
     promotedAt: 1786359134179,
+    sourceHash: "478cdb1981d2",
   },
   {
     slug: "/onboarding/step3b",
@@ -74,6 +87,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskgyvzc1nmh",
     step: 4,
     promotedAt: 1786359134361,
+    sourceHash: "2e72d0d979f6",
   },
   {
     slug: "/onboarding/step4",
@@ -81,6 +95,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskgzm7d7xvt",
     step: 5,
     promotedAt: 1786358341034,
+    sourceHash: "a200f13f1184",
   },
   {
     slug: "/onboarding/step5",
@@ -88,6 +103,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskh01pnwn8w",
     step: 6,
     promotedAt: 1786358563148,
+    sourceHash: "ccb9b512097b",
   },
   {
     slug: "/onboarding/step6",
@@ -95,6 +111,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskh0ixi1gdj",
     step: 7,
     promotedAt: 1786358341154,
+    sourceHash: "0a8ba805a66f",
   },
   {
     slug: "/onboarding/step7",
@@ -102,30 +119,35 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskh12cv6zuz",
     step: 8,
     promotedAt: 1786359134537,
+    sourceHash: "e79d5d976d39",
   },
   {
     slug: "/status",
     name: "US Onboarding — Application status",
     id: "dmskh1lole59j",
     promotedAt: 1786357121180,
+    sourceHash: "9fb2fd12bb2b",
   },
   {
     slug: "/wallets",
     name: "Dashboard — logged-in home",
     id: "dmskex612bcy1",
     promotedAt: 1786435743706,
+    sourceHash: "bec335b7a7fe",
   },
   {
     slug: "/activity",
     name: "Activity — history",
     id: "dmsnba2xdvnc3",
     promotedAt: 1786371183861,
+    sourceHash: "6185a5aa9df1",
   },
   {
     slug: "/wallets/gold",
     name: "Gold — wallet",
     id: "dmsnbpdvrz1qa",
     promotedAt: 1786435550819,
+    sourceHash: "6e0d181889e5",
   },
 ];
 

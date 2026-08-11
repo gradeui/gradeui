@@ -86,15 +86,17 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
       : Market.fmtQty(Market.toQty(amount, asset, unit), unit);
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2 pl-6">
         <Row justify="between" align="center">
           <CardTitle>{meta.label}</CardTitle>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="outline"
+            size="lg"
             iconOnly
             aria-label={`Open ${meta.label}`}
             data-grade-goto={CARD_TARGETS[asset]}
+            raised={false}
+            className="rounded-full"
           >
             <ChevronRight className="size-4" />
           </Button>
