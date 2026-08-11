@@ -11,11 +11,19 @@
  * tail from the same start date for both so the charts align, convert
  * with OZ, and re-derive GBPUSD from the latest gold row.
  *
- * TWO RATES, deliberately separate: latest()/toQty()/toUsd() are the
- * MARKET rate and value holdings; buyRate() adds the product's 0.9%
- * dealing fee and is what the buy flow quotes and converts on. The fee
- * lives INSIDE the quoted rate, so the cash fee on an order is
- * feeOn(amount) = amount * (1 - 1/1.009), not amount * 0.009.
+ * THREE RATES, deliberately separate:
+ *   - latest()/toQty()/toUsd() are the MARKET rate, which values holdings.
+ *   - buyRate() is market +0.9%: what you pay per unit when buying.
+ *   - sellRate() is market -0.9%: what you receive when selling. This is
+ *     why the iOS app quotes a lower rate on its Sell screen than its
+ *     Buy screen at the same moment (those screens are GBP; this demo is
+ *     USD, so the figures differ while the mechanics match).
+ * ASSUMPTION: the sell fee matches the buy fee at 0.9%, which is what
+ * both iOS screens state. Change SELL_FEE alone if the real spread is
+ * asymmetric.
+ * The fee lives INSIDE the quoted rate, so a BUY's cash fee is
+ * buyFee(amount) = amount * (1 - 1/1.009), not amount * 0.009. A SELL's
+ * fee is charged on the gross proceeds, so sellFee() is exact.
  *
  * Gold rows: [date, USD per gram] (LBMA gold PM auction, USD column).
  * Silver rows: [date, GBP per gram] (the LBMA silver auction publishes
@@ -31,8 +39,9 @@ export const OZ = 31.1034768; // grams per troy ounce
 
 export const GBPUSD = 1.3508; // implied by the 2026-08-10 gold auction row
 
-/** The product's dealing fee, built into every quoted buy rate. */
+/** The product's dealing fee, built into every quoted rate. */
 export const BUY_FEE = 0.009;
+export const SELL_FEE = 0.009;
 
 type PriceRow = [date: string, pricePerG: number];
 
@@ -70,6 +79,7 @@ export function latest(asset: MetalKey) {
 }
 
 export type MetalUnit = "g" | "oz";
+export type TradeDirection = "buy" | "sell";
 
 /** USD balance -> quantity at the latest price, in "g" or "oz". */
 export function toQty(usd: number, asset: MetalKey, unit: MetalUnit): number {
@@ -91,22 +101,60 @@ export function toUsd(qty: number, asset: MetalKey, unit: MetalUnit): number {
   return grams * latest(asset).usdPerG;
 }
 
-/** The fee-inclusive dealing rate per `unit` — what the buy flow
- *  quotes and converts on. */
-export function buyRate(asset: MetalKey, unit: MetalUnit): number {
+/** The market rate per `unit` — no fee. */
+export function marketRate(asset: MetalKey, unit: MetalUnit): number {
   const l = latest(asset);
-  const market = unit === "oz" ? l.usdPerOz : l.usdPerG;
-  return market * (1 + BUY_FEE);
+  return unit === "oz" ? l.usdPerOz : l.usdPerG;
 }
 
-/** The cash fee inside an order. The fee lives in the rate, so this is
+/** What you pay per unit when buying: market +0.9%. */
+export function buyRate(asset: MetalKey, unit: MetalUnit): number {
+  return marketRate(asset, unit) * (1 + BUY_FEE);
+}
+
+/** What you receive per unit when selling: market -0.9%. */
+export function sellRate(asset: MetalKey, unit: MetalUnit): number {
+  return marketRate(asset, unit) * (1 - SELL_FEE);
+}
+
+/** The quoted rate for a direction. */
+export function rateFor(
+  direction: TradeDirection,
+  asset: MetalKey,
+  unit: MetalUnit,
+): number {
+  return direction === "sell" ? sellRate(asset, unit) : buyRate(asset, unit);
+}
+
+/** The cash fee on a SELL of `qty`: charged on the gross proceeds. */
+export function sellFee(qty: number, asset: MetalKey, unit: MetalUnit): number {
+  if (!Number.isFinite(qty) || qty <= 0) return 0;
+  return qty * marketRate(asset, unit) * SELL_FEE;
+}
+
+/** Quantity sold -> USD proceeds after the fee. */
+export function sellProceeds(qty: number, asset: MetalKey, unit: MetalUnit): number {
+  return qty * sellRate(asset, unit);
+}
+
+/** USD proceeds wanted -> quantity that must be sold. */
+export function sellQty(usd: number, asset: MetalKey, unit: MetalUnit): number {
+  return usd / sellRate(asset, unit);
+}
+
+/** The cash fee inside a BUY. The fee lives in the rate, so this is
  *  usd * (1 - 1/1.009), not usd * 0.009. */
-export function feeOn(usd: number): number {
+export function buyFee(usd: number): number {
   if (!Number.isFinite(usd) || usd <= 0) return 0;
   return usd * (1 - 1 / (1 + BUY_FEE));
 }
 
 /** USD -> quantity at the DEALING rate (what an order actually buys). */
+/** Alias kept for pre-sell call sites. */
+export function feeOn(usd: number): number {
+  return buyFee(usd);
+}
+
 export function buyQty(usd: number, asset: MetalKey, unit: MetalUnit): number {
   return usd / buyRate(asset, unit);
 }
@@ -131,10 +179,18 @@ export const Market = {
   gold: GOLD_USD_PER_G,
   silver: SILVER_GBP_PER_G,
   BUY_FEE,
+  SELL_FEE,
   latest,
+  marketRate,
+  sellRate,
+  rateFor,
+  sellFee,
+  sellProceeds,
+  sellQty,
   toQty,
   toUsd,
   buyRate,
+  buyFee,
   feeOn,
   buyQty,
   buyCost,

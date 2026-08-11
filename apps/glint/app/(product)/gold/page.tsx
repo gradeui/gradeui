@@ -28,7 +28,7 @@ import { AreaChart, Area, XAxis, YAxis } from "recharts";
 import { Persona, type ActivityRow } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { METALS } from "@/components/wordmark";
-import { BuyFlow } from "@/components/buy-flow";
+import { TradeFlow } from "@/components/trade-flow";
 
 // Glint Gold wallet screen: the desktop gold view. Two cards up top:
 // the LBMA gold price (latest per-ounce figure + the last month of
@@ -154,7 +154,7 @@ export default function GoldWalletPage() {
                   <span className="text-sm text-muted-foreground">{meta.account}</span>
                 </Stack>
                 <Row gap="sm">
-                  <BuyFlow metal="gold">
+                  <TradeFlow metal="gold">
                     <Button
                       size="md"
                       className="rounded-full border"
@@ -162,10 +162,12 @@ export default function GoldWalletPage() {
                     >
                       Buy Gold
                     </Button>
-                  </BuyFlow>
-                  <Button variant="ghost" size="md" className="rounded-full">
-                    Sell
-                  </Button>
+                  </TradeFlow>
+                  <TradeFlow metal="gold" direction="sell">
+                    <Button variant="ghost" size="md" className="rounded-full">
+                      Sell
+                    </Button>
+                  </TradeFlow>
                 </Row>
               </Stack>
             </CardContent>

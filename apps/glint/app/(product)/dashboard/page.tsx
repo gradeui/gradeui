@@ -26,7 +26,7 @@ import { Plus, ChevronRight } from "lucide-react";
 import { Persona, type AssetKey } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { METALS } from "@/components/wordmark";
-import { BuyFlow } from "@/components/buy-flow";
+import { TradeFlow } from "@/components/trade-flow";
 
 // Mercury-pattern logged-in home for BUSINESS accounts. The chrome
 // comes from the (product) route layout; this page supplies only the
@@ -137,7 +137,7 @@ export default function DashboardPage() {
               <Plus className="size-4" />
               Deposit
             </Button>
-            <BuyFlow metal="gold">
+            <TradeFlow metal="gold">
               <Button
                 variant="secondary"
                 size="md"
@@ -146,8 +146,8 @@ export default function DashboardPage() {
               >
                 Buy Gold
               </Button>
-            </BuyFlow>
-            <BuyFlow metal="silver">
+            </TradeFlow>
+            <TradeFlow metal="silver">
               <Button
                 variant="secondary"
                 size="md"
@@ -156,7 +156,7 @@ export default function DashboardPage() {
               >
                 Buy Silver
               </Button>
-            </BuyFlow>
+            </TradeFlow>
           </Row>
         </Container>
       </Section>

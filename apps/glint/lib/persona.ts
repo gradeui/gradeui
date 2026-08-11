@@ -9,6 +9,10 @@
  * persona for now; add records to PERSONAS and swap DEFAULT_PERSONA
  * when the demo needs more. The cash asset displays as "USD" but its
  * KEY stays "fiat" so stored balance overrides survive the rename.
+ * Both metals display in GRAMS (Ali, 11 Aug): mixing units across the
+ * balance cards read as a bug. Flip a value to "oz" if a metal
+ * should differ. The silver ACTIVITY rows still describe ounces in
+ * their copy: those are historical text, not computed figures.
  * Keep in sync with the Studio component.
  *
  * BALANCES ARE REACTIVE: useBalance("gold") reads a FlowStore override
@@ -73,7 +77,7 @@ export const PERSONAS: Record<string, PersonaRecord> = {
     account: "AD",
     preferences: {
       "unit.gold": "g",
-      "unit.silver": "oz",
+      "unit.silver": "g",
       autoInvest: "none",
     },
     balances: {

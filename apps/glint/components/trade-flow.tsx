@@ -1,21 +1,31 @@
 "use client";
 
 /**
- * Glint buy flow, ported from the Studio shared component "BuyFlow"
- * (cmsodiwy5iqcn8): the Buy Gold / Buy Silver modal, carrying the real
- * Glint iOS app's information order. One component, parametrized by
- * metal; wrap the trigger button:
+ * Glint trade flow, ported from the Studio shared component
+ * "TradeFlow" (cmsoh3ieywgijq): the Buy / Sell modal, one component in
+ * both directions, carrying the real Glint iOS app's information
+ * order. Wrap the trigger button:
  *
- *   <BuyFlow metal="gold">
- *     <Button ...>Buy Gold</Button>
- *   </BuyFlow>
+ *   <TradeFlow metal="gold">                  // buy (default)
+ *   <TradeFlow metal="gold" direction="sell"> // sell
+ *
+ * DIRECTION shapes the form, mirroring the two iOS screens:
+ *   buy  — wallet (USD source), Amount, then Quantity.
+ *   sell — Quantity FIRST with "x available" beneath it, then the
+ *          destination wallet, then the Amount it pays out, plus the
+ *          product's three-working-days clearing note. The metal is
+ *          what you are spending, so it leads.
+ *
+ * RATES: buy is market +0.9%, sell is market -0.9% (Market.rateFor),
+ * which is why the app's sell rate is visibly lower than its buy rate
+ * at the same moment. The iOS screenshots are GBP; this demo is USD.
  *
  * FORM, top to bottom (matching the iOS app):
  *   - "Current rate" as a titled Callout showing the DEALING rate,
  *     with "incl. 0.9% fee" beneath it exactly as the app labels it.
  *     No source/date line: in the product the rate updates live, so a
  *     settlement date would read as staleness.
- *   - the funding wallet (USD, live balance);
+ *   - the funding or destination wallet (USD, live balance);
  *   - LINKED FIELDS: Amount (USD) and Quantity (metal). Typing in
  *     either drives the other through the DEALING rate. The field
  *     being typed in is never reformatted under the caret; only the
@@ -75,7 +85,7 @@ import {
 } from "@gradeui/ui";
 import { CheckCircle2, ChevronRight, TrendingUp } from "lucide-react";
 import { Persona } from "@/lib/persona";
-import { Market, type MetalKey } from "@/lib/market";
+import { Market, type MetalKey, type TradeDirection } from "@/lib/market";
 import { METALS } from "@/components/wordmark";
 
 const METAL_LABEL: Record<MetalKey, string> = {
@@ -100,11 +110,13 @@ function fmtDerived(n: number, places: number): string {
   return n.toFixed(places);
 }
 
-export function BuyFlow({
+export function TradeFlow({
   metal = "gold",
+  direction = "buy",
   children,
 }: {
   metal?: MetalKey;
+  direction?: TradeDirection;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = React.useState(false);
@@ -126,27 +138,67 @@ export function BuyFlow({
     metal === "gold" ? "unit.gold" : "unit.silver",
   );
 
+  const selling = direction === "sell";
   const label = METAL_LABEL[metal];
+  const verb = selling ? "Sell" : "Buy";
   const fiatMeta = Persona.DEFAULT.balances.fiat;
   const metalMeta = Persona.DEFAULT.balances[metal];
   const amount = Number.parseFloat(amountRaw);
-  const overBalance = Number.isFinite(amount) && amount > fiat;
-  const valid = Number.isFinite(amount) && amount > 0 && amount <= fiat;
-  const dealRate = Market.buyRate(metal, unit);
-  const qty = valid ? Market.buyQty(amount, metal, unit) : 0;
-  const fee = valid ? Market.feeOn(amount) : 0;
-  /* What the wallet gains: the metal bought, valued at market. */
-  const credited = valid ? amount - fee : 0;
-  const heldQty = Market.fmtQty(Market.toQty(metalBal, metal, unit), unit);
+  const qtyTyped = Number.parseFloat(qtyRaw);
+  const held = Market.toQty(metalBal, metal, unit);
+  const heldQty = Market.fmtQty(held, unit);
+  const dealRate = Market.rateFor(direction, metal, unit);
+
+  /* Buy is limited by cash, sell by metal. */
+  const overBalance = selling
+    ? Number.isFinite(qtyTyped) && qtyTyped > held
+    : Number.isFinite(amount) && amount > fiat;
+  const valid = selling
+    ? Number.isFinite(qtyTyped) && qtyTyped > 0 && qtyTyped <= held
+    : Number.isFinite(amount) && amount > 0 && amount <= fiat;
+
+  const qty = selling
+    ? valid
+      ? qtyTyped
+      : 0
+    : valid
+      ? Market.buyQty(amount, metal, unit)
+      : 0;
+  const cash = selling
+    ? valid
+      ? Market.sellProceeds(qtyTyped, metal, unit)
+      : 0
+    : valid
+      ? amount
+      : 0;
+  const fee = valid
+    ? selling
+      ? Market.sellFee(qtyTyped, metal, unit)
+      : Market.buyFee(amount)
+    : 0;
 
   /* Linked fields, both converting at the dealing rate. */
   const onAmount = (v: string) => {
     setAmountRaw(v);
-    setQtyRaw(fmtDerived(Market.buyQty(Number.parseFloat(v), metal, unit), 4));
+    const n = Number.parseFloat(v);
+    setQtyRaw(
+      fmtDerived(
+        selling ? Market.sellQty(n, metal, unit) : Market.buyQty(n, metal, unit),
+        4,
+      ),
+    );
   };
   const onQty = (v: string) => {
     setQtyRaw(v);
-    setAmountRaw(fmtDerived(Market.buyCost(Number.parseFloat(v), metal, unit), 2));
+    const n = Number.parseFloat(v);
+    setAmountRaw(
+      fmtDerived(
+        selling
+          ? Market.sellProceeds(n, metal, unit)
+          : Market.buyCost(n, metal, unit),
+        2,
+      ),
+    );
   };
 
   const reset = () => {
@@ -157,16 +209,83 @@ export function BuyFlow({
   };
 
   const confirm = () => {
-    /* USD falls by the full amount; the wallet gains the metal bought
-       (amount less the fee), both reactive so every subscribed balance
-       card follows immediately. Freeze the receipt BEFORE they move. */
-    const nextFiat = fiat - amount;
-    const nextMetal = metalBal + credited;
-    setOrder({ qty, cash: amount, fee, nextMetal, nextFiat });
-    setFiat(nextFiat);
+    /* Buy: USD falls by the amount, the wallet gains the metal bought
+       (amount less the fee: the fee is Glint's).
+       Sell: the metal leaves at MARKET value, USD rises by the
+       proceeds. Freeze the receipt BEFORE the balances move. */
+    const nextMetal = selling
+      ? metalBal - Market.toUsd(qtyTyped, metal, unit)
+      : metalBal + (amount - fee);
+    const nextFiat = selling ? fiat + cash : fiat - amount;
+    setOrder({ qty, cash, fee, nextMetal, nextFiat });
     setMetalBal(nextMetal);
+    setFiat(nextFiat);
     setStep("done");
   };
+
+  const walletRow = (
+    <Row
+      justify="between"
+      align="center"
+      className="h-11 rounded-md border border-input px-4"
+    >
+      <span className="text-sm font-medium text-foreground">
+        USD{" "}
+        <span className="font-normal text-muted-foreground">
+          {fiatMeta.account}
+        </span>
+      </span>
+      <span className="text-sm font-medium text-foreground">
+        {Persona.fmtMoney(fiat)}
+      </span>
+    </Row>
+  );
+
+  const amountField = (
+    <Field>
+      <FieldLabel>Amount</FieldLabel>
+      <InputGroup size="lg">
+        <InputGroupAddon align="inline-start">
+          <InputGroupText>$</InputGroupText>
+        </InputGroupAddon>
+        <InputGroupInput
+          placeholder="0.00"
+          inputMode="decimal"
+          value={amountRaw}
+          onChange={(e) => onAmount(e.target.value)}
+        />
+      </InputGroup>
+      <FieldDescription className="text-xs">
+        {selling
+          ? `${Persona.fmtMoney(fiat)} balance`
+          : overBalance
+            ? "That is more than your USD balance."
+            : `Up to ${Persona.fmtMoney(fiat)} available`}
+      </FieldDescription>
+    </Field>
+  );
+
+  const quantityField = (
+    <Field>
+      <FieldLabel>Quantity</FieldLabel>
+      <InputGroup size="lg">
+        <InputGroupInput
+          placeholder="0.0000"
+          inputMode="decimal"
+          value={qtyRaw}
+          onChange={(e) => onQty(e.target.value)}
+        />
+        <InputGroupAddon align="inline-end">
+          <InputGroupText>{unit}</InputGroupText>
+        </InputGroupAddon>
+      </InputGroup>
+      <FieldDescription className="text-xs">
+        {selling && overBalance
+          ? `That is more ${label.toLowerCase()} than you hold.`
+          : `${heldQty} ${selling ? "available" : "balance"}`}
+      </FieldDescription>
+    </Field>
+  );
 
   return (
     <Dialog
@@ -181,9 +300,13 @@ export function BuyFlow({
         {step === "form" && (
           <>
             <DialogHeader>
-              <DialogTitle>Buy {label}</DialogTitle>
+              <DialogTitle>
+                {verb} {label}
+              </DialogTitle>
               <DialogDescription>
-                A one-time market order from your USD account.
+                {selling
+                  ? "A one-time market order into your USD account."
+                  : "A one-time market order from your USD account."}
               </DialogDescription>
             </DialogHeader>
             <Stack gap="md">
@@ -194,67 +317,36 @@ export function BuyFlow({
                   1 {unit} = {Persona.fmtMoney(dealRate)}
                   <span className="text-muted-foreground">
                     {" "}
-                    incl. {(Market.BUY_FEE * 100).toFixed(1)}% fee
+                    incl.{" "}
+                    {((selling ? Market.SELL_FEE : Market.BUY_FEE) * 100).toFixed(1)}%
+                    fee
                   </span>
                 </CalloutDescription>
               </Callout>
 
-              <Field>
-                <FieldLabel>Wallet</FieldLabel>
-                <Row
-                  justify="between"
-                  align="center"
-                  className="h-11 rounded-md border border-input px-4"
-                >
-                  <span className="text-sm font-medium text-foreground">
-                    USD{" "}
-                    <span className="font-normal text-muted-foreground">
-                      {fiatMeta.account}
-                    </span>
-                  </span>
-                  <span className="text-sm font-medium text-foreground">
-                    {Persona.fmtMoney(fiat)}
-                  </span>
-                </Row>
-              </Field>
-
-              <Field>
-                <FieldLabel>Amount</FieldLabel>
-                <InputGroup size="lg">
-                  <InputGroupAddon align="inline-start">
-                    <InputGroupText>$</InputGroupText>
-                  </InputGroupAddon>
-                  <InputGroupInput
-                    placeholder="0.00"
-                    inputMode="decimal"
-                    value={amountRaw}
-                    onChange={(e) => onAmount(e.target.value)}
-                  />
-                </InputGroup>
-                <FieldDescription className="text-xs">
-                  {overBalance
-                    ? "That is more than your USD balance."
-                    : `Up to ${Persona.fmtMoney(fiat)} available`}
-                </FieldDescription>
-              </Field>
-
-              <Field>
-                <FieldLabel>Quantity</FieldLabel>
-                <InputGroup size="lg">
-                  <InputGroupInput
-                    placeholder="0.0000"
-                    inputMode="decimal"
-                    value={qtyRaw}
-                    onChange={(e) => onQty(e.target.value)}
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupText>{unit}</InputGroupText>
-                  </InputGroupAddon>
-                </InputGroup>
-                <FieldDescription className="text-xs">
-                  {heldQty} balance
-                </FieldDescription>
-              </Field>
+              {selling ? (
+                <>
+                  {quantityField}
+                  <Field>
+                    <FieldLabel>Destination</FieldLabel>
+                    {walletRow}
+                  </Field>
+                  {amountField}
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    It can take up to three working days for funds to clear in
+                    your wallet when you sell.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Field>
+                    <FieldLabel>Wallet</FieldLabel>
+                    {walletRow}
+                  </Field>
+                  {amountField}
+                  {quantityField}
+                </>
+              )}
             </Stack>
             <DialogFooter>
               <Button
@@ -283,16 +375,20 @@ export function BuyFlow({
             <DialogHeader>
               <DialogTitle>Review order</DialogTitle>
               <DialogDescription>
-                Buy {label.toLowerCase()} from {fiatMeta.account}
+                {selling
+                  ? `Sell ${label.toLowerCase()} into ${fiatMeta.account}`
+                  : `Buy ${label.toLowerCase()} from ${fiatMeta.account}`}
               </DialogDescription>
             </DialogHeader>
             <Stack gap="md">
               <Stack gap="none">
                 <span className="text-3xl font-semibold text-foreground">
-                  {Persona.fmtMoney(amount)}
+                  {selling ? Market.fmtQty(qty, unit) : Persona.fmtMoney(cash)}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  About {Market.fmtQty(qty, unit)} at {Persona.fmtMoney(dealRate)}/{unit}.
+                  {selling
+                    ? `Pays out about ${Persona.fmtMoney(cash)} at ${Persona.fmtMoney(dealRate)}/${unit}.`
+                    : `About ${Market.fmtQty(qty, unit)} at ${Persona.fmtMoney(dealRate)}/${unit}.`}{" "}
                   The order will execute at the next available price.
                 </span>
               </Stack>
@@ -301,18 +397,20 @@ export function BuyFlow({
                 <Row justify="between">
                   <span className="text-sm text-muted-foreground">From</span>
                   <span className="text-sm font-medium text-foreground">
-                    USD · {fiatMeta.account}
+                    {selling ? metalMeta.account : `USD · ${fiatMeta.account}`}
                   </span>
                 </Row>
                 <Row justify="between">
                   <span className="text-sm text-muted-foreground">To</span>
                   <span className="text-sm font-medium text-foreground">
-                    {metalMeta.account}
+                    {selling ? `USD · ${fiatMeta.account}` : metalMeta.account}
                   </span>
                 </Row>
                 <Row justify="between">
                   <span className="text-sm text-muted-foreground">
-                    Fee ({(Market.BUY_FEE * 100).toFixed(1)}%, included)
+                    Fee (
+                    {((selling ? Market.SELL_FEE : Market.BUY_FEE) * 100).toFixed(1)}
+                    %, included)
                   </span>
                   <span className="text-sm font-medium text-foreground">
                     {Persona.fmtMoney(fee)}
@@ -320,7 +418,7 @@ export function BuyFlow({
                 </Row>
               </Stack>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                By clicking &ldquo;Buy {label}&rdquo;, you authorise Glint to
+                By clicking &ldquo;{verb} {label}&rdquo;, you authorise Glint to
                 execute the market order detailed above.
               </p>
             </Stack>
@@ -339,7 +437,7 @@ export function BuyFlow({
                 style={metalButtonStyle(metal)}
                 onClick={confirm}
               >
-                Buy {label}
+                {verb} {label}
               </Button>
             </DialogFooter>
           </>
@@ -355,8 +453,9 @@ export function BuyFlow({
                 </Row>
               </DialogTitle>
               <DialogDescription>
-                You bought {Market.fmtQty(order.qty, unit)} of{" "}
-                {label.toLowerCase()} for {Persona.fmtMoney(order.cash)}.
+                You {selling ? "sold" : "bought"}{" "}
+                {Market.fmtQty(order.qty, unit)} of {label.toLowerCase()} for{" "}
+                {Persona.fmtMoney(order.cash)}.
               </DialogDescription>
             </DialogHeader>
             <Stack gap="sm">
@@ -377,6 +476,11 @@ export function BuyFlow({
                   {Persona.fmtMoney(order.nextFiat)}
                 </span>
               </Row>
+              {selling && (
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Funds can take up to three working days to clear.
+                </p>
+              )}
             </Stack>
             <DialogFooter>
               <Button
