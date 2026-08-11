@@ -30,7 +30,7 @@
  * already says "Exchange USD to Gold", and the description's subtitle
  * no longer repeats the method it sits next to.
  *
- * CLICKING A ROW opens the item in a SIDE SHEET, the way Mercury opens
+ * CLICKING ANYWHERE ON A ROW opens the item in a SIDE SHEET, the way Mercury opens
  * a transaction: the list stays put behind it, so you keep your place
  * and your scroll position. The panel mirrors the iOS transaction
  * detail screen field for field.
@@ -96,9 +96,7 @@ function AmountCell({ row }: { row: ActivityRow }) {
   );
 }
 
-function buildColumns(
-  onOpen: (row: ActivityRow) => void,
-): DataViewColumn<ActivityRow>[] {
+function buildColumns(): DataViewColumn<ActivityRow>[] {
   return [
     {
       key: "description",
@@ -106,23 +104,12 @@ function buildColumns(
       sortable: true,
       hideable: false,
       cell: (row: ActivityRow) => (
-        <button
-          type="button"
-          className="text-left"
-          onClick={() => onOpen(row)}
-          aria-label={`Open ${row.description}`}
-        >
-          <Stack gap="none">
-            <span className="font-medium text-foreground hover:underline">
-              {row.description}
-            </span>
-            {txPlace(row) && (
-              <span className="text-xs text-muted-foreground">
-                {txPlace(row)}
-              </span>
-            )}
-          </Stack>
-        </button>
+        <Stack gap="none">
+          <span className="font-medium text-foreground">{row.description}</span>
+          {txPlace(row) && (
+            <span className="text-xs text-muted-foreground">{txPlace(row)}</span>
+          )}
+        </Stack>
       ),
     },
     {
@@ -273,13 +260,20 @@ export function ActivityTable({
   hide?: string[];
   limit?: number;
 }) {
-  const [open, setOpen] = React.useState<ActivityRow | null>(null);
+  /* activeId is CONTROLLED so closing the sheet clears it. DataView's
+     click handler always sets the id and never toggles it off, so with
+     uncontrolled state a row you just closed could not be reopened:
+     the id would not change, onActiveChange would not fire, and the
+     row would look dead. */
+  const [activeId, setActiveId] = React.useState<string | null>(null);
   const [filter, setFilter] = React.useState("all");
-  const columns = buildColumns(setOpen).filter((c) => !hide.includes(c.key));
+  const columns = buildColumns().filter((c) => !hide.includes(c.key));
 
   const active = FILTERS.find((f) => f.value === filter) ?? FILTERS[0];
   const shown = rows.filter(active.test);
   const data = typeof limit === "number" ? shown.slice(0, limit) : shown;
+
+  const open = data.find((r) => r.id === activeId) ?? null;
 
   return (
     <Stack gap="md">
@@ -299,10 +293,12 @@ export function ActivityTable({
         columns={columns}
         views={["table"]}
         defaultSorting={[{ id: "timestamp", desc: true }]}
+        activeId={activeId}
+        onActiveChange={setActiveId}
         stickyHeader
         emptyMessage="Nothing here yet."
       />
-      <TxSheet row={open} onClose={() => setOpen(null)} />
+      <TxSheet row={open} onClose={() => setActiveId(null)} />
     </Stack>
   );
 }
