@@ -3216,7 +3216,7 @@ export default function StudioPage() {
             if (!o && !shareBusy) setPendingShare(null);
           }}
         >
-          <DialogContent className="max-w-md">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>
                 {pendingShare.scope ? "Share screens" : "Share screen"}

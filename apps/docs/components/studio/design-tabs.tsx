@@ -190,7 +190,7 @@ export function DesignTabs({
           if (!open) setPendingDeleteId(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent layout="center" className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-destructive" aria-hidden />

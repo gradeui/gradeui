@@ -15,6 +15,8 @@ aliases: [modal, popup, overlay, alert, system alert, alert dialog, modal dialog
 
 DialogContent sits at elevation-5 (the dialog tier). The Presence axes still apply: `surface` picks the material, `gds-aura-*` adds radiating state, the overlay scrim handles dimming the page.
 
+**Responsive shape.** Below `sm` the panel is a full-screen sheet whose padding clears the device safe areas, and its content scrolls. From `sm` up it is a centred card (`max-w-lg`, capped at 85% of the viewport height). Pass a `max-w-*` in `className` to change the desktop width; you rarely need to touch the mobile behaviour. The panel enters with a fade and a slight scale from its own centre.
+
 ---
 
 ### Scenario 1 — Destructive confirmation (default opaque)

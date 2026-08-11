@@ -2802,7 +2802,9 @@ function PreviewLoadingDialog({ open }: { open: boolean }) {
   return (
     <Dialog open={open}>
       <DialogContent
-        className="max-w-sm [&>button]:hidden"
+        layout="center"
+        showClose={false}
+        className="sm:max-w-sm"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}

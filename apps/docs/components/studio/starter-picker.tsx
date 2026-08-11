@@ -201,7 +201,8 @@ export function StarterPicker({
           structural chrome, and arbitrary classes here once shipped
           uncompiled and let the dialog exceed the screen. */}
       <DialogContent
-        className="p-0 gap-0 overflow-hidden flex flex-col"
+        layout="center"
+        className="p-0 gap-0 overflow-hidden flex flex-col sm:p-0"
         style={{
           width: "90vw",
           maxWidth: "80rem",
