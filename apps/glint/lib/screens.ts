@@ -110,7 +110,7 @@ export const SCREENS: ScreenEntry[] = [
     promotedAt: 1786357121180,
   },
   {
-    slug: "/dashboard",
+    slug: "/wallets",
     name: "Dashboard — logged-in home",
     id: "dmskex612bcy1",
     promotedAt: 1786435743706,
@@ -122,7 +122,7 @@ export const SCREENS: ScreenEntry[] = [
     promotedAt: 1786371183861,
   },
   {
-    slug: "/gold",
+    slug: "/wallets/gold",
     name: "Gold — wallet",
     id: "dmsnbpdvrz1qa",
     promotedAt: 1786435550819,

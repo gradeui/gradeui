@@ -25,6 +25,7 @@ import {
 import { Plus, ChevronRight } from "lucide-react";
 import { Persona, type AssetKey } from "@/lib/persona";
 import { Market } from "@/lib/market";
+import { accountIdentifiers } from "@/lib/accounts";
 import { METALS } from "@/components/wordmark";
 import { TradeFlow } from "@/components/trade-flow";
 
@@ -92,11 +93,12 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
     | "unit.silver";
   const [unit] = Persona.usePreference(unitKey);
   const meta = Persona.DEFAULT.balances[asset];
-  /* Metals show the holding in the persona's preferred unit (gold in
-     grams per the product); fiat keeps its account number. */
+  /* Metals show the holding in the persona's preferred unit; the cash
+     account shows its routing and account numbers, which the CEO asked
+     to have called out explicitly (11 Aug). */
   const detail =
     asset === "fiat"
-      ? meta.account
+      ? accountIdentifiers("fiat")
       : Market.fmtQty(Market.toQty(amount, asset, unit), unit);
   return (
     <Card>

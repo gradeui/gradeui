@@ -3,8 +3,8 @@
 /**
  * Route layout for the logged-in product area: mounts the AppChrome
  * shell ONCE so the sidebar rail and toolbar persist across product
- * navigations. The route group keeps URLs clean (/dashboard, /activity,
- * /gold, ...) while sharing one chrome, mirroring the onboarding
+ * navigations. The route group keeps URLs clean (/wallets, /activity,
+ * /wallets/gold, ...) while sharing one chrome, mirroring the onboarding
  * wizard's layout pattern. The active nav item and the toolbar's
  * leading slot (subpage back affordance) derive from the pathname.
  */
@@ -18,12 +18,13 @@ import { AppChrome } from "@/components/layouts/app-chrome";
    screen (keep in step with lib/screens.ts and AppChrome's NAV).
    Wallet pages map to no nav item on purpose. */
 const ACTIVE_BY_PATH: Record<string, string> = {
-  "/dashboard": "Home",
+  "/wallets": "Wallets",
   "/activity": "Activity",
-  "/gold": "Gold",
+  /* A wallet detail keeps Wallets lit: it is a child of that section. */
+  "/wallets/gold": "Wallets",
 };
 
-function BackToDashboard() {
+function BackToWallets() {
   return (
     <Button
       variant="ghost"
@@ -39,7 +40,7 @@ function BackToDashboard() {
 
 /* Subpages get the Back affordance in the toolbar's leading slot. */
 const LEADING_BY_PATH: Record<string, React.ReactNode> = {
-  "/gold": <BackToDashboard />,
+  "/wallets/gold": <BackToWallets />,
 };
 
 export default function ProductChrome({
@@ -48,7 +49,7 @@ export default function ProductChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const active = ACTIVE_BY_PATH[pathname] ?? "Home";
+  const active = ACTIVE_BY_PATH[pathname] ?? "Wallets";
   return (
     <AppChrome active={active} toolbarLeading={LEADING_BY_PATH[pathname] ?? null}>
       {children}

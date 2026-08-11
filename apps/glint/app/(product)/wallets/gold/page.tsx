@@ -28,6 +28,7 @@ import { AreaChart, Area, XAxis, YAxis } from "recharts";
 import { Persona, type ActivityRow } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { METALS } from "@/components/wordmark";
+import { accountIdentifiers } from "@/lib/accounts";
 import { TradeFlow } from "@/components/trade-flow";
 
 // Glint Gold wallet screen: the desktop gold view. Two cards up top:
@@ -94,7 +95,7 @@ export default function GoldWalletPage() {
       Math.round((unit === "oz" ? usdPerG * Market.OZ : usdPerG) * 100) / 100,
   }));
   const goldActivity = Persona.DEFAULT.activity.filter((tx) =>
-    tx.account.startsWith("Gold wallet"),
+    tx.account === Persona.DEFAULT.balances.gold.account,
   );
   return (
     <>
@@ -151,7 +152,9 @@ export default function GoldWalletPage() {
                   <span className="text-sm text-muted-foreground">
                     {Market.fmtQty(Market.toQty(amount, "gold", unit), unit)} held
                   </span>
-                  <span className="text-sm text-muted-foreground">{meta.account}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {meta.account} · {accountIdentifiers("gold")}
+                  </span>
                 </Stack>
                 <Row gap="sm">
                   <TradeFlow metal="gold">

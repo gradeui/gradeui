@@ -13,7 +13,9 @@
  * balance cards read as a bug. Flip a value to "oz" if a metal
  * should differ. The silver ACTIVITY rows still describe ounces in
  * their copy: those are historical text, not computed figures.
- * Keep in sync with the Studio component.
+ * Account identifiers (labels, last four, routing numbers,
+ * institutions) live in lib/accounts.ts, so a number changes in
+ * one place. Keep in sync with the Studio component.
  *
  * BALANCES ARE REACTIVE: useBalance("gold") reads a FlowStore override
  * (key `bal.<asset>`) falling back to the persona default, so a future
@@ -28,6 +30,7 @@
  */
 
 import { getFlowField, useFlowField } from "@/lib/flow-store";
+import { accountLabel } from "@/lib/accounts";
 
 export type AssetKey = "gold" | "silver" | "fiat";
 
@@ -81,17 +84,17 @@ export const PERSONAS: Record<string, PersonaRecord> = {
       autoInvest: "none",
     },
     balances: {
-      gold: { label: "Gold", amount: 6636.8, account: "Gold wallet ··5679" },
-      silver: { label: "Silver", amount: 2984.15, account: "Silver wallet ··4102" },
-      fiat: { label: "USD", amount: 15210.4, account: "Current ··2502" },
+      gold: { label: "Gold", amount: 6636.8, account: accountLabel("gold") },
+      silver: { label: "Silver", amount: 2984.15, account: accountLabel("silver") },
+      fiat: { label: "USD", amount: 15210.4, account: accountLabel("fiat") },
     },
     activity: [
-      { date: "Aug 7", name: "Bought gold — 3.6 g", amount: -310.2, account: "Gold wallet ··5679", method: "Market order" },
-      { date: "Aug 6", name: "Sold silver — 26 oz", amount: 1050, account: "Silver wallet ··4102", method: "Market order" },
-      { date: "Aug 5", name: "USD deposit", amount: 8400, account: "Current ··2502", method: "Wire transfer" },
-      { date: "Aug 4", name: "Bought silver — 46 oz", amount: -1862.1, account: "Silver wallet ··4102", method: "Market order" },
-      { date: "Aug 2", name: "Bought gold — 14.4 g", amount: -1240.15, account: "Gold wallet ··5679", method: "Market order" },
-      { date: "Aug 1", name: "USD deposit", amount: 3200, account: "Current ··2502", method: "ACH" },
+      { date: "Aug 7", name: "Bought gold — 3.6 g", amount: -310.2, account: accountLabel("gold"), method: "Market order" },
+      { date: "Aug 6", name: "Sold silver — 26 oz", amount: 1050, account: accountLabel("silver"), method: "Market order" },
+      { date: "Aug 5", name: "USD deposit", amount: 8400, account: accountLabel("fiat"), method: "Wire transfer" },
+      { date: "Aug 4", name: "Bought silver — 46 oz", amount: -1862.1, account: accountLabel("silver"), method: "Market order" },
+      { date: "Aug 2", name: "Bought gold — 14.4 g", amount: -1240.15, account: accountLabel("gold"), method: "Market order" },
+      { date: "Aug 1", name: "USD deposit", amount: 3200, account: accountLabel("fiat"), method: "ACH" },
     ],
   },
 };

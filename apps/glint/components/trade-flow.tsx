@@ -87,6 +87,7 @@ import { CheckCircle2, ChevronRight, TrendingUp } from "lucide-react";
 import { Persona } from "@/lib/persona";
 import { Market, type MetalKey, type TradeDirection } from "@/lib/market";
 import { METALS } from "@/components/wordmark";
+import { accountIdentifiers } from "@/lib/accounts";
 
 const METAL_LABEL: Record<MetalKey, string> = {
   gold: "Gold",
@@ -227,15 +228,20 @@ export function TradeFlow({
     <Row
       justify="between"
       align="center"
-      className="h-11 rounded-md border border-input px-4"
+      className="min-h-14 rounded-md border border-input px-4 py-2"
     >
-      <span className="text-sm font-medium text-foreground">
-        USD{" "}
-        <span className="font-normal text-muted-foreground">
-          {fiatMeta.account}
+      <Stack gap="none" className="min-w-0">
+        <span className="truncate text-sm font-medium text-foreground">
+          USD{" "}
+          <span className="font-normal text-muted-foreground">
+            {fiatMeta.account}
+          </span>
         </span>
-      </span>
-      <span className="text-sm font-medium text-foreground">
+        <span className="truncate text-xs text-muted-foreground">
+          {accountIdentifiers("fiat")}
+        </span>
+      </Stack>
+      <span className="shrink-0 text-sm font-medium text-foreground">
         {Persona.fmtMoney(fiat)}
       </span>
     </Row>

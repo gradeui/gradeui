@@ -41,7 +41,7 @@ import {
   Avatar,
   AvatarFallback,
 } from "@gradeui/ui";
-import { House, List, ArrowLeftRight, Landmark, Bell, EyeOff } from "lucide-react";
+import { Wallet, List, ArrowLeftRight, Landmark, Bell, EyeOff } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { DEFAULT_PERSONA } from "@/lib/persona";
 
@@ -53,7 +53,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { label: "Home", icon: House, target: "Dashboard — logged-in home" },
+  { label: "Wallets", icon: Wallet, target: "Dashboard — logged-in home" },
   { label: "Activity", icon: List, target: "Activity — history" },
   { label: "Payments", icon: ArrowLeftRight },
   { label: "Bank Accounts", icon: Landmark },
@@ -69,7 +69,7 @@ function initials(name: string): string {
 }
 
 export function AppChrome({
-  active = "Home",
+  active = "Wallets",
   business = DEFAULT_PERSONA.business,
   businessMeta = DEFAULT_PERSONA.businessMeta,
   account = DEFAULT_PERSONA.account,
