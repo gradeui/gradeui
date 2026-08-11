@@ -57,7 +57,11 @@ interface NavItem {
    artwork is also checked in as a standalone asset at
    public/glint-mark.svg for anywhere that needs a plain file. */
 function GlintMark() {
-  return <Wordmark lockup="mark" />;
+  /* Monochrome + 16px (Ali, 11 Aug): a filled gold glyph beside 1.5px
+     lucide strokes reads louder and larger than its box, so it takes
+     currentColor and 16px against their 20px — where the two optically
+     match. The gold mark still leads the header, where it is brand. */
+  return <Wordmark lockup="mark" tone="current" className="size-4" />;
 }
 
 const NAV: NavItem[] = [

@@ -5,6 +5,23 @@ import { SURFACE_CLASS, surfaceBg, type Surface } from "@/lib/surface"
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
+   * The whole card is the click target — a wallet tile, a project row,
+   * anything that opens something. Adds the pointer, a hover/focus
+   * treatment, and keyboard focusability, and makes any trailing
+   * `Button` inside show its hover state at the same time, so the card
+   * and its chevron read as ONE affordance rather than two.
+   *
+   * On dark surfaces a drop shadow barely registers, so the hover
+   * treatment leads with a surface lift (one ramp step) plus a brighter
+   * border, and carries the shadow as a secondary cue. See the
+   * `.gds-card[data-interactive]` rules in styles/globals.css.
+   *
+   * Put the click handler on the card. The trailing chevron should then
+   * be a `Button asChild` wrapping a span — visually identical, but not
+   * a nested interactive control inside a clickable region.
+   */
+  interactive?: boolean;
+  /**
    * What the card surface is *made of*. Composes with `shadow-elevation-*`
    * (depth) and `gds-aura-*` (state signal) — see PRESENCE.md.
    *
@@ -20,15 +37,19 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, surface = "solid", ...props }, ref) => (
+  ({ className, surface = "solid", interactive = false, ...props }, ref) => (
     <div
       ref={ref}
       data-gds-part="card"
       data-surface={surface}
+      data-interactive={interactive || undefined}
+      tabIndex={interactive ? 0 : undefined}
       className={cn(
         "gds-card rounded-xl border text-card-foreground shadow",
         surfaceBg(surface, "bg-card"),
         SURFACE_CLASS[surface],
+        interactive &&
+          "cursor-pointer transition-[background-color,border-color,box-shadow,transform] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         className
       )}
       {...props}

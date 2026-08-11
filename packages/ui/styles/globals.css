@@ -1293,6 +1293,36 @@
   border-color: transparent;
 }
 
+/* ── Interactive card ───────────────────────────────────────────────
+   The whole card is the click target (Card `interactive`). On dark
+   surfaces a drop shadow barely registers against a near-black page,
+   so the hover cue LEADS with a surface lift — card -> muted is one
+   ramp step, the same distance the theme puts between any two stacked
+   surfaces — plus a brighter border, and carries the shadow only as a
+   secondary depth hint. The lift is what reads; the shadow is garnish.
+
+   The trailing action lights at the same moment, so a card and its
+   chevron read as ONE affordance instead of two competing ones. That
+   button should be a `Button asChild` wrapping a span: styled by the
+   design system, but not a nested control inside a clickable region. */
+.gds-card[data-interactive]:hover {
+  background-color: oklch(var(--muted));
+  border-color: oklch(var(--border));
+  box-shadow: var(--gds-shadow-lg);
+}
+
+.gds-card[data-interactive]:hover [data-gds-part="button"] {
+  background-color: oklch(var(--accent));
+  color: oklch(var(--accent-foreground));
+  border-color: oklch(var(--accent));
+}
+
+/* Pressing the card settles it back down — the lift is the hover
+   signal, so removing it is the press signal. */
+.gds-card[data-interactive]:active {
+  box-shadow: var(--gds-shadow-sm);
+}
+
 [data-card-style="glass"] .gds-card {
   background-color: oklch(var(--card) / 0.6);
   backdrop-filter: blur(12px);

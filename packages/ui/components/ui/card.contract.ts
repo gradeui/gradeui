@@ -22,5 +22,10 @@ export const CardContract = contract({
       design: "knob",
       description: "what the card surface is *made of*. `solid` is the default opaque `bg-card`. `translucent` is ~82% opacity for menu sheets. `glass` is ~58% opacity + 14px blur + edge highlight for floating panels. `glass-strong` is ~42% + 24px blur for full-page overlays. Composes with `shadow-elevation-*` (depth) and `gds-aura-*` (state signal).",
   },
+  "interactive": {
+      schema: z.enum(["boolean"]).optional(),
+      design: "knob",
+      description: "the WHOLE card is the click target (a wallet tile, a project row). Adds the pointer, keyboard focusability and a hover/focus treatment, and lights any trailing Button inside at the same moment so the card and its chevron read as ONE affordance. On dark surfaces a drop shadow barely registers, so the hover cue leads with a one-step surface lift (card -> muted) plus a brighter border, with the shadow as a secondary hint. Put the handler on the card and make the trailing chevron a `Button asChild` wrapping a span, so there is no nested control inside a clickable region.",
+  },
   },
 });

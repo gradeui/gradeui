@@ -27,6 +27,7 @@ import { Persona, type AssetKey } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { accountIdentifiers } from "@/lib/accounts";
 import { MetalButton } from "@/components/metal-button";
+import { Wordmark, metalSolid } from "@/components/wordmark";
 import { TradeFlow } from "@/components/trade-flow";
 
 // Mercury-pattern logged-in home for BUSINESS accounts. The chrome
@@ -52,6 +53,19 @@ const ASSET_ORDER: AssetKey[] = ["gold", "silver", "fiat"];
 const CARD_TARGETS: Partial<Record<AssetKey, string>> = {
   gold: "Gold — wallet",
 };
+
+/** The Glint G in front of a card title, in the wallet's own colour:
+ *  the flat metal for gold and silver, the action blue for fiat. USD
+ *  carries the G too — that card is the customer's Glint wallet for
+ *  fiat, not a foreign account. A custom dollar mark drawn to match
+ *  the G is coming. */
+function AssetMark({ asset }: { asset: AssetKey }) {
+  const color =
+    asset === "fiat" ? "oklch(var(--primary))" : metalSolid(asset);
+  return (
+    <Wordmark lockup="mark" tone="current" className="size-5" style={{ color }} />
+  );
+}
 
 /** The combined holdings figure, reactive across all three assets. */
 function TotalBalance() {
@@ -84,22 +98,40 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
     asset === "fiat"
       ? accountIdentifiers("fiat")
       : Market.fmtQty(Market.toQty(amount, asset, unit), unit);
+  const target = CARD_TARGETS[asset];
   return (
-    <Card>
+    /* The WHOLE tile is the target (Ali, 11 Aug), not a 40px chevron.
+       The DS lights the trailing button when the card is hovered, so
+       the two read as one affordance. */
+    <Card
+      interactive={Boolean(target)}
+      data-grade-goto={target}
+      aria-label={target ? `Open ${meta.label}` : undefined}
+    >
       <CardHeader className="pb-2 pl-6">
         <Row justify="between" align="center">
-          <CardTitle>{meta.label}</CardTitle>
-          <Button
-            variant="outline"
-            size="lg"
-            iconOnly
-            aria-label={`Open ${meta.label}`}
-            data-grade-goto={CARD_TARGETS[asset]}
-            raised={false}
-            className="rounded-full"
-          >
-            <ChevronRight className="size-4" />
-          </Button>
+          <Row gap="sm" align="center">
+            <AssetMark asset={asset} />
+            <CardTitle className="text-lg">{meta.label}</CardTitle>
+          </Row>
+          {target && (
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              iconOnly
+              raised={false}
+              className="rounded-full"
+            >
+              <span aria-hidden="true">
+                {/* Optical centring: a chevron's mass sits left of its
+                    box, so a glyph mathematically centred in a circle
+                    reads a couple of pixels left of centre. Nudged at
+                    rest — not a hover effect. */}
+                <ChevronRight className="size-4 translate-x-[2px]" />
+              </span>
+            </Button>
+          )}
         </Row>
       </CardHeader>
       <CardContent>
