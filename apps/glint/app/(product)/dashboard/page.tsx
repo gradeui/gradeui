@@ -1,7 +1,7 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786372281658). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786435743706). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
 
 import {
@@ -26,6 +26,7 @@ import { Plus, ChevronRight } from "lucide-react";
 import { Persona, type AssetKey } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { METALS } from "@/components/wordmark";
+import { BuyFlow } from "@/components/buy-flow";
 
 // Mercury-pattern logged-in home for BUSINESS accounts. The chrome
 // comes from the (product) route layout; this page supplies only the
@@ -40,6 +41,8 @@ import { METALS } from "@/components/wordmark";
 // METAL BUTTONS: Buy Gold / Buy Silver wear the pinned metal ladders
 // as self-contained gradient pills; no icons.
 // HOLDINGS: metal cards show troy ounces at the latest LBMA price.
+// BUY FLOW: the metal pills open the BuyFlow modal; a completed
+// order moves the Persona balances and every card here follows.
 // ACTIVITY: plain recent list; the tabbed filters live on /activity.
 
 const ASSET_ORDER: AssetKey[] = ["gold", "silver", "fiat"];
@@ -134,22 +137,26 @@ export default function DashboardPage() {
               <Plus className="size-4" />
               Deposit
             </Button>
-            <Button
-              variant="secondary"
-              size="md"
-              className="rounded-full border"
-              style={METAL_BUTTON.gold}
-            >
-              Buy Gold
-            </Button>
-            <Button
-              variant="secondary"
-              size="md"
-              className="rounded-full border"
-              style={METAL_BUTTON.silver}
-            >
-              Buy Silver
-            </Button>
+            <BuyFlow metal="gold">
+              <Button
+                variant="secondary"
+                size="md"
+                className="rounded-full border"
+                style={METAL_BUTTON.gold}
+              >
+                Buy Gold
+              </Button>
+            </BuyFlow>
+            <BuyFlow metal="silver">
+              <Button
+                variant="secondary"
+                size="md"
+                className="rounded-full border"
+                style={METAL_BUTTON.silver}
+              >
+                Buy Silver
+              </Button>
+            </BuyFlow>
           </Row>
         </Container>
       </Section>

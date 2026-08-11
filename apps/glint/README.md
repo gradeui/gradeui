@@ -27,6 +27,8 @@ source, or by explicitly re-promoting a screen (below).
 | `/onboarding/step7` | 7 Review & submit |
 | `/status` | Application status |
 | `/dashboard` | Dashboard — logged-in home |
+| `/activity` | Activity — history |
+| `/gold` | Gold — wallet |
 | `/s/<designId>` | 307 redirect to the screen's route |
 
 `lib/screens.ts` is the registry tying each route to its Studio
@@ -99,9 +101,12 @@ survives any future slug rename.
 
 5. Check the page in the browser (`pnpm -F @gradeui/glint dev`).
 
-New shared components in the Studio project (beyond OnboardingLayout,
-Wordmark, FlowStore) need a one-time port into `components/` or `lib/`
-and a mapping line in `scripts/promote-screen.py`.
+Shared components ported so far: `OnboardingLayout`, `AppChrome`,
+`Wordmark` (+ the pinned metal ladders), `FlowStore`, `Persona`,
+`Market` and `BuyFlow`. Any NEW Studio shared component needs a
+one-time port into `components/` or `lib/` and a mapping line in
+`scripts/promote-screen.py`. Keep the ported copy in sync with its
+Studio twin: both carry a header note saying so.
 
 ## Deploying to Vercel
 

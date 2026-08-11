@@ -1,7 +1,7 @@
 "use client";
 
 // Promoted from Studio screen "Gold — wallet"
-// (design dmsnbpdvrz1qa, version 1786372313295). Registry: lib/screens.ts;
+// (design dmsnbpdvrz1qa, version 1786435550819). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
 
 import {
@@ -28,6 +28,7 @@ import { AreaChart, Area, XAxis, YAxis } from "recharts";
 import { Persona, type ActivityRow } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { METALS } from "@/components/wordmark";
+import { BuyFlow } from "@/components/buy-flow";
 
 // Glint Gold wallet screen: the desktop gold view. Two cards up top:
 // the LBMA gold price (latest per-ounce figure + the last month of
@@ -153,13 +154,15 @@ export default function GoldWalletPage() {
                   <span className="text-sm text-muted-foreground">{meta.account}</span>
                 </Stack>
                 <Row gap="sm">
-                  <Button
-                    size="md"
-                    className="rounded-full border"
-                    style={METAL_BUTTON}
-                  >
-                    Buy Gold
-                  </Button>
+                  <BuyFlow metal="gold">
+                    <Button
+                      size="md"
+                      className="rounded-full border"
+                      style={METAL_BUTTON}
+                    >
+                      Buy Gold
+                    </Button>
+                  </BuyFlow>
                   <Button variant="ghost" size="md" className="rounded-full">
                     Sell
                   </Button>
