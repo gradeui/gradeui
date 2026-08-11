@@ -52,8 +52,8 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/",
     name: "US Demo Landing",
     id: "dmskhheytm163",
-    promotedAt: 1786434368815,
-    sourceHash: "8b7e0a0d75f8",
+    promotedAt: 1786474270071,
+    sourceHash: "6c72dcbc8d80",
   },
   {
     slug: "/onboarding/step0",
@@ -140,6 +140,13 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmskex612bcy1",
     promotedAt: 1786470785944,
     sourceHash: "dd136235240a",
+  },
+  {
+    slug: "/bank-accounts",
+    name: "Bank Accounts",
+    id: "dmsp02q871y5u",
+    promotedAt: 1786474192541,
+    sourceHash: "d75c87bd4639",
   },
   {
     slug: "/activity",

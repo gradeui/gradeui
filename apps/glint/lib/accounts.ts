@@ -48,10 +48,23 @@ export interface Institution {
 }
 
 export interface AccountRecord {
-  /** Matches the Persona balance key where one exists. */
-  id: "fiat" | "gold" | "silver";
-  /** What the customer calls it: "Checking", "Gold wallet". */
+  /** Matches the Persona balance key where one exists. "external" has
+   *  none: it is the customer's own bank, so Glint holds no balance for
+   *  it. */
+  id: "fiat" | "gold" | "silver" | "external";
+  /**
+   * The NAME the customer knows it by: "Glint USD", "Gold wallet".
+   *
+   * NOT the kind of account it is (Ali, 11 Aug: the USD wallet page
+   * "says Checking but this is actually our Glint USD wallet"). One
+   * field was carrying both facts, so a card title showing the label
+   * read "Checking", which is the sort of account it is rather than the
+   * thing the customer holds. The kind moved to `type`.
+   */
   label: string;
+  /** The KIND of account, for the account-details row: "Checking".
+   *  Only deposit accounts have one; metal wallets are custody. */
+  type?: string;
   /**
    * Full account number. MINTED, like the routing number: see the note on
    * SUTTON. An account number is meaningless without a routing number, and
@@ -72,6 +85,25 @@ export interface AccountRecord {
    */
   routingNumber?: string;
   institution: Institution;
+  /**
+   * The legal holder, when that is NOT the customer (Ali, 11 Aug: "Glint
+   * USD, the account holder would be Glintpay LLC maybe"). A pooled
+   * fintech deposit account is held by the operator at the sponsor bank
+   * FOR THE BENEFIT OF the customer, and that is the one fact on the
+   * Bank Accounts screen that is not the customer's own name. Absent on
+   * every account the customer holds directly, where a screen falls back
+   * to the persona's legal name.
+   */
+  holder?: string;
+  /** True for an account that is NOT Glint's: the customer's own bank,
+   *  linked so money can move in. See the EXTERNAL record below. */
+  external?: boolean;
+  /** ISO date the customer linked an external account, formatted at
+   *  render. Absent on Glint's own accounts. */
+  linkedOn?: string;
+  /** Micro-deposit / instant-auth outcome on an external account. The
+   *  screen turns this into "Verified"; false reads "Pending". */
+  verified?: boolean;
 }
 
 /* Glint's US banking partner. Sutton Bank is the real sponsor bank the
@@ -82,8 +114,19 @@ export interface AccountRecord {
    actual number. A number that passes the checksum could in principle
    belong to someone; pairing an invented one with a real bank name is
    the compromise Ali signed off for a demo. */
+/* LOGO PROVENANCE (Ali, 11 Aug, asked for the real bank marks rather
+   than initials tiles). Both files are the banks' own square site icons,
+   pulled from suttonbank.com and zionsbank.com and converted to PNG:
+   Zions' is their ZB monogram, Sutton's their S emblem. They are square
+   because the tile that shows them is, and neither site publishes a
+   larger square version.
+   THEY ARE TRADEMARKS. Fine for a demo of a real partnership; if this
+   ships anywhere public, get the artwork cleared and replace the files.
+   Served from BOTH apps' public/institutions/ (glint and docs) so a
+   Studio render and the promoted app resolve the same path. */
 const SUTTON: Institution = {
   name: "Sutton Bank",
+  logo: "/institutions/sutton-bank.png",
   initials: "SB",
 };
 
@@ -92,16 +135,40 @@ const GLINT_CUSTODY: Institution = {
   initials: "GC",
 };
 
+/* The customer's OWN bank, the one they fund from: Zions Bank, Ali's
+   pick (11 Aug, pointing at zionsbank.com/business). A real Mountain
+   West business bank, and the one Glint's Salt Lake City vault shares a
+   city with. The routing number is minted on the same terms as Sutton's
+   above: 124 is the Utah prefix and the ABA checksum passes, so it
+   reads correctly, and it is deliberately not 124000054, which is
+   Zions' actual number. */
+const ZIONS: Institution = {
+  name: "Zions Bank",
+  logo: "/institutions/zions-bank.png",
+  initials: "ZB",
+};
+
 export const ACCOUNTS: Record<AccountRecord["id"], AccountRecord> = {
   fiat: {
     id: "fiat",
-    label: "Checking",
+    /* The NAME, which is what a card title shows. "Checking" moved to
+       `type`: see the note on the field. */
+    label: "Glint USD",
+    type: "Checking",
     /* MINTED (Ali, 11 Aug, asked to show the full number on the USD
        wallet). Ends 2502 so it matches the last four already shown
        everywhere else. Safe to display for the reason in the interface
        doc above: the routing number it pairs with is invented, so this
        pair addresses nothing. */
     number: "8823402502",
+    /* Glint holds this one, not the customer: see the field's note. The
+       beneficiary is composed at render from the persona's legal name, so
+       it is never typed twice.
+
+       PROVISIONAL. Ali's own word was "maybe", and he is confirming the
+       real entity name with Glint on 12 Aug. One string, one place: when
+       the real one lands it replaces this and every card follows. */
+    holder: "Glintpay LLC",
     last4: "2502",
     routingNumber: "041215032", // minted, checksum-valid; see the note on SUTTON
     institution: SUTTON,
@@ -117,6 +184,30 @@ export const ACCOUNTS: Record<AccountRecord["id"], AccountRecord> = {
     label: "Silver wallet",
     last4: "4102",
     institution: GLINT_CUSTODY,
+  },
+  /* THE LINKED EXTERNAL ACCOUNT: the customer's own business checking,
+     verified so deposits can be pulled from it. Not a Glint account, so
+     it holds no balance and never appears in the wallet list.
+
+     SHOWN IN FULL, at Ali's request (11 Aug). I had it masked on the
+     grounds that a linked account is the one number a product never
+     shows back to you, only its last four. He asked for the full number
+     on this screen, and it is safe on the same terms as the Glint
+     account beside it: both the account number and the routing number
+     it pairs with are minted, so the pair addresses nothing. Ends 4417,
+     which is where the masked form already ended, and accountLast4()
+     derives from this so the two cannot drift. */
+  external: {
+    id: "external",
+    label: "Business checking",
+    type: "Checking",
+    number: "6104814417",
+    last4: "4417",
+    routingNumber: "124000041", // minted; see the note on ZIONS
+    institution: ZIONS,
+    external: true,
+    linkedOn: "2026-07-28",
+    verified: true,
   },
 };
 
@@ -137,7 +228,7 @@ export function accountNumberFull(id: AccountRecord["id"]): string | undefined {
   return ACCOUNTS[id].number;
 }
 
-/** "Checking ··2502" — the inline form used on cards and in flows. */
+/** "Glint USD ··2502", the inline form used on cards and in flows. */
 export function accountLabel(id: AccountRecord["id"]): string {
   const a = ACCOUNTS[id];
   return `${a.label} ··${accountLast4(id)}`;

@@ -64,3 +64,56 @@ surfaces through `packages/ui/dist`, so they need `pnpm -F @gradeui/ui build`.
 - **No em or en dashes in the interface.** Ali is firm on this.
 - **Store entities, never concatenated display strings** — `account: "gold"`,
   not `"Gold wallet ··5679"`. Compose at render.
+
+## Added 11 Aug, evening session (read this first tomorrow)
+
+**Shipped since the note above:** the Glint USD wallet, the metal price and
+wallet cards as shared components, vaults across balances/activity/purchase,
+`PhoneField`, the AppChrome page-slot, the toolbar action row, and the
+**Bank Accounts** screen (Studio `Bank Accounts` / `dmsp02q871y5u` ->
+`/bank-accounts`). The demo landing now has a second card, "The logged-in
+account", with a pill per product screen.
+
+### Waiting on you
+
+- **The Glint account holder is PROVISIONAL.** `Accounts.ALL.fiat.holder` is
+  `"Glintpay LLC"`, which was your own "maybe". You said you would confirm the
+  real entity with Glint. It is one string in `lib/accounts.ts` (+ the Studio
+  twin) and every card follows.
+- **The bank logos are the banks' own site icons**, in
+  `public/institutions/` in BOTH apps (glint and docs, so Studio and the app
+  resolve the same path). Zions' is their ZB monogram at 48px; Sutton's is a
+  16px favicon upscaled to 96px, so it is a little soft up close. Both are
+  trademarks: get artwork cleared before this goes anywhere public, then drop
+  the files in and change nothing else.
+
+### Not done, and asked for
+
+- **`/wallets/usd` still needs the Glint mark in its card header and the
+  auto-invest toggle inside the card.** The "says Checking" half is fixed:
+  `Accounts.ALL.fiat.label` is now `"Glint USD"` and `type` carries
+  `"Checking"`, so the title reads correctly. The toggle wants extracting:
+  `AutoInvest` currently lives inside the dashboard screen only, so putting it
+  on a second screen means a new shared component + app twin + a `TWINS` entry,
+  not a copy.
+- **Back arrows on the wallet screens should be chevrons**, like the
+  onboarding back button. Two places: `BackToWallets` in
+  `app/(product)/layout.tsx`, and the `toolbarLeading` in each of the three
+  Studio wallet screens (promotion strips it, so the app copy is the one that
+  renders, but the Studio copy is what you see in Studio).
+- **Four twin pairs are still unguarded** (`FlowStore`, `Wordmark`,
+  `MetalButton`, `PhoneField`): no baseline recorded, so `check:twins` cannot
+  see drift on them. FlowStore is the one with real divergence, two bugs the
+  app copy fixed. Reconcile, then `check:twins --update --only <Name>`.
+- **The vault breakdown is not reactive**: `vaultsFor` reads the persona
+  default while the headline balance is a live FlowStore read, so buying gold
+  moves the total and leaves the vault rows behind. Needs per-vault keys in one
+  coordinated change across Persona, TradeFlow and MetalWalletCard.
+
+### One new script
+
+`pnpm -F @gradeui/glint read:screen -- --id <designId> --out <file>` dumps a
+screen's raw JSX and prints the `--version` to promote with. It completes the
+set (`read:component`, `mirror:component`, `write:screen`) and it is what the
+promote step should always be fed, because retyping a screen is the one way to
+lose bytes the drift guard is hashing.

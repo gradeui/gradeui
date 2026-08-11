@@ -23,6 +23,7 @@ const ACTIVE_BY_PATH: Record<string, string> = {
   "/wallets/gold": "Wallets",
   "/wallets/silver": "Wallets",
   "/wallets/usd": "Wallets",
+  "/bank-accounts": "Bank Accounts",
 };
 
 function BackToWallets() {
