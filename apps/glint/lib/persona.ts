@@ -60,12 +60,56 @@ export interface PersonaPreferences {
   autoInvest: AutoInvest;
 }
 
+/** The applying business. Every value is a wizard option VALUE or a
+ *  string in the exact format the matching input stores, so it can drop
+ *  straight into a FlowStore fallback with no transformation. State
+ *  codes are LOWERCASE (step7 does STATE_LABELS[value]; "CO" misses and
+ *  silently reads as Delaware) and dates are MM/DD/YYYY (step2's
+ *  DatePicker splits on "/" and anything else is an Invalid Date). */
+export interface PersonaCompany {
+  legalName: string;
+  dba: string;
+  usesDba: boolean;
+  entityType: "smllc" | "mmllc" | "partnership" | "corporation";
+  formationState: string;
+  formationDate: string;
+  ein: string;
+  address: { street: string; city: string; state: string; zip: string };
+  industry: string;
+  email: string;
+  phone: string;
+  cell: string;
+  website: string;
+  employees: string;
+  revenue: string;
+}
+
+/** The human filling the application in. */
+export interface PersonaApplicant {
+  first: string;
+  last: string;
+  middle: string;
+  email: string;
+  mobile: string;
+  role: string;
+  title: string;
+  dob: string;
+  ssn: string;
+  citizenship: string;
+  taxResidence: string;
+  twoFactor: string;
+  hasPersonalAccount: boolean;
+  address: { street: string; city: string; state: string; zip: string };
+}
+
 export interface PersonaRecord {
   id: string;
   owner: string;
   business: string;
   businessMeta: string;
   account: string;
+  company: PersonaCompany;
+  applicant: PersonaApplicant;
   preferences: PersonaPreferences;
   balances: Record<AssetKey, BalanceMeta>;
   activity: ActivityRow[];
@@ -78,6 +122,55 @@ export const PERSONAS: Record<string, PersonaRecord> = {
     business: "Ridgeline Construction",
     businessMeta: "Business account",
     account: "AD",
+    /* The applying business. The invented values are UNISSUABLE on
+       purpose, the same trick as the 00-prefixed routing numbers: an
+       EIN prefix of 00 has never been issued by the IRS, SSN area 000
+       has never been issued by the SSA, and 555-01xx is the reserved
+       fictional telephone block. None can collide with a real
+       company or person. Keep in sync with the Studio Persona. */
+    company: {
+      legalName: "Ridgeline Construction LLC",
+      dba: "Ridgeline Builders",
+      usesDba: false,
+      entityType: "smllc",
+      formationState: "co",
+      formationDate: "04/18/2016",
+      ein: "00-3184627",
+      address: {
+        street: "1180 Quarry Ridge Road",
+        city: "Denver",
+        state: "co",
+        zip: "80223",
+      },
+      industry: "construction",
+      email: "hello@ridgelineconstruction.com",
+      phone: "(303) 555-0148",
+      cell: "(303) 555-0192",
+      website: "ridgelineconstruction.com",
+      employees: "25-99",
+      revenue: "1m-10m",
+    },
+    applicant: {
+      first: "Ali",
+      last: "Driver",
+      middle: "",
+      email: "ali@ridgelineconstruction.com",
+      mobile: "(303) 555-0166",
+      role: "owner",
+      title: "Managing Member",
+      dob: "06/14/1984",
+      ssn: "000-55-0142",
+      citizenship: "us",
+      taxResidence: "us",
+      twoFactor: "sms",
+      hasPersonalAccount: false,
+      address: {
+        street: "2214 Bluestem Lane",
+        city: "Golden",
+        state: "co",
+        zip: "80401",
+      },
+    },
     preferences: {
       "unit.gold": "g",
       "unit.silver": "g",

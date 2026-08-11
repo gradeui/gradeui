@@ -25,6 +25,7 @@ import {
   type WizardStep,
 } from "@/components/layouts/onboarding";
 import { screenBySlug } from "@/lib/screens";
+import { DEFAULT_PERSONA } from "@/lib/persona";
 
 /* The step rail, identical across all nine step screens in Studio. */
 const STEPS: WizardStep[] = [
@@ -46,7 +47,7 @@ export default function OnboardingChrome({
   const pathname = usePathname();
   const current = screenBySlug(pathname)?.step ?? 1;
   return (
-    <OnboardingLayout steps={STEPS} current={current} account="JA">
+    <OnboardingLayout steps={STEPS} current={current} account={DEFAULT_PERSONA.account}>
       {children}
     </OnboardingLayout>
   );

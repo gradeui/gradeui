@@ -31,6 +31,7 @@ import {
   Clock,
 } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
+import { DEFAULT_PERSONA } from "@/lib/persona";
 
 // Glint US onboarding — post-submit application status. Customer-facing
 // view of the spec's status model (DRAFT → SUBMITTED → IN_REVIEW →
@@ -93,7 +94,7 @@ export default function ApplicationStatusPage() {
               <Wordmark cut="metal" className="h-5" />
               <Row gap="sm" align="center" className="rounded-full bg-muted/60 py-1 pl-1 pr-2">
                 <Avatar size="sm">
-                  <AvatarFallback tone="primary">JA</AvatarFallback>
+                  <AvatarFallback tone="primary">{DEFAULT_PERSONA.account}</AvatarFallback>
                 </Avatar>
                 <ChevronDown className="h-4 w-4 text-foreground/50" />
               </Row>
@@ -115,7 +116,7 @@ export default function ApplicationStatusPage() {
                 </h1>
                 <p className="text-muted-foreground">
                   We received your application for{" "}
-                  <span className="text-foreground">Aurora Bullion LLC</span> on
+                  <span className="text-foreground">{DEFAULT_PERSONA.company.legalName}</span> on
                   August 8, 2026 at 9:32 AM ET.
                 </p>
                 <Badge variant="secondary" rounded="full">

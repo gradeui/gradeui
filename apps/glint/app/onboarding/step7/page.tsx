@@ -21,6 +21,7 @@ import {
 import { Lock } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore, US_STATES } from "@/lib/flow-store";
+import { DEFAULT_PERSONA } from "@/lib/persona";
 
 // Glint US onboarding — Step 7: review & submit. The recap is LIVE: it
 // reads every FlowStore key the earlier steps wrote, with the original
@@ -94,38 +95,55 @@ function SectionCard({
   );
 }
 
+/* Shorthands: the applying company and the human applying. */
+const C = DEFAULT_PERSONA.company;
+const A = DEFAULT_PERSONA.applicant;
+
 export default function ReviewSubmitPage() {
   const g = FlowStore.get;
-  const [businessType] = useFlowField("businessType", "smllc");
+  const [businessType] = useFlowField("businessType", C.entityType);
   const typeLabel = TYPE_LABELS[businessType] ?? businessType;
   const smllc = businessType === "smllc";
 
-  const legalName = g("legalName", "") || "Aurora Bullion LLC";
-  const hasDba = g("hasDba", false);
-  const dbaName = g("dbaName", "") || "Aurora Gold";
+  /* Every recap row reads the FlowStore with the PERSONA as its
+     fallback, so an untouched walkthrough reviews as Ridgeline
+     Construction rather than the older Aurora Bullion identity these
+     fallbacks used to carry. The `g(key, "") || "literal"` idiom is
+     deliberately gone: a key holds nothing until the user touches the
+     field, so the persona has to BE the fallback — seeding the owning
+     step's initial value alone never reaches this screen. */
+  const legalName = g("legalName", C.legalName);
+  const hasDba = g("hasDba", C.usesDba);
+  const dbaName = g("dbaName", C.dba);
   const formed = [
-    STATE_LABELS[g("formationState", "")] ?? "Delaware",
-    g("formationDate", "") || "03/12/2021",
-  ].join(" · ");
-  const tin = g("bizTin", "") || "82-4913057";
-  const address =
-    [g("bizStreet", ""), g("bizCity", ""), STATE_LABELS[g("bizState", "")], g("bizZip", "")]
-      .filter(Boolean)
-      .join(", ") || "210 Harbor Way, Wilmington, DE 19801";
-  const industry = INDUSTRY_LABELS[g("industry", "")] ?? "Precious metals & jewellery";
-  const contact =
-    [g("bizEmail", "") || "hello@aurorabullion.com", g("bizPhone", "") || "(302) 555-0134"]
-      .join(" · ");
+    STATE_LABELS[g("formationState", C.formationState)],
+    g("formationDate", C.formationDate),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const tin = g("bizTin", C.ein);
+  const address = [
+    g("bizStreet", C.address.street),
+    g("bizCity", C.address.city),
+    STATE_LABELS[g("bizState", C.address.state)],
+    g("bizZip", C.address.zip),
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const industry = INDUSTRY_LABELS[g("industry", C.industry)] ?? C.industry;
+  const contact = [g("bizEmail", C.email), g("bizPhone", C.phone)]
+    .filter(Boolean)
+    .join(" · ");
 
   const ownerName =
-    [g("o1First", ""), g("o1Last", "")].filter(Boolean).join(" ") || "Jordan Avery";
-  const pct = g("ownershipPct", 40);
+    [g("o1First", A.first), g("o1Last", A.last)].filter(Boolean).join(" ");
+  const pct = g("ownershipPct", 100);
   const noMajorityOwner = g("noMajorityOwner", false);
   const sameAsOwner = g("controlSameAsOwner", true);
   const cpName = sameAsOwner
     ? ownerName
     : [g("cpFirst", ""), g("cpLast", "")].filter(Boolean).join(" ") || "Control person";
-  const cpTitle = g("cpTitle", "") || "CEO";
+  const cpTitle = g("cpTitle", A.title);
   const certName = g("certName", "") || ownerName;
   const certRole = g("certRole", "") || cpTitle;
   const signed = Boolean(g("signature", "")) && g("boCertified", false);
@@ -137,9 +155,9 @@ export default function ReviewSubmitPage() {
     (g("transactionTypes", ["ach", "wire"]) ?? [])
       .map((v) => RAIL_LABELS[v] ?? v)
       .join(", ") || "ACH, domestic wires";
-  const crossBorder = g("crossBorder", true);
+  const crossBorder = g("crossBorder", false);
   const countries =
-    (g("crossBorderCountries", ["uk"]) ?? [])
+    (g("crossBorderCountries", []) ?? [])
       .map((v) => COUNTRY_LABELS[v] ?? v)
       .join(", ");
   const crypto = g("cryptoActivity", false);
