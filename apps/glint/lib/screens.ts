@@ -92,8 +92,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "US Onboarding — 3b Owners & control",
     id: "dmskgyvzc1nmh",
     step: 4,
-    promotedAt: 1786468958015,
-    sourceHash: "a44d7d043206",
+    promotedAt: 1786537553089,
+    sourceHash: "d09c3397bb55",
   },
   {
     slug: "/onboarding/step4",
@@ -124,8 +124,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "US Onboarding — 7 Review & submit",
     id: "dmskh12cv6zuz",
     step: 8,
-    promotedAt: 1786453677404,
-    sourceHash: "68e111cc049c",
+    promotedAt: 1786537553759,
+    sourceHash: "2e664aa68851",
   },
   {
     slug: "/status",

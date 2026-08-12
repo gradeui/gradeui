@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — 3b Owners & control"
-// (design dmskgyvzc1nmh, version 1786468958015). Registry: lib/screens.ts;
+// (design dmskgyvzc1nmh, version 1786537553089). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: a44d7d043206
+// source-hash: d09c3397bb55
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -76,10 +76,13 @@ function AddressFields({
   defaults,
 }: {
   prefix: string;
-  // Optional: the control-person call site passes none. Annotation only.
-  defaults?: { street?: string; city?: string; state?: string; zip?: string };
+  defaults?: { street: string; city: string; state: string; zip: string };
 }) {
-  const d = defaults ?? {};
+  /* Partial, not {}: the control person passes no defaults at all, so every
+     field falls back to empty. TS-only, and one of the annotations a
+     re-promotion drops. */
+  const d: Partial<{ street: string; city: string; state: string; zip: string }> =
+    defaults ?? {};
   const [street, setStreet] = useFlowField(`${prefix}Street`, d.street ?? "");
   const [city, setCity] = useFlowField(`${prefix}City`, d.city ?? "");
   const [state, setState] = useFlowField(`${prefix}State`, d.state ?? "");
@@ -328,9 +331,17 @@ export default function OwnersControlPage() {
             <CardContent className="pt-6">
               <Row justify="between" align="center" wrap gap="md">
                 <Stack gap="none">
-                  <span className="text-sm font-medium text-foreground">Priya Nair</span>
+                  {/* NAME AND STAKE FROM THE PERSONA (Ali, 12 Aug: "I'd fix
+                      the owner name clash as thats just annoying"). This read
+                      "Priya Nair" while step7's recap called the same 35%
+                      owner "Dana Whitlock". Both now read
+                      Persona.DEFAULT.secondOwner, so the recap cannot
+                      contradict the form again. */}
+                  <span className="text-sm font-medium text-foreground">
+                    {Persona.DEFAULT.secondOwner.name}
+                  </span>
                   <span className="text-sm text-muted-foreground">
-                    35% · SSN provided · ID uploaded
+                    {`${Persona.DEFAULT.secondOwner.stake}% · SSN provided · ID uploaded`}
                   </span>
                 </Stack>
                 <Row gap="sm" align="center">

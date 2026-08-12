@@ -1,9 +1,11 @@
 "use client";
 
+import * as React from "react";
+
 // Promoted from Studio screen "US Onboarding — 7 Review & submit"
-// (design dmskh12cv6zuz, version 1786453677404). Registry: lib/screens.ts;
+// (design dmskh12cv6zuz, version 1786537553759). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 68e111cc049c
+// source-hash: 2e664aa68851
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -34,7 +36,7 @@ import { Persona } from "@/lib/persona";
 // Submission creates the audit trail: who submitted what, and when.
 const useFlowField = FlowStore.useField;
 
-const TYPE_LABELS: Record<string, string> = {
+const TYPE_LABELS = {
   smllc: "Single-member LLC",
   mmllc: "Multi-member LLC",
   partnership: "Partnership",
@@ -58,14 +60,14 @@ const VOLUME_LABELS = {
   lt10k: "Under $10k", "10-50k": "$10k to $50k",
   "50-200k": "$50k to $200k", gt200k: "Over $200k",
 };
-const COUNT_LABELS = {
+const COUNT_LABELS: Record<string, string> = {
   lt25: "under 25", "25-100": "25 to 100",
   "100-500": "100 to 500", gt500: "over 500",
 };
 const RAIL_LABELS: Record<string, string> = {
   ach: "ACH", card: "Card", wire: "Domestic wires", intl: "International",
 };
-const COUNTRY_LABELS: Record<string, string> = {
+const COUNTRY_LABELS = {
   ca: "Canada", uk: "United Kingdom", eu: "European Union",
   mx: "Mexico", other: "Other",
 };
@@ -75,7 +77,8 @@ function SectionCard({
   editTarget,
   children,
 }: {
-  title: string;
+  title: React.ReactNode;
+  /** The Studio screen name the Edit link gotos. */
   editTarget: string;
   children: React.ReactNode;
 }) {
@@ -230,9 +233,10 @@ export default function ReviewSubmitPage() {
                   <Badge variant="success-soft" rounded="full">ID verified</Badge>
                 </Row>
               </PropertyList.Row>
-              <PropertyList.Row label="Dana Whitlock">
+              {/* Same source as step3b's entry: see the note there. */}
+              <PropertyList.Row label={Persona.DEFAULT.secondOwner.name}>
                 <Row gap="sm" align="center" wrap>
-                  <span>35%</span>
+                  <span>{`${Persona.DEFAULT.secondOwner.stake}%`}</span>
                   <Badge variant="success-soft" rounded="full">ID verified</Badge>
                 </Row>
               </PropertyList.Row>

@@ -25,10 +25,24 @@
  * buyFee(amount) = amount * (1 - 1/1.009), not amount * 0.009. A SELL's
  * fee is charged on the gross proceeds, so sellFee() is exact.
  *
- * Gold rows: [date, USD per gram] (LBMA gold PM auction, USD column).
- * Silver rows: [date, GBP per gram] (the LBMA silver auction publishes
- * GBP only; converted to USD via GBPUSD, the FX implied by the
- * same-day gold row's GBP and USD columns).
+ * REFRESHED 12 Aug 2026 to the 11 Aug prints (Ali: "update our gold and
+ * silver values to todays prices, or yesterdays, whichever we can get").
+ * 11 Aug is the newest the feed carries, because LBMA publishes one
+ * auction price per day in arrears. Gold $4,383.35/oz -> $140.928/g,
+ * silver $65.185/oz -> $2.0957/g, from prices.lbma.org.uk
+ * (gold_pm.json, silver.json), USD column, divided by OZ. The 10 Aug
+ * figures already in the series match that feed exactly, which is how I
+ * know the two agree. Appended to EVERY range, so each chart ends on the
+ * latest print rather than only the 1M one moving.
+ *
+ * BOTH METALS ARE [date, USD PER GRAM], from each feed's USD column.
+ * This comment used to say silver was GBP per gram converted through
+ * GBPUSD, which was true once and had not been updated when that hop was
+ * removed: the stored silver rows are and were USD (10 Aug reads 2.0556,
+ * which is the feed's USD figure to the cent, not the 1.5227 the GBP
+ * column gives). A stale unit note on a price series is the kind of thing
+ * that gets a metal mispriced by a factor of 1.35, so it is worth being
+ * exact about.
  * One print per day, published with a lag: latest() is the last
  * settled auction, not today.
  */
@@ -37,7 +51,10 @@ export type MetalKey = "gold" | "silver";
 
 export const OZ = 31.1034768; // grams per troy ounce
 
-export const GBPUSD = 1.3508; // implied by the 2026-08-10 gold auction row
+export const GBPUSD = 1.3501; // implied by the 2026-08-11 gold auction row
+/* Reference only: it is NOT on the price path any more, since both
+   metals are stored in USD. Kept because the onboarding copy quotes a
+   sterling figure. */
 
 /** The product's dealing fee, built into every quoted rate. */
 export const BUY_FEE = 0.009;
@@ -75,6 +92,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-07-31", 129.4582], ["2026-08-03", 129.508], ["2026-08-04", 131.3101],
       ["2026-08-05", 135.2453], ["2026-08-06", 137.2146], ["2026-08-07", 139.3912],
       ["2026-08-10", 139.0343],
+      ["2026-08-11", 140.928],
     ],
     "3M": [
       ["2026-05-11", 152.0457], ["2026-05-13", 150.3272], ["2026-05-15", 145.5786],
@@ -88,6 +106,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-07-17", 128.4535], ["2026-07-21", 130.2845], ["2026-07-23", 130.0466],
       ["2026-07-27", 131.0143], ["2026-07-29", 128.6303], ["2026-07-31", 129.4582],
       ["2026-08-04", 131.3101], ["2026-08-06", 137.2146], ["2026-08-10", 139.0343],
+      ["2026-08-11", 140.928],
     ],
     "1Y": [
       ["2025-08-11", 107.9108], ["2025-08-18", 107.1391], ["2025-08-26", 108.2548],
@@ -107,6 +126,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-06-15", 140.0229], ["2026-06-22", 134.9351], ["2026-06-29", 129.4534],
       ["2026-07-06", 133.1346], ["2026-07-13", 129.881], ["2026-07-20", 128.7171],
       ["2026-07-27", 131.0143], ["2026-08-03", 129.508], ["2026-08-10", 139.0343],
+      ["2026-08-11", 140.928],
     ],
     "5Y": [
       ["2021-08-10", 55.407], ["2021-09-09", 57.4936], ["2021-10-08", 57.0113],
@@ -130,6 +150,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-02-20", 162.4642], ["2026-03-23", 143.5933], ["2026-04-23", 151.7242],
       ["2026-05-26", 145.1767], ["2026-06-24", 129.3891], ["2026-07-23", 130.0466],
       ["2026-08-10", 139.0343],
+      ["2026-08-11", 140.928],
     ],
   },
   silver: {
@@ -142,6 +163,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-07-31", 1.8559], ["2026-08-03", 1.8636], ["2026-08-04", 1.89],
       ["2026-08-05", 1.9697], ["2026-08-06", 1.9848], ["2026-08-07", 2.0679],
       ["2026-08-10", 2.0556],
+      ["2026-08-11", 2.0957],
     ],
     "3M": [
       ["2026-05-11", 2.5849], ["2026-05-13", 2.7873], ["2026-05-15", 2.5315],
@@ -155,6 +177,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-07-17", 1.7776], ["2026-07-21", 1.8934], ["2026-07-23", 1.886],
       ["2026-07-27", 1.898], ["2026-07-29", 1.8453], ["2026-07-31", 1.8559],
       ["2026-08-04", 1.89], ["2026-08-06", 1.9848], ["2026-08-10", 2.0556],
+      ["2026-08-11", 2.0957],
     ],
     "1Y": [
       ["2025-08-11", 1.2139], ["2025-08-18", 1.2245], ["2025-08-26", 1.2352],
@@ -175,6 +198,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-07-02", 1.9175], ["2026-07-09", 1.8913], ["2026-07-16", 1.8165],
       ["2026-07-23", 1.886], ["2026-07-30", 1.8665], ["2026-08-06", 1.9848],
       ["2026-08-10", 2.0556],
+      ["2026-08-11", 2.0957],
     ],
     "5Y": [
       ["2021-08-10", 0.752], ["2021-09-09", 0.7763], ["2021-10-08", 0.725],
@@ -198,6 +222,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-02-06", 2.4094], ["2026-03-09", 2.6828], ["2026-04-09", 2.3816],
       ["2026-05-11", 2.5849], ["2026-06-10", 2.0724], ["2026-07-09", 1.8913],
       ["2026-08-07", 2.0679], ["2026-08-10", 2.0556],
+      ["2026-08-11", 2.0957],
     ],
   },
 };

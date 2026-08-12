@@ -275,6 +275,26 @@ export interface PersonaPreferences {
   vault: VaultId;
 }
 
+/**
+ * THE SECOND BENEFICIAL OWNER, in one place.
+ *
+ * It was typed into two screens and they disagreed: step3b listed a 35%
+ * owner as "Priya Nair" while step7's recap called the same 35% owner
+ * "Dana Whitlock" (Ali, 12 Aug: "I'd fix the owner name clash as thats
+ * just annoying. American name"). A recap that contradicts the form it is
+ * recapping is the one bug a reviewer will always spot, so the name lives
+ * here now and both screens read it.
+ *
+ * DANA WHITLOCK is the surviving name: American, as he asked, and already
+ * the one in the formal recap. The stake is a NUMBER, so the two screens
+ * cannot render "35%" and "35 %" differently either.
+ */
+export interface PersonaOwner {
+  name: string;
+  /** Percent of the business. Screens add the % sign. */
+  stake: number;
+}
+
 /** The applying business. Every value is a wizard option VALUE or a
  *  string in the exact format the matching input stores, so it can drop
  *  straight into a FlowStore fallback with no transformation. State
@@ -324,6 +344,8 @@ export interface PersonaRecord {
   businessMeta: string;
   account: string;
   company: PersonaCompany;
+  /** The 35% co-owner named on step3b and in step7's recap. */
+  secondOwner: PersonaOwner;
   applicant: PersonaApplicant;
   preferences: PersonaPreferences;
   balances: Record<AssetKey, BalanceMeta>;
@@ -365,6 +387,8 @@ export const PERSONAS: Record<string, PersonaRecord> = {
       employees: "25-99",
       revenue: "1m-10m",
     },
+    /* The 35% co-owner: see the note on PersonaOwner. */
+    secondOwner: { name: "Dana Whitlock", stake: 35 },
     applicant: {
       first: "Wade",
       last: "Jones",
