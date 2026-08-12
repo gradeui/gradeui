@@ -97,6 +97,7 @@ import {
   InputGroupAddon,
   InputGroupText,
   InputGroupInput,
+  InputGroupButton,
   Progress,
   PropertyList,
   Select,
@@ -455,9 +456,25 @@ export function TradeFlow({
     </Callout>
   );
 
+  /* THE FIGURE SITS ON THE LABEL LINE (Ali, 12 Aug). It was under the
+     field in the description, then briefly in a block-end addon INSIDE
+     the field, which he read as "quite a large place to put it -
+     especially with all the decinal places". He is right: a full-width
+     row inside the border is a lot of furniture for one number. The label
+     line is free space, and label-left / value-right is how every
+     transfer form states a balance.
+     The description now only carries what it is for, which is telling you
+     when something is wrong. */
   const amountField = (
     <Field>
-      <FieldLabel>Amount</FieldLabel>
+      <Row justify="between" align="center" gap="sm">
+        <FieldLabel>Amount</FieldLabel>
+        {!selling && (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {Persona.fmtMoney(fiat)} available
+          </span>
+        )}
+      </Row>
       <InputGroup size="lg">
         <InputGroupAddon align="inline-start">
           <InputGroupText>$</InputGroupText>
@@ -469,19 +486,31 @@ export function TradeFlow({
           onChange={(e) => onAmount(e.target.value)}
         />
       </InputGroup>
-      <FieldDescription className="text-xs">
-        {selling
-          ? `${Persona.fmtMoney(fiat)} balance`
-          : overBalance
-          ? "That is more than your USD balance."
-          : `Up to ${Persona.fmtMoney(fiat)} available`}
-      </FieldDescription>
+      {!selling && overBalance ? (
+        <FieldDescription className="text-xs">
+          That is more than your USD balance.
+        </FieldDescription>
+      ) : null}
     </Field>
   );
 
+  /* SELL ALL (Ali, 12 Aug: "we might in sell the ability to Sell All"),
+     compact and INSIDE the field beside the unit, where a max action
+     belongs. It empties the CHOSEN vault and no other, which is why the
+     figure beside the label is that vault's holding: the vault select
+     sits directly above, so the label line does not repeat its name.
+     It fills the field through onQty, the same path typing takes, so the
+     amount follows and the review step sees an ordinary order. 4dp is
+     what the field shows, and the vault lands at zero because the gram
+     figure and the vault's dollars are derived from each other. */
   const quantityField = (
     <Field>
-      <FieldLabel>Quantity</FieldLabel>
+      <Row justify="between" align="center" gap="sm">
+        <FieldLabel>Quantity</FieldLabel>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {selling ? `${heldQty} available` : `${walletQty} held`}
+        </span>
+      </Row>
       <InputGroup size="lg">
         <InputGroupInput
           placeholder="0.0000"
@@ -491,19 +520,20 @@ export function TradeFlow({
         />
         <InputGroupAddon align="inline-end">
           <InputGroupText>{unit}</InputGroupText>
+          {selling && held > 0 ? (
+            <InputGroupButton size="xs" onClick={() => onQty(held.toFixed(4))}>
+              Sell all
+            </InputGroupButton>
+          ) : null}
         </InputGroupAddon>
       </InputGroup>
-      <FieldDescription className="text-xs">
-        {selling && overBalance
-          ? `That is more ${label.toLowerCase()} than ${
-              vault ? Accounts.vaultLabel(vault) : "that vault"
-            } holds.`
-          : selling
-          ? `${heldQty} available${
-              vault ? ` in ${Accounts.vaultLabel(vault)}` : ""
-            }`
-          : `${walletQty} balance`}
-      </FieldDescription>
+      {selling && overBalance ? (
+        <FieldDescription className="text-xs">
+          {`That is more ${label.toLowerCase()} than ${
+            vault ? Accounts.vaultLabel(vault) : "that vault"
+          } holds.`}
+        </FieldDescription>
+      ) : null}
     </Field>
   );
 
