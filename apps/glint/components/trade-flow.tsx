@@ -127,10 +127,9 @@ const QUOTE_TICK_MS = 250;
 const QUOTE_DRIFT = 0.0012;
 
 /** FIXED PANEL HEIGHT from sm up, one per direction, measured against
- *  the tallest step that direction has: the buy form needs 551px (455
- *  before the vault field, which adds a label, a 36px trigger and a
- *  description) and the sell form 517px, which has no vault field and
- *  carries the three-working-days clearing note instead. Review needs 362px and the receipt less, so those steps carry
+ *  the tallest step that direction has, which since the clearing note
+ *  moved to the review step is the FORM in both directions, and both
+ *  forms now hold the same three fields. Hence one figure for both. Review needs 362px and the receipt less, so those steps carry
  *  air above the footer, which is the price of a panel that does not
  *  resize under the pointer. A TradeFlow instance is only ever one
  *  direction, so two heights cannot make anything jump. The slack is
@@ -138,7 +137,7 @@ const QUOTE_DRIFT = 0.0012;
  *  should not put a scrollbar in the normal case. */
 const PANEL_HEIGHT: Record<TradeDirection, string> = {
   buy: "sm:h-[566px]",
-  sell: "sm:h-[626px]",
+  sell: "sm:h-[566px]",
 };
 
 /** The scrolling body of every step: it takes the space the pinned
@@ -656,10 +655,11 @@ export function TradeFlow({
                   {showVaultField ? vaultField : null}
                   {quantityField}
                   {amountField}
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    It can take up to three working days for funds to clear in
-                    your wallet when you sell.
-                  </p>
+                  {/* THE CLEARING NOTE MOVED TO THE REVIEW STEP (Ali,
+                      12 Aug). It is a consequence of confirming, not
+                      something you need while deciding how much to sell,
+                      and on the form it sat under the fields competing
+                      with their own descriptions. */}
                 </>
               ) : (
                 <>
@@ -750,6 +750,18 @@ export function TradeFlow({
                 By clicking &ldquo;{verb} {label}&rdquo;, you authorise Glint to
                 execute the market order detailed above.
               </p>
+              {/* Sells only, and HERE rather than on the form (Ali, 12
+                  Aug: "this should move to the review step"): it is what
+                  happens after you commit, so it belongs beside the thing
+                  that commits. The receipt repeats it, which is right:
+                  once the order is placed it stops being a warning and
+                  becomes the status of your money. */}
+              {selling && (
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  It can take up to three working days for funds to clear in
+                  your wallet when you sell.
+                </p>
+              )}
               {quoteTimer}
             </Stack>
             <DialogFooter className="shrink-0">
