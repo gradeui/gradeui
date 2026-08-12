@@ -144,7 +144,14 @@ const PANEL_HEIGHT: Record<TradeDirection, string> = {
  *  header and footer leave. The negative margin plus matching padding is
  *  a gutter for the inputs' focus ring, which an overflow container
  *  would otherwise clip. */
-const BODY_CLASS = "sm:-mx-1 sm:min-h-0 sm:flex-1 sm:overflow-y-auto sm:px-1";
+/* pt-2 (Ali, 12 Aug: "I also need some space between the card header and
+   the card content"). DialogHeader sets no bottom space of its own, which
+   only showed on the review step: the buy form's first child is a Callout
+   with its own padding, so it looked fine, while a PropertyList row sat
+   straight under the title. Here rather than per-step, so every step
+   breathes the same. */
+const BODY_CLASS =
+  "sm:-mx-1 sm:min-h-0 sm:flex-1 sm:overflow-y-auto sm:px-1 pt-2";
 
 /** The Glint G in the metal's flat brand colour, the same mark the
  *  wallet cards lead their titles with. */
@@ -588,7 +595,9 @@ export function TradeFlow({
   );
 
   const quoteTimer = (
-    <Stack gap="xs" className="mt-auto">
+    /* No mt-auto here any more: on the review step this sits inside the
+       bottom block below, which does the pinning for the whole group. */
+    <Stack gap="xs">
       <Row justify="between" align="center">
         <span className="text-xs text-muted-foreground">Rate held for</span>
         <span className="text-xs font-medium text-foreground">
@@ -720,7 +729,13 @@ export function TradeFlow({
                 </PropertyList.Row>
                 <PropertyList.Row
                   className="-mt-1.5"
-                  label={<span className="pl-3 text-xs">Fee included</span>}
+                  /* NO INDENT (Ali, 12 Aug: "looks crap"). It was pl-3,
+                     trying to show the fee as a child of the row above it.
+                     A PropertyList is a two-column dl, so nudging one
+                     label right just breaks the column edge every other
+                     row keeps; the smaller type already says it is a
+                     second tier. */
+                  label={<span className="text-xs">Fee included</span>}
                   value={
                     <span className="text-xs text-muted-foreground">
                       {`${Persona.fmtMoney(fee)} (${feePct}%)`}
@@ -746,23 +761,31 @@ export function TradeFlow({
                   }
                 />
               </PropertyList>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                By clicking &ldquo;{verb} {label}&rdquo;, you authorise Glint to
-                execute the market order detailed above.
-              </p>
-              {/* Sells only, and HERE rather than on the form (Ali, 12
-                  Aug: "this should move to the review step"): it is what
-                  happens after you commit, so it belongs beside the thing
-                  that commits. The receipt repeats it, which is right:
-                  once the order is placed it stops being a warning and
-                  becomes the status of your money. */}
-              {selling && (
+              {/* THE SMALL PRINT SITS WITH THE BUTTON (Ali, 12 Aug: "we'd
+                  probably also have the By clicking line next to the
+                  button, or the rate timer"). mt-auto on the GROUP, so the
+                  authorisation, the clearing note and the rate bar all
+                  drop to the bottom of the panel together, directly above
+                  the footer they are about, instead of hanging under the
+                  order rows with a void beneath them.
+                  The clearing note is sells only, and it is HERE rather
+                  than on the form because it is what happens after you
+                  commit. The receipt repeats it, which is right: once the
+                  order is placed it stops being a warning and becomes the
+                  status of your money. */}
+              <Stack gap="md" className="mt-auto">
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  It can take up to three working days for funds to clear in
-                  your wallet when you sell.
+                  By clicking &ldquo;{verb} {label}&rdquo;, you authorise Glint
+                  to execute the market order detailed above.
                 </p>
-              )}
-              {quoteTimer}
+                {selling && (
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    It can take up to three working days for funds to clear in
+                    your wallet when you sell.
+                  </p>
+                )}
+                {quoteTimer}
+              </Stack>
             </Stack>
             <DialogFooter className="shrink-0">
               <Button
@@ -822,8 +845,13 @@ export function TradeFlow({
                   }
                 />
               </PropertyList>
+              {/* Bottom of the panel here too (Ali, 12 Aug: "small print
+                  should always be at the bottom - on buy as well"). The
+                  review step pins its group for both directions already,
+                  since that step is shared; this is the receipt's own
+                  note, which was sitting under the balances. */}
               {selling && (
-                <p className="text-sm leading-relaxed text-muted-foreground">
+                <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
                   Funds can take up to three working days to clear.
                 </p>
               )}
