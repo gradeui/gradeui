@@ -1,7 +1,7 @@
 {
   "name": "sites-spike",
   "type": "module",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "private": true,
   "description": "POC: render a Grade section as fast static HTML via Astro (STUDIO-SITES.md).",
   "scripts": {
