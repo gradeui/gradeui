@@ -1,5 +1,61 @@
 # @gradeui/ui
 
+## 4.4.0
+
+### Minor Changes
+
+- db0be30: Dialog: centred entrance, a real close target, and a responsive shape.
+
+  `DialogContent` used to slide in from the top-left on top of its own centring transform, which read as the panel flying in from the corner. It now fades and scales in place.
+
+  The close button grows to a 36px target with a 20px icon, and gains a `showClose` prop for dialogs that own their own dismissal.
+
+  New `layout` prop: `sheet` (default) makes the panel a full-screen sheet below `sm`, with padding clearing the device safe areas and its content scrolling, which is the right shape for forms and flows. `layout="center"` keeps the centred card at every width, for short confirmations and for anything the user cannot dismiss. From `sm` up both are the centred card, now at `p-8` with a `max-h-[85dvh]` cap.
+
+  Consumers passing an unprefixed `p-0` or `max-w-*` to `DialogContent` should prefix it (`sm:p-0`, `sm:max-w-md`) so it still wins at `sm` and above.
+
+- bd32423: Input gains an `lg` size, and InputGroup gains a matching `size` prop.
+
+  `Input size="lg"` is `h-11` and stays at 16px text at every width: it is for the prominent single value on a surface (an amount in a dialog, a first field on a form), and 16px keeps iOS from zooming on focus. The scale now reads lg / default / sm / xs / 2xs.
+
+  `InputGroup` had a hardcoded height. It now takes `size` (`lg` | `default` | `sm`) and shares it with the control inside via context, so `<InputGroup size="lg">` sizes the whole field; an explicit `size` on `InputGroupInput` still wins.
+
+  Both are theme-relative: heights derive from `--spacing`, so a theme with tighter density renders them proportionally smaller.
+
+- 7aedff3: Interactive cards, row-sized sidebar icons, quieter soft badges, and a
+  sidebar footer spacing seam.
+
+  - **Card** gains `interactive`: the whole card becomes the click target,
+    with pointer, keyboard focusability and a hover/focus treatment, and any
+    trailing `Button` inside lights at the same moment so a card and its
+    chevron read as one affordance rather than two. On dark surfaces a drop
+    shadow barely registers, so the hover cue leads with a one-step surface
+    lift (card → muted) plus a brighter border, carrying the shadow only as a
+    secondary hint. Pair it with a `Button asChild` wrapping a span, so there
+    is no nested interactive control inside a clickable region.
+
+  - **SidebarItem / SidebarTreeItem** size their leading glyph to the row —
+    20px at size `md`, 16px at `sm` — instead of pinning 16px regardless. A
+    16px icon in an `md` row read undersized against its 14px label. This is a
+    default, not a pin: the existing `:not([class*='size-'])` idiom means a
+    `size-*` class on the icon still wins.
+
+  - **SidebarFooter** gains `--gds-sidebar-footer-px` / `--gds-sidebar-footer-py`,
+    matching the tuning seam the header, content and section already had, so an
+    app can give a footer identity block room without reaching past the
+    component. Defaults are the previous values, so nothing moves.
+
+  - **Badge** soft variants (`success-soft`, `warning-soft`, `destructive-soft`,
+    `info-soft`, `highlight-soft`) drop their 30%-alpha status hairline. On a
+    dark surface that ring read as a hard bright outline around a chip whose
+    fill barely separates from the card behind it. The tint carries the status;
+    the ring only added noise, and light mode loses nothing because the fill was
+    always doing the work.
+
+### Patch Changes
+
+- d5457bb: Dialog: the overlay scrim goes from `bg-black/80` to `bg-black/90`, so the page behind a modal recedes further and the panel reads as the only live surface.
+
 ## 4.3.0
 
 ### Minor Changes
