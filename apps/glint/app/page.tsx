@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "US Demo Landing"
-// (design dmskhheytm163, version 1786539598803). Registry: lib/screens.ts;
+// (design dmskhheytm163, version 1786540072968). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 178ad1c6670a
+// source-hash: afb9c6f2336a
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -43,7 +43,7 @@ import { FlowStore } from "@/lib/flow-store";
 // in sync with screen names (matched case-insensitively on the trimmed
 // name). Copy convention: no em or en dashes anywhere on this screen.
 //
-// "Start the flow" RESETS the FlowStore state so every demo run starts
+// "Onboarding flow" RESETS the FlowStore state so every demo run starts
 // fresh; the jump pills and the card surface keep existing state so a
 // mid-flow hop resumes where you left off.
 
@@ -66,7 +66,7 @@ const ONBOARDING_GROUPS = [
     caption: "Apply",
     jumps: [
       { label: "1 · Start", target: "US Onboarding — 1 Before you apply" },
-      { label: "2 · Type", target: "US Onboarding — 2 Business type" },
+      { label: "2 · Business type", target: "US Onboarding — 2 Business type" },
       { label: "3 · Details", target: "US Onboarding — 3 Business details" },
     ],
   },
@@ -158,7 +158,7 @@ export default function DemoLandingPage() {
             <Wordmark cut="metal" className="h-8" />
             <Stack gap="xs" align="center">
               <h1 className="text-3xl font-medium text-foreground">US Business Accounts Demo</h1>
-              <p className="max-w-xl text-muted-foreground">A walkable demo of the Glint US business account experience. </p>
+              <p className="max-w-xl text-muted-foreground">A demo of the Glint US business account experience.</p>
             </Stack>
           </Stack>
 
@@ -194,7 +194,14 @@ export default function DemoLandingPage() {
               </Row>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col">
-              <Stack gap="md" justify="between" className="flex-1 gap-4">
+              {/* NOT justify="between" (Ali, 12 Aug: "weird gaps - only the
+                  button should be at the bottom"). Spreading the whole
+                  stack pushed air between the synopsis, the rule and the
+                  pill groups as well, so the shorter card grew gaps
+                  everywhere instead of one gap above the action. The stack
+                  now packs from the top and the ACTION ROW takes mt-auto,
+                  which is the only thing that should hug the bottom. */}
+              <Stack gap="md" className="flex-1 gap-4">
                 <p className="text-sm text-muted-foreground">
                   The eight-step KYB journey: PATRIOT Act notice, business
                   type, ownership, expected activity, documents,
@@ -206,13 +213,16 @@ export default function DemoLandingPage() {
                     <JumpGroup key={g.caption} {...g} />
                   ))}
                 </Stack>
-                <Row justify="end" className="flex flex-row justify-start items-center">
+                {/* pt-2 above the action (Ali: "a bit more padding above
+                    them") on top of the stack's own gap, and mt-auto so it
+                    is the one thing pinned to the foot of the card. */}
+                <Row className="mt-auto flex flex-row items-center justify-start pt-2">
                   <Button
                     className="rounded-full"
                     data-grade-goto="US Onboarding — 1 Before you apply"
                     onPointerDown={() => FlowStore.reset()}
                   size="lg">
-                    Start the flow
+                    Onboarding flow
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Row>
@@ -241,7 +251,7 @@ export default function DemoLandingPage() {
                     <Wallet className="h-5 w-5" />
                   </div>
                   <Stack gap="xs">
-                    <CardTitle>The logged-in account</CardTitle>
+                    <CardTitle>Approved Business Account</CardTitle>
                     <CardDescription>Wallets, activity and banking</CardDescription>
                   </Stack>
                 </Row>
@@ -273,12 +283,19 @@ export default function DemoLandingPage() {
               </Row>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col">
-              <Stack gap="md" justify="between" className="flex-1 gap-4">
+              {/* NOT justify="between" (Ali, 12 Aug: "weird gaps - only the
+                  button should be at the bottom"). Spreading the whole
+                  stack pushed air between the synopsis, the rule and the
+                  pill groups as well, so the shorter card grew gaps
+                  everywhere instead of one gap above the action. The stack
+                  now packs from the top and the ACTION ROW takes mt-auto,
+                  which is the only thing that should hug the bottom. */}
+              <Stack gap="md" className="flex-1 gap-4">
+                {/* Shortened (Ali: "its a bit verby"). It listed every
+                    screen, which the pill groups below already do. */}
                 <p className="text-sm text-muted-foreground">
-                  An approved business holding gold, silver and dollars:
-                  the wallet hub, a detail screen per wallet with its price
-                  history and vaults, the full activity history, and the two
-                  bank accounts money moves between.
+                  Gold, silver and dollars held by an approved business,
+                  with the vaults and history behind them.
                 </p>
                 <Separator />
                 <Stack gap="md">
@@ -286,13 +303,13 @@ export default function DemoLandingPage() {
                     <JumpGroup key={g.caption} {...g} />
                   ))}
                 </Stack>
-                <Row justify="end" className="flex flex-row items-center justify-start">
+                <Row className="mt-auto flex flex-row items-center justify-start pt-2">
                   <Button
                     className="rounded-full"
                     data-grade-goto="Dashboard — logged-in home"
                     size="lg"
                   >
-                    Open the account
+                    Go to account
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Row>
