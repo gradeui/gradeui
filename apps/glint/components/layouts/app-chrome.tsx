@@ -194,17 +194,34 @@ export function AppChrome({
           }
         >
           <SidebarHeader>
-            {collapsed ? (
-              <Wordmark lockup="mark" className="h-5" />
-            ) : (
-              /* The logotype's G and the rail's G share a left edge:
-                 SidebarHeader's own 12px + this 8px lands the wordmark
-                 exactly where a nav row's icon starts (section inset +
-                 the item's 8px). Both render at 20px tall. */
-              <div className="px-2">
-                <Wordmark className="h-5" />
-              </div>
-            )}
+            {/* THE WORDMARK IS THE WAY OUT (Ali, 12 Aug: "when you press
+                the glint logo in the logged in app - this should go to our
+                demo homepage"). A real button, so it is keyboard reachable
+                and announced rather than a clickable div; the goto bridge
+                resolves the target from the attribute, the same protocol
+                the rail uses.
+                In a shipped product this would go to the account home,
+                which the rail already covers. Pointing it at the demo hub
+                is a DEMO convention: it is the way back to the screen
+                index from anywhere inside the logged-in app. */}
+            <button
+              type="button"
+              data-grade-goto="US Demo Landing"
+              aria-label="Glint: back to the demo home"
+              className="flex items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {collapsed ? (
+                <Wordmark lockup="mark" className="h-5" />
+              ) : (
+                /* The logotype's G and the rail's G share a left edge:
+                   SidebarHeader's own 12px + this 8px lands the wordmark
+                   exactly where a nav row's icon starts (section inset +
+                   the item's 8px). Both render at 20px tall. */
+                <div className="px-2">
+                  <Wordmark className="h-5" />
+                </div>
+              )}
+            </button>
           </SidebarHeader>
           <SidebarContent>
             <SidebarSection collapsible={false}>
