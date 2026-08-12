@@ -53,7 +53,7 @@ import {
   useBalance,
   usePreference,
   fmtMoney,
-  vaultsFor,
+  useVaults,
   DEFAULT_PERSONA,
 } from "@/lib/persona";
 import { toQty, fmtQty, type MetalKey } from "@/lib/market";
@@ -76,7 +76,14 @@ export function MetalWalletCard({
      typed rather than widening to string. */
   const [unit] = usePreference(metal === "gold" ? "unit.gold" : "unit.silver");
   const label = DEFAULT_PERSONA.balances[metal].label;
-  const vaults = vaultsFor(metal);
+  /* REACTIVE, not the persona seed (Ali, 12 Aug: "buying and doing
+     transactions should reflect in the UI", and "totals should always be
+     computed"). These rows and the headline figure above them are made
+     from the same three per-vault balances, so a purchase moves both and
+     they cannot disagree. It used to read vaultsFor(metal), the static
+     seed, which is how the card came to show 51.2991 g held above three
+     rows adding to 47.7350. */
+  const vaults = useVaults(metal);
   /* Share of the holding per vault. Computed from the USD slices against
      the metal's own total, NOT from the displayed gram figures, so the
      column sums to 100% instead of drifting with display rounding. */

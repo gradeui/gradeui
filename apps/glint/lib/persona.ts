@@ -94,6 +94,8 @@ import { getFlowField, useFlowField } from "@/lib/flow-store";
 import { accountLabel, type VaultId } from "@/lib/accounts";
 
 export type AssetKey = "gold" | "silver" | "fiat";
+/** The two assets that sit in vaults. */
+export type MetalAsset = "gold" | "silver";
 
 /** How much of a metal sits in ONE vault, in USD, the same unit as the
  *  parent balance's `amount`. An entity pair, never a rendered line: the
@@ -388,10 +390,14 @@ export const PERSONAS: Record<string, PersonaRecord> = {
       "unit.gold": "g",
       "unit.silver": "g",
       autoInvest: "gold",
-      /* Zurich is where a new purchase lands. It is also this persona's
-         largest holding in both metals, so the default reads as the
-         habit rather than as an arbitrary pick. */
-      vault: "zurich",
+      /* SALT LAKE CITY is where a new purchase lands (Ali, 12 Aug: "I
+         also want the default vault to be Salt Lake City"). It is the
+         only vault holding silver, and it is where the most recent Direct
+         Gold conversion went, so a new order landing there reads as the
+         current habit. NOTE the gold slices still have Salt Lake City
+         smallest at 20.1%: that is history, not the default, but it does
+         mean the default vault is this persona's smallest gold holding. */
+      vault: "saltlake",
     },
     balances: {
       /* The vault splits are ordered LARGEST FIRST, so a list, a chip
@@ -404,9 +410,17 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         amount: 6636.8,
         account: accountLabel("gold"),
         vaults: [
-          { vault: "zurich", amount: 2891.44 },
-          { vault: "miami", amount: 2410.63 },
-          { vault: "saltlake", amount: 1334.73 },
+          /* SALT LAKE CITY IS THE MAIN VAULT (Ali, 12 Aug: "Salt lake
+             City should be the main vault here, not Zurich"). The same
+             three uneven figures, reassigned: the standing default vault
+             is Salt Lake City and the two most recent Direct Gold
+             conversions landed there, so it holding the most is the story
+             the activity list already tells. Zurich keeps second place
+             because the 1 Aug conversion, under the older default, went
+             there. Sum is unchanged and still exactly the gold balance. */
+          { vault: "saltlake", amount: 2891.44 },
+          { vault: "zurich", amount: 2410.63 },
+          { vault: "miami", amount: 1334.73 },
         ],
       },
       silver: {
@@ -532,10 +546,15 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         status: "completed",
         account: "gold",
         counterAccount: "fiat",
-        /* Direct Gold buys land in preferences.vault, which is Zurich:
-           the customer placed no order, so there was no per-order vault
-           choice to make and the standing default is what applied. */
-        vault: "zurich",
+        /* SALT LAKE CITY (Ali, 12 Aug: "the last Direct Gold purchase
+           [should] be Salt Lake City"). Direct Gold buys land in
+           preferences.vault, and that default is now Salt Lake City, so
+           this row and the preference agree: the customer placed no
+           order, so there was no per-order choice to make.
+           The 1 Aug Direct Gold row a few entries down still reads
+           Zurich, deliberately: it predates the change of default, which
+           is what a standing preference looks like in a history. */
+        vault: "saltlake",
         method: "direct-gold",
         fee: 74.93,
         reference: "DG-2026-08-0551",
@@ -592,7 +611,9 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         status: "completed",
         account: "gold",
         counterAccount: "fiat",
-        /* Direct Gold again, so the standing default vault again. */
+        /* Direct Gold again, so the standing default vault again, but
+           the OLDER default: this is 1 Aug and the customer moved the
+           default to Salt Lake City later. See the 11 Aug row. */
         vault: "zurich",
         method: "direct-gold",
         fee: 28.54,
@@ -629,23 +650,17 @@ export function activityFor(account: AssetKey): ActivityRow[] {
 }
 
 /**
- * An asset's per-vault breakdown, in USD, largest vault first.
+ * An asset's per-vault breakdown as the PERSONA SEEDS it, in USD.
  *
- * RETURNS AN EMPTY ARRAY FOR "fiat" rather than throwing, and that is
- * the contract, not a lenient fallback: cash genuinely has no vaults
- * (see the note on the fiat balance), so a caller mapping over all three
- * assets should render nothing for the cash one instead of guarding
- * first. `vaultsFor(asset).length > 0` is therefore the honest test for
- * "does this asset sit in vaults". It also returns empty for any future
- * metal balance whose splits have not been filled in, which is the same
- * answer for the same reason: we do not know of any vault holding.
+ * The static answer, kept for anything that wants the starting shape
+ * rather than the live one. SCREENS SHOULD USE useVaults(asset), which is
+ * reactive and reflects trades; this returns the figures the demo starts
+ * from and never changes.
  *
- * The figures are the PERSONA DEFAULTS and do not track the reactive
- * useBalance override, so a trade that moves `bal.gold` leaves this
- * breakdown where it was and the two stop summing. That is acceptable
- * while the balances are static; when the purchase flow starts crediting
- * preferences.vault it will need per-vault FlowStore keys, and this
- * helper becomes the fallback underneath them.
+ * RETURNS AN EMPTY ARRAY FOR "fiat" rather than throwing, and that is the
+ * contract, not a lenient fallback: cash genuinely has no vaults (see the
+ * note on the fiat balance), so a caller mapping over all three assets
+ * should render nothing for the cash one instead of guarding first.
  */
 export function vaultsFor(asset: AssetKey): VaultBalance[] {
   return DEFAULT_PERSONA.balances[asset].vaults ?? [];
@@ -659,17 +674,145 @@ export function fullName(): string {
     .join(" ");
 }
 
-/** Reactive balance for an asset: [amount, setAmount]. */
-export function useBalance(asset: AssetKey) {
-  return useFlowField<number>(
-    `bal.${asset}`,
-    DEFAULT_PERSONA.balances[asset].amount,
-  );
+/** The three vaults, in registry order. The source of truth for what a
+ *  vault IS lives in lib/accounts.ts; this is just the iteration order,
+ *  spelled out so the hooks below can be written one per vault. */
+const VAULT_IDS: VaultId[] = ["zurich", "miami", "saltlake"];
+
+/** A metal's seed figure for one vault: the persona slice, or zero where
+ *  that metal does not sit in that vault today. Zero is a real answer,
+ *  not a missing one, which is why a purchase can put metal into a vault
+ *  the persona never used. */
+function sliceDefault(metal: MetalAsset, vault: VaultId): number {
+  const slices = DEFAULT_PERSONA.balances[metal].vaults ?? [];
+  return slices.find((s) => s.vault === vault)?.amount ?? 0;
 }
 
-/** Non-subscribing read (mirrors FlowStore.get). */
+/**
+ * PER-VAULT BALANCES, and why the metal totals are now COMPUTED (Ali, 12
+ * Aug: "I think our totals should always be computed").
+ *
+ * Each metal's money lives in THREE FlowStore keys, one per vault
+ * (`bal.gold.zurich` and so on), seeded from the persona's slices. A
+ * metal's balance is their SUM, never a stored figure. Before this, the
+ * total lived in `bal.<metal>` and the slices were static persona data,
+ * so a purchase moved the headline and left the vault table behind: buy
+ * $500 of gold and the card read 51.2991 g held above three rows adding
+ * up to 47.7350. The two could not be reconciled because nothing tied
+ * them together. Now they cannot disagree: the same numbers make both.
+ *
+ * THE LEGACY `bal.<metal>` KEY IS DEAD. It is not read and not written.
+ * A value left in a browser's storage from before this change is simply
+ * ignored, which is the right outcome for a demo: the vault slices are
+ * the truth and a stale total should not override them.
+ *
+ * WHERE A TRADE LANDS:
+ *   BUY  credits ONE vault, the one chosen in the buy form (default
+ *        preferences.vault). That is the whole point of the picker.
+ *   SELL debits PRO RATA across the vaults that hold the metal. This is
+ *        an ASSUMPTION, not a requirement Ali gave: the sell form has no
+ *        vault picker, so something has to decide, and taking it in
+ *        proportion keeps the shape of the holding rather than draining
+ *        one vault first. If sells should instead come out of a chosen
+ *        vault, or largest-first, this is the one function to change.
+ *
+ * A FOURTH VAULT means a fourth line in useMetalVaults: the hooks are
+ * written out one per vault rather than looped, because React needs the
+ * same hooks in the same order every render and a loop over a list is
+ * both a lint error and a trap if the list ever becomes dynamic.
+ */
+export function useMetalVaults(metal: MetalAsset) {
+  const zurich = useFlowField<number>(
+    `bal.${metal}.zurich`,
+    sliceDefault(metal, "zurich"),
+  );
+  const miami = useFlowField<number>(
+    `bal.${metal}.miami`,
+    sliceDefault(metal, "miami"),
+  );
+  const saltlake = useFlowField<number>(
+    `bal.${metal}.saltlake`,
+    sliceDefault(metal, "saltlake"),
+  );
+  const slices: Record<VaultId, [number, (v: number | ((p: number) => number)) => void]> = {
+    zurich,
+    miami,
+    saltlake,
+  };
+  const total = zurich[0] + miami[0] + saltlake[0];
+  /* LARGEST FIRST, and only vaults that hold something: a vault at zero
+     is not a holding, so it drops off the table until a purchase puts
+     metal in it, at which point it appears. That is why silver shows one
+     row today and would show two the moment you buy silver into Miami. */
+  const rows: VaultBalance[] = VAULT_IDS.map((vault) => ({
+    vault,
+    amount: slices[vault][0],
+  }))
+    .filter((row) => row.amount > 0)
+    .sort((a, b) => b.amount - a.amount);
+
+  /** Add to one vault: the buy path. `usd` is the value credited. */
+  const credit = (vault: VaultId, usd: number) => {
+    slices[vault][1]((prev) => prev + usd);
+  };
+
+  /** Set the TOTAL, distributing the change across the vaults in their
+   *  current proportions: the sell path. See the note above. With nothing
+   *  held anywhere the whole amount lands in the default vault, because
+   *  there are no proportions to keep. */
+  const setTotal = (next: number) => {
+    if (total <= 0) {
+      const fallback = getPreference("vault");
+      slices[fallback][1](Math.max(0, next));
+      return;
+    }
+    const ratio = Math.max(0, next) / total;
+    for (const vault of VAULT_IDS) {
+      const [amount, set] = slices[vault];
+      if (amount > 0) set(amount * ratio);
+    }
+  };
+
+  return { total, rows, credit, setTotal };
+}
+
+/** The per-vault rows for any asset, reactive. Empty for cash, which has
+ *  no vaults: see the note on the fiat balance. */
+export function useVaults(asset: AssetKey): VaultBalance[] {
+  const vaults = useMetalVaults(asset === "fiat" ? "gold" : asset);
+  return asset === "fiat" ? [] : vaults.rows;
+}
+
+/**
+ * Reactive balance for an asset: [amount, setAmount].
+ *
+ * Cash reads its own single key. A METAL's amount is the sum of its
+ * vaults, and its setter distributes pro rata: see the note above. The
+ * signature is unchanged, so every existing caller keeps working.
+ */
+export function useBalance(asset: AssetKey): [number, (n: number) => void] {
+  const cash = useFlowField<number>(
+    "bal.fiat",
+    DEFAULT_PERSONA.balances.fiat.amount,
+  );
+  /* Called for cash too, with the gold keys, so the hook count never
+     varies with the argument. The result is discarded. */
+  const vaults = useMetalVaults(asset === "fiat" ? "gold" : asset);
+  if (asset === "fiat") return cash;
+  return [vaults.total, vaults.setTotal];
+}
+
+/** Non-subscribing read, summed the same way. */
 export function getBalance(asset: AssetKey): number {
-  return getFlowField(`bal.${asset}`, DEFAULT_PERSONA.balances[asset].amount);
+  if (asset === "fiat") {
+    return getFlowField("bal.fiat", DEFAULT_PERSONA.balances.fiat.amount);
+  }
+  return VAULT_IDS.reduce(
+    (sum, vault) =>
+      sum +
+      getFlowField(`bal.${asset}.${vault}`, sliceDefault(asset, vault)),
+    0,
+  );
 }
 
 /** Reactive preference (e.g. "unit.gold", "autoInvest"): [value, set].
@@ -702,6 +845,8 @@ export const Persona = {
   DEFAULT: DEFAULT_PERSONA,
   useBalance,
   getBalance,
+  useMetalVaults,
+  useVaults,
   usePreference,
   getPreference,
   fmtMoney,

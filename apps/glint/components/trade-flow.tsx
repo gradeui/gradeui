@@ -99,11 +99,17 @@ import {
   InputGroupInput,
   Progress,
   PropertyList,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
   Stack,
   Row,
 } from "@gradeui/ui";
 import { CheckCircle2, ChevronRight } from "lucide-react";
 import { Persona } from "@/lib/persona";
+import { Accounts, type VaultId } from "@/lib/accounts";
 import { Market, type MetalKey, type TradeDirection } from "@/lib/market";
 import { Wordmark, metalSolid } from "@/components/wordmark";
 import { MetalButton } from "@/components/metal-button";
@@ -120,16 +126,17 @@ const QUOTE_TICK_MS = 250;
 const QUOTE_DRIFT = 0.0012;
 
 /** FIXED PANEL HEIGHT from sm up, one per direction, measured against
- *  the tallest step that direction has: the buy form needs 455px and the
- *  sell form 517px, the difference being the three-working-days clearing
- *  note. Review needs 362px and the receipt less, so those steps carry
+ *  the tallest step that direction has: the buy form needs 551px (455
+ *  before the vault field, which adds a label, a 36px trigger and a
+ *  description) and the sell form 517px, which has no vault field and
+ *  carries the three-working-days clearing note instead. Review needs 362px and the receipt less, so those steps carry
  *  air above the footer, which is the price of a panel that does not
  *  resize under the pointer. A TradeFlow instance is only ever one
  *  direction, so two heights cannot make anything jump. The slack is
  *  deliberate: a font fallback that wraps the note one line further
  *  should not put a scrollbar in the normal case. */
 const PANEL_HEIGHT: Record<TradeDirection, string> = {
-  buy: "sm:h-[470px]",
+  buy: "sm:h-[566px]",
   sell: "sm:h-[530px]",
 };
 
@@ -151,6 +158,14 @@ function MetalMark({ metal }: { metal: MetalKey }) {
     />
   );
 }
+
+/** THE VAULT CHOICES, in the order Ali named them (12 Aug: "Salt Lake
+ *  City, Miami, Zurich"). Ids only: every label is composed through the
+ *  Accounts directory, so a vault renamed there renames here too and
+ *  nothing is typed twice. A vault added to the directory has to be added
+ *  HERE as well, which is deliberate: the buy form offers a curated list,
+ *  not a dump of the registry. */
+const VAULT_CHOICES: VaultId[] = ["saltlake", "miami", "zurich"];
 
 const METAL_LABEL: Record<MetalKey, string> = {
   gold: "Gold",
@@ -187,12 +202,30 @@ export function TradeFlow({
     fee: number;
     nextMetal: number;
     nextFiat: number;
+    vault: VaultId;
   } | null>(null);
   const [fiat, setFiat] = Persona.useBalance("fiat");
   const [metalBal, setMetalBal] = Persona.useBalance(metal);
   const [unit] = Persona.usePreference(
     metal === "gold" ? "unit.gold" : "unit.silver"
   );
+  /* THE VAULT THIS PURCHASE LANDS IN. Two values on purpose:
+     `prefVault` is the standing preference, read reactively, and
+     `vaultChoice` is this dialog's override, which starts unset.
+     A CHANGE HERE MUST NOT WRITE THE PREFERENCE (Ali, 12 Aug: "changing
+     this only applies for this purchase"), so the setter is local state
+     and the preference is never touched. reset() clears the override, so
+     reopening the dialog starts from the default again.
+     Reading through the hook rather than getPreference() also keeps the
+     first render identical on the server and the client, which is the
+     same hydration rule the balances follow. */
+  /* The per-vault balances for this metal: `credit` is how a buy
+     lands in one vault. The total it exposes is the same number
+     useBalance(metal) returns, so nothing double-counts. */
+  const vaults = Persona.useMetalVaults(metal);
+  const [prefVault] = Persona.usePreference("vault");
+  const [vaultChoice, setVaultChoice] = React.useState<VaultId | null>(null);
+  const vault = vaultChoice ?? prefVault;
 
   const selling = direction === "sell";
   const label = METAL_LABEL[metal];
@@ -299,6 +332,8 @@ export function TradeFlow({
     setAmountRaw("");
     setQtyRaw("");
     setOrder(null);
+    /* Back to the standing default: an override belongs to one purchase. */
+    setVaultChoice(null);
     /* Back to the settled rate with a full bar, so reopening the dialog
        never flashes the last order's quote or a drained window. */
     setQuote(baseRate);
@@ -319,8 +354,18 @@ export function TradeFlow({
       ? metalBal - Market.toUsd(qtyTyped, metal, unit)
       : metalBal + Market.toUsd(qty, metal, unit);
     const nextFiat = selling ? fiat + cash : fiat - amount;
-    setOrder({ qty, cash, fee, nextMetal, nextFiat });
-    setMetalBal(nextMetal);
+    setOrder({ qty, cash, fee, nextMetal, nextFiat, vault });
+    /* A BUY LANDS IN THE CHOSEN VAULT (Ali, 12 Aug: the picker, and
+       "buying and doing transactions should reflect in the UI"), so it
+       credits that one vault rather than setting a total. The wallet
+       card's vault table and its headline figure are both made from these
+       per-vault balances, so the row for this vault grows by exactly what
+       the receipt says and the two stay reconciled.
+       A SELL has no vault picker, so it sets the total and Persona
+       distributes the fall pro rata across the vaults that hold the
+       metal. That rule is an assumption, documented where it lives. */
+    if (selling) setMetalBal(nextMetal);
+    else vaults.credit(vault, Market.toUsd(qty, metal, unit));
     setFiat(nextFiat);
     setStep("done");
   };
@@ -382,6 +427,32 @@ export function TradeFlow({
   );
 
   /* The rate hold, shown above the confirm action. */
+  /* WHERE THE METAL GOES. Buy only: a sell takes metal OUT, and which
+     vault it leaves is a different question with a different answer (and
+     one Ali has not asked for), so the sell form does not pretend to
+     offer the choice. */
+  const vaultField = (
+    <Field>
+      <FieldLabel>Vault</FieldLabel>
+      <Select value={vault} onValueChange={(v) => v && setVaultChoice(v as VaultId)}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {VAULT_CHOICES.map((id) => (
+            <SelectItem key={id} value={id}>
+              {Accounts.vaultLocation(id)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <FieldDescription className="text-xs">
+        Applies to this purchase only. Your default stays{" "}
+        {Accounts.vaultLabel(prefVault)}.
+      </FieldDescription>
+    </Field>
+  );
+
   const quoteTimer = (
     <Stack gap="xs" className="mt-auto">
       <Row justify="between" align="center">
@@ -446,6 +517,7 @@ export function TradeFlow({
                 <>
                   {amountField}
                   {quantityField}
+                  {vaultField}
                 </>
               )}
             </Stack>
@@ -507,6 +579,12 @@ export function TradeFlow({
                     </span>
                   }
                 />
+                {!selling && (
+                  <PropertyList.Row
+                    label="Vault"
+                    value={Accounts.vaultLabel(vault)}
+                  />
+                )}
                 <PropertyList.Row
                   label="Rate"
                   value={`${Persona.fmtMoney(quote)}/${unit}`}
@@ -569,6 +647,12 @@ export function TradeFlow({
                     )})`}
                   </span>
                 </PropertyList.Row>
+                {!selling && (
+                  <PropertyList.Row
+                    label="Vault"
+                    value={Accounts.vaultLocation(order.vault)}
+                  />
+                )}
                 <PropertyList.Row
                   label="New USD balance"
                   value={

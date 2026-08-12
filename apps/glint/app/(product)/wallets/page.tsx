@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786474975887). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786530535089). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 1fb3f6911340
+// source-hash: b8724701e90b
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -145,15 +145,24 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
      can never disagree about what "gold" is called. */
   const [autoInvest] = Persona.usePreference("autoInvest");
   const autoLabel = AutoInvestToggle.labelFor(autoInvest);
+  /* WHERE IT IS STORED, after the quantity (Ali, 12 Aug: "our home cards
+     need to reflect where the Gold or Silver is stored... an interpunct
+     next to the amount, followed by the amount of vaults"). Reactive, so
+     a purchase into a vault the persona never used takes the count from
+     one to two in front of you. Cash has no vaults and says nothing:
+     its line carries the auto-invest setting instead. */
+  const vaults = Persona.useVaults(asset);
+  const vaultCount =
+    vaults.length === 1 ? "1 vault" : `${vaults.length} vaults`;
   const detail =
     asset === "fiat"
       ? autoInvest === "none"
         ? "Auto-invest off"
         : `Auto-invest to ${autoLabel}`
-      : Market.fmtQty(
+      : `${Market.fmtQty(
           Market.toQty(amount, asset, unit as MetalUnit),
           unit as MetalUnit,
-        );
+        )} · ${vaultCount}`;
   const target = CARD_TARGETS[asset];
   return (
     <Card
