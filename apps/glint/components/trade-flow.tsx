@@ -463,6 +463,11 @@ export function TradeFlow({
      row inside the border is a lot of furniture for one number. The label
      line is free space, and label-left / value-right is how every
      transfer form states a balance.
+     text-sm, matching the LABEL beside it (Ali, 12 Aug: "make this text
+     bigger please"). It was text-xs, the size a description under a field
+     takes, which is the wrong size once the figure has moved up to sit
+     level with a 14px label: it read as a footnote attached to the label
+     rather than as the other half of the line.
      The description now only carries what it is for, which is telling you
      when something is wrong. */
   const amountField = (
@@ -470,7 +475,7 @@ export function TradeFlow({
       <Row justify="between" align="center" gap="sm">
         <FieldLabel>Amount</FieldLabel>
         {!selling && (
-          <span className="text-xs tabular-nums text-muted-foreground">
+          <span className="text-sm tabular-nums text-muted-foreground">
             {Persona.fmtMoney(fiat)} available
           </span>
         )}
@@ -507,7 +512,7 @@ export function TradeFlow({
     <Field>
       <Row justify="between" align="center" gap="sm">
         <FieldLabel>Quantity</FieldLabel>
-        <span className="text-xs tabular-nums text-muted-foreground">
+        <span className="text-sm tabular-nums text-muted-foreground">
           {selling ? `${heldQty} available` : `${walletQty} held`}
         </span>
       </Row>
