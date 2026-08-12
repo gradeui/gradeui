@@ -698,15 +698,28 @@ export function TradeFlow({
 
         {step === "review" && (
           <>
+            {/* ONE HEADER FOR THE WHOLE FLOW (Ali, 12 Aug: "I think the
+                main modal header should stay the same - so lets figure that
+                out"). It is the same mark and the same title on all three
+                steps now, so the panel never re-labels itself while you
+                move through it, and WHERE you are is said by the body: the
+                order rows here, the tick and "Order complete" on the
+                receipt. This step used to own the title with "Review
+                order", which is the line that moved into the body below. */}
             <DialogHeader className="shrink-0">
               <DialogTitle>
                 <Row gap="sm" align="center">
                   <MetalMark metal={metal} />
-                  Review order
+                  {verb} {label}
                 </Row>
               </DialogTitle>
             </DialogHeader>
             <Stack gap="md" className={BODY_CLASS}>
+              {/* No icon, unlike the receipt's tick: a review is a state you
+                  are passing through, not an outcome worth marking. */}
+              <span className="text-base font-medium text-foreground">
+                Review order
+              </span>
               {/* The app's Review sheet is a labelled list, so these are
                   PropertyList rows (a real dl) rather than a sentence.
                   "Fee included" STAYS INSIDE the same list: it is
@@ -830,12 +843,49 @@ export function TradeFlow({
                     Order complete
                   </span>
                 </Row>
-                {/* Still a DialogDescription, just not in the header: it is
-                    what the dialog is announced by, so moving it visually
-                    should not cost the aria-describedby link. */}
-                <DialogDescription>
-                  You {selling ? "sold" : "bought"} {Market.fmtQty(order.qty, unit)}{" "}
-                  of {label.toLowerCase()} for {Persona.fmtMoney(order.cash)}.
+                {/* THE HEADLINE (Ali, 12 Aug, with a shot of the real app:
+                    "the headline should have a bigger font, and nicer
+                    formatting. We should probably say You bought 48.2137 g
+                    of Silver for $100.00. It will be vaulted in Salt Lake
+                    City (Always capitalise the metal)").
+                    text-lg, and the three facts a customer checks are lifted
+                    out of the muted sentence: the QUANTITY and the PRICE in
+                    full foreground, and the METAL in its own flat brand
+                    colour, which is the app's own treatment. The rest stays
+                    muted so those three read first.
+                    CAPITALISED: it was label.toLowerCase(), which turned
+                    Glint's product names into common nouns. `label` is
+                    already "Gold" / "Silver".
+                    The vault sentence is buy-only. A sale does not get
+                    vaulted anywhere, so it says where it came from instead,
+                    and the property list no longer repeats either: the
+                    sentence is the better place for it. */}
+                <DialogDescription className="text-lg leading-snug">
+                  You {selling ? "sold" : "bought"}{" "}
+                  <span className="font-medium text-foreground">
+                    {Market.fmtQty(order.qty, unit)}
+                  </span>{" "}
+                  of{" "}
+                  <span
+                    className="font-medium"
+                    style={{ color: metalSolid(metal) }}
+                  >
+                    {label}
+                  </span>{" "}
+                  for{" "}
+                  <span className="font-medium text-foreground">
+                    {Persona.fmtMoney(order.cash)}
+                  </span>
+                  .
+                  {order.vault ? (
+                    <>
+                      {selling ? " Sold out of " : " It will be vaulted in "}
+                      <span className="font-medium text-foreground">
+                        {Accounts.vaultLabel(order.vault)}
+                      </span>
+                      .
+                    </>
+                  ) : null}
                 </DialogDescription>
               </Stack>
               <PropertyList labelWidth="10.5rem">
@@ -850,12 +900,6 @@ export function TradeFlow({
                     )})`}
                   </span>
                 </PropertyList.Row>
-                {order.vault ? (
-                  <PropertyList.Row
-                    label={selling ? "Sold from" : "Vault"}
-                    value={Accounts.vaultLocation(order.vault)}
-                  />
-                ) : null}
                 <PropertyList.Row
                   label="New USD balance"
                   value={
