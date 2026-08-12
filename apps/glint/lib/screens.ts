@@ -52,8 +52,8 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/",
     name: "US Demo Landing",
     id: "dmskhheytm163",
-    promotedAt: 1786540141988,
-    sourceHash: "b50f5ced6bfe",
+    promotedAt: 1786540434331,
+    sourceHash: "cc8bee10a890",
   },
   {
     slug: "/onboarding/step1",
@@ -116,8 +116,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "US Onboarding — 7 Certification",
     id: "dmskh0ixi1gdj",
     step: 7,
-    promotedAt: 1786539109645,
-    sourceHash: "87aa55c56a2a",
+    promotedAt: 1786541633461,
+    sourceHash: "d53d2f570700",
   },
   {
     slug: "/onboarding/step8",
@@ -138,15 +138,15 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/wallets",
     name: "Dashboard — logged-in home",
     id: "dmskex612bcy1",
-    promotedAt: 1786532786752,
-    sourceHash: "c0464549bcbb",
+    promotedAt: 1786541900663,
+    sourceHash: "bd4757c8c3aa",
   },
   {
     slug: "/bank-accounts",
     name: "Bank Accounts",
     id: "dmsp02q871y5u",
-    promotedAt: 1786532789506,
-    sourceHash: "fe74d5212606",
+    promotedAt: 1786541901219,
+    sourceHash: "b2ebd0e1d2ad",
   },
   {
     slug: "/activity",
@@ -173,8 +173,8 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/wallets/usd",
     name: "USD — wallet",
     id: "dmsou6g4wxv0l",
-    promotedAt: 1786532788978,
-    sourceHash: "c8bdb8af675d",
+    promotedAt: 1786541739473,
+    sourceHash: "f5c3f796604c",
   },
 ];
 

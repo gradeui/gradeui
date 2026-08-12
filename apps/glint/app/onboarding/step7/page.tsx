@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — 7 Certification"
-// (design dmskh0ixi1gdj, version 1786539109645). Registry: lib/screens.ts;
+// (design dmskh0ixi1gdj, version 1786541633461). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 87aa55c56a2a
+// source-hash: d53d2f570700
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -24,7 +24,7 @@ import {
   Stack,
   Grid,
 } from "@gradeui/ui";
-import { BadgeCheck } from "lucide-react";
+import { Info } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
 import { FlowStore } from "@/lib/flow-store";
 import { Persona } from "@/lib/persona";
@@ -59,7 +59,7 @@ const useFlowField = FlowStore.useField;
    reviewer. */
 const A = Persona.DEFAULT.applicant;
 
-export default function CertificationPage() {
+export default function CertifyPage() {
   /* The signer's name, from the owner details step 3 wrote, falling back
      to the persona applicant so an unvisited walkthrough still certifies
      as Wade Jones. */
@@ -97,8 +97,48 @@ export default function CertificationPage() {
         record that what you&rsquo;ve told us is true.
       </p>
 
+      {/* WHO IS SIGNING FIRST, THEN WHAT THEY ARE ATTESTING TO (Ali, 12
+          Aug: "let's move the name and role to the top, and put both
+          checkboxes together under application accuracy"). The two
+          attestations used to be separated by the name/role pair, which
+          put a data-entry job in the middle of a consent decision and read
+          as two unrelated screens stitched together. Identify yourself,
+          then tick what you are certifying, then sign: that is also the
+          order the record is written in.
+
+          THE MERGE IS PRESENTATIONAL ONLY. boCertified and
+          accuracyConfirmed are still two separate stored answers, because
+          they are two different legal statements (FinCEN beneficial
+          ownership vs. the accuracy-and-notify undertaking) and step 8
+          reports them separately. Nothing about the record changed; only
+          where the boxes sit. */}
       <FieldSet>
-        <FieldLegend>Beneficial ownership certification</FieldLegend>
+        <FieldLegend>Signatory</FieldLegend>
+        <Grid cols="2" gap="md">
+          <Field>
+            <FieldLabel>Your full legal name</FieldLabel>
+            <Input
+              autoComplete="name"
+              placeholder="Full legal name"
+              value={certName}
+              onChange={(e) => setCertName(e.target.value)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>Your role</FieldLabel>
+            <Input
+              placeholder="e.g. CEO"
+              value={certRole}
+              onChange={(e) => setCertRole(e.target.value)}
+            />
+          </Field>
+        </Grid>
+      </FieldSet>
+
+      <Separator className="my-4" />
+
+      <FieldSet>
+        <FieldLegend>Application accuracy</FieldLegend>
         <Stack gap="md">
           <Field orientation="horizontal">
             <Checkbox
@@ -111,43 +151,18 @@ export default function CertificationPage() {
               control person is complete and correct
             </FieldLabel>
           </Field>
-          <Grid cols="2" gap="md">
-            <Field>
-              <FieldLabel>Your full legal name</FieldLabel>
-              <Input
-                autoComplete="name"
-                placeholder="Full legal name"
-                value={certName}
-                onChange={(e) => setCertName(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Your role</FieldLabel>
-              <Input
-                placeholder="e.g. CEO"
-                value={certRole}
-                onChange={(e) => setCertRole(e.target.value)}
-              />
-            </Field>
-          </Grid>
+          <Field orientation="horizontal">
+            <Checkbox
+              checked={accuracy}
+              onCheckedChange={(v) => setAccuracy(v === true)}
+            />
+            <FieldLabel className="font-normal leading-relaxed">
+              I confirm the information in this application is complete and
+              accurate, and I&rsquo;ll tell Glint if any of it changes,
+              including changes of ownership or control
+            </FieldLabel>
+          </Field>
         </Stack>
-      </FieldSet>
-
-      <Separator className="my-4" />
-
-      <FieldSet>
-        <FieldLegend>Application accuracy</FieldLegend>
-        <Field orientation="horizontal">
-          <Checkbox
-            checked={accuracy}
-            onCheckedChange={(v) => setAccuracy(v === true)}
-          />
-          <FieldLabel className="font-normal leading-relaxed">
-            I confirm the information in this application is complete and
-            accurate, and I&rsquo;ll tell Glint if any of it changes,
-            including changes of ownership or control
-          </FieldLabel>
-        </Field>
       </FieldSet>
 
       <Separator className="my-4" />
@@ -157,15 +172,56 @@ export default function CertificationPage() {
         <Stack gap="md">
           <Field>
             <FieldLabel>Type your full legal name to sign</FieldLabel>
-            {/* The seeded name is the PLACEHOLDER here and never the
-                value: it tells the applicant what to type without typing
-                it for them. autoComplete is off because this is the one
-                field the browser must not fill, for the same reason we
-                do not prefill it ourselves. */}
+            {/* NO NAME IN THE PLACEHOLDER (Ali, 12 Aug: "I'd also suggest
+                that we don't prefill Wade Jones - or if we do, we need a
+                more handwrity font"). It was a placeholder rather than a
+                value, but a greyed name sitting in a signature box reads
+                as already-signed either way. Ali then went further ("you
+                can remove the placeholder from the signature input
+                entirely"), so the box is EMPTY: the label above already
+                says "type your full legal name to sign", and a hint
+                repeating it inside a field that must look untouched is
+                just more grey text in a signature box. seededName still
+                drives the printed name field above, which is a fact about
+                the signer rather than his assent.
+
+                THE TYPED VALUE IS HANDWRITING, via the `font-signature`
+                role now in @gradeui/ui rather than a font-family pinned
+                to this screen (Ali, 12 Aug: "we might have to add a
+                cursive font to Grade ... or specifically a Signature
+                font. This makes it as real as possible"). The role binds
+                to Caveat, self-hosted by next/font in both this app and
+                the docs app, which is what makes it resolve inside Fast
+                Frame and the MCP panel: those are the docs app, and
+                neither can reach the network.
+
+                md:text-4xl AS WELL AS text-4xl, which is not belt and
+                braces: Input carries `md:text-sm` as its own default, and
+                a media-query rule beats an unprefixed one at the same
+                specificity however the classes merge, so a plain
+                `text-4xl` was silently rendering at 14px above 768px.
+                That is why the first attempt came back as "its tiny". */}
+            {/* AUTOFILL IS THE ENEMY HERE (Ali, 12 Aug: "hold on - dont
+                prefill in with my name!!! The Signature!!!"). Nothing in
+                this code prefills it: Chrome saw an empty box under a
+                label reading "type your full legal name" and filled it
+                with whoever is signed in on the machine, which on a demo
+                laptop is the person giving the demo. autoComplete="off"
+                alone does not stop that, so the field also carries a name
+                Chrome's heuristics cannot map to a person, and the ignore
+                attributes the three common password managers look for.
+                A signature box that fills itself is worse than useless:
+                it puts a name on a legal record that nobody typed. */}
             <Input
               autoComplete="off"
-              placeholder={seededName || "Your full legal name"}
-              className="h-14 text-lg italic"
+              name="glint-signature-mark"
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore
+              data-form-type="other"
+              spellCheck={false}
+              autoCapitalize="words"
+              className="h-16 font-signature text-4xl md:text-4xl"
               value={signature}
               onChange={(e) => setSignature(e.target.value)}
             />
@@ -177,8 +233,13 @@ export default function CertificationPage() {
         </Stack>
       </FieldSet>
 
-      <Callout variant="success">
-        <BadgeCheck />
+      {/* info, NOT success (Ali, 12 Aug: "let's not have this massive
+          callout in green - knock back to our standard info color").
+          Every other "Why we ask" in the wizard is info; success was
+          reading as "you have signed" on a screen where nothing has been
+          signed yet, which is the opposite of what it meant. */}
+      <Callout variant="info">
+        <Info />
         <CalloutTitle>Why we ask</CalloutTitle>
         <CalloutDescription>
           Federal rules require an explicit certification of beneficial

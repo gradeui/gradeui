@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "US Demo Landing"
-// (design dmskhheytm163, version 1786540141988). Registry: lib/screens.ts;
+// (design dmskhheytm163, version 1786540434331). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: b50f5ced6bfe
+// source-hash: cc8bee10a890
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -47,6 +47,13 @@ import { FlowStore } from "@/lib/flow-store";
 // fresh; the jump pills and the card surface keep existing state so a
 // mid-flow hop resumes where you left off.
 
+/* CAPITALS FOLLOW THE PRODUCT (Ali, 12 Aug: "I'd capitalise things like
+   Business Account, Gold, Silver"). The rule: a word that NAMES something
+   in the product takes a capital (Business Account, Gold, Silver, Glint
+   USD, Activity, Bank Accounts, and each step name); a word merely
+   describing it does not (application, banking, journey). That is why the
+   pills read capitalised and the prose around them does not. */
+
 /* GROUPED, not one long row (Ali, 12 Aug: "I'd also consider maybe
    grouping them tags a bit so they are less like tag soup - figure out the
    best grouping"). Ten pills in a single wrap read as a heap you have to
@@ -66,7 +73,7 @@ const ONBOARDING_GROUPS = [
     caption: "Apply",
     jumps: [
       { label: "1 · Start", target: "US Onboarding — 1 Before you apply" },
-      { label: "2 · Business type", target: "US Onboarding — 2 Business type" },
+      { label: "2 · Business Type", target: "US Onboarding — 2 Business type" },
       { label: "3 · Details", target: "US Onboarding — 3 Business details" },
     ],
   },
@@ -158,7 +165,7 @@ export default function DemoLandingPage() {
             <Wordmark cut="metal" className="h-8" />
             <Stack gap="xs" align="center">
               <h1 className="text-3xl font-medium text-foreground">US Business Accounts Demo</h1>
-              <p className="max-w-xl text-muted-foreground">A demo of the Glint US business account experience.</p>
+              <p className="max-w-xl text-muted-foreground">A demo of the Glint US Business Account experience.</p>
             </Stack>
           </Stack>
 
@@ -188,7 +195,7 @@ export default function DemoLandingPage() {
                 {/* gap="xs", was none (Ali, 12 Aug: "the top Title and small
                     description are far to close togther"). */}
                 <Stack gap="xs">
-                  <CardTitle>Open a business account</CardTitle>
+                  <CardTitle>Open a Business Account</CardTitle>
                   <CardDescription>The onboarding application</CardDescription>
                 </Stack>
               </Row>
@@ -202,11 +209,16 @@ export default function DemoLandingPage() {
                   now packs from the top and the ACTION ROW takes mt-auto,
                   which is the only thing that should hug the bottom. */}
               <Stack gap="md" className="flex-1 gap-4">
-                <p className="text-sm text-muted-foreground">
-                  The eight-step KYB journey: PATRIOT Act notice, business
-                  type, ownership, expected activity, documents,
-                  certification and submission.
-                </p>
+                {/* NO SYNOPSIS PARAGRAPH (Ali, 12 Aug: "we could just remove
+                    these descriptions completely from each card ... then I
+                    can stop trying to make them fit"). It was rewritten
+                    three times and never earned its space: the pill groups
+                    below already name every screen, so the paragraph was
+                    restating the list above the list. The rule stays, now
+                    dividing the header from the pills. The one-line
+                    CardDescription in the header stays, since that is the
+                    "small description" he asked for spacing on earlier the
+                    same day. */}
                 <Separator />
                 <Stack gap="md">
                   {ONBOARDING_GROUPS.map((g) => (
@@ -252,7 +264,7 @@ export default function DemoLandingPage() {
                   </div>
                   <Stack gap="xs">
                     <CardTitle>Approved Business Account</CardTitle>
-                    <CardDescription>Wallets, activity and banking</CardDescription>
+                    <CardDescription>Wallets, Activity and banking</CardDescription>
                   </Stack>
                 </Row>
                 <DropdownMenu>
@@ -291,17 +303,7 @@ export default function DemoLandingPage() {
                   now packs from the top and the ACTION ROW takes mt-auto,
                   which is the only thing that should hug the bottom. */}
               <Stack gap="md" className="flex-1 gap-4">
-                {/* A LIST, in the same shape as the card opposite (Ali:
-                    "still to informal. Just list what is there like the
-                    onboarding"). That one reads "The eight-step KYB
-                    journey: ..." and then enumerates, so this one names
-                    the thing and enumerates too. No adjectives, no "with
-                    the ... behind them". */}
-                <p className="text-sm text-muted-foreground">
-                  The account after approval: wallet hub, gold, silver and
-                  USD wallets, price history, vaults, activity and bank
-                  accounts.
-                </p>
+                {/* No synopsis here either: see the card opposite. */}
                 <Separator />
                 <Stack gap="md">
                   {PRODUCT_GROUPS.map((g) => (

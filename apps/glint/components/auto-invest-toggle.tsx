@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Auto-invest toggle (Ali, 11 Aug 2026: "I'd extract the toggle group as a
+ * Auto-buy toggle (Ali, 11 Aug 2026: "I'd extract the toggle group as a
  * shared component on its own"). What a USD deposit does the moment it
  * lands: convert to gold, convert to silver, or sit in the cash wallet.
  *
@@ -19,13 +19,20 @@
  * either can change it. That is deliberate. A demo where the dashboard
  * says Gold and the wallet says Off is worse than no toggle at all.
  *
- * CALLED "Auto-invest" (Ali's pick over the "Direct Invest" I proposed).
- * The label used to read "Direct Gold" while the control offered Gold,
- * Silver and Off, so choosing Silver left a label naming the other metal.
- * Two names do NOT move with it: the `autoInvest` preference key, and
- * Persona's TX_METHOD_LABEL mapping of "direct-gold" to "Direct Gold".
- * That second one names the METHOD on an activity row, the thing that
- * converted a deposit, and it keeps its product name.
+ * CALLED "Auto-buy" (Glint's CEO, 12 Aug 2026, relayed by Ali: "last
+ * request from CEO - can we change Auto-invest to Auto-buy"). It was
+ * "Auto-invest" before that, which was Ali's own pick over the "Direct
+ * Invest" I proposed, and "Direct Gold" before that. THREE NAMES DO NOT
+ * MOVE WITH IT, and each for a reason:
+ *   - the `autoInvest` preference key, because it is stored state and a
+ *     rename would silently orphan every demo session already holding it;
+ *   - this module's own name, AutoInvestToggle, because the twin guard,
+ *     the mirror script's allow-list and every importing screen key off
+ *     it, and a rename is a separate mechanical pass, not a copy change;
+ *   - Persona's TX_METHOD_LABEL mapping "direct-gold" to "Direct Gold",
+ *     which names the METHOD on an activity row (the thing that converted
+ *     a deposit) rather than this setting, and keeps its product name.
+ * If Auto-buy sticks, the identifiers can follow in one deliberate sweep.
  */
 
 import * as React from "react";
@@ -42,7 +49,7 @@ const OPTIONS: { value: AutoInvest; label: string }[] = [
 ];
 
 export function AutoInvestToggle({
-  label = "Auto-invest",
+  label = "Auto-buy",
   className,
 }: {
   /** Leading label. Pass null where the surrounding copy already says it. */
@@ -95,7 +102,7 @@ export function AutoInvestToggle({
 
 /* The option list and its label map, exposed so a SCREEN can name the
    current setting without keeping its own copy of the labels. The
-   dashboard's USD card reads "Auto-invest to Gold" off labelFor, so the
+   dashboard's USD card reads "Auto-buy to Gold" off labelFor, so the
    card and the control can never disagree about what "gold" is called. */
 AutoInvestToggle.OPTIONS = OPTIONS;
 AutoInvestToggle.labelFor = function labelFor(

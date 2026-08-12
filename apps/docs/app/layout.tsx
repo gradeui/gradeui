@@ -18,6 +18,7 @@ import {
   Source_Serif_4,
   IBM_Plex_Mono,
   Poppins,
+  Caveat,
 } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -81,6 +82,12 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
+/* Handwriting, for the `font-signature` role in @gradeui/ui — the one
+   place a product wants a typed name to look written (e-signature
+   fields). Self-hosted by next/font like every loader above, which is
+   what makes it work inside the Fast Frame iframe and the MCP preview
+   panel: both are THIS app, and neither can reach the network. */
+const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat" });
 const lexend = Lexend({ subsets: ["latin"], variable: "--font-lexend" });
 
 // Serifs.
@@ -117,6 +124,7 @@ const FONT_VARS = [
   figtree.variable,
   dmSans.variable,
   lexend.variable,
+  caveat.variable,
   fraunces.variable,
   instrumentSerif.variable,
   sourceSerif.variable,

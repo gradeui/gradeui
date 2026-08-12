@@ -102,19 +102,35 @@ const fieldVariants = cva(
              that wrapped to two lines. A tick box is read at the FIRST
              line of what it applies to, whatever else is in the row, and
              on a single-line label start and center are the same pixel.
-             The 1px nudge is optical: a 16px box against a 20-24px line
-             box sits a hair high without it. */
+             THE NUDGE IS MEASURED, not guessed. 1px, then 2px, and Ali
+             still read it as high (12 Aug: "the checkboxes aren't aligned
+             still - did you add margin?"), so I measured the row in the
+             browser instead of estimating: at 14px/leading-relaxed the
+             label's line box starts at y, its cap top is 6.3px below
+             that, and the cap band is 10.19px tall. Centring the 16px box
+             on the CAP BAND (not on the line box, and not top-aligned
+             with it) wants 3.4px, so 3.5px it is. Top-aligning the box
+             with the cap top would need 6.3px and would hang the box
+             below the baseline, which reads worse.
+
+             The general formula is (1lh - 1rem) / 2 — centre the control
+             in the first line box — which lands within 0.1px of the
+             cap-band answer at every leading we use. It is not written as
+             a calc() because `1lh` on the control resolves against the
+             control's own inherited line-height, not the label's, so the
+             two disagree exactly when the label sets its own leading. If
+             a row ever needs a different figure, re-derive it that way. */
           "has-[>[role=checkbox]]:items-start has-[>[role=radio]]:items-start",
-          "[&>[role=checkbox]]:mt-px [&>[role=radio]]:mt-px",
-          "has-[>[data-slot=field-content]]:items-start has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px",
+          "[&>[role=checkbox]]:mt-[3.5px] [&>[role=radio]]:mt-[3.5px]",
+          "has-[>[data-slot=field-content]]:items-start has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-[3.5px]",
         ],
         responsive: [
           "flex-col gap-2 [&>*]:w-full [&>.sr-only]:w-auto @md/field-group:flex-row @md/field-group:items-center @md/field-group:gap-3 @md/field-group:[&>*]:w-auto",
           "@md/field-group:[&>[data-slot=field-label]]:flex-auto",
           /* Same rule as horizontal, once the row actually becomes a row. */
           "@md/field-group:has-[>[role=checkbox]]:items-start @md/field-group:has-[>[role=radio]]:items-start",
-          "@md/field-group:[&>[role=checkbox]]:mt-px @md/field-group:[&>[role=radio]]:mt-px",
-          "@md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px",
+          "@md/field-group:[&>[role=checkbox]]:mt-[3.5px] @md/field-group:[&>[role=radio]]:mt-[3.5px]",
+          "@md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-[3.5px]",
         ],
       },
     },

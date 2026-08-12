@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Bank Accounts"
-// (design dmsp02q871y5u, version 1786532789506). Registry: lib/screens.ts;
+// (design dmsp02q871y5u, version 1786541901219). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: fe74d5212606
+// source-hash: b2ebd0e1d2ad
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -27,7 +27,7 @@ import {
   DropdownMenuSeparator,
 } from "@gradeui/ui";
 import { Persona } from "@/lib/persona";
-import { Accounts, type AccountRecord } from "@/lib/accounts";
+import { Accounts } from "@/lib/accounts";
 import { ActivityTable } from "@/components/activity-table";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { AccountDetails } from "@/components/account-details";
@@ -77,7 +77,7 @@ const LINKED = "external";
    the shared component both this screen and the USD wallet now render, so
    the two cannot say different things about the same account. What stays
    here is what differs per card: the titles, the descriptions, the
-   overflow menu, and the auto-invest row passed in as an extra. */
+   overflow menu, and the auto-buy row passed in as an extra. */
 
 export default function BankAccountsPage() {
   /* No account record read here any more: AccountDetails takes an id and
@@ -160,15 +160,19 @@ export default function BankAccountsPage() {
                     connected (Ali, 11 Aug: "we dont need to know when the
                     Linked account was linked, so instead let's put in what
                     the auto-invest is"). Right: the link date is filing,
-                    while auto-invest is the setting that decides what a
+                    while auto-buy is the setting that decides what a
                     deposit pulled from this account turns into. Read live
                     off the preference, so flipping the toggle on the
                     dashboard or the USD wallet moves this line too, and
                     named by the control's own labelFor so the two cannot
                     disagree. An EXTRA row, passed as children, so
                     AccountDetails stays a statement of the account and
-                    knows nothing about auto-invest. */}
-                <PropertyList.Row label="Auto-invest">
+                    knows nothing about auto-buy.
+                    AUTO-BUY, WAS AUTO-INVEST (Glint's CEO, 12 Aug, via
+                    Ali). The stored preference key is still `autoInvest`,
+                    because it is session state and renaming it would
+                    orphan every demo run already holding a value. */}
+                <PropertyList.Row label="Auto-buy">
                   {autoInvest === "none"
                     ? "Off"
                     : `To ${AutoInvestToggle.labelFor(autoInvest)}`}

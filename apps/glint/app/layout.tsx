@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Inter } from "next/font/google";
+import { Caveat, IBM_Plex_Mono, Inter } from "next/font/google";
 import { GotoBridge } from "@/components/goto-bridge";
 import glintTheme from "@/theme/glint.theme.json";
 import "./globals.css";
@@ -8,6 +8,10 @@ import "./globals.css";
    var(--font-inter) and --font-mono to var(--font-ibm-plex-mono)
    (see app/theme.css), so the loaders register exactly those vars. */
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+/* Handwriting for the signature field on step 7, via the `font-signature`
+   role in @gradeui/ui. Registered here rather than hardcoded at the call
+   site so the app and Studio resolve the same face. */
+const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat" });
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
@@ -36,7 +40,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${ibmPlexMono.variable}`}
+      className={`dark ${inter.variable} ${ibmPlexMono.variable} ${caveat.variable}`}
       data-grade-theme={glintTheme.id}
       data-mode="dark"
       data-button-shape={glintTheme.components?.buttonShape ?? "default"}

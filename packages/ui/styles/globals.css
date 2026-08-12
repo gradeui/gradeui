@@ -54,6 +54,16 @@
      re-skins live; falls back to the display/sans stack until a theme
      sets one. */
   --font-accent: var(--font-display, var(--font-sans));
+  /* Signature font role — gives a `font-signature` utility for the one
+     place a product needs handwriting rather than type: an e-signature
+     field, where a typed name has to read as a signature (Ali, 12 Aug:
+     "we might have to add a cursive font to Grade ... or specifically a
+     Signature font. This makes it as real as possible"). It is a ROLE
+     and not a typeface: an app binds it in its theme the same way it
+     binds --font-sans, and the generic `cursive` keyword is the floor so
+     the utility still reads as handwriting on a machine with nothing
+     registered. Grade's own default binds Caveat. */
+  --font-signature: var(--font-cursive, cursive);
 }
 
 @theme inline reference {
@@ -477,6 +487,7 @@
 @source inline("opacity-{0,5,10,20,30,40,50,60,70,80,90,100}");
 @source inline("text-{2xs,xs,sm,base,lg,xl,2xl,3xl,4xl,5xl}");
 @source inline("font-{thin,extralight,light,normal,medium,semibold,bold,extrabold,black}");
+@source inline("font-{sans,mono,display,accent,signature}");
 @source inline("rounded{,-none,-sm,-md,-lg,-xl,-2xl,-3xl,-full}");
 @source inline("rounded-{tl,tr,br,bl,t,r,b,l}{,-none,-sm,-md,-lg,-xl,-2xl,-3xl,-full}");
 @source inline("{p,m}{,t,r,b,l,x,y}-{0,0.5,1,1.5,2,2.5,3,3.5,4,5,6,7,8,9,10,11,12,14,16,20,24}");
@@ -805,6 +816,10 @@
   /* Typography defaults — Inter body, Geist display (Studio). */
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-display: var(--font-geist), system-ui, -apple-system, sans-serif;
+  /* Handwriting, for signature fields. Caveat is the default binding;
+     an app that does not register the loader falls through to whatever
+     script face the OS has, then to generic cursive. */
+  --font-cursive: var(--font-caveat), "Snell Roundhand", cursive;
 
   /* Fixed semantic colors (not hue-derived, for accessibility consistency) */
   --success: 0.610 0.180 145;
@@ -1159,6 +1174,7 @@
 
   --font-sans: var(--font-geist), system-ui, sans-serif;
   --font-display: var(--font-geist), system-ui, sans-serif;
+  --font-cursive: var(--font-caveat), "Snell Roundhand", cursive;
 }
 
 .dark[data-grade-theme="energy"] {

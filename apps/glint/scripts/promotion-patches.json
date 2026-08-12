@@ -16,7 +16,9 @@
     "",
     "KEEP THESE MINIMAL. A patch is for something TypeScript needs and JSX",
     "cannot express. Anything else belongs in the Studio source, where both",
-    "renderers get it."
+    "renderers get it.",
+    "",
+    "STALE PATCHES ARE THE FAILURE MODE, and one showed up the same day this file was written: the bank-accounts entry annotated a BankMark and an AccountRows that had already moved into the AccountDetails shared component, so the screen no longer declared either. The loud failure did its job (the promotion refused rather than dropping an annotation) and the entry was deleted. When a patch stops matching, first check whether the thing it types still exists here at all."
   ],
   "app/(product)/wallets/page.tsx": [
     {
@@ -53,23 +55,6 @@
       "why": "the unit is a preference value, narrowed for the formatter",
       "find": "      : `${Market.fmtQty(Market.toQty(amount, asset, unit), unit)} · ${vaultCount}`;",
       "replace": "      : `${Market.fmtQty(\n          Market.toQty(amount, asset, unit as MetalUnit),\n          unit as MetalUnit,\n        )} · ${vaultCount}`;"
-    }
-  ],
-  "app/(product)/bank-accounts/page.tsx": [
-    {
-      "why": "the account record type for the two local helpers",
-      "find": "import { Accounts } from \"@/lib/accounts\";",
-      "replace": "import { Accounts, type AccountRecord } from \"@/lib/accounts\";"
-    },
-    {
-      "why": "the mark takes a whole record",
-      "find": "function BankMark({ account }) {",
-      "replace": "function BankMark({ account }: { account: AccountRecord }) {"
-    },
-    {
-      "why": "the rows take an account id",
-      "find": "function AccountRows({ id }) {",
-      "replace": "function AccountRows({ id }: { id: AccountRecord[\"id\"] }) {"
     }
   ],
   "app/onboarding/step2/page.tsx": [

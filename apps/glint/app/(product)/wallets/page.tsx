@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786532786752). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786541900663). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: c0464549bcbb
+// source-hash: bd4757c8c3aa
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -126,16 +126,13 @@ function TotalBalance() {
 
 function BalanceCard({ asset }: { asset: AssetKey }) {
   const [amount] = Persona.useBalance(asset);
-  /* fiat has no unit preference, so it borrows unit.gold and never reads
-     the value: the cash card shows the auto-invest setting instead. The
-     cast is the annotation promotion drops. */
   const unitKey = (asset === "fiat"
     ? "unit.gold"
     : `unit.${asset}`) as keyof PersonaPreferences;
   const [unit] = Persona.usePreference(unitKey);
   const meta = Persona.DEFAULT.balances[asset];
   /* Metals show the holding in the persona's preferred unit.
-     THE CASH CARD SHOWS THE AUTO-INVEST SETTING (Ali, 11 Aug: "rather
+     THE CASH CARD SHOWS THE AUTO-BUY SETTING (Ali, 11 Aug: "rather
      than displaying the routing number and account, lets display what the
      auto-invest setting is as this seems to be a big thing"). It is the
      one line on this card a customer would act on: the routing and
@@ -150,15 +147,19 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
      next to the amount, followed by the amount of vaults"). Reactive, so
      a purchase into a vault the persona never used takes the count from
      one to two in front of you. Cash has no vaults and says nothing:
-     its line carries the auto-invest setting instead. */
+     its line carries the auto-buy setting instead.
+     AUTO-BUY, WAS AUTO-INVEST (Glint's CEO, 12 Aug, via Ali). The stored
+     preference key is still `autoInvest`: it is session state, and
+     renaming it would orphan every demo run already holding a value. The
+     AutoInvestToggle header carries the full name history. */
   const vaults = Persona.useVaults(asset);
   const vaultCount =
     vaults.length === 1 ? "1 vault" : `${vaults.length} vaults`;
   const detail =
     asset === "fiat"
       ? autoInvest === "none"
-        ? "Auto-invest off"
-        : `Auto-invest to ${autoLabel}`
+        ? "Auto-buy off"
+        : `Auto-buy to ${autoLabel}`
       : `${Market.fmtQty(
           Market.toQty(amount, asset, unit as MetalUnit),
           unit as MetalUnit,
@@ -266,7 +267,7 @@ export default function WalletsPage() {
         </Row>
       </AppChrome.Slot>
 
-      {/* Balance, with Auto-invest alongside it. pt-8 because this is
+      {/* Balance, with Auto-buy alongside it. pt-8 because this is
           the first band under the toolbar now that the actions have
           moved into the chrome. */}
       {/* pt-4, was pt-8 (Ali, 11 Aug: "quite large"). The actions are

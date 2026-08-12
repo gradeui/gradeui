@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "USD — wallet"
-// (design dmsou6g4wxv0l, version 1786532788978). Registry: lib/screens.ts;
+// (design dmsou6g4wxv0l, version 1786541739473). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: c8bdb8af675d
+// source-hash: f5c3f796604c
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -120,7 +120,7 @@ export default function UsdWalletPage() {
                   <span className="text-4xl font-semibold tabular-nums text-foreground">
                     {Persona.fmtMoney(amount)}
                   </span>
-                  {/* AUTO-INVEST INSIDE THE CARD (Ali, 11 Aug: "this
+                  {/* AUTO-BUY INSIDE THE CARD (Ali, 11 Aug: "this
                       should also have the auto-invest toggle inside the
                       card"). It is the setting that decides what happens
                       to this balance, so it belongs on the balance, not
