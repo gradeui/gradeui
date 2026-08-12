@@ -112,7 +112,7 @@ import { CheckCircle2, ChevronRight } from "lucide-react";
 import { Persona } from "@/lib/persona";
 import { Accounts, type VaultId } from "@/lib/accounts";
 import { Market, type MetalKey, type TradeDirection } from "@/lib/market";
-import { Wordmark, metalSolid } from "@/components/wordmark";
+import { Wordmark, metalSolid, metalRing } from "@/components/wordmark";
 import { MetalButton } from "@/components/metal-button";
 
 /** How long a quote is held before it refreshes. The app's window is
@@ -126,19 +126,33 @@ const QUOTE_TICK_MS = 250;
  *  without pretending the market lurches every 30 seconds. */
 const QUOTE_DRIFT = 0.0012;
 
-/** FIXED PANEL HEIGHT from sm up, one per direction, measured against
- *  the tallest step that direction has, which since the clearing note
- *  moved to the review step is the FORM in both directions, and both
- *  forms now hold the same three fields. Hence one figure for both. Review needs 362px and the receipt less, so those steps carry
- *  air above the footer, which is the price of a panel that does not
- *  resize under the pointer. A TradeFlow instance is only ever one
- *  direction, so two heights cannot make anything jump. The slack is
- *  deliberate: a font fallback that wraps the note one line further
- *  should not put a scrollbar in the normal case. */
-const PANEL_HEIGHT: Record<TradeDirection, string> = {
-  buy: "sm:h-[566px]",
-  sell: "sm:h-[566px]",
-};
+/** THE PANEL SIZES TO ITS STEP, AND ANIMATES BETWEEN THEM (Ali, 12 Aug:
+ *  "I wonder if we can almost resize the modal with a nice animation. Like
+ *  a nice trasnsition. It's an event - a delighter").
+ *
+ *  This REPLACES a fixed height per direction, which existed for the
+ *  opposite reason: to stop the panel resizing under the pointer as you
+ *  moved between steps. That was the right call while the resize was a
+ *  jump. Animated, the resize is the point: the receipt is now a sentence
+ *  where the form was three fields, and watching the panel collapse to it
+ *  is the moment the order lands.
+ *
+ *  HOW: `interpolate-size: allow-keywords` lets a height:auto to
+ *  height:auto change be interpolated, so the transition needs no measured
+ *  pixel value and no ResizeObserver. Chrome has it; where it is missing
+ *  the height simply snaps, which is the behaviour before this note, so
+ *  nothing breaks. The easing is the iOS sheet curve rather than a linear
+ *  ramp, because this is a delighter and the last 20% is what sells it.
+ *  A transition, not an animation, so it cannot interfere with Radix's own
+ *  open/close keyframes. */
+const PANEL_MOTION =
+  "[interpolate-size:allow-keywords] [transition:height_420ms_cubic-bezier(0.32,0.72,0,1)] motion-reduce:[transition:none]";
+
+/** The mask that turns a filled box into a 1px outline: paint everything,
+ *  then subtract the content box, leaving only the padding ring. Two
+ *  spellings because Safari still wants the -webkit- prefix. */
+const RING_MASK =
+  "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)";
 
 /** The scrolling body of every step: it takes the space the pinned
  *  header and footer leave. The negative margin plus matching padding is
@@ -566,6 +580,30 @@ export function TradeFlow({
     </Field>
   );
 
+  /* THE METAL RING, once the order is done (Ali, 12 Aug: "a nice gradient
+     border go around it one its been bought - so one color for gold, one
+     for silver"). A real element rather than a border or a ring utility,
+     for two reasons: a gradient cannot be a border-color, and painting the
+     gradient as a background would replace the panel's own surface. So it
+     is a 1px inset overlay filled with the gradient and MASKED to its own
+     edge, which is the standard way to draw a gradient hairline.
+     It fades in over 700ms, slower than the panel's own resize, so the
+     ring arrives after the panel has settled rather than racing it. The
+     gradient itself comes from the metal ramp: see metalRing. */
+  const completedRing = (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 rounded-xl p-px duration-700 animate-in fade-in motion-reduce:animate-none"
+      style={{
+        background: metalRing(metal),
+        WebkitMask: RING_MASK,
+        mask: RING_MASK,
+        WebkitMaskComposite: "xor",
+        maskComposite: "exclude",
+      }}
+    />
+  );
+
   /* The rate hold, shown above the confirm action. */
   /* WHERE THE METAL GOES. Buy only: a sell takes metal OUT, and which
      vault it leaves is a different question with a different answer (and
@@ -634,15 +672,16 @@ export function TradeFlow({
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
-      {/* FIXED HEIGHT FROM sm UP so the panel stops resizing between
-          steps: header and footer are shrink-0, the body takes the rest
-          and scrolls itself. See PANEL_HEIGHT for the measurements.
-          Below sm the panel is the DS full-screen sheet and every one of
-          these classes is off, which is the right shape on a phone.
-          bordered={false} is the DS prop, not a border-0 override. */}
+      {/* The panel is auto-height now and animates between steps: see
+          PANEL_MOTION. Header and footer stay shrink-0 and the body keeps
+          its own overflow, which is what handles a step taller than the
+          viewport, since DialogContent caps at 85dvh. Below sm this is the
+          DS full-screen sheet and none of it applies, which is the right
+          shape on a phone. bordered={false} is the DS prop, not a border-0
+          override. */}
       <DialogContent
         bordered={false}
-        className={`sm:flex sm:max-w-md sm:flex-col ${PANEL_HEIGHT[direction]}`}
+        className={`sm:flex sm:max-w-md sm:flex-col ${PANEL_MOTION}`}
       >
         {step === "form" && (
           <>
@@ -818,6 +857,7 @@ export function TradeFlow({
 
         {step === "done" && order && (
           <>
+            {completedRing}
             {/* THE HEADER DOES NOT CHANGE (Ali, 12 Aug: the order complete
                 screens "should maintain the same Title and icon - so should
                 always have the Glint gold of silver. We would then move the
@@ -888,27 +928,13 @@ export function TradeFlow({
                   ) : null}
                 </DialogDescription>
               </Stack>
-              <PropertyList labelWidth="10.5rem">
-                <PropertyList.Row label={`New ${label} balance`}>
-                  <span className="font-medium text-foreground">
-                    {Persona.fmtMoney(order.nextMetal)}
-                  </span>{" "}
-                  <span className="text-muted-foreground">
-                    {`(${Market.fmtQty(
-                      Market.toQty(order.nextMetal, metal, unit),
-                      unit
-                    )})`}
-                  </span>
-                </PropertyList.Row>
-                <PropertyList.Row
-                  label="New USD balance"
-                  value={
-                    <span className="font-medium text-foreground">
-                      {Persona.fmtMoney(order.nextFiat)}
-                    </span>
-                  }
-                />
-              </PropertyList>
+              {/* NO BALANCE ROWS (Ali, 12 Aug: "I think we can remove the
+                  line items of balance on here as well"). The headline
+                  above already says what happened and where it went, and
+                  the wallet card behind the panel is showing the new
+                  balance live: repeating it here made the receipt a report
+                  when it should be a full stop. Cutting them is also what
+                  gives the resize something to do. */}
               {/* Bottom of the panel here too (Ali, 12 Aug: "small print
                   should always be at the bottom - on buy as well"). The
                   review step pins its group for both directions already,

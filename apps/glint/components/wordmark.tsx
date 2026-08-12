@@ -72,6 +72,28 @@ export function metalSurface(metal: "gold" | "silver"): React.CSSProperties {
 }
 
 /**
+ * The metal ring: a gradient hairline for the panel that just completed an
+ * order (Ali, 12 Aug: "I wonder if we can have a nice gradient border go
+ * around it one its been bought - so one color for gold, one for silver").
+ *
+ * Built from the METAL RAMP above, not from invented hexes, so gold and
+ * silver differ by hue exactly as they do everywhere else in the app and a
+ * ramp edit moves this with it. Same stops as the button's polished face,
+ * at 135deg so the light reads as coming from the top left, which is where
+ * every other surface in this theme is lit from.
+ *
+ * It returns only the gradient. The panel draws it as a border with a mask,
+ * because painting a background on the dialog would replace its surface.
+ */
+export function metalRing(metal: "gold" | "silver"): string {
+  const m = METALS[metal];
+  return (
+    `linear-gradient(135deg, oklch(${m[200]}) 0%, oklch(${m[400]}) 35%, ` +
+    `oklch(${m[100]}) 55%, oklch(${m[500]}) 100%)`
+  );
+}
+
+/**
  * The single flat metal colour, for everything that is not a button
  * face: chart strokes, dots, icons, a metal-tinted number. Step 400
  * sits where each metal is most legible on the navy surfaces and
