@@ -52,8 +52,8 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/",
     name: "US Demo Landing",
     id: "dmskhheytm163",
-    promotedAt: 1786540072968,
-    sourceHash: "afb9c6f2336a",
+    promotedAt: 1786540141988,
+    sourceHash: "b50f5ced6bfe",
   },
   {
     slug: "/onboarding/step1",

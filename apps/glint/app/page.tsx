@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "US Demo Landing"
-// (design dmskhheytm163, version 1786540072968). Registry: lib/screens.ts;
+// (design dmskhheytm163, version 1786540141988). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: afb9c6f2336a
+// source-hash: b50f5ced6bfe
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -291,11 +291,16 @@ export default function DemoLandingPage() {
                   now packs from the top and the ACTION ROW takes mt-auto,
                   which is the only thing that should hug the bottom. */}
               <Stack gap="md" className="flex-1 gap-4">
-                {/* Shortened (Ali: "its a bit verby"). It listed every
-                    screen, which the pill groups below already do. */}
+                {/* A LIST, in the same shape as the card opposite (Ali:
+                    "still to informal. Just list what is there like the
+                    onboarding"). That one reads "The eight-step KYB
+                    journey: ..." and then enumerates, so this one names
+                    the thing and enumerates too. No adjectives, no "with
+                    the ... behind them". */}
                 <p className="text-sm text-muted-foreground">
-                  Gold, silver and dollars held by an approved business,
-                  with the vaults and history behind them.
+                  The account after approval: wallet hub, gold, silver and
+                  USD wallets, price history, vaults, activity and bank
+                  accounts.
                 </p>
                 <Separator />
                 <Stack gap="md">
