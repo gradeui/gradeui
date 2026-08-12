@@ -115,13 +115,17 @@ export interface AccountRecord {
    belong to someone; pairing an invented one with a real bank name is
    the compromise Ali signed off for a demo. */
 /* LOGO PROVENANCE (Ali, 11 Aug, asked for the real bank marks rather
-   than initials tiles). Both files are the banks' own square site icons,
-   pulled from suttonbank.com and zionsbank.com and converted to PNG:
-   Zions' is their ZB monogram, Sutton's their S emblem. They are square
-   because the tile that shows them is, and neither site publishes a
-   larger square version.
+   than initials tiles). Both are the banks' own square marks:
+     sutton-bank.png  128px, supplied by Ali on 12 Aug. It replaced their
+                      48px site favicon upscaled to 96, which was the best
+                      thing publicly available and was visibly soft at the
+                      44px the tile renders. Nothing else about the tile
+                      changed; the file is the fix.
+     zions-bank.png   48px, their site favicon, the ZB monogram. Still the
+                      largest square version they publish, so it is a
+                      candidate for the same treatment.
    THEY ARE TRADEMARKS. Fine for a demo of a real partnership; if this
-   ships anywhere public, get the artwork cleared and replace the files.
+   ships anywhere public, get the artwork cleared.
    Served from BOTH apps' public/institutions/ (glint and docs) so a
    Studio render and the promoted app resolve the same path. */
 const SUTTON: Institution = {
