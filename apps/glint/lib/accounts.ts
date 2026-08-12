@@ -121,9 +121,9 @@ export interface AccountRecord {
                       thing publicly available and was visibly soft at the
                       44px the tile renders. Nothing else about the tile
                       changed; the file is the fix.
-     zions-bank.png   48px, their site favicon, the ZB monogram. Still the
-                      largest square version they publish, so it is a
-                      candidate for the same treatment.
+     zions-bank.png   128px, supplied by Ali on 12 Aug, the ZB monogram.
+                      Replaced their 48px site favicon for the same
+                      reason as Sutton's.
    THEY ARE TRADEMARKS. Fine for a demo of a real partnership; if this
    ships anywhere public, get the artwork cleared.
    Served from BOTH apps' public/institutions/ (glint and docs) so a
