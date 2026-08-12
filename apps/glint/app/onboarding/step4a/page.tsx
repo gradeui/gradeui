@@ -1,9 +1,9 @@
 "use client";
 
-// Promoted from Studio screen "US Onboarding — 3a Owner identity"
-// (design dmskgxyctfxci, version 1786468890238). Registry: lib/screens.ts;
+// Promoted from Studio screen "US Onboarding — 4a Owner identity"
+// (design dmskgxyctfxci, version 1786539106753). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 73966c79e2d8
+// source-hash: 2949978560ae
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -300,7 +300,7 @@ export default function OwnerIdentityPage() {
         <Button
           variant="link"
           className="h-auto p-0"
-          data-grade-goto="US Onboarding — 3b Owners & control"
+          data-grade-goto="US Onboarding — 4b Owners & control"
         size="sm">
           Add beneficial owners instead
         </Button>
@@ -310,7 +310,7 @@ export default function OwnerIdentityPage() {
         <Button
           className="rounded-full"
           size="lg"
-          data-grade-goto="US Onboarding — 4 Expected activity"
+          data-grade-goto="US Onboarding — 5 Expected activity"
         >
           Continue
         </Button>

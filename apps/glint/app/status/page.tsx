@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "US Onboarding — Application status"
-// (design dmskh1lole59j, version 1786466510196). Registry: lib/screens.ts;
+// (design dmskh1lole59j, version 1786539111263). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: f376fadbb6f3
+// source-hash: 32b7d6e48622
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -59,8 +59,6 @@ import { Wordmark } from "@/components/wordmark";
 // screen. If they should follow the persona, the record needs an
 // application block first.
 
-// PROMOTION ANNOTATION, not a Studio change: strict TS needs prop types
-// on an untyped helper. Types only, no logic or markup touched.
 function TimelineItem({
   icon: Icon,
   title,
@@ -69,7 +67,7 @@ function TimelineItem({
   last = false,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  title: string;
+  title: React.ReactNode;
   meta: React.ReactNode;
   state?: "done" | "current" | "todo";
   last?: boolean;
@@ -192,7 +190,7 @@ export default function ApplicationStatusPage() {
                 <Button
                   variant="outline"
                   className="rounded-full"
-                  data-grade-goto="US Onboarding — 7 Review & submit"
+                  data-grade-goto="US Onboarding — 8 Review & submit"
                 size="lg">
                   View my application
                 </Button>

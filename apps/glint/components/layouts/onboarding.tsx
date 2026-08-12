@@ -58,13 +58,13 @@ export interface WizardStep {
 }
 
 const STEP_TARGETS: Record<string, string> = {
-  "Before you apply": "US Onboarding — 0 Before you apply",
-  "Business type": "US Onboarding — 1 Business type",
-  "Business details": "US Onboarding — 2 Business details",
-  "Expected activity": "US Onboarding — 4 Expected activity",
-  Documents: "US Onboarding — 5 Documents",
-  "Certify & sign": "US Onboarding — 6 Certification",
-  "Review & submit": "US Onboarding — 7 Review & submit",
+  "Before you apply": "US Onboarding — 1 Before you apply",
+  "Business type": "US Onboarding — 2 Business type",
+  "Business details": "US Onboarding — 3 Business details",
+  "Expected activity": "US Onboarding — 5 Expected activity",
+  Documents: "US Onboarding — 6 Documents",
+  "Certify & sign": "US Onboarding — 7 Certification",
+  "Review & submit": "US Onboarding — 8 Review & submit",
 };
 
 function stepTarget(
@@ -75,8 +75,8 @@ function stepTarget(
   if (step.target) return step.target;
   if (step.label === "Owners & control") {
     return businessType === "smllc"
-      ? "US Onboarding — 3a Owner identity"
-      : "US Onboarding — 3b Owners & control";
+      ? "US Onboarding — 4a Owner identity"
+      : "US Onboarding — 4b Owners & control";
   }
   return STEP_TARGETS[step.label];
 }

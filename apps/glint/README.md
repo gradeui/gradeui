@@ -16,15 +16,15 @@ source, or by explicitly re-promoting a screen (below).
 | Route | Studio screen |
 |---|---|
 | `/` | US Demo Landing |
-| `/onboarding/step0` | 0 Before you apply |
-| `/onboarding/step1` | 1 Business type |
-| `/onboarding/step2` | 2 Business details |
-| `/onboarding/step3a` | 3a Owner identity (SMLLC branch) |
-| `/onboarding/step3b` | 3b Owners & control (all other types) |
-| `/onboarding/step4` | 4 Expected activity |
-| `/onboarding/step5` | 5 Documents |
-| `/onboarding/step6` | 6 Certification |
-| `/onboarding/step7` | 7 Review & submit |
+| `/onboarding/step1` | 0 Before you apply |
+| `/onboarding/step2` | 1 Business type |
+| `/onboarding/step3` | 2 Business details |
+| `/onboarding/step4a` | 3a Owner identity (SMLLC branch) |
+| `/onboarding/step4b` | 3b Owners & control (all other types) |
+| `/onboarding/step5` | 4 Expected activity |
+| `/onboarding/step6` | 5 Documents |
+| `/onboarding/step7` | 6 Certification |
+| `/onboarding/step8` | 7 Review & submit |
 | `/status` | Application status |
 | `/dashboard` | Dashboard — logged-in home |
 | `/activity` | Activity — history |

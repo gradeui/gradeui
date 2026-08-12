@@ -1,0 +1,154 @@
+{
+  "_why": [
+    "TYPE ANNOTATIONS THAT PROMOTION CANNOT CARRY, applied by promote-screen.py",
+    "after it transforms a screen. Studio source is JSX, the app is TypeScript,",
+    "so every promoted page loses its parameter types the moment it is",
+    "re-promoted. Before this file they were reapplied BY HAND: ten of them on",
+    "12 Aug 2026 alone, twice over, because a renumber re-promoted eleven",
+    "screens in one pass. That is a chore that gets skipped, and a skipped one",
+    "is a red build.",
+    "",
+    "EACH ENTRY IS EXACT-STRING, and promote-screen.py FAILS if a `find` does",
+    "not appear exactly once. That is deliberate: a patch that silently stops",
+    "matching is worse than a loud error, because the annotation quietly",
+    "disappears and tsc breaks somewhere unrelated. If a patch fails, the",
+    "Studio source moved: read the new source, update the string here.",
+    "",
+    "KEEP THESE MINIMAL. A patch is for something TypeScript needs and JSX",
+    "cannot express. Anything else belongs in the Studio source, where both",
+    "renderers get it."
+  ],
+  "app/(product)/wallets/page.tsx": [
+    {
+      "why": "AssetKey/PersonaPreferences/MetalUnit types for the card components",
+      "find": "import { Persona } from \"@/lib/persona\";",
+      "replace": "import {\n  Persona,\n  type AssetKey,\n  type PersonaPreferences,\n} from \"@/lib/persona\";"
+    },
+    {
+      "why": "MetalUnit for the quantity formatting casts below",
+      "find": "import { Market } from \"@/lib/market\";",
+      "replace": "import { Market, type MetalUnit } from \"@/lib/market\";"
+    },
+    {
+      "why": "the asset order is a list of keys, not strings",
+      "find": "const ASSET_ORDER = [\"gold\", \"silver\", \"fiat\"];",
+      "replace": "const ASSET_ORDER: AssetKey[] = [\"gold\", \"silver\", \"fiat\"];"
+    },
+    {
+      "why": "both card helpers take an asset key",
+      "find": "function AssetMark({ asset }) {",
+      "replace": "function AssetMark({ asset }: { asset: AssetKey }) {"
+    },
+    {
+      "why": "both card helpers take an asset key",
+      "find": "function BalanceCard({ asset }) {",
+      "replace": "function BalanceCard({ asset }: { asset: AssetKey }) {"
+    },
+    {
+      "why": "fiat borrows unit.gold and never reads it: the key needs the cast",
+      "find": "  const [unit] = Persona.usePreference(`unit.${asset}`);",
+      "replace": "  const unitKey = (asset === \"fiat\"\n    ? \"unit.gold\"\n    : `unit.${asset}`) as keyof PersonaPreferences;\n  const [unit] = Persona.usePreference(unitKey);"
+    },
+    {
+      "why": "the unit is a preference value, narrowed for the formatter",
+      "find": "      : `${Market.fmtQty(Market.toQty(amount, asset, unit), unit)} · ${vaultCount}`;",
+      "replace": "      : `${Market.fmtQty(\n          Market.toQty(amount, asset, unit as MetalUnit),\n          unit as MetalUnit,\n        )} · ${vaultCount}`;"
+    }
+  ],
+  "app/(product)/bank-accounts/page.tsx": [
+    {
+      "why": "the account record type for the two local helpers",
+      "find": "import { Accounts } from \"@/lib/accounts\";",
+      "replace": "import { Accounts, type AccountRecord } from \"@/lib/accounts\";"
+    },
+    {
+      "why": "the mark takes a whole record",
+      "find": "function BankMark({ account }) {",
+      "replace": "function BankMark({ account }: { account: AccountRecord }) {"
+    },
+    {
+      "why": "the rows take an account id",
+      "find": "function AccountRows({ id }) {",
+      "replace": "function AccountRows({ id }: { id: AccountRecord[\"id\"] }) {"
+    }
+  ],
+  "app/onboarding/step2/page.tsx": [
+    {
+      "why": "RadioGroup hands back a string; the stored value is the entity union",
+      "find": "        onValueChange={setBusinessType}",
+      "replace": "        onValueChange={(v) => setBusinessType(v as typeof businessType)}"
+    }
+  ],
+  "app/onboarding/step4b/page.tsx": [
+    {
+      "why": "the address block takes a prefix and an optional persona address",
+      "find": "function AddressFields({ prefix, defaults }) {",
+      "replace": "function AddressFields({\n  prefix,\n  defaults,\n}: {\n  prefix: string;\n  defaults?: { street: string; city: string; state: string; zip: string };\n}) {"
+    },
+    {
+      "why": "the control person passes no defaults, so every field falls back empty",
+      "find": "  const d = defaults ?? {};",
+      "replace": "  const d: Partial<{ street: string; city: string; state: string; zip: string }> =\n    defaults ?? {};"
+    }
+  ],
+  "app/onboarding/step5/page.tsx": [
+    {
+      "why": "the set is compared against option values, which are strings",
+      "find": "const DEPOSIT_METHODS = new Set(",
+      "replace": "const DEPOSIT_METHODS = new Set<string>("
+    },
+    {
+      "why": "the rails helper maps option records to their values",
+      "find": "const personaRails = (options) =>",
+      "replace": "const personaRails = (options: { value: string }[]): string[] =>"
+    },
+    {
+      "why": "an empty array default infers never[], which the multi-select rejects",
+      "find": "useFlowField(\"crossBorderCountries\", [])",
+      "replace": "useFlowField<string[]>(\"crossBorderCountries\", [])"
+    }
+  ],
+  "app/onboarding/step6/page.tsx": [
+    {
+      "why": "the document row's props, including the badge's variant union",
+      "find": "function DocRow({ title, hint, badge, badgeVariant = \"secondary\", done = false }) {",
+      "replace": "function DocRow({\n  title,\n  hint,\n  badge,\n  badgeVariant = \"secondary\",\n  done = false,\n}: {\n  title: React.ReactNode;\n  hint: React.ReactNode;\n  badge: React.ReactNode;\n  badgeVariant?: React.ComponentProps<typeof Badge>[\"variant\"];\n  done?: boolean;\n}) {"
+    }
+  ],
+  "app/onboarding/step8/page.tsx": [
+    {
+      "why": "the recap's section wrapper",
+      "find": "function SectionCard({ title, editTarget, children }) {",
+      "replace": "function SectionCard({\n  title,\n  editTarget,\n  children,\n}: {\n  title: React.ReactNode;\n  editTarget: string;\n  children: React.ReactNode;\n}) {"
+    },
+    {
+      "why": "label maps are read with FlowStore values, which are strings at runtime",
+      "find": "const INDUSTRY_LABELS = {",
+      "replace": "const INDUSTRY_LABELS: Record<string, string> = {"
+    },
+    {
+      "why": "label maps are read with FlowStore values, which are strings at runtime",
+      "find": "const COUNT_LABELS = {",
+      "replace": "const COUNT_LABELS: Record<string, string> = {"
+    },
+    {
+      "why": "label maps are read with FlowStore values, which are strings at runtime",
+      "find": "const RAIL_LABELS = {",
+      "replace": "const RAIL_LABELS: Record<string, string> = {"
+    }
+  ],
+  "app/status/page.tsx": [
+    {
+      "why": "the timeline row's props",
+      "find": "function TimelineItem({ icon: Icon, title, meta, state = \"todo\", last = false }) {",
+      "replace": "function TimelineItem({\n  icon: Icon,\n  title,\n  meta,\n  state = \"todo\",\n  last = false,\n}: {\n  icon: React.ComponentType<{ className?: string }>;\n  title: React.ReactNode;\n  meta: React.ReactNode;\n  state?: \"done\" | \"current\" | \"todo\";\n  last?: boolean;\n}) {"
+    }
+  ],
+  "app/page.tsx": [
+    {
+      "why": "the hub's captioned pill group",
+      "find": "function JumpGroup({ caption, jumps }) {",
+      "replace": "function JumpGroup({\n  caption,\n  jumps,\n}: {\n  caption: string;\n  jumps: { label: string; target: string }[];\n}) {"
+    }
+  ]
+}

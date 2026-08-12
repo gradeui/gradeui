@@ -1,327 +1,200 @@
 "use client";
 
-import * as React from "react";
-
-// Promoted from Studio screen "US Onboarding — 7 Review & submit"
-// (design dmskh12cv6zuz, version 1786537553759). Registry: lib/screens.ts;
+// Promoted from Studio screen "US Onboarding — 7 Certification"
+// (design dmskh0ixi1gdj, version 1786539109645). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 2e664aa68851
+// source-hash: 87aa55c56a2a
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
 
 import {
   Button,
-  PropertyList,
-  Badge,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
+  Input,
+  Checkbox,
+  Field,
+  FieldLabel,
+  FieldDescription,
+  FieldSet,
+  FieldLegend,
   Callout,
   CalloutTitle,
   CalloutDescription,
+  Separator,
   Stack,
-  Row,
+  Grid,
 } from "@gradeui/ui";
-import { Lock } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { OnboardingLayout } from "@/components/layouts/onboarding";
-import { FlowStore, US_STATES } from "@/lib/flow-store";
+import { FlowStore } from "@/lib/flow-store";
 import { Persona } from "@/lib/persona";
 
-// Glint US onboarding — Step 7: review & submit. The recap is LIVE: it
-// reads every FlowStore key the earlier steps wrote, with the PERSONA
-// as the fallback so an unvisited walkthrough still reads well — and
-// reads as the right company. Edit links goto the owning step.
-// Submission creates the audit trail: who submitted what, and when.
+// Glint US onboarding — Step 6: certification and attestations. Moved
+// here from Step 3b (CCO, 05 Aug) so ONE certification covers every
+// path and is a distinct, auditable event at the end of data entry.
+//  - BO certification: the digital equivalent of FinCEN's Appendix A
+//    form (FIN-2016-G003 Q19). Certifier = the individual opening the
+//    account; we capture their name and role.
+//  - Accuracy attestation: all paths; includes the undertaking to
+//    notify Glint of changes (feeds event-driven review triggers).
+//  - Signature: typed-name capture. Checkbox + typed name vs full
+//    e-sign is pending Sutton Bank legal sign-off; either way we store
+//    signer name, timestamp, application snapshot hash and document
+//    versions.
+//
+// FLOW STATE (FlowStore): checkboxes and text store; the certifier
+// name and role seed from the owner details entered earlier (one
+// PERSON record, many roles).
 const useFlowField = FlowStore.useField;
 
-const TYPE_LABELS = {
-  smllc: "Single-member LLC",
-  mmllc: "Multi-member LLC",
-  partnership: "Partnership",
-  corporation: "Corporation",
-};
-const STATE_LABELS = Object.fromEntries(
-  US_STATES.map((s) => [s.value, s.label]),
-);
-const INDUSTRY_LABELS: Record<string, string> = {
-  metals: "Precious metals & jewellery", services: "Professional services",
-  software: "Software & technology", retail: "Retail & e-commerce",
-  manufacturing: "Manufacturing", construction: "Construction & real estate",
-  hospitality: "Hospitality & food service",
-};
-const PURPOSE_LABELS = {
-  general: "General business banking", gold: "Gold & silver purchasing",
-  gov: "Receiving state or government payments",
-  payroll: "Payroll & supplier payments", other: "Something else",
-};
-const VOLUME_LABELS = {
-  lt10k: "Under $10k", "10-50k": "$10k to $50k",
-  "50-200k": "$50k to $200k", gt200k: "Over $200k",
-};
-const COUNT_LABELS: Record<string, string> = {
-  lt25: "under 25", "25-100": "25 to 100",
-  "100-500": "100 to 500", gt500: "over 500",
-};
-const RAIL_LABELS: Record<string, string> = {
-  ach: "ACH", card: "Card", wire: "Domestic wires", intl: "International",
-};
-const COUNTRY_LABELS = {
-  ca: "Canada", uk: "United Kingdom", eu: "European Union",
-  mx: "Mexico", other: "Other",
-};
-
-function SectionCard({
-  title,
-  editTarget,
-  children,
-}: {
-  title: React.ReactNode;
-  /** The Studio screen name the Edit link gotos. */
-  editTarget: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <Row justify="between" align="center">
-          <CardTitle>{title}</CardTitle>
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0"
-            data-grade-goto={editTarget}
-          >
-            Edit
-          </Button>
-        </Row>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
-/* Shorthands: the applying company and the human applying. */
-const C = Persona.DEFAULT.company;
+/* The human applying, the same alias step 7 uses. A PREFILL IS A
+   FALLBACK: every persona value below sits in the fallback position of a
+   FlowStore read, so the store is consulted FIRST and a value the
+   applicant typed on an earlier step always wins. The persona already
+   stores each value in the exact format its field expects (a title is
+   the free text this input holds, a name is the parts this screen
+   joins), so nothing here reformats anything. It also stops the browser
+   filling an empty field with whoever is sitting at the keyboard, which
+   was the actual bug: the demo signer was being replaced by the
+   reviewer. */
 const A = Persona.DEFAULT.applicant;
 
-export default function ReviewSubmitPage() {
-  const g = FlowStore.get;
-  const [businessType] = useFlowField("businessType", C.entityType);
-  const typeLabel = TYPE_LABELS[businessType] ?? businessType;
-  const smllc = businessType === "smllc";
-
-  /* Every recap row reads the FlowStore with the PERSONA as its
-     fallback, so an untouched walkthrough reviews as Ridgeline
-     Construction rather than the older Aurora Bullion identity these
-     fallbacks used to carry. The `g(key, "") || "literal"` idiom is
-     deliberately gone: a key holds nothing until the user touches the
-     field, so the persona has to BE the fallback — seeding the owning
-     step's initial value alone never reaches this screen. */
-  const legalName = g("legalName", C.legalName);
-  const hasDba = g("hasDba", C.usesDba);
-  const dbaName = g("dbaName", C.dba);
-  const formed = [
-    STATE_LABELS[g("formationState", C.formationState)],
-    g("formationDate", C.formationDate),
+export default function CertificationPage() {
+  /* The signer's name, from the owner details step 3 wrote, falling back
+     to the persona applicant so an unvisited walkthrough still certifies
+     as Wade Jones. */
+  const seededName = [
+    FlowStore.get("o1First", A.first),
+    FlowStore.get("o1Last", A.last),
   ]
     .filter(Boolean)
-    .join(" · ");
-  const tin = g("bizTin", C.ein);
-  const address = [
-    g("bizStreet", C.address.street),
-    g("bizCity", C.address.city),
-    STATE_LABELS[g("bizState", C.address.state)],
-    g("bizZip", C.address.zip),
-  ]
-    .filter(Boolean)
-    .join(", ");
-  const industry = INDUSTRY_LABELS[g("industry", C.industry)] ?? C.industry;
-  /* Email and phone are separate rows (Ali, 11 Aug): a recap is a list
-     of fields, and joining two of them into one line makes the pair
-     unreadable and unfixable — you cannot put an Edit next to half a
-     row. Address stays joined because an address IS one field. */
-  const email = g("bizEmail", C.email);
-  const phone = g("bizPhone", C.phone);
+    .join(" ");
 
-  const ownerName =
-    [g("o1First", A.first), g("o1Last", A.last)].filter(Boolean).join(" ");
-  const pct = g("ownershipPct", 100);
-  const noMajorityOwner = g("noMajorityOwner", false);
-  const sameAsOwner = g("controlSameAsOwner", true);
-  const cpName = sameAsOwner
-    ? ownerName
-    : [g("cpFirst", ""), g("cpLast", "")].filter(Boolean).join(" ") || "Control person";
-  const cpTitle = g("cpTitle", A.title);
-  const certName = g("certName", "") || ownerName;
-  const certRole = g("certRole", "") || cpTitle;
-  const signed = Boolean(g("signature", "")) && g("boCertified", false);
-
-  const purpose = PURPOSE_LABELS[g("accountPurpose", "gold")] ?? "Gold & silver purchasing";
-  const volume = VOLUME_LABELS[g("monthlyVolume", "50-200k")] ?? "$50k to $200k";
-  const count = COUNT_LABELS[g("monthlyCount", "25-100")] ?? "25 to 100";
-  const rails =
-    (g("transactionTypes", ["ach", "wire"]) ?? [])
-      .map((v) => RAIL_LABELS[v] ?? v)
-      .join(", ") || "ACH, domestic wires";
-  const crossBorder = g("crossBorder", false);
-  const countries =
-    (g("crossBorderCountries", []) ?? [])
-      .map((v) => COUNTRY_LABELS[v] ?? v)
-      .join(", ");
-  const crypto = g("cryptoActivity", false);
-  const cash = g("cashIntensive", false);
+  /* WHAT IS DELIBERATELY NOT PREFILLED, and why it is a decision rather
+     than a gap: boCertified, accuracyConfirmed and signature stay empty.
+     Those three are the applicant's OWN ACT. Pre-ticking a certification
+     or typing a name into the signature field would put consent on the
+     record that nobody gave, and this screen exists precisely to be the
+     auditable moment that consent happened. Name and title prefill
+     because they are facts ABOUT the signer; the assent is not a fact,
+     it is an act, and only the applicant can perform it. */
+  const [boCertified, setBoCertified] = useFlowField("boCertified", false);
+  const [certName, setCertName] = useFlowField("certName", seededName);
+  const [certRole, setCertRole] = useFlowField(
+    "certRole",
+    FlowStore.get("cpTitle", A.title),
+  );
+  const [accuracy, setAccuracy] = useFlowField("accuracyConfirmed", false);
+  const [signature, setSignature] = useFlowField("signature", "");
 
   return (
     <>
       <h1 className="text-3xl font-medium text-foreground">
-        Review your application
+        Certify &amp; sign
       </h1>
       <p className="text-muted-foreground">
-        A final check before you submit. This is your chance to correct
-        anything.
+        One signature covers your whole application. This is the legal
+        record that what you&rsquo;ve told us is true.
       </p>
 
-      <SectionCard title="Business" editTarget="US Onboarding — 2 Business details">
-        <PropertyList divider>
-          <PropertyList.Row label="Legal name">{legalName}</PropertyList.Row>
-          {hasDba && (
-            <PropertyList.Row label="Trading as">{dbaName}</PropertyList.Row>
-          )}
-          <PropertyList.Row label="Type">{typeLabel}</PropertyList.Row>
-          <PropertyList.Row label="Formed">{formed}</PropertyList.Row>
-          <PropertyList.Row label="EIN">{tin}</PropertyList.Row>
-          <PropertyList.Row label="Address">{address}</PropertyList.Row>
-          <PropertyList.Row label="Industry">{industry}</PropertyList.Row>
-          <PropertyList.Row label="Email">{email}</PropertyList.Row>
-          <PropertyList.Row label="Phone">{phone}</PropertyList.Row>
-        </PropertyList>
-      </SectionCard>
+      <FieldSet>
+        <FieldLegend>Beneficial ownership certification</FieldLegend>
+        <Stack gap="md">
+          <Field orientation="horizontal">
+            <Checkbox
+              checked={boCertified}
+              onCheckedChange={(v) => setBoCertified(v === true)}
+            />
+            <FieldLabel className="font-normal leading-relaxed">
+              I certify, to the best of my knowledge, that the information
+              provided about the business&rsquo;s beneficial owners and
+              control person is complete and correct
+            </FieldLabel>
+          </Field>
+          <Grid cols="2" gap="md">
+            <Field>
+              <FieldLabel>Your full legal name</FieldLabel>
+              <Input
+                autoComplete="name"
+                placeholder="Full legal name"
+                value={certName}
+                onChange={(e) => setCertName(e.target.value)}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>Your role</FieldLabel>
+              <Input
+                placeholder="e.g. CEO"
+                value={certRole}
+                onChange={(e) => setCertRole(e.target.value)}
+              />
+            </Field>
+          </Grid>
+        </Stack>
+      </FieldSet>
 
-      <SectionCard
-        title="Owners & control"
-        editTarget={
-          smllc
-            ? "US Onboarding — 3a Owner identity"
-            : "US Onboarding — 3b Owners & control"
-        }
-      >
-        <PropertyList divider>
-          {smllc ? (
-            <PropertyList.Row label={ownerName}>
-              <Row gap="sm" align="center" wrap>
-                <span>100%</span>
-                <Badge variant="secondary" rounded="full">Single owner</Badge>
-                <Badge variant="success-soft" rounded="full">ID verified</Badge>
-              </Row>
-            </PropertyList.Row>
-          ) : noMajorityOwner ? (
-            <PropertyList.Row label="Ownership">
-              No individual owns 25% or more (widely held)
-            </PropertyList.Row>
-          ) : (
-            <>
-              <PropertyList.Row label={ownerName}>
-                <Row gap="sm" align="center" wrap>
-                  <span>{pct}%</span>
-                  {sameAsOwner && (
-                    <Badge variant="secondary" rounded="full">
-                      Control person · {cpTitle}
-                    </Badge>
-                  )}
-                  <Badge variant="success-soft" rounded="full">ID verified</Badge>
-                </Row>
-              </PropertyList.Row>
-              {/* Same source as step3b's entry: see the note there. */}
-              <PropertyList.Row label={Persona.DEFAULT.secondOwner.name}>
-                <Row gap="sm" align="center" wrap>
-                  <span>{`${Persona.DEFAULT.secondOwner.stake}%`}</span>
-                  <Badge variant="success-soft" rounded="full">ID verified</Badge>
-                </Row>
-              </PropertyList.Row>
-            </>
-          )}
-          {!smllc && !sameAsOwner && (
-            <PropertyList.Row label="Control person">
-              {cpName} · {cpTitle}
-            </PropertyList.Row>
-          )}
-          <PropertyList.Row label="Certified">
-            <Row gap="sm" align="center" wrap>
-              <span>
-                By {certName} ({certRole})
-              </span>
-              <Badge
-                variant={signed ? "success-soft" : "warning-soft"}
-                rounded="full"
-              >
-                {signed ? "Signed" : "Signature pending"}
-              </Badge>
-            </Row>
-          </PropertyList.Row>
-        </PropertyList>
-      </SectionCard>
+      <Separator className="my-4" />
 
-      <SectionCard title="Expected activity" editTarget="US Onboarding — 4 Expected activity">
-        <PropertyList divider>
-          <PropertyList.Row label="Purpose">{purpose}</PropertyList.Row>
-          <PropertyList.Row label="Monthly volume">
-            {volume} · {count} transactions
-          </PropertyList.Row>
-          <PropertyList.Row label="Rails">{rails}</PropertyList.Row>
-          <PropertyList.Row label="Cross-border">
-            {crossBorder ? `Yes${countries ? ` (${countries})` : ""}` : "No"}
-          </PropertyList.Row>
-          <PropertyList.Row label="Crypto">{crypto ? "Yes" : "No"}</PropertyList.Row>
-          <PropertyList.Row label="Cash deposits">{cash ? "Yes" : "No"}</PropertyList.Row>
-        </PropertyList>
-      </SectionCard>
+      <FieldSet>
+        <FieldLegend>Application accuracy</FieldLegend>
+        <Field orientation="horizontal">
+          <Checkbox
+            checked={accuracy}
+            onCheckedChange={(v) => setAccuracy(v === true)}
+          />
+          <FieldLabel className="font-normal leading-relaxed">
+            I confirm the information in this application is complete and
+            accurate, and I&rsquo;ll tell Glint if any of it changes,
+            including changes of ownership or control
+          </FieldLabel>
+        </Field>
+      </FieldSet>
 
-      <SectionCard title="Documents" editTarget="US Onboarding — 5 Documents">
-        <PropertyList divider>
-          <PropertyList.Row label="Uploaded">
-            {[
-              "Articles of Organization",
-              "Certificate of Good Standing",
-              "EIN letter (CP 575)",
-              smllc ? null : "Operating Agreement",
-              hasDba ? "DBA certificate" : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </PropertyList.Row>
-          <PropertyList.Row label="Outstanding">
-            <Row gap="sm" align="center" wrap>
-              <span>Proof of business address</span>
-              <Badge variant="outline" rounded="full">Optional</Badge>
-            </Row>
-          </PropertyList.Row>
-        </PropertyList>
-      </SectionCard>
+      <Separator className="my-4" />
 
-      <Callout variant="info">
-        <Lock />
-        <CalloutTitle>Submitting locks your application</CalloutTitle>
+      <FieldSet>
+        <FieldLegend>Signature</FieldLegend>
+        <Stack gap="md">
+          <Field>
+            <FieldLabel>Type your full legal name to sign</FieldLabel>
+            {/* The seeded name is the PLACEHOLDER here and never the
+                value: it tells the applicant what to type without typing
+                it for them. autoComplete is off because this is the one
+                field the browser must not fill, for the same reason we
+                do not prefill it ourselves. */}
+            <Input
+              autoComplete="off"
+              placeholder={seededName || "Your full legal name"}
+              className="h-14 text-lg italic"
+              value={signature}
+              onChange={(e) => setSignature(e.target.value)}
+            />
+            <FieldDescription className="text-xs">
+              Typing your name acts as your electronic signature. We record
+              your name, a timestamp and a snapshot of your application.
+            </FieldDescription>
+          </Field>
+        </Stack>
+      </FieldSet>
+
+      <Callout variant="success">
+        <BadgeCheck />
+        <CalloutTitle>Why we ask</CalloutTitle>
         <CalloutDescription>
-          We record who submitted, what was submitted and when. If anything
-          needs correcting afterwards, our team will send it back to you.
+          Federal rules require an explicit certification of beneficial
+          ownership. Signing here is the digital equivalent of the paper
+          certification form. Nothing to print.
         </CalloutDescription>
       </Callout>
 
       <OnboardingLayout.Actions>
-        <Stack gap="sm" align="end">
-          <Button
-            className="rounded-full"
-            size="lg"
-            data-grade-goto="US Onboarding — Application status"
-          >
-            Submit application
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            Submitted applications are usually reviewed within 2 business days.
-          </span>
-        </Stack>
+        <Button
+          className="rounded-full"
+          size="lg"
+          data-grade-goto="US Onboarding — 8 Review & submit"
+        >
+          Continue to review
+        </Button>
       </OnboardingLayout.Actions>
     </>
   );

@@ -34,7 +34,9 @@ from __future__ import annotations  # PEP 604 unions on Python 3.9
 import argparse
 import hashlib
 import pathlib
+import json
 import re
+from pathlib import Path
 import sys
 
 FLOW_NAMES = {"FlowStore", "useFlowField", "getFlowField", "resetFlow", "US_STATES"}
@@ -326,6 +328,43 @@ def transform(src: str, func: str, screen_name: str, design_id: str,
     return header + src.lstrip("\n"), problems
 
 
+
+PATCH_FILE = Path(__file__).with_name("promotion-patches.json")
+
+
+def apply_patches(src: str, out_path: str) -> tuple[str, int]:
+    """Reapply the type annotations promotion cannot carry.
+
+    Studio source is JSX and the app is TypeScript, so a re-promotion wipes
+    every parameter type on the page. They used to be reapplied by hand,
+    which on 12 Aug 2026 meant ten of them twice in one day, because a step
+    renumber re-promoted eleven screens at once. A skipped one is a red
+    build, so the promoter now owns them.
+
+    EXACT STRINGS, and a MISS IS FATAL: if a `find` is absent or appears
+    twice, this raises rather than writing a page whose annotation silently
+    vanished. A failure means the Studio source moved and the patch needs
+    updating, which is a thirty second job when the error names the file.
+    """
+    if not PATCH_FILE.exists():
+        return src, 0
+    patches = json.loads(PATCH_FILE.read_text())
+    # keys are output paths as written in the plan, normalised
+    key = out_path.lstrip("./")
+    entries = patches.get(key) or []
+    for entry in entries:
+        find, replace = entry["find"], entry["replace"]
+        n = src.count(find)
+        if n != 1:
+            raise SystemExit(
+                f"promote-screen: patch for {key} matched {n} times, expected 1.\n"
+                f"  why:  {entry.get('why', '(no note)')}\n"
+                f"  find: {find[:90]}\n"
+                "The Studio source moved. Update scripts/promotion-patches.json."
+            )
+        src = src.replace(find, replace, 1)
+    return src, len(entries)
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("input", type=pathlib.Path)
@@ -346,9 +385,11 @@ def main() -> int:
     out, problems = transform(args.input.read_text(), args.func, args.name,
                               args.id, args.version, args.step,
                               unwrap=args.unwrap)
+    out, patched = apply_patches(out, str(args.output))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(out)
-    print(f"wrote {args.output} ({len(out)} chars)")
+    print(f"wrote {args.output} ({len(out)} chars)"
+          + (f", {patched} annotation patches applied" if patched else ""))
     if problems:
         print("PROBLEMS:")
         for p in problems:

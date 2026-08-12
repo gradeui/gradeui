@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "US Demo Landing"
-// (design dmskhheytm163, version 1786536440523). Registry: lib/screens.ts;
+// (design dmskhheytm163, version 1786539598803). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 756eefbcfdac
+// source-hash: 178ad1c6670a
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -47,30 +47,107 @@ import { FlowStore } from "@/lib/flow-store";
 // fresh; the jump pills and the card surface keep existing state so a
 // mid-flow hop resumes where you left off.
 
-const ONBOARDING_JUMPS = [
-  { label: "0 · Start", target: "US Onboarding — 0 Before you apply" },
-  { label: "1 · Type", target: "US Onboarding — 1 Business type" },
-  { label: "2 · Details", target: "US Onboarding — 2 Business details" },
-  { label: "3a · Single ownership", target: "US Onboarding — 3a Owner identity" },
-  { label: "3b · Multi ownership", target: "US Onboarding — 3b Owners & control" },
-  { label: "4 · Activity", target: "US Onboarding — 4 Expected activity" },
-  { label: "5 · Docs", target: "US Onboarding — 5 Documents" },
-  { label: "6 · Certify", target: "US Onboarding — 6 Certification" },
-  { label: "7 · Review", target: "US Onboarding — 7 Review & submit" },
-  { label: "Status", target: "US Onboarding — Application status" },
+/* GROUPED, not one long row (Ali, 12 Aug: "I'd also consider maybe
+   grouping them tags a bit so they are less like tag soup - figure out the
+   best grouping"). Ten pills in a single wrap read as a heap you have to
+   scan; four named runs read as the shape of the journey, and the names are
+   the phases a KYB application actually has:
+
+     Apply      who you are and what the business is
+     Ownership  the branch: one owner or several
+     Checks     what the business does, evidenced and signed
+     Submit     the hand-off, and where it goes afterwards
+
+   Ownership earns its own group because it is the only FORK in the flow:
+   4a and 4b are alternatives, not consecutive steps, and standing them
+   together says so without a word of explanation. */
+const ONBOARDING_GROUPS = [
+  {
+    caption: "Apply",
+    jumps: [
+      { label: "1 · Start", target: "US Onboarding — 1 Before you apply" },
+      { label: "2 · Type", target: "US Onboarding — 2 Business type" },
+      { label: "3 · Details", target: "US Onboarding — 3 Business details" },
+    ],
+  },
+  {
+    caption: "Ownership",
+    jumps: [
+      { label: "4a · Single owner", target: "US Onboarding — 4a Owner identity" },
+      { label: "4b · Multiple owners", target: "US Onboarding — 4b Owners & control" },
+    ],
+  },
+  {
+    caption: "Checks",
+    jumps: [
+      { label: "5 · Activity", target: "US Onboarding — 5 Expected activity" },
+      { label: "6 · Docs", target: "US Onboarding — 6 Documents" },
+      { label: "7 · Certify", target: "US Onboarding — 7 Certification" },
+    ],
+  },
+  {
+    caption: "Submit",
+    jumps: [
+      { label: "8 · Review", target: "US Onboarding — 8 Review & submit" },
+      { label: "Status", target: "US Onboarding — Application status" },
+    ],
+  },
 ];
 
 /* The logged-in screens, in the order you would walk them: the hub,
    then each wallet, then the two supporting screens. Labels are the
    customer's words for them, targets are the Studio screen names. */
-const PRODUCT_JUMPS = [
-  { label: "Dashboard", target: "Dashboard — logged-in home" },
-  { label: "Gold", target: "Gold — wallet" },
-  { label: "Silver", target: "Silver — wallet" },
-  { label: "Glint USD", target: "USD — wallet" },
-  { label: "Activity", target: "Activity — history" },
-  { label: "Bank Accounts", target: "Bank Accounts" },
+/* The logged-in screens, in two runs for the same reason as above: the
+   three wallets are one idea and the supporting screens are another. */
+const PRODUCT_GROUPS = [
+  {
+    caption: "Wallets",
+    jumps: [
+      { label: "Dashboard", target: "Dashboard — logged-in home" },
+      { label: "Gold", target: "Gold — wallet" },
+      { label: "Silver", target: "Silver — wallet" },
+      { label: "Glint USD", target: "USD — wallet" },
+    ],
+  },
+  {
+    caption: "Records",
+    jumps: [
+      { label: "Activity", target: "Activity — history" },
+      { label: "Bank Accounts", target: "Bank Accounts" },
+    ],
+  },
 ];
+
+/** One captioned run of jump pills. Caption on its own line above the row:
+ *  beside them it would compete with the pills for the same scan. */
+function JumpGroup({
+  caption,
+  jumps,
+}: {
+  caption: string;
+  jumps: { label: string; target: string }[];
+}) {
+  return (
+    <Stack gap="xs">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {caption}
+      </span>
+      <Row gap="xs" wrap>
+        {jumps.map((j) => (
+          <Button
+            key={j.label}
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+            data-grade-goto={j.target}
+          >
+            {j.label}
+          </Button>
+        ))}
+      </Row>
+    </Stack>
+  );
+}
 
 export default function DemoLandingPage() {
   return (
@@ -100,7 +177,7 @@ export default function DemoLandingPage() {
               the two CTAs line up as a row. */}
           <Grid cols="2" gap="lg">
           <Card
-            data-grade-goto="US Onboarding — 0 Before you apply"
+            data-grade-goto="US Onboarding — 1 Before you apply"
             className="flex cursor-pointer flex-col transition-colors hover:border-primary/40"
           >
             <CardHeader>
@@ -124,23 +201,15 @@ export default function DemoLandingPage() {
                   certification and submission.
                 </p>
                 <Separator />
-                <Row gap="xs" wrap>
-                  {ONBOARDING_JUMPS.map((j) => (
-                    <Button
-                      key={j.label}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full"
-                      data-grade-goto={j.target}
-                    >
-                      {j.label}
-                    </Button>
+                <Stack gap="md">
+                  {ONBOARDING_GROUPS.map((g) => (
+                    <JumpGroup key={g.caption} {...g} />
                   ))}
-                </Row>
+                </Stack>
                 <Row justify="end" className="flex flex-row justify-start items-center">
                   <Button
                     className="rounded-full"
-                    data-grade-goto="US Onboarding — 0 Before you apply"
+                    data-grade-goto="US Onboarding — 1 Before you apply"
                     onPointerDown={() => FlowStore.reset()}
                   size="lg">
                     Start the flow
@@ -212,19 +281,11 @@ export default function DemoLandingPage() {
                   bank accounts money moves between.
                 </p>
                 <Separator />
-                <Row gap="xs" wrap>
-                  {PRODUCT_JUMPS.map((j) => (
-                    <Button
-                      key={j.label}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full"
-                      data-grade-goto={j.target}
-                    >
-                      {j.label}
-                    </Button>
+                <Stack gap="md">
+                  {PRODUCT_GROUPS.map((g) => (
+                    <JumpGroup key={g.caption} {...g} />
                   ))}
-                </Row>
+                </Stack>
                 <Row justify="end" className="flex flex-row items-center justify-start">
                   <Button
                     className="rounded-full"

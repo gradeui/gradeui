@@ -32,7 +32,7 @@
  * Dev-time only: reads the service-role key from apps/docs/.env.local.
  *
  * USAGE
- *   pnpm -F @gradeui/glint write:screen -- --id dmskex612bcy1 \
+ *   pnpm -F @gradeui/glint write:screen -- --id dmskex612bcy1 --name "New name" \
  *     --file /tmp/dashboard.jsx --expect 1786463799728
  *   ... --dry     look up the row and report, write nothing
  *
@@ -55,6 +55,10 @@ function arg(flag: string): string | undefined {
 const id = arg("--id");
 const file = arg("--file");
 const expect = arg("--expect");
+/* Optional rename. designs.name is the goto TARGET every screen links by,
+   so renaming is a content change like any other and belongs on this path
+   rather than in a separate tool. */
+const rename = arg("--name");
 const DRY = process.argv.includes("--dry");
 
 if (!id || !file) {
@@ -149,6 +153,8 @@ const now = Date.now();
 /* Merge into the existing state: it carries tags and other keys that are
    nothing to do with the source, and replacing the object would drop them. */
 const state = { ...(row.state ?? {}), appSource: source };
+const patch: Record<string, unknown> = { state, updated_at: now };
+if (rename) patch.name = rename;
 let q =
   `${url}/rest/v1/designs?project_id=eq.${PROJECT_ID}&id=eq.${encodeURIComponent(id)}`;
 if (expect) q += `&updated_at=eq.${expect}`;
@@ -156,7 +162,7 @@ if (expect) q += `&updated_at=eq.${expect}`;
 const res = await fetch(q, {
   method: "PATCH",
   headers: { ...headers, Prefer: "return=representation" },
-  body: JSON.stringify({ state, updated_at: now }),
+  body: JSON.stringify(patch),
 });
 if (!res.ok) {
   console.error(`write-screen: write failed: ${res.status} ${await res.text()}`);
@@ -169,7 +175,8 @@ if (wrote.length === 0) {
 }
 
 console.log(
-  `Wrote "${row.name}", updated_at ${row.updated_at} -> ${wrote[0].updated_at}.\n` +
+  `Wrote "${row.name}"${rename ? ` (renamed to "${rename}")` : ""}, ` +
+    `updated_at ${row.updated_at} -> ${wrote[0].updated_at}.\n` +
     "NOW RENDER IT: this path skips the contract validation save_screen does,\n" +
     "so a bad prop shows as a broken preview rather than a refused save.\n" +
     "Then re-promote with scripts/promote-screen.py, or check:promotions will\n" +

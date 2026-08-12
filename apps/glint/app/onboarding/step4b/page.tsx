@@ -1,9 +1,9 @@
 "use client";
 
-// Promoted from Studio screen "US Onboarding — 3b Owners & control"
-// (design dmskgyvzc1nmh, version 1786537553089). Registry: lib/screens.ts;
+// Promoted from Studio screen "US Onboarding — 4b Owners & control"
+// (design dmskgyvzc1nmh, version 1786539107406). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: d09c3397bb55
+// source-hash: 1c3dda5ac2dd
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -78,9 +78,6 @@ function AddressFields({
   prefix: string;
   defaults?: { street: string; city: string; state: string; zip: string };
 }) {
-  /* Partial, not {}: the control person passes no defaults at all, so every
-     field falls back to empty. TS-only, and one of the annotations a
-     re-promotion drops. */
   const d: Partial<{ street: string; city: string; state: string; zip: string }> =
     defaults ?? {};
   const [street, setStreet] = useFlowField(`${prefix}Street`, d.street ?? "");
@@ -460,7 +457,7 @@ export default function OwnersControlPage() {
         <Button
           className="rounded-full"
           size="lg"
-          data-grade-goto="US Onboarding — 4 Expected activity"
+          data-grade-goto="US Onboarding — 5 Expected activity"
         >
           Continue
         </Button>
