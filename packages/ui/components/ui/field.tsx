@@ -94,11 +94,26 @@ const fieldVariants = cva(
         horizontal: [
           "flex-row items-center gap-3",
           "[&>[data-slot=field-label]]:flex-auto",
+          /* A CHECKBOX OR RADIO ROW TOP-ALIGNS, always (Ali, 12 Aug:
+             "checkboxes and their labels should be top aligned"). It used
+             to depend on the row having a field-content wrapper: with one,
+             the rule below switched to items-start; without one, a bare
+             label centred, so the box floated to the middle of a label
+             that wrapped to two lines. A tick box is read at the FIRST
+             line of what it applies to, whatever else is in the row, and
+             on a single-line label start and center are the same pixel.
+             The 1px nudge is optical: a 16px box against a 20-24px line
+             box sits a hair high without it. */
+          "has-[>[role=checkbox]]:items-start has-[>[role=radio]]:items-start",
+          "[&>[role=checkbox]]:mt-px [&>[role=radio]]:mt-px",
           "has-[>[data-slot=field-content]]:items-start has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px",
         ],
         responsive: [
           "flex-col gap-2 [&>*]:w-full [&>.sr-only]:w-auto @md/field-group:flex-row @md/field-group:items-center @md/field-group:gap-3 @md/field-group:[&>*]:w-auto",
           "@md/field-group:[&>[data-slot=field-label]]:flex-auto",
+          /* Same rule as horizontal, once the row actually becomes a row. */
+          "@md/field-group:has-[>[role=checkbox]]:items-start @md/field-group:has-[>[role=radio]]:items-start",
+          "@md/field-group:[&>[role=checkbox]]:mt-px @md/field-group:[&>[role=radio]]:mt-px",
           "@md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px",
         ],
       },
