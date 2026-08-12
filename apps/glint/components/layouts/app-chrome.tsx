@@ -42,7 +42,7 @@ import {
   Avatar,
   AvatarFallback,
 } from "@gradeui/ui";
-import { List, Landmark, Bell, EyeOff } from "lucide-react";
+import { List, Landmark, Bell, EyeOff, MessageCircle } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { DEFAULT_PERSONA } from "@/lib/persona";
 
@@ -208,7 +208,7 @@ export function AppChrome({
               type="button"
               data-grade-goto="US Demo Landing"
               aria-label="Glint: back to the demo home"
-              className="flex items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex cursor-pointer items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {collapsed ? (
                 <Wordmark lockup="mark" className="h-5" />
@@ -223,7 +223,11 @@ export function AppChrome({
               )}
             </button>
           </SidebarHeader>
-          <SidebarContent>
+          {/* flex COLUMN, so the chat box's mt-auto has something to push
+              against: SidebarContent is flex-1 by default but not a column,
+              which is why the box sat under the nav instead of at the foot
+              of the rail. */}
+          <SidebarContent className="flex flex-col">
             <SidebarSection collapsible={false}>
               {NAV.map((item) => {
                 const Icon = item.icon;
@@ -253,9 +257,57 @@ export function AppChrome({
                 );
               })}
             </SidebarSection>
+            {/* CHAT WITH US, at the bottom of the CONTENT rather than in the
+                footer (Ali, 12 Aug: "needs to move away from the account - so
+                probably above the horizontal rule"). mt-auto pushes it to the
+                foot of the rail, so it sits above the footer's own rule and
+                reads as a support affordance rather than part of the business
+                identity.
+                A DIFFERENT SURFACE from the identity box below it (his call:
+                "vary the chat to be a different background color"): the
+                primary tint says actionable, the neutral box says label. Same
+                shape, different weight.
+                INERT by design: no target and no data-grade-goto, so both
+                goto bridges ignore it. A real button all the same, so it
+                focuses and announces like the control it looks like. */}
+            <div className="mt-auto px-3 pt-3">
+              <button
+                type="button"
+                aria-label="Chat with us"
+                className={`group w-full cursor-pointer rounded-lg border border-primary/25 bg-primary/10 p-2 text-left transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  collapsed ? "flex justify-center" : ""
+                }`}
+              >
+                <Row gap="sm" align="center">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+                    <MessageCircle className="size-4" />
+                  </span>
+                  {!collapsed && (
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-foreground">
+                        Chat with us
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        Typically replies in minutes
+                      </div>
+                    </div>
+                  )}
+                </Row>
+              </button>
+            </div>
           </SidebarContent>
           <SidebarFooter>
             {/* Business identity; avatar-only when collapsed */}
+            {/* THE SAME BOX AS THE CHAT ABOVE (Ali: "I do however like that
+                treatment, maybe we could have that for the business as
+                well"), on a NEUTRAL surface: this one is a label, not an
+                action, so it takes the muted box and the chat takes the
+                tinted one. */}
+            <div
+              className={`w-full rounded-lg border border-border/60 bg-muted/20 p-2 ${
+                collapsed ? "flex justify-center" : ""
+              }`}
+            >
             <Row gap="sm" className={collapsed ? "justify-center" : undefined}>
               <Avatar size="sm">
                 <AvatarFallback>{initials(business)}</AvatarFallback>
@@ -267,6 +319,7 @@ export function AppChrome({
                 </div>
               )}
             </Row>
+            </div>
           </SidebarFooter>
         </Sidebar>
       </AppShellNav>

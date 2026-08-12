@@ -108,7 +108,7 @@ import {
   Stack,
   Row,
 } from "@gradeui/ui";
-import { CheckCircle2, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Persona } from "@/lib/persona";
 import { Accounts, type VaultId } from "@/lib/accounts";
 import { Market, type MetalKey, type TradeDirection } from "@/lib/market";
@@ -876,13 +876,13 @@ export function TradeFlow({
               </DialogTitle>
             </DialogHeader>
             <Stack gap="md" className={BODY_CLASS}>
+              {/* NO TICK AND NO "Order complete" (Ali, 12 Aug: "we can also
+                  just get rid of order complete and the tick icon.
+                  Redundant"). Fair: the headline below says what happened,
+                  the metal ring says it succeeded, and the panel has just
+                  collapsed to a sentence. Three ways of saying "done" was
+                  two too many. */}
               <Stack gap="xs">
-                <Row gap="sm" align="center">
-                  <CheckCircle2 className="size-5 text-success" />
-                  <span className="text-base font-medium text-foreground">
-                    Order complete
-                  </span>
-                </Row>
                 {/* THE HEADLINE (Ali, 12 Aug, with a shot of the real app:
                     "the headline should have a bigger font, and nicer
                     formatting. We should probably say You bought 48.2137 g

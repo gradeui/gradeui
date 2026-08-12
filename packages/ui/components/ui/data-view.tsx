@@ -36,6 +36,7 @@ import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
+  getPaginationRowModel,
   type ColumnDef,
   type SortingState,
   type VisibilityState,
@@ -51,6 +52,8 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
   Check,
   LayoutGrid,
   Rows3,
@@ -367,6 +370,17 @@ export interface DataViewProps<T = any> {
   defaultColumnVisibility?: VisibilityState;
   onColumnVisibilityChange?: OnChangeFn<VisibilityState>;
   /** Freeze the header row on vertical scroll. */
+  /**
+   * Rows per page. Unset means no pagination: every row renders and the
+   * page scrolls, which is right for a short list.
+   *
+   * WHY IT EXISTS (Ali, 12 Aug): a long table under stickyHeader was
+   * capped at 28rem and scrolled INSIDE itself, which reads as a cropped
+   * box rather than a table. Paginating is the honest fix for a history
+   * that grows: the page stays one height, and the header cap is dropped
+   * while paginating because a bounded page has nothing to scroll.
+   */
+  pageSize?: number;
   stickyHeader?: boolean;
   /** Render a built-in toolbar (columns menu + view toggle) above the view. */
   toolbar?: boolean;
@@ -395,6 +409,7 @@ export function DataView<T extends Record<string, any>>(props: DataViewProps<T>)
     columnVisibility: visibilityProp,
     defaultColumnVisibility,
     onColumnVisibilityChange,
+    pageSize,
     stickyHeader = false,
     toolbar = false,
     renderCard,
@@ -438,6 +453,8 @@ export function DataView<T extends Record<string, any>>(props: DataViewProps<T>)
     [columns],
   );
 
+  const paginated = typeof pageSize === "number" && pageSize > 0;
+
   const table = useReactTable({
     data,
     columns: tableColumns,
@@ -447,6 +464,19 @@ export function DataView<T extends Record<string, any>>(props: DataViewProps<T>)
     onColumnVisibilityChange: setColumnVisibility as OnChangeFn<VisibilityState>,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    /* Pagination is OPT IN: without a pageSize there is no pagination row
+       model at all, because TanStack's default page size is 10 and adding
+       the model unconditionally would silently truncate every existing
+       table to ten rows. */
+    ...(paginated
+      ? {
+          getPaginationRowModel: getPaginationRowModel(),
+          initialState: { pagination: { pageIndex: 0, pageSize } },
+          /* Reset to page one when the data changes under us, which is
+             what a filter or a new row should do. */
+          autoResetPageIndex: true,
+        }
+      : {}),
   });
 
   // Precompute left offsets for pinned columns (in column order).
@@ -464,6 +494,17 @@ export function DataView<T extends Record<string, any>>(props: DataViewProps<T>)
 
   const rows = table.getRowModel().rows;
   const isEmpty = rows.length === 0;
+
+  /* The visible range, for the pager's "11-20 of 24". Off the FILTERED
+     row count, not the raw data, so a filter narrows the total too. */
+  const totalRows = table.getFilteredRowModel().rows.length;
+  const pageStart = paginated && totalRows > 0
+    ? table.getState().pagination.pageIndex * pageSize! + 1
+    : 0;
+  const pageEnd = paginated
+    ? Math.min(pageStart + pageSize! - 1, totalRows)
+    : totalRows;
+
 
   return (
     <Stack gap="md" className={className} data-gds-part="data-view" data-view={view}>
@@ -485,6 +526,7 @@ export function DataView<T extends Record<string, any>>(props: DataViewProps<T>)
           onActivate={setActiveId}
           pinnedOffset={pinnedOffset}
           stickyHeader={stickyHeader}
+          capHeight={!paginated}
           emptyMessage={emptyMessage}
           isEmpty={isEmpty}
         />
@@ -499,6 +541,43 @@ export function DataView<T extends Record<string, any>>(props: DataViewProps<T>)
           isEmpty={isEmpty}
         />
       )}
+
+      {/* THE PAGER, only when paginating and only when there is more than
+          one page: a single-page table should not grow controls it does not
+          need. Range on the left, position and the two steps on the right,
+          which is the order every table in this system reads. */}
+      {paginated && table.getPageCount() > 1 ? (
+        <Row justify="between" align="center" gap="sm" data-gds-part="data-view-pager">
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {`${pageStart}\u2013${pageEnd} of ${totalRows}`}
+          </span>
+          <Row gap="xs" align="center">
+            <Button
+              variant="outline"
+              size="sm"
+              iconOnly
+              aria-label="Previous page"
+              disabled={!table.getCanPreviousPage()}
+              onClick={() => table.previousPage()}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <span className="px-1 text-xs tabular-nums text-muted-foreground">
+              {`Page ${table.getState().pagination.pageIndex + 1} of ${table.getPageCount()}`}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              iconOnly
+              aria-label="Next page"
+              disabled={!table.getCanNextPage()}
+              onClick={() => table.nextPage()}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </Row>
+        </Row>
+      ) : null}
     </Stack>
   );
 }
@@ -515,6 +594,7 @@ function TableView<T>({
   onActivate,
   pinnedOffset,
   stickyHeader,
+  capHeight,
   emptyMessage,
   isEmpty,
 }: {
@@ -523,6 +603,10 @@ function TableView<T>({
   onActivate: (id: string | null) => void;
   pinnedOffset: Record<string, number>;
   stickyHeader: boolean;
+  /** Apply the sticky-header max-height. False while paginating: a
+   *  bounded page has nothing to scroll, and the cap is what made a long
+   *  table look cropped. */
+  capHeight: boolean;
   emptyMessage: React.ReactNode;
   isEmpty: boolean;
 }) {
@@ -546,7 +630,11 @@ function TableView<T>({
          boxed it in. */
       className="overflow-auto"
       data-gds-part="data-view-table"
-      style={stickyHeader ? { maxHeight: "var(--gds-data-view-table-max-h, 28rem)" } : undefined}
+      style={
+        stickyHeader && capHeight
+          ? { maxHeight: "var(--gds-data-view-table-max-h, 28rem)" }
+          : undefined
+      }
     >
       <Table>
         <TableHeader>

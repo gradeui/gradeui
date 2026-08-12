@@ -43,6 +43,17 @@
  *            wants them; a recent list under a dashboard does not.
  *   hide     column keys to drop. A compact list drops status.
  *   limit    trims to the first N rows for a recent list.
+ *   pageSize how many rows per page. Unset means no pagination, which is
+ *            right for a wallet's short list; the full history sets it, so
+ *            the table stops scrolling inside itself.
+ *
+ * WHY THE FULL HISTORY PAGINATES (Ali, 12 Aug: "bug on the main activity
+ * page - seems we have set an explicit height and it does a weird crop
+ * scroll"). It was not this module: DataView caps its own scroll box at
+ * 28rem when stickyHeader is on, so a long table scrolled inside a cropped
+ * frame. DataView now takes a pageSize and drops that cap while
+ * paginating, which is the fix at the level the bug lives at. A wallet
+ * screen passes no pageSize, because five rows do not need pages.
  *
  * CHECKBOX SELECTION is deliberately absent: DataView has an active row
  * but no multi-select today. Adding it means a leading checkbox column
@@ -264,11 +275,14 @@ export function ActivityTable({
   filters = false,
   hide = [],
   limit,
+  pageSize,
 }: {
   rows: ActivityRow[];
   filters?: boolean;
   hide?: string[];
   limit?: number;
+  /** Rows per page. Unset = no pagination. */
+  pageSize?: number;
 }) {
   /* activeId is CONTROLLED so closing the sheet clears it. DataView's
      click handler always sets the id and never toggles it off, so with
@@ -299,6 +313,7 @@ export function ActivityTable({
         </Tabs>
       )}
       <DataView
+        pageSize={pageSize}
         data={data}
         columns={columns}
         views={["table"]}

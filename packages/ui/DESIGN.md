@@ -2254,6 +2254,7 @@ props:
   - activeId? / defaultActiveId? / onActiveChange?: string | null — the selected row; click emits it
   - sorting? / defaultSorting? / onSortingChange? — TanStack SortingState
   - columnVisibility? / defaultColumnVisibility? / onColumnVisibilityChange? — which fields show
+  - pageSize?: number — rows per page. Unset = no pagination (every row renders, the page scrolls). Set it for a history that grows: the table stops scrolling inside itself and grows a pager instead.
   - stickyHeader?: boolean — freeze the header row on scroll
   - toolbar?: boolean — render the built-in columns menu + view toggle above the view
   - renderCard?: (row, { active }) => ReactNode — override card / grid tiles

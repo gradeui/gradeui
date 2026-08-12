@@ -95,6 +95,11 @@ export const DataViewContract = contract({
       design: "event",
       description: "which fields show",
   },
+  "pageSize": {
+      schema: z.number().optional(),
+      design: "knob",
+      description: "rows per page. Unset = no pagination (every row renders, the page scrolls). Set it for a history that grows: the table stops scrolling inside itself and grows a pager instead.",
+  },
   "stickyHeader": {
       schema: z.boolean().optional(),
       design: "knob",

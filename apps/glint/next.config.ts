@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
   // @gradeui/ui is consumed as a workspace package; transpiling keeps
   // parity with consume-app and survives a future source-condition switch.
   transpilePackages: ["@gradeui/ui"],
+  /* The dev badge sits bottom-LEFT by default, which is exactly where the
+     sidebar's own footer is: it covered the business identity and the chat
+     box, and any menu opening upward from them (Ali, 12 Aug: "I cant see
+     the menus properly"). Dev-only chrome, so this affects nothing that
+     ships. */
+  devIndicators: { position: "bottom-right" },
 };
 
 export default nextConfig;

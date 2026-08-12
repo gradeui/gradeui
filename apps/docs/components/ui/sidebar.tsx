@@ -598,7 +598,15 @@ const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>(
     // the icon + tooltip survive in rail-collapsed mode.
     const hasDescription = !collapsed && description != null;
     const sharedClass = cn(
-      "group flex items-center gap-2.5 rounded-md transition-colors",
+      /* cursor-pointer (Ali, 12 Aug: "can we make sure the cursor changes
+         for the top left logo and buttons"). A nav row renders as an <a>
+         with no href when it navigates through a click handler, and an
+         anchor without href gets the default cursor, so the rail read as
+         inert text. Buttons have the same gap: the browser default for
+         <button> is `default`, not `pointer`, and neither Button nor this
+         row was setting it. Disabled rows keep pointer-events-none, so
+         they cannot show it. */
+      "group flex cursor-pointer items-center gap-2.5 rounded-md transition-colors",
       sizeClasses,
       weightClass,
       hasDescription && (isSm ? "py-1.5" : "py-2"),
