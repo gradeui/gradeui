@@ -805,19 +805,39 @@ export function TradeFlow({
 
         {step === "done" && order && (
           <>
+            {/* THE HEADER DOES NOT CHANGE (Ali, 12 Aug: the order complete
+                screens "should maintain the same Title and icon - so should
+                always have the Glint gold of silver. We would then move the
+                rest of the content (Order complete etc) onto the content").
+                So all three steps wear the metal's Glint mark and the flow's
+                own name, and the panel stops re-labelling itself under the
+                pointer: what changes is the body, which is where the state
+                of an order belongs. The green tick moved into the content
+                with the "Order complete" line. */}
             <DialogHeader className="shrink-0">
               <DialogTitle>
                 <Row gap="sm" align="center">
-                  <CheckCircle2 className="size-5 text-success" />
-                  Order complete
+                  <MetalMark metal={metal} />
+                  {verb} {label}
                 </Row>
               </DialogTitle>
-              <DialogDescription>
-                You {selling ? "sold" : "bought"} {Market.fmtQty(order.qty, unit)}{" "}
-                of {label.toLowerCase()} for {Persona.fmtMoney(order.cash)}.
-              </DialogDescription>
             </DialogHeader>
-            <Stack gap="sm" className={BODY_CLASS}>
+            <Stack gap="md" className={BODY_CLASS}>
+              <Stack gap="xs">
+                <Row gap="sm" align="center">
+                  <CheckCircle2 className="size-5 text-success" />
+                  <span className="text-base font-medium text-foreground">
+                    Order complete
+                  </span>
+                </Row>
+                {/* Still a DialogDescription, just not in the header: it is
+                    what the dialog is announced by, so moving it visually
+                    should not cost the aria-describedby link. */}
+                <DialogDescription>
+                  You {selling ? "sold" : "bought"} {Market.fmtQty(order.qty, unit)}{" "}
+                  of {label.toLowerCase()} for {Persona.fmtMoney(order.cash)}.
+                </DialogDescription>
+              </Stack>
               <PropertyList labelWidth="10.5rem">
                 <PropertyList.Row label={`New ${label} balance`}>
                   <span className="font-medium text-foreground">
