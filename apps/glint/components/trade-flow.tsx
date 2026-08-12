@@ -521,7 +521,22 @@ export function TradeFlow({
         <InputGroupAddon align="inline-end">
           <InputGroupText>{unit}</InputGroupText>
           {selling && held > 0 ? (
-            <InputGroupButton size="xs" onClick={() => onQty(held.toFixed(4))}>
+            /* SECONDARY, not the default ghost (Ali, 12 Aug: "feels a bit
+               hidden - can we make it more obvious? like more like a
+               button"). InputGroupButton wraps Button and defaults to
+               variant="ghost", which is why it read as text sitting next
+               to the unit. `secondary` gives it a filled surface so it
+               reads as a control, and rounded-full matches the pill
+               language every other button in this flow uses.
+               NOT `default`: that is the primary fill, and the loudest
+               thing in a sell dialog should be the Sell button, not a
+               convenience that fills in a number. */
+            <InputGroupButton
+              variant="secondary"
+              size="sm"
+              className="rounded-full"
+              onClick={() => onQty(held.toFixed(4))}
+            >
               Sell all
             </InputGroupButton>
           ) : null}
