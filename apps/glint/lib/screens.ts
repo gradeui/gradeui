@@ -173,8 +173,8 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/wallets/usd",
     name: "USD — wallet",
     id: "dmsou6g4wxv0l",
-    promotedAt: 1786541739473,
-    sourceHash: "f5c3f796604c",
+    promotedAt: 1786542122538,
+    sourceHash: "87ba6d111af4",
   },
 ];
 

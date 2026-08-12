@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "USD — wallet"
-// (design dmsou6g4wxv0l, version 1786541739473). Registry: lib/screens.ts;
+// (design dmsou6g4wxv0l, version 1786542122538). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: f5c3f796604c
+// source-hash: 87ba6d111af4
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -100,10 +100,18 @@ export default function UsdWalletPage() {
                   is in the ACTION BLUE rather than a metal, the same
                   colour this wallet's dashboard tile wears, because
                   dollars have no metal of their own.
-                  The title now reads "Glint USD" because an account's
-                  label is its NAME; the KIND of account ("Checking") is
-                  its type, and that shows in the details card beside
-                  this one. */}
+                  THE TITLE IS THE WALLET'S NAME, NOT THE ACCOUNT'S (Ali,
+                  12 Aug: "the /wallet/usd should just be USD, not Glint
+                  USD - to match the wallets homepage"). It read the
+                  account record's label, which is "Glint USD" because
+                  that is what the account at Sutton Bank is called. This
+                  card is the WALLET though, and the wallet is called USD
+                  on the wallets homepage, so the two disagreed about the
+                  same thing. It now reads the same source the homepage
+                  tile reads, so they cannot drift apart again.
+                  The account keeps its own name on the details card
+                  beside this one and on Bank Accounts, where naming the
+                  account is the point. */}
               <Row gap="sm" align="center" className="min-h-9">
                 <Wordmark
                   lockup="mark"
@@ -111,7 +119,7 @@ export default function UsdWalletPage() {
                   className="size-5"
                   style={{ color: "oklch(var(--primary))" }}
                 />
-                <CardTitle>{acct.label}</CardTitle>
+                <CardTitle>{Persona.DEFAULT.balances[ASSET].label}</CardTitle>
               </Row>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col">
