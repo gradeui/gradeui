@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786530535089). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786531242570). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: b8724701e90b
+// source-hash: c0a182903c00
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -269,7 +269,12 @@ export default function WalletsPage() {
       {/* pt-4, was pt-8 (Ali, 11 Aug: "quite large"). The actions are
           in the toolbar now, so this band sits directly under it and
           does not need a band-sized gap above it. */}
-      <Section pad="sm" className="pt-4">
+      {/* py-6 ON BOTH BANDS (Ali, 12 Aug). Section's own scale has no 6
+          (pad="sm" is py-8 md:py-12), so this is pad="none" plus the
+          class. The top band was pad="sm" with pt-4 and the activity band
+          py-10, which put a different gap above and below the cards; one
+          value for both is what makes the page read as evenly spaced. */}
+      <Section pad="none" className="py-6">
         <Container maxW="xl">
           <Stack gap="lg">
             <Row justify="between" align="end" wrap gap="md">
@@ -286,7 +291,7 @@ export default function WalletsPage() {
       </Section>
 
       {/* Activity: recent only; filters live on the Activity screen */}
-      <Section pad="none" className="py-10">
+      <Section pad="none" className="py-6">
         <Container maxW="xl">
           <Stack gap="md">
             <Row gap="sm" align="baseline">

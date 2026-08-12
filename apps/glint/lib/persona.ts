@@ -721,6 +721,28 @@ function sliceDefault(metal: MetalAsset, vault: VaultId): number {
  * same hooks in the same order every render and a loop over a list is
  * both a lint error and a trap if the list ever becomes dynamic.
  */
+/**
+ * A stored slice, defended against a bad value.
+ *
+ * FlowStore persists to sessionStorage, so a bad write OUTLIVES a reload:
+ * JSON turns NaN into null, the next credit computes `null + n`, and the
+ * vault's seeded figure is gone for the rest of the tab's life. That is
+ * exactly what one NaN did to the gold wallet on 12 Aug. The write path is
+ * fixed, and this is the belt: anything that is not a finite number reads
+ * as the persona's seed, so a corrupted value heals itself on next render
+ * instead of spreading. Zero passes through, because zero is a real
+ * balance.
+ */
+function storedSlice(
+  value: unknown,
+  metal: MetalAsset,
+  vault: VaultId,
+): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : sliceDefault(metal, vault);
+}
+
 export function useMetalVaults(metal: MetalAsset) {
   const zurich = useFlowField<number>(
     `bal.${metal}.zurich`,
@@ -734,12 +756,14 @@ export function useMetalVaults(metal: MetalAsset) {
     `bal.${metal}.saltlake`,
     sliceDefault(metal, "saltlake"),
   );
+  /* Each pair is [value, set]; the value goes through the guard above, so
+     a corrupted store cannot make a total NaN. */
   const slices: Record<VaultId, [number, (v: number | ((p: number) => number)) => void]> = {
-    zurich,
-    miami,
-    saltlake,
+    zurich: [storedSlice(zurich[0], metal, "zurich"), zurich[1]],
+    miami: [storedSlice(miami[0], metal, "miami"), miami[1]],
+    saltlake: [storedSlice(saltlake[0], metal, "saltlake"), saltlake[1]],
   };
-  const total = zurich[0] + miami[0] + saltlake[0];
+  const total = slices.zurich[0] + slices.miami[0] + slices.saltlake[0];
   /* LARGEST FIRST, and only vaults that hold something: a vault at zero
      is not a holding, so it drops off the table until a purchase puts
      metal in it, at which point it appears. That is why silver shows one
@@ -751,15 +775,44 @@ export function useMetalVaults(metal: MetalAsset) {
     .filter((row) => row.amount > 0)
     .sort((a, b) => b.amount - a.amount);
 
-  /** Add to one vault: the buy path. `usd` is the value credited. */
+  /**
+   * Move one vault's balance. `usd` is SIGNED: a buy credits the vault it
+   * chose, a sell debits the vault it came from (Ali, 12 Aug: sells pick a
+   * source vault, because spreading a sale across all of them "is
+   * complicated"). Both are the same one-vault operation with opposite
+   * signs, which is why there is one function.
+   *
+   * IT SETS AN ABSOLUTE VALUE rather than passing a function updater.
+   * Both stores support updaters, but Studio's passed the RAW stored
+   * value, which is undefined until a key's first write, so the first
+   * credit to a vault computed `undefined + n` and stored NaN. That bug
+   * is fixed in the Studio FlowStore now; this reads the hook's own value
+   * instead, which carries the seeded default in both implementations, so
+   * it cannot depend on that detail again.
+   *
+   * ROUNDED TO CENTS, and floored at zero. These are dollar figures, and
+   * selling a vault out completely otherwise leaves a rounding crumb like
+   * 4.5e-13 behind, which is enough to keep the vault in the table at
+   * 0.0% forever. Rounding also keeps the slices summing to a figure that
+   * looks like money rather than to a long float.
+   */
   const credit = (vault: VaultId, usd: number) => {
-    slices[vault][1]((prev) => prev + usd);
+    const [current, set] = slices[vault];
+    set(Math.max(0, Math.round((current + usd) * 100) / 100));
   };
 
-  /** Set the TOTAL, distributing the change across the vaults in their
-   *  current proportions: the sell path. See the note above. With nothing
-   *  held anywhere the whole amount lands in the default vault, because
-   *  there are no proportions to keep. */
+  /**
+   * Set the TOTAL, distributing the change across the vaults in their
+   * current proportions.
+   *
+   * NOT THE SELL PATH ANY MORE: sells name their source vault and go
+   * through credit() with a negative. This stays because useBalance has to
+   * return a setter to keep its [value, set] shape, and pro rata is the
+   * only sane answer to "set the total" once the money lives per vault.
+   * Nothing in the app calls it today. If something needs to, that is
+   * worth a second look: setting a total is usually a sign the caller
+   * actually knows which vault it means.
+   */
   const setTotal = (next: number) => {
     if (total <= 0) {
       const fallback = getPreference("vault");

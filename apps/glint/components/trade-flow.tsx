@@ -137,7 +137,7 @@ const QUOTE_DRIFT = 0.0012;
  *  should not put a scrollbar in the normal case. */
 const PANEL_HEIGHT: Record<TradeDirection, string> = {
   buy: "sm:h-[566px]",
-  sell: "sm:h-[530px]",
+  sell: "sm:h-[626px]",
 };
 
 /** The scrolling body of every step: it takes the space the pinned
@@ -225,7 +225,6 @@ export function TradeFlow({
   const vaults = Persona.useMetalVaults(metal);
   const [prefVault] = Persona.usePreference("vault");
   const [vaultChoice, setVaultChoice] = React.useState<VaultId | null>(null);
-  const vault = vaultChoice ?? prefVault;
 
   const selling = direction === "sell";
   const label = METAL_LABEL[metal];
@@ -236,8 +235,38 @@ export function TradeFlow({
   );
   const amount = Number.parseFloat(amountRaw);
   const qtyTyped = Number.parseFloat(qtyRaw);
-  const held = Market.toQty(metalBal, metal, unit);
+  /* WHICH VAULT THIS TRADE TOUCHES, and it means two different things:
+       BUY  the vault the metal lands in, any of the three, defaulting to
+            the standing preference.
+       SELL the vault the metal comes OUT of (Ali, 12 Aug: "we would have
+            to allow them to choose which vault to sell from - spread
+            evenly across all is complicated"). He is right, and it
+            replaced a pro-rata debit I had assumed. Choices are only the
+            vaults that actually hold this metal, and the FIELD ONLY
+            APPEARS WHEN THERE IS MORE THAN ONE ("the sell from a vault
+            will only be an option if there is more than one valut for
+            that metal"): with a single vault there is no choice to make,
+            so the sale simply comes from there.
+     A sell defaults to the preferred vault when it holds some of this
+     metal, and otherwise to the largest holding, which is the first row.
+     Nothing held at all leaves it undefined, and the form is invalid
+     anyway, so no label reads off it. */
+  const sellRows = vaults.rows;
+  const sellDefault =
+    sellRows.find((row) => row.vault === prefVault)?.vault ??
+    sellRows[0]?.vault;
+  const vault = vaultChoice ?? (selling ? sellDefault : prefVault);
+  const vaultChoices = selling ? sellRows.map((row) => row.vault) : VAULT_CHOICES;
+  const showVaultField = selling ? sellRows.length > 1 : true;
+  /** What the chosen vault holds, which is the ceiling on a sale. */
+  const vaultUsd = sellRows.find((row) => row.vault === vault)?.amount ?? 0;
+  /* HELD, and for a SELL the ceiling is the CHOSEN VAULT rather than the
+     whole wallet: you cannot sell 40g out of a vault holding 17. With one
+     vault the two are the same figure. */
+  const held = Market.toQty(selling ? vaultUsd : metalBal, metal, unit);
   const heldQty = Market.fmtQty(held, unit);
+  /** The whole holding, for the buy form's "balance" line. */
+  const walletQty = Market.fmtQty(Market.toQty(metalBal, metal, unit), unit);
 
   /* The settled dealing rate for this direction, and the live quote the
      flow actually converts at. The quote is seeded from the settled rate
@@ -364,8 +393,8 @@ export function TradeFlow({
        A SELL has no vault picker, so it sets the total and Persona
        distributes the fall pro rata across the vaults that hold the
        metal. That rule is an assumption, documented where it lives. */
-    if (selling) setMetalBal(nextMetal);
-    else vaults.credit(vault, Market.toUsd(qty, metal, unit));
+    const moved = Market.toUsd(selling ? qtyTyped : qty, metal, unit);
+    vaults.credit(vault, selling ? -moved : moved);
     setFiat(nextFiat);
     setStep("done");
   };
@@ -420,8 +449,14 @@ export function TradeFlow({
       </InputGroup>
       <FieldDescription className="text-xs">
         {selling && overBalance
-          ? `That is more ${label.toLowerCase()} than you hold.`
-          : `${heldQty} ${selling ? "available" : "balance"}`}
+          ? `That is more ${label.toLowerCase()} than ${
+              vault ? Accounts.vaultLabel(vault) : "that vault"
+            } holds.`
+          : selling
+          ? `${heldQty} available${
+              vault ? ` in ${Accounts.vaultLabel(vault)}` : ""
+            }`
+          : `${walletQty} balance`}
       </FieldDescription>
     </Field>
   );
@@ -439,7 +474,7 @@ export function TradeFlow({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {VAULT_CHOICES.map((id) => (
+          {vaultChoices.map((id) => (
             <SelectItem key={id} value={id}>
               {Accounts.vaultLocation(id)}
             </SelectItem>
@@ -447,8 +482,9 @@ export function TradeFlow({
         </SelectContent>
       </Select>
       <FieldDescription className="text-xs">
-        Applies to this purchase only. Your default stays{" "}
-        {Accounts.vaultLabel(prefVault)}.
+        {selling
+          ? "The sale comes out of this vault."
+          : `Applies to this purchase only. Your default stays ${Accounts.vaultLabel(prefVault)}.`}
       </FieldDescription>
     </Field>
   );
@@ -478,7 +514,16 @@ export function TradeFlow({
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
-        if (!o) reset();
+        /* RESET ON OPEN, NOT ON CLOSE (Ali, 12 Aug: "once I've bought and
+           I go back to buy gold, the modal is still the order complete
+           state"). Two things were wrong. The Done button calls setOpen
+           directly, which never reaches onOpenChange, so a close through
+           Done skipped the reset entirely and the next open showed the
+           last receipt. And resetting on close would blank the receipt
+           while the panel is still animating out. Resetting as it OPENS
+           fixes both: every entry starts at the form, whichever way the
+           last one ended. */
+        if (o) reset();
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -506,6 +551,10 @@ export function TradeFlow({
               {rateCallout}
               {selling ? (
                 <>
+                  {/* VAULT FIRST on a sell: it decides how much there is
+                      to sell, so asking for the quantity before the
+                      source would be asking against the wrong limit. */}
+                  {showVaultField ? vaultField : null}
                   {quantityField}
                   {amountField}
                   <p className="text-sm leading-relaxed text-muted-foreground">
@@ -517,7 +566,7 @@ export function TradeFlow({
                 <>
                   {amountField}
                   {quantityField}
-                  {vaultField}
+                  {showVaultField ? vaultField : null}
                 </>
               )}
             </Stack>
@@ -579,12 +628,12 @@ export function TradeFlow({
                     </span>
                   }
                 />
-                {!selling && (
+                {vault ? (
                   <PropertyList.Row
-                    label="Vault"
+                    label={selling ? "Sold from" : "Vault"}
                     value={Accounts.vaultLabel(vault)}
                   />
-                )}
+                ) : null}
                 <PropertyList.Row
                   label="Rate"
                   value={`${Persona.fmtMoney(quote)}/${unit}`}
@@ -647,12 +696,12 @@ export function TradeFlow({
                     )})`}
                   </span>
                 </PropertyList.Row>
-                {!selling && (
+                {order.vault ? (
                   <PropertyList.Row
-                    label="Vault"
+                    label={selling ? "Sold from" : "Vault"}
                     value={Accounts.vaultLocation(order.vault)}
                   />
-                )}
+                ) : null}
                 <PropertyList.Row
                   label="New USD balance"
                   value={
