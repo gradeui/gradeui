@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "USD — wallet"
-// (design dmsou6g4wxv0l, version 1786475182666). Registry: lib/screens.ts;
+// (design dmsou6g4wxv0l, version 1786532788978). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 02887a405f6d
+// source-hash: c8bdb8af675d
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -55,7 +55,7 @@ import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 // figure. With the account called out beside it, repeating the masked
 // form was the same fact stated worse.
 //
-// ACTIVITY, BOTH LEGS. Persona.activityFor("fiat") matches a row on
+// ACTIVITY, BOTH LEGS. Persona.useActivity("fiat") matches a row on
 // either `account` or `counterAccount`, and every exchange here is paid
 // from or into the USD wallet, so this list is the two deposits PLUS the
 // purchases those deposits funded. Filtering on `account` alone would
@@ -169,7 +169,7 @@ export default function UsdWalletPage() {
             <h2 className="text-lg font-semibold text-foreground">
               {Persona.DEFAULT.balances[ASSET].label} activity
             </h2>
-            <ActivityTable rows={Persona.activityFor(ASSET)} filters />
+            <ActivityTable rows={Persona.useActivity(ASSET)} filters />
           </Stack>
         </Container>
       </Section>

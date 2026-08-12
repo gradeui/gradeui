@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786531242570). Registry: lib/screens.ts;
+// (design dmskex612bcy1, version 1786532786752). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: c0a182903c00
+// source-hash: c0464549bcbb
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -226,7 +226,10 @@ export default function WalletsPage() {
      this project. If they should ever be sticky, the honest fix is a real
      page-actions slot on AppChrome that the layout can forward, not a
      second copy. */
-  const activity = Persona.DEFAULT.activity;
+  /* LIVE (Ali, 12 Aug: "let's make things appear in activity").
+     Persona.useActivity: this session's trades ahead of the seeded
+     history, so a purchase shows up here the moment it completes. */
+  const activity = Persona.useActivity();
   return (
     <>
       {/* THE ACTIONS RENDER IN THE TOOLBAR, not here. AppChrome.Slot

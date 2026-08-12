@@ -644,9 +644,65 @@ export function fmtSigned(n: number): string {
  *  gold and silver match on `account` alone, USD picks up the second leg
  *  of every exchange through `counterAccount`. */
 export function activityFor(account: AssetKey): ActivityRow[] {
-  return DEFAULT_PERSONA.activity.filter(
-    (tx) => tx.account === account || tx.counterAccount === account,
+  return DEFAULT_PERSONA.activity.filter((tx) => touches(tx, account));
+}
+
+/**
+ * ACTIVITY, INCLUDING WHAT THIS SESSION DID (Ali, 12 Aug: "one thing I'm
+ * not seeing is actions show up in activity", and "let's make things
+ * appear in activity").
+ *
+ * A trade used to move the balances and leave no trace: the history was
+ * static persona data, so buying gold changed every figure on the page
+ * except the list of things that had happened. Live rows now live in one
+ * FlowStore key, newest first, and every activity surface reads them
+ * AHEAD of the seeded history.
+ *
+ * ONE CHANNEL, FIVE SURFACES: the dashboard's recent list, the full
+ * history, and the three wallet screens all read through useActivity, so
+ * a trade shows up in all of them or in none of them. The Bank Accounts
+ * screen filters the same list down to deposits, which live trades are
+ * not, so it stays as it was.
+ *
+ * THEY ARE REAL ActivityRow VALUES, not a lighter "recent trade" shape.
+ * That is what lets them through the same table, the same detail sheet
+ * and the same Money in / Money out filters as the seeded rows, and it is
+ * why TradeFlow fills in vault, fee, rate and reference rather than just
+ * an amount.
+ *
+ * SESSION-SCOPED, because FlowStore is: they survive a reload and go away
+ * with the tab, which is what a demo wants.
+ */
+const NO_LIVE_ROWS: ActivityRow[] = [];
+
+export function useLiveActivity(): {
+  rows: ActivityRow[];
+  add: (row: ActivityRow) => void;
+} {
+  const [rows, setRows] = useFlowField<ActivityRow[]>(
+    "activity.live",
+    NO_LIVE_ROWS,
   );
+  /* Newest first, and an absolute set rather than an updater: the same
+     lesson as the vault credit, so it cannot depend on either store's
+     updater semantics. */
+  const add = (row: ActivityRow) => setRows([row, ...rows]);
+  return { rows, add };
+}
+
+/** Does this row touch that wallet? Either leg counts. */
+function touches(row: ActivityRow, account: AssetKey): boolean {
+  return row.account === account || row.counterAccount === account;
+}
+
+/**
+ * Every row a surface should show, newest first: this session's trades,
+ * then the seeded history. Omit `account` for the whole history.
+ */
+export function useActivity(account?: AssetKey): ActivityRow[] {
+  const { rows: live } = useLiveActivity();
+  const all = [...live, ...DEFAULT_PERSONA.activity];
+  return account ? all.filter((row) => touches(row, account)) : all;
 }
 
 /**
@@ -910,6 +966,8 @@ export const Persona = {
   txMethodLabel,
   txPlace,
   activityFor,
+  useActivity,
+  useLiveActivity,
   vaultsFor,
   fullName,
   TX_METHOD_LABEL,

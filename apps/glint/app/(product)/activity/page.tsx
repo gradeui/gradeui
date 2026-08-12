@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Activity — history"
-// (design dmsnba2xdvnc3, version 1786466428485). Registry: lib/screens.ts;
+// (design dmsnba2xdvnc3, version 1786532787351). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 8206941d6c64
+// source-hash: dc3d87b4e996
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -32,7 +32,7 @@ import { ActivityTable } from "@/components/activity-table";
 // metal row.
 //
 // ROWS ARE THE WHOLE PERSONA LIST, not a wallet slice: this is the full
-// history, so it hands over Persona.DEFAULT.activity as it stands. A
+// history, so it hands over Persona.useActivity() whole. A
 // wallet screen passes Persona.activityFor("gold") to the same table.
 //
 // FILTERS ON: the All / Money in / Money out tabs belong to this screen
@@ -41,7 +41,9 @@ import { ActivityTable } from "@/components/activity-table";
 // off. No `hide`, because the full history wants every column.
 
 export default function ActivityPage() {
-  const rows = Persona.DEFAULT.activity;
+  /* LIVE (Ali, 12 Aug). Persona.useActivity: this session's trades ahead of the seeded
+     history, so a purchase shows up here the moment it completes. */
+  const rows = Persona.useActivity();
   return (
     <>
       <Section pad="none" className="py-8">

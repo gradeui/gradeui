@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Bank Accounts"
-// (design dmsp02q871y5u, version 1786475181972). Registry: lib/screens.ts;
+// (design dmsp02q871y5u, version 1786532789506). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 262b3a02c3bc
+// source-hash: fe74d5212606
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -27,7 +27,7 @@ import {
   DropdownMenuSeparator,
 } from "@gradeui/ui";
 import { Persona } from "@/lib/persona";
-import { Accounts } from "@/lib/accounts";
+import { Accounts, type AccountRecord } from "@/lib/accounts";
 import { ActivityTable } from "@/components/activity-table";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { AccountDetails } from "@/components/account-details";
@@ -84,10 +84,10 @@ export default function BankAccountsPage() {
      reads its own. Live preference, not the persona default: the toggle on two other screens writes
      this, and a stale line here would contradict them. Gold by default. */
   const [autoInvest] = Persona.usePreference("autoInvest");
-  /* Deposits only: see TRANSFERS above. activityFor("fiat") returns both
+  /* Deposits only: see TRANSFERS above. useActivity("fiat") returns both
      legs of every cash movement, so the filter is what makes this list
      the transfers rather than the wallet's history. */
-  const transfers = Persona.activityFor(GLINT).filter(
+  const transfers = Persona.useActivity(GLINT).filter(
     (row) => row.type === "deposit",
   );
 

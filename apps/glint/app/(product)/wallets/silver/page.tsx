@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Silver — wallet"
-// (design dmsoj5uvz94l3, version 1786474977774). Registry: lib/screens.ts;
+// (design dmsoj5uvz94l3, version 1786532788454). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: adf752c1b8e0
+// source-hash: dc036fa15c70
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -38,7 +38,7 @@ import { ActivityTable } from "@/components/activity-table";
 // takes the left 5 columns and the chart the right 7, so the page still
 // reads as one asymmetric pair rather than two equal blocks.
 //
-// ACTIVITY: Persona.activityFor(METAL) is the shared wallet filter, so
+// ACTIVITY: Persona.useActivity(METAL) is the shared wallet filter, so
 // the three wallet screens cannot disagree about which rows belong to a
 // wallet. Silver has exactly ONE row today, the 6 Aug sale into USD; if
 // this list needs to look busier for a demo the fix is more silver rows
@@ -71,7 +71,7 @@ export default function SilverWalletPage() {
             <h2 className="text-lg font-semibold text-foreground">
               {label} activity
             </h2>
-            <ActivityTable rows={Persona.activityFor(METAL)} />
+            <ActivityTable rows={Persona.useActivity(METAL)} />
           </Stack>
         </Container>
       </Section>

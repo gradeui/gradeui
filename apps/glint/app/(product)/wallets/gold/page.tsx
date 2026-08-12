@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Gold — wallet"
-// (design dmsnbpdvrz1qa, version 1786474977242). Registry: lib/screens.ts;
+// (design dmsnbpdvrz1qa, version 1786532787867). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 365411fac971
+// source-hash: 47760c612cf0
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -37,7 +37,7 @@ import { ActivityTable } from "@/components/activity-table";
 // takes the left 5 columns and the chart the right 7, so the page still
 // reads as one asymmetric pair rather than two equal blocks.
 //
-// ACTIVITY: Persona.activityFor(METAL) is the shared wallet filter, so
+// ACTIVITY: Persona.useActivity(METAL) is the shared wallet filter, so
 // the three wallet screens cannot disagree about which rows belong to a
 // wallet. It matches on the row's `account` and `counterAccount`, which
 // is why the two Direct Gold purchases appear here: they are gold rows
@@ -71,7 +71,7 @@ export default function GoldWalletPage() {
             <h2 className="text-lg font-semibold text-foreground">
               {label} activity
             </h2>
-            <ActivityTable rows={Persona.activityFor(METAL)} />
+            <ActivityTable rows={Persona.useActivity(METAL)} />
           </Stack>
         </Container>
       </Section>

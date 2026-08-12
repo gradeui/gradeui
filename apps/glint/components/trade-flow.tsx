@@ -223,6 +223,8 @@ export function TradeFlow({
      lands in one vault. The total it exposes is the same number
      useBalance(metal) returns, so nothing double-counts. */
   const vaults = Persona.useMetalVaults(metal);
+  /* Where a completed order gets written into the history. */
+  const { add: addActivity } = Persona.useLiveActivity();
   const [prefVault] = Persona.usePreference("vault");
   const [vaultChoice, setVaultChoice] = React.useState<VaultId | null>(null);
 
@@ -396,6 +398,50 @@ export function TradeFlow({
     const moved = Market.toUsd(selling ? qtyTyped : qty, metal, unit);
     vaults.credit(vault, selling ? -moved : moved);
     setFiat(nextFiat);
+    /* AND IT GOES INTO THE HISTORY (Ali, 12 Aug: "let's make things appear
+       in activity"). A full ActivityRow, not a lighter shape, so it flows
+       through the same table, detail sheet and Money in / Money out
+       filters as the seeded rows.
+       SIGNS follow the seeded convention: metalAmount is negative on a
+       sale, fiatAmount negative when money leaves the cash wallet.
+       metalAmount is in GRAMS whatever unit the form was in, which is why
+       it is converted back through the market value rather than taken
+       from the input. The timestamp is shifted by the timezone offset so
+       it reads as the wall clock, matching the seeded rows' local format
+       rather than landing an hour out in UTC. Date.now() here is fine: it
+       is a click handler, not a render. */
+    const at = Date.now();
+    const stamped = new Date(at - new Date(at).getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 19);
+    /* ROUNDED TO 4dp, the precision every gram figure in the app is
+       displayed at. The conversion goes qty -> USD -> grams, which for a
+       2.0000 g order comes back as 1.9999913, and while nothing renders
+       that, storing it would put a lie in the row's data. */
+    const grams = Math.round(Market.toQty(moved, metal, "g") * 1e4) / 1e4;
+    addActivity({
+      id: `tx-live-${at}`,
+      kind: selling ? "exchange-sell" : "exchange-buy",
+      description: selling
+        ? `Exchange ${label} to USD`
+        : `Exchange USD to ${label}`,
+      timestamp: stamped,
+      metalAmount: selling ? -grams : grams,
+      metal,
+      fiatAmount: selling ? cash : -cash,
+      rate: quote,
+      type: "exchange",
+      status: "completed",
+      account: metal,
+      counterAccount: "fiat",
+      vault,
+      method: "market-order",
+      /* Cents, like the seeded rows: the live figure carries the full
+         float of a 0.9% share. */
+      fee: Math.round(fee * 100) / 100,
+      reference: `GX-${String(at).slice(-8, -4)}-${String(at).slice(-4)}`,
+    });
+
     setStep("done");
   };
 
