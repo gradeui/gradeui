@@ -145,8 +145,8 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/bank-accounts",
     name: "Bank Accounts",
     id: "dmsp02q871y5u",
-    promotedAt: 1786612882680,
-    sourceHash: "94d0078b116c",
+    promotedAt: 1786616415020,
+    sourceHash: "56b04a5db69d",
   },
   {
     slug: "/activity",

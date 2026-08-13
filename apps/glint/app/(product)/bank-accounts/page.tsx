@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Bank Accounts"
-// (design dmsp02q871y5u, version 1786612882680). Registry: lib/screens.ts;
+// (design dmsp02q871y5u, version 1786616415020). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 94d0078b116c
+// source-hash: 56b04a5db69d
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -207,21 +207,23 @@ export default function BankAccountsPage() {
                   it, rather than floating in the middle. */}
               <Stack gap="lg" justify="between" className="flex-1">
                 <AccountDetails id={GLINT} />
-                {/* THE SPONSOR BANK, NAMED IN THE SMALL PRINT. Glint's
-                    mark replaced Sutton's on the tile above, and Ali's
-                    note asked whether "Sutton Bank" should go entirely.
-                    Not entirely: the description above now claims FDIC
-                    coverage, and that claim is only true THROUGH Sutton,
-                    so the bank has to be named somewhere for the sentence
-                    to be honest. This is where partner-bank programmes
-                    put it. Read off the institution record, so the bank
-                    is named once in data and printed wherever it is due.
+                {/* ONE LINE, AND NO DISCLOSURE (Ali, 13 Aug: "dont add
+                    extra please (Deposits are held at Sutton Bank, Member
+                    FDIC.)"). I had added that sentence when Glint's mark
+                    replaced Sutton's on the tile, reasoning that the FDIC
+                    claim in the description is underwritten by Sutton and
+                    so should name it. Ali's answer to his own question
+                    mark was that Sutton goes, and it is his call: this is
+                    a demo of a screen, not the screen's legal copy, and
+                    extra sentences are exactly what he has been stripping
+                    out of these cards all week. The bank is still on the
+                    record and in the routing-number provenance note in
+                    Accounts, so nothing was lost but the sentence.
                     "your USD wallet", not "your Glint USD wallet": the
                     wallet is USD, the account is Glint USD. */}
                 <p className="text-xs text-muted-foreground">
                   Send a domestic wire or ACH to these details to fund your
-                  USD wallet. Deposits are held at{" "}
-                  {Accounts.ALL[GLINT].institution.sponsor}, Member FDIC.
+                  USD wallet.
                 </p>
               </Stack>
             </CardContent>

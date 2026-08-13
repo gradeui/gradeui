@@ -53,14 +53,6 @@ export interface Institution {
    * Ali: "change logo to Glint icon. Delete 'Sutton Bank'?".
    */
   mark?: "glint";
-  /**
-   * The sponsor bank behind a Glint-branded account. Named in the card's
-   * small print rather than on the tile: the FDIC claim in the card's
-   * description is only true THROUGH the sponsor, so the bank has to be
-   * named somewhere for that sentence to be honest, and this is where
-   * partner-bank programmes put it.
-   */
-  sponsor?: string;
 }
 
 export interface AccountRecord {
@@ -156,13 +148,21 @@ const SUTTON: Institution = {
    "change logo to Glint icon. Delete 'Sutton Bank'?"). The tile used to
    carry Sutton's logo, which described the plumbing rather than the
    product: the customer opened a Glint account, and Sutton is who Glint
-   banks with. Sutton is still named, in `sponsor`, and the card prints it
-   in the small print beside the FDIC claim it underwrites. */
+   banks with.
+
+   SUTTON IS NOT NAMED ON THIS CARD (Ali, 13 Aug: "dont add extra
+   please"). I had put "Deposits are held at Sutton Bank, Member FDIC" in
+   the card's small print and a `sponsor` field here to feed it, on the
+   reasoning that the FDIC claim in the description is underwritten by
+   Sutton. Ali's call was that Sutton goes, so the sentence went and the
+   field with it: a record field nothing renders is just a second place to
+   keep the same fact true. SUTTON is still defined above, still the
+   sponsor bank in the routing-number note, so the relationship is
+   documented where it belongs rather than half-printed. */
 const GLINT_BANKING: Institution = {
   name: "Glint",
   mark: "glint",
   initials: "G",
-  sponsor: SUTTON.name,
 };
 
 const GLINT_CUSTODY: Institution = {
