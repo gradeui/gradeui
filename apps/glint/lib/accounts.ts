@@ -45,6 +45,22 @@ export interface Institution {
   logo?: string;
   /** Fallback mark when there is no logo: kept short, 1-3 chars. */
   initials: string;
+  /**
+   * Set on Glint's OWN institutions: the tile renders the real wordmark
+   * glyph as vector instead of a logo file, and the account card stops
+   * printing this institution's name under the account's own name
+   * ("Glint USD" over "Glint" is a stutter). Glint, 13 Aug 2026, via
+   * Ali: "change logo to Glint icon. Delete 'Sutton Bank'?".
+   */
+  mark?: "glint";
+  /**
+   * The sponsor bank behind a Glint-branded account. Named in the card's
+   * small print rather than on the tile: the FDIC claim in the card's
+   * description is only true THROUGH the sponsor, so the bank has to be
+   * named somewhere for that sentence to be honest, and this is where
+   * partner-bank programmes put it.
+   */
+  sponsor?: string;
 }
 
 export interface AccountRecord {
@@ -85,16 +101,16 @@ export interface AccountRecord {
    */
   routingNumber?: string;
   institution: Institution;
-  /**
-   * The legal holder, when that is NOT the customer (Ali, 11 Aug: "Glint
-   * USD, the account holder would be Glintpay LLC maybe"). A pooled
-   * fintech deposit account is held by the operator at the sponsor bank
-   * FOR THE BENEFIT OF the customer, and that is the one fact on the
-   * Bank Accounts screen that is not the customer's own name. Absent on
-   * every account the customer holds directly, where a screen falls back
-   * to the persona's legal name.
+  /*
+   * NO `holder` FIELD ANY MORE (Glint, 13 Aug 2026, via Ali: "change
+   * 'Account holder' to 'Ridgeline Construction LLC'"). It existed to
+   * override the customer's name on the one account Glint legally holds
+   * at the sponsor bank, which is the truth of an FBO structure and the
+   * wrong thing to show a customer: the FBO arrangement is exactly why
+   * the account is the business's. The card names the business now, from
+   * the persona, which is the single place that string lives. The card's
+   * description says the structure out loud instead.
    */
-  holder?: string;
   /** True for an account that is NOT Glint's: the customer's own bank,
    *  linked so money can move in. See the EXTERNAL record below. */
   external?: boolean;
@@ -124,14 +140,29 @@ export interface AccountRecord {
      zions-bank.png   128px, supplied by Ali on 12 Aug, the ZB monogram.
                       Replaced their 48px site favicon for the same
                       reason as Sutton's.
-   THEY ARE TRADEMARKS. Fine for a demo of a real partnership; if this
-   ships anywhere public, get the artwork cleared.
+   THEY ARE TRADEMARKS, AND THEY ARE CLEARED (Ali, 12 Aug: "trademarks
+   are cleared and good to go - wa are partnered with Sutton Bank and the
+   ZB icon is available"). Glint is partnered with Sutton, and the ZB
+   monogram is licensed, so this is no longer a pre-public blocker.
    Served from BOTH apps' public/institutions/ (glint and docs) so a
    Studio render and the promoted app resolve the same path. */
 const SUTTON: Institution = {
   name: "Sutton Bank",
   logo: "/institutions/sutton-bank.png",
   initials: "SB",
+};
+
+/* GLINT'S OWN ACCOUNT WEARS GLINT'S MARK (Glint, 13 Aug 2026, via Ali:
+   "change logo to Glint icon. Delete 'Sutton Bank'?"). The tile used to
+   carry Sutton's logo, which described the plumbing rather than the
+   product: the customer opened a Glint account, and Sutton is who Glint
+   banks with. Sutton is still named, in `sponsor`, and the card prints it
+   in the small print beside the FDIC claim it underwrites. */
+const GLINT_BANKING: Institution = {
+  name: "Glint",
+  mark: "glint",
+  initials: "G",
+  sponsor: SUTTON.name,
 };
 
 const GLINT_CUSTODY: Institution = {
@@ -165,17 +196,9 @@ export const ACCOUNTS: Record<AccountRecord["id"], AccountRecord> = {
        doc above: the routing number it pairs with is invented, so this
        pair addresses nothing. */
     number: "8823402502",
-    /* Glint holds this one, not the customer: see the field's note. The
-       beneficiary is composed at render from the persona's legal name, so
-       it is never typed twice.
-
-       PROVISIONAL. Ali's own word was "maybe", and he is confirming the
-       real entity name with Glint on 12 Aug. One string, one place: when
-       the real one lands it replaces this and every card follows. */
-    holder: "Glintpay LLC",
     last4: "2502",
     routingNumber: "041215032", // minted, checksum-valid; see the note on SUTTON
-    institution: SUTTON,
+    institution: GLINT_BANKING,
   },
   gold: {
     id: "gold",

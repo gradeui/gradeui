@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Bank Accounts"
-// (design dmsp02q871y5u, version 1786541901219). Registry: lib/screens.ts;
+// (design dmsp02q871y5u, version 1786612882680). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: b2ebd0e1d2ad
+// source-hash: 94d0078b116c
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -182,14 +182,23 @@ export default function BankAccountsPage() {
           </Card>
 
           {/* GLINT'S OWN ACCOUNT, on the right because it is where the
-              money lands. The Glint G in the action blue, the same mark
-              the USD wallet and its dashboard tile wear, so the two
-              screens name the same account the same way. */}
+              money lands. Its tile carries the Glint wordmark glyph, set
+              on the institution record, so this card and the USD wallet's
+              details block mark the account the same way. */}
           <Card className="col-span-12 flex flex-col lg:col-span-6">
             <CardHeader>
               <Stack gap="xs">
                 <CardTitle>Glint Account</CardTitle>
-                <CardDescription>Held by Glint for your business.</CardDescription>
+                {/* THE FBO STRUCTURE, SAID OUT LOUD (Glint, 13 Aug 2026,
+                    via Ali). It read "Held by Glint for your business",
+                    which described the same arrangement without the two
+                    things a US business customer actually wants to know:
+                    that the deposit is FDIC covered, and that the benefit
+                    is theirs. Full stop kept, because the card opposite
+                    ends its description with one. */}
+                <CardDescription>
+                  FDIC account held for the benefit of your business.
+                </CardDescription>
               </Stack>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col">
@@ -198,9 +207,21 @@ export default function BankAccountsPage() {
                   it, rather than floating in the middle. */}
               <Stack gap="lg" justify="between" className="flex-1">
                 <AccountDetails id={GLINT} />
+                {/* THE SPONSOR BANK, NAMED IN THE SMALL PRINT. Glint's
+                    mark replaced Sutton's on the tile above, and Ali's
+                    note asked whether "Sutton Bank" should go entirely.
+                    Not entirely: the description above now claims FDIC
+                    coverage, and that claim is only true THROUGH Sutton,
+                    so the bank has to be named somewhere for the sentence
+                    to be honest. This is where partner-bank programmes
+                    put it. Read off the institution record, so the bank
+                    is named once in data and printed wherever it is due.
+                    "your USD wallet", not "your Glint USD wallet": the
+                    wallet is USD, the account is Glint USD. */}
                 <p className="text-xs text-muted-foreground">
                   Send a domestic wire or ACH to these details to fund your
-                  Glint USD wallet.
+                  USD wallet. Deposits are held at{" "}
+                  {Accounts.ALL[GLINT].institution.sponsor}, Member FDIC.
                 </p>
               </Stack>
             </CardContent>
