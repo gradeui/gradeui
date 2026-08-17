@@ -73,6 +73,10 @@ The 16px is doing useful work by accident: iOS Safari zooms the viewport when a
 focused input is under 16px. But it is a contradiction rather than a decision, and
 at `size="sm"` it puts a 16px field beside 12px buttons.
 
+It reaches further than form fields. `CommandInput` inherits it, so a facet
+menu's search box renders **16px in a 48px (h-12) header above 14px/30px rows** —
+the search line reads as a different component from the list it filters.
+
 **Suggested:** decide deliberately. The common resolution is `text-base
 sm:text-sm` on the control, which keeps the iOS behaviour on touch and matches the
 surrounding type on desktop.
@@ -135,6 +139,25 @@ rather than being fixed — a filter menu on desktop is the common case and it i
 the one that looks wrong.
 
 **Suggested:** `py-1.5` as the default, or a density prop on `Command`.
+
+## 5c. `CommandItem selected` shifts anything already right-aligned
+
+`selected` appends its checkmark with `ml-auto`, and only when selected:
+
+```jsx
+children, r && <Check className="text-foreground ml-auto" />
+```
+
+In a faceted filter every row carries a count, so toggling an option moves that
+count sideways by the tick's width. A column of numbers dances as you select.
+
+Reserving the slot is easy once you know (`<span className="flex w-4 shrink-0
+justify-end">`), but it means dropping `selected` and drawing the tick yourself,
+which also loses the `data-selected-item` hook.
+
+**Suggested:** render the tick slot unconditionally and toggle only the glyph,
+so trailing content never reflows. Counts beside a selection control are the
+common case, not an exotic one.
 
 ## 6. `SheetContent` has no scroll region
 
@@ -330,3 +353,21 @@ The earlier report's headline was that the screen was mouse-only. Verified fixed
   a stack of buttons.
 
 Rows are still not focusable, which is finding 8.
+
+---
+
+## Open, not yet decided
+
+**Filters on mobile.** The DS has no guidance here, and neither do we. A row of
+facet triggers plus a search field does not survive a 375px viewport, and the
+usual answers (a bottom sheet of filters, a horizontally scrolling chip rail, a
+single "Filters" button opening a full-screen panel) are all product decisions
+rather than component ones. Worth settling before another screen invents its own.
+
+**A packaged faceted filter.** See finding 11. Both RM screens now carry an
+identical hand-built one, and between them they apply FIVE corrections to
+`Command` just to sit it in a popover: `p-0` on the content, then
+`rounded-[inherit] border-0 shadow-none`, `[&_group]:p-1`,
+`[&_item]:py-1.5`, and `[&_input]:text-sm [&_input-wrapper]:h-10`. Every
+consumer will rediscover those independently and land on slightly different
+numbers. Proposal to be written up under proposed components.
