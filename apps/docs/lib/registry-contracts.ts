@@ -45,6 +45,12 @@ function specPropToContract(spec: RegistryPropSpec): PropContract {
     case "number":
       schema = z.number();
       break;
+    case "unknown":
+      // Mixed unions / opaque objects / callbacks / ReactNode slots —
+      // no serialisable kind describes them, and coercing to string
+      // would REJECT valid literals (`<Checkbox checked />`).
+      schema = z.unknown();
+      break;
     default:
       schema = z.string();
   }

@@ -380,8 +380,8 @@ importers:
         specifier: 0.5.0
         version: 0.5.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@brightlocal/ui-components':
-        specifier: 2.20.0
-        version: 2.20.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react-is@18.3.1)(react@19.2.5)(redux@5.0.1)
+        specifier: 2.25.0
+        version: 2.25.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react-is@18.3.1)(react@19.2.5)(redux@5.0.1)
       '@modelcontextprotocol/ext-apps':
         specifier: ^1.7.4
         version: 1.7.4(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod@3.25.76)
@@ -663,6 +663,9 @@ importers:
       '@types/node':
         specifier: ^20
         version: 20.19.39
+      tsx:
+        specifier: ^4.7.0
+        version: 4.22.4
 
   packages/ui:
     dependencies:
@@ -1200,8 +1203,14 @@ packages:
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@brightlocal/ui-components@2.20.0':
-    resolution: {integrity: sha512-pIMfnHiMl2PWFiYElyeZJW+hlmGYIfIN6EjEvs3VhBuetMgx/3zUsVgBvZEh+JzN63WgZ41N2EGADSpy8zUOiw==}
+  '@brightlocal/illustrations@0.6.0':
+    resolution: {integrity: sha512-gcbLc+yr/UbxGg7tX4GIcoz6bXtM6uNhAI7IRkCidn896THMKZigeitvCoNmav8mv1U+fqqIwkZfdbiMpNwmNQ==}
+    peerDependencies:
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@brightlocal/ui-components@2.25.0':
+    resolution: {integrity: sha512-nbxNB/B4stJ/EzP7Aw1OCqkGlMXV/i62CoBeWmFKK+jxqMFbFRyZmTlJjWGTj3vyd9pyFNQEB1BDdhWpvRLmcg==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -9362,10 +9371,15 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@brightlocal/ui-components@2.20.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react-is@18.3.1)(react@19.2.5)(redux@5.0.1)':
+  '@brightlocal/illustrations@0.6.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+    dependencies:
+      react: 19.2.5
+      react-dom: 19.2.5(react@19.2.5)
+
+  '@brightlocal/ui-components@2.25.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react-is@18.3.1)(react@19.2.5)(redux@5.0.1)':
     dependencies:
       '@brightlocal/icons': 2.3.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@brightlocal/illustrations': 0.5.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@brightlocal/illustrations': 0.6.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@radix-ui/react-accordion': 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@radix-ui/react-alert-dialog': 1.1.20(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@radix-ui/react-aspect-ratio': 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -9385,7 +9399,7 @@ snapshots:
       '@radix-ui/react-scroll-area': 1.2.10(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@radix-ui/react-select': 2.2.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@radix-ui/react-slider': 1.3.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@radix-ui/react-slot': 1.2.4(@types/react@19.2.14)(react@19.2.5)
+      '@radix-ui/react-slot': 1.3.0(@types/react@19.2.14)(react@19.2.5)
       '@radix-ui/react-switch': 1.2.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@radix-ui/react-tabs': 1.1.13(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@radix-ui/react-toggle': 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)

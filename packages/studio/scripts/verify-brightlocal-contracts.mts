@@ -1,0 +1,228 @@
+/**
+ * verify-brightlocal-contracts.mts — end-to-end regression test for the
+ * BrightLocal contracts, run through the REAL validator.
+ *
+ *   pnpm -F @gradeui/studio verify:brightlocal-contracts
+ *
+ * check-registry-contracts.mjs asserts the contract DATA is in sync and
+ * structurally sound. This asserts the thing authors actually care about:
+ * that JSX which should save, saves — and that JSX which should be caught,
+ * still is. Every positive case here is a snippet that `save_screen`
+ * rejected before the d.ts rewrite (Aug 2026 reports), including the two
+ * the reports name as verification criteria.
+ *
+ * Contracts are converted here exactly as the two production seams do it
+ * (apps/mcp-server/src/registry-contracts.ts and
+ * apps/docs/lib/registry-contracts.ts). If you change the conversion,
+ * change it in all three or this test stops meaning anything.
+ */
+
+import { z } from "zod";
+import { validateAgainstContract, formatViolations } from "../src/core/index.js";
+import { BRIGHTLOCAL_CONTRACTS } from "../src/registry/brightlocal/contracts.generated.js";
+
+type ContractsMap = Parameters<typeof validateAgainstContract>[1]["contracts"];
+type Contract = ContractsMap[string];
+
+function toContracts(): ContractsMap {
+  const out: Record<string, Contract> = {};
+  for (const [name, spec] of Object.entries(BRIGHTLOCAL_CONTRACTS)) {
+    const props: Record<string, Contract["props"][string]> = {};
+    for (const [pn, p] of Object.entries(spec.props)) {
+      let schema: z.ZodType<unknown>;
+      switch (p.kind) {
+        case "enum":
+          schema = p.values?.length
+            ? z.enum(p.values as [string, ...string[]])
+            : z.string();
+          break;
+        case "boolean": schema = z.boolean(); break;
+        case "number": schema = z.number(); break;
+        case "unknown": schema = z.unknown(); break;
+        default: schema = z.string();
+      }
+      if (p.optional) schema = schema.optional();
+      props[pn] = { schema, design: p.design, description: p.description, default: p.default };
+    }
+    out[name] = {
+      name: spec.name,
+      description: spec.description ?? "",
+      props,
+      variantDefaults: spec.variantDefaults ? { ...spec.variantDefaults } : undefined,
+      subcomponents: spec.subcomponents ? [...spec.subcomponents] : undefined,
+      element: spec.element,
+      subcomponentElements: spec.subcomponentElements ? { ...spec.subcomponentElements } : undefined,
+    };
+  }
+  return out;
+}
+
+const contracts = toContracts();
+
+const CASES: Array<[string, string, boolean]> = [
+  [
+    "doc verification: Tabs",
+    `const App = () => (
+      <Tabs dataHook="review-tabs" value={tab} onValueChange={setTab}>
+        <TabsList dataHook="review-tabs-list">
+          <TabsTrigger value="all" dataHook="tab-all">All</TabsTrigger>
+        </TabsList>
+      </Tabs>
+    );`,
+    true,
+  ],
+  [
+    "doc verification: Checkbox checked/onCheckedChange",
+    `const App = () => <Checkbox dataHook="cb" checked onCheckedChange={() => {}} />;`,
+    true,
+  ],
+  [
+    "Button onClick + variant + size",
+    `const App = () => <Button dataHook="b" variant="outline" size="sm" onClick={() => {}}>Go</Button>;`,
+    true,
+  ],
+  [
+    "DataTable family: pagination + select-all + search take `table`",
+    `const App = () => (
+      <DataTable table={table} dataHook="dt">
+        <DataTableToolbar dataHook="tb">
+          <DataTableSearch table={table} placeholder="Search" />
+        </DataTableToolbar>
+        <DataTableSelectAllCheckbox table={table} dataHook="all" />
+        <DataTablePagination table={table} dataHook="pg" showRowCount />
+      </DataTable>
+    );`,
+    true,
+  ],
+  [
+    "Progress takes value/max (doc 2 §5)",
+    `const App = () => <Progress dataHook="p" value={62} max={100} indicatorClassName="bg-red-500" />;`,
+    true,
+  ],
+  [
+    "Progress `color` — present in 2.25.0 (absent in the 2.20.0 the repo used to pin, which is why doc 2 §5 and the registry disagreed)",
+    `const App = () => <Progress dataHook="p" value={62} color="green" />;`,
+    true,
+  ],
+  [
+    "NEGATIVE: Progress color is a real enum, so a bogus member is caught",
+    `const App = () => <Progress dataHook="p" value={62} color="__x" />;`,
+    false,
+  ],
+  [
+    "ChartContainer width as number (doc 2 §4)",
+    `const App = () => <ChartContainer dataHook="c" config={cfg} width={190} height="100%" />;`,
+    true,
+  ],
+  [
+    "House template: SidebarProvider / GlobalLayoutContentBody dataHook (doc 2 §3)",
+    `const App = () => (
+      <SidebarProvider dataHook="provider" defaultOpen>
+        <GlobalLayoutContentBody dataHook="reviews-page-body">x</GlobalLayoutContentBody>
+      </SidebarProvider>
+    );`,
+    true,
+  ],
+  [
+    "DropdownMenu with checkbox items (doc 2 §2/§3)",
+    `const App = () => (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button dataHook="m">Menu</Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuCheckboxItem checked onCheckedChange={() => {}}>Google</DropdownMenuCheckboxItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );`,
+    true,
+  ],
+  [
+    "Input controlled (doc 2 §2)",
+    `const App = () => <Input dataHook="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" />;`,
+    true,
+  ],
+  [
+    "Table family on 2.25.0: scrollRegionLabel / layout / minWidth on the root, sizing on cells, onClick on a row",
+    `const App = () => (
+      <Table dataHook="t" layout="fixed" minWidth="720px" scrollRegionLabel="Reviews">
+        <TableHeader dataHook="th">
+          <TableRow dataHook="hr">
+            <TableHead dataHook="c1" width="40%" minWidth="220px" align="left">Review</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody dataHook="tb">
+          <TableRow dataHook="r1" onClick={() => open(1)}>
+            <TableCell dataHook="c1" size="lg" align="left">x</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    );`,
+    true,
+  ],
+  [
+    "DataTable root: stickyHeader / scrollRegionLabel / layout / footer (2.25.0)",
+    `const App = () => (
+      <DataTable
+        table={table}
+        dataHook="dt"
+        stickyHeader
+        layout="fixed"
+        minWidth="900px"
+        scrollRegionLabel="Reviews"
+        isLoading={false}
+        skeletonRowCount={8}
+        noResultsMessage="Nothing yet"
+        footer={<TableFooter dataHook="f" />}
+      />
+    );`,
+    true,
+  ],
+  [
+    "DataTableBulkActions — new in 2.25.0, absent from every earlier contract set",
+    `const App = () => (
+      <DataTableBulkActions table={table} dataHook="bulk">
+        <DataTableBulkActionsSummary dataHook="sum" />
+        <DataTableBulkActionsActions dataHook="acts" />
+      </DataTableBulkActions>
+    );`,
+    true,
+  ],
+  [
+    "NEGATIVE: bad variant is still caught",
+    `const App = () => <Button dataHook="b" variant="__x">Go</Button>;`,
+    false,
+  ],
+  [
+    "NEGATIVE: unknown prop is still caught",
+    `const App = () => <Button dataHook="b" __x="canary">Go</Button>;`,
+    false,
+  ],
+  [
+    "dataHook is REQUIRED in the contract but design:plumbing, which the validator deliberately exempts from the missing-required check — recorded so a future change to that rule is a visible test flip, not a silent wave of new errors",
+    `const App = () => <Checkbox checked />;`,
+    true,
+  ],
+];
+
+let failed = 0;
+for (const [label, jsx, shouldPass] of CASES) {
+  const report = validateAgainstContract(jsx, { contracts });
+  const errors = report.violations.filter((v) => v.severity === "error");
+  const passed = errors.length === 0;
+  const ok = passed === shouldPass;
+  if (!ok) failed++;
+  console.log(
+    `${ok ? "PASS" : "FAIL"}  ${label} — ${errors.length} error(s), ${report.componentsChecked} checked`,
+  );
+  if (!ok || (!shouldPass && errors.length)) {
+    console.log(
+      formatViolations(report)
+        .split("\n")
+        .map((l) => `        ${l}`)
+        .join("\n"),
+    );
+  }
+}
+console.log(failed === 0 ? "\nALL CASES OK" : `\n${failed} CASE(S) FAILED`);
+process.exit(failed === 0 ? 0 : 1);

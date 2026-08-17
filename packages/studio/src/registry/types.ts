@@ -29,7 +29,14 @@
  *  Consumers (the settings panel) convert specs into real zod-backed
  *  ComponentContracts at the edge — see apps/docs/lib/registry-contracts. */
 export interface RegistryPropSpec {
-  kind: "enum" | "boolean" | "string" | "number";
+  /** `"unknown"` is the honest answer for a prop whose real type no
+   *  serialisable kind can express — a mixed union (`number |
+   *  ${number}%`), an opaque object (TanStack's `Table<TData>`, Radix's
+   *  `CheckedState`), a callback, or a ReactNode slot. It converts to
+   *  `z.unknown()`, so the prop is ACCEPTED with any value instead of
+   *  being coerced to `string` and then rejecting `<Checkbox checked />`
+   *  (Aug 2026, the d.ts-extracted contracts). */
+  kind: "enum" | "boolean" | "string" | "number" | "unknown";
   /** Enum members, in display order. Required when kind === "enum". */
   values?: readonly string[];
   /** Same taxonomy as PropContract.design. Controls panel visibility:

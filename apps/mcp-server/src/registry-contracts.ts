@@ -49,6 +49,21 @@ const REGISTRIES: Readonly<Record<string, DesignSystemRegistry>> = {
   [BRIGHTLOCAL_REGISTRY.id]: BRIGHTLOCAL_REGISTRY,
 };
 
+/** Every registry id a project row may carry — for tool descriptions and
+ *  the "which design system am I on?" error paths. */
+export const REGISTRY_IDS: readonly string[] = Object.keys(REGISTRIES);
+
+/** The registry a project's screens are generated for AND validated
+ *  against. One resolver so no tool can answer from a different design
+ *  system than `save_screen` enforces (Aug 2026: `list_components` was
+ *  registry-blind and authoritatively described gradeui components to a
+ *  BrightLocal project — every one of which fails the contract check). */
+export function registryFor(
+  registryId: string | null | undefined,
+): DesignSystemRegistry {
+  return (registryId && REGISTRIES[registryId]) || GRADE_REGISTRY;
+}
+
 function specPropToContract(spec: RegistryPropSpec): Prop {
   let schema: z.ZodType<unknown>;
   switch (spec.kind) {
@@ -63,6 +78,12 @@ function specPropToContract(spec: RegistryPropSpec): Prop {
       break;
     case "number":
       schema = z.number();
+      break;
+    case "unknown":
+      // Mixed unions / opaque objects / callbacks / ReactNode slots —
+      // no serialisable kind describes them, and coercing to string
+      // would REJECT valid literals (`<Checkbox checked />`).
+      schema = z.unknown();
       break;
     default:
       schema = z.string();
@@ -105,7 +126,7 @@ const cache = new Map<string, ContractsMap>();
 export function contractsForRegistry(
   registryId: string | null | undefined,
 ): { registry: DesignSystemRegistry; contracts: ContractsMap } {
-  const registry = (registryId && REGISTRIES[registryId]) || GRADE_REGISTRY;
+  const registry = registryFor(registryId);
   const specs = registry.components.contracts;
   if (!specs) {
     // gradeui's contracts live in the package itself; any OTHER registry

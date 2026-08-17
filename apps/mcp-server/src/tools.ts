@@ -20,11 +20,15 @@ import {
   formatViolations,
 } from "@gradeui/studio/core";
 import {
-  ALLOWED_COMPONENTS,
   relevantComponentNames,
   renderComponentRefsBlock,
 } from "@gradeui/studio/playbook";
-import { contractsForRegistry } from "./registry-contracts";
+import type { DesignSystemRegistry } from "@gradeui/studio/registry";
+import {
+  contractsForRegistry,
+  registryFor,
+  REGISTRY_IDS,
+} from "./registry-contracts";
 import type { McpEnv } from "./supabase";
 import {
   listProjects,
@@ -138,13 +142,26 @@ const PAYLOAD_BUDGET_CHARS = 28_000;
 
 /** Build a screen context that fits the budget: full refs when they fit,
  *  compact when they don't. Returns the style used so the tool result can
- *  say which fidelity the host got. */
-function budgetedContext(brief: string, pin?: readonly string[]) {
-  const full = createScreenContext(brief, { pin });
+ *  say which fidelity the host got.
+ *
+ *  `registry` is the PROJECT'S design system — the same one save_screen
+ *  validates against. Without it the rules, allowlist and refs handed to
+ *  the author describe gradeui on a BrightLocal project, which is the
+ *  registry-blindness this file was audited for (Aug 2026). */
+function budgetedContext(
+  brief: string,
+  registry: DesignSystemRegistry,
+  pin?: readonly string[],
+) {
+  const full = createScreenContext(brief, { pin, registry });
   if (full.system.length <= PAYLOAD_BUDGET_CHARS) {
     return { ...full, style: "full" as const };
   }
-  const compact = createScreenContext(brief, { pin, refsStyle: "compact" });
+  const compact = createScreenContext(brief, {
+    pin,
+    registry,
+    refsStyle: "compact",
+  });
   return { ...compact, style: "compact" as const };
 }
 
@@ -622,10 +639,22 @@ export function registerGradeTools(
   server.registerTool(
     "list_components",
     {
-      title: "List Grade components",
+      title: "List a project's design-system components",
       description:
-        'List the Grade Design System components you may use in screen JSX (the Studio allowlist) — the source of truth for what save_screen will accept. Call with NO arguments for the full name list. Pass `query` (a feature, component name, or alias — e.g. "chart", "map listings", "dropdown menu") to get the COMPACT API reference (import, variants, sizes, props, composes_with) for the matching components. Only emit components this tool returns; anything else fails the contract check on save.',
+        'List the components you may use in a project\'s screen JSX (that design system\'s Studio allowlist) — the source of truth for what save_screen will accept FOR THAT PROJECT. Projects are registry-scoped (Grade, BrightLocal, …), so pass `projectId` (or `registryId`) — without one this tool cannot know which design system you are writing against. Pass `query` (a feature, component name, or alias — e.g. "chart", "data table", "dropdown menu") to get the COMPACT API reference (import, variants, sizes, props, composes_with) for the matching components; omit it for the full name list. Only emit components this tool returns; anything else fails the contract check on save.',
       inputSchema: {
+        projectId: z
+          .string()
+          .optional()
+          .describe(
+            "Project id (from list_projects) — resolves the SAME registry save_screen will validate against. Required unless you pass registryId.",
+          ),
+        registryId: z
+          .string()
+          .optional()
+          .describe(
+            `Explicit design-system registry, for browsing without a project. One of: ${REGISTRY_IDS.join(", ")}.`,
+          ),
         query: z
           .string()
           .optional()
@@ -634,14 +663,44 @@ export function registerGradeTools(
           ),
       },
     },
-    async ({ query }) => {
-      const allowedList = [...ALLOWED_COMPONENTS];
+    async ({ projectId, registryId, query }) => {
+      // Registry-BLIND answers are worse than no answer: this tool used to
+      // describe gradeui components authoritatively to BrightLocal
+      // projects, where every one of them fails the save-time contract
+      // check (Aug 2026 report). Refuse rather than guess.
+      let resolvedId: string | null;
+      if (projectId) {
+        ({ registryId: resolvedId } = await assertProject(
+          sb,
+          env.ownerUserId,
+          projectId,
+        ));
+      } else if (registryId) {
+        if (!REGISTRY_IDS.includes(registryId)) {
+          return errorText(
+            `Unknown registryId "${registryId}". Known registries: ${REGISTRY_IDS.join(", ")}.`,
+          );
+        }
+        resolvedId = registryId;
+      } else {
+        return errorText(
+          [
+            "list_components needs to know WHICH design system you are writing against — component names collide across registries and the wrong answer fails the contract check on save.",
+            "",
+            `Pass \`projectId\` (from list_projects, preferred — it resolves the same registry save_screen validates against), or \`registryId\` (one of: ${REGISTRY_IDS.join(", ")}) to browse without a project.`,
+          ].join("\n"),
+        );
+      }
+
+      const registry = registryFor(resolvedId);
+      const allowedList = [...registry.components.allowed];
+      const label = `${registry.name} (registry "${registry.id}", package ${registry.package.name})`;
 
       // No query → the full allowlist as a plain name list.
       if (!query || !query.trim()) {
         return text(
           [
-            `Grade components you may emit (${allowedList.length}) — the Studio allowlist:`,
+            `${label} — components you may emit (${allowedList.length}):`,
             "",
             allowedList.map((n) => `- ${n}`).join("\n"),
             "",
@@ -656,7 +715,7 @@ export function registerGradeTools(
       // hint at a component the model can't actually emit.
       const q = query.trim().toLowerCase();
       const allowed = new Set(allowedList.map((n) => n.toLowerCase()));
-      const refMatched = relevantComponentNames(query).filter((n) =>
+      const refMatched = relevantComponentNames(query, registry).filter((n) =>
         allowed.has(n.toLowerCase()),
       );
       const nameMatched = allowedList.filter((n) =>
@@ -666,7 +725,7 @@ export function registerGradeTools(
 
       if (matched.length === 0) {
         return text(
-          `No allowlisted components matched "${query}". Call list_components with no arguments to see the full list.`,
+          `No ${label} component matched "${query}". Call list_components with the same project/registry and no \`query\` to see the full list.`,
         );
       }
 
@@ -676,8 +735,9 @@ export function registerGradeTools(
       const block = renderComponentRefsBlock({
         onlyFor: matched,
         style: "compact",
+        registry,
       });
-      const header = `Matched ${matched.length} component(s) for "${query}": ${matched.join(", ")}`;
+      const header = `${label} — matched ${matched.length} component(s) for "${query}": ${matched.join(", ")}`;
       return text(block ? `${header}\n\n${block}` : header);
     },
   );
@@ -699,19 +759,21 @@ export function registerGradeTools(
       },
     },
     async ({ projectId, brief }) => {
-      await assertProject(sb, env.ownerUserId, projectId);
+      const { registryId } = await assertProject(sb, env.ownerUserId, projectId);
+      const registry = registryFor(registryId);
       const guidelines = projectGuidelinesBlock(
         await getProjectGuidelines(sb, projectId),
       );
-      const { system, refs, style } = budgetedContext(brief);
+      const { system, refs, style } = budgetedContext(brief, registry);
       const body = [
         `Target project: ${projectId}`,
+        `Design system: ${registry.name} (registry "${registry.id}", package ${registry.package.name})`,
         `Component refs in scope (${style}): ${refs.join(", ") || "(none matched)"}`,
         "",
-        "Write the screen as ONE self-contained React component named `App` with `export default`, following the Grade rules below. Then call `save_screen` with { projectId, name, jsx } where `jsx` is the full component source.",
+        `Write the screen as ONE self-contained React component named \`App\` with \`export default\`, following the ${registry.name} rules below. Then call \`save_screen\` with { projectId, name, jsx } where \`jsx\` is the full component source.`,
         ...(guidelines ? ["", guidelines] : []),
         "",
-        "─── GRADE SCREEN CONTEXT ───",
+        `─── ${registry.name.toUpperCase()} SCREEN CONTEXT ───`,
         system,
       ].join("\n");
       return text(body);
@@ -724,7 +786,7 @@ export function registerGradeTools(
     {
       title: "Get a Grade screen to edit",
       description:
-        "Fetch a screen's current JSX source plus the Grade component refs implied by that source, so you can iterate on it. Describe the change in words (there is no browser selection over MCP), edit the JSX, then call save_screen with the SAME screenId.",
+        "Fetch a screen's current JSX source plus the component refs implied by that source (from the PROJECT'S design system, not necessarily Grade), so you can iterate on it. Describe the change in words (there is no browser selection over MCP), edit the JSX, then call save_screen with the SAME screenId.",
       inputSchema: {
         projectId: z.string().describe("Project id"),
         screenId: z
@@ -733,7 +795,8 @@ export function registerGradeTools(
       },
     },
     async ({ projectId, screenId }) => {
-      await assertProject(sb, env.ownerUserId, projectId);
+      const { registryId } = await assertProject(sb, env.ownerUserId, projectId);
+      const registry = registryFor(registryId);
       const screen = await getScreen(sb, projectId, screenId);
       if (!screen) {
         const screens = await listScreens(sb, projectId);
@@ -749,13 +812,14 @@ export function registerGradeTools(
       const appSource = screen.state?.appSource ?? "";
       // Derive refs from the CURRENT source so the edit context surfaces the
       // components the screen actually uses.
-      const { system, refs, style } = budgetedContext(appSource);
+      const { system, refs, style } = budgetedContext(appSource, registry);
       const guidelines = projectGuidelinesBlock(
         await getProjectGuidelines(sb, projectId),
       );
       const body = [
         `Screen: "${screen.name}" — id: ${screen.id} (position ${screen.position})`,
         `version (updatedAt): ${screen.updatedAt} — pass this back to save_screen as expectedUpdatedAt so a concurrent edit isn't overwritten.`,
+        `Design system: ${registry.name} (registry "${registry.id}", package ${registry.package.name})`,
         `Component refs in scope (${style}): ${refs.join(", ") || "(none matched)"}`,
         "",
         "Current source (raw JSX):",
@@ -763,9 +827,9 @@ export function registerGradeTools(
         appSource,
         "```",
         "",
-        "Edit this JSX per the user's request, then call `save_screen` with { projectId, screenId, jsx, expectedUpdatedAt } (same screenId, the version above) to update it in place. Grade rules below.",
+        `Edit this JSX per the user's request, then call \`save_screen\` with { projectId, screenId, jsx, expectedUpdatedAt } (same screenId, the version above) to update it in place. ${registry.name} rules below.`,
         "",
-        "─── GRADE SCREEN CONTEXT ───",
+        `─── ${registry.name.toUpperCase()} SCREEN CONTEXT ───`,
         system,
       ].join("\n");
       return text(body);

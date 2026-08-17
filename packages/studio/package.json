@@ -23,6 +23,8 @@
     "generate:sidecars": "node scripts/generate-sidecars.mjs",
     "generate:registry-sidecars": "node scripts/generate-registry-sidecars.mjs",
     "generate:brightlocal-contracts": "node scripts/generate-brightlocal-contracts.mjs",
+    "check:contracts": "node scripts/check-registry-contracts.mjs",
+    "verify:brightlocal-contracts": "tsx scripts/verify-brightlocal-contracts.mts",
     "generate:scaffolds": "node scripts/generate-scaffolds.mjs",
     "gen:scaffolds-playground": "node scripts/generate-scaffolds-playground.mjs",
     "generate": "pnpm run generate:sidecars && pnpm run generate:scaffolds && pnpm run gen:scaffolds-playground",
@@ -36,6 +38,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@types/node": "^20"
+    "@types/node": "^20",
+    "tsx": "^4.7.0"
   }
 }

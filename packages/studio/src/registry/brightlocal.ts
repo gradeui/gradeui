@@ -80,7 +80,13 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
   shortName: "BrightLocal DS",
   package: {
     name: "@brightlocal/ui-components",
-    version: "2.20.0",
+    // MUST match the version the contracts were extracted from (the
+    // devDependency in apps/docs/package.json). This is the version the
+    // PREVIEW loads from esm.sh, so a stale pin renders an older library
+    // than save_screen validated against: the screen passes the contract
+    // check and then dies at runtime with "has no export X".
+    // scripts/check-registry-contracts.mjs enforces the match.
+    version: "2.25.0",
     // Empty ON PURPOSE. The tokens CSS is inlined via runtime.previewCss
     // instead of npm-imported: tailwind-preset.css is a Tailwind v4
     // SOURCE file (@import "tailwindcss" / "tw-animate-css", @theme) —

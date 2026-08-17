@@ -27,6 +27,18 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Contracts are EXTRACTED from @brightlocal/ui-components' shipped
+      # .d.ts. A version bump without a regeneration silently reintroduces
+      # the drift that had save_screen rejecting props the package really
+      # has — so fail the build instead of discovering it in a prototype.
+      - name: Check registry contracts are in sync
+        run: pnpm -F @gradeui/studio check:contracts
+
+      # The behavioural half: JSX that should save, saves. Every positive
+      # case is a snippet save_screen used to reject.
+      - name: Verify BrightLocal contracts against the validator
+        run: pnpm -F @gradeui/studio verify:brightlocal-contracts
+
       - name: Build packages
         run: pnpm -r --filter "./packages/*" build
 
