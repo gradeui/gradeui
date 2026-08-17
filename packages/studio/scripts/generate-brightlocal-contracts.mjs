@@ -535,6 +535,9 @@ export function buildContracts() {
   const distDir = join(pkgDir, "dist");
   const specs = {};
   const unconstrained = [];
+  /** Barrel re-exports of third-party components (Recharts) — allowlisted,
+   *  deliberately uncontracted. */
+  const reExported = [];
   /** Component-shaped barrel exports — what the model MAY EMIT. Wider
    *  than the contract set: DataTableToolbarLeft is a real component that
    *  simply has no props of its own. */
@@ -567,6 +570,20 @@ export function buildContracts() {
     // contract. Falls through to the same omission rule as an empty spec.
     if (!propsType) {
       unconstrained.push(name);
+      continue;
+    }
+
+    // RE-EXPORTS ARE ALLOWLISTED BUT NOT CONTRACTED. The barrel re-exports
+    // Recharts wholesale (Pie, Cell, XAxis, …). Those resolve to ~190-prop
+    // types that are mostly DOM/SVG passthrough, and they render SVG — so a
+    // generated contract lands `element: "div"` and then rejects real SVG
+    // attributes (`<Pie stroke="…">`, which Recharts genuinely accepts).
+    // A wrong contract is worse than none: with no entry,
+    // skipUnknownComponents leaves the tag unchecked, which is the honest
+    // answer for a third-party surface we do not own. Same principle as the
+    // no-props/no-element omission above.
+    if (declFile && !declFile.startsWith(pkgDir)) {
+      reExported.push(name);
       continue;
     }
     const spec = buildSpec(name, propsType, checker).spec;
@@ -663,6 +680,7 @@ ${mapKeys.map((k) => `  ${JSON.stringify(k)}: ${JSON.stringify(importMap[k])},`)
       localNames: Object.keys(local),
       skipped,
       unconstrained,
+      reExported,
     },
   };
 }
@@ -686,6 +704,11 @@ function main() {
   console.log(
     `  ${stats.fromSidecars} registry-local, from registries/brightlocal/sidecars/*.md`,
   );
+  if (stats.reExported.length) {
+    console.log(
+      `  ${stats.reExported.length} re-exported third-party components allowlisted but NOT contracted (SVG/DOM passthrough we do not own): ${stats.reExported.slice(0, 8).join(", ")}${stats.reExported.length > 8 ? ", …" : ""}`,
+    );
+  }
   if (stats.unconstrained.length) {
     console.log(
       `  ${stats.unconstrained.length} omitted (no own props and no host element — a contract there could only reject): ${stats.unconstrained.join(", ")}`,

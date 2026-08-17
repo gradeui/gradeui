@@ -226,6 +226,52 @@ sources").
 The part consumers will get wrong is counts: they want the **pre-facet** dataset,
 or the numbers collapse to zero as you select.
 
+## 13. `ChartContainer` forces `aspect-video`
+
+```
+flex aspect-video justify-center text-xs …
+```
+
+So `width` / `height` are misleading: `height="100%"` never applies and any
+non-16:9 chart is silently distorted. A 190px square box measured **190 x 107**
+(190 x 9/16 = 106.875) and the donut inside it read as cropped when it was
+actually squashed.
+
+`className` IS forwarded through `cn`, so `aspect-square` displaces it — but
+nothing in the API suggests you need to. Note also that Recharts' default 5px
+chart margin clips an `outerRadius` sized to fill the box.
+
+The earlier failure log blamed a nested `ResponsiveContainer` for invisible
+charts. This is the second, quieter half of the same problem.
+
+**Suggested:** drop `aspect-video` when an explicit `height` is passed, or
+document that the aspect ratio wins.
+
+## 14. The registry's preview CSS is missing the `--brand-*` colour tokens
+
+*(Our gap, not the DS's — recorded here because it presents as a DS bug.)*
+
+`Progress`'s colour map:
+
+```js
+green:  { track: "bg-brand-primary-foreground/20", indicator: "bg-green-400" }
+red:    { track: "bg-brand-red/20",                indicator: "bg-brand-red" }
+orange: { track: "bg-brand-orange/20",             indicator: "bg-brand-orange" }
+yellow: { track: "bg-brand-yellow/20",             indicator: "bg-brand-yellow" }
+```
+
+`preview-css.generated.ts` defines only `--brand-primary-foreground`, so
+**three of the four documented colours render fully transparent** — the bar
+disappears with no error. `green` works solely because its indicator is plain
+Tailwind `bg-green-400`.
+
+The same missing tokens made a hand-rolled `bg-[var(--brand-orange)]` bar
+invisible, and `var(--brand-red)` paint a Recharts wedge black.
+
+**Suggested:** extend the preview CSS extract to carry the full `--brand-*`
+set. An unresolved CSS variable fails silently in both `fill` and `bg-*`,
+which makes it an expensive class of bug to chase.
+
 ## 12. Missing brand marks
 
 TripAdvisor and Bing Places have no icon in the 127-asset social-media set
