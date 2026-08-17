@@ -448,7 +448,15 @@ export function DataView<T extends Record<string, any>>(props: DataViewProps<T>)
         header: () => col.header,
         enableSorting: !!col.sortable,
         enableHiding: col.hideable !== false,
-        meta: col,
+        // `as ColumnDef<T>["meta"]`: @brightlocal/ui-components (a
+        // devDependency of apps/docs, for the BYODS registry) GLOBALLY
+        // augments TanStack's ColumnMeta with `width?: string`, and
+        // DataViewColumn.width is a number. Module augmentation is not
+        // scoped to the augmenting package, so their DataTable's types
+        // land on Grade's DataView and the build fails. The read side
+        // (`columnDef.meta as DataViewColumn`) already casts, so this
+        // never depended on TanStack's meta type in either direction.
+        meta: col as ColumnDef<T>["meta"],
       })),
     [columns],
   );
