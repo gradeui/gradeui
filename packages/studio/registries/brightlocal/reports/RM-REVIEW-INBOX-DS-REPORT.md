@@ -174,6 +174,31 @@ which also loses the `data-selected-item` hook.
 so trailing content never reflows. Counts beside a selection control are the
 common case, not an exotic one.
 
+## 5d. `Command` has no arrow-key navigation outside `CommandVirtualList`
+
+The only `ArrowDown` / `ArrowUp` handling in `command.js` sits inside
+`CommandVirtualList`, as a keydown listener it attaches to the closest
+`[data-slot="command"]`:
+
+```js
+const d = v.current?.closest('[data-slot="command"]');
+const p = (i) => { switch (i.key) { case "ArrowDown": … case "ArrowUp": … case "Enter": … } }
+```
+
+So `Command` + `CommandList` + `CommandItem` — the composition in the DS's own
+docs, and the one shadcn's combobox uses — is **mouse-only**. Verified live:
+focus on the `CommandInput`, two ArrowDowns, highlight never moves and
+`aria-activedescendant` stays `null`. Same with focus moved onto the `Command`
+root itself.
+
+This matters more than it first looks. A "searchable action menu" that cannot
+be driven from the keyboard is not a menu, and every consumer following the
+documented composition inherits the problem silently — nothing errors, the
+arrows simply do nothing.
+
+**Suggested:** move the keyboard model onto `Command` itself so every
+composition gets it, rather than only the virtualised one.
+
 ## 6. `SheetContent` has no scroll region
 
 ```
