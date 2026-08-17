@@ -89,7 +89,22 @@ which renders a **rounded rectangle in a row of pills**.
 
 Measured: search radius 6px, facet button radius 9999px, at identical 32px heights.
 
-**Suggested:** either give `InputGroup` a pill option, or change the recipe.
+Worse, the DS's own field-shaped controls declare **three different radii**:
+
+| Component | radius |
+|---|---|
+| `SelectTrigger` | `rounded-sm` |
+| `InputGroup` / `DataTableSearch` | `rounded-md` |
+| `Button` | `rounded-full` |
+
+They resolve to the same 6px under the current theme, so the inconsistency is
+invisible until someone re-themes and the row splits into three shapes. It also
+makes "match the design system" genuinely ambiguous for anyone building a filter
+bar: a facet trigger is a Button by construction but a Select by behaviour, and
+those two answers disagree.
+
+**Suggested:** one declared radius for field-shaped controls, and either give
+`InputGroup` a pill option or change the toolbar recipe.
 
 ## 4. `Command` inside `Popover` double-borders
 
