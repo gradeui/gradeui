@@ -120,6 +120,22 @@ overflow-hidden px-2 py-1
 panel. Upstream shadcn uses a uniform `p-1`. Measured after correcting to `p-1`:
 5px on left, right and top (4px padding + 1px border).
 
+## 5b. `CommandItem` rows are out of proportion with the DS's own controls
+
+```
+relative flex cursor-default items-center gap-2 rounded-sm px-2 py-3 text-sm
+```
+
+`py-3` gives a **42px** row. The `size="sm"` Button that opens the menu is
+**32px**, so the panel reads noticeably heavier than the control it belongs to.
+Upstream shadcn's CommandItem is `py-1.5`, which lands at 32px exactly.
+
+If the intent is a comfortable touch target, it should scale with context
+rather than being fixed — a filter menu on desktop is the common case and it is
+the one that looks wrong.
+
+**Suggested:** `py-1.5` as the default, or a density prop on `Command`.
+
 ## 6. `SheetContent` has no scroll region
 
 ```
