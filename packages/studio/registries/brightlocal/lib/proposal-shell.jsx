@@ -500,9 +500,16 @@ const SHORTCUT_LABEL =
 // screen's preset follows.
 // Header band breathing room (tweaker: Header → Space). Values are the
 // band's own padding; px stays the DS content inset on both.
+//
+// The VERTICAL padding steps down below sm (Ali, 18 Aug: "on mobile on
+// these kind of screens we are up against it for real estate"). At 375px
+// the band was eating 234px, a third of the viewport, before a single row
+// of content — 40px of that was this padding. px does NOT step down with
+// it: the band's horizontal inset has to keep matching the body's, and
+// the body's mobile margins are a separate, bigger change.
 export const HEADER_SPACES = {
-  default: "px-6 pt-6 pb-4",
-  spacious: "px-6 pt-10 pb-8",
+  default: "px-6 pt-4 pb-3 sm:pt-6 sm:pb-4",
+  spacious: "px-6 pt-6 pb-5 sm:pt-10 sm:pb-8",
 };
 
 export const LOOK_PRESETS = {

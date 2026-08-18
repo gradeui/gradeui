@@ -2,7 +2,7 @@
 name: PageHeader
 import: "@brightlocal/proposal"
 props:
-  - title — Page title (an h2, sized by --gds-page-header-title-size, default 30px/text-3xl — one step BELOW the DS TypographyH2, which is 36px from md up). It is the current page and never appears in the breadcrumb.
+  - title — Page title (an h2, sized by --gds-page-header-title-size, default 24px below sm and 30px/text-3xl from sm up — one step BELOW the DS TypographyH2, which is 36px from md up). It is the current page and never appears in the breadcrumb.
   - breadcrumbs? — Ancestor trail, MAX TWO ({label, href?}[]). Ancestors only — BreadcrumbPage is deliberately unused. `[]` (the default) renders an invisible spacer so crumb-less pages keep the row's height and nothing jumps on navigation; `false` drops the utility row ENTIRELY (and collapses `utility` into the title row). Below sm the trail collapses to the LAST crumb behind a back arrow. (default [])
   - description? — Subtitle line under the title (muted, measured). Every proposal page should carry one — BrightLocal use page descriptions often (Ali, 18 Aug), so the description row is expected furniture, not an exception. String or node. (default none)
   - lastUpdated?: string — Timestamp shown muted at the RIGHT of the status row, level with the description — the arrangement BrightLocal's replatformed header uses. Renders as "Last updated August 13, 2026" (their format: month first, no ordinal, no colon), and when the source string carries a time the DATE is dot-underlined with the full stamp ("August 13, 2026 at 10:20 AM UTC") on hover or keyboard focus. That affordance is built in — never hand-roll a tooltip on a header date. Pass "auto" to BIND data.aiInsights.lastUpdated (the AI Insights pages own it — it was removed from the AreaInsights header so it lives in ONE place); any other string renders literally; omit to hide.
@@ -37,8 +37,10 @@ takes no className for sizing, the same way `navDensity` on
 AppLayoutShell doesn't: set the variable on any ancestor (the screen
 root, or the shell) and the header follows. Defaults in brackets:
 
-- `--gds-page-header-title-size` [1.875rem / 30px]
-- `--gds-page-header-title-leading` [2.25rem]
+- `--gds-page-header-title-size` [1.5rem / 24px below sm, 1.875rem / 30px
+  from sm up — the DEFAULT steps down on mobile, where the band was eating
+  a third of a 375px viewport. Setting this variable overrides both.]
+- `--gds-page-header-title-leading` [1.875rem below sm, 2.25rem from sm up]
 - `--gds-page-header-title-weight` [600]
 - `--gds-page-header-crumb-size` [0.875rem]
 - `--gds-page-header-crumb-gap` [0.375rem / 6px] — breadcrumb row →

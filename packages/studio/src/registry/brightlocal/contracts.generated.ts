@@ -11895,7 +11895,7 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "title": {
         "kind": "unknown",
         "design": "plumbing",
-        "description": "Page title (an h2, sized by --gds-page-header-title-size, default 30px/text-3xl — one step BELOW the DS TypographyH2, which is 36px from md up). It is the current page and never appears in the breadcrumb."
+        "description": "Page title (an h2, sized by --gds-page-header-title-size, default 24px below sm and 30px/text-3xl from sm up — one step BELOW the DS TypographyH2, which is 36px from md up). It is the current page and never appears in the breadcrumb."
       },
       "breadcrumbs": {
         "kind": "unknown",

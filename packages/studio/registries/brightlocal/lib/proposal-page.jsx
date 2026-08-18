@@ -438,6 +438,15 @@ export function PageHeader({
       data-hook={dataHook}
       className={[
         "flex w-full min-w-0 flex-col",
+        // MOBILE TITLE: 24px/30px below sm, the documented 30px/36px from
+        // sm up (Ali, 18 Aug: "we need to drop the font size a touch" on
+        // mobile). Set as the DEFAULT the inline style falls back to, not
+        // as the value, so a screen's own --gds-page-header-title-size
+        // still overrides at both widths.
+        "[--gds-page-header-title-size-default:1.5rem]",
+        "[--gds-page-header-title-leading-default:1.875rem]",
+        "sm:[--gds-page-header-title-size-default:1.875rem]",
+        "sm:[--gds-page-header-title-leading-default:2.25rem]",
         // "center" caps + centres to match the body; "justify" fills the
         // band edge-to-edge. mx-auto is the load-bearing bit — the DS
         // body is centred, so without it the header drifts left of it.
@@ -552,7 +561,7 @@ export function PageHeader({
           block with it. */}
       <div
         className={[
-          "flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+          "flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
           hasTrail ? "mt-[var(--gds-page-header-crumb-gap,0.375rem)]" : "",
         ]
           .filter(Boolean)
@@ -563,9 +572,19 @@ export function PageHeader({
           // pb-0: the DS heading carries pb-2, which would stack on top
           // of the row gap and put the seam out of one place's control.
           className="min-w-0 pb-0"
+          // Two-level var, and the reason is the interaction between them:
+          // an inline style cannot carry a media query, and a CLASS cannot
+          // beat the DS's own text-3xl md:text-4xl on TypographyH2 (equal
+          // specificity, so stylesheet order decides and md: lands last).
+          // So the inline style stays, and its DEFAULT is a variable the
+          // root sets per breakpoint. A screen setting
+          // --gds-page-header-title-size still wins at every width, which
+          // is the seam this module documents.
           style={{
-            fontSize: "var(--gds-page-header-title-size, 1.875rem)",
-            lineHeight: "var(--gds-page-header-title-leading, 2.25rem)",
+            fontSize:
+              "var(--gds-page-header-title-size, var(--gds-page-header-title-size-default, 1.875rem))",
+            lineHeight:
+              "var(--gds-page-header-title-leading, var(--gds-page-header-title-leading-default, 2.25rem))",
             fontWeight: "var(--gds-page-header-title-weight, 600)",
           }}
         >
