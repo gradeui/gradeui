@@ -52,6 +52,7 @@ import {
   TypographyMuted,
 } from "@brightlocal/ui-components";
 import {
+  ArrowLeft,
   ArrowRight,
   BarChart3,
   Briefcase,
@@ -186,6 +187,9 @@ export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
 // page); BreadcrumbPage is deliberately unused. `meta` renders in the
 // muted row under the title; `actions` right-aligns (buttons, menus).
 export function PageHeader({
+  // ANCESTORS ONLY, max two. `[]` keeps the row's FOOTPRINT (invisible
+  // spacer) so the band is the same height on every page; `false`
+  // removes the row entirely — see the utility-row note below.
   breadcrumbs = [],
   title,
   // Subtitle under the H2 — every proposal page should carry one
@@ -204,7 +208,17 @@ export function PageHeader({
   // that default was dropped — the location already leads the crumb, so
   // the row was redundant (Ali, 20 Jul).
   meta,
+  // PAGE-LEVEL CTAs. These render on the TITLE row, right, vertically
+  // centred on the title (Ali, 18 Aug) — they used to sit top-aligned,
+  // which landed them in the breadcrumb row, i.e. page actions reading
+  // as utility chrome. Same API, new position: no screen changes.
   actions,
+  // UTILITY slot — the right end of the breadcrumb row, for chrome that
+  // belongs to the app rather than the page. Defaults to the help
+  // affordance alone; pass a node to EXTEND it (your node leads, help
+  // follows unless help={false}); pass utility={false} to suppress the
+  // whole cluster, help included.
+  utility,
   // How the header CONTENT sits inside the full-bleed band the shell
   // paints (AppLayoutShell renders the header edge-to-edge; this decides
   // where its content lands within it):
@@ -230,16 +244,94 @@ export function PageHeader({
   const lastUpdatedValue = bindLastUpdated
     ? (data.aiInsights?.lastUpdated ?? null)
     : lastUpdated || null;
+
+  // breadcrumbs={false} suppresses the trail. The UTILITY ROW goes with
+  // it (spec decision (a), Ali 18 Aug): a row whose left half is empty
+  // is just a band of whitespace, so on title-only pages the utility
+  // cluster COLLAPSES into the title row's right cluster, leading the
+  // actions. The cost is that help isn't at a fixed screen position on
+  // those pages; the empty-band alternative read worse.
+  const hasTrail = breadcrumbs !== false;
+  const trail = (hasTrail ? breadcrumbs : [])
+    // Trail is ANCESTORS ONLY, max two (the H2 is the current page).
+    // Enforced here, not just documented — a screen passing a three-deep
+    // "All Locations > … > …" trail is clamped to the DEEPEST two
+    // (nearest the current page), so the immediate parent always
+    // survives the trim (Ali, 20 Jul).
+    .slice(-2)
+    // DATA-BOUND crumb: { bind: "location" } resolves to the CURRENT
+    // location's name at render position — "All Locations > Blackberry
+    // Farm Park" follows dataset switches with zero per-screen wiring
+    // (Ali, 18 Jul).
+    .map((crumb) =>
+      crumb.bind === "location" ? { ...crumb, label: data.location.name } : crumb,
+    );
+  // MOBILE (below sm) shows the LAST crumb only, behind a back arrow
+  // (Ali, 18 Aug): the nearest ancestor IS "back", and a two-deep trail
+  // on a phone wraps word-per-line. Full trail from sm up.
+  const backCrumb = trail.length ? trail[trail.length - 1] : null;
+
+  const helpButton = help ? (
+    // Deliberately quiet ("doesn't need to be mega bright"):
+    // muted icon, fills on hover.
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Help and support"
+          data-hook={`${dataHook}-help`}
+          className="text-muted-foreground hover:text-foreground rounded-full p-1.5 transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))]"
+        >
+          <HelpCircle className="size-[18px]" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 space-y-2 text-sm">
+        <p className="font-semibold">Help &amp; support</p>
+        <div className="flex flex-col gap-1.5 text-[var(--ds-tailwind-colors-neutral-600)]">
+          <span className="cursor-pointer hover:text-[var(--ds-tailwind-colors-neutral-900)]">Search the help centre</span>
+          <span className="cursor-pointer hover:text-[var(--ds-tailwind-colors-neutral-900)]">Contact support</span>
+          <span className="cursor-pointer hover:text-[var(--ds-tailwind-colors-neutral-900)]">What's new</span>
+        </div>
+      </PopoverContent>
+    </Popover>
+  ) : null;
+  const utilityNodes =
+    utility === false ? null : (
+      <>
+        {utility ?? null}
+        {helpButton}
+      </>
+    );
+  const hasUtility = utility !== false && (utility || helpButton);
+
+  const clusterClass =
+    "flex shrink-0 flex-wrap items-center gap-[var(--gds-page-header-cluster-gap,0.5rem)]";
+
   return (
     // w-full is LOAD-BEARING: inside GlobalLayoutContentHeader the
     // header block otherwise spans content width only, and
     // justify-between has nothing to distribute — actions hugged the
-    // title (16 Jul screenshot). flex-1/ml-auto belt-and-braces so the
-    // actions pin to the far right even in odd flex parents.
-    // RESPONSIVE: a single row only from sm up. Below that the header
-    // STACKS — crumbs/title/meta first, actions on their own row
-    // underneath — instead of crushing the title column against the
-    // actions (the word-per-line breadcrumb wrap, 17 Jul screenshot).
+    // title (16 Jul screenshot).
+    //
+    // THE VARIABLE SEAM (Ali, 18 Aug — same contract as navDensity on
+    // AppLayoutShell): every size and gap below reads a --gds-page-header-*
+    // variable with the default as its fallback, so a screen tunes the
+    // header by SETTING THE VARIABLE on any ancestor and never by
+    // restyling the component. Deliberately no className passthrough for
+    // sizing — that reopens the every-screen-restyles-the-header problem
+    // this module exists to prevent.
+    //
+    //   --gds-page-header-title-size     1.875rem (30px, text-3xl)
+    //   --gds-page-header-title-leading  2.25rem  (36px)
+    //   --gds-page-header-title-weight   600
+    //   --gds-page-header-crumb-size     0.875rem (14px)
+    //   --gds-page-header-row-gap        1rem
+    //   --gds-page-header-cluster-gap    0.5rem
+    //
+    // The title default is text-3xl, NOT the DS's TypographyH2 (which is
+    // text-3xl mobile / text-4xl from md up). 36px was oversized for a
+    // dense working page, so the header holds one size below the DS
+    // heading at every width; the element stays an h2.
     <div
       {...rest}
       // Persistent region across goto swaps — see the sidebar's
@@ -247,7 +339,7 @@ export function PageHeader({
       style={{ viewTransitionName: "gds-page-header", ...(rest?.style ?? {}) }}
       data-hook={dataHook}
       className={[
-        "flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4",
+        "flex w-full min-w-0 flex-col gap-[var(--gds-page-header-row-gap,1rem)]",
         // "center" caps + centres to match the body; "justify" fills the
         // band edge-to-edge. mx-auto is the load-bearing bit — the DS
         // body is centred, so without it the header drifts left of it.
@@ -256,128 +348,148 @@ export function PageHeader({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="flex min-w-0 flex-1 flex-col">
-        {breadcrumbs.length === 0 ? (
-          // CRUMB-LESS pages (All Locations — the trail's root) keep the
-          // breadcrumb row's FOOTPRINT so the header band is the same
-          // height on every page and nothing jumps on navigation (Ali,
-          // 22 Jul). Same components rendered invisible — the reserved
-          // height can never drift from the real trail's.
-          <Breadcrumb
-            aria-hidden
-            dataHook={`${dataHook}-breadcrumb-spacer`}
-            className="invisible mb-4 select-none"
-          >
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <span className="whitespace-nowrap">&nbsp;</span>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        ) : (
-          // mb-4: breathing room between the trail and the H1 (Ali, 20 Jul).
-          <Breadcrumb dataHook={`${dataHook}-breadcrumb`} className="mb-4">
-            <BreadcrumbList>
-              {breadcrumbs
-                // Trail is ANCESTORS ONLY, max two (the H2 is the current
-                // page). Enforced here, not just documented — a screen
-                // passing a three-deep "All Locations > … > …" trail is
-                // clamped to the DEEPEST two (nearest the current page),
-                // so the immediate parent always survives the trim (Ali,
-                // 20 Jul).
-                .slice(-2)
-                // DATA-BOUND crumb: { bind: "location" } resolves to the
-                // CURRENT location's name at render position — "All
-                // Locations > Blackberry Farm Park" follows dataset
-                // switches with zero per-screen wiring (Ali, 18 Jul).
-                .map((crumb) =>
-                  crumb.bind === "location"
-                    ? { ...crumb, label: data.location.name }
-                    : crumb,
-                )
-                .map((crumb, i) => (
-                <React.Fragment key={crumb.label}>
-                  {/* Separator BETWEEN crumbs — the DS's Breadcrumb is
-                      shadcn-family: separators are explicit siblings,
-                      not auto-inserted (they were silently missing —
-                      Ali, 18 Jul). */}
-                  {i > 0 ? <BreadcrumbSeparator /> : null}
+      {/* ROW 1 — UTILITY: breadcrumbs left, utility cluster right. */}
+      {hasTrail ? (
+        <div className="flex min-w-0 items-center justify-between gap-4">
+          {trail.length === 0 ? (
+            // CRUMB-LESS pages (All Locations — the trail's root) keep the
+            // breadcrumb row's FOOTPRINT so the header band is the same
+            // height on every page and nothing jumps on navigation (Ali,
+            // 22 Jul). Same components rendered invisible — the reserved
+            // height can never drift from the real trail's. Pass
+            // breadcrumbs={false} instead to drop the row altogether.
+            <Breadcrumb
+              aria-hidden
+              dataHook={`${dataHook}-breadcrumb-spacer`}
+              className="invisible select-none text-[length:var(--gds-page-header-crumb-size,0.875rem)]"
+            >
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <span className="whitespace-nowrap">&nbsp;</span>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          ) : (
+            <>
+              {/* MOBILE: the nearest ancestor only, as a back link. */}
+              <Breadcrumb
+                dataHook={`${dataHook}-breadcrumb-back`}
+                className="min-w-0 text-[length:var(--gds-page-header-crumb-size,0.875rem)] sm:hidden"
+              >
+                <BreadcrumbList>
                   <BreadcrumbItem>
-                    {/* crumb.goto — screen link (STUDIO-FLOWS):
-                        ancestors are usually other screens in the flow,
-                        so crumbs navigate in shares/embeds. {label,
-                        href?, goto?, transition?}. */}
                     <BreadcrumbLink
-                      href={crumb.href ?? "#"}
-                      data-grade-goto={crumb.goto}
-                      data-grade-transition={crumb.transition}
-                      // Wrap BETWEEN crumbs, never inside one — a crumb
-                      // breaking word-per-line reads as layout failure.
-                      className="whitespace-nowrap"
+                      href={backCrumb.href ?? "#"}
+                      data-grade-goto={backCrumb.goto}
+                      data-grade-transition={backCrumb.transition}
+                      className="inline-flex min-w-0 items-center gap-1.5"
                     >
-                      {crumb.label}
+                      <ArrowLeft className="size-4 shrink-0" />
+                      <span className="truncate">{backCrumb.label}</span>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
-                </React.Fragment>
-                ))}
-            </BreadcrumbList>
-          </Breadcrumb>
-        )}
-        <TypographyH2 dataHook={`${dataHook}-title`}>{title}</TypographyH2>
-        {description ? (
-          // mt-3 + a measure so the description reads as a subtitle with
-          // air around it, not crammed under the H1 (Ali, 20 Jul).
-          <p
-            data-hook={`${dataHook}-description`}
-            className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground"
-          >
-            {description}
-          </p>
-        ) : null}
-        {meta ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            {meta}
+                </BreadcrumbList>
+              </Breadcrumb>
+              {/* sm+: the full trail. */}
+              <Breadcrumb
+                dataHook={`${dataHook}-breadcrumb`}
+                className="hidden min-w-0 text-[length:var(--gds-page-header-crumb-size,0.875rem)] sm:block"
+              >
+                <BreadcrumbList>
+                  {trail.map((crumb, i) => (
+                    <React.Fragment key={crumb.label}>
+                      {/* Separator BETWEEN crumbs — the DS's Breadcrumb is
+                          shadcn-family: separators are explicit siblings,
+                          not auto-inserted (they were silently missing —
+                          Ali, 18 Jul). */}
+                      {i > 0 ? <BreadcrumbSeparator /> : null}
+                      <BreadcrumbItem>
+                        {/* crumb.goto — screen link (STUDIO-FLOWS):
+                            ancestors are usually other screens in the flow,
+                            so crumbs navigate in shares/embeds. {label,
+                            href?, goto?, transition?}. */}
+                        <BreadcrumbLink
+                          href={crumb.href ?? "#"}
+                          data-grade-goto={crumb.goto}
+                          data-grade-transition={crumb.transition}
+                          // Wrap BETWEEN crumbs, never inside one — a crumb
+                          // breaking word-per-line reads as layout failure.
+                          className="whitespace-nowrap"
+                        >
+                          {crumb.label}
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                    </React.Fragment>
+                  ))}
+                </BreadcrumbList>
+              </Breadcrumb>
+            </>
+          )}
+          {hasUtility ? (
+            <div data-hook={`${dataHook}-utility`} className={`${clusterClass} ml-auto`}>
+              {utilityNodes}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* ROW 2 — TITLE: title left, CTAs right, centred on the title.
+          Below sm the cluster drops to its own line rather than crushing
+          the title column against it (the 17 Jul screenshot). */}
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <TypographyH2
+          dataHook={`${dataHook}-title`}
+          // pb-0: the DS heading carries pb-2, which would stack on top
+          // of the row gap and put the seam out of one place's control.
+          className="min-w-0 pb-0"
+          style={{
+            fontSize: "var(--gds-page-header-title-size, 1.875rem)",
+            lineHeight: "var(--gds-page-header-title-leading, 2.25rem)",
+            fontWeight: "var(--gds-page-header-title-weight, 600)",
+          }}
+        >
+          {title}
+        </TypographyH2>
+        {actions || (!hasTrail && hasUtility) ? (
+          <div className={`${clusterClass} sm:ml-auto`}>
+            {/* Collapsed utility LEADS the actions on title-only pages. */}
+            {!hasTrail && hasUtility ? (
+              <div data-hook={`${dataHook}-utility`} className={clusterClass}>
+                {utilityNodes}
+              </div>
+            ) : null}
+            {actions}
           </div>
         ) : null}
       </div>
-      {/* RIGHT column (Ali, 21 Jul): actions live top-right; "Last
-          updated" has a DEDICATED slot bottom-right — smaller text,
-          bottom-aligned so it sits level with the description line.
-          self-stretch makes justify-between real; on stacked mobile the
-          column becomes a plain wrapping row. */}
-      {actions || lastUpdatedValue || help ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:ml-auto sm:flex-col sm:items-end sm:justify-between sm:self-stretch">
-          <div className="flex flex-wrap items-center gap-2">
-            {actions}
-            {help ? (
-              // Deliberately quiet ("doesn't need to be mega bright"):
-              // muted icon, fills on hover.
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Help and support"
-                    data-hook={`${dataHook}-help`}
-                    className="text-muted-foreground hover:text-foreground rounded-full p-1.5 transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))]"
-                  >
-                    <HelpCircle className="size-[18px]" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-64 space-y-2 text-sm">
-                  <p className="font-semibold">Help &amp; support</p>
-                  <div className="flex flex-col gap-1.5 text-[var(--ds-tailwind-colors-neutral-600)]">
-                    <span className="cursor-pointer hover:text-[var(--ds-tailwind-colors-neutral-900)]">Search the help centre</span>
-                    <span className="cursor-pointer hover:text-[var(--ds-tailwind-colors-neutral-900)]">Contact support</span>
-                    <span className="cursor-pointer hover:text-[var(--ds-tailwind-colors-neutral-900)]">What's new</span>
-                  </div>
-                </PopoverContent>
-              </Popover>
+
+      {/* ROW 3 — SUBTITLE: description/meta left, "Last updated" right,
+          bottom-aligned so it sits level with the description's last
+          line (Ali, 21 Jul — it keeps its dedicated slot, it just isn't
+          sharing a column with the CTAs any more). */}
+      {description || meta || lastUpdatedValue ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <div className="flex min-w-0 flex-col gap-3">
+            {description ? (
+              // A measure so the description reads as a subtitle, not a
+              // paragraph running the full width (Ali, 20 Jul).
+              <p
+                data-hook={`${dataHook}-description`}
+                className="max-w-2xl text-sm leading-relaxed text-muted-foreground"
+              >
+                {description}
+              </p>
+            ) : null}
+            {meta ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                {meta}
+              </div>
             ) : null}
           </div>
           {lastUpdatedValue ? (
             <span
               data-hook={`${dataHook}-last-updated`}
-              className="text-xs text-muted-foreground"
+              className="shrink-0 text-xs text-muted-foreground sm:ml-auto"
             >
               Last updated: {formatDate(lastUpdatedValue)}
             </span>

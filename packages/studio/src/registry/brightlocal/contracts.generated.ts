@@ -11895,25 +11895,25 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
       "title": {
         "kind": "unknown",
         "design": "plumbing",
-        "description": "Page title (rendered as TypographyH2 — the current page; it never appears in the breadcrumb)."
+        "description": "Page title (an h2, sized by --gds-page-header-title-size, default 30px/text-3xl — one step BELOW the DS TypographyH2, which is 36px from md up). It is the current page and never appears in the breadcrumb."
       },
       "breadcrumbs": {
         "kind": "unknown",
         "design": "plumbing",
         "optional": true,
-        "description": "Ancestor trail, MAX TWO ({label, href?}[]). Ancestors only — BreadcrumbPage is deliberately unused. Crumb-less pages (the trail's root, e.g. All Locations) still RESERVE the trail row's height (invisible spacer) so the header band matches every other page and nothing jumps on navigation. (default [])"
+        "description": "Ancestor trail, MAX TWO ({label, href?}[]). Ancestors only — BreadcrumbPage is deliberately unused. `[]` (the default) renders an invisible spacer so crumb-less pages keep the row's height and nothing jumps on navigation; `false` drops the utility row ENTIRELY (and collapses `utility` into the title row). Below sm the trail collapses to the LAST crumb behind a back arrow. (default [])"
       },
       "description": {
         "kind": "unknown",
         "design": "plumbing",
         "optional": true,
-        "description": "Subtitle line under the H2 (muted, measured). Every proposal page should carry one. String or node. (default none)"
+        "description": "Subtitle line under the title (muted, measured). Every proposal page should carry one. String or node. (default none)"
       },
       "lastUpdated": {
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "Timestamp shown muted beneath the description. Pass \"auto\" to BIND data.aiInsights.lastUpdated (the AI Insights pages own it — it was removed from the AreaInsights header so it lives in ONE place); any other string renders literally; omit to hide."
+        "description": "Timestamp shown muted at the right of the description row, bottom-aligned with it. Pass \"auto\" to BIND data.aiInsights.lastUpdated (the AI Insights pages own it — it was removed from the AreaInsights header so it lives in ONE place); any other string renders literally; omit to hide."
       },
       "meta": {
         "kind": "unknown",
@@ -11925,13 +11925,19 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "unknown",
         "design": "plumbing",
         "optional": true,
-        "description": "Right-aligned actions (Buttons, menus). Rendered shrink-0 beside the title block."
+        "description": "Page-level CTAs (Buttons, menus). Rendered on the TITLE row, right, vertically centred on the title — NOT in the breadcrumb row. Below sm they drop to their own line under the title."
+      },
+      "utility": {
+        "kind": "unknown",
+        "design": "plumbing",
+        "optional": true,
+        "description": "App chrome at the right end of the breadcrumb row. Defaults to the help affordance alone; pass a node to EXTEND it (your node leads, help follows unless help={false}); pass utility={false} to suppress the cluster, help included. With breadcrumbs={false} it collapses into the title row's right cluster, leading `actions`."
       },
       "help": {
         "kind": "boolean",
         "design": "knob",
         "optional": true,
-        "description": "Help/support entry top-right on every page (quiet \"?\" icon button opening a support popover). Pass help={false} to hide on a screen. (default true)"
+        "description": "Help/support entry (quiet \"?\" icon button opening a support popover) at the end of the utility cluster. Pass help={false} to hide on a screen. (default true)"
       },
       "align": {
         "kind": "enum",
