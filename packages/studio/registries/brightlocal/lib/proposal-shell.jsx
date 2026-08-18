@@ -966,6 +966,48 @@ export function AppLayoutShell({
       : "";
   // color-scheme wiring for the ld() pairs above — .dark flips them.
   const schemeCss = ":root{color-scheme:light}.dark{color-scheme:dark}";
+
+  // --gds-page-header-height — the band's MEASURED height, republished on the
+  // content column so anything sticky below it can sit exactly under it.
+  //
+  // Screens used to hardcode this (RM — Review Insights carried
+  // STICKY_TOP = "128px"), which is a guess that goes stale the moment the
+  // header changes: dropping one line from PageHeader left a gap with page
+  // content scrolling through it (Ali, 18 Aug: "gap between the fixed and the
+  // header. Is there a better way to have a sticky element to make sure the
+  // value is always relative to the header?"). This is that way. A sticky card
+  // header writes `top: var(--gds-page-header-height, 0px)` and is correct at
+  // every viewport, for every header composition, forever.
+  //
+  // Measured, not computed: the band's height depends on PageHeader's rows, the
+  // headerSpace preset, and how the title wraps at that width. A ResizeObserver
+  // is the only thing that knows all three. 0px when the header is not sticky,
+  // since then nothing needs to clear it.
+  // REACT OWNS THE VALUE, not the DOM. The first cut of this wrote the measured
+  // height straight onto the column with style.setProperty, and React kept
+  // winning: every re-render rewrites that element's style attribute from its
+  // own `style` prop, wiping the property and leaving whatever stale number
+  // happened to survive. Measured 105px against a band that was really 123px,
+  // which pushed the sticky card headers 18px UNDER the band. So the measure
+  // goes into state and the value is rendered like any other style.
+  //
+  // offsetHeight, not getBoundingClientRect().height: an integer border-box
+  // height, so a fractional layout cannot leave the offset a hair short. The
+  // observer watches the border-box for the same reason.
+  const headerRef = React.useRef(null);
+  const [bandHeight, setBandHeight] = React.useState(null);
+  React.useEffect(() => {
+    const band = headerRef.current;
+    if (!band || !stickyHeader) return;
+    const measure = () => setBandHeight(band.offsetHeight);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    // border-box so padding and the band's own border count, and a late web
+    // font or a wrapped title re-publishes instead of going stale.
+    const ro = new ResizeObserver(measure);
+    ro.observe(band, { box: "border-box" });
+    return () => ro.disconnect();
+  }, [stickyHeader]);
   const mobileToneCss =
     mobileTone && Object.keys(tone).length > 0
       ? `[data-sidebar="sidebar"][data-mobile="true"]{${Object.entries(tone)
@@ -1168,6 +1210,13 @@ export function AppLayoutShell({
           // it, so they can never drift apart again.
           "--gds-content-max-width":
             contentMaxWidth === "none" ? "none" : contentMaxWidth,
+          // The band's measured height, for anything sticky below it. 0 when
+          // the header does not stick, since then nothing has to clear it.
+          "--gds-page-header-height": !stickyHeader
+            ? "0px"
+            : bandHeight != null
+              ? `${bandHeight}px`
+              : undefined,
           ...(sidebarFrame === "flush" && seamShadow
             ? { boxShadow: CONTENT_SEAM_SHADOW }
             : {}),
@@ -1193,6 +1242,7 @@ export function AppLayoutShell({
         ) : null}
         {header ? (
           <header
+            ref={headerRef}
             data-hook={`${dataHook}-header`}
             className={[
               // Same inset as the DS content wrapper (px-section-xs =
