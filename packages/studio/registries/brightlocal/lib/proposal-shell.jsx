@@ -767,13 +767,18 @@ export function AppLayoutShell({
   // reach it; a scoped <style> targeting its data-sidebar/data-mobile
   // marks does. Toggle off to keep mobile in the default light tone.
   mobileTone = true,
-  // Content column cap. The DS's GlobalLayoutContent self-caps at
-  // breakpoint-lg and centres within the column, so pinning the
-  // sidebar to the edge does NOT make content run full-bleed — this
-  // knob just makes that cap adjustable ("1280px", "none", …).
-  // The header band is shell-owned (a sibling of GlobalLayoutContent),
-  // so this knob affects the BODY only; the band always spans the column.
-  contentMaxWidth,
+  // Content column cap — ONE measurement for the header band's content
+  // AND the page body (Ali, 18 Aug: "Review Insights is still not
+  // constrained"). It was two: the body fell through to the DS's own
+  // cap (GlobalLayout caps its container at --ds-breakpoint-xl, 1280px)
+  // while PageHeader capped at 1024px, so at any viewport wider than
+  // ~1280 the body ran 256px wider than the header above it. Measured on
+  // RM — Review Insights at 1600: header 400→1424, body 248→1548.
+  //
+  // The shell now OWNS the number: it passes it to GlobalLayoutContent
+  // and publishes it as --gds-content-max-width, which PageHeader reads.
+  // Change it here and the band follows the body. "none" uncaps both.
+  contentMaxWidth = "var(--ds-breakpoint-lg)",
   // How the sidebar sits against the screen edge (desktop only — the
   // aside is hidden below lg). Presets in SIDEBAR_FRAMES.
   sidebarFrame = "floating", // "flush" | "floating" | "attached"
@@ -1157,11 +1162,16 @@ export function AppLayoutShell({
         ]
           .filter(Boolean)
           .join(" ")}
-        style={
-          sidebarFrame === "flush" && seamShadow
+        style={{
+          // ONE content width for the whole column: the band's content
+          // (PageHeader reads this var) and the body (below) both cap at
+          // it, so they can never drift apart again.
+          "--gds-content-max-width":
+            contentMaxWidth === "none" ? "none" : contentMaxWidth,
+          ...(sidebarFrame === "flush" && seamShadow
             ? { boxShadow: CONTENT_SEAM_SHADOW }
-            : undefined
-        }
+            : {}),
+        }}
       >
         {mobileBar ? (
           // The mobile bar rides the SAME surface as the header band
@@ -1218,7 +1228,28 @@ export function AppLayoutShell({
         ) : null}
         <GlobalLayoutContent
           dataHook={`${dataHook}-content`}
-          maxWidth={contentMaxWidth}
+          maxWidth={contentMaxWidth === "none" ? "none" : contentMaxWidth}
+          // The DS's maxWidth prop does NOT apply a width — GlobalLayoutContent
+          // only publishes it as --content-max-width for a descendant to
+          // consume (verified in the 2.25.0 dist), which is why the body was
+          // running to GlobalLayout's own xl container instead. So the shell
+          // applies the number itself.
+          //
+          // The +2×section-xs is what makes the band and the body LINE UP
+          // rather than merely share a number: GlobalLayoutContent carries
+          // px-section-xs INSIDE this box, so a bare cap would leave the body
+          // 24px narrower on each side than the header content above it.
+          // Widening the cap by exactly that padding puts the body's content
+          // box on the same two edges as the header's.
+          style={
+            contentMaxWidth === "none"
+              ? undefined
+              : {
+                  maxWidth: `calc(${contentMaxWidth} + 2 * var(--ds-spacing-section-xs, 24px))`,
+                  marginInline: "auto",
+                  width: "100%",
+                }
+          }
           // Vertical breathing room for the page body — the flush shell
           // cancels the DS's outer padding, which left content sitting
           // hard against the header band (Ali, 21 Jul). Top is modest

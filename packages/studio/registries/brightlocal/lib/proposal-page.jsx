@@ -355,7 +355,7 @@ export function PageHeader({
         // read the SAME token or they cannot be guaranteed to line up.
         align === "justify"
           ? ""
-          : "mx-auto max-w-[var(--ds-breakpoint-lg,var(--breakpoint-lg))]",
+          : "mx-auto max-w-[var(--gds-content-max-width,var(--ds-breakpoint-lg))]",
       ]
         .filter(Boolean)
         .join(" ")}
