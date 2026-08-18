@@ -1239,7 +1239,15 @@ export function AppLayoutShell({
           // dark fence re-points that token, so it flips itself.)
           <div
             data-hook={`${dataHook}-mobilebar-surface`}
-            className={["lg:hidden", HEADER_SURFACES[headerSurface]?.className ?? ""]
+            // relative z-30 so this paints OVER the content ScrollArea's
+            // scrollbar (Ali, 18 Aug, who found it in the inspector). BL's
+            // ScrollBar is a styled 10px track with a bg-border thumb, and
+            // it is h-full of the scroll area, so it runs the whole viewport
+            // height — including across this bar, where a coloured strip
+            // sitting on top of the brand band is the first thing you see.
+            // The div carried no position and no z-index at all, so it had
+            // nothing to stack with. z-30 matches the header band below it.
+            className={["relative z-30 lg:hidden", HEADER_SURFACES[headerSurface]?.className ?? ""]
               .filter(Boolean)
               .join(" ")}
             style={HEADER_SURFACES[headerSurface]?.style}
