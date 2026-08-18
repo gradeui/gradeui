@@ -343,7 +343,19 @@ export function PageHeader({
         // "center" caps + centres to match the body; "justify" fills the
         // band edge-to-edge. mx-auto is the load-bearing bit — the DS
         // body is centred, so without it the header drifts left of it.
-        align === "justify" ? "" : "mx-auto max-w-[var(--breakpoint-lg)]",
+        //
+        // THE CAP MUST BE THE DS's OWN TOKEN (Ali, 18 Aug — "the Review
+        // Insights page doesn't constrain the contents"). GlobalLayoutContent
+        // caps the BODY at `var(--ds-breakpoint-lg)` (its maxWidth default,
+        // verified in the 2.25.0 dist), and content-header/content-actions
+        // do the same. This was capping at `--breakpoint-lg` — Tailwind's
+        // own theme variable, which is only 1024px if Tailwind's theme is
+        // in scope. Two variables for one measurement is exactly the drift
+        // this file keeps getting bitten by: the header and the body must
+        // read the SAME token or they cannot be guaranteed to line up.
+        align === "justify"
+          ? ""
+          : "mx-auto max-w-[var(--ds-breakpoint-lg,var(--breakpoint-lg))]",
       ]
         .filter(Boolean)
         .join(" ")}
