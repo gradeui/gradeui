@@ -411,3 +411,43 @@ identical hand-built one, and between them they apply FIVE corrections to
 `[&_item]:py-1.5`, and `[&_input]:text-sm [&_input-wrapper]:h-10`. Every
 consumer will rediscover those independently and land on slightly different
 numbers. Proposal to be written up under proposed components.
+
+---
+
+## Addendum — two more, from RM Review Insights (18 Aug 2026)
+
+Same package, different screen (`RM — Review Insights`, `dmswb0i9c6oe5`). Both
+are layout defaults that only bite in a composition the DS did not anticipate,
+and both are worked around at our call sites today.
+
+## 15. `CardHeader` reserves a row-gap for a row that has no content
+
+`CardHeader` is `grid auto-rows-min grid-rows-[auto_auto] gap-1.5`, shaped for a
+title over a description. Give it ONE child and the second explicit row is 0px
+tall, but its 6px `row-gap` is still rendered, underneath the content:
+
+    grid-template-rows: 32px 0px;   row-gap: 6px
+
+Measured on the live render: **12px above the header content, 19px below it.**
+A single-child header is bottom-heavy by 6px, and nothing in the class list says
+so. Our workaround is an inline `gridTemplateRows: "auto"` (plus `rowGap: 0`
+where the header has a real second row of its own), inline rather than a
+`grid-rows-*` utility because ours and the DS's would have equal specificity and
+the winner would come down to stylesheet order.
+
+Suggested fix upstream: drop to one explicit row and let `auto-rows-min` place
+any second child, so the gap only exists when there is something to gap.
+
+## 16. `ChartTooltipContent` has no gap between a series label and its value
+
+The row is `flex flex-1 justify-between leading-none` with the label on the left
+and the value on the right, and no `gap`. `justify-between` only distributes
+what is left over, so at the widest label there is nothing left to distribute
+and the two run together: **"Yahoo! Local17"** at 1280px with the default
+`max-w-sm` tooltip. A `gap-4` on that row costs nothing at narrow labels and is
+the difference between readable and not at wide ones.
+
+Workaround at our call sites is `className="[&_.flex-1]:gap-4"` on
+`ChartTooltipContent`, which reaches the row through the one stable handle the
+component exposes from the outside. Verified compiled and applied against the
+component's own row markup.
