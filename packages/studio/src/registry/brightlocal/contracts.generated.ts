@@ -11907,25 +11907,42 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "kind": "unknown",
         "design": "plumbing",
         "optional": true,
-        "description": "Subtitle line under the title (muted, measured). Every proposal page should carry one. String or node. (default none)"
+        "description": "Subtitle line under the title (muted, measured). Every proposal page should carry one — BrightLocal use page descriptions often (Ali, 18 Aug), so the description row is expected furniture, not an exception. String or node. (default none)"
       },
       "lastUpdated": {
         "kind": "string",
         "design": "knob",
         "optional": true,
-        "description": "Timestamp shown muted at the right of the description row, bottom-aligned with it. Pass \"auto\" to BIND data.aiInsights.lastUpdated (the AI Insights pages own it — it was removed from the AreaInsights header so it lives in ONE place); any other string renders literally; omit to hide."
+        "description": "Timestamp shown muted at the RIGHT of the status row, level with the description — the arrangement BrightLocal's replatformed header uses. Renders as \"Last updated August 13, 2026\" (their format: month first, no ordinal, no colon), and when the source string carries a time the DATE is dot-underlined with the full stamp (\"August 13, 2026 at 10:20 AM UTC\") on hover or keyboard focus. That affordance is built in — never hand-roll a tooltip on a header date. Pass \"auto\" to BIND data.aiInsights.lastUpdated (the AI Insights pages own it — it was removed from the AreaInsights header so it lives in ONE place); any other string renders literally; omit to hide."
       },
       "meta": {
         "kind": "unknown",
         "design": "plumbing",
         "optional": true,
-        "description": "Muted row under the title. EXPLICIT-ONLY: omitted (or null) renders nothing; pass any node to render it. (The old data-bound NAP + status Badge default was dropped — the location already leads the breadcrumb.) (default none)"
+        "description": "Muted line in the status row, under the description. EXPLICIT-ONLY: omitted (or null) renders nothing; pass any node to render it. (The old data-bound NAP + status Badge default was dropped — the location already leads the breadcrumb.) (default none)"
+      },
+      "status": {
+        "kind": "boolean",
+        "design": "knob",
+        "optional": true,
+        "description": "The status row (description + meta left, \"Last updated\" right) is RESERVED: it renders on every page at --gds-page-header-status-height (22px) even when nothing fills it, so the header band is the same height page to page and nothing below it shifts on navigation — the same reasoning as the invisible breadcrumb spacer. The height is a FLOOR, not a clip: a screen stacking `meta` under a description still gets both lines. Pass status={false} to drop the row and reclaim the space. (default true)"
       },
       "actions": {
         "kind": "unknown",
         "design": "plumbing",
         "optional": true,
-        "description": "Page-level CTAs (Buttons, menus). Rendered on the TITLE row, right, vertically centred on the title — NOT in the breadcrumb row. Below sm they drop to their own line under the title."
+        "description": "Page-level CTAs (Buttons, menus). Rendered on the TITLE row, right, vertically centred on the title — NOT in the breadcrumb row. Below sm they drop to their own line under the title. DO NOT pass `size` to a Button in here and DO NOT wrap them in your own flex div: the header re-sizes every Button in `actions` to `actionSize` (overriding a size you pass) and its own cluster owns the wrap and the gap. One header, one CTA size."
+      },
+      "actionSize": {
+        "kind": "enum",
+        "values": [
+          "sm",
+          "default",
+          "lg"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "The size EVERY Button in `actions` renders at. The header decides this, not the screen, so CTAs cannot drift a size apart page to page. Set it here once if a header genuinely needs a different size. (default \"default\")"
       },
       "utility": {
         "kind": "unknown",

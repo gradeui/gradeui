@@ -91,23 +91,57 @@ const MONTHS = {
   may: "May", jun: "June", jul: "July", aug: "August",
   sep: "September", oct: "October", nov: "November", dec: "December",
 };
-// "12th July, 2026" — day-with-ordinal first (snags list, Ali 21 Jul:
-// "note date format"). Ordinals: 11th/12th/13th are the teens exception.
-function ordinal(day) {
-  const teens = day % 100;
-  if (teens >= 11 && teens <= 13) return "th";
-  const last = day % 10;
-  return last === 1 ? "st" : last === 2 ? "nd" : last === 3 ? "rd" : "th";
-}
+
+// "August 13, 2026" — MONTH FIRST, no ordinal. This is BrightLocal's own
+// format, read off their replatformed header (Ali, 18 Aug: "looks like
+// their format is August 13, not 13th August"). It replaces the ordinal
+// form "13th August, 2026" that the 21 Jul snags list asked for; theirs
+// is the one to match now, and matching it in ONE function means every
+// date in the module follows without a per-screen decision.
+const MONTH_LIST = Object.values(MONTHS);
 
 export function formatDate(value) {
   if (!value || typeof value !== "string") return value ?? null;
+  // ISO first ("2026-08-13", "2026-08-13T10:20:00Z"). The dataset does not
+  // use it, but it is the shape anything machine-written reaches for, and
+  // an unformatted "2026-08-13" sitting in the header is a worse failure
+  // than any of this is worth. Regex, not `new Date` — parsing to a Date
+  // and reading it back applies the viewer's timezone, which can move the
+  // DAY across a midnight boundary.
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const month = MONTH_LIST[parseInt(iso[2], 10) - 1];
+    return month ? `${month} ${parseInt(iso[3], 10)}, ${iso[1]}` : value;
+  }
   const m = value.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,})\s+(\d{4})/);
   if (!m) return value;
   const month = MONTHS[m[2].slice(0, 3).toLowerCase()];
   if (!month) return value;
-  const day = parseInt(m[1], 10);
-  return `${day}${ordinal(day)} ${month}, ${m[3]}`;
+  return `${month} ${parseInt(m[1], 10)}, ${m[3]}`;
+}
+
+// The same date PLUS whatever time the source carried, for the tooltip
+// their header hangs off the underlined date: "August 13, 2026 at 10:20
+// AM UTC". Returns null when the source has NO time — that is the signal
+// not to render a tooltip at all, since one that only repeats the visible
+// text is an affordance promising detail it does not have.
+export function formatDateTime(value) {
+  if (!value || typeof value !== "string") return null;
+  const date = formatDate(value);
+  if (!date || date === value) return null;
+  // ISO time: 24h in the string, 12h in the tooltip, and the zone named
+  // only when the string actually says Z. Inventing "UTC" onto a naive
+  // timestamp would be stating a fact the data never carried.
+  const isoTime = value.match(/^\d{4}-\d{2}-\d{2}[T ](\d{2}):(\d{2})(?::\d{2})?(?:\.\d+)?(Z)?/);
+  if (isoTime) {
+    const h24 = parseInt(isoTime[1], 10);
+    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    const stamp = `${h12}:${isoTime[2]} ${h24 < 12 ? "AM" : "PM"}${isoTime[3] ? " UTC" : ""}`;
+    return `${date} at ${stamp}`;
+  }
+  const time = value.match(/(\d{1,2}:\d{2})\s*(AM|PM)?\s*([A-Z]{2,4})?/i);
+  if (!time) return null;
+  return `${date} at ${[time[1], time[2], time[3]].filter(Boolean).join(" ")}`;
 }
 
 // ─── DrillArrow — THE clickable-card drill affordance ─────────────────
@@ -195,19 +229,41 @@ export function PageHeader({
   // Subtitle under the H2 — every proposal page should carry one
   // (Ali, 20 Jul). String or node.
   description,
-  // Timestamp shown muted beneath the description. Pass "auto" to BIND
+  // Timestamp shown muted at the RIGHT of the status row, level with
+  // the description — where BrightLocal's live header puts it (Ali, 18
+  // Aug, against their production screenshot). Pass "auto" to BIND
   // data.aiInsights.lastUpdated — the AI Insights pages own it now; it
   // was removed from the AreaInsights header so it lives in ONE place.
   // Any other string renders literally; omit to hide. ("auto" is a
   // STRING because the contract types this prop as a string — a boolean
   // fails save validation.)
   lastUpdated,
-  // Muted row under the title. EXPLICIT-ONLY — pass any node to render
-  // it; omitted (or null) renders nothing. Previously defaulted to a
-  // data-bound NAP line + status Badge from the proposal data context;
-  // that default was dropped — the location already leads the crumb, so
-  // the row was redundant (Ali, 20 Jul).
+  // The reserved status row itself (see ROW 3 below). It is on by
+  // default and holds its 22px whether or not anything fills it; pass
+  // status={false} on a screen that genuinely wants the space back.
+  // Boolean only — the row's CONTENT is `description`, `meta` and
+  // `lastUpdated`, which is where BrightLocal's replatformed header
+  // puts it.
+  status = true,
+  // Muted line in the status row, under the description. EXPLICIT-ONLY
+  // — pass any node to render it; omitted (or null) renders nothing.
+  // Previously defaulted to a data-bound NAP line + status Badge from
+  // the proposal data context; that default was dropped — the location
+  // already leads the crumb, so the row was redundant (Ali, 20 Jul).
   meta,
+  // CTA SIZE — the HEADER's decision, not the screen's (Ali, 18 Aug:
+  // "the buttons in the header do need to be bigger, at least in RM —
+  // Review Insights"). That screen was the only one of six passing
+  // size="sm" to its header Buttons, so its CTAs read a size smaller
+  // than every other page's for no reason anyone chose. The header now
+  // NORMALISES them: every Button inside `actions` is re-sized to this,
+  // OVERRIDING a size the screen passed. That is the same call the
+  // sizing seam makes two notes down — one place decides how the header
+  // looks, and it is this module, not each screen. A header that
+  // genuinely wants a different size sets it HERE, once, for all of its
+  // CTAs. "default" matches BrightLocal's replatformed header and what
+  // the other five screens already render.
+  actionSize = "default",
   // PAGE-LEVEL CTAs. These render on the TITLE row, right, vertically
   // centred on the title (Ali, 18 Aug) — they used to sit top-aligned,
   // which landed them in the breadcrumb row, i.e. page actions reading
@@ -244,6 +300,8 @@ export function PageHeader({
   const lastUpdatedValue = bindLastUpdated
     ? (data.aiInsights?.lastUpdated ?? null)
     : lastUpdated || null;
+  // null when the source carried no time — no tooltip in that case.
+  const lastUpdatedFull = formatDateTime(lastUpdatedValue);
 
   // breadcrumbs={false} suppresses the trail. The UTILITY ROW goes with
   // it (spec decision (a), Ali 18 Aug): a row whose left half is empty
@@ -304,6 +362,29 @@ export function PageHeader({
     );
   const hasUtility = utility !== false && (utility || helpButton);
 
+  // Walks `actions` and re-sizes every DS Button it finds, through
+  // fragments and wrapper elements alike (screens wrap their CTAs in a
+  // flex div often enough that only clone-the-top-level would miss
+  // most of them). Identity check against the Button this module
+  // imports: the screen and this file resolve
+  // "@brightlocal/ui-components" through the same module registry, so
+  // it is the same component object. Anything that is not a Button is
+  // passed through untouched, children and all.
+  const sizeActions = (node) =>
+    React.Children.map(node, (child) => {
+      if (!React.isValidElement(child)) return child;
+      if (child.type === React.Fragment)
+        return sizeActions(child.props?.children);
+      if (child.type === Button)
+        return React.cloneElement(child, { size: actionSize });
+      if (child.props?.children)
+        return React.cloneElement(child, {
+          children: sizeActions(child.props.children),
+        });
+      return child;
+    });
+  const sizedActions = actions ? sizeActions(actions) : actions;
+
   const clusterClass =
     "flex shrink-0 flex-wrap items-center gap-[var(--gds-page-header-cluster-gap,0.5rem)]";
 
@@ -325,8 +406,25 @@ export function PageHeader({
     //   --gds-page-header-title-leading  2.25rem  (36px)
     //   --gds-page-header-title-weight   600
     //   --gds-page-header-crumb-size     0.875rem (14px)
-    //   --gds-page-header-row-gap        1rem
+    //   --gds-page-header-crumb-gap      0.375rem (6px — crumbs → title)
+    //   --gds-page-header-status-gap     0.25rem  (4px — title → status)
+    //   --gds-page-header-status-height  1.375rem (22px, reserved)
     //   --gds-page-header-cluster-gap    0.5rem
+    //
+    // ROW SEAMS ARE PER-ROW, NOT ONE PARENT GAP (Ali, 18 Aug — "the
+    // distance between the breadcrumbs and the header reduced"). The
+    // container used to space all three rows with a single flex `gap`,
+    // so the crumb→title seam could not be tightened without also
+    // tightening title→status. Each row now carries its own margin-top
+    // and the two seams are independent; row 1 never carries one.
+    //
+    // --gds-page-header-row-gap IS RETIRED. It named a single gap that no
+    // longer exists, and neither seam replacing it is 1rem: crumbs→title
+    // is 6px and title→status is 4px (Ali, 18 Aug: "reviews-page-header-
+    // status only needs a 4px top margin"). Nothing set it — checked
+    // across every screen in the project before dropping the name, rather
+    // than leaving a variable that reads as tunable and silently does
+    // nothing.
     //
     // The title default is text-3xl, NOT the DS's TypographyH2 (which is
     // text-3xl mobile / text-4xl from md up). 36px was oversized for a
@@ -339,7 +437,7 @@ export function PageHeader({
       style={{ viewTransitionName: "gds-page-header", ...(rest?.style ?? {}) }}
       data-hook={dataHook}
       className={[
-        "flex w-full min-w-0 flex-col gap-[var(--gds-page-header-row-gap,1rem)]",
+        "flex w-full min-w-0 flex-col",
         // "center" caps + centres to match the body; "justify" fills the
         // band edge-to-edge. mx-auto is the load-bearing bit — the DS
         // body is centred, so without it the header drifts left of it.
@@ -447,8 +545,19 @@ export function PageHeader({
 
       {/* ROW 2 — TITLE: title left, CTAs right, centred on the title.
           Below sm the cluster drops to its own line rather than crushing
-          the title column against it (the 17 Jul screenshot). */}
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          the title column against it (the 17 Jul screenshot).
+          The crumb seam lives HERE (only when there is a row above to be
+          spaced from), and it is deliberately tighter than the other row
+          seams: the crumbs label the title, so they should read as one
+          block with it. */}
+      <div
+        className={[
+          "flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+          hasTrail ? "mt-[var(--gds-page-header-crumb-gap,0.375rem)]" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <TypographyH2
           dataHook={`${dataHook}-title`}
           // pb-0: the DS heading carries pb-2, which would stack on top
@@ -470,17 +579,39 @@ export function PageHeader({
                 {utilityNodes}
               </div>
             ) : null}
-            {actions}
+            {sizedActions}
           </div>
         ) : null}
       </div>
 
-      {/* ROW 3 — SUBTITLE: description/meta left, "Last updated" right,
+      {/* ROW 3 — STATUS: description/meta left, "Last updated" right,
           bottom-aligned so it sits level with the description's last
-          line (Ali, 21 Jul — it keeps its dedicated slot, it just isn't
-          sharing a column with the CTAs any more). */}
-      {description || meta || lastUpdatedValue ? (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          line. This arrangement is BrightLocal's live header (Ali, 18
+          Aug, against their production screenshot) — description and
+          freshness on ONE line — and it is deliberately unchanged.
+
+          WHAT IS NEW IS THAT THE ROW IS RESERVED (Ali, 18 Aug): it
+          renders on EVERY page at --gds-page-header-status-height
+          (22px) even when there is nothing to put in it, instead of
+          disappearing when a page has no description. A conditional row
+          means the header band is a different height page to page and
+          everything below it shifts on navigation — the same problem
+          the invisible breadcrumb spacer solves one row up. Every page
+          should carry a description anyway (Ali: "we need a page
+          description for each page"), so the empty case is the
+          exception, not the norm.
+
+          min-height, not height: the reserve is a FLOOR. A screen that
+          stacks `meta` under the description still gets both lines
+          rather than having the second clipped — nothing today does,
+          and clipping a caller's node is a worse failure than a header
+          that is one line taller on one screen. Pass status={false} to
+          drop the row entirely. */}
+      {status !== false ? (
+        <div
+          data-hook={`${dataHook}-status`}
+          className="mt-[var(--gds-page-header-status-gap,0.25rem)] flex min-h-[var(--gds-page-header-status-height,1.375rem)] flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4"
+        >
           <div className="flex min-w-0 flex-col gap-3">
             {description ? (
               // A measure so the description reads as a subtitle, not a
@@ -503,7 +634,45 @@ export function PageHeader({
               data-hook={`${dataHook}-last-updated`}
               className="shrink-0 text-xs text-muted-foreground sm:ml-auto"
             >
-              Last updated: {formatDate(lastUpdatedValue)}
+              {/* "Last updated August 13, 2026", no colon — their line,
+                  copied (Ali, 18 Aug). */}
+              Last updated{" "}
+              {lastUpdatedFull ? (
+                // THE DATE CARRIES ITS OWN FULL STAMP. Their header
+                // dot-underlines the date and hangs the exact UTC time off
+                // it on hover, so the header stays short while the precise
+                // answer to "how stale is this?" is one hover away. Built
+                // in HERE rather than left to each screen, so every page
+                // that shows a date gets the same affordance.
+                //
+                // Own TooltipProvider: Radix throws without one in the
+                // tree, and a screen that has not mounted one at its root
+                // would take the header down with it. Nesting providers is
+                // supported, so a screen that HAS one loses nothing.
+                //
+                // tabIndex on the trigger because a hover-only tooltip is
+                // unreachable by keyboard, and this one holds information
+                // (the time) that is nowhere else on the page.
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        tabIndex={0}
+                        data-hook={`${dataHook}-last-updated-date`}
+                        className="cursor-help underline decoration-dotted underline-offset-4"
+                      >
+                        {formatDate(lastUpdatedValue)}
+                      </span>
+                    </TooltipTrigger>
+                    {/* BELOW the date, as theirs is. The default side is
+                        "top", which on this row opens the panel straight
+                        over the CTAs it sits under. */}
+                    <TooltipContent side="bottom">{lastUpdatedFull}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                formatDate(lastUpdatedValue)
+              )}
             </span>
           ) : null}
         </div>
