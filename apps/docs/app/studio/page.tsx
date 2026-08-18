@@ -115,6 +115,10 @@ import {
   type StudioSelection,
 } from "@/lib/chat-sandpack";
 import { buildSystemPrompt } from "@gradeui/studio/playbook";
+import {
+  readProjectRules,
+  buildProjectSystemPrompt,
+} from "@gradeui/studio/core";
 import { setActiveProjectRegistry } from "@/lib/active-registry";
 import { setProjectPreviewCss } from "@/lib/project-preview-css";
 import { useActiveRegistry } from "@/lib/use-active-registry";
@@ -751,32 +755,23 @@ export default function StudioPage() {
   const projectSystemPrompt = useMemo(() => {
     const proj = projects.find((p) => p.id === activeProjectId);
     if (!proj) return systemPrompt;
-    const files = proj.rulesFiles ?? [];
-    // Registry-toggle records (kind: "registry", enabled: false) switch
-    // OFF individual registry rules files for this project — rebuild the
-    // base prompt without them. No toggles = the shared memo as-is.
-    const disabledRuleIds = files
-      .filter((f) => f.kind === "registry" && f.enabled === false)
-      .map((f) => f.id.replace(/^registry:/, ""));
-    const base = disabledRuleIds.length
-      ? buildSystemPrompt(activeRegistry, { disabledRuleIds })
-      : systemPrompt;
-    const chunks: string[] = [];
-    if (proj.context?.trim()) chunks.push(`PROJECT BRIEF:\n${proj.context.trim()}`);
-    if (proj.dos?.length)
-      chunks.push(`PROJECT RULES — ALWAYS:\n${proj.dos.map((d) => `- ${d}`).join("\n")}`);
-    if (proj.donts?.length)
-      chunks.push(`PROJECT RULES — NEVER:\n${proj.donts.map((d) => `- ${d}`).join("\n")}`);
-    for (const f of files) {
-      // Registry records carry no content; disabled files stay home.
-      // .css files ride the PREVIEW (setProjectPreviewCss effect below),
-      // not the prompt.
-      if (f.kind === "registry" || f.enabled === false) continue;
-      if (f.name.trim().toLowerCase().endsWith(".css")) continue;
-      if (f.content.trim())
-        chunks.push(`PROJECT RULES (${f.name}):\n${f.content.trim()}`);
-    }
-    return chunks.length ? `${base}\n\n${chunks.join("\n\n")}` : base;
+    // One assembler, shared with the MCP server (@gradeui/studio/core).
+    // This used to be built inline here, which is how the two surfaces
+    // drifted: every steering input added to this memo reached Studio
+    // chat and nothing else. `readProjectRules` is also the single
+    // definition of what a rules_files record means (registry toggle vs
+    // authored file, enabled, .css rides the preview not the prompt).
+    const { disabledRuleIds, files } = readProjectRules(proj.rulesFiles);
+    return buildProjectSystemPrompt(
+      activeRegistry,
+      {
+        context: proj.context,
+        dos: proj.dos,
+        donts: proj.donts,
+        files,
+      },
+      { disabledRuleIds },
+    );
   }, [systemPrompt, activeRegistry, projects, activeProjectId]);
 
   // Author id for comments/threads. In cloud mode this MUST be the

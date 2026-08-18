@@ -20,6 +20,11 @@
 import { z } from "zod";
 import { validateAgainstContract, formatViolations } from "../src/core/index.js";
 import { BRIGHTLOCAL_CONTRACTS } from "../src/registry/brightlocal/contracts.generated.js";
+import { BRIGHTLOCAL_REGISTRY } from "../src/registry/index.js";
+import {
+  renderComponentRefsBlock,
+  listComponentRefs,
+} from "../src/playbook/components/refs.js";
 
 type ContractsMap = Parameters<typeof validateAgainstContract>[1]["contracts"];
 type Contract = ContractsMap[string];
@@ -206,6 +211,82 @@ const CASES: Array<[string, string, boolean]> = [
 ];
 
 let failed = 0;
+
+// ─── The reference block must describe what the validator enforces ────
+//
+// The cases above test the GATE. These test the thing an author READS
+// before hitting the gate — `list_components` / the system prompt's
+// component reference. They were two independent descriptions of one API:
+// the gate came from the d.ts-extracted contracts, the reference from the
+// sidecars (a transform of `component-meta.json`, which documents only the
+// props the DS ADDS). So Radix passthrough was enforceable but invisible —
+// `<TabsTrigger value>` was REQUIRED by the gate and absent from the
+// reference, and `Checkbox.checked` likewise. Authors read "no such prop"
+// and hand-rolled components the DS already shipped (Aug 2026 reports).
+//
+// A reference NARROWER than its gate is the expensive direction of drift,
+// so this asserts the invariant directly: every prop the validator would
+// REQUIRE is named in the block the author is given. The next component to
+// wrap a primitive fails here instead of silently.
+function refBlockFor(name: string): string {
+  return renderComponentRefsBlock({
+    onlyFor: [name],
+    style: "compact",
+    registry: BRIGHTLOCAL_REGISTRY,
+  });
+}
+
+const REF_CASES: Array<[string, string, readonly string[]]> = [
+  [
+    "doc verification: the Tabs reference names TabsTrigger's required `value`",
+    "Tabs",
+    ["TabsTrigger", "value (REQUIRED)"],
+  ],
+  [
+    "doc verification: the Checkbox reference names checked / onCheckedChange",
+    "Checkbox",
+    ["checked", "onCheckedChange"],
+  ],
+];
+
+for (const [label, component, needles] of REF_CASES) {
+  const block = refBlockFor(component);
+  const missing = needles.filter((n) => !block.includes(n));
+  if (missing.length) failed++;
+  console.log(
+    `${missing.length === 0 ? "PASS" : "FAIL"}  ${label}${missing.length ? ` — missing: ${missing.join(", ")}` : ""}`,
+  );
+}
+
+// General form of the same invariant, across every sidecar-documented
+// component in the registry: a REQUIRED prop the author is never shown is
+// a trap, whichever component grows one.
+const refs = listComponentRefs(BRIGHTLOCAL_REGISTRY);
+const sidecarNames = new Set(refs.map((r) => r.name));
+const unnamed: string[] = [];
+for (const [name, spec] of Object.entries(BRIGHTLOCAL_CONTRACTS)) {
+  const required = Object.entries(spec.props)
+    // `children` is content, not an attribute an author spells out — the
+    // reference deliberately never lists it.
+    .filter(([n, p]) => !p.optional && n !== "children")
+    .map(([n]) => n);
+  if (!required.length) continue;
+  // Only components the reference can actually reach: a block is rendered
+  // per SIDECAR, and sub-exports render under their family's root.
+  const root = sidecarNames.has(name)
+    ? name
+    : refs.find((r) => r.subcomponents?.includes(name))?.name;
+  if (!root) continue;
+  const block = refBlockFor(root);
+  for (const prop of required) {
+    if (!block.includes(prop)) unnamed.push(`${name}.${prop}`);
+  }
+}
+if (unnamed.length) failed++;
+console.log(
+  `${unnamed.length === 0 ? "PASS" : "FAIL"}  every REQUIRED contract prop is named in its component's reference block${unnamed.length ? ` — ${unnamed.length} missing: ${unnamed.slice(0, 12).join(", ")}` : ""}`,
+);
+
 for (const [label, jsx, shouldPass] of CASES) {
   const report = validateAgainstContract(jsx, { contracts });
   const errors = report.violations.filter((v) => v.severity === "error");

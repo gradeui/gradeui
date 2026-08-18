@@ -26,7 +26,11 @@ import type {
   ComponentManifest,
 } from "./types";
 import { GRADE_REGISTRY } from "../../registry/gradeui";
-import type { DesignSystemRegistry } from "../../registry/types";
+import type {
+  DesignSystemRegistry,
+  RegistryContractSpec,
+  RegistryPropSpec,
+} from "../../registry/types";
 
 // ─── Frontmatter parsing ──────────────────────────────────────────────────
 
@@ -243,6 +247,157 @@ function getRefs(registry: DesignSystemRegistry = GRADE_REGISTRY): ComponentRef[
   return refs;
 }
 
+// ─── Contract-derived API lines ───────────────────────────────────────────
+//
+// A sidecar's `props:` list and the registry's generated contracts are two
+// descriptions of one API, and they DRIFT. The BrightLocal sidecars are a
+// transform of that DS's `component-meta.json`, which documents only the
+// props the design system ADDS — Radix passthrough (`Checkbox.checked`,
+// `TabsTrigger.value`) never appears in it. The contracts are extracted
+// from the shipped `.d.ts` by the type checker, so they carry the whole
+// resolved surface.
+//
+// `save_screen` validates against the CONTRACTS. When this block described
+// props from the sidecars instead, the two disagreed in the direction that
+// costs the most: the reference the author reads was NARROWER than the
+// gate they are judged by, so real props read as unavailable and authors
+// hand-rolled components the DS already had (Aug 2026 reports; the
+// `list_components` half of the same divergence that made contract lookup
+// registry-blind).
+//
+// So: where a contract exists, it wins — for the props line, for Variants
+// and Sizes (both are just enum props), and for SUBCOMPONENTS, which get
+// their own contract per export and were previously described by nothing
+// at all. Sidecars keep everything the checker cannot know: when_to_use,
+// composes_with, aliases, notes, and the worked example body.
+
+/** Props the validator never checks — universal React/DOM passthrough. */
+const UNIVERSAL_PROPS = new Set(["key", "ref", "className", "style", "children"]);
+
+/** Compact-style cap on props rendered per component. Only three contracts
+ *  in either registry exceed it (ChartLegend 180, Calendar 79,
+ *  DatePickerCalendar 78 — all wrapping a third-party surface); the median
+ *  is under a dozen. The overflow line states the true count rather than
+ *  silently truncating, because "not listed = will fail" is the rule this
+ *  block asserts and a quiet cut would make that a lie. */
+const COMPACT_PROP_CAP = 40;
+
+/** Compact-style cap on rendered sub-exports. Sidebar ships 34 and Map 18;
+ *  rendering every one turned a single-component answer into 16k chars,
+ *  against a 28k budget for the WHOLE screen context. The names all still
+ *  appear on the Sub-exports line — only their prop detail is deferred. */
+const COMPACT_SUBCOMPONENT_CAP = 12;
+
+/** Sidecar prop line → its description text, keyed by prop name.
+ *
+ *  The contract supplies the prop SET (complete) and its type (resolved);
+ *  the sidecar supplies the better PROSE. `dataHook`'s contract JSDoc is
+ *  "Data hook for automated testing"; its sidecar line carries the house
+ *  rule an author actually needs — kebab-case `{context}-{componentType}`.
+ *  Taking the set from one and the words from the other keeps both. */
+function sidecarDescriptions(ref: ComponentRef): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const line of ref.props ?? []) {
+    const [sig, ...rest] = line.split("—");
+    const desc = rest.join("—").trim();
+    const name = sig.trim().split(/[?:\s(]/)[0];
+    if (name && desc) out.set(name, desc);
+  }
+  return out;
+}
+
+/** `disabled?: boolean — Whether the checkbox is disabled` — the sidecar
+ *  grammar, rebuilt from the contract so both sources read identically. */
+function contractPropLine(
+  name: string,
+  p: RegistryPropSpec,
+  descriptions?: Map<string, string>,
+  /** "override" on the component the sidecar documents; "fallback" on its
+   *  sub-exports. A sidecar folds the family's prose onto the ROOT, so
+   *  `value` there is described as the active tab's controlled value —
+   *  true of `<Tabs>`, wrong for `<TabsTrigger value>`, which identifies
+   *  one tab. Sub-exports keep their own JSDoc and borrow the sidecar only
+   *  where the checker had nothing to say (the house rule on dataHook). */
+  descriptionMode: "override" | "fallback" = "override",
+  withDescriptions = true,
+): string {
+  const opt = p.optional ? "?" : "";
+  let type = "";
+  if (p.kind === "enum" && p.values?.length) type = `: ${p.values.join(" | ")}`;
+  else if (p.kind !== "unknown") type = `: ${p.kind}`;
+  const bits = [`${name}${opt}${type}`];
+  if (!p.optional) bits.push("REQUIRED");
+  if (p.default !== undefined) bits.push(`default ${JSON.stringify(p.default)}`);
+  const head = bits.length > 1 ? `${bits[0]} (${bits.slice(1).join(", ")})` : bits[0];
+  if (!withDescriptions) return head;
+  const sidecar = descriptions?.get(name);
+  const description =
+    descriptionMode === "override"
+      ? (sidecar ?? p.description)
+      : (p.description ?? sidecar);
+  // The requiredness marker is already in `head`; sidecar lines lead with
+  // their own "REQUIRED (…)" so drop the duplicate rather than print both.
+  const trimmed = description?.replace(/^REQUIRED\s*/, "");
+  return trimmed ? `${head} — ${trimmed}` : head;
+}
+
+/** Contract → rendered prop lines, minus the enum props already shown on
+ *  their own Variants/Sizes lines. */
+function contractProps(
+  spec: RegistryContractSpec,
+  skip: readonly string[],
+  style: "full" | "compact",
+  descriptions?: Map<string, string>,
+  descriptionMode: "override" | "fallback" = "override",
+  /** false → names, types, enums and requiredness only. That IS the
+   *  contract surface the validator enforces; the prose is idiom. Compact
+   *  style drops it on SUB-EXPORTS, where the whole point of the line is
+   *  "this prop exists and is required" — the family's prose already sits
+   *  on the root. Without this, a fat brief's compact context grew by a
+   *  third against a budget it was already over. */
+  withDescriptions = true,
+): { line: string; total: number } | null {
+  const entries = Object.entries(spec.props).filter(
+    ([n]) => !skip.includes(n) && !UNIVERSAL_PROPS.has(n),
+  );
+  if (!entries.length) return null;
+  // REQUIRED props are never truncated. Calendar carries 79 props and its
+  // required `dataHook` sat past the cap — omitting the one prop an author
+  // cannot guess is worse than omitting twenty optional ones.
+  const required = entries.filter(([, p]) => !p.optional);
+  const optional = entries.filter(([, p]) => p.optional);
+  const shown =
+    style === "compact" && entries.length > COMPACT_PROP_CAP
+      ? [
+          ...required,
+          ...optional.slice(0, Math.max(0, COMPACT_PROP_CAP - required.length)),
+        ]
+      : entries;
+  const rendered = shown
+    .map(([n, p]) =>
+      contractPropLine(
+        n,
+        p,
+        withDescriptions ? descriptions : undefined,
+        descriptionMode,
+        withDescriptions,
+      ),
+    )
+    .join("; ");
+  const overflow =
+    shown.length < entries.length
+      ? ` … +${entries.length - shown.length} more (${entries.length} total — this component wraps a third-party surface; query it by name for the rest)`
+      : "";
+  return { line: rendered + overflow, total: entries.length };
+}
+
+function contractFor(
+  name: string,
+  registry: DesignSystemRegistry,
+): RegistryContractSpec | undefined {
+  return registry.components.contracts?.[name];
+}
+
 // ─── Public API: render ───────────────────────────────────────────────────
 
 /**
@@ -264,7 +419,11 @@ function getRefs(registry: DesignSystemRegistry = GRADE_REGISTRY): ComponentRef[
  * default imports / relative paths. Giving them the full statement
  * removes that failure mode.
  */
-function formatRef(ref: ComponentRef, style: "full" | "compact" = "full"): string {
+function formatRef(
+  ref: ComponentRef,
+  style: "full" | "compact" = "full",
+  registry: DesignSystemRegistry = GRADE_REGISTRY,
+): string {
   const lines: string[] = [];
   const names = [ref.name, ...(ref.subcomponents ?? [])].join(", ");
   const header = ref.import
@@ -274,14 +433,64 @@ function formatRef(ref: ComponentRef, style: "full" | "compact" = "full"): strin
   if (ref.subcomponents && ref.subcomponents.length) {
     lines.push(`  Sub-exports: ${ref.subcomponents.join(", ")}`);
   }
-  if (ref.variants && ref.variants.length) {
-    lines.push(`  Variants: ${ref.variants.join(", ")}`);
+  // Contract first, sidecar second — see the note above `contractPropLine`.
+  const spec = contractFor(ref.name, registry);
+  const variants = spec?.props.variant?.values ?? ref.variants;
+  const sizes = spec?.props.size?.values ?? ref.sizes;
+  if (variants && variants.length) {
+    lines.push(`  Variants: ${variants.join(", ")}`);
   }
-  if (ref.sizes && ref.sizes.length) {
-    lines.push(`  Sizes: ${ref.sizes.join(", ")}`);
+  if (sizes && sizes.length) {
+    lines.push(`  Sizes: ${sizes.join(", ")}`);
   }
-  if (ref.props && ref.props.length) {
+  const descriptions = sidecarDescriptions(ref);
+  const fromContract = spec
+    ? contractProps(spec, ["variant", "size"], style, descriptions)
+    : null;
+  if (fromContract) {
+    lines.push(`  Props: ${fromContract.line}`);
+  } else if (ref.props && ref.props.length) {
     lines.push(`  Props: ${ref.props.join("; ")}`);
+  }
+  // A contract carrying `element` tells the validator to accept that tag's
+  // native attributes and `on*` handlers on top of the props above. Saying
+  // so is the difference between "htmlFor is not available" and "htmlFor is
+  // a label attribute, use it" — the former sent authors to hand-rolled
+  // markup for props the gate would have passed.
+  if (spec?.element) {
+    lines.push(
+      `  Also accepts <${spec.element}> native attributes and on* handlers.`,
+    );
+  }
+  // Subcomponents carry their OWN contract per export (TabsTrigger.value is
+  // required there, and was described nowhere before this). Rendering them
+  // under the root is what makes the family's real surface visible without
+  // a query per sub-export.
+  const subs = (ref.subcomponents ?? []).filter((sub) =>
+    contractFor(sub, registry),
+  );
+  const shownSubs =
+    style === "compact" && subs.length > COMPACT_SUBCOMPONENT_CAP
+      ? subs.slice(0, COMPACT_SUBCOMPONENT_CAP)
+      : subs;
+  for (const sub of shownSubs) {
+    const subSpec = contractFor(sub, registry);
+    if (!subSpec) continue;
+    const subProps = contractProps(
+      subSpec,
+      [],
+      style,
+      descriptions,
+      "fallback",
+      style === "full",
+    );
+    const el = subSpec.element ? ` (+ <${subSpec.element}> native attrs)` : "";
+    if (subProps) lines.push(`    ${sub}: ${subProps.line}${el}`);
+  }
+  if (shownSubs.length < subs.length) {
+    lines.push(
+      `    … +${subs.length - shownSubs.length} more sub-exports listed above; query one by name for its props.`,
+    );
   }
   if (ref.composes_with && ref.composes_with.length) {
     lines.push(`  Composes with: ${ref.composes_with.join(", ")}`);
@@ -366,7 +575,8 @@ export function renderComponentRefsBlock(options?: {
     : refs;
   if (!picked.length) return "";
 
-  const body = picked.map((r) => formatRef(r, style)).join("\n\n");
+  const registry = options?.registry ?? GRADE_REGISTRY;
+  const body = picked.map((r) => formatRef(r, style, registry)).join("\n\n");
   const intro =
     style === "compact"
       ? [
@@ -382,7 +592,7 @@ export function renderComponentRefsBlock(options?: {
     "",
     body,
     "",
-    "Using a variant/size/prop not listed above will fail the render.",
+    "Using a variant/size/prop not listed above will fail the render, except where a component is noted as accepting native attributes.",
   ].join("\n");
 }
 

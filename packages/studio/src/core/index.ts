@@ -27,6 +27,15 @@ export {
 } from "./screen-context";
 
 export {
+  readProjectRules,
+  projectSteeringBlock,
+  buildProjectSystemPrompt,
+  type ProjectRules,
+  type ProjectRuleFile,
+  type ProjectSteering,
+} from "./project-rules";
+
+export {
   validateAgainstContract,
   validateJsx,
   formatViolations,

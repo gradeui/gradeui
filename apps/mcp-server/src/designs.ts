@@ -18,6 +18,10 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  readProjectRules,
+  type ProjectRuleFile,
+} from "@gradeui/studio/core";
 import { randomUUID } from "node:crypto";
 
 const nowMs = () => Date.now();
@@ -116,10 +120,10 @@ export async function assertProject(
   sb: SupabaseClient,
   ownerUserId: string,
   projectId: string,
-): Promise<{ registryId: string | null }> {
+): Promise<{ registryId: string | null; disabledRuleIds: string[] }> {
   const { data, error } = await sb
     .from("projects")
-    .select("id, owner_type, owner_id, deleted_at, registry_id")
+    .select("id, owner_type, owner_id, deleted_at, registry_id, rules_files")
     .eq("id", projectId)
     .maybeSingle();
   if (error) throw error;
@@ -130,7 +134,13 @@ export async function assertProject(
       `Project ${projectId} is not owned by the configured GRADE_OWNER_USER_ID — refusing to write to it.`,
     );
   }
-  return { registryId: (data.registry_id as string | null) ?? null };
+  return {
+    registryId: (data.registry_id as string | null) ?? null,
+    // Registry rules files this project switched off in Studio's Rules
+    // screen. Read through the shared reader so this server and the docs
+    // app cannot disagree about what a rules record means.
+    disabledRuleIds: readProjectRules(data.rules_files).disabledRuleIds,
+  };
 }
 
 // ─── Theme (on the `projects` row) ─────────────────────────────────────
@@ -186,6 +196,8 @@ export interface ProjectGuidelines {
   dos: string[];
   donts: string[];
   type: string | null;
+  /** The project's own authored .md rules files that are switched on. */
+  rulesFiles: ProjectRuleFile[];
 }
 
 export async function getProjectGuidelines(
@@ -194,7 +206,7 @@ export async function getProjectGuidelines(
 ): Promise<ProjectGuidelines> {
   const { data, error } = await sb
     .from("projects")
-    .select("context, dos, donts, type")
+    .select("context, dos, donts, type, rules_files")
     .eq("id", projectId)
     .maybeSingle();
   if (error) throw error;
@@ -204,6 +216,10 @@ export async function getProjectGuidelines(
     dos: (data.dos as string[] | null) ?? [],
     donts: (data.donts as string[] | null) ?? [],
     type: (data.type as string | null) ?? null,
+    // Project-authored rules files. The docs app has injected these since
+    // Jul 13; this server did not, so the same project generating the
+    // same screen followed a smaller rule set when asked through MCP.
+    rulesFiles: readProjectRules(data.rules_files).files,
   };
 }
 

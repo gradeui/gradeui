@@ -96,6 +96,10 @@ export interface ScreenContextOptions {
    *  Drives the base prompt, retrieval, pinning, and the refs block —
    *  one registry per request, end to end (STUDIO-BYODS.md B1). */
   registry?: DesignSystemRegistry;
+  /** Registry rules-file ids this project has switched OFF (Studio's
+   *  Rules screen). Ignored when `basePrompt` is supplied, since that
+   *  caller has already resolved its own rules. */
+  disabledRuleIds?: readonly string[];
 }
 
 export interface ScreenContext {
@@ -133,9 +137,21 @@ export function createScreenContext(
     pin = [],
     refsStyle = "full",
     registry = GRADE_REGISTRY,
+    disabledRuleIds,
   } = options;
 
-  const base = basePrompt ?? buildSystemPrompt(registry);
+  // Rules-file toggles have to reach the prompt through here, not only
+  // through a caller that pre-builds `basePrompt`. Studio's Rules screen
+  // switches a registry rules file off per project; the docs app honoured
+  // that by building its own base and passing it in, so every OTHER
+  // consumer (the MCP server) silently shipped all six BrightLocal rule
+  // files, 31k of chars, on every turn regardless of the switch. Two
+  // surfaces disagreeing about what the rules ARE is worse than the size.
+  const base =
+    basePrompt ??
+    (disabledRuleIds?.length
+      ? buildSystemPrompt(registry, { disabledRuleIds })
+      : buildSystemPrompt(registry));
   const editStanza = editMode ? EDIT_MODE_PROMPT : "";
 
   const set = allowedSet(registry);

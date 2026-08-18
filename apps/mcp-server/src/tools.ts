@@ -12,6 +12,7 @@
  */
 
 import { z } from "zod";
+import { projectSteeringBlock } from "@gradeui/studio/core";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
@@ -70,21 +71,24 @@ import {
   SRCDOC_PROBE_HTML,
 } from "./ui-scaled-template";
 
-/** Format a project's owner-set guidance (context + do/don't, migration 0019)
- *  into a block injected into every screen context, so the agent follows the
- *  project's steering over generic defaults. Empty string when nothing is set. */
+/** Format a project's owner-set steering (brief, do/don't, and its own
+ *  authored rules files) into the block injected into every screen
+ *  context, so the agent follows the project's steering over generic
+ *  defaults.
+ *
+ *  Delegates to @gradeui/studio/core so this server and Studio chat build
+ *  the SAME block. They previously each had their own version and drifted:
+ *  the rules-files harness landed in the docs app on Jul 13 and never
+ *  reached here, so MCP-authored screens followed a strictly smaller rule
+ *  set than the same project's chat-authored ones. */
 function projectGuidelinesBlock(g: ProjectGuidelines): string {
-  const parts: string[] = [];
-  if (g.type) parts.push(`Project type: ${g.type}`);
-  if (g.context?.trim()) parts.push(`Context: ${g.context.trim()}`);
-  if (g.dos.length) parts.push(`DO:\n${g.dos.map((d) => `  - ${d}`).join("\n")}`);
-  if (g.donts.length)
-    parts.push(`DO NOT:\n${g.donts.map((d) => `  - ${d}`).join("\n")}`);
-  if (parts.length === 0) return "";
-  return [
-    "─── PROJECT GUIDELINES (set by the project owner — follow these over generic defaults) ───",
-    ...parts,
-  ].join("\n");
+  return projectSteeringBlock({
+    type: g.type,
+    context: g.context,
+    dos: g.dos,
+    donts: g.donts,
+    files: g.rulesFiles,
+  });
 }
 
 export interface GradeToolsOptions {
@@ -151,15 +155,20 @@ const PAYLOAD_BUDGET_CHARS = 28_000;
 function budgetedContext(
   brief: string,
   registry: DesignSystemRegistry,
+  /** Registry rules files the PROJECT has switched off (Studio's Rules
+   *  screen). Threaded from the project row so the switch means the same
+   *  thing here as it does in Studio chat. */
+  disabledRuleIds?: readonly string[],
   pin?: readonly string[],
 ) {
-  const full = createScreenContext(brief, { pin, registry });
+  const full = createScreenContext(brief, { pin, registry, disabledRuleIds });
   if (full.system.length <= PAYLOAD_BUDGET_CHARS) {
     return { ...full, style: "full" as const };
   }
   const compact = createScreenContext(brief, {
     pin,
     registry,
+    disabledRuleIds,
     refsStyle: "compact",
   });
   return { ...compact, style: "compact" as const };
@@ -759,12 +768,20 @@ export function registerGradeTools(
       },
     },
     async ({ projectId, brief }) => {
-      const { registryId } = await assertProject(sb, env.ownerUserId, projectId);
+      const { registryId, disabledRuleIds } = await assertProject(
+        sb,
+        env.ownerUserId,
+        projectId,
+      );
       const registry = registryFor(registryId);
       const guidelines = projectGuidelinesBlock(
         await getProjectGuidelines(sb, projectId),
       );
-      const { system, refs, style } = budgetedContext(brief, registry);
+      const { system, refs, style } = budgetedContext(
+        brief,
+        registry,
+        disabledRuleIds,
+      );
       const body = [
         `Target project: ${projectId}`,
         `Design system: ${registry.name} (registry "${registry.id}", package ${registry.package.name})`,
@@ -795,7 +812,11 @@ export function registerGradeTools(
       },
     },
     async ({ projectId, screenId }) => {
-      const { registryId } = await assertProject(sb, env.ownerUserId, projectId);
+      const { registryId, disabledRuleIds } = await assertProject(
+        sb,
+        env.ownerUserId,
+        projectId,
+      );
       const registry = registryFor(registryId);
       const screen = await getScreen(sb, projectId, screenId);
       if (!screen) {
@@ -812,7 +833,11 @@ export function registerGradeTools(
       const appSource = screen.state?.appSource ?? "";
       // Derive refs from the CURRENT source so the edit context surfaces the
       // components the screen actually uses.
-      const { system, refs, style } = budgetedContext(appSource, registry);
+      const { system, refs, style } = budgetedContext(
+        appSource,
+        registry,
+        disabledRuleIds,
+      );
       const guidelines = projectGuidelinesBlock(
         await getProjectGuidelines(sb, projectId),
       );
