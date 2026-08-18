@@ -244,21 +244,38 @@ export const SIDEBAR_SHADOWS = {
 // readable — a bg swap alone would leave near-black text on dark green.
 export const HEADER_SURFACES = {
   none: null, // transparent — page background shows through
-  // GLASS (Ali, 24 Jul): 95% white + backdrop blur, so content ghosts
+  // GLASS (Ali, 24 Jul): 95% surface + backdrop blur, so content ghosts
   // through the sticky band as it scrolls beneath. Alpha derives from
   // the token via CSS relative color (tokens-only rule); the -webkit-
   // twin covers Safari. Harmless when the header isn't sticky —
-  // nothing passes underneath, it just reads as white.
+  // nothing passes underneath, it just reads as a solid band.
+  //
+  // THEME-AWARE via ld() like every other preset (Ali, 18 Aug: "the page
+  // header doesn't have a dark mode properly"). This one was authored
+  // with a literal base-white, so the band stayed white while the page
+  // went dark — a white strip across the top of a dark screen. The dark
+  // step is neutral-900, the same pairing SIDEBAR_TONES.white uses, so
+  // the band reads as raised against the neutral-950 page. Light mode is
+  // byte-for-byte what it was.
   white: {
     style: {
-      backgroundColor:
+      backgroundColor: ld(
         "rgb(from var(--ds-tailwind-colors-base-white) r g b / 0.95)",
+        "rgb(from var(--ds-tailwind-colors-neutral-900) r g b / 0.95)",
+      ),
       backdropFilter: "blur(8px)",
       WebkitBackdropFilter: "blur(8px)",
     },
   },
+  // Same fix, same reason — neutral-100 is a LIGHT ramp step, so it was
+  // a pale band in dark mode.
   subtle: {
-    style: { backgroundColor: "var(--ds-tailwind-colors-neutral-100)" },
+    style: {
+      backgroundColor: ld(
+        "var(--ds-tailwind-colors-neutral-100)",
+        "var(--ds-tailwind-colors-neutral-800)",
+      ),
+    },
   },
   // Dark surfaces are FENCED with the DS's own dark mode (Ali, 22 Jul:
   // "not hand rolling dark mode buttons"): the band carries the `dark`
