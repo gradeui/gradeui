@@ -451,3 +451,46 @@ Workaround at our call sites is `className="[&_.flex-1]:gap-4"` on
 `ChartTooltipContent`, which reaches the row through the one stable handle the
 component exposes from the outside. Verified compiled and applied against the
 component's own row markup.
+
+## 17. `Drawer`'s bottom variant is sized in `vh`, and only inline style can beat it
+
+The bottom variant carries `mt-24` and `max-h-[80vh]`, both as
+`data-[vaul-drawer-direction=bottom]:` variants. Two problems.
+
+**The unit.** `vh` measures the viewport with browser chrome HIDDEN, so on a
+phone with the URL bar showing, `80vh` can exceed what is actually visible —
+the bug the 20% margin appears to be hedging against in the first place.
+`svh` is the safe unit for a bottom sheet whose footer must stay reachable;
+`dvh` fits exactly but resizes the panel mid-scroll, which is the one gesture
+a drawer is for.
+
+**The specificity.** Because both are data-attribute variants, a consumer's
+plain `mt-0` / `max-h-[92svh]` loses to them. The only reliable override is
+inline style, which then beats anything the DS adds later — the opposite of
+what a design system wants. A `height` prop, or plain classes the consumer
+can replace, would fix it.
+
+Ours ends up as `style={{ marginTop: 0, maxHeight: "92svh" }}` on every
+bottom drawer, which is not something a consumer should have to discover.
+
+## 18. `Drawer` ships no close control, and `Sheet`'s cannot align to a header
+
+`Sheet` renders its own X at `absolute top-4 right-4` with an
+`opacity-70 → 100` hover. Absolutely positioned means it cannot sit on the
+centre line of a title in a padded header, and an opacity shift on a bare
+icon barely reads as interactive at all. `Drawer` renders no close at all, so
+every consumer invents one.
+
+Both want the same thing: an optional close SLOT in `DrawerHeader` /
+`SheetHeader` that participates in the header's flex row, and defaults to a
+ghost icon Button (hover surface, focus ring, 36px target) rather than a bare
+icon.
+
+## 19. The drag handle has no `data-slot`
+
+`DrawerContent` renders the handle as an anonymous `<div>` — every other part
+of the package carries `data-slot`. Adjusting its spacing (it stacks `mt-4`
+with the header's own padding, so a title sits 40px from the top of the
+drawer) means selecting it structurally with `[&>div:first-child]`, which is
+the sort of thing that breaks silently in a refactor. `data-slot="drawer-handle"`
+would cost nothing.
