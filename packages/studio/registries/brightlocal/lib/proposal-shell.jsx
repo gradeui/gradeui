@@ -1160,7 +1160,23 @@ export function AppLayoutShell({
         '[data-gds-shell-sidebar] [data-hook^="nav-"]:not([data-hook^="nav-item-"]) svg{width:var(--gds-nav-icon-size,16px);height:var(--gds-nav-icon-size,16px);stroke-width:var(--gds-nav-icon-stroke,1.5)}' +
         "[data-gds-shell-sidebar] *{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--gds-sidebar-scrollbar,rgb(0 0 0/0.18)) transparent}" +
         "[data-gds-shell-sidebar] [data-radix-scroll-area-thumb],[data-gds-shell-sidebar] [data-slot=scroll-area-thumb]{background-color:var(--gds-sidebar-scrollbar,rgb(0 0 0/0.18))}" +
-        "[data-gds-shell-sidebar] [data-radix-scroll-area-scrollbar],[data-gds-shell-sidebar] [data-slot=scroll-area-scrollbar]{background:transparent}"
+        "[data-gds-shell-sidebar] [data-radix-scroll-area-scrollbar],[data-gds-shell-sidebar] [data-slot=scroll-area-scrollbar]{background:transparent}" +
+        /* MOBILE PAGINATION IS ARROWS ONLY (Ali, 19 Aug: "on mobile I
+           would just have arrows"). The DS already tries: usePagination
+           drops to 5 slots below sm. But a table with 5 pages HAS 5
+           pages, so nothing is dropped and mobile gets prev + 1 2 3 4 5
+           + next — seven 36px buttons, a 300px nav that wraps the
+           toolbar band from 53px to 80px at 375px, measured.
+           DataTablePaginationNav takes no slot-count prop, so there is
+           nothing to pass; this is the override.
+           Structural, not by label: every item is
+           [data-slot=pagination-item], and the hook's own documented
+           contract is ["previous", ...pages, "next"], so first and last
+           ARE the arrows. Ellipsis is an item too and goes with them.
+           Scoped to the DataTable's pagination so a standalone
+           Pagination elsewhere keeps its pages. Delete this the day the
+           DS ships a compact mode. */
+        "@media (max-width:639.98px){[data-slot=data-table-pagination] [data-slot=pagination-item]:not(:first-child):not(:last-child){display:none}}"
       }</style>
       {tweaker ? (
         <ShellTweakerPanel authored={authored} tweaks={tweaks} setTweaks={setTweaks} />
