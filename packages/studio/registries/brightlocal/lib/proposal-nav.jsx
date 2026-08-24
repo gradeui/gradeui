@@ -44,6 +44,7 @@ import {
   TypographyMuted,
 } from "@brightlocal/ui-components";
 import {
+  BotMessageSquare,
   Building,
   ChevronRight,
   Grid3x3,
@@ -71,6 +72,11 @@ import { PROPOSAL_ACCOUNTS, useProposalData } from "@brightlocal/proposal-data";
 // stamp data-grade-* attributes).
 
 export const PROPOSAL_SECTIONS = [
+  // Local AI Visibility sits ABOVE AI Insights (Ali, 24 Aug). The live
+  // product wears a "New" badge on this row; left off for now. No landing
+  // screen yet, so no navLinks entry: the row renders and highlights but
+  // does not navigate until one exists.
+  { id: "local-ai-visibility", label: "Local AI Visibility", icon: BotMessageSquare },
   {
     id: "ai-insights",
     label: "AI Insights",
