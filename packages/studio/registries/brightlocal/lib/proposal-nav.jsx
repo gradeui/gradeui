@@ -317,15 +317,12 @@ export function ProposalSidebar({
   // `meta` ReactNode slot.
   userMeta,
   userInitials,
-  userMenuGroups = [
-    [
-      { label: "Account Details" },
-      { label: "Billing Details" },
-      { label: "Addons" },
-      { label: "Support Tickets" },
-    ],
-    [{ label: "Logout" }],
-  ],
+  // Account Details and Logout only (Ali, 24 Aug). Billing Details,
+  // Addons and Support Tickets are out: none of them is part of what
+  // the proposal shows, and four dead rows in the footer menu read as
+  // scope the prototype does not have. Two groups, so the rule above
+  // Logout stays. Pass userMenuGroups to restore or extend the set.
+  userMenuGroups = [[{ label: "Account Details" }], [{ label: "Logout" }]],
   dataHook = "app-sidebar",
   // Anchor-id pass-through — see AppLayoutShell's rest note.
   ...rest
