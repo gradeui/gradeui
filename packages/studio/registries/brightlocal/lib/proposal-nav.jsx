@@ -44,17 +44,13 @@ import {
   TypographyMuted,
 } from "@brightlocal/ui-components";
 import {
-  BarChart3,
-  Briefcase,
   Building,
   ChevronRight,
-  Globe,
   Grid3x3,
   House,
   Info,
   LayoutGrid,
   Link,
-  ListChecks,
   SlidersHorizontal,
   Sparkles,
   Star,
@@ -89,7 +85,6 @@ export const PROPOSAL_SECTIONS = [
       { id: "ai-insights-export", label: "Export Report" },
     ],
   },
-  { id: "setup-tasks", label: "Set-up Tasks", icon: ListChecks },
   {
     id: "location-profile",
     label: "Location Profile",
@@ -164,9 +159,10 @@ export const PROPOSAL_SECTIONS = [
   },
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "gbp-manager", label: "GBP Manager", icon: Store },
-  { id: "website-seo", label: "Website SEO", icon: Globe },
-  { id: "google-analytics", label: "Google Analytics", icon: BarChart3 },
-  { id: "agency-tools", label: "Agency Tools", icon: Briefcase },
+  // Set-up Tasks, Website SEO, Google Analytics and Agency Tools are OUT
+  // of the proposal nav (Ali, 24 Aug). Their landing screens still exist
+  // and their navLinks entries in proposal-data.jsx are kept, so putting
+  // a row back restores its link with no rewiring.
 ];
 
 /** The proposal IA with data-driven links applied:

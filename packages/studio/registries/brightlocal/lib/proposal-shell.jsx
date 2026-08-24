@@ -325,12 +325,21 @@ export const PAGE_LAYERS = {
   default: {},
   // ── Card-only treatments (Ali, 22 Jul): these touch the CARD tokens
   // only — the canvas is the Background knob's job (pageBackground).
-  // "outline" = transparent cards, border carries the shape;
+  // "outline" = cards painted the CANVAS colour, border carries the shape;
   // "subtle"  = faint tinted cards;
   // "white"   = white elevated cards.
+  //
+  // outline used to set --card: transparent, which reads identically on a
+  // flat canvas but is not the same thing. Anything painting bg-card
+  // INSIDE a card then paints nothing, and a sticky card header stops
+  // occluding the rows scrolling under it (Ali, 24 Aug, Review Insights
+  // on Live Site: the Ratings and Sources labels showed straight through
+  // "Review Performance"). Following the canvas keeps the look and makes
+  // every card surface opaque. var(), not a literal, so outline still
+  // tracks whatever pageBackground names, including "auto".
   outline: {
-    "--card": "transparent",
-    "--color-card": "transparent",
+    "--card": "var(--background)",
+    "--color-card": "var(--background)",
   },
   subtle: {
     "--card": ld("var(--ds-tailwind-colors-neutral-50)", "var(--ds-tailwind-colors-neutral-900)"),
@@ -541,8 +550,11 @@ export const LOOK_PRESETS = {
     pageBackground: "muted",
   },
   // Live Site (Ali's settings, 22 Jul): mirrors the real BrightLocal
-  // product — attached in-flow sidebar, the large nav, no header band,
-  // outline cards on the soft canvas.
+  // product — attached in-flow sidebar, the large nav, no header band.
+  // Cards are SOLID WHITE on the soft canvas (Ali, 24 Aug). They were
+  // outline; the switch is a deliberate step away from the live product,
+  // taken because these pages carry sticky card headers and stacked
+  // furniture that want a surface of their own to sit on.
   "live-site": {
     sidebarTone: "default",
     sidebarFrame: "attached",
@@ -550,7 +562,7 @@ export const LOOK_PRESETS = {
     navDensity: "expansive",
     stickyHeader: false,
     headerSurface: "none",
-    pageLayers: "outline",
+    pageLayers: "white",
     pageBackground: "subtle",
   },
 };
@@ -1036,9 +1048,20 @@ export function AppLayoutShell({
   // TRANSPARENT (filled cards ship borderless — rules/90-audit.md).
   // Shadows stay a SIDEBAR treatment. Scoped <style> because
   // border-color can't ride the --card token swap.
+  //
+  // The transition-property override is a FREEZE fix, not a taste call.
+  // The DS ships `transition-colors` on Card, and --card resolves one way
+  // on first paint and another once this shell's inline style lands, so a
+  // background-color transition fires on mount. The sandbox holds its
+  // timeline at currentTime 0, so that transition is pinned at its START
+  // value forever and every card renders transparent no matter what
+  // pageLayers says (Ali, 24 Aug: white cards that would not go white).
+  // CardHeader has no transition-colors, which is why the sticky header
+  // was the only thing painting. Dropping background-color from the list
+  // makes the colour apply instantly; shadow and border still animate.
   const layerCss =
     pageLayers !== "default"
-      ? `[data-slot="card"]{border-color:var(--border)}`
+      ? `[data-slot="card"]{border-color:var(--border);transition-property:box-shadow,border-color}`
       : "";
   // color-scheme wiring for the ld() pairs above — .dark flips them.
   const schemeCss = ":root{color-scheme:light}.dark{color-scheme:dark}";
