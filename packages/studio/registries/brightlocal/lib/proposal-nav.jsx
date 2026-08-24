@@ -157,8 +157,8 @@ export const PROPOSAL_SECTIONS = [
       { id: "citations-builder", label: "Citation Builder", paid: true },
     ],
   },
-  { id: "reviews", label: "Reviews", icon: Star },
   { id: "gbp-manager", label: "GBP Manager", icon: Store },
+  { id: "reviews", label: "Reviews", icon: Star },
   // Set-up Tasks, Website SEO, Google Analytics and Agency Tools are OUT
   // of the proposal nav (Ali, 24 Aug). Their landing screens still exist
   // and their navLinks entries in proposal-data.jsx are kept, so putting
@@ -460,28 +460,13 @@ export function ProposalSidebar({
         data-hook="sidebar-footer"
         className="border-sidebar-border flex shrink-0 flex-col border-t px-3 pt-2 pb-3"
       >
-        {/* All Locations — a STANDARD nav row (replaced the account
-            switcher dropdown, Ali 21 Jul). Sits above the signed-in
-            user with its own breathing room and a rule between it and
-            the user block (snag 6, Ali 22 Jul). Hidden ON the All
-            Locations page itself — there it's the top nav row instead. */}
-        {!isAllLocations ? (
-          <div className="border-sidebar-border mb-1.5 border-b pb-2">
-            <SidebarMenu>
-              <SidebarMenuItem dataHook="nav-item-all-locations">
-                <SidebarMenuButton
-                  size="sm"
-                  className="cursor-pointer select-none px-4 [&>span:last-of-type]:whitespace-normal!"
-                  dataHook="nav-all-locations"
-                  data-grade-goto={allLocationsGoto}
-                >
-                  <LayoutGrid className="size-5" />
-                  <span>All Locations</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </div>
-        ) : null}
+        {/* The footer "All Locations" row is GONE (Ali, 24 Aug: reflect
+            the live product). It was a standard nav row above the
+            signed-in user, added 21 Jul when it replaced the account
+            switcher dropdown. The route back is not lost: every
+            location-scoped page roots its breadcrumb trail at All
+            Locations, and the row still renders at the TOP of the nav on
+            the All Locations page itself (account context, above). */}
         <SidebarMenu>
           {/* The dropdown trigger inherits SidebarMenuButton's baked
               px-6 (rounded-full nav sizing) — comically wide in a
