@@ -2,6 +2,7 @@
 name: AppLayoutShell
 import: "@brightlocal/proposal"
 props:
+  - preset? (subtle-depth | heavy-depth | live-site) — AUTHORED look bundle: applies one of the named LOOK_PRESETS, the same table the tweaker's Alt+T dropdown reads, so a screen OPENS in that look instead of pasting nine look props that go stale the day the preset is retuned. Resolve order is shell defaults, then preset, then literal look props on this instance, then session tweaks (runtime only): preset="live-site" stickyHeader navDensity="comfortable" is Live Site with a sticky header and the roomier nav. Alt+T on a preset screen reads that preset back and shows no "tweaked" rows. An unrecognised name falls through to the defaults. (default none)
   - flush?: boolean — Cancel GlobalLayout's baked-in p-section-sm and the scroll viewport's p-1 (string literals in the dist, not prop-overridable — see rules/90-audit.md). (default true)
   - stickyHeader?: boolean — Pin the content header to the top of the scroll viewport (bg-background, border-b unless headerBorder says otherwise). Requires flush, otherwise it sticks 24px down inside the padding. (default false)
   - headerBorder?: boolean — Header band bottom border, independent of stickiness. Unset = auto (border only while sticky); true/false forces it on/off. Also a tweaker row (Alt+T).
@@ -54,6 +55,26 @@ import { AppLayoutShell, ProposalSidebar, PageHeader } from "@brightlocal/propos
   </AppLayoutShell>
 </SidebarProvider>
 ```
+
+PRESETS vs LITERAL PROPS: reach for `preset` for the whole look and
+literal props only for the knobs a screen deliberately deviates on. The
+four RM Reviews screens are the pattern:
+
+```jsx
+<AppLayoutShell
+  preset="live-site"
+  navDensity="comfortable"   // Live Site ships expansive, too loud at this page density
+  stickyHeader               // deliberate: their card furniture pins below the band
+  flush
+  pinnedSidebar
+  …
+```
+
+Retuning "live-site" in LOOK_PRESETS then moves all four; their two
+deviations stay. Copying the preset's knobs into each screen instead
+freezes them at the moment they were pasted, which is the drift this
+prop exists to stop. Presets are look knobs ONLY, so `dataset` is
+unaffected by them.
 
 The sticky header sits at z-30 — page content may use z-indexes up to
 z-20 and stays underneath; the tweaker (z-50) and portalled overlays

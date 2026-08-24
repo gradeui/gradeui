@@ -523,6 +523,17 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   "AppLayoutShell": {
     "name": "AppLayoutShell",
     "props": {
+      "preset": {
+        "kind": "enum",
+        "values": [
+          "subtle-depth",
+          "heavy-depth",
+          "live-site"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "AUTHORED look bundle: applies one of the named LOOK_PRESETS, the same table the tweaker's Alt+T dropdown reads, so a screen OPENS in that look instead of pasting nine look props that go stale the day the preset is retuned. Resolve order is shell defaults, then preset, then literal look props on this instance, then session tweaks (runtime only): preset=\"live-site\" stickyHeader navDensity=\"comfortable\" is Live Site with a sticky header and the roomier nav. Alt+T on a preset screen reads that preset back and shows no \"tweaked\" rows. An unrecognised name falls through to the defaults. (default none)"
+      },
       "flush": {
         "kind": "boolean",
         "design": "knob",

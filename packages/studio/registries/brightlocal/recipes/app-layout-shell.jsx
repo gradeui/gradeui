@@ -1,16 +1,25 @@
 // AppLayoutShell — Composable app-shell wrapper: cancels GlobalLayout's baked-in padding and exposes sticky-header / pinned-sidebar / sidebar-tone options as props.
 // keywords: app shell, layout shell, layout options, sticky header, pinned sidebar, sidebar color, sidebar tone, flush layout, remove padding, composable layout, edge to edge
 // components: global-layout, sidebar, scroll-area
-// Hand-authored (July 2026, layout explorations) — NOT harvested; the
-// recipe harvester does not touch this file.
+// LEGACY (July 2026, layout explorations). The shipping AppLayoutShell
+// lives in the shared module at registries/brightlocal/lib/proposal-shell.jsx
+// and screens IMPORT it from "@brightlocal/proposal" (see
+// rules/15-proposal-module.md). This copy is kept only so the older
+// in-file screens still read; do not copy it into a new screen, and do
+// not treat its prop list as the contract. It has no `preset` prop and
+// its enums have drifted.
+//
+// Hand-authored, NOT harvested; the recipe harvester does not touch
+// this file.
 //
 // WHY THIS EXISTS (see rules/90-audit.md): GlobalLayout bakes
 // `p-section-sm` into its inner div as a string literal (no cn() merge)
 // and ScrollArea hardcodes `p-1` on its viewport — neither is
 // prop-overridable, and the padding blocks sticky headers and
-// edge-locked sidebars. Screens are self-contained single-file JSX, so
-// this shell is defined IN-FILE (user-land component), never imported.
-// Copy the whole function into the screen and compose with it.
+// edge-locked sidebars. When this recipe was written screens were
+// self-contained single-file JSX, so the shell was defined IN-FILE and
+// never imported. That is no longer the rule: import it from
+// "@brightlocal/proposal" instead.
 
 import {
   GlobalLayout,

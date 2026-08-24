@@ -554,6 +554,46 @@ export const LOOK_PRESETS = {
     pageBackground: "subtle",
   },
 };
+// Authored-look DEFAULTS. These used to live in AppLayoutShell's
+// destructuring signature, which made `preset` impossible: a param
+// default means every knob ALWAYS holds a value, and an always-value
+// beats a preset for a knob the caller never passed. So the defaults
+// move out here and the shell resolves the look once, explicitly:
+//
+//   shell defaults -> preset -> literal props -> session tweaks
+//
+// Keys are exactly the knobs the tweaker can override, so this doubles
+// as the look-key list.
+export const SHELL_DEFAULTS = {
+  sidebarTone: "white",
+  sidebarFrame: "floating",
+  sidebarShadow: "frame",
+  seamShadow: true,
+  pageLayers: "raised",
+  pageBackground: "auto",
+  stickyHeader: false,
+  // Unset by design: "auto" means border only while sticky.
+  headerBorder: undefined,
+  headerSurface: "none",
+  headerSpace: "default",
+  dataset: "minus-one-studios",
+  navDensity: "compact",
+};
+const LOOK_KEYS = Object.keys(SHELL_DEFAULTS);
+
+// Resolve the AUTHORED look for one instance. `literal` is the raw prop
+// bag: a key it never passed arrives as undefined and must NOT wipe the
+// preset's value, which is what the undefined filter is doing here. An
+// unknown preset name falls through to the defaults rather than throwing,
+// so a typo degrades to "no preset" instead of a blank screen.
+export function resolveShellLook(preset, literal) {
+  const out = { ...SHELL_DEFAULTS, ...(LOOK_PRESETS[preset] ?? {}) };
+  for (const key of LOOK_KEYS) {
+    if (literal[key] !== undefined) out[key] = literal[key];
+  }
+  return out;
+}
+
 const PRESET_LABELS = {
   current: "Current",
   "subtle-depth": "Subtle Depth",
@@ -561,7 +601,7 @@ const PRESET_LABELS = {
   "live-site": "Live Site",
 };
 
-export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
+export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
   const [open, setOpen] = React.useState(false);
   React.useEffect(() => {
     const onKey = (e) => {
@@ -653,12 +693,18 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
                   const look = Object.fromEntries(
                     Object.entries(tweaks).filter(([k]) => k !== "dataset"),
                   );
-                  if (Object.keys(look).length === 0) return "current";
+                  // Nothing overridden, so the screen is showing exactly
+                  // its authored look: read back the preset it authors.
+                  // Opening Alt+T on a Live Site screen should say "Live
+                  // Site", not sit blank on "Current".
+                  if (Object.keys(look).length === 0)
+                    return LOOK_PRESETS[preset] ? preset : "current";
+                  // Otherwise match the LIVE look (authored + tweaks)
+                  // against each bundle. Comparing the TWEAKS alone was
+                  // only right while every screen authored every knob.
+                  const liveLook = { ...authored, ...look };
                   for (const [name, vals] of Object.entries(LOOK_PRESETS)) {
-                    if (
-                      Object.keys(vals).length === Object.keys(look).length &&
-                      Object.entries(vals).every(([k, v]) => look[k] === v)
-                    )
+                    if (Object.entries(vals).every(([k, v]) => liveLook[k] === v))
                       return name;
                   }
                   return "custom";
@@ -669,7 +715,16 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
                     const keepData =
                       prev.dataset !== undefined ? { dataset: prev.dataset } : {};
                     if (name === "current") return keepData;
-                    return { ...(LOOK_PRESETS[name] ?? {}), ...keepData };
+                    // Keep only the rows that actually DIFFER from the
+                    // authored look, the same rule `set` below uses.
+                    // Picking the preset a screen already authors then
+                    // lights up no "tweaked" chips.
+                    const look = Object.fromEntries(
+                      Object.entries(LOOK_PRESETS[name] ?? {}).filter(
+                        ([k, v]) => v !== authored[k],
+                      ),
+                    );
+                    return { ...look, ...keepData };
                   });
                 }}
                 className="mr-1 rounded-md border border-[var(--border)] bg-transparent px-1.5 py-0.5 text-[11px]"
@@ -759,16 +814,25 @@ export function ShellTweakerPanel({ authored, tweaks, setTweaks }) {
 // literals in the dist, not prop-overridable — rules/90-audit.md) and
 // exposes the layout explorations as props.
 export function AppLayoutShell({
+  // Named LOOK bundle (LOOK_PRESETS): "subtle-depth" | "heavy-depth" |
+  // "live-site". The AUTHORED counterpart of the tweaker's preset
+  // dropdown, reading the same table, so a screen can OPEN in a look
+  // instead of pasting nine knobs that go stale the day the preset is
+  // retuned. Literal look props still win over it, one at a time:
+  //   preset="live-site" stickyHeader
+  // is Live Site with a sticky header. Unknown names fall through to
+  // the defaults. (Ali, 24 Aug.)
+  preset,
   flush = true,
-  stickyHeader = false,
+  stickyHeader,
   pinnedSidebar = true,
-  sidebarTone = "white",
+  sidebarTone,
   // Nav density — "compact" (the fitted look: 30px rows, 16px/1 icons),
   // "comfortable" (DS-ish: roomier rows, 20px/1.5 icons), or "expansive"
   // (the LIVE product's generous nav: ~48px rows, 15px labels, 20px
   // icons). Small vs large menus is a real product question (Ali) — so
   // it's a shell knob AND a tweaker row, via the --gds-nav-* variables.
-  navDensity = "compact",
+  navDensity,
   // Carry the tone onto the MOBILE Sheet too. The Sheet portals to
   // document.body — outside this tree — so container-level vars can't
   // reach it; a scoped <style> targeting its data-sidebar/data-mobile
@@ -788,25 +852,25 @@ export function AppLayoutShell({
   contentMaxWidth = "var(--ds-breakpoint-lg)",
   // How the sidebar sits against the screen edge (desktop only — the
   // aside is hidden below lg). Presets in SIDEBAR_FRAMES.
-  sidebarFrame = "floating", // "flush" | "floating" | "attached"
+  sidebarFrame, // "flush" | "floating" | "attached"
   // Sidebar drop shadow — overrides the frame's own. Presets in
   // SIDEBAR_SHADOWS. "frame" (default) defers to the frame preset.
-  sidebarShadow = "frame", // "frame" | "none" | "sm" | "md" | "lg"
+  sidebarShadow, // "frame" | "none" | "sm" | "md" | "lg"
   // The flush depth model's seam shadow (CONTENT_SEAM_SHADOW), on the
   // content sheet's left edge. The DEPTH ORDER is not a knob — content
   // is always above on flush — but the shadow itself toggles (Ali, 24
   // Jul). Also a tweaker row (Sidebar → Seam shadow).
-  seamShadow = true,
+  seamShadow,
   // Optional 1px border around the sidebar container. Any CSS color —
   // tokens welcome: "var(--sidebar-border)", "var(--ds-tailwind-colors-neutral-200)".
   sidebarBorder,
   // Page-wide layer treatment — canvas + card surface. Presets in
   // PAGE_LAYERS. "raised" = green-grey canvas, white cards.
-  pageLayers = "raised",
+  pageLayers,
   // Canvas colour on its own — "auto" defers to the pageLayers preset;
   // white/subtle/muted re-point the page background independently of
   // the card treatment (tweaker: Page → Background). (Ali, 22 Jul)
-  pageBackground = "auto", // "default" | "raised"
+  pageBackground, // "auto" | "white" | "subtle" | "muted"
   // Named dataset (lib/data/*.json) — "default" renders PROPOSAL_DATA;
   // anything else wraps the shell in a nested ProposalDataProvider, so
   // it also OVERRIDES any provider a screen mounted outside. A tweaker
@@ -814,7 +878,7 @@ export function AppLayoutShell({
   // minus-one-studios by DEFAULT (Ali, 23 Jul) — the real captured
   // client is the baseline everywhere; "default" (the generic Joe
   // Bloggs data) remains available via the tweaker's Data row.
-  dataset = "minus-one-studios",
+  dataset,
   sidebar,
   header,
   // Header BAND background. The header spans the full content-area width
@@ -828,7 +892,7 @@ export function AppLayoutShell({
   // "subtle" | "dark" | "brand". The canonical colour knob — dark
   // presets also flip the header's text tokens. Beats headerBackground
   // when set; also a tweaker row (Alt+T). (Ali, 21 Jul)
-  headerSurface = "none",
+  headerSurface,
   // Header band bottom border, independent of stickiness. Unset = auto
   // (border only while sticky — the band needs an edge when content
   // scrolls beneath it); true/false forces it on/off (Ali, 21 Jul).
@@ -836,7 +900,7 @@ export function AppLayoutShell({
   // Band breathing room: "default" | "spacious" — spacious roughly
   // doubles the vertical air for presentation looks. Also a tweaker
   // row (Header → Space). (Ali, 23 Jul.)
-  headerSpace = "default",
+  headerSpace,
   // Mobile top bar slot (hamburger + logo). Rendered FIRST inside the
   // content column so it sits ABOVE the page header below lg — passing
   // it via children put it underneath (July 2026 screenshot).
@@ -862,11 +926,16 @@ export function AppLayoutShell({
   // cards already do.
   ...rest
 }) {
-  // ─── Tweaker override layer (see ShellTweakerPanel): literal props
-  // are the AUTHORED look; tweaks shadow them for this session only.
-  // Reassigning the params keeps every downstream reference
-  // (tone/frame/shadow/layers/sticky) reading the LIVE values.
-  const authored = { sidebarTone, sidebarFrame, sidebarShadow, seamShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity };
+  // ─── Look resolution + tweaker override layer.
+  //
+  // AUTHORED = shell defaults, then the named `preset` bundle, then any
+  // literal look prop on this instance (resolveShellLook above). Session
+  // tweaks from the panel shadow that, for this session only. Reassigning
+  // the params keeps every downstream reference (tone/frame/shadow/
+  // layers/sticky) reading the LIVE values.
+  const authored = resolveShellLook(preset, {
+    sidebarTone, sidebarFrame, sidebarShadow, seamShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity,
+  });
   // SESSION MEMORY: seed from the module-scope stash (below) so tweaks —
   // colours, frame, DATASET — persist across flow navigation and screen
   // switches: the lib module is compiled once per sandbox boot and its
@@ -1179,7 +1248,7 @@ export function AppLayoutShell({
         "@media (max-width:639.98px){[data-slot=data-table-pagination] [data-slot=pagination-item]:not(:first-child):not(:last-child){display:none}}"
       }</style>
       {tweaker ? (
-        <ShellTweakerPanel authored={authored} tweaks={tweaks} setTweaks={setTweaks} />
+        <ShellTweakerPanel preset={preset} authored={authored} tweaks={tweaks} setTweaks={setTweaks} />
       ) : null}
       <GlobalLayoutSidebar
         dataHook={`${dataHook}-sidebar`}
