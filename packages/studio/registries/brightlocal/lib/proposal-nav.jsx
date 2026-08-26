@@ -164,7 +164,22 @@ export const PROPOSAL_SECTIONS = [
     ],
   },
   { id: "gbp-manager", label: "GBP Manager", icon: Store },
-  { id: "reviews", label: "Reviews", icon: Star },
+  // Reviews gets sub rows (Ali, 24 Aug). The parent keeps its own
+  // landing screen — it does NOT point at Insights, so the section
+  // never duplicates a sub's page; that landing stays the "not
+  // available yet" placeholder.
+  // Get Reviews and Review Widgets get rows too, once those pages are
+  // finished (Ali, 26 Aug — soon). Until then they're off the nav and
+  // stand on activeId "reviews": the parent highlights, no sub does.
+  {
+    id: "reviews",
+    label: "Reviews",
+    icon: Star,
+    sub: [
+      { id: "reviews-insights", label: "Review Insights" },
+      { id: "reviews-inbox", label: "Review Inbox" },
+    ],
+  },
   // Set-up Tasks, Website SEO, Google Analytics and Agency Tools are OUT
   // of the proposal nav (Ali, 24 Aug). Their landing screens still exist
   // and their navLinks entries in proposal-data.jsx are kept, so putting
