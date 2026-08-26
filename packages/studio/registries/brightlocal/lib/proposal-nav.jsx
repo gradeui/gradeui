@@ -193,10 +193,29 @@ export const PROPOSAL_SECTIONS = [
  *    { goto, transition } for a transition preset:
  *      "navLinks": { "rankings-table": "Rankings Table",
  *                    "location-profile-hours": { "goto": "Opening Hours", "transition": "slide-left" } }
+ *  - `data.navHidden` DROPS rows by id — the visibility counterpart of
+ *    navLinks, and the answer to "this page exists but isn't ready to
+ *    be reached yet". A hidden row is removed with its whole subtree,
+ *    so hiding a section hides its subs:
+ *      "navHidden": ["reviews-get", "citations-builder"]
+ *    Prefer this over deleting a row from PROPOSAL_SECTIONS: the row
+ *    and its navLinks entry stay written down, and shipping the page
+ *    is deleting one string rather than reconstructing the row.
+ *    Because it reads off the data context it resolves at ANY level of
+ *    the provider stack — module default here, project data, or a
+ *    single screen wrapping itself in ProposalDataProvider (which
+ *    survives the shell's own dataset provider; see proposal-data.jsx).
+ *    A screen-level list REPLACES the inherited one rather than adding
+ *    to it — the merge is a two-level object merge and arrays are
+ *    values, so a screen that hides one row must name them all.
  *  ProposalSidebar calls this with the context data by default; screens
  *  with a custom nav can call it themselves or pass `sections` raw. */
 export function buildProposalSections(data) {
   const links = data?.navLinks ?? {};
+  // Set, not array: nav trees are small, but this runs on every render
+  // of every screen and `includes` inside a recursive filter is the
+  // kind of thing that quietly becomes the profile's top line.
+  const hidden = new Set(data?.navHidden ?? []);
   const applyLinks = (item) => {
     const link = links[item.id];
     const patched = link
@@ -212,7 +231,20 @@ export function buildProposalSections(data) {
       ? { ...patched, sub: patched.sub.map(applyLinks) }
       : patched;
   };
-  return PROPOSAL_SECTIONS.map(applyLinks);
+  // Hide BEFORE applying links, so a hidden row's subtree is never
+  // walked. An emptied `sub` is dropped rather than left as [], because
+  // NavSection tests `section.sub &&` to decide whether to render the
+  // rail at all — an empty array is truthy and would draw a bare rail
+  // under the row.
+  const applyHidden = (item) => {
+    if (hidden.has(item.id)) return null;
+    if (!item.sub) return item;
+    const sub = item.sub.map(applyHidden).filter(Boolean);
+    return sub.length ? { ...item, sub } : { ...item, sub: undefined };
+  };
+  return PROPOSAL_SECTIONS.map(applyHidden)
+    .filter(Boolean)
+    .map(applyLinks);
 }
 
 /** Does this item's subtree contain the id? Drives the open trail when
