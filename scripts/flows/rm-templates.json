@@ -1,0 +1,57 @@
+{
+  "project": "47e40175-0d55-4d21-960b-26bdf6b01282",
+  "start": "dmtaq1rm9eok2",
+  "w": 1280,
+  "h": 834,
+  "steps": [
+    {
+      "section": "Templates",
+      "dwell": 6200,
+      "caption": "Reply templates and auto-reply rules, split out of the inbox because the two are intertwined."
+    },
+    {
+      "click": "[data-hook^=\"edit-tpl-\"]",
+      "waitFor": "[data-hook=\"template-drawer\"]",
+      "section": "Edit template",
+      "caption": "Rating scope decides which reviews a template is offered for. The tokens insert at the cursor."
+    },
+    {
+      "dwell": 6700
+    },
+    {
+      "click": "[data-hook=\"close-template\"]",
+      "dwell": 900
+    },
+    {
+      "click": "[data-hook=\"new-rule\"]",
+      "waitFor": "[data-hook=\"rule-drawer\"]",
+      "section": "Auto-reply rule",
+      "caption": "Ratings offer stars only, because auto-reply is Google-only and Google does not do recommendations."
+    },
+    {
+      "dwell": 6700
+    },
+    {
+      "click": "[data-hook=\"close-rule\"]",
+      "dwell": 900
+    },
+    {
+      "click": "[data-slot=\"collapsible-trigger\"]",
+      "hoverMs": 800,
+      "section": "Rule activity",
+      "caption": "Per-rule history, including a failed send, so auto-reply failures have somewhere to live."
+    },
+    {
+      "dwell": 5600
+    },
+    {
+      "click": "[data-hook^=\"del-tpl-\"]",
+      "hoverMs": 800,
+      "section": "Delete blocked",
+      "caption": "A template a rule depends on cannot be deleted. The dialog names the rule and says what to do first."
+    },
+    {
+      "dwell": 6700
+    }
+  ]
+}

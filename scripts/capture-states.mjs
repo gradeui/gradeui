@@ -59,9 +59,9 @@ const ONLY = arg("only", null);
 // is cut in, so the suite runs one section at a time by default rather than
 // one giant pass.
 const SECTIONS = (arg("section", null) || "").split(",").map((x) => x.trim()).filter(Boolean);
-// --video records a WEBM per section: the same states, driven in ONE page
-// session so the section plays as a continuous flow rather than a slideshow.
-const VIDEO = process.argv.includes("--video");
+// NO VIDEO MODE HERE. scripts/record-flow-lossless.mjs is the recorder,
+// driven by the flow JSON in scripts/flows/. See RM-VIDEO-SPEC.md. Two
+// recorders with different step formats is worse than one.
 // --full also writes a full-PAGE capture per state, so a long screen is
 // available at its natural height as well as cropped to 1280x900. Figma
 // takes both: the fixed frame for a board, the tall one for reading.
@@ -170,6 +170,20 @@ async function scrollTo(page, y) {
   return scrolled;
 }
 
+// Spend ONE AI draft on a row and close the panel. The quota decrements on
+// a review's FIRST AI use only, so each quota state needs a different
+// number of reviews used up, then a FRESH review opened to read the
+// counter: a review that already used AI shows "AI suggestion" instead of
+// the remaining count.
+async function spendAi(page, row) {
+  await openRow(page, row);
+  await wait(800);
+  await press(page, '[data-hook^="ai-"]');
+  await wait(1500); // the generate beat is 900ms
+  await press(page, '[data-hook="close-review"]');
+  await wait(700);
+}
+
 async function hover(page, selector) {
   await inFrame(page, (sel) => {
     const el = document.querySelector(sel);
@@ -232,6 +246,26 @@ const STATES = [
   ["inbox-09-sending", "inbox", async (p) => { await sendOn(p, 0, 250); },
     `!!document.querySelector('[role="dialog"] button[disabled]')`,
     "The pending beat. Send shows a spinner and both footer buttons are disabled so a second click cannot land."],
+
+  // AI DRAFT QUOTA, all four steps. Rows 0, 2, 4 and 8 are all repliable
+  // and still needing action, so each opens a composer. Row 10 is
+  // deliberately NOT used: it arrives already failed, so its panel has no
+  // composer and no AI button to read a counter from.
+  ["inbox-10-ai-3-left", "inbox", async (p) => { await openRow(p, 0); },
+    `/3 of 3 AI drafts left/.test(document.body.innerText)`,
+    "Full AI allowance. The count sits under the composer as quiet helper text, not as a warning."],
+  ["inbox-11-ai-2-left", "inbox", async (p) => {
+    await spendAi(p, 0); await openRow(p, 2);
+  }, `/2 of 3 AI drafts left/.test(document.body.innerText)`,
+    "One draft spent. The counter only moves on a review's first AI use, so re-inserting on the same review is free."],
+  ["inbox-12-ai-1-left", "inbox", async (p) => {
+    await spendAi(p, 0); await spendAi(p, 2); await openRow(p, 4);
+  }, `/1 of 3 AI drafts left/.test(document.body.innerText)`,
+    "Last draft. Still helper text: the state that needs explaining is running out, not being close to it."],
+  ["inbox-13-ai-used-up", "inbox", async (p) => {
+    await spendAi(p, 0); await spendAi(p, 2); await spendAi(p, 4); await openRow(p, 8);
+  }, `/No AI drafts left today/.test(document.body.innerText)`,
+    "Allowance gone. This is the one state a person will want explained, so it escalates to an AlertInfo that says when it resets and what you can still do."],
 
   // ── Review Insights ─────────────────────────────────────────────────
   ["insights-01-charts", "insights", async () => {},
@@ -340,48 +374,6 @@ const wanted = STATES.filter(([name]) => {
   if (SECTIONS.length && !SECTIONS.some((sec) => name.startsWith(sec))) return false;
   return true;
 });
-
-// ── video mode ────────────────────────────────────────────────────────
-// One context per section with recordVideo on, driving that section's
-// states back to back. Playwright writes the file on context.close(), so
-// each section closes before the next opens.
-if (VIDEO) {
-  const bySection = new Map();
-  for (const st of wanted) {
-    const sec = st[0].split("-")[0];
-    if (!bySection.has(sec)) bySection.set(sec, []);
-    bySection.get(sec).push(st);
-  }
-  for (const [sec, states] of bySection) {
-    const dir = path.join(DIR, "video", sec);
-    fs.mkdirSync(dir, { recursive: true });
-    const ctx = await browser.newContext({
-      viewport: { width: 1280, height: 900 },
-      recordVideo: { dir, size: { width: 1280, height: 900 } },
-    });
-    const vp = await ctx.newPage();
-    try {
-      await vp.goto(`${BASE}/e/${SCREENS[states[0][1]]}?w=1280`, { waitUntil: "domcontentloaded", timeout: 60000 });
-      await vp.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
-      await wait(7000);
-      for (const [name, , drive] of states) {
-        try { await drive(vp); } catch (e) { console.log(`    (skipped ${name} in video: ${String(e).slice(0, 60)})`); }
-        // Hold each state long enough to read before moving on.
-        await wait(2600);
-        // Return to a known base so the next state drives from the top.
-        await vp.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
-        await wait(6000);
-      }
-      console.log(`  🎬 ${sec} video`);
-    } catch (e) {
-      console.log(`  ✗ ${sec} video — ${String(e).slice(0, 100)}`);
-    }
-    await ctx.close();
-  }
-  console.log(`\nvideos in ${path.join(DIR, "video")}`);
-  await browser.close();
-  process.exit(0);
-}
 
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
 

@@ -1,0 +1,165 @@
+{
+  "project": "47e40175-0d55-4d21-960b-26bdf6b01282",
+  "start": "dmsxf5zjggd0n",
+  "w": 1280,
+  "h": 834,
+  "steps": [
+    {
+      "section": "Inbox",
+      "dwell": 6200,
+      "caption": "The Review Inbox. One status badge per row: status is the state the review is in, never the delivery outcome."
+    },
+    {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 3200
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "click": "tbody tr:nth-child(4) td div",
+      "waitFor": "[role=\"dialog\"]",
+      "section": "Reply panel",
+      "caption": "Open a review to reply. AI draft and templates sit above the composer."
+    },
+    {
+      "dwell": 6000
+    },
+    {
+      "click": "[data-hook=\"close-review\"]",
+      "waitFor": "[data-hook=\"new-widget\"], tbody tr",
+      "dwell": 800
+    },
+    {
+      "click": "tbody tr:nth-child(2) td div",
+      "waitFor": "[role=\"dialog\"]",
+      "section": "Read-only source",
+      "caption": "TripAdvisor cannot be replied to from here, so there is no composer and no footer at all."
+    },
+    {
+      "dwell": 6000
+    },
+    {
+      "click": "[data-hook=\"close-review\"]",
+      "dwell": 800
+    },
+    {
+      "click": "tbody tr:nth-child(3) td div",
+      "waitFor": "[role=\"dialog\"]",
+      "section": "Recoverable failure",
+      "caption": "A rate limit is temporary, so the composer stays and the draft is preserved."
+    },
+    {
+      "dwell": 2500
+    },
+    {
+      "click": "[data-hook^=\"send-\"]:not([data-hook^=\"send-failed\"])",
+      "hoverMs": 600
+    },
+    {
+      "dwell": 6200
+    },
+    {
+      "click": "[data-hook=\"close-review\"]",
+      "dwell": 800
+    },
+    {
+      "click": "tbody tr:nth-child(9) td div",
+      "waitFor": "[role=\"dialog\"]",
+      "section": "Terminal failure",
+      "caption": "A deleted review is gone. The action is Skip reply, not Retry, and Send is disabled."
+    },
+    {
+      "dwell": 2500
+    },
+    {
+      "click": "[data-hook^=\"send-\"]:not([data-hook^=\"send-failed\"])",
+      "hoverMs": 600
+    },
+    {
+      "dwell": 6700
+    },
+    {
+      "click": "[data-hook=\"close-review\"]",
+      "dwell": 800
+    },
+    {
+      "click": "tbody tr:nth-child(11) td div",
+      "waitFor": "[role=\"dialog\"]",
+      "section": "Blocking failure",
+      "caption": "This one arrives already failed. The fix is outside this screen, so the composer is hidden."
+    },
+    {
+      "dwell": 6200
+    },
+    {
+      "click": "[data-hook=\"close-review\"]",
+      "dwell": 800
+    },
+    {
+      "click": "tbody tr:nth-child(1) td div",
+      "waitFor": "[role=\"dialog\"]",
+      "section": "AI quota",
+      "caption": "Three AI drafts a day. The count is quiet helper text until it runs out."
+    },
+    {
+      "dwell": 4000
+    },
+    {
+      "click": "[data-hook^=\"ai-\"]",
+      "hoverMs": 800
+    },
+    {
+      "dwell": 4200
+    },
+    {
+      "click": "[data-hook=\"close-review\"]",
+      "dwell": 700
+    },
+    {
+      "click": "tbody tr:nth-child(3) td div",
+      "waitFor": "[role=\"dialog\"]",
+      "dwell": 3200
+    },
+    {
+      "click": "[data-hook^=\"ai-\"]",
+      "hoverMs": 600
+    },
+    {
+      "dwell": 3600
+    },
+    {
+      "click": "[data-hook=\"close-review\"]",
+      "dwell": 700
+    },
+    {
+      "click": "tbody tr:nth-child(5) td div",
+      "waitFor": "[role=\"dialog\"]",
+      "dwell": 3200
+    },
+    {
+      "click": "[data-hook^=\"ai-\"]",
+      "hoverMs": 600
+    },
+    {
+      "dwell": 3600
+    },
+    {
+      "click": "[data-hook=\"close-review\"]",
+      "dwell": 700
+    },
+    {
+      "click": "tbody tr:nth-child(9) td div",
+      "waitFor": "[role=\"dialog\"]",
+      "section": "AI used up",
+      "caption": "Allowance gone. This is the one state worth explaining, so it escalates to an alert."
+    },
+    {
+      "dwell": 6700
+    }
+  ]
+}

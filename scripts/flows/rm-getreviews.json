@@ -1,0 +1,54 @@
+{
+  "project": "47e40175-0d55-4d21-960b-26bdf6b01282",
+  "start": "dmt094j963aye",
+  "w": 1280,
+  "h": 834,
+  "steps": [
+    {
+      "section": "Get Reviews",
+      "dwell": 6200,
+      "caption": "Get Reviews. Campaigns that invite visitors to leave a review by email, text or web link."
+    },
+    {
+      "scrollBy": 500,
+      "ms": 950
+    },
+    {
+      "dwell": 3000
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "click": "[data-hook=\"campaign-c1-cta\"]",
+      "waitFor": "[data-slot=\"drawer-content\"]",
+      "section": "Campaign",
+      "caption": "A campaign opens as a wide drawer over the hub, so the list stays behind it."
+    },
+    {
+      "dwell": 6700
+    },
+    {
+      "click": "[data-hook=\"campaign-tab-feedback\"]",
+      "hoverMs": 800,
+      "section": "Private feedback",
+      "caption": "Private feedback is a tab, not a nested page. That is what removed the second level of back links."
+    },
+    {
+      "dwell": 6700
+    },
+    {
+      "click": "[data-hook=\"close-campaign\"]",
+      "dwell": 900
+    },
+    {
+      "click": "button:has-text(\"New campaign\")",
+      "section": "Wizard",
+      "caption": "The campaign wizard. Cancel is a plain button, because cancelling is an action, not a move up the hierarchy."
+    },
+    {
+      "dwell": 6200
+    }
+  ]
+}

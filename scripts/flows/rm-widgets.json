@@ -1,0 +1,71 @@
+{
+  "project": "47e40175-0d55-4d21-960b-26bdf6b01282",
+  "start": "dmt094lhmpwbs",
+  "w": 1280,
+  "h": 834,
+  "steps": [
+    {
+      "section": "Widgets",
+      "dwell": 6200,
+      "caption": "Review Widgets. Yelp is excluded, stated once on the page rather than in every filter menu."
+    },
+    {
+      "click": "[data-hook=\"new-widget\"]",
+      "section": "Choose type",
+      "caption": "Step one asks hand-picked or live feed, because that choice changes every later step."
+    },
+    {
+      "dwell": 6000
+    },
+    {
+      "click": "text=Live feed",
+      "hoverMs": 800
+    },
+    {
+      "dwell": 2500
+    },
+    {
+      "click": "text=Next",
+      "section": "Filters",
+      "caption": "A live feed keeps pulling in new matching reviews. Individual ones can still be excluded by hand."
+    },
+    {
+      "dwell": 6200
+    },
+    {
+      "scrollBy": 500,
+      "ms": 950
+    },
+    {
+      "dwell": 3000
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "click": "text=Next",
+      "section": "Presentation",
+      "caption": "List, carousel or JSON feed. These three are the only widget types the source documents evidence."
+    },
+    {
+      "dwell": 6200
+    },
+    {
+      "click": "text=Next",
+      "dwell": 3000
+    },
+    {
+      "section": "Design",
+      "dwell": 5600,
+      "caption": "Design is a small set of discrete choices, with a live preview underneath."
+    },
+    {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 4000
+    }
+  ]
+}

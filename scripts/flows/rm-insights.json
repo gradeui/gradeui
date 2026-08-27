@@ -1,0 +1,67 @@
+{
+  "project": "47e40175-0d55-4d21-960b-26bdf6b01282",
+  "start": "dmswb0i9c6oe5",
+  "w": 1280,
+  "h": 834,
+  "steps": [
+    {
+      "section": "Insights",
+      "dwell": 6200,
+      "caption": "Review Insights. The sources donut is capped at five slices, which is how many chart colours the design system defines."
+    },
+    {
+      "dwell": 3000
+    },
+    {
+      "section": "Grouped sources",
+      "dwell": 4200,
+      "caption": "Anything under two percent is grouped as Other. The legend still carries every source at full count."
+    },
+    {
+      "click": "[data-hook=\"perf-view-toggle\"] [aria-label=\"Table view\"]",
+      "hoverMs": 900,
+      "section": "Table view",
+      "caption": "The same data as a table, for anyone who wants the numbers rather than the shape."
+    },
+    {
+      "dwell": 6000
+    },
+    {
+      "click": "[data-hook=\"perf-view-toggle\"] [aria-label=\"Chart view\"]",
+      "hoverMs": 600
+    },
+    {
+      "dwell": 2500
+    },
+    {
+      "scrollBy": 540,
+      "ms": 950
+    },
+    {
+      "dwell": 3000
+    },
+    {
+      "scrollBy": 540,
+      "ms": 950
+    },
+    {
+      "section": "Timeline",
+      "dwell": 6000,
+      "caption": "Below it, the review timeline and the same sources stacked over time."
+    },
+    {
+      "click": "[data-hook=\"time-view-toggle\"] [aria-label=\"Table view\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 6000
+    },
+    {
+      "scroll": "top",
+      "ms": 1000
+    },
+    {
+      "dwell": 2500
+    }
+  ]
+}
