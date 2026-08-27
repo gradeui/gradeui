@@ -168,14 +168,16 @@ export const PROPOSAL_SECTIONS = [
   // landing screen — it does NOT point at Insights, so the section
   // never duplicates a sub's page; that landing stays the "not
   // available yet" placeholder.
-  // Review Widgets joined the nav 27 Aug (Ali). Get Reviews is still off
-  // it, standing on activeId "reviews": the parent highlights, no sub
-  // does. That is the documented orphan case from reviews-subnav-spec.md
-  // decision 2, and it now applies to ONE page rather than two.
+  // All four RM sub-tools are on the nav as of 27 Aug (Ali). That closes
+  // the orphan case from reviews-subnav-spec.md decision 2: no page in
+  // this section now stands on a bare activeId="reviews" and reveals a
+  // sub list it is not in.
   //
-  // ORDER is deliberate and not alphabetical: Inbox is the daily habit,
-  // Insights is the reporting surface, Widgets is a set-and-forget
-  // publishing tool. Most-used first, down to least.
+  // ORDER follows the audit's IA (section 2.1) with the Inbox promoted to
+  // first, per that spec's decision 1: the brief frames RM's job as one
+  // inbox for every site's reviews, so the Inbox is the daily habit and
+  // the truer landing page. Insights is the reporting surface, Get
+  // Reviews is a periodic campaign job, Widgets is set-and-forget.
   {
     id: "reviews",
     label: "Reviews",
@@ -183,6 +185,7 @@ export const PROPOSAL_SECTIONS = [
     sub: [
       { id: "reviews-inbox", label: "Review Inbox" },
       { id: "reviews-insights", label: "Review Insights" },
+      { id: "reviews-get", label: "Get Reviews" },
       { id: "reviews-widgets", label: "Review Widgets" },
     ],
   },

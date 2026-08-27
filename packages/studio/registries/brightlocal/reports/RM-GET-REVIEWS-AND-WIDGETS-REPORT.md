@@ -220,10 +220,14 @@ explicitly out of scope for this round.
   Design | Preview tabs. Stacking works; tabs would be better on a phone.
 - ~~**The Reviews hub page**~~ CLOSED 27 Aug. The hub now carries a two-card
   grid linking to Review Inbox and Review Insights.
-- ~~**`nav` sub-rows for the Reviews area**~~ PARTLY CLOSED 27 Aug. Reviews now
-  has Review Inbox, Review Insights and Review Widgets as sub-rows, in that
-  order (most used first). **Get Reviews is still off the nav** and stands on
-  `activeId="reviews"`, so entering it reveals a sub list that does not contain
-  the page you are on. That is the last orphan from
-  `reviews-subnav-spec.md` decision 2, and it is a one-line fix once Get
-  Reviews is signed off.
+- ~~**`nav` sub-rows for the Reviews area**~~ CLOSED 27 Aug. All four RM
+  sub-tools are on the nav: Review Inbox, Review Insights, Get Reviews, Review
+  Widgets. Order follows the audit's IA with the Inbox promoted to first per
+  `reviews-subnav-spec.md` decision 1. No page in the section now stands on a
+  bare `activeId="reviews"`, so decision 2's orphan case is gone.
+- ~~**Back links on Get Reviews**~~ CLOSED 27 Aug. Campaign insights and All
+  feedback were two stacked in-body back links two levels deep. They are now
+  one wide right-hand Drawer (56rem cap) over the hub with Summary and All
+  feedback as TABS, which removes the nesting rather than just the arrows. The
+  five campaign actions moved from the PageHeader into the drawer footer,
+  since that header now belongs to the hub behind it.

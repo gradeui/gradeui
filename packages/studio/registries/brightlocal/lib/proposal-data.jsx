@@ -191,6 +191,7 @@ export const PROPOSAL_DATA = {
     // build, not the earlier "RM — Review Inbox" prototype.
     "reviews-inbox": "screen:dmsxf5zjggd0n", // RM — Review Inbox (DataTable)
     "reviews-insights": "screen:dmswb0i9c6oe5", // RM — Review Insights
+    "reviews-get": "screen:dmt094j963aye", // RM — Get Reviews
     "reviews-widgets": "screen:dmt094lhmpwbs", // RM — Review Widgets
     // AI Insights sub pages — screen names carry the section prefix so
     // they never clash with the top-level Reviews/Citations landings.
