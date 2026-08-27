@@ -173,6 +173,15 @@ export default async function SharePage({
   const modeParam = one(sp.mode);
   const forcedMode =
     modeParam === "dark" || modeParam === "light" ? modeParam : null;
+  // ?shell=live-site opens the screen in a named LOOK preset, the same
+  // bundle the shell tweaker's preset dropdown writes, without the screen
+  // being re-authored. Same param and same meaning as the /e/ embed, so a
+  // link works whichever surface it points at (Ali, 27 Aug). NOT
+  // lowercased through one(): preset ids are already lowercase, and the
+  // registry lib validates the name and ignores what it does not know.
+  const shellRaw = Array.isArray(sp.shell) ? sp.shell[0] : sp.shell;
+  const shellLook =
+    typeof shellRaw === "string" && shellRaw.length > 0 ? shellRaw : null;
   const supabase = getServiceSupabase();
   if (!supabase) notFound();
 
@@ -515,6 +524,7 @@ export default async function SharePage({
       shareToken={token}
       initialChromeHidden={uiOff}
       initialFit={zoomFit}
+      shellLook={shellLook}
     />
   );
 }

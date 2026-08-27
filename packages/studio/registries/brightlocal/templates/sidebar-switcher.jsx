@@ -762,7 +762,7 @@ export default function App() {
   // component in the DS — the page header IS this composition.)
   const header = (
     <div className="flex min-w-0 flex-col gap-1">
-      {/* Trail RULE: ANCESTORS ONLY, max two — the current page never
+      {/* Trail RULE: ANCESTORS ONLY, max four — the current page never
           appears in the breadcrumb (the H2 below IS the current page).
           BreadcrumbPage is deliberately unused. */}
       <Breadcrumb dataHook="page-breadcrumb">

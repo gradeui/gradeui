@@ -27,6 +27,7 @@
 //   - `expectedUpdatedAt` is ALWAYS sent, read immediately before the
 //     write, so a concurrent Studio save is refused rather than clobbered.
 import { readFileSync } from "node:fs";
+import { transformSync as esbuildTransformSync } from "esbuild";
 import { createClient } from "@supabase/supabase-js";
 import { validateAgainstContract, formatViolations } from "@gradeui/studio/core";
 import { contractsForRegistry } from "../src/registry-contracts.js";
@@ -55,6 +56,36 @@ const sb = createClient(url, key, {
 });
 
 const jsx = readFileSync(file, "utf-8");
+
+// An EMPTY file is never a legitimate screen. Without this the validator
+// happily reports "0 components checked" and the write goes through,
+// blanking the screen — which is exactly what a shell one-liner does when
+// the file it was told to read does not exist. Refuse before the write.
+if (jsx.trim().length === 0) {
+  throw new Error(`${file} is empty — refusing to blank the screen`);
+}
+
+// PARSE GATE. validateAgainstContract checks COMPONENT CONTRACTS, not that
+// the file is valid JSX — a screen with a syntax error sails through it and
+// then dies in the sandbox with "render error", which looks like a broken
+// goto or a stale cache rather than a bad save (27 Aug: a {/* */} comment
+// placed directly inside `return (` shipped this way and cost an hour).
+// esbuild is already a dependency of the renderer, so this is the same
+// parser the sandbox will use.
+const assertParses = (source: string, label: string) => {
+  try {
+    esbuildTransformSync(source, { loader: "jsx", jsx: "automatic" });
+  } catch (err) {
+    const e = err as { errors?: { text?: string; location?: { line?: number; column?: number } }[] };
+    const first = e.errors?.[0];
+    const where = first?.location ? ` at line ${first.location.line}:${first.location.column}` : "";
+    throw new Error(
+      `${label} is not valid JSX${where}: ${first?.text ?? String(err)}\nNOT SAVED — fix the syntax and try again.`,
+    );
+  }
+};
+
+assertParses(jsx, file);
 
 // Registry comes from the PROJECT ROW, exactly as save_screen resolves it.
 const { data: project, error: projErr } = await sb

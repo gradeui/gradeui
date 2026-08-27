@@ -360,6 +360,7 @@ export function EmbedScreen({
   camera,
   tweak,
   tweakThemes,
+  shellLook,
   tweakOpen = false,
   shield = false,
   transparent = false,
@@ -422,6 +423,11 @@ export function EmbedScreen({
   tweak?: EmbedTweakControl[] | null;
   /** Curated theme ids for the tweaker's picker (?themes=). */
   tweakThemes?: string[] | null;
+  /** Named shell LOOK the embed opens in (?shell=live-site). Forwarded
+   *  to the sandbox and applied by the registry lib as the opening
+   *  tweak set, so a link can say "show this in Live Site" without the
+   *  screen being re-authored. Unknown names are ignored by the lib. */
+  shellLook?: string | null;
   /** Start the theme playground open (?tweakopen=1). */
   tweakOpen?: boolean;
   /** Click-to-interact shield (?shield=1), rendered INSIDE the embed so
@@ -721,6 +727,15 @@ export function EmbedScreen({
         onGoto={resolveGoto}
         // F1: idle-compile flow siblings ("instant linkage").
         precompileSources={precompileSources}
+        // One constant scope for the whole embed session, matching the
+        // share view. Without it the lib falls back to keying the tweak
+        // stash per dataHook, so a tweak set on one screen was dropped
+        // the moment a goto landed on a screen with a different hook —
+        // the embed is a walkthrough, and a look chosen in it should
+        // survive the walk (Ali, 27 Aug).
+        tweakScope="embed-session"
+        // Opening look from ?shell=.
+        shellLook={shellLook ?? undefined}
         onRendered={() => setExtReady("1")}
         // null = "error cleared" (retry succeeded) — only real messages
         // stamp the error state; a later ext:rendered flips it to "1".

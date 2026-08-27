@@ -22,7 +22,7 @@ import { TypographyH2 } from "@brightlocal/ui-components/typography";
 <GlobalLayoutContentHeader dataHook="page-header">
   <div className="flex w-full flex-wrap items-end justify-between gap-4">
     <div className="flex min-w-0 flex-col gap-1">
-      {/* Trail RULE: ANCESTORS ONLY, max two — the current page never
+      {/* Trail RULE: ANCESTORS ONLY, max four — the current page never
           appears in the breadcrumb (the title below IS the current
           page). BreadcrumbPage is deliberately unused. */}
       <Breadcrumb dataHook="page-breadcrumb">

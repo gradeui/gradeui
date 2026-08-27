@@ -134,6 +134,7 @@ export function SharedScreen({
   shareToken,
   initialChromeHidden = false,
   initialFit = false,
+  shellLook = null,
 }: {
   appSource: string | null;
   /** Project shared components ({name → JSX module source}). */
@@ -199,6 +200,10 @@ export function SharedScreen({
   /** ?fullscreen=1 — seed Fit so a device-viewport flip lands scaled
    *  to the window instead of 100%. */
   initialFit?: boolean;
+  /** ?shell=live-site — named LOOK preset the screen OPENS in, applied
+   *  by the registry lib as the opening tweak set. Same param as the /e/
+   *  embed. A tweak the viewer makes in-session still wins over it. */
+  shellLook?: string | null;
 }) {
   // Seed the preview-css store BEFORE the frame hosts push source —
   // Studio's page-level effect does this in the editor; the share view
@@ -2008,6 +2013,7 @@ export function SharedScreen({
                         // Per-PANE tweak scope — isolation even between
                         // duplicate screens sharing a dataHook.
                         tweakScope={`pane-${m.id}`}
+                        shellLook={shellLook ?? undefined}
                         // Pin mode: the focused pane's agent captures a
                         // pick for the composer.
                         selectMode={pinMode && focusedPaneId === m.id}
@@ -2106,6 +2112,7 @@ export function SharedScreen({
             // follow the walkthrough across gotos/screens (Ali: "a
             // single screen shared should always maintain the tweaks").
             tweakScope="share-session"
+            shellLook={shellLook ?? undefined}
             // Viewer pin creation — pin mode arms the sandbox agent.
             selectMode={pinMode}
             onSelect={(sel) =>

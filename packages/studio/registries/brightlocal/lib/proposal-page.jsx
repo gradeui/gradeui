@@ -216,12 +216,15 @@ export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
 // ─── PageHeader — the composed page header ────────────────────────────
 // There is NO PageHeader component in the DS — the page header IS this
 // composition (recipe: page-header-with-breadcrumbs.jsx; upstream note:
-// it should be a component). Trail RULE: ANCESTORS ONLY, max two — the
+// it should be a component). Trail RULE: ANCESTORS ONLY, max four — the
 // current page never appears in the breadcrumb (the H2 IS the current
-// page); BreadcrumbPage is deliberately unused. `meta` renders in the
+// page); BreadcrumbPage is deliberately unused. The cap was two until
+// 27 Aug — inherited guidance rather than a constraint anyone hit, and it
+// truncated legitimate deep trails. Now four, which is the full depth of
+// the deepest real page (All Locations > Location > Reviews > Inbox). `meta` renders in the
 // muted row under the title; `actions` right-aligns (buttons, menus).
 export function PageHeader({
-  // ANCESTORS ONLY, max two. `[]` keeps the row's FOOTPRINT (invisible
+  // ANCESTORS ONLY, max four. `[]` keeps the row's FOOTPRINT (invisible
   // spacer) so the band is the same height on every page; `false`
   // removes the row entirely — see the utility-row note below.
   breadcrumbs = [],
@@ -311,12 +314,17 @@ export function PageHeader({
   // those pages; the empty-band alternative read worse.
   const hasTrail = breadcrumbs !== false;
   const trail = (hasTrail ? breadcrumbs : [])
-    // Trail is ANCESTORS ONLY, max two (the H2 is the current page).
-    // Enforced here, not just documented — a screen passing a three-deep
-    // "All Locations > … > …" trail is clamped to the DEEPEST two
-    // (nearest the current page), so the immediate parent always
-    // survives the trim (Ali, 20 Jul).
-    .slice(-2)
+    // Trail is ANCESTORS ONLY, max FOUR (the H2 is the current page).
+    // Enforced here, not just documented — a screen passing a deeper
+    // trail is clamped to the DEEPEST four (nearest the current page),
+    // so the immediate parent always survives the trim (Ali, 20 Jul).
+    // Widened two → three → four (Ali, 27 Aug). The old cap was inherited
+    // guidance, not a measured constraint, and it silently ate the root
+    // crumb on sub-tool pages, which read as if the page floated. Four is
+    // the full depth of the deepest real trail, so nothing truncates now.
+    // Mobile still shows the last crumb only, so this costs nothing
+    // below sm.
+    .slice(-4)
     // DATA-BOUND crumb: { bind: "location" } resolves to the CURRENT
     // location's name at render position — "All Locations > Blackberry
     // Farm Park" follows dataset switches with zero per-screen wiring
@@ -325,8 +333,9 @@ export function PageHeader({
       crumb.bind === "location" ? { ...crumb, label: data.location.name } : crumb,
     );
   // MOBILE (below sm) shows the LAST crumb only, behind a back arrow
-  // (Ali, 18 Aug): the nearest ancestor IS "back", and a two-deep trail
-  // on a phone wraps word-per-line. Full trail from sm up.
+  // (Ali, 18 Aug): the nearest ancestor IS "back", and even a two-deep
+  // trail on a phone wraps word-per-line — more so now the cap is four.
+  // Full trail from sm up.
   const backCrumb = trail.length ? trail[trail.length - 1] : null;
 
   const helpButton = help ? (

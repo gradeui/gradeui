@@ -171,6 +171,16 @@ export default async function EmbedPage({
   const shieldRaw = Array.isArray(sp.shield) ? sp.shield[0] : sp.shield;
   const shield = shieldRaw === "1" || shieldRaw === "true";
 
+  // Opening shell LOOK: ?shell=live-site renders the screen in a named
+  // look bundle (the same table the shell tweaker's preset dropdown
+  // writes) without the screen being re-authored. Validated by the
+  // registry lib, which ignores names it does not know, so this only
+  // has to pass the string through. A tweak the viewer makes in the
+  // session still wins over it.
+  const shellRaw = Array.isArray(sp.shell) ? sp.shell[0] : sp.shell;
+  const shellLook =
+    typeof shellRaw === "string" && shellRaw.length > 0 ? shellRaw : undefined;
+
   // Curated theme set for the playground's picker: ?themes=calm,candy-pop
   // limits the choices to a deliberate, contrasting selection. Unknown
   // ids are dropped client-side.
@@ -527,6 +537,7 @@ export default async function EmbedPage({
         camera={camera}
         tweak={tweak}
         tweakThemes={tweakThemes}
+        shellLook={shellLook}
         tweakOpen={tweakOpen}
         shield={shield}
         transparent={transparent}

@@ -71,6 +71,13 @@ export interface ExternalIframeHostProps {
    *  Single share: one constant per session; compare pane: member id;
    *  omitted: per-dataHook fallback inside the lib. */
   tweakScope?: string;
+  /** Named LOOK preset the screen should OPEN in, forwarded on
+   *  ext:source. The registry lib applies it as the opening tweak set
+   *  (the same bundle the tweaker's preset dropdown writes), so a link
+   *  can carry "render this in Live Site" without the screen being
+   *  re-authored. A tweak the viewer has already made in this session
+   *  WINS over it: the URL names the opening look, not a lock. */
+  shellLook?: string;
   /** Exposed iframe ref so wrapping chrome (the comment-pins overlay)
    *  can reach contentDocument. */
   iframeRef?: React.MutableRefObject<HTMLIFrameElement | null>;
@@ -100,6 +107,7 @@ export function ExternalIframeHost({
   onGoto,
   precompileSources,
   tweakScope,
+  shellLook,
   iframeRef: externalIframeRef,
   registryId: registryIdProp,
   rawSource = false,
@@ -148,10 +156,14 @@ export function ExternalIframeHost({
         // member id (isolation even between DUPLICATE screens sharing
         // a dataHook); absent = the lib's per-dataHook fallback.
         tweakScope: tweakScope ?? null,
+        // Opening LOOK (?shell=live-site). Sent with the source rather
+        // than as its own message so it lands BEFORE first render, the
+        // same reason tweakScope does.
+        shellLook: shellLook ?? null,
       },
       window.location.origin,
     );
-  }, [appSource, mode, rawSource, projectCss, tweakScope]);
+  }, [appSource, mode, rawSource, projectCss, tweakScope, shellLook]);
 
   // Flow-sibling precompile (STUDIO-FLOWS F1) — forward the OTHER flow
   // screens' sources so the sandbox can warm its compile cache during

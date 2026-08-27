@@ -566,6 +566,28 @@ export const LOOK_PRESETS = {
     pageBackground: "subtle",
   },
 };
+// HOST-SEEDED OPENING LOOK (window.__gdsShellLook, set by the sandbox on
+// ext:source, sourced from the embed's ?shell=live-site). Returns the
+// preset's knob bundle so the shell OPENS in that look, exactly as if the
+// tweaker's preset dropdown had been used. Deliberately NOT a new
+// resolution layer: it seeds the TWEAKS, which already sit at the end of
+//   shell defaults -> preset -> literal props -> session tweaks
+// so a link can say "show this in Live Site" without the screen being
+// re-authored, and a viewer who then tweaks something still wins (their
+// session stash is read first). Unknown names are ignored rather than
+// throwing, because the name arrives from a URL a stranger can edit.
+// (Ali, 27 Aug.)
+function hostSeedTweaks() {
+  try {
+    const name = window.__gdsShellLook;
+    if (typeof name === "string" && LOOK_PRESETS[name])
+      return { ...LOOK_PRESETS[name] };
+  } catch {
+    /* no window / cross-realm — no seed */
+  }
+  return null;
+}
+
 // Authored-look DEFAULTS. These used to live in AppLayoutShell's
 // destructuring signature, which made `preset` impossible: a param
 // default means every knob ALWAYS holds a value, and an always-value
@@ -954,8 +976,11 @@ export function AppLayoutShell({
   // namespace survives every source swap, while component state dies
   // with each screen's tree. Reload still resets to the authored look
   // (session-local semantics kept). Controlled mode bypasses the stash.
+  // Session stash FIRST: a look the viewer chose in this tab beats the
+  // one the link asked for, otherwise every goto would yank their choice
+  // back to the URL's look mid-walkthrough.
   const [ownTweaks, setOwnTweaksState] = React.useState(
-    () => loadSessionTweaks(dataHook) ?? {},
+    () => loadSessionTweaks(dataHook) ?? hostSeedTweaks() ?? {},
   );
   const setOwnTweaks = React.useCallback(
     (updater) => {
