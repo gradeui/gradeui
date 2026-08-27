@@ -169,6 +169,47 @@ pattern is easy to copy without the thing that made it work.
 
 ---
 
+## 4b. 27 Aug pass — what changed, and what the API team should know
+
+Both screens joined the Reviews sub-nav and lost their in-body back links.
+
+**Navigation.** Per-item detail on both screens is now a right-hand Drawer over
+the list, matching Review Inbox, Reply Templates and Review Widgets. This was
+not a style preference. A `goto` carries a screen id and nothing else, so a
+per-item view CANNOT be split into its own screen: there is no way to say WHICH
+widget or WHICH campaign to open. A same-screen `goto` is also inert, so a
+fourth breadcrumb pointing at the current screen renders as a link and does
+nothing (measured). An overlay is the only shape that leaves the list behind
+you and needs no invented back link.
+
+**Review Widgets is demo-complete.** Create flow verified end to end: type,
+filters, format, design, Create widget, and the drawer opens on the new widget
+with its embed snippet. That is one step better than the researcher's
+prototype, which returned to the list and made you click View to reach the
+embed code.
+
+**The 50-review cap now refuses rather than ignores.** The prototype made the
+51st checkbox a silent no-op. It now warns at the ceiling and blocks the step
+with a count of how many to remove.
+
+**Sources differ across the section, deliberately.** Review Widgets carries
+Google / Facebook / **Trustpilot**; Review Inbox and Review Insights carry
+TripAdvisor and no Trustpilot. Confirmed by Ali on 27 Aug as correct rather
+than an oversight. Worth stating to the API team, since it implies the widget
+source list is not simply the inbox source list filtered.
+
+**Still unverified, and both are the researcher's numbers, not the brief's:**
+the 50-review cap, and the Yelp exclusion stated as a policy limit.
+
+**The brief and the audit say almost nothing about widgets.** Roughly four
+sentences between the two documents, no API ticketed, sequenced last, and the
+audit has no widget section at all. Everything on that screen beyond list /
+carousel / JSON feed and a rating filter comes from the researcher's
+clickthrough, not from a committed requirement. AI Showcase curation is
+explicitly out of scope for this round.
+
+---
+
 ## 5. Known gaps in this first pass
 
 - **Kiosk mode** is offered as a channel ("web link or kiosk") but there is no
@@ -177,13 +218,12 @@ pattern is easy to copy without the thing that made it work.
   researcher had not covered them either.
 - **The split-pane steps stack on mobile** rather than offering the prototype's
   Design | Preview tabs. Stacking works; tabs would be better on a phone.
-- **The Reviews hub page** (`dmrotrhbcxk66`) is still the blank-page state, so
-  neither of these screens is reachable by clicking from inside the prototype
-  yet. Wiring them up means either building that hub's 4-card grid or adding
-  sub-rows under the `reviews` nav item in `PROPOSAL_SECTIONS` — the latter
-  changes the sidebar on Review Inbox and Review Insights too, so it was left
-  alone.
-- **`nav` sub-rows for the Reviews area.** The audit's IA (section 2.1) puts
-  Review Insights / Review Inbox / Get Reviews / Review Widgets under Reviews.
-  Nav model v2 supports exactly that shape (one level of subs, revealed on
-  entering the section). Worth doing as one deliberate change across all four.
+- ~~**The Reviews hub page**~~ CLOSED 27 Aug. The hub now carries a two-card
+  grid linking to Review Inbox and Review Insights.
+- ~~**`nav` sub-rows for the Reviews area**~~ PARTLY CLOSED 27 Aug. Reviews now
+  has Review Inbox, Review Insights and Review Widgets as sub-rows, in that
+  order (most used first). **Get Reviews is still off the nav** and stands on
+  `activeId="reviews"`, so entering it reveals a sub list that does not contain
+  the page you are on. That is the last orphan from
+  `reviews-subnav-spec.md` decision 2, and it is a one-line fix once Get
+  Reviews is signed off.

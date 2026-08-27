@@ -168,16 +168,22 @@ export const PROPOSAL_SECTIONS = [
   // landing screen — it does NOT point at Insights, so the section
   // never duplicates a sub's page; that landing stays the "not
   // available yet" placeholder.
-  // Get Reviews and Review Widgets get rows too, once those pages are
-  // finished (Ali, 26 Aug — soon). Until then they're off the nav and
-  // stand on activeId "reviews": the parent highlights, no sub does.
+  // Review Widgets joined the nav 27 Aug (Ali). Get Reviews is still off
+  // it, standing on activeId "reviews": the parent highlights, no sub
+  // does. That is the documented orphan case from reviews-subnav-spec.md
+  // decision 2, and it now applies to ONE page rather than two.
+  //
+  // ORDER is deliberate and not alphabetical: Inbox is the daily habit,
+  // Insights is the reporting surface, Widgets is a set-and-forget
+  // publishing tool. Most-used first, down to least.
   {
     id: "reviews",
     label: "Reviews",
     icon: Star,
     sub: [
-      { id: "reviews-insights", label: "Review Insights" },
       { id: "reviews-inbox", label: "Review Inbox" },
+      { id: "reviews-insights", label: "Review Insights" },
+      { id: "reviews-widgets", label: "Review Widgets" },
     ],
   },
   // Set-up Tasks, Website SEO, Google Analytics and Agency Tools are OUT
