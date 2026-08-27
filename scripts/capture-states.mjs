@@ -149,13 +149,25 @@ async function sendOn(page, row, settle = 1800) {
 
 // Scroll the SANDBOX document, not the host page. The screen lives in an
 // iframe, so window.scrollTo on the outer page moves nothing.
+// Scroll the element that ACTUALLY scrolls. The shell puts the page in its
+// own overflow container, so document.scrollingElement.scrollTop moves
+// nothing and the "scrolled" frame came out byte-identical to the top of
+// the page (27 Aug). Find the deepest element with real overflow instead.
 async function scrollTo(page, y) {
-  await inFrame(page, (top) => {
-    const el = document.scrollingElement || document.documentElement;
-    el.scrollTop = top;
+  const scrolled = await inFrame(page, (top) => {
+    let best = null;
+    let most = 0;
+    for (const el of document.querySelectorAll("*")) {
+      const over = el.scrollHeight - el.clientHeight;
+      if (over > most && el.clientHeight > 300) { best = el; most = over; }
+    }
+    const target = best || document.scrollingElement || document.documentElement;
+    target.scrollTop = top;
     window.scrollTo(0, top);
+    return { moved: target.scrollTop, max: most };
   }, y);
   await wait(1200);
+  return scrolled;
 }
 
 async function hover(page, selector) {
@@ -213,7 +225,11 @@ const STATES = [
   ["inbox-08-fail-permission-seeded", "inbox", async (p) => { await openRow(p, 10); },
     expectFailure("cannot reply to"),
     "Arrives already failed on load, so the state is visible without sending anything. Blocking, because the fix is outside this screen."],
-  ["inbox-09-sending", "inbox", async (p) => { await sendOn(p, 0, 350); },
+  // TRANSIENT. The pending beat lasts ~900ms, and the normal 1400ms
+  // post-drive settle plus a polling assertion outlived it, so this came
+  // out byte-identical to the resolved failure frame. Shot immediately,
+  // with a single-shot check rather than a poll.
+  ["inbox-09-sending", "inbox", async (p) => { await sendOn(p, 0, 250); },
     `!!document.querySelector('[role="dialog"] button[disabled]')`,
     "The pending beat. Send shows a spinner and both footer buttons are disabled so a second click cannot land."],
 
@@ -254,7 +270,13 @@ const STATES = [
   ["templates-04-delete-blocked", "templates", async (p) => { await press(p, '[data-hook^="del-tpl-"]'); },
     `!!document.querySelector('[data-hook="delete-template-inuse"]')`,
     "A template a rule depends on CANNOT be deleted. The dialog names the rule and says what to do first."],
-  ["templates-05-rule-activity", "templates", async (p) => { await press(p, '[data-hook^="rule-activity-btn-"]'); },
+  // By slot, not by data-hook: a Button inside CollapsibleTrigger asChild
+  // loses its hook the same way the tooltip and toggle ones do. Third
+  // instance of DS finding 3.2, and the reason this frame came out
+  // byte-identical to the plain list.
+  ["templates-05-rule-activity", "templates",
+    async (p) => { await press(p, '[data-slot="collapsible-trigger"]'); },
+    `!!document.querySelector('[data-slot="collapsible-trigger"][aria-expanded="true"]')`,
     null,
     "Per-rule run history, including a failed send, so auto-reply failures have somewhere to live."],
 
@@ -373,7 +395,8 @@ for (const [name, screen, drive, expect] of wanted) {
     // reliable here than waiting on a selector that differs per screen.
     await wait(7000);
     await drive(page);
-    await wait(1400);
+    const transient = name.endsWith("-sending");
+    if (!transient) await wait(1400);
     if (expect) {
       // POLL, do not check once. Recharts and the drawers mount
       // asynchronously, so a single check a fixed delay after driving
@@ -381,7 +404,8 @@ for (const [name, screen, drive, expect] of wanted) {
       // sources donut did exactly this, 27 Aug). Retry until the deadline,
       // then fail for real.
       let ok = false;
-      for (let i = 0; i < 12 && !ok; i += 1) {
+      const tries = transient ? 1 : 12;
+      for (let i = 0; i < tries && !ok; i += 1) {
         ok = await inFrame(page, (src) => {
           try { return !!eval(src); } catch { return false; }
         }, expect).catch(() => false);
