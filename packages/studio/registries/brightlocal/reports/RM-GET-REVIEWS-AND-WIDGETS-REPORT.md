@@ -133,6 +133,49 @@ picker whose whole job is "choose up to 50", a page-scoped select-all is a trap.
 whole filtered set, or the DS should ship both (page / all) the way most tables
 with paging do.
 
+### 3.6b There is no WIZARD pattern, only a `Stepper` component
+
+Asked directly (Ali, 28 Aug: *"Is there a wizard pattern?"*), the honest answer
+is: the component exists, the pattern does not.
+
+**What ships.** `Stepper` and its family (`StepperNav`, `StepperItem`,
+`StepperTrigger`, `StepperIndicator`, `StepperSeparator`, `StepperContent`,
+`StepperTitle`, `StepperDescription`) are real, allow-listed, and good. The
+storybook page is `ui-components-stepper--docs`. Both of its examples show the
+RAIL only: a row of indicators, optionally with titles and descriptions.
+
+**What does not ship.** Nothing says how the rest of a multi-step flow is put
+together. Every one of these had to be invented twice, once for the Get Reviews
+campaign wizard and once for Create Widget:
+
+- where the step rail sits relative to the step's own heading
+- whether each step is a Card, and whether the rail is inside or outside it
+- where Back / Next live, and that the last step's Next relabels to the commit
+  verb ("Create widget", "Put live")
+- where a validation error goes when Next is blocked, and what it looks like
+- how a step is skipped conditionally (a JSON feed widget has no design step,
+  so the flow is 3 long, not 4, and the count has to follow)
+- how Cancel behaves mid-flow, and whether leaving saves a draft
+- what the flow ends on
+
+Two teams building two wizards off this component will not produce the same
+thing, and did not: the first pass here used an uppercase `Step 1 of 4` eyebrow
+over a `Progress` bar, which is wrong twice over. `Progress` is a value bar, a
+percentage of a known total, not a position in a sequence; and there is no
+sanctioned eyebrow style to borrow. **The only small-uppercase label in the DS
+is `StatCard`'s, whose sidecar defines it as labelling a value.** Using it above
+a page heading is a misuse that nothing in the docs prevents.
+
+**Upstream ask:** a composition recipe, the way `AuthPageShell` and
+`DataTablePage` exist for their layouts. It only needs to answer the seven
+points above. A `Wizard` wrapper owning step state, validation gating and the
+footer would be better still, but the recipe alone would stop the drift.
+
+**Local floor:** both wizards now use `Stepper` for the rail, with the step
+heading as the Card title beneath it and the footer carrying Back / commit plus
+an inline `text-destructive` error. `Create Widget` (`dmtctjykv0feb`) is the
+cleaner of the two to copy.
+
 ### 3.6 An all-`sr-only` header row leaves a visible empty band
 
 Review Inbox hides its column headers because its rows read as a list, and gets
@@ -225,9 +268,30 @@ explicitly out of scope for this round.
   Widgets. Order follows the audit's IA with the Inbox promoted to first per
   `reviews-subnav-spec.md` decision 1. No page in the section now stands on a
   bare `activeId="reviews"`, so decision 2's orphan case is gone.
-- ~~**Back links on Get Reviews**~~ CLOSED 27 Aug. Campaign insights and All
-  feedback were two stacked in-body back links two levels deep. They are now
-  one wide right-hand Drawer (56rem cap) over the hub with Summary and All
-  feedback as TABS, which removes the nesting rather than just the arrows. The
-  five campaign actions moved from the PageHeader into the drawer footer,
-  since that header now belongs to the hub behind it.
+- ~~**Back links on Get Reviews**~~ CLOSED 27 Aug, REOPENED AND CLOSED AGAIN
+  28 Aug. Campaign insights and All feedback were two stacked in-body back
+  links two levels deep. On 27 Aug they became one wide right-hand Drawer over
+  the hub with Summary and All feedback as TABS. On 28 Aug Ali reversed the
+  container ("the screens you have put in drawers should really be full
+  screens, getreviews-02-campaign-summary should definitely be a full page"):
+  56rem of funnel, chart and feedback table inside a scrolling overlay was the
+  tell. It is a full-page view again, the five campaign actions are back in the
+  PageHeader, and the tabs stayed.
+  The reason it could not be a page the first time is now fixed: **`PageHeader`
+  crumbs take an `onClick`.** `goto` carries a screen id and nothing else, so a
+  screen that swaps its own body could not name its parent with one, and the
+  only route home was an in-body back link. The last crumb is now the route
+  home, which is what the trail was already claiming to be.
+
+- ~~**Create widget was a view, not a screen**~~ CLOSED 28 Aug. Creating a
+  widget is its own screen, `RM — Create Widget` (`dmtctjykv0feb`), on
+  `CentredLayout`: no sidebar, no breadcrumbs, a Logo header and a centred
+  column. It ends on the embed code rather than returning you to the list to
+  hunt for it.
+  **EDITING a widget stays in-page**, and this is a constraint, not a choice: a
+  `goto` cannot say WHICH widget to open. Same reason the widget detail is a
+  drawer. So Create is a screen and Edit is a view, which is a real
+  inconsistency with no wiring available to remove it.
+  Second seam: there is no store shared across screens, so a widget created on
+  the new screen cannot appear in the list afterwards. The done state says the
+  widget is ready and shows its embed code rather than pretending.
