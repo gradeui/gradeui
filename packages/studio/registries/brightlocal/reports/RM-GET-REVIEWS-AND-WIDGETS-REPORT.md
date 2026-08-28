@@ -133,6 +133,30 @@ picker whose whole job is "choose up to 50", a page-scoped select-all is a trap.
 whole filtered set, or the DS should ship both (page / all) the way most tables
 with paging do.
 
+### 3.7c Figma's `Card` has no action slot, so header actions have nowhere to go
+
+`Card` in Figma exposes `Card Content` and `Card Footer` as slots, plus
+booleans for media/header/content/footer. There is no action slot, and the
+`Card Header` frame is an instance sublayer, which Figma will not let you add
+children to (`Cannot move node. New parent is an instance or is inside of an
+instance`).
+
+Every RM card that carries something in its header therefore cannot be built
+faithfully:
+
+- the widget cards' format badge (`Carousel`, `List`), top right of the header
+- Reply Templates' `New template` and `New rule` buttons, top right of each
+  card's header
+- the campaign cards' status badge and overflow menu
+
+All of them are pushed down into the content in the Figma rebuilds, which
+changes the reading order: the action now sits below the description instead of
+beside the title.
+
+**Upstream ask:** a `Card Action` slot in the Figma component, matching what
+the code's `CardAction` already does. The code has it; Figma does not, which
+is the same shape of gap as 3.7b.
+
 ### 3.7b `Stepper` exists in code but NOT in the Figma library
 
 Finding 3.6b says there is no wizard *pattern*. There is also no wizard
