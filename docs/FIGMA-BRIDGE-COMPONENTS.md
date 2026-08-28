@@ -5,6 +5,52 @@ Hard-won notes from 27–28 Aug 2026, building BrightLocal RM screens in
 Read this before concluding a component "doesn't exist" or reaching for a
 hand-built substitute.
 
+---
+
+## START HERE (cold open)
+
+**The job:** rebuild the RM screens in Figma out of real DS components,
+instead of the flat screenshots currently pinned to each page.
+
+**Before touching anything:**
+
+1. Ask for the bridge to be running on **`Brightlocal - Reviews`**, and pin it:
+   `figma_navigate` with `lock: true`. Unpinned, a call meant for the working
+   file will silently run against whatever is active.
+2. To look up a component, ask for the **live library** to be opened with the
+   bridge too, then read it with `fileKey: p3krmC8DBUgqpbq6cLzaal`. Do not
+   guess what the library contains, and do not use the drafts copy.
+3. Read "The mistake to avoid" below before reporting anything as missing.
+
+**What already exists in `Brightlocal - Reviews`:**
+
+- Pages: `Components`, and one per section (Review Inbox, Review Performance,
+  Reply Templates, Review Widgets, Get Reviews).
+- Each section page has an empty `GlobalLayoutSlots` instance (the app shell,
+  1280x900, with `nav` / `header-slot` / `main-slot`) and a
+  **`Captured states`** section holding one `StateCard` per screenshot.
+- `StateCard` (local): a 1280x900 `shot` slot with a title and note beside it.
+  All 32 captured states have a card; the Review Inbox ones are filled.
+- **`Drawer / Right`** (local, built 28 Aug): 640x900, vertical auto-layout,
+  three slots — `header-slot`, `body-slot`, `footer-slot`. Header and footer
+  hug their content with hairline borders; the body fills. This is the shape
+  every RM overlay uses (reply panel, template editor, rule editor, widget
+  detail, campaign detail), so one component covers all five.
+- `Badge` and `ReviewRow` (local): **throwaway.** Built before the library was
+  properly enumerated. The DS has a real Badge and a real Table/Data Table.
+  Delete these and rebuild against the library.
+
+**Where the screenshots and notes live:**
+`~/Downloads/brightlocal-rm-figma-<stamp>/`, one folder per section, each with
+a `NOTES.md`. Regenerate with `node scripts/capture-states.mjs` (see
+`scripts/flows/RM-VIDEO-SPEC.md` for the sibling video pipeline).
+
+**Suggested order of work:** one screen end to end before scaling up. The
+Review Inbox list is the flagship and the hardest (needs Table, Badge, Tabs,
+Input, Rating), so proving it proves the rest.
+
+---
+
 ## The files
 
 | File | Key | What it is |

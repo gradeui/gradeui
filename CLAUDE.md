@@ -215,6 +215,24 @@ These docs are the source of truth for where Studio is going. They live in [`des
 
 These are siblings: learning is *what the system learns and generates*; chat is *how it presents that*; themes is *the unit people remix and share*; storage is *the user's own bytes that make a prototype theirs*; audit is *the trail of who did what across all of it*; fills is *how a frame gets painted*; embed is *how a finished render leaves Grade for the open web*. They cross-reference for individual features.
 
+## Figma
+
+`Brightlocal - Reviews` in Figma holds the RM screens as a design board, built
+from the `Design System - UI Components` library over the figma-console bridge.
+
+**Read [`docs/FIGMA-BRIDGE-COMPONENTS.md`](./docs/FIGMA-BRIDGE-COMPONENTS.md)
+before doing any Figma work.** It has a START HERE section for a cold open, the
+three file keys (including the drafts copy that must NOT be built against), what
+already exists in the working file, and the bridge's real constraints: how to
+enumerate the library (you cannot infer it from the working file, and guessing
+produced a wrong "the DS has no Table or Badge" claim), which of the three
+component-import routes actually works, and why images have to be dragged in by
+a person rather than placed programmatically.
+
+Sibling docs: [`scripts/flows/RM-VIDEO-SPEC.md`](./scripts/flows/RM-VIDEO-SPEC.md)
+for the section videos, and `scripts/capture-states.mjs` for the screenshot
+suite that feeds both.
+
 ## See also
 
 - `packages/ui/CLAUDE.md` — deep component/theming/subagent detail (inherited from the predecessor; still the authoritative reference for the component layer)
