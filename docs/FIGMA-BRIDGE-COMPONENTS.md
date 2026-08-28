@@ -31,11 +31,30 @@ instead of the flat screenshots currently pinned to each page.
   **`Captured states`** section holding one `StateCard` per screenshot.
 - `StateCard` (local): a 1280x900 `shot` slot with a title and note beside it.
   All 32 captured states have a card; the Review Inbox ones are filled.
-- **`Drawer / Right`** (local, built 28 Aug): 640x900, vertical auto-layout,
-  three slots — `header-slot`, `body-slot`, `footer-slot`. Header and footer
-  hug their content with hairline borders; the body fills. This is the shape
-  every RM overlay uses (reply panel, template editor, rule editor, widget
-  detail, campaign detail), so one component covers all five.
+- **Eight `REBUILD — … (Sheet)` frames**, one per overlay state, built on the
+  library's real **`Sheet`** (28 Aug). Each is a 1280x900 frame holding an
+  optional cloned backdrop, a scrim rectangle and the Sheet itself:
+
+  | Page | Frame | Panel width |
+  |---|---|---|
+  | Review Inbox | `REBUILD — reply panel (Sheet)` | 640 |
+  | Review Inbox | `REBUILD — reply composer (Sheet)` | 640 |
+  | Review Inbox | `REBUILD — read-only source (Sheet)` | 640, no footer |
+  | Review Inbox | `REBUILD — send failed, blocking (Sheet)` | 640 |
+  | Reply Templates | `REBUILD — template editor (Sheet)` | 640 |
+  | Reply Templates | `REBUILD — auto-reply rule editor (Sheet)` | 640 |
+  | Review Widgets | `REBUILD — widget detail (Sheet)` | 640 |
+  | Get Reviews | `REBUILD — campaign detail, Summary (Sheet)` | 896 |
+  | Get Reviews | `REBUILD — customer preview (Sheet)` | 448 |
+
+  Not built: the inbox **filters** drawer (a mobile-only bottom sheet, not in
+  the captured desktop set), the widget picker's bottom-sheet filters (same
+  reason), the wizard steps (in-page Cards, not overlays) and the centre
+  dialogs (`Delete template`, `Stop campaign`, `Download`, `SMS credits`).
+- **`Drawer / Right`** (local, built 28 Aug): **obsolete — delete it.** It was
+  built before the library's `Sheet` was found. The DS calls this component a
+  **Sheet**, not a Drawer, and it already ships `Sheet Body` and `Sheet Footer`
+  slots, so no local substitute is needed. See "Working with Sheet" below.
 - `Badge` and `ReviewRow` (local): **throwaway.** Built before the library was
   properly enumerated. The DS has a real Badge and a real Table/Data Table.
   Delete these and rebuild against the library.
@@ -137,6 +156,241 @@ scratch instance can be deleted.
 
 That one drag is cheaper than any workaround, and far cheaper than hand-building
 a substitute that then has to be replaced.
+
+## The build harness (read this before writing another panel)
+
+Three things live in the working file's **root plugin data**, and together they
+turn a panel from a 300-line script into a 30-line one:
+
+| Key | What |
+|---|---|
+| `rmHelper` | The whole helper library, as source. `const H = await eval(figma.root.getPluginData('rmHelper'))` |
+| `rmReg` | `{ familyName: componentSetNodeId }` for every set the panels use |
+| `rmIcons` | `{ iconName: componentNodeId }` |
+
+**`eval` works in this sandbox** (so does `new Function`), which is what makes
+the stored-helper trick possible. Without it every call would re-paste ~14KB of
+boilerplate.
+
+`H` exposes `panel`, `shellBody`, `footerRow`, `head`, `metaBlock`,
+`reviewBlock`, `card`, `codeBlock`, `box`, `btn`, `iconBtn`, `badge`, `sepH`,
+`social`, `rating`, `textarea`, `input`, `select`, `checkbox`, `progress`,
+`tabTrigger`, `alertBox`, `alertWithButton`, `T`, `F`, `wide`, `tall`,
+`addWide`, `detailRow`, `labelled`, `findNamed`, `setText`. A whole panel is:
+
+```js
+const p = await panel({ page: 'Brightlocal - Review Inbox', name: '…', x, y, behind: '48:7947' });
+const { scroll } = shellBody(p.bodySlot, await head('1 of 60'));
+addWide(scroll, await metaBlock({ source: 'Google', mark: 'Google', rating: '5.0', … }));
+await footerRow(p.footSlot, [await btn('Outline', 'Skip reply'), await btn('Primary', 'Send reply')]);
+```
+
+To extend the helper, read `rmHelper`, string-replace the piece you want, write
+it back, and `eval` to check it still parses. Patching beats re-pasting.
+
+### `figma_execute` has a hard 30-second cap
+
+The `timeout` argument does **not** raise it — the plugin side kills the call at
+30s regardless. A script that builds more than about one panel will die
+part-way and leave orphans at the page root. So:
+
+- **One panel per call.** Split a big panel into 2–3 calls, returning the
+  `scroll` and `footSlot` ids from the first so later calls can continue.
+- **Sweep strays before re-running.** `createInstance()` parents to the current
+  page, so a mid-script failure leaves `Button / …`, `panel-nav`, `panel-header`
+  and friends scattered at the page root.
+
+### Never import by key inside a build script
+
+`importComponentSetByKeyAsync` — which the earlier notes recorded as hanging —
+**does work now**, but each call costs 1–2s, and ten of them is most of the 30s
+budget. Import everything **once** into `rmReg` / `rmIcons`, then resolve with
+`figma.getNodeByIdAsync`, which is instant. Every key is in
+[`docs/figma-library-keys.tsv`](./figma-library-keys.tsv) — 1,691 rows of
+`page \t SET|CMP \t name \t key`, dumped from the live library. Regenerate it
+by walking `figma.root.children` with the library as the active file.
+
+**One trap:** the id an import returns may be a **stale cached version** of the
+component. `Sheet` came back as a node predating the slots, so
+`Show Footer#27228:1` did not exist on it, and `Button` came back with 95
+variants where the file's own copy has 121. When a set is already used in the
+file, prefer the id reached through an existing instance
+(`(await inst.getMainComponentAsync()).parent.id`) over the imported one.
+
+### Build content BEFORE reparenting into a slot
+
+Once a node is inside a slot that is itself inside an instance, **its sublayer
+ids go stale** — `children` throws `The node (instance sublayer or table cell)
+… does not exist`, and the content becomes unreachable to the API even though
+it renders correctly. So fill a Card's content slot first, then append the Card
+to the panel:
+
+```js
+const c = await card({ title: 'Live preview', desc: '…' });
+c.content.appendChild(body);       // fill it while it is still loose
+scroll.appendChild(c.card);        // now mount it — after this, c.content is dead
+```
+
+If you get it the wrong way round the only fix is to remove that child and
+rebuild it — the scroll frame's own direct children stay reachable.
+
+### `setProperties` succeeds, text silently does not
+
+`node.characters = '…'` throws when the layer's font is not loaded, and the
+usual `try/catch` swallows it — which is how a Card shipped reading
+"This is a card description." Always go through `setText`, which loads
+`node.fontName` first.
+
+## Component property maps
+
+Every DS component ships label / description / placeholder sub-layers turned ON
+by default. Forgetting to turn them off is what makes a rebuild look wrong: a
+Textarea renders "Label Text" above and "729 characters left." below, and a
+Card renders "This is a card description."
+
+| Component | Property | Use |
+|---|---|---|
+| Textarea | `Show Label#183:11`, `Show Description#183:16`, `Placeholder Text#183:5`, `Label Text#183:2`, `Description Text#183:8` | placeholder is the visible value |
+| Input | `Show Label#65:9`, `Show Description#334:40`, `Show Link#501:47`, `Placeholder Text#65:12`, `Label Text#65:6` | variant `Horizontal Layout=No, Variant=Text, State=Filled` for a filled field |
+| Select | `Show Label#345:164`, `Show Description#345:170`, `Placeholder#3001:0` | `State=Filled` when it carries a value |
+| Checkbox | `Show Text#266:18`, `Show Description#48:23`, `Label Text#53:0` | `Status=Active` means **ticked**, `Inactive` unticked. Also force `layoutSizingHorizontal = 'HUG'` — it defaults to FILL and shoves its row's label to the far right |
+| Card | `Show Media#28396:0`, `Show Header#28091:0`, `Show Content#28091:9`, `Show Footer#28091:18`, slots `Card Content#30788:108` / `Card Footer#30788:81` | no boolean for the description — hide the `Card Description` **instance** with `.visible = false` |
+| Progress | `Label#29423:0`, `Value#29423:6`, variants `Percent=0/25/50/75/100%` x `Colour=Green/Red/Orange` | only those five steps exist |
+| Tabs / Trigger | `Tab Text#183:21`, `Badge#17421:0`, `Active=On/Off` | the count lives on the nested `Badge Number` text |
+| Badge | `Show Left Icon#17100:0`, `Show Right Icon#17100:11`, `Badge Text#26:6` | `Variant=Primary` is the green one |
+| Alert | `Title#17096:0`, `Description#17096:3`, `Button#17096:7`, `Icon#17096:5`, `Title Text#26:5`, `Description Text#26:4`, `Variant=Destructive/Info/Success/Warning` | the action button lays out as a **second column** and squeezes the copy — the same reason the code puts its buttons inside the description instead |
+| Rating | `Rating=1.0…5.0` x `Size=Default/Small` | no thumb up/down variant |
+
+## Instance sublayers: what can and cannot be overridden
+
+The bridge hits several hard API limits when editing inside an instance. All
+of these **fail silently or throw** — none of them warn.
+
+| Operation on an instance sublayer | Result |
+|---|---|
+| `node.resize(w, h)` / `resizeWithoutConstraints` | **Silently no-ops.** Reads back the main component's width. |
+| `node.layoutSizingHorizontal = 'FILL'` | **Works.** This is the only way to change a sublayer's width. |
+| `node.layoutMode = 'HORIZONTAL'` | **Silently no-ops.** Direction is fixed by the main component. |
+| `node.padding*` / `itemSpacing` / `strokes` / `fills` | **Work.** |
+| `node.rotation = 180` | **Throws** `This property cannot be overridden in an instance: relative-transform`. |
+| `node.visible = false` | **Works** (use it instead of a boolean prop when the prop is unreadable). |
+| `slot.appendChild(anyNode)` | **Works**, even when the slot declares `allowPreferredValuesOnly: true`. That restriction is UI-only. |
+
+Two consequences worth knowing before you plan a build:
+
+**To widen a Sheet panel**, resize the *Sheet root* and set its `_SheetContent`
+to `FILL`. The root's own fill is the 50% scrim, so drop it and lay a separate
+scrim rectangle behind if you still want the dimmed backdrop:
+
+```js
+sheet.fills = [];                 // keep a copy first, it is the scrim paint
+sheet.resize(640, 900);
+content.layoutSizingHorizontal = 'FILL';   // now 640, resize() never would have
+```
+
+**To rotate an icon**, rotate the whole Button. `rotation` is blocked on an
+instance's children but allowed on an instance whose parent is a plain frame,
+so a chevron-up is a ghost icon Button holding `Icon / ChevronDown`, rotated
+180. The background is transparent, so nothing gives it away. (The library has
+`Icon / ChevronUp`, but it is not yet instantiated in the working file, and
+route 3 cannot reach what is not already there.)
+
+**Slot layout is fixed**, so a footer slot that is `VERTICAL, align CENTER`
+stays that way. Put a full-width horizontal frame inside it and fill that:
+
+```js
+row.layoutMode = 'HORIZONTAL'; footSlot.appendChild(row);
+row.layoutSizingHorizontal = 'FILL';   // buttons now sit left, in a row
+```
+
+## Working with `Sheet`
+
+`Sheet` is the DS's right/left/top/bottom overlay — what the code calls a
+Drawer. 8 variants (`Breakpoint` md/sm x `Position` left/right/top/bottom),
+and md/right is 384 wide with the panel right-aligned inside a scrim.
+
+Its properties:
+
+| Property | Type | Notes |
+|---|---|---|
+| `Sheet Body#31063:0` | SLOT | free-form |
+| `Sheet Footer#31063:9` | SLOT | declares Button as its only preferred value; the API ignores that |
+| `Show Header#27228:10` | BOOLEAN | false hides the DS title/description block |
+| `Show Footer#27228:1` | BOOLEAN | |
+| `Show icon#29064:0` | BOOLEAN | the icon beside the title |
+| `Title Text#220:40`, `Description Text#220:49` | TEXT | |
+
+`Sheet / Close Icon` is an **absolutely positioned sibling** of the header with
+a MAX horizontal constraint, so it survives `Show Header = false` and stays
+pinned top-right when the panel is widened. The RM panels use a ghost icon
+Button on the header's own centre line instead, so hide it.
+
+To reproduce a panel whose header is not a title (the reply panel's is
+prev/next/counter/close), set `Show Header = false`, zero `_SheetContent`'s
+padding, and build header + scroll region as two children of the body slot.
+
+## Button's component set has errors
+
+`Button` has duplicate variants in the library
+(`Variant=Destructive, State=Default, Size=default` appears twice). Any read of
+`componentProperties` or `componentPropertyDefinitions` on a Button — or on the
+set — throws `Component set for node has existing errors`, and `setProperties`
+is therefore unusable. **Wrap every property read in try/catch**, or one bad
+set kills a whole document scan.
+
+The workaround is to instantiate the exact variant component and edit its
+layers directly:
+
+```js
+const b = set.children.find(c => c.name === 'Variant=Outline, State=Default, Size=default')
+             .createInstance();
+for (const n of b.findAll(n => n.type === 'INSTANCE')) n.visible = false;  // drop placeholder icons
+b.findOne(n => n.type === 'TEXT').characters = 'Edit reply';
+```
+
+Note `createInstance()` parents to the **current page**, not to your target. If
+a script throws between `createInstance()` and `appendChild()`, it leaves
+strays at the page root — sweep them by name before re-running.
+
+## Colour variables
+
+Bind fills rather than hard-coding hex. The ids below are from the live
+library's base collection (`.../23479:98`):
+
+| Token | Variable id |
+|---|---|
+| `base/foreground` | `VariableID:79bce71fe1f71efc32d4c728dfd226e038f4d4b5/30282:910` |
+| `base/muted-foreground` | `VariableID:d1a429d113c8a646d7ed44879bbe3c501ff353b9/30282:913` |
+| `base/muted` | `VariableID:90a546c02d71c69eeb9dc12efe8aa98563804ee8/30282:912` |
+| `base/border` | `VariableID:9e76c67e238efde83e68c18b734285bc2d80d011/30282:905` |
+| `base/success-background` | `VariableID:cb35b3c72ef9a3d10aa4520b6283eec8dc344c84/23479:159` |
+
+```js
+const v = await figma.variables.getVariableByIdAsync(id);
+const paint = figma.variables.setBoundVariableForPaint(
+  { type: 'SOLID', color: { r: 0, g: 0, b: 0 } }, 'color', v);
+```
+
+To discover more, read any existing text node's `fills[0].boundVariables.color.id`,
+resolve it, then walk its collection's `variableIds`.
+
+## Known gaps in the library
+
+Real absences, found while building the RM screens. Each one currently ships a
+stand-in, so check here before hand-drawing another:
+
+- **No TripAdvisor mark.** `Social Media Icon` has Google, Facebook and Yelp
+  (Original and Neutral) but no TripAdvisor. The Figma rebuild carries a named
+  blank placeholder; the code carries a redrawn stand-in marked "must not ship".
+- **`Rating` has no thumb up/down variant**, so Facebook's recommend/not model
+  renders as stars in Figma.
+- **No `Icon / Trash2` or `Icon / Pencil`** instantiated in the working file, so
+  the reply panel's footer buttons are text-only where the build has icons.
+- **No area/line `Chart` instance** was placed: the campaign panel's "Reviews
+  over time" carries a labelled placeholder box where `Chart / Area Chart`
+  belongs.
+- **`Progress` only has 0/25/50/75/100%**, so the funnel and NPS bars are
+  rounded to the nearest quarter rather than showing their true ratios.
 
 ## Bridge mechanics
 
