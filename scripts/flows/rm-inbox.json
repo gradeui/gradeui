@@ -30,9 +30,10 @@
       "dwell": 6000
     },
     {
-      "click": "[data-hook=\"close-review\"]",
-      "waitFor": "[data-hook=\"new-widget\"], tbody tr",
-      "dwell": 800
+      "click": "[data-hook=\"close-review\"]"
+    },
+    {
+      "dwell": 1400
     },
     {
       "click": "tbody tr:nth-child(2) td div",
@@ -44,8 +45,10 @@
       "dwell": 6000
     },
     {
-      "click": "[data-hook=\"close-review\"]",
-      "dwell": 800
+      "click": "[data-hook=\"close-review\"]"
+    },
+    {
+      "dwell": 1400
     },
     {
       "click": "tbody tr:nth-child(3) td div",
@@ -57,6 +60,21 @@
       "dwell": 2500
     },
     {
+      "click": "[data-hook^=\"tpl-\"]",
+      "hoverMs": 700,
+      "caption": "Templates fill the reply without typing."
+    },
+    {
+      "dwell": 2200
+    },
+    {
+      "click": "[data-hook*=\"-t1\"]",
+      "hoverMs": 500
+    },
+    {
+      "dwell": 2000
+    },
+    {
       "click": "[data-hook^=\"send-\"]:not([data-hook^=\"send-failed\"])",
       "hoverMs": 600
     },
@@ -64,8 +82,10 @@
       "dwell": 6200
     },
     {
-      "click": "[data-hook=\"close-review\"]",
-      "dwell": 800
+      "click": "[data-hook=\"close-review\"]"
+    },
+    {
+      "dwell": 1400
     },
     {
       "click": "tbody tr:nth-child(9) td div",
@@ -77,6 +97,21 @@
       "dwell": 2500
     },
     {
+      "click": "[data-hook^=\"tpl-\"]",
+      "hoverMs": 700,
+      "caption": "Templates fill the reply without typing."
+    },
+    {
+      "dwell": 2200
+    },
+    {
+      "click": "[data-hook*=\"-t1\"]",
+      "hoverMs": 500
+    },
+    {
+      "dwell": 2000
+    },
+    {
       "click": "[data-hook^=\"send-\"]:not([data-hook^=\"send-failed\"])",
       "hoverMs": 600
     },
@@ -84,8 +119,10 @@
       "dwell": 6700
     },
     {
-      "click": "[data-hook=\"close-review\"]",
-      "dwell": 800
+      "click": "[data-hook=\"close-review\"]"
+    },
+    {
+      "dwell": 1400
     },
     {
       "click": "tbody tr:nth-child(11) td div",
@@ -97,8 +134,10 @@
       "dwell": 6200
     },
     {
-      "click": "[data-hook=\"close-review\"]",
-      "dwell": 800
+      "click": "[data-hook=\"close-review\"]"
+    },
+    {
+      "dwell": 1400
     },
     {
       "click": "tbody tr:nth-child(1) td div",
@@ -117,8 +156,10 @@
       "dwell": 4200
     },
     {
-      "click": "[data-hook=\"close-review\"]",
-      "dwell": 700
+      "click": "[data-hook=\"close-review\"]"
+    },
+    {
+      "dwell": 1400
     },
     {
       "click": "tbody tr:nth-child(3) td div",
@@ -133,8 +174,10 @@
       "dwell": 3600
     },
     {
-      "click": "[data-hook=\"close-review\"]",
-      "dwell": 700
+      "click": "[data-hook=\"close-review\"]"
+    },
+    {
+      "dwell": 1400
     },
     {
       "click": "tbody tr:nth-child(5) td div",
@@ -149,8 +192,10 @@
       "dwell": 3600
     },
     {
-      "click": "[data-hook=\"close-review\"]",
-      "dwell": 700
+      "click": "[data-hook=\"close-review\"]"
+    },
+    {
+      "dwell": 1400
     },
     {
       "click": "tbody tr:nth-child(9) td div",
