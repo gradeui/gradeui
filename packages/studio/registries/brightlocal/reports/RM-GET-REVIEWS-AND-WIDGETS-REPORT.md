@@ -133,6 +133,45 @@ picker whose whole job is "choose up to 50", a page-scoped select-all is a trap.
 whole filtered set, or the DS should ship both (page / all) the way most tables
 with paging do.
 
+### 3.7 `--card` is not white, and only the app shell hides that
+
+Every Grade page in this prototype shows white cards. None of them get that
+from the token. Measured inside a screen with no `AppLayoutShell`:
+
+```
+--card          #f2f7f3     <- pale green
+--background    #fcfdfc     <- near white
+--card-border   #ffffff00   <- fully transparent
+```
+
+So a Card out of the box is a 3% green tint against a near-white page, with no
+border to define its edge. It reads as a faint wash, not as a surface.
+
+The reason nobody has noticed is that `AppLayoutShell`'s page-layer presets
+overwrite the token inline on the shell element:
+
+```
+--card: light-dark(var(--ds-tailwind-colors-base-white), var(--ds-tailwind-colors-neutral-900))
+```
+
+Every section page wears a shell, so every section page gets white cards. The
+moment a page does NOT wear one — `CentredLayout` for the Create Widget
+wizard was the first — the raw token surfaces and the card comes out green.
+Two screens in the same product, the same `Card` component, two different
+colours, and the difference is which layout wrapper happens to be above it.
+
+**Upstream ask:** `--card` should be white in the light theme, and
+`--card-border` should be a real border token. A component's own default
+should not depend on an ancestor layout to look right, and a shell preset
+should be adjusting a surface, not correcting it. If the green IS deliberate
+for some surface, it wants to be a named variant rather than the default that
+everything then overrides.
+
+**Local floor:** the Create Widget screen applies the same inline override the
+shell uses, rather than hand-painting the card white. Copying the shell's own
+declaration means the screen tracks the preset instead of forking from it, and
+when the token is fixed upstream this line can simply be deleted.
+
 ### 3.6b There is no WIZARD pattern, only a `Stepper` component
 
 Asked directly (Ali, 28 Aug: *"Is there a wizard pattern?"*), the honest answer
