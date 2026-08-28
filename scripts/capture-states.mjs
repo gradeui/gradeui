@@ -54,7 +54,7 @@ const arg = (k, d) => {
 };
 const BASE = arg("base", "http://localhost:3000");
 const ONLY = arg("only", null);
-// --section=inbox|insights|templates|widgets|getreviews (repeatable, comma
+// --section=reviewshub|inbox|insights|templates|widgets|getreviews|createwidget (repeatable, comma
 // separated). Sections are the unit Ali thinks in, and the unit a demo video
 // is cut in, so the suite runs one section at a time by default rather than
 // one giant pass.
@@ -67,17 +67,22 @@ const SECTIONS = (arg("section", null) || "").split(",").map((x) => x.trim()).fi
 // takes both: the fixed frame for a board, the tall one for reading.
 const FULL = process.argv.includes("--full");
 const OUT = arg("out", path.join(process.env.HOME, "Desktop", "brightlocal-screens"));
-const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 15).replace(/(\d{8})(\d{6})/, "$1-$2");
+const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14).replace(/(\d{8})(\d{6})/, "$1-$2");
 const DIR = path.join(OUT, `states-${stamp}`);
 fs.mkdirSync(DIR, { recursive: true });
 
 // Share tokens for the four RM screens plus Reply Templates.
+// createwidget is the newest of them: widget CREATION left Review Widgets
+// on 28 Aug and became its own screen (design dmtctjykv0feb) on the DS
+// CentredLayout, so it needs its own token and its own section.
 const SCREENS = {
+  reviewshub: "dee5a983-be48-4f86-8c8f-e46f16b435dd",
   inbox: "a616bfc5-1806-4af8-9a9a-74b6a9173fbf",
   insights: "38f64dc2-383c-42d1-83b6-456bf254a4b1",
   templates: "55dd020f-d660-48bd-9d2c-1d2542a8b19f",
   widgets: "0609abbe-f208-4d91-858e-e5335f8cecbe",
   getreviews: "782021bd-1332-48b8-a22b-5316b520fc20",
+  createwidget: "35af1f77-ff09-43ea-b86e-534568cfeb8f",
 };
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -184,6 +189,31 @@ async function spendAi(page, row) {
   await wait(700);
 }
 
+// Walk the CREATE WIDGET screen's wizard to a named step. Every state
+// reloads the embed from scratch, so each one re-walks the chain rather
+// than sharing a page. Driven by data-hook, never by pressText("Next"):
+// the reviews step carries a DataTablePagination whose own control is
+// also called Next, and a text lookup can pick the wrong one.
+const WIDGET_WIZARD_STEPS = ["type", "reviews", "format", "design", "done"];
+async function widgetWizardTo(page, step) {
+  const stop = WIDGET_WIZARD_STEPS.indexOf(step);
+  if (stop < 0) throw new Error("unknown widget wizard step: " + step);
+  if (stop === 0) return;
+  // Live feed rather than hand-picked. The feed branch is the one that
+  // carries the explainer and the review picker, and it is the branch the
+  // old in-page states captured, so the frames stay comparable.
+  await press(page, '[data-hook="widget-mode-feed-label"]');
+  await wait(600);
+  for (let i = 0; i < stop - 1; i += 1) {
+    await press(page, '[data-hook="widget-next"]');
+    await wait(1000);
+  }
+  // The last step swaps Next for Save, and Save is what produces the done
+  // state with the embed code.
+  await press(page, `[data-hook="widget-${step === "done" ? "save" : "next"}"]`);
+  await wait(1000);
+}
+
 async function hover(page, selector) {
   await inFrame(page, (sel) => {
     const el = document.querySelector(sel);
@@ -201,11 +231,42 @@ async function hover(page, selector) {
 
 // ── the states ────────────────────────────────────────────────────────
 const expectDrawer = `!!document.querySelector('[role="dialog"]')`;
+// "A panel opened" is not the same as "the REPLIABLE panel opened". Every
+// row opens a dialog, including the already-replied and read-only ones,
+// so expectDrawer alone let inbox-02 ship a read-only frame for a whole
+// run (28 Aug). Assert the composer furniture the note actually promises.
+const expectComposer = `(() => {
+  const d = document.querySelector('[role="dialog"]');
+  return !!d && !!d.querySelector("textarea")
+    && !!d.querySelector('[data-hook^="ai-"]')
+    && !!d.querySelector('[data-hook^="send-"]');
+})()`;
 const expectFailure = (frag) =>
   `(() => { const d = document.querySelector('[role="dialog"]');
      return !!d && /${frag}/.test(d.innerText); })()`;
 
 const STATES = [
+  // ── Reviews (the section landing page) ──────────────────────────────
+  // FIRST on purpose: it is the parent of the other four RM sections, so
+  // it should read first on a Figma board. Ordering here is the only
+  // ordering there is, because this script writes one FLAT folder of
+  // <state-id>.png plus <section>-NOTES.md rather than numbered
+  // per-section subfolders, so there was nothing to renumber.
+  //
+  // Section name is `reviewshub`, not `reviews-hub`: the section a state
+  // belongs to is name.split("-")[0], so a two-word prefix would split at
+  // the first dash and file the notes under "reviews".
+  ["reviewshub-01-cards", "reviewshub", async () => {},
+    `(() => {
+       const hooks = ["reviews-hub-inbox", "reviews-hub-insights",
+                      "reviews-hub-get", "reviews-hub-widgets"];
+       const first = document.querySelector('[data-hook="reviews-hub-inbox"]');
+       if (!first) return false;
+       for (const h of hooks) if (!document.querySelector('[data-hook="' + h + '"]')) return false;
+       return getComputedStyle(first.parentElement).gridTemplateColumns.trim().split(/\\s+/).length === 2;
+     })()`,
+    "The Reviews landing page: one card per sub-tool, two up, each a link into its own screen. Static, because the page's whole job is to route."],
+
   // ── Review Inbox ────────────────────────────────────────────────────
   // ROW INDICES ARE NOT ARBITRARY and must not be guessed. The five
   // failure codes are pinned to the first five reviews that are both
@@ -219,7 +280,18 @@ const STATES = [
   ["inbox-01-list", "inbox", async () => {},
     null,
     "The inbox at rest. One status badge per row: status is the state the review is in, never the delivery outcome."],
-  ["inbox-02-reply-panel", "inbox", async (p) => { await openRow(p, 3); }, expectDrawer,
+  // ROW 6, not row 3. Row 3 is Priya / Google / "Manually replied": it
+  // opens a READ-ONLY panel with a Delete reply / Edit reply footer and
+  // no composer at all, so this frame was showing the opposite of what
+  // its note claims (28 Aug). Page one holds exactly six repliable rows,
+  // 0, 2, 4, 6, 8 and 10; the other five are all spoken for by the
+  // failure and AI-quota states, and reusing one of those would make this
+  // frame a duplicate of inbox-10. That leaves 6.
+  // ASSUMPTION worth knowing: row 6 arrives as "Reply skipped" rather
+  // than "Needs action". It is fully repliable and shows the whole
+  // composer, which is what the note is about, but the status badge in
+  // this frame is not the first-time-through one.
+  ["inbox-02-reply-panel", "inbox", async (p) => { await openRow(p, 6); }, expectComposer,
     "Reply panel for a repliable review. AI draft and template picker above the composer, Skip and Send in the footer."],
   ["inbox-03-readonly-source", "inbox", async (p) => { await openRow(p, 1); },
     expectFailure("cannot be sent from here"),
@@ -310,47 +382,144 @@ const STATES = [
   // byte-identical to the plain list.
   ["templates-05-rule-activity", "templates",
     async (p) => { await press(p, '[data-slot="collapsible-trigger"]'); },
+    // Was a 6-tuple with a stray null in the note slot, so the runner's
+    // [name, screen, , , note] destructure read null and this state was
+    // the one row missing from templates-NOTES.md.
     `!!document.querySelector('[data-slot="collapsible-trigger"][aria-expanded="true"]')`,
-    null,
     "Per-rule run history, including a failed send, so auto-reply failures have somewhere to live."],
 
   // ── Review Widgets ──────────────────────────────────────────────────
+  // The dashed "create a new widget" tile at the end of the grid was
+  // DELETED on 28 Aug alongside its Get Reviews twin, and the card grid
+  // went from three columns to two. Nothing here reached for
+  // `create-widget-tile`, so there was no selector to repoint, but the
+  // list state now asserts the two-track grid so a silent revert to three
+  // fails the run instead of shipping a wrong frame.
   ["widgets-01-list", "widgets", async () => {},
-    null,
-    "Widget dashboard. Yelp is excluded from widgets, stated once on the page rather than in every filter menu."],
-  ["widgets-02-wizard-type", "widgets", async (p) => { await press(p, '[data-hook="new-widget"]'); },
-    null,
-    "Step one asks hand-picked or live feed first, because that choice changes every later step."],
-  ["widgets-03-wizard-filters", "widgets", async (p) => {
-    await press(p, '[data-hook="new-widget"]'); await wait(800);
-    await pressText(p, "Live feed", "*"); await wait(500); await pressText(p, "Next");
-  }, null,
-    "Live feed filters. New matching reviews are added automatically; individual ones can still be excluded by hand."],
-  ["widgets-04-wizard-format", "widgets", async (p) => {
-    await press(p, '[data-hook="new-widget"]'); await wait(800);
-    await pressText(p, "Live feed", "*"); await wait(500); await pressText(p, "Next"); await wait(700);
-    await pressText(p, "Next");
-  }, null,
-    "List, carousel or JSON feed. These three are the only widget types either source document evidences."],
-  ["widgets-05-detail-embed", "widgets", async (p) => { await pressText(p, "View"); },
+    `(() => {
+       const card = document.querySelector('[data-hook="widget-w1"]');
+       const grid = card && card.parentElement;
+       if (!grid) return false;
+       if (document.querySelector('[data-hook="create-widget-tile"]')) return false;
+       return getComputedStyle(grid).gridTemplateColumns.trim().split(/\\s+/).length === 2;
+     })()`,
+    "Widget dashboard. Two columns of cards and no dashed create tile: New widget lives in the page header. Yelp is excluded from widgets, stated once on the page rather than in every filter menu."],
+  // NUMBERS 03 AND 04 ARE DELIBERATELY VACANT. They used to be the two
+  // later steps of the in-page CREATE wizard; creation moved to its own
+  // screen on 28 Aug and those frames now live in the createwidget
+  // section below. 05 keeps its number so widgets-05-detail-embed.png is
+  // still the same filename it has always been.
+  //
+  // "New widget" no longer changes view in place: it is a Button inside a
+  // span carrying data-grade-goto, so a click NAVIGATES to the create
+  // screen. Driving the wizard from here would just be a slow way of
+  // loading a different screen, so the wizard states point at that screen
+  // directly instead.
+  //
+  // EDITING is still in page, and that is what this state covers.
+  // Worth knowing: the list screen's own copy of the wizard still wears
+  // the old "STEP 1 OF 4" eyebrow plus a Progress bar
+  // (`[data-hook="widget-progress"]`), while the create screen has moved
+  // to the DS Stepper. Not asserted on, because the two are expected to
+  // converge, but that is why an edit frame and a create frame do not
+  // look alike today.
+  ["widgets-02-edit-wizard", "widgets", async (p) => { await press(p, '[data-hook="widget-w1-edit"]'); },
+    `!!document.querySelector('[data-hook="widget-wizard-card"]')
+     && !!document.querySelector('[data-hook="widget-mode-radio-group"]')`,
+    "Editing an existing widget stays on the list screen: it is a change to something that already exists, not a new linear task, so it does not earn its own page."],
+  // By hook, not by pressText("View"): every widget card carries a View
+  // button, so the text lookup silently depended on DOM order.
+  ["widgets-05-detail-embed", "widgets", async (p) => { await press(p, '[data-hook="widget-w1-view"]'); },
     `!!document.querySelector('[data-hook="widget-detail-drawer"][data-state="open"]')`,
     "The embed snippet with copy-to-clipboard. Opens automatically after saving, so the code is one step away, not two."],
 
+  // ── Create Widget ───────────────────────────────────────────────────
+  // Its own SCREEN since 28 Aug (design dmtctjykv0feb), on the DS
+  // CentredLayout: no sidebar, no breadcrumbs, a Logo header and a
+  // centred wizard. The step rail is the DS Stepper family
+  // (`widget-wizard-stepper`); the old uppercase "STEP 1 OF 4" eyebrow
+  // and its Progress bar are gone, so nothing here may reach for
+  // `widget-progress`.
+  //
+  // Every step asserts on a hook UNIQUE to that step. Four frames driven
+  // by repeated Next with no assertion is exactly the shape that produced
+  // byte-identical captures before: a Next that does not land leaves the
+  // previous step on screen and the shutter fires anyway.
+  ["createwidget-01-type", "createwidget", async () => {},
+    `!!document.querySelector('[data-hook="widget-mode-radio-group"]')
+     && !!document.querySelector('[data-hook="widget-wizard-stepper"]')
+     && !document.querySelector('[data-hook="widget-progress"]')`,
+    "Step one asks hand-picked or live feed first, because that choice changes every later step. Out of the app shell on purpose: creating a widget is a focused linear task with its own way out."],
+  ["createwidget-02-reviews", "createwidget", async (p) => { await widgetWizardTo(p, "reviews"); },
+    `!!document.querySelector('[data-hook="picker-table"]')
+     && !!document.querySelector('[data-hook="feed-explainer"]')`,
+    "Live feed filters. New matching reviews are added automatically; individual ones can still be excluded by hand."],
+  ["createwidget-03-format", "createwidget", async (p) => { await widgetWizardTo(p, "format"); },
+    `!!document.querySelector('[data-hook="widget-format-radio-group"]')`,
+    "List, carousel or JSON feed. These three are the only widget types either source document evidences."],
+  ["createwidget-04-design", "createwidget", async (p) => { await widgetWizardTo(p, "design"); },
+    `!!document.querySelector('[data-hook="design-theme-radio-group"]')`,
+    "The design step, which the in-page wizard never had a frame for. JSON feeds skip it entirely, because there is nothing to paint."],
+  ["createwidget-05-done", "createwidget", async (p) => { await widgetWizardTo(p, "done"); },
+    `!!document.querySelector('[data-hook="create-widget-done"]')`,
+    "The payoff. Saving hands over the embed code on the spot rather than sending you back to the list to go and find it, and the only way on is the button back to Review Widgets."],
+
   // ── Get Reviews ─────────────────────────────────────────────────────
+  // THE CAMPAIGN IS A PAGE, NOT A DRAWER (28 Aug). `campaign-drawer` and
+  // `close-campaign` no longer exist, so the old assertion on
+  // `[data-hook="campaign-drawer"][data-state="open"]` could only ever
+  // fail. Entry is a campaign card's CTA; the way out is the last
+  // breadcrumb crumb, which is not needed here because every state
+  // reloads the embed from scratch.
+  //
+  // Driven by data-hook, NOT by pressText("View insights"). Every Live
+  // and Stopped card carries that same label, so the text lookup took
+  // whichever card the DOM happened to order first and the frame silently
+  // depended on the sort. `campaign-c1-cta` names the campaign the note
+  // describes (Summer Visitors, the email campaign with the full funnel).
   ["getreviews-01-hub", "getreviews", async () => {},
-    null,
-    "Campaign list with live, draft and stopped states."],
-  ["getreviews-02-campaign-summary", "getreviews", async (p) => { await pressText(p, "View insights"); },
-    `!!document.querySelector('[data-hook="campaign-drawer"][data-state="open"]')`,
-    "Campaign detail as a wide drawer over the hub. The five campaign actions sit in the drawer footer."],
+    // Assert the NEW hub shape, not merely "the page rendered": key/value
+    // stat rows present, tabs absent (so this is not the campaign page),
+    // and the card grid actually resolving to two tracks rather than the
+    // three it used to be.
+    `(() => {
+       const card = document.querySelector('[data-hook="campaign-c1"]');
+       const grid = card && card.parentElement;
+       if (!grid || !document.querySelector('[data-hook="campaign-c1-stat-sent"]')) return false;
+       if (document.querySelector('[data-hook="campaign-tabs"]')) return false;
+       return getComputedStyle(grid).gridTemplateColumns.trim().split(/\\s+/).length === 2;
+     })()`,
+    "Campaign list with live, draft and stopped states. Two columns of cards, and each card's three numbers are key/value rows with hairlines rather than nested stat tiles."],
+  ["getreviews-02-campaign-summary", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c1-cta"]');
+  },
+    // Full page, so: the summary tab panel is the active one, the campaign
+    // actions are up in the page header, and NOTHING is overlaying the
+    // page. The last of those three is what catches a regression back to
+    // a drawer.
+    `(() => {
+       const sum = document.querySelector('[data-hook="campaign-summary-panel"]');
+       if (!sum || sum.getAttribute("data-state") !== "active") return false;
+       for (const h of ["insights-reuse", "insights-stop", "insights-preview", "insights-download"]) {
+         if (!document.querySelector('[data-hook="' + h + '"]')) return false;
+       }
+       return !document.querySelector('[role="dialog"]');
+     })()`,
+    "Campaign detail as a FULL PAGE, entered from a card and left through the last breadcrumb crumb. Re-use, Stop campaign, Preview and Download sit beside the title, because they act on the whole campaign."],
   ["getreviews-03-campaign-feedback", "getreviews", async (p) => {
-    await pressText(p, "View insights"); await wait(1400);
+    await press(p, '[data-hook="campaign-c1-cta"]'); await wait(1400);
     await press(p, '[data-hook="campaign-tab-feedback"]');
-  }, `(() => { const el = document.querySelector('[data-hook="campaign-feedback-panel"]');
-        return !!el && el.getAttribute("data-state") === "active"; })()`,
-    "Private feedback as a TAB, not a nested page. That is what removed the second level of back links."],
-  ["getreviews-04-wizard", "getreviews", async (p) => { await pressText(p, "New campaign"); },
-    null,
+  }, `(() => {
+        const fb = document.querySelector('[data-hook="campaign-feedback-panel"]');
+        if (!fb || fb.getAttribute("data-state") !== "active") return false;
+        const sum = document.querySelector('[data-hook="campaign-summary-panel"]');
+        if (sum && sum.getAttribute("data-state") === "active") return false;
+        return document.querySelectorAll('[data-hook^="feedback-row-"]').length > 0;
+      })()`,
+    "Private feedback as a TAB on that page, not a nested screen. That is what removed the second level of back links."],
+  ["getreviews-04-wizard", "getreviews", async (p) => { await press(p, '[data-hook="new-campaign"]'); },
+    `!!document.querySelector('[data-hook="wizard-card"]')
+     && !!document.querySelector('[data-hook="wizard-cancel"]')`,
     "Campaign wizard. Cancel is a plain button with no arrow, because cancelling is an action, not a move up the hierarchy."],
 ];
 
@@ -396,7 +565,13 @@ for (const [name, screen, drive, expect] of wanted) {
       // sources donut did exactly this, 27 Aug). Retry until the deadline,
       // then fail for real.
       let ok = false;
-      const tries = transient ? 1 : 12;
+      // 24 rather than 12 (28 Aug): the FIRST state of a run pays for the
+      // dev server compiling the /e/ route, and 7s settle + 6s of polling
+      // was not always enough for it. widgets-01-list failed on a cold
+      // browser and passed on a warm one, which is a flaky suite, not a
+      // broken screen. 12 seconds of polling costs nothing on the states
+      // that were already fine, because the loop exits on first success.
+      const tries = transient ? 1 : 24;
       for (let i = 0; i < tries && !ok; i += 1) {
         ok = await inFrame(page, (src) => {
           try { return !!eval(src); } catch { return false; }
