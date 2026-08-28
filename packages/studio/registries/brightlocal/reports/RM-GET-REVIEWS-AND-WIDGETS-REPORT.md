@@ -133,6 +133,29 @@ picker whose whole job is "choose up to 50", a page-scoped select-all is a trap.
 whole filtered set, or the DS should ship both (page / all) the way most tables
 with paging do.
 
+### 3.7b `Stepper` exists in code but NOT in the Figma library
+
+Finding 3.6b says there is no wizard *pattern*. There is also no wizard
+*component in Figma*.
+
+`@brightlocal/ui-components` ships the whole `Stepper` family and its
+storybook page is `ui-components-stepper--docs`. The Figma library has nothing:
+a full dump of every component and component set in
+`Design System - UI Components` (1,691 rows, `docs/figma-library-keys.tsv`)
+contains **zero** matches for "Stepper". The nearest things are `Icon /
+StepBack` and `Icon / StepForward`, which are arrows.
+
+So a designer laying out a wizard in Figma cannot use the component the
+engineer will build it with. They have to draw a rail out of ellipses and
+lines, and every wizard drawn that way will differ slightly from the last and
+from the code. Both Figma rebuilds here carry a hand-rolled rail, named
+`stepper-dot (hand-rolled, no Figma component)` so nobody mistakes it for an
+instance and expects it to update with the library.
+
+**Upstream ask:** publish `Stepper` to the Figma library. It is the second
+half of 3.6b and the cheaper half: the component already exists, it just has
+no Figma counterpart.
+
 ### 3.7 `--card` is not white, and only the app shell hides that
 
 Every Grade page in this prototype shows white cards. None of them get that
