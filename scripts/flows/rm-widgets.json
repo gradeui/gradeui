@@ -10,22 +10,32 @@
       "caption": "Review Widgets. Yelp is excluded, stated once on the page rather than in every filter menu."
     },
     {
-      "click": "[data-hook=\"new-widget\"]",
-      "section": "Choose type",
-      "caption": "Step one asks hand-picked or live feed, because that choice changes every later step."
+      "dwell": 3600,
+      "caption": "Two columns, and no dashed create tile. New widget in the header is the one front door, and it opens a screen of its own."
     },
     {
-      "dwell": 6000
+      "click": "[data-hook=\"widget-w1-view\"]",
+      "waitFor": "[data-hook=\"widget-detail-drawer\"]",
+      "section": "Embed code",
+      "caption": "Viewing a widget is an overlay: the preview and the embed snippet, with the list still behind it."
     },
     {
-      "click": "text=Live feed",
-      "hoverMs": 800
+      "dwell": 6700
     },
     {
-      "dwell": 2500
+      "click": "[data-hook=\"detail-edit\"]",
+      "hoverMs": 900,
+      "waitFor": "[data-hook=\"widget-wizard-stepper\"]",
+      "section": "Edit widget",
+      "caption": "Editing an existing widget stays on this screen. The stepper says where you are, because step indicators are the progress."
     },
     {
-      "click": "text=Next",
+      "dwell": 6200
+    },
+    {
+      "click": "[data-hook=\"widget-next\"]",
+      "hoverMs": 800,
+      "waitFor": "[data-hook=\"feed-explainer\"]",
       "section": "Filters",
       "caption": "A live feed keeps pulling in new matching reviews. Individual ones can still be excluded by hand."
     },
@@ -44,7 +54,9 @@
       "ms": 900
     },
     {
-      "click": "text=Next",
+      "click": "[data-hook=\"widget-next\"]",
+      "hoverMs": 800,
+      "waitFor": "[data-hook=\"widget-format-radio-group\"]",
       "section": "Presentation",
       "caption": "List, carousel or JSON feed. These three are the only widget types the source documents evidence."
     },
@@ -52,20 +64,14 @@
       "dwell": 6200
     },
     {
-      "click": "text=Next",
-      "dwell": 3000
-    },
-    {
+      "click": "[data-hook=\"widget-next\"]",
+      "hoverMs": 800,
+      "waitFor": "[data-hook=\"design-theme-field\"]",
       "section": "Design",
-      "dwell": 5600,
       "caption": "Design is a small set of discrete choices, with a live preview underneath."
     },
     {
-      "scrollBy": 520,
-      "ms": 950
-    },
-    {
-      "dwell": 4000
+      "dwell": 6000
     }
   ]
 }

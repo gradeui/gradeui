@@ -13,9 +13,11 @@
       "dwell": 3000
     },
     {
+      "click": "[data-hook=\"sources-other-row\"]",
+      "hoverMs": 3200,
       "section": "Grouped sources",
-      "dwell": 4200,
-      "caption": "Anything under two percent is grouped as Other. The legend still carries every source at full count."
+      "caption": "Anything under two percent is grouped as Other. The legend still carries every source at full count.",
+      "dwell": 2200
     },
     {
       "click": "[data-hook=\"perf-view-toggle\"] [aria-label=\"Table view\"]",
@@ -34,20 +36,13 @@
       "dwell": 2500
     },
     {
-      "scrollBy": 540,
-      "ms": 950
-    },
-    {
-      "dwell": 3000
-    },
-    {
-      "scrollBy": 540,
-      "ms": 950
-    },
-    {
+      "scroll": "bottom",
+      "ms": 1200,
       "section": "Timeline",
-      "dwell": 6000,
       "caption": "Below it, the review timeline and the same sources stacked over time."
+    },
+    {
+      "dwell": 6000
     },
     {
       "click": "[data-hook=\"time-view-toggle\"] [aria-label=\"Table view\"]",

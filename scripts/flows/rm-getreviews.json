@@ -14,7 +14,8 @@
       "ms": 950
     },
     {
-      "dwell": 3000
+      "dwell": 3000,
+      "caption": "Two columns of campaign cards, and each card's three numbers read as key and value rows rather than tiles."
     },
     {
       "scroll": "top",
@@ -22,16 +23,28 @@
     },
     {
       "click": "[data-hook=\"campaign-c1-cta\"]",
-      "waitFor": "[data-slot=\"drawer-content\"]",
+      "waitFor": "[data-hook=\"campaign-summary-panel\"]",
       "section": "Campaign",
-      "caption": "A campaign opens as a wide drawer over the hub, so the list stays behind it."
+      "caption": "A campaign is a full page, not an overlay. Its four actions, Re-use, Stop, Preview and Download, sit in the page header beside its name."
     },
     {
       "dwell": 6700
     },
     {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 4200
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
       "click": "[data-hook=\"campaign-tab-feedback\"]",
       "hoverMs": 800,
+      "waitFor": "[data-hook=\"campaign-feedback-panel\"]",
       "section": "Private feedback",
       "caption": "Private feedback is a tab, not a nested page. That is what removed the second level of back links."
     },
@@ -39,13 +52,35 @@
       "dwell": 6700
     },
     {
-      "click": "[data-hook=\"close-campaign\"]",
-      "dwell": 900
+      "click": "[data-hook=\"get-reviews-page-header-breadcrumb\"] li:last-child a",
+      "hoverMs": 900,
+      "waitFor": "[data-hook=\"campaign-c1-cta\"]",
+      "section": "Back to the hub",
+      "caption": "The last crumb, Get Reviews, is the way out. The trail was already naming the parent, so it does the job an in-body back link was doing."
     },
     {
-      "click": "button:has-text(\"New campaign\")",
+      "dwell": 4200
+    },
+    {
+      "click": "[data-hook=\"new-campaign\"]",
+      "waitFor": "[data-hook=\"wizard-card\"]",
       "section": "Wizard",
       "caption": "The campaign wizard. Cancel is a plain button, because cancelling is an action, not a move up the hierarchy."
+    },
+    {
+      "dwell": 4200
+    },
+    {
+      "click": "[data-hook=\"start-fresh-label\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 3000
+    },
+    {
+      "click": "[data-hook=\"wizard-next\"]",
+      "hoverMs": 800,
+      "waitFor": "[data-hook=\"campaign-name-input\"]"
     },
     {
       "dwell": 6200

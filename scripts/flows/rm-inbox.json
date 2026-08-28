@@ -21,7 +21,7 @@
       "ms": 900
     },
     {
-      "click": "tbody tr:nth-child(4) td div",
+      "click": "tbody tr:nth-child(1) td div",
       "waitFor": "[role=\"dialog\"]",
       "section": "Reply panel",
       "caption": "Open a review to reply. AI draft and templates sit above the composer."
@@ -198,7 +198,14 @@
       "dwell": 1400
     },
     {
-      "click": "tbody tr:nth-child(9) td div",
+      "click": "[data-hook=\"reviews-pagination\"] [aria-label=\"Go to page 2\"]",
+      "hoverMs": 800
+    },
+    {
+      "dwell": 2000
+    },
+    {
+      "click": "tbody tr:nth-child(2) td div",
       "waitFor": "[role=\"dialog\"]",
       "section": "AI used up",
       "caption": "Allowance gone. This is the one state worth explaining, so it escalates to an alert."

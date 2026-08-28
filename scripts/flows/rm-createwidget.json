@@ -1,0 +1,109 @@
+{
+  "project": "47e40175-0d55-4d21-960b-26bdf6b01282",
+  "start": "dmtctjykv0feb",
+  "w": 1280,
+  "h": 834,
+  "steps": [
+    {
+      "section": "Create widget",
+      "dwell": 6200,
+      "caption": "Creating a widget is its own screen. No sidebar, no breadcrumbs: a focused linear task on a centred layout, with the header and footer pinned while the step scrolls."
+    },
+    {
+      "click": "[data-hook=\"widget-cancel\"]",
+      "hoverMs": 900,
+      "waitFor": "[data-hook=\"leave-title\"]",
+      "section": "Leaving",
+      "caption": "Cancel now sits next to Next, so it asks first and says what is lost."
+    },
+    {
+      "dwell": 5600
+    },
+    {
+      "click": "button:has-text(\"Keep editing\")",
+      "hoverMs": 700,
+      "waitFor": "[data-hook=\"widget-wizard-stepper\"]"
+    },
+    {
+      "dwell": 2500
+    },
+    {
+      "click": "[data-hook=\"widget-mode-feed-label\"]",
+      "hoverMs": 900,
+      "section": "Choose type",
+      "caption": "Step one asks hand-picked or live feed, because that choice changes every later step."
+    },
+    {
+      "dwell": 4200
+    },
+    {
+      "click": "[data-hook=\"widget-next\"]",
+      "hoverMs": 800,
+      "waitFor": "[data-hook=\"feed-explainer\"]",
+      "section": "Choose the reviews",
+      "caption": "A live feed is a filter set once. Anything new that matches is added to the site on its own."
+    },
+    {
+      "dwell": 6200
+    },
+    {
+      "scrollBy": 500,
+      "ms": 950
+    },
+    {
+      "dwell": 3000
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "click": "[data-hook=\"widget-next\"]",
+      "hoverMs": 800,
+      "waitFor": "[data-hook=\"widget-format-radio-group\"]",
+      "section": "Layout",
+      "caption": "List, carousel or JSON feed, with the preview beside the choice."
+    },
+    {
+      "dwell": 6200
+    },
+    {
+      "click": "[data-hook=\"widget-next\"]",
+      "hoverMs": 800,
+      "waitFor": "[data-hook=\"design-theme-field\"]",
+      "section": "Design",
+      "caption": "Design is a small set of discrete choices. This is the last step, so Next becomes Create widget."
+    },
+    {
+      "dwell": 6000
+    },
+    {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 3600
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "click": "[data-hook=\"widget-save\"]",
+      "hoverMs": 900,
+      "waitFor": "[data-hook=\"create-widget-done\"]",
+      "section": "Ready to embed",
+      "caption": "The payoff of creating a widget is the embed code, so the done state hands it over rather than sending you back to the list to find it."
+    },
+    {
+      "dwell": 6700
+    },
+    {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 4200
+    }
+  ]
+}

@@ -398,7 +398,18 @@ for (const step of flow.steps) {
     // Resolve from/target once (deterministic — same DOM throughout).
     const plan = await iframe(page).evaluate((s) => {
       const vps = [...document.querySelectorAll("[data-radix-scroll-area-viewport]")];
-      const v = vps.sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
+      let v = vps.sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
+      // FALLBACK (28 Aug): a screen OUTSIDE the app shell scrolls in a plain
+      // overflow-y-auto element, not a radix ScrollArea viewport — RM Create
+      // Widget is CentredLayout with a pinned header/footer and a scrolling
+      // middle. Without this, every scroll step on such a screen is a silent
+      // no-op and the payoff below the fold (there, the embed code) never
+      // makes it on camera.
+      if (!v) {
+        v = [...document.querySelectorAll("div,main,section")]
+          .filter((e) => e.scrollHeight - e.clientHeight > 24 && e.clientHeight > 200 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+          .sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
+      }
       if (!v) return null;
       const max = v.scrollHeight - v.clientHeight;
       let target = v.scrollTop;
@@ -419,7 +430,12 @@ for (const step of flow.steps) {
         const top = plan.from + (plan.target - plan.from) * easeInOutQuad(i / steps);
         await iframe(page).evaluate((y) => {
           const vps = [...document.querySelectorAll("[data-radix-scroll-area-viewport]")];
-          const v = vps.sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
+          let v = vps.sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
+          if (!v) {
+            v = [...document.querySelectorAll("div,main,section")]
+              .filter((e) => e.scrollHeight - e.clientHeight > 24 && e.clientHeight > 200 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+              .sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
+          }
           if (v) v.scrollTop = y;
         }, top).catch(() => {});
         await shoot(); // scroll is MOVING — a real screenshot per frame

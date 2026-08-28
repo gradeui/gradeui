@@ -42,7 +42,18 @@
       "caption": "Per-rule history, including a failed send, so auto-reply failures have somewhere to live."
     },
     {
+      "scrollBy": 420,
+      "ms": 950
+    },
+    {
       "dwell": 5600
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "dwell": 2500
     },
     {
       "click": "[data-hook^=\"del-tpl-\"]",
