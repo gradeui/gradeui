@@ -338,6 +338,22 @@ export function PageHeader({
   // Full trail from sm up.
   const backCrumb = trail.length ? trail[trail.length - 1] : null;
 
+  // crumb.onClick — IN-PAGE ancestor. goto carries a screen id and nothing
+  // else, so a screen that swaps its own body (Get Reviews: hub → campaign)
+  // cannot name its parent with one. Without this the only way back is an
+  // in-body back link, which Ali rejected on exactly this screen ("I dont
+  // want weird back links like this"): the trail is already saying where
+  // home is, so the trail should be what takes you there.
+  // preventDefault because the crumb is still an <a href="#">, and letting
+  // it through would scroll the page to the top on the way out.
+  const crumbHandler = (crumb) =>
+    crumb && crumb.onClick
+      ? (event) => {
+          event.preventDefault();
+          crumb.onClick();
+        }
+      : undefined;
+
   const helpButton = help ? (
     // Deliberately quiet ("doesn't need to be mega bright"):
     // muted icon, fills on hover.
@@ -510,6 +526,7 @@ export function PageHeader({
                       href={backCrumb.href ?? "#"}
                       data-grade-goto={backCrumb.goto}
                       data-grade-transition={backCrumb.transition}
+                      onClick={crumbHandler(backCrumb)}
                       className="inline-flex min-w-0 items-center gap-1.5"
                     >
                       <ArrowLeft className="size-4 shrink-0" />
@@ -540,6 +557,7 @@ export function PageHeader({
                           href={crumb.href ?? "#"}
                           data-grade-goto={crumb.goto}
                           data-grade-transition={crumb.transition}
+                          onClick={crumbHandler(crumb)}
                           // Wrap BETWEEN crumbs, never inside one — a crumb
                           // breaking word-per-line reads as layout failure.
                           className="whitespace-nowrap"
