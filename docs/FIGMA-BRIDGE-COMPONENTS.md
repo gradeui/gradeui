@@ -390,7 +390,25 @@ stand-in, so check here before hand-drawing another:
   over time" carries a labelled placeholder box where `Chart / Area Chart`
   belongs.
 - **`Progress` only has 0/25/50/75/100%**, so the funnel and NPS bars are
-  rounded to the nearest quarter rather than showing their true ratios.
+  rounded to the nearest quarter rather than showing their true ratios. On a
+  real distribution that is fatal, not untidy: Review Insights' ratings run
+  836 / 93 / 21 / 13 / 33 / 106 / 14 against a peak of 836, so six of the seven
+  bars snap to zero and the chart reads as one bar and six empty tracks. Those
+  are drawn as track + fill at the true ratio instead, named
+  `rating-bar (hand-drawn: Figma Progress is quantised to 25% steps)`.
+- **The chart components under-report their height.** A `Chart / Line Chart`
+  instance measures 246 tall and draws its x-axis labels BELOW that, outside
+  the frame's bounds, so the next sibling in an auto-layout stack lands on top
+  of the month labels. Leave a spacer, or budget roughly 24px more than the
+  instance says it needs. Forcing the instance shorter makes it worse: the plot
+  squashes and the labels stay where they were.
+- **The chart components carry their own demo data.** `Donut` exposes only
+  `Donut Text` and `Description Text`, the centre pair; the arcs, the axis
+  labels and the series values are baked geometry with no prop to set them. So
+  the Review Insights rebuild carries the right centre figure (1116 reviews)
+  against slice proportions and month labels that belong to the component
+  rather than the product. Changing them means editing vectors inside an
+  instance.
 
 ## Bridge mechanics
 
