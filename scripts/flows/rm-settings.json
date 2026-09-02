@@ -1,0 +1,66 @@
+{
+  "project": "47e40175-0d55-4d21-960b-26bdf6b01282",
+  "start": "dmtkj124xagqa",
+  "w": 1280,
+  "h": 834,
+  "steps": [
+    {
+      "section": "Report settings",
+      "dwell": 6700,
+      "caption": "Everything the RM brief lists under Monitor Reviews that had nowhere to live: the schedule, the directories, the alerts, the share link and the run history. Reached from Review Insights' Settings button, which until now was a control that did nothing."
+    },
+    { "dwell": 2500 },
+    { "scrollBy": 460, "ms": 950 },
+    {
+      "section": "Monitored directories",
+      "dwell": 6200,
+      "caption": "Matched or no profile found, per directory. That is the brief's profile-match panel, as a column rather than a separate panel: a directory you watch but have not matched is the case worth seeing."
+    },
+    {
+      "click": "[data-hook=\"country-select\"]",
+      "hoverMs": 1100,
+      "section": "Country scopes the list",
+      "caption": "Yell and Thomson Local are United Kingdom sites and mean nothing to a US location, so the country decides which directories are even offered."
+    },
+    { "dwell": 3600 },
+    {
+      "click": "[role=\"option\"]:has-text(\"United Kingdom\")",
+      "hoverMs": 800
+    },
+    { "dwell": 5600 },
+    { "scrollBy": 700, "ms": 1100 },
+    {
+      "section": "Email alerts",
+      "dwell": 6700,
+      "caption": "The feature the UX audit says it left out: on or off, as they arrive or once a day, only negative / only positive / everything, and up to five addresses on the DS InputList."
+    },
+    {
+      "click": "[data-hook=\"alerts-switch\"]",
+      "hoverMs": 1000,
+      "waitFor": "[data-hook=\"alerts-off\"]",
+      "section": "Off says what off means",
+      "caption": "Turning alerts off collapses the section to one sentence rather than leaving four greyed-out controls. A disabled control still reads as a setting somebody has to understand."
+    },
+    { "dwell": 5200 },
+    {
+      "click": "[data-hook=\"alerts-switch\"]",
+      "hoverMs": 800,
+      "waitFor": "[data-hook=\"cadence-radio-group\"]"
+    },
+    { "dwell": 2500 },
+    { "scrollBy": 800, "ms": 1100 },
+    {
+      "section": "Sharing",
+      "dwell": 6200,
+      "caption": "A read-only view anyone can open without signing in, and the white-label switch agencies send to their clients. Off by default rather than on."
+    },
+    { "click": "[data-hook=\"copy-share-link\"]", "hoverMs": 1000 },
+    { "dwell": 4200 },
+    { "scrollBy": 800, "ms": 1100 },
+    {
+      "section": "Run history",
+      "dwell": 6700,
+      "caption": "Including the run that only partly succeeded. The brief names unexplained failures as the recurring support theme, so the one row that did not finish says what happened and offers the fix."
+    }
+  ]
+}

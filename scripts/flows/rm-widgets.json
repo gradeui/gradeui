@@ -72,6 +72,45 @@
     },
     {
       "dwell": 6000
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
+      "click": "[data-hook=\"widget-cancel\"]",
+      "hoverMs": 900,
+      "waitFor": "[data-hook=\"leave-title\"]"
+    },
+    {
+      "dwell": 3600
+    },
+    {
+      "click": "button:has-text(\"Discard and leave\")",
+      "hoverMs": 800,
+      "waitFor": "[data-hook=\"widget-w1\"]",
+      "section": "The card",
+      "caption": "One fact per row with a hairline between, not three facts glued into a sentence with interpuncts. Every date is absolute and in the same format the page header uses."
+    },
+    {
+      "dwell": 6200
+    },
+    {
+      "click": "[data-hook=\"widget-w1-delete\"]",
+      "hoverMs": 1000,
+      "waitFor": "[data-hook=\"widget-w1-delete-title\"]",
+      "section": "Delete asks",
+      "caption": "Destructive actions ask in a dialog, never as a red panel inside the card. A red panel reads as an error that has happened rather than a question being asked, and it reflowed the grid around it."
+    },
+    {
+      "dwell": 6200
+    },
+    {
+      "click": "button:has-text(\"Keep it\")",
+      "hoverMs": 800
+    },
+    {
+      "dwell": 2500
     }
   ]
 }

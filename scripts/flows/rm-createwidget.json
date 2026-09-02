@@ -58,6 +58,33 @@
       "ms": 900
     },
     {
+      "scrollBy": 900,
+      "ms": 1100
+    },
+    {
+      "dwell": 5600,
+      "section": "How many to show",
+      "caption": "A live feed has no natural ceiling, so a carousel on a homepage would grow without bound. The cap is feed-only: a hand-picked widget's limit IS the number you picked."
+    },
+    {
+      "click": "[data-hook=\"feed-limit-select\"]",
+      "hoverMs": 1000
+    },
+    {
+      "dwell": 4200
+    },
+    {
+      "click": "[role=\"option\"]:has-text(\"Newest 5\")",
+      "hoverMs": 800
+    },
+    {
+      "dwell": 4200
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
+    {
       "click": "[data-hook=\"widget-next\"]",
       "hoverMs": 800,
       "waitFor": "[data-hook=\"widget-format-radio-group\"]",
