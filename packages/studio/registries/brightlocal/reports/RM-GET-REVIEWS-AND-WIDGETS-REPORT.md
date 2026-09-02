@@ -409,3 +409,189 @@ explicitly out of scope for this round.
   Second seam: there is no store shared across screens, so a widget created on
   the new screen cannot appear in the list afterwards. The done state says the
   widget is ready and shows its embed code rather than pretending.
+
+---
+
+## 6. Second pass, 2 September 2026
+
+Driven by Ali walking the running prototype and by two documents that had not
+been read against it before: the **RM Design Brief** (Charlotte Watts, "Design
+in a state that can be fed back on by end of August 2026") and the legacy
+Figma file *Legacy Reviews Feature BL (Copy)*, which holds screenshots of the
+shipped product.
+
+### 6.1 The likert scale exists, and it is better placed than legacy's
+
+Ali: *"I cant see any kind or likert scale?"*
+
+It is there. The wizard's **Ask** step offers three feedback types — NPS 0 to
+10, thumbs up/down, 5 stars — and `{{feedbackform}}` renders the **live
+control** inside the email preview, not a placeholder.
+
+The legacy product does have an NPS scale, and it is worth seeing where: it
+sits inside the **Edit Template → Email Settings** step, drawn into the email
+body colour-coded red/amber/green with "0 – Not likely" and "10 – Very
+likely" anchors. So in legacy the scale is a property of the *email template*;
+here it is a property of the *campaign*, which is what makes one campaign =
+one ask = one insights page hold together. Same capability, better home.
+
+### 6.2 The gap the audit names in itself
+
+The audit says, of its own clickthrough: *"I have not included the 'set email
+notifications' feature (yet)."* The legacy screens show what it was — a
+modal reading "Would you like to be notified of your Internal Feedback scores
+as email notifications?", with **No/Yes**, **Immediately/Daily**, **Only
+negative / Only positive / Everything**, and **up to 5 email addresses**, plus
+a banner noting "Thumbs and Stars Alerts are not available yet".
+
+That model is now built, on DS components, as the **Email alerts** section of
+`RM — Report Settings`. `InputList` carries the five addresses; the cap is
+enforced in `onValueChange` because InputList has no `maxItems`.
+
+STILL OPEN: legacy has TWO notification surfaces, and only one is built. The
+report-level one (a new REVIEW arrived) is done. The **campaign-level** one
+(internal feedback scores from a Get Reviews campaign) is not, and it belongs
+on the wizard's feedback step, since it only applies to feedback-first
+campaigns.
+
+### 6.3 Everything the brief lists that had nowhere to live
+
+The brief's Monitor Reviews section lists these as shipped today and carrying
+straight over. NONE of them existed anywhere in the prototype, and Review
+Insights' **Settings** button was a control that did nothing when pressed:
+
+| Brief line | Now at |
+|---|---|
+| configure schedule, run day | Report Settings → Schedule |
+| monitored directories | Report Settings → Monitored directories |
+| "panel showing which directories a profile was matched on" | the match badge per row, same list |
+| country-scoped directory picker | the country Select scopes that list |
+| email alerts | Report Settings → Email alerts |
+| public / white-label share link | Report Settings → Sharing |
+| report run history table | Report Settings → Run history |
+| run report on demand | the page header action |
+| PDF export | Insights → Download (was also dead) |
+
+`RM — Report Settings` is `dmtkj124xagqa`. It is a SCREEN, not a dialog: five
+sections, three of them lists that grow, and a genuine reason to own a URL —
+"here is what we monitor for this location" is a thing one person sends
+another, and a dialog cannot be sent.
+
+Deliberately NOT there: create/delete of the report itself. On the new
+platform the report IS the location, so there is no list to add to.
+
+### 6.4 DS findings from this pass
+
+**3.8 `Input` and `Textarea` ship at 16px against 14px labels.** Measured on
+the live email step: control value `text-base` (16px), `FieldLabel` 14px,
+`FieldDescription` 14px, `CardTitle` 24px. 16px on a form control is a
+defensible DS-wide choice — it is the size that stops iOS zooming the page on
+focus — but it is not paired with a matching label size, so the text a user
+TYPES is a full step larger than the label naming it. In a wizard's narrow
+column that is the first thing you see (Ali: *"text is too big here"*).
+Worked around inside `WizardShell` only, as a scoped `<style>` on `data-slot`,
+so one surface deviates deliberately rather than thirty call sites each
+carrying a className. Delete that block when the DS settles its scale.
+
+**3.9 `DropdownMenuTrigger asChild` around a `Button` can take a whole screen
+down.** `<DropdownMenuTrigger asChild><Button dataHook=…><Download/>Download
+</Button></DropdownMenuTrigger>` throws *"Primitive.button failed to slot onto
+its children. Expected a single React element child or `Slottable`"*, and the
+page renders BLANK — not a broken button, no page. Wrapping the icon and the
+label in a single `<span>` did not fix it. Every dropdown trigger elsewhere in
+RM happens to be icon-only, which is why nothing had hit it. Review Insights'
+Download is a `Dialog` now, matching the campaign page, which is the better
+answer anyway: PDF and CSV are two different asks and the dialog has room to
+say which is which.
+
+**3.10 `StatCard`'s label was uppercase, with no knob.** Fixed in the
+component (it is ours, in `@brightlocal/proposal`), not at the call site — it
+is used on five pages. `level="nested"` now steps the number down 30px → 24px
+as well, since the surface was already stepping down and the number was not.
+
+**3.11 `PageHeader` had no slot for a date that is not a freshness stamp.**
+`lastUpdated` hardcodes the words "Last updated", which is right for a report
+and wrong for a campaign, whose date is "Sent March 12, 2026" — a fact about
+the thing, not the age of the data. Added `statusRight`, same position and
+treatment, caller's copy.
+
+### 6.5 Consistency rules now enforced across RM
+
+Ali: *"I think we need some consistency here. There probably aren't that many
+rules."* There were three, and they are:
+
+1. **Destructive actions ask in an `AlertDialog`, never inline.** A red panel
+   opening inside a card reads as an error that has HAPPENED, not a question
+   being asked, and it reflows the grid around it. Was inline on Review
+   Widgets and on Get Reviews draft cards; both are dialogs now, matching
+   Reply Templates' blocked delete and Get Reviews' stop/cancel.
+2. **No interpunct-separated fact strings. Key/value rows.** "Live feed: 5
+   star, 4 star, recommended · Google, Trustpilot · last 12 months" is three
+   facts glued into a sentence that wrapped to two lines on every card.
+   Widget cards and campaign cards are rows now, right-aligned values,
+   hairline between.
+3. **Absolute dates, ONE format, everywhere.** "5 days ago", "Last activity
+   today", "2 hours ago" and "just now" are gone from every RM screen. Every
+   date goes through `formatDate` / `formatDateTime` from
+   `@brightlocal/proposal` — the same functions the page header's Last updated
+   line uses — so a date on a card and a date in a header read identically.
+   Relative dates were also unanchored: two cards both saying "today" tell you
+   nothing about which happened first, and a screenshot of one dates itself.
+
+### 6.6 Wizard changes from the walkthrough
+
+- **Errors moved out of the footer.** They sat inline with Cancel / Back /
+  Next, which is the one row on the page that is about NAVIGATION. `WizardShell`
+  owns an `error` slot now and renders it under the step content as a DS
+  `FieldError`, so all three wizards agree.
+- **The preview pager became tabs.** Arrows told you nothing about how many
+  previews existed, and the circular buttons sat over the frame below and read
+  as part of the preview.
+- **The send step became a contact sheet.** Every page at half scale, real
+  width transformed down so the wrapping is the customer's, any tile opening
+  full size. At "ready to send?" the job is checking everything, which a tab
+  strip cannot show.
+- **"Preview as a customer" did nothing in the wizard.** The drawer was
+  mounted inside the app shell and the wizard returns before it, so the
+  control set state nothing rendered. Mounted in both places.
+- **A campaign has an accent colour**, six DS ramp tokens with grey first and
+  default, remapping `--primary` on the customer surfaces. Nothing in the
+  brief specifies a branding model for Get Reviews; this is the smallest one
+  that stops the customer seeing BrightLocal's green on a page that belongs to
+  the business.
+- **Stars went gold.** `fill-primary` made them green. A green star does not
+  read as a rating, and amber is what every review site uses. It stays amber
+  whatever the accent colour is: the star is a unit, like a percent sign.
+- **No logo means no mark.** A lettered monogram used to stand in. Initials
+  are an avatar convention — they replace a missing photo of a PERSON. A
+  business that has not given us a logo has not given us one, and inventing a
+  monogram puts something on a customer's screen the business never approved.
+- **The feed has a review cap.** "Newest 3 / 5 / 10 / 20", feed-only: a
+  hand-picked widget's limit IS the number picked, so a second number that
+  could disagree with it is a contradiction. Without it a carousel on a
+  homepage grows without bound.
+
+### 6.7 The wizards are not all screens, and one of them cannot be
+
+Worth stating plainly, because they look identical:
+
+| Wizard | Its own screen? |
+|---|---|
+| Create Widget | YES — `dmtctjykv0feb` |
+| Edit widget | no, a view inside `RM — Review Widgets` |
+| Get Reviews campaign | no, a view inside `RM — Get Reviews` |
+
+All three render the same `WizardShell`, full page, out of the app shell. Only
+the first is a row in `designs`.
+
+`data-grade-goto` carries a screen id and NOTHING ELSE, so it cannot say WHICH
+widget or WHICH campaign to open. Creating carries no record, so it can be a
+screen; editing carries one, so it cannot. Same reason the widget detail is a
+drawer.
+
+The campaign wizard COULD be split the same way, since "new campaign" carries
+no record either. The cost is that it leans on ~900 lines it shares with the
+campaign page (`CustomerPage`, `EmailPreview`, `SmsPreview`, `PreviewSheet`,
+the brand palette, the credits flow, `buildFlow`), so doing it properly means
+lifting that set into a registry lib module the way `wizard-shell` went, then
+re-pointing the capture states, the three branch flows and a new share token.
