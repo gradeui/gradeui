@@ -11926,6 +11926,12 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
         "optional": true,
         "description": "Timestamp shown muted at the RIGHT of the status row, level with the description — the arrangement BrightLocal's replatformed header uses. Renders as \"Last updated August 13, 2026\" (their format: month first, no ordinal, no colon), and when the source string carries a time the DATE is dot-underlined with the full stamp (\"August 13, 2026 at 10:20 AM UTC\") on hover or keyboard focus. That affordance is built in — never hand-roll a tooltip on a header date. Pass \"auto\" to BIND data.aiInsights.lastUpdated (the AI Insights pages own it — it was removed from the AreaInsights header so it lives in ONE place); any other string renders literally; omit to hide."
       },
+      "statusRight": {
+        "kind": "unknown",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Node shown muted at the RIGHT of the status row, same position and 12px treatment as `lastUpdated` but with copy of your own. For a date that is a FACT about the thing rather than the age of the data (\"Sent 12 Mar 2026\", \"Live since 3 May 2026\"), which \"Last updated\" would mislabel. Only one of the two renders — `lastUpdated` wins."
+      },
       "meta": {
         "kind": "unknown",
         "design": "plumbing",

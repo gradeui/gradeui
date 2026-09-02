@@ -241,6 +241,10 @@ export function PageHeader({
   // STRING because the contract types this prop as a string — a boolean
   // fails save validation.)
   lastUpdated,
+  // Right-hand status node, in the same slot and treatment as
+  // "Last updated" but with copy of the caller's choosing. See the note
+  // where it renders.
+  statusRight,
   // The reserved status row itself (see ROW 3 below). It is on by
   // default and holds its 22px whether or not anything fills it; pass
   // status={false} on a screen that genuinely wants the space back.
@@ -675,6 +679,27 @@ export function PageHeader({
               </div>
             ) : null}
           </div>
+          {/* THE RIGHT-HAND STATUS SLOT, for a date that is not a
+              freshness stamp (Ali, 2 Sep: "any dates would end up on the
+              right hand side, and be formatted in a similar fashion to
+              'last updated' on the other screens").
+              `lastUpdated` hardcodes the words "Last updated", which is
+              right for a report and wrong for a campaign — that date is
+              "sent 12 Mar 2026" or "live since 3 May 2026", a fact about
+              the thing, not about the data's age. `statusRight` takes any
+              node and gives it the same position and the same 12px muted
+              treatment, so the two read as one convention across the tool
+              instead of one page inventing a subtitle for its date. Only
+              one of the two renders; `lastUpdated` wins, because a page
+              that passes both has a bug. */}
+          {!lastUpdatedValue && statusRight ? (
+            <span
+              data-hook={`${dataHook}-status-right`}
+              className="shrink-0 text-xs text-muted-foreground sm:ml-auto"
+            >
+              {statusRight}
+            </span>
+          ) : null}
           {lastUpdatedValue ? (
             <span
               data-hook={`${dataHook}-last-updated`}
@@ -852,8 +877,22 @@ const STAT_TONES = {
   neutral: { value: "", icon: "text-muted-foreground", badge: "" },
 };
 
+// SENTENCE CASE, NOT UPPERCASE (Ali, 2 Sep: "no capitalisation of the
+// labels"). The label was `text-xs font-semibold uppercase`, which is the
+// dashboard-tile idiom from about 2015 and has two real costs: SMALL CAPS AT
+// 12PX IS THE HARDEST COMBINATION TO READ ON A SCREEN, because uppercase
+// strips the ascender/descender shape that word recognition runs on, and
+// screen readers spell some of them out. "Reviews gained" also loses its
+// meaning as a phrase when it becomes REVIEWS GAINED, which reads as two
+// tokens.
+//
+// Changed in the COMPONENT, not at the call sites: StatCard is used on the
+// AI Insights pages, rankings, Local Search Grid and the RM campaign
+// summary, and a className at each of those is how a design system stops
+// being one.
 export function StatCard({
-  // Small uppercase label above the value ("Average Position").
+  // Small label above the value ("Average position"). Sentence case: write
+  // it the way you would say it.
   label,
   // Data binding: key into data.metrics — value/delta read from the
   // proposal data context at render position (dataset switches reach
@@ -906,7 +945,7 @@ export function StatCard({
     >
       <CardContent>
         <div className="flex items-start justify-between gap-2">
-          <TypographyMuted className="text-xs font-semibold uppercase">
+          <TypographyMuted className="text-xs font-medium">
             {label}
           </TypographyMuted>
           {info ? (
@@ -929,8 +968,15 @@ export function StatCard({
             </TooltipProvider>
           ) : null}
         </div>
+        {/* A NESTED TILE IS A SMALLER TILE. `level="nested"` already steps
+            the surface down to the neutral tier; the number has to come
+            down with it, or a row of stats sitting INSIDE a module card
+            shouts louder than the card's own title. 30px on the canvas,
+            24px on another card. */}
         <div className="mt-1 flex items-baseline gap-2">
-          <span className={`text-3xl font-bold tracking-tight ${t.value}`}>
+          <span
+            className={`font-bold tracking-tight ${level === "nested" ? "text-2xl" : "text-3xl"} ${t.value}`}
+          >
             {value}
           </span>
           {delta ? (
