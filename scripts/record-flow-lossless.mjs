@@ -326,7 +326,37 @@ for (const step of flow.steps) {
       for (let i = 0; i < hn; i++) await shoot();
     }
     await armVT(iframe(page));   // patch + arm the VT hook in the sandbox frame
-    await iframe(page).locator(step.click).first().click();
+
+    // DISPATCH IN-FRAME, DO NOT LET PLAYWRIGHT AIM (2 Sep). A real
+    // locator.click() computes page coordinates from the iframe's box and
+    // clicks there. Inside the share sandbox that mapping is off, and the
+    // error GROWS WITH X: left-hand targets land, far-right ones miss.
+    // "New campaign" at x=1099 was clicked, reported success, and did
+    // nothing — the four Get Reviews flows all died on the step AFTER it,
+    // which is the worst possible way for this to fail because the click
+    // itself never errors.
+    //
+    // The element is still resolved BY PLAYWRIGHT, so `:has-text()` and
+    // every other engine-specific selector in the flows keeps working; only
+    // the pointer sequence moves in-frame. Same events capture-states.mjs
+    // sends, including the pointerover/pointermove that Radix menu and
+    // select items need before they will commit.
+    const handle = await iframe(page).locator(step.click).first().elementHandle();
+    if (!handle) throw new Error(`click target not found: ${step.click}`);
+    await handle.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const o = {
+        bubbles: true, cancelable: true, composed: true, pointerType: "mouse",
+        isPrimary: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, button: 0,
+      };
+      el.dispatchEvent(new PointerEvent("pointerover", o));
+      el.dispatchEvent(new PointerEvent("pointermove", o));
+      el.dispatchEvent(new PointerEvent("pointerdown", o));
+      el.dispatchEvent(new MouseEvent("mousedown", o));
+      el.dispatchEvent(new PointerEvent("pointerup", o));
+      el.dispatchEvent(new MouseEvent("mouseup", o));
+      el.dispatchEvent(new MouseEvent("click", o));
+    });
 
     // Did a native view transition start? The goto round-trips via
     // postMessage before the sandbox's render() calls startViewTransition,
