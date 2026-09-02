@@ -85,9 +85,9 @@ const FIGMA_PAGE = {
   inbox: "Brightlocal - Review Inbox",
   insights: "Brightlocal - Review Insights",
   widgets: "Brightlocal - Review Widgets",
-  createwidget: "Brightlocal - Create Widgets",
+  createwidget: "Brightlocal - Review Widgets - Create Widgets",
   getreviews: "Brightlocal - Get Reviews",
-  templates: "Brightlocal - Reply Templates",
+  templates: "Brightlocal - Review Inbox - Reply Templates",
   settings: "Brightlocal - Report Settings",
 };
 const sectionOf = (name) => name.split("-")[0];
@@ -207,6 +207,30 @@ async function sendOn(page, row, settle = 1800) {
 // own overflow container, so document.scrollingElement.scrollTop moves
 // nothing and the "scrolled" frame came out byte-identical to the top of
 // the page (27 Aug). Find the deepest element with real overflow instead.
+// Scroll until a given hook is at the top of the scroller. Two settings
+// frames came out BYTE-IDENTICAL because they asked for y=2100 and y=3000
+// on a page barely 2600 tall, so both landed at the bottom — and both
+// passed their assertions, because the assertion only asks whether the
+// element EXISTS, not whether it is on screen. Pixel offsets are a guess
+// about a page's height; this is not.
+async function scrollToHook(page, hook, offset = 24) {
+  const moved = await inFrame(page, ({ sel, off }) => {
+    let best = null, most = 0;
+    for (const el of document.querySelectorAll("*")) {
+      const over = el.scrollHeight - el.clientHeight;
+      if (over > most && el.clientHeight > 300) { best = el; most = over; }
+    }
+    const target = best || document.scrollingElement || document.documentElement;
+    const node = document.querySelector(sel);
+    if (!node) return { found: false };
+    const top = node.getBoundingClientRect().top - target.getBoundingClientRect().top + target.scrollTop;
+    target.scrollTop = Math.max(0, top - off);
+    return { found: true, scrollTop: target.scrollTop, max: most };
+  }, { sel: hook, off: offset });
+  await wait(1000);
+  return moved;
+}
+
 async function scrollTo(page, y) {
   const scrolled = await inFrame(page, (top) => {
     let best = null;
@@ -308,6 +332,14 @@ async function campaignWizardTo(page, branch, step) {
   await press(page, '[data-hook="wizard-next"]');
   await wait(900);
 
+  // A BRANCHING STEP MUST SHOW ITS ANSWER. Walking to `channel` stops
+  // BEFORE the option is pressed, so the email branch's channel frame and
+  // the link branch's channel frame were the same untouched radio group —
+  // byte-identical files, both passing an assertion that only asks whether
+  // the group exists. The frame is captioned as the branch, so it has to
+  // show the branch: press this branch's answer on arrival.
+  const answerFor = { ask: flow.ask, channel: flow.channel, reminder: flow.reminder };
+
   for (let i = 0; i < stop; i += 1) {
     const here = flow.steps[i];
     // The branching answers, and the two steps that need an input before
@@ -338,6 +370,11 @@ async function campaignWizardTo(page, branch, step) {
     await wait(400);
     await press(page, '[data-hook="wizard-next"]');
     await wait(1000);
+  }
+
+  if (answerFor[step]) {
+    await press(page, `[data-hook="${step}-${answerFor[step]}-label"]`);
+    await wait(500);
   }
 }
 
@@ -674,13 +711,13 @@ const STATES = [
      && !!document.querySelector('[data-hook="frequency-select"]')
      && !!document.querySelector('[data-hook="run-now"]')`,
     "Report settings. Schedule first, because when the report runs is the setting everything else depends on. Run report now sits in the page header: it acts on the report, not on any one section, and it does not move the schedule."],
-  ["settings-02-directories", "settings", async (p) => { await scrollTo(p, 420); },
+  ["settings-02-directories", "settings", async (p) => { await scrollToHook(p, '[data-hook="directories-card"]'); },
     `!!document.querySelector('[data-hook="directories-card"]')
      && !!document.querySelector('[data-hook="country-select"]')
      && !!document.querySelector('[data-hook="directory-google-matched"]')`,
     "Monitored directories, scoped by country: Yell and Thomson Local are United Kingdom sites and mean nothing to a US location. Matched / no profile found is a badge per row rather than a separate panel, because a directory you watch but have not matched is the case worth seeing."],
   ["settings-03-directories-uk", "settings", async (p) => {
-    await scrollTo(p, 420);
+    await scrollToHook(p, '[data-hook="directories-card"]');
     await press(p, '[data-hook="country-select"]');
     await wait(600);
     await pressText(p, "United Kingdom", '[role="option"]');
@@ -689,25 +726,25 @@ const STATES = [
     `!!document.querySelector('[data-hook="directory-yell"]')
      && !document.querySelector('[data-hook="directory-bbb"]')`,
     "Switching country switches which directories are even offered, and re-derives the selection. A US report silently monitoring Thomson Local is the kind of thing that makes a settings page untrustworthy."],
-  ["settings-04-alerts", "settings", async (p) => { await scrollTo(p, 1200); },
+  ["settings-04-alerts", "settings", async (p) => { await scrollToHook(p, '[data-hook="alerts-card"]'); },
     `!!document.querySelector('[data-hook="alerts-card"]')
      && !!document.querySelector('[data-hook="cadence-radio-group"]')
      && !!document.querySelector('[data-hook="recipients-list"]')`,
     "Email alerts: on or off, as they arrive or once a day, only negative / only positive / everything, and up to five addresses on the DS InputList. This is the legacy feature the UX audit explicitly left out of its prototype."],
   ["settings-05-alerts-off", "settings", async (p) => {
-    await scrollTo(p, 1200);
+    await scrollToHook(p, '[data-hook="alerts-card"]');
     await press(p, '[data-hook="alerts-switch"]');
     await wait(600);
   },
     `!!document.querySelector('[data-hook="alerts-off"]')
      && !document.querySelector('[data-hook="cadence-radio-group"]')`,
     "Off collapses the section to one sentence rather than leaving four disabled controls on screen. A disabled control still reads as a setting somebody has to understand."],
-  ["settings-06-sharing", "settings", async (p) => { await scrollTo(p, 2100); },
+  ["settings-06-sharing", "settings", async (p) => { await scrollToHook(p, '[data-hook="sharing-card"]'); },
     `!!document.querySelector('[data-hook="sharing-card"]')
      && !!document.querySelector('[data-hook="share-url-input"]')
      && !!document.querySelector('[data-hook="white-label-switch"]')`,
     "The public share link and the white-label switch. Agencies send this to their clients, so removing BrightLocal's branding is off by default rather than on."],
-  ["settings-07-history", "settings", async (p) => { await scrollTo(p, 3000); },
+  ["settings-07-history", "settings", async (p) => { await scrollToHook(p, '[data-hook="history-card"]'); },
     `!!document.querySelector('[data-hook="history-table"]')
      && !!document.querySelector('[data-hook="run-r4-state"]')
      && !!document.querySelector('[data-hook="history-note"]')`,
