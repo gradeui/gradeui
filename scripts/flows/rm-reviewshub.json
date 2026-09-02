@@ -1,0 +1,24 @@
+{
+  "project": "47e40175-0d55-4d21-960b-26bdf6b01282",
+  "start": "dmrotrhbcxk66",
+  "w": 1280,
+  "h": 834,
+  "steps": [
+    {
+      "section": "Reviews hub",
+      "dwell": 6200,
+      "caption": "Reputation Manager's four sub-tools on one page: Review Inbox, Review Insights, Get Reviews and Review Widgets. The hub is the only screen that names the whole tool, so the nav below it can stay flat."
+    },
+    { "scrollBy": 420, "ms": 950 },
+    { "dwell": 3000 },
+    { "scroll": "top", "ms": 900 },
+    {
+      "click": "[data-hook=\"reviews-hub-inbox\"]",
+      "hoverMs": 1400,
+      "waitFor": "table",
+      "section": "Into the inbox",
+      "caption": "Each card is a link, not a summary. Monitor Reviews is the foundational area, so the inbox is the first card and the default destination."
+    },
+    { "dwell": 6000 }
+  ]
+}

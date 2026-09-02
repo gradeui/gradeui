@@ -53,7 +53,10 @@ const arg = (k, d) => {
   return m ? m.slice(k.length + 3) : d;
 };
 const BASE = arg("base", "http://localhost:3000");
-const ONLY = arg("only", null);
+// --only is a comma-separated list of SUBSTRINGS, any of which selects a
+// state. A single name is the common case ("--only=inbox-04"); a list is
+// what you want after a run to re-shoot just the frames that failed.
+const ONLY = (arg("only", null) || "").split(",").map((x) => x.trim()).filter(Boolean);
 // --section=reviewshub|inbox|insights|templates|widgets|getreviews|createwidget (repeatable, comma
 // separated). Sections are the unit Ali thinks in, and the unit a demo video
 // is cut in, so the suite runs one section at a time by default rather than
@@ -85,6 +88,7 @@ const FIGMA_PAGE = {
   createwidget: "Brightlocal - Create Widgets",
   getreviews: "Brightlocal - Get Reviews",
   templates: "Brightlocal - Reply Templates",
+  settings: "Brightlocal - Report Settings",
 };
 const sectionOf = (name) => name.split("-")[0];
 const dirFor = (name) => {
@@ -112,6 +116,12 @@ const SCREENS = {
   widgets: "0609abbe-f208-4d91-858e-e5335f8cecbe",
   getreviews: "782021bd-1332-48b8-a22b-5316b520fc20",
   createwidget: "35af1f77-ff09-43ea-b86e-534568cfeb8f",
+  // RM — Report Settings (dmtkj124xagqa), new 2 Sep. The configuration
+  // surface behind Review Insights' Settings button, which was a dead
+  // control until it had somewhere to go. Minted with
+  // apps/mcp-server/scripts/make-share.mts, which is now the way to get a
+  // token for any screen added to this suite.
+  settings: "49a8ae62-91bf-49a9-a008-f3bd26d34cde",
 };
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -124,6 +134,16 @@ const PRESS = `(el) => {
   const r = el.getBoundingClientRect();
   const o = { bubbles:true, cancelable:true, composed:true, pointerType:'mouse',
               isPrimary:true, clientX:r.left+r.width/2, clientY:r.top+r.height/2, button:0 };
+  // POINTER MOVE FIRST. Radix menu and select items only commit on
+  // pointerup if the pointer has ENTERED them: SelectItem's onPointerMove
+  // is what marks the item highlighted, and onPointerUp then selects the
+  // highlighted one. Without these two events the whole sequence below
+  // lands on the item and nothing happens — the menu just stays open,
+  // which is exactly how settings-03 failed (2 Sep). Harmless on every
+  // other target, so it lives in the shared helper rather than in one
+  // state's setup.
+  el.dispatchEvent(new PointerEvent('pointerover', o));
+  el.dispatchEvent(new PointerEvent('pointermove', o));
   el.dispatchEvent(new PointerEvent('pointerdown', o));
   el.dispatchEvent(new MouseEvent('mousedown', o));
   el.dispatchEvent(new PointerEvent('pointerup', o));
@@ -218,29 +238,159 @@ async function spendAi(page, row) {
   await wait(700);
 }
 
+// Walk the GET REVIEWS campaign wizard to a named step, down a named
+// BRANCH. The flow is DERIVED from two answers (ask and channel), so a
+// step list is meaningless without them: the email branch is twelve
+// steps, the link branch is five, and `sites` sits at a different index
+// in each. `buildFlow` in the screen source is the authority; this
+// mirrors it, and `CAMPAIGN_FLOWS` below must be kept in step with it.
+//
+// Ali, 2 Sep: "Wizards can be captured as one flow for each branch." One
+// still per step per branch is what makes an incomplete wizard visible —
+// a single frame of step one looked finished and was not.
+const CAMPAIGN_FLOWS = {
+  // feedback-first, email, with the reminder turned on
+  email: {
+    ask: "feedback",
+    channel: "email",
+    reminder: "yes",
+    steps: ["name", "ask", "feedback", "channel", "email", "reminder", "reminder-design",
+            "sites", "recipients", "columns", "check", "send"],
+  },
+  // straight to a public review, by text, no reminder
+  sms: {
+    ask: "review",
+    channel: "sms",
+    reminder: "no",
+    steps: ["name", "ask", "channel", "sms", "reminder", "sites", "recipients",
+            "columns", "check", "send"],
+  },
+  // feedback-first, web link / kiosk. No message, no audience, no send.
+  link: {
+    ask: "feedback",
+    channel: "link",
+    steps: ["name", "ask", "feedback", "channel", "sites", "golive"],
+  },
+};
+
+// A step is proved by a hook that exists ONLY on that step. `email` and
+// `reminder-design` both render the email editor, so the reminder step is
+// identified by `reminder-timing`, which the first email does not have.
+const CAMPAIGN_PROOF = {
+  name: '[data-hook="campaign-name-input"]',
+  ask: '[data-hook="ask-radio-group"]',
+  feedback: '[data-hook="feedback-type-field"]',
+  channel: '[data-hook="channel-radio-group"]',
+  email: '[data-hook="email-subject-input"]',
+  sms: '[data-hook="sms-body-input"]',
+  reminder: '[data-hook="reminder-radio-group"]',
+  "reminder-design": '[data-hook="reminder-timing"]',
+  sites: '[data-hook="site-add"]',
+  recipients: '[data-hook="contacts-upload"]',
+  columns: '[data-hook="csv-map-table"]',
+  check: '[data-hook="toggle-exclusions"]',
+  send: '[data-hook="preview-as-customer"]',
+  golive: '[data-hook="link-note"]',
+};
+
+async function campaignWizardTo(page, branch, step) {
+  const flow = CAMPAIGN_FLOWS[branch];
+  if (!flow) throw new Error("unknown campaign branch: " + branch);
+  const stop = flow.steps.indexOf(step);
+  if (stop < 0) throw new Error(`step ${step} is not on the ${branch} branch`);
+
+  await press(page, '[data-hook="new-campaign"]');
+  await wait(900);
+  // The start step advances from the footer, but only once an option is
+  // picked: Next with nothing chosen sets an error and stays put.
+  await press(page, '[data-hook="start-fresh-label"]');
+  await wait(400);
+  await press(page, '[data-hook="wizard-next"]');
+  await wait(900);
+
+  for (let i = 0; i < stop; i += 1) {
+    const here = flow.steps[i];
+    // The branching answers, and the two steps that need an input before
+    // Next will move. Everything else is prefilled by the seed.
+    if (here === "ask") await press(page, `[data-hook="ask-${flow.ask}-label"]`);
+    if (here === "channel") await press(page, `[data-hook="channel-${flow.channel}-label"]`);
+    if (here === "reminder") await press(page, `[data-hook="reminder-${flow.reminder}-label"]`);
+    if (here === "recipients") {
+      // SMS blocks on the country before it will look at the CSV: the
+      // country sets the credit rate, so `validate()` refuses to move
+      // without it ("Choose the country of your contacts first"). The
+      // email branch has no country control at all.
+      if (flow.channel === "sms") {
+        await press(page, '[data-hook="country-USA-label"]');
+        await wait(300);
+      }
+      await press(page, '[data-hook="contacts-upload"]');
+    }
+    // The last gate before Send: two confirmations that both default to
+    // false, so Next on this step sets an error and stays put unless
+    // they are ticked. This is why the two `send` frames failed on the
+    // first run while every step before them passed.
+    if (here === "check") {
+      await press(page, '[data-hook="confirm-permission-label"]');
+      await wait(250);
+      await press(page, '[data-hook="confirm-privacy-label"]');
+    }
+    await wait(400);
+    await press(page, '[data-hook="wizard-next"]');
+    await wait(1000);
+  }
+}
+
 // Walk the CREATE WIDGET screen's wizard to a named step. Every state
 // reloads the embed from scratch, so each one re-walks the chain rather
 // than sharing a page. Driven by data-hook, never by pressText("Next"):
 // the reviews step carries a DataTablePagination whose own control is
 // also called Next, and a text lookup can pick the wrong one.
 const WIDGET_WIZARD_STEPS = ["type", "reviews", "format", "design", "done"];
-async function widgetWizardTo(page, step) {
+// `mode` is the branch: "feed" is a filter that keeps itself current,
+// "picked" is a fixed set chosen by hand. They share four step ids but
+// not their contents — the reviews step is an explainer plus filters on
+// one and a selection table on the other — so both branches need frames
+// (Ali, 2 Sep: "wizards can be captured as one flow for each branch").
+async function widgetWizardTo(page, step, mode = "feed") {
   const stop = WIDGET_WIZARD_STEPS.indexOf(step);
   if (stop < 0) throw new Error("unknown widget wizard step: " + step);
   if (stop === 0) return;
-  // Live feed rather than hand-picked. The feed branch is the one that
-  // carries the explainer and the review picker, and it is the branch the
-  // old in-page states captured, so the frames stay comparable.
-  await press(page, '[data-hook="widget-mode-feed-label"]');
+  await press(page, `[data-hook="widget-mode-${mode}-label"]`);
   await wait(600);
-  for (let i = 0; i < stop - 1; i += 1) {
-    await press(page, '[data-hook="widget-next"]');
+  // ONE PRESS PER STEP CROSSED, and the gate for the step we are ON is
+  // satisfied BEFORE that step's press — not on the one before it. The
+  // first version guarded inside a `stop - 1` loop, so the last press
+  // never got its gate: `format` (stop 2) tried to leave the reviews step
+  // with nothing selected and stayed put, while `done` (stop 4) happened
+  // to pass through the guard on an earlier iteration and worked. Two
+  // states from the same walker disagreeing about whether the walker
+  // works is exactly the failure this comment exists to prevent.
+  for (let i = 0; i < stop; i += 1) {
+    const here = WIDGET_WIZARD_STEPS[i];
+    // HAND-PICKED BLOCKS ON AN EMPTY SELECTION: next() refuses with
+    // "Choose at least one review to continue." The live-feed branch has
+    // no such gate, because a filter matching nothing is still a valid
+    // filter.
+    if (here === "reviews" && mode === "picked") {
+      const hooks = await inFrame(page, () =>
+        [...document.querySelectorAll('[data-hook^="picker-select-"]')]
+          .map((el) => el.getAttribute("data-hook"))
+          .filter((h) => h !== "picker-select-all")
+          .slice(0, 3),
+      );
+      for (const hook of hooks) {
+        await press(page, `[data-hook="${hook}"]`);
+        await wait(250);
+      }
+      await wait(400);
+    }
+    // The last step swaps Next for Save, and Save is what produces the
+    // done state with the embed code.
+    const last = i === stop - 1 && step === "done";
+    await press(page, `[data-hook="widget-${last ? "save" : "next"}"]`);
     await wait(1000);
   }
-  // The last step swaps Next for Save, and Save is what produces the done
-  // state with the embed code.
-  await press(page, `[data-hook="widget-${step === "done" ? "save" : "next"}"]`);
-  await wait(1000);
 }
 
 async function hover(page, selector) {
@@ -446,15 +596,17 @@ const STATES = [
   // directly instead.
   //
   // EDITING is still in page, and that is what this state covers.
-  // Worth knowing: the list screen's own copy of the wizard still wears
-  // the old "STEP 1 OF 4" eyebrow plus a Progress bar
-  // (`[data-hook="widget-progress"]`), while the create screen has moved
-  // to the DS Stepper. Not asserted on, because the two are expected to
-  // converge, but that is why an edit frame and a create frame do not
-  // look alike today.
+  // The two wizards HAVE now converged (2 Sep): both render
+  // `WizardShell` from `@brightlocal/wizard-shell`, so the edit frame and
+  // the create frame differ only in their title and their entry point.
+  // The old "STEP 1 OF 4" eyebrow and `[data-hook="widget-progress"]` are
+  // gone from both, which is why the assertion below can require the
+  // stepper and forbid the progress bar on this screen too.
   ["widgets-02-edit-wizard", "widgets", async (p) => { await press(p, '[data-hook="widget-w1-edit"]'); },
     `!!document.querySelector('[data-hook="widget-wizard-card"]')
-     && !!document.querySelector('[data-hook="widget-mode-radio-group"]')`,
+     && !!document.querySelector('[data-hook="widget-mode-radio-group"]')
+     && !!document.querySelector('[data-hook="widget-wizard-stepper"]')
+     && !document.querySelector('[data-hook="widget-progress"]')`,
     "Editing an existing widget stays on the list screen: it is a change to something that already exists, not a new linear task, so it does not earn its own page."],
   // By hook, not by pressText("View"): every widget card carries a View
   // button, so the text lookup silently depended on DOM order.
@@ -492,6 +644,74 @@ const STATES = [
   ["createwidget-05-done", "createwidget", async (p) => { await widgetWizardTo(p, "done"); },
     `!!document.querySelector('[data-hook="create-widget-done"]')`,
     "The payoff. Saving hands over the embed code on the spot rather than sending you back to the list to go and find it, and the only way on is the button back to Review Widgets."],
+
+  // THE OTHER BRANCH. Hand-picked and live feed diverge at step two and
+  // never rejoin in content, so a set of frames from one branch is not a
+  // record of the wizard. 06-08 shoot the picked branch's own steps; the
+  // type step is shared and is already 01.
+  ["createwidget-06-picked-reviews", "createwidget", async (p) => { await widgetWizardTo(p, "reviews", "picked"); },
+    `!!document.querySelector('[data-hook="picker-table"]')
+     && !document.querySelector('[data-hook="feed-explainer"]')`,
+    "Hand-picked: a fixed set, chosen row by row on the DS DataTable, so selection, select-all, search and paging behave exactly as they do in Review Inbox. No explainer, because nothing changes on its own after this."],
+  ["createwidget-07-picked-format", "createwidget", async (p) => { await widgetWizardTo(p, "format", "picked"); },
+    `!!document.querySelector('[data-hook="widget-format-radio-group"]')`,
+    "The layout step is the same on both branches: what was chosen does not change how it is drawn."],
+  ["createwidget-08-picked-done", "createwidget", async (p) => { await widgetWizardTo(p, "done", "picked"); },
+    `!!document.querySelector('[data-hook="create-widget-done"]')`,
+    "Both branches end in the same place, holding the embed code."],
+
+  // ── Report Settings ────────────────────────────────────────────────
+  // NEW SCREEN, 2 Sep (design dmtkj124xagqa). Everything the RM Design
+  // Brief lists under Monitor Reviews that previously had no home at all:
+  // schedule and run day, the country-scoped directory picker doubling as
+  // the profile-match panel, email alerts (the audit's own acknowledged
+  // gap — "I have not included the 'set email notifications' feature
+  // (yet)"), the public / white-label share link, and the run history
+  // table. Reached from Review Insights' Settings button, which until now
+  // was a control that did nothing.
+  ["settings-01-schedule", "settings", async () => {},
+    `!!document.querySelector('[data-hook="schedule-card"]')
+     && !!document.querySelector('[data-hook="frequency-select"]')
+     && !!document.querySelector('[data-hook="run-now"]')`,
+    "Report settings. Schedule first, because when the report runs is the setting everything else depends on. Run report now sits in the page header: it acts on the report, not on any one section, and it does not move the schedule."],
+  ["settings-02-directories", "settings", async (p) => { await scrollTo(p, 420); },
+    `!!document.querySelector('[data-hook="directories-card"]')
+     && !!document.querySelector('[data-hook="country-select"]')
+     && !!document.querySelector('[data-hook="directory-google-matched"]')`,
+    "Monitored directories, scoped by country: Yell and Thomson Local are United Kingdom sites and mean nothing to a US location. Matched / no profile found is a badge per row rather than a separate panel, because a directory you watch but have not matched is the case worth seeing."],
+  ["settings-03-directories-uk", "settings", async (p) => {
+    await scrollTo(p, 420);
+    await press(p, '[data-hook="country-select"]');
+    await wait(600);
+    await pressText(p, "United Kingdom", '[role="option"]');
+    await wait(600);
+  },
+    `!!document.querySelector('[data-hook="directory-yell"]')
+     && !document.querySelector('[data-hook="directory-bbb"]')`,
+    "Switching country switches which directories are even offered, and re-derives the selection. A US report silently monitoring Thomson Local is the kind of thing that makes a settings page untrustworthy."],
+  ["settings-04-alerts", "settings", async (p) => { await scrollTo(p, 1200); },
+    `!!document.querySelector('[data-hook="alerts-card"]')
+     && !!document.querySelector('[data-hook="cadence-radio-group"]')
+     && !!document.querySelector('[data-hook="recipients-list"]')`,
+    "Email alerts: on or off, as they arrive or once a day, only negative / only positive / everything, and up to five addresses on the DS InputList. This is the legacy feature the UX audit explicitly left out of its prototype."],
+  ["settings-05-alerts-off", "settings", async (p) => {
+    await scrollTo(p, 1200);
+    await press(p, '[data-hook="alerts-switch"]');
+    await wait(600);
+  },
+    `!!document.querySelector('[data-hook="alerts-off"]')
+     && !document.querySelector('[data-hook="cadence-radio-group"]')`,
+    "Off collapses the section to one sentence rather than leaving four disabled controls on screen. A disabled control still reads as a setting somebody has to understand."],
+  ["settings-06-sharing", "settings", async (p) => { await scrollTo(p, 2100); },
+    `!!document.querySelector('[data-hook="sharing-card"]')
+     && !!document.querySelector('[data-hook="share-url-input"]')
+     && !!document.querySelector('[data-hook="white-label-switch"]')`,
+    "The public share link and the white-label switch. Agencies send this to their clients, so removing BrightLocal's branding is off by default rather than on."],
+  ["settings-07-history", "settings", async (p) => { await scrollTo(p, 3000); },
+    `!!document.querySelector('[data-hook="history-table"]')
+     && !!document.querySelector('[data-hook="run-r4-state"]')
+     && !!document.querySelector('[data-hook="history-note"]')`,
+    "Run history, including the run that only partly succeeded. The brief names unexplained failures as the recurring support theme, so the one row that did not finish says what happened and offers the fix."],
 
   // ── Get Reviews ─────────────────────────────────────────────────────
   // THE CAMPAIGN IS A PAGE, NOT A DRAWER (28 Aug). `campaign-drawer` and
@@ -549,7 +769,92 @@ const STATES = [
   ["getreviews-04-wizard", "getreviews", async (p) => { await press(p, '[data-hook="new-campaign"]'); },
     `!!document.querySelector('[data-hook="wizard-card"]')
      && !!document.querySelector('[data-hook="wizard-cancel"]')`,
-    "Campaign wizard. Cancel is a plain button with no arrow, because cancelling is an action, not a move up the hierarchy."],
+    "Campaign wizard, first step. Cancel is a plain button with no arrow, because cancelling is an action, not a move up the hierarchy."],
+
+  // ── Get Reviews: the wizard, one still per step per BRANCH ──────────
+  // Ali, 2 Sep: "this is incomplete????" — and it was. A fourteen-step
+  // wizard had exactly ONE frame, of step one, which is indistinguishable
+  // from a wizard that has only one step. `campaignWizardTo` walks a named
+  // branch to a named step, and every state below asserts on a hook that
+  // exists on THAT step alone, so a Next that fails to land cannot be
+  // photographed as the step it was aiming at.
+  //
+  // Numbering is branch-major: 05-16 email, 17-19 SMS, 20-21 link. The SMS
+  // and link branches only get frames for the steps that DIFFER from the
+  // email branch; the shared ones are already above and re-shooting them
+  // would just be the same picture with a different filename.
+  ["getreviews-05-email-name", "getreviews", async (p) => { await campaignWizardTo(p, "email", "name"); },
+    `!!document.querySelector('[data-hook="campaign-name-input"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "Email branch, step one of twelve. No verb in the header: creating, re-using and resuming a draft are one flow, so the title names the campaign rather than the task."],
+  ["getreviews-06-email-ask", "getreviews", async (p) => { await campaignWizardTo(p, "email", "ask"); },
+    `!!document.querySelector('[data-hook="ask-radio-group"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "Internal feedback first, or straight to a public review. Whichever is picked, every respondent reaches the same review page, and the note says so: there is no setting here that can turn this into a review gate."],
+  ["getreviews-07-email-feedback", "getreviews", async (p) => { await campaignWizardTo(p, "email", "feedback"); },
+    `!!document.querySelector('[data-hook="feedback-type-field"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "The likert scale. NPS 0 to 10, thumbs, or stars, with the customer's own view of it beside the choice. The legacy product had this buried inside the email template editor."],
+  ["getreviews-08-email-channel", "getreviews", async (p) => { await campaignWizardTo(p, "email", "channel"); },
+    `!!document.querySelector('[data-hook="channel-radio-group"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "Email, SMS, or a web link that doubles as a tablet kiosk. This answer and the last one decide how many steps the flow has, which is why the rail counts six named phases rather than twelve steps."],
+  ["getreviews-09-email-email", "getreviews", async (p) => { await campaignWizardTo(p, "email", "email"); },
+    `!!document.querySelector('[data-hook="email-subject-input"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "The email, edited on the left and previewed on the right. The feedback-form token renders as the real scale in the preview, so the email is not something anyone has to imagine."],
+  ["getreviews-10-email-reminder", "getreviews", async (p) => { await campaignWizardTo(p, "email", "reminder"); },
+    `!!document.querySelector('[data-hook="reminder-radio-group"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "One reminder, 48 hours later, and only to people who have not responded."],
+  ["getreviews-11-email-reminder-design", "getreviews", async (p) => { await campaignWizardTo(p, "email", "reminder-design"); },
+    `!!document.querySelector('[data-hook="reminder-timing"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "The reminder, prefilled from the first email so it is an edit rather than a second authoring job. The legal footer is editable once, on the first email, and noted here."],
+  ["getreviews-12-email-sites", "getreviews", async (p) => { await campaignWizardTo(p, "email", "sites"); },
+    `!!document.querySelector('[data-hook="site-add"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "The review sites customers are sent to, in order. The same page for everyone, whatever they scored."],
+  ["getreviews-13-email-recipients", "getreviews", async (p) => { await campaignWizardTo(p, "email", "recipients"); },
+    `!!document.querySelector('[data-hook="contacts-upload"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')
+     && !document.querySelector('[data-hook=\"country-field\"]')`,
+    "A CSV of the people to ask, uploaded and read back with its row count."],
+  ["getreviews-14-email-columns", "getreviews", async (p) => { await campaignWizardTo(p, "email", "columns"); },
+    `!!document.querySelector('[data-hook="csv-map-table"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "Their header row mapped against our fields, with a preview row underneath so a wrong mapping is visible before it is confirmed."],
+  ["getreviews-15-email-check", "getreviews", async (p) => { await campaignWizardTo(p, "email", "check"); },
+    `!!document.querySelector('[data-hook="toggle-exclusions"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "120 rows in, 112 people out. The 8 that were dropped are itemised by reason rather than silently removed."],
+  ["getreviews-16-email-send", "getreviews", async (p) => { await campaignWizardTo(p, "email", "send"); },
+    `!!document.querySelector('[data-hook="preview-as-customer"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')
+     && !document.querySelector('[data-hook=\"link-note\"]')`,
+    "The whole campaign as a key-value list, with the customer's own view one click away. Send now is the only step that cannot be undone, so it is the only one that confirms."],
+  ["getreviews-17-sms-sms", "getreviews", async (p) => { await campaignWizardTo(p, "sms", "sms"); },
+    `!!document.querySelector('[data-hook="sms-body-input"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "SMS branch. Written against a real phone, with the tracked link and the opt-out line shown as the customer receives them."],
+  ["getreviews-18-sms-recipients", "getreviews", async (p) => { await campaignWizardTo(p, "sms", "recipients"); },
+    `!!document.querySelector('[data-hook="contacts-upload"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')
+     && !!document.querySelector('[data-hook=\"country-field\"]')`,
+    "Texts cost money, so the SMS branch asks where the contacts are before it asks who they are: the country sets the credit rate, and the balance sits beside it rather than in billing."],
+  ["getreviews-19-sms-send", "getreviews", async (p) => { await campaignWizardTo(p, "sms", "send"); },
+    `!!document.querySelector('[data-hook="preview-as-customer"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')
+     && !document.querySelector('[data-hook=\"link-note\"]')`,
+    "The SMS confirm names the credit cost, not just the headcount, because that is the part that cannot be undone."],
+  ["getreviews-20-link-channel", "getreviews", async (p) => { await campaignWizardTo(p, "link", "channel"); },
+    `!!document.querySelector('[data-hook="channel-radio-group"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "Link branch. A web link that doubles as a tablet kiosk has no audience and no send, so the flow drops from twelve steps to five and the rail loses two whole phases."],
+  ["getreviews-21-link-golive", "getreviews", async (p) => { await campaignWizardTo(p, "link", "golive"); },
+    `!!document.querySelector('[data-hook="link-note"]')
+     && !!document.querySelector('[data-hook="wizard-card"]')`,
+    "The last step is Put live, not Send now. The link is created at that moment rather than sitting unused beforehand."],
 ];
 
 // --dump-states prints name/section/note as JSON and exits. Anything that
@@ -568,7 +873,7 @@ const browser = await chromium.launch({ headless: true });
 const results = [];
 
 const wanted = STATES.filter(([name]) => {
-  if (ONLY && !name.includes(ONLY)) return false;
+  if (ONLY.length && !ONLY.some((o) => name.includes(o))) return false;
   if (SECTIONS.length && !SECTIONS.some((sec) => name.startsWith(sec))) return false;
   return true;
 });

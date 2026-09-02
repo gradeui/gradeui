@@ -40,6 +40,7 @@ import {
   CentredLayoutHeader,
   CentredLayoutContent,
 } from "@brightlocal/ui-components/centred-layout";
+import { FieldError } from "@brightlocal/ui-components/field";
 import {
   Stepper,
   StepperNav,
@@ -61,6 +62,50 @@ import {
 // AppLayoutShell already does both for its pages, the second through a scoped
 // <style> because border-color cannot ride a token swap. A wizard has no
 // shell, so it does it here. Both lines go when the DS fixes the tokens.
+// TYPE SCALE INSIDE A WIZARD (Ali, 2 Sep: "text is too big here", on the
+// email body and again on the review-sites step).
+//
+// MEASURED, not guessed, on the live email step at 1280 wide:
+//
+//   Input / Textarea value   16px   (the DS ships `text-base` on both)
+//   FieldLabel                14px
+//   FieldDescription          14px
+//   CardTitle                 24px  (`text-2xl font-display`)
+//
+// So the DS is internally inconsistent: the text a user TYPES is a full
+// step larger than the label naming it, and in a wizard's narrow single
+// column that mismatch is the first thing you see. 16px on form controls
+// is a defensible DS-wide choice (it is the size that stops iOS zooming
+// the page on focus) but it is not paired with a matching label size, and
+// that is a finding for BrightLocal, not something to fix per screen —
+// logged in RM-GET-REVIEWS-AND-WIDGETS-REPORT.md.
+//
+// What this does, and ONLY inside a wizard: brings the control text into
+// line with its own label at 14px, and takes the step heading from 24px to
+// 18px. A wizard step title sits UNDER a page title that already names the
+// task, so 24px was the page's size being used twice. Nothing outside
+// WizardShell is touched — the inbox composer and the settings page keep
+// the DS default, so this is one surface deviating deliberately rather
+// than the tool disagreeing with itself at random.
+//
+// Written as a scoped <style> on data-slot, not as classNames at each call
+// site: there are ~30 inputs across the three wizards and a className on
+// each is the "override soup" that makes a screen impossible to re-theme.
+// When the DS settles its own scale, delete this block and nothing else.
+const WIZARD_TYPE_SCALE = `
+[data-hook="__HOOK__-layout"] [data-slot="input"],
+[data-hook="__HOOK__-layout"] [data-slot="textarea"],
+[data-hook="__HOOK__-layout"] [data-slot="select-trigger"],
+[data-hook="__HOOK__-layout"] [data-slot="select-value"] {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+[data-hook="__HOOK__-layout"] [data-slot="card-title"] {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+`;
+
 const CARD_SURFACE = {
   "--card": "light-dark(var(--ds-tailwind-colors-base-white), var(--ds-tailwind-colors-neutral-900))",
   "--color-card": "light-dark(var(--ds-tailwind-colors-base-white), var(--ds-tailwind-colors-neutral-900))",
@@ -126,6 +171,16 @@ export function WizardSteps({ steps, value, dataHook = "wizard-stepper", ariaLab
  * screen) and the rail simply does not render, so the same shell carries the
  * end of the flow without a second layout.
  *
+ * ERRORS SIT WITH THE FORM, NOT WITH CANCEL (Ali, 2 Sep: "is this a usual
+ * place to show an error message?" — it was not). All three wizards used to
+ * put the validation message in the footer bar, inline with Cancel / Back /
+ * Next, which is the one place on the page that is about NAVIGATION. The
+ * message says something about the fields, so it renders directly under the
+ * step content, in the same scrolling column, as the DS `FieldError` —
+ * adjacent to the controls and above the actions, which is where a form
+ * error is looked for. It is `role="alert"` either way, so this changes
+ * where it is SEEN, not whether it is announced.
+ *
  * NAMING (Ali, 2 Sep): "Edit and Create are the same flow, so whatever word
  * fits both, or omit Create / Edit / New". `title` is the thing's own name,
  * never the verb. A widget being made for the first time is
@@ -138,6 +193,7 @@ export function WizardShell({
   steps,
   value,
   footer,
+  error,
   children,
   dataHook = "wizard",
   contentClassName = "",
@@ -153,6 +209,11 @@ export function WizardShell({
       className="h-screen min-h-screen justify-start gap-0 overflow-hidden p-0"
       style={CARD_SURFACE}
     >
+      {/* See WIZARD_TYPE_SCALE. Scoped to THIS wizard's own layout hook so
+          two wizards on one screen cannot fight, and so the rule cannot
+          leak into the app shell behind a closed wizard. */}
+      <style>{WIZARD_TYPE_SCALE.replaceAll("__HOOK__", dataHook)}</style>
+
       <CentredLayoutHeader className="bg-background shrink-0 justify-center border-b px-6 py-4 lg:justify-center">
         <div className="flex w-full max-w-4xl flex-col gap-3">
           <div className="flex flex-col gap-1">
@@ -176,7 +237,15 @@ export function WizardShell({
       >
         {/* max-w-4xl, not the auth-card width CentredLayout is usually handed:
             a review picker and a side-by-side preview do not fit in it. */}
-        <div className="flex w-full max-w-4xl flex-col gap-4">{children}</div>
+        <div className="flex w-full max-w-4xl flex-col gap-4">
+          {children}
+          {/* Under the step, not in the footer. See the note above. */}
+          {error ? (
+            <FieldError dataHook={`${dataHook}-error`} role="alert">
+              {error}
+            </FieldError>
+          ) : null}
+        </div>
       </CentredLayoutContent>
 
       {footer ? (
