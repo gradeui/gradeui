@@ -133,6 +133,34 @@ picker whose whole job is "choose up to 50", a page-scoped select-all is a trap.
 whole filtered set, or the DS should ship both (page / all) the way most tables
 with paging do.
 
+### 3.7d There is no edit-in-place affordance anywhere in the DS
+
+Asked directly (Ali, 2 Sep: *"Does this UI component library have a concept of
+editing text in place?"*). The answer is no, in either half.
+
+- The code allow-list carries 400-odd component names and none of them is an
+  `EditableText`, `InlineEdit`, `EditableTitle` or equivalent.
+- The Figma library's only match for "Inline" across all 1,691 components is
+  `Typography / InlineCode`, which is a code span.
+
+That matters because naming a thing you are building is a normal product
+requirement and the natural pattern is an editable title in the header, not a
+form field buried in step 3 of a wizard. Both RM wizards currently bury it, and
+the Get Reviews campaign wizard spends a whole step on it, which is the same
+requirement solved two different ways in one section.
+
+What can be assembled from what exists is a plain `Input` in the header at
+title size. It works, but it reads as a form field rather than a title, and
+`Input` has no ghost or borderless variant to soften it: its variants are
+`Horizontal Layout` x `Variant` (Text / File) x `State`. Making it look like a
+title means overriding the component's own styling at the call site, which is
+the thing this codebase deliberately does not do.
+
+**Upstream ask:** an inline-edit affordance. Minimally a borderless/ghost
+`Input` variant so a field can read as a heading until focused; better, a small
+`EditableText` that owns the read/edit swap, the pencil affordance, and commit
+on blur or Enter.
+
 ### 3.7c Figma's `Card` has no action slot, so header actions have nowhere to go
 
 `Card` in Figma exposes `Card Content` and `Card Footer` as slots, plus
