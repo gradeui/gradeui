@@ -144,6 +144,59 @@ export function formatDateTime(value) {
   return `${date} at ${[time[1], time[2], time[3]].filter(Boolean).join(" ")}`;
 }
 
+// ─── DateStamp — a date with its full timestamp one hover away ────────
+// Lifted out of PageHeader (Ali, 3 Sep: "we also need a dashed underline,
+// with the associated tooltip with full timestamp"), because a second
+// surface now needs it: the campaign cards on Get Reviews carry a date in
+// their top-right corner exactly the way the page header does, and two
+// implementations of the same affordance is how they end up differing.
+//
+// `label` is the word in front of the date — "Last updated", "Last
+// activity", "Stopped" — because the same shape carries different facts on
+// different surfaces. The date itself is dot-underlined and hangs the exact
+// stamp off it on hover, so the line stays short while "how stale is this?"
+// remains one hover away.
+//
+// Own TooltipProvider: Radix throws without one in the tree, and a surface
+// that has not mounted one at its root would take the whole card down.
+// Nesting providers is supported, so a screen that HAS one loses nothing.
+//
+// tabIndex on the trigger, because a hover-only tooltip is unreachable by
+// keyboard and this one holds information (the time) that is nowhere else.
+export function DateStamp({ label, value, dataHook, className = "" }) {
+  if (!value) return null;
+  const full = formatDateTime(value);
+  const shown = formatDate(value);
+  return (
+    <span
+      data-hook={dataHook}
+      className={`text-muted-foreground shrink-0 text-xs ${className}`}
+    >
+      {label ? `${label} ` : ""}
+      {full ? (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                tabIndex={0}
+                data-hook={dataHook ? `${dataHook}-date` : undefined}
+                className="cursor-help underline decoration-dotted underline-offset-4"
+              >
+                {shown}
+              </span>
+            </TooltipTrigger>
+            {/* BELOW the date: the default side is "top", which on a header
+                row opens the panel straight over the CTAs it sits under. */}
+            <TooltipContent side="bottom">{full}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : (
+        shown
+      )}
+    </span>
+  );
+}
+
 // ─── DrillArrow — THE clickable-card drill affordance ─────────────────
 // ONE concept, two looks (Ali, 24 Jul: "they are the same concept —
 // add affordance to a card"; promoted to the lib AFTER the standalone
@@ -701,50 +754,15 @@ export function PageHeader({
             </span>
           ) : null}
           {lastUpdatedValue ? (
-            <span
-              data-hook={`${dataHook}-last-updated`}
-              className="shrink-0 text-xs text-muted-foreground sm:ml-auto"
-            >
-              {/* "Last updated August 13, 2026", no colon — their line,
-                  copied (Ali, 18 Aug). */}
-              Last updated{" "}
-              {lastUpdatedFull ? (
-                // THE DATE CARRIES ITS OWN FULL STAMP. Their header
-                // dot-underlines the date and hangs the exact UTC time off
-                // it on hover, so the header stays short while the precise
-                // answer to "how stale is this?" is one hover away. Built
-                // in HERE rather than left to each screen, so every page
-                // that shows a date gets the same affordance.
-                //
-                // Own TooltipProvider: Radix throws without one in the
-                // tree, and a screen that has not mounted one at its root
-                // would take the header down with it. Nesting providers is
-                // supported, so a screen that HAS one loses nothing.
-                //
-                // tabIndex on the trigger because a hover-only tooltip is
-                // unreachable by keyboard, and this one holds information
-                // (the time) that is nowhere else on the page.
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span
-                        tabIndex={0}
-                        data-hook={`${dataHook}-last-updated-date`}
-                        className="cursor-help underline decoration-dotted underline-offset-4"
-                      >
-                        {formatDate(lastUpdatedValue)}
-                      </span>
-                    </TooltipTrigger>
-                    {/* BELOW the date, as theirs is. The default side is
-                        "top", which on this row opens the panel straight
-                        over the CTAs it sits under. */}
-                    <TooltipContent side="bottom">{lastUpdatedFull}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ) : (
-                formatDate(lastUpdatedValue)
-              )}
-            </span>
+            // "Last updated August 13, 2026", no colon — their line, copied
+            // (Ali, 18 Aug). The affordance itself is DateStamp now, shared
+            // with the campaign cards.
+            <DateStamp
+              label="Last updated"
+              value={lastUpdatedValue}
+              dataHook={`${dataHook}-last-updated`}
+              className="sm:ml-auto"
+            />
           ) : null}
         </div>
       ) : null}
@@ -934,8 +952,16 @@ export function StatCard({
       data-grade-transition={transition}
       className={[
         "max-w-none",
+        // NESTED TILES HAVE NO BORDER (Ali, 2 Sep: "these inset cards
+        // shouldn't have a border"). They used to carry both a fill AND a
+        // 1px edge, which is one boundary too many: the tile already sits
+        // inside a bordered card, so a border on the tile draws a line
+        // parallel to another line 12px away. The neutral fill is enough to
+        // separate a tile from the card behind it — that is what a filled
+        // surface is FOR. A border is how you separate two things that share
+        // a background, which these do not.
         level === "nested"
-          ? "border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]"
+          ? "border-0 bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]"
           : "",
         className,
       ]

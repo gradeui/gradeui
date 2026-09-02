@@ -5,50 +5,80 @@
   "h": 834,
   "steps": [
     {
-      "section": "Link and kiosk branch",
+      "section": "Web link branch",
       "dwell": 4200,
-      "caption": "The third branch. A web link that doubles as a tablet kiosk has no audience and no send: it goes live and then stands there, so the flow is five steps rather than twelve."
+      "caption": "The third branch. A web link has no audience and no send: it goes live and then sits there waiting, so the flow is five steps rather than twelve."
     },
     {
       "click": "[data-hook=\"new-campaign\"]",
       "hoverMs": 1200,
       "waitFor": "[data-hook=\"start-radio-group\"]"
     },
-    { "dwell": 2500 },
-    { "click": "[data-hook=\"start-fresh-label\"]", "hoverMs": 800 },
-    { "dwell": 1800 },
+    {
+      "dwell": 2500
+    },
+    {
+      "click": "[data-hook=\"start-fresh-label\"]",
+      "hoverMs": 800
+    },
+    {
+      "dwell": 1800
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
       "waitFor": "[data-hook=\"campaign-name-input\"]"
     },
-    { "dwell": 2500 },
+    {
+      "dwell": 2500
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
       "waitFor": "[data-hook=\"ask-radio-group\"]"
     },
-    { "dwell": 3000 },
-    { "click": "[data-hook=\"ask-feedback-label\"]", "hoverMs": 900 },
-    { "dwell": 2200 },
+    {
+      "dwell": 3000
+    },
+    {
+      "click": "[data-hook=\"ask-feedback-label\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 2200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
       "waitFor": "[data-hook=\"feedback-type-field\"]",
       "section": "Thumbs instead of NPS",
-      "caption": "A kiosk on a counter gets a two-second answer, not a considered one, so the scale is a choice rather than a fixed 0 to 10."
+      "caption": "A tablet by the till gets a two-second answer, not a considered one, so the scale is a choice rather than a fixed 0 to 10."
     },
-    { "dwell": 4600 },
-    { "click": "[data-hook=\"feedback-type-thumbs-label\"]", "hoverMs": 900 },
-    { "dwell": 5200 },
+    {
+      "dwell": 4600
+    },
+    {
+      "click": "[data-hook=\"feedback-type-thumbs-label\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 5200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
       "waitFor": "[data-hook=\"channel-radio-group\"]"
     },
-    { "dwell": 3000 },
-    { "click": "[data-hook=\"channel-link-label\"]", "hoverMs": 900 },
-    { "dwell": 2500 },
+    {
+      "dwell": 3000
+    },
+    {
+      "click": "[data-hook=\"channel-link-label\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 2500
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
@@ -56,7 +86,9 @@
       "section": "Review sites",
       "caption": "No message step at all: there is nothing to write, because nobody is being sent anything."
     },
-    { "dwell": 5200 },
+    {
+      "dwell": 5200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
@@ -64,19 +96,32 @@
       "section": "Go live",
       "caption": "The last step is Put live rather than Send now, and the link is created at that moment rather than sitting unused beforehand."
     },
-    { "dwell": 5600 },
+    {
+      "dwell": 5600
+    },
     {
       "click": "[data-hook=\"preview-as-customer\"]",
       "hoverMs": 900,
       "waitFor": "[data-hook=\"customer-preview-drawer\"]",
       "section": "On the tablet",
-      "caption": "The same landing page a kiosk shows, scored with a thumb."
+      "caption": "The same landing page the link opens, scored with a thumb."
     },
-    { "dwell": 5200 },
-    { "click": "[data-hook=\"thumb-up\"]", "hoverMs": 900 },
-    { "dwell": 5600 },
-    { "click": "[data-hook=\"close-customer-preview\"]", "hoverMs": 800 },
-    { "dwell": 2200 },
+    {
+      "dwell": 5200
+    },
+    {
+      "click": "[data-hook=\"thumb-up\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 5600
+    },
+    {
+      "key": "Escape"
+    },
+    {
+      "dwell": 2200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 900,
@@ -84,8 +129,15 @@
       "section": "Live",
       "caption": "The payoff of a link campaign is the link, so the done state hands it over with a copy button instead of sending you to the list to find it."
     },
-    { "dwell": 6200 },
-    { "click": "[data-hook=\"copy-campaign-link\"]", "hoverMs": 900 },
-    { "dwell": 4200 }
+    {
+      "dwell": 6200
+    },
+    {
+      "click": "[data-hook=\"copy-campaign-link\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 4200
+    }
   ]
 }

@@ -69,6 +69,10 @@ const SECTIONS = (arg("section", null) || "").split(",").map((x) => x.trim()).fi
 // available at its natural height as well as cropped to 1280x900. Figma
 // takes both: the fixed frame for a board, the tall one for reading.
 const FULL = process.argv.includes("--full");
+// A ceiling on the tall captures. 12000 CSS px is 24000 device px at 2x,
+// which Figma still imports; beyond that the file is unreadable as a page
+// anyway and something has gone wrong with the measurement.
+const MAX_FULL_HEIGHT = 12000;
 // --by-page nests each section in a folder named after the FIGMA PAGE it
 // belongs to, so a whole folder can be dragged onto the matching page and
 // there is nothing to line up by hand. The flat layout stays the default,
@@ -289,7 +293,7 @@ const CAMPAIGN_FLOWS = {
     steps: ["name", "ask", "channel", "sms", "reminder", "sites", "recipients",
             "columns", "check", "send"],
   },
-  // feedback-first, web link / kiosk. No message, no audience, no send.
+  // feedback-first, web link. No message, no audience, no send.
   link: {
     ask: "feedback",
     channel: "link",
@@ -651,6 +655,18 @@ const STATES = [
     `!!document.querySelector('[data-hook="widget-detail-drawer"][data-state="open"]')`,
     "The embed snippet with copy-to-clipboard. Opens automatically after saving, so the code is one step away, not two."],
 
+  // EVERY DESTRUCTIVE CONFIRMATION GETS A FRAME (Ali, 2 Sep: "I want a
+  // capture of all deletion messages"). They are the screens nobody
+  // photographs and everybody reads under pressure, and RM now has five of
+  // them across four screens. Shot together so the wording can be compared
+  // side by side rather than found one at a time.
+  ["widgets-06-delete-confirm", "widgets", async (p) => {
+    await press(p, '[data-hook="widget-w1-delete"]');
+    await wait(800);
+  },
+    `!!document.querySelector('[data-hook="widget-w1-delete-title"]')`,
+    "Deleting a widget. The name is quoted, and the consequence leads: a widget already embedded stops appearing on a website this screen cannot see, and the code on those pages stops working."],
+
   // ── Create Widget ───────────────────────────────────────────────────
   // Its own SCREEN since 28 Aug (design dmtctjykv0feb), on the DS
   // CentredLayout: no sidebar, no breadcrumbs, a Logo header and a
@@ -750,6 +766,13 @@ const STATES = [
      && !!document.querySelector('[data-hook="history-note"]')`,
     "Run history, including the run that only partly succeeded. The brief names unexplained failures as the recurring support theme, so the one row that did not finish says what happened and offers the fix."],
 
+  ["createwidget-09-leave-confirm", "createwidget", async (p) => {
+    await press(p, '[data-hook="widget-cancel"]');
+    await wait(800);
+  },
+    `!!document.querySelector('[data-hook="leave-title"]')`,
+    "Leaving the wizard without saving. Cancel sits next to Next, one mis-click from the button people press a dozen times, so it asks first and says exactly what is lost."],
+
   // ── Get Reviews ─────────────────────────────────────────────────────
   // THE CAMPAIGN IS A PAGE, NOT A DRAWER (28 Aug). `campaign-drawer` and
   // `close-campaign` no longer exist, so the old assertion on
@@ -835,7 +858,7 @@ const STATES = [
   ["getreviews-08-email-channel", "getreviews", async (p) => { await campaignWizardTo(p, "email", "channel"); },
     `!!document.querySelector('[data-hook="channel-radio-group"]')
      && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "Email, SMS, or a web link that doubles as a tablet kiosk. This answer and the last one decide how many steps the flow has, which is why the rail counts six named phases rather than twelve steps."],
+    "Email, SMS, or a web link you put wherever your customers already are. This answer and the last one decide how many steps the flow has, which is why the rail counts six named phases rather than twelve steps."],
   ["getreviews-09-email-email", "getreviews", async (p) => { await campaignWizardTo(p, "email", "email"); },
     `!!document.querySelector('[data-hook="email-subject-input"]')
      && !!document.querySelector('[data-hook="wizard-card"]')`,
@@ -884,10 +907,64 @@ const STATES = [
      && !!document.querySelector('[data-hook="wizard-card"]')
      && !document.querySelector('[data-hook=\"link-note\"]')`,
     "The SMS confirm names the credit cost, not just the headcount, because that is the part that cannot be undone."],
+  // ── The expanded preview (Ali, 2 Sep: "I'll also need a screenshot of
+  // each one open as a preview or expanded view, like when pressing on the
+  // expander"). The send step's contact sheet shows every customer-facing
+  // page at half size; clicking a tile opens it full size in a dialog.
+  // Driven off the EMAIL branch because it is the only one carrying all
+  // three pages — the link branch has no email, and a straight-to-review
+  // campaign has no feedback page.
+  ["getreviews-25-delete-draft", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c4-menu-button"]');
+    await wait(700);
+    await pressText(p, "Delete draft", '[role="menuitem"]');
+    await wait(800);
+  },
+    `!!document.querySelector('[data-hook="campaign-c4-delete-title"]')`,
+    "Deleting a draft campaign. Nothing has been sent, so nothing breaks — the copy says that rather than borrowing the alarm of a delete that does break something."],
+  ["getreviews-26-stop-campaign", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c1-menu-button"]');
+    await wait(700);
+    await pressText(p, "Stop campaign", '[role="menuitem"]');
+    await wait(800);
+  },
+    `!!document.querySelector('[data-hook="stop-title"]')`,
+    "Stopping a live campaign. Not a delete: the links stop working and the numbers stop counting, and it can be restarted, so the dialog says so instead of sounding final."],
+
+  ["getreviews-22-preview-email", "getreviews", async (p) => {
+    await campaignWizardTo(p, "email", "send");
+    await press(p, '[data-hook="preview-tile-email"]');
+    await wait(900);
+  },
+    `(() => {
+       const t = document.querySelector('[data-hook="preview-full-title"]');
+       return !!t && t.textContent.trim() === "Email";
+     })()`,
+    "The email at full size, opened from its tile. Nothing in here is clickable: this is a picture of the message, and the working version is behind Preview as a customer."],
+  ["getreviews-23-preview-feedback", "getreviews", async (p) => {
+    await campaignWizardTo(p, "email", "send");
+    await press(p, '[data-hook="preview-tile-feedback"]');
+    await wait(900);
+  },
+    `(() => {
+       const t = document.querySelector('[data-hook="preview-full-title"]');
+       return !!t && t.textContent.trim() === "Feedback page";
+     })()`,
+    "The feedback page full size. This is the page the whole review-gating question turns on, so it is worth seeing at the size a customer sees it."],
+  ["getreviews-24-preview-review", "getreviews", async (p) => {
+    await campaignWizardTo(p, "email", "send");
+    await press(p, '[data-hook="preview-tile-review"]');
+    await wait(900);
+  },
+    `(() => {
+       const t = document.querySelector('[data-hook="preview-full-title"]');
+       return !!t && t.textContent.trim() === "Review page";
+     })()`,
+    "The review page full size. Every respondent reaches this one whatever they scored, which is the decision that keeps the feature the right side of the FTC rule."],
   ["getreviews-20-link-channel", "getreviews", async (p) => { await campaignWizardTo(p, "link", "channel"); },
     `!!document.querySelector('[data-hook="channel-radio-group"]')
      && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "Link branch. A web link that doubles as a tablet kiosk has no audience and no send, so the flow drops from twelve steps to five and the rail loses two whole phases."],
+    "Web link branch. A link has no audience and no send, so the flow drops from twelve steps to five and the rail loses two whole phases."],
   ["getreviews-21-link-golive", "getreviews", async (p) => { await campaignWizardTo(p, "link", "golive"); },
     `!!document.querySelector('[data-hook="link-note"]')
      && !!document.querySelector('[data-hook="wizard-card"]')`,
@@ -956,11 +1033,47 @@ for (const [name, screen, drive, expect] of wanted) {
     await page.screenshot({ path: file, type: "png" });
     try { setPngRetinaDpi(file); } catch {}
     if (FULL) {
-      const fullDir = path.join(dirFor(name), "full");
-      fs.mkdirSync(fullDir, { recursive: true });
-      const ffile = path.join(fullDir, `${name}.png`);
-      await page.screenshot({ path: ffile, type: "png", fullPage: true });
-      try { setPngRetinaDpi(ffile); } catch {}
+      // A TALL CAPTURE MEANS GROWING THE VIEWPORT, not fullPage.
+      //
+      // `page.screenshot({ fullPage: true })` shoots the HOST page, and the
+      // screen does not live there — it is inside a fixed-height sandbox
+      // iframe, scrolling in its own overflow container. fullPage therefore
+      // returned the same 1280x900 as the cropped frame, with a different
+      // filename. That is the exact shape of failure this suite keeps
+      // finding: an output that looks like it worked.
+      //
+      // Measuring the real scroller and resizing the viewport to its
+      // scrollHeight collapses the internal scroll (verified: overflow goes
+      // to 0) and the whole page renders in one frame.
+      const need = await inFrame(page, () => {
+        let best = null, most = 0;
+        for (const el of document.querySelectorAll("*")) {
+          const over = el.scrollHeight - el.clientHeight;
+          if (over > most && el.clientHeight > 300) { best = el; most = over; }
+        }
+        return { over: most, height: best ? best.scrollHeight : document.body.scrollHeight };
+      });
+
+      // NOTHING TO EXTEND IS NOT A FAILURE. The wizards are h-screen with
+      // overflow-hidden — pinned header, pinned footer, a middle that
+      // scrolls — so their natural height IS 900 and a "full" file would be
+      // a byte-identical copy of the cropped one under a second name.
+      // Skipped, and said out loud, rather than written.
+      if (need.over < 40) {
+        console.log(`    (no tall capture: ${name} does not scroll)`);
+      } else {
+        const tall = Math.min(MAX_FULL_HEIGHT, need.height + 80);
+        await page.setViewportSize({ width: 1280, height: tall });
+        await wait(2200); // charts and sticky headers re-lay out
+        const fullDir = path.join(dirFor(name), "full");
+        fs.mkdirSync(fullDir, { recursive: true });
+        const ffile = path.join(fullDir, `${name}.png`);
+        await page.screenshot({ path: ffile, type: "png" });
+        try { setPngRetinaDpi(ffile); } catch {}
+        await page.setViewportSize({ width: 1280, height: 900 });
+        await wait(600);
+        console.log(`    + full ${tall}px`);
+      }
     }
     results.push({ name, ok: true });
     console.log(`  ✓ ${name}`);

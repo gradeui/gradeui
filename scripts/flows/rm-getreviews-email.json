@@ -16,12 +16,16 @@
       "section": "Start",
       "caption": "The wizard opens on its own page: pinned header with the phase rail, the step scrolls, pinned footer. Duplication is the first question, because re-use is how you repeat an ask."
     },
-    { "dwell": 5200 },
+    {
+      "dwell": 5200
+    },
     {
       "click": "[data-hook=\"start-fresh-label\"]",
       "hoverMs": 900
     },
-    { "dwell": 2200 },
+    {
+      "dwell": 2200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -29,7 +33,9 @@
       "section": "Name",
       "caption": "No verb in the header. Creating, re-using and resuming a draft are one flow, so the title names the campaign, not the task."
     },
-    { "dwell": 4600 },
+    {
+      "dwell": 4600
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -37,12 +43,16 @@
       "section": "What to ask",
       "caption": "Internal feedback first, or straight to a public review. Whichever is chosen, every respondent reaches the same review page: there is no configuration here that can turn this into a review gate."
     },
-    { "dwell": 6200 },
+    {
+      "dwell": 6200
+    },
     {
       "click": "[data-hook=\"ask-feedback-label\"]",
       "hoverMs": 900
     },
-    { "dwell": 3000 },
+    {
+      "dwell": 3000
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -50,23 +60,37 @@
       "section": "The feedback question",
       "caption": "NPS 0 to 10, thumbs, or stars, with the customer's view of the scale beside the choice. This is the likert scale the legacy product buried inside the email template editor."
     },
-    { "dwell": 6700 },
-    { "scrollBy": 520, "ms": 950 },
-    { "dwell": 3600 },
-    { "scroll": "top", "ms": 900 },
+    {
+      "dwell": 6700
+    },
+    {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 3600
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
       "waitFor": "[data-hook=\"channel-radio-group\"]",
       "section": "Channel",
-      "caption": "Email, SMS, or a web link that doubles as a tablet kiosk. This answer and the last one are what decide how many steps the flow has, which is why the rail counts phases rather than steps."
+      "caption": "Email, SMS, or a web link you put wherever your customers already are. This answer and the last one are what decide how many steps the flow has, which is why the rail counts phases rather than steps."
     },
-    { "dwell": 5200 },
+    {
+      "dwell": 5200
+    },
     {
       "click": "[data-hook=\"channel-email-label\"]",
       "hoverMs": 900
     },
-    { "dwell": 2200 },
+    {
+      "dwell": 2200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -74,10 +98,20 @@
       "section": "The email",
       "caption": "The editor on the left, the customer's email on the right. The feedback form token renders as the real scale in the preview, so nobody has to imagine what lands in the inbox."
     },
-    { "dwell": 6700 },
-    { "scrollBy": 540, "ms": 950 },
-    { "dwell": 4200 },
-    { "scroll": "top", "ms": 900 },
+    {
+      "dwell": 6700
+    },
+    {
+      "scrollBy": 540,
+      "ms": 950
+    },
+    {
+      "dwell": 4200
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -85,12 +119,16 @@
       "section": "Reminder",
       "caption": "One reminder, 48 hours later, only to people who have not responded."
     },
-    { "dwell": 4600 },
+    {
+      "dwell": 4600
+    },
     {
       "click": "[data-hook=\"reminder-yes-label\"]",
       "hoverMs": 900
     },
-    { "dwell": 2200 },
+    {
+      "dwell": 2200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -98,7 +136,9 @@
       "section": "The reminder email",
       "caption": "Prefilled from the first email so it is an edit, not a second authoring job. The legal footer is editable once, on the first email, and noted here."
     },
-    { "dwell": 5600 },
+    {
+      "dwell": 5600
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -106,10 +146,20 @@
       "section": "Review sites",
       "caption": "The sites customers are sent to, in order. Same page for everyone, whatever they scored."
     },
-    { "dwell": 6200 },
-    { "scrollBy": 520, "ms": 950 },
-    { "dwell": 3600 },
-    { "scroll": "top", "ms": 900 },
+    {
+      "dwell": 6200
+    },
+    {
+      "scrollBy": 520,
+      "ms": 950
+    },
+    {
+      "dwell": 3600
+    },
+    {
+      "scroll": "top",
+      "ms": 900
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -117,12 +167,16 @@
       "section": "Audience",
       "caption": "A CSV of the people to ask."
     },
-    { "dwell": 4200 },
+    {
+      "dwell": 4200
+    },
     {
       "click": "[data-hook=\"contacts-upload\"]",
       "hoverMs": 900
     },
-    { "dwell": 3600 },
+    {
+      "dwell": 3600
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -130,7 +184,9 @@
       "section": "Map the columns",
       "caption": "Their header row against our fields, with a preview row underneath so a wrong mapping is visible before it is confirmed."
     },
-    { "dwell": 6200 },
+    {
+      "dwell": 6200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -138,12 +194,31 @@
       "section": "Who is left",
       "caption": "120 rows in, 112 people out, and the 8 that were dropped are itemised rather than silently removed."
     },
-    { "dwell": 6200 },
+    {
+      "dwell": 6200
+    },
     {
       "click": "[data-hook=\"toggle-exclusions\"]",
       "hoverMs": 900
     },
-    { "dwell": 4200 },
+    {
+      "dwell": 4200
+    },
+    {
+      "click": "[data-hook=\"confirm-permission-label\"]",
+      "hoverMs": 800
+    },
+    {
+      "dwell": 1800
+    },
+    {
+      "click": "[data-hook=\"confirm-privacy-label\"]",
+      "hoverMs": 700,
+      "caption": "Both confirmations are required before Next will move. Permission to contact and the privacy policy are the two things nobody can wave through on the customer's behalf."
+    },
+    {
+      "dwell": 3000
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 800,
@@ -151,7 +226,9 @@
       "section": "Send",
       "caption": "The whole campaign as a key-value list, and the customer's own view one click away."
     },
-    { "dwell": 6200 },
+    {
+      "dwell": 6200
+    },
     {
       "click": "[data-hook=\"preview-as-customer\"]",
       "hoverMs": 900,
@@ -159,17 +236,22 @@
       "section": "Preview as a customer",
       "caption": "The live landing page, scored for real: pick a number and the follow-up appears. It is a preview of the thing being edited, so it opens as a drawer and the editor is still there when it closes."
     },
-    { "dwell": 6700 },
+    {
+      "dwell": 6700
+    },
     {
       "click": "[data-hook=\"nps-9\"]",
       "hoverMs": 900
     },
-    { "dwell": 5600 },
     {
-      "click": "[data-hook=\"close-customer-preview\"]",
-      "hoverMs": 800
+      "dwell": 5600
     },
-    { "dwell": 2500 },
+    {
+      "key": "Escape"
+    },
+    {
+      "dwell": 2500
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 900,
@@ -177,7 +259,9 @@
       "section": "Confirm",
       "caption": "Sending starts straight away and cannot be undone, so it is said once, here, and not before."
     },
-    { "dwell": 5200 },
+    {
+      "dwell": 5200
+    },
     {
       "click": "[role=\"alertdialog\"] button:has-text(\"Send now\")",
       "hoverMs": 900,
@@ -185,6 +269,8 @@
       "section": "Sent",
       "caption": "Straight on to the campaign's own insights page, because the next thing anyone wants is whether it landed."
     },
-    { "dwell": 6700 }
+    {
+      "dwell": 6700
+    }
   ]
 }

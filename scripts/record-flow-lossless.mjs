@@ -292,14 +292,23 @@ for (const step of flow.steps) {
     const mods = parts.map((p) => p.toLowerCase());
     await iframe(page).evaluate(({ k, mods }) => {
       const code = k.length === 1 ? "Key" + k.toUpperCase() : k;
-      window.dispatchEvent(new KeyboardEvent("keydown", {
+      const init = {
         key: k.length === 1 ? k.toLowerCase() : k, code,
         altKey: mods.includes("alt"), ctrlKey: mods.includes("ctrl"),
         metaKey: mods.includes("meta") || mods.includes("cmd"), shiftKey: mods.includes("shift"),
-        bubbles: true,
-      }));
+        bubbles: true, cancelable: true,
+      };
+      // DISPATCH ON BOTH. This used to fire at `window` only, which is fine
+      // for the shell's own Alt+T tweaker but never reaches Radix: its
+      // DismissableLayer listens on `document`, and an event dispatched ON
+      // window does not propagate DOWN to it. So "key": "Escape" silently
+      // closed nothing. document first (Radix, and it bubbles to window
+      // anyway), then window for anything listening only there.
+      document.dispatchEvent(new KeyboardEvent("keydown", init));
+      window.dispatchEvent(new KeyboardEvent("keydown", init));
+      document.dispatchEvent(new KeyboardEvent("keyup", init));
     }, { k, mods });
-    await sleep(400); // let the panel open / any CSS settle
+    await sleep(600); // let the panel open or the overlay unmount
     await rehide(page);
   }
   // Native <select> change (e.g. the tweaker preset dropdown → a theme).

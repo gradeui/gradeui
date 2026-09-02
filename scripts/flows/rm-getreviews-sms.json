@@ -14,15 +14,24 @@
       "hoverMs": 1200,
       "waitFor": "[data-hook=\"start-radio-group\"]"
     },
-    { "dwell": 2500 },
-    { "click": "[data-hook=\"start-fresh-label\"]", "hoverMs": 800 },
-    { "dwell": 1800 },
+    {
+      "dwell": 2500
+    },
+    {
+      "click": "[data-hook=\"start-fresh-label\"]",
+      "hoverMs": 800
+    },
+    {
+      "dwell": 1800
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
       "waitFor": "[data-hook=\"campaign-name-input\"]"
     },
-    { "dwell": 2500 },
+    {
+      "dwell": 2500
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
@@ -30,17 +39,31 @@
       "section": "Straight to a review",
       "caption": "No internal feedback step this time, so the Ask phase is one step instead of two and the rail shortens with it."
     },
-    { "dwell": 4600 },
-    { "click": "[data-hook=\"ask-review-label\"]", "hoverMs": 900 },
-    { "dwell": 2500 },
+    {
+      "dwell": 4600
+    },
+    {
+      "click": "[data-hook=\"ask-review-label\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 2500
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
       "waitFor": "[data-hook=\"channel-radio-group\"]"
     },
-    { "dwell": 2500 },
-    { "click": "[data-hook=\"channel-sms-label\"]", "hoverMs": 900 },
-    { "dwell": 2200 },
+    {
+      "dwell": 2500
+    },
+    {
+      "click": "[data-hook=\"channel-sms-label\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 2200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
@@ -48,22 +71,33 @@
       "section": "The text message",
       "caption": "Written against a real phone, with the tracked link and the opt-out line shown as the customer will actually receive them."
     },
-    { "dwell": 6700 },
+    {
+      "dwell": 6700
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
       "waitFor": "[data-hook=\"reminder-radio-group\"]"
     },
-    { "dwell": 3000 },
-    { "click": "[data-hook=\"reminder-no-label\"]", "hoverMs": 900 },
-    { "dwell": 2200 },
+    {
+      "dwell": 3000
+    },
+    {
+      "click": "[data-hook=\"reminder-no-label\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 2200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
       "waitFor": "[data-hook=\"site-add\"]",
       "section": "Review sites"
     },
-    { "dwell": 4200 },
+    {
+      "dwell": 4200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
@@ -71,9 +105,16 @@
       "section": "Credits",
       "caption": "Texts cost money, so the SMS branch asks where the contacts are before it asks who they are: the country sets the rate, and the balance sits next to it rather than in billing."
     },
-    { "dwell": 6700 },
-    { "click": "[data-hook=\"country-USA-label\"]", "hoverMs": 900 },
-    { "dwell": 3600 },
+    {
+      "dwell": 6700
+    },
+    {
+      "click": "[data-hook=\"country-USA-label\"]",
+      "hoverMs": 900
+    },
+    {
+      "dwell": 3600
+    },
     {
       "click": "[data-hook=\"buy-credits\"]",
       "hoverMs": 900,
@@ -81,23 +122,54 @@
       "section": "Buying credits",
       "caption": "Topping up happens inside the flow. Sending a customer to a separate billing page mid-campaign is how a campaign never gets sent."
     },
-    { "dwell": 6200 },
-    { "click": "[data-hook=\"paid-close\"], [data-hook=\"checkout-back\"]", "hoverMs": 800 },
-    { "dwell": 2500 },
-    { "click": "[data-hook=\"contacts-upload\"]", "hoverMs": 900, "section": "Audience" },
-    { "dwell": 3600 },
+    {
+      "dwell": 6200
+    },
+    {
+      "key": "Escape"
+    },
+    {
+      "dwell": 2500
+    },
+    {
+      "click": "[data-hook=\"contacts-upload\"]",
+      "hoverMs": 900,
+      "section": "Audience"
+    },
+    {
+      "dwell": 3600
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
       "waitFor": "[data-hook=\"csv-map-table\"]"
     },
-    { "dwell": 4600 },
+    {
+      "dwell": 4600
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
       "waitFor": "[data-hook=\"toggle-exclusions\"]"
     },
-    { "dwell": 4600 },
+    {
+      "dwell": 4600
+    },
+    {
+      "click": "[data-hook=\"confirm-permission-label\"]",
+      "hoverMs": 800
+    },
+    {
+      "dwell": 1600
+    },
+    {
+      "click": "[data-hook=\"confirm-privacy-label\"]",
+      "hoverMs": 700,
+      "caption": "Both confirmations are required before Next will move: permission to contact, and the privacy policy. Neither can be waved through on the customer's behalf."
+    },
+    {
+      "dwell": 2800
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 700,
@@ -105,19 +177,25 @@
       "section": "Send",
       "caption": "The confirm names the credit cost, not just the headcount, because that is the part that cannot be undone."
     },
-    { "dwell": 5200 },
+    {
+      "dwell": 5200
+    },
     {
       "click": "[data-hook=\"wizard-next\"]",
       "hoverMs": 900,
       "waitFor": "[data-hook=\"send-confirm-title\"]"
     },
-    { "dwell": 5600 },
+    {
+      "dwell": 5600
+    },
     {
       "click": "[role=\"alertdialog\"] button:has-text(\"Send now\")",
       "hoverMs": 900,
       "waitFor": "[data-hook=\"wizard-success\"]",
       "section": "Sent"
     },
-    { "dwell": 6200 }
+    {
+      "dwell": 6200
+    }
   ]
 }

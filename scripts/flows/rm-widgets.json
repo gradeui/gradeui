@@ -88,9 +88,7 @@
     {
       "click": "button:has-text(\"Discard and leave\")",
       "hoverMs": 800,
-      "waitFor": "[data-hook=\"widget-w1\"]",
-      "section": "The card",
-      "caption": "One fact per row with a hairline between, not three facts glued into a sentence with interpuncts. Every date is absolute and in the same format the page header uses."
+      "waitFor": "[data-hook=\"widget-w1\"]"
     },
     {
       "dwell": 6200
@@ -100,7 +98,7 @@
       "hoverMs": 1000,
       "waitFor": "[data-hook=\"widget-w1-delete-title\"]",
       "section": "Delete asks",
-      "caption": "Destructive actions ask in a dialog, never as a red panel inside the card. A red panel reads as an error that has happened rather than a question being asked, and it reflowed the grid around it."
+      "caption": "Back on the list, where each card is one fact per row rather than three glued into a sentence. Destructive actions ask in a dialog, never as a red panel inside the card: a red panel reads as an error that has happened rather than a question being asked, and it reflowed the grid around it."
     },
     {
       "dwell": 6200

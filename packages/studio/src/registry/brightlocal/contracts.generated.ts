@@ -7003,6 +7003,34 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
     },
     "element": "button"
   },
+  "DateStamp": {
+    "name": "DateStamp",
+    "props": {
+      "label": {
+        "kind": "unknown",
+        "design": "plumbing",
+        "optional": true,
+        "description": "The word in front of the date (\"Last updated\", \"Last activity\", \"Stopped\"). Omit for the date alone."
+      },
+      "value": {
+        "kind": "unknown",
+        "design": "plumbing",
+        "description": "The date, ISO preferred (\"2026-09-02T06:00\"). Rendered through formatDate; if it carries a time, formatDateTime hangs the full stamp off a dotted underline on hover and keyboard focus."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "Instance name; the underlined date derives \"<dataHook>-date\"."
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "LAYOUT ONLY (alignment inside its row) — never restyle the stamp."
+      }
+    }
+  },
   "Description": {
     "name": "Description",
     "props": {
