@@ -1201,6 +1201,21 @@ export function AppLayoutShell({
           CardHeader/CardContent, which carry the px utilities. */}
       <style>{
         ":root{--bl-card-link:var(--ds-tailwind-colors-green-800);--bl-card-link-hover:var(--ds-tailwind-colors-green-700)}" +
+        /* NO ORPHANS IN DESCRIPTIONS (Ali, 3 Sep: "I'd probably apply
+           text-pretty so we don't get orphans to all card descriptions").
+           `text-wrap: pretty` asks the browser to avoid leaving a single
+           word alone on the last line, which is the failure these
+           two-line ledes keep hitting — "carousel or a JSON feed." wrapping
+           to one word reads as a mistake in the copy rather than in the
+           column width.
+           HERE, not at ~40 call sites: it applies to every description on
+           every RM screen at once, and a className on each is the override
+           soup that makes a screen impossible to re-theme. Applied to the
+           three slots that hold wrapping prose — card, field and the page
+           header's own description — and NOT to headings, where `pretty`
+           costs layout work for text that rarely wraps.
+           Degrades silently: browsers without support wrap as before. */
+        "[data-slot=card-description],[data-slot=field-description]{text-wrap:pretty}" +
         "[data-bl-link]{transition:color 120ms ease}" +
         /* NO generic [data-bl-link]:hover colour rule any more — card
            titles stay put on hover (Ali, 24 Jul); the accordion row

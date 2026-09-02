@@ -217,6 +217,19 @@ async function sendOn(page, row, settle = 1800) {
 // passed their assertions, because the assertion only asks whether the
 // element EXISTS, not whether it is on screen. Pixel offsets are a guess
 // about a page's height; this is not.
+// Poll until a hook exists, rather than guessing a delay. A fixed wait is a
+// bet on how long a chart takes to mount, and it is a bet that gets lost on
+// a cold dev server.
+async function waitForHook(page, hook, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const there = await inFrame(page, (sel) => !!document.querySelector(sel), hook);
+    if (there) return true;
+    await wait(250);
+  }
+  return false;
+}
+
 async function scrollToHook(page, hook, offset = 24) {
   const moved = await inFrame(page, ({ sel, off }) => {
     let best = null, most = 0;
@@ -661,7 +674,12 @@ const STATES = [
   // them across four screens. Shot together so the wording can be compared
   // side by side rather than found one at a time.
   ["widgets-06-delete-confirm", "widgets", async (p) => {
-    await press(p, '[data-hook="widget-w1-delete"]');
+    // Delete moved into the card's overflow (3 Sep), so it is two steps now.
+    // The bare bin icon in the footer is gone: a destructive action sitting
+    // in the row of everyday buttons is one slip from the one it cannot undo.
+    await press(p, '[data-hook="widget-w1-menu-button"]');
+    await wait(700);
+    await pressText(p, "Delete widget", '[role="menuitem"]');
     await wait(800);
   },
     `!!document.querySelector('[data-hook="widget-w1-delete-title"]')`,
@@ -914,6 +932,51 @@ const STATES = [
   // Driven off the EMAIL branch because it is the only one carrying all
   // three pages — the link branch has no email, and a straight-to-review
   // campaign has no feedback page.
+  // ── One page per campaign STATE (Ali, 3 Sep: "put all the states in,
+  // then we can have a page in each of these states… we will need to
+  // capture each drill down for each state as well").
+  //
+  // Six states, six drill-downs, because each one renders a different
+  // banner and a different set of header actions — Scheduled can be
+  // cancelled but not re-used yet, Sending says its numbers are still
+  // moving, Finished offers Re-use and nothing to stop, Stopped offers
+  // Restart. A grid shot proves the badges; only the page proves the rest.
+  ["getreviews-27-states-grid", "getreviews", async (p) => { await scrollTo(p, 400); },
+    `(() => {
+       const want = ["Live","Draft","Stopped","Scheduled","Sending","Finished"];
+       const seen = [...document.querySelectorAll('[data-hook^="campaign-c"][data-hook$="-status"]')]
+         .map((e) => e.textContent.trim());
+       return want.every((w) => seen.includes(w));
+     })()`,
+    "All six campaign states in one grid. Nothing specifies these — not the brief, not the audit, not the legacy screens — so the set is a proposal: Live was doing two jobs, because a standing web link is live and an email campaign sent in July is not."],
+  ["getreviews-28-page-scheduled", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c6-cta"]'); },
+    `!!document.querySelector('[data-hook="state-banner"]')
+     && !!document.querySelector('[data-hook="insights-stop"]')`,
+    "Scheduled. Nothing has been sent, so the banner says the messages can still be changed, and the action reads Cancel send rather than Stop campaign."],
+  ["getreviews-29-page-sending", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c7-cta"]'); },
+    `!!document.querySelector('[data-hook="state-banner"]')`,
+    "Sending. The numbers are real but not final, which is the whole reason this state needs a banner: a half-finished funnel read as a finished one is a wrong conclusion, not a missing number."],
+  ["getreviews-30-page-finished", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c8-cta"]'); },
+    `!!document.querySelector('[data-hook="state-banner"]')
+     && !document.querySelector('[data-hook="insights-stop"]')`,
+    "Finished. Every message sent, the reminder gone, nothing left to stop — so Stop is absent and Re-use is the way to run the same ask again."],
+  ["getreviews-31-page-stopped", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c5-cta"]'); },
+    `!!document.querySelector('[data-hook="insights-restart"]')`,
+    "Stopped. The one state with a warning rather than an info banner, and the only page where Restart appears — as a primary button, because on a stopped campaign it is the thing you came to do."],
+  ["getreviews-32-restart-confirm", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c5-cta"]');
+    // 1400ms was not enough: the campaign page mounts a chart and a table
+    // before its header actions are interactive, so the press landed on a
+    // button that was there but not yet wired. Wait for the state banner,
+    // which renders in the same pass as the actions.
+    await waitForHook(p, '[data-hook="insights-restart"]');
+    await wait(600);
+    await press(p, '[data-hook="insights-restart"]');
+    await wait(1000);
+  },
+    `!!document.querySelector('[data-hook="restart-title"]')`,
+    "Restarting explains itself. It is easy to assume restart means send it again, which for a 480-person campaign is an expensive thing to assume wrongly — it reopens the links already out there, and nobody receives anything."],
+
   ["getreviews-25-delete-draft", "getreviews", async (p) => {
     await press(p, '[data-hook="campaign-c4-menu-button"]');
     await wait(700);

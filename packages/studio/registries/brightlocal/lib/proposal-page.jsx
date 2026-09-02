@@ -255,11 +255,19 @@ export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
       dataHook={dataHook}
       data-bl-link=""
       {...rest}
-      // text-xl semibold (Ali, 23 Jul) — the grid-card title scale:
-      // a step under the At-a-Glance/landing headings (text-2xl), a
-      // step over body. Overrides ride tailwind-merge past the size
+      // text-xl MEDIUM since 3 Sep (Ali: "drop the weight of these to match
+      // the standard card headers"). It was semibold (Ali, 23 Jul), which
+      // put these titles a full weight above every other card title in the
+      // tool: the widget cards, the campaign cards and the Insights cards
+      // are all `CardTitle size="small"` at font-medium, and the DS itself
+      // ships font-medium at BOTH its sizes. Semibold was ours alone.
+      //
+      // The SIZE stays text-xl. That distinction is doing real work — these
+      // are module cards on a landing page, one step under the page heading
+      // and one over body — and it is the weight, not the scale, that was
+      // making them shout. Overrides ride tailwind-merge past the size
       // variant; pass className to override per-instance.
-      className={["text-xl font-semibold", className].filter(Boolean).join(" ")}
+      className={["text-xl font-medium", className].filter(Boolean).join(" ")}
     >
       {children}
     </CardTitle>
@@ -721,7 +729,10 @@ export function PageHeader({
               // paragraph running the full width (Ali, 20 Jul).
               <p
                 data-hook={`${dataHook}-description`}
-                className="max-w-2xl text-sm leading-relaxed text-muted-foreground"
+                // text-pretty: no single-word last line. See the shell's
+                // scoped rule, which does the same for card and field
+                // descriptions; this one is ours so it takes the class.
+                className="max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground"
               >
                 {description}
               </p>
