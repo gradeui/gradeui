@@ -92,13 +92,19 @@ import {
 // site: there are ~30 inputs across the three wizards and a className on
 // each is the "override soup" that makes a screen impossible to re-theme.
 // When the DS settles its own scale, delete this block and nothing else.
+// 13px, DOWN FROM 14 (Ali, 3 Sep: "can we drop the text size down on the
+// inputs"). The DS ships 16px fields against 14px labels, which is the wrong
+// way round; 14 fixed the mismatch and 13 settles it — a step's fields now
+// read quieter than the question above them, and quieter than the customer
+// preview sitting beside them, which is the thing the writer is actually
+// looking at.
 const WIZARD_TYPE_SCALE = `
 [data-hook="__HOOK__-layout"] [data-slot="input"],
 [data-hook="__HOOK__-layout"] [data-slot="textarea"],
 [data-hook="__HOOK__-layout"] [data-slot="select-trigger"],
 [data-hook="__HOOK__-layout"] [data-slot="select-value"] {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
 }
 [data-hook="__HOOK__-layout"] [data-slot="card-title"] {
   font-size: 1.125rem;

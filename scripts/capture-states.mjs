@@ -845,14 +845,15 @@ const STATES = [
     `(() => {
        const sum = document.querySelector('[data-hook="campaign-summary-panel"]');
        if (!sum || sum.getAttribute("data-state") !== "active") return false;
-       // TWO BUTTONS AND A MENU since 3 Sep: Re-use and Stop moved into the
-       // overflow, so asserting on four buttons could only ever fail.
-       for (const h of ["insights-reuse", "insights-stop", "insights-preview", "insights-download"]) {
+       for (const h of ["insights-stop", "insights-preview", "insights-download"]) {
          if (!document.querySelector('[data-hook="' + h + '"]')) return false;
        }
+       // Re-use left the header on 3 Sep. Asserting on its ABSENCE is the
+       // only way this catches it coming back.
+       if (document.querySelector('[data-hook="insights-reuse"]')) return false;
        return !document.querySelector('[role="dialog"]');
      })()`,
-    "Campaign detail as a FULL PAGE. Two CTAs and an overflow: Preview and Download are what you came to a results page for, and Re-use and Stop — one of which starts a new campaign and the other of which is destructive — sit behind the menu."],
+    "Campaign detail as a FULL PAGE. Stop, Preview and Download: the things you do to this campaign. Re-use is not here, because starting a new campaign from an old one is a choice you make on the list, where you can see the others."],
   ["getreviews-03-campaign-feedback", "getreviews", async (p) => {
     await press(p, '[data-hook="campaign-c1-cta"]'); await wait(1400);
     await press(p, '[data-hook="campaign-tab-feedback"]');
