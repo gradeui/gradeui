@@ -1216,10 +1216,22 @@ export function AppLayoutShell({
            costs layout work for text that rarely wraps.
            Degrades silently: browsers without support wrap as before. */
         "[data-slot=card-description],[data-slot=field-description]{text-wrap:pretty}" +
-        "[data-bl-link]{transition:color 120ms ease}" +
-        /* NO generic [data-bl-link]:hover colour rule any more — card
-           titles stay put on hover (Ali, 24 Jul); the accordion row
-           rule below is the only hover recolour left. */
+        "[data-bl-link]{transition:color 120ms ease;cursor:pointer}" +
+        /* THE LINK TREATMENT, IN ONE PLACE (Ali, 3 Sep: "what's the
+           treatment on a link and the hover on a link?").
+           AT REST: the normal card foreground. Green-at-rest went on
+           22 Jul ("too many colours") and stays gone.
+           ON HOVER: green-700 + underline + pointer.
+           This reverses the 24 Jul "card titles stay put on hover".
+           Staying put left clickable titles with no affordance at all on
+           Review Widgets, and let Get Reviews invent its own with a raw
+           `hover:text-primary` — which is the BRAND green, #2AE855, at
+           1.64:1 on white. That is not a near miss on AA, it is a colour
+           you cannot read. green-700 is 4.80:1 and is already the hover
+           colour of every accordion row, so this is one treatment rather
+           than a third one. --bl-card-link-hover overrides it per theme;
+           green-800 (6.92:1) if AA is ever tightened to AAA. */
+        "[data-bl-link]:hover{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700));text-decoration-line:underline;text-underline-offset:2px}" +
         "[data-slot=accordion-trigger]:hover [data-bl-link]{color:var(--bl-card-link-hover,var(--ds-tailwind-colors-green-700))}" +
         /* The trigger's own hover:underline decorates in the TRIGGER's
            colour (dark foreground) while the label sits in link green —
