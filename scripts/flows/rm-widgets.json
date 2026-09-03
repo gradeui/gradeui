@@ -94,11 +94,19 @@
       "dwell": 6200
     },
     {
-      "click": "[data-hook=\"widget-w1-delete\"]",
+      "click": "[data-hook=\"widget-w1-menu-button\"]",
       "hoverMs": 1000,
-      "waitFor": "[data-hook=\"widget-w1-delete-title\"]",
       "section": "Delete asks",
-      "caption": "Back on the list, where each card is one fact per row rather than three glued into a sentence. Destructive actions ask in a dialog, never as a red panel inside the card: a red panel reads as an error that has happened rather than a question being asked, and it reflowed the grid around it."
+      "caption": "Back on the list, where each card is one fact per row rather than three glued into a sentence. Two buttons in the footer, everything else in the overflow, and Delete lives there rather than as a bare bin icon next to the ones people click fast."
+    },
+    {
+      "dwell": 3200
+    },
+    {
+      "click": "[role=\"menuitem\"]:has-text(\"Delete widget\")",
+      "hoverMs": 900,
+      "waitFor": "[data-hook=\"widget-w1-delete-title\"]",
+      "caption": "Destructive actions ask in a dialog, never as a red panel inside the card: a red panel reads as an error that has happened rather than a question being asked, and it reflowed the grid around it."
     },
     {
       "dwell": 6200

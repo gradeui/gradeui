@@ -22,6 +22,27 @@ instead of the flat screenshots currently pinned to each page.
    guess what the library contains, and do not use the drafts copy.
 3. Read "The mistake to avoid" below before reporting anything as missing.
 
+**State of the rebuilds (3 Sep).** Every section page is one
+`Captured states` section holding TWO columns: **column A (x=80) is the
+screenshot**, **column B (x=2120) is the DS rebuild**, traced over a 25%
+copy of the same shot. Column-B cards are named `<state> — rebuild` and
+their caption reads "DS rebuild". 79 screenshots, 30 rebuild slots.
+
+Done this pass: the sidebar matches the shipped IA (Local AI Visibility →
+GBP Manager → Reviews, location card, signed-in footer) and is propagated
+to all 25 shells; the app-shell geometry matches the live page (nav 280,
+content 952 at x=304); all 17 page headers carry their real breadcrumb,
+title, description, CTA cluster and date stamp; `Local - Inbox` is a
+faithful 12-row table with the order/pager row; the Get Reviews hub cards
+and the campaign Results card match the shipped design; Review Widgets
+cards lost the interpunkt line and the footer bin.
+
+Still open: the `…` overflow button on hub and widget cards; the widget
+cards' key-value rows; the five `createwidget-*` wizard rebuilds; the
+three overlay rebuilds that have no shell behind them
+(`templates-02`, `templates-03`, `widgets-05`); Review Insights and
+Reply Templates detail content.
+
 **What already exists in `Brightlocal - Reviews`:**
 
 - Pages: `Components`, and one per section (Review Inbox, Review Performance,
@@ -167,6 +188,16 @@ turn a panel from a 300-line script into a 30-line one:
 | `rmHelper` | The whole helper library, as source. `const H = await eval(figma.root.getPluginData('rmHelper'))` |
 | `rmReg` | `{ familyName: componentSetNodeId }` for every set the panels use |
 | `rmIcons` | `{ iconName: componentNodeId }` |
+| `rmArrange` | `arrange(page, states)` / `distribute(fromPage)` — files dropped screenshots into the file's grid |
+| `rmSidebar` | `apply(root, {top, sub})` — rewrites a SidebarContents "Items" SLOT from the master and marks the active trail |
+| `rmShell` | `fixGeometry(root)` / `rebuilds(page)` — nav column 280, content FILL, and an iterator over every column-B rebuild |
+| `rmHeader` | `crumbs` / `text` / `cta` / `ctaAdd` / `fixCurrent` — one PageHeader concern per call |
+| `rmFit` | `fit(page, slug)` — makes a rebuild's body FILL the 952 content column |
+| `rmInbox` | `row` / `place` / `status` — edits the local `Local - Inbox` table |
+| `rmHub` | `footer` / `meta` / `desc` / `headline` / `stats` / `statText` — the campaign + widget card passes |
+
+Each of those is deliberately **one concern per call**, for the reason in
+"One mutation per call" below.
 
 **`eval` works in this sandbox** (so does `new Function`), which is what makes
 the stored-helper trick possible. Without it every call would re-paste ~14KB of
@@ -260,6 +291,97 @@ Card renders "This is a card description."
 | Badge | `Show Left Icon#17100:0`, `Show Right Icon#17100:11`, `Badge Text#26:6` | `Variant=Primary` is the green one |
 | Alert | `Title#17096:0`, `Description#17096:3`, `Button#17096:7`, `Icon#17096:5`, `Title Text#26:5`, `Description Text#26:4`, `Variant=Destructive/Info/Success/Warning` | the action button lays out as a **second column** and squeezes the copy — the same reason the code puts its buttons inside the description instead |
 | Rating | `Rating=1.0…5.0` x `Size=Default/Small` | no thumb up/down variant |
+
+## One mutation per call (3 Sep)
+
+The 30s cap in the section above is the ceiling, not the working limit.
+Once the file grew to 79 `StateCard`s plus 30 rebuilds, **the bridge
+started killing calls at ~5s**, and the budget is spent on *relayout*,
+not on your code. Measured in-plugin, a breadcrumb rewrite is 148ms and a
+header text pass is 159ms — but two of them in one `figma_execute` times
+out, and the same two in separate calls both succeed.
+
+Rules that came out of that:
+
+- **One mutating operation per call**, two at most, and never two on the
+  *same* rebuild. A second op on a subtree you just touched is the
+  reliable way to hang.
+- Store the work as a **helper in root plugin data** and call it with one
+  argument per round trip. Grinding 17 headers is ~50 small calls; that
+  is fine, and it is far cheaper than a timeout that leaves the file
+  half-edited.
+- A batching loop with its own time budget (`while Date.now() - t0 < ms`)
+  **does not help** — the cost lands after your loop returns.
+- A timed-out call is **not** a no-op. It usually completed several
+  writes before dying, so re-read before retrying or you will double up.
+  Four extra `Button` instances appeared in one CTA cluster this way.
+
+## Reading `componentProperties` can blow the context
+
+`INSTANCE_SWAP` properties carry a `preferredValues` array. On the DS
+`Breadcrumb` that array is ~350 component keys, and returning the whole
+`componentProperties` object from one instance printed ~30k tokens.
+Return the keys you want by name, never the object.
+
+## Component booleans beat layer visibility, always
+
+The DS `Breadcrumb` looks like a row of items you show and hide. It is
+not. It is five **(item, chevron) PAIRS** plus a sixth item at child
+index 10 that no property governs, and `Breadcrumb 1`..`Breadcrumb 5`
+switch one pair each:
+
+```
+only Breadcrumb 1 → 11000000001      // pair 1 + the ungoverned last item
+only Breadcrumb 3 → 00001100001
+only Breadcrumb 5 → 00000000111
+```
+
+So the five booleans are the **intermediate** crumbs and index 10 is
+always the current page: an N-crumb trail turns on the first N-1
+booleans and writes the last label into index 10.
+
+Setting `.visible` on those sublayers instead **looks right for one
+frame and then silently reverts** — the booleans are re-applied on every
+relayout. Two more traps in the same family:
+
+- **Order matters: variants, then text, then the booleans LAST.**
+  Swapping a child's `Variant` re-creates that child, and the parent's
+  boolean override for its slot is lost with it, so a boolean written
+  before a swap comes back on.
+- An override written by an earlier, wrong attempt **persists**. Index 10
+  stayed hidden through every later fix until it was un-hidden directly,
+  because no boolean governs it.
+
+Probe before theorising. Flipping one boolean at a time and printing the
+visibility bitmap took one call and settled an hour of guessing.
+
+## Slot content becomes unreachable once mounted
+
+The existing note says to fill a Card's content slot *before* appending
+the Card. The failure is worse than "unreachable": once a frame is
+inside a slot inside an instance you can no longer `remove()` it,
+`resize()` it, or set `layoutSizingHorizontal` — every one throws
+`The node (instance sublayer or table cell) … does not exist`, and
+`getNodeByIdAsync` on that id **hangs** rather than returning null,
+which reads as a dead bridge.
+
+Consequences:
+
+- Give every node an **explicit width before it goes near a slot**. A
+  wrapper left on HUG collapses its FILL children to their minimum, and
+  there is no way back in to fix it.
+- The only repair is to rebuild the whole **Card** and swap it at a level
+  you can still reach (the body frame's direct children). Clone anything
+  you still need out of the broken card *first* — a sibling that is a
+  direct child of the slot may still be reachable even when its neighbour
+  is not.
+- `findAll`/`findOne` callbacks must be wrapped in try/catch. One stale
+  sublayer throws on `get_name` and takes the whole traversal with it.
+
+## Figma rotation is counter-clockwise
+
+`Icon / ChevronDown` at `rotation = 90` points **right**, not left. The
+pager's prev is `-90` and next is `+90`. Measured, not reasoned.
 
 ## Instance sublayers: what can and cannot be overridden
 

@@ -961,6 +961,32 @@ const STATES = [
   // cancelled but not re-used yet, Sending says its numbers are still
   // moving, Finished offers Re-use and nothing to stop, Stopped offers
   // Restart. A grid shot proves the badges; only the page proves the rest.
+  // ── What a campaign looks like the moment it exists (Ali, 3 Sep:
+  // "capture the campaign created state, and what happens after that").
+  // Two frames nobody had shot, and they are the two every real user sees
+  // first: the confirmation, and the results page before there are any
+  // results.
+  ["getreviews-33-created", "getreviews", async (p) => {
+    await campaignWizardTo(p, "email", "send");
+    await press(p, '[data-hook="wizard-next"]');
+    await wait(900);
+    await pressText(p, "Send now", '[role="alertdialog"] button');
+    await wait(1200);
+  },
+    `!!document.querySelector('[data-hook="wizard-success"]')`,
+    "Sent. The way on is the campaign's own insights page, because the next thing anyone wants to know is whether it landed."],
+  ["getreviews-34-no-activity-yet", "getreviews", async (p) => {
+    await campaignWizardTo(p, "email", "send");
+    await press(p, '[data-hook="wizard-next"]');
+    await wait(900);
+    await pressText(p, "Send now", '[role="alertdialog"] button');
+    await wait(1200);
+    await press(p, '[data-hook="success-insights"]');
+    await wait(1400);
+  },
+    `!!document.querySelector('[data-hook="insights-empty"]')`,
+    "A campaign with nothing back yet: sent counts, everything else is zero, and the card says so rather than drawing an empty funnel and a flat chart. This is the state a real user stares at for the first hour, and it is the one a demo never shows."],
+
   ["getreviews-27-states-grid", "getreviews", async (p) => { await scrollTo(p, 400); },
     `(() => {
        const want = ["Live","Draft","Stopped","Scheduled","Sending","Finished"];
