@@ -971,8 +971,21 @@ export function StatCard({
         // separate a tile from the card behind it — that is what a filled
         // surface is FOR. A border is how you separate two things that share
         // a background, which these do not.
+        // neutral-300, after three goes at this (Ali, 3 Sep: "too light",
+        // "I can barely see these cards", "still pale as hell").
+        //
+        // MEASURED, because guessing wasted two rounds. BrightLocal's neutral
+        // ramp is GREEN-TINTED, not grey, and its light end is very tight:
+        //   neutral-50   #fcfdfc   ~1% off white
+        //   neutral-100  #f2f7f3   identical to --muted
+        //   neutral-200  #e6ede8   ~6%
+        //   neutral-300  #d8e3da   ~12%
+        // The tile sits on a WHITE card, so 50 and 100 were invisible and 200
+        // was still under the threshold where a fill reads as a surface. 300
+        // is the first step that makes the tile a container you can see,
+        // which is the entire job of a container.
         level === "nested"
-          ? "border-0 bg-[light-dark(var(--ds-tailwind-colors-neutral-50),var(--ds-tailwind-colors-neutral-800))]"
+          ? "border-0 bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))]"
           : "",
         className,
       ]
@@ -981,7 +994,17 @@ export function StatCard({
       {...rest}
     >
       <CardContent>
-        <div className="flex items-start justify-between gap-2">
+        {/* min-h-7 RESERVES THE INFO BUTTON'S HEIGHT (Ali, 3 Sep: "the
+            number lines and title lines are very wonky, looks awful").
+            They were. The (i) is a size-7 ghost Button living in this row,
+            so a tile WITH one had a 28px label row and a tile without had a
+            ~16px one — which pushed the value down by 12px on three tiles
+            out of five and left the row of numbers stepping up and down
+            across the card.
+            Reserving the height unconditionally is the fix rather than
+            putting an (i) on every tile: an info icon on all five would make
+            them align by making the icon meaningless. */}
+        <div className="flex min-h-7 items-center justify-between gap-2">
           <TypographyMuted className="text-xs font-medium">
             {label}
           </TypographyMuted>

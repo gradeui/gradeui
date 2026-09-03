@@ -664,9 +664,27 @@ const STATES = [
     "Editing an existing widget stays on the list screen: it is a change to something that already exists, not a new linear task, so it does not earn its own page."],
   // By hook, not by pressText("View"): every widget card carries a View
   // button, so the text lookup silently depended on DOM order.
-  ["widgets-05-detail-embed", "widgets", async (p) => { await press(p, '[data-hook="widget-w1-view"]'); },
-    `!!document.querySelector('[data-hook="widget-detail-drawer"][data-state="open"]')`,
-    "The embed snippet with copy-to-clipboard. Opens automatically after saving, so the code is one step away, not two."],
+  // THE DRAWER SPLIT IN TWO (3 Sep). `widget-detail-drawer` no longer
+  // exists: preview and embed are separate sheets, because with both
+  // stacked the LENGTH OF THE PREVIEW decided whether you could see the
+  // code — a list widget showing ten reviews pushed the payoff below the
+  // fold of a 640px panel.
+  ["widgets-05-detail-embed", "widgets", async (p) => {
+    await press(p, '[data-hook="widget-w1-menu-button"]');
+    await wait(700);
+    await pressText(p, "Get embed code", '[role="menuitem"]');
+    await wait(900);
+  },
+    `!!document.querySelector('[data-hook="widget-embed-drawer"][data-state="open"]')
+     && !!document.querySelector('[data-hook="embed-instructions"]')`,
+    "The embed code on its own sheet, with the instructions the single sheet had no room for. The last step is the one nobody documents: the script line is needed once per page, not once per widget."],
+  ["widgets-07-preview-sheet", "widgets", async (p) => {
+    await press(p, '[data-hook="widget-w1-view"]');
+    await wait(900);
+  },
+    `!!document.querySelector('[data-hook="widget-preview-drawer"][data-state="open"]')
+     && !!document.querySelector('[data-hook="detail-preview-card"]')`,
+    "Preview on its own sheet. The card button says Preview now rather than View: it used to open one sheet holding two things, so the label had to be vague enough to cover both."],
 
   // EVERY DESTRUCTIVE CONFIRMATION GETS A FRAME (Ali, 2 Sep: "I want a
   // capture of all deletion messages"). They are the screens nobody
@@ -827,12 +845,14 @@ const STATES = [
     `(() => {
        const sum = document.querySelector('[data-hook="campaign-summary-panel"]');
        if (!sum || sum.getAttribute("data-state") !== "active") return false;
+       // TWO BUTTONS AND A MENU since 3 Sep: Re-use and Stop moved into the
+       // overflow, so asserting on four buttons could only ever fail.
        for (const h of ["insights-reuse", "insights-stop", "insights-preview", "insights-download"]) {
          if (!document.querySelector('[data-hook="' + h + '"]')) return false;
        }
        return !document.querySelector('[role="dialog"]');
      })()`,
-    "Campaign detail as a FULL PAGE, entered from a card and left through the last breadcrumb crumb. Re-use, Stop campaign, Preview and Download sit beside the title, because they act on the whole campaign."],
+    "Campaign detail as a FULL PAGE. Two CTAs and an overflow: Preview and Download are what you came to a results page for, and Re-use and Stop — one of which starts a new campaign and the other of which is destructive — sit behind the menu."],
   ["getreviews-03-campaign-feedback", "getreviews", async (p) => {
     await press(p, '[data-hook="campaign-c1-cta"]'); await wait(1400);
     await press(p, '[data-hook="campaign-tab-feedback"]');
@@ -962,7 +982,7 @@ const STATES = [
     "Finished. Every message sent, the reminder gone, nothing left to stop — so Stop is absent and Re-use is the way to run the same ask again."],
   ["getreviews-31-page-stopped", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c5-cta"]'); },
     `!!document.querySelector('[data-hook="insights-restart"]')`,
-    "Stopped. The one state with a warning rather than an info banner, and the only page where Restart appears — as a primary button, because on a stopped campaign it is the thing you came to do."],
+    "Stopped. The one state with a warning rather than an info banner, and the only one offering Restart — which lives in the overflow now, with Re-use, since the header is down to two CTAs."],
   ["getreviews-32-restart-confirm", "getreviews", async (p) => {
     await press(p, '[data-hook="campaign-c5-cta"]');
     // 1400ms was not enough: the campaign page mounts a chart and a table
