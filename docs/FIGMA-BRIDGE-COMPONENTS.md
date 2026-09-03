@@ -28,20 +28,34 @@ screenshot**, **column B (x=2120) is the DS rebuild**, traced over a 25%
 copy of the same shot. Column-B cards are named `<state> — rebuild` and
 their caption reads "DS rebuild". 79 screenshots, 30 rebuild slots.
 
-Done this pass: the sidebar matches the shipped IA (Local AI Visibility →
-GBP Manager → Reviews, location card, signed-in footer) and is propagated
-to all 25 shells; the app-shell geometry matches the live page (nav 280,
-content 952 at x=304); all 17 page headers carry their real breadcrumb,
-title, description, CTA cluster and date stamp; `Local - Inbox` is a
-faithful 12-row table with the order/pager row; the Get Reviews hub cards
-and the campaign Results card match the shipped design; Review Widgets
-cards lost the interpunkt line and the footer bin.
+Done this pass (3 Sep):
 
-Still open: the `…` overflow button on hub and widget cards; the widget
-cards' key-value rows; the five `createwidget-*` wizard rebuilds; the
-three overlay rebuilds that have no shell behind them
-(`templates-02`, `templates-03`, `widgets-05`); Review Insights and
-Reply Templates detail content.
+- **Sidebar** matches the shipped IA — Local AI Visibility → AI Insights
+  → Location Profile → Rankings → Local Search Grid → Citations → GBP
+  Manager → Reviews, plus the location mini-card and the signed-in
+  footer — and is propagated into all 25 shells.
+- **App-shell geometry** matches the live page: nav column 280, content
+  FILL, page card at x=304 w=952. Measured off the running share view,
+  not eyeballed.
+- **All 17 page headers** carry their real breadcrumb trail, title,
+  description, CTA cluster and date stamp (label plain, date underlined).
+- **`Local - Inbox`** is a faithful 12-row table: live column widths, no
+  visible header row (the real one is sr-only), correct per-row source,
+  rating, status badge and date, plus the order control and pager.
+- **Get Reviews hub** cards rebuilt to the shipped shape — channel +
+  status badge on one line, dated top right, headline number, key-value
+  rows, CTA anchored left, overflow dots.
+- **Campaign summary** is one Results card holding the five nested tiles
+  and a Funnel sub-heading, bars in the neutral ramp.
+- **Review Widgets** cards took the same pass, and lost the footer bin.
+- **Create Widget** wizard headers stack name / line / stepper and align
+  to the card; the done step is self-consistent about being a list.
+- **The three overlay rebuilds** (`templates-02`, `templates-03`,
+  `widgets-05`) now have their own screen behind the scrim.
+
+Still open: Review Insights and Reply Templates *detail* content; the
+`Local - Inbox` states 02-13 still show the list rather than each state's
+own overlay; no TripAdvisor mark in the library (see "Known gaps").
 
 **What already exists in `Brightlocal - Reviews`:**
 
