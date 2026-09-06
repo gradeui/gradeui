@@ -7,7 +7,7 @@
     {
       "section": "Report settings",
       "dwell": 6700,
-      "caption": "Everything the RM brief lists under Monitor Reviews that had nowhere to live: the schedule, the directories, the alerts, the share link and the run history. Reached from Review Insights' Settings button, which until now was a control that did nothing."
+      "caption": "Everything the RM brief lists under Monitor Reviews that had nowhere to live: the schedule, the directories, the alerts, the share link and the run history. Reached from Review Tracker' Settings button, which until now was a control that did nothing."
     },
     { "dwell": 2500 },
     { "scrollBy": 460, "ms": 950 },

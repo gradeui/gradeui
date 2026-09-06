@@ -5,9 +5,9 @@
   "h": 834,
   "steps": [
     {
-      "section": "Get Reviews",
+      "section": "Review Builder",
       "dwell": 6200,
-      "caption": "Get Reviews. Campaigns that invite visitors to leave a review by email, text or web link."
+      "caption": "Review Builder. Campaigns that invite visitors to leave a review by email, text or web link."
     },
     {
       "scrollBy": 500,
@@ -56,7 +56,7 @@
       "hoverMs": 900,
       "waitFor": "[data-hook=\"campaign-c1-cta\"]",
       "section": "Back to the hub",
-      "caption": "The last crumb, Get Reviews, is the way out. The trail was already naming the parent, so it does the job an in-body back link was doing."
+      "caption": "The last crumb, Review Builder, is the way out. The trail was already naming the parent, so it does the job an in-body back link was doing."
     },
     {
       "dwell": 4200

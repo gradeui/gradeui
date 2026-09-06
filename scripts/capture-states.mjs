@@ -84,14 +84,18 @@ const BY_PAGE = process.argv.includes("--by-page");
 // Section prefix -> Figma page name, VERBATIM. If a page is renamed in Figma,
 // rename it here too: a folder that does not match a page is the one thing
 // this flag exists to prevent.
+// The SECTION KEYS are slugs, not labels: they name the walker and prefix
+// every state file, so they survived the 6 Sep rename untouched. Only the
+// Figma page names moved. Do not "tidy" inbox → manager here without
+// renaming 79 files, every StateCard and every flow JSON with it.
 const FIGMA_PAGE = {
   reviewshub: "Brightlocal - Review Hub",
-  inbox: "Brightlocal - Review Inbox",
-  insights: "Brightlocal - Review Insights",
-  widgets: "Brightlocal - Review Widgets",
-  createwidget: "Brightlocal - Review Widgets - Create Widgets",
-  getreviews: "Brightlocal - Get Reviews",
-  templates: "Brightlocal - Review Inbox - Reply Templates",
+  inbox: "Brightlocal - Review Manager",
+  insights: "Brightlocal - Review Tracker",
+  widgets: "Brightlocal - Review Showcase",
+  createwidget: "Brightlocal - Review Showcase - Create Widgets",
+  getreviews: "Brightlocal - Review Builder",
+  templates: "Brightlocal - Review Manager - Reply Templates",
   settings: "Brightlocal - Report Settings",
 };
 const sectionOf = (name) => name.split("-")[0];
@@ -109,7 +113,7 @@ const DIR = path.join(OUT, `states-${stamp}`);
 fs.mkdirSync(DIR, { recursive: true });
 
 // Share tokens for the four RM screens plus Reply Templates.
-// createwidget is the newest of them: widget CREATION left Review Widgets
+// createwidget is the newest of them: widget CREATION left Review Showcase
 // on 28 Aug and became its own screen (design dmtctjykv0feb) on the DS
 // CentredLayout, so it needs its own token and its own section.
 const SCREENS = {
@@ -121,7 +125,7 @@ const SCREENS = {
   getreviews: "782021bd-1332-48b8-a22b-5316b520fc20",
   createwidget: "35af1f77-ff09-43ea-b86e-534568cfeb8f",
   // RM — Report Settings (dmtkj124xagqa), new 2 Sep. The configuration
-  // surface behind Review Insights' Settings button, which was a dead
+  // surface behind Review Tracker' Settings button, which was a dead
   // control until it had somewhere to go. Minted with
   // apps/mcp-server/scripts/make-share.mts, which is now the way to get a
   // token for any screen added to this suite.
@@ -500,7 +504,7 @@ const STATES = [
      })()`,
     "The Reviews landing page: one card per sub-tool, two up, each a link into its own screen. Static, because the page's whole job is to route."],
 
-  // ── Review Inbox ────────────────────────────────────────────────────
+  // ── Review Manager ────────────────────────────────────────────────────
   // ROW INDICES ARE NOT ARBITRARY and must not be guessed. The five
   // failure codes are pinned to the first five reviews that are both
   // repliable and still needing action, DERIVED in the screen from
@@ -572,7 +576,7 @@ const STATES = [
   }, `/No AI drafts left today/.test(document.body.innerText)`,
     "Allowance gone. This is the one state a person will want explained, so it escalates to an AlertInfo that says when it resets and what you can still do."],
 
-  // ── Review Insights ─────────────────────────────────────────────────
+  // ── Review Tracker ─────────────────────────────────────────────────
   ["insights-01-charts", "insights", async () => {},
     `!!document.querySelector('[data-hook="sources-donut"]')`,
     "Sources donut grouped to five slices max, which is the number of chart tokens the DS defines. Legend carries every source at full count."],
@@ -621,9 +625,9 @@ const STATES = [
     `!!document.querySelector('[data-slot="collapsible-trigger"][aria-expanded="true"]')`,
     "Per-rule run history, including a failed send, so auto-reply failures have somewhere to live."],
 
-  // ── Review Widgets ──────────────────────────────────────────────────
+  // ── Review Showcase ──────────────────────────────────────────────────
   // The dashed "create a new widget" tile at the end of the grid was
-  // DELETED on 28 Aug alongside its Get Reviews twin, and the card grid
+  // DELETED on 28 Aug alongside its Review Builder twin, and the card grid
   // went from three columns to two. Nothing here reached for
   // `create-widget-tile`, so there was no selector to repoint, but the
   // list state now asserts the two-track grid so a silent revert to three
@@ -732,7 +736,7 @@ const STATES = [
     "The design step, which the in-page wizard never had a frame for. JSON feeds skip it entirely, because there is nothing to paint."],
   ["createwidget-05-done", "createwidget", async (p) => { await widgetWizardTo(p, "done"); },
     `!!document.querySelector('[data-hook="create-widget-done"]')`,
-    "The payoff. Saving hands over the embed code on the spot rather than sending you back to the list to go and find it, and the only way on is the button back to Review Widgets."],
+    "The payoff. Saving hands over the embed code on the spot rather than sending you back to the list to go and find it, and the only way on is the button back to Review Showcase."],
 
   // THE OTHER BRANCH. Hand-picked and live feed diverge at step two and
   // never rejoin in content, so a set of frames from one branch is not a
@@ -741,7 +745,7 @@ const STATES = [
   ["createwidget-06-picked-reviews", "createwidget", async (p) => { await widgetWizardTo(p, "reviews", "picked"); },
     `!!document.querySelector('[data-hook="picker-table"]')
      && !document.querySelector('[data-hook="feed-explainer"]')`,
-    "Hand-picked: a fixed set, chosen row by row on the DS DataTable, so selection, select-all, search and paging behave exactly as they do in Review Inbox. No explainer, because nothing changes on its own after this."],
+    "Hand-picked: a fixed set, chosen row by row on the DS DataTable, so selection, select-all, search and paging behave exactly as they do in Review Manager. No explainer, because nothing changes on its own after this."],
   ["createwidget-07-picked-format", "createwidget", async (p) => { await widgetWizardTo(p, "format", "picked"); },
     `!!document.querySelector('[data-hook="widget-format-radio-group"]')`,
     "The layout step is the same on both branches: what was chosen does not change how it is drawn."],
@@ -756,7 +760,7 @@ const STATES = [
   // the profile-match panel, email alerts (the audit's own acknowledged
   // gap — "I have not included the 'set email notifications' feature
   // (yet)"), the public / white-label share link, and the run history
-  // table. Reached from Review Insights' Settings button, which until now
+  // table. Reached from Review Tracker' Settings button, which until now
   // was a control that did nothing.
   ["settings-01-schedule", "settings", async () => {},
     `!!document.querySelector('[data-hook="schedule-card"]')
@@ -809,7 +813,7 @@ const STATES = [
     `!!document.querySelector('[data-hook="leave-title"]')`,
     "Leaving the wizard without saving. Cancel sits next to Next, one mis-click from the button people press a dozen times, so it asks first and says exactly what is lost."],
 
-  // ── Get Reviews ─────────────────────────────────────────────────────
+  // ── Review Builder ─────────────────────────────────────────────────────
   // THE CAMPAIGN IS A PAGE, NOT A DRAWER (28 Aug). `campaign-drawer` and
   // `close-campaign` no longer exist, so the old assertion on
   // `[data-hook="campaign-drawer"][data-state="open"]` could only ever
@@ -870,7 +874,7 @@ const STATES = [
      && !!document.querySelector('[data-hook="wizard-cancel"]')`,
     "Campaign wizard, first step. Cancel is a plain button with no arrow, because cancelling is an action, not a move up the hierarchy."],
 
-  // ── Get Reviews: the wizard, one still per step per BRANCH ──────────
+  // ── Review Builder: the wizard, one still per step per BRANCH ──────────
   // Ali, 2 Sep: "this is incomplete????" — and it was. A fourteen-step
   // wizard had exactly ONE frame, of step one, which is indistinguishable
   // from a wizard that has only one step. `campaignWizardTo` walks a named

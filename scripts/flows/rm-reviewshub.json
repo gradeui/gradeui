@@ -7,7 +7,7 @@
     {
       "section": "Reviews hub",
       "dwell": 6200,
-      "caption": "Reputation Manager's four sub-tools on one page: Review Inbox, Review Insights, Get Reviews and Review Widgets. The hub is the only screen that names the whole tool, so the nav below it can stay flat."
+      "caption": "Reputation Manager's four sub-tools on one page: Review Manager, Review Tracker, Review Builder and Review Showcase. The hub is the only screen that names the whole tool, so the nav below it can stay flat."
     },
     { "scrollBy": 420, "ms": 950 },
     { "dwell": 3000 },

@@ -30,11 +30,11 @@ Dev server must be up (`pnpm dev`). Output nests in
 
 | Section | Screen | id |
 |---|---|---|
-| Review Inbox | RM — Review Inbox (DataTable) | `dmsxf5zjggd0n` |
-| Review Insights | RM — Review Insights | `dmswb0i9c6oe5` |
+| Review Manager | RM — Review Manager (DataTable) | `dmsxf5zjggd0n` |
+| Review Tracker | RM — Review Tracker | `dmswb0i9c6oe5` |
 | Reply Templates | RM — Reply Templates | `dmtaq1rm9eok2` |
-| Review Widgets | RM — Review Widgets | `dmt094lhmpwbs` |
-| Get Reviews | RM — Get Reviews | `dmt094j963aye` |
+| Review Showcase | RM — Review Showcase | `dmt094lhmpwbs` |
+| Review Builder | RM — Review Builder | `dmt094j963aye` |
 
 Project is `47e40175-0d55-4d21-960b-26bdf6b01282` throughout.
 
@@ -66,7 +66,7 @@ video caption.
    delete that is blocked, expand rule activity.
 4. **Widgets** — dashboard, wizard type step, filters, format, then the detail
    drawer with the embed snippet.
-5. **Get Reviews** — hub, open the campaign drawer, switch to the All feedback
+5. **Review Builder** — hub, open the campaign drawer, switch to the All feedback
    tab, open the wizard.
 
 ## Interaction gotchas, all learned the hard way

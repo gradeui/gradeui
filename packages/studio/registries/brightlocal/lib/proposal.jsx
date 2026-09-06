@@ -22,3 +22,4 @@ export * from "@brightlocal/proposal-insights";
 export * from "@brightlocal/proposal-glossary";
 export * from "@brightlocal/score-donut";
 export * from "@brightlocal/mini-stat";
+export * from "@brightlocal/review-funnel";

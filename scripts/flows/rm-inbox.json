@@ -7,7 +7,7 @@
     {
       "section": "Inbox",
       "dwell": 6200,
-      "caption": "The Review Inbox. One status badge per row: status is the state the review is in, never the delivery outcome."
+      "caption": "The Review Manager. One status badge per row: status is the state the review is in, never the delivery outcome."
     },
     {
       "scrollBy": 520,
