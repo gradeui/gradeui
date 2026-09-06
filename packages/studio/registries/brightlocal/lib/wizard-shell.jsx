@@ -7,7 +7,7 @@
 //
 // Two RM wizards were carrying a copy of this layout each — Create Widget on
 // its own screen and the widget editor on the list screen — and they had
-// already drifted once. A third (the Get Reviews campaign wizard) is coming.
+// already drifted once. A third (the Review Builder campaign wizard) is coming.
 // This is the one place that shape lives now.
 //
 // WHAT THE DS GIVES US, AND WHAT IT DOESN'T

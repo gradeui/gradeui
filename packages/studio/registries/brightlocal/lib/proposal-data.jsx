@@ -188,11 +188,11 @@ export const PROPOSAL_DATA = {
     "agency-tools": "screen:dmrotri3pxlio", // Agency Tools
     "rankings-table": "screen:dmrnyiy9g9f7o", // Rankings Table
     // Reviews sub pages (24 Aug). The Inbox target is the DataTable
-    // build, not the earlier "RM — Review Inbox" prototype.
-    "reviews-inbox": "screen:dmsxf5zjggd0n", // RM — Review Inbox (DataTable)
-    "reviews-insights": "screen:dmswb0i9c6oe5", // RM — Review Insights
-    "reviews-get": "screen:dmt094j963aye", // RM — Get Reviews
-    "reviews-widgets": "screen:dmt094lhmpwbs", // RM — Review Widgets
+    // build, not the earlier "RM — Review Manager" prototype.
+    "reviews-inbox": "screen:dmsxf5zjggd0n", // RM — Review Manager (DataTable)
+    "reviews-insights": "screen:dmswb0i9c6oe5", // RM — Review Tracker
+    "reviews-get": "screen:dmt094j963aye", // RM — Review Builder
+    "reviews-widgets": "screen:dmt094lhmpwbs", // RM — Review Showcase
     // AI Insights sub pages — screen names carry the section prefix so
     // they never clash with the top-level Reviews/Citations landings.
     "ai-insights-website-content": "screen:dmrouiz2ajnqw", // AI Insights - Website and Content

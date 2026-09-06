@@ -147,7 +147,7 @@ export function formatDateTime(value) {
 // ─── DateStamp — a date with its full timestamp one hover away ────────
 // Lifted out of PageHeader (Ali, 3 Sep: "we also need a dashed underline,
 // with the associated tooltip with full timestamp"), because a second
-// surface now needs it: the campaign cards on Get Reviews carry a date in
+// surface now needs it: the campaign cards on Review Builder carry a date in
 // their top-right corner exactly the way the page header does, and two
 // implementations of the same affordance is how they end up differing.
 //
@@ -321,7 +321,7 @@ export function PageHeader({
   meta,
   // CTA SIZE — the HEADER's decision, not the screen's (Ali, 18 Aug:
   // "the buttons in the header do need to be bigger, at least in RM —
-  // Review Insights"). That screen was the only one of six passing
+  // Review Tracker"). That screen was the only one of six passing
   // size="sm" to its header Buttons, so its CTAs read a size smaller
   // than every other page's for no reason anyone chose. The header now
   // NORMALISES them: every Button inside `actions` is re-sized to this,
@@ -404,7 +404,7 @@ export function PageHeader({
   const backCrumb = trail.length ? trail[trail.length - 1] : null;
 
   // crumb.onClick — IN-PAGE ancestor. goto carries a screen id and nothing
-  // else, so a screen that swaps its own body (Get Reviews: hub → campaign)
+  // else, so a screen that swaps its own body (Review Builder: hub → campaign)
   // cannot name its parent with one. Without this the only way back is an
   // in-body back link, which Ali rejected on exactly this screen ("I dont
   // want weird back links like this"): the trail is already saying where

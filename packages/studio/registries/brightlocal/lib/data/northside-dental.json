@@ -59,7 +59,7 @@
             "text": "Trigger the review campaign to recent happy patients.",
             "links": [
               {
-                "label": "Go to Get Reviews",
+                "label": "Go to Review Builder",
                 "area": "reviews"
               }
             ]

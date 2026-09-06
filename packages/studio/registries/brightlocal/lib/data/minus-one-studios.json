@@ -201,7 +201,7 @@
             "text": "Launch an email and SMS review request workflow to recent studio, podcast, and event bookings. Send a gentle reminder to non-responders after a few days.",
             "links": [
               {
-                "label": "Go to Get Reviews",
+                "label": "Go to Review Builder",
                 "area": "reviews"
               }
             ]
@@ -211,7 +211,7 @@
             "text": "Use short templates that encourage specifics, like session type, gear used, parking, or late hours, without scripting exact keywords. This helps relevance and the summaries shown by Google's AI in Maps.",
             "links": [
               {
-                "label": "Go to Get Reviews",
+                "label": "Go to Review Builder",
                 "area": "reviews"
               }
             ]

@@ -183,10 +183,10 @@ export const PROPOSAL_SECTIONS = [
     label: "Reviews",
     icon: Star,
     sub: [
-      { id: "reviews-inbox", label: "Review Inbox" },
-      { id: "reviews-insights", label: "Review Insights" },
-      { id: "reviews-get", label: "Get Reviews" },
-      { id: "reviews-widgets", label: "Review Widgets" },
+      { id: "reviews-inbox", label: "Review Manager" },
+      { id: "reviews-insights", label: "Review Tracker" },
+      { id: "reviews-get", label: "Review Builder" },
+      { id: "reviews-widgets", label: "Review Showcase" },
     ],
   },
   // Set-up Tasks, Website SEO, Google Analytics and Agency Tools are OUT

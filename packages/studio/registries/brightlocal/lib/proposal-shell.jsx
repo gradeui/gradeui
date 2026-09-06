@@ -332,7 +332,7 @@ export const PAGE_LAYERS = {
   // outline used to set --card: transparent, which reads identically on a
   // flat canvas but is not the same thing. Anything painting bg-card
   // INSIDE a card then paints nothing, and a sticky card header stops
-  // occluding the rows scrolling under it (Ali, 24 Aug, Review Insights
+  // occluding the rows scrolling under it (Ali, 24 Aug, Review Tracker
   // on Live Site: the Ratings and Sources labels showed straight through
   // "Review Performance"). Following the canvas keeps the look and makes
   // every card surface opaque. var(), not a literal, so outline still
@@ -873,12 +873,12 @@ export function AppLayoutShell({
   // marks does. Toggle off to keep mobile in the default light tone.
   mobileTone = true,
   // Content column cap — ONE measurement for the header band's content
-  // AND the page body (Ali, 18 Aug: "Review Insights is still not
+  // AND the page body (Ali, 18 Aug: "Review Tracker is still not
   // constrained"). It was two: the body fell through to the DS's own
   // cap (GlobalLayout caps its container at --ds-breakpoint-xl, 1280px)
   // while PageHeader capped at 1024px, so at any viewport wider than
   // ~1280 the body ran 256px wider than the header above it. Measured on
-  // RM — Review Insights at 1600: header 400→1424, body 248→1548.
+  // RM — Review Tracker at 1600: header 400→1424, body 248→1548.
   //
   // The shell now OWNS the number: it passes it to GlobalLayoutContent
   // and publishes it as --gds-content-max-width, which PageHeader reads.
@@ -1094,7 +1094,7 @@ export function AppLayoutShell({
   // --gds-page-header-height — the band's MEASURED height, republished on the
   // content column so anything sticky below it can sit exactly under it.
   //
-  // Screens used to hardcode this (RM — Review Insights carried
+  // Screens used to hardcode this (RM — Review Tracker carried
   // STICKY_TOP = "128px"), which is a guess that goes stale the moment the
   // header changes: dropping one line from PageHeader left a gap with page
   // content scrolling through it (Ali, 18 Aug: "gap between the fixed and the
@@ -1224,7 +1224,7 @@ export function AppLayoutShell({
            ON HOVER: green-700 + underline + pointer.
            This reverses the 24 Jul "card titles stay put on hover".
            Staying put left clickable titles with no affordance at all on
-           Review Widgets, and let Get Reviews invent its own with a raw
+           Review Showcase, and let Review Builder invent its own with a raw
            `hover:text-primary` — which is the BRAND green, #2AE855, at
            1.64:1 on white. That is not a near miss on AA, it is a colour
            you cannot read. green-700 is 4.80:1 and is already the hover

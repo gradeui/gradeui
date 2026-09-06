@@ -15,7 +15,7 @@ A date shown as status, with its exact timestamp one hover away.
 
 ## Guidance
 
-Lifted out of `PageHeader` when the Get Reviews campaign cards needed the same
+Lifted out of `PageHeader` when the Review Builder campaign cards needed the same
 affordance in their top-right corner. Two implementations of one affordance is
 how they end up differing, so there is one.
 
