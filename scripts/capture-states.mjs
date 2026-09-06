@@ -824,23 +824,23 @@ const STATES = [
   // Driven by data-hook, NOT by pressText("View insights"). Every Live
   // and Stopped card carries that same label, so the text lookup took
   // whichever card the DOM happened to order first and the frame silently
-  // depended on the sort. `campaign-c1-cta` names the campaign the note
+  // depended on the sort. `campaign-c1-open` names the campaign the note
   // describes (Summer Visitors, the email campaign with the full funnel).
   ["getreviews-01-hub", "getreviews", async () => {},
-    // Assert the NEW hub shape, not merely "the page rendered": key/value
-    // stat rows present, tabs absent (so this is not the campaign page),
-    // and the card grid actually resolving to two tracks rather than the
-    // three it used to be.
+    // Assert the TABLE hub (6 Sep), not merely "the page rendered": every
+    // campaign on one page with a status pill and a name that opens it,
+    // the two filters above it, and NO campaign tabs — those belong to the
+    // campaign page, and their absence is what proves this is the list.
     `(() => {
-       const card = document.querySelector('[data-hook="campaign-c1"]');
-       const grid = card && card.parentElement;
-       if (!grid || !document.querySelector('[data-hook="campaign-c1-stat-sent"]')) return false;
+       if (!document.querySelector('[data-hook="campaign-c1-open"]')) return false;
+       if (!document.querySelector('[data-hook="campaign-status-filter"]')) return false;
+       if (!document.querySelector('[data-hook="campaign-mode-filter"]')) return false;
        if (document.querySelector('[data-hook="campaign-tabs"]')) return false;
-       return getComputedStyle(grid).gridTemplateColumns.trim().split(/\\s+/).length === 2;
+       return document.querySelectorAll('tbody tr').length >= 9;
      })()`,
-    "Campaign list with live, draft and stopped states. Two columns of cards, and each card's three numbers are key/value rows with hairlines rather than nested stat tiles."],
+    "Campaign list as a TABLE: nine campaigns on one page, filtered by status and mode. One row per campaign and one number that matters — reviews gained — because a grid of cards spent a whole card on each and still showed fewer of them. The name is the link in."],
   ["getreviews-02-campaign-summary", "getreviews", async (p) => {
-    await press(p, '[data-hook="campaign-c1-cta"]');
+    await press(p, '[data-hook="campaign-c1-open"]');
   },
     // Full page, so: the summary tab panel is the active one, the campaign
     // actions are up in the page header, and NOTHING is overlaying the
@@ -859,7 +859,7 @@ const STATES = [
      })()`,
     "Campaign detail as a FULL PAGE. Stop, Preview and Download: the things you do to this campaign. Re-use is not here, because starting a new campaign from an old one is a choice you make on the list, where you can see the others."],
   ["getreviews-03-campaign-feedback", "getreviews", async (p) => {
-    await press(p, '[data-hook="campaign-c1-cta"]'); await wait(1400);
+    await press(p, '[data-hook="campaign-c1-open"]'); await wait(1400);
     await press(p, '[data-hook="campaign-tab-feedback"]');
   }, `(() => {
         const fb = document.querySelector('[data-hook="campaign-feedback-panel"]');
@@ -999,23 +999,23 @@ const STATES = [
          .map((e) => e.textContent.trim());
        return want.every((w) => seen.includes(w));
      })()`,
-    "All six campaign states in one grid. Nothing specifies these — not the brief, not the audit, not the legacy screens — so the set is a proposal: Live was doing two jobs, because a standing web link is live and an email campaign sent in July is not."],
-  ["getreviews-28-page-scheduled", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c6-cta"]'); },
+    "All six campaign states down one Status column. Nothing specifies these — not the brief, not the audit, not the legacy screens — so the set is a proposal: Live was doing two jobs, because a standing web link is live and an email campaign sent in July is not. The table is what makes them comparable at a glance; the old card grid showed five and hid the rest."],
+  ["getreviews-28-page-scheduled", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c6-open"]'); },
     `!!document.querySelector('[data-hook="state-banner"]')
      && !!document.querySelector('[data-hook="insights-stop"]')`,
     "Scheduled. Nothing has been sent, so the banner says the messages can still be changed, and the action reads Cancel send rather than Stop campaign."],
-  ["getreviews-29-page-sending", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c7-cta"]'); },
+  ["getreviews-29-page-sending", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c7-open"]'); },
     `!!document.querySelector('[data-hook="state-banner"]')`,
     "Sending. The numbers are real but not final, which is the whole reason this state needs a banner: a half-finished funnel read as a finished one is a wrong conclusion, not a missing number."],
-  ["getreviews-30-page-finished", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c8-cta"]'); },
+  ["getreviews-30-page-finished", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c8-open"]'); },
     `!!document.querySelector('[data-hook="state-banner"]')
      && !document.querySelector('[data-hook="insights-stop"]')`,
     "Finished. Every message sent, the reminder gone, nothing left to stop — so Stop is absent and Re-use is the way to run the same ask again."],
-  ["getreviews-31-page-stopped", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c5-cta"]'); },
+  ["getreviews-31-page-stopped", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c5-open"]'); },
     `!!document.querySelector('[data-hook="insights-restart"]')`,
     "Stopped. The one state with a warning rather than an info banner, and the only one offering Restart — which lives in the overflow now, with Re-use, since the header is down to two CTAs."],
   ["getreviews-32-restart-confirm", "getreviews", async (p) => {
-    await press(p, '[data-hook="campaign-c5-cta"]');
+    await press(p, '[data-hook="campaign-c5-open"]');
     // 1400ms was not enough: the campaign page mounts a chart and a table
     // before its header actions are interactive, so the press landed on a
     // button that was there but not yet wired. Wait for the state banner,
@@ -1034,7 +1034,7 @@ const STATES = [
     await pressText(p, "Delete draft", '[role="menuitem"]');
     await wait(800);
   },
-    `!!document.querySelector('[data-hook="campaign-c4-delete-title"]')`,
+    `!!document.querySelector('[data-hook="delete-title"]')`,
     "Deleting a draft campaign. Nothing has been sent, so nothing breaks — the copy says that rather than borrowing the alarm of a delete that does break something."],
   ["getreviews-26-stop-campaign", "getreviews", async (p) => {
     await press(p, '[data-hook="campaign-c1-menu-button"]');
