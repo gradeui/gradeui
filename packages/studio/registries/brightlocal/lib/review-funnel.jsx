@@ -3,8 +3,8 @@
 // WHY THIS EXISTS. The BrightLocal DS ships no Funnel: its chart module's
 // set is Area / Bar / Line / Pie / Radar / Radial, so a funnel has to come
 // straight from "recharts". That import resolves fine — the Studio sandbox
-// maps "recharts" to the copy already on the page, so it costs no new
-// dependency — but the OBVIOUS way to wrap it renders nothing at all.
+// maps "recharts" to the copy already on the page — but the OBVIOUS way to
+// wrap it renders nothing at all.
 //
 // Measured on the probe screen (RM — Recharts funnel probe), same markup,
 // same page:
@@ -26,6 +26,8 @@
 // and stays responsive.
 import * as React from "react";
 import { ChartContainer } from "@brightlocal/ui-components/chart";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightlocal/ui-components/tooltip";
+import { Info } from "@brightlocal/icons";
 // ONE IMPORT, from "recharts", on purpose: Recharts matches children by
 // component IDENTITY, so a Cell from the DS module and a Funnel from
 // "recharts" would not see each other.
@@ -41,37 +43,18 @@ const RAMP = [
   "var(--ds-tailwind-colors-neutral-600)",
   "var(--ds-tailwind-colors-neutral-700)",
 ];
+// The ramp crosses from light to dark, so the count inside the band has to
+// cross with it or it disappears into its own fill.
+const INK = ["#111412", "#111412", "#ffffff", "#ffffff", "#ffffff"];
 
 const CONFIG = { v: { label: "People", color: "var(--ds-tailwind-colors-neutral-400)" } };
 
-// THE BAND DRAWS ITS OWN LABEL, and that is deliberate.
-//
-// LabelList was the obvious way and it collides (Ali, 6 Sep: "check the
-// labels they are overlapping"). Its text is one string with no line
-// breaks, so "Visited a review site · 96" wraps inside the right margin and
-// a wrapped label at 240px over four bands runs into the one below it. The
-// shape already receives the exact geometry of its own band, so drawing the
-// label here puts the name and the number on two controlled lines, anchored
-// to that band's centre, and nothing can overlap.
-// MEASURED, NOT ASSUMED. Recharts hands each band
-//   { x, y, upperWidth, lowerWidth, height }
-// where x is the LEFT EDGE of that band's own bounding box, already
-// centred in the plot area — so x GROWS as the band narrows:
-//
-//   Sent          x=4   up=266 low=189
-//   Opened        x=43  up=189 low=117
-//   Left a rating x=78  up=117 low=53
-//   Visited       x=110 up=53  low=53
-//
-// The first read of this was "x is the centre", which drew a half funnel
-// whose left edge drifted right on every band. A half funnel needs a FIXED
-// spine, and that is the plot's left edge — margin.left — not each band's x.
+// THE COUNT SITS INSIDE THE BAND (Ali, 6 Sep, matching legacy's Feedback
+// Funnel). The band knows its own geometry, so it draws its own number;
+// the LABEL is DOM, not SVG, because it carries an info tooltip and an
+// <svg><text> cannot hold a DS Tooltip.
 function Band(props) {
-  const {
-    x, y, upperWidth, lowerWidth, height,
-    fill, stroke, strokeWidth, payload, half, gap, plotLeft,
-  } = props;
-
+  const { x, y, upperWidth, lowerWidth, height, fill, stroke, strokeWidth, index, half, plotLeft } = props;
   const L = plotLeft;
   const pts = half
     ? [[L, y], [L + upperWidth, y], [L + lowerWidth, y + height], [L, y + height]]
@@ -81,11 +64,7 @@ function Band(props) {
         [x + (upperWidth + lowerWidth) / 2, y + height],
         [x + (upperWidth - lowerWidth) / 2, y + height],
       ];
-
-  // Off the widest edge of THIS band, so the label never crosses the shape.
-  const tx = (half ? L + upperWidth : x + upperWidth) + gap;
-  const cy = y + height / 2;
-
+  const cx = half ? L + Math.max(upperWidth, lowerWidth) / 2 : x + upperWidth / 2;
   return (
     <g>
       <polygon
@@ -94,42 +73,47 @@ function Band(props) {
         stroke={stroke}
         strokeWidth={strokeWidth}
       />
-      <text x={tx} y={cy} fill="currentColor" fontSize={12} dominantBaseline="middle">
-        <tspan x={tx} dy="-0.35em" fillOpacity={0.7}>
-          {payload?.k ?? ""}
-        </tspan>
-        <tspan x={tx} dy="1.25em" fontWeight={500}>
-          {Number(payload?.v ?? 0).toLocaleString()}
-        </tspan>
+      <text
+        x={cx}
+        y={y + height / 2}
+        fill={INK[index % INK.length]}
+        fontSize={15}
+        fontWeight={600}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
+        {Number(props.payload?.v ?? 0).toLocaleString()}
       </text>
     </g>
   );
 }
 
 /**
- * data: [{ k: "Sent", v: 480 }, …] — step name and count, widest first.
+ * data: [{ k, v, info? }] — step name, count, and the tooltip that says
+ *   what the count actually counts.
  * variant: "half" (default) — vertical left spine, taper on one side; or
  *   "full" for the symmetrical stack.
+ * showDrop: the step-to-step drop-off, right-aligned, as legacy shows it.
  */
 export function ReviewFunnel({
   data = [],
   variant = "half",
   height = 240,
-  // The right margin the labels live in. Two lines at 12px need ~150px for
-  // "Visited a review site"; 190 leaves room without starving the shape.
-  labelWidth = 190,
-  labelGap = 12,
+  showDrop = false,
+  // The DOM label column beside the chart. 240 so "Visited Review Site"
+  // sits on one line next to its info dot and the drop-off still has a
+  // column of its own to sit in.
+  labelWidth = 240,
+  maxWidth = 480,
   marginLeft = 4,
-  // CAPPED. Four steps given a whole card's width stop reading as a funnel
-  // and become four flat ribbons — the taper is the whole point of the
-  // shape. Pass maxWidth={null} for a chart that genuinely should span.
-  maxWidth = 460,
   dataHook = "review-funnel",
   className = "",
 }) {
   const ref = React.useRef(null);
   const [width, setWidth] = React.useState(0);
   const half = variant === "half";
+  // The chart owns everything left of the label column.
+  const chartWidth = Math.max(0, width - labelWidth);
 
   React.useEffect(() => {
     const el = ref.current;
@@ -148,17 +132,18 @@ export function ReviewFunnel({
   return (
     <div
       ref={ref}
-      className={["w-full", className].filter(Boolean).join(" ")}
+      className={["flex w-full items-stretch", className].filter(Boolean).join(" ")}
       style={{ height, maxWidth: maxWidth ?? undefined }}
+      data-hook={`${dataHook}-wrap`}
     >
       {/* Nothing renders until the first measurement: a FunnelChart given
           width 0 bakes a 0-wide geometry and never recovers. */}
-      {width > 0 ? (
-        <ChartContainer config={CONFIG} dataHook={dataHook} className="aspect-auto h-full w-full">
+      {chartWidth > 0 ? (
+        <ChartContainer config={CONFIG} dataHook={dataHook} className="aspect-auto h-full shrink-0" style={{ width: chartWidth }}>
           <FunnelChart
-            width={width}
+            width={chartWidth}
             height={height}
-            margin={{ top: 8, right: labelWidth, bottom: 8, left: marginLeft }}
+            margin={{ top: 0, right: 0, bottom: 0, left: marginLeft }}
           >
             <Funnel
               dataKey="v"
@@ -168,7 +153,7 @@ export function ReviewFunnel({
               lastShapeType="rectangle"
               stroke="var(--background)"
               strokeWidth={2}
-              shape={<Band half={half} gap={labelGap} plotLeft={marginLeft} />}
+              shape={<Band half={half} plotLeft={marginLeft} />}
             >
               {data.map((d, i) => (
                 <Cell key={d.k} fill={RAMP[i % RAMP.length]} />
@@ -177,6 +162,46 @@ export function ReviewFunnel({
           </FunnelChart>
         </ChartContainer>
       ) : null}
+
+      {/* LABELS AS DOM, one row per band. Equal flex rows over the same
+          total height line up with the bands without measuring anything,
+          and a real element is the only way the "i" can be a DS Tooltip
+          that is reachable by keyboard. */}
+      <TooltipProvider>
+        <div className="flex flex-col" style={{ width: labelWidth }}>
+          {data.map((d, i) => {
+            const prev = i > 0 ? data[i - 1].v : null;
+            const drop = prev ? Math.round(((prev - d.v) / prev) * 100) : null;
+            return (
+              <div key={d.k} className="flex flex-1 items-center gap-1.5 pl-3">
+                <span className="text-sm font-medium">{d.k}</span>
+                {d.info ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={`What ${d.k} counts`}
+                        data-hook={`${dataHook}-info-${i}`}
+                        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex cursor-pointer items-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                      >
+                        <Info className="size-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>{d.info}</TooltipContent>
+                  </Tooltip>
+                ) : null}
+                {/* Its own column, shrink-0, so a long step name cannot
+                    squeeze the drop-off onto a second line beside it. */}
+                {showDrop ? (
+                  <span className="text-muted-foreground ml-auto w-12 shrink-0 text-right text-xs tabular-nums">
+                    {drop === null ? "" : `\u2193 ${drop}%`}
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </TooltipProvider>
     </div>
   );
 }
