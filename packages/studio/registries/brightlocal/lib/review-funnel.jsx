@@ -43,18 +43,19 @@ const RAMP = [
   "var(--ds-tailwind-colors-neutral-600)",
   "var(--ds-tailwind-colors-neutral-700)",
 ];
-// The ramp crosses from light to dark, so the count inside the band has to
-// cross with it or it disappears into its own fill.
-const INK = ["#111412", "#111412", "#ffffff", "#ffffff", "#ffffff"];
-
 const CONFIG = { v: { label: "People", color: "var(--ds-tailwind-colors-neutral-400)" } };
 
-// THE COUNT SITS INSIDE THE BAND (Ali, 6 Sep, matching legacy's Feedback
-// Funnel). The band knows its own geometry, so it draws its own number;
-// the LABEL is DOM, not SVG, because it carries an info tooltip and an
-// <svg><text> cannot hold a DS Tooltip.
+// THE BAND IS PURE SHAPE. The count used to be drawn inside it, matching
+// legacy, and it did not survive contact with real numbers: the bands taper,
+// so the last one is a sliver, and "9" sat half outside its own trapezoid
+// with the digit clipped by the slope (Ali, 6 Sep: "labels again on funnel
+// look crap"). A number that has to fit inside a shape whose width is the
+// value is a number that shrinks exactly when it gets least readable.
+//
+// Everything readable now lives in the DOM row beside it, where the count
+// can align on its own column and the taper can just be a taper.
 function Band(props) {
-  const { x, y, upperWidth, lowerWidth, height, fill, stroke, strokeWidth, index, half, plotLeft } = props;
+  const { x, y, upperWidth, lowerWidth, height, fill, stroke, strokeWidth, half, plotLeft } = props;
   const L = plotLeft;
   const pts = half
     ? [[L, y], [L + upperWidth, y], [L + lowerWidth, y + height], [L, y + height]]
@@ -64,27 +65,13 @@ function Band(props) {
         [x + (upperWidth + lowerWidth) / 2, y + height],
         [x + (upperWidth - lowerWidth) / 2, y + height],
       ];
-  const cx = half ? L + Math.max(upperWidth, lowerWidth) / 2 : x + upperWidth / 2;
   return (
-    <g>
-      <polygon
-        points={pts.map((p) => p.join(",")).join(" ")}
-        fill={fill}
-        stroke={stroke}
-        strokeWidth={strokeWidth}
-      />
-      <text
-        x={cx}
-        y={y + height / 2}
-        fill={INK[index % INK.length]}
-        fontSize={15}
-        fontWeight={600}
-        textAnchor="middle"
-        dominantBaseline="central"
-      >
-        {Number(props.payload?.v ?? 0).toLocaleString()}
-      </text>
-    </g>
+    <polygon
+      points={pts.map((p) => p.join(",")).join(" ")}
+      fill={fill}
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+    />
   );
 }
 
@@ -100,11 +87,11 @@ export function ReviewFunnel({
   variant = "half",
   height = 240,
   showDrop = false,
-  // The DOM label column beside the chart. 240 so "Visited Review Site"
-  // sits on one line next to its info dot and the drop-off still has a
-  // column of its own to sit in.
-  labelWidth = 240,
-  maxWidth = 480,
+  // The DOM rows beside the chart. 300 because the row now carries a step
+  // name, an info dot, a count and a drop-off, and "Visited Review Site"
+  // must not be the one that wraps.
+  labelWidth = 300,
+  maxWidth = 560,
   marginLeft = 4,
   dataHook = "review-funnel",
   className = "",
@@ -174,7 +161,7 @@ export function ReviewFunnel({
             const drop = prev ? Math.round(((prev - d.v) / prev) * 100) : null;
             return (
               <div key={d.k} className="flex flex-1 items-center gap-1.5 pl-3">
-                <span className="text-sm font-medium">{d.k}</span>
+                <span className="text-sm font-medium whitespace-nowrap">{d.k}</span>
                 {d.info ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -190,10 +177,14 @@ export function ReviewFunnel({
                     <TooltipContent>{d.info}</TooltipContent>
                   </Tooltip>
                 ) : null}
-                {/* Its own column, shrink-0, so a long step name cannot
-                    squeeze the drop-off onto a second line beside it. */}
+                {/* Count and drop-off each get a column of their own, so
+                    they stack into two straight edges however long the step
+                    names get. */}
+                <span className="ml-auto shrink-0 text-sm font-semibold tabular-nums">
+                  {Number(d.v ?? 0).toLocaleString()}
+                </span>
                 {showDrop ? (
-                  <span className="text-muted-foreground ml-auto w-12 shrink-0 text-right text-xs tabular-nums">
+                  <span className="text-muted-foreground w-14 shrink-0 text-right text-xs tabular-nums">
                     {drop === null ? "" : `\u2193 ${drop}%`}
                   </span>
                 ) : null}
