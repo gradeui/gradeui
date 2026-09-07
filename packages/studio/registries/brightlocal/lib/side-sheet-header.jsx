@@ -52,11 +52,11 @@ export function SideSheetHeader({
       className={`mx-0 flex w-full max-w-none flex-row items-start justify-between gap-3 border-b px-4 py-3 text-left ${className}`}
     >
       <div className="flex min-w-0 flex-col gap-0.5">
-        <DrawerTitle className="text-foreground text-base leading-6 font-semibold" dataHook={`${dataHook}-title`}>
+        <DrawerTitle className="text-foreground text-base leading-6 font-semibold" data-hook={`${dataHook}-title`}>
           {title}
         </DrawerTitle>
         {description ? (
-          <DrawerDescription className="text-muted-foreground text-sm leading-5" dataHook={`${dataHook}-description`}>
+          <DrawerDescription className="text-muted-foreground text-sm leading-5" data-hook={`${dataHook}-description`}>
             {description}
           </DrawerDescription>
         ) : null}
