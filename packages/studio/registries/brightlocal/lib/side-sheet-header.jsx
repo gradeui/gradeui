@@ -52,7 +52,11 @@ export function SideSheetHeader({
       className={`mx-0 flex w-full max-w-none flex-row items-start justify-between gap-3 border-b px-4 py-3 text-left ${className}`}
     >
       <div className="flex min-w-0 flex-col gap-0.5">
-        <DrawerTitle className="text-foreground text-base leading-6 font-semibold" data-hook={`${dataHook}-title`}>
+        {/* SAME TYPE AS A CARD TITLE (Ali, 7 Sep: "match the drawer title size to
+            our card title size"). CardTitle size="small" is `font-display
+            font-medium text-base`; the DS DrawerTitle default is text-lg
+            semibold in the body face, which read as a different object. */}
+        <DrawerTitle className="text-foreground font-display text-base leading-6 font-medium" data-hook={`${dataHook}-title`}>
           {title}
         </DrawerTitle>
         {description ? (
