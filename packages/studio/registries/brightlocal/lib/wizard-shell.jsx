@@ -211,13 +211,12 @@ export function WizardShell({
   dataHook = "wizard",
   contentClassName = "",
 }) {
-  // HEADER FULL WIDTH, CONTENT COLUMN AS IT WAS (Ali, 7 Sep: "the content as it
-  // is is completely fine, just changing the page header, I want the header
-  // to be the same width"). The header is a page header and reads like the
-  // one on every section page, spanning the same px-6 gutters; the settings
-  // themselves keep the centred max-w-4xl column that suits a rail plus one
-  // card. These pages are the app template with no main sidenav and a side
-  // rail for a concentrated flow, not a different kind of page.
+  // HEADER AND CONTENT SHARE THE PAGE'S GUTTERS (Ali, 7 Sep: "why is the page
+  // header width and the page content width different???"). A wide header
+  // over a centred 896px column left their left edges apart, which read as
+  // two different pages. Both now span the same px-6 gutters, exactly as the
+  // section pages do. These pages are the app template with no main sidenav
+  // and a side rail for a concentrated flow, not a different kind of page.
   return (
     <CentredLayout
       dataHook={`${dataHook}-layout`}
@@ -259,7 +258,7 @@ export function WizardShell({
       >
         {/* max-w-4xl, not the auth-card width CentredLayout is usually handed:
             a review picker and a side-by-side preview do not fit in it. */}
-        <div className="flex w-full max-w-4xl flex-col gap-4">
+        <div className="flex w-full max-w-none flex-col gap-4">
           {children}
           {/* Under the step, not in the footer. See the note above. */}
           {error ? (
@@ -275,7 +274,7 @@ export function WizardShell({
           data-hook={`${dataHook}-footer`}
           className="bg-background w-full shrink-0 border-t px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
-          <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2">{footer}</div>
+          <div className="mx-auto flex w-full max-w-none flex-wrap items-center gap-2">{footer}</div>
         </div>
       ) : null}
     </CentredLayout>
