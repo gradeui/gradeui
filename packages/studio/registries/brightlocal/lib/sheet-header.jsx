@@ -33,8 +33,13 @@ export function SheetHeader({
   trailing = null,
   closeLabel = "Close",
   dataHook = "sheet-header",
+  // The close button's own hook. Defaults to `${dataHook}-close`; screens
+  // that already had a close button (close-filters, close-template,
+  // close-rule) pass theirs so capture-states keeps pressing the same thing.
+  closeHook,
   className = "",
 }) {
+  const closeDataHook = closeHook ?? `${dataHook}-close`;
   return (
     <DrawerHeader
       data-hook={dataHook}
@@ -53,7 +58,7 @@ export function SheetHeader({
       <div className="-mt-1 -mr-2 flex shrink-0 items-center gap-1">
         {trailing}
         <DrawerClose asChild>
-          <Button variant="ghost" iconOnly className="size-8" dataHook={`${dataHook}-close`} aria-label={closeLabel}>
+          <Button variant="ghost" iconOnly className="size-8" dataHook={closeDataHook} aria-label={closeLabel}>
             <X className="size-4" />
           </Button>
         </DrawerClose>
