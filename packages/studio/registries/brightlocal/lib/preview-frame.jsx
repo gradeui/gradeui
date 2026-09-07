@@ -26,11 +26,11 @@ export function PreviewFrame({
   className = "",
   children,
 }) {
+  // SOLID GROUND (Ali, 7 Sep: "the actual surface looks murky, probably
+  // needs to be solid"). It was bg-muted/40, a translucent tint that took on
+  // whatever sat behind it and read dirty on a white card. A solid token also
+  // keeps to the tokens-only rule: no alpha mixes.
   return (
-    {/* SOLID GROUND (Ali, 7 Sep: "the actual surface looks murky, probably
-        needs to be solid"). It was bg-muted/40, a translucent tint that took
-        on whatever sat behind it and read dirty on a white card. A solid
-        token also keeps to the tokens-only rule: no alpha mixes. */}
     <div className={`bg-muted rounded-lg border border-dashed p-4 ${className}`} data-hook={dataHook}>
       <div className="text-muted-foreground mb-3 flex items-center justify-between gap-2 text-xs">
         <span className="flex items-center gap-2">
