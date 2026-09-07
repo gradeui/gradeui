@@ -25,3 +25,4 @@ export * from "@brightlocal/mini-stat";
 export * from "@brightlocal/review-funnel";
 export * from "@brightlocal/dropzone";
 export * from "@brightlocal/feedback-controls";
+export * from "@brightlocal/review-sources";
