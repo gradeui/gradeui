@@ -27,3 +27,4 @@ export * from "@brightlocal/dropzone";
 export * from "@brightlocal/feedback-controls";
 export * from "@brightlocal/review-sources";
 export * from "@brightlocal/facet-menu";
+export * from "@brightlocal/sheet-header";
