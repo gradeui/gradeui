@@ -961,11 +961,11 @@ const STATES = [
   // then we can have a page in each of these states… we will need to
   // capture each drill down for each state as well").
   //
-  // Six states, six drill-downs, because each one renders a different
-  // banner and a different set of header actions — Scheduled can be
-  // cancelled but not re-used yet, Sending says its numbers are still
-  // moving, Finished offers Re-use and nothing to stop, Stopped offers
-  // Restart. A grid shot proves the badges; only the page proves the rest.
+  // FOUR states since 7 Sep 2026 (Draft / Scheduled / Live / Ended: Sending
+  // folded into Live, Finished + Stopped into Ended). The capture ids below
+  // keep their old names so existing decks still match files; c7 now renders
+  // as Live and c8 / c5 both as Ended. A grid shot proves the badges; only
+  // the page proves the banner and header actions.
   // ── What a campaign looks like the moment it exists (Ali, 3 Sep:
   // "capture the campaign created state, and what happens after that").
   // Two frames nobody had shot, and they are the two every real user sees
