@@ -708,6 +708,9 @@ const STATES = [
     "Deleting a widget. The name is quoted, and the consequence leads: a widget already embedded stops appearing on a website this screen cannot see, and the code on those pages stops working."],
 
   // ── Create Widget ───────────────────────────────────────────────────
+  // ARCHIVED 7 Sep 2026: the wizard screen is now "RM — Create Widget
+  // (archive, wizard)". The rail Showcase (dmt094lhmpwbs) creates a widget in
+  // place, so these captures show the retired flow until they are re-pointed.
   // Its own SCREEN since 28 Aug (design dmtctjykv0feb), on the DS
   // CentredLayout: no sidebar, no breadcrumbs, a Logo header and a
   // centred wizard. The step rail is the DS Stepper family
