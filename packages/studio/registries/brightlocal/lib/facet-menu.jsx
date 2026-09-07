@@ -25,8 +25,25 @@
 //   come for free; an earlier hand-rolled version had to reimplement all
 //   three and still got them wrong.
 import * as React from "react";
-import { Check } from "@brightlocal/icons";
-import { CommandGroup, CommandItem, CommandSeparator } from "@brightlocal/ui-components/command";
+
+import { Check, ChevronDown } from "@brightlocal/icons";
+import { Button } from "@brightlocal/ui-components/button";
+import { Popover, PopoverTrigger, PopoverContent } from "@brightlocal/ui-components/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@brightlocal/ui-components/command";
+
+// Command's root is `rounded-lg border shadow-md bg-popover`; it assumes it
+// is the surface. Inside a Popover (or a Drawer) the parent is the surface,
+// so Command sheds its chrome. Exported because Review Manager's filter sheet
+// builds on it.
+export const FACET_COMMAND_CLASS =
+  "rounded-[inherit] border-0 bg-transparent shadow-none [&_[data-slot=command-group]]:p-1 [&_[data-slot=command-item]]:py-1.5 [&_[data-slot=command-input]]:text-sm [&_[data-slot=command-input-wrapper]]:h-10";
 
 // ─── FacetCheck — the selected affordance on a facet row ──────────────
 // A DRAWN checkbox, not the DS's Checkbox component. Ali asked what best
@@ -163,5 +180,162 @@ export function FacetOptions({
         </CommandGroup>
       ))}
     </>
+  );
+}
+
+export function FacetPopover({
+  label,
+  open,
+  onOpenChange,
+  align = "start",
+  panelWidth = "w-64",
+  dataHook,
+  search = false,
+  searchPlaceholder = "Find…",
+  children,
+}) {
+  const commandRef = React.useRef(null);
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        {/* text-sm font-normal: a filter trigger is a FIELD, not an action.
+            Button's base is font-semibold and size="sm" is text-xs, which put
+            these at 12px/600 beside a 14px/400 search input. The DS's own
+            SelectTrigger is `text-sm font-normal` for exactly this reason —
+            Button is simply the wrong default for a field-shaped control. */}
+        <Button
+          variant="outline"
+          size="sm"
+          dataHook={dataHook}
+          // rounded-sm is what the DS's own SelectTrigger uses
+          // (`h-9 px-3 py-2 border border-border rounded-sm`). A facet
+          // trigger IS a select, so it should read as one — Button's
+          // rounded-full pill is the wrong default for a field, and the
+          // product's real selects are not fully rounded either.
+          className="rounded-sm text-sm font-normal"
+        >
+          {label}
+          <ChevronDown className="size-3.5 opacity-60" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align={align}
+        sideOffset={4}
+        className={`${panelWidth} p-0`}
+        // Radix focuses the CONTENT WRAPPER on open, but cmdk's key handler
+        // lives on the Command element below it — and keydowns bubble UP, so
+        // arrows never reach it. Menus with a CommandInput only work by
+        // accident, because focus happens to land inside Command. Without one
+        // (the period menu) the arrows are dead. So: let Radix do its thing
+        // when there IS an input to focus, otherwise put focus on Command
+        // itself, which is what makes every menu arrow-navigable.
+        onOpenAutoFocus={(event) => {
+          const el = commandRef.current;
+          if (!el || el.querySelector('[data-slot="command-input"]')) return;
+          event.preventDefault();
+          el.focus();
+        }}
+      >
+        {/* Command's root is `rounded-lg border shadow-md bg-popover` — it
+            assumes it is the surface. PopoverContent is ALSO `rounded-md
+            border shadow-md`, so nesting them stacks two borders, two
+            shadows and two mismatched radii. The Popover is the surface
+            here, so Command sheds its chrome and inherits the radius. */}
+        <Command
+          ref={commandRef}
+          tabIndex={-1}
+          dataHook={`${dataHook}-command`}
+          // CommandGroup ships `px-2 py-1` — 8px at the sides but 4px top
+          // and bottom, so an item's highlight sits unevenly in the panel.
+          // p-1 makes the gutter uniform on all four edges (which is what
+          // the upstream shadcn Command does).
+          className={FACET_COMMAND_CLASS}
+        >
+          {search ? (
+            <CommandInput
+              dataHook={`${dataHook}-search`}
+              placeholder={searchPlaceholder}
+            />
+          ) : null}
+          <CommandList>
+            <CommandEmpty>No matches</CommandEmpty>
+            {children}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+export function FacetedFilterMenu({
+  label,
+  open,
+  onOpenChange,
+  options,
+  isAllSelected,
+  isChecked,
+  onAll,
+  onOption,
+  allLabel,
+  allCount,
+  search = false,
+  searchPlaceholder = "Find…",
+  panelWidth = "w-64",
+  // "left" | "right": which edge of the trigger the panel hangs from.
+  // Right-aligned for menus pinned to a card's right edge.
+  align = "left",
+  dataHook,
+}) {
+  // The list itself is FacetOptions, shared with the mobile sheet. No local
+  // query state and no manual filtering: cmdk filters on each item's
+  // `value`, so `value={option.label}` reproduces a substring match for free.
+  return (
+    <FacetPopover
+      label={label}
+      open={open}
+      onOpenChange={onOpenChange}
+      align={align === "right" ? "end" : "start"}
+      panelWidth={panelWidth}
+      dataHook={dataHook}
+      search={search}
+      searchPlaceholder={searchPlaceholder}
+    >
+      <FacetOptions
+        options={options}
+        isChecked={isChecked}
+        isAllSelected={isAllSelected}
+        onAll={onAll}
+        onOption={onOption}
+        allLabel={allLabel}
+        allCount={allCount}
+        dataHook={dataHook}
+      />
+    </FacetPopover>
+  );
+}
+
+export function SingleSelectMenu({ label, open, onOpenChange, options, value, onSelect, dataHook, panelWidth = "w-44" }) {
+  return (
+    <FacetPopover
+      label={label}
+      open={open}
+      onOpenChange={onOpenChange}
+      panelWidth={panelWidth}
+      dataHook={dataHook}
+    >
+      <CommandGroup>
+        {options.map((option) => (
+          <CommandItem
+            key={option.id}
+            value={option.label}
+            selected={value === option.id}
+            onSelect={() => onSelect(option.id)}
+            dataHook={`${dataHook}-${option.id}`}
+          >
+            {option.label}
+          </CommandItem>
+        ))}
+      </CommandGroup>
+    </FacetPopover>
   );
 }
