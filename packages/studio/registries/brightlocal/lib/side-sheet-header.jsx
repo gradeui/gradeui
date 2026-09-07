@@ -1,4 +1,10 @@
-// @brightlocal/sheet-header — the header of every right-hand sheet.
+// @brightlocal/side-sheet-header — the header of every right-hand sheet.
+//
+// NAMED SideSheetHeader, NOT SheetHeader: the DS barrel already exports a
+// SheetHeader (its Sheet family), and the contract generator lets the DS's
+// typed answer win over a registry sidecar, so a same-named registry
+// component validated with NO legal props. Registry-local names must not
+// collide with anything the DS barrel exports.
 //
 // WHY THIS EXISTS (Ali, 7 Sep: "the sheet headers also dont seem to cope with
 // descriptions very well"). Review Manager, Reply Templates and Review
@@ -25,7 +31,7 @@ import {
   DrawerClose,
 } from "@brightlocal/ui-components/drawer";
 
-export function SheetHeader({
+export function SideSheetHeader({
   title,
   description,
   // Slot for something that must sit beside the close button (a status

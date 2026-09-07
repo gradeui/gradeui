@@ -1,5 +1,5 @@
 ---
-name: SheetHeader
+name: SideSheetHeader
 props:
   title: "node — the sheet's title. Required; Drawer needs a title in the tree."
   description: "node — optional one-line description under the title."
