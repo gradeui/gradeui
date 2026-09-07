@@ -112,6 +112,7 @@ Input, Rating), so proving it proves the rest.
 | `Brightlocal - Reviews` | `gxrBnTlbab2cmrJuqZ4Q18` | The working file. RM pages live here. |
 | `Design System - UI Components` | `p3krmC8DBUgqpbq6cLzaal` | The LIVE library. Read-only to us. |
 | `Design System - UI Components (Copy)` | `fsyVNsGrRxdB7u2y1FQG1m` | A drafts duplicate. **Do not build against it.** |
+| `Brightlocal - Review Manager - 8 Sept 2026` | `x0kmVAyJZJoX52OnZPk96Q` | Screenshot drop file (7 Sep 2026). Ali drags captures in; we arrange them. No rebuilds here. Pages: Cover, Captures, Duplicate. |
 
 The copy is a trap. Duplicating a Figma file re-keys its local components, so
 the copy's `Badge` key points at nothing the working file can resolve. Anything
@@ -204,6 +205,7 @@ turn a panel from a 300-line script into a 30-line one:
 | `rmIcons` | `{ iconName: componentNodeId }` |
 | `rmArrange` | `arrange(page, states)` / `distribute(fromPage)` — files dropped screenshots into the file's grid |
 | `rmSidebar` | `apply(root, {top, sub})` — rewrites a SidebarContents "Items" SLOT from the master and marks the active trail |
+| `rmSkel` | Page-skeleton builder (7 Sep 2026): `shell / header / crumbs / text / cta / rail / card / settingsCard / mount / sheet / iconBtnV`. Built the eight `RM / Review Builder / *` and `RM / Review Showcase / *` frames in column B. Rail rows and settings rows are drawn (no DS equivalent); header close is Button Secondary, Size icon. |
 | `rmShell` | `fixGeometry(root)` / `rebuilds(page)` — nav column 280, content FILL, and an iterator over every column-B rebuild |
 | `rmHeader` | `crumbs` / `text` / `cta` / `ctaAdd` / `fixCurrent` — one PageHeader concern per call |
 | `rmFit` | `fit(page, slug)` — makes a rebuild's body FILL the 952 content column |
