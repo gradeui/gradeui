@@ -13,6 +13,10 @@
 //   select="single"  a tick on the chosen row, for a genuine one-of-many like
 //                    a time period.
 //
+// There is deliberately NO disabled "No reviews yet" group. Ali asked for it
+// to go from every page (7 Sep): a list of sites you cannot pick is noise.
+// Only offer sources that have reviews.
+//
 // TWO THINGS THAT LOOK LIKE MISTAKES AND ARE NOT:
 //   The checkbox is DRAWN, not a DS <Checkbox>. A focusable control nested
 //   inside a listbox option is a keyboard trap, and CommandItem already
@@ -102,8 +106,6 @@ export function FacetOptions({
   onOption,
   allLabel,
   allCount,
-  emptyGroupLabel,
-  emptyOptions = [],
   dataHook,
 }) {
   const groups = [];
@@ -160,22 +162,6 @@ export function FacetOptions({
           {options.filter((o) => o.group === group).map(renderOption)}
         </CommandGroup>
       ))}
-      {emptyGroupLabel && emptyOptions.length > 0 ? (
-        <CommandGroup heading={emptyGroupLabel}>
-          {emptyOptions.map((option) => (
-            <CommandItem
-              key={option.id}
-              value={option.label}
-              disabled
-              dataHook={`${dataHook}-${option.id}`}
-            >
-              <FacetCheck select={select} checked={false} />
-              {option.leading || null}
-              <span className="flex-1">{option.label}</span>
-            </CommandItem>
-          ))}
-        </CommandGroup>
-      ) : null}
     </>
   );
 }
