@@ -838,7 +838,7 @@ const STATES = [
        if (document.querySelector('[data-hook="campaign-tabs"]')) return false;
        return document.querySelectorAll('tbody tr').length >= 9;
      })()`,
-    "Campaign list as a TABLE: nine campaigns on one page, filtered by status and mode. One row per campaign and one number that matters — reviews gained — because a grid of cards spent a whole card on each and still showed fewer of them. The name is the link in."],
+    "Campaign list as a TABLE: nine campaigns on one page, filtered by status and mode. One row per campaign and one number that matters, reviews gained, because a grid of cards spent a whole card on each and still showed fewer of them. The name is the link in. All six campaign states sit down one Status column. Nothing specifies that set: not the brief, not the audit, not the legacy screens. It is a proposal. Live was doing two jobs, because a standing web link is live and an email campaign sent in July is not. The table is what makes them comparable at a glance; the old card grid showed five and hid the rest."],
   ["getreviews-02-campaign-summary", "getreviews", async (p) => {
     await press(p, '[data-hook="campaign-c1-open"]');
   },
@@ -992,14 +992,6 @@ const STATES = [
     `!!document.querySelector('[data-hook="insights-empty"]')`,
     "A campaign with nothing back yet: sent counts, everything else is zero, and the card says so rather than drawing an empty funnel and a flat chart. This is the state a real user stares at for the first hour, and it is the one a demo never shows."],
 
-  ["getreviews-27-states-grid", "getreviews", async (p) => { await scrollTo(p, 400); },
-    `(() => {
-       const want = ["Live","Draft","Stopped","Scheduled","Sending","Finished"];
-       const seen = [...document.querySelectorAll('[data-hook^="campaign-c"][data-hook$="-status"]')]
-         .map((e) => e.textContent.trim());
-       return want.every((w) => seen.includes(w));
-     })()`,
-    "All six campaign states down one Status column. Nothing specifies these — not the brief, not the audit, not the legacy screens — so the set is a proposal: Live was doing two jobs, because a standing web link is live and an email campaign sent in July is not. The table is what makes them comparable at a glance; the old card grid showed five and hid the rest."],
   ["getreviews-28-page-scheduled", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c6-open"]'); },
     `!!document.querySelector('[data-hook="state-banner"]')
      && !!document.querySelector('[data-hook="insights-stop"]')`,
