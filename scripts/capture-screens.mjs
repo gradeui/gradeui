@@ -163,7 +163,7 @@ const slugify = (name) =>
 async function ensureToken(designId) {
   const rows = JSON.parse(
     await sb(
-      `/rest/v1/share_links?project_id=eq.${PROJECT}&design_id=eq.${designId}&mode=eq.view&revision_id=is.null&revoked=eq.false&order=created_at.desc&limit=1&select=token,color_mode`,
+      `/rest/v1/share_links?project_id=eq.${PROJECT}&design_id=eq.${designId}&mode=eq.view&revision_id=is.null&revoked=eq.false&scope=is.null&order=created_at.desc&limit=1&select=token,color_mode`,
     ),
   );
   if (rows[0]) {
@@ -280,6 +280,9 @@ const failures = [];
 for (const s of targets) {
   let page;
   try {
+  // scope=is.null: a share made from a multi-screen canvas selection carries
+  // scope.screens and the share view renders ALL of them side by side (7 Sep:
+  // the hub and Builder shots came out as two pages in one frame).
   const token = await ensureToken(s.id);
   // /s/ (share) not /e/ (embed): the share route pulls the project's
   // custom CSS (sidebar width) and renders at natural viewport size.
