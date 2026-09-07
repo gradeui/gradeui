@@ -17,3 +17,4 @@ when_to_use: >
   Named SideSheetHeader because the DS barrel already exports a SheetHeader.
 composes_with: [Drawer, DrawerContent, DrawerBody, DrawerFooter, Button]
 aliases: [drawer header, sheet title, panel header, close button header, sheet header]
+---

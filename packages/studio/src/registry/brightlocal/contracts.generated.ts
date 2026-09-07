@@ -14514,6 +14514,52 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
     },
     "element": "button"
   },
+  "SideSheetHeader": {
+    "name": "SideSheetHeader",
+    "props": {
+      "title": {
+        "kind": "unknown",
+        "design": "plumbing",
+        "description": "node. The sheet's title. Required; Drawer needs a title in the tree."
+      },
+      "description": {
+        "kind": "unknown",
+        "design": "plumbing",
+        "optional": true,
+        "description": "node. Optional one-line description under the title."
+      },
+      "trailing": {
+        "kind": "unknown",
+        "design": "plumbing",
+        "optional": true,
+        "description": "node. Optional control beside the close button (a status pill, a secondary action). Rare."
+      },
+      "closeLabel": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "aria-label for the close button. Default \"Close\"."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true,
+        "description": "hook for the header; title and description derive `${dataHook}-title` and `${dataHook}-description`."
+      },
+      "closeHook": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "the close button's own hook. Defaults to `${dataHook}-close`; pass the screen's existing hook (close-filters, close-template, close-rule) so capture-states keeps pressing the same thing."
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "appended to the DrawerHeader; for the one local nuance a screen needs, such as `py-2!` under a bottom sheet's handle."
+      }
+    }
+  },
   "Sidebar": {
     "name": "Sidebar",
     "props": {

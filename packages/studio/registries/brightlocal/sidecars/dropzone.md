@@ -16,3 +16,4 @@ when_to_use: >
   dashed box.
 composes_with: [Field, FieldLabel, FieldDescription, Card, SetupRow]
 aliases: [file upload, upload, drop target, file picker, dropzone]
+---
