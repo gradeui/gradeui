@@ -12491,6 +12491,44 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
     },
     "element": "button"
   },
+  "PreviewFrame": {
+    "name": "PreviewFrame",
+    "props": {
+      "label": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "the small label in the top row. Default \"Preview\"."
+      },
+      "trailing": {
+        "kind": "unknown",
+        "design": "plumbing",
+        "optional": true,
+        "description": "node. Controls that belong to the preview (device tabs, a page switcher), right of the label."
+      },
+      "surface": {
+        "kind": "enum",
+        "values": [
+          "card",
+          "none"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "\"card\" draws the white inner surface for a preview of a page; \"none\" for content that paints its own surface, such as the review showcase widget. Default \"card\"."
+      },
+      "dataHook": {
+        "kind": "string",
+        "design": "plumbing",
+        "optional": true
+      },
+      "className": {
+        "kind": "string",
+        "design": "knob",
+        "optional": true,
+        "description": "appended to the outer frame."
+      }
+    }
+  },
   "Progress": {
     "name": "Progress",
     "props": {
