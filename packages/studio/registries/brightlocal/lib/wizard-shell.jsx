@@ -196,6 +196,13 @@ export function WizardSteps({ steps, value, dataHook = "wizard-stepper", ariaLab
 export function WizardShell({
   title,
   description,
+  // OPTIONAL FULL HEADER (Ali, 7 Sep: "we could probably use our page header,
+  // so we can show our date in the top right, and make this a proper page
+  // header"). Pass a node and it replaces the shell's own title block wholesale
+  // — for a task that is really a settings page, that node is <PageHeader/>,
+  // which brings breadcrumbs, the lastUpdated stamp and the actions slot the
+  // hand-rolled block below has never had. Omit it and nothing changes.
+  header,
   steps,
   value,
   footer,
@@ -222,6 +229,7 @@ export function WizardShell({
 
       <CentredLayoutHeader className="bg-background shrink-0 justify-center border-b px-6 py-4 lg:justify-center">
         <div className="flex w-full max-w-4xl flex-col gap-3">
+          {header ?? (
           <div className="flex flex-col gap-1">
             <p className="text-base font-semibold" data-hook={`${dataHook}-title`}>
               {title}
@@ -232,6 +240,7 @@ export function WizardShell({
               </p>
             ) : null}
           </div>
+          )}
           {steps?.length ? (
             <WizardSteps steps={steps} value={value} dataHook={`${dataHook}-stepper`} ariaLabel={title} />
           ) : null}

@@ -54,6 +54,7 @@ import {
   Link,
   SlidersHorizontal,
   Sparkles,
+  Gauge,
   Star,
   Store,
   TrendingUp,
@@ -72,14 +73,12 @@ import { PROPOSAL_ACCOUNTS, useProposalData } from "@brightlocal/proposal-data";
 // stamp data-grade-* attributes).
 
 export const PROPOSAL_SECTIONS = [
-  // Local AI Visibility sits ABOVE AI Insights (Ali, 24 Aug). The live
-  // product wears a "New" badge on this row; left off for now. No landing
-  // screen yet, so no navLinks entry: the row renders and highlights but
-  // does not navigate until one exists.
-  { id: "local-ai-visibility", label: "Local AI Visibility", icon: BotMessageSquare },
   {
     id: "ai-insights",
-    label: "AI Insights",
+    // "Insights & Actions", not "AI Insights" (Ali, 7 Sep). The id stays
+    // `ai-insights` so every navLinks entry, activeId and capture hook keeps
+    // working; renaming the row is a label change, not a rewiring.
+    label: "Insights & Actions",
     icon: Sparkles,
     sub: [
       // "Website" — renamed from "Website and Content" everywhere in the
@@ -89,30 +88,6 @@ export const PROPOSAL_SECTIONS = [
       { id: "ai-insights-reviews", label: "Reviews" },
       { id: "ai-insights-citations", label: "Citations" },
       { id: "ai-insights-export", label: "Export Report" },
-    ],
-  },
-  {
-    id: "location-profile",
-    label: "Location Profile",
-    icon: Building,
-    sub: [
-      { id: "location-profile-connect", label: "Connect to Listing Platforms" },
-      {
-        id: "location-profile-core",
-        label: "Core Information",
-        sub: [
-          { id: "location-profile-general", label: "General Settings" },
-          { id: "location-profile-business", label: "Business Details" },
-          { id: "location-profile-google-business-tracking", label: "Google Business Tracking" },
-          { id: "location-profile-categories", label: "Categories" },
-          { id: "location-profile-hours", label: "Opening Hours" },
-          { id: "location-profile-about", label: "About the Business" },
-          { id: "location-profile-additional", label: "Additional Data" },
-          { id: "location-profile-images", label: "Image Management" },
-          { id: "location-profile-citation-builder-data", label: "Citation Builder Data" },
-          { id: "location-profile-alerts", label: "Email Alerts" },
-        ],
-      },
     ],
   },
   // NOTE: no baked `active` flags in the default IA — which row is
@@ -140,6 +115,11 @@ export const PROPOSAL_SECTIONS = [
       },
     ],
   },
+  // MOVED HERE FROM THE TOP (Ali, 7 Sep: "move Local AI Visibility below
+  // Rankings"). It previously led the whole list, above Insights. No landing
+  // screen yet, so still no navLinks entry: the row renders and highlights but
+  // does not navigate until one exists.
+  { id: "local-ai-visibility", label: "Local AI Visibility", icon: BotMessageSquare },
   {
     id: "local-search-grid",
     label: "Local Search Grid",
@@ -163,7 +143,9 @@ export const PROPOSAL_SECTIONS = [
       { id: "citations-builder", label: "Citation Builder", paid: true },
     ],
   },
-  { id: "gbp-manager", label: "GBP Manager", icon: Store },
+  // "Google Business Profile", not "GBP Manager" (Ali, 7 Sep). Spelled out, and
+  // it now matches the Insights sub-row of the same name. The id stays.
+  { id: "gbp-manager", label: "Google Business Profile", icon: Store },
   // Reviews gets sub rows (Ali, 24 Aug). The parent keeps its own
   // landing screen — it does NOT point at Insights, so the section
   // never duplicates a sub's page; that landing stays the "not
@@ -187,6 +169,37 @@ export const PROPOSAL_SECTIONS = [
       { id: "reviews-insights", label: "Review Tracker" },
       { id: "reviews-get", label: "Review Builder" },
       { id: "reviews-widgets", label: "Review Showcase" },
+    ],
+  },
+  // NEW ROW (Ali, 7 Sep: "add Website Performance below Reviews"). No landing
+  // screen yet, so no navLinks entry, same as Local AI Visibility: it renders
+  // and highlights but does not navigate until one exists.
+  { id: "website-performance", label: "Website Performance", icon: Gauge },
+  {
+    id: "location-profile",
+    // "Location Manager", not "Location Profile" (Ali, 7 Sep). The id and
+    // every sub id stay, so navLinks, activeId and the capture hooks are
+    // untouched by the rename.
+    label: "Location Manager",
+    icon: Building,
+    sub: [
+      { id: "location-profile-connect", label: "Connect to Listing Platforms" },
+      {
+        id: "location-profile-core",
+        label: "Core Information",
+        sub: [
+          { id: "location-profile-general", label: "General Settings" },
+          { id: "location-profile-business", label: "Business Details" },
+          { id: "location-profile-google-business-tracking", label: "Google Business Tracking" },
+          { id: "location-profile-categories", label: "Categories" },
+          { id: "location-profile-hours", label: "Opening Hours" },
+          { id: "location-profile-about", label: "About the Business" },
+          { id: "location-profile-additional", label: "Additional Data" },
+          { id: "location-profile-images", label: "Image Management" },
+          { id: "location-profile-citation-builder-data", label: "Citation Builder Data" },
+          { id: "location-profile-alerts", label: "Email Alerts" },
+        ],
+      },
     ],
   },
   // Set-up Tasks, Website SEO, Google Analytics and Agency Tools are OUT

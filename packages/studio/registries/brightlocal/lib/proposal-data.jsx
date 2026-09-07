@@ -225,7 +225,12 @@ export const PROPOSAL_DATA = {
   // `counts` feeds "5 insights · 26 recommendations" (recommendations
   // = total actions); `updatesLeft` is the regeneration quota chip.
   aiInsights: {
-    lastUpdated: "14/07/26",
+    // A SHAPE formatDate CAN READ (7 Sep). This was "14/07/26", and formatDate
+    // handles ISO and "14th Jul 2026" but not dd/mm/yy, so it returned the raw
+    // string and every header on the default dataset printed "14/07/26" while
+    // minus-one-studios printed "August 18, 2026". Same date, written the way
+    // the other dataset writes it.
+    lastUpdated: "14th Jul 2026 at 9:52 AM UTC",
     updatesLeft: 3,
     counts: { insights: 3, recommendations: 8 },
     tone: "standard",
