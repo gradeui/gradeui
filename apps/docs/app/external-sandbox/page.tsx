@@ -897,6 +897,25 @@ export default function ExternalSandboxPage() {
           "react/jsx-dev-runtime": ESM.jsxDev,
           "react-dom": ESM.reactDom,
           "react-dom/client": ESM.reactDomClient,
+          // ── esm.sh semver-range outage pin (7 Sep 2026) ──────────────
+          // esm.sh started 404ing SEMVER-RANGE URLs for this package with
+          // "tarball of package '@tanstack/react-virtual' not found", while
+          // the same package at an EXACT version serves 200:
+          //     @tanstack/react-virtual@^3.13.23  → 404
+          //     @tanstack/react-virtual@3.13.23   → 200
+          // @brightlocal/ui-components@2.25.0 depends on ^3.13.23, and
+          // esm.sh emits that range as an absolute URL INSIDE its own
+          // module, so nothing on our side constructs it and nothing on our
+          // side can avoid it. One bad node fails the whole dynamic import,
+          // which took out every screen at once with a misleading
+          // "Failed to fetch @brightlocal/ui-components" at the root.
+          //
+          // Import maps can key on an absolute URL, so this rewrites just
+          // that one specifier to the exact version. Remove it once esm.sh
+          // resolves ranges again; it is a workaround for their outage, not
+          // a decision about which version we want.
+          "https://esm.sh/@tanstack/react-virtual@^3.13.23?external=react,react-dom&target=es2022":
+            "https://esm.sh/@tanstack/react-virtual@3.13.23?external=react,react-dom&target=es2022",
         },
       });
       document.head.appendChild(im);
