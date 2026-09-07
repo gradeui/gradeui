@@ -211,12 +211,9 @@ export function WizardShell({
   dataHook = "wizard",
   contentClassName = "",
 }) {
-  // HEADER AND CONTENT SHARE THE PAGE'S GUTTERS (Ali, 7 Sep: "why is the page
-  // header width and the page content width different???"). A wide header
-  // over a centred 896px column left their left edges apart, which read as
-  // two different pages. Both now span the same px-6 gutters, exactly as the
-  // section pages do. These pages are the app template with no main sidenav
-  // and a side rail for a concentrated flow, not a different kind of page.
+  // ONE CENTRED COLUMN, max-w-4xl, for header, content and footer alike. Two
+  // attempts on 7 Sep to widen this (header only, then both) were both wrong;
+  // Ali: "the width of both was completely fine before". Leave it.
   return (
     <CentredLayout
       dataHook={`${dataHook}-layout`}
@@ -234,15 +231,7 @@ export function WizardShell({
       <style>{WIZARD_TYPE_SCALE.replaceAll("__HOOK__", dataHook)}</style>
 
       <CentredLayoutHeader className="bg-background shrink-0 justify-center border-b px-6 py-4 lg:justify-center">
-        {/* --gds-content-max-width: none. PageHeader caps itself with
-            max-w-[var(--gds-content-max-width,var(--ds-breakpoint-lg))]. On
-            the section pages that token is unset and the fallback does not
-            resolve, so the header spans the gutters; inside this shell the
-            fallback resolved to 1024px and the header sat narrower than the
-            content beneath it (Ali, 7 Sep: "why is the page header width and
-            the page content width different???"). Setting the token to none
-            here makes the header behave exactly as it does on every page. */}
-        <div className="flex w-full max-w-none flex-col gap-3" style={{ "--gds-content-max-width": "none" }}>
+        <div className="flex w-full max-w-4xl flex-col gap-3">
           {header ?? (
           <div className="flex flex-col gap-1">
             <p className="text-base font-semibold" data-hook={`${dataHook}-title`}>
@@ -266,7 +255,7 @@ export function WizardShell({
       >
         {/* max-w-4xl, not the auth-card width CentredLayout is usually handed:
             a review picker and a side-by-side preview do not fit in it. */}
-        <div className="flex w-full max-w-none flex-col gap-4">
+        <div className="flex w-full max-w-4xl flex-col gap-4">
           {children}
           {/* Under the step, not in the footer. See the note above. */}
           {error ? (
@@ -282,7 +271,7 @@ export function WizardShell({
           data-hook={`${dataHook}-footer`}
           className="bg-background w-full shrink-0 border-t px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
-          <div className="mx-auto flex w-full max-w-none flex-wrap items-center gap-2">{footer}</div>
+          <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2">{footer}</div>
         </div>
       ) : null}
     </CentredLayout>
