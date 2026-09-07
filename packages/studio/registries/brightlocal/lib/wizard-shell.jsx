@@ -234,7 +234,15 @@ export function WizardShell({
       <style>{WIZARD_TYPE_SCALE.replaceAll("__HOOK__", dataHook)}</style>
 
       <CentredLayoutHeader className="bg-background shrink-0 justify-center border-b px-6 py-4 lg:justify-center">
-        <div className="flex w-full max-w-none flex-col gap-3">
+        {/* --gds-content-max-width: none. PageHeader caps itself with
+            max-w-[var(--gds-content-max-width,var(--ds-breakpoint-lg))]. On
+            the section pages that token is unset and the fallback does not
+            resolve, so the header spans the gutters; inside this shell the
+            fallback resolved to 1024px and the header sat narrower than the
+            content beneath it (Ali, 7 Sep: "why is the page header width and
+            the page content width different???"). Setting the token to none
+            here makes the header behave exactly as it does on every page. */}
+        <div className="flex w-full max-w-none flex-col gap-3" style={{ "--gds-content-max-width": "none" }}>
           {header ?? (
           <div className="flex flex-col gap-1">
             <p className="text-base font-semibold" data-hook={`${dataHook}-title`}>
