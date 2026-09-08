@@ -71,7 +71,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
           <h2 className="text-metric font-display text-foreground max-w-prose text-pretty" data-hook="review-insights-goal">
             <Mark text={plan.goal.text} mark={plan.goal.mark} />
           </h2>
-          <p className="text-muted-foreground text-body-sm max-w-prose text-pretty">{plan.lede}</p>
+          <p className="text-foreground text-body-sm max-w-prose text-pretty">{plan.lede}</p>
           <div className="flex flex-wrap items-center gap-2">
             <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
           </div>
@@ -127,7 +127,7 @@ export function ReviewPlanStrip() {
         <Mark text={plan.goal.text} mark={plan.goal.mark} />
       </p>
       {first ? (
-        <p className="text-body text-muted-foreground max-w-[60ch] text-pretty">
+        <p className="text-body text-foreground max-w-[60ch] text-pretty">
           {first.label}
           {second ? ` Then ${second.label.charAt(0).toLowerCase()}${second.label.slice(1)}` : ""}
         </p>

@@ -31,7 +31,7 @@ export function BeaconNugget({ page = "hub" }: { page?: NuggetPage }) {
       <Lightbulb className="hidden size-5 shrink-0 text-muted-foreground lg:block" />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="text-body font-medium text-foreground text-balance">{nugget.fact}</p>
-        <p className="text-body-sm text-muted-foreground text-pretty">{nugget.action}</p>
+        <p className="text-body-sm text-foreground text-pretty">{nugget.action}</p>
       </div>
       <span className="inline-flex shrink-0" data-grade-goto={nugget.cta.goto}>
         <Button variant="outline" size="sm" dataHook="beacon-nugget-cta">
