@@ -56,7 +56,7 @@ export function DemoSettingsPanel() {
     <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
       <DialogContent dataHook="demo-menu" className="overflow-hidden p-0 sm:max-w-lg">
         <DialogTitle className="sr-only">Demo settings</DialogTitle>
-        <Command className="rounded-lg">
+        <Command dataHook="demo-command" className="rounded-lg">
           <CommandInput dataHook="demo-command-input" placeholder="Persona, look, screen..." />
           <CommandList className="max-h-[70vh]">
             <CommandEmpty>Nothing matches.</CommandEmpty>
