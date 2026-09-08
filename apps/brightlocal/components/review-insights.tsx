@@ -112,8 +112,9 @@ export function ReviewPlanStrip() {
   return (
     <div
       data-hook="review-plan-strip"
-      className="flex flex-col gap-3 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 shadow-sm"
+      className="flex flex-col gap-6 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 shadow-sm lg:flex-row lg:items-stretch lg:gap-10"
     >
+    <div className="flex min-w-0 flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-100)] px-2 py-0.5 text-label-sm font-semibold text-foreground">
           <Flag className="size-3 text-muted-foreground" />
@@ -125,13 +126,27 @@ export function ReviewPlanStrip() {
         <Mark text={plan.goal.text} mark={plan.goal.mark} />
       </p>
       {first ? <p className="text-body text-muted-foreground max-w-[60ch] text-pretty">First tactic: {first.label}</p> : null}
-      <div className="flex flex-wrap items-center gap-2 pt-3">
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
         <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
         <Button variant="outline" size="sm" dataHook="review-plan-strip-open" onClick={() => show("plan")}>
           See the plan
           <ArrowRight className="size-4" />
         </Button>
       </div>
+    </div>
+      {/* The inbox's own numbers, in the same grey panel the other strips use. */}
+      <dl className="grid shrink-0 grid-cols-3 gap-6 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-6 lg:w-72 lg:grid-cols-1 lg:gap-5" data-hook="review-plan-strip-tiles">
+        {[
+          { value: String(stats.needReply), label: "need a reply" },
+          { value: String(stats.replied), label: "replied" },
+          { value: stats.oldestWaitingDays === null ? "0" : `${stats.oldestWaitingDays}d`, label: "oldest still waiting" },
+        ].map((tile) => (
+          <div key={tile.label} className="flex flex-col">
+            <dd className="text-metric text-foreground">{tile.value}</dd>
+            <dt className="text-body-xs text-muted-foreground">{tile.label}</dt>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
