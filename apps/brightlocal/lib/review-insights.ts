@@ -1,14 +1,17 @@
 /**
- * "What to do next" for the Reviews area: insight items derived from a
- * location's real numbers (lib/location-profiles) and the persona, in
- * the same item shape the Insights and Actions pages use (aiInsights
- * items: title, actionsSummary, actions with links), so the same
- * InsightCard renders both and the two can merge later.
+ * "What to do next" for the Reviews area, in BrightLocal's voice.
  *
- * Rules, not prose: every sentence quotes a number from the profile, so
- * a card never says something the pages beside it contradict. This is
- * the 8 Sep priority ("trends and how do I fix it, in place"): the hub
- * should say what to do, not just what is.
+ * The tone is lifted from their own material (the 12-month Local SEO
+ * roadmap, Sep 2026): an outcome-led goal up top, "Key tactics" under
+ * it, plain benefits, "We get it:" when a job sounds like a chore, and
+ * a "Did you know" fact with its source. Every number here comes from
+ * the location's profile (lib/location-profiles), so a card never says
+ * something the pages beside it contradict. Facts are the location's own
+ * numbers; an industry statistic goes in only with a source Ali can
+ * stand behind (see FACT below).
+ *
+ * Items share the Insights and Actions item shape (title, actionsSummary,
+ * actions with links), so the same InsightCard renders both.
  */
 
 import type { LocationProfile } from "@/lib/location-profiles";
@@ -23,15 +26,26 @@ export interface ReviewInsight {
   actions: { label: string; text: string; links: { label: string; goto: string }[] }[];
 }
 
+export interface ReviewPlan {
+  /** The one-line goal, outcome first. `mark` is the phrase to highlight. */
+  goal: { text: string; mark: string };
+  /** One plain sentence under the goal. */
+  lede: string;
+  items: ReviewInsight[];
+  /** A "Did you know" fact from the location's own numbers. */
+  fact: string | null;
+}
+
 const MANAGER = "screen:dmsxf5zjggd0n";
 const TEMPLATES = "screen:dmtaq1rm9eok2";
 const BUILDER = "screen:dmt094j963aye";
 const SHOWCASE = "screen:dmt094lhmpwbs";
 const REPORT_SETTINGS = "screen:dmtkj124xagqa";
 
-export function reviewInsightsFor(profile: LocationProfile, persona: Persona): ReviewInsight[] {
+export function reviewPlanFor(profile: LocationProfile, persona: Persona): ReviewPlan {
   const h = profile.hub;
   const starter = persona.engagement === "new";
+  const rating = Number(h.rating);
   const items: ReviewInsight[] = [];
 
   if (h.needReply > 0) {
@@ -40,40 +54,39 @@ export function reviewInsightsFor(profile: LocationProfile, persona: Persona): R
       id: "reply-backlog",
       area: "reviews",
       severity: ratio > 0.4 ? "high" : "medium",
-      title: `${h.needReply} ${h.needReply === 1 ? "review is" : "reviews are"} waiting for a reply`,
-      actionsSummary: `${h.needReply} of your ${h.allTime} reviews have no reply. Customers read replies as much as reviews, and Google shows businesses that answer. Clearing the backlog is the quickest win on this page.`,
+      title: `Get every review answered`,
+      actionsSummary: `We get it: ${h.needReply} replies sounds like an afternoon you don't have. But a reply is the one thing customers and Google both read, and ${h.needReply} of your ${h.allTime} reviews are still waiting. Here's the quickest way through.`,
       actions: [
         {
-          label: "Reply to the oldest reviews first.",
-          text: "Reply to the oldest reviews first. The inbox is sorted newest first; switch it to oldest first so nothing has been waiting longer than a week. A short, specific thank you beats a long generic one.",
+          label: "Start with the oldest reviews.",
+          text: "Start with the oldest reviews. Flip the inbox to oldest first so nobody has been waiting more than a week. Keep it short and specific: thank them, name the thing they liked, sign off.",
           links: [{ label: "Open Review Manager", goto: MANAGER }],
         },
         {
           label: "Let five-star Google reviews reply themselves.",
-          text: "Let five-star Google reviews reply themselves. An auto-reply rule with a template handles the easy ones, so the queue only holds reviews that need a person. Google is the only source that supports it.",
+          text: "Let five-star Google reviews reply themselves. An auto-reply rule with a template takes the easy ones off your plate, so the queue only holds reviews that need a person. Google is the only source that supports it.",
           links: [{ label: "Set up an auto-reply", goto: TEMPLATES }],
         },
       ],
     });
   }
 
-  const rating = Number(h.rating);
   if (rating && rating < 4.2) {
     items.push({
       id: "low-rating",
       area: "reviews",
       severity: "high",
-      title: `Your rating is ${h.rating}. Low reviews are pulling it down`,
-      actionsSummary: `At ${h.rating} you sit below the 4.2 most customers filter at. The fastest way up is fewer new low reviews and more new high ones, and both start with the reviews already here.`,
+      title: `Move your rating above 4.2`,
+      actionsSummary: `You're at ${h.rating}, and 4.2 is where a lot of people set their filter. Two things move it: fewer new low reviews, and more new high ones. Both start with the reviews you already have.`,
       actions: [
         {
           label: "Answer every one and two star review this week.",
-          text: "Answer every one and two star review this week. A calm reply that names the problem and what changed reassures the next reader more than the review worried them. Filter the inbox to one and two stars.",
+          text: "Answer every one and two star review this week. A calm reply that names the problem and says what changed reassures the next reader more than the review worried them. Filter the inbox to one and two stars.",
           links: [{ label: "Open the low reviews", goto: MANAGER }],
         },
         {
           label: "Ask your happiest customers for a review.",
-          text: "Ask your happiest customers for a review. A steady flow of new five-star reviews moves the average faster than anything else. Start with a link on the receipt or a QR code by the till.",
+          text: "Ask your happiest customers for a review. A steady flow of new five-star reviews lifts the average faster than anything else. A link on the receipt or a QR code by the till is the fastest start.",
           links: [{ label: "Create a campaign", goto: BUILDER }],
         },
       ],
@@ -85,10 +98,10 @@ export function reviewInsightsFor(profile: LocationProfile, persona: Persona): R
       id: "no-campaigns",
       area: "reviews",
       severity: starter ? "medium" : "high",
-      title: "You are not asking for reviews",
+      title: "Start asking for reviews",
       actionsSummary: starter
-        ? "You have no campaigns yet. Businesses that ask get three to five times more reviews than those that wait. One campaign is enough to start."
-        : `No campaign is running. Your ${h.reviews} reviews arrived on their own; asking is how you keep them coming.`,
+        ? "You haven't asked anyone yet, and that's normal in week one. Businesses that ask get several times more reviews than businesses that wait. One campaign is enough to start."
+        : `Nothing is running. Your ${h.reviews} reviews arrived on their own, which is great, and asking is how you keep them coming.`,
       actions: [
         {
           label: "Create your first campaign.",
@@ -104,8 +117,8 @@ export function reviewInsightsFor(profile: LocationProfile, persona: Persona): R
       id: "few-sources",
       area: "reviews",
       severity: "medium",
-      title: `Only ${h.sourceCount} review ${h.sourceCount === 1 ? "source is" : "sources are"} connected`,
-      actionsSummary: "Reviews on Facebook, Yelp and TripAdvisor count too, and you cannot reply to what you cannot see. Connecting a source takes two minutes.",
+      title: "See every review in one place",
+      actionsSummary: `Only ${h.sourceCount === 1 ? "Google is" : `${h.sourceCount} sources are`} connected. Reviews on Facebook, Yelp and TripAdvisor count too, and you can't reply to what you can't see. Connecting a source takes about two minutes.`,
       actions: [
         {
           label: "Connect Facebook and TripAdvisor.",
@@ -121,8 +134,8 @@ export function reviewInsightsFor(profile: LocationProfile, persona: Persona): R
       id: "showcase-unplaced",
       area: "reviews",
       severity: "low",
-      title: "Your best reviews are not on your website yet",
-      actionsSummary: "Three showcases are ready and none is placed. Reviews on your own site convert visitors who never look at Google.",
+      title: "Put your best reviews on your website",
+      actionsSummary: "Three showcases are ready and none is on your site yet. Reviews on your own pages convince the visitors who never look at Google.",
       actions: [
         {
           label: "Place a showcase on your site.",
@@ -133,5 +146,31 @@ export function reviewInsightsFor(profile: LocationProfile, persona: Persona): R
     });
   }
 
-  return items;
+  // The goal is the first item's outcome, said as a sentence.
+  const goal =
+    items[0]?.id === "reply-backlog"
+      ? { text: `Answer your ${h.needReply} waiting reviews and keep your rating moving up.`, mark: `${h.needReply} waiting reviews` }
+      : items[0]?.id === "low-rating"
+        ? { text: `Lift your rating from ${h.rating} to above 4.2.`, mark: `above 4.2` }
+        : items[0]?.id === "no-campaigns"
+          ? { text: "Start asking for reviews and watch the count climb.", mark: "asking for reviews" }
+          : items[0]?.id === "few-sources"
+            ? { text: "Get every review source into one inbox.", mark: "one inbox" }
+            : { text: "Keep doing what you're doing. Your reviews are in good shape.", mark: "good shape" };
+
+  const lede =
+    items.length > 0
+      ? `Worked out from your ${h.allTime} reviews as they stand today. Each tactic opens the tool that does it.`
+      : "Nothing needs you right now. Check back after your next campaign.";
+
+  // Own-data fact. FACT (assumption for Ali): an industry statistic in the
+  // roadmap's "Did you know" style needs a source we can cite, for example
+  // BrightLocal's Local Consumer Review Survey; until one is chosen, the
+  // fact quotes the location's own numbers, which are always true.
+  const fact =
+    h.allTime > 0
+      ? `Did you know ${h.fiveStar} of your ${h.reviews} reviews are five stars? ${h.needReply > 0 ? `And ${h.needReply} reviews are still waiting for a thank you.` : "And every review has been answered."}`
+      : null;
+
+  return { goal, lede, items, fact };
 }

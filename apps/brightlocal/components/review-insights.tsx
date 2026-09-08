@@ -1,44 +1,82 @@
 "use client";
 
 /**
- * "What to do next" on the Reviews hub: the review-derived insights for
- * the location in the URL, rendered with the same InsightCard the
- * Insights and Actions pages use, so the two read as one system.
+ * "What to do next", in BrightLocal's voice, at the top of the Reviews
+ * hub. The anatomy follows their roadmap material: a goal pill, an
+ * outcome-led headline with the key phrase highlighted, "Key tactics"
+ * with a target icon, then the tactics themselves (the same InsightCard
+ * the Insights and Actions pages use), and a tinted "Did you know" band.
+ * Starter accounts get the set-up guide instead (components/starter-guide).
  */
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@brightlocal/ui-components/card";
+import { Card, CardContent, CardHeader } from "@brightlocal/ui-components/card";
+import { Flag, Target, Lightbulb } from "@brightlocal/icons";
 import { InsightCard } from "@brightlocal/proposal-insights";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
-import { reviewInsightsFor } from "@/lib/review-insights";
+import { reviewPlanFor } from "@/lib/review-insights";
+
+/** The green highlighter mark from the brand material, on a phrase. */
+function Mark({ text, mark }: { text: string; mark: string }) {
+  const i = text.indexOf(mark);
+  if (i < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, i)}
+      <mark className="rounded-sm bg-[var(--ds-tailwind-colors-green-200)] px-1 text-inherit">{mark}</mark>
+      {text.slice(i + mark.length)}
+    </>
+  );
+}
 
 export function ReviewInsights() {
   const persona = usePersona();
   const location = useLocationKey();
-  const items = reviewInsightsFor(profileFor(location, persona), persona);
-  if (items.length === 0) return null;
+  if (persona.engagement === "new") return null;
+  const plan = reviewPlanFor(profileFor(location, persona), persona);
   return (
     <Card className="w-full max-w-none" density="default" dataHook="review-insights">
-      {/* Title INSIDE the card, like the hub cards beside it (Ali, 9 Sep:
-          "the title would be inside the card"). */}
       <CardHeader>
-        <div className="flex flex-col gap-1.5">
-          <CardTitle>What to do next</CardTitle>
-          <CardDescription>
-            Worked out from your reviews as they stand today. Each step opens the tool that does it.
-          </CardDescription>
+        <div className="flex flex-col gap-3">
+          {/* The goal pill, the roadmap's "Stage 1 Goal" flag. */}
+          <span
+            data-hook="review-insights-pill"
+            className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-green-300)] px-2.5 py-1 text-label-sm font-semibold text-[var(--ds-tailwind-colors-neutral-950)]"
+          >
+            <Flag className="size-3.5" />
+            This week's goal
+          </span>
+          <h2 className="text-heading-section text-foreground max-w-prose" data-hook="review-insights-goal">
+            <Mark text={plan.goal.text} mark={plan.goal.mark} />
+          </h2>
+          <p className="text-muted-foreground text-body-sm max-w-prose">{plan.lede}</p>
         </div>
       </CardHeader>
-      <CardContent>
+      {plan.items.length > 0 ? (
+        <CardContent className="flex flex-col gap-4">
+          <p className="flex items-center gap-2 text-heading-subsection" data-hook="review-insights-tactics">
+            <Target className="size-4" />
+            Key tactics
+          </p>
           <div className="flex flex-col divide-y divide-[var(--ds-tailwind-colors-neutral-100)]">
-            {items.map((item, i) => (
+            {plan.items.map((item, i) => (
               <div key={item.id} className={i === 0 ? "pb-6" : "py-6 last:pb-0"}>
                 <InsightCard item={item} />
               </div>
             ))}
           </div>
-      </CardContent>
+          {plan.fact ? (
+            <div
+              data-hook="review-insights-fact"
+              className="mt-2 flex items-start gap-4 rounded-xl bg-[var(--ds-tailwind-colors-violet-100)] px-5 py-4"
+            >
+              <Lightbulb className="mt-0.5 size-6 shrink-0 text-[var(--ds-tailwind-colors-violet-500)]" />
+              <p className="text-body max-w-prose">{plan.fact}</p>
+            </div>
+          ) : null}
+        </CardContent>
+      ) : null}
     </Card>
   );
 }

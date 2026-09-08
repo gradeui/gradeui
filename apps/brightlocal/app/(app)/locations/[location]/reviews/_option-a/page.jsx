@@ -287,13 +287,12 @@ export default function ReviewsPage() {
         }
       >
         <GlobalLayoutContentBody dataHook="reviews-page-body" className="space-y-6 pb-10">
-          {starter ? <StarterGuide /> : null}
+          {starter ? <StarterGuide /> : <ReviewInsights />}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {cards.map((card) => (
               <HubCard key={card.hook} card={card} />
             ))}
           </div>
-          <ReviewInsights />
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

@@ -85,9 +85,9 @@
       "replace": "import { StarterGuide } from \"@/components/starter-guide\";\nimport { ReviewInsights } from \"@/components/review-insights\";"
     },
     {
-      "why": "render the insights under the four cards",
-      "find": "            {cards.map((card) => (\n              <HubCard key={card.hook} card={card} />\n            ))}\n          </div>",
-      "replace": "            {cards.map((card) => (\n              <HubCard key={card.hook} card={card} />\n            ))}\n          </div>\n          <ReviewInsights />"
+      "why": "the guide (starter) or the plan (everyone else) leads the page, above the cards (Ali, 9 Sep: 'they might also sit at the top of the page')",
+      "find": "          {starter ? <StarterGuide /> : null}\n          <div className=\"grid grid-cols-1 gap-4 md:grid-cols-2\">",
+      "replace": "          {starter ? <StarterGuide /> : <ReviewInsights />}\n          <div className=\"grid grid-cols-1 gap-4 md:grid-cols-2\">"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [
