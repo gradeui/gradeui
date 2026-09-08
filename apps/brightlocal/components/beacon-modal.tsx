@@ -111,7 +111,9 @@ export function BeaconModal() {
                 <SummaryCharts stats={stats} />
                 <ModalCta stats={stats} page={page} />
               </div>
-              <DidYouKnowPanel stats={stats} page={page} />
+              <div className="lg:sticky lg:top-0 lg:self-start">
+                <DidYouKnowPanel stats={stats} page={page} />
+              </div>
             </div>
           ) : page ? (
             // From a page: that page's block and the charts, nothing that

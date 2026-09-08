@@ -108,6 +108,9 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
       ) : null}
       </div>
       {bare && hasUpsell ? (
+        // The sell stays put while the plan scrolls (Ali, 11 Sep: "this
+        // content should not scroll"): sticky inside the dialog's body.
+        <div className="lg:sticky lg:top-0 lg:self-start">
         <UpsellStrip
           layout="column"
           example={example}
@@ -117,6 +120,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
           creditsPlural="auto-replies"
           dataHook="upsell-auto-reply"
         />
+        </div>
       ) : null}
       </div>
     </Card>
