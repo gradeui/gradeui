@@ -121,7 +121,7 @@ export function nuggetFor(page: NuggetPage, s: ReviewStats, persona: Persona): N
   if (page === "builder") {
     if (s.spike && s.spikeDayCount > 0)
       return { fact: `Did you know your ${s.spike.campaign} ${s.spike.channel} brought ${s.spikeDayCount} reviews in two days?`, action: "Schedule the next one now and it sends itself.", cta: { label: "Schedule a campaign", goto: GOTO.builder } };
-    return { fact: "Did you know businesses that ask get several times more reviews than those that wait?", action: "One campaign is enough to start.", cta: { label: "Create a campaign", goto: GOTO.builder } };
+    return { fact: "Did you know businesses that ask get several times more reviews than those that wait?", action: "A link on the receipt takes ten minutes to set up.", cta: { label: "Create a campaign", goto: GOTO.builder } };
   }
   // showcase: the strip has the praised theme, so the nugget has the count.
   return { fact: `Did you know ${s.fiveStar} of your ${s.total.toLocaleString("en-GB")} reviews are five stars?`, action: "The hand-picked showcase lets you choose the six your site shows.", cta: { label: "Pick the reviews to show", goto: GOTO.manager } };

@@ -397,10 +397,10 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
 
 /** The three six-month charts, on their own so the modal can show them
  *  under a page's block without the general summary. */
-export function SummaryCharts({ stats }: { stats: ReviewStats }) {
+export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"] }: { stats: ReviewStats; kinds?: Drill[] }) {
   return (
-    <div className="mt-6 grid gap-4 border-t pt-6 md:grid-cols-3" data-hook="review-summary-charts">
-      {(["rating", "velocity", "fourPlus"] as Drill[]).map((kind) => (
+    <div className={`mt-6 grid gap-4 border-t pt-6 ${kinds.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`} data-hook="review-summary-charts">
+      {kinds.map((kind) => (
         <div key={kind} className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
           <p className="text-heading-subsection">
             {kind === "rating" ? "Rating" : kind === "velocity" ? "Review velocity" : "Four stars or above"}, last six months

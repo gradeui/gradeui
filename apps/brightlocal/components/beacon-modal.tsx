@@ -55,7 +55,11 @@ export function BeaconModal() {
             page ? (
               <div className="flex flex-col gap-2">
                 <BeaconPageBlock page={page} />
-                <SummaryCharts stats={statsFor(location, persona)} />
+                {/* Each page gets the charts it is about (Ali, 9 Sep). */}
+                <SummaryCharts
+                  stats={statsFor(location, persona)}
+                  kinds={page === "builder" ? ["velocity", "fourPlus"] : page === "showcase" ? ["rating", "fourPlus"] : ["rating", "velocity", "fourPlus"]}
+                />
               </div>
             ) : (
               <ReviewSummary full bare />

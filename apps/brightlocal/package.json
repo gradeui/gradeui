@@ -7,7 +7,8 @@
     "dev": "next dev --port 3020",
     "build": "next build",
     "start": "next start",
-    "check:promotions": "tsx scripts/check-promotions.mts"
+    "check:promotions": "tsx scripts/check-promotions.mts",
+    "check:beacon": "tsx --tsconfig tsconfig.json scripts/check-beacon-repeats.mts"
   },
   "dependencies": {
     "@brightlocal/icons": "2.4.0",
