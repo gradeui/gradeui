@@ -88,7 +88,7 @@ export function UpsellStrip({
           <p className="text-body-xs text-muted-foreground text-pretty">Only five-star Google reviews. Anything lower waits for a person. Edit the tone once and every reply follows it.</p>
         </div>
       ) : null}
-      <Button variant={trial ? "primary" : "outline"} size="sm" dataHook={`${dataHook}-cta`} className={layout === "column" ? "w-fit" : "shrink-0"}>
+      <Button variant={trial ? "primary" : "outline"} size={layout === "column" ? "lg" : "sm"} dataHook={`${dataHook}-cta`} className={layout === "column" ? "w-fit" : "shrink-0"}>
         {trial ? (
           <>
             <Sparkles className="size-4" />

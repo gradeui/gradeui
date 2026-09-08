@@ -44,13 +44,13 @@ function ModalCta({ stats, page }: { stats: ReturnType<typeof statsFor>; page?: 
   return (
     <div className="mt-6 border-t pt-6">
       {pageCta ? (
-        <Button variant="primary" dataHook="beacon-modal-cta" onClick={() => { close(); router.push(hrefFor({ path: pageCta.path, scope: "location" }, location)); }}>
+        <Button variant="primary" size="lg" dataHook="beacon-modal-cta" onClick={() => { close(); router.push(hrefFor({ path: pageCta.path, scope: "location" }, location)); }}>
           {pageCta.label}
           <ArrowRight className="size-4" />
         </Button>
       ) : (
         <span data-grade-goto={goto} onClick={() => close()}>
-          <Button variant="primary" dataHook="beacon-modal-cta">
+          <Button variant="primary" size="lg" dataHook="beacon-modal-cta">
             {label}
             <ArrowRight className="size-4" />
           </Button>

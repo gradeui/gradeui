@@ -519,7 +519,7 @@ export function DidYouKnowPanel({ stats, page }: { stats: ReviewStats; page?: Be
     <div className="flex h-full flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] p-6" data-hook="review-summary-early-fact">
       <p className="flex items-center gap-2 text-heading-subsection"><Lightbulb className="size-4" />Did you know</p>
       <p className="text-display font-display leading-none">{fact.value}</p>
-      <p className="text-heading-section max-w-[24ch] text-balance">{fact.text}</p>
+      <p className="text-heading-section font-normal max-w-[24ch] text-balance">{fact.text}</p>
       <p className="text-body-sm italic text-muted-foreground">*{fact.source}</p>
       <p className="text-body text-pretty">{line}</p>
       {/* The illustration anchors the foot of the column, so the yellow never ends in empty space. */}

@@ -9,17 +9,19 @@
  * the printable card. Hovering the code opens a small generator: a big
  * preview, the caption and colour to edit, download and print.
  *
- * ASSUMPTION (for Ali): the link is Google's write-a-review URL format,
+ * The code is real and live: it encodes THIS page on the site serving it
+ * (on brightlocal-replatform.gradeui.com, the live Builder page), so a
+ * phone can scan it off the screen (Ali, 11 Sep). In the product the link
+ * would be Google's write-a-review URL,
  * https://search.google.com/local/writereview?placeid=<Place ID>, the
  * same one BrightLocal's free "Google ID and review link generator"
- * produces. The Place ID here is a sample: the real one comes from the
- * location's Google Business Profile connection.
+ * produces, from the location's Google Business Profile connection.
  */
 
 import * as React from "react";
 import QRCode from "qrcode";
 import { Button } from "@brightlocal/ui-components/button";
-import { HoverCard, HoverCardTrigger, HoverCardContent } from "@brightlocal/ui-components/hover-card";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "@brightlocal/ui-components/dialog";
 import { Input } from "@brightlocal/ui-components/input";
 import { Download, Printer, QrCode } from "@brightlocal/icons";
 import { useLocationKey } from "@/lib/location";
@@ -34,8 +36,12 @@ const INKS: { id: string; label: string; hex: string }[] = [
 ];
 
 export function reviewLinkFor(location: string): string {
-  return `https://search.google.com/local/writereview?placeid=${SAMPLE_PLACE_ID}&utm_source=brightlocal&utm_medium=qr&utm_campaign=${encodeURIComponent(location)}`;
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://brightlocal-replatform.gradeui.com";
+  return `${origin}/locations/${location}/reviews/builder?utm_source=brightlocal&utm_medium=qr&utm_campaign=${encodeURIComponent(location)}`;
 }
+
+/** The product's real target, kept for the notes and the print card. */
+export const GOOGLE_REVIEW_LINK = `https://search.google.com/local/writereview?placeid=${SAMPLE_PLACE_ID}`;
 
 function useQrSvg(link: string, ink: string): string {
   const [svg, setSvg] = React.useState("");
@@ -65,7 +71,9 @@ function QrCard({ svg, caption, name, link }: { svg: string; caption: string; na
 export function QrBanner({ compact = false }: { compact?: boolean }) {
   const location = useLocationKey();
   const name = (DATASETS as Record<string, { location?: { name?: string } }>)[location]?.location?.name ?? location;
-  const link = reviewLinkFor(location);
+  const [link, setLink] = React.useState("https://brightlocal-replatform.gradeui.com");
+  React.useEffect(() => setLink(reviewLinkFor(location)), [location]);
+  const [open, setOpen] = React.useState(false);
   const [caption, setCaption] = React.useState("Enjoyed your visit?");
   const [ink, setInk] = React.useState(INKS[0]);
   const svg = useQrSvg(link, ink.hex);
@@ -81,12 +89,15 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
   const fact = STATS.twenty;
   return (
     <section data-hook="qr-banner" className={`flex flex-col gap-5 overflow-hidden rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] lg:flex-row lg:items-center ${compact ? "px-5 py-4" : "px-6 py-5"}`}>
-      {/* Hover the code for the generator: preview and edit (Ali, 10 Sep). */}
-      <HoverCard openDelay={150} closeDelay={250}>
-        <HoverCardTrigger asChild>
-          <button type="button" className={`${compact ? "size-16" : "size-20"} shrink-0 cursor-pointer rounded-md bg-white p-1 outline-none ring-offset-2 focus-visible:ring-2`} aria-label="Open the QR code generator" data-hook="qr-banner-code" dangerouslySetInnerHTML={{ __html: svg }} />
-        </HoverCardTrigger>
-        <HoverCardContent side="bottom" align="start" className="w-[720px] max-w-[95vw] p-0" dataHook="qr-generator">
+      {/* Tap the code for the generator, a proper dialog (Ali, 11 Sep: "hover
+          interaction is weird"): preview and edit. */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <button type="button" className={`${compact ? "size-16" : "size-20"} shrink-0 cursor-pointer rounded-md bg-white p-1 outline-none ring-offset-2 hover:ring-2 hover:ring-[var(--ds-tailwind-colors-neutral-300)] focus-visible:ring-2`} aria-label="Open the QR code generator" data-hook="qr-banner-code" dangerouslySetInnerHTML={{ __html: svg }} />
+        </DialogTrigger>
+        <DialogContent dataHook="qr-generator" className="w-[min(96vw,760px)] max-w-none gap-0 overflow-hidden p-0 sm:max-w-none">
+          <DialogTitle className="sr-only">QR code generator</DialogTitle>
+          <DialogDescription className="sr-only">Preview and edit the review card, then download or print it.</DialogDescription>
           <div className="grid gap-0 sm:grid-cols-[1fr_320px]">
             <div className="flex flex-col gap-4 p-5">
               <p className="text-heading-subsection">QR code generator</p>
@@ -105,7 +116,7 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
                   ))}
                 </div>
               </div>
-              <p className="text-body-xs text-muted-foreground break-all">Opens {link.split("?")[0]}</p>
+              <p className="text-body-xs text-muted-foreground break-all">Opens {link.split("?")[0]}. Scan it with your phone to try.</p>
               <div className="mt-auto flex flex-wrap gap-2">
                 <Button variant="primary" size="sm" dataHook="qr-generator-download" asChild>
                   <a href={dataUrl || undefined} download={`review-qr-${location}.svg`}>
@@ -123,12 +134,12 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
               <QrCard svg={svg} caption={caption} name={name} link={link} />
             </div>
           </div>
-        </HoverCardContent>
-      </HoverCard>
+        </DialogContent>
+      </Dialog>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <p className="flex items-center gap-2 text-heading-subsection"><QrCode className="size-4" />Set up a QR code</p>
         <p className="text-body-sm text-pretty">
-          This code opens your Google review page. Put it on the till, the receipt, the menu or the door, and customers can leave a review while it is still fresh. Free, and ready now. Hover the code to edit it.
+          This code opens your review page. Put it on the till, the receipt, the menu or the door, and customers can leave a review while it is still fresh. Free, and ready now. Tap the code to preview and edit it.
         </p>
         {/* Research, sourced (Ali, 10 Sep: "back it up with research"). */}
         <p className="text-body-sm text-muted-foreground text-pretty">

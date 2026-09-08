@@ -130,7 +130,7 @@ export function TrialRecapModal() {
               </ul>
             </div>
             <div className="flex flex-col gap-2">
-              <Button variant="primary" dataHook="trial-recap-cta" onClick={() => setOpen(false)}>
+              <Button variant="primary" size="lg" dataHook="trial-recap-cta" onClick={() => setOpen(false)}>
                 {lapsed ? "Pick up where you left off" : "Keep everything"}
                 <ArrowRight className="size-4" />
               </Button>
