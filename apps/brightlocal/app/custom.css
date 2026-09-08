@@ -262,8 +262,8 @@
 /* ════════════════════════════════════════════════════════════════════
    BEACON COLOUR (setting: neutral | tinted | families). Lifts Beacon's
    surfaces off the page with the DS accessible pairings: a family's 100
-   as the surface, 950 for headings, 700 for muted copy (700/100 is the
-   chart's small-text AA pair), 200 for marks, 300 for the border. The
+   as the surface, regular text colours, 200 for marks and borders, 300 on
+   buttons and badges. The
    root carries data-beacon-tone; the surfaces carry their data-hooks.
    ════════════════════════════════════════════════════════════════════ */
 [data-beacon-tone="tinted"] [data-hook="review-summary-strip"],
@@ -272,14 +272,15 @@
 [data-beacon-tone="tinted"] [data-hook^="beacon-nugget-"],
 [data-beacon-tone="tinted"] [data-hook="beacon-modal"],
 [data-beacon-tone="tinted"] [data-hook="review-insights"] {
-  --beacon-100: var(--ds-tailwind-colors-green-100);
-  --beacon-50: var(--ds-tailwind-colors-green-50);
-  --beacon-200: var(--ds-tailwind-colors-green-200);
-  --beacon-300: var(--ds-tailwind-colors-green-300);
-  --beacon-700: var(--ds-tailwind-colors-green-700); --beacon-800: var(--ds-tailwind-colors-green-800);
-  --beacon-950: var(--ds-tailwind-colors-green-950);
+  --beacon-100: var(--ds-tailwind-colors-sky-100);
+  --beacon-50: var(--ds-tailwind-colors-sky-50);
+  --beacon-200: var(--ds-tailwind-colors-sky-200);
+  --beacon-300: var(--ds-tailwind-colors-sky-300);
+  --beacon-700: var(--ds-tailwind-colors-sky-700); --beacon-800: var(--ds-tailwind-colors-sky-800);
+  --beacon-950: var(--ds-tailwind-colors-sky-950);
 }
-/* families: summaries sky, recommendations green, upsells yellow, nuggets violet */
+/* families: summaries sky, recommendations violet, upsells yellow, nuggets sky.
+   Green is the brand's button colour, so it is never the tint. */
 [data-beacon-tone="families"] [data-hook="review-summary-strip"],
 [data-beacon-tone="families"] [data-hook^="beacon-strip-"],
 [data-beacon-tone="families"] [data-hook="beacon-modal"] {
@@ -288,13 +289,13 @@
 [data-beacon-tone="families"] [data-hook="review-plan-strip"],
 [data-beacon-tone="families"] [data-hook="beacon-modal"][data-beacon-section="plan"],
 [data-beacon-tone="families"] [data-hook="review-insights"] {
-  --beacon-100: var(--ds-tailwind-colors-green-100); --beacon-50: var(--ds-tailwind-colors-green-50); --beacon-200: var(--ds-tailwind-colors-green-200); --beacon-300: var(--ds-tailwind-colors-green-300); --beacon-700: var(--ds-tailwind-colors-green-700); --beacon-800: var(--ds-tailwind-colors-green-800); --beacon-950: var(--ds-tailwind-colors-green-950);
+  --beacon-100: var(--ds-tailwind-colors-violet-100); --beacon-50: var(--ds-tailwind-colors-violet-50); --beacon-200: var(--ds-tailwind-colors-violet-200); --beacon-300: var(--ds-tailwind-colors-violet-300); --beacon-700: var(--ds-tailwind-colors-violet-700); --beacon-800: var(--ds-tailwind-colors-violet-800); --beacon-950: var(--ds-tailwind-colors-violet-950);
 }
 [data-beacon-tone="families"] [data-hook^="upsell"] {
   --beacon-100: var(--ds-tailwind-colors-yellow-100); --beacon-50: var(--ds-tailwind-colors-yellow-50); --beacon-200: var(--ds-tailwind-colors-yellow-200); --beacon-300: var(--ds-tailwind-colors-yellow-300); --beacon-700: var(--ds-tailwind-colors-yellow-800); --beacon-800: var(--ds-tailwind-colors-yellow-900); --beacon-950: var(--ds-tailwind-colors-yellow-950);
 }
 [data-beacon-tone="families"] [data-hook^="beacon-nugget-"] {
-  --beacon-100: var(--ds-tailwind-colors-violet-100); --beacon-50: var(--ds-tailwind-colors-violet-50); --beacon-200: var(--ds-tailwind-colors-violet-200); --beacon-300: var(--ds-tailwind-colors-violet-300); --beacon-700: var(--ds-tailwind-colors-violet-700); --beacon-800: var(--ds-tailwind-colors-violet-800); --beacon-950: var(--ds-tailwind-colors-violet-950);
+  --beacon-100: var(--ds-tailwind-colors-sky-100); --beacon-50: var(--ds-tailwind-colors-sky-50); --beacon-200: var(--ds-tailwind-colors-sky-200); --beacon-300: var(--ds-tailwind-colors-sky-300); --beacon-700: var(--ds-tailwind-colors-sky-700); --beacon-800: var(--ds-tailwind-colors-sky-800); --beacon-950: var(--ds-tailwind-colors-sky-950);
 }
 /* Paint wherever a family is set. */
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"],
@@ -305,14 +306,8 @@
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] {
   background: var(--beacon-100) !important;
   border-color: var(--beacon-200) !important;
-  color: var(--beacon-800);
-  --foreground: var(--beacon-800);
-  --muted-foreground: var(--beacon-700);
-  box-shadow: none !important; /* the tint lifts it; a grey shadow under colour looks dirty */
-}
-/* The nugget's second line reads in the same colour as its fact. */
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] {
-  --muted-foreground: var(--beacon-800);
+  box-shadow: none !important; /* the tint lifts it, a grey shadow under colour looks dirty */
+  /* Text keeps the regular DS colours (the DS rule for tinted surfaces). */
 }
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] mark,
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] mark,
@@ -341,7 +336,6 @@
 [data-beacon-tone="families"] [data-hook^="upsell"] button:not(.bg-primary),
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] button:not(.bg-primary) {
   border-color: var(--beacon-300) !important;
-  color: var(--beacon-800) !important;
   background: transparent !important;
 }
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button:not(.bg-primary):hover,
@@ -359,5 +353,4 @@
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-insights-pill"] {
   background: var(--beacon-50) !important;
   border-color: var(--beacon-300) !important;
-  color: var(--beacon-800) !important;
 }
