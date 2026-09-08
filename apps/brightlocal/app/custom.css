@@ -270,7 +270,6 @@
 [data-beacon-tone="tinted"] [data-hook^="beacon-strip-"],
 [data-beacon-tone="tinted"] [data-hook="review-plan-strip"],
 [data-beacon-tone="tinted"] [data-hook^="beacon-nugget-"],
-[data-beacon-tone="tinted"] [data-hook="beacon-modal"],
 [data-beacon-tone="tinted"] [data-hook="review-insights"] {
   --beacon-100: var(--ds-tailwind-colors-sky-100);
   --beacon-50: var(--ds-tailwind-colors-sky-50);
@@ -282,12 +281,10 @@
 /* families: summaries sky, recommendations violet, upsells yellow, nuggets sky.
    Green is the brand's button colour, so it is never the tint. */
 [data-beacon-tone="families"] [data-hook="review-summary-strip"],
-[data-beacon-tone="families"] [data-hook^="beacon-strip-"],
-[data-beacon-tone="families"] [data-hook="beacon-modal"] {
+[data-beacon-tone="families"] [data-hook^="beacon-strip-"] {
   --beacon-100: var(--ds-tailwind-colors-sky-100); --beacon-50: var(--ds-tailwind-colors-sky-50); --beacon-200: var(--ds-tailwind-colors-sky-200); --beacon-300: var(--ds-tailwind-colors-sky-300); --beacon-700: var(--ds-tailwind-colors-sky-700); --beacon-800: var(--ds-tailwind-colors-sky-800); --beacon-950: var(--ds-tailwind-colors-sky-950);
 }
 [data-beacon-tone="families"] [data-hook="review-plan-strip"],
-[data-beacon-tone="families"] [data-hook="beacon-modal"][data-beacon-section="plan"],
 [data-beacon-tone="families"] [data-hook="review-insights"] {
   --beacon-100: var(--ds-tailwind-colors-violet-100); --beacon-50: var(--ds-tailwind-colors-violet-50); --beacon-200: var(--ds-tailwind-colors-violet-200); --beacon-300: var(--ds-tailwind-colors-violet-300); --beacon-700: var(--ds-tailwind-colors-violet-700); --beacon-800: var(--ds-tailwind-colors-violet-800); --beacon-950: var(--ds-tailwind-colors-violet-950);
 }
@@ -302,30 +299,26 @@
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"],
-[data-beacon-tone="families"] [data-hook^="upsell"],
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] {
+[data-beacon-tone="families"] [data-hook^="upsell"] {
   background: var(--beacon-100) !important;
   border-color: var(--beacon-200) !important;
   box-shadow: none !important; /* the tint lifts it, a grey shadow under colour looks dirty */
-  /* Text keeps the regular DS colours (the DS rule for tinted surfaces). */
+  /* One ink on a tint (Ali, 10 Sep: "way too many colors"): everything
+     black, nothing muted, badges transparent, the main CTA a black button. */
+  --muted-foreground: var(--foreground);
+  color: var(--foreground);
 }
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] mark,
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] mark,
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] mark,
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] mark {
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] mark {
   background: var(--beacon-200) !important;
 }
 /* Panels inside a tinted surface step to the family's 50, and the
    dialog's inner panels and header follow. */
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip-tiles"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip-tiles"],
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] dl,
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] [data-hook="review-summary-charts"] > div,
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] dl > div {
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] dl {
   background: var(--beacon-50) !important;
-}
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal-header"] {
-  border-color: var(--beacon-200);
 }
 /* Buttons on a tinted surface take the family: outline in the family's
    300 border and 800 text, hover to 200. Primary stays the brand button. */
@@ -333,25 +326,38 @@
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button:not(.bg-primary),
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button:not(.bg-primary),
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button,
-[data-beacon-tone="families"] [data-hook^="upsell"] button:not(.bg-primary),
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] button:not(.bg-primary) {
+[data-beacon-tone="families"] [data-hook^="upsell"] button:not(.bg-primary) {
   border-color: var(--foreground) !important; /* black outline on an accent (Ali, 10 Sep) */
   background: transparent !important;
 }
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button:not(.bg-primary):hover,
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button:not(.bg-primary):hover,
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button:not(.bg-primary):hover,
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button:hover,
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] button:not(.bg-primary):hover {
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button:hover {
   background: var(--beacon-200) !important;
 }
 /* The Beacon badge and the goal pill match: the family's 50 behind, a black outline. */
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-badge"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-insights-badge"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip-badge"],
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal-badge"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-insights-pill"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip-pill"] {
-  background: var(--beacon-50) !important;
+  background: transparent !important;
   border-color: var(--foreground) !important;
+  color: var(--foreground) !important;
+}
+/* The main CTA on a tint is a black button (the brand green fights the tint). */
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button.bg-primary,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button.bg-primary,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button.bg-primary,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button.bg-primary,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="upsell"] button.bg-primary,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="review-quote-"] button.bg-primary {
+  background: var(--foreground) !important;
+  color: var(--ds-tailwind-colors-base-white) !important;
+  border-color: var(--foreground) !important;
+}
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="review-quote-"] button:not(.bg-primary) {
+  border-color: var(--foreground) !important;
+  background: transparent !important;
 }

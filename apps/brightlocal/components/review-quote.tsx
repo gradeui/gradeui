@@ -66,7 +66,7 @@ export function ReviewQuoteBand({ kind, goto }: { kind: QuoteKind; goto: string 
           <p className="text-body-sm text-muted-foreground">{rating} on {SOURCE_LABEL[review.source] ?? review.source}, {when}</p>
         </div>
         <span data-grade-goto={goto}>
-          <Button variant="outline" size="sm" dataHook={`review-quote-${kind}-cta`}>
+          <Button variant="primary" dataHook={`review-quote-${kind}-cta`}>
             {cta}
             <ArrowRight className="size-4" />
           </Button>

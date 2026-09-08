@@ -1780,9 +1780,9 @@ function ReviewsInbox() {
 
   const renderInbox = () => (
     <Card dataHook="review-inbox" density="condensed" className="max-w-none gap-0 p-0">
-      {/* bg-muted: the filter group shares the table header's background
-          (Ali, 9 Sep), so tabs, filters and header read as one band. */}
-      <div className="bg-muted sticky z-30 rounded-t-[inherit]" style={{ top: stickyTop }}>
+      {/* White (Ali, 10 Sep: "table header area white?"): tabs, filters and
+          the order row sit on the card's own surface, divided by borders. */}
+      <div className="bg-[var(--ds-tailwind-colors-base-white)] sticky z-30 rounded-t-[inherit]" style={{ top: stickyTop }}>
         {/* ROW 1 — TABS. Real DS Tabs: role="tablist", roving tabindex and
             arrow-key navigation, none of which the hand-rolled buttons had.
             
@@ -1834,7 +1834,7 @@ function ReviewsInbox() {
         {/* ROW 2 — FILTERS, own surface, always visible. Search leads, per
             the DS's own DataTablePage recipe (Toolbar > ToolbarLeft >
             DataTableSearch). */}
-        <div className="bg-muted/40 flex flex-wrap items-center gap-2 border-b px-4 py-2">
+        <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
           <DataTableSearch
             table={table}
             dataHook="search-reviews"
