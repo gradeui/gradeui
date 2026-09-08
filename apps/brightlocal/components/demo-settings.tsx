@@ -25,6 +25,12 @@ import { PERSONAS } from "@/lib/personas";
 import { SCREENS, hrefFor, locationFromPath, relativePath } from "@/lib/screens";
 import { LOOK_PRESETS } from "@brightlocal/proposal-shell";
 
+const ENGINE_LABELS = {
+  native: "De facto GlobalLayout (DS as shipped)",
+  "native-fixed": "De facto plus proposed fixes",
+  modified: "Modified GlobalLayout (proposal shell)",
+} as const;
+
 const LOOK_LABELS: Record<string, string> = {
   "live-site": "Live Site (DS default)",
   "subtle-depth": "Subtle Depth",
@@ -75,17 +81,17 @@ export function DemoSettingsPanel() {
             </CommandGroup>
             <CommandSeparator />
             <CommandGroup heading="Layout engine">
-              {(["native", "modified"] as const).map((e) => (
+              {(["native", "native-fixed", "modified"] as const).map((e) => (
                 <CommandItem
                   key={e}
                   dataHook={`demo-engine-${e}`}
-                  value={`engine ${e === "native" ? "de facto GlobalLayout as shipped" : "modified GlobalLayout proposal shell"}`}
+                  value={`engine ${ENGINE_LABELS[e]}`}
                   onSelect={() => {
                     setEngine(e);
                     setMenuOpen(false);
                   }}
                 >
-                  {e === "native" ? "De facto GlobalLayout (DS as shipped)" : "Modified GlobalLayout (proposal shell)"}
+                  {ENGINE_LABELS[e]}
                   {settings.engine === e ? <Check className="ml-auto size-4" /> : null}
                 </CommandItem>
               ))}

@@ -31,6 +31,16 @@
       "why": "starter persona has no campaigns yet: the page opens on its own empty state (Create your first campaign)",
       "find": "  const [campaigns, setCampaigns] = useState(seedCampaigns);\n",
       "replace": "  const persona = usePersona();\n  const [campaigns, setCampaigns] = useState(() => (persona.engagement === \"new\" ? [] : seedCampaigns()));\n"
+    },
+    {
+      "why": "location hook + profiles",
+      "find": "import { usePersona } from \"@/lib/demo\";",
+      "replace": "import { usePersona } from \"@/lib/demo\";\nimport { useLocationKey } from \"@/lib/location\";\nimport { profileFor } from \"@/lib/location-profiles\";"
+    },
+    {
+      "why": "campaigns per location; starter still has none",
+      "find": "  const persona = usePersona();\n  const [campaigns, setCampaigns] = useState(() => (persona.engagement === \"new\" ? [] : seedCampaigns()));\n",
+      "replace": "  const persona = usePersona();\n  const locationKey = useLocationKey();\n  const [campaigns, setCampaigns] = useState(() =>\n    persona.engagement === \"new\" ? [] : seedCampaigns().slice(0, profileFor(locationKey).campaigns),\n  );\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -53,6 +63,21 @@
       "why": "the guide leads the page for a starter; cards read from the persona set",
       "find": "        <GlobalLayoutContentBody dataHook=\"reviews-page-body\" className=\"space-y-6 pb-10\">\n          <div className=\"grid grid-cols-1 gap-4 md:grid-cols-2\">\n            {HUB_CARDS.map((card) => (",
       "replace": "        <GlobalLayoutContentBody dataHook=\"reviews-page-body\" className=\"space-y-6 pb-10\">\n          {starter ? <StarterGuide /> : null}\n          <div className=\"grid grid-cols-1 gap-4 md:grid-cols-2\">\n            {cards.map((card) => ("
+    },
+    {
+      "why": "location hook + profiles",
+      "find": "import { usePersona } from \"@/lib/demo\";",
+      "replace": "import { usePersona } from \"@/lib/demo\";\nimport { useLocationKey } from \"@/lib/location\";\nimport { profileFor } from \"@/lib/location-profiles\";"
+    },
+    {
+      "why": "engaged cards read the location's profile numbers (lib/location-profiles, read off the pages), so Hove says Hove",
+      "find": "// HubCard / DrillArrow are lifted VERBATIM from UI Vision - Location Hub",
+      "replace": "// PER-LOCATION CARDS (app-side, 9 Sep): the same four signposts with the\n// numbers of the location in the URL, from lib/location-profiles (where\n// each number is read off the page it links to, as HUB_CARDS' were).\nfunction hubCardsFor(profile) {\n  const h = profile.hub;\n  return [\n    { ...HUB_CARDS[0], headline: String(h.needReply), parts: [{ k: \"Replied\", v: String(h.replied) }, { k: \"Skipped\", v: String(h.skipped) }, { k: \"All time\", v: String(h.allTime) }] },\n    { ...HUB_CARDS[1], headline: h.rating, parts: [{ k: \"Reviews\", v: h.reviews }, { k: \"Five star\", v: h.fiveStar }, { k: \"Sources\", v: String(h.sourceCount) }] },\n    { ...HUB_CARDS[2], headline: String(h.running), parts: [{ k: \"Scheduled\", v: String(h.scheduled) }, { k: \"Draft\", v: String(h.draft) }, { k: \"All time\", v: String(h.campaignsAll) }] },\n    HUB_CARDS[3],\n  ];\n}\n\n// HubCard / DrillArrow are lifted VERBATIM from UI Vision - Location Hub"
+    },
+    {
+      "why": "pick cards by persona and location",
+      "find": "  const cards = starter ? STARTER_HUB_CARDS : HUB_CARDS;\n",
+      "replace": "  const locationKey = useLocationKey();\n  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(profileFor(locationKey));\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [
@@ -80,6 +105,41 @@
       "why": "the header count follows the persona's seed",
       "find": "<span className=\"text-foreground font-medium tabular-nums\">{SEED_REVIEWS.length}</span> reviews",
       "replace": "<span className=\"text-foreground font-medium tabular-nums\">{seedRowsFor(persona).length}</span> reviews"
+    },
+    {
+      "why": "location hook + profiles",
+      "find": "import { usePersona } from \"@/lib/demo\";",
+      "replace": "import { usePersona } from \"@/lib/demo\";\nimport { useLocationKey } from \"@/lib/location\";\nimport { profileFor } from \"@/lib/location-profiles\";"
+    },
+    {
+      "why": "rows per location: the starter persona keeps its four; everyone else shows the first inboxRows of the seed for the location in the URL",
+      "find": "const seedRowsFor = (persona) => (persona?.engagement === \"new\" ? STARTER_REVIEWS : SEED_REVIEWS);",
+      "replace": "const seedRowsFor = (persona, location) =>\n  persona?.engagement === \"new\" ? STARTER_REVIEWS : SEED_REVIEWS.slice(0, profileFor(location).inboxRows);"
+    },
+    {
+      "why": "inbox reads the location",
+      "find": "  const persona = usePersona();\n  const [reviews, setReviews] = useState(() =>\n    seedRowsFor(persona).map(",
+      "replace": "  const persona = usePersona();\n  const locationKey = useLocationKey();\n  const [reviews, setReviews] = useState(() =>\n    seedRowsFor(persona, locationKey).map("
+    },
+    {
+      "why": "header count reads the location",
+      "find": "export default function RMReviewManagerDataTablePage() {\n  const persona = usePersona();\n",
+      "replace": "export default function RMReviewManagerDataTablePage() {\n  const persona = usePersona();\n  const locationKey = useLocationKey();\n"
+    },
+    {
+      "why": "header count reads the location",
+      "find": "{seedRowsFor(persona).length}</span> reviews",
+      "replace": "{seedRowsFor(persona, locationKey).length}</span> reviews"
+    },
+    {
+      "why": "de facto engine: nothing is sticky above the table, so the sticky offset is zero rather than the header's height",
+      "find": "    let band = el;\n    let node = el;\n    while (node && node !== document.body) {\n      if (window.getComputedStyle(node).position === \"sticky\") {\n        band = node;\n        break;\n      }\n      node = node.parentElement;\n    }\n    const measure = () => setOffset(Math.round(band.getBoundingClientRect().height));",
+      "replace": "    // The band is the nearest STICKY ancestor. With none (the de facto\n    // GlobalLayout has no sticky header) the offset is zero: measuring\n    // the header itself put the table's sticky header 100px down the\n    // page (Ali, 9 Sep).\n    let band = null;\n    let node = el;\n    while (node && node !== document.body) {\n      if (window.getComputedStyle(node).position === \"sticky\") {\n        band = node;\n        break;\n      }\n      node = node.parentElement;\n    }\n    const measure = () => setOffset(band ? Math.round(band.getBoundingClientRect().height) : 0);\n    const watched = band ?? el;"
+    },
+    {
+      "why": "observe the band, or the header itself when there is none",
+      "find": "    const ro = new ResizeObserver(measure);\n    ro.observe(band);",
+      "replace": "    const ro = new ResizeObserver(measure);\n    ro.observe(watched);"
     }
   ],
   "app/(app)/locations/[location]/reviews/tracker/page.jsx": [
@@ -107,6 +167,38 @@
       "why": "select the persona's data before any card renders",
       "find": "export default function RMReviewTrackerPage() {\n",
       "replace": "export default function RMReviewTrackerPage() {\n  const persona = usePersona();\n  selectTrackerData(persona);\n  const HEADLINE_RATING = headlineRating();\n"
+    },
+    {
+      "why": "location hook + profiles",
+      "find": "import { usePersona } from \"@/lib/demo\";",
+      "replace": "import { usePersona } from \"@/lib/demo\";\nimport { useLocationKey } from \"@/lib/location\";\nimport { profileFor } from \"@/lib/location-profiles\";"
+    },
+    {
+      "why": "select the location's sources and star mix (lib/location-profiles) unless the starter persona is on",
+      "find": "function selectTrackerData(persona) {\n  const starter = persona?.engagement === \"new\";\n  SOURCES = starter ? STARTER_SOURCES : ENGAGED_SOURCES;\n  STAR_MIX = starter ? STARTER_STAR_MIX : ENGAGED_STAR_MIX;\n}",
+      "replace": "function selectTrackerData(persona, location) {\n  const starter = persona?.engagement === \"new\";\n  const profile = profileFor(location);\n  SOURCES = starter ? STARTER_SOURCES : profile.sources;\n  STAR_MIX = starter ? STARTER_STAR_MIX : profile.starMix;\n}"
+    },
+    {
+      "why": "page selects by persona and location",
+      "find": "  const persona = usePersona();\n  selectTrackerData(persona);\n",
+      "replace": "  const persona = usePersona();\n  const locationKey = useLocationKey();\n  selectTrackerData(persona, locationKey);\n"
+    }
+  ],
+  "app/(app)/locations/page.jsx": [
+    {
+      "why": "persona hook",
+      "find": "} from \"@brightlocal/proposal\";",
+      "replace": "} from \"@brightlocal/proposal\";\nimport { usePersona } from \"@/lib/demo\";"
+    },
+    {
+      "why": "the grid shows the persona's locations; the client scope is the agency's real clients rather than Client A/B",
+      "find": "  const CLIENT_LOCATIONS = {\n    \"client-a\": [\"minus-one-studios\"],\n    \"client-b\": [\"harbour-co\", \"northside-dental\"],\n  };\n  const visible = (data.locations ?? [])\n    .filter(\n      (l) => client === \"all\" || (CLIENT_LOCATIONS[client] ?? []).includes(l.id),\n    )",
+      "replace": "  const CLIENT_LOCATIONS = {\n    \"minus-one-studios\": [\"minus-one-studios\"],\n    \"harbour-co\": [\"harbour-co\", \"harbour-co-hove\", \"harbour-co-worthing\"],\n    \"northside-dental\": [\"northside-dental\"],\n  };\n  // PERSONA SCOPE (app-side, 9 Sep): an account sees its own locations.\n  // A single business sees one card; Harbour & Co sees three; the agency\n  // sees every client's, with the client filter above the grid.\n  const persona = usePersona();\n  const visible = (data.locations ?? [])\n    .filter((l) => persona.locations.includes(l.id))\n    .filter(\n      (l) => client === \"all\" || (CLIENT_LOCATIONS[client] ?? []).includes(l.id),\n    )"
+    },
+    {
+      "why": "client filter only for the agency, with real client names",
+      "find": "          <Select value={client} onValueChange={setClient}>\n            <SelectTrigger dataHook=\"locations-client-select\" className=\"w-40\">\n              <SelectValue placeholder=\"All Clients\" />\n            </SelectTrigger>\n            <SelectContent>\n              <SelectItem value=\"all\">All Clients</SelectItem>\n              <SelectItem value=\"client-a\">Client A</SelectItem>\n              <SelectItem value=\"client-b\">Client B</SelectItem>\n            </SelectContent>\n          </Select>",
+      "replace": "          {persona.accountType === \"agency\" ? (\n          <Select value={client} onValueChange={setClient}>\n            <SelectTrigger dataHook=\"locations-client-select\" className=\"w-44\">\n              <SelectValue placeholder=\"All Clients\" />\n            </SelectTrigger>\n            <SelectContent>\n              <SelectItem value=\"all\">All Clients</SelectItem>\n              <SelectItem value=\"minus-one-studios\">Minus 1 Studios</SelectItem>\n              <SelectItem value=\"harbour-co\">Harbour &amp; Co</SelectItem>\n              <SelectItem value=\"northside-dental\">Northside Dental</SelectItem>\n            </SelectContent>\n          </Select>\n          ) : null}"
     }
   ]
 }

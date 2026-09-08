@@ -1525,9 +1525,23 @@ function ModifiedAppLayoutShell({
 //               props; look knobs are ignored. What you see is 2.27.0.
 // A screen never chooses: it renders <AppLayoutShell> and the setting
 // decides, so the two can be compared on any page from the same source.
+// Three values: "native" (the DS as shipped, nothing overridden),
+// "native-fixed" (the same layout with the proposed token fixes from
+// app/custom.css applied, scoped by the data attribute below), and
+// "modified" (the proposal shell). The first two RENDER the same tree;
+// the attribute is what custom.css keys on.
 export function layoutEngine() {
   try {
-    return window.__gdsLayoutEngine === "native" ? "native" : "modified";
+    const raw = window.__gdsLayoutEngine;
+    return raw === "native" || raw === "native-fixed" ? "native" : "modified";
+  } catch {
+    return "modified";
+  }
+}
+export function layoutEngineRaw() {
+  try {
+    const raw = window.__gdsLayoutEngine;
+    return raw === "native" || raw === "native-fixed" ? raw : "modified";
   } catch {
     return "modified";
   }
@@ -1542,7 +1556,7 @@ function NativeAppLayoutShell({ sidebar, header, mobileBar, children, dataset, d
   const shell = (
     <GlobalLayout
       dataHook={dataHook}
-      data-gds-layout-engine="native"
+      data-gds-layout-engine={layoutEngineRaw()}
       className={className}
       // Nothing is sticky above the content in the DS layout, so screens
       // that offset their own sticky rows by the page header's height

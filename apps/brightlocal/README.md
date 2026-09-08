@@ -107,6 +107,11 @@ scripts/
   `data-grade-goto="screen:<id>"`; `components/goto-bridge.tsx`
   resolves ids through `lib/screens.ts` and drives the Next router.
   Areas with no promoted screen resolve to a skeleton page.
+- **Locations carry their own data.** `lib/location-profiles.ts` says,
+  per dataset key, how much of each screen's seed a location shows and
+  what its sources look like; the hub numbers there are read off those
+  pages. Personas scope which locations an account sees
+  (`lib/personas.ts`), and accounts with several get a sidebar switcher.
 - **Personas drive the data.** `lib/demo.tsx` pushes the persona's
   dataset into the proposal module's session dataset seam and the look
   preset into its host seed, then remounts the screen. No screen edits

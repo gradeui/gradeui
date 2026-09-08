@@ -51,14 +51,21 @@ export default function SettingsPage() {
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Layout engine</h2>
         <p className="text-muted-foreground text-sm">
-          De facto is the design system's GlobalLayout and page header exactly as shipped in 2.27.0.
-          Modified is the proposal shell built on top of it: padding cancelled, sidebar tones, the
-          sticky band and the tweaker. Every screen renders from the same source either way.
+          De facto is the design system's GlobalLayout, sidebar and page header exactly as shipped
+          in 2.27.0, nothing overridden. De facto plus proposed fixes is the same layout with the
+          token changes on the proposed-changes page applied (white bordered cards, the content
+          width cap, the sidebar width). Modified is the proposal shell built on top of the DS:
+          padding cancelled, sidebar tones, the sticky band and the tweaker. Every screen renders
+          from the same source in all three.
         </p>
-        <RadioGroup dataHook="settings-engine" value={settings.engine} onValueChange={(v) => setEngine(v as "modified" | "native")}>
+        <RadioGroup dataHook="settings-engine" value={settings.engine} onValueChange={(v) => setEngine(v as "modified" | "native" | "native-fixed")}>
           <div className="flex items-center gap-3">
             <RadioGroupItem value="native" id="engine-native" />
             <Label htmlFor="engine-native">De facto GlobalLayout</Label>
+          </div>
+          <div className="flex items-center gap-3">
+            <RadioGroupItem value="native-fixed" id="engine-native-fixed" />
+            <Label htmlFor="engine-native-fixed">De facto plus proposed fixes</Label>
           </div>
           <div className="flex items-center gap-3">
             <RadioGroupItem value="modified" id="engine-modified" />

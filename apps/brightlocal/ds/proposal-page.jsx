@@ -1653,7 +1653,7 @@ function NativePageHeader({
 export function PageHeader(props) {
   let native = false;
   try {
-    native = window.__gdsLayoutEngine === "native";
+    native = window.__gdsLayoutEngine === "native" || window.__gdsLayoutEngine === "native-fixed";
   } catch {}
   return native ? <NativePageHeader {...props} /> : <ModifiedPageHeader {...props} />;
 }

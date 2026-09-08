@@ -115,6 +115,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useUrlParam } from "@/lib/url-state";
 import { usePersona } from "@/lib/demo";
+import { useLocationKey } from "@/lib/location";
+import { profileFor } from "@/lib/location-profiles";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -5957,7 +5959,10 @@ function CustomerPreviewDrawer({ open, onOpenChange, config, expired }) {
 
 export default function RMReviewBuilderPage() {
   const persona = usePersona();
-  const [campaigns, setCampaigns] = useState(() => (persona.engagement === "new" ? [] : seedCampaigns()));
+  const locationKey = useLocationKey();
+  const [campaigns, setCampaigns] = useState(() =>
+    persona.engagement === "new" ? [] : seedCampaigns().slice(0, profileFor(locationKey).campaigns),
+  );
   const [templates, setTemplates] = useState(seedTemplates);
   const [draft, setDraft] = useState(blankCampaignDraft);
   const [step, setStep] = useState("setup");

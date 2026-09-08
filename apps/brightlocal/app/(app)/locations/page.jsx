@@ -44,6 +44,7 @@ import {
   LocationCard,
   useProposalData,
 } from "@brightlocal/proposal";
+import { usePersona } from "@/lib/demo";
 
 function LocationsGrid() {
   const data = useProposalData();
@@ -57,10 +58,16 @@ function LocationsGrid() {
   // labels stay "Client A/B" per Ali's wording; swap for real client/
   // agency names here + in the SelectItems below if wanted.
   const CLIENT_LOCATIONS = {
-    "client-a": ["minus-one-studios"],
-    "client-b": ["harbour-co", "northside-dental"],
+    "minus-one-studios": ["minus-one-studios"],
+    "harbour-co": ["harbour-co", "harbour-co-hove", "harbour-co-worthing"],
+    "northside-dental": ["northside-dental"],
   };
+  // PERSONA SCOPE (app-side, 9 Sep): an account sees its own locations.
+  // A single business sees one card; Harbour & Co sees three; the agency
+  // sees every client's, with the client filter above the grid.
+  const persona = usePersona();
   const visible = (data.locations ?? [])
+    .filter((l) => persona.locations.includes(l.id))
     .filter(
       (l) => client === "all" || (CLIENT_LOCATIONS[client] ?? []).includes(l.id),
     )
@@ -92,16 +99,19 @@ function LocationsGrid() {
           {/* Client scope (Ali, 22 & 24 Jul) — NOW FILTERS the grid:
               Client A = Minus 1 Studios, Client B = the other two
               (hardcoded CLIENT_LOCATIONS map above). */}
+          {persona.accountType === "agency" ? (
           <Select value={client} onValueChange={setClient}>
-            <SelectTrigger dataHook="locations-client-select" className="w-40">
+            <SelectTrigger dataHook="locations-client-select" className="w-44">
               <SelectValue placeholder="All Clients" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Clients</SelectItem>
-              <SelectItem value="client-a">Client A</SelectItem>
-              <SelectItem value="client-b">Client B</SelectItem>
+              <SelectItem value="minus-one-studios">Minus 1 Studios</SelectItem>
+              <SelectItem value="harbour-co">Harbour &amp; Co</SelectItem>
+              <SelectItem value="northside-dental">Northside Dental</SelectItem>
             </SelectContent>
           </Select>
+          ) : null}
           {/* View switcher as TABS (Ali, 22 Jul) — a mutually exclusive
               always-one-active pair is tab semantics, not a toggle. */}
           <Tabs

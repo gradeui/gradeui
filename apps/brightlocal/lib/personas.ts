@@ -26,6 +26,12 @@ export interface Persona {
   dataset: string;
   /** Look preset the shell opens in (LOOK_PRESETS in ds/proposal-shell). */
   look: string;
+  /** The locations this account can see (dataset keys). All Locations
+   *  lists exactly these; the sidebar offers a switcher when there are
+   *  several. */
+  locations: string[];
+  /** The account name shown over the locations (agency: the agency). */
+  accountLabel: string;
 }
 
 export const PERSONAS: Persona[] = [
@@ -37,6 +43,8 @@ export const PERSONAS: Persona[] = [
     engagement: "new",
     dataset: "minus-one-studios",
     look: "live-site",
+    locations: ["minus-one-studios"],
+    accountLabel: "Minus 1 Studios",
   },
   {
     id: "engaged",
@@ -46,24 +54,30 @@ export const PERSONAS: Persona[] = [
     engagement: "engaged",
     dataset: "minus-one-studios",
     look: "live-site",
+    locations: ["minus-one-studios"],
+    accountLabel: "Minus 1 Studios",
   },
   {
     id: "multi",
     label: "Multi-location business",
-    description: "Harbour & Co. Several locations under one account, switching between them.",
+    description: "Harbour & Co. Three restaurants under one account, switching between them.",
     accountType: "multi",
     engagement: "engaged",
     dataset: "harbour-co",
     look: "live-site",
+    locations: ["harbour-co", "harbour-co-hove", "harbour-co-worthing"],
+    accountLabel: "Harbour & Co",
   },
   {
     id: "agency",
     label: "Agency",
-    description: "Acme Local Agency managing client locations, including Northside Dental.",
+    description: "Acme Local Agency managing every client location, starting on Northside Dental.",
     accountType: "agency",
     engagement: "engaged",
     dataset: "northside-dental",
     look: "live-site",
+    locations: ["northside-dental", "minus-one-studios", "harbour-co", "harbour-co-hove", "harbour-co-worthing"],
+    accountLabel: "Acme Local Agency",
   },
 ];
 

@@ -32,6 +32,8 @@ import {
   CardTitleLink,
 } from "@brightlocal/proposal";
 import { usePersona } from "@/lib/demo";
+import { useLocationKey } from "@/lib/location";
+import { profileFor } from "@/lib/location-profiles";
 import { StarterGuide } from "@/components/starter-guide";
 
 /* ================================ reference =============================== */
@@ -156,6 +158,19 @@ const STARTER_HUB_CARDS = [
   { ...HUB_CARDS[3], headline: "3", headlineLabel: "showcases ready", parts: [{ k: "On your site", v: "0" }] },
 ];
 
+// PER-LOCATION CARDS (app-side, 9 Sep): the same four signposts with the
+// numbers of the location in the URL, from lib/location-profiles (where
+// each number is read off the page it links to, as HUB_CARDS' were).
+function hubCardsFor(profile) {
+  const h = profile.hub;
+  return [
+    { ...HUB_CARDS[0], headline: String(h.needReply), parts: [{ k: "Replied", v: String(h.replied) }, { k: "Skipped", v: String(h.skipped) }, { k: "All time", v: String(h.allTime) }] },
+    { ...HUB_CARDS[1], headline: h.rating, parts: [{ k: "Reviews", v: h.reviews }, { k: "Five star", v: h.fiveStar }, { k: "Sources", v: String(h.sourceCount) }] },
+    { ...HUB_CARDS[2], headline: String(h.running), parts: [{ k: "Scheduled", v: String(h.scheduled) }, { k: "Draft", v: String(h.draft) }, { k: "All time", v: String(h.campaignsAll) }] },
+    HUB_CARDS[3],
+  ];
+}
+
 // HubCard / DrillArrow are lifted VERBATIM from UI Vision - Location Hub
 // (dmrurue2wmp9u), which is where the pattern is set.
 function DrillArrow() {
@@ -230,7 +245,8 @@ function HubCard({ card }) {
 export default function ReviewsPage() {
   const persona = usePersona();
   const starter = persona.engagement === "new";
-  const cards = starter ? STARTER_HUB_CARDS : HUB_CARDS;
+  const locationKey = useLocationKey();
+  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(profileFor(locationKey));
   return (
     <SidebarProvider dataHook="provider" defaultOpen>
       <AppLayoutShell

@@ -16,8 +16,11 @@
  * screen a stable link that survives slug renames.
  */
 
+import { DATASETS } from "@brightlocal/data";
+
 export const DEFAULT_LOCATION = "minus-one-studios";
-export const LOCATIONS = ["minus-one-studios", "harbour-co", "northside-dental"] as const;
+/** Every dataset key is a location (ds/data.js). */
+export const LOCATIONS = Object.keys(DATASETS) as readonly string[];
 
 export interface ScreenEntry {
   /** Route path relative to the scope ("" for the scope root). */
@@ -78,8 +81,8 @@ export const SKELETON_AREAS: { path: string; id: string; label: string }[] = [
 
 const norm = (s: string) => s.trim().toLowerCase();
 
-export function isLocation(value: string | null | undefined): value is (typeof LOCATIONS)[number] {
-  return !!value && (LOCATIONS as readonly string[]).includes(value);
+export function isLocation(value: string | null | undefined): value is string {
+  return !!value && LOCATIONS.includes(value);
 }
 
 /** The location segment of a pathname, if it has one. */

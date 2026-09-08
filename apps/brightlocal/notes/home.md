@@ -20,8 +20,15 @@ picture.
 |---|---|---|
 | Starter | Single location, just started, needs handholding | Minus 1 Studios |
 | Engaged | Single location with months of use | Minus 1 Studios |
-| Multi-location | Several locations under one account | Harbour & Co |
-| Agency | Managing client locations | Northside Dental |
+| Multi-location | Three restaurants under one account | Harbour & Co, Hove, Worthing |
+| Agency | Acme Local Agency managing every client location | Northside Dental first |
+
+Every location carries its own review data (`lib/location-profiles.ts`):
+how many inbox rows, which sources, the star mix, how many campaigns,
+and the hub numbers read off those pages. All Locations shows only the
+account's locations, and an account with several gets a location
+switcher in the sidebar that keeps you on the same page in the other
+location.
 
 The starter persona seeds every Reviews screen for a business in its
 first week: four Google reviews and one connected source (Manager and

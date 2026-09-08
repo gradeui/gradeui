@@ -16,8 +16,8 @@ export const DS_CHANGES: DsChange[] = [
   {
     id: "sidebar-width",
     title: "Sidebar width is not overridable",
-    finding: "SidebarProvider sets --sidebar-width to 224px inline and the live platform hardcodes the container width, so neither :root variables nor classes reach it. 224px truncates nav labels.",
-    workaround: "A stylesheet rule at [data-slot=sidebar-provider] re-declares the variable with !important (app/globals.css).",
+    finding: "SidebarProvider sets --sidebar-width inline (224px when this was logged against 2.20.0; 2.27.0 ships 288px) and the live platform hardcodes the container width, so neither :root variables nor classes reach it. The proposal settled on 280px.",
+    workaround: "A stylesheet rule at [data-slot=sidebar-provider] re-declares the variable with !important (app/custom.css), under the fixed and modified engines only.",
     ask: "Accept a width prop or read a :root token.",
   },
   {

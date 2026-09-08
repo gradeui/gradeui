@@ -65,6 +65,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePersona } from "@/lib/demo";
+import { useLocationKey } from "@/lib/location";
+import { profileFor } from "@/lib/location-profiles";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -522,7 +524,8 @@ const STARTER_REVIEWS = SEED_REVIEWS.slice(0, 4).map((row) => {
   next[5] = "needs";
   return next;
 });
-const seedRowsFor = (persona) => (persona?.engagement === "new" ? STARTER_REVIEWS : SEED_REVIEWS);
+const seedRowsFor = (persona, location) =>
+  persona?.engagement === "new" ? STARTER_REVIEWS : SEED_REVIEWS.slice(0, profileFor(location).inboxRows);
 
 const DEMO_FAILURE_IDS = SEED_REVIEWS.map((row, i) => ({
   id: `r${i}`,
@@ -598,7 +601,11 @@ function useStickyHeaderOffset(headerHook) {
   useEffect(() => {
     const el = document.querySelector(`[data-hook="${headerHook}"]`);
     if (!el) return undefined;
-    let band = el;
+    // The band is the nearest STICKY ancestor. With none (the de facto
+    // GlobalLayout has no sticky header) the offset is zero: measuring
+    // the header itself put the table's sticky header 100px down the
+    // page (Ali, 9 Sep).
+    let band = null;
     let node = el;
     while (node && node !== document.body) {
       if (window.getComputedStyle(node).position === "sticky") {
@@ -607,10 +614,11 @@ function useStickyHeaderOffset(headerHook) {
       }
       node = node.parentElement;
     }
-    const measure = () => setOffset(Math.round(band.getBoundingClientRect().height));
+    const measure = () => setOffset(band ? Math.round(band.getBoundingClientRect().height) : 0);
+    const watched = band ?? el;
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(band);
+    ro.observe(watched);
     return () => ro.disconnect();
   }, [headerHook]);
   return offset;
@@ -1303,8 +1311,9 @@ function ReviewsInbox() {
   const stickyTop = useStickyHeaderOffset("reviews-page-header");
 
   const persona = usePersona();
+  const locationKey = useLocationKey();
   const [reviews, setReviews] = useState(() =>
-    seedRowsFor(persona).map(([source, name, rating, text, date, status, aiDraft], i) => ({
+    seedRowsFor(persona, locationKey).map(([source, name, rating, text, date, status, aiDraft], i) => ({
       id: `r${i}`,
       source,
       name,
@@ -2175,6 +2184,7 @@ function ReviewsInbox() {
 
 export default function RMReviewManagerDataTablePage() {
   const persona = usePersona();
+  const locationKey = useLocationKey();
   return (
     <SidebarProvider>
       <AppLayoutShell
@@ -2218,7 +2228,7 @@ export default function RMReviewManagerDataTablePage() {
             // the page renders, never typed in, so it moves when the data does.
             description={(
               <span data-hook="page-stat">
-                <span className="text-foreground font-medium tabular-nums">{seedRowsFor(persona).length}</span> reviews
+                <span className="text-foreground font-medium tabular-nums">{seedRowsFor(persona, locationKey).length}</span> reviews
               </span>
             )}
             // "auto" binds data.aiInsights.lastUpdated, so the line follows a

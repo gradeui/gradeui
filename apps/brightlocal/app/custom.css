@@ -23,13 +23,22 @@
    --sidebar-width inline, which shadows a :root override, so re-declare
    it AT the provider with !important. (Carried over from the Studio
    project's custom.css rules file.) */
-[data-slot="sidebar-provider"] {
+/* SCOPING (Ali, 9 Sep: "I want de facto to represent what it is"). Every
+   override below applies under the "native-fixed" and "modified" layout
+   engines only. The plain "native" engine is the DS exactly as shipped,
+   so the ledger can be seen both ways from the Cmd+K menu. The engine
+   attribute sits on the GlobalLayout root; the SidebarProvider is above
+   it, hence :has(). */
+[data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]),
+[data-slot="sidebar-provider"]:has([data-gds-layout-engine="modified"]) {
   --sidebar-width: 280px !important;
 }
-[data-slot="sidebar-container"] {
+[data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]) [data-slot="sidebar-container"],
+[data-slot="sidebar-provider"]:has([data-gds-layout-engine="modified"]) [data-slot="sidebar-container"] {
   width: var(--sidebar-width) !important;
 }
-aside {
+[data-gds-layout-engine="native-fixed"] aside,
+[data-gds-layout-engine="modified"] aside {
   border-left: 1px solid transparent;
 }
 
@@ -61,10 +70,12 @@ aside {
    The proposal shell already re-points this per look; the de facto
    engine needs it at the token, so it lands here, light and dark. Ledger
    entry: /docs/changes, "Card surface is not white". */
-:root {
+[data-gds-layout-engine="native-fixed"],
+[data-gds-layout-engine="modified"] {
   --card: var(--ds-tailwind-colors-base-white);
 }
-.dark {
+.dark [data-gds-layout-engine="native-fixed"],
+.dark [data-gds-layout-engine="modified"] {
   --card: var(--ds-tailwind-colors-neutral-900);
 }
 
@@ -73,8 +84,8 @@ aside {
    border is base/border, which is the semantic --border token, so the
    card border follows it. Ledger: /docs/changes, "Card border token is
    transparent". */
-:root,
-.dark {
+[data-gds-layout-engine="native-fixed"],
+[data-gds-layout-engine="modified"] {
   --card-border: var(--border);
 }
 
@@ -85,7 +96,8 @@ aside {
    sticky offset variable) replaces the object and loses the cap. Restate
    it from the stylesheet with !important so it wins over the inline
    style. Ledger: /docs/changes, "Content body loses its max width". */
-[data-slot="content-body"] {
+[data-gds-layout-engine="native-fixed"] [data-slot="content-body"],
+[data-gds-layout-engine="modified"] [data-slot="content-body"] {
   max-width: var(--content-max-width) !important;
 }
 

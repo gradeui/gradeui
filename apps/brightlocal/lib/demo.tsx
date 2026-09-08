@@ -29,9 +29,11 @@ export interface DemoSettings {
   look: string;
   /** Chosen layout option per base route (see components/option-switch). */
   variants: Record<string, string>;
-  /** "modified": the proposal shell. "native": the DS GlobalLayout and
-   *  page header as shipped, nothing overridden. */
-  engine: "modified" | "native";
+  /** "native": the DS GlobalLayout, sidebar and page header exactly as
+   *  shipped, nothing overridden. "native-fixed": the same with the
+   *  proposed token fixes from app/custom.css. "modified": the proposal
+   *  shell. */
+  engine: "modified" | "native" | "native-fixed";
 }
 
 interface DemoContextValue {
@@ -40,7 +42,7 @@ interface DemoContextValue {
   setPersona: (id: string) => void;
   setLook: (look: string) => void;
   setVariant: (base: string, slug: string) => void;
-  setEngine: (engine: "modified" | "native") => void;
+  setEngine: (engine: DemoSettings["engine"]) => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   notesOpen: boolean;
@@ -111,6 +113,13 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       ...(stored ?? {}),
     };
     if (urlPersona && PERSONAS.some((p) => p.id === urlPersona)) next.personaId = urlPersona;
+    // ?engine=native|modified and ?look=<preset|authored> on any link
+    // (Ali, 9 Sep: "I might also want it as a get param"). They set the
+    // stored setting, so the choice sticks after the param is gone.
+    const urlEngine = params.get("engine");
+    if (urlEngine === "native" || urlEngine === "native-fixed" || urlEngine === "modified") next.engine = urlEngine;
+    const urlLook = params.get("look");
+    if (urlLook && (urlLook === "authored" || (LOOK_PRESETS as Record<string, unknown>)[urlLook])) next.look = urlLook;
     if (next.look !== "authored" && !(LOOK_PRESETS as Record<string, unknown>)[next.look]) next.look = "authored";
     applySeams(next);
     setSettings(next);

@@ -100,6 +100,8 @@
 
 import { Fragment, useMemo, useRef, useState } from "react";
 import { usePersona } from "@/lib/demo";
+import { useLocationKey } from "@/lib/location";
+import { profileFor } from "@/lib/location-profiles";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -281,10 +283,11 @@ const STARTER_STAR_MIX = { 5: 3, 4: 1, 3: 0, 2: 0, 1: 0 };
 // the app remounts the page when the persona changes.
 let SOURCES = ENGAGED_SOURCES;
 let STAR_MIX = ENGAGED_STAR_MIX;
-function selectTrackerData(persona) {
+function selectTrackerData(persona, location) {
   const starter = persona?.engagement === "new";
-  SOURCES = starter ? STARTER_SOURCES : ENGAGED_SOURCES;
-  STAR_MIX = starter ? STARTER_STAR_MIX : ENGAGED_STAR_MIX;
+  const profile = profileFor(location);
+  SOURCES = starter ? STARTER_SOURCES : profile.sources;
+  STAR_MIX = starter ? STARTER_STAR_MIX : profile.starMix;
 }
 
 const PERIODS = [
@@ -1527,7 +1530,8 @@ const headlineRating = () => {
 
 export default function RMReviewTrackerPage() {
   const persona = usePersona();
-  selectTrackerData(persona);
+  const locationKey = useLocationKey();
+  selectTrackerData(persona, locationKey);
   const HEADLINE_RATING = headlineRating();
   // The Download dialog's open state. The only piece of state App itself
   // owns — everything else on this page is owned by the card that draws it.

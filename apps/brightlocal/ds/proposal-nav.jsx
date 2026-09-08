@@ -36,6 +36,8 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarMenuSubVariant,
+  SidebarPopoverMenu,
+  SidebarSwitcher,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -61,6 +63,50 @@ import {
   TrendingUp,
 } from "@brightlocal/icons";
 import { PROPOSAL_ACCOUNTS, useProposalData } from "@brightlocal/proposal-data";
+import { DATASETS } from "@brightlocal/data";
+import { selectSessionDataset } from "@brightlocal/proposal-shell";
+import { usePathname, useRouter } from "next/navigation";
+import { useDemo } from "@/lib/demo";
+import { hrefFor, locationFromPath, relativePath } from "@/lib/screens";
+
+// ─── LOCATION SWITCHER (app-side, 9 Sep) ──────────────────────────────
+// An account with several locations (the multi-location and agency
+// personas) switches between them here, on the DS's own SidebarSwitcher
+// and SidebarPopoverMenu. Picking one stays on the SAME page in the other
+// location (/locations/<other>/reviews/tracker), which is what the URL
+// structure is for. Single-location accounts render nothing here and
+// keep the plain location row.
+function useLocationSwitcher() {
+  const { persona } = useDemo();
+  const pathname = usePathname();
+  const router = useRouter();
+  const current = locationFromPath(pathname) ?? persona.dataset;
+  if (persona.locations.length <= 1) return null;
+  const rel = relativePath(pathname);
+  const items = persona.locations.map((key) => ({
+    label: DATASETS[key]?.location?.name ?? key,
+    icon: <House className="size-4" />,
+    onClick: () => {
+      selectSessionDataset(key);
+      router.push(hrefFor({ path: pathname.startsWith("/locations/") ? rel : "", scope: "location" }, key));
+    },
+  }));
+  return {
+    label: DATASETS[current]?.location?.name ?? current,
+    groupTitle: persona.accountLabel,
+    items,
+  };
+}
+
+function LocationSwitcher({ dataHook = "location-switcher", className }) {
+  const sw = useLocationSwitcher();
+  if (!sw) return null;
+  return (
+    <SidebarSwitcher dataHook={dataHook} icon={<House className="size-4" />} label={sw.label} triggerClassName={className}>
+      <SidebarPopoverMenu dataHook={`${dataHook}-menu`} groupTitle={sw.groupTitle} items={sw.items} />
+    </SidebarSwitcher>
+  );
+}
 
 // ─── Nav + account data (the proposal's default IA) ──────────────────
 // Screens can pass their own `sections` / `accounts` to ProposalSidebar;
@@ -414,6 +460,7 @@ function ModifiedProposalSidebar({
   // Ali 21 Jul). Signalled by its activeId; no extra prop or per-screen
   // wiring needed.
   const isAllLocations = activeId === "all-locations";
+  const hasSwitcher = useLocationSwitcher() !== null;
   return (
     // view-transition-name (STUDIO-FLOWS F1.5): a STABLE name shared by
     // every screen's sidebar means goto swaps treat the nav as the SAME
@@ -493,6 +540,11 @@ function ModifiedProposalSidebar({
                       The data-hook deliberately does NOT start with
                       "nav-" so the shell's nav-rhythm CSS (fixed row
                       heights) leaves it alone. */}
+                  {hasSwitcher ? (
+                    <SidebarMenuItem dataHook="nav-item-location-switcher" className="mb-1">
+                      <LocationSwitcher />
+                    </SidebarMenuItem>
+                  ) : (
                   <SidebarMenuItem dataHook="nav-item-current-location">
                     <button
                       type="button"
@@ -511,6 +563,7 @@ function ModifiedProposalSidebar({
                       </span>
                     </button>
                   </SidebarMenuItem>
+                  )}
                   {sections.map((section) => (
                     <NavSection key={section.id} section={section} activeId={activeId} />
                   ))}
@@ -639,10 +692,12 @@ function NativeProposalSidebar({
   userMeta = userMeta ?? data.user.meta;
   userInitials = userInitials ?? data.user.initials;
   const isAllLocations = activeId === "all-locations";
+  const hasSwitcher = useLocationSwitcher() !== null;
   return (
     <Sidebar {...rest} dataHook={dataHook} data-gds-layout-engine="native">
       <SidebarHeader dataHook="sidebar-header">
         <Logo dataHook="sidebar-logo" />
+        {hasSwitcher ? <LocationSwitcher /> : null}
       </SidebarHeader>
       <SidebarContent dataHook="sidebar-content">
         <SidebarGroup>
@@ -660,15 +715,17 @@ function NativeProposalSidebar({
               </SidebarMenuItem>
               {isAllLocations ? null : (
                 <>
-                  <SidebarMenuItem dataHook="nav-item-current-location">
-                    <SidebarMenuButton
-                      dataHook="nav-current-location"
-                      data-grade-goto={locationHomeGoto}
-                    >
-                      <House />
-                      <span>{data.location.name}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  {hasSwitcher ? null : (
+                    <SidebarMenuItem dataHook="nav-item-current-location">
+                      <SidebarMenuButton
+                        dataHook="nav-current-location"
+                        data-grade-goto={locationHomeGoto}
+                      >
+                        <House />
+                        <span>{data.location.name}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                   {sections.map((section) => (
                     <NativeNavSection key={section.id} section={section} activeId={activeId} />
                   ))}
@@ -704,7 +761,7 @@ function NativeProposalSidebar({
 export function ProposalSidebar(props) {
   let native = false;
   try {
-    native = window.__gdsLayoutEngine === "native";
+    native = window.__gdsLayoutEngine === "native" || window.__gdsLayoutEngine === "native-fixed";
   } catch {}
   return native ? <NativeProposalSidebar {...props} /> : <ModifiedProposalSidebar {...props} />;
 }
