@@ -29,10 +29,12 @@ import { DATASETS } from "@brightlocal/data";
 import { STATS } from "@/lib/first-run";
 
 const SAMPLE_PLACE_ID = "ChIJN1t_tDeuEmsRUsoyG83frY4"; // sample, see header
-const INKS: { id: string; label: string; hex: string }[] = [
-  { id: "black", label: "Black", hex: "#111412" },
-  { id: "green", label: "Brand green", hex: "#00691a" },
-  { id: "navy", label: "Navy", hex: "#0c2a4a" },
+const INK = "#111412";
+/** Paper sizes for the printable card (Ali, 11 Sep: "A4, A5, A6"), in mm. */
+const SIZES: { id: "A4" | "A5" | "A6"; label: string; where: string; w: number; h: number }[] = [
+  { id: "A6", label: "A6", where: "the till or a receipt", w: 105, h: 148 },
+  { id: "A5", label: "A5", where: "a table or the counter", w: 148, h: 210 },
+  { id: "A4", label: "A4", where: "the door or a window", w: 210, h: 297 },
 ];
 
 export function reviewLinkFor(location: string): string {
@@ -57,9 +59,13 @@ function useQrSvg(link: string, ink: string): string {
 
 /** The printable card, the thing on the till. Rendered live in the banner
  *  at a scale, full size in the generator and the print window. */
-function QrCard({ svg, caption, name, link }: { svg: string; caption: string; name: string; link: string }) {
+function QrCard({ svg, caption, name, link, size }: { svg: string; caption: string; name: string; link: string; size?: { id: string; w: number; h: number } }) {
+  // The card keeps the paper's proportions; the preview shows A6 at 320px
+  // wide and the larger sizes at the same width, taller.
+  const ratio = size ? size.h / size.w : 148 / 105;
   return (
-    <div className="flex w-[320px] flex-col items-center gap-4 rounded-2xl border bg-white px-8 py-8 text-center" data-hook="qr-card">
+    <div className="flex w-[320px] flex-col items-center justify-center gap-4 rounded-2xl border bg-white px-8 py-8 text-center" style={{ minHeight: 320 * ratio }} data-hook="qr-card">
+      {size ? <p className="text-label-sm text-muted-foreground">{size.id}</p> : null}
       <p className="text-heading-section font-display text-balance">{caption}</p>
       <p className="text-body-sm text-muted-foreground text-pretty">Scan to leave {name} a Google review. It takes a minute and it helps more than you know.</p>
       <div className="size-40" dangerouslySetInnerHTML={{ __html: svg }} />
@@ -75,13 +81,14 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
   React.useEffect(() => setLink(reviewLinkFor(location)), [location]);
   const [open, setOpen] = React.useState(false);
   const [caption, setCaption] = React.useState("Enjoyed your visit?");
-  const [ink, setInk] = React.useState(INKS[0]);
-  const svg = useQrSvg(link, ink.hex);
+  const [size, setSize] = React.useState(SIZES[0]);
+  const svg = useQrSvg(link, INK);
   const dataUrl = svg ? `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` : "";
   const print = () => {
     const w = window.open("", "_blank", "width=480,height=640");
     if (!w) return;
-    w.document.write(`<title>Review us: ${name}</title><body style="font-family:Inter,system-ui;text-align:center;padding:40px"><h1 style="font-size:24px">${caption}</h1><p style="font-size:16px;color:#555">Scan to leave ${name} a Google review. It takes a minute and it helps more than you know.</p><div style="width:280px;margin:24px auto">${svg}</div><p style="font-size:12px;color:#888">${link.split("?")[0]}</p></body>`);
+    const scale = size.w / 105; // type and code grow with the paper
+    w.document.write(`<title>Review us: ${name}</title><style>@page{size:${size.id} portrait;margin:0}html,body{margin:0}</style><body style="font-family:Inter,system-ui;text-align:center;width:${size.w}mm;height:${size.h}mm;box-sizing:border-box;padding:${12 * scale}mm;display:flex;flex-direction:column;justify-content:center;gap:${6 * scale}mm"><h1 style="font-size:${22 * scale}px;margin:0">${caption}</h1><p style="font-size:${14 * scale}px;color:#555;margin:0">Scan to leave ${name} a Google review. It takes a minute and it helps more than you know.</p><div style="width:${52 * scale}mm;margin:0 auto">${svg}</div><p style="font-size:${10 * scale}px;color:#888;margin:0">${link.split("?")[0]}</p></body>`);
     w.document.close();
     w.focus();
     w.print();
@@ -106,15 +113,15 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
                 <Input value={caption} onChange={(e) => setCaption(e.target.value)} dataHook="qr-caption" />
               </label>
               <div className="flex flex-col gap-1.5 text-body-sm">
-                Ink
+                Paper size
                 <div className="flex gap-2">
-                  {INKS.map((i) => (
-                    <button key={i.id} type="button" onClick={() => setInk(i)} className={`flex items-center gap-2 rounded-full border px-3 py-1 text-label-sm ${ink.id === i.id ? "border-foreground" : ""}`} data-hook={`qr-ink-${i.id}`}>
-                      <span className="size-3 rounded-full" style={{ background: i.hex }} />
-                      {i.label}
+                  {SIZES.map((sz) => (
+                    <button key={sz.id} type="button" onClick={() => setSize(sz)} className={`flex items-center gap-2 rounded-full border px-3 py-1 text-label-sm ${size.id === sz.id ? "border-foreground bg-[var(--ds-tailwind-colors-neutral-100)]" : ""}`} data-hook={`qr-size-${sz.id}`}>
+                      {sz.label}
                     </button>
                   ))}
                 </div>
+                <p className="text-body-xs text-muted-foreground">{size.label} suits {size.where}.</p>
               </div>
               <p className="text-body-xs text-muted-foreground break-all">Opens {link.split("?")[0]}. Scan it with your phone to try.</p>
               <div className="mt-auto flex flex-wrap gap-2">
@@ -131,7 +138,7 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
               </div>
             </div>
             <div className="flex items-center justify-center bg-[var(--ds-tailwind-colors-neutral-100)] p-5">
-              <QrCard svg={svg} caption={caption} name={name} link={link} />
+              <QrCard svg={svg} caption={caption} name={name} link={link} size={size} />
             </div>
           </div>
         </DialogContent>
