@@ -19,7 +19,9 @@ import { useSearchParams } from "next/navigation";
 import { PERSONAS, DEFAULT_PERSONA_ID, personaById, type Persona } from "@/lib/personas";
 import { selectSessionDataset, LOOK_PRESETS } from "@brightlocal/proposal-shell";
 
-const STORAGE_KEY = "grade-bl-demo";
+// v2 (8 Sep): the default look moved to "authored"; a new key so browsers that
+// stored the old seeded default pick the new one up.
+const STORAGE_KEY = "grade-bl-demo-v2";
 
 export interface DemoSettings {
   personaId: string;
@@ -87,7 +89,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
   const urlPersona = params.get("persona");
   const [settings, setSettings] = React.useState<DemoSettings>({
     personaId: DEFAULT_PERSONA_ID,
-    look: "live-site",
+    look: "authored",
     variants: {},
     engine: "modified",
   });
@@ -101,13 +103,13 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     const stored = readStored();
     const next: DemoSettings = {
       personaId: DEFAULT_PERSONA_ID,
-      look: "live-site",
+      look: "authored",
       variants: {},
       engine: "modified",
       ...(stored ?? {}),
     };
     if (urlPersona && PERSONAS.some((p) => p.id === urlPersona)) next.personaId = urlPersona;
-    if (next.look !== "authored" && !(LOOK_PRESETS as Record<string, unknown>)[next.look]) next.look = "live-site";
+    if (next.look !== "authored" && !(LOOK_PRESETS as Record<string, unknown>)[next.look]) next.look = "authored";
     applySeams(next);
     setSettings(next);
     setReady(true);

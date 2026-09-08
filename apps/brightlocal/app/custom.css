@@ -88,3 +88,20 @@ aside {
 [data-slot="content-body"] {
   max-width: var(--content-max-width) !important;
 }
+
+/* FONT WEIGHT RAMP, modified engine only. The DS shifts the whole ramp one
+   step down (normal 300, medium 400, semibold 500, bold 600), so body copy
+   paints thin. The Studio prototype re-pointed it to the standard scale on
+   every proposal screen; the modified engine keeps that so it looks as it
+   did in Studio. The de facto engine keeps the DS ramp so the difference
+   can be seen. Ledger: /docs/changes, "The font-weight ramp is shifted". */
+[data-gds-layout-engine="modified"] {
+  --ds-font-weight-extralight: 200;
+  --ds-font-weight-light: 300;
+  --ds-font-weight-normal: 400;
+  --ds-font-weight-medium: 500;
+  --ds-font-weight-semibold: 600;
+  --ds-font-weight-bold: 700;
+  --ds-font-weight-extrabold: 800;
+  --ds-font-weight-black: 900;
+}

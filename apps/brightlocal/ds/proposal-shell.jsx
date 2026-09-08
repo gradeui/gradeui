@@ -559,9 +559,10 @@ export const LOOK_PRESETS = {
     sidebarTone: "default",
     sidebarFrame: "attached",
     sidebarShadow: "none",
-    // "native" since 8 Sep (Ali: "as close to production as we can"): the
-    // DS sidebar as shipped, not our expansive imitation of the live nav.
-    navDensity: "native",
+    // "expansive" again (8 Sep, evening): the DS-as-shipped nav now has its
+    // own engine (NativeProposalSidebar), so this preset goes back to what
+    // the Studio prototype rendered. "native" stays a tweaker option.
+    navDensity: "expansive",
     stickyHeader: false,
     headerSurface: "none",
     pageLayers: "white",
@@ -1150,6 +1151,7 @@ function ModifiedAppLayoutShell({
       : "";
   const shell = (
     <GlobalLayout
+      data-gds-layout-engine="modified"
       {...rest}
       dataHook={dataHook}
       // Selection stamp: GlobalLayout's inner div spreads rest props
