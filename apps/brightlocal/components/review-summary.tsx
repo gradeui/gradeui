@@ -25,7 +25,9 @@ import { statsFor } from "@/lib/reviews-data";
 import { useBeaconModal } from "@/lib/beacon-modal";
 import { reviewsFor } from "@/lib/reviews-data";
 import { STATS } from "@/lib/first-run";
-import { Star, Lightbulb } from "@brightlocal/icons";
+import { pickIllustration } from "@/lib/illustrations";
+import { Rating } from "@brightlocal/ui-components/rating";
+import { Lightbulb } from "@brightlocal/icons";
 import { FirstRunBand } from "@/components/first-run";
 import { Button } from "@brightlocal/ui-components/button";
 import { ArrowRight } from "@brightlocal/icons";
@@ -428,6 +430,11 @@ export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"
 }
 
 
+function FactArt({ keywords }: { keywords: string[] }) {
+  const Art = pickIllustration(keywords);
+  return <Art className="size-16 shrink-0" />;
+}
+
 const SITE_LABEL: Record<string, string> = { google: "Google", facebook: "Facebook", tripadvisor: "TripAdvisor", yelp: "Yelp", trustpilot: "Trustpilot" };
 
 /** The early-days block: every review so far as a short timeline (there
@@ -451,9 +458,9 @@ function EarlyDays({ stats }: { stats: ReviewStats }) {
             {reviews.map((r) => (
               <li key={r.id} className="flex items-baseline gap-3 py-2 text-body-sm">
                 <span className="w-16 shrink-0 tabular-nums text-muted-foreground">{r.daysAgo === 0 ? "Today" : `${r.daysAgo}d ago`}</span>
-                <span className="flex w-20 shrink-0 items-center gap-0.5" aria-label={typeof r.rating === "number" ? `${r.rating} stars` : String(r.rating)}>
+                <span className="flex w-24 shrink-0 items-center">
                   {typeof r.rating === "number"
-                    ? Array.from({ length: 5 }, (_, i) => <Star key={i} className={`size-3 ${i < (r.rating as number) ? "fill-current" : "text-muted-foreground/40"}`} />)
+                    ? <Rating value={r.rating} dataHook={`early-rating-${r.id}`} />
                     : <span className="text-muted-foreground">{r.rating === "up" ? "Recommends" : "Does not"}</span>}
                 </span>
                 <span className="w-20 shrink-0 text-muted-foreground">{SITE_LABEL[r.source] ?? r.source}</span>
@@ -466,8 +473,13 @@ function EarlyDays({ stats }: { stats: ReviewStats }) {
         )}
         <p className="text-body-xs text-muted-foreground">Month-by-month charts arrive once there are three months of reviews to compare.</p>
       </div>
-      <div className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-4" data-hook="review-summary-early-fact">
-        <p className="flex items-center gap-2 text-heading-subsection"><Lightbulb className="size-4" />Did you know</p>
+      {/* Tinted like the roadmap's Did you know bands (Ali, 10 Sep: "opportunity
+          for colour here"), with an illustration picked by the fact's meaning. */}
+      <div className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] p-5" data-hook="review-summary-early-fact">
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-center gap-2 text-heading-subsection"><Lightbulb className="size-4" />Did you know</p>
+          <FactArt keywords={fact.art} />
+        </div>
         <p className="text-display font-display leading-none">{fact.value}</p>
         <p className="text-body text-pretty">{fact.text}</p>
         <p className="text-body-sm italic text-muted-foreground">*{fact.source}</p>

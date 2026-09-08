@@ -14,6 +14,8 @@ export interface FirstRunStat {
   value: string;
   text: string;
   source: string;
+  /** Keywords for pickIllustration (lib/illustrations). */
+  art: string[];
 }
 
 export interface FirstRun {
@@ -33,11 +35,11 @@ const GOTO = {
 
 /** Quoted from brightlocal.com (10 Sep 2026) with the sources it names. */
 export const STATS = {
-  visit: { value: "76%", text: "of nearby mobile searches result in a business visit within 24 hours.", source: "Think with Google" },
-  responses: { value: "100+", text: "reviews paired with regular responses significantly boost rankings in Google Maps and local search.", source: "WiserReview" },
-  inconsistent: { value: "62%", text: "of consumers will avoid a local business if they find incorrect or inconsistent information online.", source: "BrightLocal" },
-  twenty: { value: "47%", text: "of consumers won't use a business that has fewer than 20 reviews.", source: "BrightLocal Local Consumer Review Survey" },
-  threeMonths: { value: "74%", text: "only care about reviews written in the last three months.", source: "BrightLocal Local Consumer Review Survey" },
+  visit: { value: "76%", text: "of nearby mobile searches result in a business visit within 24 hours.", source: "Think with Google", art: ["visit", "nearby"] },
+  responses: { value: "100+", text: "reviews paired with regular responses significantly boost rankings in Google Maps and local search.", source: "WiserReview", art: ["reply", "responses"] },
+  inconsistent: { value: "62%", text: "of consumers will avoid a local business if they find incorrect or inconsistent information online.", source: "BrightLocal", art: ["inconsistent", "check"] },
+  twenty: { value: "47%", text: "of consumers won't use a business that has fewer than 20 reviews.", source: "BrightLocal Local Consumer Review Survey", art: ["reviews", "stars"] },
+  threeMonths: { value: "74%", text: "only care about reviews written in the last three months.", source: "BrightLocal Local Consumer Review Survey", art: ["recent", "months"] },
 };
 
 export function firstRunFor(page: NuggetPage): FirstRun {
