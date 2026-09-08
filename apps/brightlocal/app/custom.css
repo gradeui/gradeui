@@ -54,3 +54,16 @@ aside {
 .prose-bl th, .prose-bl td { border: 1px solid var(--border); padding: 0.375rem 0.5rem; text-align: left; vertical-align: top; }
 .prose-bl th { background: var(--muted); font-weight: var(--ds-font-weight-medium, 500); }
 .prose-bl a { color: var(--link); text-decoration: underline; text-underline-offset: 3px; }
+
+/* CARDS ARE WHITE (Ali, 8 Sep: "all the cards will at least need a white
+   background"). The DS maps --card to neutral-100, a grey-green one step
+   below the neutral-50 page, so cards barely separate from the canvas.
+   The proposal shell already re-points this per look; the de facto
+   engine needs it at the token, so it lands here, light and dark. Ledger
+   entry: /docs/changes, "Card surface is not white". */
+:root {
+  --card: var(--ds-tailwind-colors-base-white);
+}
+.dark {
+  --card: var(--ds-tailwind-colors-neutral-900);
+}

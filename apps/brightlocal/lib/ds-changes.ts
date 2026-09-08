@@ -42,6 +42,13 @@ export const DS_CHANGES: DsChange[] = [
     ask: "Drop the base max-width, or make it a variant.",
   },
   {
+    id: "card-surface",
+    title: "Card surface is not white",
+    finding: "The tokens map --card to neutral-100, one step below the neutral-50 page background, so a filled Card barely separates from the canvas and, with the transparent card border, has no edge either. Figma's cards are white.",
+    workaround: "app/custom.css re-points --card to base white (neutral-900 in dark). The proposal shell did the same per look.",
+    ask: "Map card-light to base white, or ship a card surface variant.",
+  },
+  {
     id: "card-border",
     title: "Card border token is transparent",
     finding: "--ds-colors-card-border-light maps to base-transparent, so the filled Card renders no visible border by default. Figma's card border is base/border (neutral-200), the semantic --border token.",
