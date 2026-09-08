@@ -57,7 +57,7 @@ const BASE = arg("base", "http://localhost:3000");
 // state. A single name is the common case ("--only=inbox-04"); a list is
 // what you want after a run to re-shoot just the frames that failed.
 const ONLY = (arg("only", null) || "").split(",").map((x) => x.trim()).filter(Boolean);
-// --section=reviewshub|inbox|insights|templates|widgets|getreviews|settings (repeatable, comma
+// --section=reviewshub|manager|insights|templates|widgets|getreviews|settings (repeatable, comma
 // separated). Sections are the unit Ali thinks in, and the unit a demo video
 // is cut in, so the suite runs one section at a time by default rather than
 // one giant pass.
@@ -90,7 +90,7 @@ const BY_PAGE = process.argv.includes("--by-page");
 // renaming 79 files, every StateCard and every flow JSON with it.
 const FIGMA_PAGE = {
   reviewshub: "Brightlocal - Review Hub",
-  inbox: "Brightlocal - Review Manager",
+  manager: "Brightlocal - Review Manager",
   insights: "Brightlocal - Review Tracker",
   widgets: "Brightlocal - Review Showcase",
   getreviews: "Brightlocal - Review Builder",
@@ -117,7 +117,7 @@ fs.mkdirSync(DIR, { recursive: true });
 // with its section: that screen is archived.
 const SCREENS = {
   reviewshub: "dee5a983-be48-4f86-8c8f-e46f16b435dd",
-  inbox: "a616bfc5-1806-4af8-9a9a-74b6a9173fbf",
+  manager: "a616bfc5-1806-4af8-9a9a-74b6a9173fbf",
   insights: "38f64dc2-383c-42d1-83b6-456bf254a4b1",
   templates: "55dd020f-d660-48bd-9d2c-1d2542a8b19f",
   widgets: "0609abbe-f208-4d91-858e-e5335f8cecbe",
@@ -508,9 +508,24 @@ const STATES = [
   // failure, so the send SUCCEEDED, the drawer closed, and the run
   // captured a plain list that looked almost right (27 Aug). Every one
   // of these now asserts on the failure copy before the shutter fires.
-  ["inbox-01-list", "inbox", async () => {},
+  ["manager-01-list", "manager", async () => {},
     null,
-    "The inbox at rest. One status badge per row: status is the state the review is in, never the delivery outcome."],
+    "Review Manager at rest: the tabs with their counts, the facet triggers, and one status badge per row (status is the state the review is in, never the delivery outcome)."],
+  // THE FOUR FACET MENUS OPEN (Ali, 8 Sep: "in Review Manager, can we also
+  // expose the facet menus as we do in Builder"). Same FacetedFilterMenu as
+  // every other page; each shot exists to show that menu's rows and counts.
+  ["manager-02-sources-facet", "manager", async (p) => { await press(p, '[data-hook="facet-sources"]'); },
+    `!!document.querySelector('[data-slot="command-item"]')`,
+    "The sources facet open: All sources with its total, then each connected source with its mark and count."],
+  ["manager-03-ratings-facet", "manager", async (p) => { await press(p, '[data-hook="facet-ratings"]'); },
+    `!!document.querySelector('[data-slot="command-item"]')`,
+    "The ratings facet open: All ratings, then each star rating and the Facebook recommendation rows with counts."],
+  ["manager-04-period-facet", "manager", async (p) => { await press(p, '[data-hook="facet-period"]'); },
+    `!!document.querySelector('[data-slot="command-item"]')`,
+    "The period menu open: the single-select list with a tick on the chosen period."],
+  ["manager-05-order-facet", "manager", async (p) => { await press(p, '[data-hook="facet-order"]'); },
+    `!!document.querySelector('[data-slot="command-item"]')`,
+    "The order menu open: Newest first ticked, the other orders below it."],
   // ROW 6, not row 3. Row 3 is Priya / Google / "Manually replied": it
   // opens a READ-ONLY panel with a Delete reply / Edit reply footer and
   // no composer at all, so this frame was showing the opposite of what
@@ -522,31 +537,31 @@ const STATES = [
   // than "Needs action". It is fully repliable and shows the whole
   // composer, which is what the note is about, but the status badge in
   // this frame is not the first-time-through one.
-  ["inbox-02-reply-panel", "inbox", async (p) => { await openRow(p, 6); }, expectComposer,
+  ["manager-06-reply-panel", "manager", async (p) => { await openRow(p, 6); }, expectComposer,
     "Reply panel for a repliable review. AI draft and template picker above the composer, Skip and Send in the footer."],
-  ["inbox-03-readonly-source", "inbox", async (p) => { await openRow(p, 1); },
+  ["manager-07-readonly-source", "manager", async (p) => { await openRow(p, 1); },
     expectFailure("cannot be sent from here"),
     "TripAdvisor cannot be replied to from here. No composer, no AI, no template picker, and no footer at all."],
-  ["inbox-04-fail-disconnected", "inbox", async (p) => { await sendOn(p, 0); },
+  ["manager-08-fail-disconnected", "manager", async (p) => { await sendOn(p, 0); },
     expectFailure("connection has expired"),
     "BLOCKING failure. The connection expired, so the composer is hidden: a reply box you cannot submit is furniture that invites wasted typing."],
-  ["inbox-05-fail-rate-limited", "inbox", async (p) => { await sendOn(p, 2); },
+  ["manager-09-fail-rate-limited", "manager", async (p) => { await sendOn(p, 2); },
     expectFailure("limiting replies"),
     "RECOVERABLE failure. The composer stays and the draft is preserved, because waiting a few minutes genuinely fixes this one."],
-  ["inbox-06-fail-unknown", "inbox", async (p) => { await sendOn(p, 4); },
+  ["manager-10-fail-unknown", "manager", async (p) => { await sendOn(p, 4); },
     expectFailure("rejected this reply"),
     "RECOVERABLE failure. Even the generic case says what to do next; never a bare 'something went wrong'."],
-  ["inbox-07-fail-deleted-terminal", "inbox", async (p) => { await sendOn(p, 8); },
+  ["manager-11-fail-deleted-terminal", "manager", async (p) => { await sendOn(p, 8); },
     expectFailure("no longer on"),
     "TERMINAL failure. The review is gone, so the action is Skip reply, not Retry, and Send is disabled. A retry that 'worked' would be a lie."],
-  ["inbox-08-fail-permission-seeded", "inbox", async (p) => { await openRow(p, 10); },
+  ["manager-12-fail-permission-seeded", "manager", async (p) => { await openRow(p, 10); },
     expectFailure("cannot reply to"),
     "Arrives already failed on load, so the state is visible without sending anything. Blocking, because the fix is outside this screen."],
   // TRANSIENT. The pending beat lasts ~900ms, and the normal 1400ms
   // post-drive settle plus a polling assertion outlived it, so this came
   // out byte-identical to the resolved failure frame. Shot immediately,
   // with a single-shot check rather than a poll.
-  ["inbox-09-sending", "inbox", async (p) => { await sendOn(p, 0, 250); },
+  ["manager-13-sending", "manager", async (p) => { await sendOn(p, 0, 250); },
     `!!document.querySelector('[role="dialog"] button[disabled]')`,
     "The pending beat. Send shows a spinner and both footer buttons are disabled so a second click cannot land."],
 
@@ -554,18 +569,18 @@ const STATES = [
   // and still needing action, so each opens a composer. Row 10 is
   // deliberately NOT used: it arrives already failed, so its panel has no
   // composer and no AI button to read a counter from.
-  ["inbox-10-ai-3-left", "inbox", async (p) => { await openRow(p, 0); },
+  ["manager-14-ai-3-left", "manager", async (p) => { await openRow(p, 0); },
     `/3 of 3 AI drafts left/.test(document.body.innerText)`,
     "Full AI allowance. The count sits under the composer as quiet helper text, not as a warning."],
-  ["inbox-11-ai-2-left", "inbox", async (p) => {
+  ["manager-15-ai-2-left", "manager", async (p) => {
     await spendAi(p, 0); await openRow(p, 2);
   }, `/2 of 3 AI drafts left/.test(document.body.innerText)`,
     "One draft spent. The counter only moves on a review's first AI use, so re-inserting on the same review is free."],
-  ["inbox-12-ai-1-left", "inbox", async (p) => {
+  ["manager-16-ai-1-left", "manager", async (p) => {
     await spendAi(p, 0); await spendAi(p, 2); await openRow(p, 4);
   }, `/1 of 3 AI drafts left/.test(document.body.innerText)`,
     "Last draft. Still helper text: the state that needs explaining is running out, not being close to it."],
-  ["inbox-13-ai-used-up", "inbox", async (p) => {
+  ["manager-17-ai-used-up", "manager", async (p) => {
     await spendAi(p, 0); await spendAi(p, 2); await spendAi(p, 4); await openRow(p, 8);
   }, `/No AI drafts left today/.test(document.body.innerText)`,
     "Allowance gone. This is the one state a person will want explained, so it escalates to an AlertInfo that says when it resets and what you can still do."],
