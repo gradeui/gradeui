@@ -289,6 +289,10 @@
     {
       "find": "<div className=\"bg-muted/40 flex flex-wrap items-center gap-2 border-b px-4 py-2\">",
       "replace": "<div className=\"flex flex-wrap items-center gap-2 border-b px-4 py-2\">"
+    },
+    {
+      "find": "  persona?.engagement === \"new\" ? STARTER_REVIEWS : inboxRowsFor(location, persona);",
+      "replace": "  inboxRowsFor(location, persona); // every persona from the rows: the old STARTER_REVIEWS seed showed TripAdvisor and Facebook with only Google connected (Ali, 10 Sep)"
     }
   ],
   "app/(app)/locations/[location]/reviews/tracker/page.jsx": [

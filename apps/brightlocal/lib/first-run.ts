@@ -39,6 +39,7 @@ export const STATS = {
   responses: { value: "100+", text: "reviews paired with regular responses significantly boost rankings in Google Maps and local search.", source: "WiserReview", art: ["reply", "responses"] },
   inconsistent: { value: "62%", text: "of consumers will avoid a local business if they find incorrect or inconsistent information online.", source: "BrightLocal", art: ["inconsistent", "check"] },
   twenty: { value: "47%", text: "of consumers won't use a business that has fewer than 20 reviews.", source: "BrightLocal Local Consumer Review Survey", art: ["reviews", "stars"] },
+  spend: { value: "27%", text: "of consumers have spent more than $1,000 after reading reviews.", source: "BrightLocal Local Consumer Review Survey", art: ["website", "trust"] },
   threeMonths: { value: "74%", text: "only care about reviews written in the last three months.", source: "BrightLocal Local Consumer Review Survey", art: ["recent", "months"] },
 };
 

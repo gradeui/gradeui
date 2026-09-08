@@ -42,13 +42,16 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
   const location = useLocationKey();
   const stats = statsFor(location, persona);
   const plan = reviewPlanFor(stats, persona);
+  const hasUpsell = plan.items.some((i) => i.id === "reply-backlog");
   return (
     <Card className={bare ? "w-full max-w-none rounded-none border-0 bg-transparent shadow-none" : "w-full max-w-none"} density="default" dataHook="review-insights">
+      {/* In the dialog the upsell is a column up the right (Ali, 10 Sep:
+          "upsell on right, content on left"); on the hub it leads the card. */}
+      <div className={bare && hasUpsell ? "grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-start" : undefined}>{/* upsell column sits at the top of the right track */}
+      <div className="flex flex-col">
       <CardHeader>
         <div className="flex flex-col gap-4">
-          {/* The upsell leads when there is one (Ali, 9 Sep): one kind of
-              content at a time, the offer first, then the goal. */}
-          {plan.items.some((i) => i.id === "reply-backlog") ? (
+          {hasUpsell && !bare ? (
             <UpsellStrip
               feature="Auto-reply"
               benefit="Beacon can answer your five-star Google reviews for you, in your tone, an hour after they land."
@@ -72,7 +75,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
           <h2 className="text-metric font-display text-foreground max-w-prose text-pretty" data-hook="review-insights-goal">
             <Mark text={plan.goal.text} mark={plan.goal.mark} />
           </h2>
-          <p className="text-foreground text-body-sm max-w-prose text-pretty">{plan.lede}</p>
+          <p className="text-foreground text-body max-w-prose text-pretty">{plan.lede}</p>
           <div className="flex flex-wrap items-center gap-2">
             <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
           </div>
@@ -95,6 +98,18 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
 
         </CardContent>
       ) : null}
+      </div>
+      {bare && hasUpsell ? (
+        <UpsellStrip
+          layout="column"
+          feature="Auto-reply"
+          benefit="Beacon can answer your five-star Google reviews for you, in your tone, an hour after they land."
+          creditsLabel="auto-reply"
+          creditsPlural="auto-replies"
+          dataHook="upsell-auto-reply"
+        />
+      ) : null}
+      </div>
     </Card>
   );
 }
@@ -129,11 +144,10 @@ export function ReviewPlanStrip() {
       </p>
       {lead ? <p className="text-body text-foreground max-w-[60ch] text-pretty">{lead.strip}</p> : null}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
-        <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
         <Button variant="outline" size="sm" dataHook="review-plan-strip-open" onClick={() => show("plan")}>
-          See the plan
-          <ArrowRight className="size-4" />
+          Tell me more
         </Button>
+        <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
       </div>
     </div>
       {/* The inbox's own numbers, in the same grey panel the other strips use. */}

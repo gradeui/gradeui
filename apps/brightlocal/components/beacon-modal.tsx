@@ -13,11 +13,15 @@ import { X } from "@brightlocal/icons";
 import { useLocationKey } from "@/lib/location";
 import { DATASETS } from "@brightlocal/data";
 import { useBeaconModal } from "@/lib/beacon-modal";
-import { ReviewSummary, BeaconBadge, BeaconPageBlock, SummaryCharts } from "@/components/review-summary";
+import { ReviewSummary, BeaconBadge, BeaconPageBlock, SummaryCharts, DidYouKnowPanel, isEarlyDays } from "@/components/review-summary";
+import { ArrowRight } from "@brightlocal/icons";
 import { statsFor } from "@/lib/reviews-data";
 import { usePersona } from "@/lib/demo";
 import { ReviewInsights } from "@/components/review-insights";
 import { pickIllustration } from "@/lib/illustrations";
+import { pageBeaconFor, type BeaconPage } from "@/lib/beacon-pages";
+import { hrefFor } from "@/lib/screens";
+import { useRouter } from "next/navigation";
 
 const PAGE_NAME: Record<string, string> = { tracker: "Review Tracker", builder: "Review Builder", showcase: "Review Showcase" };
 const ART_KEYS: Record<string, string[]> = { plan: ["fix", "win", "habit"], summary: ["reviews", "stars"], tracker: ["velocity", "spike"], builder: ["campaign", "email", "ask"], showcase: ["website", "widget"] };
@@ -27,11 +31,42 @@ function HeaderArt({ section, page }: { section: string; page?: string | null })
   return <Art className="size-16 shrink-0" />;
 }
 
+/** The dialog's CTA, bottom-left (Ali, 10 Sep: "where is the CTA?"): the
+ *  one thing to do next, from the rows. */
+function ModalCta({ stats, page }: { stats: ReturnType<typeof statsFor>; page?: BeaconPage | null }) {
+  const { close } = useBeaconModal();
+  const persona = usePersona();
+  const location = useLocationKey();
+  const router = useRouter();
+  const pageCta = page ? pageBeaconFor(page, stats, persona).cta : undefined;
+  const goto = stats.needReply > 0 ? "screen:dmsxf5zjggd0n" : "screen:dmt094j963aye";
+  const label = stats.needReply > 0 ? `Reply to your ${stats.needReply} waiting ${stats.needReply === 1 ? "review" : "reviews"}` : "Create a campaign";
+  return (
+    <div className="mt-6 border-t pt-6">
+      {pageCta ? (
+        <Button variant="primary" dataHook="beacon-modal-cta" onClick={() => { close(); router.push(hrefFor({ path: pageCta.path, scope: "location" }, location)); }}>
+          {pageCta.label}
+          <ArrowRight className="size-4" />
+        </Button>
+      ) : (
+        <span data-grade-goto={goto} onClick={() => close()}>
+          <Button variant="primary" dataHook="beacon-modal-cta">
+            {label}
+            <ArrowRight className="size-4" />
+          </Button>
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function BeaconModal() {
   const { open, close, page, section } = useBeaconModal();
   const location = useLocationKey();
   const persona = usePersona();
   const locationName = (DATASETS as Record<string, { location?: { name?: string } }>)[location]?.location?.name ?? location;
+  const stats = statsFor(location, persona);
+  const early = isEarlyDays(stats);
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : close())}>
       {/* LARGE, with a fixed header (Ali, 9 Sep): near full-screen on
@@ -53,7 +88,7 @@ export function BeaconModal() {
                 <BeaconBadge dataHook="beacon-modal-badge" beta />
                 <span className="text-label-sm text-muted-foreground">{locationName}</span>
               </div>
-              <DialogTitle className="text-heading-page leading-tight">{section === "plan" ? "Beacon's plan for you" : page ? `What Beacon sees in your ${PAGE_NAME[page]}` : "Beacon's summary of your reviews"}</DialogTitle>
+              <DialogTitle className="text-heading-page font-sans leading-tight">{section === "plan" ? "Beacon's plan for you" : page ? `What Beacon sees in your ${PAGE_NAME[page]}` : "Beacon's summary of your reviews"}</DialogTitle>
             </div>
           </div>
           <DialogDescription className="sr-only">Your AI summary for this location.</DialogDescription>
@@ -67,22 +102,34 @@ export function BeaconModal() {
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
           {section === "plan" ? (
             <ReviewInsights bare />
-          ) : (
-            // From a page: that page's block and the charts, nothing that
-            // restates it (Ali, 9 Sep: "Stacked!"). From the hub: the full
-            // summary.
-            page ? (
+          ) : early ? (
+            // Content left, the Did you know up the right (Ali, 10 Sep),
+            // stacked on mobile. Early days: no charts to draw yet.
+            <div className="grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-stretch">
               <div className="flex flex-col gap-2">
-                <BeaconPageBlock page={page} />
-                {/* Each page gets the charts it is about (Ali, 9 Sep). */}
-                <SummaryCharts
-                  stats={statsFor(location, persona)}
-                  kinds={page === "builder" ? ["velocity", "fourPlus"] : page === "showcase" ? ["rating", "fourPlus"] : ["rating", "velocity", "fourPlus"]}
-                />
+                {page ? <BeaconPageBlock page={page} /> : <ReviewSummary full bare tilesRow />}
+                <SummaryCharts stats={stats} />
+                <ModalCta stats={stats} page={page} />
               </div>
-            ) : (
+              <DidYouKnowPanel stats={stats} page={page} />
+            </div>
+          ) : page ? (
+            // From a page: that page's block and the charts, nothing that
+            // restates it (Ali, 9 Sep: "Stacked!").
+            <div className="flex flex-col gap-2">
+              <BeaconPageBlock page={page} />
+              {/* Each page gets the charts it is about (Ali, 9 Sep). */}
+              <SummaryCharts
+                stats={stats}
+                kinds={page === "builder" ? ["velocity", "fourPlus"] : page === "showcase" ? ["rating", "fourPlus"] : ["rating", "velocity", "fourPlus"]}
+              />
+              <ModalCta stats={stats} page={page} />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
               <ReviewSummary full bare />
-            )
+              <ModalCta stats={stats} />
+            </div>
           )}
         </div>
       </DialogContent>

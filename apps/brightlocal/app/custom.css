@@ -259,6 +259,12 @@
   display: none;
 }
 
+/* The dialog's Close button gets a visible hover (Ali, 10 Sep). */
+[data-hook="beacon-modal-close"]:hover,
+[data-hook="trial-recap-later"]:hover {
+  background: var(--ds-tailwind-colors-neutral-100) !important;
+}
+
 /* ════════════════════════════════════════════════════════════════════
    BEACON COLOUR (setting: neutral | tinted | families). Lifts Beacon's
    surfaces off the page with the DS accessible pairings: a family's 100

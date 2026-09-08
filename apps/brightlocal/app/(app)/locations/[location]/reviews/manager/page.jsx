@@ -534,7 +534,7 @@ const STARTER_REVIEWS = SEED_REVIEWS.slice(0, 4).map((row) => {
   return next;
 });
 const seedRowsFor = (persona, location) =>
-  persona?.engagement === "new" ? STARTER_REVIEWS : inboxRowsFor(location, persona);
+  inboxRowsFor(location, persona); // every persona from the rows: the old STARTER_REVIEWS seed showed TripAdvisor and Facebook with only Google connected (Ali, 10 Sep)
 
 const DEMO_FAILURE_IDS = SEED_REVIEWS.map((row, i) => ({
   id: `r${i}`,

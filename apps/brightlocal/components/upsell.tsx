@@ -19,7 +19,10 @@ export function UpsellStrip({
   creditsLabel,
   creditsPlural,
   dataHook = "upsell",
+  layout = "strip",
 }: {
+  /** "column": the dialog's right-hand column, yellow, full height. */
+  layout?: "strip" | "column";
   feature: string;
   benefit: string;
   /** What one credit buys, e.g. "auto-reply", and its plural. */
@@ -33,7 +36,11 @@ export function UpsellStrip({
   return (
     <div
       data-hook={dataHook}
-      className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] px-5 py-4 sm:flex-row sm:items-center sm:gap-5"
+      className={
+        layout === "column"
+          ? "flex flex-col gap-4 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] p-6"
+          : "flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] px-5 py-4 sm:flex-row sm:items-center sm:gap-5"
+      }
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {/* The upsell's own badge type: outlined like the Beacon badge,
@@ -42,7 +49,7 @@ export function UpsellStrip({
           <Lock className="size-3 text-muted-foreground" />
           {feature} is part of Pro
         </span>
-        <p className="text-body-sm text-foreground">
+        <p className={layout === "column" ? "text-body text-foreground text-pretty" : "text-body-sm text-foreground"}>
           {benefit}
           {trial ? ` Your trial includes ${trial.credits} free ${trial.credits === 1 ? creditsLabel : (creditsPlural ?? `${creditsLabel}s`)}, so try one now.` : ""}
         </p>

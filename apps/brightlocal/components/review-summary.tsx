@@ -201,7 +201,7 @@ function TellMeMore({ stats, kind, label, lines }: { stats: ReviewStats; kind: D
   );
 }
 
-export function ReviewSummary({ full = false, bare = false }: { full?: boolean; bare?: boolean }) {
+export function ReviewSummary({ full = false, bare = false, tilesRow = false }: { full?: boolean; bare?: boolean; tilesRow?: boolean }) {
   const persona = usePersona();
   const location = useLocationKey();
   const stats = statsFor(location, persona);
@@ -214,7 +214,7 @@ export function ReviewSummary({ full = false, bare = false }: { full?: boolean; 
       data-hook="review-summary"
       className={bare ? "relative" : "relative overflow-hidden rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] px-6 py-6 shadow-sm lg:px-8 lg:py-7"}
     >
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-10">
+      <div className={tilesRow ? "flex flex-col gap-5" : "flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-10"}>
         {/* Globey, the DS mascot, so this reads as Beacon speaking rather
             than a stat block. Same illustration family the empty states use. */}
         {/* No body illustration in the dialog: its header carries one (the
@@ -244,10 +244,11 @@ export function ReviewSummary({ full = false, bare = false }: { full?: boolean; 
               </p>
             ))}
           </div>
-          <p className="text-body-xs text-muted-foreground" data-hook="review-summary-disclosure">
+          <p className={tilesRow ? "hidden" : "text-body-xs text-muted-foreground"} data-hook="review-summary-disclosure">
             Written by Beacon from this location's reviews. Hover a number for what it counts; the info icons hold the rest.
           </p>
         </div>
+        {tilesRow ? null : (
         <dl className="grid shrink-0 grid-cols-3 gap-3 lg:w-[22rem] lg:grid-cols-1" data-hook="review-summary-tiles">
           {summary.tiles.map((tile) => {
             const drill = drillFor(tile.label);
@@ -264,6 +265,7 @@ export function ReviewSummary({ full = false, bare = false }: { full?: boolean; 
             );
           })}
         </dl>
+        )}
       </div>
       {full && !persona.engagement.startsWith("new") ? <SummaryCharts stats={stats} /> : null}
     </section>
@@ -300,11 +302,17 @@ export function ReviewSummaryStrip() {
             ))}
           </p>
         ) : null}
-        <div className="mt-auto pt-3">
+        {/* "Tell me more" first, the CTA second (Ali, 10 Sep). */}
+        <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
           <Button variant="outline" size="sm" dataHook="review-summary-strip-open" onClick={() => show("summary")}>
-            Read the full summary
-            <ArrowRight className="size-4" />
+            Tell me more
           </Button>
+          <span data-grade-goto={stats.needReply > 0 ? "screen:dmsxf5zjggd0n" : "screen:dmt094j963aye"}>
+            <Button variant="primary" size="sm" dataHook="review-summary-strip-cta">
+              {stats.needReply > 0 ? `Reply to your ${stats.needReply} waiting ${stats.needReply === 1 ? "review" : "reviews"}` : "Create a campaign"}
+              <ArrowRight className="size-4" />
+            </Button>
+          </span>
         </div>
       </div>
       <dl className="grid shrink-0 grid-cols-3 gap-6 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-6 lg:w-72 lg:grid-cols-1 lg:gap-5" data-hook="review-summary-strip-tiles">
@@ -366,15 +374,15 @@ export function BeaconPageStrip({ page }: { page: BeaconPage }) {
           ))}
         </p>
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
+          <Button variant="outline" size="sm" dataHook={`beacon-strip-${page}-open`} onClick={() => show("summary", page)}>
+            Tell me more
+          </Button>
           {b.cta ? (
             <Button variant="primary" size="sm" dataHook={`beacon-strip-${page}-cta`} onClick={() => router.push(hrefFor({ path: b.cta!.path, scope: "location" }, location))}>
               {b.cta.label}
               <ArrowRight className="size-4" />
             </Button>
           ) : null}
-          <Button variant="outline" size="sm" dataHook={`beacon-strip-${page}-open`} onClick={() => show("summary", page)}>
-            Read the full summary
-          </Button>
         </div>
       </div>
       <dl className="grid shrink-0 grid-cols-3 gap-6 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-6 lg:w-72 lg:grid-cols-1 lg:gap-5">
@@ -412,13 +420,19 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
 
 /** The three six-month charts, on their own so the modal can show them
  *  under a page's block without the general summary. */
+/** True when the location has fewer than three months of reviews: the
+ *  dialog then runs a Did you know up its right side instead of charts. */
+export function isEarlyDays(stats: ReviewStats): boolean {
+  return stats.months.filter((m) => m.count > 0).length < 3;
+}
+
 export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"] }: { stats: ReviewStats; kinds?: Drill[] }) {
   // A six-month chart needs six months. With fewer than three months of
   // data (Ali, 10 Sep: "if you only have one month of data, think what
   // timeline is worthy of it") the dialog shows the reviews it actually
   // has, and a sourced "Did you know" with the ask, instead of empty bars.
   const monthsWithData = stats.months.filter((m) => m.count > 0).length;
-  if (monthsWithData < 3) return <EarlyDays stats={stats} />;
+  if (monthsWithData < 3) return <EarlyReviewsList stats={stats} />;
   return (
     <div className={`mt-6 grid gap-4 border-t pt-6 ${kinds.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`} data-hook="review-summary-charts">
       {kinds.map((kind) => (
@@ -453,56 +467,65 @@ function FactArt({ keywords }: { keywords: string[] }) {
 
 /** The early-days block: every review so far as a short timeline (there
  *  are few enough to list), then one sourced fact and the thing to do. */
-function EarlyDays({ stats }: { stats: ReviewStats }) {
+export function EarlyReviewsList({ stats }: { stats: ReviewStats }) {
   const persona = usePersona();
   const location = useLocationKey();
   const reviews = reviewsFor(location, persona).slice(0, 8);
   const first = reviews[reviews.length - 1];
   const spanDays = first ? first.daysAgo : 0;
-  const fact = stats.total < 20 ? STATS.twenty : STATS.threeMonths;
-  const need = Math.max(0, 20 - stats.total);
   return (
-    <div className="mt-6 grid gap-6 border-t pt-6 lg:grid-cols-[3fr_2fr] lg:items-stretch" data-hook="review-summary-early">
-      <div className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
-        <p className="text-heading-subsection">
-          {stats.total === 0 ? "No reviews yet" : `Your ${stats.total} ${stats.total === 1 ? "review" : "reviews"} so far, ${spanDays <= 1 ? "today" : `over ${spanDays} days`}`}
-        </p>
-        {reviews.length ? (
-          <ol className="flex flex-col divide-y">
-            {reviews.map((r) => (
-              <li key={r.id} className="flex items-baseline gap-3 py-2 text-body-sm">
-                <span className="w-16 shrink-0 tabular-nums text-muted-foreground">{r.daysAgo === 0 ? "Today" : `${r.daysAgo}d ago`}</span>
-                <span className="flex w-24 shrink-0 items-center">
-                  {typeof r.rating === "number"
-                    ? <Rating value={r.rating} dataHook={`early-rating-${r.id}`} />
-                    : <span className="text-muted-foreground">{r.rating === "up" ? "Recommends" : "Does not"}</span>}
-                </span>
-                <SiteCell source={r.source} />
-                <span className="min-w-0 truncate">{r.text}</span>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="text-body-sm text-muted-foreground">Connect a review site and anything already written about you appears here.</p>
-        )}
-        <p className="text-body-xs text-muted-foreground">Month-by-month charts arrive once there are three months of reviews to compare.</p>
+    <div className="mt-6 flex flex-col gap-3 border-t pt-6" data-hook="review-summary-early">
+      <p className="text-heading-subsection">
+        {stats.total === 0 ? "No reviews yet" : `Your ${stats.total} ${stats.total === 1 ? "review" : "reviews"} so far, ${spanDays <= 1 ? "today" : `over ${spanDays} days`}`}
+      </p>
+      {reviews.length ? (
+        <ol className="flex flex-col divide-y">
+          {reviews.map((r) => (
+            <li key={r.id} className="flex items-baseline gap-3 py-2 text-body-sm">
+              <span className="w-16 shrink-0 tabular-nums text-muted-foreground">{r.daysAgo === 0 ? "Today" : `${r.daysAgo}d ago`}</span>
+              <span className="flex w-24 shrink-0 items-center">
+                {typeof r.rating === "number"
+                  ? <Rating value={r.rating} dataHook={`early-rating-${r.id}`} />
+                  : <span className="text-muted-foreground">{r.rating === "up" ? "Recommends" : "Does not"}</span>}
+              </span>
+              <SiteCell source={r.source} />
+              <span className="min-w-0 truncate">{r.text}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="text-body-sm text-muted-foreground">Connect a review site and anything already written about you appears here.</p>
+      )}
+      <p className="text-body-xs text-muted-foreground">Month-by-month charts arrive once there are three months of reviews to compare.</p>
+    </div>
+  );
+}
+
+/** The Did you know column: one sourced fact chosen for the page (the
+ *  Showcase's is social proof, the Builder's is the twenty-review line,
+ *  the Tracker's is recency), an illustration picked by its meaning, and
+ *  the thing to do. Runs the full height of the dialog's right side. */
+export function DidYouKnowPanel({ stats, page }: { stats: ReviewStats; page?: BeaconPage | null }) {
+  const fact = page === "showcase" ? STATS.spend : page === "tracker" ? STATS.threeMonths : stats.total < 20 ? STATS.twenty : STATS.visit;
+  const need = Math.max(0, 20 - stats.total);
+  const line =
+    page === "showcase"
+      ? "Reviews on your own site reach the people who never look at Google. Pick the best and put them where the booking happens."
+      : page === "tracker"
+        ? "Recent reviews are what count, so the chart to watch is the last three months, not all time."
+        : stats.total < 20
+          ? `You have ${stats.total}. ${need} more and you are past the line most customers draw. One email to last month's happy customers is the fastest way there.`
+          : "Keep asking every month and the recent window stays full.";
+  return (
+    <div className="flex h-full flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] p-6" data-hook="review-summary-early-fact">
+      <div className="flex items-center justify-between gap-3">
+        <p className="flex items-center gap-2 text-heading-subsection"><Lightbulb className="size-4" />Did you know</p>
+        <FactArt keywords={fact.art} />
       </div>
-      {/* Tinted like the roadmap's Did you know bands (Ali, 10 Sep: "opportunity
-          for colour here"), with an illustration picked by the fact's meaning. */}
-      <div className="flex h-full flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] p-6" data-hook="review-summary-early-fact">
-        <div className="flex items-center justify-between gap-3">
-          <p className="flex items-center gap-2 text-heading-subsection"><Lightbulb className="size-4" />Did you know</p>
-          <FactArt keywords={fact.art} />
-        </div>
-        <p className="text-display font-display leading-none">{fact.value}</p>
-        <p className="text-body text-pretty">{fact.text}</p>
-        <p className="text-body-sm italic text-muted-foreground">*{fact.source}</p>
-        <p className="text-body-sm text-pretty">
-          {stats.total < 20
-            ? `You have ${stats.total}. ${need} more and you are past the line most customers draw. One email to last month's happy customers is the fastest way there.`
-            : "Recent reviews are what count, so keep asking every month."}
-        </p>
-      </div>
+      <p className="text-display font-display leading-none">{fact.value}</p>
+      <p className="text-body text-pretty">{fact.text}</p>
+      <p className="text-body-sm italic text-muted-foreground">*{fact.source}</p>
+      <p className="text-body text-pretty">{line}</p>
     </div>
   );
 }

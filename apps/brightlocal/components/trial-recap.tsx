@@ -81,7 +81,7 @@ export function TrialRecapModal() {
                 <BeaconBadge beta dataHook="trial-recap-badge" />
                 <span className="text-label-sm text-muted-foreground">{persona.accountLabel}</span>
               </div>
-              <DialogTitle className="text-heading-page leading-tight">{title}</DialogTitle>
+              <DialogTitle className="text-heading-page font-sans leading-tight">{title}</DialogTitle>
             </div>
           </div>
         </div>
