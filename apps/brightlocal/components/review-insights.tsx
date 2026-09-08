@@ -14,7 +14,8 @@ import { Flag, Target } from "@brightlocal/icons";
 import { InsightCard } from "@brightlocal/proposal-insights";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
-import { statsFor } from "@/lib/reviews-data";
+import { statsFor, reviewsFor } from "@/lib/reviews-data";
+import { DATASETS } from "@brightlocal/data";
 import { reviewPlanFor } from "@/lib/review-insights";
 import { UpsellStrip } from "@/components/upsell";
 import { BeaconBadge } from "@/components/review-summary";
@@ -43,11 +44,18 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
   const stats = statsFor(location, persona);
   const plan = reviewPlanFor(stats, persona);
   const hasUpsell = plan.items.some((i) => i.id === "reply-backlog");
+  // The example: the newest five-star Google review still waiting, with
+  // the reply Beacon has already drafted for it.
+  const candidate = reviewsFor(location, persona).find((r) => r.source === "google" && r.rating === 5 && r.status === "needs") ?? reviewsFor(location, persona).find((r) => r.source === "google" && r.rating === 5);
+  const business = (DATASETS as Record<string, { location?: { name?: string } }>)[location]?.location?.name ?? location;
+  const example = candidate
+    ? { name: candidate.name, site: "Google", rating: 5, text: candidate.text, reply: candidate.aiDraft.replace("{{firstname}}", candidate.name.split(" ")[0]).replace("{{businessname}}", business) }
+    : null;
   return (
     <Card className={bare ? "w-full max-w-none rounded-none border-0 bg-transparent shadow-none" : "w-full max-w-none"} density="default" dataHook="review-insights">
       {/* In the dialog the upsell is a column up the right (Ali, 10 Sep:
           "upsell on right, content on left"); on the hub it leads the card. */}
-      <div className={bare && hasUpsell ? "grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-start" : undefined}>{/* upsell column sits at the top of the right track */}
+      <div className={bare && hasUpsell ? "grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-stretch" : undefined}>
       <div className="flex flex-col">
       <CardHeader>
         <div className="flex flex-col gap-4">
@@ -102,6 +110,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
       {bare && hasUpsell ? (
         <UpsellStrip
           layout="column"
+          example={example}
           feature="Auto-reply"
           benefit="Beacon can answer your five-star Google reviews for you, in your tone, an hour after they land."
           creditsLabel="auto-reply"

@@ -458,9 +458,9 @@ function SiteCell({ source }: { source: string }) {
   );
 }
 
-function FactArt({ keywords }: { keywords: string[] }) {
+function FactArt({ keywords, large = false }: { keywords: string[]; large?: boolean }) {
   const Art = pickIllustration(keywords);
-  return <Art className="size-16 shrink-0" />;
+  return <Art className={large ? "size-28 shrink-0" : "size-16 shrink-0"} />;
 }
 
 
@@ -517,14 +517,15 @@ export function DidYouKnowPanel({ stats, page }: { stats: ReviewStats; page?: Be
           : "Keep asking every month and the recent window stays full.";
   return (
     <div className="flex h-full flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] p-6" data-hook="review-summary-early-fact">
-      <div className="flex items-center justify-between gap-3">
-        <p className="flex items-center gap-2 text-heading-subsection"><Lightbulb className="size-4" />Did you know</p>
-        <FactArt keywords={fact.art} />
-      </div>
+      <p className="flex items-center gap-2 text-heading-subsection"><Lightbulb className="size-4" />Did you know</p>
       <p className="text-display font-display leading-none">{fact.value}</p>
-      <p className="text-body text-pretty">{fact.text}</p>
+      <p className="text-heading-section font-display max-w-[24ch] text-balance">{fact.text}</p>
       <p className="text-body-sm italic text-muted-foreground">*{fact.source}</p>
       <p className="text-body text-pretty">{line}</p>
+      {/* The illustration anchors the foot of the column, so the yellow never ends in empty space. */}
+      <div className="mt-auto flex justify-end pt-6">
+        <FactArt keywords={fact.art} large />
+      </div>
     </div>
   );
 }
