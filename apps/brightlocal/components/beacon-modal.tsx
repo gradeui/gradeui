@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * The large Beacon dialog: the full AI summary, every line and the
- * six-month charts. The plan is NOT here (Ali, 9 Sep); it unfolds on
- * Review Manager. Opened by the strips; mounted once in the product
- * layout.
+ * The large Beacon dialog. Two sections: the summary (every line, the
+ * six-month charts, led by the page's own block when opened from a
+ * page) and the plan (opened from the Manager's goal strip). Never
+ * both at once. Mounted once in the product layout.
  */
 
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@brightlocal/ui-components/dialog";
@@ -14,9 +14,10 @@ import { useLocationKey } from "@/lib/location";
 import { DATASETS } from "@brightlocal/data";
 import { useBeaconModal } from "@/lib/beacon-modal";
 import { ReviewSummary, BeaconBadge, BeaconPageBlock } from "@/components/review-summary";
+import { ReviewInsights } from "@/components/review-insights";
 
 export function BeaconModal() {
-  const { open, close, page } = useBeaconModal();
+  const { open, close, page, section } = useBeaconModal();
   const location = useLocationKey();
   const locationName = (DATASETS as Record<string, { location?: { name?: string } }>)[location]?.location?.name ?? location;
   return (
@@ -31,7 +32,7 @@ export function BeaconModal() {
         <div className="flex shrink-0 items-center justify-between gap-4 border-b px-6 py-4" data-hook="beacon-modal-header">
           <div className="flex min-w-0 items-center gap-3">
             <BeaconBadge dataHook="beacon-modal-badge" beta />
-            <DialogTitle className="text-heading-subsection leading-normal">Beacon insights for {locationName}</DialogTitle>
+            <DialogTitle className="text-heading-subsection leading-normal">{section === "plan" ? `Beacon's plan for ${locationName}` : `Beacon insights for ${locationName}`}</DialogTitle>
           </div>
           <DialogDescription className="sr-only">Your AI summary for this location.</DialogDescription>
           <DialogClose asChild>
@@ -42,10 +43,14 @@ export function BeaconModal() {
           </DialogClose>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-          <div className="flex flex-col gap-6">
-            {page ? <BeaconPageBlock page={page} /> : null}
-            <ReviewSummary full bare />
-          </div>
+          {section === "plan" ? (
+            <ReviewInsights bare />
+          ) : (
+            <div className="flex flex-col gap-6">
+              {page ? <BeaconPageBlock page={page} /> : null}
+              <ReviewSummary full bare />
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

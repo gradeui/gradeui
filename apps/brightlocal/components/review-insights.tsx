@@ -17,9 +17,9 @@ import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
 import { reviewPlanFor } from "@/lib/review-insights";
 import { UpsellStrip } from "@/components/upsell";
-import * as React from "react";
+import { useBeaconModal } from "@/lib/beacon-modal";
 import { Button } from "@brightlocal/ui-components/button";
-import { ChevronDown } from "@brightlocal/icons";
+import { ArrowRight } from "@brightlocal/icons";
 import { FixItForMe } from "@/components/fix-it-for-me";
 
 /** The green highlighter mark from the brand material, on a phrase. */
@@ -41,7 +41,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
   const stats = statsFor(location, persona);
   const plan = reviewPlanFor(stats, persona);
   return (
-    <Card className={bare ? "w-full max-w-none rounded-none border-0 border-t bg-transparent pt-8 shadow-none" : "w-full max-w-none"} density="default" dataHook="review-insights">
+    <Card className={bare ? "w-full max-w-none rounded-none border-0 bg-transparent shadow-none" : "w-full max-w-none"} density="default" dataHook="review-insights">
       <CardHeader>
         <div className="flex flex-col gap-3">
           {/* The goal pill, the roadmap's "Stage 1 Goal" flag. */}
@@ -105,12 +105,11 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
 export function ReviewPlanStrip() {
   const persona = usePersona();
   const location = useLocationKey();
-  const [expanded, setExpanded] = React.useState(false);
+  const { show } = useBeaconModal();
   const stats = statsFor(location, persona);
   const plan = reviewPlanFor(stats, persona);
   const first = plan.items[0]?.actions[0];
   return (
-    <>
     <div
       data-hook="review-plan-strip"
       className="flex flex-col gap-3 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 shadow-sm"
@@ -125,14 +124,11 @@ export function ReviewPlanStrip() {
       {first ? <p className="text-body text-muted-foreground max-w-[60ch] text-pretty">First tactic: {first.label}</p> : null}
       <div className="flex flex-wrap items-center gap-2 pt-3">
         <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
-        <Button variant="outline" size="sm" dataHook="review-plan-strip-open" onClick={() => setExpanded((e) => !e)} aria-expanded={expanded}>
-          {expanded ? "Hide the plan" : "See the plan"}
-          <ChevronDown className={`size-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        <Button variant="outline" size="sm" dataHook="review-plan-strip-open" onClick={() => show("plan")}>
+          See the plan
+          <ArrowRight className="size-4" />
         </Button>
       </div>
     </div>
-    {/* The full plan unfolds here, on the page that does the work. */}
-    {expanded ? <ReviewInsights /> : null}
-    </>
   );
 }
