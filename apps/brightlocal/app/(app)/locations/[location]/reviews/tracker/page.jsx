@@ -1706,7 +1706,7 @@ export default function RMReviewTrackerPage() {
 
             <ReviewPerformance />
             <ReviewTimeline />
-            <BeaconNugget />
+            <BeaconNugget page="tracker" />
           </GlobalLayoutContentBody>
 
           {/* PDF AND CSV ARE TWO DIFFERENT ASKS — a report you send someone,

@@ -2654,7 +2654,7 @@ export default function RMReviewShowcasePage() {
               </DrawerFooter>
             </DrawerContent>
           </Drawer>
-          <BeaconNugget />
+          <BeaconNugget page="showcase" />
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

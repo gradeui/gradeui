@@ -304,7 +304,7 @@ export default function ReviewsPage() {
               <HubCard key={card.hook} card={{ ...card, beacon: chips[card.hook] }} />
             ))}
           </div>
-          <BeaconNugget />
+          <BeaconNugget page="hub" />
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

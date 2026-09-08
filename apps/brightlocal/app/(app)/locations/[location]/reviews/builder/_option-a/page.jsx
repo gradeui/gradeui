@@ -6491,7 +6491,7 @@ export default function RMReviewBuilderPage() {
             config={previewConfig?.config ?? null}
             expired={!!previewConfig?.expired}
           />
-          {view === "hub" ? <BeaconNugget /> : null}
+          {view === "hub" ? <BeaconNugget page="builder" /> : null}
         </GlobalLayoutContentBody>
       </AppLayoutShell>
 

@@ -60,7 +60,7 @@
     {
       "why": "the nugget closes the page",
       "find": "        </GlobalLayoutContentBody>",
-      "replace": "          {view === \"hub\" ? <BeaconNugget /> : null}\n        </GlobalLayoutContentBody>"
+      "replace": "          {view === \"hub\" ? <BeaconNugget page=\"builder\" /> : null}\n        </GlobalLayoutContentBody>"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -157,7 +157,7 @@
     {
       "why": "the nugget closes the page",
       "find": "        </GlobalLayoutContentBody>",
-      "replace": "          <BeaconNugget />\n        </GlobalLayoutContentBody>"
+      "replace": "          <BeaconNugget page=\"hub\" />\n        </GlobalLayoutContentBody>"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [
@@ -259,7 +259,7 @@
     {
       "why": "the nugget closes the page",
       "find": "        </GlobalLayoutContentBody>",
-      "replace": "          <BeaconNugget />\n        </GlobalLayoutContentBody>"
+      "replace": "          <BeaconNugget page=\"manager\" />\n        </GlobalLayoutContentBody>"
     }
   ],
   "app/(app)/locations/[location]/reviews/tracker/page.jsx": [
@@ -336,7 +336,7 @@
     {
       "why": "the nugget closes the page",
       "find": "          </GlobalLayoutContentBody>",
-      "replace": "            <BeaconNugget />\n          </GlobalLayoutContentBody>"
+      "replace": "            <BeaconNugget page=\"tracker\" />\n          </GlobalLayoutContentBody>"
     }
   ],
   "app/(app)/locations/page.jsx": [
@@ -375,7 +375,7 @@
     {
       "why": "the nugget closes the page",
       "find": "        </GlobalLayoutContentBody>",
-      "replace": "          <BeaconNugget />\n        </GlobalLayoutContentBody>"
+      "replace": "          <BeaconNugget page=\"showcase\" />\n        </GlobalLayoutContentBody>"
     }
   ]
 }

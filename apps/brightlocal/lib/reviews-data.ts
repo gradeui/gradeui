@@ -62,6 +62,12 @@ export interface ReviewStats {
    *  last 20 reviews. The lifetime average barely moves (Ali, 9 Sep:
    *  "extremely hard to move ratings even 0.1"). */
   recent: { kind: "days" | "count"; size: number; count: number; rating: string; ratingValue: number };
+  /** Days since the oldest review still waiting for a reply, or null. */
+  oldestWaitingDays: number | null;
+  /** Share of this month's reviews that came from Google. */
+  googleShareThisMonth: number;
+  /** Reviews that arrived on the spike day (and the day after). */
+  spikeDayCount: number;
   /** The last six months, oldest first, for the drill-down charts. */
   months: { label: string; count: number; rating: string; fourPlusPct: number }[];
   /** Multi-location: the sibling branch customers compare this one to. */
@@ -332,7 +338,12 @@ export function statsFor(location: string, persona?: { engagement?: string } | n
       fourPlusPct: rows.length ? Math.round((rows.filter((x) => num(x.rating) >= 4).length / rows.length) * 100) : 0,
     });
   }
+  const waiting = inbox.filter((x) => x.status === "needs");
+  const spikeAt = spikeDaysAgo(r.spike);
   return {
+    oldestWaitingDays: waiting.length ? Math.max(...waiting.map((x) => x.daysAgo)) : null,
+    googleShareThisMonth: thisMonth.length ? Math.round((thisMonth.filter((x) => x.source === "google").length / thisMonth.length) * 100) : 0,
+    spikeDayCount: spikeAt === null ? 0 : list.filter((x) => x.daysAgo === spikeAt || x.daysAgo === spikeAt + 1).length,
     months,
     recent: { kind: windowKind, size: windowKind === "days" ? 30 : 20, count: windowRows.length, rating: windowAvg.toFixed(1), ratingValue: windowAvg },
     compare,

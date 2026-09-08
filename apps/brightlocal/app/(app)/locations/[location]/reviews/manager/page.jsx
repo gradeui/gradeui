@@ -2271,7 +2271,7 @@ export default function RMReviewManagerDataTablePage() {
               belongs on the Manager page). The full plan opens in the modal. */}
           <ReviewPlanStrip />
           <ReviewsInbox />
-          <BeaconNugget />
+          <BeaconNugget page="manager" />
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

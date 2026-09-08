@@ -88,3 +88,40 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
     cta: { label: "Pick the reviews to show", path: "reviews/manager" },
   };
 }
+
+export type NuggetPage = BeaconPage | "hub" | "manager";
+
+export interface Nugget {
+  fact: string;
+  action: string;
+  cta: { label: string; goto: string };
+}
+
+const GOTO = { manager: "screen:dmsxf5zjggd0n", templates: "screen:dmtaq1rm9eok2", builder: "screen:dmt094j963aye", showcase: "screen:dmt094lhmpwbs" };
+
+/** One fact and one easy thing, per page, from the location's own rows. */
+export function nuggetFor(page: NuggetPage, s: ReviewStats, persona: Persona): Nugget | null {
+  const starter = persona.engagement === "new";
+  if (page === "hub") {
+    if (s.needReply > 0)
+      return { fact: `Did you know ${s.needReply} of your ${s.inbox} reviews are still waiting for a thank you?`, action: "Start with the oldest one.", cta: { label: "Open Review Manager", goto: GOTO.manager } };
+    return { fact: `Did you know ${s.fiveStar} of your ${s.total.toLocaleString("en-GB")} reviews are five stars?`, action: "Put the best of them on your website.", cta: { label: "Open Review Showcase", goto: GOTO.showcase } };
+  }
+  if (page === "manager") {
+    if (s.oldestWaitingDays !== null)
+      return { fact: `Did you know your oldest unanswered review has waited ${s.oldestWaitingDays} days?`, action: "Answer that one first; it is the one people see waiting.", cta: { label: "Set up an auto-reply", goto: GOTO.templates } };
+    return { fact: "Did you know every review here has a reply?", action: "Keep it that way with an auto-reply for five-star Google reviews.", cta: { label: "Set up an auto-reply", goto: GOTO.templates } };
+  }
+  if (page === "tracker") {
+    return { fact: `Did you know ${s.googleShareThisMonth}% of this month's reviews came from Google?`, action: starter ? "Connect Facebook and TripAdvisor to see the rest." : "The other sources count too; make sure they are connected.", cta: { label: "See the reviews", goto: GOTO.manager } };
+  }
+  if (page === "builder") {
+    if (s.spike && s.spikeDayCount > 0)
+      return { fact: `Did you know your ${s.spike.campaign} ${s.spike.channel} brought ${s.spikeDayCount} reviews in two days?`, action: "Same again next month keeps the velocity up.", cta: { label: "Create a campaign", goto: GOTO.builder } };
+    return { fact: "Did you know businesses that ask get several times more reviews than those that wait?", action: "One campaign is enough to start.", cta: { label: "Create a campaign", goto: GOTO.builder } };
+  }
+  // showcase
+  if (s.theme?.good)
+    return { fact: `Did you know customers keep praising ${s.theme.text}?`, action: "That is the quote for your booking page.", cta: { label: "Pick the reviews to show", goto: GOTO.manager } };
+  return { fact: `Did you know ${s.fiveStar} of your reviews are five stars?`, action: "The hand-picked showcase lets you choose which ones your site shows.", cta: { label: "Pick the reviews to show", goto: GOTO.manager } };
+}
