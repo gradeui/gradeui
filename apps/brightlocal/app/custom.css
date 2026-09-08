@@ -67,3 +67,13 @@ aside {
 .dark {
   --card: var(--ds-tailwind-colors-neutral-900);
 }
+
+/* AND A BORDER (Ali, 8 Sep). The DS's card-border token is transparent,
+   so Card's own `border border-card-border` paints nothing. Figma's card
+   border is base/border, which is the semantic --border token, so the
+   card border follows it. Ledger: /docs/changes, "Card border token is
+   transparent". */
+:root,
+.dark {
+  --card-border: var(--border);
+}

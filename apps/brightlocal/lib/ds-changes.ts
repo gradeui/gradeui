@@ -52,7 +52,7 @@ export const DS_CHANGES: DsChange[] = [
     id: "card-border",
     title: "Card border token is transparent",
     finding: "--ds-colors-card-border-light maps to base-transparent, so the filled Card renders no visible border by default. Figma's card border is base/border (neutral-200), the semantic --border token.",
-    workaround: "Screens set the border explicitly where the design shows one.",
+    workaround: "app/custom.css re-points --card-border to --border, so every Card gets the Figma edge without a per-screen class.",
     ask: "Point card-border at base/border, or document the transparent default.",
   },
   {
