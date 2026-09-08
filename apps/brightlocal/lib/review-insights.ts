@@ -80,7 +80,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
       area: "reviews",
       severity: "high",
       title: stats.compare ? `Bring ${stats.compare.self} back in line with ${stats.compare.label}` : `Turn your recent reviews around`,
-      actionsSummary: `Your ${winLabel} average is ${win.rating}${stats.ratingValue - win.ratingValue >= 0.3 ? ` against ${stats.rating} all time` : ""}. The lifetime number barely moves; the recent one does, and it's what the next customer sees first. Two things move it: fewer new low reviews, and more new high ones.${stats.compare && stats.compare.mentions ? ` ${stats.compare.mentions} of your last ${stats.lastN} reviews name your ${stats.compare.label} branch as the standard. Go and see what ${stats.compare.label} does differently.` : ""}`,
+      actionsSummary: `Your ${winLabel} average is ${win.rating}${stats.ratingValue - win.ratingValue >= 0.3 ? ` against ${stats.rating} all time` : ""}. The lifetime number barely moves. The recent one does, and it is what the next customer sees first. Two things move it: fewer new low reviews, and more new high ones.${stats.compare && stats.compare.mentions ? ` ${stats.compare.mentions} of your last ${stats.lastN} reviews name your ${stats.compare.label} branch as the standard. Go and see what ${stats.compare.label} does differently.` : ""}`,
       actions: [
         {
           label: "Answer every one and two star review this week.",
@@ -108,7 +108,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
       actions: [
         {
           label: "Create your first campaign.",
-          text: "Create your first campaign. Email and SMS reach past customers; a web link or QR code catches people at the till. Pick one channel and send to a small list first.",
+          text: "Create your first campaign. Email and SMS reach past customers. A web link or QR code catches people at the till. Pick one channel and send to a small list first.",
           links: [{ label: "Create a campaign", goto: BUILDER }],
         },
       ],
@@ -125,7 +125,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
       actions: [
         {
           label: "Connect Facebook and TripAdvisor.",
-          text: "Connect Facebook and TripAdvisor. Facebook needs you to sign in once; TripAdvisor just needs your listing URL. New reviews from both land in the inbox.",
+          text: "Connect Facebook and TripAdvisor. Facebook needs you to sign in once. TripAdvisor just needs your listing URL. New reviews from both land in the inbox.",
           links: [{ label: "Manage sources", goto: REPORT_SETTINGS }],
         },
       ],

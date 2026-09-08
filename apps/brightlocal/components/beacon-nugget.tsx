@@ -28,9 +28,9 @@ export function BeaconNugget({ page = "hub" }: { page?: NuggetPage }) {
       data-hook={`beacon-nugget-${page}`}
       className="mx-auto flex w-full flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-100)] px-6 py-4 lg:w-3/4 lg:flex-row lg:items-center lg:gap-6"
     >
-      <Lightbulb className="hidden size-5 shrink-0 text-[var(--ds-tailwind-colors-neutral-500)] lg:block" />
+      <Lightbulb className="hidden size-5 shrink-0 text-muted-foreground lg:block" />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <p className="text-body font-medium text-[var(--ds-tailwind-colors-neutral-800)] text-balance">{nugget.fact}</p>
+        <p className="text-body font-medium text-foreground text-balance">{nugget.fact}</p>
         <p className="text-body-sm text-muted-foreground text-pretty">{nugget.action}</p>
       </div>
       <span className="inline-flex shrink-0" data-grade-goto={nugget.cta.goto}>

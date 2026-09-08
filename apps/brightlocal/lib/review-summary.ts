@@ -84,7 +84,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
       tone: "bad",
       slot: "rating",
       segments: [
-        m(String(s.compare.mentions), "bad", `Reviews in your last ${s.lastN} whose text names the ${s.compare.label} branch.`), t(` of your last ${s.lastN} reviews compare ${s.compare.self} with your ${s.compare.label} branch, and not kindly. ${s.compare.label} is on `), m(s.compare.siblingRecentRating, "good"), t(` for the same period; ${s.compare.self} is on `), m(win.rating, "bad"), t(". Same brand, different experience: that is worth a visit."),
+        m(String(s.compare.mentions), "bad", `Reviews in your last ${s.lastN} whose text names the ${s.compare.label} branch.`), t(` of your last ${s.lastN} reviews compare ${s.compare.self} with your ${s.compare.label} branch, and not kindly. ${s.compare.label} is on `), m(s.compare.siblingRecentRating, "good"), t(` for the same period. ${s.compare.self} is on `), m(win.rating, "bad"), t(". Same brand, different experience: that is worth a visit."),
       ],
     });
   }

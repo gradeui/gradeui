@@ -276,25 +276,25 @@
   --beacon-50: var(--ds-tailwind-colors-green-50);
   --beacon-200: var(--ds-tailwind-colors-green-200);
   --beacon-300: var(--ds-tailwind-colors-green-300);
-  --beacon-700: var(--ds-tailwind-colors-green-700);
+  --beacon-700: var(--ds-tailwind-colors-green-700); --beacon-800: var(--ds-tailwind-colors-green-800);
   --beacon-950: var(--ds-tailwind-colors-green-950);
 }
 /* families: summaries sky, recommendations green, upsells yellow, nuggets violet */
 [data-beacon-tone="families"] [data-hook="review-summary-strip"],
 [data-beacon-tone="families"] [data-hook^="beacon-strip-"],
 [data-beacon-tone="families"] [data-hook="beacon-modal"] {
-  --beacon-100: var(--ds-tailwind-colors-sky-100); --beacon-50: var(--ds-tailwind-colors-sky-50); --beacon-200: var(--ds-tailwind-colors-sky-200); --beacon-300: var(--ds-tailwind-colors-sky-300); --beacon-700: var(--ds-tailwind-colors-sky-700); --beacon-950: var(--ds-tailwind-colors-sky-950);
+  --beacon-100: var(--ds-tailwind-colors-sky-100); --beacon-50: var(--ds-tailwind-colors-sky-50); --beacon-200: var(--ds-tailwind-colors-sky-200); --beacon-300: var(--ds-tailwind-colors-sky-300); --beacon-700: var(--ds-tailwind-colors-sky-700); --beacon-800: var(--ds-tailwind-colors-sky-800); --beacon-950: var(--ds-tailwind-colors-sky-950);
 }
 [data-beacon-tone="families"] [data-hook="review-plan-strip"],
 [data-beacon-tone="families"] [data-hook="beacon-modal"][data-beacon-section="plan"],
 [data-beacon-tone="families"] [data-hook="review-insights"] {
-  --beacon-100: var(--ds-tailwind-colors-green-100); --beacon-50: var(--ds-tailwind-colors-green-50); --beacon-200: var(--ds-tailwind-colors-green-200); --beacon-300: var(--ds-tailwind-colors-green-300); --beacon-700: var(--ds-tailwind-colors-green-700); --beacon-950: var(--ds-tailwind-colors-green-950);
+  --beacon-100: var(--ds-tailwind-colors-green-100); --beacon-50: var(--ds-tailwind-colors-green-50); --beacon-200: var(--ds-tailwind-colors-green-200); --beacon-300: var(--ds-tailwind-colors-green-300); --beacon-700: var(--ds-tailwind-colors-green-700); --beacon-800: var(--ds-tailwind-colors-green-800); --beacon-950: var(--ds-tailwind-colors-green-950);
 }
 [data-beacon-tone="families"] [data-hook^="upsell"] {
-  --beacon-100: var(--ds-tailwind-colors-yellow-100); --beacon-50: var(--ds-tailwind-colors-yellow-50); --beacon-200: var(--ds-tailwind-colors-yellow-200); --beacon-300: var(--ds-tailwind-colors-yellow-300); --beacon-700: var(--ds-tailwind-colors-yellow-800); --beacon-950: var(--ds-tailwind-colors-yellow-950);
+  --beacon-100: var(--ds-tailwind-colors-yellow-100); --beacon-50: var(--ds-tailwind-colors-yellow-50); --beacon-200: var(--ds-tailwind-colors-yellow-200); --beacon-300: var(--ds-tailwind-colors-yellow-300); --beacon-700: var(--ds-tailwind-colors-yellow-800); --beacon-800: var(--ds-tailwind-colors-yellow-900); --beacon-950: var(--ds-tailwind-colors-yellow-950);
 }
 [data-beacon-tone="families"] [data-hook^="beacon-nugget-"] {
-  --beacon-100: var(--ds-tailwind-colors-violet-100); --beacon-50: var(--ds-tailwind-colors-violet-50); --beacon-200: var(--ds-tailwind-colors-violet-200); --beacon-300: var(--ds-tailwind-colors-violet-300); --beacon-700: var(--ds-tailwind-colors-violet-700); --beacon-950: var(--ds-tailwind-colors-violet-950);
+  --beacon-100: var(--ds-tailwind-colors-violet-100); --beacon-50: var(--ds-tailwind-colors-violet-50); --beacon-200: var(--ds-tailwind-colors-violet-200); --beacon-300: var(--ds-tailwind-colors-violet-300); --beacon-700: var(--ds-tailwind-colors-violet-700); --beacon-800: var(--ds-tailwind-colors-violet-800); --beacon-950: var(--ds-tailwind-colors-violet-950);
 }
 /* Paint wherever a family is set. */
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"],
@@ -304,10 +304,15 @@
 [data-beacon-tone="families"] [data-hook^="upsell"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] {
   background: var(--beacon-100) !important;
-  border-color: var(--beacon-300) !important;
-  color: var(--beacon-950);
-  --foreground: var(--beacon-950);
+  border-color: var(--beacon-200) !important;
+  color: var(--beacon-800);
+  --foreground: var(--beacon-800);
   --muted-foreground: var(--beacon-700);
+  box-shadow: none !important; /* the tint lifts it; a grey shadow under colour looks dirty */
+}
+/* The nugget's second line reads in the same colour as its fact. */
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] {
+  --muted-foreground: var(--beacon-800);
 }
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] mark,
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] mark,
@@ -325,5 +330,34 @@
   background: var(--beacon-50) !important;
 }
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal-header"] {
-  border-color: var(--beacon-300);
+  border-color: var(--beacon-200);
+}
+/* Buttons on a tinted surface take the family: outline in the family's
+   300 border and 800 text, hover to 200. Primary stays the brand button. */
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button:not(.bg-primary),
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button:not(.bg-primary),
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button:not(.bg-primary),
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button,
+[data-beacon-tone="families"] [data-hook^="upsell"] button:not(.bg-primary),
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] button:not(.bg-primary) {
+  border-color: var(--beacon-300) !important;
+  color: var(--beacon-800) !important;
+  background: transparent !important;
+}
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button:not(.bg-primary):hover,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button:not(.bg-primary):hover,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button:not(.bg-primary):hover,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button:hover,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] button:not(.bg-primary):hover {
+  background: var(--beacon-200) !important;
+}
+/* The Beacon badge and the goal pill sit on the family's 50. */
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-badge"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-insights-badge"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip-badge"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal-badge"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-insights-pill"] {
+  background: var(--beacon-50) !important;
+  border-color: var(--beacon-300) !important;
+  color: var(--beacon-800) !important;
 }

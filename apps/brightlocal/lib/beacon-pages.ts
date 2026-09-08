@@ -39,7 +39,7 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
         : [
             m(String(s.thisMonth), `Reviews received so far this month.`), t(" reviews so far this month, "), m(`${up ? "up" : "down"} ${Math.abs(s.monthChangePct)}%`, `Against ${s.lastMonth} in the whole of last month.`), t(` on the ${s.lastMonth} last month. `),
             ...(s.spike ? [t("The spike on "), m(s.spike.date), t(` is your ${s.spike.campaign} ${s.spike.channel}. `)] : []),
-            t("Your "), m(s.recent.kind === "days" ? "last 30 days" : "last 20 reviews"), t(" average "), m(s.recent.rating), t(`; all time is `), m(s.rating), t("."),
+            t("Your "), m(s.recent.kind === "days" ? "last 30 days" : "last 20 reviews"), t(" average "), m(s.recent.rating), t(`. All time is `), m(s.rating), t("."),
           ],
       tiles: [
         { value: `${up ? "+" : ""}${s.monthChangePct}%`, label: "review velocity vs last month" },
@@ -78,7 +78,7 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
     headline: starter ? "Three showcases are ready. None is on your site yet." : `${s.fiveStar} five-star reviews, and your website shows none of them.`,
     line: [
       t("The people who read reviews on your own site are the ones who never look at Google. "),
-      ...(s.theme?.good ? [t("The thing customers keep praising is "), m(s.theme.text), t(". That is the quote to put on the booking page.")] : [t("Your best reviews are ready to show; pick the ones the booking page should carry.")]),
+      ...(s.theme?.good ? [t("The thing customers keep praising is "), m(s.theme.text), t(". That is the quote to put on the booking page.")] : [t("Your best reviews are ready to show. Pick the ones the booking page should carry.")]),
     ],
     tiles: [
       { value: String(s.fiveStar), label: "five-star reviews" },
@@ -109,11 +109,11 @@ export function nuggetFor(page: NuggetPage, s: ReviewStats, persona: Persona): N
   }
   if (page === "manager") {
     if (s.oldestWaitingDays !== null)
-      return { fact: `Did you know your oldest unanswered review has waited ${s.oldestWaitingDays} days?`, action: "Answer that one first; it is the one people see waiting.", cta: { label: "Set up an auto-reply", goto: GOTO.templates } };
+      return { fact: `Did you know your oldest unanswered review has waited ${s.oldestWaitingDays} days?`, action: "Answer that one first. It is the one people see waiting.", cta: { label: "Set up an auto-reply", goto: GOTO.templates } };
     return { fact: "Did you know every review here has a reply?", action: "Keep it that way with an auto-reply for five-star Google reviews.", cta: { label: "Set up an auto-reply", goto: GOTO.templates } };
   }
   if (page === "tracker") {
-    return { fact: `Did you know ${s.googleShareThisMonth}% of this month's reviews came from Google?`, action: starter ? "Connect Facebook and TripAdvisor to see the rest." : "The other sources count too; make sure they are connected.", cta: { label: "See the reviews", goto: GOTO.manager } };
+    return { fact: `Did you know ${s.googleShareThisMonth}% of this month's reviews came from Google?`, action: starter ? "Connect Facebook and TripAdvisor to see the rest." : "The other sources count too. Make sure they are connected.", cta: { label: "See the reviews", goto: GOTO.manager } };
   }
   // RULE: a nugget never restates the page's strip (Ali, 9 Sep). The strip
   // already tells the Builder about the spike and the Showcase about the

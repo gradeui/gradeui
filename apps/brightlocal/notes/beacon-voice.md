@@ -26,6 +26,10 @@ toward Ray").
 - For a brand with several branches, the comparison between them is the
   insight, especially when customers name the other branch.
 
+- Reading age: high school. Short sentences, one idea each. No semicolons,
+  ever. If two clauses want a semicolon, make them two sentences or join
+  them with "but" or "and".
+
 ## Examples to teach it (add freely)
 
 Brian

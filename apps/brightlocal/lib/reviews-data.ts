@@ -130,7 +130,7 @@ const MID = [
   "Solid, but pricier than it used to be for the same thing.",
   "OK for a quick visit. Wouldn't plan a day around it.",
   "Nice people, slightly tired surroundings. Three stars feels fair.",
-  "Middle of the road. Booking was easy; the visit itself was average.",
+  "Middle of the road. Booking was easy but the visit itself was average.",
   "Happy enough, though the website promised a bit more than we got.",
 ];
 const LOW = (theme?: string) => [
