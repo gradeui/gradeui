@@ -45,14 +45,14 @@ const TONE_TEXT: Record<string, string> = {
   neutral: "text-foreground",
 };
 
-/** THE Beacon badge, one shape everywhere: outlined, the ✦ in the accent
- *  green, "Beacon" in the foreground. A badge can be a link (Ali, 9 Sep):
+/** THE Beacon badge, one shape everywhere: outlined, the word alone. A badge can be a link (Ali, 9 Sep):
  *  with `beta` it carries a "Beta" tail and opens the Beacon notes, where
  *  "learn more" and "give us feedback" live. */
 export function BeaconBadge({ dataHook = "beacon-badge", beta = false }: { dataHook?: string; beta?: boolean }) {
+  // No icon (Ali, 9 Sep): the word is the mark.
   const inner = (
     <>
-      <Sparkles aria-hidden className="size-3.5 text-[var(--ds-tailwind-colors-green-500)]" /> Beacon
+      Beacon
       {beta ? <span className="text-muted-foreground border-l pl-1.5">Beta</span> : null}
     </>
   );
