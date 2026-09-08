@@ -133,7 +133,7 @@ function TellMeMore({ stats, kind, label, lines }: { stats: ReviewStats; kind: D
           <div className="flex flex-col gap-3">
             <p className="text-heading-subsection">{label.charAt(0).toUpperCase() + label.slice(1)}, last six months</p>
             {lines.map((line, i) => (
-              <p key={i} className="text-body-sm font-display">
+              <p key={i} className="text-body-sm">
                 {line.segments.map((sg, j) => (
                   <Seg key={j} s={sg} />
                 ))}
@@ -182,12 +182,12 @@ export function ReviewSummary({ full = false, bare = false }: { full?: boolean; 
             )}
             <span className="text-muted-foreground">AI summary of your reviews, updated today</span>
           </p>
-          <h2 className="text-heading-page font-display" data-hook="review-summary-headline">
+          <h2 className="text-metric font-display text-pretty" data-hook="review-summary-headline">
             {summary.headline}
           </h2>
           <div className="flex flex-col gap-3">
             {cardLines.map((line, i) => (
-              <p key={i} className="text-body font-display text-foreground max-w-[60ch]" data-hook={`review-summary-line-${i}`} data-register={line.register ?? registerFor(line.tone)}>
+              <p key={i} className="text-body text-foreground max-w-[60ch] text-pretty" data-hook={`review-summary-line-${i}`} data-register={line.register ?? registerFor(line.tone)}>
                 {line.segments.map((s, j) => (
                   <Seg key={j} s={s} />
                 ))}
@@ -203,7 +203,7 @@ export function ReviewSummary({ full = false, bare = false }: { full?: boolean; 
             const drill = drillFor(tile.label);
             return (
               <div key={tile.label} className="relative flex flex-col gap-0.5 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] px-4 py-3">
-                <dd className={`text-metric font-display ${TONE_TEXT[tile.tone]}`}>{tile.value}</dd>
+                <dd className={`text-metric ${TONE_TEXT[tile.tone]}`}>{tile.value}</dd>
                 <dt className="text-body-xs text-muted-foreground">{tile.label}</dt>
                 {drill && !full && !persona.engagement.startsWith("new") ? (
                   <span className="absolute right-2 top-2">
@@ -246,34 +246,34 @@ export function ReviewSummaryStrip() {
   return (
     <section
       data-hook="review-summary-strip"
-      className="flex flex-col gap-5 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-6 shadow-sm lg:flex-row lg:items-stretch lg:gap-8"
+      className="flex flex-col gap-6 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 shadow-sm lg:flex-row lg:items-stretch lg:gap-10"
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
         <p className="text-label-sm flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-foreground">
             <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span> Beacon
           </span>
           <span className="text-muted-foreground">AI summary, updated today</span>
         </p>
-        <p className="text-heading-subsection font-display" data-hook="review-summary-strip-headline">{summary.headline}</p>
+        <p className="text-metric font-display max-w-[40ch] text-pretty" data-hook="review-summary-strip-headline">{summary.headline}</p>
         {lead ? (
-          <p className="text-body-sm font-display text-foreground max-w-[70ch]">
+          <p className="text-body text-foreground max-w-[60ch] text-pretty">
             {lead.segments.map((sg, j) => (
               <Seg key={j} s={sg} />
             ))}
           </p>
         ) : null}
-        <div className="pt-1">
+        <div className="mt-auto pt-3">
           <Button variant="outline" size="sm" dataHook="review-summary-strip-open" onClick={() => show("summary")}>
             Read the full summary
             <ArrowRight className="size-4" />
           </Button>
         </div>
       </div>
-      <dl className="grid shrink-0 grid-cols-3 gap-4 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] px-5 py-4 lg:w-64 lg:grid-cols-1 lg:gap-3" data-hook="review-summary-strip-tiles">
+      <dl className="grid shrink-0 grid-cols-3 gap-6 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-6 lg:w-72 lg:grid-cols-1 lg:gap-5" data-hook="review-summary-strip-tiles">
         {summary.tiles.map((tile) => (
           <div key={tile.label} className="flex flex-col">
-            <dd className={`text-metric font-display ${TONE_TEXT[tile.tone]}`}>{tile.value}</dd>
+            <dd className={`text-metric ${TONE_TEXT[tile.tone]}`}>{tile.value}</dd>
             <dt className="text-body-xs text-muted-foreground">{tile.label}</dt>
           </div>
         ))}
@@ -291,7 +291,7 @@ export function ReviewSummaryStrip() {
 export function BeaconChip({ text, tone = "neutral", dataHook = "beacon-chip" }: { text: string; tone?: "good" | "bad" | "neutral"; dataHook?: string }) {
   const bg = "bg-[var(--ds-tailwind-colors-neutral-100)]"; // neutral whatever the tone (Ali, 9 Sep)
   return (
-    <span data-hook={dataHook} className={`text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm px-2 py-0.5 font-display ${bg} text-[var(--ds-tailwind-colors-neutral-950)]`}>
+    <span data-hook={dataHook} className={`text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm px-2 py-0.5 ${bg} text-[var(--ds-tailwind-colors-neutral-950)]`}>
       <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span>
       {text}
     </span>
@@ -311,32 +311,32 @@ export function BeaconPageStrip({ page }: { page: BeaconPage }) {
   return (
     <section
       data-hook={`beacon-strip-${page}`}
-      className="flex flex-col gap-5 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-6 shadow-sm lg:flex-row lg:items-stretch lg:gap-8"
+      className="flex flex-col gap-6 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 shadow-sm lg:flex-row lg:items-stretch lg:gap-10"
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
         <p className="text-label-sm flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-foreground">
             <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span> Beacon
           </span>
           <span className="text-muted-foreground">From this location's reviews, updated today</span>
         </p>
-        <p className="text-heading-subsection font-display" data-hook={`beacon-strip-${page}-headline`}>{b.headline}</p>
-        <p className="text-body-sm font-display text-foreground max-w-[70ch]">
+        <p className="text-metric font-display max-w-[40ch] text-pretty" data-hook={`beacon-strip-${page}-headline`}>{b.headline}</p>
+        <p className="text-body text-foreground max-w-[60ch] text-pretty">
           {b.line.map((sg, j) => (
             <Seg key={j} s={sg} />
           ))}
         </p>
-        <div className="pt-1">
+        <div className="mt-auto pt-3">
           <Button variant="outline" size="sm" dataHook={`beacon-strip-${page}-open`} onClick={() => show("summary")}>
             Read the full summary
             <ArrowRight className="size-4" />
           </Button>
         </div>
       </div>
-      <dl className="grid shrink-0 grid-cols-3 gap-4 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] px-5 py-4 lg:w-64 lg:grid-cols-1 lg:gap-3">
+      <dl className="grid shrink-0 grid-cols-3 gap-6 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-6 lg:w-72 lg:grid-cols-1 lg:gap-5">
         {b.tiles.map((tile) => (
           <div key={tile.label} className="flex flex-col">
-            <dd className="text-metric font-display text-foreground">{tile.value}</dd>
+            <dd className="text-metric text-foreground">{tile.value}</dd>
             <dt className="text-body-xs text-muted-foreground">{tile.label}</dt>
           </div>
         ))}

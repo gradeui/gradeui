@@ -52,10 +52,10 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
             <Flag className="size-3.5 text-[var(--ds-tailwind-colors-green-500)]" />
             This week's goal
           </span>
-          <h2 className="text-heading-section text-foreground max-w-prose" data-hook="review-insights-goal">
+          <h2 className="text-metric font-display text-foreground max-w-prose text-pretty" data-hook="review-insights-goal">
             <Mark text={plan.goal.text} mark={plan.goal.mark} />
           </h2>
-          <p className="text-muted-foreground text-body-sm max-w-prose">{plan.lede}</p>
+          <p className="text-muted-foreground text-body-sm max-w-prose text-pretty">{plan.lede}</p>
           <div className="flex flex-wrap items-center gap-2">
             <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
           </div>
@@ -119,7 +119,7 @@ export function ReviewPlanStrip() {
           <Flag className="size-3 text-[var(--ds-tailwind-colors-green-500)]" />
           This week's goal
         </span>
-        <p className="text-heading-subsection font-display" data-hook="review-plan-strip-goal">
+        <p className="text-metric font-display text-pretty" data-hook="review-plan-strip-goal">
           <Mark text={plan.goal.text} mark={plan.goal.mark} />
         </p>
         {first ? <p className="text-body-sm text-muted-foreground">First tactic: {first.label}</p> : null}
