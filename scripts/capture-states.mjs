@@ -57,7 +57,7 @@ const BASE = arg("base", "http://localhost:3000");
 // state. A single name is the common case ("--only=inbox-04"); a list is
 // what you want after a run to re-shoot just the frames that failed.
 const ONLY = (arg("only", null) || "").split(",").map((x) => x.trim()).filter(Boolean);
-// --section=reviewshub|inbox|insights|templates|widgets|getreviews|createwidget (repeatable, comma
+// --section=reviewshub|inbox|insights|templates|widgets|getreviews|settings (repeatable, comma
 // separated). Sections are the unit Ali thinks in, and the unit a demo video
 // is cut in, so the suite runs one section at a time by default rather than
 // one giant pass.
@@ -93,7 +93,6 @@ const FIGMA_PAGE = {
   inbox: "Brightlocal - Review Manager",
   insights: "Brightlocal - Review Tracker",
   widgets: "Brightlocal - Review Showcase",
-  createwidget: "Brightlocal - Review Showcase - Create Widgets",
   getreviews: "Brightlocal - Review Builder",
   templates: "Brightlocal - Review Manager - Reply Templates",
   settings: "Brightlocal - Report Settings",
@@ -112,10 +111,10 @@ const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14).replac
 const DIR = path.join(OUT, `states-${stamp}`);
 fs.mkdirSync(DIR, { recursive: true });
 
-// Share tokens for the four RM screens plus Reply Templates.
-// createwidget is the newest of them: widget CREATION left Review Showcase
-// on 28 Aug and became its own screen (design dmtctjykv0feb) on the DS
-// CentredLayout, so it needs its own token and its own section.
+// Share tokens for the RM screens plus Reply Templates. widgets and
+// getreviews resolve to the RAIL designs (dmt094lhmpwbs and dmt094j963aye),
+// checked against share_links on 7 Sep 2026. The createwidget token went
+// with its section: that screen is archived.
 const SCREENS = {
   reviewshub: "dee5a983-be48-4f86-8c8f-e46f16b435dd",
   inbox: "a616bfc5-1806-4af8-9a9a-74b6a9173fbf",
@@ -123,7 +122,6 @@ const SCREENS = {
   templates: "55dd020f-d660-48bd-9d2c-1d2542a8b19f",
   widgets: "0609abbe-f208-4d91-858e-e5335f8cecbe",
   getreviews: "782021bd-1332-48b8-a22b-5316b520fc20",
-  createwidget: "35af1f77-ff09-43ea-b86e-534568cfeb8f",
   // RM — Report Settings (dmtkj124xagqa), new 2 Sep. The configuration
   // surface behind Review Tracker' Settings button, which was a dead
   // control until it had somewhere to go. Minted with
@@ -283,172 +281,95 @@ async function spendAi(page, row) {
   await wait(700);
 }
 
-// Walk the GET REVIEWS campaign wizard to a named step, down a named
-// BRANCH. The flow is DERIVED from two answers (ask and channel), so a
-// step list is meaningless without them: the email branch is twelve
-// steps, the link branch is five, and `sites` sits at a different index
-// in each. `buildFlow` in the screen source is the authority; this
-// mirrors it, and `CAMPAIGN_FLOWS` below must be kept in step with it.
-//
-// Ali, 2 Sep: "Wizards can be captured as one flow for each branch." One
-// still per step per branch is what makes an incomplete wizard visible —
-// a single frame of step one looked finished and was not.
-const CAMPAIGN_FLOWS = {
-  // feedback-first, email, with the reminder turned on
-  email: {
-    ask: "feedback",
-    channel: "email",
-    reminder: "yes",
-    steps: ["name", "ask", "feedback", "channel", "email", "reminder", "reminder-design",
-            "sites", "recipients", "columns", "check", "send"],
-  },
-  // straight to a public review, by text, no reminder
-  sms: {
-    ask: "review",
-    channel: "sms",
-    reminder: "no",
-    steps: ["name", "ask", "channel", "sms", "reminder", "sites", "recipients",
-            "columns", "check", "send"],
-  },
-  // feedback-first, web link. No message, no audience, no send.
-  link: {
-    ask: "feedback",
-    channel: "link",
-    steps: ["name", "ask", "feedback", "channel", "sites", "golive"],
-  },
-};
+// ── walkers for the two RAIL screens (7 Sep 2026) ──────────────────────
+// Review Builder and Review Showcase both replaced their wizards with a
+// settings page: a sticky left rail of sections, one card per section, and
+// an Edit button that opens the section's controls in a right-hand sheet.
+// Every state reloads the embed, so each walker starts from the list.
 
-// A step is proved by a hook that exists ONLY on that step. `email` and
-// `reminder-design` both render the email editor, so the reminder step is
-// identified by `reminder-timing`, which the first email does not have.
-const CAMPAIGN_PROOF = {
-  name: '[data-hook="campaign-name-input"]',
-  ask: '[data-hook="ask-radio-group"]',
-  feedback: '[data-hook="feedback-type-field"]',
-  channel: '[data-hook="channel-radio-group"]',
-  email: '[data-hook="email-subject-input"]',
-  sms: '[data-hook="sms-body-input"]',
-  reminder: '[data-hook="reminder-radio-group"]',
-  "reminder-design": '[data-hook="reminder-timing"]',
-  sites: '[data-hook="site-add"]',
-  recipients: '[data-hook="contacts-upload"]',
-  columns: '[data-hook="csv-map-table"]',
-  check: '[data-hook="toggle-exclusions"]',
-  send: '[data-hook="preview-as-customer"]',
-  golive: '[data-hook="link-note"]',
-};
-
-async function campaignWizardTo(page, branch, step) {
-  const flow = CAMPAIGN_FLOWS[branch];
-  if (!flow) throw new Error("unknown campaign branch: " + branch);
-  const stop = flow.steps.indexOf(step);
-  if (stop < 0) throw new Error(`step ${step} is not on the ${branch} branch`);
-
-  await press(page, '[data-hook="new-campaign"]');
-  await wait(900);
-  // The start step advances from the footer, but only once an option is
-  // picked: Next with nothing chosen sets an error and stays put.
-  await press(page, '[data-hook="start-fresh-label"]');
-  await wait(400);
-  await press(page, '[data-hook="wizard-next"]');
-  await wait(900);
-
-  // A BRANCHING STEP MUST SHOW ITS ANSWER. Walking to `channel` stops
-  // BEFORE the option is pressed, so the email branch's channel frame and
-  // the link branch's channel frame were the same untouched radio group —
-  // byte-identical files, both passing an assertion that only asks whether
-  // the group exists. The frame is captioned as the branch, so it has to
-  // show the branch: press this branch's answer on arrival.
-  const answerFor = { ask: flow.ask, channel: flow.channel, reminder: flow.reminder };
-
-  for (let i = 0; i < stop; i += 1) {
-    const here = flow.steps[i];
-    // The branching answers, and the two steps that need an input before
-    // Next will move. Everything else is prefilled by the seed.
-    if (here === "ask") await press(page, `[data-hook="ask-${flow.ask}-label"]`);
-    if (here === "channel") await press(page, `[data-hook="channel-${flow.channel}-label"]`);
-    if (here === "reminder") await press(page, `[data-hook="reminder-${flow.reminder}-label"]`);
-    if (here === "recipients") {
-      // SMS blocks on the country before it will look at the CSV: the
-      // country sets the credit rate, so `validate()` refuses to move
-      // without it ("Choose the country of your contacts first"). The
-      // email branch has no country control at all.
-      if (flow.channel === "sms") {
-        await press(page, '[data-hook="country-USA-label"]');
-        await wait(300);
-      }
-      await press(page, '[data-hook="contacts-upload"]');
-    }
-    // The last gate before Send: two confirmations that both default to
-    // false, so Next on this step sets an error and stays put unless
-    // they are ticked. This is why the two `send` frames failed on the
-    // first run while every step before them passed.
-    if (here === "check") {
-      await press(page, '[data-hook="confirm-permission-label"]');
-      await wait(250);
-      await press(page, '[data-hook="confirm-privacy-label"]');
-    }
-    await wait(400);
-    await press(page, '[data-hook="wizard-next"]');
+// Open a campaign's page from the hub, then optionally press one of its
+// header actions. The page mounts a chart and a table before the header
+// buttons are wired, so the walker waits for `insights-preview` (rendered
+// in the same pass as the actions) rather than a fixed delay.
+async function campaignPage(page, id, actionHook = null) {
+  await press(page, `[data-hook="campaign-${id}-open"]`);
+  await waitForHook(page, '[data-hook="insights-preview"]');
+  await wait(600);
+  if (actionHook) {
+    await press(page, `[data-hook="${actionHook}"]`);
     await wait(1000);
-  }
-
-  if (answerFor[step]) {
-    await press(page, `[data-hook="${step}-${answerFor[step]}-label"]`);
-    await wait(500);
   }
 }
 
-// Walk the CREATE WIDGET screen's wizard to a named step. Every state
-// reloads the embed from scratch, so each one re-walks the chain rather
-// than sharing a page. Driven by data-hook, never by pressText("Next"):
-// the reviews step carries a DataTablePagination whose own control is
-// also called Next, and a text lookup can pick the wrong one.
-const WIDGET_WIZARD_STEPS = ["type", "reviews", "format", "design", "done"];
-// `mode` is the branch: "feed" is a filter that keeps itself current,
-// "picked" is a fixed set chosen by hand. They share four step ids but
-// not their contents — the reviews step is an explainer plus filters on
-// one and a selection table on the other — so both branches need frames
-// (Ali, 2 Sep: "wizards can be captured as one flow for each branch").
-async function widgetWizardTo(page, step, mode = "feed") {
-  const stop = WIDGET_WIZARD_STEPS.indexOf(step);
-  if (stop < 0) throw new Error("unknown widget wizard step: " + step);
-  if (stop === 0) return;
-  await press(page, `[data-hook="widget-mode-${mode}-label"]`);
-  await wait(600);
-  // ONE PRESS PER STEP CROSSED, and the gate for the step we are ON is
-  // satisfied BEFORE that step's press — not on the one before it. The
-  // first version guarded inside a `stop - 1` loop, so the last press
-  // never got its gate: `format` (stop 2) tried to leave the reviews step
-  // with nothing selected and stayed put, while `done` (stop 4) happened
-  // to pass through the guard on an earlier iteration and worked. Two
-  // states from the same walker disagreeing about whether the walker
-  // works is exactly the failure this comment exists to prevent.
-  for (let i = 0; i < stop; i += 1) {
-    const here = WIDGET_WIZARD_STEPS[i];
-    // HAND-PICKED BLOCKS ON AN EMPTY SELECTION: next() refuses with
-    // "Choose at least one review to continue." The live-feed branch has
-    // no such gate, because a filter matching nothing is still a valid
-    // filter.
-    if (here === "reviews" && mode === "picked") {
-      const hooks = await inFrame(page, () =>
-        [...document.querySelectorAll('[data-hook^="picker-select-"]')]
-          .map((el) => el.getAttribute("data-hook"))
-          .filter((h) => h !== "picker-select-all")
-          .slice(0, 3),
-      );
-      for (const hook of hooks) {
-        await press(page, `[data-hook="${hook}"]`);
-        await wait(250);
-      }
-      await wait(400);
-    }
-    // The last step swaps Next for Save, and Save is what produces the
-    // done state with the embed code.
-    const last = i === stop - 1 && step === "done";
-    await press(page, `[data-hook="widget-${last ? "save" : "next"}"]`);
-    await wait(1000);
+// Templates page, then the first seeded template ("How likely to
+// recommend", t1) in the editor, on a named rail tab. t1 asks for feedback
+// first, so its rail carries all five sections including Rating question.
+async function templateEditor(page, tab = "general") {
+  await press(page, '[data-hook="open-templates"]');
+  await waitForHook(page, '[data-hook="template-t1-open"]');
+  await wait(400);
+  await press(page, '[data-hook="template-t1-open"]');
+  await waitForHook(page, '[data-hook="template-rail"]');
+  await wait(500);
+  if (tab !== "general") {
+    await press(page, `[data-hook="template-tab-${tab}"]`);
+    await wait(600);
   }
+}
+
+// A showcase's settings page (Edit on its card) on a named rail section.
+async function showcaseSettings(page, id, tab = "reviews") {
+  await press(page, `[data-hook="widget-${id}-edit"]`);
+  await waitForHook(page, '[data-hook="widget-rail"]');
+  await wait(500);
+  if (tab !== "reviews") {
+    await press(page, `[data-hook="widget-tab-${tab}"]`);
+    await wait(600);
+  }
+}
+
+// The section sheet for a showcase section. Sheets slide in from the
+// right, so the settle after the hook appears is what keeps the frame from
+// catching it mid-slide.
+async function showcaseSheet(page, id, tab) {
+  await showcaseSettings(page, id, tab);
+  await press(page, `[data-hook="widget-edit-${tab}"]`);
+  await waitForHook(page, '[data-hook="section-sheet-panel"]');
+  await wait(900);
+}
+
+// Close whatever Radix layer is open (a facet popover, a menu). Radix
+// listens for Escape on the document, so a synthetic keydown there is
+// enough; re-pressing the trigger would depend on how each menu toggles.
+async function escape(page) {
+  await inFrame(page, () => {
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    return true;
+  });
+  await wait(500);
+}
+
+// Drop focus before the shutter. Synthetic pointer events leave the last
+// target focused, and the sheet and the facet panel both draw a focus ring
+// when that happens, which is not a state anyone designed.
+async function blur(page) {
+  await inFrame(page, () => { document.activeElement && document.activeElement.blur(); return true; });
+  await wait(200);
+}
+
+// Scroll the sheet body that holds the Design controls to its bottom. The
+// body is the scroller (min-h-0 grow overflow-y-auto), found by walking up
+// from the controls to the first ancestor with real overflow.
+async function scrollDesignSheet(page) {
+  const moved = await inFrame(page, () => {
+    let el = document.querySelector('[data-hook="design-controls"]');
+    while (el && el.scrollHeight - el.clientHeight < 40) el = el.parentElement;
+    if (!el) return false;
+    el.scrollTop = el.scrollHeight;
+    return el.scrollTop;
+  });
+  await wait(800);
+  return moved;
 }
 
 async function hover(page, selector) {
@@ -464,6 +385,79 @@ async function hover(page, selector) {
     return true;
   }, selector);
   await wait(900);
+}
+
+
+// New campaign from the hub, walked down the SEND PATH to a named step:
+// setup -> recipients -> columns -> check -> send -> confirm -> success.
+// `channel` picks a mode on the settings page first (the Select's option
+// label, read from CHANNELS: Email / SMS / Web link / Kiosk); a standing
+// mode's primary action is Go live, which lands on `golive` instead.
+async function newCampaignTo(page, step, { channel = null } = {}) {
+  await press(page, '[data-hook="new-campaign"]');
+  await waitForHook(page, '[data-hook="setup-card"]');
+  await wait(500);
+  if (channel) {
+    await press(page, '[data-hook="setup-channel"]');
+    await wait(600);
+    await pressText(page, channel, '[role="option"]');
+    await wait(600);
+  }
+  if (step === "setup") return;
+  await press(page, '[data-hook="setup-create"]');
+  await wait(1000);
+  if (step === "recipients" || step === "golive") return;
+  // The CSV dropzone simulates an upload on press; recipients will not
+  // move without it ("Upload a CSV file to continue.").
+  await press(page, '[data-hook="contacts-upload"]');
+  await wait(900);
+  await press(page, '[data-hook="wizard-next"]');
+  await wait(1000);
+  if (step === "columns") return;
+  await press(page, '[data-hook="wizard-next"]');
+  await wait(1000);
+  if (step === "check") return;
+  // Both confirmations default to off, and Next refuses without them.
+  await press(page, '[data-hook="confirm-permission-label"]');
+  await wait(250);
+  await press(page, '[data-hook="confirm-privacy-label"]');
+  await wait(250);
+  await press(page, '[data-hook="wizard-next"]');
+  // The send step mounts the whole contact sheet; wait for it rather than
+  // pressing Next into a step that is not there yet (getreviews-45 failed
+  // exactly this way on its first run).
+  await waitForHook(page, '[data-hook="preview-as-customer"]');
+  await wait(800);
+  if (step === "send") return;
+  await press(page, '[data-hook="wizard-next"]');
+  await waitForHook(page, '[data-hook="send-confirm-title"]');
+  await wait(700);
+  if (step === "confirm") return;
+  await pressText(page, "Send now", '[role="alertdialog"] button');
+  await waitForHook(page, '[data-hook="wizard-success"]');
+  await wait(800);
+}
+
+// The Draft campaign (c4, SMS) reopened on its settings page, then Review
+// and send, which for SMS lands on the recipients step with the country
+// and credits controls email never shows.
+async function draftToRecipients(page) {
+  await press(page, '[data-hook="campaign-c4-open"]');
+  await waitForHook(page, '[data-hook="setup-card"]');
+  await wait(500);
+  await press(page, '[data-hook="setup-create"]');
+  await waitForHook(page, '[data-hook="country-field"]');
+  await wait(500);
+}
+
+// Untick every ticked review in the open picker. Bounded, because a loop
+// that waits for "none left" would spin forever if a press stopped landing.
+async function untickAll(page, max = 8) {
+  for (let i = 0; i < max; i += 1) {
+    const did = await press(page, '[data-hook^="picker-check-"][data-state="checked"]');
+    if (!did) return;
+    await wait(350);
+  }
 }
 
 // ── the states ────────────────────────────────────────────────────────
@@ -626,135 +620,287 @@ const STATES = [
     "Per-rule run history, including a failed send, so auto-reply failures have somewhere to live."],
 
   // ── Review Showcase ──────────────────────────────────────────────────
-  // The dashed "create a new widget" tile at the end of the grid was
-  // DELETED on 28 Aug alongside its Review Builder twin, and the card grid
-  // went from three columns to two. Nothing here reached for
-  // `create-widget-tile`, so there was no selector to repoint, but the
-  // list state now asserts the two-track grid so a silent revert to three
-  // fails the run instead of shipping a wrong frame.
+  // REWRITTEN 7 Sep 2026 for the RAIL version (dmt094lhmpwbs), then widened
+  // the same day to EVERY STATE (Ali: "capture every state ... and all copy
+  // used in the product"). Three fixed showcases (List, Carousel, JSON feed);
+  // a settings page per showcase with a Reviews / Design / Embed rail (JSON:
+  // Reviews / Embed) and Save / Close in the page header; Reviews and Design
+  // open a right-hand sheet. The Design card and sheet group their controls
+  // under Display / Information / Animation (Animation on the carousel only).
   ["widgets-01-list", "widgets", async () => {},
     `(() => {
-       const card = document.querySelector('[data-hook="widget-w1"]');
-       const grid = card && card.parentElement;
-       if (!grid) return false;
-       if (document.querySelector('[data-hook="create-widget-tile"]')) return false;
-       return getComputedStyle(grid).gridTemplateColumns.trim().split(/\\s+/).length === 2;
+       for (const id of ["list", "carousel", "json"]) {
+         for (const h of ["", "-view", "-edit", "-menu-button"]) {
+           if (!document.querySelector('[data-hook="widget-' + id + h + '"]')) return false;
+         }
+       }
+       return !document.querySelector('[role="dialog"]');
      })()`,
-    "Widget dashboard. Two columns of cards and no dashed create tile: New widget lives in the page header. Yelp is excluded from widgets, stated once on the page rather than in every filter menu."],
-  // NUMBERS 03 AND 04 ARE DELIBERATELY VACANT. They used to be the two
-  // later steps of the in-page CREATE wizard; creation moved to its own
-  // screen on 28 Aug and those frames now live in the createwidget
-  // section below. 05 keeps its number so widgets-05-detail-embed.png is
-  // still the same filename it has always been.
-  //
-  // "New widget" no longer changes view in place: it is a Button inside a
-  // span carrying data-grade-goto, so a click NAVIGATES to the create
-  // screen. Driving the wizard from here would just be a slow way of
-  // loading a different screen, so the wizard states point at that screen
-  // directly instead.
-  //
-  // EDITING is still in page, and that is what this state covers.
-  // The two wizards HAVE now converged (2 Sep): both render
-  // `WizardShell` from `@brightlocal/wizard-shell`, so the edit frame and
-  // the create frame differ only in their title and their entry point.
-  // The old "STEP 1 OF 4" eyebrow and `[data-hook="widget-progress"]` are
-  // gone from both, which is why the assertion below can require the
-  // stepper and forbid the progress bar on this screen too.
-  ["widgets-02-edit-wizard", "widgets", async (p) => { await press(p, '[data-hook="widget-w1-edit"]'); },
-    `!!document.querySelector('[data-hook="widget-wizard-card"]')
-     && !!document.querySelector('[data-hook="widget-mode-radio-group"]')
-     && !!document.querySelector('[data-hook="widget-wizard-stepper"]')
-     && !document.querySelector('[data-hook="widget-progress"]')`,
-    "Editing an existing widget stays on the list screen: it is a change to something that already exists, not a new linear task, so it does not earn its own page."],
-  // By hook, not by pressText("View"): every widget card carries a View
-  // button, so the text lookup silently depended on DOM order.
-  // THE DRAWER SPLIT IN TWO (3 Sep). `widget-detail-drawer` no longer
-  // exists: preview and embed are separate sheets, because with both
-  // stacked the LENGTH OF THE PREVIEW decided whether you could see the
-  // code — a list widget showing ten reviews pushed the payoff below the
-  // fold of a 640px panel.
-  ["widgets-05-detail-embed", "widgets", async (p) => {
-    await press(p, '[data-hook="widget-w1-menu-button"]');
+    "The three showcases as cards: each card's title, caption and summary rows, with Preview, Edit and the overflow."],
+  ["widgets-02-overflow-embed-code", "widgets", async (p) => {
+    await press(p, '[data-hook="widget-carousel-menu-button"]');
     await wait(700);
-    await pressText(p, "Get embed code", '[role="menuitem"]');
-    await wait(900);
+    await blur(p);
   },
-    `!!document.querySelector('[data-hook="widget-embed-drawer"][data-state="open"]')
-     && !!document.querySelector('[data-hook="embed-instructions"]')`,
-    "The embed code on its own sheet, with the instructions the single sheet had no room for. The last step is the one nobody documents: the script line is needed once per page, not once per widget."],
-  ["widgets-07-preview-sheet", "widgets", async (p) => {
-    await press(p, '[data-hook="widget-w1-view"]');
+    `[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === "Embed code")`,
+    "A List or Carousel card's overflow holds one item, Embed code."],
+  ["widgets-03-overflow-feed-url", "widgets", async (p) => {
+    // The JSON card is the third of three and sits at the fold; its menu
+    // opens downward, off the frame, unless the card is scrolled up first.
+    await scrollToHook(p, '[data-hook="widget-json"]', 120);
+    await press(p, '[data-hook="widget-json-menu-button"]');
+    await wait(700);
+    await blur(p);
+  },
+    `[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === "Feed URL")`,
+    "The JSON feed card's overflow says Feed URL instead."],
+  ["widgets-04-preview-sheet-list", "widgets", async (p) => {
+    await press(p, '[data-hook="widget-list-view"]');
+    await waitForHook(p, '[data-hook="widget-preview-drawer"]');
     await wait(900);
   },
     `!!document.querySelector('[data-hook="widget-preview-drawer"][data-state="open"]')
-     && !!document.querySelector('[data-hook="detail-preview-card"]')`,
-    "Preview on its own sheet. The card button says Preview now rather than View: it used to open one sheet holding two things, so the label had to be vague enough to cover both."],
-
-  // EVERY DESTRUCTIVE CONFIRMATION GETS A FRAME (Ali, 2 Sep: "I want a
-  // capture of all deletion messages"). They are the screens nobody
-  // photographs and everybody reads under pressure, and RM now has five of
-  // them across four screens. Shot together so the wording can be compared
-  // side by side rather than found one at a time.
-  ["widgets-06-delete-confirm", "widgets", async (p) => {
-    // Delete moved into the card's overflow (3 Sep), so it is two steps now.
-    // The bare bin icon in the footer is gone: a destructive action sitting
-    // in the row of everyday buttons is one slip from the one it cannot undo.
-    await press(p, '[data-hook="widget-w1-menu-button"]');
-    await wait(700);
-    await pressText(p, "Delete widget", '[role="menuitem"]');
-    await wait(800);
+     && !!document.querySelector('[data-hook="preview-frame-sheet"] .bg-neutral-900')`,
+    "The Preview sheet for the List: the showcase in its saved dark mode and Edit showcase in the footer."],
+  ["widgets-05-preview-sheet-carousel", "widgets", async (p) => {
+    await press(p, '[data-hook="widget-carousel-view"]');
+    await waitForHook(p, '[data-hook="widget-preview-drawer"]');
+    await wait(900);
   },
-    `!!document.querySelector('[data-hook="widget-w1-delete-title"]')`,
-    "Deleting a widget. The name is quoted, and the consequence leads: a widget already embedded stops appearing on a website this screen cannot see, and the code on those pages stops working."],
+    `!!document.querySelector('[data-hook="widget-preview-drawer"][data-state="open"]')
+     && !!document.querySelector('[data-hook="widget-carousel-next"]')`,
+    "The Preview sheet for the Carousel: arrows, dots and the Reviews by brightlocal line."],
+  ["widgets-06-embed-sheet-list", "widgets", async (p) => {
+    await press(p, '[data-hook="widget-list-menu-button"]');
+    await wait(700);
+    await pressText(p, "Embed code", '[role="menuitem"]');
+    await waitForHook(p, '[data-hook="widget-embed-drawer"]');
+    await wait(900);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook="widget-embed-drawer"][data-state="open"]')
+     && !!document.querySelector('[data-hook="detail-embed-code-steps"]')`,
+    "The Embed sheet: the script line, Copy code, and the three numbered steps for a page editor."],
+  ["widgets-07-feed-url-sheet-json", "widgets", async (p) => {
+    await press(p, '[data-hook="widget-json-menu-button"]');
+    await wait(700);
+    await pressText(p, "Feed URL", '[role="menuitem"]');
+    await waitForHook(p, '[data-hook="widget-embed-drawer"]');
+    await wait(900);
+    await blur(p);
+  },
+    `(() => {
+       const b = document.querySelector('[data-hook="detail-embed-code-copy"]');
+       return !!b && b.textContent.trim() === "Copy URL";
+     })()`,
+    "The Feed URL sheet: the URL, Copy URL, and the three steps written for a developer."],
 
-  // ── Create Widget ───────────────────────────────────────────────────
-  // ARCHIVED 7 Sep 2026: the wizard screen is now "RM — Create Widget
-  // (archive, wizard)". The rail Showcase (dmt094lhmpwbs) creates a widget in
-  // place, so these captures show the retired flow until they are re-pointed.
-  // Its own SCREEN since 28 Aug (design dmtctjykv0feb), on the DS
-  // CentredLayout: no sidebar, no breadcrumbs, a Logo header and a
-  // centred wizard. The step rail is the DS Stepper family
-  // (`widget-wizard-stepper`); the old uppercase "STEP 1 OF 4" eyebrow
-  // and its Progress bar are gone, so nothing here may reach for
-  // `widget-progress`.
-  //
-  // Every step asserts on a hook UNIQUE to that step. Four frames driven
-  // by repeated Next with no assertion is exactly the shape that produced
-  // byte-identical captures before: a Next that does not land leaves the
-  // previous step on screen and the shutter fires anyway.
-  ["createwidget-01-type", "createwidget", async () => {},
-    `!!document.querySelector('[data-hook="widget-mode-radio-group"]')
-     && !!document.querySelector('[data-hook="widget-wizard-stepper"]')
-     && !document.querySelector('[data-hook="widget-progress"]')`,
-    "Step one asks hand-picked or live feed first, because that choice changes every later step. Out of the app shell on purpose: creating a widget is a focused linear task with its own way out."],
-  ["createwidget-02-reviews", "createwidget", async (p) => { await widgetWizardTo(p, "reviews"); },
-    `!!document.querySelector('[data-hook="picker-table"]')
-     && !!document.querySelector('[data-hook="feed-explainer"]')`,
-    "Live feed filters. New matching reviews are added automatically; individual ones can still be excluded by hand."],
-  ["createwidget-03-format", "createwidget", async (p) => { await widgetWizardTo(p, "format"); },
-    `!!document.querySelector('[data-hook="widget-format-radio-group"]')`,
-    "List, carousel or JSON feed. These three are the only widget types either source document evidences."],
-  ["createwidget-04-design", "createwidget", async (p) => { await widgetWizardTo(p, "design"); },
-    `!!document.querySelector('[data-hook="design-theme-radio-group"]')`,
-    "The design step, which the in-page wizard never had a frame for. JSON feeds skip it entirely, because there is nothing to paint."],
-  ["createwidget-05-done", "createwidget", async (p) => { await widgetWizardTo(p, "done"); },
-    `!!document.querySelector('[data-hook="create-widget-done"]')`,
-    "The payoff. Saving hands over the embed code on the spot rather than sending you back to the list to go and find it, and the only way on is the button back to Review Showcase."],
+  // SETTINGS, every showcase on every rail section.
+  ["widgets-08-list-reviews", "widgets", async (p) => { await showcaseSettings(p, "list", "reviews"); },
+    `!!document.querySelector('[data-hook="widget-settings-layout"]')
+     && !!document.querySelector('[data-hook="widget-tab-reviews"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="widget-panel-reviews-rows"]')`,
+    "List settings on Reviews: Review Showcase / List in the header with Save showcase and Close, the rail, and the hand-picked rows over the preview."],
+  ["widgets-09-list-design", "widgets", async (p) => { await showcaseSettings(p, "list", "design"); },
+    `!!document.querySelector('[data-hook="widget-tab-design"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="widget-panel-design-group-display"]')
+     && !document.querySelector('[data-hook="widget-panel-design-group-animation"]')`,
+    "List settings on Design: the Display and Information groups as rows, with no Animation group for a list."],
+  ["widgets-10-list-embed", "widgets", async (p) => { await showcaseSettings(p, "list", "embed"); },
+    `!!document.querySelector('[data-hook="widget-tab-embed"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="widget-panel-embed-code-pre"]')`,
+    "List settings on Embed: the code, Copy code and the steps, on the card with no Edit."],
+  ["widgets-11-carousel-reviews", "widgets", async (p) => { await showcaseSettings(p, "carousel", "reviews"); },
+    `!!document.querySelector('[data-hook="widget-tab-reviews"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="widget-carousel-preview"]')`,
+    "Carousel settings on Reviews: the live-feed rows (Ratings, Sources, Period, Limit, Left out, Showing now)."],
+  ["widgets-12-carousel-design", "widgets", async (p) => { await showcaseSettings(p, "carousel", "design"); },
+    `!!document.querySelector('[data-hook="widget-tab-design"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="widget-panel-design-group-animation"]')`,
+    "Carousel settings on Design: Display, Information and the Animation group with Loop, Autoplay and Controls."],
+  ["widgets-13-carousel-embed", "widgets", async (p) => { await showcaseSettings(p, "carousel", "embed"); },
+    `!!document.querySelector('[data-hook="widget-tab-embed"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="widget-panel-embed-code-pre"]')`,
+    "Carousel settings on Embed."],
+  ["widgets-14-json-reviews", "widgets", async (p) => { await showcaseSettings(p, "json", "reviews"); },
+    `!!document.querySelector('[data-hook="widget-tab-reviews"][aria-selected="true"]')
+     && !document.querySelector('[data-hook="widget-tab-design"]')`,
+    "JSON feed settings: a two-item rail (Reviews, Embed) and the feed rows."],
+  ["widgets-15-json-embed", "widgets", async (p) => { await showcaseSettings(p, "json", "embed"); },
+    `(() => {
+       const b = document.querySelector('[data-hook="widget-panel-embed-code-copy"]');
+       return !!b && b.textContent.trim() === "Copy URL";
+     })()`,
+    "JSON feed settings on Embed: the URL with Copy URL and the developer steps."],
 
-  // THE OTHER BRANCH. Hand-picked and live feed diverge at step two and
-  // never rejoin in content, so a set of frames from one branch is not a
-  // record of the wizard. 06-08 shoot the picked branch's own steps; the
-  // type step is shared and is already 01.
-  ["createwidget-06-picked-reviews", "createwidget", async (p) => { await widgetWizardTo(p, "reviews", "picked"); },
-    `!!document.querySelector('[data-hook="picker-table"]')
-     && !document.querySelector('[data-hook="feed-explainer"]')`,
-    "Hand-picked: a fixed set, chosen row by row on the DS DataTable, so selection, select-all, search and paging behave exactly as they do in Review Manager. No explainer, because nothing changes on its own after this."],
-  ["createwidget-07-picked-format", "createwidget", async (p) => { await widgetWizardTo(p, "format", "picked"); },
-    `!!document.querySelector('[data-hook="widget-format-radio-group"]')`,
-    "The layout step is the same on both branches: what was chosen does not change how it is drawn."],
-  ["createwidget-08-picked-done", "createwidget", async (p) => { await widgetWizardTo(p, "done", "picked"); },
-    `!!document.querySelector('[data-hook="create-widget-done"]')`,
-    "Both branches end in the same place, holding the embed code."],
+  // THE REVIEWS SHEET, both modes and everything in its bar.
+  ["widgets-16-reviews-sheet-handpicked", "widgets", async (p) => { await showcaseSheet(p, "list", "reviews"); },
+    `(() => {
+       const on = document.querySelector('#widget-mode-picked');
+       return !!on && on.getAttribute("data-state") === "checked"
+         && !document.querySelector('[data-hook="picker-facet-period"]')
+         && /chosen/.test(document.querySelector('[data-hook="picker-count"]').textContent);
+     })()`,
+    "Hand-picked: the two mode cards with their captions, sources and ratings facets, the N of 50 chosen line, and ticked review cards on the dark shell."],
+  ["widgets-17-handpicked-sources-facet", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "reviews");
+    await press(p, '[data-hook="picker-facet-sources"]');
+    await wait(700);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook="picker-facet-sources-command"]')
+     && !!document.querySelector('[data-hook="picker-facet-sources-google"]')`,
+    "The sources facet open: All sources with its total, then each source with its mark and count."],
+  ["widgets-18-handpicked-tooltip", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "reviews");
+    await hover(p, '[data-hook^="picker-row-"][data-selected="false"] [data-hook^="picker-check-wrap-"]');
+  },
+    `[...document.querySelectorAll('[role="tooltip"]')].some((t) => /Tick to include/.test(t.textContent))`,
+    "Hovering an unticked box in Hand-picked: the Tick to include this review tooltip."],
+  ["widgets-19-feed-ratings-facet", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "reviews");
+    await press(p, '[data-hook="picker-facet-ratings"]');
+    await wait(700);
+    await blur(p);
+  },
+    `(() => {
+       const on = document.querySelector('#widget-mode-feed');
+       return !!on && on.getAttribute("data-state") === "checked"
+         && !!document.querySelector('[data-hook="picker-facet-ratings-command"]')
+         && !!document.querySelector('[data-hook="picker-facet-ratings-4plus"]');
+     })()`,
+    "Live feed with the ratings facet open: All ratings, 5 stars, 4 stars and above, Recommended (Facebook), each with a glyph and count."],
+  ["widgets-20-feed-period-facet", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "reviews");
+    await press(p, '[data-hook="picker-facet-period"]');
+    await wait(700);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook="picker-facet-period-command"]')
+     && !!document.querySelector('[data-hook="picker-facet-period-365"]')`,
+    "The period menu open: All time, Last 30 days, Last 90 days, Last 12 months with counts."],
+  ["widgets-21-feed-limit-menu", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "reviews");
+    await press(p, '[data-hook="picker-limit"]');
+    await wait(700);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook="picker-limit-command"]')
+     && !!document.querySelector('[data-hook="picker-limit-all"]')`,
+    "The limit menu open: No limit, 3, 5, 10 and 20 reviews."],
+  ["widgets-22-feed-unticked", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "reviews");
+    await press(p, '[data-hook^="picker-check-"][data-state="checked"]');
+    await wait(600);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook^="picker-row-"][data-selected="false"]')
+     && /left out/.test(document.querySelector('[data-hook="picker-count"]').textContent)`,
+    "One review unticked on a live feed: the card fades and the count line gains left out."],
+  ["widgets-23-feed-tooltip", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "reviews");
+    await hover(p, '[data-hook^="picker-check-wrap-"]');
+  },
+    `[...document.querySelectorAll('[role="tooltip"]')].some((t) => /Included in the feed/.test(t.textContent))`,
+    "Hovering a ticked box on a live feed: the Included in the feed, untick to leave this review out tooltip."],
+  ["widgets-24-no-reviews-chosen", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "reviews");
+    await untickAll(p);
+    await press(p, '[data-hook="section-sheet-done"]');
+    await wait(900);
+    await press(p, '[data-hook="widget-save"]');
+    await wait(900);
+  },
+    `!!document.querySelector('[data-hook="reviews-issue"]')
+     && /No reviews chosen/.test(document.querySelector('[data-hook="reviews-issue"]').textContent)`,
+    "Save with nothing ticked: the No reviews chosen alert on the Reviews card, with the tick-one-or-switch line."],
+  ["widgets-25-no-reviews-match", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "reviews");
+    // Facebook only, five stars only: recommendations never match a star
+    // rating, so the feed is empty by construction.
+    await press(p, '[data-hook="picker-facet-sources"]');
+    await wait(600);
+    await press(p, '[data-hook="picker-facet-sources-google"]');
+    await wait(300);
+    await press(p, '[data-hook="picker-facet-sources-facebook"]');
+    await wait(300);
+    await escape(p);
+    // Tick 5 stars FIRST: an empty ratings list reads as "all", so unticking
+    // the two that are on would widen the feed rather than narrow it.
+    await press(p, '[data-hook="picker-facet-ratings"]');
+    await wait(600);
+    await press(p, '[data-hook="picker-facet-ratings-5"]');
+    await wait(300);
+    await press(p, '[data-hook="picker-facet-ratings-4plus"]');
+    await wait(300);
+    await press(p, '[data-hook="picker-facet-ratings-rec"]');
+    await wait(300);
+    await escape(p);
+    await press(p, '[data-hook="section-sheet-done"]');
+    await wait(900);
+    await press(p, '[data-hook="widget-save"]');
+    await wait(900);
+  },
+    `!!document.querySelector('[data-hook="reviews-issue"]')
+     && /No reviews match/.test(document.querySelector('[data-hook="reviews-issue"]').textContent)`,
+    "Save with a feed that matches nothing: the No reviews match alert and its widen-the-filters line."],
+
+  // THE DESIGN SHEET.
+  ["widgets-26-design-sheet-list", "widgets", async (p) => { await showcaseSheet(p, "list", "design"); },
+    `!!document.querySelector('[data-hook="design-live-preview"]')
+     && !!document.querySelector('[data-hook="design-group-display"]')
+     && !!document.querySelector('[data-hook="design-group-information"]')
+     && !document.querySelector('[data-hook="design-group-animation"]')`,
+    "The Design sheet for the List: the sticky preview, then Display (Mode, Corners, Review text, Show on each review, branding) and Information (Title, summary), and no Animation."],
+  ["widgets-27-design-sheet-carousel-animation", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "design");
+    await scrollDesignSheet(p);
+  },
+    `(() => {
+       const prev = document.querySelector('[data-hook="design-live-preview"]');
+       let sc = document.querySelector('[data-hook="design-controls"]');
+       while (sc && sc.scrollHeight - sc.clientHeight < 40) sc = sc.parentElement;
+       if (!prev || !sc || sc.scrollTop < 150) return false;
+       const dp = prev.getBoundingClientRect(), ds = sc.getBoundingClientRect();
+       return Math.abs(dp.top - ds.top) < 4 && !!document.querySelector('[data-hook="design-group-animation"]');
+     })()`,
+    "The Carousel's Design sheet scrolled to Animation (Loop, Autoplay, Every, Show arrows, Show dots) with the preview still pinned at the top."],
+  ["widgets-28-design-autoplay-on", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "design");
+    await scrollDesignSheet(p);
+    await press(p, '#design-autoplay');
+    await wait(600);
+    await blur(p);
+  },
+    `(() => {
+       const sw = document.querySelector('#design-autoplay');
+       const ev = document.querySelector('[data-hook="design-every"]');
+       return !!sw && sw.getAttribute("data-state") === "checked" && !!ev && !ev.hasAttribute("disabled") && !ev.hasAttribute("data-disabled");
+     })()`,
+    "Autoplay switched on: the Every select is enabled and reads its seconds value."],
+  ["widgets-29-design-mode-dark", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "design");
+    await press(p, '[data-hook="design-theme-dark-label"]');
+    await wait(700);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook="preview-frame-design-sheet"] .bg-neutral-900')`,
+    "Mode switched to Dark on the Carousel: the sticky preview repaints dark at once."],
+  ["widgets-30-leave-dialog", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "design");
+    await press(p, '[data-hook="design-theme-dark-label"]');
+    await wait(500);
+    await press(p, '[data-hook="section-sheet-done"]');
+    await wait(900);
+    await press(p, '[data-hook="widget-cancel"]');
+    await wait(900);
+  },
+    `!!document.querySelector('[data-hook="leave-title"]') && !!document.querySelector('[data-hook="leave-confirm"]')`,
+    "Close after a change: Leave without saving your changes, the sentence about what reverts, Keep editing and Discard and leave."],
+  ["widgets-31-settings-narrow", "widgets", async (p) => { await showcaseSettings(p, "carousel", "reviews"); },
+    `!!document.querySelector('[data-hook="widget-next-section"]')`,
+    "Carousel settings at 390 wide: the rail stacks above the card and the footer carries Back and Next between sections.",
+    { width: 390 }],
 
   // ── Report Settings ────────────────────────────────────────────────
   // NEW SCREEN, 2 Sep (design dmtkj124xagqa). Everything the RM Design
@@ -809,275 +955,485 @@ const STATES = [
      && !!document.querySelector('[data-hook="history-note"]')`,
     "Run history, including the run that only partly succeeded. The brief names unexplained failures as the recurring support theme, so the one row that did not finish says what happened and offers the fix."],
 
-  ["createwidget-09-leave-confirm", "createwidget", async (p) => {
-    await press(p, '[data-hook="widget-cancel"]');
-    await wait(800);
-  },
-    `!!document.querySelector('[data-hook="leave-title"]')`,
-    "Leaving the wizard without saving. Cancel sits next to Next, one mis-click from the button people press a dozen times, so it asks first and says exactly what is lost."],
-
   // ── Review Builder ─────────────────────────────────────────────────────
-  // THE CAMPAIGN IS A PAGE, NOT A DRAWER (28 Aug). `campaign-drawer` and
-  // `close-campaign` no longer exist, so the old assertion on
-  // `[data-hook="campaign-drawer"][data-state="open"]` could only ever
-  // fail. Entry is a campaign card's CTA; the way out is the last
-  // breadcrumb crumb, which is not needed here because every state
-  // reloads the embed from scratch.
+  // REWRITTEN 7 Sep 2026 for the RAIL version (dmt094j963aye), then widened
+  // the same day to EVERY STATE (Ali: "capture every state, or at least as
+  // many as we need to accurately represent each main screen and all copy
+  // used in the product"). Built from the source: each state exists to put
+  // one piece of copy on screen, and the caption says which.
   //
-  // Driven by data-hook, NOT by pressText("View insights"). Every Live
-  // and Stopped card carries that same label, so the text lookup took
-  // whichever card the DOM happened to order first and the frame silently
-  // depended on the sort. `campaign-c1-open` names the campaign the note
-  // describes (Summer Visitors, the email campaign with the full funnel).
+  // Seed ids, read not guessed: c2 kiosk (stars), c3 SMS (thumbs), c4 Draft
+  // (SMS), c5 Ended (email), c6 Scheduled (email, stars), c7 Live (email,
+  // review only), c9 Live (web link). c1 and c8 are the NPS campaigns and
+  // their pages BLANK the sandbox with "ReferenceError: Badge is not
+  // defined" (probed 7 Sep); so does the All feedback tab on any page. Those
+  // surfaces (NPS gauge, feedback table, feedback drawer) have no state here
+  // until the screen is fixed; see the capture report.
   ["getreviews-01-hub", "getreviews", async () => {},
-    // Assert the TABLE hub (6 Sep), not merely "the page rendered": every
-    // campaign on one page with a status pill and a name that opens it,
-    // the two filters above it, and NO campaign tabs — those belong to the
-    // campaign page, and their absence is what proves this is the list.
     `(() => {
        if (!document.querySelector('[data-hook="campaign-c1-open"]')) return false;
-       if (!document.querySelector('[data-hook="campaign-status-filter"]')) return false;
-       if (!document.querySelector('[data-hook="campaign-mode-filter"]')) return false;
+       for (const h of ["campaign-status-filter", "campaign-type-filter", "campaign-mode-filter"]) {
+         if (!document.querySelector('[data-hook="' + h + '"]')) return false;
+       }
        if (document.querySelector('[data-hook="campaign-tabs"]')) return false;
        return document.querySelectorAll('tbody tr').length >= 9;
      })()`,
-    "Campaign list as a TABLE: nine campaigns on one page, filtered by status and mode. One row per campaign and one number that matters, reviews gained, because a grid of cards spent a whole card on each and still showed fewer of them. The name is the link in. All six campaign states sit down one Status column. Nothing specifies that set: not the brief, not the audit, not the legacy screens. It is a proposal. Live was doing two jobs, because a standing web link is live and an email campaign sent in July is not. The table is what makes them comparable at a glance; the old card grid showed five and hid the rest."],
-  ["getreviews-02-campaign-summary", "getreviews", async (p) => {
-    await press(p, '[data-hook="campaign-c1-open"]');
+    "The hub: the page title and count, the campaigns table with every status pill, and the three facet triggers reading All statuses / All types / All modes."],
+  ["getreviews-02-hub-status-facet", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-status-filter"]');
+    await wait(700);
+    await blur(p);
   },
-    // Full page, so: the summary tab panel is the active one, the campaign
-    // actions are up in the page header, and NOTHING is overlaying the
-    // page. The last of those three is what catches a regression back to
-    // a drawer.
+    `!!document.querySelector('[data-hook="campaign-status-filter-command"]')
+     && ["Draft", "Scheduled", "Live", "Ended"].every((s) => !!document.querySelector('[data-hook="campaign-status-filter-' + s + '"]'))`,
+    "The status facet open: All statuses plus the four status names."],
+  ["getreviews-03-hub-type-facet", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-type-filter"]');
+    await wait(700);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook="campaign-type-filter-command"]')
+     && !!document.querySelector('[data-hook="campaign-type-filter-nps"]')`,
+    "The type facet open: All types and the four ask types with their icons (NPS, Star rating, Thumbs up or down, Review only)."],
+  ["getreviews-04-hub-mode-facet", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-mode-filter"]');
+    await wait(700);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook="campaign-mode-filter-command"]')
+     && !!document.querySelector('[data-hook="campaign-mode-filter-kiosk"]')`,
+    "The mode facet open: All modes and the four modes with their icons (Email, SMS, Kiosk, Web link)."],
+  ["getreviews-05-hub-filtered-ended", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-status-filter"]');
+    await wait(700);
+    await press(p, '[data-hook="campaign-status-filter-Ended"]');
+    await wait(500);
+    await escape(p);
+    await blur(p);
+  },
     `(() => {
-       const sum = document.querySelector('[data-hook="campaign-summary-panel"]');
-       if (!sum || sum.getAttribute("data-state") !== "active") return false;
-       for (const h of ["insights-stop", "insights-preview", "insights-download"]) {
-         if (!document.querySelector('[data-hook="' + h + '"]')) return false;
-       }
-       // Re-use left the header on 3 Sep. Asserting on its ABSENCE is the
-       // only way this catches it coming back.
-       if (document.querySelector('[data-hook="insights-reuse"]')) return false;
-       return !document.querySelector('[role="dialog"]');
+       if (document.querySelector('[data-hook="campaign-status-filter-command"]')) return false;
+       const t = document.querySelector('[data-hook="campaign-status-filter"]');
+       if (!t || t.textContent.trim() !== "Ended") return false;
+       const rows = [...document.querySelectorAll('tbody tr')];
+       return rows.length === 2 && /2 of 9/.test(document.querySelector('[data-hook="campaigns-count"]').textContent);
      })()`,
-    "Campaign detail as a FULL PAGE. Stop, Preview and Download: the things you do to this campaign. Re-use is not here, because starting a new campaign from an old one is a choice you make on the list, where you can see the others."],
-  ["getreviews-03-campaign-feedback", "getreviews", async (p) => {
-    await press(p, '[data-hook="campaign-c1-open"]'); await wait(1400);
-    await press(p, '[data-hook="campaign-tab-feedback"]');
-  }, `(() => {
-        const fb = document.querySelector('[data-hook="campaign-feedback-panel"]');
-        if (!fb || fb.getAttribute("data-state") !== "active") return false;
-        const sum = document.querySelector('[data-hook="campaign-summary-panel"]');
-        if (sum && sum.getAttribute("data-state") === "active") return false;
-        return document.querySelectorAll('[data-hook^="feedback-row-"]').length > 0;
-      })()`,
-    "Private feedback as a TAB on that page, not a nested screen. That is what removed the second level of back links."],
-  ["getreviews-04-wizard", "getreviews", async (p) => { await press(p, '[data-hook="new-campaign"]'); },
-    `!!document.querySelector('[data-hook="wizard-card"]')
-     && !!document.querySelector('[data-hook="wizard-cancel"]')`,
-    "Campaign wizard, first step. Cancel is a plain button with no arrow, because cancelling is an action, not a move up the hierarchy."],
+    "Filtered to Ended: the trigger reads the chosen status and the card count changes to 2 of 9 campaigns."],
 
-  // ── Review Builder: the wizard, one still per step per BRANCH ──────────
-  // Ali, 2 Sep: "this is incomplete????" — and it was. A fourteen-step
-  // wizard had exactly ONE frame, of step one, which is indistinguishable
-  // from a wizard that has only one step. `campaignWizardTo` walks a named
-  // branch to a named step, and every state below asserts on a hook that
-  // exists on THAT step alone, so a Next that fails to land cannot be
-  // photographed as the step it was aiming at.
-  //
-  // Numbering is branch-major: 05-16 email, 17-19 SMS, 20-21 link. The SMS
-  // and link branches only get frames for the steps that DIFFER from the
-  // email branch; the shared ones are already above and re-shooting them
-  // would just be the same picture with a different filename.
-  ["getreviews-05-email-name", "getreviews", async (p) => { await campaignWizardTo(p, "email", "name"); },
-    `!!document.querySelector('[data-hook="campaign-name-input"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "Email branch, step one of twelve. No verb in the header: creating, re-using and resuming a draft are one flow, so the title names the campaign rather than the task."],
-  ["getreviews-06-email-ask", "getreviews", async (p) => { await campaignWizardTo(p, "email", "ask"); },
-    `!!document.querySelector('[data-hook="ask-radio-group"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "Internal feedback first, or straight to a public review. Whichever is picked, every respondent reaches the same review page, and the note says so: there is no setting here that can turn this into a review gate."],
-  ["getreviews-07-email-feedback", "getreviews", async (p) => { await campaignWizardTo(p, "email", "feedback"); },
-    `!!document.querySelector('[data-hook="feedback-type-field"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "The likert scale. NPS 0 to 10, thumbs, or stars, with the customer's own view of it beside the choice. The legacy product had this buried inside the email template editor."],
-  ["getreviews-08-email-channel", "getreviews", async (p) => { await campaignWizardTo(p, "email", "channel"); },
-    `!!document.querySelector('[data-hook="channel-radio-group"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "Email, SMS, or a web link you put wherever your customers already are. This answer and the last one decide how many steps the flow has, which is why the rail counts six named phases rather than twelve steps."],
-  ["getreviews-09-email-email", "getreviews", async (p) => { await campaignWizardTo(p, "email", "email"); },
-    `!!document.querySelector('[data-hook="email-subject-input"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "The email, edited on the left and previewed on the right. The feedback-form token renders as the real scale in the preview, so the email is not something anyone has to imagine."],
-  ["getreviews-10-email-reminder", "getreviews", async (p) => { await campaignWizardTo(p, "email", "reminder"); },
-    `!!document.querySelector('[data-hook="reminder-radio-group"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "One reminder, 48 hours later, and only to people who have not responded."],
-  ["getreviews-11-email-reminder-design", "getreviews", async (p) => { await campaignWizardTo(p, "email", "reminder-design"); },
-    `!!document.querySelector('[data-hook="reminder-timing"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "The reminder, prefilled from the first email so it is an edit rather than a second authoring job. The legal footer is editable once, on the first email, and noted here."],
-  ["getreviews-12-email-sites", "getreviews", async (p) => { await campaignWizardTo(p, "email", "sites"); },
-    `!!document.querySelector('[data-hook="site-add"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "The review sites customers are sent to, in order. The same page for everyone, whatever they scored."],
-  ["getreviews-13-email-recipients", "getreviews", async (p) => { await campaignWizardTo(p, "email", "recipients"); },
-    `!!document.querySelector('[data-hook="contacts-upload"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')
-     && !document.querySelector('[data-hook=\"country-field\"]')`,
-    "A CSV of the people to ask, uploaded and read back with its row count."],
-  ["getreviews-14-email-columns", "getreviews", async (p) => { await campaignWizardTo(p, "email", "columns"); },
-    `!!document.querySelector('[data-hook="csv-map-table"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "Their header row mapped against our fields, with a preview row underneath so a wrong mapping is visible before it is confirmed."],
-  ["getreviews-15-email-check", "getreviews", async (p) => { await campaignWizardTo(p, "email", "check"); },
-    `!!document.querySelector('[data-hook="toggle-exclusions"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "120 rows in, 112 people out. The 8 that were dropped are itemised by reason rather than silently removed."],
-  ["getreviews-16-email-send", "getreviews", async (p) => { await campaignWizardTo(p, "email", "send"); },
-    `!!document.querySelector('[data-hook="preview-as-customer"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')
-     && !document.querySelector('[data-hook=\"link-note\"]')`,
-    "The whole campaign as a key-value list, with the customer's own view one click away. Send now is the only step that cannot be undone, so it is the only one that confirms."],
-  ["getreviews-17-sms-sms", "getreviews", async (p) => { await campaignWizardTo(p, "sms", "sms"); },
-    `!!document.querySelector('[data-hook="sms-body-input"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "SMS branch. Written against a real phone, with the tracked link and the opt-out line shown as the customer receives them."],
-  ["getreviews-18-sms-recipients", "getreviews", async (p) => { await campaignWizardTo(p, "sms", "recipients"); },
-    `!!document.querySelector('[data-hook="contacts-upload"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')
-     && !!document.querySelector('[data-hook=\"country-field\"]')`,
-    "Texts cost money, so the SMS branch asks where the contacts are before it asks who they are: the country sets the credit rate, and the balance sits beside it rather than in billing."],
-  ["getreviews-19-sms-send", "getreviews", async (p) => { await campaignWizardTo(p, "sms", "send"); },
-    `!!document.querySelector('[data-hook="preview-as-customer"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')
-     && !document.querySelector('[data-hook=\"link-note\"]')`,
-    "The SMS confirm names the credit cost, not just the headcount, because that is the part that cannot be undone."],
-  // ── The expanded preview (Ali, 2 Sep: "I'll also need a screenshot of
-  // each one open as a preview or expanded view, like when pressing on the
-  // expander"). The send step's contact sheet shows every customer-facing
-  // page at half size; clicking a tile opens it full size in a dialog.
-  // Driven off the EMAIL branch because it is the only one carrying all
-  // three pages — the link branch has no email, and a straight-to-review
-  // campaign has no feedback page.
-  // ── One page per campaign STATE (Ali, 3 Sep: "put all the states in,
-  // then we can have a page in each of these states… we will need to
-  // capture each drill down for each state as well").
-  //
-  // FOUR states since 7 Sep 2026 (Draft / Scheduled / Live / Ended: Sending
-  // folded into Live, Finished + Stopped into Ended). The capture ids below
-  // keep their old names so existing decks still match files; c7 now renders
-  // as Live and c8 / c5 both as Ended. A grid shot proves the badges; only
-  // the page proves the banner and header actions.
-  // ── What a campaign looks like the moment it exists (Ali, 3 Sep:
-  // "capture the campaign created state, and what happens after that").
-  // Two frames nobody had shot, and they are the two every real user sees
-  // first: the confirmation, and the results page before there are any
-  // results.
-  ["getreviews-33-created", "getreviews", async (p) => {
-    await campaignWizardTo(p, "email", "send");
-    await press(p, '[data-hook="wizard-next"]');
-    await wait(900);
-    await pressText(p, "Send now", '[role="alertdialog"] button');
-    await wait(1200);
+  // THE ROW MENU, once per distinct item set. Rename, Re-use as new campaign
+  // and Save as template are on every row; the rest depend on mode or status.
+  ["getreviews-06-row-menu-live", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c7-menu-button"]');
+    await wait(700);
   },
-    `!!document.querySelector('[data-hook="wizard-success"]')`,
-    "Sent. The way on is the campaign's own insights page, because the next thing anyone wants to know is whether it landed."],
-  ["getreviews-34-no-activity-yet", "getreviews", async (p) => {
-    await campaignWizardTo(p, "email", "send");
-    await press(p, '[data-hook="wizard-next"]');
-    await wait(900);
-    await pressText(p, "Send now", '[role="alertdialog"] button');
-    await wait(1200);
-    await press(p, '[data-hook="success-insights"]');
-    await wait(1400);
+    `["Rename", "Re-use as new campaign", "Save as template", "Stop campaign"].every((t) =>
+       [...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === t))`,
+    "A Live email row's overflow: Rename, Re-use as new campaign, Save as template, and Stop campaign below the rule."],
+  ["getreviews-07-row-menu-kiosk", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c2-menu-button"]');
+    await wait(700);
   },
-    `!!document.querySelector('[data-hook="insights-empty"]')`,
-    "A campaign with nothing back yet: sent counts, everything else is zero, and the card says so rather than drawing an empty funnel and a flat chart. This is the state a real user stares at for the first hour, and it is the one a demo never shows."],
-
-  ["getreviews-28-page-scheduled", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c6-open"]'); },
-    `!!document.querySelector('[data-hook="state-banner"]')
-     && !!document.querySelector('[data-hook="insights-stop"]')`,
-    "Scheduled. Nothing has been sent, so the banner says the messages can still be changed, and the action reads Cancel send rather than Stop campaign."],
-  ["getreviews-29-page-sending", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c7-open"]'); },
-    `!!document.querySelector('[data-hook="state-banner"]')`,
-    "Sending. The numbers are real but not final, which is the whole reason this state needs a banner: a half-finished funnel read as a finished one is a wrong conclusion, not a missing number."],
-  ["getreviews-30-page-finished", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c8-open"]'); },
-    `!!document.querySelector('[data-hook="state-banner"]')
-     && !document.querySelector('[data-hook="insights-stop"]')`,
-    "Finished. Every message sent, the reminder gone, nothing left to stop — so Stop is absent and Re-use is the way to run the same ask again."],
-  ["getreviews-31-page-stopped", "getreviews", async (p) => { await press(p, '[data-hook="campaign-c5-open"]'); },
-    `!!document.querySelector('[data-hook="insights-restart"]')`,
-    "Stopped. The one state with a warning rather than an info banner, and the only one offering Restart — which lives in the overflow now, with Re-use, since the header is down to two CTAs."],
-  ["getreviews-32-restart-confirm", "getreviews", async (p) => {
-    await press(p, '[data-hook="campaign-c5-open"]');
-    // 1400ms was not enough: the campaign page mounts a chart and a table
-    // before its header actions are interactive, so the press landed on a
-    // button that was there but not yet wired. Wait for the state banner,
-    // which renders in the same pass as the actions.
-    await waitForHook(p, '[data-hook="insights-restart"]');
-    await wait(600);
-    await press(p, '[data-hook="insights-restart"]');
-    await wait(1000);
+    `[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === "Open kiosk")`,
+    "A kiosk row's overflow adds Open kiosk at the top."],
+  ["getreviews-08-row-menu-link", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c9-menu-button"]');
+    await wait(700);
   },
-    `!!document.querySelector('[data-hook="restart-title"]')`,
-    "Restarting explains itself. It is easy to assume restart means send it again, which for a 480-person campaign is an expensive thing to assume wrongly — it reopens the links already out there, and nobody receives anything."],
-
-  ["getreviews-25-delete-draft", "getreviews", async (p) => {
+    `[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === "Copy link")`,
+    "A web link row's overflow adds Copy link at the top."],
+  ["getreviews-09-row-menu-scheduled", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c6-menu-button"]');
+    await wait(700);
+  },
+    `[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === "Cancel send")`,
+    "A Scheduled row's overflow says Cancel send where a Live row says Stop campaign."],
+  ["getreviews-10-row-menu-ended", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c5-menu-button"]');
+    await wait(700);
+  },
+    `[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === "Restart campaign")`,
+    "An Ended row's overflow offers Restart campaign and no Stop."],
+  ["getreviews-11-row-menu-draft", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c4-menu-button"]');
+    await wait(700);
+  },
+    `[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === "Delete draft")`,
+    "A Draft row's overflow ends with Delete draft, the only row that can be deleted."],
+  ["getreviews-12-delete-draft-confirm", "getreviews", async (p) => {
     await press(p, '[data-hook="campaign-c4-menu-button"]');
     await wait(700);
     await pressText(p, "Delete draft", '[role="menuitem"]');
-    await wait(800);
+    await wait(900);
   },
-    `!!document.querySelector('[data-hook="delete-title"]')`,
-    "Deleting a draft campaign. Nothing has been sent, so nothing breaks — the copy says that rather than borrowing the alarm of a delete that does break something."],
-  ["getreviews-26-stop-campaign", "getreviews", async (p) => {
-    await press(p, '[data-hook="campaign-c1-menu-button"]');
-    await wait(700);
-    await pressText(p, "Stop campaign", '[role="menuitem"]');
-    await wait(800);
-  },
-    `!!document.querySelector('[data-hook="stop-title"]')`,
-    "Stopping a live campaign. Not a delete: the links stop working and the numbers stop counting, and it can be restarted, so the dialog says so instead of sounding final."],
+    `!!document.querySelector('[data-hook="delete-title"]')
+     && /never been sent/.test(document.querySelector('[data-hook="delete-desc"]').textContent)`,
+    "The delete-draft dialog: the quoted name, the sentence that nothing has been sent, Keep it and Delete draft."],
 
-  ["getreviews-22-preview-email", "getreviews", async (p) => {
-    await campaignWizardTo(p, "email", "send");
+  // ONE PAGE PER STATUS, plus the two feedback summaries that render.
+  ["getreviews-13-page-live", "getreviews", async (p) => { await campaignPage(p, "c7"); },
+    `(() => {
+       for (const h of ["insights-stop", "insights-preview", "insights-download", "insights-summary-card"]) {
+         if (!document.querySelector('[data-hook="' + h + '"]')) return false;
+       }
+       return !document.querySelector('[data-hook="state-banner"]') && !document.querySelector('[role="dialog"]');
+     })()`,
+    "A Live email campaign: Stop campaign, Preview and Download in the header, the Results stat row and the funnel with its stage labels, and no banner."],
+  ["getreviews-14-page-scheduled", "getreviews", async (p) => { await campaignPage(p, "c6"); },
+    `(() => {
+       const stop = document.querySelector('[data-hook="insights-stop"]');
+       return !!document.querySelector('[data-hook="state-banner"]') && !!stop && stop.textContent.trim() === "Cancel send"
+         && !!document.querySelector('[data-hook="insights-empty"]');
+     })()`,
+    "Scheduled: the info banner about nothing having been sent yet, Cancel send in the header, zeros in the stat row and the No activity yet card."],
+  ["getreviews-15-page-ended", "getreviews", async (p) => { await campaignPage(p, "c5"); },
+    `!!document.querySelector('[data-hook="state-banner"]')
+     && !!document.querySelector('[data-hook="insights-restart"]')
+     && !document.querySelector('[data-hook="insights-stop"]')`,
+    "Ended: the banner saying the numbers are final and to re-use it, Restart in the header instead of Stop."],
+  // SCROLLED TO THE FEEDBACK CARD: it sits below the 900px fold, and a
+  // predicate that only asks whether it exists shot the funnel instead.
+  ["getreviews-16-page-kiosk-stars", "getreviews", async (p) => {
+    await campaignPage(p, "c2");
+    await waitForHook(p, '[data-hook="insights-feedback-summary"]');
+    await scrollToHook(p, '[data-hook="insights-feedback-summary"]');
+  },
+    `!!document.querySelector('[data-hook="insights-feedback-summary"]')
+     && !!document.querySelector('[data-hook="dist-5"]')
+     && !!document.querySelector('[data-hook="insights-sessions"]')`,
+    "A kiosk campaign asking for stars, scrolled to the Internal feedback card: the star distribution and its Only visible to you note, under a stat row that counts Sessions rather than Sent."],
+  ["getreviews-17-page-sms-thumbs", "getreviews", async (p) => {
+    await campaignPage(p, "c3");
+    await waitForHook(p, '[data-hook="insights-feedback-summary"]');
+    await scrollToHook(p, '[data-hook="insights-feedback-summary"]');
+  },
+    `!!document.querySelector('[data-hook="insights-feedback-summary"]')
+     && !!document.querySelector('[data-hook="thumbs-up"]')
+     && !!document.querySelector('[data-hook="insights-recent-feedback"]')`,
+    "An SMS campaign asking thumbs up or down: the thumbs split in Internal feedback and the Recent feedback card with its View all button."],
+  ["getreviews-18-stop-confirm", "getreviews", async (p) => { await campaignPage(p, "c7", "insights-stop"); },
+    `!!document.querySelector('[data-hook="stop-title"]')`,
+    "The stop dialog: the quoted name, the links-stop-working sentence, Keep it live and Stop campaign."],
+  ["getreviews-19-restart-confirm", "getreviews", async (p) => { await campaignPage(p, "c5", "insights-restart"); },
+    `!!document.querySelector('[data-hook="restart-title"]')`,
+    "The restart dialog: nobody is sent anything, the links work again, Leave it stopped and Restart campaign."],
+  ["getreviews-20-download-dialog", "getreviews", async (p) => { await campaignPage(p, "c7", "insights-download"); },
+    `!!document.querySelector('[data-hook="download-title"]') && !!document.querySelector('[data-hook="download-pdf"]')`,
+    "The Download dialog: what CSV and PDF each give you, the testimonials permission count, and the two buttons."],
+
+  // THE CUSTOMER VIEW, every page it can open on.
+  ["getreviews-21-customer-review-page", "getreviews", async (p) => {
+    await campaignPage(p, "c7", "insights-preview");
+    await waitForHook(p, '[data-hook="customer-preview-drawer"]');
+    await wait(600);
+  },
+    `(() => {
+       const t = document.querySelector('[data-hook="customer-preview-header-title"]');
+       return !!t && t.textContent.trim() === "Customer view"
+         && !!document.querySelector('[data-hook="customer-preview-drawer"] [data-hook^="customer-site-"]');
+     })()`,
+    "Customer view on a review-only campaign: the review page with its invitation wording and the Review us on Google button, and the footer line that this is exactly what the customer sees."],
+  // c3 (thumbs), NOT c6 or c2 (stars): the interactive star control in the
+  // drawer throws "ReferenceError: Star is not defined" and blanks the
+  // sandbox (probed 7 Sep 2026). Thumbs is the one feedback type whose
+  // customer page renders, so it carries the feedback-page copy.
+  ["getreviews-22-customer-feedback-page", "getreviews", async (p) => {
+    await campaignPage(p, "c3", "insights-preview");
+    await waitForHook(p, '[data-hook="customer-submit"]');
+    await wait(600);
+  },
+    `!!document.querySelector('[data-hook="customer-preview-drawer"] [data-hook="customer-submit"]')
+     && !!document.querySelector('[data-hook="customer-consent-label"]')`,
+    "Customer view on a feedback-first campaign opens on the feedback page: the question, the thumbs choice, the follow-up question, the permission tick box and Send feedback."],
+  ["getreviews-23-customer-review-invitation", "getreviews", async (p) => {
+    await campaignPage(p, "c3", "insights-preview");
+    await waitForHook(p, '[data-hook="customer-submit"]');
+    await wait(400);
+    await press(p, '[data-hook="customer-submit"]');
+    await wait(800);
+  },
+    `!!document.querySelector('[data-hook="restart-customer-preview"]')
+     && !document.querySelector('[data-hook="customer-submit"]')`,
+    "After Send feedback the drawer moves to the review invitation page, and Start again appears in the footer."],
+  ["getreviews-24-customer-expired", "getreviews", async (p) => {
+    await campaignPage(p, "c5", "insights-preview");
+    await waitForHook(p, '[data-hook="customer-preview-drawer"]');
+    await wait(600);
+  },
+    `/This request has expired/.test(document.querySelector('[data-hook="customer-preview-drawer"]').innerText)`,
+    "Preview on an Ended campaign opens on the expired-link page and its two sentences."],
+  // 25 IS DELIBERATELY VACANT. Kiosk view (the drawer titled "Kiosk view"
+  // with the tablet sentence in its footer) opens the star-rating feedback
+  // page, and the only kiosk campaign (c2) asks for stars, so it hits the
+  // "Star is not defined" crash above. Reinstate as campaignPage(p, "c2",
+  // "insights-preview") asserting the header title once the screen is fixed.
+
+  // THE CAMPAIGN SETTINGS PAGE AND THE SEND PATH.
+  ["getreviews-26-draft-settings", "getreviews", async (p) => {
+    await press(p, '[data-hook="campaign-c4-open"]');
+    await waitForHook(p, '[data-hook="setup-card"]');
+    await wait(600);
+  },
+    `!!document.querySelector('[data-hook="setup-card"]')
+     && !!document.querySelector('[data-hook="setup-channel"]')
+     && !document.querySelector('[data-hook="template-rail"]')`,
+    "A Draft reopens on the campaign settings page: Review campaign as the header, the four settings rows, Review and send, and Start from a template underneath."],
+  ["getreviews-27-new-campaign", "getreviews", async (p) => { await newCampaignTo(p, "setup"); },
+    `!!document.querySelector('[data-hook="setup-card"]')
+     && /Untitled campaign/.test(document.querySelector('[data-hook="campaign-page-header"]').innerText)`,
+    "New campaign: the same settings page with Untitled campaign in the header and the rating-first switch on by default."],
+  ["getreviews-28-pick-template", "getreviews", async (p) => {
+    await newCampaignTo(p, "setup");
+    await press(p, '[data-hook="setup-template"]');
+    await wait(900);
+  },
+    `!!document.querySelector('[data-hook="template-t1"]')
+     && /Pick a template/.test(document.querySelector('[data-hook="wizard-step-title"]').textContent)`,
+    "Start from a template: the Pick a template step, its sub line, and one row per template with its ask type."],
+  // 29 IS DELIBERATELY VACANT. Expanding a template row on the Pick a
+  // template step (its summary rows and Use this template) throws
+  // "TypeError: Cannot read properties of undefined (reading 'map')" in
+  // campaignSummary and blanks the sandbox (probed 7 Sep 2026). Reinstate as
+  // press template-t1 asserting template-t1-use once the screen is fixed.
+  ["getreviews-30-leave-dialog", "getreviews", async (p) => {
+    await newCampaignTo(p, "setup");
+    await press(p, '[data-hook="setup-cancel"]');
+    await wait(900);
+  },
+    `!!document.querySelector('[data-hook="leave-title"]') && !!document.querySelector('[data-hook="cancel-yes"]')`,
+    "Close on the settings page: the leave dialog and its two buttons."],
+  ["getreviews-31-recipients-email", "getreviews", async (p) => { await newCampaignTo(p, "recipients"); },
+    `!!document.querySelector('[data-hook="audience-field"]')
+     && !!document.querySelector('[data-hook="contacts-upload"]')
+     && !document.querySelector('[data-hook="country-field"]')`,
+    "Who should we send this to, for email: the One person / A list choice and the CSV dropzone with its wording."],
+  ["getreviews-32-recipients-one-person", "getreviews", async (p) => {
+    await newCampaignTo(p, "recipients");
+    await press(p, '[data-hook="audience-one-label"]');
+    await wait(600);
+  },
+    `!!document.querySelector('[data-hook="one-contact"]') && !document.querySelector('[data-hook="contacts-upload"]')`,
+    "One person chosen: the single address field and its description replace the dropzone."],
+  ["getreviews-33-recipients-error", "getreviews", async (p) => {
+    await newCampaignTo(p, "recipients");
+    await press(p, '[data-hook="wizard-next"]');
+    await wait(700);
+  },
+    `/Upload a CSV file to continue/.test(document.querySelector('[data-hook="campaign-wizard-error"]').textContent)`,
+    "Next with nothing uploaded: the Upload a CSV file to continue error in the footer slot."],
+  ["getreviews-34-recipients-sms", "getreviews", async (p) => { await draftToRecipients(p); },
+    `!!document.querySelector('[data-hook="country-field"]') && !!document.querySelector('[data-hook="buy-credits"]')`,
+    "The SMS version of recipients: the country choice with credits per text, the balance line and Buy credits."],
+  ["getreviews-35-credits-packages", "getreviews", async (p) => {
+    await draftToRecipients(p);
+    await press(p, '[data-hook="buy-credits"]');
+    await wait(900);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook="credits-title"]') && !!document.querySelector('[data-hook^="credits-buy-"]')`,
+    "The credits dialog: the packages, each with its price and a Buy button."],
+  ["getreviews-36-credits-checkout", "getreviews", async (p) => {
+    await draftToRecipients(p);
+    await press(p, '[data-hook="buy-credits"]');
+    await wait(900);
+    await press(p, '[data-hook^="credits-buy-"]');
+    await wait(800);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook="checkout-title"]') && !!document.querySelector('[data-hook="checkout-pay"]')`,
+    "Checkout: the card fields, Back and Pay."],
+  ["getreviews-37-credits-paid", "getreviews", async (p) => {
+    await draftToRecipients(p);
+    await press(p, '[data-hook="buy-credits"]');
+    await wait(900);
+    await press(p, '[data-hook^="credits-buy-"]');
+    await wait(800);
+    await press(p, '[data-hook="checkout-pay"]');
+    await wait(1200);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook="paid-title"]')`,
+    "Paid: the confirmation copy and the new balance."],
+  ["getreviews-38-columns", "getreviews", async (p) => { await newCampaignTo(p, "columns"); },
+    `!!document.querySelector('[data-hook="csv-map-table"]') && !!document.querySelector('[data-hook="header-row"]')`,
+    "Map your columns: the header row switch, the guessed mapping per column and Confirm as the footer action."],
+  ["getreviews-39-check", "getreviews", async (p) => { await newCampaignTo(p, "check"); },
+    `!!document.querySelector('[data-hook="toggle-exclusions"]') && !!document.querySelector('[data-hook="confirm-permission-label"]')`,
+    "Check your list: rows in and people out, Show the rows we left out, and the two confirmations."],
+  ["getreviews-40-check-exclusions", "getreviews", async (p) => {
+    await newCampaignTo(p, "check");
+    await press(p, '[data-hook="toggle-exclusions"]');
+    await wait(600);
+  },
+    `/Hide the rows we left out/.test(document.querySelector('[data-hook="toggle-exclusions"]').textContent)`,
+    "The left-out rows expanded, each with its reason, under Hide the rows we left out."],
+  ["getreviews-41-check-error", "getreviews", async (p) => {
+    await newCampaignTo(p, "check");
+    await press(p, '[data-hook="wizard-next"]');
+    await wait(700);
+  },
+    `/tick both confirmations/.test(document.querySelector('[data-hook="campaign-wizard-error"]').textContent)`,
+    "Next without the confirmations: Please tick both confirmations to continue."],
+  ["getreviews-42-send", "getreviews", async (p) => { await newCampaignTo(p, "send"); },
+    `!!document.querySelector('[data-hook="preview-as-customer"]') && !!document.querySelector('[data-hook="preview-tile-email"]')`,
+    "Ready to send: the summary rows, the contact sheet of every customer page, Preview as a customer, and Send now in the footer."],
+  ["getreviews-43-send-preview-full", "getreviews", async (p) => {
+    await newCampaignTo(p, "send");
     await press(p, '[data-hook="preview-tile-email"]');
     await wait(900);
   },
-    `(() => {
-       const t = document.querySelector('[data-hook="preview-full-title"]');
-       return !!t && t.textContent.trim() === "Email";
-     })()`,
-    "The email at full size, opened from its tile. Nothing in here is clickable: this is a picture of the message, and the working version is behind Preview as a customer."],
-  ["getreviews-23-preview-feedback", "getreviews", async (p) => {
-    await campaignWizardTo(p, "email", "send");
-    await press(p, '[data-hook="preview-tile-feedback"]');
-    await wait(900);
-  },
-    `(() => {
-       const t = document.querySelector('[data-hook="preview-full-title"]');
-       return !!t && t.textContent.trim() === "Feedback page";
-     })()`,
-    "The feedback page full size. This is the page the whole review-gating question turns on, so it is worth seeing at the size a customer sees it."],
-  ["getreviews-24-preview-review", "getreviews", async (p) => {
-    await campaignWizardTo(p, "email", "send");
-    await press(p, '[data-hook="preview-tile-review"]');
-    await wait(900);
-  },
-    `(() => {
-       const t = document.querySelector('[data-hook="preview-full-title"]');
-       return !!t && t.textContent.trim() === "Review page";
-     })()`,
-    "The review page full size. Every respondent reaches this one whatever they scored, which is the decision that keeps the feature the right side of the FTC rule."],
-  ["getreviews-20-link-channel", "getreviews", async (p) => { await campaignWizardTo(p, "link", "channel"); },
-    `!!document.querySelector('[data-hook="channel-radio-group"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "Web link branch. A link has no audience and no send, so the flow drops from twelve steps to five and the rail loses two whole phases."],
-  ["getreviews-21-link-golive", "getreviews", async (p) => { await campaignWizardTo(p, "link", "golive"); },
+    `(() => { const t = document.querySelector('[data-hook="preview-full-title"]'); return !!t && t.textContent.trim() === "Email"; })()`,
+    "A contact-sheet tile opened full size: the Email dialog and its description line."],
+  ["getreviews-44-send-confirm", "getreviews", async (p) => { await newCampaignTo(p, "confirm"); },
+    `!!document.querySelector('[data-hook="send-confirm-title"]')`,
+    "Send now asks once: the confirm dialog with the headcount and its two buttons."],
+  // 45 IS DELIBERATELY VACANT. The email "sent" card cannot be shot: Send now
+  // blanks the sandbox with "ReferenceError: sendCount is not defined"
+  // (SuccessView reads a wizard-scope variable; probed 7 Sep 2026). The
+  // kiosk success below survives because its branch never reaches that
+  // read. Reinstate as `newCampaignTo(p, "success")` asserting
+  // `wizard-success` + `success-insights` once the screen is fixed.
+  ["getreviews-46-go-live-link", "getreviews", async (p) => { await newCampaignTo(p, "golive", { channel: "Web link" }); },
     `!!document.querySelector('[data-hook="link-note"]')
-     && !!document.querySelector('[data-hook="wizard-card"]')`,
-    "The last step is Put live, not Send now. The link is created at that moment rather than sitting unused beforehand."],
+     && /Ready to go live/.test(document.querySelector('[data-hook="wizard-step-title"]').textContent)`,
+    "A web link campaign skips the audience: Ready to go live, the link note, and Put live as the action."],
+  ["getreviews-47-launch-kiosk", "getreviews", async (p) => { await newCampaignTo(p, "golive", { channel: "Kiosk" }); },
+    `/Ready to launch the kiosk/.test(document.querySelector('[data-hook="wizard-step-title"]').textContent)`,
+    "A kiosk campaign's last step is titled Ready to launch the kiosk, with Launch kiosk as the action."],
+  ["getreviews-48-kiosk-live", "getreviews", async (p) => {
+    await newCampaignTo(p, "golive", { channel: "Kiosk" });
+    await press(p, '[data-hook="wizard-next"]');
+    await wait(1400);
+  },
+    `!!document.querySelector('[data-hook="wizard-success"]') && !!document.querySelector('[data-hook="success-open-kiosk"]')`,
+    "Your kiosk is live: the kiosk address and the Open kiosk button."],
+
+  // TEMPLATES.
+  ["getreviews-49-templates", "getreviews", async (p) => {
+    await press(p, '[data-hook="open-templates"]');
+    await waitForHook(p, '[data-hook="templates-table"]');
+    await wait(500);
+  },
+    `!!document.querySelector('[data-hook="templates-table"]') && !!document.querySelector('[data-hook="new-template"]')`,
+    "The Templates page: its header line, the table with Create campaign per row, and New template."],
+  ["getreviews-50-template-row-menu", "getreviews", async (p) => {
+    await press(p, '[data-hook="open-templates"]');
+    await waitForHook(p, '[data-hook="template-t1-menu-button"]');
+    await wait(400);
+    await press(p, '[data-hook="template-t1-menu-button"]');
+    await wait(700);
+  },
+    `["Edit template", "Duplicate", "Delete template"].every((t) =>
+       [...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === t))`,
+    "A template row's overflow: Edit template, Duplicate, and Delete template below the rule."],
+  ["getreviews-51-delete-template-confirm", "getreviews", async (p) => {
+    await press(p, '[data-hook="open-templates"]');
+    await waitForHook(p, '[data-hook="template-t1-menu-button"]');
+    await wait(400);
+    await press(p, '[data-hook="template-t1-menu-button"]');
+    await wait(700);
+    await pressText(p, "Delete template", '[role="menuitem"]');
+    await wait(900);
+  },
+    `!!document.querySelector('[data-hook="delete-title"]')
+     && /cannot be recovered/.test(document.querySelector('[data-hook="delete-desc"]').textContent)`,
+    "The delete-template dialog: campaigns already made are not affected, Keep it and Delete template."],
+  ["getreviews-52-new-template", "getreviews", async (p) => {
+    await press(p, '[data-hook="open-templates"]');
+    await waitForHook(p, '[data-hook="new-template"]');
+    await wait(400);
+    await press(p, '[data-hook="new-template"]');
+    await waitForHook(p, '[data-hook="template-rail"]');
+    await wait(600);
+  },
+    `!!document.querySelector('[data-hook="template-rail"]')
+     && /Untitled template/.test(document.querySelector('[data-hook="template-page-header"]').innerText)`,
+    "New template: the editor with Untitled template in the header and Save template as the action."],
+  ["getreviews-53-template-general", "getreviews", async (p) => { await templateEditor(p, "general"); },
+    `!!document.querySelector('[data-hook="template-tab-general"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="template-basics"]')
+     && !document.querySelector('[data-hook="setup-channel"]')`,
+    "Editing a template, General: the five rail items with their sub lines, the name, rating-first, rating type, logo and accent colour rows."],
+  ["getreviews-54-template-message-email", "getreviews", async (p) => { await templateEditor(p, "invite"); },
+    `!!document.querySelector('[data-hook="template-tab-invite"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="preview-frame-invite"] [data-hook="email-preview-rule"]')`,
+    "Message: the card hint, the Email / Text message toggle, and the email previewed with its subject, body, scale and legal footer."],
+  ["getreviews-55-template-message-sms", "getreviews", async (p) => {
+    await templateEditor(p, "invite");
+    await press(p, '[data-hook="preview-channel-sms"]');
+    await wait(600);
+  },
+    `!!document.querySelector('[data-hook="preview-frame-invite"] [data-hook="sms-preview-bubble"]')`,
+    "The same message as a text: one bubble with the short link and the Reply STOP line."],
+  ["getreviews-56-template-message-sheet", "getreviews", async (p) => {
+    await templateEditor(p, "invite");
+    await press(p, '[data-hook="template-edit-invite"]');
+    await waitForHook(p, '[data-hook="section-sheet"]');
+    await wait(900);
+  },
+    `(() => {
+       const t = document.querySelector('[data-hook="section-sheet-header-title"]');
+       return !!t && t.textContent.trim() === "Message" && !!document.querySelector('[data-hook="field-subject"]');
+     })()`,
+    "The Message sheet: The message and The reminder groups, each field with its helper sentence, and Done."],
+  ["getreviews-57-template-message-sheet-sms-override", "getreviews", async (p) => {
+    await templateEditor(p, "invite");
+    await press(p, '[data-hook="template-edit-invite"]');
+    await waitForHook(p, '[data-hook="section-sheet"]');
+    await wait(900);
+    await press(p, '[data-hook="template-smsOverride"]');
+    await wait(600);
+  },
+    `!!document.querySelector('[data-hook="field-smsText"]')`,
+    "Word it differently in a text message switched on: the Text message wording field and its helper appear."],
+  ["getreviews-58-template-rating", "getreviews", async (p) => { await templateEditor(p, "rate"); },
+    `!!document.querySelector('[data-hook="template-tab-rate"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="preview-frame-rate"]')`,
+    "Rating question: the card hint and the feedback page previewed with its question, scale, follow-up and permission box."],
+  ["getreviews-59-template-rating-sheet", "getreviews", async (p) => {
+    await templateEditor(p, "rate");
+    await press(p, '[data-hook="template-edit-rate"]');
+    await waitForHook(p, '[data-hook="section-sheet"]');
+    await wait(900);
+  },
+    `(() => {
+       const t = document.querySelector('[data-hook="section-sheet-header-title"]');
+       return !!t && t.textContent.trim() === "Rating question" && !!document.querySelector('[data-hook="field-feedbackQuestion"]');
+     })()`,
+    "The Rating question sheet: Question and Follow-up question with their helper sentences."],
+  ["getreviews-60-template-review", "getreviews", async (p) => { await templateEditor(p, "review"); },
+    `!!document.querySelector('[data-hook="template-tab-review"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="preview-note-review"]')`,
+    "Public review: the card hint, the review page preview, and the note that review sites are chosen on the campaign."],
+  ["getreviews-61-template-review-sheet", "getreviews", async (p) => {
+    await templateEditor(p, "review");
+    await press(p, '[data-hook="template-edit-review"]');
+    await waitForHook(p, '[data-hook="section-sheet"]');
+    await wait(900);
+  },
+    `(() => {
+       const t = document.querySelector('[data-hook="section-sheet-header-title"]');
+       return !!t && t.textContent.trim() === "Public review" && !!document.querySelector('[data-hook="field-invite"]');
+     })()`,
+    "The Public review sheet: Wording above the buttons and Button label with the {{site}} hint."],
+  ["getreviews-62-template-contact", "getreviews", async (p) => { await templateEditor(p, "identify"); },
+    `!!document.querySelector('[data-hook="template-tab-identify"][aria-selected="true"]')
+     && !!document.querySelector('[data-hook="preview-frame-identify"]')`,
+    "Contact details: the card hint about public links and the name / email / permission form previewed."],
+  ["getreviews-63-template-contact-sheet", "getreviews", async (p) => {
+    await templateEditor(p, "identify");
+    await press(p, '[data-hook="template-edit-identify"]');
+    await waitForHook(p, '[data-hook="section-sheet"]');
+    await wait(900);
+  },
+    `(() => {
+       const t = document.querySelector('[data-hook="section-sheet-header-title"]');
+       return !!t && t.textContent.trim() === "Contact details" && !!document.querySelector('[data-hook="field-contactIntro"]');
+     })()`,
+    "The Contact details sheet: Wording above the form, Ask permission to quote them, and Permission wording."],
+  ["getreviews-64-template-narrow", "getreviews", async (p) => { await templateEditor(p, "general"); },
+    `!!document.querySelector('[data-hook="template-next-section"]')`,
+    "The template editor at 390 wide: the rail stacks above the card and the footer carries Back and Next between sections.",
+    { width: 390 }],
 ];
 
 // --dump-states prints name/section/note as JSON and exits. Anything that
@@ -1103,9 +1459,14 @@ const wanted = STATES.filter(([name]) => {
 
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
 
-for (const [name, screen, drive, expect] of wanted) {
+for (const [name, screen, drive, expect, , opts] of wanted) {
+  // An optional sixth element `{ width }` shoots the state NARROW (7 Sep:
+  // the settings pages grow a Back / Next footer below lg, and that footer
+  // is copy). 1280 otherwise, and the viewport is reset every state.
+  const width = (opts && opts.width) || 1280;
   try {
-    await page.goto(`${BASE}/e/${SCREENS[screen]}?w=1280&motion=off`, {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${BASE}/e/${SCREENS[screen]}?w=${width}&motion=off`, {
       waitUntil: "domcontentloaded", timeout: 60000,
     });
     await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
