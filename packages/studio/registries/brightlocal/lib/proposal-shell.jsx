@@ -64,7 +64,7 @@ import {
 // (raw hand-editable JSON; filename = dataset name). Lib-to-lib import,
 // resolved through the same libModules seam as this file itself.
 import { DATASETS } from "@brightlocal/data";
-import { ProposalDataProvider, PROPOSAL_DATA } from "@brightlocal/proposal-data";
+import { ProposalDataProvider, PROPOSAL_DATA, DEFAULT_DATASET } from "@brightlocal/proposal-data";
 
 // ─── Shell presets — tones × frames × shadows × page layers ─────────
 // NOTE the --color-* doubles: the theme maps --color-sidebar-* from
@@ -610,7 +610,8 @@ export const SHELL_DEFAULTS = {
   headerBorder: undefined,
   headerSurface: "none",
   headerSpace: "default",
-  dataset: "minus-one-studios",
+  // Same constant the data context defaults to; see proposal-data.jsx.
+  dataset: DEFAULT_DATASET,
   navDensity: "compact",
 };
 const LOOK_KEYS = Object.keys(SHELL_DEFAULTS);

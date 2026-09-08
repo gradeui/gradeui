@@ -562,8 +562,17 @@ function resolveProposalData(d) {
   return { ...d, aiInsights: { ...ai, summary: resolved } };
 }
 
+// ONE DEFAULT DATASET, INSIDE AND OUTSIDE THE SHELL. AppLayoutShell mounts a
+// provider for SHELL_DEFAULTS.dataset, so everything rendered inside it saw
+// Minus 1 Studios, while anything that read the context OUTSIDE that
+// provider (Report Settings computing the location name at the top of App,
+// the Builder's full-page settings pages under WizardShell) fell back to the
+// raw fixture and said "Blackberry Farm Park" (caught by the 8 Sep capture
+// sweep). The context default now carries the same default dataset the
+// shell applies, so a screen reads the same location wherever it asks.
+export const DEFAULT_DATASET = "minus-one-studios";
 const ProposalDataContext = React.createContext(
-  resolveProposalData(PROPOSAL_DATA),
+  resolveProposalData(mergeProposalData(PROPOSAL_DATA, DATASETS[DEFAULT_DATASET])),
 );
 
 /** Recursive merge: plain objects merge key-by-key over the defaults,
