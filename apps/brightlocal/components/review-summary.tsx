@@ -23,6 +23,9 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
 import { useBeaconModal } from "@/lib/beacon-modal";
+import { reviewsFor } from "@/lib/reviews-data";
+import { STATS } from "@/lib/first-run";
+import { Star, Lightbulb } from "@brightlocal/icons";
 import { FirstRunBand } from "@/components/first-run";
 import { Button } from "@brightlocal/ui-components/button";
 import { ArrowRight } from "@brightlocal/icons";
@@ -145,7 +148,7 @@ export function drillCopy(stats: ReviewStats, kind: Drill): string {
     return `${last.count} reviews so far this month against ${prev.count} in ${prev.label}. Your busiest month was ${peak.label} with ${peak.count}${stats.spike ? `, and this month's spike on ${stats.spike.date} came from your ${stats.spike.campaign} ${stats.spike.channel}` : ""}. Volume and cadence over time is the number that tells you whether asking is working.`;
   }
   if (kind === "rating") {
-    return `Month by month, new reviews averaged ${m.map((x) => x.rating || "none").join(", ")}. The lifetime average hardly moves; this is where you see change first.`;
+    return `Month by month, new reviews averaged ${m.map((x) => x.rating || "none").join(", ")}. The lifetime average hardly moves. This is where you see change first.`;
   }
   return `The share of four-star-and-above reviews was ${m.map((x) => `${x.fourPlusPct}%`).join(", ")} across the six months. A dip here shows up in the rating weeks later.`;
 }
@@ -403,6 +406,12 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
 /** The three six-month charts, on their own so the modal can show them
  *  under a page's block without the general summary. */
 export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"] }: { stats: ReviewStats; kinds?: Drill[] }) {
+  // A six-month chart needs six months. With fewer than three months of
+  // data (Ali, 10 Sep: "if you only have one month of data, think what
+  // timeline is worthy of it") the dialog shows the reviews it actually
+  // has, and a sourced "Did you know" with the ask, instead of empty bars.
+  const monthsWithData = stats.months.filter((m) => m.count > 0).length;
+  if (monthsWithData < 3) return <EarlyDays stats={stats} />;
   return (
     <div className={`mt-6 grid gap-4 border-t pt-6 ${kinds.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`} data-hook="review-summary-charts">
       {kinds.map((kind) => (
@@ -414,6 +423,60 @@ export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"
           <p className="text-body-xs text-muted-foreground">{drillCopy(stats, kind)}</p>
         </div>
       ))}
+    </div>
+  );
+}
+
+
+const SITE_LABEL: Record<string, string> = { google: "Google", facebook: "Facebook", tripadvisor: "TripAdvisor", yelp: "Yelp", trustpilot: "Trustpilot" };
+
+/** The early-days block: every review so far as a short timeline (there
+ *  are few enough to list), then one sourced fact and the thing to do. */
+function EarlyDays({ stats }: { stats: ReviewStats }) {
+  const persona = usePersona();
+  const location = useLocationKey();
+  const reviews = reviewsFor(location, persona).slice(0, 8);
+  const first = reviews[reviews.length - 1];
+  const spanDays = first ? first.daysAgo : 0;
+  const fact = stats.total < 20 ? STATS.twenty : STATS.threeMonths;
+  const need = Math.max(0, 20 - stats.total);
+  return (
+    <div className="mt-6 grid gap-6 border-t pt-6 lg:grid-cols-[3fr_2fr]" data-hook="review-summary-early">
+      <div className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
+        <p className="text-heading-subsection">
+          {stats.total === 0 ? "No reviews yet" : `Your ${stats.total} ${stats.total === 1 ? "review" : "reviews"} so far, ${spanDays <= 1 ? "today" : `over ${spanDays} days`}`}
+        </p>
+        {reviews.length ? (
+          <ol className="flex flex-col divide-y">
+            {reviews.map((r) => (
+              <li key={r.id} className="flex items-baseline gap-3 py-2 text-body-sm">
+                <span className="w-16 shrink-0 tabular-nums text-muted-foreground">{r.daysAgo === 0 ? "Today" : `${r.daysAgo}d ago`}</span>
+                <span className="flex w-20 shrink-0 items-center gap-0.5" aria-label={typeof r.rating === "number" ? `${r.rating} stars` : String(r.rating)}>
+                  {typeof r.rating === "number"
+                    ? Array.from({ length: 5 }, (_, i) => <Star key={i} className={`size-3 ${i < (r.rating as number) ? "fill-current" : "text-muted-foreground/40"}`} />)
+                    : <span className="text-muted-foreground">{r.rating === "up" ? "Recommends" : "Does not"}</span>}
+                </span>
+                <span className="w-20 shrink-0 text-muted-foreground">{SITE_LABEL[r.source] ?? r.source}</span>
+                <span className="min-w-0 truncate">{r.text}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="text-body-sm text-muted-foreground">Connect a review site and anything already written about you appears here.</p>
+        )}
+        <p className="text-body-xs text-muted-foreground">Month-by-month charts arrive once there are three months of reviews to compare.</p>
+      </div>
+      <div className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-4" data-hook="review-summary-early-fact">
+        <p className="flex items-center gap-2 text-heading-subsection"><Lightbulb className="size-4" />Did you know</p>
+        <p className="text-display font-display leading-none">{fact.value}</p>
+        <p className="text-body text-pretty">{fact.text}</p>
+        <p className="text-body-sm italic text-muted-foreground">*{fact.source}</p>
+        <p className="text-body-sm text-pretty">
+          {stats.total < 20
+            ? `You have ${stats.total}. ${need} more and you are past the line most customers draw. One email to last month's happy customers is the fastest way there.`
+            : "Recent reviews are what count, so keep asking every month."}
+        </p>
+      </div>
     </div>
   );
 }
