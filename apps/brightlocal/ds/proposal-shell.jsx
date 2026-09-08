@@ -1538,7 +1538,17 @@ function NativeAppLayoutShell({ sidebar, header, mobileBar, children, dataset, d
   delete look.contentMaxWidth; delete look.sidebarBorder; delete look.headerBackground;
   delete look.tweaker; delete look.tweaks; delete look.onTweaksChange;
   const shell = (
-    <GlobalLayout dataHook={dataHook} data-gds-layout-engine="native" className={className} {...look}>
+    <GlobalLayout
+      dataHook={dataHook}
+      data-gds-layout-engine="native"
+      className={className}
+      // Nothing is sticky above the content in the DS layout, so screens
+      // that offset their own sticky rows by the page header's height
+      // (--gds-page-header-height, published by the modified shell) get 0
+      // here rather than their 128px fallback.
+      style={{ "--gds-page-header-height": "0px" }}
+      {...look}
+    >
       <GlobalLayoutSidebar dataHook={`${dataHook}-sidebar`}>{sidebar}</GlobalLayoutSidebar>
       <GlobalLayoutContent dataHook={`${dataHook}-content`}>
         {mobileBar}
