@@ -22,7 +22,7 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor, reviewsFor } from "@/lib/reviews-data";
 import { BeaconBadge } from "@/components/review-summary";
-import { GlobeyCalmOpen1, GlobeyDownClosed } from "@brightlocal/illustrations";
+import { CalendarSchedule, HandWave } from "@brightlocal/illustrations";
 
 const PLAN = { name: "Grow", price: "$49", per: "USD / mo, billed annually" };
 
@@ -67,25 +67,27 @@ export function TrialRecapModal() {
       ];
   const keeps = ["Every review from Google, Facebook and 80+ review sites in one inbox", "Replies to Google and Facebook without leaving BrightLocal", "Review requests by email, SMS and QR code", "Auto-reply rules for five-star Google reviews"];
   const stops = ["New reviews stop arriving here", "Auto-replies and campaigns pause", "The showcase on your website goes blank"];
-  const Art = lapsed ? GlobeyDownClosed : GlobeyCalmOpen1;
+  // Calendar for the countdown, a wave for the welcome back (not Globey, he is everywhere already).
+  const Art = lapsed ? HandWave : CalendarSchedule;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent dataHook="trial-recap" className="flex max-h-[90vh] w-[min(96vw,880px)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none">
         <div className="flex items-start justify-between gap-6 border-b px-8 py-6">
           <div className="flex items-center gap-4">
-            <Art className="size-14 shrink-0" />
+            <Art className="size-16 shrink-0" />
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <BeaconBadge beta dataHook="trial-recap-badge" />
                 <span className="text-label-sm text-muted-foreground">{persona.accountLabel}</span>
               </div>
-              <DialogTitle className="text-heading-section leading-tight">{title}</DialogTitle>
+              <DialogTitle className="text-heading-page leading-tight">{title}</DialogTitle>
             </div>
           </div>
         </div>
         <div className="flex flex-col gap-8 overflow-y-auto px-8 py-8">
-          <DialogDescription className="text-metric font-display text-foreground max-w-[30ch] text-balance">{headline}</DialogDescription>
+          <DialogDescription className="sr-only">{headline}</DialogDescription>
+          <p className="text-metric font-display max-w-[34ch] text-balance">{headline}</p>
           <div className="grid gap-8 lg:grid-cols-2">
             <div className="flex flex-col gap-3">
               <p className="text-heading-subsection">{lapsed ? "Since the trial ended" : "What the trial has got you"}</p>
@@ -112,7 +114,7 @@ export function TrialRecapModal() {
                 <span className="text-body-sm text-muted-foreground">{PLAN.per}</span>
               </p>
               {lapsed ? (
-                <span className="inline-flex w-fit items-center rounded-full bg-[var(--ds-tailwind-colors-green-200)] px-2.5 py-0.5 text-label-sm font-semibold">Come back this week: first month half price</span>
+                <span className="inline-flex w-fit items-center rounded-full bg-[var(--ds-tailwind-colors-neutral-950)] px-3 py-1 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]">Come back this week: first month half price</span>
               ) : (
                 <span className="inline-flex w-fit items-center rounded-full bg-[var(--ds-tailwind-colors-green-200)] px-2.5 py-0.5 text-label-sm font-semibold">Saving 21% on annual</span>
               )}
