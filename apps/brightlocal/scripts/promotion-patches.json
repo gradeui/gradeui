@@ -260,6 +260,11 @@
       "why": "the nugget closes the page",
       "find": "        </GlobalLayoutContentBody>",
       "replace": "          <BeaconNugget page=\"manager\" />\n        </GlobalLayoutContentBody>"
+    },
+    {
+      "why": "the filter group above the table shares the table header's background",
+      "find": "      <div className=\"bg-card sticky z-30 rounded-t-[inherit]\" style={{ top: stickyTop }}>",
+      "replace": "      {/* bg-muted: the filter group shares the table header's background\n          (Ali, 9 Sep), so tabs, filters and header read as one band. */}\n      <div className=\"bg-muted sticky z-30 rounded-t-[inherit]\" style={{ top: stickyTop }}>"
     }
   ],
   "app/(app)/locations/[location]/reviews/tracker/page.jsx": [

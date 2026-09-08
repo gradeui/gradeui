@@ -109,6 +109,7 @@ export function ReviewPlanStrip() {
   const stats = statsFor(location, persona);
   const plan = reviewPlanFor(stats, persona);
   const first = plan.items[0]?.actions[0];
+  const second = plan.items[0]?.actions[1];
   return (
     <div
       data-hook="review-plan-strip"
@@ -125,7 +126,12 @@ export function ReviewPlanStrip() {
       <p className="text-metric font-display text-balance max-w-[40ch]" data-hook="review-plan-strip-goal">
         <Mark text={plan.goal.text} mark={plan.goal.mark} />
       </p>
-      {first ? <p className="text-body text-muted-foreground max-w-[60ch] text-pretty">First tactic: {first.label}</p> : null}
+      {first ? (
+        <p className="text-body text-muted-foreground max-w-[60ch] text-pretty">
+          {first.label}
+          {second ? ` Then ${second.label.charAt(0).toLowerCase()}${second.label.slice(1)}` : ""}
+        </p>
+      ) : null}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
         <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
         <Button variant="outline" size="sm" dataHook="review-plan-strip-open" onClick={() => show("plan")}>

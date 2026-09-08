@@ -1780,7 +1780,9 @@ function ReviewsInbox() {
 
   const renderInbox = () => (
     <Card dataHook="review-inbox" density="condensed" className="max-w-none gap-0 p-0">
-      <div className="bg-card sticky z-30 rounded-t-[inherit]" style={{ top: stickyTop }}>
+      {/* bg-muted: the filter group shares the table header's background
+          (Ali, 9 Sep), so tabs, filters and header read as one band. */}
+      <div className="bg-muted sticky z-30 rounded-t-[inherit]" style={{ top: stickyTop }}>
         {/* ROW 1 — TABS. Real DS Tabs: role="tablist", roving tabindex and
             arrow-key navigation, none of which the hand-rolled buttons had.
             
