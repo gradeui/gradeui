@@ -115,6 +115,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useUrlParam } from "@/lib/url-state";
 import { usePersona } from "@/lib/demo";
+import { QrBanner } from "@/components/qr-banner";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
 import { BeaconPageStrip } from "@/components/review-summary";
@@ -6399,6 +6400,7 @@ export default function RMReviewBuilderPage() {
       >
         <GlobalLayoutContentBody className="gap-4">
           {view === "hub" ? <BeaconPageStrip page="builder" /> : null}
+          {view === "hub" ? <QrBanner compact /> : null}
           {view === "hub" ? (
             <CampaignsPage
               campaigns={campaigns}

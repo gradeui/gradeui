@@ -81,9 +81,11 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
       ...(s.theme?.good ? [t("The thing customers keep praising is "), m(s.theme.text), t(". That is the quote to put on the booking page.")] : [t("Your best reviews are ready to show. Pick the ones the booking page should carry.")]),
     ],
     tiles: [
+      // The total lives here (Ali, 10 Sep: "in Review Showcase we also need
+      // to show the total reviews somewhere"); the header keeps its showcase count.
+      { value: s.total.toLocaleString("en-GB"), label: "reviews across every site" },
       { value: String(s.fiveStar), label: "five-star reviews" },
       { value: `${s.fourPlusPct}%`, label: "four stars or above this month" },
-      { value: "3", label: "showcases ready" },
     ],
     cta: { label: "Pick the reviews to show", path: "reviews/manager" },
   };

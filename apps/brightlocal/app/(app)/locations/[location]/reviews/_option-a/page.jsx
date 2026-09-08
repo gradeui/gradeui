@@ -37,6 +37,7 @@ import { profileFor } from "@/lib/location-profiles";
 import { statsFor } from "@/lib/reviews-data";
 import { StarterGuide } from "@/components/starter-guide";
 import { ReviewSummaryStrip, BeaconChip } from "@/components/review-summary";
+import { QrBanner } from "@/components/qr-banner";
 import { BeaconNugget } from "@/components/beacon-nugget";
 import { reviewPlanFor } from "@/lib/review-insights";
 import { reviewSummaryFor } from "@/lib/review-summary";
@@ -299,6 +300,7 @@ export default function ReviewsPage() {
         <GlobalLayoutContentBody dataHook="reviews-page-body" className="space-y-6 pb-10">
           <ReviewSummaryStrip />
           {starter ? <StarterGuide /> : null}
+          {stats.campaignsAll === 0 ? <QrBanner /> : null}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {cards.map((card) => (
               <HubCard key={card.hook} card={{ ...card, beacon: chips[card.hook] }} />

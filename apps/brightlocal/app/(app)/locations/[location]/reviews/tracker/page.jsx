@@ -100,6 +100,7 @@
 
 import { Fragment, useMemo, useRef, useState } from "react";
 import { usePersona } from "@/lib/demo";
+import { ConnectedSites } from "@/components/connected-sites";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
 import { reviewsFor } from "@/lib/reviews-data";
@@ -902,7 +903,12 @@ function ReviewPerformance() {
                 {sourceCount} {sourceCount === 1 ? "source" : "sources"}
               </span>
             </p>
-            {view === "chart" ? (
+            {/* ONE SITE, NO DONUT (Ali, 10 Sep): a single slice says nothing,
+                so the panel becomes the connection list and the pitch to
+                connect more. The donut returns at two sites. */}
+            {view === "chart" && sourceCount <= 1 ? (
+              <ConnectedSites connected={grouping.named.map((row) => ({ id: row.id, name: row.name, count: row.value }))} />
+            ) : view === "chart" ? (
               <div className="flex flex-wrap items-center gap-8">
                 <div className="relative size-[190px] shrink-0">
                   <ChartContainer
