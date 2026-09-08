@@ -64,6 +64,19 @@ import {
 // (raw hand-editable JSON; filename = dataset name). Lib-to-lib import,
 // resolved through the same libModules seam as this file itself.
 import { DATASETS } from "@brightlocal/data";
+import { useParams } from "next/navigation";
+
+// THE URL NAMES THE DATASET (app-side, 9 Sep). /locations/<key>/... is
+// the location, and it beats the session stash: the stash is a module
+// global that the location layout sets during render, and on the server
+// a page segment can render before its layout, so a shell could read
+// the previous request's dataset and hydrate with the wrong breadcrumb.
+// The URL is the same on both sides.
+function useUrlDataset() {
+  const params = useParams();
+  const key = params && typeof params.location === "string" ? params.location : null;
+  return key && DATASETS[key] ? key : null;
+}
 import { ProposalDataProvider, PROPOSAL_DATA, DEFAULT_DATASET } from "@brightlocal/proposal-data";
 
 // ─── Shell presets — tones × frames × shadows × page layers ─────────
@@ -971,6 +984,7 @@ function ModifiedAppLayoutShell({
   // tweaks from the panel shadow that, for this session only. Reassigning
   // the params keeps every downstream reference (tone/frame/shadow/
   // layers/sticky) reading the LIVE values.
+  const urlDataset = useUrlDataset();
   const authored = resolveShellLook(preset, {
     sidebarTone, sidebarFrame, sidebarShadow, seamShadow, pageLayers, pageBackground, stickyHeader, headerBorder, headerSurface, headerSpace, dataset, navDensity,
   });
@@ -1505,7 +1519,7 @@ function ModifiedAppLayoutShell({
   // Dataset priority: explicit tweaker Data row > session-selected
   // (location-card click) > authored prop.
   const effectiveDataset =
-    tweaks?.dataset !== undefined ? dataset : (loadSessionDataset() ?? dataset);
+    tweaks?.dataset !== undefined ? dataset : (urlDataset ?? loadSessionDataset() ?? dataset);
   return effectiveDataset && effectiveDataset !== "default" ? (
     <ProposalDataProvider dataset={effectiveDataset}>{shell}</ProposalDataProvider>
   ) : (
@@ -1548,6 +1562,7 @@ export function layoutEngineRaw() {
 }
 
 function NativeAppLayoutShell({ sidebar, header, mobileBar, children, dataset, dataHook = "app-layout", className, ...rest }) {
+  const urlDataset = useUrlDataset();
   const look = { ...rest };
   for (const key of LOOK_KEYS) delete look[key];
   delete look.preset; delete look.flush; delete look.pinnedSidebar; delete look.mobileTone;
@@ -1573,7 +1588,7 @@ function NativeAppLayoutShell({ sidebar, header, mobileBar, children, dataset, d
       </GlobalLayoutContent>
     </GlobalLayout>
   );
-  const effectiveDataset = loadSessionDataset() ?? dataset;
+  const effectiveDataset = urlDataset ?? loadSessionDataset() ?? dataset;
   return effectiveDataset && effectiveDataset !== "default" ? (
     <ProposalDataProvider dataset={effectiveDataset}>{shell}</ProposalDataProvider>
   ) : (

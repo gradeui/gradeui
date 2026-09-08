@@ -35,6 +35,7 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
 import { StarterGuide } from "@/components/starter-guide";
+import { ReviewInsights } from "@/components/review-insights";
 
 /* ================================ reference =============================== */
 
@@ -292,6 +293,7 @@ export default function ReviewsPage() {
               <HubCard key={card.hook} card={card} />
             ))}
           </div>
+          <ReviewInsights />
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

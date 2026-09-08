@@ -78,6 +78,16 @@
       "why": "pick cards by persona and location",
       "find": "  const cards = starter ? STARTER_HUB_CARDS : HUB_CARDS;\n",
       "replace": "  const locationKey = useLocationKey();\n  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(profileFor(locationKey));\n"
+    },
+    {
+      "why": "what to do next: review-derived insights under the cards",
+      "find": "import { StarterGuide } from \"@/components/starter-guide\";",
+      "replace": "import { StarterGuide } from \"@/components/starter-guide\";\nimport { ReviewInsights } from \"@/components/review-insights\";"
+    },
+    {
+      "why": "render the insights under the four cards",
+      "find": "            {cards.map((card) => (\n              <HubCard key={card.hook} card={card} />\n            ))}\n          </div>",
+      "replace": "            {cards.map((card) => (\n              <HubCard key={card.hook} card={card} />\n            ))}\n          </div>\n          <ReviewInsights />"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [

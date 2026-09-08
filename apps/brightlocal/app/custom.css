@@ -230,3 +230,25 @@
   line-height: 1.5rem;
   font-weight: var(--ds-font-weight-normal, 400);
 }
+
+/* SECTION HEADINGS IN POPPINS, proposed (Ali, 9 Sep: "I'd err on
+   text-heading-section being Poppins"). Figma maps only display and page
+   headings to the display face; card, dialog and sheet titles fall to
+   Inter, so a page carries less of the brand face than before. Under the
+   fixed and modified engines the section heading, and the DS card title
+   that will use it, take the display face. Pure de facto keeps Inter.
+   Ledger: /docs/changes, "Section headings lose the brand face". */
+[data-gds-layout-engine="native-fixed"] .text-heading-section,
+[data-gds-layout-engine="modified"] .text-heading-section,
+[data-gds-layout-engine="native-fixed"] [data-slot="card-title"],
+[data-gds-layout-engine="modified"] [data-slot="card-title"] {
+  font-family: var(--font-display);
+}
+
+/* Inline code inside a sentence: 0.9em of the surrounding text (Figma:
+   "text-code-inline"). */
+@utility text-code-inline {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  font-weight: var(--ds-font-weight-normal, 400);
+}

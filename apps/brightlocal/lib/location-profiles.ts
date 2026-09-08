@@ -116,6 +116,21 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
   },
 };
 
-export function profileFor(location: string | null | undefined): LocationProfile {
+/** The starter persona's week-one numbers, whatever the location: four
+ *  Google reviews, nothing answered, no campaigns. Matches the starter
+ *  seeds the Manager, Tracker and Builder apply. */
+export const STARTER_PROFILE: LocationProfile = {
+  inboxRows: 4,
+  sources: [{ id: "google", name: "Google", stars: 4 }],
+  starMix: { 5: 3, 4: 1, 3: 0, 2: 0, 1: 0 },
+  campaigns: 0,
+  hub: { needReply: 4, replied: 0, skipped: 0, allTime: 4, rating: "4.8", reviews: "4", fiveStar: "3", sourceCount: 1, running: 0, scheduled: 0, draft: 0, campaignsAll: 0 },
+};
+
+export function profileFor(
+  location: string | null | undefined,
+  persona?: { engagement?: string } | null,
+): LocationProfile {
+  if (persona?.engagement === "new") return STARTER_PROFILE;
   return LOCATION_PROFILES[location ?? ""] ?? LOCATION_PROFILES["minus-one-studios"];
 }

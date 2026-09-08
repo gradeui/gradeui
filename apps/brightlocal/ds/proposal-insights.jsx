@@ -380,14 +380,19 @@ function ActionWhere({ item, action, index }) {
   return (
     <div className="flex flex-wrap gap-2">
       {links.map((l) => (
-        <Button
-          key={l.label}
-          variant="outline"
-          size="sm"
-          dataHook={`insight-${item.id}-action-${index}-link`}
-        >
-          {l.label} <ArrowRight className="size-3.5" />
-        </Button>
+        // PER-ACTION DEEP LINK (app-side, 9 Sep): a link may carry `goto`
+        // ("screen:<id>"); the wrapper span holds it because Button drops
+        // unknown data-* props, and the goto bridge resolves from the
+        // closest [data-grade-goto]. Links without goto stay inert.
+        <span key={l.label} className="inline-flex" data-grade-goto={l.goto}>
+          <Button
+            variant="outline"
+            size="sm"
+            dataHook={`insight-${item.id}-action-${index}-link`}
+          >
+            {l.label} <ArrowRight className="size-3.5" />
+          </Button>
+        </span>
       ))}
     </div>
   );
@@ -476,7 +481,9 @@ export function InsightAction({ item, action, index, style = "accordion" }) {
           cursor — a clickable row needs the hand (snag, Ali 22 Jul). */}
       <AccordionTrigger
         className="cursor-pointer"
-        dataHook={`insight-${item.id}-action-${index}-trigger`}
+        // data-hook, not dataHook: AccordionTrigger (2.27.0) does not take
+        // the prop and forwarded it to the DOM as an unknown attribute.
+        data-hook={`insight-${item.id}-action-${index}-trigger`}
       >
         {/* NUMBERED rows (Ali, 23 Jul) — "1." ahead of each action so
             the list reads as a CHECKLIST. (Numbers were dropped 20 Jul

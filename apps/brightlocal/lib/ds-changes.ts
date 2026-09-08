@@ -133,6 +133,13 @@ export const DS_CHANGES: DsChange[] = [
     ask: "Ship the fourteen utilities in the tokens preset, and have GlobalLayoutContentHeader apply text-heading-page to a title slot.",
   },
   {
+    id: "section-heading-face",
+    title: "Section headings lose the brand face",
+    finding: "The Figma typography set maps only text-display and text-heading-page to Poppins; text-heading-section and text-heading-subsection (card, dialog and sheet titles) are Inter. A product page then carries the display face once, in the page title, and reads less like BrightLocal than the current product does.",
+    workaround: "Under the fixed and modified engines, text-heading-section and the DS card title take the display face. Pure de facto keeps Inter so the two can be compared.",
+    ask: "Map text-heading-section to font-display in the tokens.",
+  },
+  {
     id: "page-header",
     title: "GlobalLayoutContentHeader has no breadcrumbs, utility slot or status row",
     finding: "The DS header gives a back link, title, subtitle and actions. It has no breadcrumbs (Breadcrumb is placed by hand), no help affordance slot, no last-updated row and no way to normalise CTA sizes, so page heights vary between screens.",
