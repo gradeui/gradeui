@@ -1237,7 +1237,7 @@ const STATES = [
     await press(p, '[data-hook="wizard-next"]');
     await wait(700);
   },
-    `/Upload a CSV file to continue/.test(document.querySelector('[data-hook="campaign-wizard-error"]').textContent)`,
+    `/Upload a CSV file to continue/.test(document.querySelector('[data-hook="step-issue"]').textContent)`,
     "Next with nothing uploaded: the Upload a CSV file to continue error in the footer slot."],
   ["getreviews-34-recipients-sms", "getreviews", async (p) => { await draftToRecipients(p); },
     `!!document.querySelector('[data-hook="country-field"]') && !!document.querySelector('[data-hook="buy-credits"]')`,
@@ -1290,7 +1290,7 @@ const STATES = [
     await press(p, '[data-hook="wizard-next"]');
     await wait(700);
   },
-    `/tick both confirmations/.test(document.querySelector('[data-hook="campaign-wizard-error"]').textContent)`,
+    `/tick both confirmations/.test(document.querySelector('[data-hook="step-issue"]').textContent)`,
     "Next without the confirmations: Please tick both confirmations to continue."],
   ["getreviews-42-send", "getreviews", async (p) => { await newCampaignTo(p, "send"); },
     `!!document.querySelector('[data-hook="preview-as-customer"]') && !!document.querySelector('[data-hook="preview-tile-email"]')`,
