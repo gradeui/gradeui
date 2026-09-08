@@ -98,26 +98,71 @@ const HIGH = [
   "Third visit this year and it keeps getting better. Easily recommended.",
   "Easy to find, easy parking, lovely staff. Exactly what we hoped for.",
   "The best experience we've had locally. Attentive without being fussy.",
-  "Took my nephew and we stayed until closing. So patient with him. Lovely.",
+  "Stayed until closing. So welcoming, and nobody rushed us.",
   "Quick, friendly and well organised. You can tell the team care.",
+  "Came on a recommendation and it lived up to it. Will be sending friends.",
+  "Faultless. Booked online, arrived, everything ready. Simple as that.",
+  "Warm welcome, good prices, and they remembered us from last time.",
+  "Exactly what a local business should be. Proper attention to detail.",
+  "Turned up late and they still fitted us in with a smile. Five stars for that alone.",
+  "Clean, calm and well run. The little touches make the difference.",
+  "Our go-to now. Consistent every single time.",
+  "Helpful over the phone, even better in person. Thank you.",
+  "Lovely atmosphere and a team that seems to enjoy being there.",
+  "Good communication from booking to the day. No surprises.",
+  "A cut above the places nearby. Worth the extra ten minutes' drive.",
+  "Did what they said, when they said. Rare these days.",
+  "The staff sorted a problem before we'd even noticed it. Impressive.",
+  "Relaxed, unhurried and genuinely friendly. We'll be regulars.",
+  "First time here and already planning the next visit.",
+  "Every question answered patiently. Left feeling looked after.",
+  "Big thumbs up from all of us. Well priced for what you get.",
+  "Straightforward, honest and quick. Exactly as it should be.",
+  "Superb service on a busy Saturday. Hats off to the team.",
+  "Small thing, but they followed up the next day to check we were happy.",
 ];
 const MID = [
   "Lovely in parts, but a few things weren't as described. Worth checking before you go.",
   "Good overall. A little slow at the busiest time, but the staff were kind about it.",
   "Decent, if a bit rushed. Would give it another go on a quieter day.",
+  "Fine. Nothing wrong, nothing memorable either.",
+  "Mixed. Great start, then we waited a while for someone to come back to us.",
+  "Solid, but pricier than it used to be for the same thing.",
+  "OK for a quick visit. Wouldn't plan a day around it.",
+  "Nice people, slightly tired surroundings. Three stars feels fair.",
+  "Middle of the road. Booking was easy; the visit itself was average.",
+  "Happy enough, though the website promised a bit more than we got.",
 ];
 const LOW = (theme?: string) => [
   `Disappointing this time. ${theme ? `The ${theme} let it down badly.` : "Not what we expected for the money."} Left feeling let down.`,
   `Really wanted to like it, but ${theme ? theme : "the whole visit"} spoiled the day. Nobody seemed to notice.`,
   `The welcome was fine. After that, ${theme ? theme : "everything else let it down"}. Won't be rushing back.`,
   `Not good. ${theme ? `We told staff about ${theme} and nothing changed.` : "We raised it with staff and nothing changed."}`,
+  `Two visits, two let-downs. ${theme ? `Both times it was ${theme}.` : "Both times something was off."}`,
+  `Poor value on the day. ${theme ? `${theme.charAt(0).toUpperCase()}${theme.slice(1)} again.` : "Felt like an afterthought."}`,
+  `Felt ignored. ${theme ? `Add ${theme} and it adds up to a bad afternoon.` : "Had to ask twice for the basics."}`,
+  `Used to be great. ${theme ? `Now it is ${theme}, and nobody apologises.` : "Something has changed and not for the better."}`,
+  `Booked well ahead and it still went wrong. ${theme ? `${theme.charAt(0).toUpperCase()}${theme.slice(1)} was the low point.` : "Would not book again."}`,
+  `One to avoid until they sort ${theme ? theme : "the basics"} out.`,
 ];
 const COMPARE = (self: string, other: string) => [
   `I went to the ${self} branch and was shocked. It's nothing like the amazing ${other} branch. 1 star.`,
   `We love the ${other} one, so we tried ${self}. Same menu, completely different experience. Won't be back to this one.`,
 ];
+// Short closers, added when a deck has to go round again, so a line that
+// reappears in a long inbox still reads differently.
+const CLOSERS = ["Thanks all.", "See you soon.", "Keep it up.", "Recommended.", "Will be back.", "Five stars from us.", "Cheers.", "Top marks.", "Lovely.", "Thank you again."];
 const PRAISE = (theme?: string) =>
-  theme ? [`What stood out was ${theme}. That alone makes it worth coming back for.`, `Can't fault it. Special mention for ${theme}.`] : [];
+  theme
+    ? [
+        `What stood out was ${theme}. That alone makes it worth coming back for.`,
+        `Can't fault it. Special mention for ${theme}.`,
+        `If you read one thing: ${theme}. That is why we keep coming back.`,
+        `Everything was good, and ${theme} was the best bit.`,
+        `Honestly the ${theme} made our day.`,
+        `Plenty of places do the basics. Not many manage ${theme}.`,
+      ]
+    : [];
 
 const DRAFT = "Thank you {{firstname}}, that means a lot to everyone at {{businessname}}. I'll pass it on to the team.";
 const DRAFT_LOW = "Thank you for telling us, {{firstname}}. That isn't the experience we want anyone to have at {{businessname}}, and I'd like to put it right. Could you reach me directly so I can hear what happened?";
@@ -258,12 +303,35 @@ export function reviewsFor(location: string, persona?: { engagement?: string } |
   const h = profile.hub;
   const target = { needs: h.needReply, skipped: h.skipped, replied: Math.max(0, inbox - h.needReply - h.skipped) };
   let needs = 0, skipped = 0;
+  // Texts come off shuffled decks, one per pool, so no line repeats until
+  // its deck is exhausted (Ali, 9 Sep: "stop repeating that they are good
+  // with children"). Praise lines are rationed to one in six high reviews.
+  const closers = [...CLOSERS];
+  const deck = (arr: string[]) => {
+    const d = [...arr];
+    for (let i = d.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(rand() * (i + 1));
+      [d[i], d[j]] = [d[j], d[i]];
+    }
+    let k = 0;
+    return () => {
+      const pass = Math.floor(k / Math.max(1, d.length));
+      const line = d[k++ % d.length];
+      return pass === 0 || !line ? line : `${line} ${closers[(k + pass) % closers.length]}`;
+    };
+  };
+  const decks = { high: deck(HIGH), mid: deck(MID), low: deck(LOW(themeText)), praise: deck(PRAISE(praise)) };
   let compares = 0;
+  let highs = 0;
   list.forEach((x, i) => {
     const low = typeof x.rating === "number" ? x.rating <= 2 : x.rating === "down";
     const mid = typeof x.rating === "number" && x.rating === 3;
-    const pool = low ? LOW(themeText) : mid ? MID : praise && rand() < 0.35 ? PRAISE(praise) : HIGH;
-    x.text = pool[Math.floor(rand() * pool.length)];
+    if (low) x.text = decks.low();
+    else if (mid) x.text = decks.mid();
+    else {
+      highs += 1;
+      x.text = praise && highs % 6 === 0 ? decks.praise() : decks.high();
+    }
     // The first two low reviews in the last N name the sibling branch.
     if (low && r.compare && i < r.lastN && compares < 2) {
       x.text = COMPARE(r.compare.self, r.compare.label)[compares];
