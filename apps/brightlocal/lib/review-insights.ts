@@ -175,9 +175,12 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
   // roadmap's "Did you know" style needs a source we can cite, for example
   // BrightLocal's Local Consumer Review Survey; until one is chosen, the
   // fact quotes the location's own numbers, which are always true.
+  // ONE sentence (Ali, 9 Sep: "the nugget text string is too long").
   const fact =
     h.allTime > 0
-      ? `Did you know ${h.fiveStar} of your ${h.reviews} reviews are five stars? ${h.needReply > 0 ? `And ${h.needReply} reviews are still waiting for a thank you.` : "And every review has been answered."}`
+      ? h.needReply > 0
+        ? `Did you know ${h.needReply} of your ${h.allTime} reviews are still waiting for a thank you?`
+        : `Did you know ${h.fiveStar} of your ${h.reviews} reviews are five stars?`
       : null;
 
   return { goal, lede, items, fact };

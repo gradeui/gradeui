@@ -22,23 +22,20 @@ export function BeaconNugget() {
   const link = first?.links[0];
   if (!plan.fact && !first) return null;
   return (
+    // A banner, not a card: three-quarters width, centred, close to the
+    // table above it, one sentence and one button (Ali, 9 Sep).
     <div
       data-hook="beacon-nugget"
-      className="mt-6 flex flex-col gap-5 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 lg:flex-row lg:items-center lg:gap-10"
+      className="mx-auto flex w-full flex-col gap-4 rounded-xl border bg-[var(--ds-tailwind-colors-base-white)] px-6 py-5 lg:w-3/4 lg:flex-row lg:items-center lg:gap-6"
     >
-      <Lightbulb className="hidden size-8 shrink-0 text-[var(--ds-tailwind-colors-green-500)] lg:block" />
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <p className="text-label-sm text-muted-foreground">Before you go</p>
-        {plan.fact ? <p className="text-metric font-display text-balance max-w-[40ch]">{plan.fact}</p> : null}
-        {first ? (
-          <p className="text-body text-muted-foreground max-w-[60ch] text-pretty">
-            One easy thing to do now: {first.label}
-          </p>
-        ) : null}
+      <Lightbulb className="hidden size-6 shrink-0 text-[var(--ds-tailwind-colors-green-500)] lg:block" />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {plan.fact ? <p className="text-heading-subsection text-balance">{plan.fact}</p> : null}
+        {first ? <p className="text-body-sm text-muted-foreground text-pretty">One easy thing to do now: {first.label}</p> : null}
       </div>
       {link ? (
         <span className="inline-flex shrink-0" data-grade-goto={link.goto}>
-          <Button variant="primary" dataHook="beacon-nugget-cta">
+          <Button variant="primary" size="sm" dataHook="beacon-nugget-cta">
             {link.label}
             <ArrowRight className="size-4" />
           </Button>
