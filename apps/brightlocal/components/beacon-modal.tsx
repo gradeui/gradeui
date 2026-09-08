@@ -17,6 +17,15 @@ import { ReviewSummary, BeaconBadge, BeaconPageBlock, SummaryCharts } from "@/co
 import { statsFor } from "@/lib/reviews-data";
 import { usePersona } from "@/lib/demo";
 import { ReviewInsights } from "@/components/review-insights";
+import { pickIllustration } from "@/lib/illustrations";
+
+const PAGE_NAME: Record<string, string> = { tracker: "Review Tracker", builder: "Review Builder", showcase: "Review Showcase" };
+const ART_KEYS: Record<string, string[]> = { plan: ["fix", "win", "habit"], summary: ["reviews", "stars"], tracker: ["velocity", "spike"], builder: ["campaign", "email", "ask"], showcase: ["website", "widget"] };
+
+function HeaderArt({ section, page }: { section: string; page?: string | null }) {
+  const Art = pickIllustration(ART_KEYS[section === "plan" ? "plan" : page ?? "summary"]);
+  return <Art className="size-16 shrink-0" />;
+}
 
 export function BeaconModal() {
   const { open, close, page, section } = useBeaconModal();
@@ -33,10 +42,19 @@ export function BeaconModal() {
         data-beacon-section={section}
         className="flex max-h-[94vh] w-[min(96vw,1400px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,1400px)]"
       >
-        <div className="flex shrink-0 items-center justify-between gap-4 border-b px-6 py-4" data-hook="beacon-modal-header">
-          <div className="flex min-w-0 items-center gap-3">
-            <BeaconBadge dataHook="beacon-modal-badge" beta />
-            <DialogTitle className="text-heading-subsection leading-normal">{section === "plan" ? `Beacon's plan for ${locationName}` : `Beacon insights for ${locationName}`}</DialogTitle>
+        <div className="flex shrink-0 items-start justify-between gap-6 border-b px-6 py-5" data-hook="beacon-modal-header">
+          {/* The trial recap's header format (Ali, 10 Sep: "a lovely header
+              format"): an illustration picked for what the dialog is about,
+              the badge and the location on one line, the title under it. */}
+          <div className="flex min-w-0 items-center gap-4">
+            <HeaderArt section={section} page={page} />
+            <div className="flex min-w-0 flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <BeaconBadge dataHook="beacon-modal-badge" beta />
+                <span className="text-label-sm text-muted-foreground">{locationName}</span>
+              </div>
+              <DialogTitle className="text-heading-page leading-tight">{section === "plan" ? "Beacon's plan for you" : page ? `What Beacon sees in your ${PAGE_NAME[page]}` : "Beacon's summary of your reviews"}</DialogTitle>
+            </div>
           </div>
           <DialogDescription className="sr-only">Your AI summary for this location.</DialogDescription>
           <DialogClose asChild>

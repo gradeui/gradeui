@@ -27,6 +27,7 @@ import { reviewsFor } from "@/lib/reviews-data";
 import { STATS } from "@/lib/first-run";
 import { pickIllustration } from "@/lib/illustrations";
 import { Rating } from "@brightlocal/ui-components/rating";
+import { SITE_MARK, SITE_LABEL } from "@/components/site-marks";
 import { Lightbulb } from "@brightlocal/icons";
 import { FirstRunBand } from "@/components/first-run";
 import { Button } from "@brightlocal/ui-components/button";
@@ -216,9 +217,13 @@ export function ReviewSummary({ full = false, bare = false }: { full?: boolean; 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-10">
         {/* Globey, the DS mascot, so this reads as Beacon speaking rather
             than a stat block. Same illustration family the empty states use. */}
-        <div className="hidden shrink-0 lg:block" aria-hidden>
-          <GlobeyCalmOpen1 className="h-28 w-auto" />
-        </div>
+        {/* No body illustration in the dialog: its header carries one (the
+            trial recap's format, Ali's preferred one, 10 Sep). */}
+        {bare ? null : (
+          <div className="hidden shrink-0 lg:block" aria-hidden>
+            <GlobeyCalmOpen1 className="h-28 w-auto" />
+          </div>
+        )}
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <p className="text-label-sm flex flex-wrap items-center gap-x-2 gap-y-1" data-hook="review-summary-label">
             {/* In the modal the header already carries the badge. */}
@@ -430,12 +435,21 @@ export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"
 }
 
 
+function SiteCell({ source }: { source: string }) {
+  const Mark = SITE_MARK[source];
+  return (
+    <span className="flex w-28 shrink-0 items-center gap-1.5 text-muted-foreground">
+      {Mark ? <Mark className="size-3.5 shrink-0" /> : null}
+      {SITE_LABEL[source] ?? source}
+    </span>
+  );
+}
+
 function FactArt({ keywords }: { keywords: string[] }) {
   const Art = pickIllustration(keywords);
   return <Art className="size-16 shrink-0" />;
 }
 
-const SITE_LABEL: Record<string, string> = { google: "Google", facebook: "Facebook", tripadvisor: "TripAdvisor", yelp: "Yelp", trustpilot: "Trustpilot" };
 
 /** The early-days block: every review so far as a short timeline (there
  *  are few enough to list), then one sourced fact and the thing to do. */
@@ -448,7 +462,7 @@ function EarlyDays({ stats }: { stats: ReviewStats }) {
   const fact = stats.total < 20 ? STATS.twenty : STATS.threeMonths;
   const need = Math.max(0, 20 - stats.total);
   return (
-    <div className="mt-6 grid gap-6 border-t pt-6 lg:grid-cols-[3fr_2fr]" data-hook="review-summary-early">
+    <div className="mt-6 grid gap-6 border-t pt-6 lg:grid-cols-[3fr_2fr] lg:items-stretch" data-hook="review-summary-early">
       <div className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
         <p className="text-heading-subsection">
           {stats.total === 0 ? "No reviews yet" : `Your ${stats.total} ${stats.total === 1 ? "review" : "reviews"} so far, ${spanDays <= 1 ? "today" : `over ${spanDays} days`}`}
@@ -463,7 +477,7 @@ function EarlyDays({ stats }: { stats: ReviewStats }) {
                     ? <Rating value={r.rating} dataHook={`early-rating-${r.id}`} />
                     : <span className="text-muted-foreground">{r.rating === "up" ? "Recommends" : "Does not"}</span>}
                 </span>
-                <span className="w-20 shrink-0 text-muted-foreground">{SITE_LABEL[r.source] ?? r.source}</span>
+                <SiteCell source={r.source} />
                 <span className="min-w-0 truncate">{r.text}</span>
               </li>
             ))}
@@ -475,7 +489,7 @@ function EarlyDays({ stats }: { stats: ReviewStats }) {
       </div>
       {/* Tinted like the roadmap's Did you know bands (Ali, 10 Sep: "opportunity
           for colour here"), with an illustration picked by the fact's meaning. */}
-      <div className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] p-5" data-hook="review-summary-early-fact">
+      <div className="flex h-full flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] p-6" data-hook="review-summary-early-fact">
         <div className="flex items-center justify-between gap-3">
           <p className="flex items-center gap-2 text-heading-subsection"><Lightbulb className="size-4" />Did you know</p>
           <FactArt keywords={fact.art} />

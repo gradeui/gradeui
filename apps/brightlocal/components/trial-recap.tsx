@@ -72,7 +72,7 @@ export function TrialRecapModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent dataHook="trial-recap" className="flex max-h-[90vh] w-[min(96vw,880px)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none">
+      <DialogContent dataHook="trial-recap" className="flex max-h-[90vh] w-[min(96vw,1040px)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none">
         <div className="flex items-start justify-between gap-6 border-b px-8 py-6">
           <div className="flex items-center gap-4">
             <Art className="size-16 shrink-0" />
@@ -85,10 +85,14 @@ export function TrialRecapModal() {
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-8 overflow-y-auto px-8 py-8">
+        {/* Content left, the plan up the right (Ali, 10 Sep: "a better read,
+            then simply stack on mobile"). The plan panel is black with white
+            text, the site's pricing colours reversed for weight. */}
+        <div className="grid gap-0 overflow-y-auto lg:grid-cols-[3fr_2fr]">
+        <div className="flex flex-col gap-8 px-8 py-8">
           <DialogDescription className="sr-only">{headline}</DialogDescription>
           <p className="text-metric font-display max-w-[34ch] text-balance">{headline}</p>
-          <div className="grid gap-8 lg:grid-cols-2">
+          <div className="grid gap-8">
             <div className="flex flex-col gap-3">
               <p className="text-heading-subsection">{lapsed ? "Since the trial ended" : "What the trial has got you"}</p>
               <ul className="flex flex-col gap-2">
@@ -106,17 +110,18 @@ export function TrialRecapModal() {
               </ul>
             </div>
           </div>
-          <div className="flex flex-col gap-6 rounded-[20px] bg-[var(--ds-tailwind-colors-neutral-100)] p-6 lg:flex-row lg:items-center lg:justify-between">
+        </div>
+          <div className="flex flex-col justify-between gap-8 bg-[var(--ds-tailwind-colors-neutral-950)] px-8 py-8 text-[var(--ds-tailwind-colors-base-white)]" data-hook="trial-recap-plan">
             <div className="flex flex-col gap-2">
               <p className="text-label-sm font-semibold uppercase tracking-wide">{PLAN.name}</p>
               <p className="flex items-baseline gap-2">
                 <span className="text-display font-display leading-none">{PLAN.price}</span>
-                <span className="text-body-sm text-muted-foreground">{PLAN.per}</span>
+                <span className="text-body-sm text-[var(--ds-tailwind-colors-neutral-400)]">{PLAN.per}</span>
               </p>
               {lapsed ? (
-                <span className="inline-flex w-fit items-center rounded-full bg-[var(--ds-tailwind-colors-neutral-950)] px-3 py-1 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]">Come back this week: first month half price</span>
+                <span className="inline-flex w-fit items-center rounded-full bg-[var(--ds-tailwind-colors-green-500)] px-3 py-1 text-label-sm font-semibold text-[var(--ds-tailwind-colors-neutral-950)]">Come back this week: first month half price</span>
               ) : (
-                <span className="inline-flex w-fit items-center rounded-full bg-[var(--ds-tailwind-colors-green-200)] px-2.5 py-0.5 text-label-sm font-semibold">Saving 21% on annual</span>
+                <span className="inline-flex w-fit items-center rounded-full bg-[var(--ds-tailwind-colors-green-500)] px-2.5 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-neutral-950)]">Saving 21% on annual</span>
               )}
               <ul className="mt-2 flex flex-col gap-1">
                 {keeps.map((k) => (
@@ -124,12 +129,12 @@ export function TrialRecapModal() {
                 ))}
               </ul>
             </div>
-            <div className="flex shrink-0 flex-col gap-2">
+            <div className="flex flex-col gap-2">
               <Button variant="primary" dataHook="trial-recap-cta" onClick={() => setOpen(false)}>
                 {lapsed ? "Pick up where you left off" : "Keep everything"}
                 <ArrowRight className="size-4" />
               </Button>
-              <Button variant="outline" dataHook="trial-recap-later" onClick={() => setOpen(false)}>
+              <Button variant="outline" dataHook="trial-recap-later" className="border-[var(--ds-tailwind-colors-neutral-600)] bg-transparent text-[var(--ds-tailwind-colors-base-white)] hover:bg-[var(--ds-tailwind-colors-neutral-800)] hover:text-[var(--ds-tailwind-colors-base-white)]" onClick={() => setOpen(false)}>
                 {lapsed ? "Just looking" : "Remind me later"}
               </Button>
             </div>

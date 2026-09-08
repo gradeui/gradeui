@@ -11,22 +11,8 @@
  */
 
 import { Button } from "@brightlocal/ui-components/button";
-import { Check, GoogleOriginal, FacebookOriginal, YelpOriginal } from "@brightlocal/icons";
-
-// The same stand-in the Manager draws (no TripAdvisor mark in @brightlocal/icons yet).
-function TripAdvisorMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" focusable="false" data-ds-standin="brand-mark">
-      <path d="M12 4.4c2.2 0 4.1 1 5.3 2.5H6.7C7.9 5.4 9.8 4.4 12 4.4Z" fill="#00AF87" />
-      <circle cx="7.2" cy="13.1" r="5.1" fill="#fff" stroke="#00AF87" strokeWidth="1.8" />
-      <circle cx="16.8" cy="13.1" r="5.1" fill="#fff" stroke="#00AF87" strokeWidth="1.8" />
-      <circle cx="7.2" cy="13.1" r="2.1" fill="#000" />
-      <circle cx="16.8" cy="13.1" r="2.1" fill="#000" />
-    </svg>
-  );
-}
-
-const MARK: Record<string, React.ComponentType<{ className?: string }>> = { google: GoogleOriginal, facebook: FacebookOriginal, tripadvisor: TripAdvisorMark, yelp: YelpOriginal };
+import { Check } from "@brightlocal/icons";
+import { SITE_MARK as MARK } from "@/components/site-marks";
 
 const REPORT_SETTINGS = "screen:dmtkj124xagqa";
 const NEXT_SITES = [
