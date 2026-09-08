@@ -17,6 +17,7 @@ import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
 import { reviewPlanFor } from "@/lib/review-insights";
 import { UpsellStrip } from "@/components/upsell";
+import { BeaconBadge } from "@/components/review-summary";
 import { useBeaconModal } from "@/lib/beacon-modal";
 import { Button } from "@brightlocal/ui-components/button";
 import { ArrowRight } from "@brightlocal/icons";
@@ -55,14 +56,18 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
               dataHook="upsell-auto-reply"
             />
           ) : null}
-          {/* The goal pill, the roadmap's "Stage 1 Goal" flag. */}
-          <span
-            data-hook="review-insights-pill"
-            className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-100)] px-2.5 py-1 text-label-sm font-semibold text-foreground"
-          >
-            <Flag className="size-3.5 text-[var(--ds-tailwind-colors-green-500)]" />
-            This week's goal
-          </span>
+          {/* The goal pill, the roadmap's "Stage 1 Goal" flag, with the
+              Beacon Beta badge beside it so the beta is called out here too. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              data-hook="review-insights-pill"
+              className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-100)] px-2.5 py-1 text-label-sm font-semibold text-foreground"
+            >
+              <Flag className="size-3.5 text-muted-foreground" />
+              This week's goal
+            </span>
+            <BeaconBadge beta dataHook="review-insights-badge" />
+          </div>
           <h2 className="text-metric font-display text-foreground max-w-prose text-pretty" data-hook="review-insights-goal">
             <Mark text={plan.goal.text} mark={plan.goal.mark} />
           </h2>
@@ -109,10 +114,13 @@ export function ReviewPlanStrip() {
       data-hook="review-plan-strip"
       className="flex flex-col gap-3 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 shadow-sm"
     >
-      <span className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-100)] px-2 py-0.5 text-label-sm font-semibold text-foreground">
-        <Flag className="size-3 text-[var(--ds-tailwind-colors-green-500)]" />
-        This week's goal
-      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-100)] px-2 py-0.5 text-label-sm font-semibold text-foreground">
+          <Flag className="size-3 text-muted-foreground" />
+          This week's goal
+        </span>
+        <BeaconBadge beta dataHook="review-plan-strip-badge" />
+      </div>
       <p className="text-metric font-display text-balance max-w-[40ch]" data-hook="review-plan-strip-goal">
         <Mark text={plan.goal.text} mark={plan.goal.mark} />
       </p>
