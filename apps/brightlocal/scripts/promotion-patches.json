@@ -88,6 +88,31 @@
       "why": "the guide (starter) or the plan (everyone else) leads the page, above the cards (Ali, 9 Sep: 'they might also sit at the top of the page')",
       "find": "          {starter ? <StarterGuide /> : null}\n          <div className=\"grid grid-cols-1 gap-4 md:grid-cols-2\">",
       "replace": "          {starter ? <StarterGuide /> : <ReviewInsights />}\n          <div className=\"grid grid-cols-1 gap-4 md:grid-cols-2\">"
+    },
+    {
+      "why": "AI summary import",
+      "find": "import { ReviewInsights } from \"@/components/review-insights\";",
+      "replace": "import { ReviewInsights } from \"@/components/review-insights\";\nimport { ReviewSummary } from \"@/components/review-summary\";"
+    },
+    {
+      "why": "the AI summary leads the page, above the guide or the plan",
+      "find": "          {starter ? <StarterGuide /> : <ReviewInsights />}",
+      "replace": "          <ReviewSummary />\n          {starter ? <StarterGuide /> : <ReviewInsights />}"
+    },
+    {
+      "why": "hub numbers are read off the shared dataset, not typed",
+      "find": "import { profileFor } from \"@/lib/location-profiles\";",
+      "replace": "import { profileFor } from \"@/lib/location-profiles\";\nimport { statsFor } from \"@/lib/reviews-data\";"
+    },
+    {
+      "why": "cards read the dataset's stats",
+      "find": "function hubCardsFor(profile) {\n  const h = profile.hub;\n  return [\n    { ...HUB_CARDS[0], headline: String(h.needReply), parts: [{ k: \"Replied\", v: String(h.replied) }, { k: \"Skipped\", v: String(h.skipped) }, { k: \"All time\", v: String(h.allTime) }] },\n    { ...HUB_CARDS[1], headline: h.rating, parts: [{ k: \"Reviews\", v: h.reviews }, { k: \"Five star\", v: h.fiveStar }, { k: \"Sources\", v: String(h.sourceCount) }] },",
+      "replace": "function hubCardsFor(h) {\n  return [\n    { ...HUB_CARDS[0], headline: String(h.needReply), parts: [{ k: \"Replied\", v: String(h.replied) }, { k: \"Skipped\", v: String(h.skipped) }, { k: \"In your inbox\", v: String(h.inbox) }] },\n    { ...HUB_CARDS[1], headline: h.rating, parts: [{ k: \"Reviews\", v: h.total.toLocaleString(\"en-GB\") }, { k: \"Five star\", v: String(h.fiveStar) }, { k: \"Sources\", v: String(h.sourceCount) }] },"
+    },
+    {
+      "why": "cards read the dataset's stats",
+      "find": "  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(profileFor(locationKey));",
+      "replace": "  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(statsFor(locationKey, persona));"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [
@@ -150,6 +175,21 @@
       "why": "observe the band, or the header itself when there is none",
       "find": "    const ro = new ResizeObserver(measure);\n    ro.observe(band);",
       "replace": "    const ro = new ResizeObserver(measure);\n    ro.observe(watched);"
+    },
+    {
+      "why": "inbox rows come from the shared dataset",
+      "find": "import { profileFor } from \"@/lib/location-profiles\";",
+      "replace": "import { profileFor } from \"@/lib/location-profiles\";\nimport { inboxRowsFor, TODAY as DATA_TODAY } from \"@/lib/reviews-data\";"
+    },
+    {
+      "why": "rows per location from the dataset; the starter keeps its four",
+      "find": "const seedRowsFor = (persona, location) =>\n  persona?.engagement === \"new\" ? STARTER_REVIEWS : SEED_REVIEWS.slice(0, profileFor(location).inboxRows);",
+      "replace": "const seedRowsFor = (persona, location) =>\n  persona?.engagement === \"new\" ? STARTER_REVIEWS : inboxRowsFor(location, persona);"
+    },
+    {
+      "why": "today is the dataset's today, so daysAgo agrees with the Tracker and the summary",
+      "find": "const TODAY = new Date(2026, 7, 17);",
+      "replace": "const TODAY = DATA_TODAY;"
     }
   ],
   "app/(app)/locations/[location]/reviews/tracker/page.jsx": [
@@ -192,6 +232,21 @@
       "why": "page selects by persona and location",
       "find": "  const persona = usePersona();\n  selectTrackerData(persona);\n",
       "replace": "  const persona = usePersona();\n  const locationKey = useLocationKey();\n  selectTrackerData(persona, locationKey);\n"
+    },
+    {
+      "why": "tracker rows come from the shared dataset",
+      "find": "import { profileFor } from \"@/lib/location-profiles\";",
+      "replace": "import { profileFor } from \"@/lib/location-profiles\";\nimport { reviewsFor } from \"@/lib/reviews-data\";"
+    },
+    {
+      "why": "buildReviews reads the dataset the Manager and the summary read, so charts, counts and sentences agree",
+      "find": "function buildReviews() {\n  const rand = mulberry32(20260816);",
+      "replace": "let DATASET_KEY = null;\nfunction buildReviews() {\n  // The shared dataset (lib/reviews-data) when the page has selected a\n  // location; the seeded generator below stays as the fallback.\n  if (DATASET_KEY) {\n    return reviewsFor(DATASET_KEY.location, DATASET_KEY.persona).map((x) => ({\n      source: x.source,\n      bucket: typeof x.rating === \"number\" ? String(x.rating) : x.rating,\n      daysAgo: x.daysAgo,\n    }));\n  }\n  const rand = mulberry32(20260816);"
+    },
+    {
+      "why": "select the dataset with the persona and location",
+      "find": "  const persona = usePersona();\n  const locationKey = useLocationKey();\n  selectTrackerData(persona, locationKey);",
+      "replace": "  const persona = usePersona();\n  const locationKey = useLocationKey();\n  selectTrackerData(persona, locationKey);\n  DATASET_KEY = { location: locationKey, persona };"
     }
   ],
   "app/(app)/locations/page.jsx": [

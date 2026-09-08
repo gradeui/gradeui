@@ -67,6 +67,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
+import { inboxRowsFor, TODAY as DATA_TODAY } from "@/lib/reviews-data";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -204,7 +205,7 @@ const UNCONNECTED_SOURCES = [
 
 const RECOMMENDATION_SOURCE = "facebook";
 const AI_DRAFT_QUOTA = 3;
-const TODAY = new Date(2026, 7, 17);
+const TODAY = DATA_TODAY;
 
 const shortDate = (iso) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
@@ -525,7 +526,7 @@ const STARTER_REVIEWS = SEED_REVIEWS.slice(0, 4).map((row) => {
   return next;
 });
 const seedRowsFor = (persona, location) =>
-  persona?.engagement === "new" ? STARTER_REVIEWS : SEED_REVIEWS.slice(0, profileFor(location).inboxRows);
+  persona?.engagement === "new" ? STARTER_REVIEWS : inboxRowsFor(location, persona);
 
 const DEMO_FAILURE_IDS = SEED_REVIEWS.map((row, i) => ({
   id: `r${i}`,

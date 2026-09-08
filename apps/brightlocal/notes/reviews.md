@@ -1,5 +1,18 @@
 # Reviews hub
 
+## AI summary and What to do next
+
+The page opens with an AI summary in its own style (Poppins narrative,
+numbers set as metrics, bad news first with the why, a "Did you know"
+that softens and instructs) and then the plan: a goal, key tactics, each
+opening the tool that does it. Both are computed from ONE generated
+review dataset per location (`lib/reviews-data.ts`), which the Review
+Manager rows and the Review Tracker charts also read. So "out of your
+last 10 reviews, 4 were 2 stars" is literally the top of the Manager.
+The authored inputs live in `lib/location-profiles.ts` (`recent`:
+last-N lows, month-on-month change, the spike and its campaign, the
+theme customers mention).
+
 The landing page for the Reviews area. Four cards, one per tool, each
 with a headline number and a breakdown capped at three parts.
 

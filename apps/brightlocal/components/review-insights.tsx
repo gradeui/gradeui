@@ -14,7 +14,7 @@ import { Flag, Target, Lightbulb } from "@brightlocal/icons";
 import { InsightCard } from "@brightlocal/proposal-insights";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
-import { profileFor } from "@/lib/location-profiles";
+import { statsFor } from "@/lib/reviews-data";
 import { reviewPlanFor } from "@/lib/review-insights";
 
 /** The green highlighter mark from the brand material, on a phrase. */
@@ -34,7 +34,7 @@ export function ReviewInsights() {
   const persona = usePersona();
   const location = useLocationKey();
   if (persona.engagement === "new") return null;
-  const plan = reviewPlanFor(profileFor(location, persona), persona);
+  const plan = reviewPlanFor(statsFor(location, persona), persona);
   return (
     <Card className="w-full max-w-none" density="default" dataHook="review-insights">
       <CardHeader>

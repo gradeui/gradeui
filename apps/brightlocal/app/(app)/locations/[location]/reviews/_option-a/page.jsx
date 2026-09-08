@@ -34,8 +34,10 @@ import {
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
+import { statsFor } from "@/lib/reviews-data";
 import { StarterGuide } from "@/components/starter-guide";
 import { ReviewInsights } from "@/components/review-insights";
+import { ReviewSummary } from "@/components/review-summary";
 
 /* ================================ reference =============================== */
 
@@ -162,11 +164,10 @@ const STARTER_HUB_CARDS = [
 // PER-LOCATION CARDS (app-side, 9 Sep): the same four signposts with the
 // numbers of the location in the URL, from lib/location-profiles (where
 // each number is read off the page it links to, as HUB_CARDS' were).
-function hubCardsFor(profile) {
-  const h = profile.hub;
+function hubCardsFor(h) {
   return [
-    { ...HUB_CARDS[0], headline: String(h.needReply), parts: [{ k: "Replied", v: String(h.replied) }, { k: "Skipped", v: String(h.skipped) }, { k: "All time", v: String(h.allTime) }] },
-    { ...HUB_CARDS[1], headline: h.rating, parts: [{ k: "Reviews", v: h.reviews }, { k: "Five star", v: h.fiveStar }, { k: "Sources", v: String(h.sourceCount) }] },
+    { ...HUB_CARDS[0], headline: String(h.needReply), parts: [{ k: "Replied", v: String(h.replied) }, { k: "Skipped", v: String(h.skipped) }, { k: "In your inbox", v: String(h.inbox) }] },
+    { ...HUB_CARDS[1], headline: h.rating, parts: [{ k: "Reviews", v: h.total.toLocaleString("en-GB") }, { k: "Five star", v: String(h.fiveStar) }, { k: "Sources", v: String(h.sourceCount) }] },
     { ...HUB_CARDS[2], headline: String(h.running), parts: [{ k: "Scheduled", v: String(h.scheduled) }, { k: "Draft", v: String(h.draft) }, { k: "All time", v: String(h.campaignsAll) }] },
     HUB_CARDS[3],
   ];
@@ -247,7 +248,7 @@ export default function ReviewsPage() {
   const persona = usePersona();
   const starter = persona.engagement === "new";
   const locationKey = useLocationKey();
-  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(profileFor(locationKey));
+  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(statsFor(locationKey, persona));
   return (
     <SidebarProvider dataHook="provider" defaultOpen>
       <AppLayoutShell
@@ -287,6 +288,7 @@ export default function ReviewsPage() {
         }
       >
         <GlobalLayoutContentBody dataHook="reviews-page-body" className="space-y-6 pb-10">
+          <ReviewSummary />
           {starter ? <StarterGuide /> : <ReviewInsights />}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {cards.map((card) => (

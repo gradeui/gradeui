@@ -21,7 +21,27 @@ export interface TrackerSource {
   down?: number;
 }
 
+/** What happened lately, for the AI summary. Numbers are authored per
+ *  location and must agree with the profile's totals; the campaign is one
+ *  the Builder seed actually shows for that location. */
+export interface RecentActivity {
+  /** Of the last N reviews, how many were at `lowStar` or below. */
+  lastN: number;
+  lowCount: number;
+  lowStar: number;
+  /** Reviews received this month against last month, as a percentage. */
+  monthChangePct: number;
+  /** Share of this month's reviews at four stars or above. */
+  fourPlusPct: number;
+  /** A spike tied to a campaign send, if there was one. */
+  spike?: { date: string; campaign: string; channel: string; incentive?: string };
+  /** The one thing customers keep mentioning, good or bad. */
+  theme?: { text: string; good: boolean };
+}
+
 export interface LocationProfile {
+  /** What happened lately (AI summary). */
+  recent: RecentActivity;
   /** Rows of the Manager seed this location shows (max 60). */
   inboxRows: number;
   /** Tracker sources and the star mix across the star sources. */
@@ -59,6 +79,11 @@ const ENGAGED_SOURCES: TrackerSource[] = [
 export const LOCATION_PROFILES: Record<string, LocationProfile> = {
   // The captured account. Full seeds everywhere.
   "minus-one-studios": {
+    recent: {
+      lastN: 10, lowCount: 1, lowStar: 2, monthChangePct: 31, fourPlusPct: 84,
+      spike: { date: "3 Sep", campaign: "Bank Holiday Visitors", channel: "email" },
+      theme: { text: "how patient the team is with children", good: true },
+    },
     inboxRows: 60,
     sources: ENGAGED_SOURCES,
     starMix: { 5: 836, 4: 93, 3: 21, 2: 13, 1: 33 },
@@ -67,6 +92,11 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
   },
   // Harbour & Co, the flagship: busy, well run.
   "harbour-co": {
+    recent: {
+      lastN: 10, lowCount: 1, lowStar: 2, monthChangePct: 22, fourPlusPct: 79,
+      spike: { date: "3 Sep", campaign: "Bank Holiday Visitors", channel: "email" },
+      theme: { text: "the lunchtime queue", good: false },
+    },
     inboxRows: 41,
     sources: [
       { id: "google", name: "Google", stars: 262 },
@@ -80,6 +110,10 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
   },
   // Hove: newer site, fewer reviews, one campaign.
   "harbour-co-hove": {
+    recent: {
+      lastN: 10, lowCount: 2, lowStar: 2, monthChangePct: 9, fourPlusPct: 70,
+      theme: { text: "slow service on Saturday evenings", good: false },
+    },
     inboxRows: 23,
     sources: [
       { id: "google", name: "Google", stars: 96 },
@@ -92,6 +126,11 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
   },
   // Worthing: the weak one, replies falling behind.
   "harbour-co-worthing": {
+    recent: {
+      lastN: 10, lowCount: 4, lowStar: 2, monthChangePct: -18, fourPlusPct: 50,
+      spike: { date: "2 Aug", campaign: "Season Pass Holders", channel: "SMS", incentive: "a 10% discount" },
+      theme: { text: "cold food and long waits", good: false },
+    },
     inboxRows: 28,
     sources: [
       { id: "google", name: "Google", stars: 49 },
@@ -104,6 +143,11 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
   },
   // Northside Dental: the agency client with a reputation problem.
   "northside-dental": {
+    recent: {
+      lastN: 10, lowCount: 4, lowStar: 2, monthChangePct: 12, fourPlusPct: 55,
+      spike: { date: "2 Aug", campaign: "Season Pass Holders", channel: "SMS" },
+      theme: { text: "waiting times and missed callbacks", good: false },
+    },
     inboxRows: 35,
     sources: [
       { id: "google", name: "Google", stars: 141 },
@@ -120,6 +164,7 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
  *  Google reviews, nothing answered, no campaigns. Matches the starter
  *  seeds the Manager, Tracker and Builder apply. */
 export const STARTER_PROFILE: LocationProfile = {
+  recent: { lastN: 4, lowCount: 0, lowStar: 2, monthChangePct: 0, fourPlusPct: 100 },
   inboxRows: 4,
   sources: [{ id: "google", name: "Google", stars: 4 }],
   starMix: { 5: 3, 4: 1, 3: 0, 2: 0, 1: 0 },

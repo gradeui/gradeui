@@ -102,6 +102,7 @@ import { Fragment, useMemo, useRef, useState } from "react";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
+import { reviewsFor } from "@/lib/reviews-data";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -368,7 +369,17 @@ function mulberry32(a) {
   };
 }
 
+let DATASET_KEY = null;
 function buildReviews() {
+  // The shared dataset (lib/reviews-data) when the page has selected a
+  // location; the seeded generator below stays as the fallback.
+  if (DATASET_KEY) {
+    return reviewsFor(DATASET_KEY.location, DATASET_KEY.persona).map((x) => ({
+      source: x.source,
+      bucket: typeof x.rating === "number" ? String(x.rating) : x.rating,
+      daysAgo: x.daysAgo,
+    }));
+  }
   const rand = mulberry32(20260816);
   const pool = [];
   Object.entries(STAR_MIX).forEach(([bucket, n]) => {
@@ -1532,6 +1543,7 @@ export default function RMReviewTrackerPage() {
   const persona = usePersona();
   const locationKey = useLocationKey();
   selectTrackerData(persona, locationKey);
+  DATASET_KEY = { location: locationKey, persona };
   const HEADLINE_RATING = headlineRating();
   // The Download dialog's open state. The only piece of state App itself
   // owns — everything else on this page is owned by the card that draws it.

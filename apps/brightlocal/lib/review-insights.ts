@@ -14,7 +14,7 @@
  * actions with links), so the same InsightCard renders both.
  */
 
-import type { LocationProfile } from "@/lib/location-profiles";
+import type { ReviewStats } from "@/lib/reviews-data";
 import type { Persona } from "@/lib/personas";
 
 export interface ReviewInsight {
@@ -42,8 +42,8 @@ const BUILDER = "screen:dmt094j963aye";
 const SHOWCASE = "screen:dmt094lhmpwbs";
 const REPORT_SETTINGS = "screen:dmtkj124xagqa";
 
-export function reviewPlanFor(profile: LocationProfile, persona: Persona): ReviewPlan {
-  const h = profile.hub;
+export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan {
+  const h = { ...stats, allTime: stats.inbox, reviews: stats.total.toLocaleString("en-GB"), fiveStar: String(stats.fiveStar) };
   const starter = persona.engagement === "new";
   const rating = Number(h.rating);
   const items: ReviewInsight[] = [];
