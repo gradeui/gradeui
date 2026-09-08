@@ -33,7 +33,7 @@ const LOOK_LABELS: Record<string, string> = {
 };
 
 export function DemoSettingsPanel() {
-  const { menuOpen, setMenuOpen, settings, setPersona, setLook, setVariant, setEngine } = useDemo();
+  const { menuOpen, setMenuOpen, setNotesOpen, settings, setPersona, setLook, setVariant, setEngine } = useDemo();
   const router = useRouter();
   const pathname = usePathname();
   const go = (slug: string) => {
@@ -153,6 +153,17 @@ export function DemoSettingsPanel() {
             </CommandGroup>
             <CommandSeparator />
             <CommandGroup heading="More">
+              <CommandItem
+                dataHook="demo-notes"
+                value="page notes readme markdown"
+                onSelect={() => {
+                  setMenuOpen(false);
+                  setNotesOpen(true);
+                }}
+              >
+                Page notes
+                <CommandShortcut>Cmd+.</CommandShortcut>
+              </CommandItem>
               <CommandItem dataHook="demo-go-settings" value="settings page" onSelect={() => go("/settings")}>
                 Settings page
               </CommandItem>

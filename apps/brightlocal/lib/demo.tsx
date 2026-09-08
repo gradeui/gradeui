@@ -41,6 +41,8 @@ interface DemoContextValue {
   setEngine: (engine: "modified" | "native") => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
+  notesOpen: boolean;
+  setNotesOpen: (open: boolean) => void;
   /** Bumps whenever a setting changes; layouts key their subtree on it
    *  so every shell remounts and re-reads the seams. */
   epoch: number;
@@ -92,6 +94,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
   const [epoch, setEpoch] = React.useState(0);
   const [ready, setReady] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [notesOpen, setNotesOpen] = React.useState(false);
 
   // First mount: stored settings, then the URL persona on top.
   React.useEffect(() => {
@@ -129,6 +132,10 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
         e.preventDefault();
         setMenuOpen((o) => !o);
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === ".") {
+        e.preventDefault();
+        setNotesOpen((o) => !o);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -151,9 +158,11 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
         }),
       menuOpen,
       setMenuOpen,
+      notesOpen,
+      setNotesOpen,
       epoch,
     }),
-    [settings, update, menuOpen, epoch],
+    [settings, update, menuOpen, notesOpen, epoch],
   );
 
   // Shells read the seams at mount, so nothing renders until they are set.

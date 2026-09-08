@@ -3,6 +3,7 @@ import { VercelToolbar } from "@vercel/toolbar/next";
 import { GotoBridge } from "@/components/goto-bridge";
 import { DemoProvider } from "@/lib/demo";
 import { DemoSettingsPanel } from "@/components/demo-settings";
+import { PageNotes } from "@/components/page-notes";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function RootLayout({
           <GotoBridge />
           {children}
           <DemoSettingsPanel />
+          <PageNotes />
         </DemoProvider>
         {toolbar ? <VercelToolbar /> : null}
       </body>
