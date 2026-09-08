@@ -77,8 +77,8 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
   return {
     headline: starter ? "Three showcases are ready. None is on your site yet." : `${s.fiveStar} five-star reviews, and your website shows none of them.`,
     line: [
-      t("Did you know the people who read reviews on your own site are the ones who never look at Google? "), m(String(s.fiveStar), "Five-star reviews across every connected source, all time."), t(" of your "), m(s.total.toLocaleString("en-GB")), t(" reviews are five stars"),
-      ...(s.theme?.good ? [t(", and the thing they keep praising is "), m(s.theme.text), t(". That is the quote to put on the booking page.")] : [t(". The hand-picked showcase lets you choose which ones the booking page shows.")]),
+      t("The people who read reviews on your own site are the ones who never look at Google. "),
+      ...(s.theme?.good ? [t("The thing customers keep praising is "), m(s.theme.text), t(". That is the quote to put on the booking page.")] : [t("Your best reviews are ready to show; pick the ones the booking page should carry.")]),
     ],
     tiles: [
       { value: String(s.fiveStar), label: "five-star reviews" },
@@ -115,13 +115,14 @@ export function nuggetFor(page: NuggetPage, s: ReviewStats, persona: Persona): N
   if (page === "tracker") {
     return { fact: `Did you know ${s.googleShareThisMonth}% of this month's reviews came from Google?`, action: starter ? "Connect Facebook and TripAdvisor to see the rest." : "The other sources count too; make sure they are connected.", cta: { label: "See the reviews", goto: GOTO.manager } };
   }
+  // RULE: a nugget never restates the page's strip (Ali, 9 Sep). The strip
+  // already tells the Builder about the spike and the Showcase about the
+  // praised theme, so their nuggets say something else.
   if (page === "builder") {
     if (s.spike && s.spikeDayCount > 0)
-      return { fact: `Did you know your ${s.spike.campaign} ${s.spike.channel} brought ${s.spikeDayCount} reviews in two days?`, action: "Same again next month keeps the velocity up.", cta: { label: "Create a campaign", goto: GOTO.builder } };
+      return { fact: `Did you know your ${s.spike.campaign} ${s.spike.channel} brought ${s.spikeDayCount} reviews in two days?`, action: "Schedule the next one now and it sends itself.", cta: { label: "Schedule a campaign", goto: GOTO.builder } };
     return { fact: "Did you know businesses that ask get several times more reviews than those that wait?", action: "One campaign is enough to start.", cta: { label: "Create a campaign", goto: GOTO.builder } };
   }
-  // showcase
-  if (s.theme?.good)
-    return { fact: `Did you know customers keep praising ${s.theme.text}?`, action: "That is the quote for your booking page.", cta: { label: "Pick the reviews to show", goto: GOTO.manager } };
-  return { fact: `Did you know ${s.fiveStar} of your reviews are five stars?`, action: "The hand-picked showcase lets you choose which ones your site shows.", cta: { label: "Pick the reviews to show", goto: GOTO.manager } };
+  // showcase: the strip has the praised theme, so the nugget has the count.
+  return { fact: `Did you know ${s.fiveStar} of your ${s.total.toLocaleString("en-GB")} reviews are five stars?`, action: "The hand-picked showcase lets you choose the six your site shows.", cta: { label: "Pick the reviews to show", goto: GOTO.manager } };
 }
