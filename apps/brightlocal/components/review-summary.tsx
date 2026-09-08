@@ -225,13 +225,14 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
           </div>
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <p className="text-label-sm flex flex-wrap items-center gap-x-2 gap-y-1" data-hook="review-summary-label">
-            {/* In the modal the header already carries the badge. */}
-            {bare ? null : (
+          {/* In the dialog the header already carries the badge and the
+              title, so no eyebrow line at all (Ali, 11 Sep). */}
+          {bare ? null : (
+            <p className="text-label-sm flex flex-wrap items-center gap-x-2 gap-y-1" data-hook="review-summary-label">
               <BeaconBadge beta />
-            )}
-            <span className="text-muted-foreground">AI summary of your reviews, updated today</span>
-          </p>
+              <span className="text-muted-foreground">AI summary of your reviews, updated today</span>
+            </p>
+          )}
           <h2 className="text-metric font-display text-balance" data-hook="review-summary-headline">
             {summary.headline}
           </h2>
@@ -405,9 +406,7 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
   const b = pageBeaconFor(page, statsFor(location, persona), persona);
   return (
     <div className="flex flex-col gap-3" data-hook={`beacon-page-block-${page}`}>
-      <p className="text-label-sm text-muted-foreground">
-        {page === "tracker" ? "Review Tracker" : page === "builder" ? "Review Builder" : "Review Showcase"}
-      </p>
+      {/* No eyebrow (Ali, 11 Sep: "classic AI eyebrows"); the header names the page. */}
       <p className="text-metric font-display text-balance max-w-[40ch]">{b.headline}</p>
       <p className="text-body text-foreground max-w-[60ch] text-pretty">
         {b.line.map((sg, j) => (
