@@ -103,6 +103,7 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
 import { reviewsFor } from "@/lib/reviews-data";
+import { BeaconPageStrip } from "@/components/review-summary";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -1668,6 +1669,7 @@ export default function RMReviewTrackerPage() {
             className="gap-4 pb-10"
             style={{ "--rm-sticky-top": STICKY_TOP }}
           >
+            <BeaconPageStrip page="tracker" />
             {/* CONNECT FACEBOOK BANNER: PULLED for now (Ali, 18 Aug: "get rid
                 of the facebook connect banner for now it's getting in my way").
                 Not a decision that it should not exist, so here is what it was

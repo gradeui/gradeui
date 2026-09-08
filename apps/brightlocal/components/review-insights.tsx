@@ -29,27 +29,27 @@ function Mark({ text, mark }: { text: string; mark: string }) {
   return (
     <>
       {text.slice(0, i)}
-      <mark className="rounded-sm bg-[var(--ds-tailwind-colors-green-200)] px-1 text-inherit">{mark}</mark>
+      <mark className="rounded-sm bg-[var(--ds-tailwind-colors-neutral-100)] px-1 text-inherit">{mark}</mark>
       {text.slice(i + mark.length)}
     </>
   );
 }
 
-export function ReviewInsights() {
+export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
   const persona = usePersona();
   const location = useLocationKey();
   const stats = statsFor(location, persona);
   const plan = reviewPlanFor(stats, persona);
   return (
-    <Card className="w-full max-w-none" density="default" dataHook="review-insights">
+    <Card className={bare ? "w-full max-w-none rounded-none border-0 border-t bg-transparent pt-8 shadow-none" : "w-full max-w-none"} density="default" dataHook="review-insights">
       <CardHeader>
         <div className="flex flex-col gap-3">
           {/* The goal pill, the roadmap's "Stage 1 Goal" flag. */}
           <span
             data-hook="review-insights-pill"
-            className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-green-300)] px-2.5 py-1 text-label-sm font-semibold text-[var(--ds-tailwind-colors-neutral-950)]"
+            className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-100)] px-2.5 py-1 text-label-sm font-semibold text-foreground"
           >
-            <Flag className="size-3.5" />
+            <Flag className="size-3.5 text-[var(--ds-tailwind-colors-green-500)]" />
             This week's goal
           </span>
           <h2 className="text-heading-section text-foreground max-w-prose" data-hook="review-insights-goal">
@@ -86,9 +86,9 @@ export function ReviewInsights() {
           {plan.fact ? (
             <div
               data-hook="review-insights-fact"
-              className="mt-2 flex items-start gap-4 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] px-5 py-4"
+              className="mt-2 flex items-start gap-4 rounded-xl bg-[var(--ds-tailwind-colors-neutral-100)] px-5 py-4"
             >
-              <Lightbulb className="mt-0.5 size-6 shrink-0 text-[var(--ds-tailwind-colors-neutral-950)]" />
+              <Lightbulb className="mt-0.5 size-6 shrink-0 text-[var(--ds-tailwind-colors-green-500)]" />
               <p className="text-body max-w-prose">{plan.fact}</p>
             </div>
           ) : null}
@@ -115,8 +115,8 @@ export function ReviewPlanStrip() {
       className="flex flex-col gap-3 rounded-xl border bg-card px-5 py-4 lg:flex-row lg:items-center lg:gap-6"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <span className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-green-300)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-neutral-950)]">
-          <Flag className="size-3" />
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-100)] px-2 py-0.5 text-label-sm font-semibold text-foreground">
+          <Flag className="size-3 text-[var(--ds-tailwind-colors-green-500)]" />
           This week's goal
         </span>
         <p className="text-heading-subsection font-display" data-hook="review-plan-strip-goal">

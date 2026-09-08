@@ -252,3 +252,9 @@
   font-size: 0.9em;
   font-weight: var(--ds-font-weight-normal, 400);
 }
+
+/* Beacon modal: the DS DialogContent paints its own corner X; the modal
+   carries a labelled Close in its fixed header instead. */
+[data-hook="beacon-modal"] > button:not([data-hook]) {
+  display: none;
+}

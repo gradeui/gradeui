@@ -117,6 +117,7 @@ import { useUrlParam } from "@/lib/url-state";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
+import { BeaconPageStrip } from "@/components/review-summary";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -6396,6 +6397,7 @@ export default function RMReviewBuilderPage() {
         }
       >
         <GlobalLayoutContentBody className="gap-4">
+          {view === "hub" ? <BeaconPageStrip page="builder" /> : null}
           {view === "hub" ? (
             <CampaignsPage
               campaigns={campaigns}

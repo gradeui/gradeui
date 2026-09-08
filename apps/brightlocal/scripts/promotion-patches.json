@@ -41,6 +41,16 @@
       "why": "campaigns per location; starter still has none",
       "find": "  const persona = usePersona();\n  const [campaigns, setCampaigns] = useState(() => (persona.engagement === \"new\" ? [] : seedCampaigns()));\n",
       "replace": "  const persona = usePersona();\n  const locationKey = useLocationKey();\n  const [campaigns, setCampaigns] = useState(() =>\n    persona.engagement === \"new\" ? [] : seedCampaigns().slice(0, profileFor(locationKey).campaigns),\n  );\n"
+    },
+    {
+      "why": "Beacon page strip import",
+      "find": "import { profileFor } from \"@/lib/location-profiles\";",
+      "replace": "import { profileFor } from \"@/lib/location-profiles\";\nimport { BeaconPageStrip } from \"@/components/review-summary\";"
+    },
+    {
+      "why": "Beacon leads the Builder hub view: what asking did",
+      "find": "        <GlobalLayoutContentBody className=\"gap-4\">\n          {view === \"hub\" ? (\n            <CampaignsPage",
+      "replace": "        <GlobalLayoutContentBody className=\"gap-4\">\n          {view === \"hub\" ? <BeaconPageStrip page=\"builder\" /> : null}\n          {view === \"hub\" ? (\n            <CampaignsPage"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -277,6 +287,16 @@
       "why": "select the dataset with the persona and location",
       "find": "  const persona = usePersona();\n  const locationKey = useLocationKey();\n  selectTrackerData(persona, locationKey);",
       "replace": "  const persona = usePersona();\n  const locationKey = useLocationKey();\n  selectTrackerData(persona, locationKey);\n  DATASET_KEY = { location: locationKey, persona };"
+    },
+    {
+      "why": "Beacon page strip import",
+      "find": "import { reviewsFor } from \"@/lib/reviews-data\";",
+      "replace": "import { reviewsFor } from \"@/lib/reviews-data\";\nimport { BeaconPageStrip } from \"@/components/review-summary\";"
+    },
+    {
+      "why": "Beacon leads the Tracker: volume and cadence",
+      "find": "          <GlobalLayoutContentBody\n            className=\"gap-4 pb-10\"\n            style={{ \"--rm-sticky-top\": STICKY_TOP }}\n          >",
+      "replace": "          <GlobalLayoutContentBody\n            className=\"gap-4 pb-10\"\n            style={{ \"--rm-sticky-top\": STICKY_TOP }}\n          >\n            <BeaconPageStrip page=\"tracker\" />"
     }
   ],
   "app/(app)/locations/page.jsx": [
@@ -294,6 +314,18 @@
       "why": "client filter only for the agency, with real client names",
       "find": "          <Select value={client} onValueChange={setClient}>\n            <SelectTrigger dataHook=\"locations-client-select\" className=\"w-40\">\n              <SelectValue placeholder=\"All Clients\" />\n            </SelectTrigger>\n            <SelectContent>\n              <SelectItem value=\"all\">All Clients</SelectItem>\n              <SelectItem value=\"client-a\">Client A</SelectItem>\n              <SelectItem value=\"client-b\">Client B</SelectItem>\n            </SelectContent>\n          </Select>",
       "replace": "          {persona.accountType === \"agency\" ? (\n          <Select value={client} onValueChange={setClient}>\n            <SelectTrigger dataHook=\"locations-client-select\" className=\"w-44\">\n              <SelectValue placeholder=\"All Clients\" />\n            </SelectTrigger>\n            <SelectContent>\n              <SelectItem value=\"all\">All Clients</SelectItem>\n              <SelectItem value=\"minus-one-studios\">Minus 1 Studios</SelectItem>\n              <SelectItem value=\"harbour-co\">Harbour &amp; Co</SelectItem>\n              <SelectItem value=\"northside-dental\">Northside Dental</SelectItem>\n            </SelectContent>\n          </Select>\n          ) : null}"
+    }
+  ],
+  "app/(app)/locations/[location]/reviews/showcase/_option-a/page.jsx": [
+    {
+      "why": "Beacon page strip import",
+      "find": "import { useEffect, useMemo, useState } from \"react\";",
+      "replace": "import { useEffect, useMemo, useState } from \"react\";\nimport { BeaconPageStrip } from \"@/components/review-summary\";"
+    },
+    {
+      "why": "Beacon leads the Showcase: the reasons why",
+      "find": "        <GlobalLayoutContentBody className=\"gap-4\">\n          <WidgetsDashboard",
+      "replace": "        <GlobalLayoutContentBody className=\"gap-4\">\n          <BeaconPageStrip page=\"showcase\" />\n          <WidgetsDashboard"
     }
   ]
 }

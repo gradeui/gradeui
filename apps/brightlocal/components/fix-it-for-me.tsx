@@ -40,7 +40,7 @@ export function FixItForMe({ count, goto }: { count: number; goto: string }) {
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center gap-2 py-2 text-body-sm text-muted-foreground">
-            {done ? <Check className="size-4 text-[var(--ds-tailwind-colors-green-600)]" /> : <LoaderCircle className="size-4 animate-spin" />}
+            {done ? <Check className="size-4" /> : <LoaderCircle className="size-4 animate-spin" />}
             {done ? "Drafts are waiting in Review Manager." : "This usually takes a few seconds."}
           </div>
           <DialogFooter>

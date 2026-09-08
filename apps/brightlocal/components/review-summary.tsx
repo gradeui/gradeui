@@ -25,15 +25,19 @@ import { Button } from "@brightlocal/ui-components/button";
 import { ArrowRight } from "@brightlocal/icons";
 import { reviewSummaryFor, registerFor, type Segment } from "@/lib/review-summary";
 import type { ReviewStats } from "@/lib/reviews-data";
+import { pageBeaconFor, type BeaconPage } from "@/lib/beacon-pages";
 
+// NEUTRAL ONLY (Ali, 9 Sep: "stop highlighting numbers with red and
+// green"). The words carry the judgement; the marks just say "this is a
+// number". Tone stays on the data for anything that wants it later.
 const TONE_MARK: Record<string, string> = {
-  good: "bg-[var(--ds-tailwind-colors-green-200)]",
-  bad: "bg-[var(--ds-tailwind-colors-red-100)]",
+  good: "bg-[var(--ds-tailwind-colors-neutral-100)]",
+  bad: "bg-[var(--ds-tailwind-colors-neutral-100)]",
   neutral: "bg-[var(--ds-tailwind-colors-neutral-100)]",
 };
 const TONE_TEXT: Record<string, string> = {
-  good: "text-[var(--ds-tailwind-colors-green-700)]",
-  bad: "text-[var(--ds-tailwind-colors-red-600)]",
+  good: "text-foreground",
+  bad: "text-foreground",
   neutral: "text-foreground",
 };
 
@@ -79,7 +83,7 @@ export function DrillChart({ stats, kind }: { stats: ReviewStats; kind: Drill })
         return (
           <div key={mo.label} className="group flex flex-1 flex-col items-center gap-1" title={explain(mo)}>
             <div
-              className={`w-full rounded-t-md transition-colors ${last ? "bg-[var(--ds-tailwind-colors-green-500)]" : "bg-[var(--ds-tailwind-colors-green-200)] group-hover:bg-[var(--ds-tailwind-colors-green-300)]"}`}
+              className={`w-full rounded-t-md transition-colors ${last ? "bg-[var(--ds-tailwind-colors-green-500)]" : "bg-[var(--ds-tailwind-colors-neutral-200)] group-hover:bg-[var(--ds-tailwind-colors-neutral-300)]"}`}
               style={{ height: `${h}px` }}
             />
             <span className="text-body-xs text-muted-foreground">{mo.label}</span>
@@ -149,7 +153,7 @@ function TellMeMore({ stats, kind, label, lines }: { stats: ReviewStats; kind: D
   );
 }
 
-export function ReviewSummary({ full = false }: { full?: boolean }) {
+export function ReviewSummary({ full = false, bare = false }: { full?: boolean; bare?: boolean }) {
   const persona = usePersona();
   const location = useLocationKey();
   const stats = statsFor(location, persona);
@@ -160,7 +164,7 @@ export function ReviewSummary({ full = false }: { full?: boolean }) {
   return (
     <section
       data-hook="review-summary"
-      className="relative overflow-hidden rounded-[20px] border border-[var(--ds-tailwind-colors-green-200)] bg-[var(--ds-tailwind-colors-green-50)] px-6 py-6 lg:px-8 lg:py-7"
+      className={bare ? "relative" : "relative overflow-hidden rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] px-6 py-6 shadow-sm lg:px-8 lg:py-7"}
     >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-10">
         {/* Globey, the DS mascot, so this reads as Beacon speaking rather
@@ -169,11 +173,14 @@ export function ReviewSummary({ full = false }: { full?: boolean }) {
           <GlobeyCalmOpen1 className="h-28 w-auto" />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <p className="text-label-sm flex flex-wrap items-center gap-x-2 gap-y-1 text-[var(--ds-tailwind-colors-green-700)]" data-hook="review-summary-label">
-            <span className="inline-flex items-center gap-1 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-1.5 py-0.5 text-white">
-              <span aria-hidden>✦</span> Beacon
-            </span>
-            <span>AI summary of your reviews, updated today</span>
+          <p className="text-label-sm flex flex-wrap items-center gap-x-2 gap-y-1" data-hook="review-summary-label">
+            {/* In the modal the header already carries the badge. */}
+            {bare ? null : (
+              <span className="inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-foreground">
+                <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span> Beacon
+              </span>
+            )}
+            <span className="text-muted-foreground">AI summary of your reviews, updated today</span>
           </p>
           <h2 className="text-heading-page font-display" data-hook="review-summary-headline">
             {summary.headline}
@@ -195,7 +202,7 @@ export function ReviewSummary({ full = false }: { full?: boolean }) {
           {summary.tiles.map((tile) => {
             const drill = drillFor(tile.label);
             return (
-              <div key={tile.label} className="relative flex flex-col gap-0.5 rounded-xl bg-[var(--ds-tailwind-colors-base-white)]/80 px-4 py-3 backdrop-blur">
+              <div key={tile.label} className="relative flex flex-col gap-0.5 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] px-4 py-3">
                 <dd className={`text-metric font-display ${TONE_TEXT[tile.tone]}`}>{tile.value}</dd>
                 <dt className="text-body-xs text-muted-foreground">{tile.label}</dt>
                 {drill && !full && !persona.engagement.startsWith("new") ? (
@@ -209,9 +216,9 @@ export function ReviewSummary({ full = false }: { full?: boolean }) {
         </dl>
       </div>
       {full && !persona.engagement.startsWith("new") ? (
-        <div className="mt-6 grid gap-4 border-t border-[var(--ds-tailwind-colors-green-200)] pt-6 md:grid-cols-3" data-hook="review-summary-charts">
+        <div className="mt-6 grid gap-4 border-t pt-6 md:grid-cols-3" data-hook="review-summary-charts">
           {(["rating", "velocity", "fourPlus"] as Drill[]).map((kind) => (
-            <div key={kind} className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-base-white)]/80 p-4">
+            <div key={kind} className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
               <p className="text-heading-subsection">
                 {kind === "rating" ? "Rating" : kind === "velocity" ? "Review velocity" : "Four stars or above"}, last six months
               </p>
@@ -239,14 +246,14 @@ export function ReviewSummaryStrip() {
   return (
     <section
       data-hook="review-summary-strip"
-      className="flex flex-col gap-4 rounded-[20px] border border-[var(--ds-tailwind-colors-green-200)] bg-[var(--ds-tailwind-colors-green-50)] px-5 py-4 lg:flex-row lg:items-center lg:gap-6"
+      className="flex flex-col gap-5 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-6 shadow-sm lg:flex-row lg:items-stretch lg:gap-8"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <p className="text-label-sm flex items-center gap-2 text-[var(--ds-tailwind-colors-green-700)]">
-          <span className="inline-flex items-center gap-1 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-1.5 py-0.5 text-white">
-            <span aria-hidden>✦</span> Beacon
+        <p className="text-label-sm flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-foreground">
+            <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span> Beacon
           </span>
-          <span>AI summary, updated today</span>
+          <span className="text-muted-foreground">AI summary, updated today</span>
         </p>
         <p className="text-heading-subsection font-display" data-hook="review-summary-strip-headline">{summary.headline}</p>
         {lead ? (
@@ -256,19 +263,21 @@ export function ReviewSummaryStrip() {
             ))}
           </p>
         ) : null}
+        <div className="pt-1">
+          <Button variant="outline" size="sm" dataHook="review-summary-strip-open" onClick={() => show("summary")}>
+            Read the full summary
+            <ArrowRight className="size-4" />
+          </Button>
+        </div>
       </div>
-      <dl className="flex shrink-0 flex-wrap gap-x-5 gap-y-1" data-hook="review-summary-strip-tiles">
+      <dl className="grid shrink-0 grid-cols-3 gap-4 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] px-5 py-4 lg:w-64 lg:grid-cols-1 lg:gap-3" data-hook="review-summary-strip-tiles">
         {summary.tiles.map((tile) => (
           <div key={tile.label} className="flex flex-col">
-            <dd className={`text-heading-section font-display ${TONE_TEXT[tile.tone]}`}>{tile.value}</dd>
+            <dd className={`text-metric font-display ${TONE_TEXT[tile.tone]}`}>{tile.value}</dd>
             <dt className="text-body-xs text-muted-foreground">{tile.label}</dt>
           </div>
         ))}
       </dl>
-      <Button variant="outline" size="sm" dataHook="review-summary-strip-open" className="shrink-0" onClick={() => show("summary")}>
-        Read the full summary
-        <ArrowRight className="size-4" />
-      </Button>
     </section>
   );
 }
@@ -280,11 +289,58 @@ export function ReviewSummaryStrip() {
  * link wins, and the Manager and the modal carry the rest.
  */
 export function BeaconChip({ text, tone = "neutral", dataHook = "beacon-chip" }: { text: string; tone?: "good" | "bad" | "neutral"; dataHook?: string }) {
-  const bg = tone === "bad" ? "bg-[var(--ds-tailwind-colors-red-100)]" : tone === "good" ? "bg-[var(--ds-tailwind-colors-green-200)]" : "bg-[var(--ds-tailwind-colors-neutral-100)]";
+  const bg = "bg-[var(--ds-tailwind-colors-neutral-100)]"; // neutral whatever the tone (Ali, 9 Sep)
   return (
     <span data-hook={dataHook} className={`text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm px-2 py-0.5 font-display ${bg} text-[var(--ds-tailwind-colors-neutral-950)]`}>
-      <span aria-hidden className="text-[var(--ds-tailwind-colors-green-700)]">✦</span>
+      <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span>
       {text}
     </span>
+  );
+}
+
+/**
+ * The medium strip for a working page (Tracker, Builder, Showcase): the
+ * page's own Beacon line and three metrics, same modal behind it.
+ */
+export function BeaconPageStrip({ page }: { page: BeaconPage }) {
+  const persona = usePersona();
+  const location = useLocationKey();
+  const { show } = useBeaconModal();
+  const stats = statsFor(location, persona);
+  const b = pageBeaconFor(page, stats, persona);
+  return (
+    <section
+      data-hook={`beacon-strip-${page}`}
+      className="flex flex-col gap-5 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-6 shadow-sm lg:flex-row lg:items-stretch lg:gap-8"
+    >
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <p className="text-label-sm flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-foreground">
+            <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span> Beacon
+          </span>
+          <span className="text-muted-foreground">From this location's reviews, updated today</span>
+        </p>
+        <p className="text-heading-subsection font-display" data-hook={`beacon-strip-${page}-headline`}>{b.headline}</p>
+        <p className="text-body-sm font-display text-foreground max-w-[70ch]">
+          {b.line.map((sg, j) => (
+            <Seg key={j} s={sg} />
+          ))}
+        </p>
+        <div className="pt-1">
+          <Button variant="outline" size="sm" dataHook={`beacon-strip-${page}-open`} onClick={() => show("summary")}>
+            Read the full summary
+            <ArrowRight className="size-4" />
+          </Button>
+        </div>
+      </div>
+      <dl className="grid shrink-0 grid-cols-3 gap-4 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] px-5 py-4 lg:w-64 lg:grid-cols-1 lg:gap-3">
+        {b.tiles.map((tile) => (
+          <div key={tile.label} className="flex flex-col">
+            <dd className="text-metric font-display text-foreground">{tile.value}</dd>
+            <dt className="text-body-xs text-muted-foreground">{tile.label}</dt>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }

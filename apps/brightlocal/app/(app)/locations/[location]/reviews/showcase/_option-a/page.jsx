@@ -103,6 +103,7 @@
 // background, not a Grade surface, so no semantic token applies.
 
 import { useEffect, useMemo, useState } from "react";
+import { BeaconPageStrip } from "@/components/review-summary";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -2598,6 +2599,7 @@ export default function RMReviewShowcasePage() {
         }
       >
         <GlobalLayoutContentBody className="gap-4">
+          <BeaconPageStrip page="showcase" />
           <WidgetsDashboard
             widgets={widgets}
             onEdit={startEdit}
