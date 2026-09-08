@@ -31,6 +31,8 @@ import {
   PageHeader,
   CardTitleLink,
 } from "@brightlocal/proposal";
+import { usePersona } from "@/lib/demo";
+import { StarterGuide } from "@/components/starter-guide";
 
 /* ================================ reference =============================== */
 
@@ -143,6 +145,17 @@ const HUB_CARDS = [
   },
 ];
 
+// STARTER PERSONA (app-side, 8 Sep). The same four signposts for a business
+// that has just started: the numbers match what its Manager, Tracker,
+// Builder and Showcase pages seed for that persona (four Google reviews,
+// one connected source, no campaigns, three unplaced showcases).
+const STARTER_HUB_CARDS = [
+  { ...HUB_CARDS[0], headline: "4", headlineLabel: "need a reply", parts: [{ k: "Replied", v: "0" }, { k: "All time", v: "4" }] },
+  { ...HUB_CARDS[1], headline: "4.8", headlineLabel: "average rating", parts: [{ k: "Reviews", v: "4" }, { k: "Five star", v: "3" }, { k: "Sources", v: "1" }] },
+  { ...HUB_CARDS[2], headline: "0", headlineLabel: "campaigns running", parts: [{ k: "Sent", v: "0" }, { k: "Reviews gained", v: "0" }] },
+  { ...HUB_CARDS[3], headline: "3", headlineLabel: "showcases ready", parts: [{ k: "On your site", v: "0" }] },
+];
+
 // HubCard / DrillArrow are lifted VERBATIM from UI Vision - Location Hub
 // (dmrurue2wmp9u), which is where the pattern is set.
 function DrillArrow() {
@@ -215,6 +228,9 @@ function HubCard({ card }) {
 }
 
 export default function ReviewsPage() {
+  const persona = usePersona();
+  const starter = persona.engagement === "new";
+  const cards = starter ? STARTER_HUB_CARDS : HUB_CARDS;
   return (
     <SidebarProvider dataHook="provider" defaultOpen>
       <AppLayoutShell
@@ -254,8 +270,9 @@ export default function ReviewsPage() {
         }
       >
         <GlobalLayoutContentBody dataHook="reviews-page-body" className="space-y-6 pb-10">
+          {starter ? <StarterGuide /> : null}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {HUB_CARDS.map((card) => (
+            {cards.map((card) => (
               <HubCard key={card.hook} card={card} />
             ))}
           </div>

@@ -23,5 +23,15 @@ picture.
 | Multi-location | Several locations under one account | Harbour & Co |
 | Agency | Managing client locations | Northside Dental |
 
-The starter persona does not yet have its own empty states: today it
-changes the chrome and dataset only.
+The starter persona seeds every Reviews screen for a business in its
+first week: four Google reviews and one connected source (Manager and
+Tracker), no campaigns (Builder opens on its empty state), showcases
+ready but not yet placed, and a set-up guide leading the hub.
+
+## URLs
+
+Routes are flat for now (`/reviews/tracker`). Every route lives in one
+registry (`lib/screens.ts`), so moving to
+`/locations/<location>/reviews/tracker` later is a folder move plus
+redirects, and the breadcrumbs, which already navigate by screen id,
+keep working unchanged.

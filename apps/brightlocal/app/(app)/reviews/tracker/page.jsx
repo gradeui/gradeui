@@ -99,6 +99,7 @@
 // Body is gap-4, not space-y-6 — the DS body is already flex flex-col gap-6.
 
 import { Fragment, useMemo, useRef, useState } from "react";
+import { usePersona } from "@/lib/demo";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -257,7 +258,7 @@ const DAY_MS = 86400000;
 // five chart tokens (--chart-1..5), so a fixed colour per source stops
 // working the moment there are six, and the sixth would either repeat a
 // hue or invent one off-system.
-const SOURCES = [
+const ENGAGED_SOURCES = [
   { id: "google", name: "Google", stars: 862 },
   { id: "facebook", name: "Facebook", up: 106, down: 14 },
   { id: "yelp", name: "Yelp", stars: 61 },
@@ -270,7 +271,21 @@ const SOURCES = [
 // MUST sum to the total `stars` across SOURCES (996). buildReviews draws
 // one bucket per star review out of this pool by index, so a pool shorter
 // than the star count walks off the end and yields undefined buckets.
-const STAR_MIX = { 5: 836, 4: 93, 3: 21, 2: 13, 1: 33 };
+const ENGAGED_STAR_MIX = { 5: 836, 4: 93, 3: 21, 2: 13, 1: 33 };
+// STARTER PERSONA (app-side, 8 Sep): one connected source, four reviews,
+// matching the Review Manager's starter seed. Sums must agree (4).
+const STARTER_SOURCES = [{ id: "google", name: "Google", stars: 4 }];
+const STARTER_STAR_MIX = { 5: 3, 4: 1, 3: 0, 2: 0, 1: 0 };
+// Selected ONCE per render of the page (selectTrackerData below) before any
+// card reads them. Module-level so the seeded builders keep their shape;
+// the app remounts the page when the persona changes.
+let SOURCES = ENGAGED_SOURCES;
+let STAR_MIX = ENGAGED_STAR_MIX;
+function selectTrackerData(persona) {
+  const starter = persona?.engagement === "new";
+  SOURCES = starter ? STARTER_SOURCES : ENGAGED_SOURCES;
+  STAR_MIX = starter ? STARTER_STAR_MIX : ENGAGED_STAR_MIX;
+}
 
 const PERIODS = [
   { id: "all", label: "All time" },
@@ -1505,12 +1520,15 @@ function ReviewTimeline() {
 }
 
 // buildReviews is seeded, so one module-level call agrees with every card.
-const HEADLINE_RATING = (() => {
+const headlineRating = () => {
   const stars = buildReviews().map((review) => Number(review.bucket)).filter(Boolean);
   return stars.length ? (stars.reduce((sum, n) => sum + n, 0) / stars.length).toFixed(1) : "0.0";
-})();
+};
 
 export default function RMReviewTrackerPage() {
+  const persona = usePersona();
+  selectTrackerData(persona);
+  const HEADLINE_RATING = headlineRating();
   // The Download dialog's open state. The only piece of state App itself
   // owns — everything else on this page is owned by the card that draws it.
   const [downloadOpen, setDownloadOpen] = useState(false);

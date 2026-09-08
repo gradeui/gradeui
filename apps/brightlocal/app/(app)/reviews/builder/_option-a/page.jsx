@@ -114,6 +114,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useUrlParam } from "@/lib/url-state";
+import { usePersona } from "@/lib/demo";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -5955,7 +5956,8 @@ function CustomerPreviewDrawer({ open, onOpenChange, config, expired }) {
 /* =================================== app ================================== */
 
 export default function RMReviewBuilderPage() {
-  const [campaigns, setCampaigns] = useState(seedCampaigns);
+  const persona = usePersona();
+  const [campaigns, setCampaigns] = useState(() => (persona.engagement === "new" ? [] : seedCampaigns()));
   const [templates, setTemplates] = useState(seedTemplates);
   const [draft, setDraft] = useState(blankCampaignDraft);
   const [step, setStep] = useState("setup");

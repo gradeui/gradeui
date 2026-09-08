@@ -64,6 +64,7 @@
 // See finding 12.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePersona } from "@/lib/demo";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -514,6 +515,15 @@ const FAILURE_DEMO_SEQUENCE = [
 
 // Repliable AND still needing action: a review that already carries a reply
 // renders the sent reply instead of a composer, so it has no Send to fail.
+// STARTER PERSONA (app-side, 8 Sep): four reviews, none answered. Same
+// indexes as SEED_REVIEWS so ids (r0..r3) line up with the failure demo.
+const STARTER_REVIEWS = SEED_REVIEWS.slice(0, 4).map((row) => {
+  const next = [...row];
+  next[5] = "needs";
+  return next;
+});
+const seedRowsFor = (persona) => (persona?.engagement === "new" ? STARTER_REVIEWS : SEED_REVIEWS);
+
 const DEMO_FAILURE_IDS = SEED_REVIEWS.map((row, i) => ({
   id: `r${i}`,
   source: row[0],
@@ -1292,8 +1302,9 @@ function ReviewsInbox() {
   const business = useBusinessName();
   const stickyTop = useStickyHeaderOffset("reviews-page-header");
 
+  const persona = usePersona();
   const [reviews, setReviews] = useState(() =>
-    SEED_REVIEWS.map(([source, name, rating, text, date, status, aiDraft], i) => ({
+    seedRowsFor(persona).map(([source, name, rating, text, date, status, aiDraft], i) => ({
       id: `r${i}`,
       source,
       name,
@@ -2163,6 +2174,7 @@ function ReviewsInbox() {
 /* --------------------------------- shell ---------------------------------- */
 
 export default function RMReviewManagerDataTablePage() {
+  const persona = usePersona();
   return (
     <SidebarProvider>
       <AppLayoutShell
@@ -2206,7 +2218,7 @@ export default function RMReviewManagerDataTablePage() {
             // the page renders, never typed in, so it moves when the data does.
             description={(
               <span data-hook="page-stat">
-                <span className="text-foreground font-medium tabular-nums">{SEED_REVIEWS.length}</span> reviews
+                <span className="text-foreground font-medium tabular-nums">{seedRowsFor(persona).length}</span> reviews
               </span>
             )}
             // "auto" binds data.aiInsights.lastUpdated, so the line follows a
