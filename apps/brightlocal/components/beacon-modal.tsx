@@ -13,12 +13,15 @@ import { X } from "@brightlocal/icons";
 import { useLocationKey } from "@/lib/location";
 import { DATASETS } from "@brightlocal/data";
 import { useBeaconModal } from "@/lib/beacon-modal";
-import { ReviewSummary, BeaconBadge, BeaconPageBlock } from "@/components/review-summary";
+import { ReviewSummary, BeaconBadge, BeaconPageBlock, SummaryCharts } from "@/components/review-summary";
+import { statsFor } from "@/lib/reviews-data";
+import { usePersona } from "@/lib/demo";
 import { ReviewInsights } from "@/components/review-insights";
 
 export function BeaconModal() {
   const { open, close, page, section } = useBeaconModal();
   const location = useLocationKey();
+  const persona = usePersona();
   const locationName = (DATASETS as Record<string, { location?: { name?: string } }>)[location]?.location?.name ?? location;
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : close())}>
@@ -46,10 +49,17 @@ export function BeaconModal() {
           {section === "plan" ? (
             <ReviewInsights bare />
           ) : (
-            <div className="flex flex-col gap-6">
-              {page ? <BeaconPageBlock page={page} /> : null}
+            // From a page: that page's block and the charts, nothing that
+            // restates it (Ali, 9 Sep: "Stacked!"). From the hub: the full
+            // summary.
+            page ? (
+              <div className="flex flex-col gap-2">
+                <BeaconPageBlock page={page} />
+                <SummaryCharts stats={statsFor(location, persona)} />
+              </div>
+            ) : (
               <ReviewSummary full bare />
-            </div>
+            )
           )}
         </div>
       </DialogContent>

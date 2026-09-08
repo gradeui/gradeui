@@ -254,19 +254,7 @@ export function ReviewSummary({ full = false, bare = false }: { full?: boolean; 
           })}
         </dl>
       </div>
-      {full && !persona.engagement.startsWith("new") ? (
-        <div className="mt-6 grid gap-4 border-t pt-6 md:grid-cols-3" data-hook="review-summary-charts">
-          {(["rating", "velocity", "fourPlus"] as Drill[]).map((kind) => (
-            <div key={kind} className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
-              <p className="text-heading-subsection">
-                {kind === "rating" ? "Rating" : kind === "velocity" ? "Review velocity" : "Four stars or above"}, last six months
-              </p>
-              <DrillChart stats={stats} kind={kind} />
-              <p className="text-body-xs text-muted-foreground">{drillCopy(stats, kind)}</p>
-            </div>
-          ))}
-        </div>
-      ) : null}
+      {full && !persona.engagement.startsWith("new") ? <SummaryCharts stats={stats} /> : null}
     </section>
   );
 }
@@ -393,7 +381,7 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
   const location = useLocationKey();
   const b = pageBeaconFor(page, statsFor(location, persona), persona);
   return (
-    <div className="flex flex-col gap-3 border-b pb-6" data-hook={`beacon-page-block-${page}`}>
+    <div className="flex flex-col gap-3" data-hook={`beacon-page-block-${page}`}>
       <p className="text-label-sm text-muted-foreground">
         {page === "tracker" ? "Review Tracker" : page === "builder" ? "Review Builder" : "Review Showcase"}
       </p>
@@ -403,6 +391,24 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
           <Seg key={j} s={sg} />
         ))}
       </p>
+    </div>
+  );
+}
+
+/** The three six-month charts, on their own so the modal can show them
+ *  under a page's block without the general summary. */
+export function SummaryCharts({ stats }: { stats: ReviewStats }) {
+  return (
+    <div className="mt-6 grid gap-4 border-t pt-6 md:grid-cols-3" data-hook="review-summary-charts">
+      {(["rating", "velocity", "fourPlus"] as Drill[]).map((kind) => (
+        <div key={kind} className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
+          <p className="text-heading-subsection">
+            {kind === "rating" ? "Rating" : kind === "velocity" ? "Review velocity" : "Four stars or above"}, last six months
+          </p>
+          <DrillChart stats={stats} kind={kind} />
+          <p className="text-body-xs text-muted-foreground">{drillCopy(stats, kind)}</p>
+        </div>
+      ))}
     </div>
   );
 }
