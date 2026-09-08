@@ -22,6 +22,7 @@ import { useBeaconModal } from "@/lib/beacon-modal";
 import { Button } from "@brightlocal/ui-components/button";
 import { ArrowRight } from "@brightlocal/icons";
 import { FixItForMe } from "@/components/fix-it-for-me";
+import { FirstRunBand } from "@/components/first-run";
 
 /** The green highlighter mark from the brand material, on a phrase. */
 function Mark({ text, mark }: { text: string; mark: string }) {
@@ -109,6 +110,7 @@ export function ReviewPlanStrip() {
   const stats = statsFor(location, persona);
   const plan = reviewPlanFor(stats, persona);
   const lead = plan.items[0];
+  if (persona.engagement === "empty") return <FirstRunBand page="manager" />;
   return (
     <div
       data-hook="review-plan-strip"

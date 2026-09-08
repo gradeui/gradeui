@@ -27,7 +27,7 @@ export default function DocsIndex() {
         </Link>
       </div>
       <p className="text-muted-foreground text-sm">
-        Also: <Link href="/docs/beacon-summaries" className="underline underline-offset-4">Everything Beacon says</Link>, every sentence for every persona and page, and <Link href="/docs/beacon" className="underline underline-offset-4">Beacon badge treatments</Link>.
+        Also: <Link href="/docs/beacon-summaries" className="underline underline-offset-4">Everything Beacon says</Link>, every sentence for every persona and page, <Link href="/docs/beacon-voices" className="underline underline-offset-4">the five Beacon voices</Link> on the same situations, and <Link href="/docs/beacon" className="underline underline-offset-4">Beacon badge treatments</Link>.
       </p>
       <p className="text-muted-foreground text-sm">
         Leave comments on any page with the Vercel toolbar (bottom of the screen on the hosted

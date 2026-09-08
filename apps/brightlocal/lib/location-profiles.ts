@@ -178,10 +178,22 @@ export const STARTER_PROFILE: LocationProfile = {
   hub: { needReply: 4, replied: 0, skipped: 0, allTime: 4, rating: "4.8", reviews: "4", fiveStar: "3", sourceCount: 1, running: 0, scheduled: 0, draft: 0, campaignsAll: 0 },
 };
 
+/** The empty persona: signed up, nothing connected, nothing in. Every
+ *  page shows its true first-run state. */
+export const EMPTY_PROFILE: LocationProfile = {
+  recent: { lastN: 0, lowCount: 0, lowStar: 2, monthChangePct: 0, fourPlusPct: 0 },
+  inboxRows: 0,
+  sources: [],
+  starMix: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+  campaigns: 0,
+  hub: { needReply: 0, replied: 0, skipped: 0, allTime: 0, rating: "0.0", reviews: "0", fiveStar: "0", sourceCount: 0, running: 0, scheduled: 0, draft: 0, campaignsAll: 0 },
+};
+
 export function profileFor(
   location: string | null | undefined,
   persona?: { engagement?: string } | null,
 ): LocationProfile {
   if (persona?.engagement === "new") return STARTER_PROFILE;
+  if (persona?.engagement === "empty") return EMPTY_PROFILE;
   return LOCATION_PROFILES[location ?? ""] ?? LOCATION_PROFILES["minus-one-studios"];
 }

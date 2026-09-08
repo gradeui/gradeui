@@ -79,7 +79,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
 
   const win = stats.recent;
   const winLabel = win.kind === "days" ? `last ${win.size} days` : `last ${win.size} reviews`;
-  if (win.ratingValue < 4.2 || stats.ratingValue - win.ratingValue >= 0.3) {
+  if (stats.total > 0 && (win.ratingValue < 4.2 || stats.ratingValue - win.ratingValue >= 0.3)) {
     items.push({
       id: "low-rating",
       strip: "Answer every one and two star review this week, then ask your happiest customers for a review.",

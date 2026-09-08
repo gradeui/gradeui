@@ -453,7 +453,8 @@ function ModifiedProposalSidebar({
   sections = sections ?? buildProposalSections(data);
   accountLabel = accountLabel ?? data.account.label;
   userName = userName ?? data.user.name;
-  userMeta = userMeta ?? data.user.meta;
+  const seamMeta = useSeamUserMeta();
+  userMeta = userMeta ?? seamMeta ?? data.user.meta;
   userInitials = userInitials ?? data.user.initials;
   // The All Locations page is an ACCOUNT context — no location is
   // selected — so it drops the whole location nav (scope requirement,
@@ -689,7 +690,8 @@ function NativeProposalSidebar({
   const data = useProposalData();
   sections = sections ?? buildProposalSections(data);
   userName = userName ?? data.user.name;
-  userMeta = userMeta ?? data.user.meta;
+  const seamMeta = useSeamUserMeta();
+  userMeta = userMeta ?? seamMeta ?? data.user.meta;
   userInitials = userInitials ?? data.user.initials;
   const isAllLocations = activeId === "all-locations";
   const hasSwitcher = useLocationSwitcher() !== null;
@@ -756,6 +758,17 @@ function NativeProposalSidebar({
       </SidebarFooter>
     </Sidebar>
   );
+}
+
+/** Host seam: window.__gdsUserMeta overrides the dataset's user meta line
+ *  ("Trial: 3 days left", "Trial ended"). Read after mount so the server
+ *  and first client render agree. */
+function useSeamUserMeta() {
+  const [meta, setMeta] = React.useState(null);
+  React.useEffect(() => {
+    setMeta(typeof window !== "undefined" && window.__gdsUserMeta !== undefined ? window.__gdsUserMeta : null);
+  }, []);
+  return meta;
 }
 
 export function ProposalSidebar(props) {

@@ -17,3 +17,10 @@ The same map lives in Reply Templates; keep them in sync.
 - "Reply skipped" is the proposed status.
 - Read and unread was deliberately dropped.
 - Bulk select is parked.
+
+
+## Reference: the website page beside this one
+
+The Reputation Manager page. What we borrowed: "Reply to every review from a single, easy-to-use dashboard", and Google plus Facebook as the two sites you can answer from inside BrightLocal.
+
+![brightlocal.com, full height, 10 Sep 2026](/reference/02-reputation-manager.png)

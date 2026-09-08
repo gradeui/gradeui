@@ -18,6 +18,7 @@ export function BeaconNugget({ page = "hub" }: { page?: NuggetPage }) {
   const persona = usePersona();
   const location = useLocationKey();
   const nugget = nuggetFor(page, statsFor(location, persona), persona);
+  if (persona.engagement === "empty") return null;
   if (!nugget) return null;
   return (
     // A banner, not a card: three-quarters width, centred, close to the

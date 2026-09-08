@@ -3,6 +3,7 @@
 import { useDemo } from "@/lib/demo";
 import { BeaconModalProvider } from "@/lib/beacon-modal";
 import { BeaconModal } from "@/components/beacon-modal";
+import { TrialRecapModal } from "@/components/trial-recap";
 
 /**
  * The product area. Every promoted screen carries its own shell (the
@@ -16,6 +17,7 @@ export default function AppAreaLayout({ children }: { children: React.ReactNode 
     <BeaconModalProvider>
       <div key={epoch}>{children}</div>
       <BeaconModal />
+      <TrialRecapModal />
     </BeaconModalProvider>
   );
 }

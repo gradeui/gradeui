@@ -67,3 +67,14 @@ Goal card from BrightLocal's 12-month roadmap as the reference.
    sources, providers or directories (directories = citations). New copy
    uses "review sites"; existing "sources" strings stay until Ali has seen
    both side by side.
+
+
+## Reference: the website page beside this one
+
+The Local SEO Services page. What we borrowed: the stage goal pill, the outcome headline, the month rail and Key tactics, and the six-card grid with illustrations.
+
+![brightlocal.com, full height, 10 Sep 2026](/reference/06-local-seo-services.png)
+
+The pricing page, for the trial recap and win-back: prices in black, the action and the "Saving" pill in green, the recommended plan lifted.
+
+![brightlocal.com/pricing, 10 Sep 2026](/reference/07-pricing.png)

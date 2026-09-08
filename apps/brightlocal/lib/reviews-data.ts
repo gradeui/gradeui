@@ -184,7 +184,7 @@ const cache = new Map<string, Review[]>();
 /** Every review for a location, newest first. Deterministic per key. */
 export function reviewsFor(location: string, persona?: { engagement?: string } | null): Review[] {
   const profile = profileFor(location, persona);
-  const key = `${location}:${persona?.engagement === "new" ? "starter" : "engaged"}`;
+  const key = `${location}:${persona?.engagement === "new" ? "starter" : persona?.engagement === "empty" ? "empty" : "engaged"}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const rand = mulberry32(hash(key));

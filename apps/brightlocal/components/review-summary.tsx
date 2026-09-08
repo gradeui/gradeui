@@ -23,6 +23,7 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
 import { useBeaconModal } from "@/lib/beacon-modal";
+import { FirstRunBand } from "@/components/first-run";
 import { Button } from "@brightlocal/ui-components/button";
 import { ArrowRight } from "@brightlocal/icons";
 import { reviewSummaryFor, registerFor, type Segment } from "@/lib/review-summary";
@@ -270,6 +271,7 @@ export function ReviewSummaryStrip() {
   const stats = statsFor(location, persona);
   const summary = reviewSummaryFor(stats, persona.engagement === "new");
   const lead = summary.lines.find((line) => !line.slot);
+  if (persona.engagement === "empty") return <FirstRunBand page="hub" />;
   return (
     <section
       data-hook="review-summary-strip"
@@ -314,6 +316,8 @@ export function ReviewSummaryStrip() {
  * link wins, and the Manager and the modal carry the rest.
  */
 export function BeaconChip({ text, tone = "neutral", dataHook = "beacon-chip" }: { text: string; tone?: "good" | "bad" | "neutral"; dataHook?: string }) {
+  const persona = usePersona();
+  if (persona.engagement === "empty") return null; // nothing to say yet: the first-run band carries the page
   const bg = "bg-[var(--ds-tailwind-colors-base-white)]"; // neutral whatever the tone (Ali, 9 Sep); same outline as the badge
   return (
     <span data-hook={dataHook} className={`text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm border px-2 py-0.5 ${bg} text-foreground`}>
@@ -334,6 +338,7 @@ export function BeaconPageStrip({ page }: { page: BeaconPage }) {
   const { show } = useBeaconModal();
   const stats = statsFor(location, persona);
   const b = pageBeaconFor(page, stats, persona);
+  if (persona.engagement === "empty") return <FirstRunBand page={page} />;
   return (
     <section
       data-hook={`beacon-strip-${page}`}

@@ -37,3 +37,10 @@ Layout options.
   reviews for the same location. Both are honest to their own page; side
   by side they read as a contradiction. Cheapest fix is relabelling the
   Manager part "In your inbox".
+
+
+## Reference: the website page beside this one
+
+The Reputation Manager page. What we borrowed: track, generate, showcase as the three verbs, and the sourced stats for the first-run band.
+
+![brightlocal.com, full height, 10 Sep 2026](/reference/02-reputation-manager.png)

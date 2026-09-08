@@ -89,6 +89,14 @@ function applySeams(settings: DemoSettings) {
   window.__gdsTweakScope = "app";
   window.__gdsLayoutEngine = settings.engine;
   document.documentElement.setAttribute("data-beacon-tone", settings.beaconTone ?? "neutral");
+  // The sidebar's user line follows the persona: trial countdown, ended, or the plan.
+  (window as unknown as { __gdsUserMeta?: string | null }).__gdsUserMeta = persona.trial
+    ? `Trial: ${persona.trial.daysLeft} ${persona.trial.daysLeft === 1 ? "day" : "days"} left`
+    : persona.lapsed
+      ? "Trial ended"
+      : persona.engagement === "empty"
+        ? "Free trial: 14 days left"
+        : "Grow plan";
   window.__gdsShellLook = settings.look === "authored" ? null : settings.look;
   selectSessionDataset(persona.dataset);
   // A previously tweaked look would otherwise beat the persona's: the

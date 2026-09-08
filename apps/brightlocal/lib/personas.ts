@@ -8,13 +8,17 @@
  *   engaged   a single-location business with real usage behind it
  *   multi     a multi-location business
  *   agency    an agency managing client locations
+ *   empty     signed up, nothing connected, looking around (Ali, 10 Sep:
+ *             separate from the trial, which may have connected things)
+ *   lapsed    the trial ended and they did not subscribe (Ali, 10 Sep:
+ *             "how do we bring them back? discounts?")
  *
  * `dataset` "default" is the proposal module's generic Acme Local Agency
  * data. Screens read the persona through usePersona() in lib/demo.
  */
 
 export type AccountType = "smb" | "multi" | "agency";
-export type Engagement = "new" | "engaged";
+export type Engagement = "new" | "engaged" | "empty";
 
 export interface Persona {
   id: string;
@@ -34,20 +38,46 @@ export interface Persona {
   accountLabel: string;
   /** On a free trial: gated features show as upsells with free credits. */
   trial?: { daysLeft: number; credits: number };
+  /** The trial ended: the account is read-only until they subscribe. The
+   *  recap modal becomes the win-back. */
+  lapsed?: { daysAgo: number };
 }
 
 export const PERSONAS: Persona[] = [
   {
+    id: "empty",
+    label: "Signed up, looking around",
+    description: "Minus 1 Studios, day one. No review sites connected, no reviews, no campaigns.",
+    accountType: "smb",
+    engagement: "empty",
+    dataset: "minus-one-studios",
+    look: "live-site",
+    locations: ["minus-one-studios"],
+    accountLabel: "Minus 1 Studios",
+  },
+  {
     id: "starter",
     label: "Single location, just started",
-    description: "Minus 1 Studios, week one. Few reviews, nothing set up, needs handholding.",
+    description: "Minus 1 Studios, near the end of a free trial. Google connected, four reviews in, nothing answered.",
     accountType: "smb",
     engagement: "new",
     dataset: "minus-one-studios",
     look: "live-site",
     locations: ["minus-one-studios"],
     accountLabel: "Minus 1 Studios",
-    trial: { daysLeft: 14, credits: 3 },
+    trial: { daysLeft: 3, credits: 3 },
+  },
+  {
+    id: "lapsed",
+    label: "Trial ended",
+    description: "Minus 1 Studios, nine days after the trial ended. Reviews still arriving, nobody answering.",
+    accountType: "smb",
+    engagement: "new",
+    dataset: "minus-one-studios",
+    look: "live-site",
+    locations: ["minus-one-studios"],
+    accountLabel: "Minus 1 Studios",
+    lapsed: { daysAgo: 9 },
   },
   {
     id: "engaged",

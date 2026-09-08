@@ -42,3 +42,10 @@ registry (`lib/screens.ts`), so moving to
 `/locations/<location>/reviews/tracker` later is a folder move plus
 redirects, and the breadcrumbs, which already navigate by screen id,
 keep working unchanged.
+
+
+## Reference: the website page beside this one
+
+The homepage. What we borrowed: "Shine bright, locally", second person throughout, one flowing sentence with commas.
+
+![brightlocal.com, full height, 10 Sep 2026](/reference/01-home.png)
