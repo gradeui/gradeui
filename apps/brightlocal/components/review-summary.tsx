@@ -1,6 +1,10 @@
 "use client";
 
 /**
+ * SURFACE (Ali asked, 9 Sep): the gradient is ours, built from DS tokens
+ * (green-50 to white to violet-100) because the DS has no gradient or
+ * "AI" surface. Logged as a proposal; swap for a DS surface if one ships.
+ *
  * The AI summary, at the very top of the Reviews hub. Deliberately its
  * own thing (Ali, 9 Sep: "styled in its own specific way"): a soft brand
  * surface, a Poppins narrative with the numbers set as metrics, good
@@ -12,6 +16,7 @@
 import * as React from "react";
 import { Sparkles, Info, LoaderCircle } from "@brightlocal/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightlocal/ui-components/popover";
+import { GlobeyCalmOpen1 } from "@brightlocal/illustrations";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
@@ -113,7 +118,7 @@ function TellMeMore({ stats, kind, label }: { stats: ReviewStats; kind: Drill; l
       <PopoverContent dataHook={`review-summary-more-${kind}-content`} align="end" className="w-80 p-4">
         {ready ? (
           <div className="flex flex-col gap-3">
-            <p className="text-heading-subsection">{label}, last six months</p>
+            <p className="text-heading-subsection">{label.charAt(0).toUpperCase() + label.slice(1)}, last six months</p>
             <DrillChart stats={stats} kind={kind} />
             <p className="text-body-sm text-muted-foreground">{drillCopy(stats, kind)}</p>
           </div>
@@ -141,23 +146,33 @@ export function ReviewSummary() {
       className="relative overflow-hidden rounded-[20px] border border-[var(--ds-tailwind-colors-green-200)] bg-[linear-gradient(135deg,var(--ds-tailwind-colors-green-50),var(--ds-tailwind-colors-base-white)_55%,var(--ds-tailwind-colors-violet-100))] px-6 py-6 lg:px-8 lg:py-7"
     >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-10">
+        {/* Globey, the DS mascot, so this reads as Beacon speaking rather
+            than a stat block. Same illustration family the empty states use. */}
+        <div className="hidden shrink-0 lg:block" aria-hidden>
+          <GlobeyCalmOpen1 className="h-28 w-auto" />
+        </div>
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <p className="text-label-sm flex items-center gap-1.5 text-[var(--ds-tailwind-colors-violet-600)]" data-hook="review-summary-label">
-            <Sparkles className="size-3.5" />
-            AI summary, updated today
+          <p className="text-label-sm flex flex-wrap items-center gap-x-2 gap-y-1 text-[var(--ds-tailwind-colors-violet-600)]" data-hook="review-summary-label">
+            <span className="inline-flex items-center gap-1 rounded-sm bg-[var(--ds-tailwind-colors-violet-500)] px-1.5 py-0.5 text-white">
+              <span aria-hidden>✦</span> Beacon
+            </span>
+            <span>AI summary of your reviews, updated today</span>
           </p>
           <h2 className="text-heading-page font-display" data-hook="review-summary-headline">
             {summary.headline}
           </h2>
           <div className="flex flex-col gap-3">
             {summary.lines.map((line, i) => (
-              <p key={i} className="font-display text-lg leading-8 text-foreground max-w-[60ch]" data-hook={`review-summary-line-${i}`} data-register={line.register ?? registerFor(line.tone)}>
+              <p key={i} className="text-body font-display text-foreground max-w-[60ch]" data-hook={`review-summary-line-${i}`} data-register={line.register ?? registerFor(line.tone)}>
                 {line.segments.map((s, j) => (
                   <Seg key={j} s={s} />
                 ))}
               </p>
             ))}
           </div>
+          <p className="text-body-xs text-muted-foreground" data-hook="review-summary-disclosure">
+            Written by Beacon from this location's reviews. Every number links to the reviews behind it; check before you act on it.
+          </p>
         </div>
         <dl className="grid shrink-0 grid-cols-3 gap-3 lg:w-[22rem] lg:grid-cols-1" data-hook="review-summary-tiles">
           {summary.tiles.map((tile) => {

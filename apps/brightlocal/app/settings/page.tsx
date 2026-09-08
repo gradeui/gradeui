@@ -7,6 +7,7 @@ import { LOOK_PRESETS } from "@brightlocal/proposal-shell";
 import { Button } from "@brightlocal/ui-components/button";
 import { RadioGroup, RadioGroupItem } from "@brightlocal/ui-components/radio-group";
 import { Label } from "@brightlocal/ui-components/label";
+import { Switch } from "@brightlocal/ui-components/switch";
 
 const LOOK_LABELS: Record<string, string> = {
   "live-site": "Live Site (DS default)",
@@ -18,7 +19,7 @@ const LOOK_LABELS: Record<string, string> = {
 /** The long-form version of the Cmd+K menu, for when a reviewer wants to
  *  read the options rather than search them. */
 export default function SettingsPage() {
-  const { settings, setPersona, setLook, setEngine } = useDemo();
+  const { settings, setPersona, setLook, setEngine, setUpsell, setFixItForMe } = useDemo();
   const looks = [...Object.keys(LOOK_PRESETS), "authored"];
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-10 px-6 py-16">
@@ -84,6 +85,24 @@ export default function SettingsPage() {
             </div>
           ))}
         </RadioGroup>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Beacon and Pro</h2>
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="upsell" className="flex flex-col gap-0.5">
+            <span>Show upsells and gated content</span>
+            <span className="text-muted-foreground text-sm font-normal">The house style for features in Pro. A trial account sees its free credits; off hides every upsell.</span>
+          </Label>
+          <Switch dataHook="settings-upsell" id="upsell" checked={settings.upsell} onCheckedChange={setUpsell} />
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="fix" className="flex flex-col gap-0.5">
+            <span>Fix it for me</span>
+            <span className="text-muted-foreground text-sm font-normal">Beacon does the first tactic on the plan and hands the result back for approval.</span>
+          </Label>
+          <Switch dataHook="settings-fix-it" id="fix" checked={settings.fixItForMe} onCheckedChange={setFixItForMe} />
+        </div>
       </section>
 
       <div>

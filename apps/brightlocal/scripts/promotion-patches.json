@@ -97,7 +97,7 @@
     {
       "why": "the AI summary leads the page, above the guide or the plan",
       "find": "          {starter ? <StarterGuide /> : <ReviewInsights />}",
-      "replace": "          <ReviewSummary />\n          {starter ? <StarterGuide /> : <ReviewInsights />}"
+      "replace": "          <ReviewSummary />\n          {starter ? <StarterGuide /> : null}\n          <ReviewInsights />"
     },
     {
       "why": "hub numbers are read off the shared dataset, not typed",
@@ -266,4 +266,4 @@
       "replace": "          {persona.accountType === \"agency\" ? (\n          <Select value={client} onValueChange={setClient}>\n            <SelectTrigger dataHook=\"locations-client-select\" className=\"w-44\">\n              <SelectValue placeholder=\"All Clients\" />\n            </SelectTrigger>\n            <SelectContent>\n              <SelectItem value=\"all\">All Clients</SelectItem>\n              <SelectItem value=\"minus-one-studios\">Minus 1 Studios</SelectItem>\n              <SelectItem value=\"harbour-co\">Harbour &amp; Co</SelectItem>\n              <SelectItem value=\"northside-dental\">Northside Dental</SelectItem>\n            </SelectContent>\n          </Select>\n          ) : null}"
     }
   ]
-}
+}\n

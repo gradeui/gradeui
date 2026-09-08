@@ -140,6 +140,13 @@ export const DS_CHANGES: DsChange[] = [
     ask: "Map text-heading-section to font-display in the tokens.",
   },
   {
+    id: "ai-surface",
+    title: "No surface or voice treatment for AI-generated content",
+    finding: "The DS has no surface, badge or gradient for content written by an assistant, and no guidance on declaring it. The prototype's AI summary needed a distinct look (Ali: styled in its own specific way) plus a clear declaration that it is generated.",
+    workaround: "A gradient built from DS tokens (green-50 to white to violet-100), a Beacon sigil badge on violet-500, Globey from the illustrations package, and a one-line disclosure. All app-side.",
+    ask: "Define an AI surface (background, badge, disclosure pattern) and the Beacon sigil as DS tokens and a component.",
+  },
+  {
     id: "page-header",
     title: "GlobalLayoutContentHeader has no breadcrumbs, utility slot or status row",
     finding: "The DS header gives a back link, title, subtitle and actions. It has no breadcrumbs (Breadcrumb is placed by hand), no help affordance slot, no last-updated row and no way to normalise CTA sizes, so page heights vary between screens.",

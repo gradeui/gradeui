@@ -32,6 +32,8 @@ export interface Persona {
   locations: string[];
   /** The account name shown over the locations (agency: the agency). */
   accountLabel: string;
+  /** On a free trial: gated features show as upsells with free credits. */
+  trial?: { daysLeft: number; credits: number };
 }
 
 export const PERSONAS: Persona[] = [
@@ -45,6 +47,7 @@ export const PERSONAS: Persona[] = [
     look: "live-site",
     locations: ["minus-one-studios"],
     accountLabel: "Minus 1 Studios",
+    trial: { daysLeft: 14, credits: 3 },
   },
   {
     id: "engaged",

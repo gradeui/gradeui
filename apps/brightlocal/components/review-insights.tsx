@@ -16,6 +16,8 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
 import { reviewPlanFor } from "@/lib/review-insights";
+import { UpsellStrip } from "@/components/upsell";
+import { FixItForMe } from "@/components/fix-it-for-me";
 
 /** The green highlighter mark from the brand material, on a phrase. */
 function Mark({ text, mark }: { text: string; mark: string }) {
@@ -33,8 +35,8 @@ function Mark({ text, mark }: { text: string; mark: string }) {
 export function ReviewInsights() {
   const persona = usePersona();
   const location = useLocationKey();
-  if (persona.engagement === "new") return null;
-  const plan = reviewPlanFor(statsFor(location, persona), persona);
+  const stats = statsFor(location, persona);
+  const plan = reviewPlanFor(stats, persona);
   return (
     <Card className="w-full max-w-none" density="default" dataHook="review-insights">
       <CardHeader>
@@ -51,6 +53,9 @@ export function ReviewInsights() {
             <Mark text={plan.goal.text} mark={plan.goal.mark} />
           </h2>
           <p className="text-muted-foreground text-body-sm max-w-prose">{plan.lede}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
+          </div>
         </div>
       </CardHeader>
       {plan.items.length > 0 ? (
@@ -66,6 +71,15 @@ export function ReviewInsights() {
               </div>
             ))}
           </div>
+          {plan.items.some((i) => i.id === "reply-backlog") ? (
+            <UpsellStrip
+              feature="Auto-reply"
+              benefit="Beacon can answer your five-star Google reviews for you, in your tone, an hour after they land."
+              creditsLabel="auto-reply"
+              creditsPlural="auto-replies"
+              dataHook="upsell-auto-reply"
+            />
+          ) : null}
           {plan.fact ? (
             <div
               data-hook="review-insights-fact"

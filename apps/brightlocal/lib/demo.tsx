@@ -34,6 +34,11 @@ export interface DemoSettings {
    *  proposed token fixes from app/custom.css. "modified": the proposal
    *  shell. */
   engine: "modified" | "native" | "native-fixed";
+  /** Show gated content and upsells in the pages (the house style for
+   *  "this is in Pro"). Off hides every upsell so a demo can run clean. */
+  upsell: boolean;
+  /** Show the "Fix it for me" affordance on the plan. */
+  fixItForMe: boolean;
 }
 
 interface DemoContextValue {
@@ -43,6 +48,8 @@ interface DemoContextValue {
   setLook: (look: string) => void;
   setVariant: (base: string, slug: string) => void;
   setEngine: (engine: DemoSettings["engine"]) => void;
+  setUpsell: (on: boolean) => void;
+  setFixItForMe: (on: boolean) => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   notesOpen: boolean;
@@ -96,6 +103,8 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     look: "authored",
     variants: {},
     engine: "modified",
+    upsell: true,
+    fixItForMe: false,
   });
   const [epoch, setEpoch] = React.useState(0);
   const [ready, setReady] = React.useState(false);
@@ -110,6 +119,8 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       look: "authored",
       variants: {},
       engine: "modified",
+      upsell: true,
+      fixItForMe: false,
       ...(stored ?? {}),
     };
     if (urlPersona && PERSONAS.some((p) => p.id === urlPersona)) next.personaId = urlPersona;
@@ -167,6 +178,8 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       },
       setLook: (look) => update({ look }),
       setEngine: (engine) => update({ engine }),
+      setUpsell: (upsell) => update({ upsell }),
+      setFixItForMe: (fixItForMe) => update({ fixItForMe }),
       setVariant: (base, slug) =>
         setSettings((prev) => {
           const next = { ...prev, variants: { ...prev.variants, [base]: slug } };

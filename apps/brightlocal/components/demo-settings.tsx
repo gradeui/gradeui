@@ -39,7 +39,7 @@ const LOOK_LABELS: Record<string, string> = {
 };
 
 export function DemoSettingsPanel() {
-  const { menuOpen, setMenuOpen, setNotesOpen, settings, persona, setPersona, setLook, setVariant, setEngine } = useDemo();
+  const { menuOpen, setMenuOpen, setNotesOpen, settings, persona, setPersona, setLook, setVariant, setEngine, setUpsell, setFixItForMe } = useDemo();
   const router = useRouter();
   const pathname = usePathname();
   const location = locationFromPath(pathname) ?? persona.dataset;
@@ -158,6 +158,17 @@ export function DemoSettingsPanel() {
                     {(settings.variants[o.base] ?? o.base) === o.slug ? <Check className="ml-auto size-4" /> : null}
                   </CommandItem>
                 ))}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="Beacon and Pro">
+              <CommandItem dataHook="demo-upsell" value="upsell gated content pro credits" onSelect={() => { setUpsell(!settings.upsell); setMenuOpen(false); }}>
+                Show upsells and gated content
+                {settings.upsell ? <Check className="ml-auto size-4" /> : null}
+              </CommandItem>
+              <CommandItem dataHook="demo-fix-it" value="fix it for me beacon" onSelect={() => { setFixItForMe(!settings.fixItForMe); setMenuOpen(false); }}>
+                Fix it for me
+                {settings.fixItForMe ? <Check className="ml-auto size-4" /> : null}
+              </CommandItem>
             </CommandGroup>
             <CommandSeparator />
             <CommandGroup heading="More">
