@@ -119,6 +119,13 @@ export const DS_CHANGES: DsChange[] = [
     ask: "Publish a drill-down arrow component with solid and on-media looks, plus an icon Button size.",
   },
   {
+    id: "content-body-max-width",
+    title: "Content body loses its max width when given a style",
+    finding: "GlobalLayoutContentBody applies max-width: var(--content-max-width) as an inline style object, then spreads the caller's props after it. A screen that passes any style prop (the Tracker sets a sticky-offset variable) replaces that object, so the body runs full width while the header stays at 1024px.",
+    workaround: "app/custom.css restates the max width from the stylesheet with !important.",
+    ask: "Merge the caller's style over the max width instead of replacing it, or move the cap to a class.",
+  },
+  {
     id: "page-header",
     title: "GlobalLayoutContentHeader has no breadcrumbs, utility slot or status row",
     finding: "The DS header gives a back link, title, subtitle and actions. It has no breadcrumbs (Breadcrumb is placed by hand), no help affordance slot, no last-updated row and no way to normalise CTA sizes, so page heights vary between screens.",

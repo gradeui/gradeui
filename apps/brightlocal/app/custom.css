@@ -77,3 +77,14 @@ aside {
 .dark {
   --card-border: var(--border);
 }
+
+/* CONTENT BODY MAX WIDTH SURVIVES A style PROP (8 Sep, the Tracker
+   "well stretched" on wide screens). GlobalLayoutContentBody sets
+   max-width: var(--content-max-width) as an inline style and then spreads
+   props after it, so a screen passing any style of its own (the Tracker's
+   sticky offset variable) replaces the object and loses the cap. Restate
+   it from the stylesheet with !important so it wins over the inline
+   style. Ledger: /docs/changes, "Content body loses its max width". */
+[data-slot="content-body"] {
+  max-width: var(--content-max-width) !important;
+}
