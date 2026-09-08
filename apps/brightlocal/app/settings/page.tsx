@@ -19,7 +19,7 @@ const LOOK_LABELS: Record<string, string> = {
 /** The long-form version of the Cmd+K menu, for when a reviewer wants to
  *  read the options rather than search them. */
 export default function SettingsPage() {
-  const { settings, setPersona, setLook, setEngine, setUpsell, setFixItForMe } = useDemo();
+  const { settings, setPersona, setLook, setEngine, setUpsell, setFixItForMe, setBeaconTone } = useDemo();
   const looks = [...Object.keys(LOOK_PRESETS), "authored"];
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-10 px-6 py-16">
@@ -82,6 +82,21 @@ export default function SettingsPage() {
             <div key={l} className="flex items-center gap-3">
               <RadioGroupItem value={l} id={`look-${l}`} />
               <Label htmlFor={`look-${l}`}>{LOOK_LABELS[l] ?? l}</Label>
+            </div>
+          ))}
+        </RadioGroup>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Beacon colour</h2>
+        <p className="text-muted-foreground text-sm">
+          Lifts Beacon's surfaces off the page with the accessible pairings from the DS chart (100 background, 700 and 950 text).
+        </p>
+        <RadioGroup dataHook="settings-tone" value={settings.beaconTone} onValueChange={(v) => setBeaconTone(v as "neutral" | "tinted" | "families")}>
+          {([["neutral", "Neutral, white surfaces"], ["tinted", "Tinted, one family everywhere"], ["families", "Families, a colour per kind of content: summaries sky, recommendations green, upsells yellow, nuggets violet"]] as const).map(([v, label]) => (
+            <div key={v} className="flex items-start gap-3">
+              <RadioGroupItem value={v} id={`tone-${v}`} className="mt-1" />
+              <Label htmlFor={`tone-${v}`}>{label}</Label>
             </div>
           ))}
         </RadioGroup>

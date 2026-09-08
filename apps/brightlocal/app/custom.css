@@ -258,3 +258,72 @@
 [data-hook="beacon-modal"] > button:not([data-hook]) {
   display: none;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   BEACON COLOUR (setting: neutral | tinted | families). Lifts Beacon's
+   surfaces off the page with the DS accessible pairings: a family's 100
+   as the surface, 950 for headings, 700 for muted copy (700/100 is the
+   chart's small-text AA pair), 200 for marks, 300 for the border. The
+   root carries data-beacon-tone; the surfaces carry their data-hooks.
+   ════════════════════════════════════════════════════════════════════ */
+[data-beacon-tone="tinted"] [data-hook="review-summary-strip"],
+[data-beacon-tone="tinted"] [data-hook^="beacon-strip-"],
+[data-beacon-tone="tinted"] [data-hook="review-plan-strip"],
+[data-beacon-tone="tinted"] [data-hook^="beacon-nugget-"],
+[data-beacon-tone="tinted"] [data-hook="beacon-modal"],
+[data-beacon-tone="tinted"] [data-hook="review-insights"] {
+  --beacon-100: var(--ds-tailwind-colors-green-100);
+  --beacon-50: var(--ds-tailwind-colors-green-50);
+  --beacon-200: var(--ds-tailwind-colors-green-200);
+  --beacon-300: var(--ds-tailwind-colors-green-300);
+  --beacon-700: var(--ds-tailwind-colors-green-700);
+  --beacon-950: var(--ds-tailwind-colors-green-950);
+}
+/* families: summaries sky, recommendations green, upsells yellow, nuggets violet */
+[data-beacon-tone="families"] [data-hook="review-summary-strip"],
+[data-beacon-tone="families"] [data-hook^="beacon-strip-"],
+[data-beacon-tone="families"] [data-hook="beacon-modal"] {
+  --beacon-100: var(--ds-tailwind-colors-sky-100); --beacon-50: var(--ds-tailwind-colors-sky-50); --beacon-200: var(--ds-tailwind-colors-sky-200); --beacon-300: var(--ds-tailwind-colors-sky-300); --beacon-700: var(--ds-tailwind-colors-sky-700); --beacon-950: var(--ds-tailwind-colors-sky-950);
+}
+[data-beacon-tone="families"] [data-hook="review-plan-strip"],
+[data-beacon-tone="families"] [data-hook="beacon-modal"][data-beacon-section="plan"],
+[data-beacon-tone="families"] [data-hook="review-insights"] {
+  --beacon-100: var(--ds-tailwind-colors-green-100); --beacon-50: var(--ds-tailwind-colors-green-50); --beacon-200: var(--ds-tailwind-colors-green-200); --beacon-300: var(--ds-tailwind-colors-green-300); --beacon-700: var(--ds-tailwind-colors-green-700); --beacon-950: var(--ds-tailwind-colors-green-950);
+}
+[data-beacon-tone="families"] [data-hook^="upsell"] {
+  --beacon-100: var(--ds-tailwind-colors-yellow-100); --beacon-50: var(--ds-tailwind-colors-yellow-50); --beacon-200: var(--ds-tailwind-colors-yellow-200); --beacon-300: var(--ds-tailwind-colors-yellow-300); --beacon-700: var(--ds-tailwind-colors-yellow-800); --beacon-950: var(--ds-tailwind-colors-yellow-950);
+}
+[data-beacon-tone="families"] [data-hook^="beacon-nugget-"] {
+  --beacon-100: var(--ds-tailwind-colors-violet-100); --beacon-50: var(--ds-tailwind-colors-violet-50); --beacon-200: var(--ds-tailwind-colors-violet-200); --beacon-300: var(--ds-tailwind-colors-violet-300); --beacon-700: var(--ds-tailwind-colors-violet-700); --beacon-950: var(--ds-tailwind-colors-violet-950);
+}
+/* Paint wherever a family is set. */
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"],
+[data-beacon-tone="families"] [data-hook^="upsell"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] {
+  background: var(--beacon-100) !important;
+  border-color: var(--beacon-300) !important;
+  color: var(--beacon-950);
+  --foreground: var(--beacon-950);
+  --muted-foreground: var(--beacon-700);
+}
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] mark,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] mark,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] mark,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] mark {
+  background: var(--beacon-200) !important;
+}
+/* Panels inside a tinted surface step to the family's 50, and the
+   dialog's inner panels and header follow. */
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip-tiles"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip-tiles"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] dl,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] [data-hook="review-summary-charts"] > div,
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] dl > div {
+  background: var(--beacon-50) !important;
+}
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal-header"] {
+  border-color: var(--beacon-300);
+}

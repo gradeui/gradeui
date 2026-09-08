@@ -30,6 +30,7 @@ export function BeaconModal() {
           if it must, and nothing inside carries its own border. */}
       <DialogContent
         dataHook="beacon-modal"
+        data-beacon-section={section}
         className="flex max-h-[94vh] w-[min(96vw,1400px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,1400px)]"
       >
         <div className="flex shrink-0 items-center justify-between gap-4 border-b px-6 py-4" data-hook="beacon-modal-header">

@@ -39,6 +39,11 @@ export interface DemoSettings {
   upsell: boolean;
   /** Show the "Fix it for me" affordance on the plan. */
   fixItForMe: boolean;
+  /** How Beacon surfaces are coloured: neutral (white), tinted (one
+   *  family on every surface, 100 background with 700/950 text, the AA
+   *  pairs from the DS chart), or families (a family per kind of content:
+   *  summaries sky, recommendations green, upsells yellow, nuggets violet). */
+  beaconTone: "neutral" | "tinted" | "families";
 }
 
 interface DemoContextValue {
@@ -50,6 +55,7 @@ interface DemoContextValue {
   setEngine: (engine: DemoSettings["engine"]) => void;
   setUpsell: (on: boolean) => void;
   setFixItForMe: (on: boolean) => void;
+  setBeaconTone: (tone: DemoSettings["beaconTone"]) => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   notesOpen: boolean;
@@ -82,6 +88,7 @@ function applySeams(settings: DemoSettings) {
   const persona = personaById(settings.personaId);
   window.__gdsTweakScope = "app";
   window.__gdsLayoutEngine = settings.engine;
+  document.documentElement.setAttribute("data-beacon-tone", settings.beaconTone ?? "neutral");
   window.__gdsShellLook = settings.look === "authored" ? null : settings.look;
   selectSessionDataset(persona.dataset);
   // A previously tweaked look would otherwise beat the persona's: the
@@ -105,6 +112,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     engine: "modified",
     upsell: true,
     fixItForMe: false,
+    beaconTone: "neutral",
   });
   const [epoch, setEpoch] = React.useState(0);
   const [ready, setReady] = React.useState(false);
@@ -121,6 +129,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       engine: "modified",
       upsell: true,
       fixItForMe: false,
+      beaconTone: "neutral",
       ...(stored ?? {}),
     };
     if (urlPersona && PERSONAS.some((p) => p.id === urlPersona)) next.personaId = urlPersona;
@@ -129,6 +138,8 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     // stored setting, so the choice sticks after the param is gone.
     const urlEngine = params.get("engine");
     if (urlEngine === "native" || urlEngine === "native-fixed" || urlEngine === "modified") next.engine = urlEngine;
+    const urlTone = params.get("tone");
+    if (urlTone === "neutral" || urlTone === "tinted" || urlTone === "families") next.beaconTone = urlTone;
     const urlLook = params.get("look");
     if (urlLook && (urlLook === "authored" || (LOOK_PRESETS as Record<string, unknown>)[urlLook])) next.look = urlLook;
     if (next.look !== "authored" && !(LOOK_PRESETS as Record<string, unknown>)[next.look]) next.look = "authored";
@@ -180,6 +191,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       setEngine: (engine) => update({ engine }),
       setUpsell: (upsell) => update({ upsell }),
       setFixItForMe: (fixItForMe) => update({ fixItForMe }),
+      setBeaconTone: (beaconTone) => update({ beaconTone }),
       setVariant: (base, slug) =>
         setSettings((prev) => {
           const next = { ...prev, variants: { ...prev.variants, [base]: slug } };
