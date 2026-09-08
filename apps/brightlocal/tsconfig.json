@@ -1,0 +1,33 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "plugins": [{ "name": "next" }],
+    "allowJs": true,
+    "checkJs": false,
+    "paths": {
+      "@/*": ["./*"],
+      "@brightlocal/proposal": ["./ds/proposal.jsx"],
+      "@brightlocal/proposal-data": ["./ds/proposal-data.jsx"],
+      "@brightlocal/proposal-shell": ["./ds/proposal-shell.jsx"],
+      "@brightlocal/proposal-nav": ["./ds/proposal-nav.jsx"],
+      "@brightlocal/proposal-page": ["./ds/proposal-page.jsx"],
+      "@brightlocal/proposal-insights": ["./ds/proposal-insights.jsx"],
+      "@brightlocal/proposal-glossary": ["./ds/proposal-glossary.jsx"],
+      "@brightlocal/score-donut": ["./ds/score-donut.jsx"],
+      "@brightlocal/mini-stat": ["./ds/mini-stat.jsx"],
+      "@brightlocal/review-funnel": ["./ds/review-funnel.jsx"],
+      "@brightlocal/review-sources": ["./ds/review-sources.jsx"],
+      "@brightlocal/dropzone": ["./ds/dropzone.jsx"],
+      "@brightlocal/feedback-controls": ["./ds/feedback-controls.jsx"],
+      "@brightlocal/facet-menu": ["./ds/facet-menu.jsx"],
+      "@brightlocal/side-sheet-header": ["./ds/side-sheet-header.jsx"],
+      "@brightlocal/preview-frame": ["./ds/preview-frame.jsx"],
+      "@brightlocal/wizard-shell": ["./ds/wizard-shell.jsx"],
+      "@brightlocal/data": ["./ds/data.js"]
+    },
+    "incremental": true
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -4,14 +4,32 @@
     {
       "name": "glint",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["-F", "@gradeui/glint", "dev"],
+      "runtimeArgs": [
+        "-F",
+        "@gradeui/glint",
+        "dev"
+      ],
       "port": 3010
     },
     {
       "name": "docs",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["-F", "@gradeui/docs", "dev"],
+      "runtimeArgs": [
+        "-F",
+        "@gradeui/docs",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "brightlocal",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "-F",
+        "@gradeui/brightlocal",
+        "dev"
+      ],
+      "port": 3020
     }
   ]
 }

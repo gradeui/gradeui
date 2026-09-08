@@ -1,0 +1,51 @@
+/* ════════════════════════════════════════════════════════════════════
+   BRIGHTLOCAL REPLATFORM PROTOTYPE, GLOBALS
+
+   The real design system, compiled the way a BrightLocal app would
+   compile it: their Tailwind v4 preset (tokens, semantic vars, fonts,
+   utilities, motion) plus a scan of the published component dist so
+   every class the components emit is generated. Studio painted the same
+   screens through an in-browser compiler fed hand-extracted copies of
+   these files; here the package is the source.
+   ════════════════════════════════════════════════════════════════════ */
+
+@import "@brightlocal/tokens/tailwind-preset.css";
+
+/* Source scanning. The preset does not know where components live. */
+@source "../app/**/*.{ts,tsx,js,jsx}";
+@source "../components/**/*.{ts,tsx,js,jsx}";
+@source "../lib/**/*.{ts,tsx,js,jsx}";
+@source "../ds/**/*.{js,jsx}";
+@source "../node_modules/@brightlocal/ui-components/dist/**/*.js";
+
+/* Fonts: the preset's @font-face rules resolve --ds-font-* to the
+   self-hosted woff2 files. The plain (non-utility) --font-* slots the
+   proposal module reads in inline styles need the same aliases the
+   Studio preview set at :root. */
+:root {
+  --font-sans: var(--ds-font-font-sans, Inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--ds-font-font-display, Poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--ds-font-font-mono, "Geist Mono"), ui-monospace, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  margin: 0;
+}
+
+/* ── Project overrides carried over from the Studio project's custom.css
+   (rules file, enabled). The log of what the client DS needs fixing. */
+/* SIDEBAR WIDTH: 224px truncates labels. SidebarProvider sets
+   --sidebar-width inline, which shadows a :root override, so re-declare
+   it AT the provider with !important. */
+[data-slot="sidebar-provider"] {
+  --sidebar-width: 280px !important;
+}
+[data-slot="sidebar-container"] {
+  width: var(--sidebar-width) !important;
+}
+aside {
+  border-left: 1px solid transparent;
+}

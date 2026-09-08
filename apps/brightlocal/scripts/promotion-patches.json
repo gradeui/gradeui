@@ -1,0 +1,26 @@
+{
+  "_why": [
+    "App-side edits a promoted screen needs that Studio cannot express, reapplied by",
+    "promote-screen.py after every promotion so a re-promotion does not lose them.",
+    "Each entry is exact-string and the promoter FAILS if a find does not appear",
+    "exactly once: a patch that silently stops matching is worse than a loud error.",
+    "Keep these minimal; anything Studio can carry belongs in Studio."
+  ],
+  "app/(app)/reviews/builder/_option-a/page.jsx": [
+    {
+      "why": "The Builder's view (hub, templates, wizard, campaign, success) lives on the URL so Back closes a view and a link can open one.",
+      "find": "import { Fragment, useEffect, useMemo, useRef, useState } from \"react\";",
+      "replace": "import { Fragment, useEffect, useMemo, useRef, useState } from \"react\";\nimport { useUrlParam } from \"@/lib/url-state\";"
+    },
+    {
+      "why": "Swap the view state for the URL param (declared after activeId, which it needs).",
+      "find": "  const [view, setView] = useState(\"hub\");\n",
+      "replace": ""
+    },
+    {
+      "why": "Declare the URL-backed view once activeId exists: a campaign view with no campaign (reload, shared link) lands on the hub.",
+      "find": "  const [activeId, setActiveId] = useState(null);\n",
+      "replace": "  const [activeId, setActiveId] = useState(null);\n  const [urlView, setView] = useUrlParam(\"view\", \"hub\");\n  const view = urlView === \"campaign\" && activeId === null ? \"hub\" : urlView;\n"
+    }
+  ]
+}
