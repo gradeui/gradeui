@@ -193,6 +193,12 @@ const SOURCES = {
   },
   facebook: { name: "Facebook", Icon: FacebookOriginal, hasMark: true, canReply: true, canAutoReply: false, ratingKind: "recommendation" },
   yelp: { name: "Yelp", Icon: YelpOriginal, hasMark: true, canReply: false, canAutoReply: false, ratingKind: "star" },
+  // The three smaller sources the Tracker counts for Minus 1 Studios. They
+  // arrive through the shared dataset (lib/reviews-data), so the inbox
+  // must know them or a row throws. None can be replied to from here.
+  yahoo: { name: "Yahoo! Local", Icon: Globe, hasMark: false, canReply: false, canAutoReply: false, ratingKind: "star" },
+  apple: { name: "Apple Maps", Icon: AppleOriginal, hasMark: true, canReply: false, canAutoReply: false, ratingKind: "star" },
+  bing: { name: "Bing Places", Icon: Globe, hasMark: false, canReply: false, canAutoReply: false, ratingKind: "star" },
 };
 
 const canReply = (review) => !review || SOURCES[review.source]?.canReply !== false;

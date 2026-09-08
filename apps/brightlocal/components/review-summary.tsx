@@ -36,8 +36,14 @@ const TONE_TEXT: Record<string, string> = {
 
 function Seg({ s }: { s: Segment }) {
   if (s.kind === "text") return <>{s.text}</>;
+  // The hint rides on hover (native title): what the number is, exactly.
   return (
-    <mark className={`rounded-sm px-1 font-semibold text-inherit ${TONE_MARK[s.tone]}`}>{s.text}</mark>
+    <mark
+      className={`rounded-sm px-1 font-semibold text-inherit ${TONE_MARK[s.tone]} ${s.hint ? "cursor-help underline decoration-dotted decoration-1 underline-offset-4" : ""}`}
+      title={s.hint}
+    >
+      {s.text}
+    </mark>
   );
 }
 
@@ -95,7 +101,7 @@ function drillCopy(stats: ReviewStats, kind: Drill): string {
   return `The share of four-star-and-above reviews was ${m.map((x) => `${x.fourPlusPct}%`).join(", ")} across the six months. A dip here shows up in the rating weeks later.`;
 }
 
-function TellMeMore({ stats, kind, label }: { stats: ReviewStats; kind: Drill; label: string }) {
+function TellMeMore({ stats, kind, label, lines }: { stats: ReviewStats; kind: Drill; label: string; lines: { segments: Segment[] }[] }) {
   const [open, setOpen] = React.useState(false);
   const [ready, setReady] = React.useState(false);
   React.useEffect(() => {
@@ -119,6 +125,13 @@ function TellMeMore({ stats, kind, label }: { stats: ReviewStats; kind: Drill; l
         {ready ? (
           <div className="flex flex-col gap-3">
             <p className="text-heading-subsection">{label.charAt(0).toUpperCase() + label.slice(1)}, last six months</p>
+            {lines.map((line, i) => (
+              <p key={i} className="text-body-sm font-display">
+                {line.segments.map((sg, j) => (
+                  <Seg key={j} s={sg} />
+                ))}
+              </p>
+            ))}
             <DrillChart stats={stats} kind={kind} />
             <p className="text-body-sm text-muted-foreground">{drillCopy(stats, kind)}</p>
           </div>
@@ -162,7 +175,7 @@ export function ReviewSummary() {
             {summary.headline}
           </h2>
           <div className="flex flex-col gap-3">
-            {summary.lines.map((line, i) => (
+            {summary.lines.filter((line) => !line.slot).slice(0, 2).map((line, i) => (
               <p key={i} className="text-body font-display text-foreground max-w-[60ch]" data-hook={`review-summary-line-${i}`} data-register={line.register ?? registerFor(line.tone)}>
                 {line.segments.map((s, j) => (
                   <Seg key={j} s={s} />
@@ -171,7 +184,7 @@ export function ReviewSummary() {
             ))}
           </div>
           <p className="text-body-xs text-muted-foreground" data-hook="review-summary-disclosure">
-            Written by Beacon from this location's reviews. Every number links to the reviews behind it; check before you act on it.
+            Written by Beacon from this location's reviews. Hover a number for what it counts; the info icons hold the rest.
           </p>
         </div>
         <dl className="grid shrink-0 grid-cols-3 gap-3 lg:w-[22rem] lg:grid-cols-1" data-hook="review-summary-tiles">
@@ -183,7 +196,7 @@ export function ReviewSummary() {
                 <dt className="text-body-xs text-muted-foreground">{tile.label}</dt>
                 {drill && !persona.engagement.startsWith("new") ? (
                   <span className="absolute right-2 top-2">
-                    <TellMeMore stats={stats} kind={drill} label={tile.label} />
+                    <TellMeMore stats={stats} kind={drill} label={tile.label} lines={summary.lines.filter((l) => l.slot === drill)} />
                   </span>
                 ) : null}
               </div>

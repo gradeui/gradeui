@@ -190,6 +190,11 @@
       "why": "today is the dataset's today, so daysAgo agrees with the Tracker and the summary",
       "find": "const TODAY = new Date(2026, 7, 17);",
       "replace": "const TODAY = DATA_TODAY;"
+    },
+    {
+      "why": "the inbox knows every source the shared dataset can carry",
+      "find": "  yelp: { name: \"Yelp\", Icon: YelpOriginal, hasMark: true, canReply: false, canAutoReply: false, ratingKind: \"star\" },\n};",
+      "replace": "  yelp: { name: \"Yelp\", Icon: YelpOriginal, hasMark: true, canReply: false, canAutoReply: false, ratingKind: \"star\" },\n  // The three smaller sources the Tracker counts for Minus 1 Studios. They\n  // arrive through the shared dataset (lib/reviews-data), so the inbox\n  // must know them or a row throws. None can be replied to from here.\n  yahoo: { name: \"Yahoo! Local\", Icon: Globe, hasMark: false, canReply: false, canAutoReply: false, ratingKind: \"star\" },\n  apple: { name: \"Apple Maps\", Icon: AppleOriginal, hasMark: true, canReply: false, canAutoReply: false, ratingKind: \"star\" },\n  bing: { name: \"Bing Places\", Icon: Globe, hasMark: false, canReply: false, canAutoReply: false, ratingKind: \"star\" },\n};"
     }
   ],
   "app/(app)/locations/[location]/reviews/tracker/page.jsx": [
@@ -266,4 +271,4 @@
       "replace": "          {persona.accountType === \"agency\" ? (\n          <Select value={client} onValueChange={setClient}>\n            <SelectTrigger dataHook=\"locations-client-select\" className=\"w-44\">\n              <SelectValue placeholder=\"All Clients\" />\n            </SelectTrigger>\n            <SelectContent>\n              <SelectItem value=\"all\">All Clients</SelectItem>\n              <SelectItem value=\"minus-one-studios\">Minus 1 Studios</SelectItem>\n              <SelectItem value=\"harbour-co\">Harbour &amp; Co</SelectItem>\n              <SelectItem value=\"northside-dental\">Northside Dental</SelectItem>\n            </SelectContent>\n          </Select>\n          ) : null}"
     }
   ]
-}\n
+}
