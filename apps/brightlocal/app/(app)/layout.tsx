@@ -1,6 +1,8 @@
 "use client";
 
 import { useDemo } from "@/lib/demo";
+import { BeaconModalProvider } from "@/lib/beacon-modal";
+import { BeaconModal } from "@/components/beacon-modal";
 
 /**
  * The product area. Every promoted screen carries its own shell (the
@@ -10,5 +12,10 @@ import { useDemo } from "@/lib/demo";
  */
 export default function AppAreaLayout({ children }: { children: React.ReactNode }) {
   const { epoch } = useDemo();
-  return <div key={epoch}>{children}</div>;
+  return (
+    <BeaconModalProvider>
+      <div key={epoch}>{children}</div>
+      <BeaconModal />
+    </BeaconModalProvider>
+  );
 }

@@ -17,6 +17,9 @@ import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
 import { reviewPlanFor } from "@/lib/review-insights";
 import { UpsellStrip } from "@/components/upsell";
+import { useBeaconModal } from "@/lib/beacon-modal";
+import { Button } from "@brightlocal/ui-components/button";
+import { ArrowRight } from "@brightlocal/icons";
 import { FixItForMe } from "@/components/fix-it-for-me";
 
 /** The green highlighter mark from the brand material, on a phrase. */
@@ -83,14 +86,51 @@ export function ReviewInsights() {
           {plan.fact ? (
             <div
               data-hook="review-insights-fact"
-              className="mt-2 flex items-start gap-4 rounded-xl bg-[var(--ds-tailwind-colors-violet-100)] px-5 py-4"
+              className="mt-2 flex items-start gap-4 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] px-5 py-4"
             >
-              <Lightbulb className="mt-0.5 size-6 shrink-0 text-[var(--ds-tailwind-colors-violet-500)]" />
+              <Lightbulb className="mt-0.5 size-6 shrink-0 text-[var(--ds-tailwind-colors-neutral-950)]" />
               <p className="text-body max-w-prose">{plan.fact}</p>
             </div>
           ) : null}
         </CardContent>
       ) : null}
     </Card>
+  );
+}
+
+/**
+ * The compact goal strip for a working page (Review Manager): the goal
+ * pill and sentence, the first tactic, and a button into the modal's plan.
+ */
+export function ReviewPlanStrip() {
+  const persona = usePersona();
+  const location = useLocationKey();
+  const { show } = useBeaconModal();
+  const stats = statsFor(location, persona);
+  const plan = reviewPlanFor(stats, persona);
+  const first = plan.items[0]?.actions[0];
+  return (
+    <div
+      data-hook="review-plan-strip"
+      className="flex flex-col gap-3 rounded-xl border bg-card px-5 py-4 lg:flex-row lg:items-center lg:gap-6"
+    >
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-green-300)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-neutral-950)]">
+          <Flag className="size-3" />
+          This week's goal
+        </span>
+        <p className="text-heading-subsection font-display" data-hook="review-plan-strip-goal">
+          <Mark text={plan.goal.text} mark={plan.goal.mark} />
+        </p>
+        {first ? <p className="text-body-sm text-muted-foreground">First tactic: {first.label}</p> : null}
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
+        <Button variant="outline" size="sm" dataHook="review-plan-strip-open" onClick={() => show("plan")}>
+          See the plan
+          <ArrowRight className="size-4" />
+        </Button>
+      </div>
+    </div>
   );
 }

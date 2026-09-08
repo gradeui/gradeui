@@ -82,7 +82,7 @@
     {
       "why": "what to do next: review-derived insights under the cards",
       "find": "import { StarterGuide } from \"@/components/starter-guide\";",
-      "replace": "import { StarterGuide } from \"@/components/starter-guide\";\nimport { ReviewInsights } from \"@/components/review-insights\";"
+      "replace": "import { StarterGuide } from \"@/components/starter-guide\";\nimport { ReviewSummaryStrip } from \"@/components/review-summary\";"
     },
     {
       "why": "the guide (starter) or the plan (everyone else) leads the page, above the cards (Ali, 9 Sep: 'they might also sit at the top of the page')",
@@ -90,14 +90,9 @@
       "replace": "          {starter ? <StarterGuide /> : <ReviewInsights />}\n          <div className=\"grid grid-cols-1 gap-4 md:grid-cols-2\">"
     },
     {
-      "why": "AI summary import",
-      "find": "import { ReviewInsights } from \"@/components/review-insights\";",
-      "replace": "import { ReviewInsights } from \"@/components/review-insights\";\nimport { ReviewSummary } from \"@/components/review-summary\";"
-    },
-    {
       "why": "the AI summary leads the page, above the guide or the plan",
       "find": "          {starter ? <StarterGuide /> : <ReviewInsights />}",
-      "replace": "          <ReviewSummary />\n          {starter ? <StarterGuide /> : null}\n          <ReviewInsights />"
+      "replace": "          <ReviewSummaryStrip />\n          {starter ? <StarterGuide /> : null}"
     },
     {
       "why": "hub numbers are read off the shared dataset, not typed",
@@ -113,6 +108,26 @@
       "why": "cards read the dataset's stats",
       "find": "  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(profileFor(locationKey));",
       "replace": "  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(statsFor(locationKey, persona));"
+    },
+    {
+      "why": "Beacon chips on the cards: the goal on Manager, the lead fact on Tracker",
+      "find": "import { ReviewSummaryStrip } from \"@/components/review-summary\";",
+      "replace": "import { ReviewSummaryStrip, BeaconChip } from \"@/components/review-summary\";\nimport { reviewPlanFor } from \"@/lib/review-insights\";\nimport { reviewSummaryFor } from \"@/lib/review-summary\";"
+    },
+    {
+      "why": "chips computed from the same stats",
+      "find": "  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(statsFor(locationKey, persona));",
+      "replace": "  const stats = statsFor(locationKey, persona);\n  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(stats);\n  // The smallest Beacon size on the two cards it can say something about.\n  const chips = {\n    \"reviews-hub-inbox\": reviewPlanFor(stats, persona).goal.short,\n    \"reviews-hub-insights\": reviewSummaryFor(stats, starter).short,\n  };"
+    },
+    {
+      "why": "chip under the card headline",
+      "find": "        <p className=\"flex items-baseline gap-2\" data-hook={`${card.hook}-headline`}>\n          <span className=\"text-3xl font-bold tracking-tight tabular-nums\">{card.headline}</span>\n          <span className=\"text-muted-foreground text-sm\">{card.headlineLabel}</span>\n        </p>",
+      "replace": "        <p className=\"flex items-baseline gap-2\" data-hook={`${card.hook}-headline`}>\n          <span className=\"text-3xl font-bold tracking-tight tabular-nums\">{card.headline}</span>\n          <span className=\"text-muted-foreground text-sm\">{card.headlineLabel}</span>\n        </p>\n        {card.beacon ? <BeaconChip text={card.beacon} dataHook={`${card.hook}-beacon`} /> : null}"
+    },
+    {
+      "why": "pass the chip text into the card",
+      "find": "            {cards.map((card) => (\n              <HubCard key={card.hook} card={card} />\n            ))}",
+      "replace": "            {cards.map((card) => (\n              <HubCard key={card.hook} card={{ ...card, beacon: chips[card.hook] }} />\n            ))}"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [
@@ -195,6 +210,16 @@
       "why": "the inbox knows every source the shared dataset can carry",
       "find": "  yelp: { name: \"Yelp\", Icon: YelpOriginal, hasMark: true, canReply: false, canAutoReply: false, ratingKind: \"star\" },\n};",
       "replace": "  yelp: { name: \"Yelp\", Icon: YelpOriginal, hasMark: true, canReply: false, canAutoReply: false, ratingKind: \"star\" },\n  // The three smaller sources the Tracker counts for Minus 1 Studios. They\n  // arrive through the shared dataset (lib/reviews-data), so the inbox\n  // must know them or a row throws. None can be replied to from here.\n  yahoo: { name: \"Yahoo! Local\", Icon: Globe, hasMark: false, canReply: false, canAutoReply: false, ratingKind: \"star\" },\n  apple: { name: \"Apple Maps\", Icon: AppleOriginal, hasMark: true, canReply: false, canAutoReply: false, ratingKind: \"star\" },\n  bing: { name: \"Bing Places\", Icon: Globe, hasMark: false, canReply: false, canAutoReply: false, ratingKind: \"star\" },\n};"
+    },
+    {
+      "why": "Beacon plan strip import",
+      "find": "import { inboxRowsFor, TODAY as DATA_TODAY } from \"@/lib/reviews-data\";",
+      "replace": "import { inboxRowsFor, TODAY as DATA_TODAY } from \"@/lib/reviews-data\";\nimport { ReviewPlanStrip } from \"@/components/review-insights\";"
+    },
+    {
+      "why": "the plan strip leads the Manager page",
+      "find": "          <ReviewsInbox />",
+      "replace": "          {/* Beacon's goal for this location, compact (Ali, 9 Sep: the plan\n              belongs on the Manager page). The full plan opens in the modal. */}\n          <ReviewPlanStrip />\n          <ReviewsInbox />"
     }
   ],
   "app/(app)/locations/[location]/reviews/tracker/page.jsx": [

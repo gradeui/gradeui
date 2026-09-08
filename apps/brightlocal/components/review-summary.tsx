@@ -2,7 +2,7 @@
 
 /**
  * SURFACE (Ali asked, 9 Sep): the gradient is ours, built from DS tokens
- * (green-50 to white to violet-100) because the DS has no gradient or
+ * (green-50 to white to neutral-100) because the DS has no gradient or
  * "AI" surface. Logged as a proposal; swap for a DS surface if one ships.
  *
  * The AI summary, at the very top of the Reviews hub. Deliberately its
@@ -20,6 +20,9 @@ import { GlobeyCalmOpen1 } from "@brightlocal/illustrations";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
+import { useBeaconModal } from "@/lib/beacon-modal";
+import { Button } from "@brightlocal/ui-components/button";
+import { ArrowRight } from "@brightlocal/icons";
 import { reviewSummaryFor, registerFor, type Segment } from "@/lib/review-summary";
 import type { ReviewStats } from "@/lib/reviews-data";
 
@@ -54,9 +57,9 @@ function Seg({ s }: { s: Segment }) {
  * about what it means here, for this location. Apple Health for reviews,
  * in miniature.
  */
-type Drill = "velocity" | "rating" | "fourPlus";
+export type Drill = "velocity" | "rating" | "fourPlus";
 
-function DrillChart({ stats, kind }: { stats: ReviewStats; kind: Drill }) {
+export function DrillChart({ stats, kind }: { stats: ReviewStats; kind: Drill }) {
   const months = stats.months;
   const values = months.map((mo) => (kind === "velocity" ? mo.count : kind === "rating" ? Number(mo.rating || 0) : mo.fourPlusPct));
   const max = Math.max(1, ...values);
@@ -87,7 +90,7 @@ function DrillChart({ stats, kind }: { stats: ReviewStats; kind: Drill }) {
   );
 }
 
-function drillCopy(stats: ReviewStats, kind: Drill): string {
+export function drillCopy(stats: ReviewStats, kind: Drill): string {
   const m = stats.months;
   const last = m[m.length - 1];
   const prev = m[m.length - 2];
@@ -146,17 +149,18 @@ function TellMeMore({ stats, kind, label, lines }: { stats: ReviewStats; kind: D
   );
 }
 
-export function ReviewSummary() {
+export function ReviewSummary({ full = false }: { full?: boolean }) {
   const persona = usePersona();
   const location = useLocationKey();
   const stats = statsFor(location, persona);
   const summary = reviewSummaryFor(stats, persona.engagement === "new");
+  const cardLines = full ? summary.lines : summary.lines.filter((line) => !line.slot).slice(0, 2);
   const drillFor = (label: string): Drill | null =>
     label.startsWith("rating") ? "rating" : label.includes("velocity") ? "velocity" : label.includes("four stars") ? "fourPlus" : null;
   return (
     <section
       data-hook="review-summary"
-      className="relative overflow-hidden rounded-[20px] border border-[var(--ds-tailwind-colors-green-200)] bg-[linear-gradient(135deg,var(--ds-tailwind-colors-green-50),var(--ds-tailwind-colors-base-white)_55%,var(--ds-tailwind-colors-violet-100))] px-6 py-6 lg:px-8 lg:py-7"
+      className="relative overflow-hidden rounded-[20px] border border-[var(--ds-tailwind-colors-green-200)] bg-[var(--ds-tailwind-colors-green-50)] px-6 py-6 lg:px-8 lg:py-7"
     >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-10">
         {/* Globey, the DS mascot, so this reads as Beacon speaking rather
@@ -165,8 +169,8 @@ export function ReviewSummary() {
           <GlobeyCalmOpen1 className="h-28 w-auto" />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <p className="text-label-sm flex flex-wrap items-center gap-x-2 gap-y-1 text-[var(--ds-tailwind-colors-violet-600)]" data-hook="review-summary-label">
-            <span className="inline-flex items-center gap-1 rounded-sm bg-[var(--ds-tailwind-colors-violet-500)] px-1.5 py-0.5 text-white">
+          <p className="text-label-sm flex flex-wrap items-center gap-x-2 gap-y-1 text-[var(--ds-tailwind-colors-green-700)]" data-hook="review-summary-label">
+            <span className="inline-flex items-center gap-1 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-1.5 py-0.5 text-white">
               <span aria-hidden>✦</span> Beacon
             </span>
             <span>AI summary of your reviews, updated today</span>
@@ -175,7 +179,7 @@ export function ReviewSummary() {
             {summary.headline}
           </h2>
           <div className="flex flex-col gap-3">
-            {summary.lines.filter((line) => !line.slot).slice(0, 2).map((line, i) => (
+            {cardLines.map((line, i) => (
               <p key={i} className="text-body font-display text-foreground max-w-[60ch]" data-hook={`review-summary-line-${i}`} data-register={line.register ?? registerFor(line.tone)}>
                 {line.segments.map((s, j) => (
                   <Seg key={j} s={s} />
@@ -194,7 +198,7 @@ export function ReviewSummary() {
               <div key={tile.label} className="relative flex flex-col gap-0.5 rounded-xl bg-[var(--ds-tailwind-colors-base-white)]/80 px-4 py-3 backdrop-blur">
                 <dd className={`text-metric font-display ${TONE_TEXT[tile.tone]}`}>{tile.value}</dd>
                 <dt className="text-body-xs text-muted-foreground">{tile.label}</dt>
-                {drill && !persona.engagement.startsWith("new") ? (
+                {drill && !full && !persona.engagement.startsWith("new") ? (
                   <span className="absolute right-2 top-2">
                     <TellMeMore stats={stats} kind={drill} label={tile.label} lines={summary.lines.filter((l) => l.slot === drill)} />
                   </span>
@@ -204,6 +208,83 @@ export function ReviewSummary() {
           })}
         </dl>
       </div>
+      {full && !persona.engagement.startsWith("new") ? (
+        <div className="mt-6 grid gap-4 border-t border-[var(--ds-tailwind-colors-green-200)] pt-6 md:grid-cols-3" data-hook="review-summary-charts">
+          {(["rating", "velocity", "fourPlus"] as Drill[]).map((kind) => (
+            <div key={kind} className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-base-white)]/80 p-4">
+              <p className="text-heading-subsection">
+                {kind === "rating" ? "Rating" : kind === "velocity" ? "Review velocity" : "Four stars or above"}, last six months
+              </p>
+              <DrillChart stats={stats} kind={kind} />
+              <p className="text-body-xs text-muted-foreground">{drillCopy(stats, kind)}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </section>
+  );
+}
+
+/**
+ * The compact strip for a page: Beacon badge, the headline, the one line,
+ * three small metrics, and a button into the modal for the full thing.
+ */
+export function ReviewSummaryStrip() {
+  const persona = usePersona();
+  const location = useLocationKey();
+  const { show } = useBeaconModal();
+  const stats = statsFor(location, persona);
+  const summary = reviewSummaryFor(stats, persona.engagement === "new");
+  const lead = summary.lines.find((line) => !line.slot);
+  return (
+    <section
+      data-hook="review-summary-strip"
+      className="flex flex-col gap-4 rounded-[20px] border border-[var(--ds-tailwind-colors-green-200)] bg-[var(--ds-tailwind-colors-green-50)] px-5 py-4 lg:flex-row lg:items-center lg:gap-6"
+    >
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <p className="text-label-sm flex items-center gap-2 text-[var(--ds-tailwind-colors-green-700)]">
+          <span className="inline-flex items-center gap-1 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-1.5 py-0.5 text-white">
+            <span aria-hidden>✦</span> Beacon
+          </span>
+          <span>AI summary, updated today</span>
+        </p>
+        <p className="text-heading-subsection font-display" data-hook="review-summary-strip-headline">{summary.headline}</p>
+        {lead ? (
+          <p className="text-body-sm font-display text-foreground max-w-[70ch]">
+            {lead.segments.map((sg, j) => (
+              <Seg key={j} s={sg} />
+            ))}
+          </p>
+        ) : null}
+      </div>
+      <dl className="flex shrink-0 flex-wrap gap-x-5 gap-y-1" data-hook="review-summary-strip-tiles">
+        {summary.tiles.map((tile) => (
+          <div key={tile.label} className="flex flex-col">
+            <dd className={`text-heading-section font-display ${TONE_TEXT[tile.tone]}`}>{tile.value}</dd>
+            <dt className="text-body-xs text-muted-foreground">{tile.label}</dt>
+          </div>
+        ))}
+      </dl>
+      <Button variant="outline" size="sm" dataHook="review-summary-strip-open" className="shrink-0" onClick={() => show("summary")}>
+        Read the full summary
+        <ArrowRight className="size-4" />
+      </Button>
+    </section>
+  );
+}
+
+/**
+ * The smallest size: a chip of a few words with the Beacon sigil, for a
+ * card or a row. `what` picks the plan's goal or the summary's lead fact.
+ * Informational on purpose: inside a card that navigates, the card's own
+ * link wins, and the Manager and the modal carry the rest.
+ */
+export function BeaconChip({ text, tone = "neutral", dataHook = "beacon-chip" }: { text: string; tone?: "good" | "bad" | "neutral"; dataHook?: string }) {
+  const bg = tone === "bad" ? "bg-[var(--ds-tailwind-colors-red-100)]" : tone === "good" ? "bg-[var(--ds-tailwind-colors-green-200)]" : "bg-[var(--ds-tailwind-colors-neutral-100)]";
+  return (
+    <span data-hook={dataHook} className={`text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm px-2 py-0.5 font-display ${bg} text-[var(--ds-tailwind-colors-neutral-950)]`}>
+      <span aria-hidden className="text-[var(--ds-tailwind-colors-green-700)]">✦</span>
+      {text}
+    </span>
   );
 }

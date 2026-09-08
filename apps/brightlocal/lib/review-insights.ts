@@ -27,8 +27,9 @@ export interface ReviewInsight {
 }
 
 export interface ReviewPlan {
-  /** The one-line goal, outcome first. `mark` is the phrase to highlight. */
-  goal: { text: string; mark: string };
+  /** The one-line goal, outcome first. `mark` is the phrase to highlight.
+   *  `short` is the few-word size for a chip ("Answer your 26 reviews"). */
+  goal: { text: string; mark: string; short: string };
   /** One plain sentence under the goal. */
   lede: string;
   items: ReviewInsight[];
@@ -154,16 +155,16 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
   // The goal is the first item's outcome, said as a sentence.
   const goal =
     items[0]?.id === "reply-backlog"
-      ? { text: `Answer your ${h.needReply} waiting reviews and keep your rating moving up.`, mark: `${h.needReply} waiting reviews` }
+      ? { text: `Answer your ${h.needReply} waiting reviews and keep your rating moving up.`, mark: `${h.needReply} waiting reviews`, short: `Answer your ${h.needReply} reviews` }
       : items[0]?.id === "low-rating"
         ? stats.compare
-          ? { text: `Get ${stats.compare.self}'s recent reviews back to ${stats.compare.label}'s standard.`, mark: `${stats.compare.label}'s standard` }
-          : { text: `Get your ${winLabel} back to four stars and above.`, mark: "four stars and above" }
+          ? { text: `Get ${stats.compare.self}'s recent reviews back to ${stats.compare.label}'s standard.`, mark: `${stats.compare.label}'s standard`, short: `Catch up with ${stats.compare.label}` }
+          : { text: `Get your ${winLabel} back to four stars and above.`, mark: "four stars and above", short: "Turn recent reviews around" }
         : items[0]?.id === "no-campaigns"
-          ? { text: "Start asking for reviews and watch the count climb.", mark: "asking for reviews" }
+          ? { text: "Start asking for reviews and watch the count climb.", mark: "asking for reviews", short: "Send your first campaign" }
           : items[0]?.id === "few-sources"
-            ? { text: "Get every review source into one inbox.", mark: "one inbox" }
-            : { text: "Keep doing what you're doing. Your reviews are in good shape.", mark: "good shape" };
+            ? { text: "Get every review source into one inbox.", mark: "one inbox", short: "Connect more sources" }
+            : { text: "Keep doing what you're doing. Your reviews are in good shape.", mark: "good shape", short: "All in good shape" };
 
   const lede =
     items.length > 0

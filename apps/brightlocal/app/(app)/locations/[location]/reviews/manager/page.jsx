@@ -68,6 +68,7 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
 import { inboxRowsFor, TODAY as DATA_TODAY } from "@/lib/reviews-data";
+import { ReviewPlanStrip } from "@/components/review-insights";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -2265,6 +2266,9 @@ export default function RMReviewManagerDataTablePage() {
         }
       >
         <GlobalLayoutContentBody>
+          {/* Beacon's goal for this location, compact (Ali, 9 Sep: the plan
+              belongs on the Manager page). The full plan opens in the modal. */}
+          <ReviewPlanStrip />
           <ReviewsInbox />
         </GlobalLayoutContentBody>
       </AppLayoutShell>

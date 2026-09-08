@@ -33,10 +33,10 @@ export function UpsellStrip({
   return (
     <div
       data-hook={dataHook}
-      className="flex flex-col gap-3 rounded-xl border border-dashed border-[var(--ds-tailwind-colors-violet-300)] bg-[var(--ds-tailwind-colors-violet-100)]/60 px-4 py-3.5 sm:flex-row sm:items-center sm:gap-5"
+      className="flex flex-col gap-3 rounded-xl border border-dashed border-[var(--ds-tailwind-colors-neutral-300)] bg-[var(--ds-tailwind-colors-yellow-100)] px-4 py-3.5 sm:flex-row sm:items-center sm:gap-5"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-violet-500)] px-2 py-0.5 text-white">
+        <span className="text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-white">
           <Lock className="size-3" />
           {feature} is part of Pro
         </span>

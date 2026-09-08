@@ -36,6 +36,8 @@ export const registerFor = (tone: SummaryLine["tone"]): Register => (tone === "b
 
 export interface ReviewSummary {
   headline: string;
+  /** The few-word size for a chip ("4 of your last 10 were 2 stars"). */
+  short: string;
   lines: SummaryLine[];
   tiles: { value: string; label: string; tone: "good" | "bad" | "neutral" }[];
 }
@@ -51,6 +53,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
   if (isStarter) {
     return {
       headline: "Your first reviews are in, and they're good.",
+      short: `${h.fiveStar} of your first ${h.allTime} are five stars`,
       lines: [
         { tone: "good", segments: [t("Out of your first "), m(String(h.allTime)), t(" reviews, "), m(h.fiveStar, "good"), t(" were five stars. Nobody has had a reply yet. Did you know a reply within a day is the thing the next customer notices?")] },
         { tone: "neutral", segments: [t("You haven't asked anyone for a review yet. Businesses that ask get several times more than businesses that wait.")] },
@@ -156,8 +159,18 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     if (v) v.slot = undefined;
   }
 
+  const short =
+    s.compare && s.compare.mentions > 0
+      ? `${s.compare.mentions} of your last ${s.lastN} mention ${s.compare.label}`
+      : r.lowCount >= 1
+        ? `${r.lowCount} of your last ${r.lastN} were ${r.lowStar} stars or lower`
+        : r.monthChangePct > 0
+          ? `Review velocity up ${r.monthChangePct}%`
+          : `Review velocity down ${Math.abs(r.monthChangePct)}%`;
+
   return {
     headline,
+    short,
     lines,
     tiles: [
       { value: win.rating, label: `rating, ${winLabel}`, tone: win.ratingValue >= 4.5 ? "good" : win.ratingValue < 4.0 ? "bad" : "neutral" },
