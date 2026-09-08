@@ -37,6 +37,7 @@ import { profileFor } from "@/lib/location-profiles";
 import { statsFor } from "@/lib/reviews-data";
 import { StarterGuide } from "@/components/starter-guide";
 import { ReviewSummaryStrip, BeaconChip } from "@/components/review-summary";
+import { BeaconNugget } from "@/components/beacon-nugget";
 import { reviewPlanFor } from "@/lib/review-insights";
 import { reviewSummaryFor } from "@/lib/review-summary";
 
@@ -303,6 +304,7 @@ export default function ReviewsPage() {
               <HubCard key={card.hook} card={{ ...card, beacon: chips[card.hook] }} />
             ))}
           </div>
+          <BeaconNugget />
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

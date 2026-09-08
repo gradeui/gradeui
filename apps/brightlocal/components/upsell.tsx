@@ -33,11 +33,13 @@ export function UpsellStrip({
   return (
     <div
       data-hook={dataHook}
-      className="flex flex-col gap-3 rounded-xl border border-dashed bg-[var(--ds-tailwind-colors-neutral-50)] px-4 py-3.5 sm:flex-row sm:items-center sm:gap-5"
+      className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] px-5 py-4 sm:flex-row sm:items-center sm:gap-5"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-white">
-          <Lock className="size-3" />
+        {/* The upsell's own badge type: outlined like the Beacon badge,
+            a lock, foreground text. The solid black read far too strong. */}
+        <span className="text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-2 py-0.5 text-foreground">
+          <Lock className="size-3 text-muted-foreground" />
           {feature} is part of Pro
         </span>
         <p className="text-body-sm text-foreground">

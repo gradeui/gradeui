@@ -69,6 +69,7 @@ import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
 import { inboxRowsFor, TODAY as DATA_TODAY } from "@/lib/reviews-data";
 import { ReviewPlanStrip } from "@/components/review-insights";
+import { BeaconNugget } from "@/components/beacon-nugget";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -2270,6 +2271,7 @@ export default function RMReviewManagerDataTablePage() {
               belongs on the Manager page). The full plan opens in the modal. */}
           <ReviewPlanStrip />
           <ReviewsInbox />
+          <BeaconNugget />
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

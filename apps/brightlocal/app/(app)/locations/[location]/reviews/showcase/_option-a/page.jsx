@@ -104,6 +104,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BeaconPageStrip } from "@/components/review-summary";
+import { BeaconNugget } from "@/components/beacon-nugget";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -2653,6 +2654,7 @@ export default function RMReviewShowcasePage() {
               </DrawerFooter>
             </DrawerContent>
           </Drawer>
+          <BeaconNugget />
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

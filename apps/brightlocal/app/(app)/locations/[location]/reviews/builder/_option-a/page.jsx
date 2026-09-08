@@ -118,6 +118,7 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
 import { BeaconPageStrip } from "@/components/review-summary";
+import { BeaconNugget } from "@/components/beacon-nugget";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -6490,6 +6491,7 @@ export default function RMReviewBuilderPage() {
             config={previewConfig?.config ?? null}
             expired={!!previewConfig?.expired}
           />
+          {view === "hub" ? <BeaconNugget /> : null}
         </GlobalLayoutContentBody>
       </AppLayoutShell>
 

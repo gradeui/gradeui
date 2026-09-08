@@ -51,6 +51,16 @@
       "why": "Beacon leads the Builder hub view: what asking did",
       "find": "        <GlobalLayoutContentBody className=\"gap-4\">\n          {view === \"hub\" ? (\n            <CampaignsPage",
       "replace": "        <GlobalLayoutContentBody className=\"gap-4\">\n          {view === \"hub\" ? <BeaconPageStrip page=\"builder\" /> : null}\n          {view === \"hub\" ? (\n            <CampaignsPage"
+    },
+    {
+      "why": "Beacon nugget import",
+      "find": "import { BeaconPageStrip } from \"@/components/review-summary\";",
+      "replace": "import { BeaconPageStrip } from \"@/components/review-summary\";\nimport { BeaconNugget } from \"@/components/beacon-nugget\";"
+    },
+    {
+      "why": "the nugget closes the page",
+      "find": "        </GlobalLayoutContentBody>",
+      "replace": "          {view === \"hub\" ? <BeaconNugget /> : null}\n        </GlobalLayoutContentBody>"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -138,6 +148,16 @@
       "why": "pass the chip text into the card",
       "find": "            {cards.map((card) => (\n              <HubCard key={card.hook} card={card} />\n            ))}",
       "replace": "            {cards.map((card) => (\n              <HubCard key={card.hook} card={{ ...card, beacon: chips[card.hook] }} />\n            ))}"
+    },
+    {
+      "why": "Beacon nugget import",
+      "find": "import { ReviewSummaryStrip, BeaconChip } from \"@/components/review-summary\";",
+      "replace": "import { ReviewSummaryStrip, BeaconChip } from \"@/components/review-summary\";\nimport { BeaconNugget } from \"@/components/beacon-nugget\";"
+    },
+    {
+      "why": "the nugget closes the page",
+      "find": "        </GlobalLayoutContentBody>",
+      "replace": "          <BeaconNugget />\n        </GlobalLayoutContentBody>"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [
@@ -230,6 +250,16 @@
       "why": "the plan strip leads the Manager page",
       "find": "          <ReviewsInbox />",
       "replace": "          {/* Beacon's goal for this location, compact (Ali, 9 Sep: the plan\n              belongs on the Manager page). The full plan opens in the modal. */}\n          <ReviewPlanStrip />\n          <ReviewsInbox />"
+    },
+    {
+      "why": "Beacon nugget import",
+      "find": "import { ReviewPlanStrip } from \"@/components/review-insights\";",
+      "replace": "import { ReviewPlanStrip } from \"@/components/review-insights\";\nimport { BeaconNugget } from \"@/components/beacon-nugget\";"
+    },
+    {
+      "why": "the nugget closes the page",
+      "find": "        </GlobalLayoutContentBody>",
+      "replace": "          <BeaconNugget />\n        </GlobalLayoutContentBody>"
     }
   ],
   "app/(app)/locations/[location]/reviews/tracker/page.jsx": [
@@ -297,6 +327,16 @@
       "why": "Beacon leads the Tracker: volume and cadence",
       "find": "          <GlobalLayoutContentBody\n            className=\"gap-4 pb-10\"\n            style={{ \"--rm-sticky-top\": STICKY_TOP }}\n          >",
       "replace": "          <GlobalLayoutContentBody\n            className=\"gap-4 pb-10\"\n            style={{ \"--rm-sticky-top\": STICKY_TOP }}\n          >\n            <BeaconPageStrip page=\"tracker\" />"
+    },
+    {
+      "why": "Beacon nugget import",
+      "find": "import { BeaconPageStrip } from \"@/components/review-summary\";",
+      "replace": "import { BeaconPageStrip } from \"@/components/review-summary\";\nimport { BeaconNugget } from \"@/components/beacon-nugget\";"
+    },
+    {
+      "why": "the nugget closes the page",
+      "find": "          </GlobalLayoutContentBody>",
+      "replace": "            <BeaconNugget />\n          </GlobalLayoutContentBody>"
     }
   ],
   "app/(app)/locations/page.jsx": [
@@ -326,6 +366,16 @@
       "why": "Beacon leads the Showcase: the reasons why",
       "find": "        <GlobalLayoutContentBody className=\"gap-4\">\n          <WidgetsDashboard",
       "replace": "        <GlobalLayoutContentBody className=\"gap-4\">\n          <BeaconPageStrip page=\"showcase\" />\n          <WidgetsDashboard"
+    },
+    {
+      "why": "Beacon nugget import",
+      "find": "import { BeaconPageStrip } from \"@/components/review-summary\";",
+      "replace": "import { BeaconPageStrip } from \"@/components/review-summary\";\nimport { BeaconNugget } from \"@/components/beacon-nugget\";"
+    },
+    {
+      "why": "the nugget closes the page",
+      "find": "        </GlobalLayoutContentBody>",
+      "replace": "          <BeaconNugget />\n        </GlobalLayoutContentBody>"
     }
   ]
 }

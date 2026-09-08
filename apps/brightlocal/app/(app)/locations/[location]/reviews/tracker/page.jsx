@@ -104,6 +104,7 @@ import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
 import { reviewsFor } from "@/lib/reviews-data";
 import { BeaconPageStrip } from "@/components/review-summary";
+import { BeaconNugget } from "@/components/beacon-nugget";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -1705,6 +1706,7 @@ export default function RMReviewTrackerPage() {
 
             <ReviewPerformance />
             <ReviewTimeline />
+            <BeaconNugget />
           </GlobalLayoutContentBody>
 
           {/* PDF AND CSV ARE TWO DIFFERENT ASKS — a report you send someone,

@@ -10,7 +10,7 @@
  */
 
 import { Card, CardContent, CardHeader } from "@brightlocal/ui-components/card";
-import { Flag, Target, Lightbulb } from "@brightlocal/icons";
+import { Flag, Target } from "@brightlocal/icons";
 import { InsightCard } from "@brightlocal/proposal-insights";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
@@ -43,7 +43,18 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
   return (
     <Card className={bare ? "w-full max-w-none rounded-none border-0 bg-transparent shadow-none" : "w-full max-w-none"} density="default" dataHook="review-insights">
       <CardHeader>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
+          {/* The upsell leads when there is one (Ali, 9 Sep): one kind of
+              content at a time, the offer first, then the goal. */}
+          {plan.items.some((i) => i.id === "reply-backlog") ? (
+            <UpsellStrip
+              feature="Auto-reply"
+              benefit="Beacon can answer your five-star Google reviews for you, in your tone, an hour after they land."
+              creditsLabel="auto-reply"
+              creditsPlural="auto-replies"
+              dataHook="upsell-auto-reply"
+            />
+          ) : null}
           {/* The goal pill, the roadmap's "Stage 1 Goal" flag. */}
           <span
             data-hook="review-insights-pill"
@@ -74,24 +85,8 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
               </div>
             ))}
           </div>
-          {plan.items.some((i) => i.id === "reply-backlog") ? (
-            <UpsellStrip
-              feature="Auto-reply"
-              benefit="Beacon can answer your five-star Google reviews for you, in your tone, an hour after they land."
-              creditsLabel="auto-reply"
-              creditsPlural="auto-replies"
-              dataHook="upsell-auto-reply"
-            />
-          ) : null}
-          {plan.fact ? (
-            <div
-              data-hook="review-insights-fact"
-              className="mt-2 flex items-start gap-4 rounded-xl bg-[var(--ds-tailwind-colors-neutral-100)] px-5 py-4"
-            >
-              <Lightbulb className="mt-0.5 size-6 shrink-0 text-[var(--ds-tailwind-colors-green-500)]" />
-              <p className="text-body max-w-prose">{plan.fact}</p>
-            </div>
-          ) : null}
+
+
         </CardContent>
       ) : null}
     </Card>
