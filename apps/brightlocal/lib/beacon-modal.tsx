@@ -11,11 +11,14 @@
 import * as React from "react";
 
 export type BeaconSection = "summary" | "plan";
+export type BeaconPageKey = "tracker" | "builder" | "showcase" | null;
 
 interface BeaconModalState {
   open: boolean;
   section: BeaconSection;
-  show: (section?: BeaconSection) => void;
+  /** The page the modal was opened from; its own Beacon block leads. */
+  page: BeaconPageKey;
+  show: (section?: BeaconSection, page?: BeaconPageKey) => void;
   close: () => void;
 }
 
@@ -24,17 +27,20 @@ const Ctx = React.createContext<BeaconModalState | null>(null);
 export function BeaconModalProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = React.useState(false);
   const [section, setSection] = React.useState<BeaconSection>("summary");
+  const [page, setPage] = React.useState<BeaconPageKey>(null);
   const value = React.useMemo<BeaconModalState>(
     () => ({
       open,
       section,
-      show: (s = "summary") => {
+      page,
+      show: (s = "summary", pg = null) => {
         setSection(s);
+        setPage(pg);
         setOpen(true);
       },
       close: () => setOpen(false),
     }),
-    [open, section],
+    [open, section, page],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -14,9 +14,11 @@
  */
 
 import * as React from "react";
+import Link from "next/link";
 import { Sparkles, Info, LoaderCircle } from "@brightlocal/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightlocal/ui-components/popover";
 import { GlobeyCalmOpen1 } from "@brightlocal/illustrations";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, Bar, BarChart, XAxis, Cell } from "@brightlocal/ui-components/chart";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
@@ -26,14 +28,16 @@ import { ArrowRight } from "@brightlocal/icons";
 import { reviewSummaryFor, registerFor, type Segment } from "@/lib/review-summary";
 import type { ReviewStats } from "@/lib/reviews-data";
 import { pageBeaconFor, type BeaconPage } from "@/lib/beacon-pages";
+import { hrefFor } from "@/lib/screens";
+import { useRouter } from "next/navigation";
 
 // NEUTRAL ONLY (Ali, 9 Sep: "stop highlighting numbers with red and
 // green"). The words carry the judgement; the marks just say "this is a
 // number". Tone stays on the data for anything that wants it later.
 const TONE_MARK: Record<string, string> = {
-  good: "bg-[var(--ds-tailwind-colors-neutral-100)]",
-  bad: "bg-[var(--ds-tailwind-colors-neutral-100)]",
-  neutral: "bg-[var(--ds-tailwind-colors-neutral-100)]",
+  good: "bg-[var(--ds-tailwind-colors-neutral-200)]",
+  bad: "bg-[var(--ds-tailwind-colors-neutral-200)]",
+  neutral: "bg-[var(--ds-tailwind-colors-neutral-200)]",
 };
 const TONE_TEXT: Record<string, string> = {
   good: "text-foreground",
@@ -41,12 +45,41 @@ const TONE_TEXT: Record<string, string> = {
   neutral: "text-foreground",
 };
 
+/** THE Beacon badge, one shape everywhere: outlined, the ✦ in the accent
+ *  green, "Beacon" in the foreground. A badge can be a link (Ali, 9 Sep):
+ *  with `beta` it carries a "Beta" tail and opens the Beacon notes, where
+ *  "learn more" and "give us feedback" live. */
+export function BeaconBadge({ dataHook = "beacon-badge", beta = false }: { dataHook?: string; beta?: boolean }) {
+  const inner = (
+    <>
+      <Sparkles aria-hidden className="size-3.5 text-[var(--ds-tailwind-colors-green-500)]" /> Beacon
+      {beta ? <span className="text-muted-foreground border-l pl-1.5">Beta</span> : null}
+    </>
+  );
+  const cls = "text-label-sm inline-flex items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-foreground";
+  if (beta) {
+    return (
+      <Link href="/docs/beacon-notes" data-hook={dataHook} className={`${cls} hover:bg-[var(--ds-tailwind-colors-neutral-50)]`} title="What Beacon is, and how to give feedback">
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <span data-hook={dataHook} className={cls}>
+      {inner}
+    </span>
+  );
+}
+
 function Seg({ s }: { s: Segment }) {
   if (s.kind === "text") return <>{s.text}</>;
   // The hint rides on hover (native title): what the number is, exactly.
+  // Short marks (a number, a date) never wrap: "3 Sep" split across lines
+  // reads wrong (Ali, 9 Sep). Phrases still wrap.
+  const nowrap = s.text.length <= 16 ? "whitespace-nowrap" : "";
   return (
     <mark
-      className={`rounded-sm px-1 font-semibold text-inherit ${TONE_MARK[s.tone]} ${s.hint ? "cursor-help underline decoration-dotted decoration-1 underline-offset-4" : ""}`}
+      className={`rounded-sm px-1 font-semibold text-inherit ${TONE_MARK[s.tone]} ${nowrap} ${s.hint ? "cursor-help underline decoration-dotted decoration-1 underline-offset-4" : ""}`}
       title={s.hint}
     >
       {s.text}
@@ -64,33 +97,41 @@ function Seg({ s }: { s: Segment }) {
 export type Drill = "velocity" | "rating" | "fourPlus";
 
 export function DrillChart({ stats, kind }: { stats: ReviewStats; kind: Drill }) {
-  const months = stats.months;
-  const values = months.map((mo) => (kind === "velocity" ? mo.count : kind === "rating" ? Number(mo.rating || 0) : mo.fourPlusPct));
-  const max = Math.max(1, ...values);
-  const min = kind === "rating" ? 1 : 0;
-  const explain = (mo: ReviewStats["months"][number]) =>
-    kind === "velocity"
-      ? `${mo.label}: ${mo.count} review${mo.count === 1 ? "" : "s"} came in.`
-      : kind === "rating"
-        ? `${mo.label}: reviews that month averaged ${mo.rating || "no rating"}.`
-        : `${mo.label}: ${mo.fourPlusPct}% of that month's reviews were four stars or above.`;
+  // The DS Chart (recharts underneath), the same one the Tracker draws
+  // with (Ali, 9 Sep: "are those charts recharts?"). Neutral bars, the
+  // current month in the accent, a plain-English tooltip per bar.
+  const data = stats.months.map((mo) => ({
+    month: mo.label,
+    value: kind === "velocity" ? mo.count : kind === "rating" ? Number(mo.rating || 0) : mo.fourPlusPct,
+    explain:
+      kind === "velocity"
+        ? `${mo.count} review${mo.count === 1 ? "" : "s"} came in.`
+        : kind === "rating"
+          ? `Reviews that month averaged ${mo.rating || "no rating"}.`
+          : `${mo.fourPlusPct}% of that month's reviews were four stars or above.`,
+  }));
+  const config = { value: { label: kind === "velocity" ? "Reviews" : kind === "rating" ? "Rating" : "Four stars or above" } };
   return (
-    <div className="flex h-24 items-end gap-1.5" role="img" aria-label="Last six months">
-      {months.map((mo, i) => {
-        const v = values[i];
-        const h = Math.max(4, Math.round(((v - min) / (max - min || 1)) * 80));
-        const last = i === months.length - 1;
-        return (
-          <div key={mo.label} className="group flex flex-1 flex-col items-center gap-1" title={explain(mo)}>
-            <div
-              className={`w-full rounded-t-md transition-colors ${last ? "bg-[var(--ds-tailwind-colors-green-500)]" : "bg-[var(--ds-tailwind-colors-neutral-200)] group-hover:bg-[var(--ds-tailwind-colors-neutral-300)]"}`}
-              style={{ height: `${h}px` }}
+    <ChartContainer config={config} className="h-28 w-full" dataHook={`beacon-chart-${kind}`}>
+      <BarChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }} barCategoryGap={6}>
+        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} fontSize={12} />
+        <ChartTooltip
+          cursor={false}
+          content={
+            <ChartTooltipContent
+              hideIndicator
+              labelFormatter={(label: unknown, payload: unknown[]) => `${String(label)}: ${(payload?.[0] as { payload?: { explain?: string } } | undefined)?.payload?.explain ?? ""}`}
+              formatter={() => null}
             />
-            <span className="text-body-xs text-muted-foreground">{mo.label}</span>
-          </div>
-        );
-      })}
-    </div>
+          }
+        />
+        <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+          {data.map((d, i) => (
+            <Cell key={d.month} fill={i === data.length - 1 ? "var(--ds-tailwind-colors-green-500)" : "var(--ds-tailwind-colors-neutral-200)"} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ChartContainer>
   );
 }
 
@@ -176,13 +217,11 @@ export function ReviewSummary({ full = false, bare = false }: { full?: boolean; 
           <p className="text-label-sm flex flex-wrap items-center gap-x-2 gap-y-1" data-hook="review-summary-label">
             {/* In the modal the header already carries the badge. */}
             {bare ? null : (
-              <span className="inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-foreground">
-                <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span> Beacon
-              </span>
+              <BeaconBadge beta />
             )}
             <span className="text-muted-foreground">AI summary of your reviews, updated today</span>
           </p>
-          <h2 className="text-metric font-display text-pretty" data-hook="review-summary-headline">
+          <h2 className="text-metric font-display text-balance" data-hook="review-summary-headline">
             {summary.headline}
           </h2>
           <div className="flex flex-col gap-3">
@@ -250,12 +289,10 @@ export function ReviewSummaryStrip() {
     >
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <p className="text-label-sm flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-foreground">
-            <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span> Beacon
-          </span>
+          <BeaconBadge beta />
           <span className="text-muted-foreground">AI summary, updated today</span>
         </p>
-        <p className="text-metric font-display max-w-[40ch] text-pretty" data-hook="review-summary-strip-headline">{summary.headline}</p>
+        <p className="text-metric font-display max-w-[40ch] text-balance" data-hook="review-summary-strip-headline">{summary.headline}</p>
         {lead ? (
           <p className="text-body text-foreground max-w-[60ch] text-pretty">
             {lead.segments.map((sg, j) => (
@@ -289,10 +326,10 @@ export function ReviewSummaryStrip() {
  * link wins, and the Manager and the modal carry the rest.
  */
 export function BeaconChip({ text, tone = "neutral", dataHook = "beacon-chip" }: { text: string; tone?: "good" | "bad" | "neutral"; dataHook?: string }) {
-  const bg = "bg-[var(--ds-tailwind-colors-neutral-100)]"; // neutral whatever the tone (Ali, 9 Sep)
+  const bg = "bg-[var(--ds-tailwind-colors-base-white)]"; // neutral whatever the tone (Ali, 9 Sep); same outline as the badge
   return (
-    <span data-hook={dataHook} className={`text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm px-2 py-0.5 ${bg} text-[var(--ds-tailwind-colors-neutral-950)]`}>
-      <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span>
+    <span data-hook={dataHook} className={`text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm border px-2 py-0.5 ${bg} text-foreground`}>
+      <Sparkles aria-hidden className="size-3.5 text-[var(--ds-tailwind-colors-green-500)]" />
       {text}
     </span>
   );
@@ -305,6 +342,7 @@ export function BeaconChip({ text, tone = "neutral", dataHook = "beacon-chip" }:
 export function BeaconPageStrip({ page }: { page: BeaconPage }) {
   const persona = usePersona();
   const location = useLocationKey();
+  const router = useRouter();
   const { show } = useBeaconModal();
   const stats = statsFor(location, persona);
   const b = pageBeaconFor(page, stats, persona);
@@ -315,21 +353,24 @@ export function BeaconPageStrip({ page }: { page: BeaconPage }) {
     >
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <p className="text-label-sm flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-foreground">
-            <span aria-hidden className="text-[var(--ds-tailwind-colors-green-500)]">✦</span> Beacon
-          </span>
+          <BeaconBadge beta />
           <span className="text-muted-foreground">From this location's reviews, updated today</span>
         </p>
-        <p className="text-metric font-display max-w-[40ch] text-pretty" data-hook={`beacon-strip-${page}-headline`}>{b.headline}</p>
+        <p className="text-metric font-display max-w-[40ch] text-balance" data-hook={`beacon-strip-${page}-headline`}>{b.headline}</p>
         <p className="text-body text-foreground max-w-[60ch] text-pretty">
           {b.line.map((sg, j) => (
             <Seg key={j} s={sg} />
           ))}
         </p>
-        <div className="mt-auto pt-3">
-          <Button variant="outline" size="sm" dataHook={`beacon-strip-${page}-open`} onClick={() => show("summary")}>
+        <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
+          {b.cta ? (
+            <Button variant="primary" size="sm" dataHook={`beacon-strip-${page}-cta`} onClick={() => router.push(hrefFor({ path: b.cta!.path, scope: "location" }, location))}>
+              {b.cta.label}
+              <ArrowRight className="size-4" />
+            </Button>
+          ) : null}
+          <Button variant="outline" size="sm" dataHook={`beacon-strip-${page}-open`} onClick={() => show("summary", page)}>
             Read the full summary
-            <ArrowRight className="size-4" />
           </Button>
         </div>
       </div>
@@ -342,5 +383,26 @@ export function BeaconPageStrip({ page }: { page: BeaconPage }) {
         ))}
       </dl>
     </section>
+  );
+}
+
+/** The page's own Beacon block, leading the modal when it was opened
+ *  from that page: headline and line, no chrome. */
+export function BeaconPageBlock({ page }: { page: BeaconPage }) {
+  const persona = usePersona();
+  const location = useLocationKey();
+  const b = pageBeaconFor(page, statsFor(location, persona), persona);
+  return (
+    <div className="flex flex-col gap-3 border-b pb-6" data-hook={`beacon-page-block-${page}`}>
+      <p className="text-label-sm text-muted-foreground">
+        {page === "tracker" ? "Review Tracker" : page === "builder" ? "Review Builder" : "Review Showcase"}
+      </p>
+      <p className="text-metric font-display text-balance max-w-[40ch]">{b.headline}</p>
+      <p className="text-body text-foreground max-w-[60ch] text-pretty">
+        {b.line.map((sg, j) => (
+          <Seg key={j} s={sg} />
+        ))}
+      </p>
+    </div>
   );
 }

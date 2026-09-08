@@ -27,6 +27,9 @@ export default function DocsIndex() {
         </Link>
       </div>
       <p className="text-muted-foreground text-sm">
+        Also: <Link href="/docs/beacon" className="underline underline-offset-4">Beacon badge treatments</Link>, five options side by side.
+      </p>
+      <p className="text-muted-foreground text-sm">
         Leave comments on any page with the Vercel toolbar (bottom of the screen on the hosted
         version). Comments attach to the element you click.
       </p>

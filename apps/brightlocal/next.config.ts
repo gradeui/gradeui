@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
   devIndicators: { position: "bottom-right" },
   // The notes API reads notes/*.md at request time; make sure the
   // serverless bundle carries them.
-  outputFileTracingIncludes: { "/api/notes": ["./notes/**/*"] },
+  outputFileTracingIncludes: { "/api/notes": ["./notes/**/*"], "/docs/beacon-notes": ["./notes/**/*"] },
 };
 
 // The Vercel toolbar is what carries comments on the production URL.

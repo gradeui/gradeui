@@ -16,6 +16,8 @@ export interface PageBeacon {
   headline: string;
   line: Segment[];
   tiles: { value: string; label: string }[];
+  /** The one thing to do about it. `path` is relative to the location. */
+  cta?: { label: string; path: string };
 }
 
 const t = (text: string): Segment => ({ kind: "text", text });
@@ -35,7 +37,7 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
       line: starter
         ? [t("Your "), m(String(s.total)), t(" reviews so far all came from Google. The Tracker earns its keep once you're asking and more sources are connected.")]
         : [
-            m(String(s.thisMonth), `Reviews received so far this month.`), t(" reviews so far this month against "), m(String(s.lastMonth), "Reviews received in the whole of last month."), t(" in the whole of last month. "),
+            m(String(s.thisMonth), `Reviews received so far this month.`), t(" reviews so far this month, "), m(`${up ? "up" : "down"} ${Math.abs(s.monthChangePct)}%`, `Against ${s.lastMonth} in the whole of last month.`), t(` on the ${s.lastMonth} last month. `),
             ...(s.spike ? [t("The spike on "), m(s.spike.date), t(` is your ${s.spike.campaign} ${s.spike.channel}. `)] : []),
             t("Your "), m(s.recent.kind === "days" ? "last 30 days" : "last 20 reviews"), t(" average "), m(s.recent.rating), t(`; all time is `), m(s.rating), t("."),
           ],
@@ -44,6 +46,7 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
         { value: s.recent.rating, label: s.recent.kind === "days" ? "rating, last 30 days" : "rating, last 20 reviews" },
         { value: `${s.fourPlusPct}%`, label: "four stars or above this month" },
       ],
+      cta: starter ? { label: "Send your first campaign", path: "reviews/builder?view=wizard" } : { label: "See the reviews behind this", path: "reviews/manager" },
     };
   }
 
@@ -66,6 +69,7 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
         { value: String(s.thisMonth), label: "reviews this month" },
         { value: s.spike ? s.spike.date : "none", label: "last spike" },
       ],
+      cta: { label: s.running === 0 || starter ? "Create a campaign" : "Get a campaign ready for next month", path: "reviews/builder?view=wizard" },
     };
   }
 
@@ -81,5 +85,6 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
       { value: `${s.fourPlusPct}%`, label: "four stars or above this month" },
       { value: "3", label: "showcases ready" },
     ],
+    cta: { label: "Pick the reviews to show", path: "reviews/manager" },
   };
 }
