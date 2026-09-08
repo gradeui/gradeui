@@ -37,6 +37,10 @@ export interface RecentActivity {
   spike?: { date: string; campaign: string; channel: string; incentive?: string };
   /** The one thing customers keep mentioning, good or bad. */
   theme?: { text: string; good: boolean };
+  /** For a branch of a brand: the sibling customers compare it to. Some
+   *  of the low reviews name that branch ("nothing like the amazing
+   *  Brighton branch"), which is the insight for a multi-location owner. */
+  compare?: { to: string; label: string; self: string };
 }
 
 export interface LocationProfile {
@@ -113,6 +117,7 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
     recent: {
       lastN: 10, lowCount: 2, lowStar: 2, monthChangePct: 9, fourPlusPct: 70,
       theme: { text: "slow service on Saturday evenings", good: false },
+      compare: { to: "harbour-co", label: "Brighton", self: "Hove" },
     },
     inboxRows: 23,
     sources: [
@@ -130,6 +135,7 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
       lastN: 10, lowCount: 4, lowStar: 2, monthChangePct: -18, fourPlusPct: 50,
       spike: { date: "2 Aug", campaign: "Season Pass Holders", channel: "SMS", incentive: "a 10% discount" },
       theme: { text: "cold food and long waits", good: false },
+      compare: { to: "harbour-co", label: "Brighton", self: "Worthing" },
     },
     inboxRows: 28,
     sources: [

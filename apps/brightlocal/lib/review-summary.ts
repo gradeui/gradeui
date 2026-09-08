@@ -15,10 +15,18 @@ export type Segment =
   | { kind: "text"; text: string }
   | { kind: "metric"; text: string; tone: "good" | "bad" | "neutral" };
 
+/** Beacon's register for a line (see notes/beacon-voice.md): bad news in
+ *  Brian, the warm default in Bea, a real win in Ray. Derived from tone
+ *  today; the examples file will drive the wording later. */
+export type Register = "brian" | "bea" | "ray";
+
 export interface SummaryLine {
   segments: Segment[];
   tone: "good" | "bad" | "neutral";
+  register?: Register;
 }
+
+export const registerFor = (tone: SummaryLine["tone"]): Register => (tone === "bad" ? "brian" : tone === "good" ? "ray" : "bea");
 
 export interface ReviewSummary {
   headline: string;
@@ -49,7 +57,26 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     };
   }
 
-  // Bad news first, with the why.
+  const win = s.recent;
+  const winLabel = win.kind === "days" ? `last ${win.size} days` : `last ${win.size} reviews`;
+  const drop = s.ratingValue - win.ratingValue;
+
+  // Bad news first, with the why. The recent window is the number that
+  // can move; the lifetime average barely does.
+  if (drop >= 0.3 && win.ratingValue < 4.3) {
+    lines.push({
+      tone: "bad",
+      segments: [t(`Your ${winLabel} average `), m(win.rating, "bad"), t(" against "), m(s.rating), t(" all time. That gap is the number to watch, and the one you can move.")],
+    });
+  }
+  if (s.compare && s.compare.mentions > 0) {
+    lines.push({
+      tone: "bad",
+      segments: [
+        m(String(s.compare.mentions), "bad"), t(` of your last ${s.lastN} reviews compare ${s.compare.self} with your ${s.compare.label} branch, and not kindly. ${s.compare.label} is on `), m(s.compare.siblingRecentRating, "good"), t(` for the same period; ${s.compare.self} is on `), m(win.rating, "bad"), t(". Same brand, different experience: that is worth a visit."),
+      ],
+    });
+  }
   if (r.lowCount >= 3) {
     lines.push({
       tone: "bad",
@@ -103,9 +130,10 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     lines.push({ tone: "good", segments: [t("The thing customers keep praising is "), m(r.theme.text, "good"), t(". Worth saying in your replies, and on your website.")] });
   }
 
-  const ratingTone = Number(h.rating) >= 4.5 ? "good" : Number(h.rating) < 4.2 ? "bad" : "neutral";
   const headline =
-    r.lowCount >= 3
+    s.compare && s.compare.mentions > 0
+      ? `${s.compare.self} is falling behind ${s.compare.label}, and customers are saying so.`
+      : r.lowCount >= 3
       ? "A run of low reviews needs your attention this week."
       : r.monthChangePct > 0
         ? "Reviews are up, and mostly for the right reasons."
@@ -115,7 +143,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     headline,
     lines,
     tiles: [
-      { value: h.rating, label: "average rating", tone: ratingTone },
+      { value: win.rating, label: `rating, ${winLabel}`, tone: win.ratingValue >= 4.5 ? "good" : win.ratingValue < 4.0 ? "bad" : "neutral" },
       { value: `${r.monthChangePct > 0 ? "+" : ""}${r.monthChangePct}%`, label: "review velocity vs last month", tone: r.monthChangePct > 0 ? "good" : r.monthChangePct < 0 ? "bad" : "neutral" },
       { value: `${r.fourPlusPct}%`, label: "four stars or above", tone: r.fourPlusPct >= 70 ? "good" : r.fourPlusPct < 55 ? "bad" : "neutral" },
     ],

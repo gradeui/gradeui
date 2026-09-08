@@ -57,6 +57,15 @@ export interface ReviewStats {
   lowStar: number;
   spike: LocationProfile["recent"]["spike"];
   theme: LocationProfile["recent"]["theme"];
+  /** The headline that CAN move: the recent window's rating. Time-based
+   *  (last 30 days) when there are enough reviews in it, otherwise the
+   *  last 20 reviews. The lifetime average barely moves (Ali, 9 Sep:
+   *  "extremely hard to move ratings even 0.1"). */
+  recent: { kind: "days" | "count"; size: number; count: number; rating: string; ratingValue: number };
+  /** The last six months, oldest first, for the drill-down charts. */
+  months: { label: string; count: number; rating: string; fourPlusPct: number }[];
+  /** Multi-location: the sibling branch customers compare this one to. */
+  compare: null | { label: string; self: string; mentions: number; siblingRecentRating: string; siblingRating: string };
   running: number;
   scheduled: number;
   draft: number;
@@ -96,6 +105,10 @@ const LOW = (theme?: string) => [
   `Really wanted to like it, but ${theme ? theme : "the whole visit"} spoiled the day. Nobody seemed to notice.`,
   `The welcome was fine. After that, ${theme ? theme : "everything else let it down"}. Won't be rushing back.`,
   `Not good. ${theme ? `We told staff about ${theme} and nothing changed.` : "We raised it with staff and nothing changed."}`,
+];
+const COMPARE = (self: string, other: string) => [
+  `I went to the ${self} branch and was shocked. It's nothing like the amazing ${other} branch. 1 star.`,
+  `We love the ${other} one, so we tried ${self}. Same menu, completely different experience. Won't be back to this one.`,
 ];
 const PRAISE = (theme?: string) =>
   theme ? [`What stood out was ${theme}. That alone makes it worth coming back for.`, `Can't fault it. Special mention for ${theme}.`] : [];
@@ -239,11 +252,17 @@ export function reviewsFor(location: string, persona?: { engagement?: string } |
   const h = profile.hub;
   const target = { needs: h.needReply, skipped: h.skipped, replied: Math.max(0, inbox - h.needReply - h.skipped) };
   let needs = 0, skipped = 0;
+  let compares = 0;
   list.forEach((x, i) => {
     const low = typeof x.rating === "number" ? x.rating <= 2 : x.rating === "down";
     const mid = typeof x.rating === "number" && x.rating === 3;
     const pool = low ? LOW(themeText) : mid ? MID : praise && rand() < 0.35 ? PRAISE(praise) : HIGH;
     x.text = pool[Math.floor(rand() * pool.length)];
+    // The first two low reviews in the last N name the sibling branch.
+    if (low && r.compare && i < r.lastN && compares < 2) {
+      x.text = COMPARE(r.compare.self, r.compare.label)[compares];
+      compares += 1;
+    }
     x.aiDraft = low ? DRAFT_LOW : DRAFT;
     if (i >= inbox) { x.status = "manual"; return; }
     // Newest rows tend to be unanswered; auto replies only exist for
@@ -278,7 +297,45 @@ export function statsFor(location: string, persona?: { engagement?: string } | n
   const fourPlus = thisMonth.filter((x) => num(x.rating) >= 4).length;
   const r = profile.recent;
   const lastN = list.slice(0, r.lastN);
+  const starsOf = (xs: Review[]) => xs.filter((x) => typeof x.rating === "number").map((x) => x.rating as number);
+  const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+  const last30 = list.filter((x) => x.daysAgo < 30);
+  const windowKind: "days" | "count" = last30.length >= 15 ? "days" : "count";
+  const windowRows = windowKind === "days" ? last30 : list.slice(0, 20);
+  const windowAvg = avgOf(starsOf(windowRows));
+  let compare: ReviewStats["compare"] = null;
+  if (r.compare) {
+    const sib = reviewsFor(r.compare.to, persona);
+    const sibLast30 = sib.filter((x) => x.daysAgo < 30);
+    const sibWindow = sibLast30.length >= 15 ? sibLast30 : sib.slice(0, 20);
+    compare = {
+      label: r.compare.label,
+      self: r.compare.self,
+      mentions: lastN.filter((x) => x.text.includes(r.compare!.label)).length,
+      siblingRecentRating: avgOf(starsOf(sibWindow)).toFixed(1),
+      siblingRating: avgOf(starsOf(sib)).toFixed(1),
+    };
+  }
+  const months: ReviewStats["months"] = [];
+  for (let back = 5; back >= 0; back -= 1) {
+    const start = new Date(TODAY.getFullYear(), TODAY.getMonth() - back, 1);
+    const end = new Date(TODAY.getFullYear(), TODAY.getMonth() - back + 1, 1);
+    const rows = list.filter((x) => {
+      const d = new Date(TODAY.getTime() - x.daysAgo * DAY);
+      return d >= start && d < end;
+    });
+    const st = starsOf(rows);
+    months.push({
+      label: start.toLocaleDateString("en-GB", { month: "short" }),
+      count: rows.length,
+      rating: st.length ? avgOf(st).toFixed(1) : "",
+      fourPlusPct: rows.length ? Math.round((rows.filter((x) => num(x.rating) >= 4).length / rows.length) * 100) : 0,
+    });
+  }
   return {
+    months,
+    recent: { kind: windowKind, size: windowKind === "days" ? 30 : 20, count: windowRows.length, rating: windowAvg.toFixed(1), ratingValue: windowAvg },
+    compare,
     inbox: inbox.length,
     needReply: inbox.filter((x) => x.status === "needs").length,
     replied: inbox.filter((x) => x.status === "manual" || x.status === "auto").length,

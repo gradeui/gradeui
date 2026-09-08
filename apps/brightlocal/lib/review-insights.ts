@@ -71,13 +71,15 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
     });
   }
 
-  if (rating && rating < 4.2) {
+  const win = stats.recent;
+  const winLabel = win.kind === "days" ? `last ${win.size} days` : `last ${win.size} reviews`;
+  if (win.ratingValue < 4.2 || stats.ratingValue - win.ratingValue >= 0.3) {
     items.push({
       id: "low-rating",
       area: "reviews",
       severity: "high",
-      title: `Move your rating above 4.2`,
-      actionsSummary: `You're at ${h.rating}, and 4.2 is where a lot of people set their filter. Two things move it: fewer new low reviews, and more new high ones. Both start with the reviews you already have.`,
+      title: stats.compare ? `Bring ${stats.compare.self} back in line with ${stats.compare.label}` : `Turn your recent reviews around`,
+      actionsSummary: `Your ${winLabel} average is ${win.rating}${stats.ratingValue - win.ratingValue >= 0.3 ? ` against ${stats.rating} all time` : ""}. The lifetime number barely moves; the recent one does, and it's what the next customer sees first. Two things move it: fewer new low reviews, and more new high ones.${stats.compare && stats.compare.mentions ? ` ${stats.compare.mentions} of your last ${stats.lastN} reviews name your ${stats.compare.label} branch as the standard. Go and see what ${stats.compare.label} does differently.` : ""}`,
       actions: [
         {
           label: "Answer every one and two star review this week.",
@@ -146,12 +148,17 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
     });
   }
 
+  // The recent-window item leads when it fires: it is the interesting one.
+  const lowIdx = items.findIndex((i) => i.id === "low-rating");
+  if (lowIdx > 0) items.unshift(items.splice(lowIdx, 1)[0]);
   // The goal is the first item's outcome, said as a sentence.
   const goal =
     items[0]?.id === "reply-backlog"
       ? { text: `Answer your ${h.needReply} waiting reviews and keep your rating moving up.`, mark: `${h.needReply} waiting reviews` }
       : items[0]?.id === "low-rating"
-        ? { text: `Lift your rating from ${h.rating} to above 4.2.`, mark: `above 4.2` }
+        ? stats.compare
+          ? { text: `Get ${stats.compare.self}'s recent reviews back to ${stats.compare.label}'s standard.`, mark: `${stats.compare.label}'s standard` }
+          : { text: `Get your ${winLabel} back to four stars and above.`, mark: "four stars and above" }
         : items[0]?.id === "no-campaigns"
           ? { text: "Start asking for reviews and watch the count climb.", mark: "asking for reviews" }
           : items[0]?.id === "few-sources"
