@@ -35,17 +35,5 @@ body {
   margin: 0;
 }
 
-/* ── Project overrides carried over from the Studio project's custom.css
-   (rules file, enabled). The log of what the client DS needs fixing. */
-/* SIDEBAR WIDTH: 224px truncates labels. SidebarProvider sets
-   --sidebar-width inline, which shadows a :root override, so re-declare
-   it AT the provider with !important. */
-[data-slot="sidebar-provider"] {
-  --sidebar-width: 280px !important;
-}
-[data-slot="sidebar-container"] {
-  width: var(--sidebar-width) !important;
-}
-aside {
-  border-left: 1px solid transparent;
-}
+/* Prototype overrides live in ONE file. See the notes inside it. */
+@import "./custom.css";

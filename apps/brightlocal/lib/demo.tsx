@@ -27,6 +27,9 @@ export interface DemoSettings {
   look: string;
   /** Chosen layout option per base route (see components/option-switch). */
   variants: Record<string, string>;
+  /** "modified": the proposal shell. "native": the DS GlobalLayout and
+   *  page header as shipped, nothing overridden. */
+  engine: "modified" | "native";
 }
 
 interface DemoContextValue {
@@ -35,6 +38,7 @@ interface DemoContextValue {
   setPersona: (id: string) => void;
   setLook: (look: string) => void;
   setVariant: (base: string, slug: string) => void;
+  setEngine: (engine: "modified" | "native") => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   /** Bumps whenever a setting changes; layouts key their subtree on it
@@ -48,6 +52,7 @@ declare global {
   interface Window {
     __gdsShellLook?: string | null;
     __gdsTweakScope?: string | null;
+    __gdsLayoutEngine?: string | null;
   }
 }
 
@@ -63,6 +68,7 @@ function readStored(): DemoSettings | null {
 function applySeams(settings: DemoSettings) {
   const persona = personaById(settings.personaId);
   window.__gdsTweakScope = "app";
+  window.__gdsLayoutEngine = settings.engine;
   window.__gdsShellLook = settings.look === "authored" ? null : settings.look;
   selectSessionDataset(persona.dataset);
   // A previously tweaked look would otherwise beat the persona's: the
@@ -81,6 +87,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     personaId: DEFAULT_PERSONA_ID,
     look: "live-site",
     variants: {},
+    engine: "modified",
   });
   const [epoch, setEpoch] = React.useState(0);
   const [ready, setReady] = React.useState(false);
@@ -93,6 +100,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       personaId: DEFAULT_PERSONA_ID,
       look: "live-site",
       variants: {},
+      engine: "modified",
       ...(stored ?? {}),
     };
     if (urlPersona && PERSONAS.some((p) => p.id === urlPersona)) next.personaId = urlPersona;
@@ -132,6 +140,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       persona: personaById(settings.personaId),
       setPersona: (id) => update({ personaId: id }),
       setLook: (look) => update({ look }),
+      setEngine: (engine) => update({ engine }),
       setVariant: (base, slug) =>
         setSettings((prev) => {
           const next = { ...prev, variants: { ...prev.variants, [base]: slug } };

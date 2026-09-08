@@ -6,12 +6,11 @@ import {
   Avatar,
   AvatarFallback,
   Badge,
-  MapGridPin,
-  MapLocationPin,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
   Button,
   Card,
@@ -21,9 +20,16 @@ import {
   CardTitle,
   GlobalLayout,
   GlobalLayoutContent,
+  GlobalLayoutContentActions,
   GlobalLayoutContentHeader,
   GlobalLayoutSidebar,
+  GlobalLayoutSubtitle,
   Logo,
+  MapGridPin,
+  MapLocationPin,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Sidebar,
   SidebarAccountDropdown,
   SidebarContent,
@@ -39,14 +45,11 @@ import {
   SidebarMenuSubVariant,
   SidebarPopoverMenu,
   SidebarSwitcher,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+  Skeleton,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-  Skeleton,
   TypographyH2,
   TypographyH3,
   TypographyMuted,
@@ -284,7 +287,7 @@ export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
 // truncated legitimate deep trails. Now four, which is the full depth of
 // the deepest real page (All Locations > Location > Reviews > Inbox). `meta` renders in the
 // muted row under the title; `actions` right-aligns (buttons, menus).
-export function PageHeader({
+function ModifiedPageHeader({
   // ANCESTORS ONLY, max four. `[]` keeps the row's FOOTPRINT (invisible
   // spacer) so the band is the same height on every page; `false`
   // removes the row entirely — see the utility-row note below.
@@ -1550,4 +1553,100 @@ export function RankGrid({
       <div className="relative">{body}</div>
     </div>
   );
+}
+
+// ─── NATIVE PAGE HEADER (8 Sep) ───────────────────────────────────────
+// The DS's own GlobalLayoutContentHeader, fed from the same props every
+// screen already passes to PageHeader. It slots direct children by
+// type: Breadcrumb before the title, GlobalLayoutSubtitle under it,
+// GlobalLayoutContentActions in the title row. What it can take:
+//   breadcrumbs  the DS Breadcrumb (ours binds the location and
+//                navigates by screen id through data-grade-goto)
+//   title        the header's own children
+//   description  GlobalLayoutSubtitle
+//   date         lastUpdated / statusRight, muted, leading the actions
+//                (the DS has no status row; this is the nearest slot)
+//   actions      GlobalLayoutContentActions (buttons at their own size)
+// What it cannot: the utility slot (help), the reserved status row that
+// keeps page heights equal, actionSize normalising, meta. Help is left
+// out for now (Ali: "just ignore help for now").
+function NativePageHeader({
+  breadcrumbs = [],
+  title,
+  description,
+  lastUpdated,
+  statusRight,
+  actions,
+  dataHook = "page-header",
+}) {
+  const data = useProposalData();
+  const bindLastUpdated = lastUpdated === "auto" || lastUpdated === true;
+  const lastUpdatedValue = bindLastUpdated
+    ? (data.aiInsights?.lastUpdated ?? null)
+    : lastUpdated || null;
+  const trail = (breadcrumbs === false ? [] : breadcrumbs)
+    .slice(-4)
+    .map((crumb) =>
+      crumb.bind === "location" ? { ...crumb, label: data.location.name } : crumb,
+    );
+  const date = lastUpdatedValue ? (
+    <DateStamp label="Last updated" value={lastUpdatedValue} dataHook={`${dataHook}-last-updated`} />
+  ) : statusRight ? (
+    <span className="text-muted-foreground text-xs" data-hook={`${dataHook}-status`}>{statusRight}</span>
+  ) : null;
+  return (
+    <GlobalLayoutContentHeader dataHook={dataHook} data-gds-layout-engine="native">
+      {trail.length ? (
+        <Breadcrumb dataHook={`${dataHook}-breadcrumbs`}>
+          <BreadcrumbList>
+            {trail.map((crumb, i) => (
+              <React.Fragment key={`${crumb.label}-${i}`}>
+                <BreadcrumbItem>
+                  <BreadcrumbLink
+                    href={crumb.href ?? "#"}
+                    data-grade-goto={crumb.goto}
+                    data-grade-transition={crumb.transition}
+                    onClick={
+                      crumb.onClick
+                        ? (event) => {
+                            event.preventDefault();
+                            crumb.onClick();
+                          }
+                        : crumb.href
+                          ? undefined
+                          : (event) => event.preventDefault()
+                    }
+                  >
+                    {crumb.label}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+              </React.Fragment>
+            ))}
+            <BreadcrumbItem>
+              <BreadcrumbPage>{title}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      ) : null}
+      {title}
+      {description ? (
+        <GlobalLayoutSubtitle dataHook={`${dataHook}-description`}>{description}</GlobalLayoutSubtitle>
+      ) : null}
+      {date || actions ? (
+        <GlobalLayoutContentActions dataHook={`${dataHook}-actions`}>
+          {date}
+          {actions}
+        </GlobalLayoutContentActions>
+      ) : null}
+    </GlobalLayoutContentHeader>
+  );
+}
+
+export function PageHeader(props) {
+  let native = false;
+  try {
+    native = window.__gdsLayoutEngine === "native";
+  } catch {}
+  return native ? <NativePageHeader {...props} /> : <ModifiedPageHeader {...props} />;
 }

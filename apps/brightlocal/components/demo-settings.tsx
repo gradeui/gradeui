@@ -33,7 +33,7 @@ const LOOK_LABELS: Record<string, string> = {
 };
 
 export function DemoSettingsPanel() {
-  const { menuOpen, setMenuOpen, settings, setPersona, setLook, setVariant } = useDemo();
+  const { menuOpen, setMenuOpen, settings, setPersona, setLook, setVariant, setEngine } = useDemo();
   const router = useRouter();
   const pathname = usePathname();
   const go = (slug: string) => {
@@ -68,6 +68,23 @@ export function DemoSettingsPanel() {
                     <span className="text-muted-foreground truncate text-xs">{p.description}</span>
                   </span>
                   {settings.personaId === p.id ? <Check className="ml-auto size-4" /> : null}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="Layout engine">
+              {(["native", "modified"] as const).map((e) => (
+                <CommandItem
+                  key={e}
+                  dataHook={`demo-engine-${e}`}
+                  value={`engine ${e === "native" ? "de facto GlobalLayout as shipped" : "modified GlobalLayout proposal shell"}`}
+                  onSelect={() => {
+                    setEngine(e);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {e === "native" ? "De facto GlobalLayout (DS as shipped)" : "Modified GlobalLayout (proposal shell)"}
+                  {settings.engine === e ? <Check className="ml-auto size-4" /> : null}
                 </CommandItem>
               ))}
             </CommandGroup>

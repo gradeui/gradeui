@@ -850,7 +850,7 @@ export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
 // Cancels GlobalLayout's baked-in p-section-sm + viewport p-1 (string
 // literals in the dist, not prop-overridable — rules/90-audit.md) and
 // exposes the layout explorations as props.
-export function AppLayoutShell({
+function ModifiedAppLayoutShell({
   // Named LOOK bundle (LOOK_PRESETS): "subtle-depth" | "heavy-depth" |
   // "live-site". The AUTHORED counterpart of the tweaker's preset
   // dropdown, reading the same table, so a screen can OPEN in a look
@@ -1511,3 +1511,54 @@ export function AppLayoutShell({
   );
 }
 
+// ─── LAYOUT ENGINE (8 Sep, Ali: "use de facto GlobalLayout, or the
+// modified GlobalLayout, as a setting") ─────────────────────────────
+// The host names the engine (window.__gdsLayoutEngine, set by the app's
+// DemoProvider before render; the app remounts screens when it changes):
+//   "modified"  the proposal shell above: padding cancelled, sidebar
+//               tones and frames, the sticky band, the tweaker
+//   "native"    the DS's GlobalLayout as shipped, nothing overridden:
+//               sidebar in GlobalLayoutSidebar, the page header and body
+//               straight into GlobalLayoutContent. Screens pass the same
+//               props; look knobs are ignored. What you see is 2.27.0.
+// A screen never chooses: it renders <AppLayoutShell> and the setting
+// decides, so the two can be compared on any page from the same source.
+export function layoutEngine() {
+  try {
+    return window.__gdsLayoutEngine === "native" ? "native" : "modified";
+  } catch {
+    return "modified";
+  }
+}
+
+function NativeAppLayoutShell({ sidebar, header, mobileBar, children, dataset, dataHook = "app-layout", className, ...rest }) {
+  const look = { ...rest };
+  for (const key of LOOK_KEYS) delete look[key];
+  delete look.preset; delete look.flush; delete look.pinnedSidebar; delete look.mobileTone;
+  delete look.contentMaxWidth; delete look.sidebarBorder; delete look.headerBackground;
+  delete look.tweaker; delete look.tweaks; delete look.onTweaksChange;
+  const shell = (
+    <GlobalLayout dataHook={dataHook} data-gds-layout-engine="native" className={className} {...look}>
+      <GlobalLayoutSidebar dataHook={`${dataHook}-sidebar`}>{sidebar}</GlobalLayoutSidebar>
+      <GlobalLayoutContent dataHook={`${dataHook}-content`}>
+        {mobileBar}
+        {header}
+        {children}
+      </GlobalLayoutContent>
+    </GlobalLayout>
+  );
+  const effectiveDataset = loadSessionDataset() ?? dataset;
+  return effectiveDataset && effectiveDataset !== "default" ? (
+    <ProposalDataProvider dataset={effectiveDataset}>{shell}</ProposalDataProvider>
+  ) : (
+    shell
+  );
+}
+
+export function AppLayoutShell(props) {
+  return layoutEngine() === "native" ? (
+    <NativeAppLayoutShell {...props} />
+  ) : (
+    <ModifiedAppLayoutShell {...props} />
+  );
+}

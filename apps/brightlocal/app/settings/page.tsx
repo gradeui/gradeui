@@ -18,7 +18,7 @@ const LOOK_LABELS: Record<string, string> = {
 /** The long-form version of the Cmd+K menu, for when a reviewer wants to
  *  read the options rather than search them. */
 export default function SettingsPage() {
-  const { settings, setPersona, setLook } = useDemo();
+  const { settings, setPersona, setLook, setEngine } = useDemo();
   const looks = [...Object.keys(LOOK_PRESETS), "authored"];
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-10 px-6 py-16">
@@ -45,6 +45,25 @@ export default function SettingsPage() {
               </Label>
             </div>
           ))}
+        </RadioGroup>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Layout engine</h2>
+        <p className="text-muted-foreground text-sm">
+          De facto is the design system's GlobalLayout and page header exactly as shipped in 2.27.0.
+          Modified is the proposal shell built on top of it: padding cancelled, sidebar tones, the
+          sticky band and the tweaker. Every screen renders from the same source either way.
+        </p>
+        <RadioGroup dataHook="settings-engine" value={settings.engine} onValueChange={(v) => setEngine(v as "modified" | "native")}>
+          <div className="flex items-center gap-3">
+            <RadioGroupItem value="native" id="engine-native" />
+            <Label htmlFor="engine-native">De facto GlobalLayout</Label>
+          </div>
+          <div className="flex items-center gap-3">
+            <RadioGroupItem value="modified" id="engine-modified" />
+            <Label htmlFor="engine-modified">Modified GlobalLayout</Label>
+          </div>
         </RadioGroup>
       </section>
 
