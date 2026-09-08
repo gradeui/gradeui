@@ -1629,7 +1629,10 @@ function NativePageHeader({
           </BreadcrumbList>
         </Breadcrumb>
       ) : null}
-      {title}
+      {/* The DS header slots its children but styles none of them: a bare
+          string renders at body size (Ali, 8 Sep: "the default title is
+          very small"). Their pattern is to pass a Typography heading. */}
+      <TypographyH2 dataHook={`${dataHook}-title`}>{title}</TypographyH2>
       {description ? (
         <GlobalLayoutSubtitle dataHook={`${dataHook}-description`}>{description}</GlobalLayoutSubtitle>
       ) : null}
