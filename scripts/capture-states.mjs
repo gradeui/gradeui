@@ -1095,7 +1095,11 @@ const STATES = [
   ["getreviews-16-page-kiosk-stars", "getreviews", async (p) => {
     await campaignPage(p, "c2");
     await waitForHook(p, '[data-hook="insights-feedback-summary"]');
-    await scrollToHook(p, '[data-hook="insights-feedback-summary"]');
+    // 300, not the default 24: the campaign page header is sticky and about
+    // 200px tall, so a 24px offset put the card's title and its "Only visible
+    // to you" note under the header and the shot showed bars with no heading
+    // (8 Sep sweep).
+    await scrollToHook(p, '[data-hook="insights-feedback-summary"]', 300);
   },
     `!!document.querySelector('[data-hook="insights-feedback-summary"]')
      && !!document.querySelector('[data-hook="dist-5"]')
