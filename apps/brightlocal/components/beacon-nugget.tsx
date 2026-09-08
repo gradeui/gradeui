@@ -1,12 +1,14 @@
 "use client";
 
 /**
- * The nugget at the bottom of every Reviews page (Ali, 9 Sep: "scroll
- * for insights, there's always a nugget"). One "Did you know" from the
- * location's own reviews, in Bea's voice, quiet.
+ * The footer CTA on every Reviews page (Ali, 9 Sep: "top and tail the
+ * data, like a traditional website"). One fact from the location's own
+ * reviews, then the single easiest thing to do next, with the button
+ * that does it. Quiet, in Bea's voice.
  */
 
-import { Lightbulb } from "@brightlocal/icons";
+import { Lightbulb, ArrowRight } from "@brightlocal/icons";
+import { Button } from "@brightlocal/ui-components/button";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
@@ -16,17 +18,32 @@ export function BeaconNugget() {
   const persona = usePersona();
   const location = useLocationKey();
   const plan = reviewPlanFor(statsFor(location, persona), persona);
-  if (!plan.fact) return null;
+  const first = plan.items[0]?.actions[0];
+  const link = first?.links[0];
+  if (!plan.fact && !first) return null;
   return (
     <div
       data-hook="beacon-nugget"
-      className="mt-4 flex items-start gap-4 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] px-6 py-5"
+      className="mt-6 flex flex-col gap-5 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 lg:flex-row lg:items-center lg:gap-10"
     >
-      <Lightbulb className="mt-0.5 size-5 shrink-0 text-[var(--ds-tailwind-colors-green-500)]" />
-      <div className="flex flex-col gap-1">
-        <p className="text-label-sm text-muted-foreground">Beacon nugget</p>
-        <p className="text-body text-pretty max-w-[70ch]">{plan.fact}</p>
+      <Lightbulb className="hidden size-8 shrink-0 text-[var(--ds-tailwind-colors-green-500)] lg:block" />
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <p className="text-label-sm text-muted-foreground">Before you go</p>
+        {plan.fact ? <p className="text-metric font-display text-balance max-w-[40ch]">{plan.fact}</p> : null}
+        {first ? (
+          <p className="text-body text-muted-foreground max-w-[60ch] text-pretty">
+            One easy thing to do now: {first.label}
+          </p>
+        ) : null}
       </div>
+      {link ? (
+        <span className="inline-flex shrink-0" data-grade-goto={link.goto}>
+          <Button variant="primary" dataHook="beacon-nugget-cta">
+            {link.label}
+            <ArrowRight className="size-4" />
+          </Button>
+        </span>
+      ) : null}
     </div>
   );
 }
