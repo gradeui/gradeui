@@ -1630,9 +1630,13 @@ function NativePageHeader({
         </Breadcrumb>
       ) : null}
       {/* The DS header slots its children but styles none of them: a bare
-          string renders at body size (Ali, 8 Sep: "the default title is
-          very small"). Their pattern is to pass a Typography heading. */}
-      <TypographyH2 dataHook={`${dataHook}-title`}>{title}</TypographyH2>
+          string renders at body size. The Figma page header's title style
+          is typography/text-heading-page (Poppins 24/32 semibold, "exactly
+          one per screen"), whose note says code ships it as the utility
+          text-heading-page. The tokens package (0.12.0) does not have it
+          yet, so app/custom.css defines it to that spec; delete the local
+          copy when the tokens ship theirs. */}
+      <h1 className="text-heading-page text-foreground" data-hook={`${dataHook}-title`}>{title}</h1>
       {description ? (
         <GlobalLayoutSubtitle dataHook={`${dataHook}-description`}>{description}</GlobalLayoutSubtitle>
       ) : null}

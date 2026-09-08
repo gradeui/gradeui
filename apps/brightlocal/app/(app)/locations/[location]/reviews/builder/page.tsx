@@ -8,12 +8,12 @@ import HubAndSpoke from "./hub-and-spoke/page";
 export default function ReviewBuilderPage() {
   return (
     <OptionSwitch
-      base="/reviews/builder"
+      base="reviews/builder"
       options={{
-        "/reviews/builder": A,
-        "/reviews/builder/simplified": Simplified,
-        "/reviews/builder/gauge": Gauge,
-        "/reviews/builder/hub-and-spoke": HubAndSpoke,
+        "reviews/builder": A,
+        "reviews/builder/simplified": Simplified,
+        "reviews/builder/gauge": Gauge,
+        "reviews/builder/hub-and-spoke": HubAndSpoke,
       }}
     />
   );

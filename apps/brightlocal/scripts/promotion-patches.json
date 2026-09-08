@@ -6,7 +6,7 @@
     "exactly once: a patch that silently stops matching is worse than a loud error.",
     "Keep these minimal; anything Studio can carry belongs in Studio."
   ],
-  "app/(app)/reviews/builder/_option-a/page.jsx": [
+  "app/(app)/locations/[location]/reviews/builder/_option-a/page.jsx": [
     {
       "why": "The Builder's view (hub, templates, wizard, campaign, success) lives on the URL so Back closes a view and a link can open one.",
       "find": "import { Fragment, useEffect, useMemo, useRef, useState } from \"react\";",
@@ -33,7 +33,7 @@
       "replace": "  const persona = usePersona();\n  const [campaigns, setCampaigns] = useState(() => (persona.engagement === \"new\" ? [] : seedCampaigns()));\n"
     }
   ],
-  "app/(app)/reviews/_option-a/page.jsx": [
+  "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
     {
       "why": "persona hook + the starter guide card",
       "find": "import {\n  AppLayoutShell,\n  ProposalSidebar,\n  PageHeader,\n  CardTitleLink,\n} from \"@brightlocal/proposal\";",
@@ -55,7 +55,7 @@
       "replace": "        <GlobalLayoutContentBody dataHook=\"reviews-page-body\" className=\"space-y-6 pb-10\">\n          {starter ? <StarterGuide /> : null}\n          <div className=\"grid grid-cols-1 gap-4 md:grid-cols-2\">\n            {cards.map((card) => ("
     }
   ],
-  "app/(app)/reviews/manager/page.jsx": [
+  "app/(app)/locations/[location]/reviews/manager/page.jsx": [
     {
       "why": "persona hook",
       "find": "import { useEffect, useMemo, useRef, useState } from \"react\";",
@@ -82,7 +82,7 @@
       "replace": "<span className=\"text-foreground font-medium tabular-nums\">{seedRowsFor(persona).length}</span> reviews"
     }
   ],
-  "app/(app)/reviews/tracker/page.jsx": [
+  "app/(app)/locations/[location]/reviews/tracker/page.jsx": [
     {
       "why": "persona hook",
       "find": "import { Fragment, useMemo, useRef, useState } from \"react\";",

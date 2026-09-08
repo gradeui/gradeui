@@ -8,14 +8,13 @@ import { usePathname } from "next/navigation";
 import { SidebarProvider, SidebarTrigger, GlobalLayoutContentBody, Logo } from "@brightlocal/ui-components";
 import { Menu } from "@brightlocal/icons";
 import { AppLayoutShell, ProposalSidebar, PageHeader, EmptyPrototypePage } from "@brightlocal/proposal";
-import { SKELETON_AREAS } from "@/lib/screens";
+import { SKELETON_AREAS, relativePath } from "@/lib/screens";
 
 export default function SkeletonAreaPage() {
-  const pathname = usePathname();
-  const area = SKELETON_AREAS.find((a) => a.slug === pathname);
+  const rel = relativePath(usePathname());
+  const area = SKELETON_AREAS.find((a) => a.path === rel);
   const label = area?.label ?? "This area";
-  // The sidebar highlights the section the slug belongs to.
-  const activeId = pathname.split("/")[1] ?? "";
+  const activeId = rel.split("/")[0] ?? "";
   return (
     <SidebarProvider dataHook="provider" defaultOpen>
       <AppLayoutShell

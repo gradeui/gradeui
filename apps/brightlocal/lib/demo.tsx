@@ -15,7 +15,7 @@
  */
 
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PERSONAS, DEFAULT_PERSONA_ID, personaById, type Persona } from "@/lib/personas";
 import { selectSessionDataset, LOOK_PRESETS } from "@brightlocal/proposal-shell";
 
@@ -86,6 +86,8 @@ function applySeams(settings: DemoSettings) {
 
 function DemoProviderInner({ children }: { children: React.ReactNode }) {
   const params = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const urlPersona = params.get("persona");
   const [settings, setSettings] = React.useState<DemoSettings>({
     personaId: DEFAULT_PERSONA_ID,
@@ -147,7 +149,13 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     () => ({
       settings,
       persona: personaById(settings.personaId),
-      setPersona: (id) => update({ personaId: id }),
+      setPersona: (id) => {
+        update({ personaId: id });
+        // The URL carries the location; a persona is a location, so the
+        // page follows it (same relative path, the persona's location).
+        const m = pathname.match(/^\/locations\/[^/]+(.*)$/);
+        if (m) router.replace(`/locations/${personaById(id).dataset}${m[1]}`);
+      },
       setLook: (look) => update({ look }),
       setEngine: (engine) => update({ engine }),
       setVariant: (base, slug) =>
@@ -164,7 +172,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       setNotesOpen,
       epoch,
     }),
-    [settings, update, menuOpen, notesOpen, epoch],
+    [settings, update, menuOpen, notesOpen, epoch, pathname, router],
   );
 
   // Shells read the seams at mount, so nothing renders until they are set.

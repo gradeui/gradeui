@@ -10,8 +10,8 @@ import TrendsC from "./trends-c/page";
 export default function ReviewsPage() {
   return (
     <OptionSwitch
-      base="/reviews"
-      options={{ "/reviews": A, "/reviews/trends": Trends, "/reviews/trends-b": TrendsB, "/reviews/trends-c": TrendsC }}
+      base="reviews"
+      options={{ "reviews": A, "reviews/trends": Trends, "reviews/trends-b": TrendsB, "reviews/trends-c": TrendsC }}
     />
   );
 }

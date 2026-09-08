@@ -15,7 +15,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { SCREENS } from "../lib/screens";
+import { SCREENS, hrefFor } from "../lib/screens";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const app = join(here, "..");
@@ -34,19 +34,21 @@ function sourceSignature(src: string): string {
 const warn = process.argv.includes("--warn");
 let drifted = 0;
 for (const s of SCREENS) {
-  const page = join(app, "app/(app)", s.slug, "page.jsx");
+  const rel = s.scope === "root" ? s.path : join("locations/[location]", s.path);
+  const direct = join(app, "app/(app)", rel, "page.jsx");
+  const page = existsSync(direct) ? direct : join(app, "app/(app)", rel, "_option-a/page.jsx");
   const stamp = existsSync(page) ? readFileSync(page, "utf8").match(/^\/\/ source-hash: (\w+)/m)?.[1] : undefined;
   const { data, error } = await sb.from("designs").select("state, updated_at").eq("id", s.id).single();
   if (error || !data) {
-    console.log(`? ${s.slug}  (${s.id}) not readable: ${error?.message}`);
+    console.log(`? ${s.path}  (${s.id}) not readable: ${error?.message}`);
     continue;
   }
   const live = sourceSignature(String(data.state?.appSource ?? ""));
-  if (!stamp) console.log(`~ ${s.slug}  no source-hash stamp`);
-  else if (live === stamp) console.log(`= ${s.slug}`);
+  if (!stamp) console.log(`~ ${s.path}  no source-hash stamp`);
+  else if (live === stamp) console.log(`= ${s.path}`);
   else {
     drifted++;
-    console.log(`! ${s.slug}  Studio moved (${data.updated_at})`);
+    console.log(`! ${s.path}  Studio moved (${data.updated_at})`);
   }
 }
 console.log(drifted ? `${drifted} drifted` : "all current");

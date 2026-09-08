@@ -22,7 +22,7 @@ import {
 import { Check } from "@brightlocal/icons";
 import { useDemo } from "@/lib/demo";
 import { PERSONAS } from "@/lib/personas";
-import { SCREENS } from "@/lib/screens";
+import { SCREENS, hrefFor, locationFromPath, relativePath } from "@/lib/screens";
 import { LOOK_PRESETS } from "@brightlocal/proposal-shell";
 
 const LOOK_LABELS: Record<string, string> = {
@@ -33,12 +33,14 @@ const LOOK_LABELS: Record<string, string> = {
 };
 
 export function DemoSettingsPanel() {
-  const { menuOpen, setMenuOpen, setNotesOpen, settings, setPersona, setLook, setVariant, setEngine } = useDemo();
+  const { menuOpen, setMenuOpen, setNotesOpen, settings, persona, setPersona, setLook, setVariant, setEngine } = useDemo();
   const router = useRouter();
   const pathname = usePathname();
-  const go = (slug: string) => {
+  const location = locationFromPath(pathname) ?? persona.dataset;
+  const rel = relativePath(pathname);
+  const go = (href: string) => {
     setMenuOpen(false);
-    router.push(slug);
+    router.push(href);
   };
   const looks = [...Object.keys(LOOK_PRESETS), "authored"];
   const primary = SCREENS.filter((s) => !s.variantOf);
@@ -119,9 +121,9 @@ export function DemoSettingsPanel() {
             <CommandSeparator />
             <CommandGroup heading="Screens">
               {primary.map((s) => (
-                <CommandItem key={s.slug} dataHook={`demo-screen-${s.id}`} value={`screen ${s.label}`} onSelect={() => go(s.slug)}>
+                <CommandItem key={s.path} dataHook={`demo-screen-${s.id}`} value={`screen ${s.label}`} onSelect={() => go(hrefFor(s, location))}>
                   {s.label}
-                  {pathname === s.slug ? <Check className="ml-auto size-4" /> : null}
+                  {(s.scope === "root" ? pathname === `/${s.path}` : rel === s.path) ? <Check className="ml-auto size-4" /> : null}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -129,12 +131,12 @@ export function DemoSettingsPanel() {
               {/* Picking an option makes the BASE route render it, so a
                   flow keeps its URLs whichever option is on. */}
               {primary
-                .filter((b) => variants.some((v) => v.variantOf === b.slug))
+                .filter((b) => variants.some((v) => v.variantOf === b.path))
                 .flatMap((b) => [
-                  { base: b.slug, slug: b.slug, label: `${b.label}: option A (as promoted)`, id: b.id },
+                  { base: b.path, slug: b.path, label: `${b.label}: option A (as promoted)`, id: b.id },
                   ...variants
-                    .filter((v) => v.variantOf === b.slug)
-                    .map((v, i) => ({ base: b.slug, slug: v.slug, label: `${b.label}: option ${"BCDE"[i] ?? i + 2}, ${v.label}`, id: v.id })),
+                    .filter((v) => v.variantOf === b.path)
+                    .map((v, i) => ({ base: b.path, slug: v.path, label: `${b.label}: option ${"BCDE"[i] ?? i + 2}, ${v.label}`, id: v.id })),
                 ])
                 .map((o) => (
                   <CommandItem
@@ -143,7 +145,7 @@ export function DemoSettingsPanel() {
                     value={`option ${o.label}`}
                     onSelect={() => {
                       setVariant(o.base, o.slug);
-                      go(o.base);
+                      go(hrefFor({ path: o.base, scope: "location" }, location));
                     }}
                   >
                     {o.label}

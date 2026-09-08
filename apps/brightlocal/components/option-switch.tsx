@@ -4,8 +4,9 @@
  * OptionSwitch: one route, several layout options (A, B, C). The base
  * route renders whichever option the demo settings pick for it, so a
  * flow keeps its URLs whatever option a participant is on. Options stay
- * reachable at their own routes too, for direct links and comparison.
- * `?variant=<slug>` on the base URL pins one for the session.
+ * reachable at their own routes too. Keys are paths relative to the
+ * location scope ("reviews", "reviews/trends"). `?variant=<path>` on
+ * the base URL pins one for the session.
  */
 
 import * as React from "react";

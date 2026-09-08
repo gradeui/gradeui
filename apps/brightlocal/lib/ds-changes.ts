@@ -126,6 +126,13 @@ export const DS_CHANGES: DsChange[] = [
     ask: "Merge the caller's style over the max width instead of replacing it, or move the cap to a class.",
   },
   {
+    id: "typography-utilities",
+    title: "The fourteen Figma typography utilities are missing from the tokens",
+    finding: "The DS Figma file defines fourteen typography/* text styles (text-display, text-heading-page, text-heading-section, text-heading-subsection, text-body and its sm, xs and tabular forms, text-label, text-label-sm, text-metric, text-code), each annotated with the code utility it ships as. @brightlocal/tokens 0.12.0 ships none of them, and GlobalLayoutContentHeader styles none of its children, so a page title has no DS-sanctioned class.",
+    workaround: "app/custom.css defines all fourteen to the Figma spec, weights bound to the DS ramp variables; the de facto page header uses text-heading-page on an h1.",
+    ask: "Ship the fourteen utilities in the tokens preset, and have GlobalLayoutContentHeader apply text-heading-page to a title slot.",
+  },
+  {
     id: "page-header",
     title: "GlobalLayoutContentHeader has no breadcrumbs, utility slot or status row",
     finding: "The DS header gives a back link, title, subtitle and actions. It has no breadcrumbs (Breadcrumb is placed by hand), no help affordance slot, no last-updated row and no way to normalise CTA sizes, so page heights vary between screens.",

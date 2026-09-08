@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PERSONAS } from "@/lib/personas";
-import { SCREENS } from "@/lib/screens";
+import { SCREENS, hrefFor } from "@/lib/screens";
 
 /**
  * Demo home: pick a persona, land on the Reviews hub. Also lists every
@@ -30,7 +30,7 @@ export default function Home() {
           {PERSONAS.map((p) => (
             <Link
               key={p.id}
-              href={`/reviews?persona=${p.id}`}
+              href={`/locations/${p.dataset}/reviews?persona=${p.id}`}
               className="bg-card hover:bg-accent flex flex-col gap-1 rounded-lg border p-4 transition-colors"
             >
               <span className="font-medium">{p.label}</span>
@@ -45,8 +45,8 @@ export default function Home() {
           <h2 className="text-lg font-semibold">Screens</h2>
           <ul className="flex flex-col gap-1">
             {primary.map((s) => (
-              <li key={s.slug}>
-                <Link className="text-link underline-offset-4 hover:underline" href={s.slug}>
+              <li key={s.path}>
+                <Link className="text-link underline-offset-4 hover:underline" href={hrefFor(s, "minus-one-studios")}>
                   {s.label}
                 </Link>
               </li>
@@ -57,8 +57,8 @@ export default function Home() {
           <h2 className="text-lg font-semibold">Variations</h2>
           <ul className="flex flex-col gap-1">
             {variants.map((s) => (
-              <li key={s.slug}>
-                <Link className="text-link underline-offset-4 hover:underline" href={s.slug}>
+              <li key={s.path}>
+                <Link className="text-link underline-offset-4 hover:underline" href={hrefFor(s, "minus-one-studios")}>
                   {s.label}
                 </Link>
               </li>

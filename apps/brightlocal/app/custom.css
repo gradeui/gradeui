@@ -105,3 +105,116 @@ aside {
   --ds-font-weight-extrabold: 800;
   --ds-font-weight-black: 900;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY UTILITIES, from Figma (Ali, 8 Sep: "add all those tokens").
+   The DS Figma file carries fourteen typography/* text styles, each with
+   a note naming the code utility it should ship as. @brightlocal/tokens
+   0.12.0 ships none of them, so they are defined here to the Figma spec
+   and used from here on. Weights bind to the DS ramp variables, so a
+   "semibold" style renders 500 on the DS ramp (their note: "renders 500
+   on web") and 600 under the modified engine's standard ramp.
+   Delete each one when the tokens ship it. Ledger: /docs/changes.
+   ════════════════════════════════════════════════════════════════════ */
+/* Brand moments only. Figma typography/text-display: 36/40, semibold. */
+@utility text-display {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+  font-weight: var(--ds-font-weight-semibold, 600);
+}
+/* Page title, exactly one per screen. Figma typography/text-heading-page: 24/32, semibold. */
+@utility text-heading-page {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: var(--ds-font-weight-semibold, 600);
+}
+/* Card, dialog and sheet titles. Figma typography/text-heading-section: 20/28, semibold. */
+@utility text-heading-section {
+  font-family: var(--font-sans);
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: var(--ds-font-weight-semibold, 600);
+}
+/* Sections inside a card, alert titles; the smallest heading. Figma typography/text-heading-subsection: 16/24, semibold. */
+@utility text-heading-subsection {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: var(--ds-font-weight-semibold, 600);
+}
+/* The default text. Figma typography/text-body: 16/24, medium. */
+@utility text-body {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: var(--ds-font-weight-medium, 500);
+}
+/* Body text with tabular figures. Figma typography/text-body-tabular: 16/24, medium. */
+@utility text-body-tabular {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: var(--ds-font-weight-medium, 500);
+  font-variant-numeric: tabular-nums;
+}
+/* Table cells, dense lists, chrome. Figma typography/text-body-sm: 14/20, medium. */
+@utility text-body-sm {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: var(--ds-font-weight-medium, 500);
+}
+/* Small body text with tabular figures. Figma typography/text-body-sm-tabular: 14/20, medium. */
+@utility text-body-sm-tabular {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: var(--ds-font-weight-medium, 500);
+  font-variant-numeric: tabular-nums;
+}
+/* Helper text, captions; the floor. Figma typography/text-body-xs: 12/16, medium. */
+@utility text-body-xs {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: var(--ds-font-weight-medium, 500);
+}
+/* Extra-small body text with tabular figures. Figma typography/text-body-xs-tabular: 12/16, medium. */
+@utility text-body-xs-tabular {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: var(--ds-font-weight-medium, 500);
+  font-variant-numeric: tabular-nums;
+}
+/* Form labels, tabs, buttons, nav. Figma typography/text-label: 14/20, medium. */
+@utility text-label {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: var(--ds-font-weight-medium, 500);
+}
+/* Badges, chips, group labels. Figma typography/text-label-sm: 12/16, medium. */
+@utility text-label-sm {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: var(--ds-font-weight-medium, 500);
+}
+/* Large numbers only: KPIs, card scores. Figma typography/text-metric: 24/28, semibold. */
+@utility text-metric {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  line-height: 1.75rem;
+  font-weight: var(--ds-font-weight-semibold, 600);
+  font-variant-numeric: tabular-nums;
+}
+/* IDs, keys. Figma typography/text-code: 16/24, normal. */
+@utility text-code {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: var(--ds-font-weight-normal, 400);
+}

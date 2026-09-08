@@ -2,6 +2,16 @@ import type { NextConfig } from "next";
 import { withVercelToolbar } from "@vercel/toolbar/plugins/next";
 
 const nextConfig: NextConfig = {
+  // The flat routes of the first day (/reviews/...) moved under
+  // /locations/<location>/... (8 Sep). Anything already shared lands in
+  // the default location.
+  async redirects() {
+    return [
+      { source: "/location", destination: "/locations/minus-one-studios", permanent: false },
+      { source: "/reviews", destination: "/locations/minus-one-studios/reviews", permanent: false },
+      { source: "/reviews/:path*", destination: "/locations/minus-one-studios/reviews/:path*", permanent: false },
+    ];
+  },
   // The proposal module is plain JSX (ds/*.jsx), aliased through
   // tsconfig paths. Next honours those for both bundlers.
   devIndicators: { position: "bottom-right" },
