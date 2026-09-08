@@ -43,3 +43,34 @@ Bea
 Ray
 - "Your review velocity is up: 23% more reviews this month than last."
 - "Third month in a row above 4.5. That is a habit now."
+
+## Reference material: brightlocal.com (read 10 Sep 2026)
+
+The roadmap PDF is one document. The website is the bigger sample, and
+it says the same things a different way. Lines worth copying the shape
+of:
+
+- "Building a brand people love and trust shouldn't feel like a chore"
+- "Reply to every review from a single, easy-to-use dashboard"
+- "Turn positive feedback into a powerful tool that wins new customers"
+- "Don't let a lack of feedback or old, inconsistent reviews hold you back"
+- "You're never on your own."
+- "We make growth feel simple by turning complex data into clear, confident action."
+
+What the site does that the summaries should too:
+
+- One flowing sentence with commas, not two clipped ones. "Start with the
+  oldest reviews, then let your five-star Google reviews reply themselves."
+  The old "Start with X. Then Y." stitching was ours, not theirs.
+- Second person throughout. Benefits as outcomes: win customers, build
+  trust, grow your reputation. Features come second.
+- Short punchy lines for headlines (five to twelve words), one longer
+  explanatory sentence under them.
+- Empathy first, then confidence: name the chore, then make it small.
+
+Two citable industry stats from the site (from BrightLocal's own Local
+Consumer Review Survey), the source Ali asked for before any industry
+number goes in a "Did you know":
+
+- 47% of consumers won't use a business that has less than 20 reviews.
+- 74% only care about reviews written in the last three months.

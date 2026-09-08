@@ -24,6 +24,10 @@ export interface ReviewInsight {
   title: string;
   actionsSummary: string;
   actions: { label: string; text: string; links: { label: string; goto: string }[] }[];
+  /** One flowing sentence for the Manager strip, in place of the tactic
+   *  labels stitched together (Ali, 10 Sep: two clipped sentences read
+   *  oddly, and that stitching was never BrightLocal's style). */
+  strip: string;
 }
 
 export interface ReviewPlan {
@@ -53,6 +57,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
     const ratio = h.allTime ? h.needReply / h.allTime : 0;
     items.push({
       id: "reply-backlog",
+      strip: "Start with the oldest reviews, then let your five-star Google reviews reply themselves.",
       area: "reviews",
       severity: ratio > 0.4 ? "high" : "medium",
       title: `Get every review answered`,
@@ -77,6 +82,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
   if (win.ratingValue < 4.2 || stats.ratingValue - win.ratingValue >= 0.3) {
     items.push({
       id: "low-rating",
+      strip: "Answer every one and two star review this week, then ask your happiest customers for a review.",
       area: "reviews",
       severity: "high",
       title: stats.compare ? `Bring ${stats.compare.self} back in line with ${stats.compare.label}` : `Turn your recent reviews around`,
@@ -99,6 +105,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
   if (h.running === 0) {
     items.push({
       id: "no-campaigns",
+      strip: "Pick one channel, send to a small list first, and watch the count climb.",
       area: "reviews",
       severity: starter ? "medium" : "high",
       title: "Start asking for reviews",
@@ -118,6 +125,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
   if (h.sourceCount < 3) {
     items.push({
       id: "few-sources",
+      strip: "Connect Facebook and TripAdvisor so every new review lands in the same inbox.",
       area: "reviews",
       severity: "medium",
       title: "See every review in one place",
@@ -135,6 +143,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
   if (starter) {
     items.push({
       id: "showcase-unplaced",
+      strip: "Choose the reviews you are proudest of and put them where new customers will see them.",
       area: "reviews",
       severity: "low",
       title: "Put your best reviews on your website",

@@ -61,7 +61,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
           <div className="flex flex-wrap items-center gap-2">
             <span
               data-hook="review-insights-pill"
-              className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-100)] px-2.5 py-1 text-label-sm font-semibold text-foreground"
+              className="inline-flex w-fit items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-label-sm text-foreground"
             >
               <Flag className="size-3.5 text-muted-foreground" />
               This week's goal
@@ -108,8 +108,7 @@ export function ReviewPlanStrip() {
   const { show } = useBeaconModal();
   const stats = statsFor(location, persona);
   const plan = reviewPlanFor(stats, persona);
-  const first = plan.items[0]?.actions[0];
-  const second = plan.items[0]?.actions[1];
+  const lead = plan.items[0];
   return (
     <div
       data-hook="review-plan-strip"
@@ -117,7 +116,7 @@ export function ReviewPlanStrip() {
     >
     <div className="flex min-w-0 flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-100)] px-2 py-0.5 text-label-sm font-semibold text-foreground">
+        <span data-hook="review-plan-strip-pill" className="inline-flex w-fit items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-label-sm text-foreground">
           <Flag className="size-3 text-muted-foreground" />
           This week's goal
         </span>
@@ -126,12 +125,7 @@ export function ReviewPlanStrip() {
       <p className="text-metric font-display text-balance max-w-[40ch]" data-hook="review-plan-strip-goal">
         <Mark text={plan.goal.text} mark={plan.goal.mark} />
       </p>
-      {first ? (
-        <p className="text-body text-foreground max-w-[60ch] text-pretty">
-          {first.label}
-          {second ? ` Then ${second.label.charAt(0).toLowerCase()}${second.label.slice(1)}` : ""}
-        </p>
-      ) : null}
+      {lead ? <p className="text-body text-foreground max-w-[60ch] text-pretty">{lead.strip}</p> : null}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
         <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
         <Button variant="outline" size="sm" dataHook="review-plan-strip-open" onClick={() => show("plan")}>

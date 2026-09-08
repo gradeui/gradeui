@@ -335,7 +335,7 @@
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button,
 [data-beacon-tone="families"] [data-hook^="upsell"] button:not(.bg-primary),
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] button:not(.bg-primary) {
-  border-color: var(--beacon-300) !important;
+  border-color: var(--foreground) !important; /* black outline on an accent (Ali, 10 Sep) */
   background: transparent !important;
 }
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button:not(.bg-primary):hover,
@@ -345,12 +345,13 @@
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal"] button:not(.bg-primary):hover {
   background: var(--beacon-200) !important;
 }
-/* The Beacon badge and the goal pill sit on the family's 50. */
+/* The Beacon badge and the goal pill match: the family's 50 behind, a black outline. */
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-badge"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-insights-badge"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip-badge"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="beacon-modal-badge"],
-[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-insights-pill"] {
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-insights-pill"],
+[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip-pill"] {
   background: var(--beacon-50) !important;
-  border-color: var(--beacon-300) !important;
+  border-color: var(--foreground) !important;
 }
