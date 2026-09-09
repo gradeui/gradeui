@@ -156,7 +156,7 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
           {compact ? <BannerArt className="size-12 shrink-0" /> : null}
         </div>
         <p className="text-body-sm text-pretty">
-          This code opens your review page. Put it on the till, the receipt, the menu or the door, and customers can leave a review while it is still fresh. Free, and ready now. Tap the code to preview and edit it.
+          Put it on the till or the door and customers can leave a review while it is still fresh. Tap the code to preview and print it.
         </p>
         {/* Research, sourced (Ali, 10 Sep: "back it up with research"). */}
         <p className="text-body-sm text-muted-foreground text-pretty">
@@ -178,14 +178,8 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
       {/* The live preview: the printable card, scaled and offset off the
           banner's edge (Ali, 10 Sep: "a scaled live offset widget, basically
           like a live banner"). */}
-      {compact ? null : (
-        <div className="relative hidden h-40 w-96 shrink-0 lg:block" aria-hidden>
-          <BannerArt className="absolute left-0 top-1/2 size-28 -translate-y-1/2" />
-          <div className="absolute -bottom-24 left-28 origin-top-left rotate-[-4deg] scale-[0.62] shadow-lg">
-            <QrCard svg={svg} caption={caption} name={name} link={link} />
-          </div>
-        </div>
-      )}
+      {/* No live card here (Ali, 11 Sep: "maybe cheesy"); the card lives in the generator. */}
+      {compact ? null : <BannerArt className="hidden size-28 shrink-0 lg:block" aria-hidden />}
     </section>
   );
 }
