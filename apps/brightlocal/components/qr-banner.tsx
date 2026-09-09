@@ -107,7 +107,7 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
           interaction is weird"): preview and edit. */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <button type="button" className={`${compact ? "size-16" : "size-20"} shrink-0 cursor-pointer rounded-md bg-white p-1 outline-none ring-offset-2 hover:ring-2 hover:ring-[var(--ds-tailwind-colors-neutral-300)] focus-visible:ring-2`} aria-label="Open the QR code generator" data-hook="qr-banner-code" dangerouslySetInnerHTML={{ __html: svg }} />
+          <button type="button" className={`${compact ? "size-20" : "size-32"} shrink-0 cursor-pointer rounded-md bg-white p-1 outline-none ring-offset-2 hover:ring-2 hover:ring-[var(--ds-tailwind-colors-neutral-300)] focus-visible:ring-2`} aria-label="Open the QR code generator" data-hook="qr-banner-code" dangerouslySetInnerHTML={{ __html: svg }} />
         </DialogTrigger>
         <DialogContent dataHook="qr-generator" className="w-[min(96vw,760px)] max-w-none gap-0 overflow-hidden p-0 sm:max-w-none">
           <DialogTitle className="sr-only">QR code generator</DialogTitle>
@@ -179,7 +179,9 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
           banner's edge (Ali, 10 Sep: "a scaled live offset widget, basically
           like a live banner"). */}
       {/* No live card here (Ali, 11 Sep: "maybe cheesy"); the card lives in the generator. */}
-      {compact ? null : <BannerArt className="hidden size-28 shrink-0 lg:block" aria-hidden />}
+      {/* Wrapped: the illustration renders a light and a dark twin, and a
+          responsive class on it un-hides the twin. */}
+      {compact ? null : <div className="hidden shrink-0 lg:block" aria-hidden><BannerArt className="size-28" /></div>}
     </section>
   );
 }
