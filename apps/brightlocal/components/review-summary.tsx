@@ -104,7 +104,7 @@ function Seg({ s }: { s: Segment }) {
  */
 export type Drill = "velocity" | "rating" | "fourPlus";
 
-export function DrillChart({ stats, kind }: { stats: ReviewStats; kind: Drill }) {
+export function DrillChart({ stats, kind, onTint = false }: { stats: ReviewStats; kind: Drill; onTint?: boolean }) {
   // The DS Chart (recharts underneath), the same one the Tracker draws
   // with (Ali, 9 Sep: "are those charts recharts?"). Neutral bars, the
   // current month in the accent, a plain-English tooltip per bar.
@@ -141,7 +141,7 @@ export function DrillChart({ stats, kind }: { stats: ReviewStats; kind: Drill })
         />
         <Bar dataKey="value" radius={[6, 6, 0, 0]}>
           {data.map((d, i) => (
-            <Cell key={d.month} fill={i === data.length - 1 ? "var(--ds-tailwind-colors-green-500)" : "var(--ds-tailwind-colors-neutral-200)"} />
+            <Cell key={d.month} fill={i === data.length - 1 ? "var(--ds-tailwind-colors-green-500)" : onTint ? "var(--ds-tailwind-colors-base-white)" : "var(--ds-tailwind-colors-neutral-200)"} />
           ))}
           <LabelList dataKey="value" position="top" fontSize={12} formatter={fmt} className="fill-foreground" />
         </Bar>
@@ -457,7 +457,8 @@ export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"
         {kinds.map((kind) => (
           <div key={kind} className="flex flex-col gap-2">
             <p className="text-label-sm font-semibold uppercase tracking-wide">{kind === "rating" ? "Rating" : kind === "velocity" ? "Review velocity" : "Four stars or above"}</p>
-            <DrillChart stats={stats} kind={kind} />
+            {/* Past months in white on the tint (Ali, 11 Sep: grey on blue "looks awful"). */}
+            <DrillChart stats={stats} kind={kind} onTint />
             <p className="text-body-sm text-pretty">{drillCopy(stats, kind)}</p>
           </div>
         ))}
