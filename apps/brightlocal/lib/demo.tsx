@@ -43,7 +43,7 @@ export interface DemoSettings {
    *  family on every surface, 100 background with 700/950 text, the AA
    *  pairs from the DS chart), or families (a family per kind of content:
    *  summaries sky, recommendations green, upsells yellow, nuggets violet). */
-  beaconTone: "neutral" | "tinted" | "families";
+  beaconTone: "neutral" | "tinted" | "families" | "vivid";
 }
 
 interface DemoContextValue {
@@ -147,7 +147,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     const urlEngine = params.get("engine");
     if (urlEngine === "native" || urlEngine === "native-fixed" || urlEngine === "modified") next.engine = urlEngine;
     const urlTone = params.get("tone");
-    if (urlTone === "neutral" || urlTone === "tinted" || urlTone === "families") next.beaconTone = urlTone;
+    if (urlTone === "neutral" || urlTone === "tinted" || urlTone === "families" || urlTone === "vivid") next.beaconTone = urlTone;
     const urlLook = params.get("look");
     if (urlLook && (urlLook === "authored" || (LOOK_PRESETS as Record<string, unknown>)[urlLook])) next.look = urlLook;
     if (next.look !== "authored" && !(LOOK_PRESETS as Record<string, unknown>)[next.look]) next.look = "authored";

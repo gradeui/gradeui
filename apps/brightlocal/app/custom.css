@@ -314,6 +314,36 @@
 [data-beacon-tone="families"] [data-hook^="beacon-nugget-"] {
   --beacon-100: var(--ds-tailwind-colors-sky-100); --beacon-50: var(--ds-tailwind-colors-sky-50); --beacon-200: var(--ds-tailwind-colors-sky-200); --beacon-300: var(--ds-tailwind-colors-sky-300); --beacon-700: var(--ds-tailwind-colors-sky-700); --beacon-800: var(--ds-tailwind-colors-sky-800); --beacon-950: var(--ds-tailwind-colors-sky-950);
 }
+/* SUPER BRIGHT (Ali, 11 Sep, from the site's newsletter block: a green-500
+   panel, yellow and sky cards, a violet button, on black). The families at
+   full strength: the surface is the 500 (yellow and sky at 400 for the
+   text to stay black and legible), marks the 300, buttons black. */
+[data-beacon-tone="vivid"] [data-hook="review-summary-strip"],
+[data-beacon-tone="vivid"] [data-hook^="beacon-strip-"] {
+  --beacon-100: var(--ds-tailwind-colors-sky-400); --beacon-50: var(--ds-tailwind-colors-sky-300); --beacon-200: var(--ds-tailwind-colors-sky-200); --beacon-300: var(--ds-tailwind-colors-sky-600); --beacon-700: var(--ds-tailwind-colors-sky-950); --beacon-800: var(--ds-tailwind-colors-sky-950); --beacon-950: var(--ds-tailwind-colors-sky-950);
+}
+[data-beacon-tone="vivid"] [data-hook="review-plan-strip"],
+[data-beacon-tone="vivid"] [data-hook="review-insights"] {
+  --beacon-100: var(--ds-tailwind-colors-green-500); --beacon-50: var(--ds-tailwind-colors-green-400); --beacon-200: var(--ds-tailwind-colors-green-300); --beacon-300: var(--ds-tailwind-colors-green-700); --beacon-700: var(--ds-tailwind-colors-green-950); --beacon-800: var(--ds-tailwind-colors-green-950); --beacon-950: var(--ds-tailwind-colors-green-950);
+}
+[data-beacon-tone="vivid"] [data-hook^="upsell"] {
+  --beacon-100: var(--ds-tailwind-colors-yellow-400); --beacon-50: var(--ds-tailwind-colors-yellow-300); --beacon-200: var(--ds-tailwind-colors-yellow-200); --beacon-300: var(--ds-tailwind-colors-yellow-700); --beacon-700: var(--ds-tailwind-colors-yellow-950); --beacon-800: var(--ds-tailwind-colors-yellow-950); --beacon-950: var(--ds-tailwind-colors-yellow-950);
+}
+[data-beacon-tone="vivid"] [data-hook^="beacon-nugget-"] {
+  --beacon-100: var(--ds-tailwind-colors-violet-400); --beacon-50: var(--ds-tailwind-colors-violet-300); --beacon-200: var(--ds-tailwind-colors-violet-200); --beacon-300: var(--ds-tailwind-colors-violet-700); --beacon-700: var(--ds-tailwind-colors-violet-950); --beacon-800: var(--ds-tailwind-colors-violet-950); --beacon-950: var(--ds-tailwind-colors-violet-950);
+}
+/* Vivid: the tiles and inner panels sit on a lighter step of the same family
+   rather than the 50, and the inner Did you know / sell columns in dialogs
+   keep their own tints (popovers stay white). */
+[data-beacon-tone="vivid"] [data-hook="review-summary-strip-tiles"],
+[data-beacon-tone="vivid"] [data-hook="review-plan-strip-tiles"],
+[data-beacon-tone="vivid"] [data-hook^="beacon-strip-"] dl {
+  background: var(--beacon-50) !important;
+}
+[data-beacon-tone="vivid"] [data-hook^="upsell"] {
+  background: var(--beacon-100) !important;
+}
+
 /* Paint wherever a family is set. */
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"],
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"],
