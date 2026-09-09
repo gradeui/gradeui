@@ -695,3 +695,12 @@ nextjs-portal {
   .deck-page { break-after: page; page-break-after: always; }
   .deck-page:last-child { break-after: auto; page-break-after: auto; }
 }
+
+/* The DS accordion trigger sets its own size; on a Beacon surface a prompt
+   is body weight, like every other line (Ali, 12 Sep: too many sizes). */
+[data-hook="review-summary-more"] [data-slot="accordion-trigger"],
+[data-hook="review-insights-tactics"] [data-slot="accordion-trigger"] {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: var(--ds-font-weight-semibold, 600);
+}

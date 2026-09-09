@@ -55,7 +55,7 @@ export function UpsellStrip({
       data-hook={dataHook}
       className={
         layout === "column"
-          ? "flex flex-col gap-5 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] p-6"
+          ? "flex flex-col gap-5 rounded-xl bg-[var(--ds-tailwind-colors-yellow-200)] p-6"
           : "flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] px-5 py-4 sm:flex-row sm:items-center sm:gap-5"
       }
     >
@@ -74,7 +74,7 @@ export function UpsellStrip({
             <Lock className={layout === "column" ? "size-3" : "size-3 text-muted-foreground"} />
             {feature} is part of Pro
           </span>
-          {layout === "column" ? <p className="text-heading-section font-display text-balance">Let the easy ones answer themselves.</p> : null}
+          {layout === "column" ? <p className="text-metric font-display text-balance">Let the easy ones answer themselves.</p> : null}
           </div>
         </div>
         <p className={layout === "column" ? "text-body text-foreground text-pretty" : "text-body-sm text-foreground"}>
@@ -86,18 +86,18 @@ export function UpsellStrip({
         <div className="flex flex-col gap-3" data-hook={`${dataHook}-example`}>
           <p className="text-label-sm text-muted-foreground">{example.business ? `On one of ${example.business}'s own reviews` : "On one of your own reviews"}</p>
           <div className="flex flex-col gap-2 rounded-lg bg-[var(--ds-tailwind-colors-base-white)] p-4">
-            <div className="flex items-center gap-2 text-body-sm">
+            <div className="flex items-center gap-2 text-label-sm text-muted-foreground">
               <Rating value={example.rating} dataHook={`${dataHook}-example-rating`} />
               <span className="font-medium">{example.name}</span>
               <span className="text-muted-foreground">on {example.site}</span>
             </div>
-            <p className="text-body-sm text-pretty">“{example.text}”</p>
+            <p className="text-body text-pretty">“{example.text}”</p>
           </div>
           {/* The reply is the hero (Ali, 11 Sep: "make more of the reply"). */}
           <div className="flex flex-col gap-3 rounded-lg border-2 border-foreground bg-[var(--ds-tailwind-colors-base-white)] p-5">
             <p className="flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]"><Sparkles className="size-3.5" />Beacon's reply, an hour later</p>
-            <p className="text-heading-subsection text-pretty">“{example.reply}”</p>
-            <p className="text-body-sm text-muted-foreground">Sent as {example.site === "Google" ? "the owner" : "you"}, in your tone. Edit it once and every reply follows.</p>
+            <p className="text-body font-semibold text-pretty">“{example.reply}”</p>
+            <p className="text-label-sm text-muted-foreground">Sent as {example.site === "Google" ? "the owner" : "you"}, in your tone. Edit it once and every reply follows.</p>
           </div>
         </div>
       ) : null}

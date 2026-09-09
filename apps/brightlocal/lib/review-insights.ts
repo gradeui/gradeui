@@ -3,7 +3,7 @@
  *
  * The tone is lifted from their own material (the 12-month Local SEO
  * roadmap, Sep 2026): an outcome-led goal up top, "Key tactics" under
- * it, plain benefits, "We get it:" when a job sounds like a chore, and
+ * it, plain benefits, and
  * a "Did you know" fact with its source. Every number here comes from
  * the location's profile (lib/location-profiles), so a card never says
  * something the pages beside it contradict. Facts are the location's own
@@ -61,7 +61,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
       area: "reviews",
       severity: ratio > 0.4 ? "high" : "medium",
       title: `Get every review answered`,
-      actionsSummary: `We get it: ${h.needReply} replies sounds like an afternoon you don't have. But a reply is the one thing customers and Google both read, and ${h.needReply} of your ${h.allTime} reviews are still waiting. Here's the quickest way through.`,
+      actionsSummary: `${h.needReply} of your ${h.allTime} reviews are still waiting. A reply is the one thing customers and Google both read.`,
       actions: [
         {
           label: "Start with the oldest reviews.",

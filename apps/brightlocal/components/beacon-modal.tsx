@@ -94,7 +94,7 @@ export function BeaconModal() {
                 <BeaconBadge dataHook="beacon-modal-badge" beta />
                 <span className="text-label-sm text-muted-foreground">{locationName}</span>
               </div>
-              <DialogTitle className="text-heading-page font-sans leading-tight text-balance">{section === "plan" ? "Beacon's plan for you" : page ? `What Beacon sees in your ${PAGE_NAME[page]}` : "Beacon's summary of your reviews"}</DialogTitle>
+              <DialogTitle className="text-metric font-sans leading-tight text-balance">{section === "plan" ? "Beacon's plan for you" : page ? `What Beacon sees in your ${PAGE_NAME[page]}` : "Beacon's summary of your reviews"}</DialogTitle>
             </div>
           </div>
           <DialogDescription className="sr-only">Your AI summary for this location.</DialogDescription>

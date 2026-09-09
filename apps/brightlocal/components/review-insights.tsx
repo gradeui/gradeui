@@ -72,16 +72,17 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
           ) : null}
           {/* The goal pill, the roadmap's "Stage 1 Goal" flag, with the
               Beacon Beta badge beside it so the beta is called out here too. */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              data-hook="review-insights-pill"
-              className="inline-flex w-fit items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-label-sm text-foreground"
-            >
-              <Flag className="size-3.5 text-muted-foreground" />
-              This week's goal
-            </span>
-            <BeaconBadge beta dataHook="review-insights-badge" />
-          </div>
+          {/* One badge per surface (Ali, 12 Sep): in the dialog the header
+              already says Beacon, and the headline already is the goal. */}
+          {bare ? null : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span data-hook="review-insights-pill" className="inline-flex w-fit items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-label-sm text-foreground">
+                <Flag className="size-3.5 text-muted-foreground" />
+                This week's goal
+              </span>
+              <BeaconBadge beta dataHook="review-insights-badge" />
+            </div>
+          )}
           <h2 className="text-metric font-display text-foreground max-w-prose text-pretty" data-hook="review-insights-goal">
             <Mark text={plan.goal.text} mark={plan.goal.mark} />
           </h2>
@@ -99,12 +100,12 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
               tactic just shows (Ali, 12 Sep: "a lot happening"). */}
           {bare && plan.items.length === 1 ? (
             <div className="flex max-w-prose flex-col gap-3" data-hook="review-insights-tactic-single">
-              <p className="text-heading-subsection">{plan.items[0].title}</p>
+              <p className="text-body font-semibold">{plan.items[0].title}</p>
               <p className="text-body text-pretty">{plan.items[0].actionsSummary}</p>
               <div className="flex flex-col gap-2">
                 {plan.items[0].actions.map((a, j) => (
                   <div key={j} className="flex flex-col items-start gap-2 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-3">
-                    <p className="text-body-sm font-medium">{a.label}</p>
+                    <p className="text-body">{a.label}</p>
                     {a.links[0] ? (
                       <span data-grade-goto={a.links[0].goto}>
                         <Button variant="outline" size="sm" dataHook={`tactic-single-${j}`}>
@@ -126,11 +127,11 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="flex flex-col gap-3 pb-2">
-                      <p className="text-body-sm text-pretty">{item.actionsSummary}</p>
+                      <p className="text-body text-pretty">{item.actionsSummary}</p>
                       <div className="flex flex-col gap-2">
                         {item.actions.map((a, j) => (
                           <div key={j} className="flex flex-col items-start gap-2 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-3">
-                            <p className="text-body-sm font-medium">{a.label}</p>
+                            <p className="text-body">{a.label}</p>
                             {a.links[0] ? (
                               <span data-grade-goto={a.links[0].goto}>
                                 <Button variant="outline" size="sm" dataHook={`tactic-${item.id}-${j}`}>

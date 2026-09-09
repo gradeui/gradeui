@@ -295,7 +295,7 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
                       {/* The why, then the thing that fixes it (Ali, 12 Sep). */}
                       {line.fix ? (
                         <div className="flex flex-col items-start gap-2 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-3">
-                          <p className="text-body-sm">{line.fix.text}</p>
+                          <p className="text-body">{line.fix.text}</p>
                           <span data-grade-goto={line.fix.goto} onClick={() => close()}>
                             <Button variant="outline" size="sm" dataHook={`review-summary-fix-${i}`}>
                               {line.fix.label}
@@ -570,7 +570,7 @@ function ChartTabs({ stats, kinds }: { stats: ReviewStats; kinds: Drill[] }) {
               <div className="h-36"><DrillChart stats={stats} kind={kind} /></div>
               <div className="flex min-h-[4.5rem] flex-col gap-1">
                 <p className="text-body font-semibold text-balance">{drillCopy(stats, kind).lede}</p>
-                <p className="text-body-sm text-muted-foreground text-pretty">{drillCopy(stats, kind).detail}</p>
+                <p className="text-body text-muted-foreground text-pretty">{drillCopy(stats, kind).detail}</p>
               </div>
             </div>
           </TabsContent>
@@ -695,7 +695,7 @@ export function DidYouKnowPanel({ stats, page }: { stats: ReviewStats; page?: Be
           ? `You have ${stats.total}. ${need} more and you are past the line most customers draw. One email to last month's happy customers is the fastest way there.`
           : "Keep asking every month and the recent window stays full.";
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-yellow-100)] p-6" data-hook="review-summary-early-fact">
+    <div className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-yellow-200)] p-6" data-hook="review-summary-early-fact">
       <p className="flex items-center gap-2 text-heading-subsection"><Lightbulb className="size-4" />Did you know</p>
       <p className="text-display font-display leading-none">{fact.value}</p>
       <p className="text-heading-section max-w-[24ch] text-balance">{fact.text}</p>

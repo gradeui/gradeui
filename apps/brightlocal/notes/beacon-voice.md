@@ -37,7 +37,10 @@ Brian
 - "Nothing has gone out since 2 Aug."
 
 Bea
-- "We get it: 14 replies sounds like an afternoon you don't have."
+- ~~"We get it: 14 replies sounds like an afternoon you don't have."~~
+  Cut 12 Sep: Ali, "the we get it paragraph is just fluff". Sympathy that
+  delays the point is throat-clearing. Lead with the fact, and let the
+  fix carry the warmth.
 - "Start with the oldest reviews. Keep it short and specific."
 
 Ray
@@ -110,3 +113,19 @@ a dashboard feel useless.
 `SummaryLine.prompt` in lib/review-summary.ts is required in practice: a
 line without one falls back to "More on this", which is a copy bug, not a
 feature.
+
+## Three text roles, no more
+
+Ali, 12 Sep: "there are so many different text sizes and colours."
+
+Every Beacon surface uses three roles and nothing else:
+
+| Role | Size | Colour | Used for |
+|---|---|---|---|
+| label | 12 | muted | eyebrows, sources, the line under a metric |
+| body | 16 | foreground | everything you actually read |
+| headline | 24, Poppins | foreground | one per surface |
+
+Emphasis is **weight**, never another size. A sub-heading inside a
+surface is body semibold, not a fourth size. Metrics are the one
+exception: a tile value is 24 tabular, because a number is a picture.
