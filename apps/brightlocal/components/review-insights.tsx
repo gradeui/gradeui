@@ -57,7 +57,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
           "upsell on right, content on left"); on the hub it leads the card. */}
       <div className={bare && hasUpsell ? "grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-stretch" : undefined}>
       <div className="flex flex-col">
-      <CardHeader>
+      <CardHeader className={bare ? "pt-0" : undefined}>
         <div className="flex flex-col gap-4">
           {hasUpsell && !bare ? (
             <UpsellStrip

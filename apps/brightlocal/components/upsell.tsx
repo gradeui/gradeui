@@ -75,7 +75,7 @@ export function UpsellStrip({
       </div>
       {layout === "column" && example ? (
         <div className="flex flex-col gap-3" data-hook={`${dataHook}-example`}>
-          <p className="text-heading-subsection">{example.business ? `On one of ${example.business}'s own reviews` : "On one of your own reviews"}</p>
+          <p className="text-heading-subsection">{example.business ? `Made for ${example.business}, from one of your own reviews` : "Made from one of your own reviews"}</p>
           <div className="flex flex-col gap-2 rounded-lg bg-[var(--ds-tailwind-colors-base-white)] p-4">
             <div className="flex items-center gap-2 text-body-sm">
               <Rating value={example.rating} dataHook={`${dataHook}-example-rating`} />
