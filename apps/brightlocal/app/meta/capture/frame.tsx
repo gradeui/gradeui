@@ -145,8 +145,8 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
         <div
           className="flex items-center justify-center px-24 pb-8"
           style={{
-            opacity: ready ? 1 : 0,
-            transform: ready ? "none" : "translateY(10px)",
+            opacity: ready && !cardSpec ? 1 : 0,
+            transform: ready && !cardSpec ? "none" : "translateY(10px)",
             // Always behind the frame: the product lands, then the line
             // about it (Ali, 12 Sep).
             transition: "opacity 480ms ease-out 420ms, transform 480ms ease-out 420ms",

@@ -63,9 +63,10 @@ const settings = (persona) => ({
   appearance: flow.appearance ?? "light",
 });
 
-const stageUrl = (url, bg, caption) => {
+const stageUrl = (url, bg, caption, card) => {
   const p = new URLSearchParams({ url, w: String(W), h: String(H), bg: bg ?? flow.bg ?? "neutral" });
   if (caption) p.set("caption", caption);
+  if (card) p.set("card", card);
   return `${BASE}/meta/capture?${p.toString()}`;
 };
 
@@ -121,9 +122,13 @@ for (const [i, step] of flow.steps.entries()) {
     // Cards render INSIDE the stage: one document for the whole video, so a
     // cut never navigates and never flashes white.
     if (!onStage) {
-      await page.goto(stageUrl(flow.steps.find((x) => x.go)?.go ?? "/locations/minus-one-studios/reviews", bg, undefined), { waitUntil: "networkidle", timeout: 90000 });
+      // The card is painted server-side on the first frame, so the video
+      // opens on the card rather than on an empty canvas.
+      await page.goto(stageUrl(flow.steps.find((x) => x.go)?.go ?? "/locations/minus-one-studios/reviews", bg, undefined, step.card), { waitUntil: "domcontentloaded", timeout: 90000 });
       onStage = true;
+      await wait(step.ms ?? 2600);
       await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor({ timeout: 40000 }).catch(() => {});
+      continue;
     }
     await page.evaluate((slug) => window.__stage?.card(slug), step.card);
     await wait(step.ms ?? 2600);

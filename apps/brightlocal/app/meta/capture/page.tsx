@@ -20,6 +20,9 @@ export default async function CapturePage({ searchParams }: { searchParams: Prom
         url: one("url") ?? "/locations/minus-one-studios/reviews",
         bg: one("bg") ?? "neutral",
         caption: one("caption"),
+        // ?card= paints a cut-scene card on the very first frame, so a
+        // video never opens on a bare canvas (Ali, 12 Sep).
+        card: one("card") ?? null,
       }}
       w={Number(one("w") ?? 1280)}
       h={Number(one("h") ?? 900)}
