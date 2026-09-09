@@ -20,6 +20,7 @@ import { usePersona } from "@/lib/demo";
 import { ReviewInsights } from "@/components/review-insights";
 import { pickIllustration } from "@/lib/illustrations";
 import { pageBeaconFor, type BeaconPage } from "@/lib/beacon-pages";
+import { InsightsPdfButton } from "@/components/insights-pdf";
 import { hrefFor } from "@/lib/screens";
 import { useRouter } from "next/navigation";
 
@@ -42,7 +43,7 @@ function ModalCta({ stats, page }: { stats: ReturnType<typeof statsFor>; page?: 
   const goto = stats.needReply > 0 ? "screen:dmsxf5zjggd0n" : "screen:dmt094j963aye";
   const label = stats.needReply > 0 ? `Reply to your ${stats.needReply} waiting ${stats.needReply === 1 ? "review" : "reviews"}` : "Create a campaign";
   return (
-    <div className="mt-6 border-t pt-6">
+    <div className="mt-6 flex flex-wrap items-center gap-3 border-t pt-6">
       {pageCta ? (
         <Button variant="primary" size="lg" dataHook="beacon-modal-cta" onClick={() => { close(); router.push(hrefFor({ path: pageCta.path, scope: "location" }, location)); }}>
           {pageCta.label}
@@ -56,6 +57,7 @@ function ModalCta({ stats, page }: { stats: ReturnType<typeof statsFor>; page?: 
           </Button>
         </span>
       )}
+      <InsightsPdfButton />
     </div>
   );
 }

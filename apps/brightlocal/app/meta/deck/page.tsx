@@ -43,6 +43,14 @@ function DeckBody() {
   const stats = statsFor(location, persona);
   const name = (DATASETS as Record<string, { location?: { name?: string } }>)[location]?.location?.name ?? location;
   const pages = deckFor(persona, stats, name);
+  // ?print=1 opens the browser's print dialog once the deck has laid out,
+  // which is how the in-product "as a PDF" button works: no PDF library,
+  // no server, the browser prints the same components the app renders.
+  React.useEffect(() => {
+    if (params.get("print") !== "1") return;
+    const t = setTimeout(() => window.print(), 1800);
+    return () => clearTimeout(t);
+  }, [params]);
   return (
     <div className="flex flex-col items-center gap-6 bg-[var(--ds-tailwind-colors-neutral-200)] py-6 print:gap-0 print:bg-white print:py-0">
       {pages.map((p, i) => (

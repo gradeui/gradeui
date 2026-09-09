@@ -22,6 +22,7 @@ import { BeaconBadge } from "@/components/review-summary";
 import { BeaconNugget } from "@/components/beacon-nugget";
 import { useBeaconModal } from "@/lib/beacon-modal";
 import { ReviewQuoteBand } from "@/components/review-quote";
+import { InsightsPdfButton } from "@/components/insights-pdf";
 
 function Mark({ text, mark }: { text: string; mark: string }) {
   const i = text.indexOf(mark);
@@ -150,6 +151,7 @@ export default function ReviewsInsightsPage() {
                 <Button variant="outline" size="sm" dataHook="roadmap-ask-beacon" onClick={() => modal.show("plan")}>
                   Ask Beacon
                 </Button>
+                <InsightsPdfButton />
                 <Button variant="outline" size="sm" dataHook="roadmap-help-center" asChild>
                   <a href="https://help.brightlocal.com" target="_blank" rel="noreferrer">Help Center</a>
                 </Button>
