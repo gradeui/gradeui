@@ -79,3 +79,23 @@ Open items in the order I would take them.
       place.
     Pick two or three, not all. Stagger plus the mark sweep plus the bars
     rising is probably the set.
+15. **Port back to gradeui, as static pages** (Ali, 12 Sep). The gradeui
+    build stays static, so the port is new pages, not a runtime.
+    - Moves cleanly: the pure libraries (reviews-data, review-summary,
+      review-insights, beacon-pages, first-run, beacon-voices,
+      illustrations, plans, review-roadmap) have no Next or browser
+      dependency and render at build time with a fixed persona each.
+    - Moves with a shim: the components read persona and location from
+      the demo provider and next/navigation. A static page passes those
+      as props instead (a `StaticDemo` provider with a fixed persona and
+      location per page, no localStorage, no URL params).
+    - Stays here: the settings surface (Cmd+K, /settings, tones, dark,
+      engines), the goto bridge, the QR generator's print window, the
+      trial recap's open-on-switch. A static page shows one state.
+    - The shape: apps/docs pages per persona and section ("Beacon for a
+      trial account", "Beacon for a multi-location brand"), each one a
+      frozen render of the strips, dialog columns and the roadmap, plus
+      the voices and summaries docs pages as they are. The DS stays the
+      npm package; the docs site would take @brightlocal/* as deps the
+      same way this app does, and the ds/*.jsx copy goes back to being
+      the registry lib it was copied from.
