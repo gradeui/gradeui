@@ -79,7 +79,7 @@ Open items in the order I would take them.
       place.
     Pick two or three, not all. Stagger plus the mark sweep plus the bars
     rising is probably the set.
-15. **Port back to gradeui, as static pages** (Ali, 12 Sep). The gradeui
+15. **Port back to gradeui, as static pages** (Ali, 12 Sep; NOT needed for the reveal in about two days, park it). The gradeui
     build stays static, so the port is new pages, not a runtime.
     - Moves cleanly: the pure libraries (reviews-data, review-summary,
       review-insights, beacon-pages, first-run, beacon-voices,
