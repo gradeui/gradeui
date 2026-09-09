@@ -43,6 +43,10 @@ declare global {
 export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageState; w: number; h: number; pad: number; radius: number }) {
   const [state, setState] = React.useState(initial);
   const [ready, setReady] = React.useState(false);
+  // A cut-scene card stays up until the NEXT screen has loaded and faded
+  // in, or you see the bare canvas in between: fade out, gap, fade back in
+  // (Ali, 12 Sep). The card is cleared by the effect below, not by set().
+  const clearCardWhenReady = React.useRef(false);
   const [scale, setScale] = React.useState(0);
   const frameRef = React.useRef<HTMLIFrameElement>(null);
   const stage = STAGES[state.bg] ?? STAGES.neutral;
@@ -64,8 +68,13 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
       set: (next) => {
         // A new url means a new load: hide the frame first so the incoming
         // page never paints white over the canvas.
-        if (next.url && next.url !== state.url) setReady(false);
-        setState((s) => ({ ...s, ...next }));
+        const isNewUrl = Boolean(next.url && next.url !== state.url);
+        if (isNewUrl) setReady(false);
+        setState((s) => {
+          const holdCard = isNewUrl && s.card && next.card === null;
+          if (holdCard) clearCardWhenReady.current = true;
+          return { ...s, ...next, card: holdCard ? s.card : next.card !== undefined ? next.card : s.card };
+        });
       },
       card: (slug) => setState((s) => ({ ...s, card: slug })),
       reloadFrame: () => {
@@ -77,6 +86,14 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
     };
     return () => { delete window.__stage; };
   }, [state.url, ready]);
+
+  // Cross-fade: the card goes only once the screen behind it is up.
+  React.useEffect(() => {
+    if (!ready || !clearCardWhenReady.current) return;
+    clearCardWhenReady.current = false;
+    const t = setTimeout(() => setState((s) => ({ ...s, card: null })), 120);
+    return () => clearTimeout(t);
+  }, [ready]);
 
   return (
     <main
@@ -151,7 +168,7 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
         data-hook="stage-card"
         aria-hidden={!cardSpec}
         className="pointer-events-none absolute inset-0"
-        style={{ opacity: cardSpec ? 1 : 0, transition: "opacity 360ms ease-out" }}
+        style={{ opacity: cardSpec ? 1 : 0, transition: "opacity 520ms ease-out" }}
       >
         {cardSpec ? <CutSceneCard card={cardSpec} /> : null}
       </div>
