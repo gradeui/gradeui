@@ -74,3 +74,29 @@ number goes in a "Did you know":
 
 - 47% of consumers won't use a business that has less than 20 reviews.
 - 74% only care about reviews written in the last three months.
+
+## Every insight carries a one-liner
+
+Ali, 12 Sep: "if we have that many insights it's an accordion, with just
+single sentences to prompt to open up. Always progressive disclosure, not
+cognitive overload."
+
+So every insight is authored as a pair:
+
+- a **prompt**: one line that says what the finding is about without
+  saying it ("Why your recent rating sits below your all-time average").
+  Scannable, no numbers, no conclusion.
+- the **detail**: the finding itself, with the numbers, in its register.
+
+Where they surface:
+
+| Surface | Prompt | Detail |
+|---|---|---|
+| Summary strip | the headline | one lead line |
+| Summary dialog | the headline, the lead line, then an accordion of prompts | opened on demand |
+| Page strips | the headline | the line, plus `more` in the dialog |
+| The plan | the tactic title | `actionsSummary` behind the accordion |
+
+`SummaryLine.prompt` in lib/review-summary.ts is required in practice: a
+line without one falls back to "More on this", which is a copy bug, not a
+feature.

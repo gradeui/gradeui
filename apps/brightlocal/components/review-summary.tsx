@@ -29,6 +29,7 @@ import { reviewsFor } from "@/lib/reviews-data";
 import { STATS } from "@/lib/first-run";
 import { pickIllustration } from "@/lib/illustrations";
 import { Rating } from "@brightlocal/ui-components/rating";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@brightlocal/ui-components/accordion";
 import { SITE_MARK, SITE_LABEL } from "@/components/site-marks";
 import { Lightbulb } from "@brightlocal/icons";
 import { FirstRunBand } from "@/components/first-run";
@@ -239,7 +240,12 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
   // mental"). The dialog leads with the two lines that are not already a
   // tile; the rest stay behind each tile's Tell me more, which is where
   // they were designed to live.
-  const cardLines = (full ? [...summary.lines.filter((l) => !l.slot), ...summary.lines.filter((l) => l.slot)] : summary.lines.filter((line) => !line.slot)).slice(0, 2);
+  // PROGRESSIVE DISCLOSURE, NOT A WALL (Ali, 12 Sep). On a strip: the one
+  // line that is not already a tile. In the dialog: the lead line in full,
+  // and every other finding as a prompt you can open.
+  const ordered = full ? [...summary.lines.filter((l) => !l.slot), ...summary.lines.filter((l) => l.slot)] : summary.lines.filter((line) => !line.slot);
+  const cardLines = full ? ordered.slice(0, 1) : ordered.slice(0, 2);
+  const moreLines = full ? ordered.slice(1) : [];
   const drillFor = (label: string): Drill | null =>
     label.startsWith("rating") ? "rating" : label.includes("velocity") ? "velocity" : label.includes("four stars") ? "fourPlus" : null;
   return (
@@ -274,6 +280,20 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
               <VoiceLine key={i} line={line} index={i} />
             ))}
           </div>
+          {moreLines.length ? (
+            <Accordion type="multiple" dataHook="review-summary-more" className="w-full max-w-[60ch]">
+              {moreLines.map((line, i) => (
+                <AccordionItem key={i} value={`finding-${i}`}>
+                  <AccordionTrigger className="cursor-pointer text-left" data-hook={`review-summary-more-${i}`}>
+                    {line.prompt ?? "More on this"}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <VoiceLine line={line} index={100 + i} />
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          ) : null}
           <p className={tilesRow ? "hidden" : "text-body-xs text-muted-foreground"} data-hook="review-summary-disclosure">
             Written by Beacon from this location's reviews. Hover a number for what it counts; the info icons hold the rest.
           </p>

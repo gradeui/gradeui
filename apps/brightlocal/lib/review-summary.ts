@@ -31,6 +31,10 @@ export interface SummaryLine {
   /** The same thought in the other registers, for the easter egg (Ali,
    *  11 Sep: hover to see who wrote it, click to get a new author). */
   variants?: Partial<Record<Register, Segment[]>>;
+  /** One line that says what this finding is about, without saying it.
+   *  Four findings stacked is a wall (Ali, 12 Sep), so a long summary
+   *  becomes an accordion: prompts you can scan, detail you choose. */
+  prompt?: string;
   register?: Register;
   slot?: Slot;
 }
@@ -79,6 +83,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     lines.push({
       tone: "bad",
       slot: "rating",
+      prompt: "Why your recent rating sits below your all-time average",
       segments: [t(`Your ${winLabel} average `), m(win.rating, "bad", `The average of the ${win.count} star ratings in your ${winLabel}.`), t(" against "), m(s.rating, "neutral", `The average of all ${s.total.toLocaleString("en-GB")} star ratings, ever. It barely moves.`), t(" all time. That gap is the number to watch, and the one you can move.")],
       register: "brian",
       variants: {
@@ -91,6 +96,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     lines.push({
       tone: "bad",
       slot: "rating",
+      prompt: `What customers are comparing ${s.compare.self} with`,
       segments: [
         m(String(s.compare.mentions), "bad", `Reviews in your last ${s.lastN} whose text names the ${s.compare.label} branch.`), t(` of your last ${s.lastN} reviews compare ${s.compare.self} with your ${s.compare.label} branch, and not kindly. ${s.compare.label} is on `), m(s.compare.siblingRecentRating, "good"), t(` for the same period. ${s.compare.self} is on `), m(win.rating, "bad"), t(". Same brand, different experience: that is worth a visit."),
       ],
@@ -104,6 +110,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
   if (r.lowCount >= 3) {
     lines.push({
       tone: "bad",
+      prompt: "The run of low reviews, and what they have in common",
       segments: [
         t("Out of your last "), m(String(r.lastN), "neutral", "Your most recent reviews across every connected source."), t(" reviews, "), m(String(r.lowCount), "bad", `Reviews at ${r.lowStar} stars or lower, or a Facebook thumbs down. They are at the top of Review Manager.`), t(` were ${r.lowStar} stars or lower.`),
         ...(r.theme && !r.theme.good ? [t(" The thing they keep mentioning is "), m(r.theme.text, "bad"), t(".")] : []),
@@ -118,6 +125,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     // know things soften the blow as well as another way to say do this").
     lines.push({
       tone: "neutral",
+      prompt: "What a reply actually does for the next reader",
       segments: [t("Did you know a calm reply reassures the next reader more than the review worried them? Answer those "), m(String(r.lowCount)), t(" this week and the rating follows.")],
       register: "bea",
       variants: {
@@ -128,6 +136,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
   } else if (r.lowCount > 0) {
     lines.push({
       tone: "neutral",
+      prompt: "The low reviews in your last ten",
       segments: [t("Out of your last "), m(String(r.lastN)), t(" reviews, "), m(String(r.lowCount), "bad"), t(` ${r.lowCount === 1 ? "was" : "were"} ${r.lowStar} stars or lower`), ...(r.theme && !r.theme.good ? [t(", about "), m(r.theme.text, "bad"), t(".")] : [t(".")])],
       register: "brian",
       variants: {
@@ -142,6 +151,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     lines.push({
       tone: "good",
       slot: "velocity",
+      prompt: "Why more people are writing about you this month",
       segments: [
         t("Your review velocity is up: "), m(`${r.monthChangePct}% more`, "good", `${s.thisMonth} reviews so far this month against ${s.lastMonth} in the whole of last month.`), t(" reviews this month than last."),
         ...(r.spike
@@ -161,6 +171,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     lines.push({
       tone: "bad",
       slot: "velocity",
+      prompt: "Why fewer people are writing about you this month",
       segments: [
         t("Your review velocity has dropped: "), m(`${Math.abs(r.monthChangePct)}% fewer`, "bad", `${s.thisMonth} reviews so far this month against ${s.lastMonth} in the whole of last month.`), t(" reviews this month than last."),
         ...(r.spike
@@ -175,13 +186,14 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
       },
     });
   } else {
-    lines.push({ tone: "neutral", slot: "velocity", segments: [t("Reviews received are level with last month. "), m(`${r.fourPlusPct}%`, r.fourPlusPct >= 70 ? "good" : "neutral"), t(" were four stars or above.")] });
+    lines.push({ tone: "neutral", slot: "velocity", prompt: "How this month compares with last", segments: [t("Reviews received are level with last month. "), m(`${r.fourPlusPct}%`, r.fourPlusPct >= 70 ? "good" : "neutral"), t(" were four stars or above.")] });
   }
 
   if (r.theme?.good) {
     lines.push({
       tone: "good",
       slot: "fourPlus",
+      prompt: "The thing customers keep praising",
       segments: [t("The thing customers keep praising is "), m(r.theme.text, "good"), t(". Worth saying in your replies, and on your website.")],
       register: "bea",
       variants: {
