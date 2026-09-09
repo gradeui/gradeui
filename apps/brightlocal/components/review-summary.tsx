@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@brightlocal/ui-compone
 import { GlobeyCalmOpen1 } from "@brightlocal/illustrations";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, Bar, BarChart, XAxis, Cell } from "@brightlocal/ui-components/chart";
 import { LabelList, YAxis } from "recharts";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@brightlocal/ui-components/tabs";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
@@ -118,7 +119,7 @@ export function DrillChart({ stats, kind, onTint = false }: { stats: ReviewStats
           ? `Reviews that month averaged ${mo.rating || "no rating"}.`
           : `${mo.fourPlusPct}% of that month's reviews were four stars or above.`,
   }));
-  const config = { value: { label: kind === "velocity" ? "Reviews" : kind === "rating" ? "Rating" : "Four stars or above" } };
+  const config = { value: { label: kind === "velocity" ? "Reviews" : kind === "rating" ? "Rating" : "4 stars or above" } };
   // THE NUMBERS SIT ON THE BARS, not in the prose (Ali, 11 Sep). A floor on
   // the rating and four-plus axes so six near-identical months show their
   // differences: ratings live between 3 and 5, four-plus between 50 and 100.
@@ -150,21 +151,35 @@ export function DrillChart({ stats, kind, onTint = false }: { stats: ReviewStats
   );
 }
 
-export function drillCopy(stats: ReviewStats, kind: Drill): string {
+/** A chart caption in two beats (Ali, 11 Sep: "split it, a lede sentence,
+ *  then a smaller sentence, more advertorial"): the headline read, then
+ *  the one line that explains why it matters. Numbers stay on the bars. */
+export function drillCopy(stats: ReviewStats, kind: Drill): { lede: string; detail: string } {
   const m = stats.months;
   const last = m[m.length - 1];
   const prev = m[m.length - 2];
   const peak = m.reduce((a, b) => (b.count > a.count ? b : a), m[0]);
   if (kind === "velocity") {
-    return `${last.count} reviews so far this month against ${prev.count} in ${prev.label}. Your busiest month was ${peak.label} with ${peak.count}${stats.spike ? `, and this month's spike on ${stats.spike.date} came from your ${stats.spike.campaign} ${stats.spike.channel}` : ""}. Volume and cadence over time is the number that tells you whether asking is working.`;
+    const dir = last.count > prev.count ? "Up on last month" : last.count < prev.count ? "Down on last month" : "Level with last month";
+    return {
+      lede: stats.spike ? `Your ${stats.spike.campaign} ${stats.spike.channel} is why ${stats.spike.date} spiked.` : `${dir}, with ${peak.label} your busiest.`,
+      detail: stats.spike ? `${dir}. Asking works. Send the next one before the glow fades.` : "Volume over time is the number that tells you whether asking is working.",
+    };
   }
   if (kind === "rating") {
     const first = m.find((x) => x.rating);
-    const dir = first && last.rating ? (Number(last.rating) < Number(first.rating) - 0.1 ? "has slipped since" : Number(last.rating) > Number(first.rating) + 0.1 ? "has climbed since" : "has held steady since") : "is";
-    return `The average of each month's new reviews ${dir} ${first?.label ?? "the spring"}. The lifetime average hardly moves. This is where you see change first.`;
+    const slipped = first && last.rating && Number(last.rating) < Number(first.rating) - 0.1;
+    const climbed = first && last.rating && Number(last.rating) > Number(first.rating) + 0.1;
+    return {
+      lede: slipped ? `New reviews have slipped since ${first!.label}.` : climbed ? `New reviews have climbed since ${first!.label}.` : "New reviews are holding steady.",
+      detail: "The lifetime average hardly moves. This is where change shows first.",
+    };
   }
   const lowest = m.reduce((a, b) => (b.fourPlusPct < a.fourPlusPct ? b : a), m[0]);
-  return `${lowest.label} was the weakest month for four-star-and-above reviews. A dip here shows up in the rating weeks later.`;
+  return {
+    lede: `${lowest.label} was the weakest month for four stars and above.`,
+    detail: "A dip here shows up in the rating weeks later. Answer the low ones first.",
+  };
 }
 
 function TellMeMore({ stats, kind, label, lines }: { stats: ReviewStats; kind: Drill; label: string; lines: { segments: Segment[] }[] }) {
@@ -199,7 +214,7 @@ function TellMeMore({ stats, kind, label, lines }: { stats: ReviewStats; kind: D
               </p>
             ))}
             <DrillChart stats={stats} kind={kind} />
-            <p className="text-body-sm text-muted-foreground">{drillCopy(stats, kind)}</p>
+            <p className="text-body-sm text-muted-foreground"><span className="font-semibold text-foreground">{drillCopy(stats, kind).lede}</span> {drillCopy(stats, kind).detail}</p>
           </div>
         ) : (
           <div className="text-muted-foreground flex items-center gap-2 py-6 text-body-sm">
@@ -434,6 +449,56 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
 
 /** The three six-month charts, on their own so the modal can show them
  *  under a page's block without the general summary. */
+const KIND_LABEL: Record<Drill, string> = { rating: "Rating", velocity: "Review velocity", fourPlus: "4 stars or above" };
+
+/** The dialog's chart column as auto-cycling tabs (Ali, 11 Sep): one
+ *  chart in view, the next every few seconds, and the cycle stops the
+ *  moment the reader hovers or picks a tab. Past months in white on the
+ *  tint. The reveal uses the DS entrance motion tokens. */
+function ChartTabs({ stats, kinds }: { stats: ReviewStats; kinds: Drill[] }) {
+  const [active, setActive] = React.useState<Drill>(kinds[0]);
+  const [paused, setPaused] = React.useState(false);
+  React.useEffect(() => {
+    if (paused || kinds.length < 2) return;
+    const t = setInterval(() => setActive((k) => kinds[(kinds.indexOf(k) + 1) % kinds.length]), 5000);
+    return () => clearInterval(t);
+  }, [paused, kinds]);
+  return (
+    <div
+      className="flex h-full flex-col gap-4 rounded-xl bg-[var(--ds-tailwind-colors-neutral-100)] p-6"
+      data-hook="review-summary-charts"
+      onMouseEnter={() => setPaused(true)}
+    >
+      {/* Neutral scale, not a tint (Ali, 11 Sep): the tabs will switch between
+          the three chart types full width, so the box is furniture, not a sell. */}
+      <p className="text-heading-subsection">The last six months</p>
+      <Tabs value={active} onValueChange={(v) => { setActive(v as Drill); setPaused(true); }} dataHook="review-summary-chart-tabs">
+        <TabsList className="grid w-full bg-[var(--ds-tailwind-colors-neutral-200)]" style={{ gridTemplateColumns: `repeat(${kinds.length}, minmax(0, 1fr))` }} dataHook="review-summary-chart-tablist">
+          {kinds.map((kind) => (
+            <TabsTrigger key={kind} value={kind} dataHook={`review-summary-chart-tab-${kind}`}>{KIND_LABEL[kind]}</TabsTrigger>
+          ))}
+        </TabsList>
+        {kinds.map((kind) => (
+          <TabsContent key={kind} value={kind} dataHook={`review-summary-chart-panel-${kind}`}>
+            {/* Fixed heights for the chart and its caption so a tab change never moves the box. */}
+            <div key={active === kind ? `${kind}-on` : kind} className="gds-beacon-reveal flex flex-col gap-3 pt-2">
+              <div className="h-36"><DrillChart stats={stats} kind={kind} /></div>
+              <div className="flex min-h-[4.5rem] flex-col gap-1">
+                <p className="text-body font-semibold text-balance">{drillCopy(stats, kind).lede}</p>
+                <p className="text-body-sm text-muted-foreground text-pretty">{drillCopy(stats, kind).detail}</p>
+              </div>
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
+      <div className="mt-auto flex items-end justify-between gap-3 pt-2">
+        <p className="text-body-xs text-muted-foreground">{!paused && kinds.length > 1 ? "Cycling every few seconds. Hover to hold." : ""}</p>
+        <FactArt keywords={active === "velocity" ? ["velocity", "spike"] : active === "rating" ? ["rating", "star"] : ["trust", "good"]} large />
+      </div>
+    </div>
+  );
+}
+
 /** True when the location has fewer than three months of reviews: the
  *  dialog then runs a Did you know up its right side instead of charts. */
 export function isEarlyDays(stats: ReviewStats): boolean {
@@ -450,30 +515,16 @@ export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"
   // STACKED: the dialog's right column, an infographic on a tint (Ali, 11
   // Sep: "stack those charts vertically on some kind of background, treat
   // that stuff like an additional infographic insight").
-  if (stacked) {
-    return (
-      <div className="flex flex-col gap-6 rounded-xl bg-[var(--ds-tailwind-colors-sky-100)] p-6" data-hook="review-summary-charts">
-        <p className="text-heading-subsection">The last six months</p>
-        {kinds.map((kind) => (
-          <div key={kind} className="flex flex-col gap-2">
-            <p className="text-label-sm font-semibold uppercase tracking-wide">{kind === "rating" ? "Rating" : kind === "velocity" ? "Review velocity" : "Four stars or above"}</p>
-            {/* Past months in white on the tint (Ali, 11 Sep: grey on blue "looks awful"). */}
-            <DrillChart stats={stats} kind={kind} onTint />
-            <p className="text-body-sm text-pretty">{drillCopy(stats, kind)}</p>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  if (stacked) return <ChartTabs stats={stats} kinds={kinds} />;
   return (
     <div className={`mt-6 grid gap-4 border-t pt-6 ${kinds.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`} data-hook="review-summary-charts">
       {kinds.map((kind) => (
         <div key={kind} className="flex flex-col gap-3 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-4">
           <p className="text-heading-subsection">
-            {kind === "rating" ? "Rating" : kind === "velocity" ? "Review velocity" : "Four stars or above"}, last six months
+            {kind === "rating" ? "Rating" : kind === "velocity" ? "Review velocity" : "4 stars or above"}, last six months
           </p>
           <DrillChart stats={stats} kind={kind} />
-          <p className="text-body-xs text-muted-foreground">{drillCopy(stats, kind)}</p>
+          <p className="text-body-xs text-muted-foreground">{drillCopy(stats, kind).lede} {drillCopy(stats, kind).detail}</p>
         </div>
       ))}
     </div>

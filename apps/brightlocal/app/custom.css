@@ -259,6 +259,20 @@
   display: none;
 }
 
+/* Beacon reveals use the DS entrance motion tokens (Ali, 11 Sep: "a real
+   opportunity to use the fixed animation tokens to reveal the popover
+   content"). One class, a fade and a short rise. */
+@keyframes gds-beacon-reveal {
+  from { opacity: 0; transform: translateY(var(--ds-motion-entrance-distance, 8px)); }
+  to { opacity: 1; transform: none; }
+}
+.gds-beacon-reveal {
+  animation: gds-beacon-reveal var(--ds-motion-entrance-duration, 320ms) var(--ds-motion-entrance-ease, ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gds-beacon-reveal { animation: none; }
+}
+
 /* The dialog's Close button gets a visible hover (Ali, 10 Sep). */
 [data-hook="beacon-modal-close"]:hover,
 [data-hook="trial-recap-later"]:hover {
