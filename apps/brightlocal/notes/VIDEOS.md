@@ -41,3 +41,20 @@ then chapters, then a closing card with the one thing to do.
 Overview first (it sells the rest), then Manager, then the hub, then the
 others. Each video is its own flow file so one can be re-rendered
 without the set.
+
+## Cut-scene cards
+
+`/cards/<slug>` renders a full-frame 16:9 card with no chrome, on the
+super-bright palette: persona cards (`persona-empty`, `persona-starter`,
+`persona-engaged`, `persona-multi`, `persona-agency`, `persona-lapsed`)
+and section cards (`beacon`, `hub`, `manager`, `tracker`, `builder`,
+`showcase`, `roadmap`, `account`, `tones`, `end`). `/cards` lists them.
+The recorder's `title` step navigates there; the same URL screenshotted
+at 1920x1080 is the Figma Slides frame. Content lives in lib/cards.ts.
+
+## The stitched master
+
+One long cut of everything, in the order above: overview, hub, Manager,
+Tracker, Builder, Showcase, roadmap, account, tones, end card. Built
+with join-sections from the nine renders so any one can be re-rendered
+alone. Chapters marked so Figma Slides can take it in pieces too.
