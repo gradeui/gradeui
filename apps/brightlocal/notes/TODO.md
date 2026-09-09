@@ -34,3 +34,16 @@ Open items in the order I would take them.
     counts (three mentions to name a theme, three months for a trend, a
     sibling or the survey for a comparison) so Beacon says what changed
     and why, not just the numbers.
+11. **Celebrate the firsts, and the seconds** (Ali, 11 Sep, last thing).
+    Milestones as moments: the first review replied to, the second review
+    site connected, the first campaign sent, the first showcase placed,
+    the twentieth review. Ray's register, the one place he is allowed to
+    fire. Each moment carries a "Did you know" about the very thing they
+    just did ("You've connected TripAdvisor. Did you know...") with a
+    citable source, or a Beacon insight on that connection from the rows
+    ("TripAdvisor is where your comparison reviews come from"). Always
+    imparting wisdom. Needs: a milestone detector over the rows plus a
+    session flag so each fires once, a small celebration surface (toast
+    or a strip variant with the confetti illustration), and a sourced
+    fact per milestone (the harvested site copy has the survey stats;
+    third-party numbers need a source before they go in).
