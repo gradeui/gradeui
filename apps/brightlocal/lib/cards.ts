@@ -37,6 +37,7 @@ const SECTION_CARDS: Record<string, Omit<CardSpec, "slug">> = {
   account: { kicker: "Section", title: "Subscription and pricing", line: "What the trial got you, what stops, and the way up.", surface: "var(--ds-tailwind-colors-neutral-950)", ink: "white", art: ["price", "offer"] },
   tones: { kicker: "Section", title: "Tones and dark", line: "Neutral, tinted, families, super bright, and the dark side of all of it.", surface: "var(--ds-tailwind-colors-violet-400)", ink: "black", art: ["idea", "tip"] },
   walkthrough: { kicker: "One location, one month", title: "What Beacon says, page by page", line: "Minus 1 Studios, eight months in. The same numbers on every screen.", surface: "var(--ds-tailwind-colors-green-500)", ink: "black", art: ["review", "stars"] },
+  popovers: { kicker: "Every one of them", title: "What Beacon says when you ask", line: "The eight dialogs, in order, with nothing else in the way.", surface: "var(--ds-tailwind-colors-violet-400)", ink: "black", art: ["idea", "tip"] },
   end: { kicker: "Beacon", title: "Someone sat next to you", line: "Telling you what to do about your reviews, in your own numbers.", surface: "var(--ds-tailwind-colors-neutral-950)", ink: "white", art: ["help", "support"] },
 };
 
