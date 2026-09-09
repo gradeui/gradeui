@@ -465,13 +465,20 @@ function ChartTabs({ stats, kinds }: { stats: ReviewStats; kinds: Drill[] }) {
   }, [paused, kinds]);
   return (
     <div
-      className="flex h-full flex-col gap-4 rounded-xl bg-[var(--ds-tailwind-colors-neutral-100)] p-6"
+      className="flex flex-col gap-4 rounded-xl bg-[var(--ds-tailwind-colors-neutral-100)] p-6"
       data-hook="review-summary-charts"
       onMouseEnter={() => setPaused(true)}
     >
-      {/* Neutral scale, not a tint (Ali, 11 Sep): the tabs will switch between
-          the three chart types full width, so the box is furniture, not a sell. */}
-      <p className="text-heading-subsection">The last six months</p>
+      {/* Neutral scale, not a tint (Ali, 11 Sep): the tabs switch between the
+          chart types full width. Same header format as every other column:
+          illustration left, title right (Ali: "the order looks weird"). */}
+      <div className="flex items-center gap-4">
+        <FactArt keywords={["velocity", "spike"]} />
+        <div className="flex flex-col gap-0.5">
+          <p className="text-label-sm text-muted-foreground">Infographic</p>
+          <p className="text-heading-section font-display">The last six months</p>
+        </div>
+      </div>
       <Tabs value={active} onValueChange={(v) => { setActive(v as Drill); setPaused(true); }} dataHook="review-summary-chart-tabs">
         <TabsList className="grid w-full bg-[var(--ds-tailwind-colors-neutral-200)]" style={{ gridTemplateColumns: `repeat(${kinds.length}, minmax(0, 1fr))` }} dataHook="review-summary-chart-tablist">
           {kinds.map((kind) => (
@@ -491,10 +498,6 @@ function ChartTabs({ stats, kinds }: { stats: ReviewStats; kinds: Drill[] }) {
           </TabsContent>
         ))}
       </Tabs>
-      <div className="mt-auto flex items-end justify-between gap-3 pt-2">
-        <p className="text-body-xs text-muted-foreground">{!paused && kinds.length > 1 ? "Cycling every few seconds. Hover to hold." : ""}</p>
-        <FactArt keywords={active === "velocity" ? ["velocity", "spike"] : active === "rating" ? ["rating", "star"] : ["trust", "good"]} large />
-      </div>
     </div>
   );
 }

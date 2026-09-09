@@ -36,11 +36,11 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
           : `Review velocity is down ${Math.abs(s.monthChangePct)}% on last month.`,
       line: starter
         ? [t("Your "), m(String(s.total)), t(" reviews so far all came from Google. The Tracker earns its keep once you're asking and more sources are connected.")]
-        : [
-            m(String(s.thisMonth), `Reviews received so far this month.`), t(" reviews so far this month, "), m(`${up ? "up" : "down"} ${Math.abs(s.monthChangePct)}%`, `Against ${s.lastMonth} in the whole of last month.`), t(` on the ${s.lastMonth} last month. `),
-            ...(s.spike ? [t("The spike on "), m(s.spike.date), t(` is your ${s.spike.campaign} ${s.spike.channel}. `)] : []),
-            t("Your "), m(s.recent.kind === "days" ? "last 30 days" : "last 20 reviews"), t(" average "), m(s.recent.rating), t(`. All time is `), m(s.rating), t("."),
-          ],
+        // No numbers in the line: the tiles beside it carry them (Ali, 11 Sep:
+        // "so many numbers it is untrue"). One idea, then the why.
+        : s.spike
+          ? [t(`Your ${s.spike.campaign} ${s.spike.channel} is the reason. Asking works, so the next one should already be in the diary. `), t(s.recent.ratingValue < s.ratingValue - 0.2 ? "The recent rating is running below your lifetime average, which is the number to watch." : "Your recent rating is holding up, which is the number that matters to the next customer.")]
+          : [t(up ? "More people are writing about you than last month. " : "Fewer people are writing about you than last month. "), t(s.recent.ratingValue < s.ratingValue - 0.2 ? "The recent rating is running below your lifetime average, which is the number to watch." : "Your recent rating is holding up, which is the number that matters to the next customer.")],
       tiles: [
         { value: `${up ? "+" : ""}${s.monthChangePct}%`, label: "review velocity vs last month" },
         { value: s.recent.rating, label: s.recent.kind === "days" ? "rating, last 30 days" : "rating, last 20 reviews" },
