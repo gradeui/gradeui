@@ -553,3 +553,13 @@
    were never generated (Ali, 11 Sep: "ILLUSTRATION COLOURS"). */
 .dark svg.dark\:hidden { display: none !important; }
 .dark svg.dark\:block { display: block !important; }
+/* The proposal module's InsightCard colours tactic labels green-700/900,
+   which vanishes on black. */
+.dark [data-hook="review-insights"] .text-\[var\(--ds-tailwind-colors-green-700\)\],
+.dark [data-hook="review-insights"] .text-\[var\(--ds-tailwind-colors-green-900\)\],
+.dark [data-hook="review-insights"] [data-slot="accordion-trigger"] span {
+  color: var(--foreground) !important;
+}
+.dark [data-hook="review-insights"] .bg-\[var\(--ds-tailwind-colors-green-100\)\] {
+  background: var(--muted) !important;
+}
