@@ -81,6 +81,19 @@ export const SITUATIONS: Situation[] = [
     },
   },
   {
+    id: "velocity-up",
+    title: "Velocity up after a campaign (the Tracker strip)",
+    facts: "Review velocity up 30% on last month. The Bank Holiday Visitors email caused the spike on 3 September. The recent rating is holding level with all time.",
+    kind: "good",
+    lines: {
+      keith: "Reviews are up 30% on last month. The email caused it. The rating has not moved.",
+      brian: "Review velocity is up 30% on last month. Your Bank Holiday Visitors email is the reason. Your recent rating is holding, which is the number the next customer sees.",
+      bea: "Review velocity is up 30% on last month, and your Bank Holiday Visitors email is why. Asking works, so the next one should already be in the diary. Your recent rating is holding up too, and that is the number that matters to the next customer.",
+      ray: "Up 30% on last month, and it was your Bank Holiday email that did it. That is proof asking works. Book the next one now while the rating is holding, and watch this chart do it again.",
+      buzz: "Thirty percent up on last month, pal, and it was that Bank Holiday email what did it. Told you asking works. Get the next one sent before you've finished your brew, and your rating's holding lovely by the way.",
+    },
+  },
+  {
     id: "trial-ending",
     title: "Three days left on the trial",
     facts: "Google connected. Four reviews found, three of them five stars. Nothing answered, nothing sent. Three free auto-replies unused.",
