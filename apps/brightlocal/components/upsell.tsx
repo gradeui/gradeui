@@ -84,7 +84,7 @@ export function UpsellStrip({
       </div>
       {layout === "column" && example ? (
         <div className="flex flex-col gap-3" data-hook={`${dataHook}-example`}>
-          <p className="text-heading-subsection">{example.business ? `Made for ${example.business}, from one of your own reviews` : "Made from one of your own reviews"}</p>
+          <p className="text-label-sm text-muted-foreground">{example.business ? `On one of ${example.business}'s own reviews` : "On one of your own reviews"}</p>
           <div className="flex flex-col gap-2 rounded-lg bg-[var(--ds-tailwind-colors-base-white)] p-4">
             <div className="flex items-center gap-2 text-body-sm">
               <Rating value={example.rating} dataHook={`${dataHook}-example-rating`} />
@@ -99,7 +99,6 @@ export function UpsellStrip({
             <p className="text-heading-subsection text-pretty">“{example.reply}”</p>
             <p className="text-body-sm text-muted-foreground">Sent as {example.site === "Google" ? "the owner" : "you"}, in your tone. Edit it once and every reply follows.</p>
           </div>
-          <p className="text-body-xs text-muted-foreground text-pretty">Only five-star Google reviews. Anything lower waits for a person.</p>
         </div>
       ) : null}
       <Button variant={trial ? "primary" : "outline"} size={layout === "column" ? "lg" : "sm"} dataHook={`${dataHook}-cta`} className={layout === "column" ? "w-fit" : "shrink-0"} onClick={() => { if (!trial) { modal.close(); router.push(SUBSCRIPTION_PATH); } }}>

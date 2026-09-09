@@ -107,7 +107,10 @@ export function BeaconModal() {
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6" key={`${section}-${page ?? "hub"}`}>
           {section === "plan" ? (
-            <ReviewInsights bare />
+            <div className="flex flex-col gap-2">
+              <ReviewInsights bare />
+              <ModalCta stats={stats} />
+            </div>
           ) : early ? (
             // Content left, the Did you know up the right (Ali, 10 Sep),
             // stacked on mobile. Early days: no charts to draw yet.

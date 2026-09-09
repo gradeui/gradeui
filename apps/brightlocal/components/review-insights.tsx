@@ -25,6 +25,7 @@ import { ArrowRight } from "@brightlocal/icons";
 import { FixItForMe } from "@/components/fix-it-for-me";
 import { FirstRunBand } from "@/components/first-run";
 import { StripArt } from "@/components/review-summary";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@brightlocal/ui-components/accordion";
 
 /** The green highlighter mark from the brand material, on a phrase. */
 function Mark({ text, mark }: { text: string; mark: string }) {
@@ -85,26 +86,82 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
             <Mark text={plan.goal.text} mark={plan.goal.mark} />
           </h2>
           <p className="text-foreground text-body max-w-prose text-pretty">{plan.lede}</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
-          </div>
+          {bare ? null : (
+            <div className="flex flex-wrap items-center gap-2">
+              <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
+            </div>
+          )}
         </div>
       </CardHeader>
       {plan.items.length > 0 ? (
         <CardContent className="flex flex-col gap-4">
-          <p className="flex items-center gap-2 text-heading-subsection" data-hook="review-insights-tactics">
-            <Target className="size-4" />
-            Key tactics
-          </p>
-          <div className="flex flex-col divide-y divide-[var(--ds-tailwind-colors-neutral-100)]">
-            {plan.items.map((item, i) => (
-              <div key={item.id} className={i === 0 ? "pb-6" : "py-6 last:pb-0"}>
-                <InsightCard item={item} />
+          {/* An accordion of one is a closed box for no reason: a single
+              tactic just shows (Ali, 12 Sep: "a lot happening"). */}
+          {bare && plan.items.length === 1 ? (
+            <div className="flex max-w-prose flex-col gap-3" data-hook="review-insights-tactic-single">
+              <p className="text-heading-subsection">{plan.items[0].title}</p>
+              <p className="text-body text-pretty">{plan.items[0].actionsSummary}</p>
+              <div className="flex flex-col gap-2">
+                {plan.items[0].actions.map((a, j) => (
+                  <div key={j} className="flex flex-col items-start gap-2 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-3">
+                    <p className="text-body-sm font-medium">{a.label}</p>
+                    {a.links[0] ? (
+                      <span data-grade-goto={a.links[0].goto}>
+                        <Button variant="outline" size="sm" dataHook={`tactic-single-${j}`}>
+                          {a.links[0].label}
+                          <ArrowRight className="size-4" />
+                        </Button>
+                      </span>
+                    ) : null}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-
-
+            </div>
+          ) : bare ? (
+            <Accordion type="multiple" dataHook="review-insights-tactics" className="w-full max-w-prose">
+              {plan.items.map((item) => (
+                <AccordionItem key={item.id} value={item.id}>
+                  <AccordionTrigger className="cursor-pointer text-left" data-hook={`review-insights-tactic-${item.id}`}>
+                    {item.title}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="flex flex-col gap-3 pb-2">
+                      <p className="text-body-sm text-pretty">{item.actionsSummary}</p>
+                      <div className="flex flex-col gap-2">
+                        {item.actions.map((a, j) => (
+                          <div key={j} className="flex flex-col items-start gap-2 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-3">
+                            <p className="text-body-sm font-medium">{a.label}</p>
+                            {a.links[0] ? (
+                              <span data-grade-goto={a.links[0].goto}>
+                                <Button variant="outline" size="sm" dataHook={`tactic-${item.id}-${j}`}>
+                                  {a.links[0].label}
+                                  <ArrowRight className="size-4" />
+                                </Button>
+                              </span>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          ) : (
+            <>
+              <p className="flex items-center gap-2 text-heading-subsection" data-hook="review-insights-tactics">
+                <Target className="size-4" />
+                Key tactics
+              </p>
+              <div className="flex flex-col divide-y divide-[var(--ds-tailwind-colors-neutral-100)]">
+                {plan.items.map((item, i) => (
+                  <div key={item.id} className={i === 0 ? "pb-6" : "py-6 last:pb-0"}>
+                    <InsightCard item={item} />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </CardContent>
       ) : null}
       </div>
