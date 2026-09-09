@@ -14,7 +14,9 @@ const nextConfig: NextConfig = {
   },
   // The proposal module is plain JSX (ds/*.jsx), aliased through
   // tsconfig paths. Next honours those for both bundlers.
-  devIndicators: { position: "bottom-right" },
+  // Off entirely: the badge lands in the corner of every recorded frame
+  // (Ali, 12 Sep: "I dont want to see the nextjs logos").
+  devIndicators: false,
   // The notes API reads notes/*.md at request time; make sure the
   // serverless bundle carries them.
   outputFileTracingIncludes: { "/api/notes": ["./notes/**/*"], "/docs/beacon-notes": ["./notes/**/*"] },
