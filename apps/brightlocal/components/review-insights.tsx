@@ -49,10 +49,10 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
   const candidate = reviewsFor(location, persona).find((r) => r.source === "google" && r.rating === 5 && r.status === "needs") ?? reviewsFor(location, persona).find((r) => r.source === "google" && r.rating === 5);
   const business = (DATASETS as Record<string, { location?: { name?: string } }>)[location]?.location?.name ?? location;
   const example = candidate
-    ? { name: candidate.name, site: "Google", rating: 5, text: candidate.text, reply: candidate.aiDraft.replace("{{firstname}}", candidate.name.split(" ")[0]).replace("{{businessname}}", business) }
+    ? { name: candidate.name, site: "Google", rating: 5, text: candidate.text, business, reply: candidate.aiDraft.replace("{{firstname}}", candidate.name.split(" ")[0]).replace("{{businessname}}", business) }
     : null;
   return (
-    <Card className={bare ? "w-full max-w-none rounded-none border-0 bg-transparent shadow-none" : "w-full max-w-none"} density="default" dataHook="review-insights">
+    <Card className={bare ? "w-full max-w-none gap-4 rounded-none border-0 bg-transparent py-0 shadow-none" : "w-full max-w-none"} density="default" dataHook="review-insights">
       {/* In the dialog the upsell is a column up the right (Ali, 10 Sep:
           "upsell on right, content on left"); on the hub it leads the card. */}
       <div className={bare && hasUpsell ? "grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-stretch" : undefined}>

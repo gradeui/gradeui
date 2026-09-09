@@ -34,7 +34,7 @@ export function UpsellStrip({
    *  an example of the service on the account's own review (Ali, 11 Sep:
    *  "sell the service, provide an example"). */
   layout?: "strip" | "column";
-  example?: { name: string; site: string; rating: number; text: string; reply: string } | null;
+  example?: { name: string; site: string; rating: number; text: string; reply: string; business?: string } | null;
   feature: string;
   benefit: string;
   /** What one credit buys, e.g. "auto-reply", and its plural. */
@@ -75,7 +75,7 @@ export function UpsellStrip({
       </div>
       {layout === "column" && example ? (
         <div className="flex flex-col gap-3" data-hook={`${dataHook}-example`}>
-          <p className="text-heading-subsection">What that looks like on one of yours</p>
+          <p className="text-heading-subsection">{example.business ? `On one of ${example.business}'s own reviews` : "On one of your own reviews"}</p>
           <div className="flex flex-col gap-2 rounded-lg bg-[var(--ds-tailwind-colors-base-white)] p-4">
             <div className="flex items-center gap-2 text-body-sm">
               <Rating value={example.rating} dataHook={`${dataHook}-example-rating`} />
