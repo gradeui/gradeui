@@ -47,3 +47,11 @@ Open items in the order I would take them.
     or a strip variant with the confetti illustration), and a sourced
     fact per milestone (the harvested site copy has the survey stats;
     third-party numbers need a source before they go in).
+12. **"Since you last visited"** (Ali, 11 Sep). A daily pass over the rows
+    with a few rules: what arrived since the last visit, what changed
+    (rating window, waiting count, a site that went quiet), and the one
+    milestone crossed if any. Surfaces as the first thing on the hub for a
+    returning user, in the recap's header format, and feeds the milestone
+    moments in item 11. Rules first, model second: the query is cheap and
+    deterministic, the wording is where the voices come in. Persona data
+    gives it a "last visit" date per persona to fake the gap.
