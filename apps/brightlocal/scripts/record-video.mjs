@@ -118,9 +118,14 @@ for (const [i, step] of flow.steps.entries()) {
   }
 
   if (step.card) {
-    await page.goto(`${BASE}/meta/cards/${step.card}`, { waitUntil: "networkidle", timeout: 90000 });
-    currentUrl = null;
-    onStage = false;
+    // Cards render INSIDE the stage: one document for the whole video, so a
+    // cut never navigates and never flashes white.
+    if (!onStage) {
+      await page.goto(stageUrl(flow.steps.find((x) => x.go)?.go ?? "/locations/minus-one-studios/reviews", bg, undefined), { waitUntil: "networkidle", timeout: 90000 });
+      onStage = true;
+      await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor({ timeout: 40000 }).catch(() => {});
+    }
+    await page.evaluate((slug) => window.__stage?.card(slug), step.card);
     await wait(step.ms ?? 2600);
     continue;
   }
@@ -133,7 +138,7 @@ for (const [i, step] of flow.steps.entries()) {
       await page.goto(stageUrl(step.go, bg, step.caption), { waitUntil: "networkidle", timeout: 90000 });
       onStage = true;
     } else {
-      await page.evaluate((next) => window.__stage?.set(next), { url: step.go, bg, caption: step.caption ?? undefined });
+      await page.evaluate((next) => window.__stage?.set(next), { url: step.go, bg, caption: step.caption ?? undefined, card: null });
     }
     currentUrl = step.go;
     await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor({ timeout: 40000 }).catch(() => {});

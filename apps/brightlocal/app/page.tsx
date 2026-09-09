@@ -15,10 +15,10 @@ export default function Home() {
       <header className="flex flex-col gap-3">
         <p className="text-muted-foreground text-sm">BrightLocal replatform prototype</p>
         <h1 className="text-3xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>
-          Reviews, rebuilt on the design system
+          Reviews
         </h1>
         <p className="text-muted-foreground max-w-prose">
-          A walkable prototype of the Reviews area on the published BrightLocal component
+          A prototype of the Reviews area on the published BrightLocal component
           library. Pick who you are, then press <kbd className="rounded border px-1.5 py-0.5 text-xs">Cmd K</kbd>{" "}
           anywhere to switch persona, layout or screen.
         </p>

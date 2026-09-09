@@ -17,17 +17,23 @@
 import * as React from "react";
 import { Logo } from "@brightlocal/ui-components";
 import { STAGES, CAPTION_BAND } from "@/lib/stage";
+import { CutSceneCard } from "@/components/cut-scene-card";
+import { cardFor } from "@/lib/cards";
 
 export interface StageState {
   url: string;
   bg: string;
   caption?: string;
+  /** A cut-scene card, rendered over the canvas. No navigation, so a cut
+   *  never flashes white (Ali, 12 Sep). */
+  card?: string | null;
 }
 
 declare global {
   interface Window {
     __stage?: {
       set: (next: Partial<StageState>) => void;
+      card: (slug: string | null) => void;
       reloadFrame: () => void;
       ready: () => boolean;
     };
@@ -40,6 +46,7 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
   const [scale, setScale] = React.useState(0);
   const frameRef = React.useRef<HTMLIFrameElement>(null);
   const stage = STAGES[state.bg] ?? STAGES.neutral;
+  const cardSpec = state.card ? cardFor(state.card) : undefined;
 
   React.useEffect(() => {
     const fit = () => {
@@ -60,6 +67,7 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
         if (next.url && next.url !== state.url) setReady(false);
         setState((s) => ({ ...s, ...next }));
       },
+      card: (slug) => setState((s) => ({ ...s, card: slug })),
       reloadFrame: () => {
         setReady(false);
         const el = frameRef.current;
@@ -123,6 +131,16 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
         data-ink={stage.ink === "var(--ds-tailwind-colors-base-white)" ? "white" : "black"}
         className="absolute bottom-10 left-12 h-9 w-auto"
       />
+      {/* The cut-scene card sits over the whole canvas and cross-fades, so a
+          cut costs no navigation and shows no white. */}
+      <div
+        data-hook="stage-card"
+        aria-hidden={!cardSpec}
+        className="pointer-events-none absolute inset-0"
+        style={{ opacity: cardSpec ? 1 : 0, transition: "opacity 360ms ease-out" }}
+      >
+        {cardSpec ? <CutSceneCard card={cardSpec} /> : null}
+      </div>
     </main>
   );
 }
