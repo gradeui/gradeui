@@ -19,6 +19,7 @@ import { Sparkles, Info, LoaderCircle } from "@brightlocal/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightlocal/ui-components/popover";
 import { GlobeyCalmOpen1 } from "@brightlocal/illustrations";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, Bar, BarChart, XAxis, Cell } from "@brightlocal/ui-components/chart";
+import { LabelList, YAxis } from "recharts";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
@@ -118,10 +119,16 @@ export function DrillChart({ stats, kind }: { stats: ReviewStats; kind: Drill })
           : `${mo.fourPlusPct}% of that month's reviews were four stars or above.`,
   }));
   const config = { value: { label: kind === "velocity" ? "Reviews" : kind === "rating" ? "Rating" : "Four stars or above" } };
+  // THE NUMBERS SIT ON THE BARS, not in the prose (Ali, 11 Sep). A floor on
+  // the rating and four-plus axes so six near-identical months show their
+  // differences: ratings live between 3 and 5, four-plus between 50 and 100.
+  const domain: [number, number] | undefined = kind === "rating" ? [3, 5] : kind === "fourPlus" ? [50, 100] : undefined;
+  const fmt = (v: unknown) => (kind === "rating" ? Number(v).toFixed(1) : kind === "fourPlus" ? `${v}%` : String(v));
   return (
-    <ChartContainer config={config} className="h-28 w-full" dataHook={`beacon-chart-${kind}`}>
-      <BarChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }} barCategoryGap={6}>
+    <ChartContainer config={config} className="h-32 w-full" dataHook={`beacon-chart-${kind}`}>
+      <BarChart data={data} margin={{ top: 18, right: 0, left: 0, bottom: 0 }} barCategoryGap={6}>
         <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} fontSize={12} />
+        <YAxis hide domain={domain} />
         <ChartTooltip
           cursor={false}
           content={
@@ -136,6 +143,7 @@ export function DrillChart({ stats, kind }: { stats: ReviewStats; kind: Drill })
           {data.map((d, i) => (
             <Cell key={d.month} fill={i === data.length - 1 ? "var(--ds-tailwind-colors-green-500)" : "var(--ds-tailwind-colors-neutral-200)"} />
           ))}
+          <LabelList dataKey="value" position="top" fontSize={12} formatter={fmt} className="fill-foreground" />
         </Bar>
       </BarChart>
     </ChartContainer>
@@ -151,9 +159,12 @@ export function drillCopy(stats: ReviewStats, kind: Drill): string {
     return `${last.count} reviews so far this month against ${prev.count} in ${prev.label}. Your busiest month was ${peak.label} with ${peak.count}${stats.spike ? `, and this month's spike on ${stats.spike.date} came from your ${stats.spike.campaign} ${stats.spike.channel}` : ""}. Volume and cadence over time is the number that tells you whether asking is working.`;
   }
   if (kind === "rating") {
-    return `Month by month, new reviews averaged ${m.map((x) => x.rating || "none").join(", ")}. The lifetime average hardly moves. This is where you see change first.`;
+    const first = m.find((x) => x.rating);
+    const dir = first && last.rating ? (Number(last.rating) < Number(first.rating) - 0.1 ? "has slipped since" : Number(last.rating) > Number(first.rating) + 0.1 ? "has climbed since" : "has held steady since") : "is";
+    return `The average of each month's new reviews ${dir} ${first?.label ?? "the spring"}. The lifetime average hardly moves. This is where you see change first.`;
   }
-  return `The share of four-star-and-above reviews was ${m.map((x) => `${x.fourPlusPct}%`).join(", ")} across the six months. A dip here shows up in the rating weeks later.`;
+  const lowest = m.reduce((a, b) => (b.fourPlusPct < a.fourPlusPct ? b : a), m[0]);
+  return `${lowest.label} was the weakest month for four-star-and-above reviews. A dip here shows up in the rating weeks later.`;
 }
 
 function TellMeMore({ stats, kind, label, lines }: { stats: ReviewStats; kind: Drill; label: string; lines: { segments: Segment[] }[] }) {
@@ -268,7 +279,7 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
         </dl>
         )}
       </div>
-      {full && !persona.engagement.startsWith("new") ? <SummaryCharts stats={stats} /> : null}
+      {full && !bare && !persona.engagement.startsWith("new") ? <SummaryCharts stats={stats} /> : null}
     </section>
   );
 }
@@ -429,13 +440,30 @@ export function isEarlyDays(stats: ReviewStats): boolean {
   return stats.months.filter((m) => m.count > 0).length < 3;
 }
 
-export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"] }: { stats: ReviewStats; kinds?: Drill[] }) {
+export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"], stacked = false }: { stats: ReviewStats; kinds?: Drill[]; stacked?: boolean }) {
   // A six-month chart needs six months. With fewer than three months of
   // data (Ali, 10 Sep: "if you only have one month of data, think what
   // timeline is worthy of it") the dialog shows the reviews it actually
   // has, and a sourced "Did you know" with the ask, instead of empty bars.
   const monthsWithData = stats.months.filter((m) => m.count > 0).length;
   if (monthsWithData < 3) return <EarlyReviewsList stats={stats} />;
+  // STACKED: the dialog's right column, an infographic on a tint (Ali, 11
+  // Sep: "stack those charts vertically on some kind of background, treat
+  // that stuff like an additional infographic insight").
+  if (stacked) {
+    return (
+      <div className="flex flex-col gap-6 rounded-xl bg-[var(--ds-tailwind-colors-sky-100)] p-6" data-hook="review-summary-charts">
+        <p className="text-heading-subsection">The last six months</p>
+        {kinds.map((kind) => (
+          <div key={kind} className="flex flex-col gap-2">
+            <p className="text-label-sm font-semibold uppercase tracking-wide">{kind === "rating" ? "Rating" : kind === "velocity" ? "Review velocity" : "Four stars or above"}</p>
+            <DrillChart stats={stats} kind={kind} />
+            <p className="text-body-sm text-pretty">{drillCopy(stats, kind)}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className={`mt-6 grid gap-4 border-t pt-6 ${kinds.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`} data-hook="review-summary-charts">
       {kinds.map((kind) => (

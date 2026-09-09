@@ -115,22 +115,22 @@ export function BeaconModal() {
                 <DidYouKnowPanel stats={stats} page={page} />
               </div>
             </div>
-          ) : page ? (
-            // From a page: that page's block and the charts, nothing that
-            // restates it (Ali, 9 Sep: "Stacked!").
-            <div className="flex flex-col gap-2">
-              <BeaconPageBlock page={page} />
-              {/* Each page gets the charts it is about (Ali, 9 Sep). */}
-              <SummaryCharts
-                stats={stats}
-                kinds={page === "builder" ? ["velocity", "fourPlus"] : page === "showcase" ? ["rating", "fourPlus"] : ["rating", "velocity", "fourPlus"]}
-              />
-              <ModalCta stats={stats} page={page} />
-            </div>
           ) : (
-            <div className="flex flex-col gap-2">
-              <ReviewSummary full bare />
-              <ModalCta stats={stats} />
+            // Rich data: content left, the six-month charts stacked up the
+            // right as an infographic (Ali, 11 Sep). Each page gets the
+            // charts it is about (Ali, 9 Sep).
+            <div className="grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-start">
+              <div className="flex flex-col gap-2">
+                {page ? <BeaconPageBlock page={page} /> : <ReviewSummary full bare tilesRow />}
+                <ModalCta stats={stats} page={page} />
+              </div>
+              <div className="lg:sticky lg:top-0 lg:self-start">
+                <SummaryCharts
+                  stats={stats}
+                  stacked
+                  kinds={page === "builder" ? ["velocity", "fourPlus"] : page === "showcase" ? ["rating", "fourPlus"] : ["rating", "velocity", "fourPlus"]}
+                />
+              </div>
             </div>
           )}
         </div>
