@@ -18,6 +18,10 @@ export interface PageBeacon {
   tiles: { value: string; label: string }[];
   /** The one thing to do about it. `path` is relative to the location. */
   cta?: { label: string; path: string };
+  /** Dialog only (Ali, 11 Sep: "going to full screen, we would add more
+   *  text"): what is behind the number, what to watch, the one thing to
+   *  do. The strip never shows it. */
+  more?: string;
 }
 
 const t = (text: string): Segment => ({ kind: "text", text });
@@ -47,6 +51,11 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
         { value: `${s.fourPlusPct}%`, label: "four stars or above this month" },
       ],
       cta: starter ? { label: "Send your first campaign", path: "reviews/builder?view=wizard" } : { label: "See the reviews behind this", path: "reviews/manager" },
+      more: starter
+        ? "Four reviews is a start, not a trend. Once you are asking, this page shows whether the asks are landing: how many arrive each month, what they average, and which review sites they come from. Until then the only number that matters is the next one in."
+        : s.spike
+          ? `Most of the spike landed in the two days after the ${s.spike.channel} went out, which is the normal shape: people review while the visit is fresh. The recent rating is the one to keep an eye on, because a busy month with a slipping average means the new customers are not having the same day out the old ones did. If it holds, send the next campaign to the customers you have not asked yet.`
+          : "Volume is the honest measure of whether asking works. Watch the recent rating alongside it: more reviews at a lower average is a warning, more reviews at the same average is growth.",
     };
   }
 
@@ -70,6 +79,11 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
         { value: s.spike ? s.spike.date : "none", label: "last spike" },
       ],
       cta: { label: s.running === 0 || starter ? "Create a campaign" : "Get a campaign ready for next month", path: "reviews/builder?view=wizard" },
+      more: starter
+        ? "Email reaches the customers you already have an address for. SMS gets read within minutes. A QR code by the till catches people while they are still smiling. Pick one, send it to a handful of happy customers, and watch what comes back before you build anything bigger."
+        : s.running === 0
+          ? "Every campaign that has run so far produced a visible bump within a week. Nothing running means the count relies on customers who review unprompted, and most never do. One campaign to last month's happy customers is the smallest thing that changes this chart."
+          : "Reviews come in the days after an ask and then fade, so a campaign a month keeps the recent window full. Rotate the audience: the people you asked last time have already said their piece.",
     };
   }
 
@@ -88,6 +102,9 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
       { value: `${s.fourPlusPct}%`, label: "four stars or above this month" },
     ],
     cta: { label: "Pick the reviews to show", path: "reviews/manager" },
+    more: starter
+      ? "A showcase is a small block of your best reviews that sits on your own website, refreshed as new ones arrive. It is ready now, and it fills itself from the reviews you choose. Three five-star reviews is enough to start."
+      : "The people reading reviews on your own site are the ones deciding right now, and they never open Google to check. The showcase updates itself as new reviews arrive, so once it is placed it stays current without you. Pick the six that say what you want the booking page to say.",
   };
 }
 

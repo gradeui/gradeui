@@ -443,6 +443,8 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
           <Seg key={j} s={sg} />
         ))}
       </p>
+      {/* The dialog earns its size: the paragraph the strip never shows. */}
+      {b.more ? <p className="text-body text-muted-foreground max-w-[60ch] text-pretty" data-hook={`beacon-page-more-${page}`}>{b.more}</p> : null}
     </div>
   );
 }
