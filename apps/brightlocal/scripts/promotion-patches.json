@@ -174,6 +174,30 @@
     {
       "find": "import { ReviewSummaryStrip, BeaconChip } from \"@/components/review-summary\";",
       "replace": "import { ReviewSummaryStrip, BeaconChip } from \"@/components/review-summary\";\nimport { QrBanner } from \"@/components/qr-banner\";"
+    },
+    {
+      "find": "        {card.beacon ? <BeaconChip text={card.beacon} dataHook={`${card.hook}-beacon`} /> : null}\n      </CardContent>",
+      "replace": "        {card.beacon ? <BeaconChip text={card.beacon} dataHook={`${card.hook}-beacon`} /> : null}\n        {/* A starter's next step lives in the card it belongs to (Ali, 11 Sep),\n            in place of a separate guide. */}\n        {card.step ? (\n          <div className=\"flex flex-col gap-2 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-3\" data-hook={`${card.hook}-step`}>\n            <p className=\"text-sm font-medium\">{card.step.done ? \"Done: \" : \"Next: \"}{card.step.title}</p>\n            <p className=\"text-muted-foreground text-sm\">{card.step.detail}</p>\n            <span className=\"w-fit\" data-grade-goto={card.step.goto} onClick={(e) => e.stopPropagation()}>\n              <Button variant={card.step.done ? \"outline\" : \"primary\"} size=\"sm\" dataHook={`${card.hook}-step-cta`}>\n                {card.step.cta}\n                <ArrowRight className=\"size-4\" />\n              </Button>\n            </span>\n          </div>\n        ) : null}\n      </CardContent>"
+    },
+    {
+      "find": "  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(stats);",
+      "replace": "  const cards = (starter ? STARTER_HUB_CARDS : hubCardsFor(stats)).map((card) =>\n    starter ? { ...card, step: STEPS.find((s) => s.id === STEP_CARD[card.hook]) ?? null } : card,\n  );"
+    },
+    {
+      "find": "          {starter ? <StarterGuide /> : null}\n",
+      "replace": "          {/* The guide is folded into the cards for a starter (Ali, 11 Sep). */}\n"
+    },
+    {
+      "find": "          {stats.campaignsAll === 0 ? <QrBanner /> : null}\n",
+      "replace": ""
+    },
+    {
+      "find": "          <BeaconNugget page=\"hub\" />\n        </GlobalLayoutContentBody>",
+      "replace": "          <BeaconNugget page=\"hub\" />\n          {/* The QR code sits at the foot for an account that has not asked\n              yet (Ali, 11 Sep: \"meaningful and fun for a fresh starter, it\n              ties them in to the service\"). */}\n          {stats.campaignsAll === 0 ? <QrBanner /> : null}\n        </GlobalLayoutContentBody>"
+    },
+    {
+      "find": "import { StarterGuide } from \"@/components/starter-guide\";",
+      "replace": "import { STEPS, STEP_CARD } from \"@/components/starter-guide\";"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [

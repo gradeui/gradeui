@@ -35,7 +35,7 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
 import { statsFor } from "@/lib/reviews-data";
-import { StarterGuide } from "@/components/starter-guide";
+import { STEPS, STEP_CARD } from "@/components/starter-guide";
 import { ReviewSummaryStrip, BeaconChip } from "@/components/review-summary";
 import { QrBanner } from "@/components/qr-banner";
 import { BeaconNugget } from "@/components/beacon-nugget";
@@ -227,6 +227,20 @@ function HubCard({ card }) {
           <span className="text-muted-foreground text-sm">{card.headlineLabel}</span>
         </p>
         {card.beacon ? <BeaconChip text={card.beacon} dataHook={`${card.hook}-beacon`} /> : null}
+        {/* A starter's next step lives in the card it belongs to (Ali, 11 Sep),
+            in place of a separate guide. */}
+        {card.step ? (
+          <div className="flex flex-col gap-2 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-3" data-hook={`${card.hook}-step`}>
+            <p className="text-sm font-medium">{card.step.done ? "Done: " : "Next: "}{card.step.title}</p>
+            <p className="text-muted-foreground text-sm">{card.step.detail}</p>
+            <span className="w-fit" data-grade-goto={card.step.goto} onClick={(e) => e.stopPropagation()}>
+              <Button variant={card.step.done ? "outline" : "primary"} size="sm" dataHook={`${card.hook}-step-cta`}>
+                {card.step.cta}
+                <ArrowRight className="size-4" />
+              </Button>
+            </span>
+          </div>
+        ) : null}
       </CardContent>
       {/* The breakdown is one row, not a stack: three short key/value pairs
           fit across a half-width card, and stacking them would make the card
@@ -253,7 +267,9 @@ export default function ReviewsPage() {
   const starter = persona.engagement === "new";
   const locationKey = useLocationKey();
   const stats = statsFor(locationKey, persona);
-  const cards = starter ? STARTER_HUB_CARDS : hubCardsFor(stats);
+  const cards = (starter ? STARTER_HUB_CARDS : hubCardsFor(stats)).map((card) =>
+    starter ? { ...card, step: STEPS.find((s) => s.id === STEP_CARD[card.hook]) ?? null } : card,
+  );
   // The smallest Beacon size on the two cards it can say something about.
   const chips = {
     "reviews-hub-inbox": reviewPlanFor(stats, persona).goal.short,
@@ -299,14 +315,17 @@ export default function ReviewsPage() {
       >
         <GlobalLayoutContentBody dataHook="reviews-page-body" className="space-y-6 pb-10">
           <ReviewSummaryStrip />
-          {starter ? <StarterGuide /> : null}
-          {stats.campaignsAll === 0 ? <QrBanner /> : null}
+          {/* The guide is folded into the cards for a starter (Ali, 11 Sep). */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {cards.map((card) => (
               <HubCard key={card.hook} card={{ ...card, beacon: chips[card.hook] }} />
             ))}
           </div>
           <BeaconNugget page="hub" />
+          {/* The QR code sits at the foot for an account that has not asked
+              yet (Ali, 11 Sep: "meaningful and fun for a fresh starter, it
+              ties them in to the service"). */}
+          {stats.campaignsAll === 0 ? <QrBanner /> : null}
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

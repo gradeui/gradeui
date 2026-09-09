@@ -13,7 +13,17 @@ import { Progress } from "@brightlocal/ui-components/progress";
 import { Button } from "@brightlocal/ui-components/button";
 import { Check, ArrowRight } from "@brightlocal/icons";
 
-const STEPS = [
+/** Which hub card each step lives in when the guide is folded into the
+ *  cards (Ali, 11 Sep: "these small items can also live in the cards with
+ *  0 numbers"). */
+export const STEP_CARD: Record<string, string> = {
+  "reviews-hub-insights": "connect",
+  "reviews-hub-inbox": "reply",
+  "reviews-hub-get": "ask",
+  "reviews-hub-widgets": "show",
+};
+
+export const STEPS = [
   {
     id: "connect",
     title: "Connect your review sources",
