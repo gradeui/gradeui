@@ -81,6 +81,47 @@ export default function SubscriptionPage() {
             ) : null}
           </section>
 
+          {/* THE UPGRADE PATH (Ali, 11 Sep): the ladder from where this account
+              stands, each step saying what it adds and what that means for
+              this account's own numbers. On a trial everything is on, so the
+              path reads as where you land when it ends. */}
+          <section className="flex flex-col gap-4" data-hook="upgrade-path">
+            <div className="flex flex-col gap-1">
+              <p className="text-heading-section font-display">{trial ? "Where you land when the trial ends" : lapsed ? "Pick up where you left off" : currentPlan ? "Your plan, and what the others add" : "The upgrade path"}</p>
+              <p className="text-body-sm text-muted-foreground max-w-[64ch] text-pretty">{trial ? "The trial runs on Grow. Choose the step that fits, and everything below that step stays." : "Each step keeps everything from the one before it."}</p>
+            </div>
+            <ol className="grid gap-3 lg:grid-cols-3">
+              {PLANS.map((plan, i) => {
+                const isCurrent = currentPlan === plan.id;
+                const unlocks =
+                  plan.id === "track"
+                    ? "See where you rank and where your listings are wrong."
+                    : plan.id === "manage"
+                      ? "AI insights on top of that, and your business details kept right everywhere."
+                      : stats.needReply > 0
+                        ? `Your ${stats.needReply} waiting reviews answered, campaigns to ask for more, and ${stats.fiveStar} five-star reviews ready for your website.`
+                        : "Every review in one inbox, campaigns to ask for more, and your best reviews on your website.";
+                return (
+                  <li key={plan.id} className={`relative flex flex-col gap-3 rounded-[20px] p-5 ${isCurrent ? "bg-[var(--ds-tailwind-colors-neutral-950)] text-[var(--ds-tailwind-colors-base-white)]" : "bg-[var(--ds-tailwind-colors-neutral-100)]"}`} data-hook={`upgrade-step-${plan.id}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`inline-flex size-7 items-center justify-center rounded-full text-label-sm font-semibold ${isCurrent ? "bg-[var(--ds-tailwind-colors-base-white)] text-[var(--ds-tailwind-colors-neutral-950)]" : "border"}`}>{i + 1}</span>
+                      <span className="text-label-sm font-semibold uppercase tracking-wide">{plan.name}</span>
+                      <span className={`ml-auto text-label-sm ${isCurrent ? "opacity-70" : "text-muted-foreground"}`}>{isCurrent ? "You are here" : `$${plan.price}/mo`}</span>
+                    </div>
+                    <p className={`text-body ${isCurrent ? "" : ""}`}>{plan.strap}</p>
+                    <p className={`text-body-sm text-pretty ${isCurrent ? "opacity-80" : "text-muted-foreground"}`}>{unlocks}</p>
+                    {!isCurrent && (currentPlan === null || PLANS.findIndex((p) => p.id === currentPlan) < i) ? (
+                      <Button variant={plan.id === "grow" ? "primary" : "outline"} size="sm" dataHook={`upgrade-step-${plan.id}-cta`} className="mt-auto w-fit" onClick={() => router.push(`/account/subscription?chosen=${plan.id}`)}>
+                        {trial ? `Land on ${plan.name}` : lapsed ? `Come back on ${plan.name}` : `Upgrade to ${plan.name}`}
+                        <ArrowRight className="size-4" />
+                      </Button>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+
           <div className="grid gap-4 lg:grid-cols-3">
             {PLANS.map((plan) => {
               const isCurrent = currentPlan === plan.id;

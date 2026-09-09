@@ -1,0 +1,36 @@
+# Todo (queued 11 Sep 2026, evening)
+
+Open items in the order I would take them.
+
+1. **Beacon voice setting.** An in-page setting (Cmd+K and /settings) that
+   sets the default voice: auto (register per line, as now), Brian, Bea or
+   Ray. The per-line variants already exist in lib/review-summary.ts, so
+   the setting picks the variant where one exists and falls back to the
+   base line. Keith and Buzz stay fixtures.
+2. **Easter egg, part three.** Extend the hover/click author to the page
+   strips (lib/beacon-pages.ts lines) and the plan items, not just the
+   summary lines.
+3. **Globey scene assets.** The full-body Globey scenes (magnifying glass
+   and friends) are not in @brightlocal/illustrations 0.6.0. Drop the SVGs
+   into public/globey/ and swap the stand-ins (QR banner, first-run band,
+   dialog headers). lib/illustrations.ts is the meaning catalogue.
+4. **Subscription page, second pass.** The plan CTAs route to
+   ?chosen=<plan> and do nothing else. Decide what "Choose Grow" does in
+   the prototype (a confirmation state, a fake checkout, or a persona
+   switch to engaged). The half-price win-back is a proposal, not a
+   BrightLocal offer.
+5. **Other Insights & Actions areas.** Website, Google Business Profile,
+   Citations and Export are still skeletons. The Reviews roadmap page is
+   the template.
+6. **Dark mode sweep.** Every bespoke surface now has a dark rule, but the
+   Tracker page body, the Builder wizard and the Showcase widgets were not
+   checked in dark. Rule: use the DS semantic pairs, never raw ramp colours.
+7. **Badge treatment pick.** Eight options at /docs/beacon, none chosen.
+8. **Motion.** The DS entrance tokens are on the chart-tab reveal only.
+   Stagger the dialog's headline, copy and column on open.
+9. **Review sites vs sources.** New copy says review sites; the Tracker's
+   Report Settings and the older Beacon lines still say sources. Pick one.
+10. **Theme engine.** For the large personas, a theme engine with mention
+    counts (three mentions to name a theme, three months for a trend, a
+    sibling or the survey for a comparison) so Beacon says what changed
+    and why, not just the numbers.
