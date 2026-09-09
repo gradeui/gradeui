@@ -57,7 +57,11 @@ export function UpsellStrip({
       <div className={layout === "column" ? "flex min-w-0 flex-col gap-2" : "flex min-w-0 flex-1 flex-col gap-1"}>
         {/* The upsell's own badge type: outlined like the Beacon badge,
             a lock, foreground text. The solid black read far too strong. */}
-        <div className="flex items-start justify-between gap-3">
+        <div className={layout === "column" ? "flex items-center gap-4" : "flex items-start justify-between gap-3"}>
+          {/* The dialog header's format (Ali, 11 Sep): illustration left, badge and
+              headline right, so the column starts tight and does not scroll. */}
+          {layout === "column" ? <UpsellArt feature={feature} /> : null}
+          <div className={layout === "column" ? "flex flex-col gap-1.5" : "contents"}>
           {/* In the column the Pro badge goes hard: black, white text (Ali, 11 Sep). */}
           <span className={layout === "column"
             ? "text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2.5 py-1 font-semibold text-[var(--ds-tailwind-colors-base-white)]"
@@ -65,9 +69,9 @@ export function UpsellStrip({
             <Lock className={layout === "column" ? "size-3" : "size-3 text-muted-foreground"} />
             {feature} is part of Pro
           </span>
-          {layout === "column" ? <UpsellArt feature={feature} /> : null}
+          {layout === "column" ? <p className="text-heading-section font-display text-balance">Let the easy ones answer themselves.</p> : null}
+          </div>
         </div>
-        {layout === "column" ? <p className="text-heading-section font-display text-balance">Let the easy ones answer themselves.</p> : null}
         <p className={layout === "column" ? "text-body text-foreground text-pretty" : "text-body-sm text-foreground"}>
           {benefit}
           {trial ? ` Your trial includes ${trial.credits} free ${trial.credits === 1 ? creditsLabel : (creditsPlural ?? `${creditsLabel}s`)}, so try one now.` : ""}
@@ -87,7 +91,7 @@ export function UpsellStrip({
           {/* The reply is the hero (Ali, 11 Sep: "make more of the reply"). */}
           <div className="flex flex-col gap-3 rounded-lg border-2 border-foreground bg-[var(--ds-tailwind-colors-base-white)] p-5">
             <p className="flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]"><Sparkles className="size-3.5" />Beacon's reply, an hour later</p>
-            <p className="text-heading-section font-display text-balance">“{example.reply}”</p>
+            <p className="text-heading-subsection text-pretty">“{example.reply}”</p>
             <p className="text-body-sm text-muted-foreground">Sent as {example.site === "Google" ? "the owner" : "you"}, in your tone. Edit it once and every reply follows.</p>
           </div>
           <p className="text-body-xs text-muted-foreground text-pretty">Only five-star Google reviews. Anything lower waits for a person.</p>
