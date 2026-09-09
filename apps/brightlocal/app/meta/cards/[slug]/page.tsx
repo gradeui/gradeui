@@ -11,6 +11,7 @@ import { cardFor, CARDS } from "@/lib/cards";
 import { pickIllustration } from "@/lib/illustrations";
 import { BeaconBadge } from "@/components/review-summary";
 import Link from "next/link";
+import { Logo } from "@brightlocal/ui-components";
 
 export default function CardPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -32,20 +33,21 @@ export default function CardPage({ params }: { params: Promise<{ slug: string }>
   return (
     <main
       data-hook={`card-${card.slug}`}
-      className="flex min-h-screen w-full items-center justify-center"
+      className="relative flex min-h-screen w-full items-center justify-center"
       style={{ background: card.surface, color: ink }}
     >
       <div className="flex w-[min(92vw,1400px)] items-center gap-16">
-        <Art className="size-[28vh] shrink-0" />
+        <Art className="size-[24rem] shrink-0" />
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-4">
-            <span className="rounded-sm border px-2 py-0.5 text-label-sm" style={{ borderColor: ink }}>Beacon <span className="ml-1 opacity-70">Beta</span></span>
-            <span className="text-label-sm font-semibold uppercase tracking-widest opacity-80">{card.kicker}</span>
+            <span className="rounded-md border-2 px-3 py-1 text-[1.5rem] font-semibold" style={{ borderColor: ink }}>Beacon <span className="ml-2 opacity-70">Beta</span></span>
+            <span className="text-stage-kicker opacity-80">{card.kicker}</span>
           </div>
-          <h1 className="font-display text-[7vh] leading-[1.05] tracking-tight text-balance">{card.title}</h1>
-          <p className="max-w-[28ch] text-[2.6vh] leading-snug text-pretty opacity-90">{card.line}</p>
+          <h1 className="text-stage-title text-balance">{card.title}</h1>
+          <p className="text-stage-line max-w-[26ch] text-pretty opacity-90">{card.line}</p>
         </div>
       </div>
+      <Logo dataHook="stage-logo" data-ink={card.ink === "white" ? "white" : "black"} className="absolute bottom-10 left-12 h-9 w-auto" />
     </main>
   );
 }

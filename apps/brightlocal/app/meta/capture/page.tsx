@@ -19,6 +19,7 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
+import { Logo } from "@brightlocal/ui-components";
 
 const STAGES: Record<string, { bg: string; ink: string }> = {
   neutral: { bg: "var(--ds-tailwind-colors-neutral-100)", ink: "var(--ds-tailwind-colors-neutral-950)" },
@@ -58,7 +59,7 @@ function CaptureStage() {
     <main
       data-hook="capture-stage"
       data-ready={size ? "true" : "false"}
-      className="flex h-screen w-screen flex-col items-center justify-center overflow-hidden"
+      className="relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden"
       style={{ background: stage.bg, color: stage.ink, gap: caption ? 40 : 0 }}
     >
       <div
@@ -87,10 +88,17 @@ function CaptureStage() {
         />
       </div>
       {caption ? (
-        <p data-hook="capture-caption" className="font-display max-w-[40ch] text-center text-[2.6vh] leading-snug text-balance">
+        <p data-hook="capture-caption" className="text-stage-caption max-w-[32ch] text-center text-balance">
           {caption}
         </p>
       ) : null}
+      {/* The mono logotype, bottom left, so every frame is branded without
+          competing with the product inside the frame. */}
+      <Logo
+        dataHook="stage-logo"
+        data-ink={stage.ink === "var(--ds-tailwind-colors-base-white)" ? "white" : "black"}
+        className="absolute bottom-10 left-12 h-9 w-auto"
+      />
     </main>
   );
 }

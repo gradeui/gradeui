@@ -635,3 +635,50 @@
     animation: none !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   STAGE TYPE (Ali, 12 Sep: "match the text size to something"). The
+   capture stage and the cut-scene cards are 1920x1080 canvases holding a
+   1280-wide app, so stage type is the DS scale multiplied by that ratio
+   (1.5) rather than a vh guess. Every size below is a real DS step times
+   a whole number.
+   ════════════════════════════════════════════════════════════════════ */
+@utility text-stage-caption {
+  /* text-display (36/40) at stage scale. */
+  font-family: var(--font-display);
+  font-size: 3.375rem;
+  line-height: 1.2;
+  font-weight: var(--ds-font-weight-semibold, 600);
+}
+@utility text-stage-title {
+  /* text-display x 3: a full-frame card title. */
+  font-family: var(--font-display);
+  font-size: 6.75rem;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  font-weight: var(--ds-font-weight-semibold, 600);
+}
+@utility text-stage-line {
+  /* text-body (16/24) x 2.25, the supporting line under a card title. */
+  font-family: var(--font-sans);
+  font-size: 2.25rem;
+  line-height: 1.35;
+}
+@utility text-stage-kicker {
+  /* text-label-sm x 2, the eyebrow. */
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: var(--ds-font-weight-semibold, 600);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* The BrightLocal logotype in mono: black on a light stage, white on a
+   dark one. The DS Logo paints its own brand green, so it is filtered. */
+[data-hook="stage-logo"] {
+  filter: grayscale(1) brightness(0);
+}
+[data-hook="stage-logo"][data-ink="white"] {
+  filter: grayscale(1) brightness(0) invert(1);
+}
