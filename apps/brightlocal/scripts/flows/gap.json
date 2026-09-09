@@ -1,0 +1,21 @@
+{
+  "name": "the-gap",
+  "w": 1280, "h": 900, "bg": "violet", "tone": "tinted", "persona": "multi",
+  "steps": [
+    { "card": "persona-multi", "ms": 3000 },
+    { "go": "/locations/harbour-co-hove/reviews", "bg": "violet", "caption": "Hove looks fine. The lifetime rating is 4.4.", "ms": 3200 },
+    { "caption": "But the lifetime number cannot move. The last thirty days can.", "ms": 3200 },
+    { "click": "[data-hook=review-summary-strip-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 4200 },
+    { "caption": "Two of the last ten reviews name Brighton as the standard.", "ms": 4000 },
+    { "key": "Escape", "ms": 900 },
+    { "card": "manager", "ms": 2400 },
+    { "go": "/locations/harbour-co-hove/reviews/manager", "bg": "violet", "caption": "So the plan is about one branch, not the brand.", "ms": 3000 },
+    { "click": "[data-hook=review-plan-strip-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 4200 },
+    { "key": "Escape", "ms": 900 },
+    { "card": "tracker", "ms": 2400 },
+    { "go": "/locations/harbour-co-hove/reviews/tracker", "bg": "sky", "caption": "The recent window is the number to watch.", "ms": 3000 },
+    { "click": "[data-hook=beacon-strip-tracker-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 5200 },
+    { "key": "Escape", "ms": 900 },
+    { "card": "end", "ms": 3000 }
+  ]
+}
