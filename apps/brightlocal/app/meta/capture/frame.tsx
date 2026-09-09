@@ -47,6 +47,9 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
   // in, or you see the bare canvas in between: fade out, gap, fade back in
   // (Ali, 12 Sep). The card is cleared by the effect below, not by set().
   const clearCardWhenReady = React.useRef(false);
+  // Card to card is a straight cut (Ali, 12 Sep). Only the move between a
+  // card and a screen cross-fades.
+  const cardWasUp = React.useRef(false);
   const [scale, setScale] = React.useState(0);
   const frameRef = React.useRef<HTMLIFrameElement>(null);
   const stage = STAGES[state.bg] ?? STAGES.neutral;
@@ -86,6 +89,8 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
     };
     return () => { delete window.__stage; };
   }, [state.url, ready]);
+
+  React.useEffect(() => { cardWasUp.current = Boolean(state.card); }, [state.card]);
 
   // Cross-fade: the card goes only once the screen behind it is up.
   React.useEffect(() => {
@@ -168,7 +173,7 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
         data-hook="stage-card"
         aria-hidden={!cardSpec}
         className="pointer-events-none absolute inset-0"
-        style={{ opacity: cardSpec ? 1 : 0, transition: "opacity 520ms ease-out" }}
+        style={{ opacity: cardSpec ? 1 : 0, transition: cardWasUp.current ? "none" : "opacity 520ms ease-out" }}
       >
         {cardSpec ? <CutSceneCard card={cardSpec} /> : null}
       </div>

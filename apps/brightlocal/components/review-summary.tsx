@@ -235,7 +235,11 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
   const location = useLocationKey();
   const stats = statsFor(location, persona);
   const summary = reviewSummaryFor(stats, persona.engagement === "new");
-  const cardLines = full ? summary.lines : summary.lines.filter((line) => !line.slot).slice(0, 2);
+  // THREE PARAGRAPHS IS A WALL (Ali, 12 Sep: "the text on the left here is
+  // mental"). The dialog leads with the two lines that are not already a
+  // tile; the rest stay behind each tile's Tell me more, which is where
+  // they were designed to live.
+  const cardLines = (full ? [...summary.lines.filter((l) => !l.slot), ...summary.lines.filter((l) => l.slot)] : summary.lines.filter((line) => !line.slot)).slice(0, 2);
   const drillFor = (label: string): Drill | null =>
     label.startsWith("rating") ? "rating" : label.includes("velocity") ? "velocity" : label.includes("four stars") ? "fourPlus" : null;
   return (
