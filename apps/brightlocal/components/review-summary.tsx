@@ -62,7 +62,7 @@ export function BeaconBadge({ dataHook = "beacon-badge", beta = false }: { dataH
   const inner = (
     <>
       Beacon
-      {beta ? <span className="text-muted-foreground border-l pl-1.5">Beta</span> : null}
+      {beta ? <span className="text-muted-foreground border-l border-current/25 pl-1.5">Beta</span> : null}
     </>
   );
   const cls = "text-label-sm inline-flex items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-foreground";
