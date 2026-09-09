@@ -96,8 +96,8 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
   React.useEffect(() => {
     if (!ready || !clearCardWhenReady.current) return;
     clearCardWhenReady.current = false;
-    const t = setTimeout(() => setState((s) => ({ ...s, card: null })), 120);
-    return () => clearTimeout(t);
+    // The screen behind is already up, so the card leaves on the same frame.
+    setState((s) => ({ ...s, card: null }));
   }, [ready]);
 
   return (
@@ -173,7 +173,9 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
         data-hook="stage-card"
         aria-hidden={!cardSpec}
         className="pointer-events-none absolute inset-0"
-        style={{ opacity: cardSpec ? 1 : 0, transition: cardWasUp.current ? "none" : "opacity 520ms ease-out" }}
+        // Cards cut, they never blend: two full-frame images fading through
+        // each other reads as murk (Ali, 12 Sep).
+        style={{ opacity: cardSpec ? 1 : 0 }}
       >
         {cardSpec ? <CutSceneCard card={cardSpec} /> : null}
       </div>

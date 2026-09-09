@@ -1,25 +1,93 @@
 {
   "name": "day-one-to-habit",
-  "w": 1280, "h": 900, "bg": "sky", "tone": "tinted", "persona": "empty",
+  "w": 1280,
+  "h": 900,
+  "bg": "sky",
+  "tone": "tinted",
+  "persona": "empty",
   "steps": [
-    { "card": "persona-empty", "ms": 3000 },
-    { "go": "/locations/minus-one-studios/reviews", "bg": "sky", "caption": "No reviews, no sites connected, nothing to summarise.", "ms": 3400 },
-    { "caption": "So it says why it matters, with a number you can cite.", "ms": 3400 },
-    { "scrollBy": 620, "ms": 1600 },
-    { "caption": "And one thing to do today: a code for the till.", "ms": 3200 },
-    { "card": "persona-starter", "ms": 2600 },
-    { "persona": "starter" },
-    { "go": "/locations/minus-one-studios/reviews", "bg": "yellow", "caption": "A week in. Four reviews, and a chart that will not lie about them.", "recap": true, "ms": 4400 },
-    { "go": "/locations/minus-one-studios/reviews/tracker", "bg": "yellow", "caption": "Too few for a trend, so it lists them instead.", "ms": 2800 },
-    { "click": "[data-hook=beacon-strip-tracker-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 4200 },
-    { "key": "Escape", "ms": 900 },
-    { "card": "persona-engaged", "ms": 2600 },
-    { "persona": "engaged" },
-    { "go": "/locations/minus-one-studios/reviews/tracker", "bg": "green", "caption": "Eight months in, and now the six months mean something.", "ms": 2800 },
-    { "click": "[data-hook=beacon-strip-tracker-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 5200 },
-    { "key": "Escape", "ms": 900 },
-    { "card": "roadmap", "ms": 2400 },
-    { "go": "/locations/minus-one-studios/ai-insights/reviews", "bg": "green", "caption": "Make reviews a habit, not a project.", "ms": 4200 },
-    { "card": "end", "ms": 3000 }
+    {
+      "card": "persona-empty",
+      "ms": 3000
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews",
+      "bg": "sky",
+      "caption": "No reviews, no sites connected, nothing to summarise.",
+      "ms": 3400
+    },
+    {
+      "caption": "So it says why it matters, with a number you can cite.",
+      "ms": 3400
+    },
+    {
+      "scrollBy": 620,
+      "ms": 1600
+    },
+    {
+      "caption": "And one thing to do today: a code for the till.",
+      "ms": 3200
+    },
+    {
+      "card": "persona-starter",
+      "ms": 2600
+    },
+    {
+      "persona": "starter"
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews",
+      "bg": "yellow",
+      "caption": "A week in. Four reviews, and a chart that will not lie about them.",
+      "recap": true,
+      "ms": 4400
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews/tracker",
+      "bg": "yellow",
+      "caption": "Too few for a trend, so it lists them instead.",
+      "ms": 2800
+    },
+    {
+      "click": "[data-hook=beacon-strip-tracker-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 4200
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "card": "persona-engaged",
+      "ms": 2600
+    },
+    {
+      "persona": "engaged"
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews/tracker",
+      "bg": "green",
+      "caption": "Eight months in, and now the six months mean something.",
+      "ms": 2800
+    },
+    {
+      "click": "[data-hook=beacon-strip-tracker-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 5200
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "card": "roadmap",
+      "ms": 2400
+    },
+    {
+      "go": "/locations/minus-one-studios/ai-insights/reviews",
+      "bg": "green",
+      "caption": "Make reviews a habit, not a project.",
+      "ms": 4200
+    }
   ]
 }

@@ -1,21 +1,77 @@
 {
   "name": "the-trial",
-  "w": 1280, "h": 900, "bg": "yellow", "tone": "tinted", "persona": "starter",
+  "w": 1280,
+  "h": 900,
+  "bg": "yellow",
+  "tone": "tinted",
+  "persona": "starter",
   "steps": [
-    { "card": "persona-starter", "ms": 3000 },
-    { "go": "/locations/minus-one-studios/reviews", "bg": "yellow", "caption": "Three days left.", "recap": true, "ms": 4600 },
-    { "go": "/locations/minus-one-studios/reviews/manager", "bg": "yellow", "caption": "Four reviews in, none answered.", "ms": 2800 },
-    { "click": "[data-hook=review-plan-strip-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 3600 },
-    { "caption": "This is the reply auto-reply would have sent, on one of their own reviews.", "ms": 4400 },
-    { "key": "Escape", "ms": 900 },
-    { "card": "account", "ms": 2400 },
-    { "go": "/account/subscription", "bg": "black", "caption": "What the trial got them, and what stops.", "ms": 4200 },
-    { "scrollBy": 520, "ms": 1600 },
-    { "dwell": 2600 },
-    { "card": "persona-lapsed", "ms": 2600 },
-    { "persona": "lapsed" },
-    { "go": "/locations/minus-one-studios/reviews", "bg": "yellow", "caption": "Nine days later. Four more reviews, nobody watching.", "recap": true, "ms": 4600 },
-    { "go": "/account/subscription", "bg": "black", "caption": "So the win-back says exactly that.", "ms": 4000 },
-    { "card": "end", "ms": 3000 }
+    {
+      "card": "persona-starter",
+      "ms": 3000
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews",
+      "bg": "yellow",
+      "caption": "Three days left.",
+      "recap": true,
+      "ms": 4600
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews/manager",
+      "bg": "yellow",
+      "caption": "Four reviews in, none answered.",
+      "ms": 2800
+    },
+    {
+      "click": "[data-hook=review-plan-strip-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 3600
+    },
+    {
+      "caption": "This is the reply auto-reply would have sent, on one of their own reviews.",
+      "ms": 4400
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "card": "account",
+      "ms": 2400
+    },
+    {
+      "go": "/account/subscription",
+      "bg": "black",
+      "caption": "What the trial got them, and what stops.",
+      "ms": 4200
+    },
+    {
+      "scrollBy": 520,
+      "ms": 1600
+    },
+    {
+      "dwell": 2600
+    },
+    {
+      "card": "persona-lapsed",
+      "ms": 2600
+    },
+    {
+      "persona": "lapsed"
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews",
+      "bg": "yellow",
+      "caption": "Nine days later. Four more reviews, nobody watching.",
+      "recap": true,
+      "ms": 4600
+    },
+    {
+      "go": "/account/subscription",
+      "bg": "black",
+      "caption": "So the win-back says exactly that.",
+      "ms": 4000
+    }
   ]
 }
