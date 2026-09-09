@@ -70,10 +70,7 @@
     {
       "key": "Escape",
       "ms": 3200
-    },
-    {
-      "card": "end",
-      "ms": 3400
     }
-  ]
+  ],
+  "postroll": "end"
 }

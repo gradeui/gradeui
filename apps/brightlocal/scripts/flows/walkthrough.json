@@ -1,0 +1,36 @@
+{
+  "name": "beacon-walkthrough",
+  "w": 1280, "h": 900, "bg": "neutral", "tone": "tinted", "persona": "engaged",
+  "preroll": "walkthrough",
+  "postroll": "end",
+  "steps": [
+    { "go": "/locations/minus-one-studios/reviews", "bg": "violet", "caption": "The hub. One trend per card, and what to do first.", "ms": 3600 },
+    { "click": "[data-hook=review-summary-strip-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 3400 },
+    { "caption": "Each finding is a line you can open, then the thing that fixes it.", "ms": 2600 },
+    { "click": "[data-hook=review-summary-more-0]", "ms": 3600 },
+    { "key": "Escape", "ms": 900 },
+
+    { "card": "manager", "ms": 2400 },
+    { "go": "/locations/minus-one-studios/reviews/manager", "bg": "violet", "caption": "The inbox, and this week's goal above it.", "ms": 3200 },
+    { "click": "[data-hook=review-plan-strip-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 3600 },
+    { "caption": "The plan, with the reply auto-reply would have sent on one of their own reviews.", "ms": 4200 },
+    { "key": "Escape", "ms": 900 },
+
+    { "card": "tracker", "ms": 2400 },
+    { "go": "/locations/minus-one-studios/reviews/tracker", "bg": "sky", "caption": "The trend, and what moved it.", "ms": 3000 },
+    { "click": "[data-hook=beacon-strip-tracker-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 4400 },
+    { "dwell": 4200 },
+    { "key": "Escape", "ms": 900 },
+
+    { "card": "builder", "ms": 2400 },
+    { "go": "/locations/minus-one-studios/reviews/builder", "bg": "yellow", "caption": "Asking is the only thing that moves the count.", "ms": 3600 },
+
+    { "card": "showcase", "ms": 2400 },
+    { "go": "/locations/minus-one-studios/reviews/showcase", "bg": "green", "caption": "And the best of them belong on your own website.", "ms": 3600 },
+
+    { "card": "roadmap", "ms": 2400 },
+    { "go": "/locations/minus-one-studios/ai-insights/reviews", "bg": "green", "caption": "All of it as a plan, three stages at a time.", "ms": 3400 },
+    { "scrollBy": 700, "ms": 1800 },
+    { "dwell": 2600 }
+  ]
+}

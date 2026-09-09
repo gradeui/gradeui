@@ -44,6 +44,10 @@ const ffmpeg = requireDocs("ffmpeg-static");
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, "").split("=")));
 const flow = JSON.parse(fs.readFileSync(args.flow, "utf8"));
+// Top and tail: a flow names its own pre-roll and post-roll cards, so every
+// video opens and closes the same way without repeating steps in each file.
+if (flow.preroll) flow.steps.unshift({ card: flow.preroll, ms: flow.prerollMs ?? 3000 });
+if (flow.postroll) flow.steps.push({ card: flow.postroll, ms: flow.postrollMs ?? 3400 });
 const BASE = args.base ?? "http://localhost:3020";
 const W = flow.w ?? 1280;
 const H = flow.h ?? 900;
