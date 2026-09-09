@@ -72,6 +72,10 @@
       "bg": "black",
       "caption": "So the win-back says exactly that.",
       "ms": 4000
+    },
+    {
+      "card": "end",
+      "ms": 3400
     }
   ]
 }

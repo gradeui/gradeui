@@ -88,6 +88,10 @@
       "bg": "green",
       "caption": "Make reviews a habit, not a project.",
       "ms": 4200
+    },
+    {
+      "card": "end",
+      "ms": 3400
     }
   ]
 }

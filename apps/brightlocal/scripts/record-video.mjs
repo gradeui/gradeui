@@ -219,6 +219,8 @@ await ctx.close();
 await browser.close();
 
 const mp4 = path.join(outDir, `${args.out ?? flow.name}.mp4`);
-execFileSync(ffmpeg, ["-y", "-i", videoPath, "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30", mp4], { stdio: "inherit" });
+// -ss 0.7: the browser paints one white frame before the first document
+// does, and it is always at the head (Ali, 12 Sep).
+execFileSync(ffmpeg, ["-y", "-ss", "0.7", "-i", videoPath, "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30", mp4], { stdio: "inherit" });
 fs.writeFileSync(path.join(outDir, "flow.json"), JSON.stringify(flow, null, 2));
 console.log(`\n${mp4}`);

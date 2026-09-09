@@ -36,7 +36,7 @@ const SECTION_CARDS: Record<string, Omit<CardSpec, "slug">> = {
   roadmap: { kicker: "Section", title: "Insights & Actions", line: "The next three months, one stage at a time.", surface: "var(--ds-tailwind-colors-sky-400)", ink: "black", art: ["habit", "win"] },
   account: { kicker: "Section", title: "Subscription and pricing", line: "What the trial got you, what stops, and the way up.", surface: "var(--ds-tailwind-colors-neutral-950)", ink: "white", art: ["price", "offer"] },
   tones: { kicker: "Section", title: "Tones and dark", line: "Neutral, tinted, families, super bright, and the dark side of all of it.", surface: "var(--ds-tailwind-colors-violet-400)", ink: "black", art: ["idea", "tip"] },
-  end: { kicker: "The prototype", title: "See it for yourself", line: "brightlocal-replatform.gradeui.com", surface: "var(--ds-tailwind-colors-green-500)", ink: "black", art: ["celebrate", "milestone"] },
+  end: { kicker: "Beacon", title: "Someone sat next to you", line: "Telling you what to do about your reviews, in your own numbers.", surface: "var(--ds-tailwind-colors-neutral-950)", ink: "white", art: ["help", "support"] },
 };
 
 export const CARDS: CardSpec[] = [
