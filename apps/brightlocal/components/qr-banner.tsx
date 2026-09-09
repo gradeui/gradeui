@@ -27,6 +27,12 @@ import { Download, Printer, QrCode } from "@brightlocal/icons";
 import { useLocationKey } from "@/lib/location";
 import { DATASETS } from "@brightlocal/data";
 import { STATS } from "@/lib/first-run";
+import { HandSearchMagnifyingGlass } from "@brightlocal/illustrations";
+
+// SWAP POINT: Ali wants the full-body "Globey with a magnifying glass" scene
+// here. It is not in @brightlocal/illustrations 0.6.0; drop the SVG into
+// public/globey/ and replace this stand-in.
+const BannerArt = HandSearchMagnifyingGlass;
 
 const SAMPLE_PLACE_ID = "ChIJN1t_tDeuEmsRUsoyG83frY4"; // sample, see header
 const INK = "#111412";
@@ -95,7 +101,8 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
   };
   const fact = STATS.twenty;
   return (
-    <section data-hook="qr-banner" className={`flex flex-col gap-5 overflow-hidden rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] lg:flex-row lg:items-center ${compact ? "px-5 py-4" : "px-6 py-5"}`}>
+    // Promo cards vary their accent (Ali, 11 Sep): this one is sky, the sells are yellow.
+    <section data-hook="qr-banner" className={`flex flex-col gap-5 overflow-hidden rounded-[20px] bg-[var(--ds-tailwind-colors-sky-100)] lg:flex-row lg:items-center ${compact ? "px-5 py-4" : "px-6 py-5"}`}>
       {/* Tap the code for the generator, a proper dialog (Ali, 11 Sep: "hover
           interaction is weird"): preview and edit. */}
       <Dialog open={open} onOpenChange={setOpen}>
@@ -144,7 +151,10 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
         </DialogContent>
       </Dialog>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <p className="flex items-center gap-2 text-heading-subsection"><QrCode className="size-4" />Set up a QR code</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-center gap-2 text-heading-subsection"><QrCode className="size-4" />Set up a QR code</p>
+          {compact ? <BannerArt className="size-12 shrink-0" /> : null}
+        </div>
         <p className="text-body-sm text-pretty">
           This code opens your review page. Put it on the till, the receipt, the menu or the door, and customers can leave a review while it is still fresh. Free, and ready now. Tap the code to preview and edit it.
         </p>
@@ -169,8 +179,9 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
           banner's edge (Ali, 10 Sep: "a scaled live offset widget, basically
           like a live banner"). */}
       {compact ? null : (
-        <div className="relative hidden h-40 w-72 shrink-0 lg:block" aria-hidden>
-          <div className="absolute -bottom-24 left-0 origin-top-left rotate-[-4deg] scale-[0.62] shadow-lg">
+        <div className="relative hidden h-40 w-96 shrink-0 lg:block" aria-hidden>
+          <BannerArt className="absolute left-0 top-1/2 size-28 -translate-y-1/2" />
+          <div className="absolute -bottom-24 left-28 origin-top-left rotate-[-4deg] scale-[0.62] shadow-lg">
             <QrCard svg={svg} caption={caption} name={name} link={link} />
           </div>
         </div>

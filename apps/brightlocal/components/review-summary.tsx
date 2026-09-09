@@ -285,6 +285,10 @@ export function ReviewSummaryStrip() {
   const summary = reviewSummaryFor(stats, persona.engagement === "new");
   const lead = summary.lines.find((line) => !line.slot);
   if (persona.engagement === "empty") return <FirstRunBand page="hub" />;
+  // A small data set gets the guide and the nugget, not a summary strip
+  // on top (Ali, 11 Sep: "a bit much, just the getting started with a small
+  // did you know").
+  if (persona.engagement === "new") return null;
   return (
     <section
       data-hook="review-summary-strip"
