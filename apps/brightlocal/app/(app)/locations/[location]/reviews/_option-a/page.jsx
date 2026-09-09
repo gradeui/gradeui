@@ -321,7 +321,8 @@ export default function ReviewsPage() {
               <HubCard key={card.hook} card={{ ...card, beacon: chips[card.hook] }} />
             ))}
           </div>
-          <BeaconNugget page="hub" />
+          {/* No general nugget on the hub (Ali, 11 Sep): only quick, meaningful
+              actions live at the foot. */}
           {/* The QR code sits at the foot for an account that has not asked
               yet (Ali, 11 Sep: "meaningful and fun for a fresh starter, it
               ties them in to the service"). */}

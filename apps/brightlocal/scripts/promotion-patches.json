@@ -198,6 +198,10 @@
     {
       "find": "import { StarterGuide } from \"@/components/starter-guide\";",
       "replace": "import { STEPS, STEP_CARD } from \"@/components/starter-guide\";"
+    },
+    {
+      "find": "          <BeaconNugget page=\"hub\" />\n          {/* The QR code sits at the foot",
+      "replace": "          {/* No general nugget on the hub (Ali, 11 Sep): only quick, meaningful\n              actions live at the foot. */}\n          {/* The QR code sits at the foot"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [
