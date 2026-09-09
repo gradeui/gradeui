@@ -548,3 +548,8 @@
 .dark [data-hook="qr-banner"] {
   color: var(--foreground);
 }
+/* The DS illustrations render a light and a dark twin with dark:hidden and
+   dark:block, but that package sits outside Tailwind's scan, so the classes
+   were never generated (Ali, 11 Sep: "ILLUSTRATION COLOURS"). */
+.dark svg.dark\:hidden { display: none !important; }
+.dark svg.dark\:block { display: block !important; }
