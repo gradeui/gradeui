@@ -21,6 +21,15 @@ then chapters, then a closing card with the one thing to do.
 | 8 | Account and pricing | starter (3 days left) → lapsed (win-back) → engaged (upgrade ladder) | recap modal on switch |
 | 9 | Tones and dark | engaged in neutral → tinted → families → super bright → dark | the settings switch, Cmd+K |
 
+## The cast
+
+Three personas carry the section videos (Ali, 12 Sep): the trial
+(`starter`), the engaged single location (`engaged`) and the
+multi-location brand (`multi`). That is the trial story, the everyday
+story and the comparison story, and it keeps each render short. The
+overview alone runs all six, because the empty account, the agency and
+the lapsed trial are each one scene there and nowhere else.
+
 ## Production
 
 - Recorder: a flow runner for the standalone app, not the Studio share
@@ -44,11 +53,11 @@ without the set.
 
 ## Cut-scene cards
 
-`/cards/<slug>` renders a full-frame 16:9 card with no chrome, on the
+`/meta/cards/<slug>` renders a full-frame 16:9 card with no chrome, on the
 super-bright palette: persona cards (`persona-empty`, `persona-starter`,
 `persona-engaged`, `persona-multi`, `persona-agency`, `persona-lapsed`)
 and section cards (`beacon`, `hub`, `manager`, `tracker`, `builder`,
-`showcase`, `roadmap`, `account`, `tones`, `end`). `/cards` lists them.
+`showcase`, `roadmap`, `account`, `tones`, `end`). `/meta/cards` lists them.
 The recorder's `title` step navigates there; the same URL screenshotted
 at 1920x1080 is the Figma Slides frame. Content lives in lib/cards.ts.
 

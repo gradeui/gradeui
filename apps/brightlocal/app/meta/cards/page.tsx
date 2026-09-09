@@ -12,7 +12,7 @@ export default function CardsIndex() {
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {CARDS.map((c) => (
           <li key={c.slug}>
-            <Link href={`/cards/${c.slug}`} className="flex aspect-video flex-col justify-end gap-1 rounded-xl p-4 transition-shadow hover:shadow-md" style={{ background: c.surface, color: c.ink === "white" ? "var(--ds-tailwind-colors-base-white)" : "var(--ds-tailwind-colors-neutral-950)" }}>
+            <Link href={`/meta/cards/${c.slug}`} className="flex aspect-video flex-col justify-end gap-1 rounded-xl p-4 transition-shadow hover:shadow-md" style={{ background: c.surface, color: c.ink === "white" ? "var(--ds-tailwind-colors-base-white)" : "var(--ds-tailwind-colors-neutral-950)" }}>
               <span className="text-label-sm font-semibold uppercase tracking-widest opacity-80">{c.kicker}</span>
               <span className="text-heading-subsection">{c.title}</span>
             </Link>

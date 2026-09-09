@@ -21,7 +21,7 @@ export default function CardPage({ params }: { params: Promise<{ slug: string }>
         <p className="text-heading-page">Cards</p>
         <ul className="flex flex-col gap-1">
           {CARDS.map((c) => (
-            <li key={c.slug}><Link className="underline underline-offset-4" href={`/cards/${c.slug}`}>{c.slug}</Link></li>
+            <li key={c.slug}><Link className="underline underline-offset-4" href={`/meta/cards/${c.slug}`}>{c.slug}</Link></li>
           ))}
         </ul>
       </div>
