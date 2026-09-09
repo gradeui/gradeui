@@ -97,6 +97,16 @@ Where they surface:
 | Page strips | the headline | the line, plus `more` in the dialog |
 | The plan | the tactic title | `actionsSummary` behind the accordion |
 
+Each finding is then three parts, never two (Ali, 12 Sep: "there is the
+why, and then the action to fix it"):
+
+1. the prompt, one line, scannable
+2. the why, with the numbers, in its register
+3. the fix: one sentence and the button that does it (`SummaryLine.fix`)
+
+A finding without a fix is an observation, and observations are what make
+a dashboard feel useless.
+
 `SummaryLine.prompt` in lib/review-summary.ts is required in practice: a
 line without one falls back to "More on this", which is a copy bug, not a
 feature.

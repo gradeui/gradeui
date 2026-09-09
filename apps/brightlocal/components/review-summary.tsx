@@ -23,6 +23,7 @@ import { LabelList, YAxis } from "recharts";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@brightlocal/ui-components/tabs";
 import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
+import { DATASETS } from "@brightlocal/data";
 import { statsFor } from "@/lib/reviews-data";
 import { useBeaconModal } from "@/lib/beacon-modal";
 import { reviewsFor } from "@/lib/reviews-data";
@@ -234,6 +235,7 @@ function TellMeMore({ stats, kind, label, lines }: { stats: ReviewStats; kind: D
 export function ReviewSummary({ full = false, bare = false, tilesRow = false }: { full?: boolean; bare?: boolean; tilesRow?: boolean }) {
   const persona = usePersona();
   const location = useLocationKey();
+  const { close } = useBeaconModal();
   const stats = statsFor(location, persona);
   const summary = reviewSummaryFor(stats, persona.engagement === "new");
   // THREE PARAGRAPHS IS A WALL (Ali, 12 Sep: "the text on the left here is
@@ -288,7 +290,21 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
                     {line.prompt ?? "More on this"}
                   </AccordionTrigger>
                   <AccordionContent>
-                    <VoiceLine line={line} index={100 + i} />
+                    <div className="flex flex-col gap-3 pb-2">
+                      <VoiceLine line={line} index={100 + i} />
+                      {/* The why, then the thing that fixes it (Ali, 12 Sep). */}
+                      {line.fix ? (
+                        <div className="flex flex-col items-start gap-2 rounded-lg bg-[var(--ds-tailwind-colors-neutral-50)] p-3">
+                          <p className="text-body-sm">{line.fix.text}</p>
+                          <span data-grade-goto={line.fix.goto} onClick={() => close()}>
+                            <Button variant="outline" size="sm" dataHook={`review-summary-fix-${i}`}>
+                              {line.fix.label}
+                              <ArrowRight className="size-4" />
+                            </Button>
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -516,6 +532,8 @@ const KIND_LABEL: Record<Drill, string> = { rating: "Rating", velocity: "Review 
  *  moment the reader hovers or picks a tab. Past months in white on the
  *  tint. The reveal uses the DS entrance motion tokens. */
 function ChartTabs({ stats, kinds }: { stats: ReviewStats; kinds: Drill[] }) {
+  const location = useLocationKey();
+  const locationName = (DATASETS as Record<string, { location?: { name?: string } }>)[location]?.location?.name ?? "This location";
   const [active, setActive] = React.useState<Drill>(kinds[0]);
   const [paused, setPaused] = React.useState(false);
   React.useEffect(() => {
@@ -535,7 +553,7 @@ function ChartTabs({ stats, kinds }: { stats: ReviewStats; kinds: Drill[] }) {
       <div className="flex items-center gap-4">
         <FactArt keywords={["velocity", "spike"]} />
         <div className="flex flex-col gap-0.5">
-          <p className="text-label-sm text-muted-foreground">Infographic</p>
+          <p className="text-label-sm text-muted-foreground">{locationName}</p>
           <p className="text-heading-section font-display">The last six months</p>
         </div>
       </div>

@@ -77,7 +77,11 @@ export function BeaconModal() {
       <DialogContent
         dataHook="beacon-modal"
         data-beacon-section={section}
-        className="flex max-h-[94vh] w-[min(96vw,1400px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,1400px)]"
+        // A CONSISTENT SHAPE (Ali, 12 Sep: "some kind of min-ratio, this
+        // looks imbalanced"). 1120 is the width at which the two columns
+        // sit at 3:2 with the text column holding ~60 characters, which is
+        // what every other Beacon surface reads at.
+        className="flex max-h-[94vh] w-[min(94vw,1120px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(94vw,1120px)]"
       >
         <div className="flex shrink-0 items-start justify-between gap-6 border-b px-6 py-5" data-hook="beacon-modal-header">
           {/* The trial recap's header format (Ali, 10 Sep: "a lovely header

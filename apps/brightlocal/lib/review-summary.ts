@@ -35,6 +35,9 @@ export interface SummaryLine {
    *  Four findings stacked is a wall (Ali, 12 Sep), so a long summary
    *  becomes an accordion: prompts you can scan, detail you choose. */
   prompt?: string;
+  /** The why is only half of it (Ali, 12 Sep): every finding ends in the
+   *  one thing that fixes it, and the tool that does it. */
+  fix?: { text: string; label: string; goto: string };
   register?: Register;
   slot?: Slot;
 }
@@ -84,6 +87,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
       tone: "bad",
       slot: "rating",
       prompt: "Why your recent rating sits below your all-time average",
+      fix: { text: "Answer every one and two star review this week: the recent window is the one that moves.", label: "Open the low reviews", goto: "screen:dmsxf5zjggd0n" },
       segments: [t(`Your ${winLabel} average `), m(win.rating, "bad", `The average of the ${win.count} star ratings in your ${winLabel}.`), t(" against "), m(s.rating, "neutral", `The average of all ${s.total.toLocaleString("en-GB")} star ratings, ever. It barely moves.`), t(" all time. That gap is the number to watch, and the one you can move.")],
       register: "brian",
       variants: {
@@ -97,6 +101,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
       tone: "bad",
       slot: "rating",
       prompt: `What customers are comparing ${s.compare.self} with`,
+      fix: { text: `Go and see what ${s.compare.label} does differently, then answer the reviews that named it.`, label: "See the reviews", goto: "screen:dmsxf5zjggd0n" },
       segments: [
         m(String(s.compare.mentions), "bad", `Reviews in your last ${s.lastN} whose text names the ${s.compare.label} branch.`), t(` of your last ${s.lastN} reviews compare ${s.compare.self} with your ${s.compare.label} branch, and not kindly. ${s.compare.label} is on `), m(s.compare.siblingRecentRating, "good"), t(` for the same period. ${s.compare.self} is on `), m(win.rating, "bad"), t(". Same brand, different experience: that is worth a visit."),
       ],
@@ -111,6 +116,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     lines.push({
       tone: "bad",
       prompt: "The run of low reviews, and what they have in common",
+      fix: { text: "Reply to each of them this week, shortest first.", label: "Open Review Manager", goto: "screen:dmsxf5zjggd0n" },
       segments: [
         t("Out of your last "), m(String(r.lastN), "neutral", "Your most recent reviews across every connected source."), t(" reviews, "), m(String(r.lowCount), "bad", `Reviews at ${r.lowStar} stars or lower, or a Facebook thumbs down. They are at the top of Review Manager.`), t(` were ${r.lowStar} stars or lower.`),
         ...(r.theme && !r.theme.good ? [t(" The thing they keep mentioning is "), m(r.theme.text, "bad"), t(".")] : []),
@@ -137,6 +143,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
     lines.push({
       tone: "neutral",
       prompt: "The low reviews in your last ten",
+      fix: { text: "Answer them, then move on. A reply is what the next reader sees.", label: "Open Review Manager", goto: "screen:dmsxf5zjggd0n" },
       segments: [t("Out of your last "), m(String(r.lastN)), t(" reviews, "), m(String(r.lowCount), "bad"), t(` ${r.lowCount === 1 ? "was" : "were"} ${r.lowStar} stars or lower`), ...(r.theme && !r.theme.good ? [t(", about "), m(r.theme.text, "bad"), t(".")] : [t(".")])],
       register: "brian",
       variants: {
@@ -152,6 +159,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
       tone: "good",
       slot: "velocity",
       prompt: "Why more people are writing about you this month",
+      fix: { text: "Get the next campaign in the diary while the last one is still working.", label: "Create a campaign", goto: "screen:dmt094j963aye" },
       segments: [
         t("Your review velocity is up: "), m(`${r.monthChangePct}% more`, "good", `${s.thisMonth} reviews so far this month against ${s.lastMonth} in the whole of last month.`), t(" reviews this month than last."),
         ...(r.spike
@@ -172,6 +180,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
       tone: "bad",
       slot: "velocity",
       prompt: "Why fewer people are writing about you this month",
+      fix: { text: "One email to last month's happy customers turns this around.", label: "Create a campaign", goto: "screen:dmt094j963aye" },
       segments: [
         t("Your review velocity has dropped: "), m(`${Math.abs(r.monthChangePct)}% fewer`, "bad", `${s.thisMonth} reviews so far this month against ${s.lastMonth} in the whole of last month.`), t(" reviews this month than last."),
         ...(r.spike
@@ -194,6 +203,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
       tone: "good",
       slot: "fourPlus",
       prompt: "The thing customers keep praising",
+      fix: { text: "Put that line on your booking page, where the next customer decides.", label: "Open Review Showcase", goto: "screen:dmt094lhmpwbs" },
       segments: [t("The thing customers keep praising is "), m(r.theme.text, "good"), t(". Worth saying in your replies, and on your website.")],
       register: "bea",
       variants: {
