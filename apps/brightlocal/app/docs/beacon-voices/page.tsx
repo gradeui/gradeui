@@ -27,12 +27,17 @@ export default function BeaconVoicesPage() {
             <h2 className="text-heading-section">{s.title}</h2>
             <p className="text-body-sm text-muted-foreground max-w-prose">{s.facts}</p>
           </div>
-          <div className="grid gap-3 lg:grid-cols-5">
+          {/* Rows, not columns (Ali, 11 Sep: "vertical is hard to read"): the
+              voice on the left, the line as a lede and its supporting text. */}
+          <div className="flex flex-col divide-y rounded-lg border">
             {VOICES.map((v) => (
-              <figure key={v.id} className={`flex flex-col gap-2 rounded-lg border p-4 ${v.ships ? "bg-card" : "bg-muted/40"}`}>
-                <figcaption className="text-label-sm font-semibold uppercase tracking-wide">{v.name}{v.ships ? "" : " (fixture)"}</figcaption>
-                <blockquote className="text-body text-pretty">{s.lines[v.id]}</blockquote>
-              </figure>
+              <div key={v.id} className={`grid gap-2 px-4 py-3 sm:grid-cols-[8rem_1fr] ${v.ships ? "" : "bg-muted/40"}`}>
+                <p className="text-label-sm font-semibold uppercase tracking-wide">{v.name}{v.ships ? "" : <span className="ml-1 font-normal normal-case text-muted-foreground">(fixture)</span>}</p>
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-body font-semibold text-balance">{s.lines[v.id].lede}</p>
+                  {s.lines[v.id].detail ? <p className="text-body-sm text-muted-foreground text-pretty">{s.lines[v.id].detail}</p> : null}
+                </div>
+              </div>
             ))}
           </div>
         </section>

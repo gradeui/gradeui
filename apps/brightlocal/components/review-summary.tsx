@@ -264,7 +264,7 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
           </h2>
           <div className="flex flex-col gap-3">
             {cardLines.map((line, i) => (
-              <p key={i} className="text-body text-foreground max-w-[60ch] text-pretty" data-hook={`review-summary-line-${i}`} data-register={line.register ?? registerFor(line.tone)}>
+              <p key={i} className="text-body text-foreground max-w-[60ch] text-pretty" data-hook={`review-summary-line-${i}`} data-register={line.register ?? registerFor(line.tone)} title={`Written by ${VOICE_NAME[line.register ?? registerFor(line.tone)] ?? "Beacon"}`}>
                 {line.segments.map((s, j) => (
                   <Seg key={j} s={s} />
                 ))}
@@ -449,6 +449,10 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
 
 /** The three six-month charts, on their own so the modal can show them
  *  under a page's block without the general summary. */
+/** Easter egg, part one (Ali, 11 Sep): hover a Beacon line to see who wrote
+ *  it. Part two, click to change the voice, waits for the voice setting. */
+const VOICE_NAME: Record<string, string> = { brian: "Brian", bea: "Bea", ray: "Ray", keith: "Keith", buzz: "Buzz" };
+
 const KIND_LABEL: Record<Drill, string> = { rating: "Rating", velocity: "Review velocity", fourPlus: "4 stars or above" };
 
 /** The dialog's chart column as auto-cycling tabs (Ali, 11 Sep): one
