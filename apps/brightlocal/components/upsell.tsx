@@ -77,10 +77,12 @@ export function UpsellStrip({
           {layout === "column" ? <p className="text-metric font-display text-balance">Let the easy ones answer themselves.</p> : null}
           </div>
         </div>
-        <p className={layout === "column" ? "text-body text-foreground text-pretty" : "text-body-sm text-foreground"}>
-          {benefit}
-          {trial ? ` Your trial includes ${trial.credits} free ${trial.credits === 1 ? creditsLabel : (creditsPlural ?? `${creditsLabel}s`)}, so try one now.` : ""}
-        </p>
+        {layout === "column" && !trial ? null : (
+          <p className={layout === "column" ? "text-body text-foreground text-pretty" : "text-body-sm text-foreground"}>
+            {layout === "column" ? "" : benefit}
+            {trial ? `Your trial includes ${trial.credits} free ${trial.credits === 1 ? creditsLabel : (creditsPlural ?? `${creditsLabel}s`)}. Try one now.` : ""}
+          </p>
+        )}
       </div>
       {layout === "column" && example ? (
         <div className="flex flex-col gap-3" data-hook={`${dataHook}-example`}>
@@ -97,7 +99,6 @@ export function UpsellStrip({
           <div className="flex flex-col gap-3 rounded-lg border-2 border-foreground bg-[var(--ds-tailwind-colors-base-white)] p-5">
             <p className="flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]"><Sparkles className="size-3.5" />Beacon's reply, an hour later</p>
             <p className="text-body font-semibold text-pretty">“{example.reply}”</p>
-            <p className="text-label-sm text-muted-foreground">Sent as {example.site === "Google" ? "the owner" : "you"}, in your tone. Edit it once and every reply follows.</p>
           </div>
         </div>
       ) : null}

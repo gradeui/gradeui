@@ -86,7 +86,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
           <h2 className="text-metric font-display text-foreground max-w-prose text-pretty" data-hook="review-insights-goal">
             <Mark text={plan.goal.text} mark={plan.goal.mark} />
           </h2>
-          <p className="text-foreground text-body max-w-prose text-pretty">{plan.lede}</p>
+          {bare ? null : <p className="text-foreground text-body max-w-prose text-pretty">{plan.lede}</p>}
           {bare ? null : (
             <div className="flex flex-wrap items-center gap-2">
               <FixItForMe count={stats.needReply} goto="screen:dmsxf5zjggd0n" />
@@ -100,7 +100,6 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
               tactic just shows (Ali, 12 Sep: "a lot happening"). */}
           {bare && plan.items.length === 1 ? (
             <div className="flex max-w-prose flex-col gap-3" data-hook="review-insights-tactic-single">
-              <p className="text-body font-semibold">{plan.items[0].title}</p>
               <p className="text-body text-pretty">{plan.items[0].actionsSummary}</p>
               <div className="flex flex-col gap-2">
                 {plan.items[0].actions.map((a, j) => (

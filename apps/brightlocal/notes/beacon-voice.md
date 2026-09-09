@@ -129,3 +129,22 @@ Every Beacon surface uses three roles and nothing else:
 Emphasis is **weight**, never another size. A sub-heading inside a
 surface is body semibold, not a fourth size. Metrics are the one
 exception: a tile value is 24 tabular, because a number is a picture.
+
+## What to cut
+
+Ali, 12 Sep: "remove as much as possible while still getting the point
+across." The test for every block on a Beacon surface:
+
+1. **Does it explain the interface?** Cut. "Each tactic opens the tool
+   that does it" tells them what a link is.
+2. **Does it restate the headline?** Cut. With one tactic, its title and
+   the goal are the same sentence twice.
+3. **Does it say what the example already proves?** Cut. A real review
+   with Beacon's real reply beneath it explains auto-reply better than a
+   sentence about auto-reply. The exception is the offer: free credits
+   are a fact the example cannot show.
+4. **Does it repeat a word from the block above?** Rewrite one of them.
+   "In your tone" appeared three times in one column.
+
+What always survives: the headline, one sentence of why with the
+numbers, the action with its button, and the proof.
