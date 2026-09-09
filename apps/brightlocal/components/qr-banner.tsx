@@ -137,7 +137,7 @@ export function QrBanner({ compact = false }: { compact?: boolean }) {
                 </Button>
               </div>
             </div>
-            <div className="flex items-center justify-center bg-[var(--ds-tailwind-colors-neutral-100)] p-5">
+            <div className="flex items-center justify-center bg-[var(--ds-tailwind-colors-neutral-100)] p-5 pt-12 sm:pt-5 sm:pr-14">
               <QrCard svg={svg} caption={caption} name={name} link={link} size={size} />
             </div>
           </div>
