@@ -92,3 +92,24 @@ git (a two-minute 1080p cut is 10 to 30 MB and the repo is not the place).
 Finals to share go wherever Ali wants them: Figma Slides takes the mp4
 directly, and the prototype could serve them from `apps/brightlocal/public`
 if a link is easier, at the cost of the repo size.
+
+## In Figma
+
+`Brightlocal - Reviews` has a **Beacon collateral** page (12 Sep):
+
+- **Cut-scene cards** — all sixteen, laid out as a board, exactly as the
+  app renders them.
+- **Templates** — two components:
+  - `Cut-scene card`, with Kicker, Title and Line as text properties and
+    toggles for the illustration and the logotype. Change the frame fill
+    for the surface colour.
+  - `Scene card`, the recorder's own framing: a 1280x900 page scaled to
+    0.796 with a 220px caption band under it, plus a Caption property.
+    Drop a screenshot into the screen slot and lay out your own scenes.
+- **Banners and popovers** — a named, correctly sized frame for every
+  banner at 1440, 1180, 900 and 430, so the PNGs from the Figma export
+  drop straight in. Each frame's hint says which file it wants.
+
+The bridge cannot place images, so illustrations, logotypes and
+screenshots are slots for a person to drop into. Everything else is
+native Figma layers.

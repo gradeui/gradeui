@@ -96,8 +96,13 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
           style={{
             width: w,
             height: h,
-            transform: `scale(${scale || 1})`,
+            // The scaled frame gets its own compositor layer, or every
+            // repaint inside the iframe re-rasterises the whole stage and
+            // the recording judders (Ali, 12 Sep: "still quite janky").
+            transform: `scale(${scale || 1}) translateZ(0)`,
             transformOrigin: "center",
+            willChange: "opacity",
+            backfaceVisibility: "hidden",
             borderRadius: radius / (scale || 1),
             overflow: "hidden",
             opacity: ready && scale ? 1 : 0,

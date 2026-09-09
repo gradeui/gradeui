@@ -184,12 +184,24 @@ for (const [i, step] of flow.steps.entries()) {
 
   if (step.scrollBy !== undefined || step.scroll) {
     const to = step.scroll === "top" ? 0 : step.scroll === "bottom" ? 99999 : null;
-    await frame().locator("body").evaluate((_, opts) => {
+    // A hand-driven scroll on requestAnimationFrame, not `behavior: smooth`.
+    // The browser's own smooth scroll runs on a timer that the recorder's
+    // load makes lumpy; this one moves the same distance every frame.
+    const ms = step.ms ?? 1200;
+    await frame().locator("body").evaluate((_, opts) => new Promise((done) => {
       const target = document.querySelector("[data-slot=scroll-area-viewport]") ?? document.scrollingElement ?? document.body;
-      const next = opts.to !== null ? opts.to : target.scrollTop + opts.by;
-      target.scrollTo({ top: next, behavior: "smooth" });
-    }, { to, by: step.scrollBy ?? 0 });
-    await wait(step.ms ?? 1200);
+      const from = target.scrollTop;
+      const to = opts.to !== null ? opts.to : from + opts.by;
+      const start = performance.now();
+      const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+      const tick = (now) => {
+        const t = Math.min(1, (now - start) / opts.ms);
+        target.scrollTop = from + (to - from) * ease(t);
+        if (t < 1) requestAnimationFrame(tick); else done();
+      };
+      requestAnimationFrame(tick);
+    }), { to, by: step.scrollBy ?? 0, ms });
+    await wait(300);
     continue;
   }
 
