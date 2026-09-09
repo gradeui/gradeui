@@ -55,7 +55,11 @@ Open items in the order I would take them.
     moments in item 11. Rules first, model second: the query is cheap and
     deterministic, the wording is where the voices come in. Persona data
     gives it a "last visit" date per persona to fake the gap.
-13. **Walkthrough videos.** Plan in notes/VIDEOS.md: nine videos, persona
+13. **Walkthrough videos.** DONE in part: the runner is
+    apps/brightlocal/scripts/record-video.mjs, the capture stage is
+    /meta/capture, the first flow is scripts/flows/overview.json and it
+    renders. Remaining: the eight section flows and the stitched master.
+    Original note: Plan in notes/VIDEOS.md: nine videos, persona
     cut scenes, a flow runner for the standalone app with `persona` and
     `title` steps, stills first.
 14. **Popover motion** (Ali, 12 Sep: "an interesting way to animate in the
@@ -99,3 +103,17 @@ Open items in the order I would take them.
       npm package; the docs site would take @brightlocal/* as deps the
       same way this app does, and the ds/*.jsx copy goes back to being
       the registry lib it was copied from.
+16. **Showcase: relevance and sentiment** (Ali, 12 Sep). Choosing which
+    reviews to show should not be "here are your five-star ones". Two
+    steps:
+    - **Relevance.** A showcase for the booking page wants reviews that
+      talk about booking; one for a service page wants that service. The
+      generator already tags a theme per location, so a first pass can
+      match on the theme phrase and the review text.
+    - **Sentiment.** Star rating is not sentiment. A four-star review that
+      raves reads better than a five-star with two words. Score the text,
+      prefer specific praise over short ones, drop anything with a "but".
+    - **"Pick them for me."** A button on the Showcase that selects six:
+      positive, specific, recent, and spread across review sites and
+      themes, with one line saying why each was chosen. Advanced mode, but
+      it is the single most demo-able AI moment in the product.

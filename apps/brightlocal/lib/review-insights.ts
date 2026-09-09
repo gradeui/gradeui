@@ -147,7 +147,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
       area: "reviews",
       severity: "low",
       title: "Put your best reviews on your website",
-      actionsSummary: "Three showcases are ready and none is on your site yet. Reviews on your own pages convince the visitors who never look at Google.",
+      actionsSummary: "Three showcases are ready to place, and reviews on your own pages convince the visitors who never look at Google. This is the easiest win on the list.",
       actions: [
         {
           label: "Place a showcase on your site.",

@@ -89,9 +89,9 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
 
   // showcase: the reasons why
   return {
-    headline: starter ? "Three showcases are ready. None is on your site yet." : `${s.fiveStar} five-star reviews, and your website shows none of them.`,
+    headline: starter ? "Three showcases are ready to go on your site." : `You have ${s.fiveStar.toLocaleString("en-GB")} five-star reviews ready for your website.`,
     line: [
-      t("The people who read reviews on your own site are the ones who never look at Google. "),
+      t("The people who read reviews on your own site are the ones who never look at Google, so this is the easiest win you have. "),
       ...(s.theme?.good ? [t("The thing customers keep praising is "), m(s.theme.text), t(". That is the quote to put on the booking page.")] : [t("Your best reviews are ready to show. Pick the ones the booking page should carry.")]),
     ],
     tiles: [
