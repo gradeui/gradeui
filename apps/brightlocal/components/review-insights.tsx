@@ -168,7 +168,8 @@ export function ReviewPlanStrip() {
         {[
           { value: String(stats.needReply), label: "need a reply" },
           { value: String(stats.replied), label: "replied" },
-          { value: stats.oldestWaitingDays === null ? "0" : `${stats.oldestWaitingDays}d`, label: "oldest still waiting" },
+          // "6d" read as a code (Ali, 11 Sep): the number alone, the unit in the label.
+          { value: stats.oldestWaitingDays === null ? "0" : String(stats.oldestWaitingDays), label: stats.oldestWaitingDays === 1 ? "day the oldest has waited" : "days the oldest has waited" },
         ].map((tile) => (
           <div key={tile.label} className="flex flex-col">
             <dd className="text-metric text-foreground">{tile.value}</dd>
