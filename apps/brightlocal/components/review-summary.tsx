@@ -90,6 +90,9 @@ function Seg({ s }: { s: Segment }) {
     <mark
       className={`rounded-sm px-1 font-semibold text-inherit ${TONE_MARK[s.tone]} ${nowrap} ${s.hint ? "cursor-help underline decoration-dotted decoration-1 underline-offset-4" : ""}`}
       title={s.hint}
+      // The sweep paints this colour in; without it the gradient would use
+      // currentColor and the phrase would vanish under its own highlighter.
+      style={{ ["--gds-mark-ink" as string]: "var(--ds-tailwind-colors-neutral-200)" }}
     >
       {s.text}
     </mark>
@@ -140,7 +143,7 @@ export function DrillChart({ stats, kind, onTint = false }: { stats: ReviewStats
             />
           }
         />
-        <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+        <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive animationBegin={120} animationDuration={520} animationEasing="ease-out">
           {data.map((d, i) => (
             <Cell key={d.month} fill={i === data.length - 1 ? "var(--ds-tailwind-colors-green-500)" : onTint ? "var(--ds-tailwind-colors-base-white)" : "var(--ds-tailwind-colors-neutral-200)"} />
           ))}
@@ -431,7 +434,7 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
   const location = useLocationKey();
   const b = pageBeaconFor(page, statsFor(location, persona), persona);
   return (
-    <div className="flex flex-col gap-3" data-hook={`beacon-page-block-${page}`}>
+    <div className="gds-stagger flex flex-col gap-3" data-hook={`beacon-page-block-${page}`}>
       {/* No eyebrow (Ali, 11 Sep: "classic AI eyebrows"); the header names the page. */}
       <p className="text-metric font-display text-balance max-w-[40ch]">{b.headline}</p>
       <p className="text-body text-foreground max-w-[60ch] text-pretty">

@@ -30,6 +30,20 @@ story and the comparison story, and it keeps each render short. The
 overview alone runs all six, because the empty account, the agency and
 the lapsed trial are each one scene there and nowhere else.
 
+## The capture stage
+
+`/meta/capture` loads any app path in an iframe at a fixed logical size
+and scales it to fit the recorder's viewport, so a 1920x1080 video shows
+a real 1280x900 page rather than a stretched one. Params:
+
+    /meta/capture?url=<path>&w=1280&h=900&bg=violet&pad=88&radius=20&caption=...
+
+`bg` is one of neutral, green, sky, violet, yellow, black, white, so the
+canvas colour is chosen per shot in the flow file. No separate stitching
+pass for the background. The recorder clicks inside with a frame
+locator, and localStorage seeding reaches the iframe because it is the
+same origin.
+
 ## Production
 
 - Recorder: a flow runner for the standalone app, not the Studio share

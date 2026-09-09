@@ -99,19 +99,19 @@ export function BeaconModal() {
             </Button>
           </DialogClose>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6" key={`${section}-${page ?? "hub"}`}>
           {section === "plan" ? (
             <ReviewInsights bare />
           ) : early ? (
             // Content left, the Did you know up the right (Ali, 10 Sep),
             // stacked on mobile. Early days: no charts to draw yet.
             <div className="grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-stretch">
-              <div className="flex flex-col gap-2">
+              <div className="gds-stagger flex flex-col gap-2">
                 {page ? <BeaconPageBlock page={page} /> : <ReviewSummary full bare tilesRow />}
                 <SummaryCharts stats={stats} />
                 <ModalCta stats={stats} page={page} />
               </div>
-              <div className="lg:sticky lg:top-0 lg:self-start">
+              <div className="gds-beacon-column lg:sticky lg:top-0 lg:self-start">
                 <DidYouKnowPanel stats={stats} page={page} />
               </div>
             </div>
@@ -120,11 +120,11 @@ export function BeaconModal() {
             // right as an infographic (Ali, 11 Sep). Each page gets the
             // charts it is about (Ali, 9 Sep).
             <div className="grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-start">
-              <div className="flex flex-col gap-2">
+              <div className="gds-stagger flex flex-col gap-2">
                 {page ? <BeaconPageBlock page={page} /> : <ReviewSummary full bare tilesRow />}
                 <ModalCta stats={stats} page={page} />
               </div>
-              <div className="lg:sticky lg:top-0 lg:self-start">
+              <div className="gds-beacon-column lg:sticky lg:top-0 lg:self-start">
                 <SummaryCharts
                   stats={stats}
                   stacked

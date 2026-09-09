@@ -563,3 +563,75 @@
 .dark [data-hook="review-insights"] .bg-\[var\(--ds-tailwind-colors-green-100\)\] {
   background: var(--muted) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   BEACON MOTION (Ali, 12 Sep: "an interesting way to animate in the
+   popovers"). Three beats on the DS motion tokens, no more:
+
+   1. STAGGER — a dialog reads in the order you would read it. Put
+      `gds-stagger` on a container; its children come in one after
+      another on --ds-motion-entrance-stagger.
+   2. MARK SWEEP — the highlighter draws left to right under the phrase,
+      a beat after the headline lands.
+   3. BARS RISE — chart bars grow from the baseline (recharts' own
+      animation, turned on with the overshoot easing).
+
+   Everything collapses to nothing under prefers-reduced-motion.
+   ════════════════════════════════════════════════════════════════════ */
+@keyframes gds-beacon-rise {
+  from { opacity: 0; transform: translateY(var(--ds-motion-entrance-distance, 8px)); }
+  to { opacity: 1; transform: none; }
+}
+.gds-stagger > * {
+  animation: gds-beacon-rise var(--ds-motion-entrance-duration, 320ms) var(--ds-motion-entrance-ease, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+.gds-stagger > *:nth-child(1) { animation-delay: calc(var(--ds-motion-entrance-stagger, 60ms) * 0); }
+.gds-stagger > *:nth-child(2) { animation-delay: calc(var(--ds-motion-entrance-stagger, 60ms) * 1); }
+.gds-stagger > *:nth-child(3) { animation-delay: calc(var(--ds-motion-entrance-stagger, 60ms) * 2); }
+.gds-stagger > *:nth-child(4) { animation-delay: calc(var(--ds-motion-entrance-stagger, 60ms) * 3); }
+.gds-stagger > *:nth-child(5) { animation-delay: calc(var(--ds-motion-entrance-stagger, 60ms) * 4); }
+.gds-stagger > *:nth-child(6) { animation-delay: calc(var(--ds-motion-entrance-stagger, 60ms) * 5); }
+.gds-stagger > *:nth-child(n + 7) { animation-delay: calc(var(--ds-motion-entrance-stagger, 60ms) * 6); }
+
+/* The right-hand column comes in last and from its own edge, which is what
+   sells "content left, insight right". */
+@keyframes gds-beacon-column {
+  from { opacity: 0; transform: translateX(calc(var(--ds-motion-entrance-distance, 8px) * 2)); }
+  to { opacity: 1; transform: none; }
+}
+.gds-beacon-column {
+  animation: gds-beacon-column var(--ds-motion-duration-slow, 480ms) var(--ds-motion-entrance-ease, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation-delay: calc(var(--ds-motion-entrance-stagger, 60ms) * 3);
+}
+
+/* THE MARK SWEEP. The highlighter is painted as a background the width of
+   which grows from nothing, so the phrase is legible the whole time and
+   the colour arrives under it. Marks inside a staggered block only. */
+@keyframes gds-mark-sweep {
+  from { background-size: 0% 100%; }
+  to { background-size: 100% 100%; }
+}
+.gds-stagger mark,
+.gds-beacon-column mark {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: left center;
+  animation: gds-mark-sweep var(--ds-motion-duration-base, 240ms) var(--ds-motion-ease-emphasized, ease-out) both;
+  animation-delay: calc(var(--ds-motion-entrance-stagger, 60ms) * 4);
+}
+/* The base colour has to go while the sweep runs, or the highlighter is
+   already there and nothing appears to move. The gradient paints it back. */
+.gds-stagger mark,
+.gds-beacon-column mark {
+  background-color: transparent !important;
+  background-image: linear-gradient(var(--gds-mark-ink, var(--ds-tailwind-colors-neutral-200)), var(--gds-mark-ink, var(--ds-tailwind-colors-neutral-200)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gds-stagger > *,
+  .gds-beacon-column,
+  .gds-stagger mark,
+  .gds-beacon-column mark {
+    animation: none !important;
+  }
+}
