@@ -689,3 +689,9 @@
 nextjs-portal {
   display: none !important;
 }
+
+/* The deck prints one A4 landscape page per section, backgrounds and all. */
+@media print {
+  .deck-page { break-after: page; page-break-after: always; }
+  .deck-page:last-child { break-after: auto; page-break-after: auto; }
+}
