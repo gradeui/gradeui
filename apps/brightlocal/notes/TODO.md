@@ -55,3 +55,27 @@ Open items in the order I would take them.
     moments in item 11. Rules first, model second: the query is cheap and
     deterministic, the wording is where the voices come in. Persona data
     gives it a "last visit" date per persona to fake the gap.
+13. **Walkthrough videos.** Plan in notes/VIDEOS.md: nine videos, persona
+    cut scenes, a flow runner for the standalone app with `persona` and
+    `title` steps, stills first.
+14. **Popover motion** (Ali, 12 Sep: "an interesting way to animate in the
+    popovers"). Ideas, all on the DS motion tokens, none decorative for
+    its own sake:
+    - Stagger: header, then headline, then copy, then the right column,
+      each on `--ds-motion-entrance-stagger`, so the dialog reads in the
+      order you would read it.
+    - The column slides in from the right edge a beat after the content,
+      which sells "content left, insight right".
+    - Numbers count up over `--ds-motion-duration-slow` (the tiles, the
+      chart labels), the one place a number earns motion.
+    - Marks sweep: the highlighter mark draws left to right under the key
+      phrase as the headline lands.
+    - Illustrations draw on: the line work strokes in (stroke-dashoffset)
+      with the green accent popping last, matching their black-line-plus-
+      one-accent rule.
+    - Chart bars rise from the baseline, the current month last and in
+      green, with `--ds-motion-ease-overshoot`.
+    - Reduced motion: everything collapses to the plain fade already in
+      place.
+    Pick two or three, not all. Stagger plus the mark sweep plus the bars
+    rising is probably the set.
