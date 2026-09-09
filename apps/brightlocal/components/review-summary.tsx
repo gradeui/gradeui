@@ -319,6 +319,8 @@ export function ReviewSummaryStrip() {
       data-hook="review-summary-strip"
       className="flex flex-col gap-6 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 shadow-sm lg:flex-row lg:items-stretch lg:gap-10"
     >
+      <div className="flex min-w-0 flex-1 items-start gap-5">
+      <StripArt keywords={["review", "stars"]} />
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <p className="text-label-sm flex items-center gap-2">
           <BeaconBadge beta />
@@ -344,6 +346,7 @@ export function ReviewSummaryStrip() {
             </Button>
           </span>
         </div>
+      </div>
       </div>
       <dl className="grid shrink-0 grid-cols-3 gap-6 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-6 lg:w-72 lg:grid-cols-1 lg:gap-5" data-hook="review-summary-strip-tiles">
         {summary.tiles.map((tile) => (
@@ -392,6 +395,8 @@ export function BeaconPageStrip({ page }: { page: BeaconPage }) {
       data-hook={`beacon-strip-${page}`}
       className="flex flex-col gap-6 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 shadow-sm lg:flex-row lg:items-stretch lg:gap-10"
     >
+      <div className="flex min-w-0 flex-1 items-start gap-5">
+      <StripArt keywords={page === "tracker" ? ["velocity", "spike"] : page === "builder" ? ["campaign", "email", "ask"] : ["website", "widget"]} />
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <p className="text-label-sm flex items-center gap-2">
           <BeaconBadge beta />
@@ -414,6 +419,7 @@ export function BeaconPageStrip({ page }: { page: BeaconPage }) {
             </Button>
           ) : null}
         </div>
+      </div>
       </div>
       <dl className="grid shrink-0 grid-cols-3 gap-6 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-6 lg:w-72 lg:grid-cols-1 lg:gap-5">
         {b.tiles.map((tile) => (
@@ -564,6 +570,20 @@ export function SummaryCharts({ stats, kinds = ["rating", "velocity", "fourPlus"
   );
 }
 
+
+/** Every Beacon strip carries an illustration, picked by what the surface
+ *  is about (Ali, 12 Sep). Same format as the dialog header: art left,
+ *  badge and headline right. */
+export function StripArt({ keywords }: { keywords: string[] }) {
+  const Art = pickIllustration(keywords);
+  // Wrapped: the illustration renders a light and a dark twin, and a
+  // responsive class on the svg itself un-hides the twin.
+  return (
+    <div className="hidden shrink-0 lg:block" aria-hidden>
+      <Art className="size-20" />
+    </div>
+  );
+}
 
 function SiteCell({ source }: { source: string }) {
   const Mark = SITE_MARK[source];

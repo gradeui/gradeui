@@ -24,6 +24,7 @@ import { Button } from "@brightlocal/ui-components/button";
 import { ArrowRight } from "@brightlocal/icons";
 import { FixItForMe } from "@/components/fix-it-for-me";
 import { FirstRunBand } from "@/components/first-run";
+import { StripArt } from "@/components/review-summary";
 
 /** The green highlighter mark from the brand material, on a phrase. */
 function Mark({ text, mark }: { text: string; mark: string }) {
@@ -144,6 +145,8 @@ export function ReviewPlanStrip() {
       data-hook="review-plan-strip"
       className="flex flex-col gap-6 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] p-8 shadow-sm lg:flex-row lg:items-stretch lg:gap-10"
     >
+    <div className="flex min-w-0 flex-1 items-start gap-5">
+    <StripArt keywords={["reply", "answer"]} />
     <div className="flex min-w-0 flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <span data-hook="review-plan-strip-pill" className="inline-flex w-fit items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-label-sm text-foreground">
@@ -164,6 +167,7 @@ export function ReviewPlanStrip() {
       </div>
     </div>
       {/* The inbox's own numbers, in the same grey panel the other strips use. */}
+      </div>
       <dl className="grid shrink-0 grid-cols-3 gap-6 rounded-xl bg-[var(--ds-tailwind-colors-neutral-50)] p-6 lg:w-72 lg:grid-cols-1 lg:gap-5" data-hook="review-plan-strip-tiles">
         {[
           { value: String(stats.needReply), label: "need a reply" },

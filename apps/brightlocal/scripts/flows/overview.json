@@ -1,0 +1,143 @@
+{
+  "name": "beacon-overview",
+  "w": 1280,
+  "h": 900,
+  "bg": "neutral",
+  "persona": "engaged",
+  "steps": [
+    {
+      "card": "beacon",
+      "ms": 3000
+    },
+    {
+      "card": "persona-empty",
+      "ms": 2600
+    },
+    {
+      "persona": "empty"
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews",
+      "bg": "sky",
+      "caption": "Day one. Nothing connected, nothing in.",
+      "ms": 2600
+    },
+    {
+      "scrollBy": 420,
+      "ms": 1400
+    },
+    {
+      "dwell": 2200
+    },
+    {
+      "card": "persona-starter",
+      "ms": 2600
+    },
+    {
+      "persona": "starter"
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews",
+      "bg": "yellow",
+      "caption": "Three days left on the trial.",
+      "ms": 3200
+    },
+    {
+      "recap": true,
+      "ms": 4200,
+      "caption": "What the trial has found so far."
+    },
+    {
+      "dwell": 2400
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews/manager",
+      "bg": "yellow",
+      "caption": "The plan, and what auto-reply would have written.",
+      "ms": 2200
+    },
+    {
+      "click": "[data-hook=review-plan-strip-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 3600
+    },
+    {
+      "dwell": 2600
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "card": "persona-engaged",
+      "ms": 2600
+    },
+    {
+      "persona": "engaged"
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews/tracker",
+      "bg": "green",
+      "caption": "Eight months in. What moved, and why.",
+      "ms": 2400
+    },
+    {
+      "click": "[data-hook=beacon-strip-tracker-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 4000
+    },
+    {
+      "dwell": 5200
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "card": "persona-multi",
+      "ms": 2600
+    },
+    {
+      "persona": "multi"
+    },
+    {
+      "go": "/locations/harbour-co-hove/reviews",
+      "bg": "violet",
+      "caption": "Customers compare Hove with Brighton, and Beacon says so.",
+      "ms": 3400
+    },
+    {
+      "click": "[data-hook=review-summary-strip-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 3800
+    },
+    {
+      "dwell": 3000
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "card": "persona-lapsed",
+      "ms": 2600
+    },
+    {
+      "persona": "lapsed"
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews",
+      "bg": "yellow",
+      "caption": "Nine days after the trial ended.",
+      "ms": 3600
+    },
+    {
+      "dwell": 2600
+    },
+    {
+      "card": "end",
+      "ms": 3200
+    }
+  ],
+  "tone": "tinted"
+}
