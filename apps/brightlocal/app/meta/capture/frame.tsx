@@ -101,7 +101,7 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
             borderRadius: radius / (scale || 1),
             overflow: "hidden",
             opacity: ready && scale ? 1 : 0,
-            transition: "opacity 420ms ease-out",
+            transition: "opacity 600ms ease-out",
             boxShadow: ready ? "0 40px 120px rgba(0,0,0,0.25)" : "none",
             flex: "0 0 auto",
           }}
@@ -114,13 +114,22 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
             width={w}
             height={h}
             // The load event fires before fonts and first paint settle.
-            onLoad={() => setTimeout(() => setReady(true), 420)}
+            onLoad={() => setTimeout(() => setReady(true), 700)}
             style={{ border: 0, display: "block", background: "var(--ds-tailwind-colors-base-white)" }}
           />
         </div>
       </div>
       {state.caption ? (
-        <div className="flex items-center justify-center px-24 pb-8">
+        <div
+          className="flex items-center justify-center px-24 pb-8"
+          style={{
+            opacity: ready ? 1 : 0,
+            transform: ready ? "none" : "translateY(10px)",
+            // Always behind the frame: the product lands, then the line
+            // about it (Ali, 12 Sep).
+            transition: "opacity 480ms ease-out 420ms, transform 480ms ease-out 420ms",
+          }}
+        >
           <p data-hook="capture-caption" className="text-stage-caption max-w-[44ch] text-center text-balance">
             {state.caption}
           </p>

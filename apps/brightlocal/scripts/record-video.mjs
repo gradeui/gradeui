@@ -142,7 +142,8 @@ for (const [i, step] of flow.steps.entries()) {
     }
     currentUrl = step.go;
     await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor({ timeout: 40000 }).catch(() => {});
-    await wait(step.ms ?? 1600);
+    // The caption trails the frame by ~900ms, so hold at least that long.
+    await wait(Math.max(step.ms ?? 1600, 1400));
     if (!step.recap) await dismissRecap();
     continue;
   }
@@ -165,6 +166,9 @@ for (const [i, step] of flow.steps.entries()) {
 
   if (step.click) {
     await dismissRecap();
+    // A beat before every popup, so the click reads as a decision rather
+    // than a jump cut (Ali, 12 Sep).
+    await wait(step.before ?? 900);
     const target = step.top ? page.locator(step.click) : frame().locator(step.click);
     await target.first().click({ timeout: 20000 });
     if (step.waitFor) await frame().locator(step.waitFor).first().waitFor({ timeout: 20000 }).catch(() => {});
