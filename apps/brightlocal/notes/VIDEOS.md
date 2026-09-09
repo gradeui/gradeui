@@ -81,3 +81,14 @@ One long cut of everything, in the order above: overview, hub, Manager,
 Tracker, Builder, Showcase, roadmap, account, tones, end card. Built
 with join-sections from the nine renders so any one can be re-rendered
 alone. Chapters marked so Figma Slides can take it in pieces too.
+
+## Where the videos live
+
+`~/Desktop/brightlocal-videos/<flow-name>-<stamp>/` holds the mp4, the raw
+webm Playwright wrote, and a copy of the flow file that produced it. Same
+pattern as the screenshot drops: dated folders on the Desktop, nothing in
+git (a two-minute 1080p cut is 10 to 30 MB and the repo is not the place).
+
+Finals to share go wherever Ali wants them: Figma Slides takes the mp4
+directly, and the prototype could serve them from `apps/brightlocal/public`
+if a link is easier, at the cost of the repo size.

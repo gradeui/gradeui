@@ -682,3 +682,10 @@
 [data-hook="stage-logo"][data-ink="white"] {
   filter: grayscale(1) brightness(0) invert(1);
 }
+
+/* No dev badge in the videos (Ali, 12 Sep: "I dont want to see the nextjs
+   logos"). The dev overlay mounts as <nextjs-portal>; it has no value in a
+   prototype and it sits in the corner of every frame. */
+nextjs-portal {
+  display: none !important;
+}

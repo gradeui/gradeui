@@ -86,6 +86,7 @@ const page = await ctx.newPage();
 let persona = flow.persona ?? "engaged";
 let bg = flow.bg ?? "neutral";
 let currentUrl = null;
+let onStage = false;
 
 const frame = () => page.frameLocator("[data-hook=capture-frame]");
 
@@ -109,21 +110,33 @@ for (const [i, step] of flow.steps.entries()) {
     persona = step.persona;
     await ctx.addInitScript((s) => { try { localStorage.setItem("grade-bl-demo-v2", JSON.stringify(s)); } catch {} }, settings(persona));
     await page.evaluate((s) => { try { localStorage.setItem("grade-bl-demo-v2", JSON.stringify(s)); } catch {} }, settings(persona));
-    if (currentUrl) { await page.reload({ waitUntil: "networkidle" }); await wait(900); }
+    if (onStage) {
+      await page.evaluate(() => window.__stage?.reloadFrame());
+      await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor({ timeout: 40000 }).catch(() => {});
+      await wait(400);
+    }
   }
 
   if (step.card) {
     await page.goto(`${BASE}/meta/cards/${step.card}`, { waitUntil: "networkidle", timeout: 90000 });
     currentUrl = null;
+    onStage = false;
     await wait(step.ms ?? 2600);
     continue;
   }
 
   if (step.go) {
     bg = step.bg ?? bg;
-    currentUrl = stageUrl(step.go, bg, step.caption);
-    await page.goto(currentUrl, { waitUntil: "networkidle", timeout: 90000 });
-    await frame().locator("body").waitFor({ timeout: 30000 }).catch(() => {});
+    if (!onStage) {
+      // First shot only: load the stage. Everything after is an in-place
+      // swap, so the canvas never unloads and never flashes white.
+      await page.goto(stageUrl(step.go, bg, step.caption), { waitUntil: "networkidle", timeout: 90000 });
+      onStage = true;
+    } else {
+      await page.evaluate((next) => window.__stage?.set(next), { url: step.go, bg, caption: step.caption ?? undefined });
+    }
+    currentUrl = step.go;
+    await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor({ timeout: 40000 }).catch(() => {});
     await wait(step.ms ?? 1600);
     if (!step.recap) await dismissRecap();
     continue;
@@ -132,10 +145,9 @@ for (const [i, step] of flow.steps.entries()) {
   if (step.caption !== undefined && !step.go && currentUrl) {
     // Repaint the stage caption without reloading the app inside: the
     // iframe keeps its state, only the canvas text changes.
-    await page.evaluate((text) => {
-      const el = document.querySelector("[data-hook=capture-caption]");
-      if (el) el.textContent = text;
-    }, step.caption);
+    await page.evaluate((text) => window.__stage?.set({ caption: text }), step.caption);
+    await wait(step.ms ?? 900);
+    continue;
   }
 
   if (step.recap) {

@@ -1,0 +1,128 @@
+"use client";
+
+/**
+ * The capture stage's live shell.
+ *
+ * The recorder does NOT navigate between shots. It calls `window.__stage`,
+ * which swaps the iframe's src, the canvas colour and the caption in place,
+ * so the canvas never unloads and nothing ever flashes white (Ali, 12 Sep).
+ * The frame fades out, loads, settles, fades back in; the canvas colour
+ * cross-fades under it.
+ *
+ *   await page.evaluate(() => window.__stage.set({ url, bg, caption }))
+ *   await page.evaluate(() => window.__stage.reloadFrame())
+ *   await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor()
+ */
+
+import * as React from "react";
+import { Logo } from "@brightlocal/ui-components";
+import { STAGES, CAPTION_BAND } from "@/lib/stage";
+
+export interface StageState {
+  url: string;
+  bg: string;
+  caption?: string;
+}
+
+declare global {
+  interface Window {
+    __stage?: {
+      set: (next: Partial<StageState>) => void;
+      reloadFrame: () => void;
+      ready: () => boolean;
+    };
+  }
+}
+
+export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageState; w: number; h: number; pad: number; radius: number }) {
+  const [state, setState] = React.useState(initial);
+  const [ready, setReady] = React.useState(false);
+  const [scale, setScale] = React.useState(0);
+  const frameRef = React.useRef<HTMLIFrameElement>(null);
+  const stage = STAGES[state.bg] ?? STAGES.neutral;
+
+  React.useEffect(() => {
+    const fit = () => {
+      const availW = window.innerWidth - pad * 2;
+      const availH = window.innerHeight - pad * 2 - (state.caption ? CAPTION_BAND : 0);
+      setScale(Math.min(availW / w, availH / h));
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [w, h, pad, state.caption]);
+
+  React.useEffect(() => {
+    window.__stage = {
+      set: (next) => {
+        // A new url means a new load: hide the frame first so the incoming
+        // page never paints white over the canvas.
+        if (next.url && next.url !== state.url) setReady(false);
+        setState((s) => ({ ...s, ...next }));
+      },
+      reloadFrame: () => {
+        setReady(false);
+        const el = frameRef.current;
+        if (el) el.src = el.src;
+      },
+      ready: () => ready,
+    };
+    return () => { delete window.__stage; };
+  }, [state.url, ready]);
+
+  return (
+    <main
+      data-hook="capture-stage"
+      data-ready={ready ? "true" : "false"}
+      className="relative grid h-screen w-screen overflow-hidden"
+      style={{
+        background: stage.bg,
+        color: stage.ink,
+        gridTemplateRows: state.caption ? `1fr ${CAPTION_BAND}px` : "1fr",
+        paddingTop: pad,
+        transition: "background-color 480ms ease-out, color 480ms ease-out",
+      }}
+    >
+      <div className="flex min-h-0 items-center justify-center">
+        <div
+          style={{
+            width: w,
+            height: h,
+            transform: `scale(${scale || 1})`,
+            transformOrigin: "center",
+            borderRadius: radius / (scale || 1),
+            overflow: "hidden",
+            opacity: ready && scale ? 1 : 0,
+            transition: "opacity 420ms ease-out",
+            boxShadow: ready ? "0 40px 120px rgba(0,0,0,0.25)" : "none",
+            flex: "0 0 auto",
+          }}
+        >
+          <iframe
+            ref={frameRef}
+            data-hook="capture-frame"
+            title="capture"
+            src={state.url}
+            width={w}
+            height={h}
+            // The load event fires before fonts and first paint settle.
+            onLoad={() => setTimeout(() => setReady(true), 420)}
+            style={{ border: 0, display: "block", background: "var(--ds-tailwind-colors-base-white)" }}
+          />
+        </div>
+      </div>
+      {state.caption ? (
+        <div className="flex items-center justify-center px-24 pb-8">
+          <p data-hook="capture-caption" className="text-stage-caption max-w-[44ch] text-center text-balance">
+            {state.caption}
+          </p>
+        </div>
+      ) : null}
+      <Logo
+        dataHook="stage-logo"
+        data-ink={stage.ink === "var(--ds-tailwind-colors-base-white)" ? "white" : "black"}
+        className="absolute bottom-10 left-12 h-9 w-auto"
+      />
+    </main>
+  );
+}

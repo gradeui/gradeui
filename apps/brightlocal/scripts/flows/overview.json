@@ -53,13 +53,17 @@
     {
       "go": "/locations/minus-one-studios/reviews/manager",
       "bg": "yellow",
-      "caption": "The plan, and what auto-reply would have written.",
+      "caption": "Beacon's plan for the week.",
       "ms": 2200
     },
     {
       "click": "[data-hook=review-plan-strip-open]",
       "waitFor": "[data-hook=beacon-modal]",
       "ms": 3600
+    },
+    {
+      "caption": "And what auto-reply would have written, on one of their own reviews.",
+      "ms": 2800
     },
     {
       "dwell": 2600
