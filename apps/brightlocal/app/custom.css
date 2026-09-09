@@ -411,3 +411,140 @@
   border-color: var(--foreground) !important;
   background: transparent !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   DARK MODE for the bespoke Beacon surfaces (Ali, 11 Sep: "not so great
+   in dark mode"). The DS flips its own tokens under .dark; these surfaces
+   hard-code white and the light tints, so under .dark they take the card
+   and muted tokens, the tints drop to the family's 950 with the theme's
+   foreground, and the black-on-white badges invert.
+   ════════════════════════════════════════════════════════════════════ */
+.dark [data-hook="review-summary-strip"],
+.dark [data-hook^="beacon-strip-"],
+.dark [data-hook="review-plan-strip"],
+.dark [data-hook^="review-quote-"],
+.dark [data-hook^="first-run-"],
+.dark [data-hook="qr-banner"],
+.dark [data-hook="connected-sites"],
+.dark [data-hook="review-summary-charts"],
+.dark [data-hook="subscription-state"],
+.dark [data-hook^="plan-"] {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+  color: var(--foreground);
+}
+.dark [data-hook="review-summary-strip-tiles"],
+.dark [data-hook="review-plan-strip-tiles"],
+.dark [data-hook^="beacon-strip-"] dl,
+.dark [data-hook="review-summary-tiles"],
+.dark [data-hook^="beacon-nugget-"],
+.dark [data-hook^="reviews-hub-"] [data-hook$="-step"],
+.dark [data-hook="review-summary-chart-tablist"] {
+  background: var(--muted) !important;
+}
+/* Tints: the family's 950, the theme's foreground on top. */
+.dark [data-hook="review-summary-early-fact"],
+.dark [data-hook^="upsell"],
+.dark [data-hook="subscription-reviews"] {
+  background: var(--ds-tailwind-colors-yellow-950) !important;
+  color: var(--foreground);
+}
+.dark [data-hook^="upsell"] [data-hook$="-example"] > div {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+}
+.dark [data-hook="trial-recap-plan"] {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-left: 1px solid var(--border);
+}
+/* Marks and badges. */
+.dark [data-hook="review-summary-strip"] mark,
+.dark [data-hook^="beacon-strip-"] mark,
+.dark [data-hook="review-plan-strip"] mark,
+.dark [data-hook="beacon-modal"] mark,
+.dark [data-hook="review-insights"] mark {
+  background: var(--ds-tailwind-colors-neutral-700) !important;
+  color: var(--foreground) !important;
+}
+.dark [data-hook="beacon-badge"],
+.dark [data-hook="review-insights-badge"],
+.dark [data-hook="review-plan-strip-badge"],
+.dark [data-hook="beacon-modal-badge"],
+.dark [data-hook="trial-recap-badge"],
+.dark [data-hook="roadmap-badge"],
+.dark [data-hook="review-insights-pill"],
+.dark [data-hook="review-plan-strip-pill"],
+.dark [data-hook="roadmap-pill"],
+.dark [data-hook$="-beacon"] {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+}
+/* The black-on-white pills invert. */
+.dark [data-hook^="upsell"] span.bg-\[var\(--ds-tailwind-colors-neutral-950\)\],
+.dark [data-hook^="upsell"] p.bg-\[var\(--ds-tailwind-colors-neutral-950\)\],
+.dark [data-hook="subscription-reviews"] span.bg-\[var\(--ds-tailwind-colors-neutral-950\)\],
+.dark [data-hook^="plan-"] span.bg-\[var\(--ds-tailwind-colors-neutral-950\)\],
+.dark [data-hook="subscription-state"] span.bg-\[var\(--ds-tailwind-colors-neutral-950\)\] {
+  background: var(--foreground) !important;
+  color: var(--background) !important;
+}
+/* Buttons on tinted surfaces went black in the light tones; in the dark they go white. */
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button.bg-primary,
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button.bg-primary,
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button.bg-primary,
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button.bg-primary,
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="upsell"] button.bg-primary {
+  background: var(--foreground) !important;
+  color: var(--background) !important;
+  border-color: var(--foreground) !important;
+}
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button:not(.bg-primary),
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button:not(.bg-primary),
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button:not(.bg-primary),
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button,
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="upsell"] button:not(.bg-primary),
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="review-quote-"] button:not(.bg-primary) {
+  border-color: var(--foreground) !important;
+  color: var(--foreground) !important;
+}
+/* Tinted tones in the dark: the family's 950 as the surface. */
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"],
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"],
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"],
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] {
+  background: var(--beacon-950) !important;
+  border-color: transparent !important;
+}
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip-tiles"],
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip-tiles"],
+.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] dl {
+  background: var(--card) !important;
+}
+/* The reply card and review card in the sell column. */
+.dark [data-hook^="upsell"] .border-foreground {
+  border-color: var(--border) !important;
+}
+/* Light-mode strip borders go softer (Ali, 11 Sep: "even more subtle"). */
+[data-beacon-tone="neutral"] [data-hook="review-summary-strip"],
+[data-beacon-tone="neutral"] [data-hook^="beacon-strip-"],
+[data-beacon-tone="neutral"] [data-hook="review-plan-strip"],
+[data-beacon-tone="neutral"] [data-hook^="first-run-"] {
+  border-color: var(--ds-tailwind-colors-neutral-100);
+}
+/* Dark stragglers: the Manager's filter band (forced white in the light) and
+   the plan's tactic labels, which the proposal module colours in a green
+   that vanishes on black. */
+.dark [data-hook="review-manager"] .bg-\[var\(--ds-tailwind-colors-base-white\)\],
+.dark .sticky.bg-\[var\(--ds-tailwind-colors-base-white\)\] {
+  background: var(--card) !important;
+}
+.dark [data-hook="review-insights"] button,
+.dark [data-hook="review-insights"] [data-slot="accordion-trigger"] {
+  color: var(--foreground) !important;
+}
+.dark [data-hook^="review-quote-"],
+.dark [data-hook="qr-banner"] {
+  color: var(--foreground);
+}
