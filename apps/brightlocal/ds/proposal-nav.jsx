@@ -444,7 +444,8 @@ function ModifiedProposalSidebar({
   // the proposal shows, and four dead rows in the footer menu read as
   // scope the prototype does not have. Two groups, so the rule above
   // Logout stays. Pass userMenuGroups to restore or extend the set.
-  userMenuGroups = [[{ label: "Account Details" }], [{ label: "Logout" }]],
+  // Account Details opens the in-product subscription page for now (Ali, 11 Sep).
+  userMenuGroups = [[{ label: "Account Details", onClick: () => { if (typeof window !== "undefined") window.location.assign("/account/subscription"); } }], [{ label: "Logout" }]],
   dataHook = "app-sidebar",
   // Anchor-id pass-through — see AppLayoutShell's rest note.
   ...rest
@@ -681,7 +682,8 @@ function NativeProposalSidebar({
   userName,
   userMeta,
   userInitials,
-  userMenuGroups = [[{ label: "Account Details" }], [{ label: "Logout" }]],
+  // Account Details opens the in-product subscription page for now (Ali, 11 Sep).
+  userMenuGroups = [[{ label: "Account Details", onClick: () => { if (typeof window !== "undefined") window.location.assign("/account/subscription"); } }], [{ label: "Logout" }]],
   dataHook = "app-sidebar",
   // Look-only props the modified sidebar takes; dropped here.
   accounts, accountLabel,

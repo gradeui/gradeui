@@ -34,7 +34,7 @@ import { Lightbulb } from "@brightlocal/icons";
 import { FirstRunBand } from "@/components/first-run";
 import { Button } from "@brightlocal/ui-components/button";
 import { ArrowRight } from "@brightlocal/icons";
-import { reviewSummaryFor, registerFor, type Segment } from "@/lib/review-summary";
+import { reviewSummaryFor, registerFor, type Segment, type SummaryLine, type Register } from "@/lib/review-summary";
 import type { ReviewStats } from "@/lib/reviews-data";
 import { pageBeaconFor, type BeaconPage } from "@/lib/beacon-pages";
 import { hrefFor } from "@/lib/screens";
@@ -264,11 +264,7 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
           </h2>
           <div className="flex flex-col gap-3">
             {cardLines.map((line, i) => (
-              <p key={i} className="text-body text-foreground max-w-[60ch] text-pretty" data-hook={`review-summary-line-${i}`} data-register={line.register ?? registerFor(line.tone)} title={`Written by ${VOICE_NAME[line.register ?? registerFor(line.tone)] ?? "Beacon"}`}>
-                {line.segments.map((s, j) => (
-                  <Seg key={j} s={s} />
-                ))}
-              </p>
+              <VoiceLine key={i} line={line} index={i} />
             ))}
           </div>
           <p className={tilesRow ? "hidden" : "text-body-xs text-muted-foreground"} data-hook="review-summary-disclosure">
@@ -454,6 +450,31 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
 /** Easter egg, part one (Ali, 11 Sep): hover a Beacon line to see who wrote
  *  it. Part two, click to change the voice, waits for the voice setting. */
 const VOICE_NAME: Record<string, string> = { brian: "Brian", bea: "Bea", ray: "Ray", keith: "Keith", buzz: "Buzz" };
+
+/** A summary line with the easter egg: hover to see who wrote it, click to
+ *  hand it to the next voice that has a version (Ali, 11 Sep). The
+ *  register comes from the data; the variants are authored per line. */
+function VoiceLine({ line, index }: { line: SummaryLine; index: number }) {
+  const base = line.register ?? registerFor(line.tone);
+  const order: Register[] = [base, ...(["brian", "bea", "ray"] as Register[]).filter((v) => v !== base && line.variants?.[v])];
+  const [k, setK] = React.useState(0);
+  const voice = order[k % order.length];
+  const segments = voice === base ? line.segments : (line.variants?.[voice] ?? line.segments);
+  const next = order[(k + 1) % order.length];
+  return (
+    <p
+      className={`text-body text-foreground max-w-[60ch] text-pretty ${order.length > 1 ? "cursor-pointer" : ""}`}
+      data-hook={`review-summary-line-${index}`}
+      data-register={voice}
+      title={order.length > 1 ? `Written by ${VOICE_NAME[voice]}. Click for ${VOICE_NAME[next]}.` : `Written by ${VOICE_NAME[voice] ?? "Beacon"}`}
+      onClick={() => order.length > 1 && setK((n) => n + 1)}
+    >
+      {segments.map((sg, j) => (
+        <Seg key={j} s={sg} />
+      ))}
+    </p>
+  );
+}
 
 const KIND_LABEL: Record<Drill, string> = { rating: "Rating", velocity: "Review velocity", fourPlus: "4 stars or above" };
 

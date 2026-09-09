@@ -28,6 +28,9 @@ export type Slot = "rating" | "velocity" | "fourPlus";
 export interface SummaryLine {
   segments: Segment[];
   tone: "good" | "bad" | "neutral";
+  /** The same thought in the other registers, for the easter egg (Ali,
+   *  11 Sep: hover to see who wrote it, click to get a new author). */
+  variants?: Partial<Record<Register, Segment[]>>;
   register?: Register;
   slot?: Slot;
 }
@@ -77,6 +80,11 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
       tone: "bad",
       slot: "rating",
       segments: [t(`Your ${winLabel} average `), m(win.rating, "bad", `The average of the ${win.count} star ratings in your ${winLabel}.`), t(" against "), m(s.rating, "neutral", `The average of all ${s.total.toLocaleString("en-GB")} star ratings, ever. It barely moves.`), t(" all time. That gap is the number to watch, and the one you can move.")],
+      register: "brian",
+      variants: {
+        bea: [t(`Your ${winLabel} are averaging `), m(win.rating, "bad"), t(", a step below your "), m(s.rating, "neutral"), t(" all time. The lifetime number barely moves, so this is the one you can actually shift, and it starts with the next few replies.")],
+        ray: [t(`Your ${winLabel} sit at `), m(win.rating, "bad"), t(" against "), m(s.rating, "neutral"), t(" all time. That gap closes fast: a handful of good weeks and it is gone. Start today.")],
+      },
     });
   }
   if (s.compare && s.compare.mentions > 0) {
@@ -86,6 +94,11 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
       segments: [
         m(String(s.compare.mentions), "bad", `Reviews in your last ${s.lastN} whose text names the ${s.compare.label} branch.`), t(` of your last ${s.lastN} reviews compare ${s.compare.self} with your ${s.compare.label} branch, and not kindly. ${s.compare.label} is on `), m(s.compare.siblingRecentRating, "good"), t(` for the same period. ${s.compare.self} is on `), m(win.rating, "bad"), t(". Same brand, different experience: that is worth a visit."),
       ],
+      register: "brian",
+      variants: {
+        bea: [m(String(s.compare.mentions), "bad"), t(` of your last ${s.lastN} reviews mention ${s.compare.label}, and they mean it as a comparison. ${s.compare.label} is on `), m(s.compare.siblingRecentRating, "good"), t(` and ${s.compare.self} on `), m(win.rating, "bad"), t(` for the same period. Whatever ${s.compare.label} is doing, it travels. Go and see it.`)],
+        ray: [t(`Good news hiding in a bad line: ${s.compare.label} is on `), m(s.compare.siblingRecentRating, "good"), t(`, so you already own the answer. `), m(String(s.compare.mentions), "bad"), t(` of your last ${s.lastN} say ${s.compare.self} is not there yet. One visit, one list of what differs, and this gap starts closing.`)],
+      },
     });
   }
   if (r.lowCount >= 3) {
@@ -95,17 +108,32 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
         t("Out of your last "), m(String(r.lastN), "neutral", "Your most recent reviews across every connected source."), t(" reviews, "), m(String(r.lowCount), "bad", `Reviews at ${r.lowStar} stars or lower, or a Facebook thumbs down. They are at the top of Review Manager.`), t(` were ${r.lowStar} stars or lower.`),
         ...(r.theme && !r.theme.good ? [t(" The thing they keep mentioning is "), m(r.theme.text, "bad"), t(".")] : []),
       ],
+      register: "brian",
+      variants: {
+        bea: [m(String(r.lowCount), "bad"), t(` of your last ${r.lastN} came in at ${r.lowStar} stars or lower`), ...(r.theme && !r.theme.good ? [t(", and they agree on the reason: "), m(r.theme.text, "bad"), t(".")] : [t(".")]), t(" That is a pattern, not bad luck, which is the good news: patterns can be fixed.")],
+        ray: [m(String(r.lowCount), "bad"), t(` low ones in your last ${r.lastN}`), ...(r.theme && !r.theme.good ? [t(", all about "), m(r.theme.text, "bad")] : []), t(". Fix that one thing and the next ten reviews look different. You have done harder.")],
+      },
     });
     // The softener, which is also the instruction (Ali, 9 Sep: "did you
     // know things soften the blow as well as another way to say do this").
     lines.push({
       tone: "neutral",
       segments: [t("Did you know a calm reply reassures the next reader more than the review worried them? Answer those "), m(String(r.lowCount)), t(" this week and the rating follows.")],
+      register: "bea",
+      variants: {
+        brian: [t("A calm reply to a low review is read by the next customer. Answer the "), m(String(r.lowCount)), t(" this week.")],
+        ray: [t("Here is the trick: a calm reply undoes most of a bad review. Answer those "), m(String(r.lowCount)), t(" today and watch the next reader relax.")],
+      },
     });
   } else if (r.lowCount > 0) {
     lines.push({
       tone: "neutral",
       segments: [t("Out of your last "), m(String(r.lastN)), t(" reviews, "), m(String(r.lowCount), "bad"), t(` ${r.lowCount === 1 ? "was" : "were"} ${r.lowStar} stars or lower`), ...(r.theme && !r.theme.good ? [t(", about "), m(r.theme.text, "bad"), t(".")] : [t(".")])],
+      register: "brian",
+      variants: {
+        bea: [t("Only "), m(String(r.lowCount), "bad"), t(` of your last ${r.lastN} landed at ${r.lowStar} stars or lower`), ...(r.theme && !r.theme.good ? [t(", and it was about "), m(r.theme.text, "bad"), t(".")] : [t(".")]), t(" Worth a reply, not a worry.")],
+        ray: [m(String(r.lowCount), "bad"), t(` in ${r.lastN}`), ...(r.theme && !r.theme.good ? [t(", about "), m(r.theme.text, "bad")] : []), t(". That is a good run. Answer it and move on.")],
+      },
     });
   }
 
@@ -122,6 +150,12 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
         t(" "), m(`${r.fourPlusPct}%`, r.fourPlusPct >= 70 ? "good" : "neutral"), t(" of them were four stars or above."),
         ...(r.fourPlusPct >= 70 ? [t(" Great work.")] : []),
       ],
+      register: r.fourPlusPct >= 70 ? "ray" : "bea",
+      variants: {
+        brian: [t("Reviews are up "), m(`${r.monthChangePct}%`, "good"), t(" on last month."), ...(r.spike ? [t(" The "), m(r.spike.campaign), t(` ${r.spike.channel} on `), m(r.spike.date), t(" caused the spike.")] : []), t(" "), m(`${r.fourPlusPct}%`, "neutral"), t(" were four stars or above.")],
+        bea: [t("More people are writing about you: "), m(`${r.monthChangePct}% more`, "good"), t(" reviews than last month"), ...(r.spike ? [t(", and your "), m(r.spike.campaign), t(` ${r.spike.channel} on `), m(r.spike.date), t(" is why")] : []), t(". "), m(`${r.fourPlusPct}%`, r.fourPlusPct >= 70 ? "good" : "neutral"), t(" of them were four stars or above, which is the part that matters.")],
+        ray: [t("Up "), m(`${r.monthChangePct}%`, "good"), t(" on last month"), ...(r.spike ? [t(", and it was your "), m(r.spike.campaign), t(` ${r.spike.channel} that did it`)] : []), t(". "), m(`${r.fourPlusPct}%`, "good"), t(" four stars or above. That is asking working. Send the next one.")],
+      },
     });
   } else if (r.monthChangePct < 0) {
     lines.push({
@@ -134,13 +168,27 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
           : [t(" Nothing has gone out to ask for any.")]),
         t(" Only "), m(`${r.fourPlusPct}%`, "bad"), t(" of them were four stars or above."),
       ],
+      register: "brian",
+      variants: {
+        bea: [t("A quieter month: "), m(`${Math.abs(r.monthChangePct)}% fewer`, "bad"), t(" reviews than last"), ...(r.spike ? [t(", and nothing has gone out since your "), m(r.spike.campaign), t(` ${r.spike.channel} on `), m(r.spike.date)] : [t(", and nothing has gone out to ask for any")]), t(". One campaign changes this.")],
+        ray: [t("Down "), m(`${Math.abs(r.monthChangePct)}%`, "bad"), t(" on last month, and that is fixable by Friday: one email to last month's happy customers and this chart moves again.")],
+      },
     });
   } else {
     lines.push({ tone: "neutral", slot: "velocity", segments: [t("Reviews received are level with last month. "), m(`${r.fourPlusPct}%`, r.fourPlusPct >= 70 ? "good" : "neutral"), t(" were four stars or above.")] });
   }
 
   if (r.theme?.good) {
-    lines.push({ tone: "good", slot: "fourPlus", segments: [t("The thing customers keep praising is "), m(r.theme.text, "good"), t(". Worth saying in your replies, and on your website.")] });
+    lines.push({
+      tone: "good",
+      slot: "fourPlus",
+      segments: [t("The thing customers keep praising is "), m(r.theme.text, "good"), t(". Worth saying in your replies, and on your website.")],
+      register: "bea",
+      variants: {
+        brian: [t("Customers most often mention "), m(r.theme.text, "good"), t(". Use it in replies and on the website.")],
+        ray: [t("They keep saying it: "), m(r.theme.text, "good"), t(". That is your line. Put it on the booking page today.")],
+      },
+    });
   }
 
   const headline =
