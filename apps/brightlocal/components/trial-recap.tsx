@@ -23,6 +23,8 @@ import { useLocationKey } from "@/lib/location";
 import { statsFor, reviewsFor } from "@/lib/reviews-data";
 import { BeaconBadge } from "@/components/review-summary";
 import { CalendarSchedule, HandWave } from "@brightlocal/illustrations";
+import { useRouter } from "next/navigation";
+import { SUBSCRIPTION_PATH } from "@/lib/plans";
 
 const PLAN = { name: "Grow", price: "$49", per: "USD / mo, billed annually" };
 
@@ -30,6 +32,7 @@ export function TrialRecapModal() {
   const persona = usePersona();
   const location = useLocationKey();
   const [open, setOpen] = React.useState(false);
+  const router = useRouter();
   const lastId = React.useRef<string | null>(null);
   // Opens on a switch INTO a trial or lapsed persona (and on first load
   // with one), once per switch.
@@ -130,7 +133,7 @@ export function TrialRecapModal() {
               </ul>
             </div>
             <div className="flex flex-col gap-2">
-              <Button variant="primary" size="lg" dataHook="trial-recap-cta" onClick={() => setOpen(false)}>
+              <Button variant="primary" size="lg" dataHook="trial-recap-cta" onClick={() => { setOpen(false); router.push(SUBSCRIPTION_PATH); }}>
                 {lapsed ? "Pick up where you left off" : "Keep everything"}
                 <ArrowRight className="size-4" />
               </Button>

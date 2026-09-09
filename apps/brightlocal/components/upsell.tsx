@@ -13,6 +13,8 @@ import { Lock, Sparkles, ArrowRight } from "@brightlocal/icons";
 import { Button } from "@brightlocal/ui-components/button";
 import { Rating } from "@brightlocal/ui-components/rating";
 import { pickIllustration } from "@/lib/illustrations";
+import { useRouter } from "next/navigation";
+import { SUBSCRIPTION_PATH } from "@/lib/plans";
 import { useDemo } from "@/lib/demo";
 
 /** Upsells always carry an illustration (Ali, 11 Sep), picked by what the feature does. */
@@ -43,6 +45,7 @@ export function UpsellStrip({
   dataHook?: string;
 }) {
   const { settings, persona } = useDemo();
+  const router = useRouter();
   if (!settings.upsell) return null;
   const trial = persona.trial;
   return (
@@ -97,7 +100,7 @@ export function UpsellStrip({
           <p className="text-body-xs text-muted-foreground text-pretty">Only five-star Google reviews. Anything lower waits for a person.</p>
         </div>
       ) : null}
-      <Button variant={trial ? "primary" : "outline"} size={layout === "column" ? "lg" : "sm"} dataHook={`${dataHook}-cta`} className={layout === "column" ? "w-fit" : "shrink-0"}>
+      <Button variant={trial ? "primary" : "outline"} size={layout === "column" ? "lg" : "sm"} dataHook={`${dataHook}-cta`} className={layout === "column" ? "w-fit" : "shrink-0"} onClick={() => { if (!trial) router.push(SUBSCRIPTION_PATH); }}>
         {trial ? (
           <>
             <Sparkles className="size-4" />
