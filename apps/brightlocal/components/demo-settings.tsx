@@ -39,7 +39,7 @@ const LOOK_LABELS: Record<string, string> = {
 };
 
 export function DemoSettingsPanel() {
-  const { menuOpen, setMenuOpen, setNotesOpen, settings, persona, setPersona, setLook, setVariant, setEngine, setUpsell, setFixItForMe, setBeaconTone } = useDemo();
+  const { menuOpen, setMenuOpen, setNotesOpen, settings, persona, setPersona, setLook, setVariant, setEngine, setUpsell, setFixItForMe, setBeaconTone, setAppearance } = useDemo();
   const router = useRouter();
   const pathname = usePathname();
   const location = locationFromPath(pathname) ?? persona.dataset;
@@ -161,10 +161,19 @@ export function DemoSettingsPanel() {
             </CommandGroup>
             <CommandSeparator />
             <CommandGroup heading="Beacon colour">
-              {(["neutral", "tinted", "families"] as const).map((t) => (
+              {(["neutral", "tinted", "families", "vivid"] as const).map((t) => (
                 <CommandItem key={t} dataHook={`demo-tone-${t}`} value={`beacon colour ${t}`} onSelect={() => { setBeaconTone(t); setMenuOpen(false); }}>
-                  {t === "neutral" ? "Neutral (white surfaces)" : t === "tinted" ? "Tinted (one family, AA pairs)" : "Families (a colour per kind of content)"}
+                  {t === "neutral" ? "Neutral (white surfaces)" : t === "tinted" ? "Tinted (one family, AA pairs)" : t === "families" ? "Families (a colour per kind of content)" : "Super bright (the website's full-strength palette)"}
                   {settings.beaconTone === t ? <Check className="ml-auto size-4" /> : null}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="Appearance">
+              {(["light", "dark"] as const).map((a) => (
+                <CommandItem key={a} dataHook={`demo-appearance-${a}`} value={`appearance ${a} mode`} onSelect={() => { setAppearance(a); setMenuOpen(false); }}>
+                  {a === "light" ? "Light" : "Dark"}
+                  {(settings.appearance ?? "light") === a ? <Check className="ml-auto size-4" /> : null}
                 </CommandItem>
               ))}
             </CommandGroup>

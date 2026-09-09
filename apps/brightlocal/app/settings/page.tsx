@@ -19,7 +19,7 @@ const LOOK_LABELS: Record<string, string> = {
 /** The long-form version of the Cmd+K menu, for when a reviewer wants to
  *  read the options rather than search them. */
 export default function SettingsPage() {
-  const { settings, setPersona, setLook, setEngine, setUpsell, setFixItForMe, setBeaconTone } = useDemo();
+  const { settings, setPersona, setLook, setEngine, setUpsell, setFixItForMe, setBeaconTone, setAppearance } = useDemo();
   const looks = [...Object.keys(LOOK_PRESETS), "authored"];
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-10 px-6 py-16">
@@ -88,12 +88,24 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Appearance</h2>
+        <p className="text-muted-foreground text-sm">The DS dark mode, its own tokens on the html element. Also in Cmd+K, and ?appearance=dark.</p>
+        <RadioGroup dataHook="settings-appearance" value={settings.appearance ?? "light"} onValueChange={(v) => setAppearance(v as "light" | "dark")}>
+          {([["light", "Light"], ["dark", "Dark"]] as const).map(([v, label]) => (
+            <div key={v} className="flex items-start gap-3">
+              <RadioGroupItem value={v} id={`appearance-${v}`} className="mt-1" />
+              <Label htmlFor={`appearance-${v}`}>{label}</Label>
+            </div>
+          ))}
+        </RadioGroup>
+      </section>
+      <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Beacon colour</h2>
         <p className="text-muted-foreground text-sm">
           Lifts Beacon's surfaces off the page with the accessible pairings from the DS chart (100 background, 700 and 950 text).
         </p>
-        <RadioGroup dataHook="settings-tone" value={settings.beaconTone} onValueChange={(v) => setBeaconTone(v as "neutral" | "tinted" | "families")}>
-          {([["neutral", "Neutral, white surfaces"], ["tinted", "Tinted, one family everywhere"], ["families", "Families, a colour per kind of content: summaries sky, recommendations violet, upsells yellow, nuggets sky"], ["vivid", "Super bright, the website's full-strength palette: green, yellow, sky and violet at 500, black text and black buttons"]] as const).map(([v, label]) => (
+        <RadioGroup dataHook="settings-tone" value={settings.beaconTone} onValueChange={(v) => setBeaconTone(v as "neutral" | "tinted" | "families" | "vivid")}>
+          {([["neutral", "Neutral, white surfaces"], ["tinted", "Tinted, one family everywhere (violet)"], ["families", "Families, a colour per kind of content: summaries sky, recommendations violet, upsells yellow, nuggets sky"], ["vivid", "Super bright, the website's full-strength palette: green, yellow, sky and violet at 500, black text and black buttons"]] as const).map(([v, label]) => (
             <div key={v} className="flex items-start gap-3">
               <RadioGroupItem value={v} id={`tone-${v}`} className="mt-1" />
               <Label htmlFor={`tone-${v}`}>{label}</Label>

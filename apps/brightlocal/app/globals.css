@@ -10,6 +10,9 @@
    ════════════════════════════════════════════════════════════════════ */
 
 @import "@brightlocal/tokens/tailwind-preset.css";
+/* The DS dark mode is the .dark class (its tokens live under .dark in the
+   preset); tell Tailwind the dark: variant follows that class, not the OS. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Source scanning. The preset does not know where components live. */
 @source "../app/**/*.{ts,tsx,js,jsx}";

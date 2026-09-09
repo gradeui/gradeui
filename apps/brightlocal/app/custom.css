@@ -291,12 +291,12 @@
 [data-beacon-tone="tinted"] [data-hook="review-plan-strip"],
 [data-beacon-tone="tinted"] [data-hook^="beacon-nugget-"],
 [data-beacon-tone="tinted"] [data-hook="review-insights"] {
-  --beacon-100: var(--ds-tailwind-colors-sky-100);
-  --beacon-50: var(--ds-tailwind-colors-sky-50);
-  --beacon-200: var(--ds-tailwind-colors-sky-200);
-  --beacon-300: var(--ds-tailwind-colors-sky-300);
-  --beacon-700: var(--ds-tailwind-colors-sky-700); --beacon-800: var(--ds-tailwind-colors-sky-800);
-  --beacon-950: var(--ds-tailwind-colors-sky-950);
+  --beacon-100: var(--ds-tailwind-colors-violet-100);
+  --beacon-50: var(--ds-tailwind-colors-violet-50);
+  --beacon-200: var(--ds-tailwind-colors-violet-200);
+  --beacon-300: var(--ds-tailwind-colors-violet-300);
+  --beacon-700: var(--ds-tailwind-colors-violet-700); --beacon-800: var(--ds-tailwind-colors-violet-800);
+  --beacon-950: var(--ds-tailwind-colors-violet-950);
 }
 /* families: summaries sky, recommendations violet, upsells yellow, nuggets sky.
    Green is the brand's button colour, so it is never the tint. */

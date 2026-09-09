@@ -44,6 +44,8 @@ export interface DemoSettings {
    *  pairs from the DS chart), or families (a family per kind of content:
    *  summaries sky, recommendations green, upsells yellow, nuggets violet). */
   beaconTone: "neutral" | "tinted" | "families" | "vivid";
+  /** Light or dark, the DS `.dark` class on <html> (Ali, 11 Sep: a switch in Cmd+K). */
+  appearance: "light" | "dark";
 }
 
 interface DemoContextValue {
@@ -56,6 +58,7 @@ interface DemoContextValue {
   setUpsell: (on: boolean) => void;
   setFixItForMe: (on: boolean) => void;
   setBeaconTone: (tone: DemoSettings["beaconTone"]) => void;
+  setAppearance: (appearance: DemoSettings["appearance"]) => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   notesOpen: boolean;
@@ -89,6 +92,7 @@ function applySeams(settings: DemoSettings) {
   window.__gdsTweakScope = "app";
   window.__gdsLayoutEngine = settings.engine;
   document.documentElement.setAttribute("data-beacon-tone", settings.beaconTone ?? "neutral");
+  document.documentElement.classList.toggle("dark", settings.appearance === "dark");
   // The sidebar's user line follows the persona: trial countdown, ended, or the plan.
   (window as unknown as { __gdsUserMeta?: string | null }).__gdsUserMeta = persona.trial
     ? `Trial: ${persona.trial.daysLeft} ${persona.trial.daysLeft === 1 ? "day" : "days"} left`
@@ -121,6 +125,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     upsell: true,
     fixItForMe: false,
     beaconTone: "neutral",
+    appearance: "light",
   });
   const [epoch, setEpoch] = React.useState(0);
   const [ready, setReady] = React.useState(false);
@@ -138,6 +143,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       upsell: true,
       fixItForMe: false,
       beaconTone: "neutral",
+      appearance: "light",
       ...(stored ?? {}),
     };
     if (urlPersona && PERSONAS.some((p) => p.id === urlPersona)) next.personaId = urlPersona;
@@ -148,6 +154,8 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     if (urlEngine === "native" || urlEngine === "native-fixed" || urlEngine === "modified") next.engine = urlEngine;
     const urlTone = params.get("tone");
     if (urlTone === "neutral" || urlTone === "tinted" || urlTone === "families" || urlTone === "vivid") next.beaconTone = urlTone;
+    const urlAppearance = params.get("appearance");
+    if (urlAppearance === "light" || urlAppearance === "dark") next.appearance = urlAppearance;
     const urlLook = params.get("look");
     if (urlLook && (urlLook === "authored" || (LOOK_PRESETS as Record<string, unknown>)[urlLook])) next.look = urlLook;
     if (next.look !== "authored" && !(LOOK_PRESETS as Record<string, unknown>)[next.look]) next.look = "authored";
@@ -200,6 +208,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       setUpsell: (upsell) => update({ upsell }),
       setFixItForMe: (fixItForMe) => update({ fixItForMe }),
       setBeaconTone: (beaconTone) => update({ beaconTone }),
+      setAppearance: (appearance) => update({ appearance }),
       setVariant: (base, slug) =>
         setSettings((prev) => {
           const next = { ...prev, variants: { ...prev.variants, [base]: slug } };
