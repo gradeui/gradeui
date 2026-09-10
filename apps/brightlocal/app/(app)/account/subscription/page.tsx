@@ -8,7 +8,6 @@
  * features called out because that is what brought them here.
  */
 
-import { useRouter } from "next/navigation";
 import { SidebarProvider, SidebarTrigger, GlobalLayoutContentBody, Logo } from "@brightlocal/ui-components";
 import { Button } from "@brightlocal/ui-components/button";
 import { Card, CardContent } from "@brightlocal/ui-components/card";
@@ -18,6 +17,8 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
 import { PLANS } from "@/lib/plans";
+import { useUrlParam } from "@/lib/url-state";
+import { TODAY } from "@/lib/reviews-data";
 import { pickIllustration } from "@/lib/illustrations";
 
 function Art({ keywords, className }: { keywords: string[]; className?: string }) {
@@ -29,10 +30,20 @@ export default function SubscriptionPage() {
   const persona = usePersona();
   const location = useLocationKey();
   const stats = statsFor(location, persona);
-  const router = useRouter();
+  // CHOOSING A PLAN (Ali, TODO 4: "decide what Choose Grow does"). It records
+  // the choice and says so. Not a fake checkout, because a prototype must
+  // never ask for card details, and not a persona switch, because that would
+  // claim the product did something it did not. `?chosen=` survives a reload
+  // and a share, and Change plan puts it back.
+  const [chosen, setChosen] = useUrlParam<"" | "track" | "manage" | "grow">("chosen", "");
+  const chosenPlan = PLANS.find((p) => p.id === chosen) ?? null;
   const trial = persona.trial;
   const lapsed = persona.lapsed;
-  const currentPlan = trial || lapsed || persona.engagement === "empty" ? null : "grow";
+  const paidPlan = trial || lapsed || persona.engagement === "empty" ? null : "grow";
+  const currentPlan = chosenPlan?.id ?? paidPlan;
+  const trialEnds = trial
+    ? new Date(TODAY.getTime() + trial.daysLeft * 86400000).toLocaleDateString("en-GB", { day: "numeric", month: "long" })
+    : null;
   const state = trial
     ? { title: `${trial.daysLeft} ${trial.daysLeft === 1 ? "day" : "days"} left on your free trial`, body: `Everything below is on while the trial runs. Pick a plan before it ends and nothing stops: the ${stats.total} reviews already in, the replies, the campaigns.`, cta: "Choose a plan", art: ["trial", "days"] }
     : lapsed
@@ -67,19 +78,42 @@ export default function SubscriptionPage() {
         }
       >
         <GlobalLayoutContentBody dataHook="subscription-page-body" className="flex flex-col gap-8 pb-10">
-          {/* The account's own state, in the dialog header format. */}
-          <section data-hook="subscription-state" className={`flex flex-col gap-5 rounded-[20px] px-8 py-7 lg:flex-row lg:items-center lg:justify-between ${lapsed ? "bg-[var(--ds-tailwind-colors-yellow-100)]" : "bg-[var(--ds-tailwind-colors-neutral-100)]"}`}>
-            <div className="flex items-center gap-5">
-              <Art keywords={state.art} className="size-16 shrink-0" />
-              <div className="flex flex-col gap-1">
-                <p className="text-heading-section font-display text-balance">{state.title}</p>
-                <p className="text-body max-w-[60ch] text-pretty">{state.body}</p>
+          {/* The account's own state, in the dialog header format. Once a plan
+              is chosen the same band confirms the choice and offers the way
+              back, so the page never has two headlines competing. */}
+          {chosenPlan ? (
+            <section data-hook="subscription-chosen" className="flex flex-col gap-5 rounded-[20px] bg-[var(--ds-tailwind-colors-green-100)] px-8 py-7 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-5">
+                <Art keywords={["success", "confirm"]} className="size-16 shrink-0" />
+                <div className="flex flex-col gap-1">
+                  <p className="text-heading-section font-display text-balance">{chosenPlan.name} it is.</p>
+                  <p className="text-body max-w-[62ch] text-pretty">
+                    {trial
+                      ? `You move onto ${chosenPlan.name} on ${trialEnds}, when the trial ends. Nothing stops in between, and the ${stats.total} reviews already in stay exactly where they are.`
+                      : lapsed
+                        ? `Welcome back. ${chosenPlan.name} switches everything on again at half price for the first month, and the reviews that arrived while you were away are waiting in the inbox.`
+                        : `You are moving to ${chosenPlan.name}, at $${chosenPlan.price} USD a month billed annually. ${chosenPlan.strap}.`}
+                  </p>
+                </div>
               </div>
-            </div>
-            {lapsed ? (
-              <span className="inline-flex w-fit shrink-0 items-center rounded-full bg-[var(--ds-tailwind-colors-neutral-950)] px-3 py-1 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]">First month half price</span>
-            ) : null}
-          </section>
+              <Button variant="outline" size="sm" dataHook="subscription-change-plan" className="w-fit shrink-0" onClick={() => setChosen(null)}>
+                Change plan
+              </Button>
+            </section>
+          ) : (
+            <section data-hook="subscription-state" className={`flex flex-col gap-5 rounded-[20px] px-8 py-7 lg:flex-row lg:items-center lg:justify-between ${lapsed ? "bg-[var(--ds-tailwind-colors-yellow-100)]" : "bg-[var(--ds-tailwind-colors-neutral-100)]"}`}>
+              <div className="flex items-center gap-5">
+                <Art keywords={state.art} className="size-16 shrink-0" />
+                <div className="flex flex-col gap-1">
+                  <p className="text-heading-section font-display text-balance">{state.title}</p>
+                  <p className="text-body max-w-[60ch] text-pretty">{state.body}</p>
+                </div>
+              </div>
+              {lapsed ? (
+                <span className="inline-flex w-fit shrink-0 items-center rounded-full bg-[var(--ds-tailwind-colors-neutral-950)] px-3 py-1 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]">First month half price</span>
+              ) : null}
+            </section>
+          )}
 
           {/* THE UPGRADE PATH (Ali, 11 Sep): the ladder from where this account
               stands, each step saying what it adds and what that means for
@@ -87,7 +121,7 @@ export default function SubscriptionPage() {
               path reads as where you land when it ends. */}
           <section className="flex flex-col gap-4" data-hook="upgrade-path">
             <div className="flex flex-col gap-1">
-              <p className="text-heading-section font-display">{trial ? "Where you land when the trial ends" : lapsed ? "Pick up where you left off" : currentPlan ? "Your plan, and what the others add" : "The upgrade path"}</p>
+              <p className="text-heading-section font-display">{chosenPlan ? `${chosenPlan.name}, and what the others add` : trial ? "Where you land when the trial ends" : lapsed ? "Pick up where you left off" : currentPlan ? "Your plan, and what the others add" : "The upgrade path"}</p>
               <p className="text-body-sm text-muted-foreground max-w-[64ch] text-pretty">{trial ? "The trial runs on Grow. Choose the step that fits, and everything below that step stays." : "Each step keeps everything from the one before it."}</p>
             </div>
             <ol className="grid gap-3 lg:grid-cols-3">
@@ -111,7 +145,7 @@ export default function SubscriptionPage() {
                     <p className={`text-body ${isCurrent ? "" : ""}`}>{plan.strap}</p>
                     <p className={`text-body-sm text-pretty ${isCurrent ? "opacity-80" : "text-muted-foreground"}`}>{unlocks}</p>
                     {!isCurrent && (currentPlan === null || PLANS.findIndex((p) => p.id === currentPlan) < i) ? (
-                      <Button variant={plan.id === "grow" ? "primary" : "outline"} size="sm" dataHook={`upgrade-step-${plan.id}-cta`} className="mt-auto w-fit" onClick={() => router.push(`/account/subscription?chosen=${plan.id}`)}>
+                      <Button variant={plan.id === "grow" ? "primary" : "outline"} size="sm" dataHook={`upgrade-step-${plan.id}-cta`} className="mt-auto w-fit" onClick={() => setChosen(plan.id)}>
                         {trial ? `Land on ${plan.name}` : lapsed ? `Come back on ${plan.name}` : `Upgrade to ${plan.name}`}
                         <ArrowRight className="size-4" />
                       </Button>
@@ -134,7 +168,7 @@ export default function SubscriptionPage() {
                         <p className="text-label-sm font-semibold uppercase tracking-wide">{plan.name}</p>
                         <p className="text-body-sm text-muted-foreground">{plan.strap}</p>
                       </div>
-                      {isCurrent ? <span className="rounded-sm border px-2 py-0.5 text-label-sm">Your plan</span> : isReviews ? <span className="rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]">Reviews live here</span> : null}
+                      {isCurrent ? <span className="rounded-sm border px-2 py-0.5 text-label-sm">{chosenPlan ? "Your choice" : "Your plan"}</span> : isReviews ? <span className="rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]">Reviews live here</span> : null}
                     </div>
                     <p className="flex items-baseline gap-2">
                       <span className="text-display font-display leading-none">${plan.price}</span>
@@ -148,8 +182,17 @@ export default function SubscriptionPage() {
                       ))}
                     </ul>
                     <div className="mt-auto pt-2">
-                      <Button variant={isReviews ? "primary" : "outline"} dataHook={`plan-${plan.id}-cta`} onClick={() => router.push(`/account/subscription?chosen=${plan.id}`)} className="w-full">
-                        {isCurrent ? "Manage billing" : trial ? `Try ${plan.name} free` : lapsed ? `Come back on ${plan.name}` : `Choose ${plan.name}`}
+                      <Button
+                        variant={isReviews ? "primary" : "outline"}
+                        dataHook={`plan-${plan.id}-cta`}
+                        // Manage billing is not a plan choice, so it must not set
+                        // `chosen` and claim you are "moving to Grow" when you are
+                        // already on it. Deliberately inert, like the other
+                        // account-admin buttons in the prototype.
+                        onClick={isCurrent && !chosenPlan ? undefined : () => setChosen(plan.id)}
+                        className="w-full"
+                      >
+                        {isCurrent ? (chosenPlan ? "Chosen" : "Manage billing") : trial ? `Try ${plan.name} free` : lapsed ? `Come back on ${plan.name}` : `Choose ${plan.name}`}
                         <ArrowRight className="size-4" />
                       </Button>
                     </div>

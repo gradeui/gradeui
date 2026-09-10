@@ -14,10 +14,21 @@ Open items in the order I would take them.
    and friends) are not in @brightlocal/illustrations 0.6.0. Drop the SVGs
    into public/globey/ and swap the stand-ins (QR banner, first-run band,
    dialog headers). lib/illustrations.ts is the meaning catalogue.
-4. **Subscription page, second pass.** The plan CTAs route to
-   ?chosen=<plan> and do nothing else. Decide what "Choose Grow" does in
-   the prototype (a confirmation state, a fake checkout, or a persona
-   switch to engaged). The half-price win-back is a proposal, not a
+4. **Subscription page, second pass.** DONE 10 Sep: a **confirmation
+   state**. Not a fake checkout, because a prototype must never ask for
+   card details, and not a persona switch, because that would claim the
+   product did something it did not. Choosing a plan sets `?chosen=`, the
+   state band turns green and says what the choice means in this account's
+   own terms (the trial persona gets the date the trial ends and its
+   review count, the lapsed one gets the half-price line, everyone else
+   gets the price), the ladder and the cards mark it "Your choice", and
+   Change plan puts it all back. Manage billing on the plan you already
+   have is deliberately inert rather than claiming you are moving to it.
+   STILL OPEN: the four FAQ questions are the real ones off
+   brightlocal.com/pricing, but the harvest only caught the questions
+   because the accordions were shut, so there are no answers to quote and
+   the boxes do not open. Either link them out to the pricing page or get
+   the answers. The half-price win-back is still a proposal, not a
    BrightLocal offer.
 5. **Other Insights & Actions areas.** Website, Google Business Profile,
    Citations and Export are still skeletons. The Reviews roadmap page is
