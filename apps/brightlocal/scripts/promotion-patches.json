@@ -154,6 +154,21 @@
       "why": "a rating impact of 0.0 was painted in the positive green (send campaign tiles)",
       "find": "        { label: \"Clicked\", value: (stats.clicked ?? 0).toLocaleString() },\n        { label: \"Reviews gained\", value: String(stats.reviews ?? 0), tone: \"success\",\n          info: \"New reviews this campaign brought in, matched on timing.\" },\n        { label: \"Rating impact\", value: stats.impact ?? \"0.0\", tone: \"success\",\n          info: \"Rating change from this campaign's reviews only.\" },",
       "replace": "        { label: \"Clicked\", value: (stats.clicked ?? 0).toLocaleString() },\n        { label: \"Reviews gained\", value: String(stats.reviews ?? 0), tone: \"success\",\n          info: \"New reviews this campaign brought in, matched on timing.\" },\n        // NOT success when nothing moved (Builder audit, 10 Sep): a flat 0.0\n        // rendered in the positive green reads as good news.\n        { label: \"Rating impact\", value: stats.impact ?? \"0.0\", tone: Number(String(stats.impact ?? \"0\").replace(\"+\", \"\")) > 0 ? \"success\" : undefined,\n          info: \"Rating change from this campaign's reviews only.\" },"
+    },
+    {
+      "why": "statsFor, for the spike count the rows actually contain",
+      "find": "import { profileFor } from \"@/lib/location-profiles\";",
+      "replace": "import { profileFor } from \"@/lib/location-profiles\";\nimport { statsFor } from \"@/lib/reviews-data\";"
+    },
+    {
+      "why": "the spike campaign is credited with the reviews the rows actually hold, so the table, the hub and the nugget stop disagreeing",
+      "find": "function scaleCampaigns(list, profile) {",
+      "replace": "/** The spike campaign gained what the review rows say it gained (Builder\n *  audit, 10 Sep). One screen read \"Bank Holiday Visitors ... 4\" in the\n *  table, \"brought 29 reviews in two days\" in the nugget and \"brought 29\n *  reviews on 3 Sep\" on the hub card. spikeDayCount is counted off the rows\n *  themselves, so it wins and the seed follows it. */\nfunction creditSpike(list, profile, stats) {\n  const name = profile?.recent?.spike?.campaign;\n  const gained = stats?.spikeDayCount ?? 0;\n  if (!name || gained <= 0) return list;\n  return list.map((c) => (c.name === name && c.stats ? { ...c, stats: { ...c.stats, reviews: gained } } : c));\n}\n\nfunction scaleCampaigns(list, profile) {"
+    },
+    {
+      "why": "credit the spike campaign after scaling",
+      "find": "  const [campaigns, setCampaigns] = useState(() => {\n    const profile = profileFor(locationKey, persona);\n    return scaleCampaigns(seedCampaigns().slice(0, profile.campaigns), profile);\n  });",
+      "replace": "  const [campaigns, setCampaigns] = useState(() => {\n    const profile = profileFor(locationKey, persona);\n    const scaled = scaleCampaigns(seedCampaigns().slice(0, profile.campaigns), profile);\n    return creditSpike(scaled, profile, statsFor(locationKey, persona));\n  });"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [

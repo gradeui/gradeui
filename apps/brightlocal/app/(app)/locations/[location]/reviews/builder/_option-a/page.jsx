@@ -118,6 +118,7 @@ import { usePersona } from "@/lib/demo";
 import { QrBanner } from "@/components/qr-banner";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
+import { statsFor } from "@/lib/reviews-data";
 import { BeaconPageStrip } from "@/components/review-summary";
 import { BeaconNugget } from "@/components/beacon-nugget";
 import {
@@ -5132,6 +5133,18 @@ function Gauge({ value, min, max, bands, display, caption, dataHook, legend = tr
 // that has 79 in total. Everything moves by the same ratio, then each funnel
 // step is clamped to the one above it so rounding can never invert it.
 const SEED_TOTAL_REVIEWS = 1116;
+/** The spike campaign gained what the review rows say it gained (Builder
+ *  audit, 10 Sep). One screen read "Bank Holiday Visitors ... 4" in the
+ *  table, "brought 29 reviews in two days" in the nugget and "brought 29
+ *  reviews on 3 Sep" on the hub card. spikeDayCount is counted off the rows
+ *  themselves, so it wins and the seed follows it. */
+function creditSpike(list, profile, stats) {
+  const name = profile?.recent?.spike?.campaign;
+  const gained = stats?.spikeDayCount ?? 0;
+  if (!name || gained <= 0) return list;
+  return list.map((c) => (c.name === name && c.stats ? { ...c, stats: { ...c.stats, reviews: gained } } : c));
+}
+
 function scaleCampaigns(list, profile) {
   const total = Number(String(profile?.hub?.reviews ?? "").replace(/,/g, "")) || SEED_TOTAL_REVIEWS;
   if (total >= SEED_TOTAL_REVIEWS) return list;
@@ -6087,7 +6100,8 @@ export default function RMReviewBuilderPage() {
   // answers for both empty and starter, so the "new" special case goes too.
   const [campaigns, setCampaigns] = useState(() => {
     const profile = profileFor(locationKey, persona);
-    return scaleCampaigns(seedCampaigns().slice(0, profile.campaigns), profile);
+    const scaled = scaleCampaigns(seedCampaigns().slice(0, profile.campaigns), profile);
+    return creditSpike(scaled, profile, statsFor(locationKey, persona));
   });
   const [templates, setTemplates] = useState(seedTemplates);
   const [draft, setDraft] = useState(blankCampaignDraft);
