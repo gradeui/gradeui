@@ -90,8 +90,12 @@ Open items in the order I would take them.
     7:50 in the order overview, day one, the trial, the gap, walkthrough,
     popovers, with order.txt beside it so it can be re-cut. Straight
     stream copy, no re-encode.
-    Remaining: a flow per section if the six do not cover enough. Plan in
-    notes/VIDEOS.md.
+    The library page is /meta/videos, with a player at /meta/videos/<slug>:
+    sections you can jump between, a real subtitle track, a clickable
+    transcript, scrub-bar previews and tag filtering. The whole pipeline
+    is written up in notes/VIDEOS.md.
+    Remaining: a flow per section if the six do not cover enough, and
+    voiceover, which is the point of having a synced subtitle track.
     NOTE: recording needs disk. Each Next dev server's `.next/dev` cache
     grows without bound (brightlocal's had reached 11 GB and apps/docs is
     at 12 GB, which filled the disk mid-run on 10 Sep). Stop the server,
@@ -212,3 +216,26 @@ Open items in the order I would take them.
       as a heading, the starter Builder page makes the same argument three
       times with three buttons that all create a campaign, and the
       Showcase's "..." menu holds one item.
+
+19. **Video leftovers** (10 Sep, from the two frame-by-frame audits).
+    - **the-gap, 26.7s to 32.2s: three layers superimposed.** The Review
+      Manager page, a ghosted "Your plan for this week" drawer and a
+      ghosted auto-reply popover are all visible at once for 5.5 seconds,
+      with the headline printed twice at two sizes. Not a crossfade: two
+      frames three seconds apart are identical in composition. Needs
+      reproducing by hand before guessing at a cause; the flow clicks a
+      popover open while a dialog is still on screen, which is the first
+      thing to rule out.
+    - **The Reviews empty state wraps its three steps badly**: "1 Connect
+      your review sites  2 Ask customers for reviews" share a row and
+      "3 Reply, then show the best" drops under item 1.
+    - **Content clipped at the framed screen's bottom edge.** The stage
+      frames 1280x900 and several scenes have a sentence or a stat cut in
+      half at the fold for the whole shot. Either scroll to it in the flow
+      or give the stage a taller frame.
+    - **A paused frame can contradict its caption.** the-gap opens on
+      "Hove looks fine. The lifetime rating is 4.4." while the biggest
+      thing on screen says Hove is falling behind. The next caption
+      resolves it, which is the point, but it reads badly as a still.
+    - **Two persona names in one set**: day-one uses Alastair Driver,
+      the-gap uses Sofia Marsh. Fine if deliberate.

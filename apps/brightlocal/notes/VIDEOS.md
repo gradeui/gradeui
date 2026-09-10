@@ -93,6 +93,50 @@ Tracker, Builder, Showcase, roadmap, account, tones, end card. Built
 with join-sections from the nine renders so any one can be re-rendered
 alone. Chapters marked so Figma Slides can take it in pieces too.
 
+## The library page
+
+`/meta/videos` is the grid and `/meta/videos/<slug>` is the player. Both
+are unlisted, like everything under /meta, and the whole app is noindex.
+`/meta` indexes the four surfaces.
+
+**The pipeline, end to end.**
+
+1. `node scripts/record-video.mjs --flow=scripts/flows/<name>.json`
+   writes `~/Desktop/brightlocal-videos/<flow>-<stamp>/` holding the mp4,
+   the raw webm, the flow file, **captions.vtt** and **chapters.json**.
+   The recorder keeps a timeline: every caption and every cut-scene card
+   stamps itself against wall clock, less the head trim it measures off
+   the front, so the subtitle track lands on the frame it describes.
+2. `node scripts/publish-videos.mjs [--only=<flow>]` takes the newest
+   recording per flow and writes into `public/videos/`: the web-sized mp4
+   (1280 wide, faststart, about 1.4 MB a minute), the subtitle track, a
+   poster, **one still per section named by that section's id**, and a
+   sprite sheet plus thumbnail VTT for the scrub-bar previews. It also
+   regenerates `lib/videos.generated.ts`.
+3. Write the title, description and tags in `lib/videos.ts`, keyed by
+   slug. Publishing again never touches that file, so re-recording a
+   video never overwrites the writing.
+
+**Section ids.** `<flow>--<nn>-<card>`, for example
+`the-gap--03-tracker`. The id is also the thumbnail's filename
+(`/videos/thumbs/<id>.jpg`) and the anchor on the player page, so a
+section can be pointed at from anywhere without looking anything up. The
+section's name and one-line description are read off the cut-scene card
+the video actually shows, so the page and the video cannot drift apart.
+Override one in `lib/videos.ts` only if the card itself is wrong.
+
+**Subtitles are off by default in the player.** The caption is painted
+into the video by the capture stage, because the same frames go to Figma
+and anywhere else with no player around them, so showing the `<track>` as
+well renders every line twice. The track still ships and still downloads,
+and the Subtitles button turns it on.
+
+**Storage.** The repo, under `public/videos/`. At web size the whole set
+is around 10 MB, which git carries without complaint and Vercel serves
+with no credentials and no signed URLs. Move to Supabase Storage or
+Vercel Blob when this is dozens of videos, or when someone needs to
+upload one without a commit.
+
 ## Where the videos live
 
 `~/Desktop/brightlocal-videos/<flow-name>-<stamp>/` holds the mp4, the raw
