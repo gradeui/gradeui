@@ -77,6 +77,13 @@ at 1920x1080 is the Figma Slides frame. Content lives in lib/cards.ts.
 
 ## The stitched master
 
+BUILT 10 Sep: `~/Desktop/brightlocal-videos/insights-master-2026-09-10/`
+holds `insights-master.mp4` (7:50) and the `order.txt` it was cut from.
+All six clips are 1920x1080 at 30fps, so it is a straight
+`ffmpeg -f concat -c copy`, no re-encode and no quality loss. Re-cut it by
+editing order.txt and running that command again.
+
+
 One long cut of everything, in the order above: overview, hub, Manager,
 Tracker, Builder, Showcase, roadmap, account, tones, end card. Built
 with join-sections from the nine renders so any one can be re-rendered

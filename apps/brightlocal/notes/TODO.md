@@ -85,8 +85,13 @@ Open items in the order I would take them.
     the-trial and day-one-to-habit, in ~/Desktop/brightlocal-videos/.
     The runner is scripts/record-video.mjs, the stage is /meta/capture,
     the flows are scripts/flows/*.json.
-    Remaining: the stitched master, and a flow per section if the six do
-    not cover enough. Plan in notes/VIDEOS.md.
+    The stitched master is
+    ~/Desktop/brightlocal-videos/insights-master-2026-09-10/insights-master.mp4,
+    7:50 in the order overview, day one, the trial, the gap, walkthrough,
+    popovers, with order.txt beside it so it can be re-cut. Straight
+    stream copy, no re-encode.
+    Remaining: a flow per section if the six do not cover enough. Plan in
+    notes/VIDEOS.md.
     NOTE: recording needs disk. Each Next dev server's `.next/dev` cache
     grows without bound (brightlocal's had reached 11 GB and apps/docs is
     at 12 GB, which filled the disk mid-run on 10 Sep). Stop the server,
