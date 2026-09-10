@@ -17,6 +17,7 @@ export function CutSceneCard({ card }: { card: CardSpec }) {
   return (
     <div
       data-hook={`card-${card.slug}`}
+      data-cut-scene-card={card.slug}
       className="flex h-full w-full items-center justify-center"
       style={{ background: card.surface, color: ink }}
     >
@@ -25,11 +26,14 @@ export function CutSceneCard({ card }: { card: CardSpec }) {
           <Art className="size-[24rem]" />
         </div>
         <div className="flex flex-col gap-6">
+          {/* NO EYEBROW (Ali, 10 Sep: "we can lose all the eyebrows next to the
+              badges"). The badge said Insights and the kicker said "Reviews" or
+              "Three days left" beside it, which is a second label doing the
+              first one's job. The title says what the card is. */}
           <div className="flex items-center gap-4">
             <span className="rounded-md border-2 px-3 py-1 text-[1.5rem] font-semibold" style={{ borderColor: ink }}>
               Insights
             </span>
-            <span className="text-stage-kicker opacity-80">{card.kicker}</span>
           </div>
           <h1 className="text-stage-title text-balance">{card.title}</h1>
           <p className="text-stage-line max-w-[26ch] text-pretty opacity-90">{card.line}</p>

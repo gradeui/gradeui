@@ -58,13 +58,13 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
   React.useEffect(() => {
     const fit = () => {
       const availW = window.innerWidth - pad * 2;
-      const availH = window.innerHeight - pad * 2 - (state.caption ? CAPTION_BAND : 0);
+      const availH = window.innerHeight - pad * 2 - CAPTION_BAND;
       setScale(Math.min(availW / w, availH / h));
     };
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
-  }, [w, h, pad, state.caption]);
+  }, [w, h, pad]);
 
   React.useEffect(() => {
     window.__stage = {
@@ -108,7 +108,9 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
       style={{
         background: stage.bg,
         color: stage.ink,
-        gridTemplateRows: state.caption ? `1fr ${CAPTION_BAND}px` : "1fr",
+        // ALWAYS reserved: a caption arriving used to shrink the row and
+        // rescale the frame mid-shot.
+        gridTemplateRows: `1fr ${CAPTION_BAND}px`,
         paddingTop: pad,
         transition: "background-color 480ms ease-out, color 480ms ease-out",
       }}
@@ -146,22 +148,25 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
           />
         </div>
       </div>
-      {state.caption ? (
-        <div
-          className="flex items-center justify-center px-24 pb-8"
-          style={{
-            opacity: ready && !cardSpec ? 1 : 0,
-            transform: ready && !cardSpec ? "none" : "translateY(10px)",
-            // Always behind the frame: the product lands, then the line
-            // about it (Ali, 12 Sep).
-            transition: "opacity 480ms ease-out 420ms, transform 480ms ease-out 420ms",
-          }}
-        >
-          <p data-hook="capture-caption" className="text-stage-caption max-w-[44ch] text-center text-balance">
-            {state.caption}
-          </p>
-        </div>
-      ) : null}
+      {/* A SUBTITLE, NOT AN ANIMATION (Ali, 10 Sep: "the subtitles sometimes
+          fade in and out and back in, also a bit out of sync, I need them in
+          sync because I'm going to get an audio transcript on the screen").
+          It used to hang off `ready`, which goes false on every navigation, so
+          each page change faded the line out, waited 700ms for load plus a
+          420ms delay, then faded it back in. The line now changes exactly when
+          the step changes and holds through the reload. The only thing that
+          hides it is a cut-scene card covering the canvas. */}
+      <div
+        className="flex items-center justify-center px-24 pb-8"
+        style={{
+          opacity: state.caption && !cardSpec ? 1 : 0,
+          transition: "opacity 160ms linear",
+        }}
+      >
+        <p data-hook="capture-caption" className="text-stage-caption max-w-[44ch] text-center text-balance">
+          {state.caption}
+        </p>
+      </div>
       <Logo
         dataHook="stage-logo"
         data-ink={stage.ink === "var(--ds-tailwind-colors-base-white)" ? "white" : "black"}

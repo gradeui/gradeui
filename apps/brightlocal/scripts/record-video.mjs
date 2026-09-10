@@ -88,12 +88,33 @@ await ctx.addInitScript((s) => {
 }, settings(flow.persona ?? "engaged"));
 
 const page = await ctx.newPage();
+// THE TIMELINE (Ali, 10 Sep: "I need them in sync ... I will alongside this
+// want an official subtitle track, and points in the video that can be jumped
+// to"). recordVideo starts with the first page, so wall clock from here is
+// video time, less the HEAD_TRIM the encode takes off the front. Every caption
+// and every cut-scene card stamps itself, and the two sidecars fall out of it.
+const HEAD_TRIM = 0.7;
+const t0 = Date.now();
+const marks = [];
+const at = () => Math.max(0, (Date.now() - t0) / 1000 - HEAD_TRIM);
+const mark = (kind, text, extra) => { if (text) marks.push({ kind, text, t: at(), ...extra }); };
 let persona = flow.persona ?? "engaged";
 let bg = flow.bg ?? "neutral";
 let currentUrl = null;
 let onStage = false;
 
 const frame = () => page.frameLocator("[data-hook=capture-frame]");
+
+/** A chapter, read off the cut-scene card itself so the video, the page and
+ *  the thumbnail can never drift apart: the card's headline is the section
+ *  name and its line is the section's description. */
+async function cardChapter(slug) {
+  const card = page.locator("[data-cut-scene-card]").first();
+  const clean = (t) => (t || "").replace(/\s+/g, " ").trim();
+  const title = clean(await card.locator("h1").first().innerText({ timeout: 4000 }).catch(() => null));
+  const line = clean(await card.locator("p").first().innerText({ timeout: 2000 }).catch(() => null));
+  return { slug, title: title || slug, line };
+}
 
 /** The trial recap opens on its own when the persona is a trial or a lapsed
  *  trial, and it swallows every click behind it. A flow that wants it on
@@ -130,11 +151,13 @@ for (const [i, step] of flow.steps.entries()) {
       // opens on the card rather than on an empty canvas.
       await page.goto(stageUrl(flow.steps.find((x) => x.go)?.go ?? "/locations/minus-one-studios/reviews", bg, undefined, step.card), { waitUntil: "domcontentloaded", timeout: 90000 });
       onStage = true;
+      { const c = await cardChapter(step.card); mark("card", c.title, { slug: c.slug, line: c.line }); }
       await wait(step.ms ?? 2600);
       await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor({ timeout: 40000 }).catch(() => {});
       continue;
     }
     await page.evaluate((slug) => window.__stage?.card(slug), step.card);
+    { const c = await cardChapter(step.card); mark("card", c.title, { slug: c.slug, line: c.line }); }
     await wait(step.ms ?? 2600);
     continue;
   }
@@ -149,6 +172,7 @@ for (const [i, step] of flow.steps.entries()) {
     } else {
       await page.evaluate((next) => window.__stage?.set(next), { url: step.go, bg, caption: step.caption ?? undefined, card: null });
     }
+    mark("caption", step.caption);
     currentUrl = step.go;
     await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor({ timeout: 40000 }).catch(() => {});
     // The caption trails the frame by ~900ms, so hold at least that long.
@@ -161,6 +185,7 @@ for (const [i, step] of flow.steps.entries()) {
     // Repaint the stage caption without reloading the app inside: the
     // iframe keeps its state, only the canvas text changes.
     await page.evaluate((text) => window.__stage?.set({ caption: text }), step.caption);
+    mark("caption", step.caption);
     await wait(step.ms ?? 900);
     continue;
   }
@@ -227,4 +252,49 @@ const mp4 = path.join(outDir, `${args.out ?? flow.name}.mp4`);
 // does, and it is always at the head (Ali, 12 Sep).
 execFileSync(ffmpeg, ["-y", "-ss", "0.7", "-i", videoPath, "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30", mp4], { stdio: "inherit" });
 fs.writeFileSync(path.join(outDir, "flow.json"), JSON.stringify(flow, null, 2));
+
+// ── THE SIDECARS ──────────────────────────────────────────────────────
+// captions.vtt is a real subtitle track: a cue runs from the moment its
+// caption was set until the next caption or card. chapters.json is the
+// jump-to list, one entry per cut-scene card plus the opening.
+const total = at();
+const clock = (sec) => {
+  const s = Math.max(0, sec);
+  const h = String(Math.floor(s / 3600)).padStart(2, "0");
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+  const ss = String(Math.floor(s % 60)).padStart(2, "0");
+  const ms = String(Math.round((s % 1) * 1000)).padStart(3, "0");
+  return `${h}:${m}:${ss}.${ms}`;
+};
+const cues = [];
+marks.forEach((m, i) => {
+  if (m.kind !== "caption") return;
+  const end = marks[i + 1]?.t ?? total;
+  if (end - m.t < 0.4) return;
+  cues.push(`${cues.length + 1}\n${clock(m.t)} --> ${clock(end)}\n${m.text}\n`);
+});
+fs.writeFileSync(path.join(outDir, "captions.vtt"), `WEBVTT\n\n${cues.join("\n")}`);
+
+// A STABLE ID PER SECTION (Ali, 10 Sep: "name the thumbnails for the sections
+// with unique IDs so I can reference them easily"). `<flow>--<nn>-<card>`, and
+// the section's thumbnail is that id with .jpg on the end, so a section can be
+// pointed at from anywhere without looking anything up.
+const cardMarks = marks.filter((m) => m.kind === "card");
+const chapters = cardMarks.map((m, i) => {
+  const next = cardMarks[i + 1];
+  return {
+    id: `${flow.name}--${String(i + 1).padStart(2, "0")}-${m.slug}`,
+    card: m.slug,
+    title: m.text,
+    description: m.line ?? "",
+    t: Number(m.t.toFixed(2)),
+    end: Number((next?.t ?? total).toFixed(2)),
+  };
+});
+fs.writeFileSync(
+  path.join(outDir, "chapters.json"),
+  JSON.stringify({ name: flow.name, duration: Number(total.toFixed(2)), chapters, marks: marks.map((m) => ({ ...m, t: Number(m.t.toFixed(2)) })) }, null, 2),
+);
+
 console.log(`\n${mp4}`);
+console.log(`${cues.length} caption cues, ${chapters.length} chapters`);
