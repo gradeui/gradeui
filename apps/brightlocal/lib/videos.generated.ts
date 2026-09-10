@@ -115,8 +115,8 @@ export const RECORDED: RecordedVideo[] = [
         "text": "Make reviews a habit, not a project."
       }
     ],
-    "tileW": 240,
-    "tileH": 136
+    "tileW": 320,
+    "tileH": 180
   },
   {
     "slug": "insights-overview",
@@ -228,12 +228,12 @@ export const RECORDED: RecordedVideo[] = [
         "text": "Nine days after the trial ended."
       }
     ],
-    "tileW": 240,
-    "tileH": 136
+    "tileW": 320,
+    "tileH": 180
   },
   {
     "slug": "insights-popovers",
-    "duration": 129.64,
+    "duration": 121.27,
     "chapters": [
       {
         "id": "insights-popovers--01-popovers",
@@ -241,68 +241,140 @@ export const RECORDED: RecordedVideo[] = [
         "title": "What it says when you ask",
         "description": "The eight dialogs, in order, with nothing else in the way.",
         "t": 0,
-        "end": 96.96,
+        "end": 2.73,
         "thumb": "/videos/thumbs/insights-popovers--01-popovers.jpg"
       },
       {
-        "id": "insights-popovers--02-end",
+        "id": "insights-popovers--02-summary",
+        "card": "summary",
+        "title": "The summary",
+        "description": "One headline, one line, and the findings you can open.",
+        "t": 2.73,
+        "end": 20.28,
+        "thumb": "/videos/thumbs/insights-popovers--02-summary.jpg"
+      },
+      {
+        "id": "insights-popovers--03-plan",
+        "card": "plan",
+        "title": "The plan",
+        "description": "This week's goal, and what auto-reply would have written.",
+        "t": 20.28,
+        "end": 31.59,
+        "thumb": "/videos/thumbs/insights-popovers--03-plan.jpg"
+      },
+      {
+        "id": "insights-popovers--04-tracker",
+        "card": "tracker",
+        "title": "The Tracker",
+        "description": "The trend across every review site, and what moved it.",
+        "t": 31.59,
+        "end": 43.56,
+        "thumb": "/videos/thumbs/insights-popovers--04-tracker.jpg"
+      },
+      {
+        "id": "insights-popovers--05-builder",
+        "card": "builder",
+        "title": "The Builder",
+        "description": "Asking is the only thing that moves the count.",
+        "t": 43.56,
+        "end": 54.62,
+        "thumb": "/videos/thumbs/insights-popovers--05-builder.jpg"
+      },
+      {
+        "id": "insights-popovers--06-qr",
+        "card": "qr",
+        "title": "The QR code",
+        "description": "Generated on the page, sized for the till or the door.",
+        "t": 54.62,
+        "end": 66.71,
+        "thumb": "/videos/thumbs/insights-popovers--06-qr.jpg"
+      },
+      {
+        "id": "insights-popovers--07-showcase",
+        "card": "showcase",
+        "title": "The Showcase",
+        "description": "Your best reviews, and what they are worth on your own site.",
+        "t": 66.71,
+        "end": 81.38,
+        "thumb": "/videos/thumbs/insights-popovers--07-showcase.jpg"
+      },
+      {
+        "id": "insights-popovers--08-trial",
+        "card": "trial",
+        "title": "On a trial",
+        "description": "Three days left, and what the trial has found so far.",
+        "t": 81.38,
+        "end": 91.19,
+        "thumb": "/videos/thumbs/insights-popovers--08-trial.jpg"
+      },
+      {
+        "id": "insights-popovers--09-lapsed",
+        "card": "lapsed",
+        "title": "After it ended",
+        "description": "Nine days on, with reviews still arriving and nobody watching.",
+        "t": 91.19,
+        "end": 96.82,
+        "thumb": "/videos/thumbs/insights-popovers--09-lapsed.jpg"
+      },
+      {
+        "id": "insights-popovers--10-end",
         "card": "end",
         "title": "Someone sat next to you",
         "description": "Telling you what to do about your reviews, in your own numbers.",
-        "t": 96.96,
-        "end": 129.64,
-        "thumb": "/videos/thumbs/insights-popovers--02-end.jpg"
+        "t": 96.82,
+        "end": 121.27,
+        "thumb": "/videos/thumbs/insights-popovers--10-end.jpg"
       }
     ],
     "transcript": [
       {
-        "t": 2.706,
-        "end": 16.075,
+        "t": 2.729,
+        "end": 16.103,
         "text": "1. The summary. One headline, one line, and the findings you can open."
       },
       {
-        "t": 16.075,
-        "end": 20.245,
+        "t": 16.103,
+        "end": 20.28,
         "text": "Every finding ends in the thing that fixes it."
       },
       {
-        "t": 20.245,
-        "end": 32.042,
+        "t": 20.282,
+        "end": 31.589,
         "text": "2. The plan, and what auto-reply would have written."
       },
       {
-        "t": 32.042,
-        "end": 44.181,
+        "t": 31.591,
+        "end": 43.562,
         "text": "3. The Tracker. The charts cycle on their own."
       },
       {
-        "t": 44.181,
-        "end": 55.437,
+        "t": 43.565,
+        "end": 54.617,
         "text": "4. The Builder. Asking is the only thing that moves the count."
       },
       {
-        "t": 55.437,
-        "end": 67.554,
+        "t": 54.618,
+        "end": 66.708,
         "text": "5. And the QR code, generated on the page."
       },
       {
-        "t": 67.554,
-        "end": 81.403,
+        "t": 66.71,
+        "end": 81.381,
         "text": "6. The Showcase, and what the reviews are worth."
       },
       {
-        "t": 81.403,
-        "end": 91.328,
+        "t": 81.385,
+        "end": 91.185,
         "text": "7. Three days left on the trial, and what it found."
       },
       {
-        "t": 91.328,
-        "end": 96.961,
+        "t": 91.188,
+        "end": 96.822,
         "text": "8. And nine days after it ended."
       }
     ],
-    "tileW": 240,
-    "tileH": 136
+    "tileW": 320,
+    "tileH": 180
   },
   {
     "slug": "insights-walkthrough",
@@ -414,8 +486,8 @@ export const RECORDED: RecordedVideo[] = [
         "text": "All of it as a plan, three stages at a time."
       }
     ],
-    "tileW": 240,
-    "tileH": 136
+    "tileW": 320,
+    "tileH": 180
   },
   {
     "slug": "the-gap",
@@ -485,8 +557,8 @@ export const RECORDED: RecordedVideo[] = [
         "text": "The recent window is the number to watch."
       }
     ],
-    "tileW": 240,
-    "tileH": 136
+    "tileW": 320,
+    "tileH": 180
   },
   {
     "slug": "the-trial",
@@ -561,7 +633,7 @@ export const RECORDED: RecordedVideo[] = [
         "text": "So the win-back says exactly that."
       }
     ],
-    "tileW": 240,
-    "tileH": 136
+    "tileW": 320,
+    "tileH": 180
   }
 ];

@@ -26,7 +26,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Play, Pause, Volume2, VolumeX, Maximize2, ChevronLeft, ChevronRight, Subtitles } from "@brightlocal/icons";
+import { Play, Pause, Volume2, VolumeX, Maximize2, Minimize2, ChevronLeft, ChevronRight, Subtitles } from "@brightlocal/icons";
 import { Button } from "@brightlocal/ui-components/button";
 import { stamp, type Video } from "@/lib/videos";
 
@@ -49,6 +49,12 @@ function parseThumbs(text: string): ThumbCue[] {
 
 export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video | null; next: Video | null }) {
   const ref = React.useRef<HTMLVideoElement>(null);
+  // FULL SCREEN TAKES THE WHOLE PLAYER, not just the video. It used to
+  // fullscreen the black box the <video> sits in, which does enter, but the
+  // scrub bar and every control are siblings of that box, so you got a bare
+  // video with no way to seek and no way out but Escape.
+  const shellRef = React.useRef<HTMLDivElement>(null);
+  const [full, setFull] = React.useState(false);
   const barRef = React.useRef<HTMLDivElement>(null);
   const transcriptRef = React.useRef<HTMLOListElement>(null);
   const [playing, setPlaying] = React.useState(false);
@@ -88,6 +94,27 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
     return () => el.removeEventListener("loadedmetadata", apply);
   }, [captionsOn]);
 
+  const toggleFull = React.useCallback(() => {
+    const el = shellRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }) | null;
+    const doc = document as Document & { webkitExitFullscreen?: () => Promise<void>; webkitFullscreenElement?: Element };
+    if (!el) return;
+    if (document.fullscreenElement || doc.webkitFullscreenElement) {
+      void (document.exitFullscreen?.() ?? doc.webkitExitFullscreen?.())?.catch(() => {});
+      return;
+    }
+    void (el.requestFullscreen?.() ?? el.webkitRequestFullscreen?.())?.catch(() => {});
+  }, []);
+
+  React.useEffect(() => {
+    const on = () => setFull(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", on);
+    document.addEventListener("webkitfullscreenchange", on);
+    return () => {
+      document.removeEventListener("fullscreenchange", on);
+      document.removeEventListener("webkitfullscreenchange", on);
+    };
+  }, []);
+
   const seek = React.useCallback((to: number) => {
     const el = ref.current;
     if (!el) return;
@@ -114,11 +141,27 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
       else if (e.key === "j") seek(el.currentTime - 10);
       else if (e.key === "c") setCaptionsOn((v) => !v);
       else if (e.key === "m") { el.muted = !el.muted; setMuted(el.muted); }
-      else if (e.key === "f") void el.parentElement?.requestFullscreen?.().catch(() => {});
+      else if (e.key === "f") toggleFull();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [seek, toggle]);
+  }, [seek, toggle, toggleFull]);
+
+  // THE PLAYHEAD MOVES EVERY FRAME (Ali, 10 Sep: "the playhead dot is a bit
+  // jumpy from one place to the next"). `timeupdate` fires roughly four times
+  // a second, so the dot stepped in visible jumps. rAF reads currentTime at
+  // the display's own rate while playing, and stops the moment it pauses.
+  React.useEffect(() => {
+    if (!playing) return;
+    let raf = 0;
+    const tick = () => {
+      const el = ref.current;
+      if (el) setT(el.currentTime);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playing]);
 
   const activeSection = React.useMemo(() => {
     let found = video.sections[0] ?? null;
@@ -154,9 +197,17 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-3">
+      <div
+        ref={shellRef}
+        data-hook="player-shell"
+        data-full={full ? "true" : "false"}
+        className={full ? "flex h-screen w-screen flex-col bg-black p-4 gap-3" : "flex flex-col gap-3"}
+      >
         {/* ── the video ─────────────────────────────────────────────── */}
-        <div className="relative overflow-hidden rounded-xl bg-black" data-hook="player-stage">
+        <div
+          className={`relative overflow-hidden bg-black ${full ? "min-h-0 flex-1" : "rounded-xl"}`}
+          data-hook="player-stage"
+        >
           <video
             ref={ref}
             data-hook="player-video"
@@ -164,7 +215,7 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
             poster={video.poster}
             preload="metadata"
             playsInline
-            className="block w-full"
+            className={full ? "h-full w-full object-contain" : "block w-full"}
             onClick={toggle}
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
@@ -219,7 +270,7 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
             aria-valuemax={Math.round(duration)}
             aria-valuenow={Math.round(t)}
             aria-valuetext={`${stamp(t)} of ${stamp(duration)}`}
-            className="relative flex h-6 cursor-pointer items-center"
+            className={`relative flex cursor-pointer items-center ${full ? "h-7" : "h-6"}`}
             onMouseMove={(e) => { const p = onBar(e); if (p) setHover({ x: p.x, t: p.ratio * duration }); }}
             onMouseLeave={() => setHover(null)}
             onClick={(e) => { const p = onBar(e); if (p) seek(p.ratio * duration); }}
@@ -235,7 +286,7 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
                 const width = ((s.end - s.t) / duration) * 100;
                 const filled = Math.max(0, Math.min(1, (t - s.t) / Math.max(0.01, s.end - s.t)));
                 return (
-                  <div key={s.id} className="bg-muted relative h-full overflow-hidden rounded-full" style={{ width: `${width}%` }}>
+                  <div key={s.id} className={`relative h-full overflow-hidden rounded-full ${full ? "bg-white/25" : "bg-muted"}`} style={{ width: `${width}%` }}>
                     <div
                       className="absolute inset-y-0 left-0 bg-[var(--ds-tailwind-colors-green-500)]"
                       style={{ width: `${filled * 100}%` }}
@@ -245,7 +296,9 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
               })}
             </div>
             <span
-              className="pointer-events-none absolute size-3.5 -translate-x-1/2 rounded-full bg-[var(--ds-tailwind-colors-neutral-950)] ring-2 ring-white"
+              className={`pointer-events-none absolute size-3.5 -translate-x-1/2 rounded-full ring-2 ${full ? "bg-white ring-black/40" : "bg-[var(--ds-tailwind-colors-neutral-950)] ring-white"}`}
+              // No transition: rAF already moves this every frame, and a
+              // transition on top of that lags the picture.
               style={{ left: `${(t / duration) * 100}%` }}
             />
           </div>
@@ -257,7 +310,7 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
             {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
             {playing ? "Pause" : "Play"}
           </Button>
-          <span className="text-body-sm text-muted-foreground tabular-nums" data-hook="player-time">
+          <span className={`text-body-sm tabular-nums ${full ? "text-white/80" : "text-muted-foreground"}`} data-hook="player-time">
             {stamp(t)} / {video.length}
           </span>
           <span className="grow" />
@@ -284,10 +337,10 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
             variant="outline"
             size="sm"
             dataHook="player-fullscreen"
-            ariaLabel="Full screen"
-            onClick={() => void ref.current?.parentElement?.requestFullscreen?.().catch(() => {})}
+            ariaLabel={full ? "Leave full screen" : "Full screen"}
+            onClick={toggleFull}
           >
-            <Maximize2 className="size-4" />
+            {full ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
           </Button>
         </div>
       </div>

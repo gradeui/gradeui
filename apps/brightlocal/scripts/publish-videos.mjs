@@ -8,10 +8,10 @@
  * (the newest one per flow wins) this writes into
  * apps/brightlocal/public/videos/:
  *
- *   <slug>.mp4              1280 wide, faststart, the file the page plays
+ *   <slug>.mp4              1920 native, CRF 23, faststart: the file played
  *   <slug>.vtt              the subtitle track, straight from the recording
  *   <slug>.poster.jpg       the grid card's still
- *   <slug>.sprite.jpg       a 4-wide sheet of 160px stills, one every 2s
+ *   <slug>.sprite.jpg       a 5-wide sheet of 320px stills, one every 2s
  *   <slug>.thumbs.vtt       maps each 2s window to a region of that sheet,
  *                           which is how a scrub-bar preview works
  *   thumbs/<chapter-id>.jpg one still per section, named by the section's
@@ -19,8 +19,8 @@
  *
  * and regenerates lib/videos.generated.ts, which the /meta/videos pages read.
  *
- * WHY THE REPO AND NOT A BUCKET (Ali asked, 10 Sep). At 1280 and CRF 30 the
- * six cuts are about 25 MB together, which git carries without complaint and
+ * WHY THE REPO AND NOT A BUCKET (Ali asked, 10 Sep). At native resolution and
+ * CRF 23 the six cuts are about 30 MB together, which git carries and
  * Vercel serves from public/ with no credentials, no signed URLs and no extra
  * moving part. Move to Supabase Storage or Vercel Blob when this is dozens of
  * videos or when someone needs to upload one without a commit.
@@ -102,7 +102,7 @@ function headBlank(src) {
 }
 
 const THUMB_EVERY = 2; // seconds
-const THUMB_W = 240;
+const THUMB_W = 320; // the scrub preview is shown at its natural size
 const SPRITE_COLS = 5;
 
 const published = [];
@@ -121,8 +121,14 @@ for (const rec of newestPerFlow()) {
   const blank = headBlank(master);
   const duration = meta.duration - blank;
   if (blank) console.log(`  trimming ${blank.toFixed(2)}s of blank from the head`);
-  ff([...(blank ? ["-ss", String(blank)] : []), "-i", master, "-vf", "scale=1280:-2", "-c:v", "libx264",
-      "-preset", "slow", "-crf", "27", "-pix_fmt", "yuv420p", "-r", "30", "-movflags", "+faststart", "-an",
+  // NATIVE 1920, NO RESCALE (Ali, 10 Sep: "the quality is a bit too
+  // pixellated"). The player is up to 1100 CSS pixels wide, which is 2200 on
+  // a retina screen, so a 1280 copy was being upscaled in the browser, and
+  // the 1920-to-1280 downscale had already softened every bit of small text
+  // on the way down. Keeping the source resolution and spending the bytes on
+  // CRF 23 instead costs about 30 MB for the set against 12.
+  ff([...(blank ? ["-ss", String(blank)] : []), "-i", master, "-c:v", "libx264",
+      "-preset", "slow", "-crf", "23", "-pix_fmt", "yuv420p", "-r", "30", "-movflags", "+faststart", "-an",
       path.join(OUT, `${slug}.mp4`)]);
 
   // 2. the subtitle track, shifted by whatever came off the front so it stays
@@ -148,6 +154,17 @@ for (const rec of newestPerFlow()) {
     // times; the published times move with the trim.
     return { ...c, t: Math.max(0, c.t - blank), end: Math.max(0, c.end - blank), thumb: `/videos/thumbs/${c.id}.jpg` };
   });
+
+  // 4b. drop any section still from a previous cut of this video. Re-cutting
+  //     popovers from 2 sections to 10 renamed most of them, and the orphans
+  //     sat in the folder looking like live files.
+  const keepThumbs = new Set(chapters.map((c) => `${c.id}.jpg`));
+  for (const file of fs.readdirSync(THUMBS)) {
+    if (file.startsWith(`${slug}--`) && !keepThumbs.has(file)) {
+      fs.unlinkSync(path.join(THUMBS, file));
+      console.log(`  removed a stale section still: ${file}`);
+    }
+  }
 
   // 5. the scrub-bar sprite: a still every 2s, tiled, plus the VTT that says
   //    which tile belongs to which second.

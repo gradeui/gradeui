@@ -131,11 +131,23 @@ and anywhere else with no player around them, so showing the `<track>` as
 well renders every line twice. The track still ships and still downloads,
 and the Subtitles button turns it on.
 
-**Storage.** The repo, under `public/videos/`. At web size the whole set
-is around 10 MB, which git carries without complaint and Vercel serves
-with no credentials and no signed URLs. Move to Supabase Storage or
-Vercel Blob when this is dozens of videos, or when someone needs to
-upload one without a commit.
+**Sections without cards.** Most flows are divided by their cut-scene
+cards. A flow with few cards can declare its own: put `"chapter"` on any
+step, with optional `"chapterSlug"` and `"chapterLine"`. The still then
+comes off the screen at that moment rather than off a card, which suits a
+walkthrough of dialogs. `popovers.json` uses this for its eight.
+
+**Quality.** Published at the source's own 1920, no rescale, CRF 23. The
+player is up to 1100 CSS pixels wide, which is 2200 on a retina screen, so
+a 1280 copy was being upscaled in the browser on top of a downscale that
+had already softened every bit of small text. Native costs about 42 MB for
+the set against 12.
+
+**Storage.** The repo, under `public/videos/`. 42 MB, which git carries and
+Vercel serves with no credentials and no signed URLs. The trigger for
+moving to Supabase Storage or Vercel Blob is history rather than working
+size: every full re-record adds another 42 MB of blobs that never go away.
+Two or three more passes and it is worth doing.
 
 ## Where the videos live
 

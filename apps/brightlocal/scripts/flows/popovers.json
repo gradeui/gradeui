@@ -1,40 +1,156 @@
 {
   "name": "insights-popovers",
-  "w": 1280, "h": 900, "bg": "violet", "tone": "tinted", "persona": "engaged",
+  "w": 1280,
+  "h": 900,
+  "bg": "violet",
+  "tone": "tinted",
+  "persona": "engaged",
   "preroll": "popovers",
   "postroll": "end",
   "steps": [
-    { "go": "/locations/minus-one-studios/reviews", "bg": "violet", "caption": "1. The summary. One headline, one line, and the findings you can open.", "ms": 2600 },
-    { "click": "[data-hook=review-summary-strip-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 4200 },
-    { "click": "[data-hook=review-summary-more-0]", "ms": 4400 },
-    { "caption": "Every finding ends in the thing that fixes it.", "ms": 3200 },
-    { "key": "Escape", "ms": 900 },
-
-    { "go": "/locations/minus-one-studios/reviews/manager", "bg": "violet", "caption": "2. The plan, and what auto-reply would have written.", "ms": 2400 },
-    { "click": "[data-hook=review-plan-strip-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 5600 },
-    { "key": "Escape", "ms": 900 },
-
-    { "go": "/locations/minus-one-studios/reviews/tracker", "bg": "sky", "caption": "3. The Tracker. The charts cycle on their own.", "ms": 2400 },
-    { "click": "[data-hook=beacon-strip-tracker-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 6200 },
-    { "key": "Escape", "ms": 900 },
-
-    { "go": "/locations/minus-one-studios/reviews/builder", "bg": "yellow", "caption": "4. The Builder. Asking is the only thing that moves the count.", "ms": 2400 },
-    { "click": "[data-hook=beacon-strip-builder-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 5200 },
-    { "key": "Escape", "ms": 900 },
-
-    { "caption": "5. And the QR code, generated on the page.", "ms": 1800 },
-    { "click": "[data-hook=qr-banner-code]", "waitFor": "[data-hook=qr-generator]", "ms": 4400 },
-    { "click": "[data-hook=qr-size-A5]", "ms": 3000 },
-    { "key": "Escape", "ms": 900 },
-
-    { "go": "/locations/minus-one-studios/reviews/showcase", "bg": "green", "caption": "6. The Showcase, and what the reviews are worth.", "ms": 2400 },
-    { "click": "[data-hook=beacon-strip-showcase-open]", "waitFor": "[data-hook=beacon-modal]", "ms": 5200 },
-    { "key": "Escape", "ms": 900 },
-
-    { "persona": "starter" },
-    { "go": "/locations/minus-one-studios/reviews", "bg": "yellow", "caption": "7. Three days left on the trial, and what it found.", "recap": true, "ms": 5600 },
-
-    { "persona": "lapsed" },
-    { "go": "/locations/minus-one-studios/reviews", "bg": "yellow", "caption": "8. And nine days after it ended.", "recap": true, "ms": 5600 }
+    {
+      "go": "/locations/minus-one-studios/reviews",
+      "bg": "violet",
+      "caption": "1. The summary. One headline, one line, and the findings you can open.",
+      "ms": 2600,
+      "chapter": "The summary",
+      "chapterSlug": "summary",
+      "chapterLine": "One headline, one line, and the findings you can open."
+    },
+    {
+      "click": "[data-hook=review-summary-strip-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 4200
+    },
+    {
+      "click": "[data-hook=review-summary-more-0]",
+      "ms": 4400
+    },
+    {
+      "caption": "Every finding ends in the thing that fixes it.",
+      "ms": 3200
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews/manager",
+      "bg": "violet",
+      "caption": "2. The plan, and what auto-reply would have written.",
+      "ms": 2400,
+      "chapter": "The plan",
+      "chapterSlug": "plan",
+      "chapterLine": "This week's goal, and what auto-reply would have written."
+    },
+    {
+      "click": "[data-hook=review-plan-strip-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 5600
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews/tracker",
+      "bg": "sky",
+      "caption": "3. The Tracker. The charts cycle on their own.",
+      "ms": 2400,
+      "chapter": "The Tracker",
+      "chapterSlug": "tracker",
+      "chapterLine": "The trend across every review site, and what moved it."
+    },
+    {
+      "click": "[data-hook=beacon-strip-tracker-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 6200
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews/builder",
+      "bg": "yellow",
+      "caption": "4. The Builder. Asking is the only thing that moves the count.",
+      "ms": 2400,
+      "chapter": "The Builder",
+      "chapterSlug": "builder",
+      "chapterLine": "Asking is the only thing that moves the count."
+    },
+    {
+      "click": "[data-hook=beacon-strip-builder-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 5200
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "caption": "5. And the QR code, generated on the page.",
+      "ms": 1800,
+      "chapter": "The QR code",
+      "chapterSlug": "qr",
+      "chapterLine": "Generated on the page, sized for the till or the door."
+    },
+    {
+      "click": "[data-hook=qr-banner-code]",
+      "waitFor": "[data-hook=qr-generator]",
+      "ms": 4400
+    },
+    {
+      "click": "[data-hook=qr-size-A5]",
+      "ms": 3000
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews/showcase",
+      "bg": "green",
+      "caption": "6. The Showcase, and what the reviews are worth.",
+      "ms": 2400,
+      "chapter": "The Showcase",
+      "chapterSlug": "showcase",
+      "chapterLine": "Your best reviews, and what they are worth on your own site."
+    },
+    {
+      "click": "[data-hook=beacon-strip-showcase-open]",
+      "waitFor": "[data-hook=beacon-modal]",
+      "ms": 5200
+    },
+    {
+      "key": "Escape",
+      "ms": 900
+    },
+    {
+      "persona": "starter"
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews",
+      "bg": "yellow",
+      "caption": "7. Three days left on the trial, and what it found.",
+      "recap": true,
+      "ms": 5600,
+      "chapter": "On a trial",
+      "chapterSlug": "trial",
+      "chapterLine": "Three days left, and what the trial has found so far."
+    },
+    {
+      "persona": "lapsed"
+    },
+    {
+      "go": "/locations/minus-one-studios/reviews",
+      "bg": "yellow",
+      "caption": "8. And nine days after it ended.",
+      "recap": true,
+      "ms": 5600,
+      "chapter": "After it ended",
+      "chapterSlug": "lapsed",
+      "chapterLine": "Nine days on, with reviews still arriving and nobody watching."
+    }
   ]
 }

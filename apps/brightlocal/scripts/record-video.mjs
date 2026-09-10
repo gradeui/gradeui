@@ -75,6 +75,7 @@ const stageUrl = (url, bg, caption, card) => {
 };
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const slugify = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({
@@ -131,6 +132,19 @@ async function cardChapter(slug) {
   return { slug, title: title || slug, line };
 }
 
+/** Hold until the framed screen is fully opaque. Clicking into a frame that
+ *  is still fading in opened a dialog over a half-lit page and left it that
+ *  way for the rest of the shot, which is the ghosting both video audits
+ *  found in the Hove cut (10 Sep). Cheap insurance against it returning. */
+async function waitForFrameSettled() {
+  await page
+    .waitForFunction(() => {
+      const el = document.querySelector("[data-hook=capture-frame]")?.parentElement;
+      return !el || Number(getComputedStyle(el).opacity) > 0.99;
+    }, null, { timeout: 8000 })
+    .catch(() => {});
+}
+
 /** The trial recap opens on its own when the persona is a trial or a lapsed
  *  trial, and it swallows every click behind it. A flow that wants it on
  *  screen says so with { "recap": true }; every other step closes it. */
@@ -157,6 +171,12 @@ for (const [i, step] of flow.steps.entries()) {
       await wait(400);
     }
   }
+
+  // A STEP CAN NAME A SECTION (Ali, 10 Sep: "something like Every dialog
+  // should actually have more sections"). Cut-scene cards divide most flows,
+  // but a walkthrough of eight dialogs has no cards between them, so the flow
+  // says where its sections are and the still comes off the screen itself.
+  if (step.chapter) marks.push({ kind: "card", text: step.chapter, t: at(), slug: step.chapterSlug ?? slugify(step.chapter), line: step.chapterLine ?? "" });
 
   if (step.card) {
     // Cards render INSIDE the stage: one document for the whole video, so a
@@ -214,6 +234,7 @@ for (const [i, step] of flow.steps.entries()) {
   }
 
   if (step.click) {
+    await waitForFrameSettled();
     await dismissRecap();
     // A beat before every popup, so the click reads as a decision rather
     // than a jump cut (Ali, 12 Sep).
