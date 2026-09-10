@@ -65,7 +65,7 @@ export default function BeaconBadgePage() {
 function Badge({ className, style }: { className: string; style?: React.CSSProperties }) {
   return (
     <span className={`text-label-sm inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 ${className}`} style={style}>
-      Beacon
+      Insights
       <span className="border-l border-current/30 pl-1.5 opacity-70">Beta</span>
     </span>
   );

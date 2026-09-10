@@ -21,7 +21,7 @@ import { GlobeyCalmOpen1 } from "@brightlocal/illustrations";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, Bar, BarChart, XAxis, Cell } from "@brightlocal/ui-components/chart";
 import { LabelList, YAxis } from "recharts";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@brightlocal/ui-components/tabs";
-import { usePersona } from "@/lib/demo";
+import { usePersona, useDemo } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { DATASETS } from "@brightlocal/data";
 import { statsFor } from "@/lib/reviews-data";
@@ -61,7 +61,7 @@ const TONE_TEXT: Record<string, string> = {
  *  my own product name isn't it." So: the plain word, no beta tail, no link
  *  out. `beta` is kept as a no-op prop so the callers did not all have to
  *  change on the day. */
-export function BeaconBadge({ dataHook = "beacon-badge" }: { dataHook?: string; beta?: boolean }) {
+export function BeaconBadge({ dataHook = "beacon-badge" }: { dataHook?: string }) {
   const cls = "text-label-sm inline-flex items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-foreground";
   return (
     <span data-hook={dataHook} className={cls}>
@@ -258,7 +258,7 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
               title, so no eyebrow line at all (Ali, 11 Sep). */}
           {bare ? null : (
             <p className="text-label-sm flex flex-wrap items-center gap-x-2 gap-y-1" data-hook="review-summary-label">
-              <BeaconBadge beta />
+              <BeaconBadge />
               <span className="text-muted-foreground">AI summary of your reviews, updated today</span>
             </p>
           )}
@@ -331,12 +331,14 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
  * three small metrics, and a button into the modal for the full thing.
  */
 export function ReviewSummaryStrip() {
+  const { settings } = useDemo();
   const persona = usePersona();
   const location = useLocationKey();
   const { show } = useBeaconModal();
   const stats = statsFor(location, persona);
   const summary = reviewSummaryFor(stats, persona.engagement === "new");
   const lead = summary.lines.find((line) => !line.slot);
+  if (settings.insights === false) return null;
   if (persona.engagement === "empty") return <FirstRunBand page="hub" />;
   // A small data set gets the guide and the nugget, not a summary strip
   // on top (Ali, 11 Sep: "a bit much, just the getting started with a small
@@ -351,7 +353,7 @@ export function ReviewSummaryStrip() {
       <StripArt keywords={["review", "stars"]} />
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <p className="text-label-sm flex items-center gap-2">
-          <BeaconBadge beta />
+          <BeaconBadge />
           <span className="text-muted-foreground">AI summary, updated today</span>
         </p>
         <p className="text-metric font-display max-w-[40ch] text-balance" data-hook="review-summary-strip-headline">{summary.headline}</p>
@@ -395,7 +397,9 @@ export function ReviewSummaryStrip() {
  * link wins, and the Manager and the modal carry the rest.
  */
 export function BeaconChip({ text, tone = "neutral", dataHook = "beacon-chip" }: { text: string; tone?: "good" | "bad" | "neutral"; dataHook?: string }) {
+  const { settings } = useDemo();
   const persona = usePersona();
+  if (settings.insights === false) return null;
   if (persona.engagement === "empty") return null; // nothing to say yet: the first-run band carries the page
   const bg = "bg-[var(--ds-tailwind-colors-base-white)]"; // neutral whatever the tone (Ali, 9 Sep); same outline as the badge
   return (
@@ -411,12 +415,14 @@ export function BeaconChip({ text, tone = "neutral", dataHook = "beacon-chip" }:
  * page's own Beacon line and three metrics, same modal behind it.
  */
 export function BeaconPageStrip({ page }: { page: BeaconPage }) {
+  const { settings } = useDemo();
   const persona = usePersona();
   const location = useLocationKey();
   const router = useRouter();
   const { show } = useBeaconModal();
   const stats = statsFor(location, persona);
   const b = pageBeaconFor(page, stats, persona);
+  if (settings.insights === false) return null;
   if (persona.engagement === "empty") return <FirstRunBand page={page} />;
   return (
     <section
@@ -427,7 +433,7 @@ export function BeaconPageStrip({ page }: { page: BeaconPage }) {
       <StripArt keywords={page === "tracker" ? ["velocity", "spike"] : page === "builder" ? ["campaign", "email", "ask"] : ["website", "widget"]} />
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <p className="text-label-sm flex items-center gap-2">
-          <BeaconBadge beta />
+          <BeaconBadge />
           <span className="text-muted-foreground">From this location's reviews, updated today</span>
         </p>
         <p className="text-metric font-display max-w-[40ch] text-balance" data-hook={`beacon-strip-${page}-headline`}>{b.headline}</p>

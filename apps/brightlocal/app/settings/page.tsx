@@ -19,7 +19,7 @@ const LOOK_LABELS: Record<string, string> = {
 /** The long-form version of the Cmd+K menu, for when a reviewer wants to
  *  read the options rather than search them. */
 export default function SettingsPage() {
-  const { settings, setPersona, setLook, setEngine, setUpsell, setFixItForMe, setBeaconTone, setAppearance } = useDemo();
+  const { settings, setPersona, setLook, setEngine, setUpsell, setFixItForMe, setBeaconTone, setAppearance, setInsights } = useDemo();
   const looks = [...Object.keys(LOOK_PRESETS), "authored"];
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-10 px-6 py-16">
@@ -88,6 +88,16 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-semibold">Contextual insights</h2>
+        <p className="text-muted-foreground text-sm">
+          Off shows the product on its own, with no strips, chips, nuggets or dialogs. Handy for a screenshot or a reshoot. The same switch is in the Cmd K menu, and <code>?insights=off</code> works from the address bar.
+        </p>
+        <div className="flex items-start gap-3">
+          <Switch dataHook="settings-insights" id="settings-insights" checked={settings.insights !== false} onCheckedChange={(v) => setInsights(Boolean(v))} />
+          <Label htmlFor="settings-insights">Show contextual insights</Label>
+        </div>
+      </section>
+      <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Appearance</h2>
         <p className="text-muted-foreground text-sm">The DS dark mode, its own tokens on the html element. Also in Cmd+K, and ?appearance=dark.</p>
         <RadioGroup dataHook="settings-appearance" value={settings.appearance ?? "light"} onValueChange={(v) => setAppearance(v as "light" | "dark")}>
@@ -102,7 +112,7 @@ export default function SettingsPage() {
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Insights colour</h2>
         <p className="text-muted-foreground text-sm">
-          Lifts Beacon's surfaces off the page with the accessible pairings from the DS chart (100 background, 700 and 950 text).
+          Lifts the insight surfaces off the page with the accessible pairings from the DS chart (100 background, 700 and 950 text).
         </p>
         <RadioGroup dataHook="settings-tone" value={settings.beaconTone} onValueChange={(v) => setBeaconTone(v as "neutral" | "tinted" | "families" | "vivid")}>
           {([["neutral", "Neutral, white surfaces"], ["tinted", "Tinted, one family everywhere (violet)"], ["families", "Families, a colour per kind of content: summaries sky, recommendations violet, upsells yellow, nuggets sky"], ["vivid", "Super bright, the website's full-strength palette: green, yellow, sky and violet at 500, black text and black buttons"]] as const).map(([v, label]) => (
@@ -126,7 +136,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between gap-4">
           <Label htmlFor="fix" className="flex flex-col gap-0.5">
             <span>Fix it for me</span>
-            <span className="text-muted-foreground text-sm font-normal">Beacon does the first tactic on the plan and hands the result back for approval.</span>
+            <span className="text-muted-foreground text-sm font-normal">We do the first tactic on the plan and hand the result back for approval.</span>
           </Label>
           <Switch dataHook="settings-fix-it" id="fix" checked={settings.fixItForMe} onCheckedChange={setFixItForMe} />
         </div>

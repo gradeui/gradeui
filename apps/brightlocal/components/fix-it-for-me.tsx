@@ -32,7 +32,7 @@ export function FixItForMe({ count, goto }: { count: number; goto: string }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent dataHook="fix-it-for-me-dialog" className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{done ? `${count} replies drafted` : "Beacon is drafting your replies"}</DialogTitle>
+            <DialogTitle>{done ? `${count} replies drafted` : "Drafting your replies"}</DialogTitle>
             <DialogDescription>
               {done
                 ? `Each one is written for the review it answers, in your usual tone. Nothing goes out until you say so.`

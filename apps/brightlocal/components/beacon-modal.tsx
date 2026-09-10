@@ -16,7 +16,7 @@ import { useBeaconModal } from "@/lib/beacon-modal";
 import { ReviewSummary, BeaconBadge, BeaconPageBlock, SummaryCharts, DidYouKnowPanel, isEarlyDays } from "@/components/review-summary";
 import { ArrowRight } from "@brightlocal/icons";
 import { statsFor } from "@/lib/reviews-data";
-import { usePersona } from "@/lib/demo";
+import { usePersona, useDemo } from "@/lib/demo";
 import { ReviewInsights } from "@/components/review-insights";
 import { pickIllustration } from "@/lib/illustrations";
 import { pageBeaconFor, type BeaconPage } from "@/lib/beacon-pages";
@@ -67,8 +67,10 @@ export function BeaconModal() {
   const location = useLocationKey();
   const persona = usePersona();
   const locationName = (DATASETS as Record<string, { location?: { name?: string } }>)[location]?.location?.name ?? location;
+  const { settings } = useDemo();
   const stats = statsFor(location, persona);
   const early = isEarlyDays(stats);
+  if (settings.insights === false) return null;
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : close())}>
       {/* LARGE, with a fixed header (Ali, 9 Sep): near full-screen on
@@ -91,7 +93,7 @@ export function BeaconModal() {
             <HeaderArt section={section} page={page} />
             <div className="flex min-w-0 flex-col gap-1">
               <div className="flex items-center gap-2">
-                <BeaconBadge dataHook="beacon-modal-badge" beta />
+                <BeaconBadge dataHook="beacon-modal-badge" />
                 <span className="text-label-sm text-muted-foreground">{locationName}</span>
               </div>
               <DialogTitle className="text-metric font-sans leading-tight text-balance">{section === "plan" ? "Your plan for this week" : page ? `Insights for your ${PAGE_NAME[page]}` : "Your review insights"}</DialogTitle>

@@ -12,7 +12,7 @@
 import { Card, CardContent, CardHeader } from "@brightlocal/ui-components/card";
 import { Flag, Target } from "@brightlocal/icons";
 import { InsightCard } from "@brightlocal/proposal-insights";
-import { usePersona } from "@/lib/demo";
+import { usePersona, useDemo } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor, reviewsFor } from "@/lib/reviews-data";
 import { DATASETS } from "@brightlocal/data";
@@ -80,7 +80,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
                 <Flag className="size-3.5 text-muted-foreground" />
                 This week's goal
               </span>
-              <BeaconBadge beta dataHook="review-insights-badge" />
+              <BeaconBadge dataHook="review-insights-badge" />
             </div>
           )}
           <h2 className="text-metric font-display text-foreground max-w-prose text-pretty" data-hook="review-insights-goal">
@@ -190,12 +190,14 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
  * pill and sentence, the first tactic, and a button into the modal's plan.
  */
 export function ReviewPlanStrip() {
+  const { settings } = useDemo();
   const persona = usePersona();
   const location = useLocationKey();
   const { show } = useBeaconModal();
   const stats = statsFor(location, persona);
   const plan = reviewPlanFor(stats, persona);
   const lead = plan.items[0];
+  if (settings.insights === false) return null;
   if (persona.engagement === "empty") return <FirstRunBand page="manager" />;
   return (
     <div
@@ -210,7 +212,7 @@ export function ReviewPlanStrip() {
           <Flag className="size-3 text-muted-foreground" />
           This week's goal
         </span>
-        <BeaconBadge beta dataHook="review-plan-strip-badge" />
+        <BeaconBadge dataHook="review-plan-strip-badge" />
       </div>
       <p className="text-metric font-display text-balance max-w-[40ch]" data-hook="review-plan-strip-goal">
         <Mark text={plan.goal.text} mark={plan.goal.mark} />

@@ -27,7 +27,7 @@ export function CutSceneCard({ card }: { card: CardSpec }) {
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-4">
             <span className="rounded-md border-2 px-3 py-1 text-[1.5rem] font-semibold" style={{ borderColor: ink }}>
-              Beacon <span className="ml-2 opacity-70">Beta</span>
+              Insights
             </span>
             <span className="text-stage-kicker opacity-80">{card.kicker}</span>
           </div>

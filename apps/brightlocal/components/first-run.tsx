@@ -11,10 +11,13 @@
 import { Sparkles, ArrowRight, Check } from "@brightlocal/icons";
 import { Button } from "@brightlocal/ui-components/button";
 import { firstRunFor, FIRST_RUN_STEPS } from "@/lib/first-run";
+import { useDemo } from "@/lib/demo";
 import type { NuggetPage } from "@/lib/beacon-pages";
 
 export function FirstRunBand({ page }: { page: NuggetPage }) {
+  const { settings } = useDemo();
   const fr = firstRunFor(page);
+  if (settings.insights === false) return null;
   return (
     <section data-hook={`first-run-${page}`} className="flex flex-col gap-8 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] px-8 py-8 lg:px-10">
       <div className="flex flex-col items-start gap-3">

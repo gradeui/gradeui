@@ -9,7 +9,7 @@
 
 import { Lightbulb, ArrowRight } from "@brightlocal/icons";
 import { Button } from "@brightlocal/ui-components/button";
-import { usePersona } from "@/lib/demo";
+import { usePersona, useDemo } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
 import { nuggetFor, type NuggetPage } from "@/lib/beacon-pages";
@@ -17,7 +17,9 @@ import { nuggetFor, type NuggetPage } from "@/lib/beacon-pages";
 export function BeaconNugget({ page = "hub" }: { page?: NuggetPage }) {
   const persona = usePersona();
   const location = useLocationKey();
+  const { settings } = useDemo();
   const nugget = nuggetFor(page, statsFor(location, persona), persona);
+  if (settings.insights === false) return null;
   if (persona.engagement === "empty") return null;
   if (!nugget) return null;
   return (

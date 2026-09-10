@@ -45,7 +45,7 @@ function Stage({ stage, first }: { stage: RoadmapStage; first: boolean }) {
             <Flag className="size-3.5 text-muted-foreground" />
             {stage.pill}
           </span>
-          {first ? <BeaconBadge beta dataHook="roadmap-badge" /> : null}
+          {first ? <BeaconBadge dataHook="roadmap-badge" /> : null}
         </div>
         <h2 className="text-heading-page font-display max-w-[32ch] text-balance">
           <Mark text={stage.goal.text} mark={stage.goal.mark} />
@@ -144,12 +144,12 @@ export default function ReviewsInsightsPage() {
                 <LifeBuoy className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col gap-1">
                   <p className="text-heading-subsection">Need a hand with any of this?</p>
-                  <p className="text-body text-pretty">Beacon can walk you through the plan, or a person from BrightLocal can. Both are free.</p>
+                  <p className="text-body text-pretty">We can walk you through the plan, or a person from BrightLocal can. Both are free.</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" dataHook="roadmap-ask-beacon" onClick={() => modal.show("plan")}>
-                  Ask Beacon
+                  Explain this
                 </Button>
                 <InsightsPdfButton />
                 <Button variant="outline" size="sm" dataHook="roadmap-help-center" asChild>

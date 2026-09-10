@@ -46,6 +46,10 @@ export interface DemoSettings {
   beaconTone: "neutral" | "tinted" | "families" | "vivid";
   /** Light or dark, the DS `.dark` class on <html> (Ali, 11 Sep: a switch in Cmd+K). */
   appearance: "light" | "dark";
+  /** Contextual insights on the pages. Off strips every strip, chip,
+   *  nugget, dialog and first-run band, so the product can be shot
+   *  without them (Ali, 12 Sep). */
+  insights: boolean;
 }
 
 interface DemoContextValue {
@@ -59,6 +63,7 @@ interface DemoContextValue {
   setFixItForMe: (on: boolean) => void;
   setBeaconTone: (tone: DemoSettings["beaconTone"]) => void;
   setAppearance: (appearance: DemoSettings["appearance"]) => void;
+  setInsights: (insights: boolean) => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   notesOpen: boolean;
@@ -126,6 +131,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     fixItForMe: false,
     beaconTone: "neutral",
     appearance: "light",
+    insights: true,
   });
   const [epoch, setEpoch] = React.useState(0);
   const [ready, setReady] = React.useState(false);
@@ -144,6 +150,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       fixItForMe: false,
       beaconTone: "neutral",
       appearance: "light",
+      insights: true,
       ...(stored ?? {}),
     };
     if (urlPersona && PERSONAS.some((p) => p.id === urlPersona)) next.personaId = urlPersona;
@@ -156,6 +163,9 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     if (urlTone === "neutral" || urlTone === "tinted" || urlTone === "families" || urlTone === "vivid") next.beaconTone = urlTone;
     const urlAppearance = params.get("appearance");
     if (urlAppearance === "light" || urlAppearance === "dark") next.appearance = urlAppearance;
+    const urlInsights = params.get("insights");
+    if (urlInsights === "off" || urlInsights === "false" || urlInsights === "0") next.insights = false;
+    if (urlInsights === "on" || urlInsights === "true" || urlInsights === "1") next.insights = true;
     const urlLook = params.get("look");
     if (urlLook && (urlLook === "authored" || (LOOK_PRESETS as Record<string, unknown>)[urlLook])) next.look = urlLook;
     if (next.look !== "authored" && !(LOOK_PRESETS as Record<string, unknown>)[next.look]) next.look = "authored";
@@ -209,6 +219,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       setFixItForMe: (fixItForMe) => update({ fixItForMe }),
       setBeaconTone: (beaconTone) => update({ beaconTone }),
       setAppearance: (appearance) => update({ appearance }),
+      setInsights: (insights) => update({ insights }),
       setVariant: (base, slug) =>
         setSettings((prev) => {
           const next = { ...prev, variants: { ...prev.variants, [base]: slug } };

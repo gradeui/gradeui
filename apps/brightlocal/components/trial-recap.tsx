@@ -18,7 +18,7 @@ import * as React from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@brightlocal/ui-components/dialog";
 import { Button } from "@brightlocal/ui-components/button";
 import { Check, X, ArrowRight } from "@brightlocal/icons";
-import { usePersona } from "@/lib/demo";
+import { usePersona, useDemo } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor, reviewsFor } from "@/lib/reviews-data";
 import { BeaconBadge } from "@/components/review-summary";
@@ -30,6 +30,7 @@ const PLAN = { name: "Grow", price: "$49", per: "USD / mo, billed annually" };
 
 export function TrialRecapModal() {
   const persona = usePersona();
+  const { settings } = useDemo();
   const location = useLocationKey();
   const [open, setOpen] = React.useState(false);
   const router = useRouter();
@@ -42,6 +43,7 @@ export function TrialRecapModal() {
     setOpen(Boolean(persona.trial || persona.lapsed));
   }, [persona.id, persona.trial, persona.lapsed]);
   if (!persona.trial && !persona.lapsed) return null;
+  if (settings.insights === false) return null;
 
   const stats = statsFor(location, persona);
   const reviews = reviewsFor(location, persona);
@@ -81,7 +83,7 @@ export function TrialRecapModal() {
             <Art className="size-16 shrink-0" />
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <BeaconBadge beta dataHook="trial-recap-badge" />
+                <BeaconBadge dataHook="trial-recap-badge" />
                 <span className="text-label-sm text-muted-foreground">{persona.accountLabel}</span>
               </div>
               <DialogTitle className="text-heading-page font-sans leading-tight text-balance">{title}</DialogTitle>
