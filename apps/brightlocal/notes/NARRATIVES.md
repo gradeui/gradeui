@@ -15,7 +15,7 @@ Each runs 60 to 90 seconds and works as a video or as a PDF deck.
 
 Harbour & Co has three branches. Hove's lifetime rating looks fine at
 4.4, which is exactly the problem: the lifetime number cannot move, so
-nothing looks wrong. Beacon reads the last thirty days at 4.0, then reads
+nothing looks wrong. Insights reads the last thirty days at 4.0, then reads
 the review text and finds two customers naming Brighton as the standard.
 That is the whole insight: not "your rating dropped", but "your own
 customers are telling you which branch to copy."
@@ -34,7 +34,7 @@ find, and it is true of the underlying rows.
 **The question:** does the product earn the subscription?
 
 Three days left. The trial has found four Google reviews, three of them
-five stars, and nobody has replied to any of them. Beacon shows what
+five stars, and nobody has replied to any of them. Insights shows what
 auto-reply would have written on one of their own reviews, in their tone.
 Then the trial ends, nine days pass, four more reviews arrive, nobody is
 watching, and the win-back says exactly that.
@@ -56,7 +56,7 @@ before it is sold.
 An empty account has no reviews, no sites connected, no campaigns. Every
 page has to say something true anyway, so it says why it matters, with a
 sourced number, and one thing to do. Then the same business a week in,
-then eight months in with campaigns running and a spike Beacon can
+then eight months in with campaigns running and a spike Insights can
 explain.
 
 The arc: the empty hub's stat band, the QR code you can print today, the

@@ -1,5 +1,5 @@
 {
-  "name": "beacon-popovers",
+  "name": "insights-popovers",
   "w": 1280, "h": 900, "bg": "violet", "tone": "tinted", "persona": "engaged",
   "preroll": "popovers",
   "postroll": "end",

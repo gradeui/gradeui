@@ -11,7 +11,7 @@ then chapters, then a closing card with the one thing to do.
 
 | # | Video | Chapters (persona cut scenes) | Delight beats |
 |---|---|---|---|
-| 1 | Beacon, the overview | empty (first-run band) → starter (trial recap, the plan) → engaged (summary, Tell me more) → multi (Hove vs Brighton) → lapsed (win-back) | dialog reveal, tab cycle, hover an author, click for the next voice |
+| 1 | Insights, the overview | empty (first-run band) → starter (trial recap, the plan) → engaged (summary, Tell me more) → multi (Hove vs Brighton) → lapsed (win-back) | dialog reveal, tab cycle, hover an author, click for the next voice |
 | 2 | Reviews hub | empty → starter (steps in the cards) → engaged (trend footers, chips) → agency (switching locations) | QR banner tap, generator sizes |
 | 3 | Review Manager | starter (Google only, first reply) → engaged (backlog, plan dialog with the auto-reply example) → multi (comparison line) | Fix it for me, the sell column, See Pro into the account page |
 | 4 | Review Tracker | starter (one site, connection list) → engaged (six-month tabs, values on bars) → multi (branch comparison) | auto-cycling tabs, connect a site |

@@ -1,5 +1,5 @@
 {
-  "name": "beacon-walkthrough",
+  "name": "insights-walkthrough",
   "w": 1280, "h": 900, "bg": "neutral", "tone": "tinted", "persona": "engaged",
   "preroll": "walkthrough",
   "postroll": "end",
