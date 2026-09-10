@@ -20,7 +20,7 @@ const BASE = args.base ?? "http://localhost:3020";
 const persona = args.persona ?? "multi";
 const outDir = path.join(os.homedir(), "Desktop", "brightlocal-decks");
 fs.mkdirSync(outDir, { recursive: true });
-const out = path.join(outDir, `${args.out ?? `beacon-${persona}`}.pdf`);
+const out = path.join(outDir, `${args.out ?? `insights-${persona}`}.pdf`);
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1123, height: 794 } });
