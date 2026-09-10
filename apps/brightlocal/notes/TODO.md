@@ -117,3 +117,22 @@ Open items in the order I would take them.
       positive, specific, recent, and spread across review sites and
       themes, with one line saying why each was chosen. Advanced mode, but
       it is the single most demo-able AI moment in the product.
+17. **Finish the registry port** (10 Sep). `apps/brightlocal/ds/*.jsx` is a
+    copy of `packages/studio/registries/brightlocal/lib/*.jsx`, and four
+    files have drifted because the app is where the work happened.
+    `proposal-insights.jsx` is now ported back (the per-action `goto`
+    wrapper span, because Button drops unknown `data-*`, and `data-hook`
+    instead of `dataHook` on AccordionTrigger, which 2.27.0 leaked to the
+    DOM). Still app-only, ~446 lines across three files:
+    - `proposal-page.jsx`: `NativePageHeader`, the DS's own
+      GlobalLayoutContentHeader fed from the props every screen already
+      passes, plus the PageHeader engine split.
+    - `proposal-shell.jsx`: the `native` nav density, the layout-engine
+      switch (`window.__gdsLayoutEngine`), `data-gds-layout-engine`.
+    - `proposal-nav.jsx`: `NativeProposalSidebar`.
+    One thing does NOT port: `useUrlDataset` imports `next/navigation`,
+    which Studio's Fast Frame has no idea about. Drop it and keep the
+    `loadSessionDataset()` fallback. The registry has no parse gate and
+    every Studio screen imports these, so: esbuild-check each file, run
+    `node scripts/generate-registry-lib.mjs brightlocal`, then look at a
+    real screen on `localhost:3000/e/<shareId>` before calling it done.
