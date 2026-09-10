@@ -110,7 +110,9 @@ function applySeams(settings: DemoSettings) {
     : persona.lapsed
       ? "Trial ended"
       : persona.engagement === "empty"
-        ? "Free trial: 14 days left"
+        // "Trial: N days left", the same shape the starter persona uses; the
+        // two read as different products otherwise (Builder audit, 10 Sep).
+        ? "Trial: 14 days left"
         : "Grow plan";
   window.__gdsShellLook = settings.look === "authored" ? null : settings.look;
   selectSessionDataset(persona.dataset);

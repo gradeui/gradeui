@@ -371,9 +371,9 @@ function ReviewsCard() {
 // themselves (21–50 / 51+) are also ours, not the live product's.
 const RANKING_BARS = [
   { label: "Top 3", count: 1 },
-  { label: "4–10", count: 1 },
-  { label: "11–20", count: 0 },
-  { label: "21–50", count: 3 },
+  { label: "4 to 10", count: 1 },
+  { label: "11 to 20", count: 0 },
+  { label: "21 to 50", count: 3 },
   { label: "51+", count: 0 },
 ];
 
@@ -397,7 +397,7 @@ function RankingsCard() {
       <div className="flex flex-col gap-1.5">
         {RANKING_BARS.map((b) => (
           <BarRow key={b.label} label={b.label} count={b.count} total={5}
-            dataHook={"hub-rankings-" + b.label.replace(/[+ –]/g, "-")} />
+            dataHook={"hub-rankings-" + b.label.replace(/[+ ]+/g, "-")} />
         ))}
       </div>
     </MetricHubCard>
@@ -563,7 +563,7 @@ function LocalSearchGridCard() {
                 >
                   <MapGridPin
                     dataHook={`hub-lsg-pin-${i}`}
-                    value={rank ?? "–"}
+                    value={rank ?? "Not ranked"}
                     variant={
                       rank == null || rank > 20
                         ? "unranked"

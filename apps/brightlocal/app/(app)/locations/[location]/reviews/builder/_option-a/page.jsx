@@ -1531,19 +1531,21 @@ function PreviewSheet({ pages, renderPage, onOpen }) {
         className={`grid items-start gap-3 ${roomy ? "" : "sm:grid-cols-2"}`}
         data-hook="preview-sheet"
       >
+        {/* A DIV WITH AN OVERLAY, NOT A BUTTON WRAPPING A PAGE (Builder
+            audit, 10 Sep). The rendered page has its own buttons (the NPS
+            scale, the consent box, Submit), and a button cannot contain a
+            button: React logged a hydration error on the Send step, and
+            pointer-events-none hid it visually while leaving those inner
+            controls in the tab order. `inert` takes them out properly and
+            the overlay carries the click and the accessible name. */}
         {pages.map((page) => (
-          <button
+          <div
             key={page.id}
-            type="button"
             data-hook={`preview-tile-${page.id}`}
-            onClick={() => onOpen(page.id)}
-            className="hover:border-primary focus-visible:ring-ring group flex flex-col gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            className="hover:border-primary focus-within:ring-ring group relative flex flex-col gap-2 rounded-lg border p-2 text-left transition-colors focus-within:ring-2"
           >
             <div className="bg-background w-full overflow-hidden rounded-md border">
-              <div
-                className="pointer-events-none select-none"
-                style={{ width: SHEET_W, zoom: scale }}
-              >
+              <div className="pointer-events-none select-none" style={{ width: SHEET_W, zoom: scale }} inert>
                 {renderPage(page.id)}
               </div>
             </div>
@@ -1551,7 +1553,13 @@ function PreviewSheet({ pages, renderPage, onOpen }) {
               <Maximize2 className="text-muted-foreground size-3.5" />
               {page.label}
             </span>
-          </button>
+            <button
+              type="button"
+              aria-label={`Open the ${page.label} preview`}
+              onClick={() => onOpen(page.id)}
+              className="absolute inset-0 rounded-lg focus-visible:outline-none"
+            />
+          </div>
         ))}
       </div>
     </div>
@@ -1785,7 +1793,7 @@ function TablePager({ page, pageCount, from, to, total, noun, onPage, hook }) {
   return (
     <div className="bg-muted/40 flex flex-wrap items-center gap-2 border-t px-4 py-2">
       <span className="text-muted-foreground text-sm">
-        {from}–{to} of {total} {noun}
+        {from} to {to} of {total} {noun}
       </span>
       <span className="grow" />
       <Pagination dataHook={`${hook}-pagination`} className="mx-0 w-auto">
@@ -1992,13 +2000,15 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
         // other way, so a sign would be decoration. A Draft has nothing to
         // count, and says so with a dash rather than a zero it did not earn.
         id: "reviews",
+        // No long dashes anywhere (Ali's rule): an em dash was the
+        // empty-value glyph in this column.
         header: () => <span className="block text-right">Reviews gained</span>,
         cell: ({ row }) => (
           <span className="block text-right font-semibold tabular-nums">
             {row.original.stats ? (
               row.original.stats.reviews
             ) : (
-              <span className="text-muted-foreground font-normal">—</span>
+              <span className="text-muted-foreground font-normal">None yet</span>
             )}
           </span>
         ),
@@ -5176,7 +5186,9 @@ function CampaignInsights({ campaign, onAllFeedback }) {
         { label: config.channel === "kiosk" ? "Sessions" : "Visits", value: (stats.visits ?? 0).toLocaleString() },
         { label: "Reviews gained", value: String(stats.reviews ?? 0), tone: "success",
           info: "New reviews this campaign brought in, matched on timing." },
-        { label: "Rating impact", value: stats.impact ?? "0.0", tone: "success",
+        // NOT success when nothing moved (Builder audit, 10 Sep): a flat 0.0
+        // rendered in the positive green reads as good news.
+        { label: "Rating impact", value: stats.impact ?? "0.0", tone: Number(String(stats.impact ?? "0").replace("+", "")) > 0 ? "success" : undefined,
           info: "Rating change from this campaign's reviews only." },
       ]
     : [
@@ -5186,7 +5198,9 @@ function CampaignInsights({ campaign, onAllFeedback }) {
         { label: "Clicked", value: (stats.clicked ?? 0).toLocaleString() },
         { label: "Reviews gained", value: String(stats.reviews ?? 0), tone: "success",
           info: "New reviews this campaign brought in, matched on timing." },
-        { label: "Rating impact", value: stats.impact ?? "0.0", tone: "success",
+        // NOT success when nothing moved (Builder audit, 10 Sep): a flat 0.0
+        // rendered in the positive green reads as good news.
+        { label: "Rating impact", value: stats.impact ?? "0.0", tone: Number(String(stats.impact ?? "0").replace("+", "")) > 0 ? "success" : undefined,
           info: "Rating change from this campaign's reviews only." },
       ];
 
@@ -5198,9 +5212,13 @@ function CampaignInsights({ campaign, onAllFeedback }) {
   const funnel = [
     { k: "Sent", v: stats.sent ?? 0, info: "The number of recipients this campaign was sent to" },
     { k: "Opened", v: stats.opened ?? 0, info: "The number of recipients that opened the campaign" },
+    // Clicked was missing, though the Results row directly above shows it,
+    // between Opened and Left rating (Builder audit, 10 Sep). And the last
+    // step was the only title-cased one of the five.
+    { k: "Clicked", v: stats.clicked ?? 0, info: "The number of recipients that clicked through" },
     { k: "Left rating", v: stats.rated ?? 0, info: "The number of recipients that left a rating" },
     {
-      k: "Visited Review Site",
+      k: "Visited a review site",
       v: stats.visited ?? 0,
       info: "The number of recipients that visited a review site",
     },
