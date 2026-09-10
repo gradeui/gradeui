@@ -1106,7 +1106,11 @@ function CarouselWidget({ widget, reviews, skin, branded }) {
   );
 }
 
-function WidgetPreview({ widget, reviews }) {
+// `full` shows every review (Showcase audit, 10 Sep). The cap makes sense on
+// the card, where the preview is a thumbnail; in the dedicated preview sheet
+// it truncated at four and appended "and 1 more review" with about 450px of
+// empty drawer below it.
+function WidgetPreview({ widget, reviews, full }) {
   const skin = previewSkin(widget.design);
   const branded = widget.design.branding !== false;
 
@@ -1135,10 +1139,10 @@ function WidgetPreview({ widget, reviews }) {
   return (
     <div className={`flex min-w-0 flex-col gap-3 rounded-lg p-4 ${skin.shell}`}>
       <WidgetHeader design={widget.design} skin={skin} />
-      {reviews.slice(0, 4).map((r) => (
+      {(full ? reviews : reviews.slice(0, 4)).map((r) => (
         <PreviewReview key={r.id} review={r} design={widget.design} skin={skin} />
       ))}
-      {reviews.length > 4 ? (
+      {!full && reviews.length > 4 ? (
         <span className={`text-center text-xs ${skin.meta}`}>
           and {reviews.length - 4} more review{reviews.length - 4 === 1 ? "" : "s"}
         </span>
@@ -2341,7 +2345,7 @@ function WidgetPreviewSheet({ widget }) {
   return (
     <div data-hook="detail-preview">
       <PreviewFrame surface="none" dataHook="preview-frame-sheet">
-        <WidgetPreview widget={widget} reviews={resolveReviews(widget)} />
+        <WidgetPreview widget={widget} reviews={resolveReviews(widget)} full />
       </PreviewFrame>
     </div>
   );
@@ -2564,7 +2568,11 @@ export default function RMReviewShowcasePage() {
             breadcrumbs={crumbs}
             title="Review Showcase"
             description={heading}
-            lastUpdated="auto"
+            // THIS SHOWCASE'S DATE (Showcase audit, 10 Sep). "auto" binds the
+            // account's own refresh date, so the header said "Last updated
+            // August 18, 2026" while each showcase carried a real `updated`
+            // value that nothing ever read.
+            lastUpdated={draft?.updated ?? undefined}
             actions={headerActions}
           />
         }

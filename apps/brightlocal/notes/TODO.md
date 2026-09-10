@@ -160,3 +160,45 @@ Open items in the order I would take them.
     every Studio screen imports these, so: esbuild-check each file, run
     `node scripts/generate-registry-lib.mjs brightlocal`, then look at a
     real screen on `localhost:3000/e/<shareId>` before calling it done.
+18. **Audit leftovers** (10 Sep). Both audits are actioned except the
+    items below, which are either a deliberate prototype limit, a
+    DS-level fix, or a decision that is Ali's.
+    - **The `rail` showcase variant is stale.** `?variant=reviews/showcase/rail`
+      renders a New showcase button, three named widgets and a Trustpilot
+      source that is not in any review pool, against the three fixed
+      showcases everywhere else. Re-promote it from Studio or delete it if
+      the comparison is finished. (`?variant=rail` on its own silently does
+      nothing: the param wants the full path.)
+    - **Saved edits vanish on navigation**, on both the Builder and the
+      Showcase, because the widgets and campaigns live in `useState`.
+      Understandable in a prototype, and the one thing a demo audience
+      will try. Would need the demo store, or the URL, to hold them.
+    - **Unsaved changes escape through the breadcrumb.** The X asks
+      "Leave without saving your changes?"; the breadcrumb does not. Route
+      it through `cancelSettings()` when the draft is dirty.
+    - **The Showcase edit view drops the app shell** and the Builder wizard
+      does too, so editing is a full-page takeover with one guarded exit.
+      The code comment says there is no breadcrumb trail; there is one.
+    - **Accessibility, four things.** The settings rail sets
+      `role="tablist"` with no `tabpanel`, no `aria-controls` and no arrow
+      keys. The Hand-picked / Live feed radios render as buttons with no
+      accessible name, which is a DS issue in `RadioGroupItem` plus
+      `Field variant="box"` and repeats wherever ChoiceCards is used. No
+      `<main>` landmark on any page, which is app-shell level. Card titles
+      and wizard step questions are buttons and paragraphs, so most views
+      have only an H1 and no structure to navigate by.
+    - **The widget's empty star is invisible on its dark skin in app dark
+      mode.** The muted star follows the app's token, and the widget
+      preview stands for the customer's own website, so it should render
+      the same in both themes.
+    - **430px:** the breadcrumb trail clips at the viewport edge on both
+      pages (the DS says mobile should show the last crumb only, and it is
+      showing all four), and the Builder's campaigns table scrolls sideways
+      inside its card with no visual cue.
+    - **Three date forms on one Builder screen**: "August 13" (the DS's
+      deliberate BrightLocal form), "3 Sep" and "Campaign, 9 Aug 2026".
+      Pick one for the app's own strings; the DS one is not a slip.
+    - **Small copy**: "Start from a template" is a ghost button that reads
+      as a heading, the starter Builder page makes the same argument three
+      times with three buttons that all create a campaign, and the
+      Showcase's "..." menu holds one item.

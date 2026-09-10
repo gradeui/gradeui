@@ -614,6 +614,26 @@
       "why": "the List card stretched to the Carousel's height",
       "find": "function WidgetsDashboard({ widgets, onView, onEdit, onEmbed }) {\n  return (\n    <div className=\"grid gap-4 md:grid-cols-2\">",
       "replace": "// items-start, so a three-row List card is its own height instead of being\n// stretched to the seven-row Carousel and leaving ~180px of white (Showcase\n// audit, 10 Sep).\nfunction WidgetsDashboard({ widgets, onView, onEdit, onEmbed }) {\n  return (\n    <div className=\"grid items-start gap-4 md:grid-cols-2\">"
+    },
+    {
+      "why": "the four-review cap belongs on the inline card, not the dedicated preview sheet",
+      "find": "function WidgetPreview({ widget, reviews }) {\n  const skin = previewSkin(widget.design);",
+      "replace": "// `full` shows every review (Showcase audit, 10 Sep). The cap makes sense on\n// the card, where the preview is a thumbnail; in the dedicated preview sheet\n// it truncated at four and appended \"and 1 more review\" with about 450px of\n// empty drawer below it.\nfunction WidgetPreview({ widget, reviews, full }) {\n  const skin = previewSkin(widget.design);"
+    },
+    {
+      "why": "the cap is conditional now",
+      "find": "      {reviews.slice(0, 4).map((r) => (\n        <PreviewReview key={r.id} review={r} design={widget.design} skin={skin} />\n      ))}\n      {reviews.length > 4 ? (",
+      "replace": "      {(full ? reviews : reviews.slice(0, 4)).map((r) => (\n        <PreviewReview key={r.id} review={r} design={widget.design} skin={skin} />\n      ))}\n      {!full && reviews.length > 4 ? ("
+    },
+    {
+      "why": "the preview sheet asks for the full list",
+      "find": "        <WidgetPreview widget={widget} reviews={resolveReviews(widget)} />",
+      "replace": "        <WidgetPreview widget={widget} reviews={resolveReviews(widget)} full />"
+    },
+    {
+      "why": "the header stamps THIS showcase's date, not the account's refresh date",
+      "find": "            description={heading}\n            lastUpdated=\"auto\"\n            actions={headerActions}",
+      "replace": "            description={heading}\n            // THIS SHOWCASE'S DATE (Showcase audit, 10 Sep). \"auto\" binds the\n            // account's own refresh date, so the header said \"Last updated\n            // August 18, 2026\" while each showcase carried a real `updated`\n            // value that nothing ever read.\n            lastUpdated={draft?.updated ?? undefined}\n            actions={headerActions}"
     }
   ],
   "app/(app)/locations/[location]/reviews/builder/simplified/page.jsx": [
