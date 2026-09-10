@@ -5116,6 +5116,41 @@ function Gauge({ value, min, max, bands, display, caption, dataHook, legend = tr
 /* ================================ insights ================================ */
 
 
+// SCALE THE SEEDS TO THE LOCATION (Builder audit, 10 Sep). seedCampaigns()
+// carries Minus 1 Studios' numbers, and every location reused them unscaled:
+// Worthing's two campaigns claimed 52 + 38 = 90 reviews against a location
+// that has 79 in total. Everything moves by the same ratio, then each funnel
+// step is clamped to the one above it so rounding can never invert it.
+const SEED_TOTAL_REVIEWS = 1116;
+function scaleCampaigns(list, profile) {
+  const total = Number(String(profile?.hub?.reviews ?? "").replace(/,/g, "")) || SEED_TOTAL_REVIEWS;
+  if (total >= SEED_TOTAL_REVIEWS) return list;
+  const ratio = total / SEED_TOTAL_REVIEWS;
+  const at = (v) => (typeof v === "number" ? Math.max(v > 0 ? 1 : 0, Math.round(v * ratio)) : v);
+  // Two shapes of campaign: a send has the whole funnel, a standing link or a
+  // kiosk has visits and nothing above them. So each field is scaled on its
+  // own, then clamped to the step above ONLY where the seed itself was
+  // ordered that way. Chaining the clamp from `sent` collapsed the kiosk to
+  // zero, because a kiosk sends nothing.
+  const STEPS = ["sent", "delivered", "opened", "clicked", "rated", "visited", "reviews"];
+  return list.map((c) => {
+    if (!c.stats) return c;
+    const scaled = { ...c.stats };
+    for (const k of [...STEPS, "visits"]) if (typeof c.stats[k] === "number") scaled[k] = at(c.stats[k]);
+    let prev = null;
+    for (const k of STEPS) {
+      if (typeof c.stats[k] !== "number") continue;
+      if (prev && c.stats[k] <= c.stats[prev]) scaled[k] = Math.min(scaled[k], scaled[prev]);
+      prev = k;
+    }
+    return { ...c, stats: scaled };
+  });
+}
+
+// The prototype's today, the same date lib/reviews-data anchors on, so the
+// chart's windows agree with every other number on the screen.
+const SEED_TODAY = new Date(2026, 8, 9);
+
 function CampaignInsights({ campaign, onAllFeedback }) {
   const config = campaign.config;
   const standing = isStanding(config.channel);
@@ -5193,35 +5228,76 @@ function CampaignInsights({ campaign, onAllFeedback }) {
       ]
     : [{ id: "day", label: "Day by day" }];
 
+  // THE CHART IS THIS CAMPAIGN'S (Builder audit, 10 Sep). Every series and
+  // every date under them was a fixed string, so Bank Holiday Visitors, whose
+  // own header says "Sending since September 3, 2026" and whose Reviews gained
+  // is 4, charted a 12 to 25 July run adding up to about 38, and Receipt QR
+  // Link charted 215 against its own 31. The shapes below are the same shapes,
+  // scaled to the campaign's own total and starting on its own date.
+  const startedAt = new Date(campaign.dates?.date ?? SEED_TODAY);
+  const totalReviews = Number(stats.reviews ?? 0);
+  // A one-shot's fourteen days run FROM its send; a standing campaign's run
+  // BACK from today, because that is what "the last 14 days" means.
+  const dayLabel = (offset) => {
+    const d = new Date(standing ? SEED_TODAY : startedAt);
+    d.setDate(d.getDate() + (standing ? offset - 13 : offset));
+    return `${d.getDate()} ${d.toLocaleDateString("en-GB", { month: "short" }).slice(0, 3)}`;
+  };
+  /** Spread `total` over `shape` keeping the shape, as whole reviews, with the
+   *  rounding drift pushed onto the biggest bar so the bars always sum to it. */
+  const spread = (shape, total) => {
+    const sum = shape.reduce((a, x) => a + x, 0) || 1;
+    const out = shape.map((x) => Math.floor((x / sum) * total));
+    let left = total - out.reduce((a, x) => a + x, 0);
+    while (left > 0) {
+      let best = 0;
+      for (let i = 1; i < shape.length; i += 1) if (shape[i] > shape[best]) best = i;
+      out[best] += 1;
+      left -= 1;
+      shape = shape.map((x, i) => (i === best ? x - 0.001 : x));
+    }
+    return out;
+  };
+  // A one-shot send peaks in the first days and tails off; a standing link is
+  // flat with noise. Both are the original shapes, now carrying real totals.
+  const DAY_SHAPE = standing
+    ? [3, 4, 2, 5, 4, 6, 3, 5, 4, 6, 5, 7, 4, 6]
+    : [2, 6, 5, 4, 7, 4, 3, 2, 2, 1, 1, 0, 1, 0];
+  // A standing campaign's fourteen days are a window on it, not the whole of
+  // it, so they carry roughly a fortnight's worth rather than the lot.
+  const monthsRunning = Math.max(
+    1,
+    Math.round((SEED_TODAY.getTime() - startedAt.getTime()) / (1000 * 60 * 60 * 24 * 30.4)),
+  );
+  const dayTotal = standing ? Math.max(0, Math.round(totalReviews / Math.max(1, monthsRunning * 2))) : totalReviews;
+  const monthShape = Array.from({ length: monthsRunning }, (_, i) => 3 + i);
+  const quarters = Math.max(1, Math.ceil(monthsRunning / 3));
+  const quarterShape = Array.from({ length: quarters }, (_, i) => 3 + i * 2);
+  const labelOfMonth = (i) => {
+    const d = new Date(startedAt);
+    d.setMonth(d.getMonth() + i);
+    return d.toLocaleDateString("en-GB", { month: "short" }).slice(0, 3);
+  };
+  const labelOfQuarter = (i) => {
+    const d = new Date(startedAt);
+    d.setMonth(d.getMonth() + i * 3);
+    return `Q${Math.floor(d.getMonth() / 3) + 1} ${d.getFullYear()}`;
+  };
   const SERIES = {
-    day: standing
-      ? [3, 4, 2, 5, 4, 6, 3, 5, 4, 6, 5, 7, 4, 6].map((reviews, i) => ({
-          label: `${1 + i} Aug`,
-          reviews,
-        }))
-      : [2, 6, 5, 4, 7, 4, 3, 2, 2, 1, 1, 0, 1, 0].map((reviews, i) => ({
-          label: `${12 + i} Jul`,
-          reviews,
-        })),
-    month: [
-      { label: "May", reviews: 38 },
-      { label: "Jun", reviews: 52 },
-      { label: "Jul", reviews: 61 },
-      { label: "Aug", reviews: 64 },
-    ],
-    quarter: [
-      { label: "Q2 2026", reviews: 90 },
-      { label: "Q3 2026", reviews: 125 },
-    ],
+    day: spread(DAY_SHAPE, dayTotal).map((reviews, i) => ({ label: dayLabel(i), reviews })),
+    month: spread(monthShape, totalReviews).map((reviews, i) => ({ label: labelOfMonth(i), reviews })),
+    quarter: spread(quarterShape, totalReviews).map((reviews, i) => ({ label: labelOfQuarter(i), reviews })),
   };
   const series = SERIES[grain] ?? SERIES.day;
 
+  const startedOn = formatDate((campaign.dates?.date ?? "").slice(0, 10) || undefined);
+  const since = `${campaign.dates?.label ?? "Sent"} ${startedOn}`;
   const grainSub = {
     day: standing
-      ? `Live since ${formatDate("2026-05-03")}, showing the last 14 days.`
-      : `Sent ${formatDate("2026-07-12")}${config.reminder ? `, reminder ${formatDate("2026-07-14")} to people who had not responded` : ""}.`,
-    month: `Live since ${formatDate("2026-05-03")}, by calendar month.`,
-    quarter: `Live since ${formatDate("2026-05-03")}, by calendar quarter.`,
+      ? `${since}, showing the last 14 days.`
+      : `${since}${config.reminder ? `, reminder to people who had not responded two days later` : ""}.`,
+    month: `${since}, by calendar month.`,
+    quarter: `${since}, by calendar quarter.`,
   };
   const chartConfig = { reviews: { label: "Reviews", color: "var(--chart-1, var(--chart-1-light))" } };
 
@@ -5991,9 +6067,10 @@ export default function RMReviewBuilderPage() {
   // 52/38/31 reviews gained, directly under "Create your first campaign", while
   // the Reviews hub said nothing was running. The persona-aware profile already
   // answers for both empty and starter, so the "new" special case goes too.
-  const [campaigns, setCampaigns] = useState(() =>
-    seedCampaigns().slice(0, profileFor(locationKey, persona).campaigns),
-  );
+  const [campaigns, setCampaigns] = useState(() => {
+    const profile = profileFor(locationKey, persona);
+    return scaleCampaigns(seedCampaigns().slice(0, profile.campaigns), profile);
+  });
   const [templates, setTemplates] = useState(seedTemplates);
   const [draft, setDraft] = useState(blankCampaignDraft);
   const [step, setStep] = useState("setup");
