@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ArrowRight } from "@brightlocal/icons";
 import { VIDEOS } from "@/lib/videos";
 import { CARDS } from "@/lib/cards";
+import { STATES, STATE_SECTIONS } from "@/lib/states";
 
 const SURFACES = [
   {
@@ -15,6 +16,12 @@ const SURFACES = [
     title: "Videos",
     line: "The walkthroughs, with sections you can jump between, a transcript and a subtitle track.",
     count: () => `${VIDEOS.length} videos`,
+  },
+  {
+    href: "/meta/states",
+    title: "States",
+    line: "Every interaction state with the note that would have gone beside it in Figma. Tap one and the frame opens the real page driven into it.",
+    count: () => `${STATES.length} states, ${STATE_SECTIONS.length} sections`,
   },
   {
     href: "/meta/deck",

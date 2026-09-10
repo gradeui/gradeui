@@ -14,6 +14,15 @@ export interface DsChange {
 
 export const DS_CHANGES: DsChange[] = [
   {
+    id: "togglegroupitem-datahook",
+    title: "ToggleGroupItem does not forward dataHook",
+    finding:
+      "ToggleGroupItem accepts a dataHook prop and drops it, so the items inside a ToggleGroup carry no data-hook of their own. The group gets one, the items do not, which means a test or a capture script cannot address the thing it needs to press. Button has the same shape of problem with unknown data-* props.",
+    workaround:
+      'Address the item through its ariaLabel instead, as in [aria-label="Table view"] inside the group. That works because ariaLabel IS forwarded, but it couples the selector to a label written for screen readers, which may be reworded.',
+    ask: "Forward dataHook from ToggleGroupItem the way ToggleGroup does, or spread unknown data-* props onto the rendered element.",
+  },
+  {
     id: "sidebar-width",
     title: "Sidebar width is not overridable",
     finding: "SidebarProvider sets --sidebar-width inline (224px when this was logged against 2.20.0; 2.27.0 ships 288px) and the live platform hardcodes the container width, so neither :root variables nor classes reach it. The proposal settled on 280px.",

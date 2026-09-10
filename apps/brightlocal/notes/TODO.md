@@ -248,3 +248,23 @@ Open items in the order I would take them.
       grows upward instead. One line of CSS, but it changes the framing of
       every shot, so it wants doing at the same time as the next full
       re-record rather than on its own.
+
+20. **The state browser** (Ali, 10 Sep). Built: `/meta/states`, 33 states
+    across seven sections, each with the note that used to be a Figma
+    annotation. The catalogue is `lib/states.ts` and it is the ONE
+    definition two things read: the page drives a same-origin iframe
+    through the steps, so tapping a thumbnail opens the real page in that
+    interaction, and `npx tsx scripts/capture-states.mts` drives the same
+    steps under Playwright to re-shoot the thumbnails.
+    To add a state: write the entry, run the capture, done. A broken
+    selector fails that one frame and the run carries on.
+    Remaining, in rough order of use:
+    - **Cover the rest.** 33 is a good spine, not the whole product. The
+      Builder wizard alone has more steps worth a frame, and nothing yet
+      covers dark mode or the three insight tones.
+    - **A Figma export.** The point of this page is that the notes live
+      with the states, so the obvious next step is a script that pushes
+      thumbnail plus note onto a Figma board rather than doing it by hand.
+    - **Diff against a previous run.** The thumbnails are deterministic,
+      so a second capture into a temp folder could show which states
+      changed. That is the thing that would catch a regression.
