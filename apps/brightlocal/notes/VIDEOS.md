@@ -83,6 +83,10 @@ All six clips are 1920x1080 at 30fps, so it is a straight
 `ffmpeg -f concat -c copy`, no re-encode and no quality loss. Re-cut it by
 editing order.txt and running that command again.
 
+`insights-master-share.mp4` beside it is the same cut at 1280 wide and
+CRF 30, about 10 MB, for anywhere with an upload limit. Re-make it with
+`-vf scale=1280:-2 -crf 30 -movflags +faststart`.
+
 
 One long cut of everything, in the order above: overview, hub, Manager,
 Tracker, Builder, Showcase, roadmap, account, tones, end card. Built
