@@ -53,7 +53,7 @@
     {
       "go": "/locations/minus-one-studios/reviews/manager",
       "bg": "yellow",
-      "caption": "Beacon's plan for the week.",
+      "caption": "The plan for the week.",
       "ms": 2200
     },
     {
@@ -107,7 +107,7 @@
     {
       "go": "/locations/harbour-co-hove/reviews",
       "bg": "violet",
-      "caption": "Customers compare Hove with Brighton, and Beacon says so.",
+      "caption": "Customers compare Hove with Brighton, and their reviews say so.",
       "ms": 3400
     },
     {

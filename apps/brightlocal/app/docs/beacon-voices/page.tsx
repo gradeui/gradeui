@@ -8,7 +8,7 @@ export default function BeaconVoicesPage() {
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-2">
         <p className="text-muted-foreground text-sm"><Link href="/docs" className="hover:underline">Docs</Link></p>
-        <h1 className="text-heading-page">The five Beacon voices</h1>
+        <h1 className="text-heading-page">The five voices</h1>
         <p className="text-body text-muted-foreground max-w-prose">
           Keith, Brian, Bea, Ray and Buzz, flattest to brightest, on the same six situations. Brian, Bea and Ray ship: bad news gets the flattest register, Bea is the default, Ray fires only on a real win. Keith and Buzz are calibration points. If a line sounds like Keith, warm it up. If it sounds like Buzz, dial it back toward Ray.
         </p>

@@ -39,7 +39,7 @@ export default function BeaconSummariesPage() {
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-2">
         <p className="text-muted-foreground text-sm"><Link href="/docs" className="hover:underline">Docs</Link></p>
-        <h1 className="text-heading-page">Everything Beacon says</h1>
+        <h1 className="text-heading-page">Everything it says</h1>
         <p className="text-body text-muted-foreground max-w-prose">
           Every sentence on every surface, for every persona and location, produced by the same code the product runs. Registers: Brian for bad news, Bea by default, Ray for a real win. Review the tone here. The numbers come from the rows.
         </p>

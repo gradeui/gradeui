@@ -97,7 +97,7 @@ export function UpsellStrip({
           </div>
           {/* The reply is the hero (Ali, 11 Sep: "make more of the reply"). */}
           <div className="flex flex-col gap-3 rounded-lg border-2 border-foreground bg-[var(--ds-tailwind-colors-base-white)] p-5">
-            <p className="flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]"><Sparkles className="size-3.5" />Beacon's reply, an hour later</p>
+            <p className="flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]"><Sparkles className="size-3.5" />The reply, sent an hour later</p>
             <p className="text-body font-semibold text-pretty">“{example.reply}”</p>
           </div>
         </div>

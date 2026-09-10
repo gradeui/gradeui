@@ -64,7 +64,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
           {hasUpsell && !bare ? (
             <UpsellStrip
               feature="Auto-reply"
-              benefit="Beacon can answer your five-star Google reviews for you, in your tone, an hour after they land."
+              benefit="BrightLocal can answer your five-star Google reviews for you, in your tone, an hour after they land."
               creditsLabel="auto-reply"
               creditsPlural="auto-replies"
               dataHook="upsell-auto-reply"
@@ -173,7 +173,7 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
           layout="column"
           example={example}
           feature="Auto-reply"
-          benefit="Beacon can answer your five-star Google reviews for you, in your tone, an hour after they land."
+          benefit="BrightLocal can answer your five-star Google reviews for you, in your tone, an hour after they land."
           creditsLabel="auto-reply"
           creditsPlural="auto-replies"
           dataHook="upsell-auto-reply"

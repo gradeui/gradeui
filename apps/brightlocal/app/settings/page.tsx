@@ -100,7 +100,7 @@ export default function SettingsPage() {
         </RadioGroup>
       </section>
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Beacon colour</h2>
+        <h2 className="text-lg font-semibold">Insights colour</h2>
         <p className="text-muted-foreground text-sm">
           Lifts Beacon's surfaces off the page with the accessible pairings from the DS chart (100 background, 700 and 950 text).
         </p>
@@ -115,7 +115,7 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Beacon and Pro</h2>
+        <h2 className="text-lg font-semibold">Insights and Pro</h2>
         <div className="flex items-center justify-between gap-4">
           <Label htmlFor="upsell" className="flex flex-col gap-0.5">
             <span>Show upsells and gated content</span>

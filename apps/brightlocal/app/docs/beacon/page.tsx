@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Beacon badge treatments, side by side, so the pick is made by eye.
+ * Badge treatments, side by side, so the pick is made by eye.
  * Every colour is a DS token; the pairings follow the accessible
  * pairings chart (800/300, 700/100, 950/400). The glows are box-shadows
  * on token colours, from quiet to loud.
@@ -47,7 +47,7 @@ export default function BeaconBadgePage() {
         @media (prefers-reduced-motion: reduce) { .beacon-breathe { box-shadow: 0 0 18px 4px ${G(400)}; } }
       `}</style>
       <p className="text-muted-foreground text-sm"><Link href="/docs" className="hover:underline">Docs</Link></p>
-      <h1 className="text-heading-page">Beacon badge treatments</h1>
+      <h1 className="text-heading-page">Badge treatments</h1>
       <p className="text-body text-muted-foreground max-w-prose">
         Eight treatments of the same word, on white, on the grey panel, and where it matters on dark. Tokens only; the glows are box-shadows on green-200 to green-500.
       </p>

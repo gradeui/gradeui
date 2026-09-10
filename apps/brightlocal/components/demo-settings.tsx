@@ -160,7 +160,7 @@ export function DemoSettingsPanel() {
                 ))}
             </CommandGroup>
             <CommandSeparator />
-            <CommandGroup heading="Beacon colour">
+            <CommandGroup heading="Insights colour">
               {(["neutral", "tinted", "families", "vivid"] as const).map((t) => (
                 <CommandItem key={t} dataHook={`demo-tone-${t}`} value={`beacon colour ${t}`} onSelect={() => { setBeaconTone(t); setMenuOpen(false); }}>
                   {t === "neutral" ? "Neutral (white surfaces)" : t === "tinted" ? "Tinted (one family, AA pairs)" : t === "families" ? "Families (a colour per kind of content)" : "Super bright (the website's full-strength palette)"}
@@ -178,7 +178,7 @@ export function DemoSettingsPanel() {
               ))}
             </CommandGroup>
             <CommandSeparator />
-            <CommandGroup heading="Beacon and Pro">
+            <CommandGroup heading="Insights and Pro">
               <CommandItem dataHook="demo-upsell" value="upsell gated content pro credits" onSelect={() => { setUpsell(!settings.upsell); setMenuOpen(false); }}>
                 Show upsells and gated content
                 {settings.upsell ? <Check className="ml-auto size-4" /> : null}

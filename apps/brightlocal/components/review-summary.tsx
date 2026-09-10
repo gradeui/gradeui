@@ -56,28 +56,16 @@ const TONE_TEXT: Record<string, string> = {
   neutral: "text-foreground",
 };
 
-/** THE Beacon badge, one shape everywhere: outlined, the word alone. A badge can be a link (Ali, 9 Sep):
- *  with `beta` it carries a "Beta" tail and opens the Beacon notes, where
- *  "learn more" and "give us feedback" live. */
-export function BeaconBadge({ dataHook = "beacon-badge", beta = false }: { dataHook?: string; beta?: boolean }) {
-  // No icon (Ali, 9 Sep): the word is the mark.
-  const inner = (
-    <>
-      Beacon
-      {beta ? <span className="text-muted-foreground border-l border-current/25 pl-1.5">Beta</span> : null}
-    </>
-  );
+/** The badge on every AI surface. Ali, 12 Sep: "let's just call it Insights
+ *  and drop the beta. This is something I need to socialise, and inventing
+ *  my own product name isn't it." So: the plain word, no beta tail, no link
+ *  out. `beta` is kept as a no-op prop so the callers did not all have to
+ *  change on the day. */
+export function BeaconBadge({ dataHook = "beacon-badge" }: { dataHook?: string; beta?: boolean }) {
   const cls = "text-label-sm inline-flex items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-foreground";
-  if (beta) {
-    return (
-      <Link href="/docs/beacon-notes" data-hook={dataHook} className={`${cls} hover:bg-[var(--ds-tailwind-colors-neutral-50)]`} title="What Beacon is, and how to give feedback">
-        {inner}
-      </Link>
-    );
-  }
   return (
     <span data-hook={dataHook} className={cls}>
-      {inner}
+      Insights
     </span>
   );
 }
@@ -311,7 +299,7 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
             </Accordion>
           ) : null}
           <p className={tilesRow ? "hidden" : "text-body-xs text-muted-foreground"} data-hook="review-summary-disclosure">
-            Written by Beacon from this location's reviews. Hover a number for what it counts; the info icons hold the rest.
+            From this location's reviews. Hover a number for what it counts.
           </p>
         </div>
         {tilesRow ? null : (
@@ -515,7 +503,7 @@ function VoiceLine({ line, index }: { line: SummaryLine; index: number }) {
       className={`text-body text-foreground max-w-[60ch] text-pretty ${order.length > 1 ? "cursor-pointer" : ""}`}
       data-hook={`review-summary-line-${index}`}
       data-register={voice}
-      title={order.length > 1 ? `Written by ${VOICE_NAME[voice]}. Click for ${VOICE_NAME[next]}.` : `Written by ${VOICE_NAME[voice] ?? "Beacon"}`}
+      title={order.length > 1 ? `Written by ${VOICE_NAME[voice]}. Click for ${VOICE_NAME[next]}.` : `Written by ${VOICE_NAME[voice] ?? "Insights"}`}
       onClick={() => order.length > 1 && setK((n) => n + 1)}
     >
       {segments.map((sg, j) => (
