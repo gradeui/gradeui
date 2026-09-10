@@ -79,13 +79,18 @@ Open items in the order I would take them.
     moments in item 11. Rules first, model second: the query is cheap and
     deterministic, the wording is where the voices come in. Persona data
     gives it a "last visit" date per persona to fake the gap.
-13. **Walkthrough videos.** DONE in part: the runner is
-    apps/brightlocal/scripts/record-video.mjs, the capture stage is
-    /meta/capture, the first flow is scripts/flows/overview.json and it
-    renders. Remaining: the eight section flows and the stitched master.
-    Original note: Plan in notes/VIDEOS.md: nine videos, persona
-    cut scenes, a flow runner for the standalone app with `persona` and
-    `title` steps, stills first.
+13. **Walkthrough videos.** Six flows exist and all six were re-recorded
+    on 10 Sep after the rename and the audit fixes:
+    insights-overview, insights-walkthrough, insights-popovers, the-gap,
+    the-trial and day-one-to-habit, in ~/Desktop/brightlocal-videos/.
+    The runner is scripts/record-video.mjs, the stage is /meta/capture,
+    the flows are scripts/flows/*.json.
+    Remaining: the stitched master, and a flow per section if the six do
+    not cover enough. Plan in notes/VIDEOS.md.
+    NOTE: recording needs disk. Each Next dev server's `.next/dev` cache
+    grows without bound (brightlocal's had reached 11 GB and apps/docs is
+    at 12 GB, which filled the disk mid-run on 10 Sep). Stop the server,
+    delete `.next/dev`, restart.
 14. **Popover motion** (Ali, 12 Sep: "an interesting way to animate in the
     popovers"). Ideas, all on the DS motion tokens, none decorative for
     its own sake:
