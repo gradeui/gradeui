@@ -182,10 +182,14 @@ for (const rec of newestPerFlow()) {
 // ── the manifest ──────────────────────────────────────────────────────
 const existing = path.join(APP, "lib/videos.generated.ts");
 const prev = fs.existsSync(existing) ? fs.readFileSync(existing, "utf8") : "";
-const keep = /* keep any flow we did not publish this run */ (() => {
-  const m = /export const RECORDED: RecordedVideo\[\] = (\[[\s\S]*?\]);\n/.exec(prev);
+// Keep any flow we did not publish this run, so `--only=<flow>` refreshes one
+// video without dropping the rest of the manifest. The array is written by
+// JSON.stringify, so it parses as-is: the re-quoting this used to do turned
+// `"slug":` into `""slug"":` and the catch silently returned nothing.
+const keep = (() => {
+  const m = /export const RECORDED: RecordedVideo\[\] = (\[[\s\S]*\]);\n$/.exec(prev.trimEnd() + "\n");
   if (!m) return [];
-  try { return JSON.parse(m[1].replace(/(\w+):/g, '"$1":').replace(/'/g, '"')); } catch { return []; }
+  try { return JSON.parse(m[1]); } catch (e) { console.log(`  (could not read the previous manifest: ${e.message})`); return []; }
 })();
 const bySlug = new Map(keep.map((v) => [v.slug, v]));
 for (const v of published) bySlug.set(v.slug, v);
