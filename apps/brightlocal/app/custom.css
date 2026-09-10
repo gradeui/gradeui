@@ -363,6 +363,17 @@
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] mark {
   background: var(--beacon-200) !important;
 }
+/* The same mark in the dark. The tone rule above wins on specificity, so the
+   mark keeps its light 200 background whatever the theme; only the ink has to
+   be pinned, or it inherits the near-white --foreground and lands at 1.36:1
+   (Showcase audit, 10 Sep). Every tone's 200 is a light step, so one literal
+   dark ink covers all of them. */
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] mark,
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] mark,
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] mark,
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] mark {
+  color: var(--ds-tailwind-colors-neutral-950) !important;
+}
 /* Panels inside a tinted surface step to the family's 50, and the
    dialog's inner panels and header follow. */
 [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip-tiles"],
@@ -490,36 +501,41 @@
   background: var(--foreground) !important;
   color: var(--background) !important;
 }
-/* Buttons on tinted surfaces went black in the light tones; in the dark they go white. */
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button.bg-primary,
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button.bg-primary,
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button.bg-primary,
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button.bg-primary,
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="upsell"] button.bg-primary {
+/* DARK + A TONE. `.dark[data-beacon-tone]` with NO SPACE: both the class and
+   the attribute live on <html>, so `.dark [data-beacon-tone]` asked for a
+   descendant and matched nothing. Every rule in this section was dead, which
+   is why a tinted strip in dark mode was near-white ink on light violet at
+   about 1.06:1 (Showcase audit, 10 Sep).
+   Buttons on tinted surfaces went black in the light tones; in the dark they go white. */
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button.bg-primary,
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button.bg-primary,
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button.bg-primary,
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button.bg-primary,
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="upsell"] button.bg-primary {
   background: var(--foreground) !important;
   color: var(--background) !important;
   border-color: var(--foreground) !important;
 }
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button:not(.bg-primary),
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button:not(.bg-primary),
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button:not(.bg-primary),
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button,
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="upsell"] button:not(.bg-primary),
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="review-quote-"] button:not(.bg-primary) {
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"] button:not(.bg-primary),
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] button:not(.bg-primary),
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"] button:not(.bg-primary),
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] button,
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="upsell"] button:not(.bg-primary),
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="review-quote-"] button:not(.bg-primary) {
   border-color: var(--foreground) !important;
   color: var(--foreground) !important;
 }
 /* Tinted tones in the dark: the family's 950 as the surface. */
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"],
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"],
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"],
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] {
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip"],
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"],
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip"],
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-nugget-"] {
   background: var(--beacon-950) !important;
   border-color: transparent !important;
 }
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip-tiles"],
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip-tiles"],
-.dark [data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] dl {
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-summary-strip-tiles"],
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook="review-plan-strip-tiles"],
+.dark[data-beacon-tone]:not([data-beacon-tone="neutral"]) [data-hook^="beacon-strip-"] dl {
   background: var(--card) !important;
 }
 /* The reply card and review card in the sell column. */

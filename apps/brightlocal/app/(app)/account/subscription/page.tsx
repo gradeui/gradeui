@@ -11,6 +11,7 @@
 import { SidebarProvider, SidebarTrigger, GlobalLayoutContentBody, Logo } from "@brightlocal/ui-components";
 import { Button } from "@brightlocal/ui-components/button";
 import { Card, CardContent } from "@brightlocal/ui-components/card";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@brightlocal/ui-components/accordion";
 import { Menu, Check, ArrowRight, Lock } from "@brightlocal/icons";
 import { AppLayoutShell, ProposalSidebar, PageHeader } from "@brightlocal/proposal";
 import { usePersona } from "@/lib/demo";
@@ -20,6 +21,31 @@ import { PLANS } from "@/lib/plans";
 import { useUrlParam } from "@/lib/url-state";
 import { TODAY } from "@/lib/reviews-data";
 import { pickIllustration } from "@/lib/illustrations";
+
+/**
+ * The four questions brightlocal.com/pricing asks, with their real answers
+ * (read 10 Sep 2026). Their facts, our wording: no card up front, a
+ * downgrade lands immediately with no refund, a cancelled account keeps its
+ * reports but stops running them.
+ */
+const FAQ = [
+  {
+    q: "What happens after my free trial ends?",
+    a: "You pick the plan that fits. If you are not ready, you can still log in and look at the data you already have, but nothing new runs and nothing refreshes until a plan is active.",
+  },
+  {
+    q: "How and when do I pay?",
+    a: "Only when you are ready. We do not take your card details up front, so there are no surprise charges. You add them once you have seen the results and want to keep going.",
+  },
+  {
+    q: "Can I change my plan?",
+    a: "Any time, up or down, and between monthly and annual. A downgrade lands straight away rather than at your renewal date, and there is no refund for the time left on the plan you are leaving, so it is usually worth waiting until you are close to renewal.",
+  },
+  {
+    q: "Can I cancel at any time?",
+    a: "Yes, and we will not delete your account or your reports. They stop updating and you cannot open them while the subscription is off. Come back and they start running again.",
+  },
+];
 
 function Art({ keywords, className }: { keywords: string[]; className?: string }) {
   const A = pickIllustration(keywords);
@@ -216,13 +242,25 @@ export default function SubscriptionPage() {
             <Art keywords={["review", "stars"]} className="hidden size-28 lg:block" />
           </section>
 
+          {/* THE FAQ, WITH ANSWERS (10 Sep). It was four bordered boxes styled
+              like an accordion that did not open, because the first harvest of
+              brightlocal.com/pricing caught the questions with the answers
+              still collapsed. Read again 10 Sep 2026 with the panels expanded;
+              the facts are theirs, the wording is ours. */}
           <section className="flex flex-col gap-3" data-hook="subscription-faq">
             <p className="text-heading-subsection">Frequently asked questions</p>
-            <ul className="grid gap-2 text-body-sm sm:grid-cols-2">
-              {["What happens after my free trial ends?", "How and when do I pay?", "Can I change my plan?", "Can I cancel at any time?"].map((q) => (
-                <li key={q} className="rounded-lg border px-4 py-3">{q}</li>
+            <Accordion type="multiple" dataHook="subscription-faq-list" className="w-full">
+              {FAQ.map((f, i) => (
+                <AccordionItem key={f.q} value={`faq-${i}`}>
+                  <AccordionTrigger className="cursor-pointer text-left" data-hook={`subscription-faq-${i}`}>
+                    {f.q}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-body max-w-[70ch] text-pretty pb-2">{f.a}</p>
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            </ul>
+            </Accordion>
           </section>
         </GlobalLayoutContentBody>
       </AppLayoutShell>
