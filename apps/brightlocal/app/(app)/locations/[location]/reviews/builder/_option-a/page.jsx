@@ -4241,44 +4241,58 @@ function CampaignWizard({
             <p className="text-base font-semibold">
               {sendCount === 1 ? "1 person" : `${sendCount} people`} will get this {draft.channel === "sms" ? "text" : "email"}
             </p>
-            <p className="text-muted-foreground mt-1 text-sm">
-              From 120 rows in customers.csv. 8 rows were left out:
-            </p>
-            <ul className="mt-2 flex flex-col gap-1 text-sm">
-              {exclusions.map((x) => (
-                <li key={x.label} className="flex gap-2">
-                  <span className="w-6 shrink-0 text-right font-medium tabular-nums">{x.count}</span>
-                  <span>{x.label}</span>
-                  <span className="text-muted-foreground">({x.note})</span>
-                </li>
-              ))}
-            </ul>
-            <Button
-              variant="ghost"
-              size="sm"
-              dataHook="toggle-exclusions"
-              className="-ml-2 mt-1"
-              onClick={() => setShowExclusions((v) => !v)}
-            >
-              {showExclusions ? "Hide the rows we left out" : "Show the rows we left out"}
-              {showExclusions ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-            </Button>
-            {showExclusions ? (
-              <div className="bg-muted/40 mt-2 flex flex-col gap-1 rounded-md border p-3 text-sm">
-                {[
-                  { row: 12, value: "sophie.hart@example.com", reason: "Duplicate of row 4" },
-                  { row: 31, value: "(blank)", reason: "No contact detail" },
-                  { row: 58, value: "dan.pryce@example.com", reason: "Duplicate of row 9" },
-                  { row: 77, value: "tom.bailey@example.com", reason: "Unsubscribed 3 Feb 2026" },
-                ].map((x) => (
-                  <div key={x.row} className="grid grid-cols-[4rem_1fr_auto] gap-2">
-                    <span className="text-muted-foreground">Row {x.row}</span>
-                    <span className="truncate">{x.value}</span>
-                    <span className="text-muted-foreground">{x.reason}</span>
+            {/* ONLY A LIST HAS ROWS (Builder audit, 10 Sep). "One person" says
+                on its own step that there is nothing to upload and no columns
+                to map, and the next step still read "From 120 rows in
+                customers.csv. 8 rows were left out". The drill-down also
+                listed four rows against a stated eight, with a mix that did
+                not match its own summary, so it lists all eight now. */}
+            {draft.audience === "one" ? null : (
+              <>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  From 120 rows in customers.csv. 8 rows were left out:
+                </p>
+                <ul className="mt-2 flex flex-col gap-1 text-sm">
+                  {exclusions.map((x) => (
+                    <li key={x.label} className="flex gap-2">
+                      <span className="w-6 shrink-0 text-right font-medium tabular-nums">{x.count}</span>
+                      <span>{x.label}</span>
+                      <span className="text-muted-foreground">({x.note})</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  dataHook="toggle-exclusions"
+                  className="-ml-2 mt-1"
+                  onClick={() => setShowExclusions((v) => !v)}
+                >
+                  {showExclusions ? "Hide the rows we left out" : "Show the rows we left out"}
+                  {showExclusions ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                </Button>
+                {showExclusions ? (
+                  <div className="bg-muted/40 mt-2 flex flex-col gap-1 rounded-md border p-3 text-sm">
+                    {[
+                      { row: 12, value: "sophie.hart@example.com", reason: "Duplicate of row 4" },
+                      { row: 19, value: "priya.nair@example.com", reason: "Duplicate of row 6" },
+                      { row: 31, value: "(blank)", reason: "No contact detail" },
+                      { row: 44, value: "(blank)", reason: "No contact detail" },
+                      { row: 58, value: "dan.pryce@example.com", reason: "Duplicate of row 9" },
+                      { row: 63, value: "not-an-address", reason: "No contact detail" },
+                      { row: 71, value: "megan.frost@example.com", reason: "Duplicate of row 22" },
+                      { row: 77, value: "tom.bailey@example.com", reason: "Unsubscribed 3 Feb 2026" },
+                    ].map((x) => (
+                      <div key={x.row} className="grid grid-cols-[4rem_1fr_auto] gap-2">
+                        <span className="text-muted-foreground">Row {x.row}</span>
+                        <span className="truncate">{x.value}</span>
+                        <span className="text-muted-foreground">{x.reason}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : null}
+                ) : null}
+              </>
+            )}
           </div>
 
           {draft.channel === "sms" ? (
@@ -4530,12 +4544,16 @@ function CampaignWizard({
           // lastUpdated stamp both render in the status row, so switching it
           // off hid the two things this header exists for. On the settings
           // page the header also carries Save and Close (setupActions).
+          // lastUpdated ONLY ONCE THERE IS SOMETHING TO STAMP (Builder audit,
+          // 10 Sep). "auto" binds the account's own refresh date, so the very
+          // first screen of a new campaign read "Last updated August 18, 2026"
+          // about a draft that had never been saved.
           <PageHeader
             dataHook="template-page-header"
             breadcrumbs={trail}
             title="Review template"
             description={draft.name?.trim() || "Untitled template"}
-            lastUpdated="auto"
+            lastUpdated={draft.id ? "auto" : undefined}
             actions={step === "setup" ? setupActions : undefined}
           />
         ) : step === "setup" ? (
@@ -4548,7 +4566,7 @@ function CampaignWizard({
             breadcrumbs={trail}
             title="Review campaign"
             description={draft.name?.trim() || "Untitled campaign"}
-            lastUpdated="auto"
+            lastUpdated={draft.id ? "auto" : undefined}
             actions={setupActions}
           />
         ) : (
@@ -4557,7 +4575,7 @@ function CampaignWizard({
             breadcrumbs={trail}
             title="Review campaign"
             description={draft.name?.trim() || "Untitled campaign"}
-            lastUpdated="auto"
+            lastUpdated={draft.id ? "auto" : undefined}
             actions={onSendPath ? sendActions : closeAction}
           />
         )

@@ -43,9 +43,15 @@ const SIZES: { id: "A4" | "A5" | "A6"; label: string; where: string; w: number; 
   { id: "A4", label: "A4", where: "the door or a window", w: 210, h: 297 },
 ];
 
+// NEVER window.location.origin (Builder audit, 10 Sep). The printed poster is
+// customer-facing: on localhost it read "http://localhost:3020/locations/..."
+// under "Scan to leave Minus 1 Studios a Google review", and that is what a
+// demo would put on screen. The hosted prototype is the one honest origin, and
+// it is the same in the print window, the preview and a screenshot.
+const REVIEW_LINK_ORIGIN = "https://brightlocal-replatform.gradeui.com";
+
 export function reviewLinkFor(location: string): string {
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://brightlocal-replatform.gradeui.com";
-  return `${origin}/locations/${location}/reviews/builder?utm_source=brightlocal&utm_medium=qr&utm_campaign=${encodeURIComponent(location)}`;
+  return `${REVIEW_LINK_ORIGIN}/locations/${location}/reviews/builder?utm_source=brightlocal&utm_medium=qr&utm_campaign=${encodeURIComponent(location)}`;
 }
 
 /** The product's real target, kept for the notes and the print card. */

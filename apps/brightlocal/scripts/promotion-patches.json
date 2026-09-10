@@ -89,6 +89,26 @@
       "why": "\"1 campaigns\" in the page header stat",
       "find": "          <span className=\"text-foreground font-medium tabular-nums\">{campaigns.length}</span> campaigns\n",
       "replace": "          <span className=\"text-foreground font-medium tabular-nums\">{campaigns.length}</span> {campaigns.length === 1 ? \"campaign\" : \"campaigns\"}\n"
+    },
+    {
+      "why": "one person has no CSV, so the row counts and the drill-down go with it; the drill-down also listed 4 of a stated 8",
+      "find": "            <p className=\"text-muted-foreground mt-1 text-sm\">\n              From 120 rows in customers.csv. 8 rows were left out:",
+      "replace": "            {/* ONLY A LIST HAS ROWS (Builder audit, 10 Sep). \"One person\" says\n                on its own step that there is nothing to upload and no columns\n                to map, and the next step still read \"From 120 rows in\n                customers.csv. 8 rows were left out\". The drill-down also\n                listed four rows against a stated eight, with a mix that did\n                not match its own summary, so it lists all eight now. */}\n            {draft.audience === \"one\" ? null : (\n              <>\n                <p className=\"text-muted-foreground mt-1 text-sm\">\n                  From 120 rows in customers.csv. 8 rows were left out:"
+    },
+    {
+      "why": "no last-updated stamp on a draft that has never been saved",
+      "find": "            lastUpdated=\"auto\"\n            actions={step === \"setup\" ? setupActions : undefined}",
+      "replace": "            lastUpdated={draft.id ? \"auto\" : undefined}\n            actions={step === \"setup\" ? setupActions : undefined}"
+    },
+    {
+      "why": "no last-updated stamp on a draft that has never been saved (campaign header)",
+      "find": "            lastUpdated=\"auto\"\n            actions={setupActions}",
+      "replace": "            lastUpdated={draft.id ? \"auto\" : undefined}\n            actions={setupActions}"
+    },
+    {
+      "why": "no last-updated stamp on a draft that has never been saved (step header)",
+      "find": "            lastUpdated=\"auto\"\n            actions={onSendPath ? sendActions : closeAction}",
+      "replace": "            lastUpdated={draft.id ? \"auto\" : undefined}\n            actions={onSendPath ? sendActions : closeAction}"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -455,6 +475,11 @@
     {
       "find": "import { usePersona } from \"@/lib/demo\";",
       "replace": "import { usePersona } from \"@/lib/demo\";\nimport { ConnectedSites } from \"@/components/connected-sites\";"
+    },
+    {
+      "why": "profileFor needs the persona, or the empty account charts the location's own star mix",
+      "find": "function selectTrackerData(persona, location) {\n  const starter = persona?.engagement === \"new\";\n  const profile = profileFor(location);",
+      "replace": "function selectTrackerData(persona, location) {\n  // The persona goes to profileFor too (Builder audit found the same hole on\n  // the Builder, 10 Sep): without it the empty account got the location's own\n  // star mix, so an account with nothing connected charted 1,116 reviews.\n  const starter = persona?.engagement === \"new\";\n  const profile = profileFor(location, persona);"
     }
   ],
   "app/(app)/locations/page.jsx": [
@@ -494,6 +519,56 @@
       "why": "the nugget closes the page",
       "find": "        </GlobalLayoutContentBody>",
       "replace": "          <BeaconNugget page=\"showcase\" />\n        </GlobalLayoutContentBody>"
+    },
+    {
+      "why": "the review pool is the location's own reviews, not the farm park's 1,116 rows",
+      "find": "const REVIEWS = buildReviews();",
+      "replace": "// THE POOL IS THE LOCATION'S OWN REVIEWS (Showcase audit, 10 Sep).\n// buildReviews() is the farm park's 1,116 rows and nothing else: every\n// location showed \"1,116 Total Reviews / 4.7\" over reviews about owl\n// encounters and the maize maze, while the insight strip directly above\n// said 130 and 68 five-star, and the Manager for the same location showed\n// completely different rows. lib/reviews-data is the one pool the rest of\n// the app reads, so the showcase reads it too and the farm-park builder\n// becomes the fallback for a location with no profile.\n//\n// Selected ONCE per render, before any widget reads it, the same way the\n// Tracker selects its sources. Module-level so the memoised consumers keep\n// their shape; the app remounts the page when the persona changes.\nconst FALLBACK_REVIEWS = buildReviews();\nlet REVIEWS = FALLBACK_REVIEWS;\n\n/** A lib/reviews-data row in the shape this screen's widgets expect: a\n *  numeric rating OR a Facebook recommendation, and a formatted date. */\nfunction asShowcaseReview(r) {\n  return {\n    id: r.id,\n    name: r.name,\n    source: r.source,\n    rating: typeof r.rating === \"number\" ? r.rating : null,\n    recommended: r.rating === \"up\" ? true : r.rating === \"down\" ? false : null,\n    daysAgo: r.daysAgo,\n    date: formatDate(r.date),\n    text: r.text,\n  };\n}\n\nfunction selectShowcaseReviews(location, persona) {\n  const rows = reviewsFor(location, persona);\n  REVIEWS = rows.length ? rows.map(asShowcaseReview) : [];\n  POOL_TOTAL = REVIEWS.length;\n  const stars = REVIEWS.filter((r) => typeof r.rating === \"number\").map((r) => r.rating);\n  POOL_AVERAGE = stars.length ? stars.reduce((a, b) => a + b, 0) / stars.length : 0;\n}"
+    },
+    {
+      "why": "POOL_TOTAL and POOL_AVERAGE are rewritten by selectShowcaseReviews",
+      "find": "const POOL_TOTAL = REVIEWS.length;\nconst fmtCount = (n) => n.toLocaleString(\"en-GB\");\nconst POOL_AVERAGE = (() => {",
+      "replace": "// `let`, because selectShowcaseReviews above rewrites all three together.\nlet POOL_TOTAL = REVIEWS.length;\nconst fmtCount = (n) => n.toLocaleString(\"en-GB\");\nlet POOL_AVERAGE = (() => {"
+    },
+    {
+      "why": "the page selects the pool before seedWidgets reads it",
+      "find": "export default function RMReviewShowcasePage() {\n  const [widgets, setWidgets] = useState(seedWidgets);",
+      "replace": "export default function RMReviewShowcasePage() {\n  const persona = usePersona();\n  const locationKey = useLocationKey();\n  // Before useState runs its initialisers, so seedWidgets picks from this\n  // location's own reviews.\n  selectShowcaseReviews(locationKey, persona);\n  const [widgets, setWidgets] = useState(seedWidgets);"
+    },
+    {
+      "why": "persona, location and the review pool come from the app",
+      "find": "import { BeaconPageStrip } from \"@/components/review-summary\";",
+      "replace": "import { BeaconPageStrip } from \"@/components/review-summary\";\nimport { usePersona } from \"@/lib/demo\";\nimport { useLocationKey } from \"@/lib/location\";\nimport { reviewsFor } from \"@/lib/reviews-data\";"
+    },
+    {
+      "why": "British spelling",
+      "find": "caption: \"Display reviews in an ordered, customizable list\"",
+      "replace": "caption: \"Display reviews in an ordered, customisable list\""
+    },
+    {
+      "why": "no semicolons",
+      "find": "<li>Publish the page. Each showcase is one line; add one per showcase you want on the page.</li>",
+      "replace": "<li>Publish the page. Each showcase is one line. Add one per showcase you want on the page.</li>"
+    },
+    {
+      "why": "\"on your site\" already means placed on the website on the hub card",
+      "find": "  const capNote =\n    typeof widget.limit === \"number\" && widget.limit < inWidget ? `, ${widget.limit} on your site` : \"\";",
+      "replace": "  const capNote =\n    typeof widget.limit === \"number\" && widget.limit < inWidget ? `, ${widget.limit} in the showcase` : \"\";"
+    },
+    {
+      "why": "the alert said \"below\" about a closed sheet",
+      "find": "none: { title: \"No reviews chosen\", body: () => \"Tick at least one review below, or switch to Live feed.\" },",
+      "replace": "none: { title: \"No reviews chosen\", body: () => \"Open Reviews and tick at least one, or switch to Live feed.\" },"
+    },
+    {
+      "why": "a List showcase has no animation",
+      "find": "    sub: \"Display, information, animation\",",
+      "replace": "    sub: \"Display and information\","
+    },
+    {
+      "why": "the List card stretched to the Carousel's height",
+      "find": "function WidgetsDashboard({ widgets, onView, onEdit, onEmbed }) {\n  return (\n    <div className=\"grid gap-4 md:grid-cols-2\">",
+      "replace": "// items-start, so a three-row List card is its own height instead of being\n// stretched to the seven-row Carousel and leaving ~180px of white (Showcase\n// audit, 10 Sep).\nfunction WidgetsDashboard({ widgets, onView, onEdit, onEmbed }) {\n  return (\n    <div className=\"grid items-start gap-4 md:grid-cols-2\">"
     }
   ],
   "app/(app)/locations/[location]/reviews/builder/simplified/page.jsx": [

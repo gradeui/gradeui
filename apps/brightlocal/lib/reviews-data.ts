@@ -400,7 +400,10 @@ export function statsFor(location: string, persona?: { engagement?: string } | n
     });
     const st = starsOf(rows);
     months.push({
-      label: start.toLocaleDateString("en-GB", { month: "short" }),
+      // .slice(0, 3): en-GB's "short" month is "Sept" for September and three
+      // letters for everything else, so a six-month chart read "Apr May Jun
+      // Jul Aug Sept" with one odd label out (Showcase audit, 10 Sep).
+      label: start.toLocaleDateString("en-GB", { month: "short" }).slice(0, 3),
       count: rows.length,
       rating: st.length ? avgOf(st).toFixed(1) : "",
       fourPlusPct: rows.length ? Math.round((rows.filter((x) => num(x.rating) >= 4).length / rows.length) * 100) : 0,

@@ -288,8 +288,11 @@ const STARTER_STAR_MIX = { 5: 3, 4: 1, 3: 0, 2: 0, 1: 0 };
 let SOURCES = ENGAGED_SOURCES;
 let STAR_MIX = ENGAGED_STAR_MIX;
 function selectTrackerData(persona, location) {
+  // The persona goes to profileFor too (Builder audit found the same hole on
+  // the Builder, 10 Sep): without it the empty account got the location's own
+  // star mix, so an account with nothing connected charted 1,116 reviews.
   const starter = persona?.engagement === "new";
-  const profile = profileFor(location);
+  const profile = profileFor(location, persona);
   SOURCES = starter ? STARTER_SOURCES : profile.sources;
   STAR_MIX = starter ? STARTER_STAR_MIX : profile.starMix;
 }

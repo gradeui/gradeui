@@ -104,6 +104,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BeaconPageStrip } from "@/components/review-summary";
+import { usePersona } from "@/lib/demo";
+import { useLocationKey } from "@/lib/location";
+import { reviewsFor } from "@/lib/reviews-data";
 import { BeaconNugget } from "@/components/beacon-nugget";
 import {
   SidebarProvider,
@@ -299,7 +302,7 @@ const PERIODS = [
 // live product: List, Carousel and JSON feed exist once each, are never
 // created, named or deleted, and their format is what they are. `caption`
 // is the live product's card copy, TRIMMED: the live lines are longer and
-// clumsy ("Display your reviews in an ordered, customizable list on your
+// clumsy ("Display your reviews in an ordered, customisable list on your
 // website" and so on), so these keep the verb and the noun and drop the rest.
 // `heading` is the settings page title and the sheet titles: the card's
 // own title, verbatim (Ali, 7 Sep: "each showcase should have a title, even
@@ -309,7 +312,7 @@ const FORMATS = {
     id: "list",
     label: "List",
     heading: "List",
-    caption: "Display reviews in an ordered, customizable list",
+    caption: "Display reviews in an ordered, customisable list",
     Icon: LayoutList,
   },
   carousel: {
@@ -477,7 +480,43 @@ function shortDate(daysAgo) {
   return formatDate(isoDate(daysAgo));
 }
 
-const REVIEWS = buildReviews();
+// THE POOL IS THE LOCATION'S OWN REVIEWS (Showcase audit, 10 Sep).
+// buildReviews() is the farm park's 1,116 rows and nothing else: every
+// location showed "1,116 Total Reviews / 4.7" over reviews about owl
+// encounters and the maize maze, while the insight strip directly above
+// said 130 and 68 five-star, and the Manager for the same location showed
+// completely different rows. lib/reviews-data is the one pool the rest of
+// the app reads, so the showcase reads it too and the farm-park builder
+// becomes the fallback for a location with no profile.
+//
+// Selected ONCE per render, before any widget reads it, the same way the
+// Tracker selects its sources. Module-level so the memoised consumers keep
+// their shape; the app remounts the page when the persona changes.
+const FALLBACK_REVIEWS = buildReviews();
+let REVIEWS = FALLBACK_REVIEWS;
+
+/** A lib/reviews-data row in the shape this screen's widgets expect: a
+ *  numeric rating OR a Facebook recommendation, and a formatted date. */
+function asShowcaseReview(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    source: r.source,
+    rating: typeof r.rating === "number" ? r.rating : null,
+    recommended: r.rating === "up" ? true : r.rating === "down" ? false : null,
+    daysAgo: r.daysAgo,
+    date: formatDate(r.date),
+    text: r.text,
+  };
+}
+
+function selectShowcaseReviews(location, persona) {
+  const rows = reviewsFor(location, persona);
+  REVIEWS = rows.length ? rows.map(asShowcaseReview) : [];
+  POOL_TOTAL = REVIEWS.length;
+  const stars = REVIEWS.filter((r) => typeof r.rating === "number").map((r) => r.rating);
+  POOL_AVERAGE = stars.length ? stars.reduce((a, b) => a + b, 0) / stars.length : 0;
+}
 
 function blankWidget() {
   return {
@@ -555,6 +594,9 @@ function seedWidgets() {
       updated: "2026-07-04T09:25",
       mode: "picked",
       format: "list",
+      // Up to five, not always five: an account with three five-star reviews
+      // showed "5 chosen by hand" and previewed five farm-park reviews it did
+      // not have (Showcase audit, 10 Sep).
       picked: REVIEWS.filter((r) => r.rating === 5).slice(0, 5).map((r) => r.id),
       design: { ...base.design, theme: "dark", corners: "square", length: "snippet" },
     },
@@ -874,9 +916,10 @@ function PreviewReview({ review, design, skin, leading = null, contentClassName 
 // pool is built to the Tracker's split and star mix (see buildReviews).
 // An empty title hides the title and keeps the stats; the switch off keeps
 // the title alone; both gone and the row is not drawn at all.
-const POOL_TOTAL = REVIEWS.length;
+// `let`, because selectShowcaseReviews above rewrites all three together.
+let POOL_TOTAL = REVIEWS.length;
 const fmtCount = (n) => n.toLocaleString("en-GB");
-const POOL_AVERAGE = (() => {
+let POOL_AVERAGE = (() => {
   const stars = REVIEWS.filter((r) => typeof r.rating === "number").map((r) => r.rating);
   return stars.length ? stars.reduce((a, b) => a + b, 0) / stars.length : 0;
 })();
@@ -1295,10 +1338,11 @@ function ReviewList({ widget, setWidget }) {
   // the site, and both numbers are true).
   const leftOut = matching.filter((r) => excludedOf(widget).includes(r.id)).length;
   const inWidget = matching.length - leftOut;
-  // "on your site", not "shown", now that the line also says how many are
-  // listed.
+  // "in the showcase", not "on your site" (Showcase audit, 10 Sep): the hub
+  // card says "On your site 0" and means placed on the website, so the same
+  // words here for "will appear in the widget" taught the reader nothing.
   const capNote =
-    typeof widget.limit === "number" && widget.limit < inWidget ? `, ${widget.limit} on your site` : "";
+    typeof widget.limit === "number" && widget.limit < inWidget ? `, ${widget.limit} in the showcase` : "";
   const count = picked
     ? chosen > MAX_HAND_PICKED
       ? `${chosen} of ${MAX_HAND_PICKED} chosen. Remove ${chosen - MAX_HAND_PICKED} before you save.`
@@ -1568,9 +1612,12 @@ function WidgetCard({ widget, onView, onEdit, onEmbed }) {
 // whether or not anything is configured. Two-up stays (Ali, 28 Aug: "only
 // 2-up grids"), so the third card wraps; flag if three-up is wanted now that
 // the count is fixed.
+// items-start, so a three-row List card is its own height instead of being
+// stretched to the seven-row Carousel and leaving ~180px of white (Showcase
+// audit, 10 Sep).
 function WidgetsDashboard({ widgets, onView, onEdit, onEmbed }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid items-start gap-4 md:grid-cols-2">
       {FORMAT_ORDER.map((id) => widgets.find((w) => w.id === id))
         .filter(Boolean)
         .map((w) => (
@@ -1611,7 +1658,7 @@ const SECTIONS = [
   {
     id: "design",
     rail: "Design",
-    sub: "Display, information, animation",
+    sub: "Display and information",
     Icon: Palette,
     hint: "How each review looks on your site",
   },
@@ -1848,7 +1895,7 @@ function EmbedCode({ widget, disabled = false, steps = true, hook = "embed-code"
           <>
             <li>Copy the code.</li>
             <li>Paste it into the page's HTML where the reviews should appear. In most site builders that is an "Embed" or "Custom HTML" block.</li>
-            <li>Publish the page. Each showcase is one line; add one per showcase you want on the page.</li>
+            <li>Publish the page. Each showcase is one line. Add one per showcase you want on the page.</li>
           </>
         )}
       </ol>
@@ -1876,7 +1923,7 @@ function issueFor(widget, reviews) {
   return null;
 }
 const ISSUE_COPY = {
-  none: { title: "No reviews chosen", body: () => "Tick at least one review below, or switch to Live feed." },
+  none: { title: "No reviews chosen", body: () => "Open Reviews and tick at least one, or switch to Live feed." },
   cap: {
     title: "Too many reviews",
     body: (w) =>
@@ -2315,6 +2362,11 @@ function WidgetEmbedSheet({ widget }) {
 // header, so we can show our date in the top right, and make this a proper
 // page header").
 export default function RMReviewShowcasePage() {
+  const persona = usePersona();
+  const locationKey = useLocationKey();
+  // Before useState runs its initialisers, so seedWidgets picks from this
+  // location's own reviews.
+  selectShowcaseReviews(locationKey, persona);
   const [widgets, setWidgets] = useState(seedWidgets);
   const [view, setView] = useState("list");
   const [draft, setDraft] = useState(() => seedWidgets()[0]);
