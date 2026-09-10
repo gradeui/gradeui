@@ -54,12 +54,21 @@ const probe = (file) => {
   }
 };
 
-/** The newest recording folder per flow name. */
+/** The recording to publish per flow. The recorder writes a plain `<flow>`
+ *  folder and overwrites it, so that one always wins; the dated
+ *  `<flow>-<stamp>` folders are what it used to write, and the newest of
+ *  those is the fallback until they are cleared out. */
 function newestPerFlow() {
+  const dated = /-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}$/;
   const dirs = fs
     .readdirSync(SRC, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && /-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}$/.test(d.name))
-    .map((d) => ({ dir: path.join(SRC, d.name), flow: d.name.replace(/-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}$/, ""), stamp: d.name.slice(-16) }))
+    .filter((d) => d.isDirectory())
+    .map((d) => ({
+      dir: path.join(SRC, d.name),
+      flow: d.name.replace(dated, ""),
+      // An undated folder is the current one, so sort it above every stamp.
+      stamp: dated.test(d.name) ? d.name.slice(-16) : "9999",
+    }))
     .filter((d) => fs.existsSync(path.join(d.dir, "chapters.json")));
   const best = new Map();
   for (const d of dirs) if (!best.has(d.flow) || best.get(d.flow).stamp < d.stamp) best.set(d.flow, d);

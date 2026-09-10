@@ -52,8 +52,12 @@ const BASE = args.base ?? "http://localhost:3020";
 const W = flow.w ?? 1280;
 const H = flow.h ?? 900;
 const STAGE = { width: 1920, height: 1080 };
-const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 16);
-const outDir = path.join(os.homedir(), "Desktop", "brightlocal-videos", `${flow.name}-${stamp}`);
+// ONE FOLDER PER FLOW, OVERWRITTEN (Ali, 10 Sep: "I don't need history, we
+// can for now just go over the top if it is the same video"). Every run used
+// to leave a new `<flow>-<stamp>` folder behind, and ten passes at the Hove
+// cut had put ten copies of it on the Desktop.
+const outDir = path.join(os.homedir(), "Desktop", "brightlocal-videos", flow.name);
+fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
 const settings = (persona) => ({
@@ -319,6 +323,9 @@ function headTrim(src) {
 const trim = headTrim(videoPath);
 console.log(`head trim ${trim.toFixed(2)}s`);
 execFileSync(ffmpeg, ["-y", "-ss", String(trim), "-i", videoPath, "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30", mp4], { stdio: "inherit" });
+// The webm is Playwright's intermediate and nothing reads it once the mp4
+// exists, so it goes rather than sitting there at twice the mp4's size.
+fs.rmSync(videoPath, { force: true });
 fs.writeFileSync(path.join(outDir, "flow.json"), JSON.stringify(flow, null, 2));
 
 // ── THE SIDECARS ──────────────────────────────────────────────────────

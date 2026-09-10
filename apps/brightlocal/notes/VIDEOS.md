@@ -102,8 +102,13 @@ are unlisted, like everything under /meta, and the whole app is noindex.
 **The pipeline, end to end.**
 
 1. `node scripts/record-video.mjs --flow=scripts/flows/<name>.json`
-   writes `~/Desktop/brightlocal-videos/<flow>-<stamp>/` holding the mp4,
-   the raw webm, the flow file, **captions.vtt** and **chapters.json**.
+   writes `~/Desktop/brightlocal-videos/<flow>/` holding the mp4, the flow
+   file, **captions.vtt** and **chapters.json**. It OVERWRITES that folder
+   (Ali, 10 Sep: "I don't need history, we can for now just go over the top
+   if it is the same video") and deletes Playwright's raw webm once the mp4
+   is encoded, because nothing reads it and it is twice the size. The dated
+   `<flow>-<stamp>` folders are the old layout; publish still reads them as
+   a fallback.
    The recorder keeps a timeline: every caption and every cut-scene card
    stamps itself against wall clock, less the head trim it measures off
    the front, so the subtitle track lands on the frame it describes.
@@ -144,10 +149,10 @@ had already softened every bit of small text. Native costs about 42 MB for
 the set against 12.
 
 **Storage.** The repo, under `public/videos/`. 42 MB, which git carries and
-Vercel serves with no credentials and no signed URLs. The trigger for
-moving to Supabase Storage or Vercel Blob is history rather than working
-size: every full re-record adds another 42 MB of blobs that never go away.
-Two or three more passes and it is worth doing.
+Vercel serves with no credentials and no signed URLs. Re-recording
+overwrites the same paths, so the working size stays put. Git history still
+keeps each version's blob, which is the thing that eventually argues for a
+bucket, but that is a later problem and not one to design around now.
 
 ## Where the videos live
 
