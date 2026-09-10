@@ -239,3 +239,12 @@ Open items in the order I would take them.
       resolves it, which is the point, but it reads badly as a still.
     - **Two persona names in one set**: day-one uses Alastair Driver,
       the-gap uses Sofia Marsh. Fine if deliberate.
+    - **The caption sits lower when it runs to two lines.** The band went
+      from 220 to 260 on 10 Sep, which moved a two-liner's clearance from
+      about 75px to 81px against a one-liner's 114px. The band centres its
+      contents, so a taller band moves both edges. The real fix is to
+      bottom-anchor it (items-end plus a fixed bottom padding) so the last
+      line always sits the same distance from the edge and a second line
+      grows upward instead. One line of CSS, but it changes the framing of
+      every shot, so it wants doing at the same time as the next full
+      re-record rather than on its own.
