@@ -112,7 +112,11 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
         // rescale the frame mid-shot.
         gridTemplateRows: `1fr ${CAPTION_BAND}px`,
         paddingTop: pad,
-        transition: "background-color 480ms ease-out, color 480ms ease-out",
+        // 240ms, not 480 (video audits, 10 Sep). Both audits caught the
+        // backdrop washing through a wrong colour on a card-to-screen
+        // handoff: yellow snapping to cyan for a frame, then washing back
+        // through green. Half the duration halves the wash.
+        transition: "background-color 240ms ease-out, color 240ms ease-out",
       }}
     >
       <div className="flex min-h-0 items-center justify-center">
@@ -130,7 +134,11 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
             borderRadius: radius / (scale || 1),
             overflow: "hidden",
             opacity: ready && scale ? 1 : 0,
-            transition: "opacity 600ms ease-out",
+            // 260ms, not 600 (video audits, 10 Sep). Seven transitions in the
+            // popovers cut left a flat colour with no screen and no caption
+            // for a full second, and the trial and day-one cuts held nearly
+            // two. The fade was most of it, the 700ms settle below the rest.
+            transition: "opacity 260ms ease-out",
             boxShadow: ready ? "0 40px 120px rgba(0,0,0,0.25)" : "none",
             flex: "0 0 auto",
           }}
@@ -143,8 +151,11 @@ export function CaptureStage({ initial, w, h, pad, radius }: { initial: StageSta
             width={w}
             height={h}
             // The load event fires before fonts and first paint settle.
-            onLoad={() => setTimeout(() => setReady(true), 700)}
-            style={{ border: 0, display: "block", background: "var(--ds-tailwind-colors-base-white)" }}
+            onLoad={() => setTimeout(() => setReady(true), 380)}
+            // No white ground under the app while it fades in: a white
+            // rectangle ramping up over a coloured canvas is the brightness
+            // flash both audits measured on the first reveal of every video.
+            style={{ border: 0, display: "block", background: "transparent" }}
           />
         </div>
       </div>

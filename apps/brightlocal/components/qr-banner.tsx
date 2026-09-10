@@ -81,7 +81,13 @@ function QrCard({ svg, caption, name, link, size }: { svg: string; caption: stri
       <p className="text-heading-section font-display text-balance">{caption}</p>
       <p className="text-body-sm text-muted-foreground text-pretty">Scan to leave {name} a Google review. It takes a minute and it helps more than you know.</p>
       <div className="size-40" dangerouslySetInnerHTML={{ __html: svg }} />
-      <p className="text-body-xs text-muted-foreground break-all">{link.split("?")[0]}</p>
+      {/* THE PRINTED URL IS GOOGLE'S, NOT OURS (video audit, 10 Sep). The
+          code still encodes this prototype so a phone can scan it off the
+          screen, which is what Ali asked for, but the line under it is what
+          the product would print, and a gradeui.com address sitting under
+          "Scan to leave X a Google review" is the wrong thing on a card a
+          customer holds. */}
+      <p className="text-body-xs text-muted-foreground break-all">{GOOGLE_REVIEW_LINK.split("?")[0]}</p>
     </div>
   );
 }

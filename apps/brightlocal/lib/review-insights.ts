@@ -177,7 +177,10 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
 
   const lede =
     items.length > 0
-      ? `Worked out from your ${h.allTime} reviews as they stand today. Each tactic opens the tool that does it.`
+      // "in your inbox", because allTime is the INBOX count, not the
+      // location's total (video audit, 10 Sep). It read "worked out from your
+      // 60 reviews" twelve seconds after the Tracker had shown 1,116.
+      ? `Worked out from the ${h.allTime} reviews in your inbox as they stand today. Each tactic opens the tool that does it.`
       : "Nothing needs you right now. Check back after your next campaign.";
 
   // Own-data fact. FACT (assumption for Ali): an industry statistic in the

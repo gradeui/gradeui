@@ -11,4 +11,8 @@ export const STAGES: Record<string, { bg: string; ink: string }> = {
 
 /** Two lines of the stage caption plus its leading, reserved so a one-line
  *  and a two-line caption sit the same distance from the bottom edge. */
-export const CAPTION_BAND = 220;
+// 260, not 220 (video audits, 10 Sep). A two-line caption put its second
+// baseline at about y=1005 of 1080, level with the logo and roughly 75px
+// clear of the edge, against 125px for a one-liner. The band is centred, so
+// the extra 40px is 20px of clearance top and bottom.
+export const CAPTION_BAND = 260;

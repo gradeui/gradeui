@@ -331,6 +331,21 @@
       "why": "\"1 campaigns running\" on the hub card, and a two-day count reported as one day (Builder audit, 10 Sep)",
       "find": "    { ...HUB_CARDS[2], headline: String(h.running), parts: [{ k: \"Scheduled\", v: String(h.scheduled) }, { k: \"Draft\", v: String(h.draft) }, { k: \"All time\", v: String(h.campaignsAll) }], trend: h.spike && h.spikeDayCount > 0 ? { dir: \"up\", text: `${h.spike.campaign} brought ${h.spikeDayCount} reviews on ${h.spike.date}.` } : h.running === 0 ? { dir: \"flat\", text: \"Nothing running. Reviews arrive only when they arrive.\" } : { dir: \"flat\", text: `${h.thisMonth} reviews so far this month.` } },",
       "replace": "    { ...HUB_CARDS[2], headline: String(h.running), headlineLabel: h.running === 1 ? \"campaign running\" : \"campaigns running\", parts: [{ k: \"Scheduled\", v: String(h.scheduled) }, { k: \"Draft\", v: String(h.draft) }, { k: \"All time\", v: String(h.campaignsAll) }], trend: h.spike && h.spikeDayCount > 0 ? { dir: \"up\", text: `${h.spike.campaign} brought ${h.spikeDayCount} ${h.spikeDayCount === 1 ? \"review\" : \"reviews\"} in the two days after ${h.spike.date}.` } : h.running === 0 ? { dir: \"flat\", text: \"Nothing running. Reviews arrive only when they arrive.\" } : { dir: \"flat\", text: `${h.thisMonth} reviews so far this month.` } },"
+    },
+    {
+      "why": "the day-one account said \"3 showcases ready\" beside three zeros, and the same card's own sub-line said 0 five-star reviews ready to show",
+      "find": "  { ...HUB_CARDS[3], headline: \"3\", headlineLabel: \"showcases ready\", parts: [{ k: \"On your site\", v: \"0\" }], trend: { dir: \"flat\", text: \"None on your site yet.\" } },",
+      "replace": "  // \"showcases set up\", not \"showcases ready\" (video audit, 10 Sep). Three\n  // are configured, which is why the Showcase page lists three, but nothing\n  // can go in them yet and the card sat beside three honest zeros claiming\n  // otherwise.\n  { ...HUB_CARDS[3], headline: \"3\", headlineLabel: \"showcases set up\", parts: [{ k: \"On your site\", v: \"0\" }], trend: { dir: \"flat\", text: \"Nothing to put in them yet.\" } },"
+    },
+    {
+      "why": "a location with no five-star reviews should not be told it has some ready",
+      "find": "    { ...HUB_CARDS[3], trend: { dir: \"up\", text: `${h.fiveStar} five-star reviews ready to show.` } },",
+      "replace": "    { ...HUB_CARDS[3], headlineLabel: h.fiveStar === 0 ? \"showcases set up\" : \"showcases\", trend: h.fiveStar === 0 ? { dir: \"flat\", text: \"Nothing to put in them yet.\" } : { dir: \"up\", text: `${h.fiveStar} five-star reviews ready to show.` } },"
+    },
+    {
+      "why": "\"last 20 reviews\" on an account that has four",
+      "find": "`Last ${h.recent.kind === \"days\" ? \"30 days\" : \"20 reviews\"} average ${h.recent.rating}, against ${h.rating} all time.`",
+      "replace": "`Last ${h.recent.kind === \"days\" ? \"30 days\" : `${Math.min(20, h.total)} reviews`} average ${h.recent.rating}, against ${h.rating} all time.`"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [

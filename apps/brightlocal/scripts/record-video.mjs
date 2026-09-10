@@ -93,10 +93,11 @@ const page = await ctx.newPage();
 // to"). recordVideo starts with the first page, so wall clock from here is
 // video time, less the HEAD_TRIM the encode takes off the front. Every caption
 // and every cut-scene card stamps itself, and the two sidecars fall out of it.
-const HEAD_TRIM = 0.7;
+let HEAD_TRIM = 0.7; // replaced by the measured trim before the sidecars
 const t0 = Date.now();
 const marks = [];
-const at = () => Math.max(0, (Date.now() - t0) / 1000 - HEAD_TRIM);
+const raw = () => (Date.now() - t0) / 1000;
+const at = () => Math.max(0, raw() - HEAD_TRIM);
 const mark = (kind, text, extra) => { if (text) marks.push({ kind, text, t: at(), ...extra }); };
 let persona = flow.persona ?? "engaged";
 let bg = flow.bg ?? "neutral";
@@ -248,15 +249,47 @@ await ctx.close();
 await browser.close();
 
 const mp4 = path.join(outDir, `${args.out ?? flow.name}.mp4`);
-// -ss 0.7: the browser paints one white frame before the first document
-// does, and it is always at the head (Ali, 12 Sep).
-execFileSync(ffmpeg, ["-y", "-ss", "0.7", "-i", videoPath, "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30", mp4], { stdio: "inherit" });
+
+/** How much blank to take off the front, MEASURED rather than guessed.
+ *
+ *  The browser paints white before the first document does, and how long it
+ *  holds depends on the machine: a fixed 0.7s was enough for most flows and
+ *  left the popovers cut opening on 41 frames of pure white (video audit,
+ *  10 Sep). A blank frame is a FLAT one, so the first frame whose luma has
+ *  any spread at all is the first frame with something on it. */
+function headTrim(src) {
+  // `-f null -` always exits non-zero, so the useful output is the thrown
+  // error's stderr.
+  let out = "";
+  try {
+    out = execFileSync(ffmpeg, ["-t", "4", "-i", src, "-vf", "signalstats,metadata=print", "-f", "null", "-"],
+      { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+  } catch (e) { out = String(e.stderr ?? ""); }
+  const frames = [];
+  const re = /pts_time:([\d.]+)[\s\S]*?YMIN=(\d+)[\s\S]*?YMAX=(\d+)/g;
+  let m;
+  while ((m = re.exec(out))) frames.push({ t: Number(m[1]), spread: Number(m[3]) - Number(m[2]) });
+  const first = frames.find((f) => f.spread > 40);
+  // Never trim more than 3s, and never less than the old 0.7: a flow that
+  // opens on a flat-colour card would otherwise lose its opening.
+  if (!first) return 0.7;
+  return Math.min(3, Math.max(0.7, first.t));
+}
+
+const trim = headTrim(videoPath);
+console.log(`head trim ${trim.toFixed(2)}s`);
+execFileSync(ffmpeg, ["-y", "-ss", String(trim), "-i", videoPath, "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30", mp4], { stdio: "inherit" });
 fs.writeFileSync(path.join(outDir, "flow.json"), JSON.stringify(flow, null, 2));
 
 // ── THE SIDECARS ──────────────────────────────────────────────────────
 // captions.vtt is a real subtitle track: a cue runs from the moment its
 // caption was set until the next caption or card. chapters.json is the
 // jump-to list, one entry per cut-scene card plus the opening.
+// The marks were stamped against the provisional trim; restate them all
+// against the measured one so the subtitles stay on the frame.
+const shift = trim - 0.7;
+for (const m of marks) m.t = Math.max(0, m.t - shift);
+HEAD_TRIM = trim;
 const total = at();
 const clock = (sec) => {
   const s = Math.max(0, sec);

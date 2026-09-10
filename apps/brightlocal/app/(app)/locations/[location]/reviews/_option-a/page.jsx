@@ -161,7 +161,11 @@ const STARTER_HUB_CARDS = [
   { ...HUB_CARDS[0], headline: "4", headlineLabel: "need a reply", parts: [{ k: "Replied", v: "0" }, { k: "All time", v: "4" }], trend: { dir: "flat", text: "All four arrived in the last eight days. None answered yet." } },
   { ...HUB_CARDS[1], headline: "4.8", headlineLabel: "average rating", parts: [{ k: "Reviews", v: "4" }, { k: "Five star", v: "3" }, { k: "Sources", v: "1" }], trend: { dir: "up", text: "Three of your first four are five stars." } },
   { ...HUB_CARDS[2], headline: "0", headlineLabel: "campaigns running", parts: [{ k: "Sent", v: "0" }, { k: "Reviews gained", v: "0" }], trend: { dir: "flat", text: "Nothing sent yet. Every review so far came in on its own." } },
-  { ...HUB_CARDS[3], headline: "3", headlineLabel: "showcases ready", parts: [{ k: "On your site", v: "0" }], trend: { dir: "flat", text: "None on your site yet." } },
+  // "showcases set up", not "showcases ready" (video audit, 10 Sep). Three
+  // are configured, which is why the Showcase page lists three, but nothing
+  // can go in them yet and the card sat beside three honest zeros claiming
+  // otherwise.
+  { ...HUB_CARDS[3], headline: "3", headlineLabel: "showcases set up", parts: [{ k: "On your site", v: "0" }], trend: { dir: "flat", text: "Nothing to put in them yet." } },
 ];
 
 // PER-LOCATION CARDS (app-side, 9 Sep): the same four signposts with the
@@ -170,9 +174,9 @@ const STARTER_HUB_CARDS = [
 function hubCardsFor(h) {
   return [
     { ...HUB_CARDS[0], headline: String(h.needReply), parts: [{ k: "Replied", v: String(h.replied) }, { k: "Skipped", v: String(h.skipped) }, { k: "In your inbox", v: String(h.inbox) }], trend: h.oldestWaitingDays ? { dir: h.oldestWaitingDays > 3 ? "down" : "flat", text: `The oldest has waited ${h.oldestWaitingDays} days.` } : { dir: "up", text: "Nothing waiting. Every review has a reply." } },
-    { ...HUB_CARDS[1], headline: h.rating, parts: [{ k: "Reviews", v: h.total.toLocaleString("en-GB") }, { k: "Five star", v: String(h.fiveStar) }, { k: "Sources", v: String(h.sourceCount) }], trend: h.recent.ratingValue < h.ratingValue - 0.2 ? { dir: "down", text: `Last ${h.recent.kind === "days" ? "30 days" : "20 reviews"} average ${h.recent.rating}, against ${h.rating} all time.` } : h.monthChangePct !== 0 ? { dir: h.monthChangePct > 0 ? "up" : "down", text: `Review velocity ${h.monthChangePct > 0 ? "up" : "down"} ${Math.abs(h.monthChangePct)}% on last month.` } : { dir: "flat", text: `Holding at ${h.rating}. Same pace as last month.` } },
+    { ...HUB_CARDS[1], headline: h.rating, parts: [{ k: "Reviews", v: h.total.toLocaleString("en-GB") }, { k: "Five star", v: String(h.fiveStar) }, { k: "Sources", v: String(h.sourceCount) }], trend: h.recent.ratingValue < h.ratingValue - 0.2 ? { dir: "down", text: `Last ${h.recent.kind === "days" ? "30 days" : `${Math.min(20, h.total)} reviews`} average ${h.recent.rating}, against ${h.rating} all time.` } : h.monthChangePct !== 0 ? { dir: h.monthChangePct > 0 ? "up" : "down", text: `Review velocity ${h.monthChangePct > 0 ? "up" : "down"} ${Math.abs(h.monthChangePct)}% on last month.` } : { dir: "flat", text: `Holding at ${h.rating}. Same pace as last month.` } },
     { ...HUB_CARDS[2], headline: String(h.running), headlineLabel: h.running === 1 ? "campaign running" : "campaigns running", parts: [{ k: "Scheduled", v: String(h.scheduled) }, { k: "Draft", v: String(h.draft) }, { k: "All time", v: String(h.campaignsAll) }], trend: h.spike && h.spikeDayCount > 0 ? { dir: "up", text: `${h.spike.campaign} brought ${h.spikeDayCount} ${h.spikeDayCount === 1 ? "review" : "reviews"} in the two days after ${h.spike.date}.` } : h.running === 0 ? { dir: "flat", text: "Nothing running. Reviews arrive only when they arrive." } : { dir: "flat", text: `${h.thisMonth} reviews so far this month.` } },
-    { ...HUB_CARDS[3], trend: { dir: "up", text: `${h.fiveStar} five-star reviews ready to show.` } },
+    { ...HUB_CARDS[3], headlineLabel: h.fiveStar === 0 ? "showcases set up" : "showcases", trend: h.fiveStar === 0 ? { dir: "flat", text: "Nothing to put in them yet." } : { dir: "up", text: `${h.fiveStar} five-star reviews ready to show.` } },
   ];
 }
 

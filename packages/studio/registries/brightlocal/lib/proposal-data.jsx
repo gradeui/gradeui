@@ -230,7 +230,12 @@ export const PROPOSAL_DATA = {
     // string and every header on the default dataset printed "14/07/26" while
     // minus-one-studios printed "August 18, 2026". Same date, written the way
     // the other dataset writes it.
-    lastUpdated: "14th Jul 2026 at 9:52 AM UTC",
+    // THE PROTOTYPE'S TODAY, not a date two months behind it. Every page
+    // header binds this, so both video audits found "Last updated August 18,
+    // 2026" printed beside September data on the same screen: a "3 Sep" spike,
+    // a Sep column in the six-month chart, and "updated today" in the insight
+    // band. lib/reviews-data anchors on 9 Sep 2026, so this does too.
+    lastUpdated: "9th Sep 2026 at 9:52 AM UTC",
     updatesLeft: 3,
     counts: { insights: 3, recommendations: 8 },
     tone: "standard",

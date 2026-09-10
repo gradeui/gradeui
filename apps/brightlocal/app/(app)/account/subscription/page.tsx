@@ -234,7 +234,13 @@ export default function SubscriptionPage() {
               <span className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]"><Lock className="size-3" />Part of Grow</span>
               <p className="text-heading-section font-display text-balance">What Grow does with the reviews you already have</p>
               <ul className="flex flex-col gap-1.5 text-body">
-                <li>{stats.needReply > 0 ? `Answers your ${stats.needReply} waiting five-star Google reviews automatically, in your tone.` : "Answers five-star Google reviews for you, in your tone, an hour after they land."}</li>
+                {/* needReply is every waiting review, not the five-star ones
+                    (video audit, 10 Sep). The trial account read "Answers your 4
+                    waiting five-star Google reviews" on a page whose own dialog
+                    said three of the four are five stars. Auto-reply is the
+                    five-star rule, so the sentence says what it does instead of
+                    attaching a count that belongs to another number. */}
+                <li>Answers your five-star Google reviews automatically, in your tone, an hour after they land.</li>
                 <li>Asks customers for reviews by email, SMS and a QR code at the till.</li>
                 <li>{stats.fiveStar > 0 ? `Puts the best of your ${stats.fiveStar} five-star reviews on your website.` : "Puts your best reviews on your website."}</li>
               </ul>
