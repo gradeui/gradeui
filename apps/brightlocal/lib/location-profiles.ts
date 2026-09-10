@@ -98,7 +98,11 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
   "harbour-co": {
     recent: {
       lastN: 10, lowCount: 1, lowStar: 2, monthChangePct: 22, fourPlusPct: 79,
-      spike: { date: "3 Sep", campaign: "Bank Holiday Visitors", channel: "email" },
+      // NAME A CAMPAIGN THIS LOCATION ACTUALLY HAS (Builder audit, 10 Sep).
+      // The Builder shows seedCampaigns().slice(0, campaigns), so with 5 the
+      // last one is Spring Reopening. Bank Holiday Visitors is the seventh
+      // seed and never appeared on this location's page.
+      spike: { date: "3 Sep", campaign: "Summer Visitors", channel: "email" },
       theme: { text: "the lunchtime queue", good: false },
     },
     inboxRows: 41,
@@ -133,7 +137,10 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
   "harbour-co-worthing": {
     recent: {
       lastN: 10, lowCount: 4, lowStar: 2, monthChangePct: -18, fourPlusPct: 50,
-      spike: { date: "2 Aug", campaign: "Season Pass Holders", channel: "SMS", incentive: "a 10% discount" },
+      // Two campaigns here, so the spike can only be Summer Visitors or the
+      // Front Desk Kiosk. The incentive is gone as well: paying for reviews
+      // breaches Google's policy, so BrightLocal would not model it approvingly.
+      spike: { date: "2 Aug", campaign: "Summer Visitors", channel: "email" },
       theme: { text: "cold food and long waits", good: false },
       compare: { to: "harbour-co", label: "Brighton", self: "Worthing" },
     },
@@ -151,7 +158,7 @@ export const LOCATION_PROFILES: Record<string, LocationProfile> = {
   "northside-dental": {
     recent: {
       lastN: 10, lowCount: 4, lowStar: 2, monthChangePct: 12, fourPlusPct: 55,
-      spike: { date: "2 Aug", campaign: "Season Pass Holders", channel: "SMS" },
+      spike: { date: "2 Aug", campaign: "Summer Visitors", channel: "email" },
       theme: { text: "waiting times and missed callbacks", good: false },
     },
     inboxRows: 35,

@@ -60,23 +60,30 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
   }
 
   if (page === "builder") {
+    // A SPIKE IS ONLY A SPIKE IF IT WENT UP, AND IF ANYTHING ARRIVED (Builder
+    // audit, 10 Sep). The branch used to fire on `s.spike` alone, so Worthing
+    // read "Reviews received this month are down 15% on last month. The send on
+    // 2 Aug did most of that. Same again next month keeps the velocity up." It
+    // was congratulating the location on a fall, and naming a send that brought
+    // nothing on the day.
+    const realSpike = s.spike && up && s.spikeDayCount > 0 ? s.spike : null;
     return {
       headline: starter
         ? "One campaign is enough to start."
         : s.running === 0
           ? "Nothing is asking for reviews right now."
-          : s.spike
-            ? `Your ${s.spike.campaign} ${s.spike.channel} is why ${s.spike.date} spiked.`
-            : `${s.running} campaigns are running. Here's what they're bringing in.`,
+          : realSpike
+            ? `Your ${realSpike.campaign} ${realSpike.channel} is why ${realSpike.date} spiked.`
+            : `${s.running} ${s.running === 1 ? "campaign is" : "campaigns are"} running. Here is what they are bringing in.`,
       line: starter
         ? [t("Businesses that ask get several times more reviews than businesses that wait. A link on the receipt or a QR code by the till takes ten minutes to set up.")]
-        : s.spike
-          ? [t("Reviews received this month are "), m(`${up ? "up" : "down"} ${Math.abs(s.monthChangePct)}%`), t(" on last month, and "), m(`${s.fourPlusPct}%`), t(" of them were four stars or above. The send on "), m(s.spike.date), t(" did most of that. Same again next month keeps the velocity up.")]
+        : realSpike
+          ? [t("Reviews received this month are "), m(`up ${Math.abs(s.monthChangePct)}%`), t(" on last month, and "), m(`${s.fourPlusPct}%`), t(" of them were four stars or above. The send on "), m(realSpike.date), t(" did most of that. Same again next month keeps the velocity up.")]
           : [t("Reviews received this month are "), m(`${up ? "up" : "down"} ${Math.abs(s.monthChangePct)}%`), t(" on last month. Nothing you sent explains it, which means a campaign would.")],
       tiles: [
-        { value: String(s.running), label: "campaigns running" },
+        { value: String(s.running), label: s.running === 1 ? "campaign running" : "campaigns running" },
         { value: String(s.thisMonth), label: "reviews this month" },
-        { value: s.spike ? s.spike.date : "none", label: "last spike" },
+        { value: realSpike ? realSpike.date : "not yet", label: "last spike" },
       ],
       cta: { label: s.running === 0 || starter ? "Create a campaign" : "Get a campaign ready for next month", path: "reviews/builder?view=wizard" },
       more: starter
@@ -104,7 +111,7 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
     cta: { label: "Pick the reviews to show", path: "reviews/manager" },
     more: starter
       ? "A showcase is a small block of your best reviews that sits on your own website, refreshed as new ones arrive. It is ready now, and it fills itself from the reviews you choose. Three five-star reviews is enough to start."
-      : "The people reading reviews on your own site are the ones deciding right now, and they never open Google to check. The showcase updates itself as new reviews arrive, so once it is placed it stays current without you. Pick the six that say what you want the booking page to say.",
+      : "The people reading reviews on your own site are the ones deciding right now, and they never open Google to check. The showcase updates itself as new reviews arrive, so once it is placed it stays current without you. Pick the five that say what you want the booking page to say.",
   };
 }
 
@@ -143,5 +150,5 @@ export function nuggetFor(page: NuggetPage, s: ReviewStats, persona: Persona): N
     return { fact: "Did you know businesses that ask get several times more reviews than those that wait?", action: "A link on the receipt takes ten minutes to set up.", cta: { label: "Create a campaign", goto: GOTO.builder } };
   }
   // showcase: the strip has the praised theme, so the nugget has the count.
-  return { fact: `Did you know ${s.fiveStar} of your ${s.total.toLocaleString("en-GB")} reviews are five stars?`, action: "The hand-picked showcase lets you choose the six your site shows.", cta: { label: "Pick the reviews to show", goto: GOTO.manager } };
+  return { fact: `Did you know ${s.fiveStar} of your ${s.total.toLocaleString("en-GB")} reviews are five stars?`, action: "The hand-picked showcase lets you choose the five your site shows.", cta: { label: "Pick the reviews to show", goto: GOTO.manager } };
 }

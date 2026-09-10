@@ -98,6 +98,12 @@ function applySeams(settings: DemoSettings) {
   window.__gdsLayoutEngine = settings.engine;
   document.documentElement.setAttribute("data-beacon-tone", settings.beaconTone ?? "neutral");
   document.documentElement.classList.toggle("dark", settings.appearance === "dark");
+  // color-scheme as well as the class. Surfaces outside AppLayoutShell (the
+  // campaign wizard is the one that showed it) redeclare their tokens with
+  // light-dark(), which reads color-scheme, not the class. Without this the
+  // wizard settings card stayed white while --foreground went near-white,
+  // and every label in it vanished at 1.02:1 (Builder audit, 10 Sep).
+  document.documentElement.style.colorScheme = settings.appearance === "dark" ? "dark" : "light";
   // The sidebar's user line follows the persona: trial countdown, ended, or the plan.
   (window as unknown as { __gdsUserMeta?: string | null }).__gdsUserMeta = persona.trial
     ? `Trial: ${persona.trial.daysLeft} ${persona.trial.daysLeft === 1 ? "day" : "days"} left`

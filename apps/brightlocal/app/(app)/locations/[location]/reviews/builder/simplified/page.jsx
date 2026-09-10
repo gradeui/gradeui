@@ -4589,6 +4589,11 @@ function CampaignWizard({
 /* ================================= success ================================ */
 
 function SuccessView({ draft, onInsights, onHub, onKiosk }) {
+  // sendCount lived in CampaignWizard, so reading it here threw and took the
+  // whole page down the moment anyone pressed Send (Builder audit, 10 Sep).
+  // Kiosk and Web link survived only because the template literal never
+  // evaluated it. Email, the default, and SMS both died.
+  const sendCount = recipientsOf(draft);
   const standing = isStanding(draft.channel);
   const kiosk = draft.channel === "kiosk";
   const [copied, setCopied] = useState(false);

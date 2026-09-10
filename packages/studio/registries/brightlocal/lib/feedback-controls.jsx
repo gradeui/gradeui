@@ -18,7 +18,10 @@
 // clicks, which is what every preview surface wants.
 import * as React from "react";
 import { Rating } from "@brightlocal/ui-components/rating";
-import { ThumbsUp, ThumbsDown } from "@brightlocal/icons";
+import { Badge } from "@brightlocal/ui-components/badge";
+// Star and Badge were used below and never imported, so a star-rating
+// preview and every NPS control crashed the page (Builder audit, 10 Sep).
+import { ThumbsUp, ThumbsDown, Star } from "@brightlocal/icons";
 
 function FeedbackControl({ type, value, onPick, interactive }) {
   if (type === "nps") {

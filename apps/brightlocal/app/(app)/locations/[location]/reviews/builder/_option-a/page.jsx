@@ -2158,7 +2158,7 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
                 Campaigns
               </CardTitle>
               <span className="text-muted-foreground text-sm" data-hook="campaigns-count">
-                {filtered ? `${rows.length} of ${campaigns.length}` : campaigns.length} campaigns
+                {filtered ? `${rows.length} of ${campaigns.length}` : campaigns.length} {!filtered && campaigns.length === 1 ? "campaign" : "campaigns"}
               </span>
             </div>
             <span className="grow" />
@@ -4900,6 +4900,11 @@ function CampaignWizard({
 /* ================================= success ================================ */
 
 function SuccessView({ draft, onInsights, onHub, onKiosk }) {
+  // sendCount lived in CampaignWizard, so reading it here threw and took the
+  // whole page down the moment anyone pressed Send (Builder audit, 10 Sep).
+  // Kiosk and Web link survived only because the template literal never
+  // evaluated it. Email, the default, and SMS both died.
+  const sendCount = recipientsOf(draft);
   const standing = isStanding(draft.channel);
   const kiosk = draft.channel === "kiosk";
   const [copied, setCopied] = useState(false);
@@ -5963,8 +5968,13 @@ function CustomerPreviewDrawer({ open, onOpenChange, config, expired }) {
 export default function RMReviewBuilderPage() {
   const persona = usePersona();
   const locationKey = useLocationKey();
+  // profileFor NEEDS the persona (Builder audit, 10 Sep). Without it the empty
+  // account got the location's own profile and showed nine live campaigns with
+  // 52/38/31 reviews gained, directly under "Create your first campaign", while
+  // the Reviews hub said nothing was running. The persona-aware profile already
+  // answers for both empty and starter, so the "new" special case goes too.
   const [campaigns, setCampaigns] = useState(() =>
-    persona.engagement === "new" ? [] : seedCampaigns().slice(0, profileFor(locationKey).campaigns),
+    seedCampaigns().slice(0, profileFor(locationKey, persona).campaigns),
   );
   const [templates, setTemplates] = useState(seedTemplates);
   const [draft, setDraft] = useState(blankCampaignDraft);
@@ -6174,7 +6184,7 @@ export default function RMReviewBuilderPage() {
       // the page renders, never typed in, so it moves when the data does.
       description: (
         <span data-hook="page-stat">
-          <span className="text-foreground font-medium tabular-nums">{campaigns.length}</span> campaigns
+          <span className="text-foreground font-medium tabular-nums">{campaigns.length}</span> {campaigns.length === 1 ? "campaign" : "campaigns"}
         </span>
       ),
     },
