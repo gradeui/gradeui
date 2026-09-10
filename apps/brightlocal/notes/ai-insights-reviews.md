@@ -9,10 +9,10 @@ Goal card from BrightLocal's 12-month roadmap as the reference.
   the key phrase marked, a month rail down the left of each card (the
   brand green, the one place it is used as a surface), and "Key tactics".
 - Three stages from the same rows every other page reads:
-  - This week: the plan Beacon gives on the hub (`reviewPlanFor`).
+  - This week: the plan Insights gives on the hub (`reviewPlanFor`).
   - This month: what the Tracker, Builder and Showcase strips ask for.
   - Next quarter: three habits, judged against today's numbers.
-- A help card: Ask Beacon opens the plan dialog, Help Center goes to
+- A help card: Explain this opens the plan dialog, Help Center goes to
   help.brightlocal.com.
 - The hub nugget at the foot, so the page tops and tails like the rest.
 

@@ -1,7 +1,9 @@
-# Beacon, and how it talks
+# Insights, and how it talks
 
-Beacon (✦, "Bea" to humans) is the voice behind the AI summary and the
-plan. It has three shipping registers on a five-point scale, flattest
+Insights (✦) is the voice behind the AI summary and the plan. It has no
+product name of its own: the badge says Insights, and the whole concept
+is Reviews: Contextual Insights & Actions. "Bea" is a register below,
+not a name we say out loud. It has three shipping registers on a five-point scale, flattest
 to brightest: Keith · **Brian · Bea · Ray** · Buzz. Keith and Buzz are
 the outliers we test against ("if it sounds like Buzz, dial it back
 toward Ray").
@@ -118,7 +120,7 @@ feature.
 
 Ali, 12 Sep: "there are so many different text sizes and colours."
 
-Every Beacon surface uses three roles and nothing else:
+Every insight surface uses three roles and nothing else:
 
 | Role | Size | Colour | Used for |
 |---|---|---|---|
@@ -133,14 +135,14 @@ exception: a tile value is 24 tabular, because a number is a picture.
 ## What to cut
 
 Ali, 12 Sep: "remove as much as possible while still getting the point
-across." The test for every block on a Beacon surface:
+across." The test for every block on an insight surface:
 
 1. **Does it explain the interface?** Cut. "Each tactic opens the tool
    that does it" tells them what a link is.
 2. **Does it restate the headline?** Cut. With one tactic, its title and
    the goal are the same sentence twice.
 3. **Does it say what the example already proves?** Cut. A real review
-   with Beacon's real reply beneath it explains auto-reply better than a
+   with the real reply beneath it explains auto-reply better than a
    sentence about auto-reply. The exception is the offer: free credits
    are a fact the example cannot show.
 4. **Does it repeat a word from the block above?** Rewrite one of them.
