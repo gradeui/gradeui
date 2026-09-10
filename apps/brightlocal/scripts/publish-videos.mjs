@@ -91,10 +91,14 @@ function headBlank(src) {
   while ((m = re.exec(out))) frames.push({ t: Number(m[1]), spread: Number(m[3]) - Number(m[2]) });
   if (!frames.length) return 0;
   const first = frames.find((f) => f.spread > 40);
-  // Only trim if there is a real run of blank at the head, and never more
-  // than 3s: a flow opening on a flat-colour card would otherwise lose it.
   if (!first || first.t < 0.05) return 0;
-  return Math.min(3, first.t);
+  // Land TWO FRAMES INSIDE the content, not exactly on its first frame: the
+  // overview's blank ran to 3.07s, the old 3s cap trimmed to 3.00, and the
+  // published file still opened on white. Six seconds of headroom, because a
+  // cold dev server compiling /meta/capture is what produces these and it can
+  // take that long. Nothing in this set opens on a genuinely flat card, so
+  // there is nothing here to protect.
+  return Math.min(6, first.t + 0.07);
 }
 
 const THUMB_EVERY = 2; // seconds

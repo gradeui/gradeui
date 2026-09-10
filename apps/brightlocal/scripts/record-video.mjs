@@ -87,6 +87,20 @@ await ctx.addInitScript((s) => {
   try { localStorage.setItem("grade-bl-demo-v2", JSON.stringify(s)); } catch {}
 }, settings(flow.persona ?? "engaged"));
 
+// WARM THE ROUTE FIRST. A cold dev server compiling /meta/capture is what
+// puts three seconds of white at the head of whichever flow runs first, and
+// the recording starts the moment the first page does. This page is thrown
+// away before the recording context is made, so the compile happens off
+// camera (video audits, 10 Sep).
+{
+  const warm = await browser.newContext({ viewport: STAGE });
+  const wp = await warm.newPage();
+  await wp.goto(`${BASE}/meta/capture?url=/locations/minus-one-studios/reviews&w=${W}&h=${H}&card=${flow.preroll ?? "beacon"}`,
+    { waitUntil: "networkidle", timeout: 120000 }).catch(() => {});
+  await wp.waitForTimeout(1200);
+  await warm.close();
+}
+
 const page = await ctx.newPage();
 // THE TIMELINE (Ali, 10 Sep: "I need them in sync ... I will alongside this
 // want an official subtitle track, and points in the video that can be jumped
