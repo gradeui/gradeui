@@ -39,7 +39,7 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
           ? `Review velocity is up ${s.monthChangePct}% on last month.`
           : `Review velocity is down ${Math.abs(s.monthChangePct)}% on last month.`,
       line: starter
-        ? [t("Your "), m(String(s.total)), t(" reviews so far all came from Google. The Tracker earns its keep once you're asking and more sources are connected.")]
+        ? [t("Your "), m(String(s.total)), t(" reviews so far all came from Google. The Tracker earns its keep once you're asking and more review sites are connected.")]
         // No numbers in the line: the tiles beside it carry them (Ali, 11 Sep:
         // "so many numbers it is untrue"). One idea, then the why.
         : s.spike
@@ -132,7 +132,7 @@ export function nuggetFor(page: NuggetPage, s: ReviewStats, persona: Persona): N
     return { fact: "Did you know every review here has a reply?", action: "Keep it that way with an auto-reply for five-star Google reviews.", cta: { label: "Set up an auto-reply", goto: GOTO.templates } };
   }
   if (page === "tracker") {
-    return { fact: `Did you know ${s.googleShareThisMonth}% of this month's reviews came from Google?`, action: starter ? "Connect Facebook and TripAdvisor to see the rest." : "The other sources count too. Make sure they are connected.", cta: { label: "See the reviews", goto: GOTO.manager } };
+    return { fact: `Did you know ${s.googleShareThisMonth}% of this month's reviews came from Google?`, action: starter ? "Connect Facebook and TripAdvisor to see the rest." : "The other review sites count too. Make sure they are connected.", cta: { label: "See the reviews", goto: GOTO.manager } };
   }
   // RULE: a nugget never restates the page's strip (Ali, 9 Sep). The strip
   // already tells the Builder about the spike and the Showcase about the

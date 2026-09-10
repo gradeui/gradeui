@@ -26,7 +26,7 @@ export const STEP_CARD: Record<string, string> = {
 export const STEPS = [
   {
     id: "connect",
-    title: "Connect your review sources",
+    title: "Connect your review sites",
     detail: "Google is connected. Facebook, Yelp and TripAdvisor take two minutes each.",
     cta: "Connect more",
     goto: "screen:dmswb0i9c6oe5",

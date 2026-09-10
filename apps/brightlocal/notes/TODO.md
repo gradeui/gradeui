@@ -28,8 +28,21 @@ Open items in the order I would take them.
 7. **Badge treatment pick.** Eight options at /docs/beacon, none chosen.
 8. **Motion.** The DS entrance tokens are on the chart-tab reveal only.
    Stagger the dialog's headline, copy and column on open.
-9. **Review sites vs sources.** New copy says review sites; the Tracker's
-   Report Settings and the older Beacon lines still say sources. Pick one.
+9. **Review sites vs sources.** DECIDED 10 Sep: **review sites**. It is
+   BrightLocal's own published word, already recorded at the top of
+   lib/first-run.ts, and "source" reads like plumbing. Done in the copy
+   this app owns: the page lines (lib/beacon-pages.ts), the insight items
+   and their action links (lib/review-insights.ts), the summary hint
+   (lib/review-summary.ts), the starter guide and the DS component note.
+   Field names (`source`, `sourceCount`, `bySource`) stay as they are, and
+   so does "source" meaning a citation under a "Did you know".
+   REMAINING, and deliberately not touched: the Tracker's own chrome (the
+   facet menus "All sources" and "Find a source", the donut's "7 sources",
+   the "Source" table head, the "Source timeline" panel title) and the
+   Report Settings sheet. Those live in a PROMOTED screen, so the change
+   belongs in Studio and comes back with the next promotion. A promotion
+   patch would work but the patches file says to keep itself minimal, and
+   a rename is exactly what Studio can carry.
 10. **Theme engine.** For the large personas, a theme engine with mention
     counts (three mentions to name a theme, three months for a trend, a
     sibling or the survey for a comparison) so Beacon says what changed

@@ -118,7 +118,7 @@ export function reviewSummaryFor(s: ReviewStats, isStarter: boolean): ReviewSumm
       prompt: "The run of low reviews, and what they have in common",
       fix: { text: "Reply to each of them this week, shortest first.", label: "Open Review Manager", goto: "screen:dmsxf5zjggd0n" },
       segments: [
-        t("Out of your last "), m(String(r.lastN), "neutral", "Your most recent reviews across every connected source."), t(" reviews, "), m(String(r.lowCount), "bad", `Reviews at ${r.lowStar} stars or lower, or a Facebook thumbs down. They are at the top of Review Manager.`), t(` were ${r.lowStar} stars or lower.`),
+        t("Out of your last "), m(String(r.lastN), "neutral", "Your most recent reviews across every connected review site."), t(" reviews, "), m(String(r.lowCount), "bad", `Reviews at ${r.lowStar} stars or lower, or a Facebook thumbs down. They are at the top of Review Manager.`), t(` were ${r.lowStar} stars or lower.`),
         ...(r.theme && !r.theme.good ? [t(" The thing they keep mentioning is "), m(r.theme.text, "bad"), t(".")] : []),
       ],
       register: "brian",

@@ -70,7 +70,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
         },
         {
           label: "Let five-star Google reviews reply themselves.",
-          text: "Let five-star Google reviews reply themselves. An auto-reply rule with a template takes the easy ones off your plate, so the queue only holds reviews that need a person. Google is the only source that supports it.",
+          text: "Let five-star Google reviews reply themselves. An auto-reply rule with a template takes the easy ones off your plate, so the queue only holds reviews that need a person. Google is the only review site that supports it.",
           links: [{ label: "Set up an auto-reply", goto: TEMPLATES }],
         },
       ],
@@ -129,12 +129,12 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
       area: "reviews",
       severity: "medium",
       title: "See every review in one place",
-      actionsSummary: `Only ${h.sourceCount === 1 ? "Google is" : `${h.sourceCount} sources are`} connected. Reviews on Facebook, Yelp and TripAdvisor count too, and you can't reply to what you can't see. Connecting a source takes about two minutes.`,
+      actionsSummary: `Only ${h.sourceCount === 1 ? "Google is" : `${h.sourceCount} review sites are`} connected. Reviews on Facebook, Yelp and TripAdvisor count too, and you can't reply to what you can't see. Connecting a review site takes about two minutes.`,
       actions: [
         {
           label: "Connect Facebook and TripAdvisor.",
           text: "Connect Facebook and TripAdvisor. Facebook needs you to sign in once. TripAdvisor just needs your listing URL. New reviews from both land in the inbox.",
-          links: [{ label: "Manage sources", goto: REPORT_SETTINGS }],
+          links: [{ label: "Manage review sites", goto: REPORT_SETTINGS }],
         },
       ],
     });
@@ -172,7 +172,7 @@ export function reviewPlanFor(stats: ReviewStats, persona: Persona): ReviewPlan 
         : items[0]?.id === "no-campaigns"
           ? { text: "Start asking for reviews and watch the count climb.", mark: "asking for reviews", short: "Send your first campaign" }
           : items[0]?.id === "few-sources"
-            ? { text: "Get every review source into one inbox.", mark: "one inbox", short: "Connect more sources" }
+            ? { text: "Get every review site into one inbox.", mark: "one inbox", short: "Connect more review sites" }
             : { text: "Keep doing what you're doing. Your reviews are in good shape.", mark: "good shape", short: "All in good shape" };
 
   const lede =
