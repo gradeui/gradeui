@@ -258,17 +258,22 @@ const mp4 = path.join(outDir, `${args.out ?? flow.name}.mp4`);
  *  10 Sep). A blank frame is a FLAT one, so the first frame whose luma has
  *  any spread at all is the first frame with something on it. */
 function headTrim(src) {
-  // `-f null -` always exits non-zero, so the useful output is the thrown
-  // error's stderr.
+  // `metadata=print:file=-` writes to STDOUT, one "frame:N ... pts_time:T"
+  // header per frame followed by its keys. Without file=- the same lines go
+  // to stderr with a "[Parsed_metadata]" prefix and no pts_time beside them,
+  // which is what this used to try to read, and it parsed nothing.
   let out = "";
   try {
-    out = execFileSync(ffmpeg, ["-t", "4", "-i", src, "-vf", "signalstats,metadata=print", "-f", "null", "-"],
+    out = execFileSync(ffmpeg, ["-v", "error", "-t", "4", "-i", src, "-vf", "signalstats,metadata=print:file=-", "-f", "null", "-"],
       { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
-  } catch (e) { out = String(e.stderr ?? ""); }
+  } catch (e) { out = String(e.stdout ?? "") || String(e.stderr ?? ""); }
   const frames = [];
+  // YLOW, YAVG and YHIGH sit between YMIN and YMAX, so the gap has to allow
+  // any number of lines. Lazy, so it stays inside one frame.
   const re = /pts_time:([\d.]+)[\s\S]*?YMIN=(\d+)[\s\S]*?YMAX=(\d+)/g;
   let m;
   while ((m = re.exec(out))) frames.push({ t: Number(m[1]), spread: Number(m[3]) - Number(m[2]) });
+  if (!frames.length) console.log("  head trim: no frame stats, falling back");
   const first = frames.find((f) => f.spread > 40);
   // Never trim more than 3s, and never less than the old 0.7: a flow that
   // opens on a flat-colour card would otherwise lose its opening.

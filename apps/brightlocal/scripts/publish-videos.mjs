@@ -75,6 +75,28 @@ const clock = (sec) => {
   return `${h}:${m}:${ss}.${ms}`;
 };
 
+/** Seconds of blank at the head of a file, measured. A blank frame is a FLAT
+ *  one, so the first frame whose luma has any spread is the first frame with
+ *  something on it. `metadata=print:file=-` writes to stdout, one
+ *  "frame:N ... pts_time:T" header per frame followed by its keys. */
+function headBlank(src) {
+  let out = "";
+  try {
+    out = execFileSync(ffmpeg, ["-v", "error", "-t", "4", "-i", src, "-vf", "signalstats,metadata=print:file=-", "-f", "null", "-"],
+      { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+  } catch (e) { out = String(e.stdout ?? "") || String(e.stderr ?? ""); }
+  const re = /pts_time:([\d.]+)[\s\S]*?YMIN=(\d+)[\s\S]*?YMAX=(\d+)/g;
+  const frames = [];
+  let m;
+  while ((m = re.exec(out))) frames.push({ t: Number(m[1]), spread: Number(m[3]) - Number(m[2]) });
+  if (!frames.length) return 0;
+  const first = frames.find((f) => f.spread > 40);
+  // Only trim if there is a real run of blank at the head, and never more
+  // than 3s: a flow opening on a flat-colour card would otherwise lose it.
+  if (!first || first.t < 0.05) return 0;
+  return Math.min(3, first.t);
+}
+
 const THUMB_EVERY = 2; // seconds
 const THUMB_W = 240;
 const SPRITE_COLS = 5;
@@ -87,18 +109,29 @@ for (const rec of newestPerFlow()) {
   const master = path.join(rec.dir, `${slug}.mp4`);
   if (!fs.existsSync(master)) { console.log(`skip ${slug}: no mp4`); continue; }
   const meta = JSON.parse(fs.readFileSync(path.join(rec.dir, "chapters.json"), "utf8"));
-  const duration = meta.duration;
-  console.log(`\n${slug}  ${duration.toFixed(1)}s  ${meta.chapters.length} sections`);
+  console.log(`\n${slug}  ${meta.duration.toFixed(1)}s  ${meta.chapters.length} sections`);
 
-  // 1. the web copy
-  ff(["-i", master, "-vf", "scale=1280:-2", "-c:v", "libx264", "-preset", "slow", "-crf", "27",
-      "-pix_fmt", "yuv420p", "-r", "30", "-movflags", "+faststart", "-an", path.join(OUT, `${slug}.mp4`)]);
+  // 1. the web copy, with any blank head taken off. The recorder trims what
+  //    it can measure, but a slow first paint can still leave a beat of white
+  //    at the front, and it is the first thing anyone sees.
+  const blank = headBlank(master);
+  const duration = meta.duration - blank;
+  if (blank) console.log(`  trimming ${blank.toFixed(2)}s of blank from the head`);
+  ff([...(blank ? ["-ss", String(blank)] : []), "-i", master, "-vf", "scale=1280:-2", "-c:v", "libx264",
+      "-preset", "slow", "-crf", "27", "-pix_fmt", "yuv420p", "-r", "30", "-movflags", "+faststart", "-an",
+      path.join(OUT, `${slug}.mp4`)]);
 
-  // 2. the subtitle track, verbatim
-  fs.copyFileSync(path.join(rec.dir, "captions.vtt"), path.join(OUT, `${slug}.vtt`));
+  // 2. the subtitle track, shifted by whatever came off the front so it stays
+  //    on the frame it describes.
+  const rawVtt = fs.readFileSync(path.join(rec.dir, "captions.vtt"), "utf8");
+  const shifted = blank
+    ? rawVtt.replace(/(\d\d):(\d\d):(\d\d)\.(\d\d\d)/g, (_, h, m2, sec, ms) =>
+        clock(Number(h) * 3600 + Number(m2) * 60 + Number(sec) + Number(ms) / 1000 - blank))
+    : rawVtt;
+  fs.writeFileSync(path.join(OUT, `${slug}.vtt`), shifted);
 
   // 3. the grid poster: the first section's card, a beat in
-  ff(["-ss", String(Math.min(2, duration / 2)), "-i", master, "-frames:v", "1",
+  ff(["-ss", String(Math.min(2, duration / 2) + blank), "-i", master, "-frames:v", "1",
       "-vf", `scale=${THUMB_W * 3}:-2`, "-q:v", "4", path.join(OUT, `${slug}.poster.jpg`)]);
 
   // 4. one still per section, named by the section's own id
@@ -107,14 +140,16 @@ for (const rec of newestPerFlow()) {
     const at = Math.min(c.t + 1.2, Math.max(c.t, c.end - 0.4));
     ff(["-ss", String(at), "-i", master, "-frames:v", "1", "-vf", `scale=${THUMB_W * 2}:-2`, "-q:v", "4",
         path.join(THUMBS, `${c.id}.jpg`)]);
-    return { ...c, thumb: `/videos/thumbs/${c.id}.jpg` };
+    // The stills come off the untrimmed master, so they use the original
+    // times; the published times move with the trim.
+    return { ...c, t: Math.max(0, c.t - blank), end: Math.max(0, c.end - blank), thumb: `/videos/thumbs/${c.id}.jpg` };
   });
 
   // 5. the scrub-bar sprite: a still every 2s, tiled, plus the VTT that says
   //    which tile belongs to which second.
   const count = Math.max(1, Math.ceil(duration / THUMB_EVERY));
   const rows = Math.ceil(count / SPRITE_COLS);
-  ff(["-i", master, "-vf", `fps=1/${THUMB_EVERY},scale=${THUMB_W}:-2,tile=${SPRITE_COLS}x${rows}`,
+  ff([...(blank ? ["-ss", String(blank)] : []), "-i", master, "-vf", `fps=1/${THUMB_EVERY},scale=${THUMB_W}:-2,tile=${SPRITE_COLS}x${rows}`,
       "-frames:v", "1", "-q:v", "5", path.join(OUT, `${slug}.sprite.jpg`)]);
   // Every tile is the same size, and ffmpeg keeps the source aspect, so read
   // one tile's height off the sheet rather than assuming 16:9.
@@ -134,8 +169,7 @@ for (const rec of newestPerFlow()) {
 
   // 6. the transcript, parsed back out of the subtitle track so the page can
   //    render it without shipping a VTT parser.
-  const vtt = fs.readFileSync(path.join(rec.dir, "captions.vtt"), "utf8");
-  const transcript = [...vtt.matchAll(/(\d\d):(\d\d):(\d\d)\.(\d\d\d) --> (\d\d):(\d\d):(\d\d)\.(\d\d\d)\n(.+)/g)].map((m) => ({
+  const transcript = [...shifted.matchAll(/(\d\d):(\d\d):(\d\d)\.(\d\d\d) --> (\d\d):(\d\d):(\d\d)\.(\d\d\d)\n(.+)/g)].map((m) => ({
     t: Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) + Number(m[4]) / 1000,
     end: Number(m[5]) * 3600 + Number(m[6]) * 60 + Number(m[7]) + Number(m[8]) / 1000,
     text: m[9].trim(),
