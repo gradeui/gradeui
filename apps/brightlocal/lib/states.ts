@@ -31,7 +31,8 @@ export type StateSection =
   | "builder"
   | "showcase"
   | "insights"
-  | "account";
+  | "account"
+  | "looks";
 
 export interface StateStep {
   /** A selector inside the app. Pressed with a full pointer sequence. */
@@ -60,6 +61,12 @@ export interface ScreenState {
   steps?: StateStep[];
   /** Wider or narrower than the default 1280, for a responsive frame. */
   width?: number;
+  /** The insight layer's colour treatment. Neutral unless the state is about
+   *  the tone itself. */
+  tone?: "neutral" | "tinted" | "families" | "vivid";
+  /** Force the contextual insight layer off for this one state. The page has
+   *  a global switch for the same thing, which wins while it is set. */
+  insights?: boolean;
 }
 
 const M = "/locations/minus-one-studios";
@@ -73,6 +80,7 @@ export const SECTION_LABEL: Record<StateSection, string> = {
   showcase: "Review Showcase",
   insights: "Insights & Actions",
   account: "Account",
+  looks: "Tones, and without insights",
 };
 
 export const STATES: ScreenState[] = [
@@ -252,18 +260,111 @@ export const STATES: ScreenState[] = [
     steps: [{ click: "[data-hook=beacon-strip-builder-open]", waitFor: "[data-hook=beacon-modal]", wait: 900 }],
   },
   {
-    id: "builder-03-wizard-recipients",
+    id: "builder-03-wizard-settings",
+    section: "builder",
+    title: "Campaign settings",
+    note: "The first step: what to ask for, how it is sent, and which review sites it points at. Nothing here is a modal, so the whole campaign can be read before any of it is committed to.",
+    path: `${M}/reviews/builder?view=wizard`,
+  },
+  {
+    id: "builder-04-wizard-recipients",
     section: "builder",
     title: "Who to ask",
-    note: "The second step of the campaign wizard. One person or a list, and the step will not let you past without the thing it needs: the alert sits in the card, beside the choice it is about, not in the shell.",
+    note: "One person or a list. The step will not let you past without the thing it needs, and the alert sits in the card beside the choice it is about rather than in the shell, where it would be a long way from the control that clears it.",
     path: `${M}/reviews/builder?view=wizard`,
     steps: [
-      { click: "button:has-text('Review and send')", wait: 900 },
-      { click: "button:has-text('Next')", wait: 900 },
+      { click: "[data-hook=setup-create]", waitFor: "[data-hook=send-rail]", wait: 700 },
+      { click: "[data-hook=wizard-next]", wait: 900 },
     ],
   },
   {
-    id: "builder-04-qr",
+    id: "builder-05-wizard-one-person",
+    section: "builder",
+    title: "Asking one person",
+    note: "The other half of the same step. Choosing one person drops the upload and the column mapping entirely, because a single address has no rows to match, and the later steps say so rather than inventing a CSV that was never uploaded.",
+    path: `${M}/reviews/builder?view=wizard`,
+    steps: [
+      { click: "[data-hook=setup-create]", waitFor: "[data-hook=send-rail]", wait: 700 },
+      { click: "[data-hook=send-tab-recipients]", wait: 700 },
+      // The label, not the radio: RadioGroupItem renders a button the size of
+      // its dot, sitting under the card that describes it.
+      { click: "[data-hook=audience-one-label]", wait: 900 },
+    ],
+  },
+  {
+    id: "builder-06-wizard-columns",
+    section: "builder",
+    title: "Matching the columns",
+    note: "The uploaded file's own headings against the fields a send needs. The step exists because a CSV is somebody else's spreadsheet and its columns are never in the order anyone expects.",
+    path: `${M}/reviews/builder?view=wizard`,
+    steps: [
+      { click: "[data-hook=setup-create]", waitFor: "[data-hook=send-rail]", wait: 700 },
+      // The rail is READ-ONLY by design (a controlled Stepper with no
+      // onValueChange), so the only way through is Next, satisfying each gate
+      // on the way. Dropzone is a button, so pressing it is the upload.
+      { click: "[data-hook=contacts-upload]", wait: 800 },
+      { click: "[data-hook=wizard-next]", wait: 1000 },
+    ],
+  },
+  {
+    id: "builder-07-wizard-check",
+    section: "builder",
+    title: "Check your list",
+    note: "Who is getting it and who was left out, with the reasons. The rows dropped as duplicates, blanks or unsubscribes are listed in full rather than summarised, because the number on its own is the thing nobody trusts.",
+    path: `${M}/reviews/builder?view=wizard`,
+    steps: [
+      { click: "[data-hook=setup-create]", waitFor: "[data-hook=send-rail]", wait: 700 },
+      // The rail is READ-ONLY by design (a controlled Stepper with no
+      // onValueChange), so the only way through is Next, satisfying each gate
+      // on the way. Dropzone is a button, so pressing it is the upload.
+      { click: "[data-hook=contacts-upload]", wait: 800 },
+      { click: "[data-hook=wizard-next]", wait: 900 },
+      { click: "[data-hook=wizard-next]", wait: 1000 },
+    ],
+  },
+  {
+    id: "builder-08-wizard-excluded",
+    section: "builder",
+    title: "The rows we left out",
+    note: "Opened. Every excluded row with its number, its value and why it went, so the eight in the summary can be counted rather than taken on trust. The two confirmations under it are what the step will not go past without.",
+    path: `${M}/reviews/builder?view=wizard`,
+    steps: [
+      { click: "[data-hook=setup-create]", waitFor: "[data-hook=send-rail]", wait: 700 },
+      { click: "[data-hook=contacts-upload]", wait: 800 },
+      { click: "[data-hook=wizard-next]", wait: 900 },
+      { click: "[data-hook=wizard-next]", wait: 900 },
+      { click: "[data-hook=toggle-exclusions]", wait: 900 },
+    ],
+  },
+  {
+    id: "builder-09-wizard-send",
+    section: "builder",
+    title: "Ready to send",
+    note: "The last step. Every page the recipient will see, as a preview you can open, and the count you are about to send to. The tiles are pictures of live pages, made inert so their own buttons stay out of the tab order.",
+    path: `${M}/reviews/builder?view=wizard`,
+    steps: [
+      { click: "[data-hook=setup-create]", waitFor: "[data-hook=send-rail]", wait: 700 },
+      // The rail is READ-ONLY by design (a controlled Stepper with no
+      // onValueChange), so the only way through is Next, satisfying each gate
+      // on the way. Dropzone is a button, so pressing it is the upload.
+      { click: "[data-hook=contacts-upload]", wait: 800 },
+      { click: "[data-hook=wizard-next]", wait: 800 },
+      { click: "[data-hook=wizard-next]", wait: 800 },
+      // Check will not go past until both confirmations are ticked.
+      { click: "[data-hook=confirm-permission]", wait: 300 },
+      { click: "[data-hook=confirm-privacy]", wait: 400 },
+      { click: "[data-hook=wizard-next]", waitFor: "[data-hook^=preview-tile-]", wait: 1200 },
+    ],
+  },
+  {
+    id: "builder-10-wizard-success",
+    section: "builder",
+    title: "Sending",
+    note: "What follows Send. It names the number it is going to and where the answers will appear, so the campaign does not simply vanish off the screen it was made on.",
+    path: `${M}/reviews/builder?view=success`,
+  },
+  {
+    id: "builder-11-qr",
     section: "builder",
     title: "The QR code",
     note: "Generated on the page, sized for the till, the table or the door, with the caption and the colour editable. The code is live and scannable; the line printed under it is Google's own review URL, which is what the customer's card would carry.",
@@ -271,7 +372,7 @@ export const STATES: ScreenState[] = [
     steps: [{ click: "[data-hook=qr-banner-code]", waitFor: "[data-hook=qr-generator]", wait: 1000 }],
   },
   {
-    id: "builder-05-empty",
+    id: "builder-12-empty",
     section: "builder",
     title: "No campaigns yet",
     note: "Nothing running, and the page says so rather than showing a table of somebody else's numbers. The first campaign is the only thing being asked for.",
@@ -361,6 +462,62 @@ export const STATES: ScreenState[] = [
     path: "/settings",
   },
 ];
+
+
+// ── the looks ───────────────────────────────────────────────────────
+const LOOKS: ScreenState[] = [
+  {
+    id: "looks-01-tinted",
+    section: "looks",
+    title: "Tinted",
+    note: "The insight surfaces on a violet tint, with one ink: everything black, nothing muted, the badge transparent and the main button black rather than the brand green, which fights a tint. The borders go almost away, because the tint is already doing the lifting.",
+    path: `${M}/reviews`,
+    tone: "tinted",
+  },
+  {
+    id: "looks-02-families",
+    section: "looks",
+    title: "Families",
+    note: "The same rules with a colour per section, so the Manager, the Tracker and the Builder each carry their own, and a screenshot says which page it came from without the breadcrumb.",
+    path: `${M}/reviews/tracker`,
+    tone: "families",
+  },
+  {
+    id: "looks-03-vivid",
+    section: "looks",
+    title: "Super bright",
+    note: "Full strength rather than a tint. The tiles and inner panels step to a lighter shade of the same family instead of white, and it still measures above 8:1, which is the constraint that keeps it from being a poster.",
+    path: `${M}/reviews`,
+    tone: "vivid",
+  },
+  {
+    id: "looks-04-tinted-dialog",
+    section: "looks",
+    title: "A dialog on a tint",
+    note: "The popover is the one thing that never takes the colour. It stays white whatever the tone is set to, so the surface you read the detail on is the same every time.",
+    path: `${M}/reviews`,
+    tone: "tinted",
+    steps: [{ click: "[data-hook=review-summary-strip-open]", waitFor: "[data-hook=beacon-modal]", wait: 900 }],
+  },
+  {
+    id: "looks-05-no-insights",
+    section: "looks",
+    title: "Without insights",
+    note: "The same hub with the contextual layer stripped out: no strips, no chips, no nuggets, no dialogs. It is what the product looks like on its own, and what a screenshot of it looks like when the AI layer is not the thing being shown.",
+    path: `${M}/reviews`,
+    insights: false,
+  },
+  {
+    id: "looks-06-no-insights-manager",
+    section: "looks",
+    title: "The Manager, without insights",
+    note: "The same again on the inbox. The plan band goes and the page is the table, the tabs and the facets, which is the product BrightLocal already has.",
+    path: `${M}/reviews/manager`,
+    insights: false,
+  },
+];
+
+STATES.push(...LOOKS);
 
 export const STATE_SECTIONS: StateSection[] = (() => {
   const seen: StateSection[] = [];

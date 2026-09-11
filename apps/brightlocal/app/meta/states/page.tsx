@@ -17,7 +17,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Maximize2, Minimize2, RotateCcw, ExternalLink, Check, TriangleAlert } from "@brightlocal/icons";
+import { Maximize2, Minimize2, RotateCcw, ExternalLink, Check, TriangleAlert, Sparkles } from "@brightlocal/icons";
 import { Button } from "@brightlocal/ui-components/button";
 import {
   STATES,
@@ -27,10 +27,26 @@ import {
   thumbFor,
   type ScreenState,
 } from "@/lib/states";
-import { replay, seedPersona, type ReplayResult } from "@/lib/state-driver";
+import { replay, seedLook, type ReplayResult } from "@/lib/state-driver";
+
+/** The shapes a frame can be fitted to. The height is the width over the
+ *  ratio, so it is a crop of the page rather than a letterbox of it: the same
+ *  thing a screenshot at that shape would be. */
+const RATIOS: { id: string; label: string; value: number | null }[] = [
+  { id: "native", label: "Native", value: null },
+  { id: "3:2", label: "3:2", value: 3 / 2 },
+  { id: "16:9", label: "16:9", value: 16 / 9 },
+  { id: "4:3", label: "4:3", value: 4 / 3 },
+];
 
 export default function StatesPage() {
   const [active, setActive] = React.useState<ScreenState>(STATES[0]);
+  const [ratio, setRatio] = React.useState(RATIOS[0]);
+  // A GLOBAL SWITCH (Ali, 10 Sep: "an option for all the screens to either
+  // show insights or not, this could also be a global setting for these
+  // screens"). null follows whatever each state asks for; true and false
+  // override every one of them.
+  const [insights, setInsights] = React.useState<boolean | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [result, setResult] = React.useState<ReplayResult | null>(null);
   const [full, setFull] = React.useState(false);
@@ -40,17 +56,35 @@ export default function StatesPage() {
 
   // The persona has to be in storage before the frame boots, so it is written
   // on the way to setting the src rather than after.
-  const open = React.useCallback((state: ScreenState) => {
-    seedPersona(state.persona ?? "engaged");
+  const lookFor = React.useCallback(
+    (state: ScreenState) => ({
+      personaId: state.persona ?? "engaged",
+      tone: state.tone ?? "neutral",
+      insights: insights ?? state.insights,
+    }),
+    [insights],
+  );
+
+  const open = React.useCallback(
+    (state: ScreenState) => {
+      seedLook(lookFor(state));
+      setResult(null);
+      setBusy(true);
+      setActive(state);
+      setNonce((n) => n + 1);
+    },
+    [lookFor],
+  );
+
+  // Changing the global switch or the ratio reloads whatever is in the frame,
+  // because both are read on boot.
+  React.useEffect(() => {
+    seedLook(lookFor(active));
     setResult(null);
     setBusy(true);
-    setActive(state);
     setNonce((n) => n + 1);
-  }, []);
-
-  React.useEffect(() => {
-    seedPersona(active.persona ?? "engaged");
-  }, [active]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [insights]);
 
   const onLoad = React.useCallback(async () => {
     const frame = frameRef.current;
@@ -78,6 +112,9 @@ export default function StatesPage() {
   };
 
   const width = active.width ?? 1280;
+  // The page renders at its own width; the ratio decides how much of its
+  // height the frame shows.
+  const frameHeight = ratio.value ? Math.round(width / ratio.value) : 900;
   const boxRef = React.useRef<HTMLDivElement>(null);
   const [scale, setScale] = React.useState(1);
 
@@ -96,13 +133,13 @@ export default function StatesPage() {
       // of one at full width is the right crop, and the frame scrolls inside
       // itself for the rest. A narrow state (the 430 phone) is never blown up
       // past life size.
-      setScale(full ? Math.min(w / width, h / 900) : Math.min(w / width, width < 900 ? 1 : 4));
+      setScale(full ? Math.min(w / width, h / frameHeight) : Math.min(w / width, width < 900 ? 1 : 4));
     };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(box);
     return () => ro.disconnect();
-  }, [width, full, active.id]);
+  }, [width, full, active.id, frameHeight]);
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-6 py-8">
@@ -122,7 +159,7 @@ export default function StatesPage() {
             ref={boxRef}
             className={`relative flex justify-center overflow-hidden border bg-white ${full ? "min-h-0 flex-1 rounded-lg" : "rounded-xl"}`}
             data-hook="states-frame-box"
-            style={full ? undefined : { height: "min(56vh, 620px)" }}
+            style={full ? undefined : { aspectRatio: `${width} / ${frameHeight}`, maxHeight: "min(52vh, 600px)" }}
           >
             <iframe
               key={`${active.id}-${nonce}`}
@@ -134,7 +171,7 @@ export default function StatesPage() {
               className="origin-top border-0"
               style={{
                 width,
-                height: full ? Math.round((boxRef.current?.clientHeight ?? 900) / (scale || 1)) : 900,
+                height: full ? Math.round((boxRef.current?.clientHeight ?? 900) / (scale || 1)) : frameHeight,
                 transform: `scale(${scale})`,
               }}
             />
@@ -164,6 +201,32 @@ export default function StatesPage() {
                 {result.ok ? "In the state" : `Stopped at step ${(result.failedAt ?? 0) + 1}: ${result.reason}`}
               </span>
             ) : null}
+            <span className="flex items-center gap-1" data-hook="states-ratio">
+              {RATIOS.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setRatio(r)}
+                  aria-pressed={r.id === ratio.id}
+                  className={`rounded-full border px-2.5 py-1 text-label-sm font-semibold transition-colors ${
+                    r.id === ratio.id
+                      ? "border-[var(--ds-tailwind-colors-neutral-950)] bg-[var(--ds-tailwind-colors-neutral-950)] text-[var(--ds-tailwind-colors-base-white)]"
+                      : full ? "border-white/30 text-white/80 hover:bg-white/10" : "hover:bg-accent"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </span>
+            <Button
+              variant={insights === false ? "primary" : "outline"}
+              size="sm"
+              dataHook="states-insights"
+              onClick={() => setInsights(insights === false ? null : false)}
+            >
+              <Sparkles className="size-4" />
+              {insights === false ? "Insights off" : "Insights on"}
+            </Button>
             <Button variant="outline" size="sm" dataHook="states-replay" onClick={() => open(active)}>
               <RotateCcw className="size-4" />
               Replay
@@ -200,10 +263,14 @@ export default function StatesPage() {
                     id={s.id}
                     data-hook={`states-card-${s.id}`}
                     onClick={() => open(s)}
-                    className="group flex w-full flex-col gap-2 text-left"
+                    // scroll-mt keeps a card clear of the sticky frame when
+                    // anything scrolls to it: without it a card jumped to by
+                    // its anchor lands underneath and cannot be clicked.
+                    className="group flex w-full scroll-mt-[70vh] flex-col gap-2 text-left"
                   >
                     <span
-                      className={`bg-muted relative block aspect-[1280/900] w-full overflow-hidden rounded-xl border-2 transition-colors ${
+                      style={{ aspectRatio: `${s.width ?? 1280} / ${ratio.value ? Math.round((s.width ?? 1280) / ratio.value) : 900}` }}
+                      className={`bg-muted relative block w-full overflow-hidden rounded-xl border-2 transition-colors ${
                         current ? "border-[var(--ds-tailwind-colors-neutral-950)]" : "border-transparent group-hover:border-[var(--ds-tailwind-colors-neutral-300)]"
                       }`}
                     >

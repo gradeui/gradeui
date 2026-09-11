@@ -1,8 +1,188 @@
 {
-  "captured": "2026-09-10T13:08:04.795Z",
+  "captured": "2026-09-10T13:46:31.467Z",
   "results": [
     {
+      "id": "hub-01-at-rest",
+      "ok": true
+    },
+    {
+      "id": "hub-02-summary-dialog",
+      "ok": true
+    },
+    {
+      "id": "hub-03-finding-open",
+      "ok": true
+    },
+    {
+      "id": "hub-04-empty",
+      "ok": true
+    },
+    {
+      "id": "hub-05-trial",
+      "ok": true
+    },
+    {
+      "id": "hub-06-lapsed",
+      "ok": true
+    },
+    {
+      "id": "hub-07-multi",
+      "ok": true
+    },
+    {
       "id": "hub-08-trial-recap",
+      "ok": true
+    },
+    {
+      "id": "manager-01-inbox",
+      "ok": true
+    },
+    {
+      "id": "manager-02-plan-dialog",
+      "ok": true
+    },
+    {
+      "id": "manager-03-facets",
+      "ok": true
+    },
+    {
+      "id": "manager-04-mobile-filters",
+      "ok": true
+    },
+    {
+      "id": "manager-05-empty",
+      "ok": true
+    },
+    {
+      "id": "tracker-01-charts",
+      "ok": true
+    },
+    {
+      "id": "tracker-02-dialog",
+      "ok": true
+    },
+    {
+      "id": "tracker-03-sources",
+      "ok": true
+    },
+    {
+      "id": "tracker-04-sources-table",
+      "ok": true
+    },
+    {
+      "id": "tracker-05-connect-alert",
+      "ok": true
+    },
+    {
+      "id": "builder-01-campaigns",
+      "ok": true
+    },
+    {
+      "id": "builder-02-dialog",
+      "ok": true
+    },
+    {
+      "id": "builder-03-wizard-settings",
+      "ok": true
+    },
+    {
+      "id": "builder-04-wizard-recipients",
+      "ok": true
+    },
+    {
+      "id": "builder-05-wizard-one-person",
+      "ok": true
+    },
+    {
+      "id": "builder-06-wizard-columns",
+      "ok": true
+    },
+    {
+      "id": "builder-07-wizard-check",
+      "ok": true
+    },
+    {
+      "id": "builder-08-wizard-excluded",
+      "ok": true
+    },
+    {
+      "id": "builder-09-wizard-send",
+      "ok": true
+    },
+    {
+      "id": "builder-10-wizard-success",
+      "ok": true
+    },
+    {
+      "id": "builder-11-qr",
+      "ok": true
+    },
+    {
+      "id": "builder-12-empty",
+      "ok": true
+    },
+    {
+      "id": "showcase-01-widgets",
+      "ok": true
+    },
+    {
+      "id": "showcase-02-dialog",
+      "ok": true
+    },
+    {
+      "id": "showcase-03-preview",
+      "ok": true
+    },
+    {
+      "id": "showcase-04-empty",
+      "ok": true
+    },
+    {
+      "id": "insights-01-roadmap",
+      "ok": true
+    },
+    {
+      "id": "insights-02-pdf",
+      "ok": true
+    },
+    {
+      "id": "account-01-pricing",
+      "ok": true
+    },
+    {
+      "id": "account-02-chosen",
+      "ok": true
+    },
+    {
+      "id": "account-03-lapsed",
+      "ok": true
+    },
+    {
+      "id": "account-04-settings",
+      "ok": true
+    },
+    {
+      "id": "looks-01-tinted",
+      "ok": true
+    },
+    {
+      "id": "looks-02-families",
+      "ok": true
+    },
+    {
+      "id": "looks-03-vivid",
+      "ok": true
+    },
+    {
+      "id": "looks-04-tinted-dialog",
+      "ok": true
+    },
+    {
+      "id": "looks-05-no-insights",
+      "ok": true
+    },
+    {
+      "id": "looks-06-no-insights-manager",
       "ok": true
     }
   ]

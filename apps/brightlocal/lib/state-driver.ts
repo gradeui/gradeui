@@ -124,17 +124,31 @@ export async function replay(frame: HTMLIFrameElement, steps: StateStep[] = []):
 }
 
 /** Seed the demo settings the frame will read on load. Same-origin, so the
- *  parent can write the key the app boots from before it boots. */
-export function seedPersona(personaId: string) {
+ *  parent can write the key the app boots from before it boots, which is the
+ *  only way to have the frame render on a persona or a tone from its very
+ *  first paint rather than flipping to it a beat later. */
+export function seedLook(look: {
+  personaId: string;
+  tone?: string;
+  /** true, false, or undefined to leave the app's own setting alone. */
+  insights?: boolean;
+}) {
   try {
     const raw = localStorage.getItem("grade-bl-demo-v2");
     const current = raw ? JSON.parse(raw) : {};
     localStorage.setItem(
       "grade-bl-demo-v2",
-      JSON.stringify({ ...current, personaId, look: "authored", engine: "native-fixed" }),
+      JSON.stringify({
+        ...current,
+        personaId: look.personaId,
+        look: "authored",
+        engine: "native-fixed",
+        beaconTone: look.tone ?? "neutral",
+        ...(look.insights === undefined ? {} : { insights: look.insights }),
+      }),
     );
   } catch {
     // A private window with storage blocked still gets the screen, just on
-    // whatever persona the app defaults to.
+    // whatever the app defaults to.
   }
 }

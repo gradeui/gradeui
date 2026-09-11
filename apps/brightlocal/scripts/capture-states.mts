@@ -42,30 +42,39 @@ fs.mkdirSync(OUT, { recursive: true });
 const wanted = STATES.filter((s) => !ONLY.length || ONLY.some((o) => s.id.includes(o)));
 console.log(`${wanted.length} state(s) -> public/states/`);
 
-const settings = (persona: string) => ({
-  personaId: persona,
+const settings = (state: (typeof STATES)[number]) => ({
+  personaId: state.persona ?? "engaged",
   look: "authored",
   variants: {},
   engine: "native-fixed",
   upsell: true,
   fixItForMe: true,
-  beaconTone: "neutral",
+  beaconTone: state.tone ?? "neutral",
   appearance: "light",
+  // A state can strip the contextual insight layer. Undefined leaves the
+  // app's own default alone rather than forcing it on.
+  ...(state.insights === false ? { insights: false } : {}),
 });
+
+// --ratio shoots every frame at one shape, which is what a Figma board wants:
+// the viewport height becomes the width over the ratio, so it is a crop of the
+// page rather than a letterbox of it. Native keeps each state's own 900.
+const RATIO: Record<string, number> = { "16:9": 16 / 9, "3:2": 3 / 2, "4:3": 4 / 3 };
+const ratioArg = arg("ratio");
+const heightFor = (w: number) => (ratioArg && RATIO[ratioArg] ? Math.round(w / RATIO[ratioArg]) : 900);
 
 const browser = await chromium.launch();
 const results: { id: string; ok: boolean; error?: string }[] = [];
 
 for (const state of wanted) {
   const width = state.width ?? 1280;
-  const persona = state.persona ?? "engaged";
   const ctx = await browser.newContext({
-    viewport: { width, height: 900 },
+    viewport: { width, height: heightFor(width) },
     deviceScaleFactor: 2,
   });
   await ctx.addInitScript((s: unknown) => {
     try { localStorage.setItem("grade-bl-demo-v2", JSON.stringify(s)); } catch {}
-  }, settings(persona));
+  }, settings(state));
   const page = await ctx.newPage();
   const png = path.join(OUT, `${state.id}.png`);
   try {
