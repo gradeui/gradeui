@@ -31,7 +31,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 export interface SafeAreaInsets {
   top: number;
@@ -123,41 +123,67 @@ export interface StandaloneState {
   insets: SafeAreaInsets;
 }
 
-/**
- * Live standalone + inset state for the top-level document.
- *
- * Starts as "not standalone, zero insets" so the server render and the
- * first client paint agree (no hydration mismatch), then measures on
- * mount. Re-measures on rotation and resize, because the top inset
- * moves to the side in landscape.
- */
-export function useStandaloneInsets(): StandaloneState {
-  const [state, setState] = useState<StandaloneState>({
-    standalone: false,
-    insets: ZERO_INSETS,
-  });
+/* ── The store ─────────────────────────────────────────────────────
+   ONE measurement for the whole document, not one per consumer.
+   `FastIframeHost` mounts many times over (the focused mount, every
+   canvas tile, each compare pane, the registry browser, layout
+   preview), and a per-instance hook would mean each of those
+   installing its own resize + orientationchange + matchMedia
+   listeners and appending its own probe div to document.body on every
+   measure. The display is a property of the document, so it is read
+   once and shared.
 
-  useEffect(() => {
-    let frame = 0;
-    const sync = () => {
-      cancelAnimationFrame(frame);
-      // One frame's grace: after an orientation change iOS reports the
-      // OLD insets if you read them synchronously from the event.
-      frame = requestAnimationFrame(() => {
-        const standalone = isStandaloneDisplay();
-        const insets = measureSafeAreaInsets();
-        setState((prev) =>
-          prev.standalone === standalone &&
-          prev.insets.top === insets.top &&
-          prev.insets.right === insets.right &&
-          prev.insets.bottom === insets.bottom &&
-          prev.insets.left === insets.left
-            ? prev
-            : { standalone, insets },
-        );
-      });
-    };
-    sync();
+   Same architecture as lib/project-preview-css.ts and for the same
+   reason: state on `globalThis` so dev-mode HMR cannot reset it,
+   subscribable so every frame host re-posts when the device rotates.
+   The listeners are installed on the FIRST subscriber and torn down
+   with the last. */
+
+interface InsetStore {
+  state: StandaloneState;
+  listeners: Set<() => void>;
+  teardown: (() => void) | null;
+  frame: number;
+}
+
+const g = globalThis as typeof globalThis & {
+  __gradeStandaloneInsets?: InsetStore;
+};
+const store: InsetStore = (g.__gradeStandaloneInsets ??= {
+  // Starts "not standalone, zero insets" so the server render and the
+  // first client paint agree, then measures on the first subscribe.
+  state: { standalone: false, insets: ZERO_INSETS },
+  listeners: new Set(),
+  teardown: null,
+  frame: 0,
+});
+
+function sync(): void {
+  cancelAnimationFrame(store.frame);
+  // One frame's grace: read synchronously from an orientationchange
+  // and iOS hands you the PREVIOUS orientation's insets.
+  store.frame = requestAnimationFrame(() => {
+    const standalone = isStandaloneDisplay();
+    const insets = measureSafeAreaInsets();
+    const prev = store.state;
+    if (
+      prev.standalone === standalone &&
+      prev.insets.top === insets.top &&
+      prev.insets.right === insets.right &&
+      prev.insets.bottom === insets.bottom &&
+      prev.insets.left === insets.left
+    ) {
+      return;
+    }
+    store.state = { standalone, insets };
+    for (const l of store.listeners) l();
+  });
+}
+
+function subscribe(listener: () => void): () => void {
+  const first = store.listeners.size === 0;
+  store.listeners.add(listener);
+  if (first) {
     window.addEventListener("resize", sync);
     window.addEventListener("orientationchange", sync);
     let mq: MediaQueryList | null = null;
@@ -167,13 +193,37 @@ export function useStandaloneInsets(): StandaloneState {
     } catch {
       mq = null;
     }
-    return () => {
-      cancelAnimationFrame(frame);
+    store.teardown = () => {
       window.removeEventListener("resize", sync);
       window.removeEventListener("orientationchange", sync);
       mq?.removeEventListener("change", sync);
     };
-  }, []);
+    sync();
+  }
+  return () => {
+    store.listeners.delete(listener);
+    if (store.listeners.size === 0) {
+      cancelAnimationFrame(store.frame);
+      store.teardown?.();
+      store.teardown = null;
+    }
+  };
+}
 
-  return state;
+const SERVER_STATE: StandaloneState = {
+  standalone: false,
+  insets: ZERO_INSETS,
+};
+
+/**
+ * Live standalone + inset state for the top-level document, shared by
+ * every consumer. Re-measures on rotation and resize, because the top
+ * inset moves to the side in landscape.
+ */
+export function useStandaloneInsets(): StandaloneState {
+  return useSyncExternalStore(
+    subscribe,
+    () => store.state,
+    () => SERVER_STATE,
+  );
 }
