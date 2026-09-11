@@ -1450,6 +1450,28 @@ function findComponentOwner(el: Element | null): Element | null {
       } else {
         document.documentElement.setAttribute("data-motion", "off");
       }
+    } else if (data.type === "grade:set-safe-area") {
+      // Home-screen standalone + the display's real safe-area insets.
+      // Mirrors the Fast sandbox handler — kept in sync per the
+      // two-agent rule in STUDIO.md. The values are measured by the
+      // PARENT because env(safe-area-inset-*) inside this iframe
+      // resolves against the iframe box and is always zero.
+      var saRoot = document.documentElement;
+      var saRaw = data.insets || {};
+      var saPx = function (v) {
+        return (typeof v === "number" && isFinite(v) && v > 0
+          ? Math.round(v)
+          : 0) + "px";
+      };
+      if (data.standalone !== false) {
+        saRoot.setAttribute("data-standalone", "true");
+      } else {
+        saRoot.removeAttribute("data-standalone");
+      }
+      saRoot.style.setProperty("--gds-safe-area-top", saPx(saRaw.top));
+      saRoot.style.setProperty("--gds-safe-area-right", saPx(saRaw.right));
+      saRoot.style.setProperty("--gds-safe-area-bottom", saPx(saRaw.bottom));
+      saRoot.style.setProperty("--gds-safe-area-left", saPx(saRaw.left));
     } else if (data.type === "grade:collect-media-sources") {
       // Walk every rendered MediaSurface, harvest the
       // \`data-media-source\` JSON the component stamps on its root

@@ -37,6 +37,11 @@
  *       (overrides), upserted LAST as <style data-grade-project-css>
  *     { type: "grade:select-mode",   enabled }       — toggle agent
  *     { type: "grade:clear-selection" }              — hide overlay
+ *     { type: "grade:set-safe-area", standalone, insets } — the parent is
+ *       installed to a home screen; `insets` are the DISPLAY's real
+ *       env(safe-area-inset-*) values, which cannot be read in here
+ *       (inside the iframe they are always zero). Lands as
+ *       `data-standalone` + `--gds-safe-area-*` on the sandbox root.
  *
  *   Sandbox → parent
  *     { type: "grade:fast-ready" }                   — bundle loaded
@@ -1464,6 +1469,35 @@ export default function FastSandboxPage() {
           } else {
             document.documentElement.setAttribute("data-motion", "off");
           }
+          break;
+        }
+        case "grade:set-safe-area": {
+          // The prototype is running inside a home-screen app. Stamp
+          // `data-standalone` on <html> and publish the display's real
+          // insets as `--gds-safe-area-*`.
+          //
+          // A screen that draws its own simulated status bar reads the
+          // attribute and stops — in standalone the DEVICE's status bar
+          // is already drawn over the top of the web view, and two is
+          // worse than either. A screen that pads for the notch reads
+          // the vars instead of its own per-handset constants, which
+          // are only ever right on the one phone they were typed for.
+          const root = document.documentElement;
+          const standalone = data.standalone !== false;
+          const raw = (data.insets ?? {}) as Record<string, unknown>;
+          const px = (v: unknown): string => {
+            const n = typeof v === "number" ? v : Number.NaN;
+            return `${Number.isFinite(n) && n > 0 ? Math.round(n) : 0}px`;
+          };
+          if (standalone) {
+            root.dataset.standalone = "true";
+          } else {
+            delete root.dataset.standalone;
+          }
+          root.style.setProperty("--gds-safe-area-top", px(raw.top));
+          root.style.setProperty("--gds-safe-area-right", px(raw.right));
+          root.style.setProperty("--gds-safe-area-bottom", px(raw.bottom));
+          root.style.setProperty("--gds-safe-area-left", px(raw.left));
           break;
         }
         case "grade:collect-media-sources": {

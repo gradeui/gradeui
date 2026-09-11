@@ -9,6 +9,7 @@
  * screen and nothing else.
  */
 
+import type { Viewport } from "next";
 import { notFound } from "next/navigation";
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { resolveProjectAppIconUrl } from "@/lib/project-app-icon";
@@ -18,6 +19,31 @@ import { SHARE_VIEWPORT_PRESETS } from "@/lib/studio-storage";
 import type { User } from "@/lib/studio-users";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * THE WHITE STRIPE (Ali, 11 Sep). A share added to an iPhone home
+ * screen launched with a white band above the content — the status-bar
+ * area, reserved and painted by the system rather than being part of
+ * the app. Two tags kill it, and BOTH are needed:
+ *
+ *   - `viewport-fit=cover` (here) lets the document extend into the
+ *     display's inset areas instead of being letterboxed inside them.
+ *   - `apple-mobile-web-app-status-bar-style: black-translucent`
+ *     (in generateMetadata) makes the status bar overlay the content
+ *     instead of reserving a band for it.
+ *
+ * With only the first, the band stays. With only the second, the
+ * document still stops short of the top. The prototype then paints all
+ * the way up and the device's own clock/battery sit over it.
+ *
+ * This is a ROUTE-level viewport: the docs site and Studio keep the
+ * Next default, so nothing else on gradeui.com changes.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 /** Tab title: "Screen — Project · Grade". Light second query — the
  *  page itself re-validates the token; this only names the tab. */
@@ -65,10 +91,28 @@ export async function generateMetadata({
     // Home-screen standalone (Ali, 23 Jul): a ?fullscreen=1 share added
     // to an iPhone home screen launches with NO Safari chrome — the
     // real-product illusion end to end. Inert for normal tab viewers.
-    // The icon takes the SCREEN's name; status bar stays default (safe
-    // over light and dark bands alike).
-    appleWebApp: { capable: true, title: screen, statusBarStyle: "default" },
-    other: { "mobile-web-app-capable": "yes" },
+    // The icon takes the SCREEN's name.
+    //
+    // black-translucent, NOT default (11 Sep): `default` reserves an
+    // opaque band at the top of the display and paints it light, which
+    // is the white stripe over a dark prototype. Translucent hands
+    // those pixels to the document — see the viewport export above,
+    // which is the other half of the fix.
+    appleWebApp: {
+      capable: true,
+      title: screen,
+      statusBarStyle: "black-translucent",
+    },
+    // The APPLE-PREFIXED capability tag, which Next does not emit:
+    // `appleWebApp.capable` above produces the unprefixed
+    // `mobile-web-app-capable` only (next/dist/lib/metadata/metadata.js
+    // emits the apple- name for title and status-bar-style, never for
+    // capable). Newer iOS honours the unprefixed spelling, older iOS
+    // only this one — and without a capability tag the status-bar
+    // style is ignored and the stripe comes back. This line used to
+    // restate the unprefixed name, which was a duplicate of the tag
+    // above and left the apple one missing altogether.
+    other: { "apple-mobile-web-app-capable": "yes" },
     // The project's own app icon (asset-resolved above) — the share
     // installs wearing the CLIENT's mark, not Grade's. No asset = the
     // site defaults.

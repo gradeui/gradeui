@@ -57,6 +57,7 @@ import {
 import { toast } from "sonner";
 import { themeToCSSVars, fontFaceCSS } from "@/lib/themes/apply";
 import { useProjectPreviewCss } from "@/lib/project-preview-css";
+import { useStandaloneInsets } from "@/lib/standalone-insets";
 import type { GeneratedTheme } from "@/lib/themes";
 import type { ViewportWidth } from "@/components/studio/sandpack-frame";
 import {
@@ -496,6 +497,24 @@ export function FastIframeHost({
     postToSandbox({ type: "grade:set-motion", enabled: motion });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, motion]);
+
+  // Home-screen standalone + the display's REAL safe-area insets.
+  //
+  // Only ever posted when the top-level document is actually running
+  // installed to a home screen — in a normal tab this is silent, so
+  // Studio tiles, docs embeds and the capture scripts are untouched.
+  //
+  // It has to come from out here: env(safe-area-inset-*) read INSIDE
+  // the iframe resolves against the iframe's own box and is always
+  // zero, however deep the notch is. The parent is the only realm that
+  // can see the display. Re-posted on boot (so a re-mounted frame
+  // inherits it) and whenever the device rotates.
+  const { standalone, insets } = useStandaloneInsets();
+  useEffect(() => {
+    if (!ready || !standalone) return;
+    postToSandbox({ type: "grade:set-safe-area", standalone: true, insets });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, standalone, insets.top, insets.right, insets.bottom, insets.left]);
 
   // Media URL map — every time the canvas's resolved-URL state changes
   // (or this iframe finishes booting), push the current map in. The

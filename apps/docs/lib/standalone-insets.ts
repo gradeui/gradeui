@@ -1,0 +1,179 @@
+/**
+ * Standalone (home-screen) detection + real safe-area insets.
+ *
+ * WHY THIS EXISTS
+ * A prototype added to an iPhone home screen launches with no browser
+ * chrome — and, with `apple-mobile-web-app-status-bar-style` set to
+ * `black-translucent` plus `viewport-fit=cover`, the web view runs the
+ * full height of the display with the DEVICE'S OWN status bar drawn
+ * over the top of it. Two things follow:
+ *
+ *   1. The prototype must know it is standalone, so it can stop drawing
+ *      its own simulated status bar (otherwise you see two).
+ *   2. It needs the REAL insets, because the notch/dynamic-island band
+ *      differs per handset and the simulated constants a screen ships
+ *      with ("iPhone 15 Pro is 59px") are only right on one phone.
+ *
+ * THE IFRAME PROBLEM (the reason this is a host-side module)
+ * Every prototype renders inside the /fast-sandbox iframe. `env(safe-
+ * area-inset-*)` evaluated INSIDE that iframe resolves against the
+ * IFRAME's box, not the display — so it is zero, always, even in
+ * standalone. Only the top-level document can see the true insets.
+ * The host therefore measures here and posts the values into the frame
+ * (`grade:set-safe-area`), where they land as `--gds-safe-area-*` on
+ * the frame's root for the prototype to read.
+ *
+ * MEASUREMENT
+ * `env()` is not readable from JS directly, so we do the standard
+ * trick: park an off-screen probe whose padding is set to the four
+ * env() values and read them back through getComputedStyle.
+ */
+
+"use client";
+
+import { useEffect, useState } from "react";
+
+export interface SafeAreaInsets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export const ZERO_INSETS: SafeAreaInsets = {
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+};
+
+/** True when the document is running as an installed/home-screen app.
+ *  `navigator.standalone` is the iOS-only legacy flag and still the
+ *  most reliable signal on older iOS; the media query covers the rest
+ *  (and Android/desktop installs).
+ *
+ *  TOP-LEVEL ONLY, and this is load-bearing rather than tidiness:
+ *  `display-mode` PROPAGATES to nested browsing contexts but `env()`
+ *  does NOT. An /e/ embed iframed inside another page (the marketing
+ *  live-embed, the MCP preview panel) that happens to be open in an
+ *  installed app would match the media query while the probe below
+ *  correctly measures zero — so we would tell the prototype "you are
+ *  on a device, stand your status bar down" and then put nothing in
+ *  its place. Only the document that actually owns the display gets
+ *  to answer yes. */
+export function isStandaloneDisplay(): boolean {
+  if (typeof window === "undefined") return false;
+  // Identity comparison only — safe cross-origin, unlike reading any
+  // property off window.top.
+  if (window.top !== window.self) return false;
+  const legacy = (window.navigator as Navigator & { standalone?: boolean })
+    .standalone;
+  if (legacy === true) return true;
+  try {
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.matchMedia("(display-mode: fullscreen)").matches
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Read the four env(safe-area-inset-*) values off the TOP-LEVEL
+ *  document. Returns zeros anywhere they aren't supported or aren't
+ *  set — which is the correct answer in a normal browser tab. */
+export function measureSafeAreaInsets(): SafeAreaInsets {
+  if (typeof document === "undefined") return ZERO_INSETS;
+  const probe = document.createElement("div");
+  // Fixed + zero-size + hidden: the probe must not contribute layout
+  // or scroll extent while it is parked in the document.
+  probe.style.cssText = [
+    "position:fixed",
+    "top:0",
+    "left:0",
+    "width:0",
+    "height:0",
+    "visibility:hidden",
+    "pointer-events:none",
+    "padding-top:env(safe-area-inset-top, 0px)",
+    "padding-right:env(safe-area-inset-right, 0px)",
+    "padding-bottom:env(safe-area-inset-bottom, 0px)",
+    "padding-left:env(safe-area-inset-left, 0px)",
+  ].join(";");
+  document.body.appendChild(probe);
+  const cs = getComputedStyle(probe);
+  const px = (v: string): number => {
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+  };
+  const insets: SafeAreaInsets = {
+    top: px(cs.paddingTop),
+    right: px(cs.paddingRight),
+    bottom: px(cs.paddingBottom),
+    left: px(cs.paddingLeft),
+  };
+  probe.remove();
+  return insets;
+}
+
+export interface StandaloneState {
+  /** Whether this document is running installed to a home screen. */
+  standalone: boolean;
+  /** Real display insets. Zeros in a normal tab. */
+  insets: SafeAreaInsets;
+}
+
+/**
+ * Live standalone + inset state for the top-level document.
+ *
+ * Starts as "not standalone, zero insets" so the server render and the
+ * first client paint agree (no hydration mismatch), then measures on
+ * mount. Re-measures on rotation and resize, because the top inset
+ * moves to the side in landscape.
+ */
+export function useStandaloneInsets(): StandaloneState {
+  const [state, setState] = useState<StandaloneState>({
+    standalone: false,
+    insets: ZERO_INSETS,
+  });
+
+  useEffect(() => {
+    let frame = 0;
+    const sync = () => {
+      cancelAnimationFrame(frame);
+      // One frame's grace: after an orientation change iOS reports the
+      // OLD insets if you read them synchronously from the event.
+      frame = requestAnimationFrame(() => {
+        const standalone = isStandaloneDisplay();
+        const insets = measureSafeAreaInsets();
+        setState((prev) =>
+          prev.standalone === standalone &&
+          prev.insets.top === insets.top &&
+          prev.insets.right === insets.right &&
+          prev.insets.bottom === insets.bottom &&
+          prev.insets.left === insets.left
+            ? prev
+            : { standalone, insets },
+        );
+      });
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
+    let mq: MediaQueryList | null = null;
+    try {
+      mq = window.matchMedia("(display-mode: standalone)");
+      mq.addEventListener("change", sync);
+    } catch {
+      mq = null;
+    }
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
+      mq?.removeEventListener("change", sync);
+    };
+  }, []);
+
+  return state;
+}

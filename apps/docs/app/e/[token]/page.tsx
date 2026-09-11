@@ -12,6 +12,7 @@
  * never annotate. See STUDIO-CAPTURE.md (consumer 3) + STUDIO-EMBED.md.
  */
 
+import type { Viewport } from "next";
 import { notFound } from "next/navigation";
 import { getServiceSupabase } from "@/lib/supabase/service";
 import { resolveProjectAppIconUrl } from "@/lib/project-app-icon";
@@ -53,6 +54,17 @@ function parseCameraParam(raw: string | undefined): CameraShot[] | undefined {
 
 export const dynamic = "force-dynamic";
 
+/** Standalone viewport — in lockstep with the share view. `viewport-fit=cover`
+ *  plus black-translucent (below) is what stops an installed prototype
+ *  launching with a white status-bar band; see the long note on
+ *  app/s/[token]/page.tsx. An embed inherits it because an embed URL is
+ *  just as likely to be the thing added to a home screen. */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 /** Tab title — kept in lockstep with the share view (/s/<token>):
  *  "Screen — Project · Grade". Light second query; the page itself
  *  re-validates the token, this only names the tab. */
@@ -83,8 +95,15 @@ export async function generateMetadata({
   const proj = (project as { name: string } | null)?.name ?? "Grade";
   return {
     title: `${screen} — ${proj} · Grade`,
-    appleWebApp: { capable: true, title: screen, statusBarStyle: "default" },
-    other: { "mobile-web-app-capable": "yes" },
+    appleWebApp: {
+      capable: true,
+      title: screen,
+      statusBarStyle: "black-translucent",
+    },
+    // Apple-prefixed capability tag — Next only emits the unprefixed
+    // one for `capable: true`, and older iOS reads only this spelling.
+    // See the fuller note on app/s/[token]/page.tsx.
+    other: { "apple-mobile-web-app-capable": "yes" },
     ...(appIconUrl
       ? { icons: { apple: [{ url: appIconUrl, sizes: "512x512" }] } }
       : {}),
