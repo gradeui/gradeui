@@ -632,6 +632,7 @@ window.addEventListener("message", (event: MessageEvent) => {
       registryId?: string | null;
       embedUrl?: string | null;
       name?: string;
+      sharedComponents?: Record<string, string> | null;
       bare?: boolean;
     };
     if (sc.appSource)
@@ -643,6 +644,11 @@ window.addEventListener("message", (event: MessageEvent) => {
         themeDraftJson: sc.themeDraftJson ?? null,
         registryId: sc.registryId ?? null,
         name: sc.name,
+        // Project shared components ride this cherry-pick too, and were
+        // dropped here exactly as bare once was: the tool sent them, this
+        // copy left them behind, and every screen importing
+        // "@project/components" threw "no shared components were loaded".
+        sharedComponents: sc.sharedComponents ?? null,
         // v7 bare mode — this cherry-pick is exactly where the flag got
         // dropped the first time; keep it in sync with ScreenPayload.
         bare: Boolean(sc.bare),
