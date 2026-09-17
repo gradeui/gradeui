@@ -5045,21 +5045,26 @@ function CampaignInsights({ campaign, onAllFeedback }) {
             dataHook="insights-performance"
           />
 
-          <Card dataHook="insights-timeline" className="max-w-none">
-            <CardHeader>
-              <CardTitle size="small" dataHook="insights-timeline-title">
-                Reviews over time
-              </CardTitle>
-              {/* No description (Ali, 17 Sep: "not needed"). The period is the
-                  select's own label, and the start date is already in the
-                  page header's status slot. */}
-              {/* The controls go in CardAction, the DS's own slot for a
-                  control that acts on the card, the same place Review Tracker
-                  puts its period filter and its chart/table switch. The period
-                  select only shows when there is more than one grain: a select
-                  with one option is furniture. */}
-              <CardAction>
-                <div className="flex items-center gap-2">
+          <Card dataHook="insights-timeline" density="condensed" className="max-w-none">
+            {/* THE TRACKER'S STICKY HEADER (Ali, 17 Sep: "the table headers in
+                Review builder campaign view to be sticky, just like in
+                Tracker"). The band holding the title and the controls pins
+                under the page header, on the card's own background with a
+                rule under it, so the period and the chart/table switch stay
+                in reach while a long table scrolls. No description (Ali, 17
+                Sep: "not needed"): the start date is in the page header. */}
+            <CardHeader
+              className="bg-card sticky top-[var(--gds-page-header-height,0px)] z-[5] -mt-3 rounded-t-[inherit] border-b px-6 pt-4 pb-4"
+              style={{ gridTemplateRows: "auto", rowGap: 0 }}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-5">
+                {/* "Timeline", the Tracker's name for the same card (Ali, 17 Sep). */}
+                <CardTitle size="small" dataHook="insights-timeline-title">
+                  Timeline
+                </CardTitle>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {/* The period select only shows when there is more than one
+                      grain: a select with one option is furniture. */}
                   {GRAINS.length > 1 ? (
                     <>
                       <Select value={grain} onValueChange={setGrain}>
@@ -5079,9 +5084,9 @@ function CampaignInsights({ campaign, onAllFeedback }) {
                   ) : null}
                   <ViewToggle view={timelineView} onChange={setTimelineView} idPrefix="timeline" />
                 </div>
-              </CardAction>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-6 pt-2 pb-6">
               {timelineView === "table" ? (
                 <Table dataHook="insights-timeline-table">
                   <TableHeader>
@@ -5160,7 +5165,18 @@ function CampaignInsights({ campaign, onAllFeedback }) {
                         max={100}
                         bands={NPS_BANDS}
                         display={nps}
-                        caption={`NPS, ${responded} responses`}
+                        // ONE SCALE ON SCREEN (Ali, 17 Sep: "0-50 and 50 and above
+                        // - but we are one to 10? Weird discrepancy?"). The dial's
+                        // legend ranged the SCORE (-100 to 100) right beside rows
+                        // ranging the ANSWER (0 to 10), in the same three colours,
+                        // so they read as one scale. The legend goes; the band's
+                        // word moves into the caption, and the rows keep the 0 to
+                        // 10 ranges people actually answered on.
+                        legend={false}
+                        caption={`${(() => {
+                          const band = NPS_BANDS.find((b) => nps < b.to) ?? NPS_BANDS[NPS_BANDS.length - 1];
+                          return band.meaning.charAt(0).toUpperCase() + band.meaning.slice(1);
+                        })()} NPS, ${responded} responses`}
                         dataHook="insights-nps-gauge"
                       />
                       <div className="flex flex-1 flex-col gap-2">
@@ -5181,9 +5197,14 @@ function CampaignInsights({ campaign, onAllFeedback }) {
                             scale — so the hues stay, at a step that reads as
                             data rather than as an alert. */}
                         {[
-                          { k: "Promoters (9 to 10)", n: promoters, bar: "--ds-tailwind-colors-emerald-600" },
-                          { k: "Passives (7 to 8)", n: passives, bar: "--ds-tailwind-colors-amber-400" },
-                          { k: "Detractors (0 to 6)", n: detractors, bar: "--ds-tailwind-colors-rose-400" },
+                          // WHOLE CLASS NAMES, not a variable dropped into one at
+                          // runtime (Ali, 17 Sep: the bars "appear to be empty").
+                          // Tailwind only builds classes it can read in the
+                          // source, so bg-[var(${row.bar})] never existed in the
+                          // app's CSS and every fill was transparent.
+                          { k: "Promoters (9 to 10)", n: promoters, bar: "bg-[var(--ds-tailwind-colors-emerald-600)]" },
+                          { k: "Passives (7 to 8)", n: passives, bar: "bg-[var(--ds-tailwind-colors-amber-400)]" },
+                          { k: "Detractors (0 to 6)", n: detractors, bar: "bg-[var(--ds-tailwind-colors-rose-400)]" },
                         ].map((row) => (
                           <div key={row.k} className="flex items-center gap-3">
                             <span className="w-40 shrink-0 text-sm">{row.k}</span>
@@ -5191,12 +5212,18 @@ function CampaignInsights({ campaign, onAllFeedback }) {
                               dataHook={`nps-${row.k.slice(0, 3).toLowerCase()}`}
                               value={row.n}
                               max={responded}
-                              indicatorClassName={`bg-[var(${row.bar})]`}
+                              indicatorClassName={row.bar}
                               ariaLabel={`${row.n} ${row.k}`}
                               className="h-2 flex-1 bg-[var(--ds-tailwind-colors-neutral-200)]"
                             />
-                            <span className="w-20 shrink-0 text-right text-sm tabular-nums">
-                              {row.n} ({Math.round((row.n / responded) * 100)}%)
+                            {/* PERCENTAGES ONLY (Ali, 17 Sep: "Do we need numbers
+                                AND percentages?"). NPS is the promoter share less
+                                the detractor share, so the shares are the numbers
+                                that add up to it; the response count is in the
+                                dial's caption, and each count stays in the bar's
+                                label for a screen reader. */}
+                            <span className="w-12 shrink-0 text-right text-sm tabular-nums">
+                              {Math.round((row.n / responded) * 100)}%
                             </span>
                           </div>
                         ))}

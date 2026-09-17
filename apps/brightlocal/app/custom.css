@@ -271,6 +271,24 @@
   line-height: 1.5rem;
 }
 
+/* A TOGGLE GROUP SHOWS WHICH ITEM IS ON (Ali, 17 Sep: "there is no selected
+   state in the chart/table toggle"). Two faults stack. The DS styles the on
+   item with data-[state=on]:bg-accent, but every chart/table item sits in a
+   TooltipTrigger asChild, and the tooltip writes its own data-state
+   ("closed") over the toggle's, so the rule never matches. And bg-accent is
+   neutral-100, the same fill as the item's hover and barely off the card, so
+   even applied it would not read. aria-checked (single) and aria-pressed
+   (multiple) survive the tooltip, so the state keys off those: the on item
+   takes neutral-200 and the foreground, the off items a muted icon.
+   Ledger: /docs/changes, "ToggleGroupItem's selected state does not show". */
+:is([data-gds-layout-engine="native-fixed"], [data-gds-layout-engine="modified"]) [data-radix-collection-item][data-variant]:is([aria-checked="true"], [aria-pressed="true"]) {
+  background: var(--ds-tailwind-colors-neutral-200);
+  color: var(--foreground);
+}
+:is([data-gds-layout-engine="native-fixed"], [data-gds-layout-engine="modified"]) [data-radix-collection-item][data-variant]:is([aria-checked="false"], [aria-pressed="false"]) {
+  color: var(--muted-foreground);
+}
+
 /* A HEADING ROLE ON A DS TITLE WINS. DialogTitle, SheetTitle, DrawerTitle
    and AlertDialogTitle ship `text-lg leading-none`, and cn() cannot tell the
    text-heading-* utilities are font sizes, so both classes land and the DS

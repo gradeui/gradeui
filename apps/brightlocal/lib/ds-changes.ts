@@ -14,6 +14,15 @@ export interface DsChange {
 
 export const DS_CHANGES: DsChange[] = [
   {
+    id: "togglegroupitem-selected-state",
+    title: "ToggleGroupItem's selected state does not show",
+    finding:
+      "ToggleGroupItem marks the on item with data-[state=on]:bg-accent. Wrapped in TooltipTrigger asChild, which is how every icon-only toggle gets its label, the tooltip's own data-state (closed) replaces the toggle's, so the selected style never applies: measured, chart and table items both transparent with the same icon colour. bg-accent is also neutral-100, the item's hover fill and 1.03:1 against the card, so the state would not read even when it applied.",
+    workaround:
+      "app/custom.css keys the state off aria-checked and aria-pressed, which survive the tooltip: the on item takes neutral-200 and the foreground, off items a muted icon.",
+    ask: "Style ToggleGroupItem's on state from aria-checked / aria-pressed (or a data-pressed attribute Tooltip does not own), and give it a fill distinct from hover.",
+  },
+  {
     id: "title-heading-roles",
     title: "Title components drop the heading roles",
     finding:

@@ -677,7 +677,7 @@ function ReviewPerformance() {
     <Card dataHook="review-performance" density="condensed" className="max-w-none">
       <CardHeader className={STICKY_HEADER} style={STICKY_HEADER_STYLE}>
         <div className="flex flex-wrap items-center justify-between gap-5">
-          <CardTitle size="small" dataHook="performance-title">Review Performance</CardTitle>
+          <CardTitle size="small" dataHook="performance-title">Review performance</CardTitle>
 
           <div className="flex flex-wrap items-center gap-1.5">
             <FacetedFilterMenu
@@ -964,6 +964,9 @@ function ReviewPerformance() {
                           className="size-2.5 rounded-[2px]"
                           style={{ background: colourOf[row.id] }}
                         />
+                        {/* Provider logos by default (Ali, 17 Sep), between
+                            the swatch that keys the donut and the name. */}
+                        <SourceMark source={row.id} />
                         <span className="text-sm">{row.name}</span>
                       </span>
                       <span className="text-muted-foreground text-sm tabular-nums">
@@ -1010,7 +1013,10 @@ function ReviewPerformance() {
                           <span className="flex flex-col gap-1">
                             {grouping.grouped.map((row) => (
                               <span key={row.id} className="flex items-center justify-between gap-4">
-                                <span>{row.name}</span>
+                                <span className="flex items-center gap-2">
+                                  <SourceMark source={row.id} />
+                                  {row.name}
+                                </span>
                                 <span className="tabular-nums">{row.value}</span>
                               </span>
                             ))}
@@ -1038,7 +1044,12 @@ function ReviewPerformance() {
                 <TableBody>
                   {activeSources.map((source) => (
                     <TableRow key={source.id}>
-                      <TableCell>{source.name}</TableCell>
+                      <TableCell>
+                        <span className="flex items-center gap-2">
+                          <SourceMark source={source.id} />
+                          {source.name}
+                        </span>
+                      </TableCell>
                       <TableCell align="right" className="tabular-nums">
                         {bySource[source.id]}
                       </TableCell>
