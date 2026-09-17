@@ -271,6 +271,22 @@
   line-height: 1.5rem;
 }
 
+/* A HEADING ROLE ON A DS TITLE WINS. DialogTitle, SheetTitle, DrawerTitle
+   and AlertDialogTitle ship `text-lg leading-none`, and cn() cannot tell the
+   text-heading-* utilities are font sizes, so both classes land and the DS
+   size wins on source order: an insight dialog asked for the section heading
+   and measured 18/18. Opt-in only, so a title with no role keeps the DS size.
+   Not engine-scoped, because a dialog portals out of the engine element.
+   Ledger: /docs/changes, "Title components drop the heading roles". */
+:is([data-slot="dialog-title"], [data-slot="sheet-title"], [data-slot="drawer-title"], [data-slot="alert-dialog-title"]).text-heading-section {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+:is([data-slot="dialog-title"], [data-slot="sheet-title"], [data-slot="drawer-title"], [data-slot="alert-dialog-title"]).text-heading-subsection {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
 /* Inline code inside a sentence: 0.9em of the surrounding text (Figma:
    "text-code-inline"). */
 @utility text-code-inline {

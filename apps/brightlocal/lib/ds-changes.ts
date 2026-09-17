@@ -14,6 +14,15 @@ export interface DsChange {
 
 export const DS_CHANGES: DsChange[] = [
   {
+    id: "title-heading-roles",
+    title: "Title components drop the heading roles",
+    finding:
+      "DialogTitle ships text-lg leading-none font-semibold, and SheetTitle, DrawerTitle and AlertDialogTitle follow the same shape. A call site that adds text-heading-section gets both classes, because cn() only merges the size utilities it knows, and the DS size wins on source order. The insights dialog title measured 18/18 where the Figma rules want the section heading at 20/28.",
+    workaround:
+      "app/custom.css gives a title carrying text-heading-section or text-heading-subsection that role's size and line height, keyed on the title's data-slot. A title with no role keeps the DS size.",
+    ask: "Register the text-heading-* utilities with the tailwind-merge config the components use, so a role class replaces the default size, or give the titles a size prop mapped to the roles.",
+  },
+  {
     id: "cardtitle-type-roles",
     title: "CardTitle does not follow the type roles",
     finding:

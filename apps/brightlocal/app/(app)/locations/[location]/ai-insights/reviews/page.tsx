@@ -18,11 +18,9 @@ import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { statsFor } from "@/lib/reviews-data";
 import { reviewRoadmapFor, type RoadmapStage } from "@/lib/review-roadmap";
-import { BeaconBadge } from "@/components/review-summary";
 import { BeaconNugget } from "@/components/beacon-nugget";
 import { useBeaconModal } from "@/lib/beacon-modal";
 import { ReviewQuoteBand } from "@/components/review-quote";
-import { InsightsPdfButton } from "@/components/insights-pdf";
 
 function Mark({ text, mark }: { text: string; mark: string }) {
   const i = text.indexOf(mark);
@@ -36,7 +34,7 @@ function Mark({ text, mark }: { text: string; mark: string }) {
   );
 }
 
-function Stage({ stage, first }: { stage: RoadmapStage; first: boolean }) {
+function Stage({ stage }: { stage: RoadmapStage }) {
   return (
     <section className="flex flex-col gap-5" data-hook={`roadmap-stage-${stage.id}`}>
       <div className="flex flex-col gap-3">
@@ -45,9 +43,8 @@ function Stage({ stage, first }: { stage: RoadmapStage; first: boolean }) {
             <Flag className="size-3.5 text-muted-foreground" />
             {stage.pill}
           </span>
-          {first ? <BeaconBadge dataHook="roadmap-badge" /> : null}
         </div>
-        <h2 className="text-heading-page font-display max-w-[32ch] text-balance">
+        <h2 className="text-heading-section max-w-[32ch] text-balance">
           <Mark text={stage.goal.text} mark={stage.goal.mark} />
         </h2>
         <p className="text-body max-w-prose text-pretty">{stage.lede}</p>
@@ -133,7 +130,7 @@ export default function ReviewsInsightsPage() {
               this week's plan, the best recent one after this month's. */}
           {stages.map((s, i) => (
             <div key={s.id} className="flex flex-col gap-12">
-              <Stage stage={s} first={i === 0} />
+              <Stage stage={s} />
               {i === 0 ? <ReviewQuoteBand kind="waiting" goto="screen:dmsxf5zjggd0n" /> : null}
               {i === 1 ? <ReviewQuoteBand kind="best" goto="screen:dmt094lhmpwbs" /> : null}
             </div>
@@ -151,7 +148,6 @@ export default function ReviewsInsightsPage() {
                 <Button variant="outline" size="sm" dataHook="roadmap-ask-beacon" onClick={() => modal.show("plan")}>
                   Explain this
                 </Button>
-                <InsightsPdfButton />
                 <Button variant="outline" size="sm" dataHook="roadmap-help-center" asChild>
                   <a href="https://help.brightlocal.com" target="_blank" rel="noreferrer">Help Center</a>
                 </Button>

@@ -262,7 +262,7 @@ export function ReviewSummary({ full = false, bare = false, tilesRow = false }: 
               <span className="text-muted-foreground">AI summary of your reviews, updated today</span>
             </p>
           )}
-          <h2 className="text-metric font-display text-balance" data-hook="review-summary-headline">
+          <h2 className="text-heading-section text-balance" data-hook="review-summary-headline">
             {summary.headline}
           </h2>
           <div className="flex flex-col gap-3">
@@ -356,7 +356,7 @@ export function ReviewSummaryStrip() {
           <BeaconBadge />
           <span className="text-muted-foreground">AI summary, updated today</span>
         </p>
-        <p className="text-metric font-display max-w-[40ch] text-balance" data-hook="review-summary-strip-headline">{summary.headline}</p>
+        <p className="text-heading-section max-w-[40ch] text-balance" data-hook="review-summary-strip-headline">{summary.headline}</p>
         {lead ? (
           <p className="text-body text-foreground max-w-[60ch] text-pretty">
             {lead.segments.map((sg, j) => (
@@ -436,7 +436,7 @@ export function BeaconPageStrip({ page }: { page: BeaconPage }) {
           <BeaconBadge />
           <span className="text-muted-foreground">From this location's reviews, updated today</span>
         </p>
-        <p className="text-metric font-display max-w-[40ch] text-balance" data-hook={`beacon-strip-${page}-headline`}>{b.headline}</p>
+        <p className="text-heading-section max-w-[40ch] text-balance" data-hook={`beacon-strip-${page}-headline`}>{b.headline}</p>
         <p className="text-body text-foreground max-w-[60ch] text-pretty">
           {b.line.map((sg, j) => (
             <Seg key={j} s={sg} />
@@ -476,7 +476,7 @@ export function BeaconPageBlock({ page }: { page: BeaconPage }) {
   return (
     <div className="gds-stagger flex flex-col gap-3" data-hook={`beacon-page-block-${page}`}>
       {/* No eyebrow (Ali, 11 Sep: "classic AI eyebrows"); the header names the page. */}
-      <p className="text-metric font-display text-balance max-w-[40ch]">{b.headline}</p>
+      <p className="text-heading-section text-balance max-w-[40ch]">{b.headline}</p>
       <p className="text-body text-foreground max-w-[60ch] text-pretty">
         {b.line.map((sg, j) => (
           <Seg key={j} s={sg} />

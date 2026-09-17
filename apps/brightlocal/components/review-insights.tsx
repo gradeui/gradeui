@@ -10,7 +10,7 @@
  */
 
 import { Card, CardContent, CardHeader } from "@brightlocal/ui-components/card";
-import { Flag, Target } from "@brightlocal/icons";
+import { Target } from "@brightlocal/icons";
 import { InsightCard } from "@brightlocal/proposal-insights";
 import { usePersona, useDemo } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
@@ -76,14 +76,10 @@ export function ReviewInsights({ bare = false }: { bare?: boolean } = {}) {
               already says Beacon, and the headline already is the goal. */}
           {bare ? null : (
             <div className="flex flex-wrap items-center gap-2">
-              <span data-hook="review-insights-pill" className="inline-flex w-fit items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-label-sm text-foreground">
-                <Flag className="size-3.5 text-muted-foreground" />
-                This week's goal
-              </span>
               <BeaconBadge dataHook="review-insights-badge" />
             </div>
           )}
-          <h2 className="text-metric font-display text-foreground max-w-prose text-pretty" data-hook="review-insights-goal">
+          <h2 className="text-heading-section text-foreground max-w-prose text-pretty" data-hook="review-insights-goal">
             <Mark text={plan.goal.text} mark={plan.goal.mark} />
           </h2>
           {bare ? null : <p className="text-foreground text-body max-w-prose text-pretty">{plan.lede}</p>}
@@ -207,14 +203,13 @@ export function ReviewPlanStrip() {
     <div className="flex min-w-0 flex-1 items-start gap-5">
     <StripArt keywords={["reply", "answer"]} />
     <div className="flex min-w-0 flex-1 flex-col gap-3">
+      {/* No "This week's goal" badge (Ali, 17 Sep: "get rid of any badges that
+          say This week's goal"). The headline under it IS the goal, so the
+          badge was a label for the sentence it sat on top of. */}
       <div className="flex flex-wrap items-center gap-2">
-        <span data-hook="review-plan-strip-pill" className="inline-flex w-fit items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-1.5 py-0.5 text-label-sm text-foreground">
-          <Flag className="size-3 text-muted-foreground" />
-          This week's goal
-        </span>
         <BeaconBadge dataHook="review-plan-strip-badge" />
       </div>
-      <p className="text-metric font-display text-balance max-w-[40ch]" data-hook="review-plan-strip-goal">
+      <p className="text-heading-section text-balance max-w-[40ch]" data-hook="review-plan-strip-goal">
         <Mark text={plan.goal.text} mark={plan.goal.mark} />
       </p>
       {lead ? <p className="text-body text-foreground max-w-[60ch] text-pretty">{lead.strip}</p> : null}

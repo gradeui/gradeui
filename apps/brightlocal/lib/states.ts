@@ -421,14 +421,6 @@ export const STATES: ScreenState[] = [
     note: "The next three months, one stage at a time, in the anatomy of BrightLocal's own twelve-month roadmap: a goal pill, an outcome-led headline with the key phrase marked, a coloured month rail, and Key tactics under it.",
     path: `${M}/ai-insights/reviews`,
   },
-  {
-    id: "insights-02-pdf",
-    section: "insights",
-    title: "As a PDF",
-    note: "The same story rendered for print on the fly, at a standard page size, from the same libraries the screens read. No PDF library: the browser prints it.",
-    path: `${M}/ai-insights/reviews`,
-    steps: [{ scrollTo: "[data-hook=insights-pdf]", wait: 600 }],
-  },
 
   // ── the account ────────────────────────────────────────────────────
   {

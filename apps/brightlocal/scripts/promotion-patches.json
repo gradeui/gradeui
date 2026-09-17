@@ -600,6 +600,11 @@
       "why": "Figma type rules (Ali, 17 Sep): the donut centre is a metric, 24/28 rather than 24/32",
       "find": "<span className=\"text-2xl font-semibold tabular-nums\">{total.toLocaleString(\"en-GB\")}</span>",
       "replace": "<span className=\"text-metric\">{total.toLocaleString(\"en-GB\")}</span>"
+    },
+    {
+      "why": "Figma type rules (Ali, 17 Sep): the timeline titles inside the card take the compact heading, Inter 14/20 semibold",
+      "find": "      <p className=\"text-sm font-medium\">{title}</p>",
+      "replace": "      <p className=\"text-heading-compact\">{title}</p>"
     }
   ],
   "app/(app)/locations/page.jsx": [

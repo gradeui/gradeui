@@ -20,7 +20,6 @@ import { usePersona, useDemo } from "@/lib/demo";
 import { ReviewInsights } from "@/components/review-insights";
 import { pickIllustration } from "@/lib/illustrations";
 import { pageBeaconFor, type BeaconPage } from "@/lib/beacon-pages";
-import { InsightsPdfButton } from "@/components/insights-pdf";
 import { hrefFor } from "@/lib/screens";
 import { useRouter } from "next/navigation";
 
@@ -57,7 +56,6 @@ function ModalCta({ stats, page }: { stats: ReturnType<typeof statsFor>; page?: 
           </Button>
         </span>
       )}
-      <InsightsPdfButton />
     </div>
   );
 }
@@ -96,7 +94,7 @@ export function BeaconModal() {
                 <BeaconBadge dataHook="beacon-modal-badge" />
                 <span className="text-label-sm text-muted-foreground">{locationName}</span>
               </div>
-              <DialogTitle className="text-metric font-sans leading-tight text-balance">{section === "plan" ? "Your plan for this week" : page ? `Insights for your ${PAGE_NAME[page]}` : "Your review insights"}</DialogTitle>
+              <DialogTitle className="text-heading-section text-balance">{section === "plan" ? "Your plan for this week" : page ? `Insights for your ${PAGE_NAME[page]}` : "Your review insights"}</DialogTitle>
             </div>
           </div>
           <DialogDescription className="sr-only">Your AI summary for this location.</DialogDescription>

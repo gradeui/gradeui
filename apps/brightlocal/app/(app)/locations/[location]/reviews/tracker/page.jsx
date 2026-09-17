@@ -1068,7 +1068,7 @@ function ReviewPerformance() {
 function PanTitle({ title }) {
   return (
     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-      <p className="text-sm font-medium">{title}</p>
+      <p className="text-heading-compact">{title}</p>
     </div>
   );
 }

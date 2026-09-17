@@ -25,7 +25,7 @@ export function FirstRunBand({ page }: { page: NuggetPage }) {
           <Sparkles className="size-3.5 text-[var(--ds-tailwind-colors-green-500)]" />
           Why it matters
         </span>
-        <h2 className="text-heading-page font-display max-w-[28ch] text-balance">{fr.headline}</h2>
+        <h2 className="text-heading-section max-w-[28ch] text-balance">{fr.headline}</h2>
         <p className="text-body max-w-[64ch] text-pretty">{fr.lede}</p>
       </div>
       <dl className="grid gap-8 lg:grid-cols-3">

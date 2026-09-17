@@ -67,14 +67,17 @@ export function UpsellStrip({
               headline right, so the column starts tight and does not scroll. */}
           {layout === "column" ? <UpsellArt feature={feature} /> : null}
           <div className={layout === "column" ? "flex flex-col gap-1.5" : "contents"}>
-          {/* In the column the Pro badge goes hard: black, white text (Ali, 11 Sep). */}
+          {/* In the column this sits in a dialog that already wears the
+              Insights badge, so it is a plain line, not a second badge (Ali,
+              17 Sep: "we dont need badge overwhelm"). On a page it is the
+              only badge, so it keeps its outline. */}
           <span className={layout === "column"
-            ? "text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2.5 py-1 font-semibold text-[var(--ds-tailwind-colors-base-white)]"
+            ? "text-label-sm inline-flex w-fit items-center gap-1.5 font-semibold text-foreground"
             : "text-label-sm inline-flex w-fit items-center gap-1.5 rounded-sm border bg-[var(--ds-tailwind-colors-base-white)] px-2 py-0.5 text-foreground"}>
-            <Lock className={layout === "column" ? "size-3" : "size-3 text-muted-foreground"} />
+            <Lock className="size-3 text-muted-foreground" />
             {feature} is part of Pro
           </span>
-          {layout === "column" ? <p className="text-metric font-display text-balance">Let the easy ones answer themselves.</p> : null}
+          {layout === "column" ? <p className="text-heading-section text-balance">Let the easy ones answer themselves.</p> : null}
           </div>
         </div>
         {layout === "column" && !trial ? null : (
@@ -97,7 +100,7 @@ export function UpsellStrip({
           </div>
           {/* The reply is the hero (Ali, 11 Sep: "make more of the reply"). */}
           <div className="flex flex-col gap-3 rounded-lg border-2 border-foreground bg-[var(--ds-tailwind-colors-base-white)] p-5">
-            <p className="flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]"><Sparkles className="size-3.5" />The reply, sent an hour later</p>
+            <p className="flex w-fit items-center gap-1.5 text-label-sm font-semibold text-foreground"><Sparkles className="size-3.5" />The reply, sent an hour later</p>
             <p className="text-body font-semibold text-pretty">“{example.reply}”</p>
           </div>
         </div>

@@ -86,7 +86,7 @@ export function TrialRecapModal() {
                 <BeaconBadge dataHook="trial-recap-badge" />
                 <span className="text-label-sm text-muted-foreground">{persona.accountLabel}</span>
               </div>
-              <DialogTitle className="text-heading-page font-sans leading-tight text-balance">{title}</DialogTitle>
+              <DialogTitle className="text-heading-section text-balance">{title}</DialogTitle>
             </div>
           </div>
         </div>
@@ -96,7 +96,7 @@ export function TrialRecapModal() {
         <div className="grid gap-0 overflow-y-auto lg:grid-cols-[3fr_2fr]">
         <div className="flex flex-col gap-8 px-8 py-8">
           <DialogDescription className="sr-only">{headline}</DialogDescription>
-          <p className="text-metric font-display max-w-[34ch] text-balance">{headline}</p>
+          <p className="text-heading-section max-w-[34ch] text-balance">{headline}</p>
           <div className="grid gap-8">
             <div className="flex flex-col gap-3">
               <p className="text-heading-subsection">{lapsed ? "Since the trial ended" : "What the trial has got you"}</p>
@@ -124,9 +124,9 @@ export function TrialRecapModal() {
                 <span className="text-body-sm text-[var(--ds-tailwind-colors-neutral-400)]">{PLAN.per}</span>
               </p>
               {lapsed ? (
-                <span className="inline-flex w-fit items-center rounded-full bg-[var(--ds-tailwind-colors-green-500)] px-3 py-1 text-label-sm font-semibold text-[var(--ds-tailwind-colors-neutral-950)]">Come back this week: first month half price</span>
+                <p className="text-label-sm font-semibold text-[var(--ds-tailwind-colors-green-500)]">Come back this week: first month half price</p>
               ) : (
-                <span className="inline-flex w-fit items-center rounded-full bg-[var(--ds-tailwind-colors-green-500)] px-2.5 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-neutral-950)]">Saving 21% on annual</span>
+                <p className="text-label-sm font-semibold text-[var(--ds-tailwind-colors-green-500)]">Saving 21% on annual</p>
               )}
               <ul className="mt-2 flex flex-col gap-1">
                 {keeps.map((k) => (
