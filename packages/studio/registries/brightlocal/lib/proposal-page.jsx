@@ -906,13 +906,17 @@ const STAT_TONES = {
     icon: "text-muted-foreground",
     badge: "border-transparent bg-success-background text-success-foreground",
   },
+  // NO COLOUR ON THE NUMBER (Ali, 17 Sep: "Dont colourise the metrics text";
+  // Figma: "Never brand green or any accent colour on type. Text colour
+  // tokens are default, muted and destructive, nothing else"). The tone
+  // still colours the icon and the delta badge, which are not type.
   success: {
-    value: "text-emerald-600",
+    value: "",
     icon: "text-emerald-600",
     badge: "border-transparent bg-success-background text-success-foreground",
   },
   destructive: {
-    value: "text-rose-600",
+    value: "",
     icon: "text-rose-600",
     badge: "border-transparent bg-destructive/10 text-destructive",
   },
@@ -1041,15 +1045,11 @@ export function StatCard({
             </TooltipProvider>
           ) : null}
         </div>
-        {/* A NESTED TILE IS A SMALLER TILE. `level="nested"` already steps
-            the surface down to the neutral tier; the number has to come
-            down with it, or a row of stats sitting INSIDE a module card
-            shouts louder than the card's own title. 30px on the canvas,
-            24px on another card. */}
+        {/* THE FIGMA METRIC STYLE (Ali, 17 Sep): Inter 24/28, semibold,
+            tabular, at both levels. The app spells it text-metric; Studio
+            has no such utility, so the same values as plain classes. */}
         <div className="mt-1 flex items-baseline gap-2">
-          <span
-            className={`font-bold tracking-tight ${level === "nested" ? "text-2xl" : "text-3xl"} ${t.value}`}
-          >
+          <span className={`text-2xl leading-7 font-semibold tabular-nums ${t.value}`}>
             {value}
           </span>
           {delta ? (

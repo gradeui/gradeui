@@ -5180,7 +5180,7 @@ function scaleCampaigns(list, profile) {
 // chart's windows agree with every other number on the screen.
 const SEED_TODAY = new Date(2026, 8, 9);
 
-function CampaignInsights({ campaign, onAllFeedback }) {
+function CampaignInsights({ campaign }) {
   const config = campaign.config;
   const standing = isStanding(config.channel);
   const stats = campaign.stats ?? {};
@@ -5384,17 +5384,21 @@ function CampaignInsights({ campaign, onAllFeedback }) {
           "results" is only meaningful with a period attached, and a standing
           link campaign and a one-shot email campaign date theirs
           differently. */}
-      <Card dataHook="insights-summary-card" className="max-w-none">
-        <CardHeader>
+      <Card dataHook="insights-summary-card" density="condensed" className="max-w-none">
+        {/* THE SAME CARD TITLE AS THE OTHERS (Ali, 17 Sep: the tiles sat "miles
+            away" from their title). The Tracker's header band, a rule under
+            the title and the content close beneath it, instead of the DS
+            default header and the card's gap-8 under it. No subtitle (Ali, 3
+            Sep: the date is already in the page header). */}
+        <CardHeader
+          className="bg-card sticky top-[var(--gds-page-header-height,0px)] z-[5] -mt-3 rounded-t-[inherit] border-b px-6 pt-4 pb-4"
+          style={{ gridTemplateRows: "auto", rowGap: 0 }}
+        >
           <CardTitle size="small" dataHook="insights-summary-title">
             Results
           </CardTitle>
-{/* No subtitle (Ali, 3 Sep: "we don't need this"). The date was
-              already in the page header's own status slot two rows above,
-              so the card was repeating it under a heading that does not
-              need qualifying: Results are the results. */}
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-6 pt-2 pb-6">
           <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
             {tiles.map((t) => (
               <StatCard
@@ -5625,8 +5629,15 @@ function CampaignInsights({ campaign, onAllFeedback }) {
                   style={{ gridTemplateRows: "auto", rowGap: 0 }}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-5">
+                    {/* NAMED FOR WHAT IT MEASURES (Ali, 17 Sep): "Internal
+                        feedback" is now the table of responses, so this card
+                        takes the name of the score it draws. */}
                     <CardTitle size="small" dataHook="insights-feedback-title">
-                      Internal feedback
+                      {config.feedbackType === "nps"
+                        ? "Net Promoter Score"
+                        : config.feedbackType === "thumbs"
+                          ? "Thumbs up or down"
+                          : "Feedback ratings"}
                     </CardTitle>
                     <ViewToggle view={feedbackView} onChange={setFeedbackView} idPrefix="feedback" />
                   </div>
@@ -5711,7 +5722,7 @@ function CampaignInsights({ campaign, onAllFeedback }) {
                             max={100}
                             bands={NPS_BANDS}
                             display={nps}
-                            unit="Net Promoter Score"
+                            unit="score"
                             // ONE SCALE ON SCREEN (Ali, 17 Sep: "0-50 and 50 and above
                             // - but we are one to 10? Weird discrepancy?"). The dial's
                             // legend ranged the SCORE (-100 to 100) right beside rows
@@ -5833,35 +5844,6 @@ function CampaignInsights({ campaign, onAllFeedback }) {
                       )}
                     </div>
                   )}
-                </CardContent>
-              </Card>
-
-              <Card dataHook="insights-recent-feedback" className="max-w-none">
-                <CardHeader>
-                  <CardTitle size="small" dataHook="insights-recent-title">
-                    Recent feedback
-                  </CardTitle>
-                  <CardAction>
-                    <Button variant="outline" size="sm" dataHook="view-all-feedback" onClick={onAllFeedback}>
-                      View all {FEEDBACK_ITEMS.length}
-                    </Button>
-                  </CardAction>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="divide-border divide-y border-t">
-                    {FEEDBACK_ITEMS.slice(0, 6).map((f) => (
-                      <div key={f.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                        <span className="w-24 shrink-0">
-                          <FeedbackScore type={config.feedbackType} score={f.score} />
-                        </span>
-                        <span className="w-28 shrink-0 truncate font-medium">{f.name}</span>
-                        <span className="text-muted-foreground min-w-0 flex-1 truncate">{f.text}</span>
-                        <span className="text-muted-foreground hidden shrink-0 text-xs sm:block">
-                          {formatDate(f.date)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
                 </CardContent>
               </Card>
             </>
@@ -5990,73 +5972,53 @@ function AllFeedback({ campaign }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* PLAIN, NOT CRYPTIC (Ali, 3 Sep: "seems like a cryptic message to
-          me, bad English or not really legible"). It was: "came to you
-          privately through the campaign" describes a MECHANISM, in the
-          passive, and "it is not published anywhere" is a negative that
-          leaves the reader working out what the positive was.
-          The fact that matters is who can see it and where it is not — so
-          it says that, in that order, and names the sites people are
-          actually worried about rather than saying "anywhere". */}
-      <AlertInfo
-        dataHook="feedback-private-note"
-        description="Only you can see this. Customers wrote it on your own feedback page, so none of it appears on Google, Facebook or any other review site."
-      />
-
-      {/* py-0 ON THE CARD (Ali, 2 Sep: "this table has a gap at the top").
-          CardContent was already p-0, but Card's own density="condensed"
-          padding is py-3, so the filter band sat 12px below the card's top
-          edge with a strip of card background above it — which reads as a
-          rendering mistake, because a band that is flush on three sides and
-          not the fourth has no way of reading as deliberate.
-          overflow-hidden keeps the band's square corners inside the card's
-          rounded ones. */}
-      <Card
-        dataHook="all-feedback-card"
-        className="max-w-none overflow-hidden py-0"
-        density="condensed"
-      >
-        <CardContent className="flex flex-col gap-0 p-0">
-          <div className="bg-muted/40 flex flex-wrap items-center gap-2 border-b px-4 py-2">
-            <div className="w-48">
-              <Select value={ratingFilter} onValueChange={setRatingFilter}>
-                <SelectTrigger dataHook="feedback-rating-filter">
-                  <SelectValue placeholder="All ratings" />
-                </SelectTrigger>
-                <SelectContent>
-                  {RATING_OPTIONS.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      {/* INTERNAL FEEDBACK, AS A CARD LIKE THE OTHERS (Ali, 17 Sep: "that would
+          also have to have filters (same table format) - And be Internal
+          feedback"). The Tracker's sticky header band: the title on the
+          left, the filters on the right, so the filters stay in reach while
+          the rows scroll. No card-level overflow-hidden, which would stop the
+          header sticking, and no "Showing N of M": the pagination already
+          counts the filtered rows. */}
+      <Card dataHook="all-feedback-card" className="max-w-none" density="condensed">
+        <CardHeader
+          className="bg-card sticky top-[var(--gds-page-header-height,0px)] z-[5] -mt-3 rounded-t-[inherit] border-b px-6 pt-4 pb-4"
+          style={{ gridTemplateRows: "auto", rowGap: 0 }}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-5">
+            <CardTitle size="small" dataHook="all-feedback-title">
+              Internal feedback
+            </CardTitle>
+            <div className="flex flex-wrap items-center gap-1.5">
+                <div className="w-48">
+                  <Select value={ratingFilter} onValueChange={setRatingFilter}>
+                    <SelectTrigger dataHook="feedback-rating-filter">
+                      <SelectValue placeholder="All ratings" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RATING_OPTIONS.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-56">
+                  <Select value={visitedFilter} onValueChange={setVisitedFilter}>
+                    <SelectTrigger dataHook="feedback-visited-filter">
+                      <SelectValue placeholder="All feedback" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All feedback</SelectItem>
+                      <SelectItem value="yes">Visited a review site</SelectItem>
+                      <SelectItem value="no">Did not visit a review site</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
             </div>
-            <div className="w-56">
-              <Select value={visitedFilter} onValueChange={setVisitedFilter}>
-                <SelectTrigger dataHook="feedback-visited-filter">
-                  <SelectValue placeholder="All feedback" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All feedback</SelectItem>
-                  <SelectItem value="yes">Visited a review site</SelectItem>
-                  <SelectItem value="no">Did not visit a review site</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <span className="grow" />
-            {/* NO CTA IN THE FILTER BAND (Ali, 2 Sep: "we would not also have
-                a CTA in the table header"). A "Download testimonials" button
-                lived here, and it was wrong twice over: a filter band is for
-                narrowing what you are looking at, not for acting on the whole
-                dataset, and the page header's own Download already offers
-                testimonials alongside CSV and PDF. One control, in the place
-                that acts on the campaign. The count stays — it describes the
-                filters, which is exactly what belongs in this band. */}
-            <span className="text-muted-foreground text-sm">
-              Showing {rows.length} of {FEEDBACK_ITEMS.length}
-            </span>
           </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-0 p-0">
 
           {/* DELEGATED, BECAUSE DataTable HAS NO onRowClick. Its props are
               table / dataHook / isLoading / noResultsMessage / stickyHeader /
@@ -6068,6 +6030,9 @@ function AllFeedback({ campaign }) {
               <button> in the Feedback cell, whose click bubbles to this same
               handler. Both open the same drawer. */}
           <div
+            // The column labels stick under the card's sticky header, not
+            // under the page's: the page header's height plus the band's.
+            style={{ "--th-top": "calc(var(--gds-page-header-height, 0px) + 69px)" }}
             onClick={(e) => {
               const tr = e.target.closest?.("tbody tr");
               const hook = tr?.querySelector("[data-hook^='feedback-row-']");
@@ -6746,29 +6711,15 @@ export default function RMReviewBuilderPage() {
               Two SCREENS is still not an option: goto carries a screen id and
               nothing else, so it cannot say WHICH campaign to open. */}
           {onCampaign ? (
-            <Tabs value={campaignTab} onValueChange={setCampaignTab} dataHook="campaign-tabs">
-              <TabsList dataHook="campaign-tabs-list">
-                <TabsTrigger value="summary" dataHook="campaign-tab-summary">
-                  Summary
-                </TabsTrigger>
-                <TabsTrigger value="feedback" dataHook="campaign-tab-feedback">
-                  All feedback
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="summary" dataHook="campaign-summary-panel">
-                <div className="pt-4">
-                  <CampaignInsights
-                    campaign={active}
-                    onAllFeedback={() => setCampaignTab("feedback")}
-                  />
-                </div>
-              </TabsContent>
-              <TabsContent value="feedback" dataHook="campaign-feedback-panel">
-                <div className="pt-4">
-                  <AllFeedback campaign={active} />
-                </div>
-              </TabsContent>
-            </Tabs>
+            <div className="flex flex-col gap-4 pt-4" data-hook="campaign-summary-panel">
+              {/* ONE PAGE, NO TABS (Ali, 17 Sep: "bring All feedback directly
+                  into the page"). The feedback table is Internal feedback, a
+                  card on the page like every other, and a Recent feedback
+                  preview of the same rows has nothing left to preview. A
+                  campaign that asks for no feedback has no card for it. */}
+              <CampaignInsights campaign={active} />
+              {active.config.ask === "feedback" ? <AllFeedback campaign={active} /> : null}
+            </div>
           ) : null}
 
           {/* Inside the shell on purpose: the customer pages read the business

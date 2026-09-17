@@ -271,6 +271,23 @@
   line-height: 1.5rem;
 }
 
+/* LIGHT-DARK() NEEDS A DECLARED COLOR-SCHEME. The build (lightningcss) rewrites
+   every light-dark(a, b) into var(--lightningcss-light, a) var(--lightningcss-dark, b)
+   and only defines those two switches where a STYLESHEET sets color-scheme.
+   The app set it from JavaScript (lib/demo.tsx, an inline style), so neither
+   switch existed and every light-dark() colour computed to transparent:
+   measured on the campaign page, the nested StatCard tiles' neutral-100 fill
+   (Ali, 17 Sep: "These cards should be like neutral 100"), and the same for the
+   shell tweaker's panel and every other light-dark() class. Declaring the
+   scheme here lets the build define the switches; the inline style still
+   follows the appearance setting. */
+:root {
+  color-scheme: light;
+}
+:root.dark {
+  color-scheme: dark;
+}
+
 /* A TOGGLE GROUP SHOWS WHICH ITEM IS ON (Ali, 17 Sep: "there is no selected
    state in the chart/table toggle"). Two faults stack. The DS styles the on
    item with data-[state=on]:bg-accent, but every chart/table item sits in a
