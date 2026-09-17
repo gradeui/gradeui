@@ -2177,9 +2177,11 @@ function ReviewsInbox() {
               drawer is `inset-y-0 h-full`, so on iOS these buttons sit under
               the home indicator. flex-row because DrawerFooter is flex-col:
               it is shaped for stacked confirm/cancel buttons, and these are
-              a toolbar. */}
+              a toolbar. justify-end because the DS SheetFooter right-aligns
+              its buttons (sm:justify-end), and this panel should match it
+              (Ali, 17 Sep). */}
           {canReply(active) ? (
-          <DrawerFooter className="max-w-none flex-row items-center border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <DrawerFooter className="max-w-none flex-row items-center justify-end border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <ReplyActions
               review={active}
               draft={draft}

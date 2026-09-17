@@ -1577,7 +1577,7 @@ export function RankGrid({
 //                navigates by screen id through data-grade-goto)
 //   title        the header's own children
 //   description  GlobalLayoutSubtitle
-//   date         lastUpdated / statusRight, muted, leading the actions
+//   date         lastUpdated / statusRight, muted, under the actions
 //                (the DS has no status row; this is the nearest slot)
 //   actions      GlobalLayoutContentActions (buttons at their own size)
 // What it cannot: the utility slot (help), the reserved status row that
@@ -1653,10 +1653,14 @@ function NativePageHeader({
       {description ? (
         <GlobalLayoutSubtitle dataHook={`${dataHook}-description`}>{description}</GlobalLayoutSubtitle>
       ) : null}
+      {/* The date goes UNDER the buttons, right-aligned with them (Ali, 17 Sep:
+          "it should be below"). The DS actions slot is one flex row, so the
+          date used to sit to the left of the buttons as if it were one. On
+          narrow screens the slot drops under the title and both left-align. */}
       {date || actions ? (
-        <GlobalLayoutContentActions dataHook={`${dataHook}-actions`}>
+        <GlobalLayoutContentActions dataHook={`${dataHook}-actions`} className="flex-col items-start gap-2 md:items-end">
+          {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
           {date}
-          {actions}
         </GlobalLayoutContentActions>
       ) : null}
     </GlobalLayoutContentHeader>
