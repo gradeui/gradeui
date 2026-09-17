@@ -30,7 +30,7 @@ export interface RecordedVideo {
 export const RECORDED: RecordedVideo[] = [
   {
     "slug": "day-one-to-habit",
-    "duration": 62.23,
+    "duration": 61.97,
     "chapters": [
       {
         "id": "day-one-to-habit--01-persona-empty",
@@ -38,7 +38,7 @@ export const RECORDED: RecordedVideo[] = [
         "title": "Signed up, looking around",
         "description": "Nothing connected, nothing in. What does the product say to someone with no reviews?",
         "t": 0,
-        "end": 14.63,
+        "end": 14.62,
         "thumb": "/videos/thumbs/day-one-to-habit--01-persona-empty.jpg"
       },
       {
@@ -46,8 +46,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-starter",
         "title": "On a free trial",
         "description": "Google connected, four reviews in, nobody answered. The trial has to earn its keep.",
-        "t": 14.63,
-        "end": 34.81,
+        "t": 14.62,
+        "end": 35.1,
         "thumb": "/videos/thumbs/day-one-to-habit--02-persona-starter.jpg"
       },
       {
@@ -55,8 +55,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-engaged",
         "title": "A single location, engaged",
         "description": "Campaigns running, replies flowing, and a rating that is hard to move.",
-        "t": 34.81,
-        "end": 50.39,
+        "t": 35.1,
+        "end": 50.68,
         "thumb": "/videos/thumbs/day-one-to-habit--03-persona-engaged.jpg"
       },
       {
@@ -64,8 +64,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "roadmap",
         "title": "Insights & Actions",
         "description": "The next three months, one stage at a time.",
-        "t": 50.39,
-        "end": 58.31,
+        "t": 50.68,
+        "end": 58.14,
         "thumb": "/videos/thumbs/day-one-to-habit--04-roadmap.jpg"
       },
       {
@@ -73,45 +73,45 @@ export const RECORDED: RecordedVideo[] = [
         "card": "end",
         "title": "Insights exploration",
         "description": "What could be possible with contextual AI insights",
-        "t": 58.31,
-        "end": 62.23,
+        "t": 58.14,
+        "end": 61.97,
         "thumb": "/videos/thumbs/day-one-to-habit--05-end.jpg"
       }
     ],
     "transcript": [
       {
-        "t": 2.632,
-        "end": 6.093,
+        "t": 2.641,
+        "end": 6.07,
         "text": "No reviews, no sites connected, nothing to summarise."
       },
       {
-        "t": 6.093,
-        "end": 11.415,
+        "t": 6.07,
+        "end": 11.402,
         "text": "So it says why it matters, with a number you can cite."
       },
       {
-        "t": 11.415,
-        "end": 14.628,
+        "t": 11.402,
+        "end": 14.621,
         "text": "And one thing to do today: a code for the till."
       },
       {
-        "t": 20.042,
-        "end": 24.447,
+        "t": 20.019,
+        "end": 25.243,
         "text": "A week in. Four reviews, and a chart that will not lie about them."
       },
       {
-        "t": 24.447,
-        "end": 34.814,
+        "t": 25.243,
+        "end": 35.101,
         "text": "Too few for a trend, so it lists them instead."
       },
       {
-        "t": 40.246,
-        "end": 50.386,
+        "t": 40.543,
+        "end": 50.682,
         "text": "Eight months in, and now the six months mean something."
       },
       {
-        "t": 52.79,
-        "end": 58.309,
+        "t": 53.089,
+        "end": 58.138,
         "text": "Make reviews a habit, not a project."
       }
     ],
@@ -120,15 +120,15 @@ export const RECORDED: RecordedVideo[] = [
   },
   {
     "slug": "insights-overview",
-    "duration": 100.97,
+    "duration": 100.22999999999999,
     "chapters": [
       {
         "id": "insights-overview--01-beacon",
         "card": "beacon",
         "title": "Contextual Insights & Actions",
         "description": "Like someone sat next to you, telling you what to do about your reviews.",
-        "t": 0.23,
-        "end": 3.24,
+        "t": 0,
+        "end": 2.66,
         "thumb": "/videos/thumbs/insights-overview--01-beacon.jpg"
       },
       {
@@ -136,8 +136,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-empty",
         "title": "Signed up, looking around",
         "description": "Nothing connected, nothing in. What does the product say to someone with no reviews?",
-        "t": 3.24,
-        "end": 15.21,
+        "t": 2.66,
+        "end": 14.61,
         "thumb": "/videos/thumbs/insights-overview--02-persona-empty.jpg"
       },
       {
@@ -145,8 +145,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-starter",
         "title": "On a free trial",
         "description": "Google connected, four reviews in, nobody answered. The trial has to earn its keep.",
-        "t": 15.21,
-        "end": 44.54,
+        "t": 14.61,
+        "end": 45.44,
         "thumb": "/videos/thumbs/insights-overview--03-persona-starter.jpg"
       },
       {
@@ -154,8 +154,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-engaged",
         "title": "A single location, engaged",
         "description": "Campaigns running, replies flowing, and a rating that is hard to move.",
-        "t": 44.54,
-        "end": 65.08,
+        "t": 45.44,
+        "end": 65.33,
         "thumb": "/videos/thumbs/insights-overview--04-persona-engaged.jpg"
       },
       {
@@ -163,8 +163,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-multi",
         "title": "A multi-location brand",
         "description": "Customers compare Hove with Brighton, and their reviews say so.",
-        "t": 65.08,
-        "end": 84.64,
+        "t": 65.33,
+        "end": 83.83,
         "thumb": "/videos/thumbs/insights-overview--05-persona-multi.jpg"
       },
       {
@@ -172,8 +172,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-lapsed",
         "title": "The trial ended",
         "description": "Reviews still arriving, nobody watching. How do we bring them back?",
-        "t": 84.64,
-        "end": 97.13,
+        "t": 83.83,
+        "end": 96.36,
         "thumb": "/videos/thumbs/insights-overview--06-persona-lapsed.jpg"
       },
       {
@@ -181,50 +181,50 @@ export const RECORDED: RecordedVideo[] = [
         "card": "end",
         "title": "Insights exploration",
         "description": "What could be possible with contextual AI insights",
-        "t": 97.13,
-        "end": 100.97,
+        "t": 96.36,
+        "end": 100.22999999999999,
         "thumb": "/videos/thumbs/insights-overview--07-end.jpg"
       }
     ],
     "transcript": [
       {
-        "t": 8.656,
-        "end": 15.215,
+        "t": 8.064,
+        "end": 14.613,
         "text": "Day one. Nothing connected, nothing in."
       },
       {
-        "t": 20.663,
-        "end": 23.875,
+        "t": 20.042,
+        "end": 24.093,
         "text": "Three days left on the trial."
       },
       {
-        "t": 23.875,
-        "end": 30.48,
+        "t": 24.093,
+        "end": 30.707,
         "text": "What the trial has found so far."
       },
       {
-        "t": 30.48,
-        "end": 38.192,
+        "t": 30.707,
+        "end": 39.092,
         "text": "The plan for the week."
       },
       {
-        "t": 38.192,
-        "end": 44.539,
+        "t": 39.092,
+        "end": 45.442,
         "text": "And what auto-reply would have written, on one of their own reviews."
       },
       {
-        "t": 49.963,
-        "end": 65.075,
+        "t": 50.85,
+        "end": 65.325,
         "text": "Eight months in. What moved, and why."
       },
       {
-        "t": 71.04,
-        "end": 84.645,
+        "t": 70.742,
+        "end": 83.827,
         "text": "Customers compare Hove with Brighton, and their reviews say so."
       },
       {
-        "t": 90.045,
-        "end": 97.126,
+        "t": 89.253,
+        "end": 96.365,
         "text": "Nine days after the trial ended."
       }
     ],
@@ -233,7 +233,7 @@ export const RECORDED: RecordedVideo[] = [
   },
   {
     "slug": "insights-popovers",
-    "duration": 92.13,
+    "duration": 93.87,
     "chapters": [
       {
         "id": "insights-popovers--01-popovers",
@@ -250,7 +250,7 @@ export const RECORDED: RecordedVideo[] = [
         "title": "The summary",
         "description": "One headline, one line, and the findings you can open.",
         "t": 2.61,
-        "end": 20.14,
+        "end": 20.13,
         "thumb": "/videos/thumbs/insights-popovers--02-summary.jpg"
       },
       {
@@ -258,8 +258,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "plan",
         "title": "The plan",
         "description": "This week's goal, and what auto-reply would have written.",
-        "t": 20.14,
-        "end": 30.93,
+        "t": 20.13,
+        "end": 30.92,
         "thumb": "/videos/thumbs/insights-popovers--03-plan.jpg"
       },
       {
@@ -267,8 +267,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "tracker",
         "title": "The Tracker",
         "description": "The trend across every review site, and what moved it.",
-        "t": 30.93,
-        "end": 42.38,
+        "t": 30.92,
+        "end": 43.08,
         "thumb": "/videos/thumbs/insights-popovers--04-tracker.jpg"
       },
       {
@@ -276,8 +276,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "builder",
         "title": "The Builder",
         "description": "Asking is the only thing that moves the count.",
-        "t": 42.38,
-        "end": 52.81,
+        "t": 43.08,
+        "end": 54.1,
         "thumb": "/videos/thumbs/insights-popovers--05-builder.jpg"
       },
       {
@@ -285,8 +285,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "qr",
         "title": "The QR code",
         "description": "Generated on the page, sized for the till or the door.",
-        "t": 52.81,
-        "end": 64.84,
+        "t": 54.1,
+        "end": 66.16,
         "thumb": "/videos/thumbs/insights-popovers--06-qr.jpg"
       },
       {
@@ -294,8 +294,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "showcase",
         "title": "The Showcase",
         "description": "Your best reviews, and what they are worth on your own site.",
-        "t": 64.84,
-        "end": 75.39,
+        "t": 66.16,
+        "end": 76.63,
         "thumb": "/videos/thumbs/insights-popovers--07-showcase.jpg"
       },
       {
@@ -303,8 +303,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "trial",
         "title": "On a trial",
         "description": "Three days left, and what the trial has found so far.",
-        "t": 75.39,
-        "end": 81.88,
+        "t": 76.63,
+        "end": 83.55,
         "thumb": "/videos/thumbs/insights-popovers--08-trial.jpg"
       },
       {
@@ -312,8 +312,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "lapsed",
         "title": "After it ended",
         "description": "Nine days on, with reviews still arriving and nobody watching.",
-        "t": 81.88,
-        "end": 88.31,
+        "t": 83.55,
+        "end": 89.99,
         "thumb": "/videos/thumbs/insights-popovers--09-lapsed.jpg"
       },
       {
@@ -321,55 +321,55 @@ export const RECORDED: RecordedVideo[] = [
         "card": "end",
         "title": "Insights exploration",
         "description": "What could be possible with contextual AI insights",
-        "t": 88.31,
-        "end": 92.13,
+        "t": 89.99,
+        "end": 93.87,
         "thumb": "/videos/thumbs/insights-popovers--10-end.jpg"
       }
     ],
     "transcript": [
       {
-        "t": 2.616,
-        "end": 15.969,
+        "t": 2.613,
+        "end": 15.957,
         "text": "1. The summary. One headline, one line, and the findings you can open."
       },
       {
-        "t": 15.969,
-        "end": 20.144,
+        "t": 15.957,
+        "end": 20.127,
         "text": "Every finding ends in the thing that fixes it."
       },
       {
-        "t": 20.146,
-        "end": 30.928,
+        "t": 20.132,
+        "end": 30.921,
         "text": "2. The plan, and what auto-reply would have written."
       },
       {
-        "t": 30.93,
-        "end": 42.38,
+        "t": 30.922,
+        "end": 43.083,
         "text": "3. The Tracker. The charts cycle on their own."
       },
       {
-        "t": 42.381,
-        "end": 52.814,
+        "t": 43.087,
+        "end": 54.097,
         "text": "4. The Builder. Asking is the only thing that moves the count."
       },
       {
-        "t": 52.815,
-        "end": 64.845,
+        "t": 54.1,
+        "end": 66.158,
         "text": "5. And the QR code, generated on the page."
       },
       {
-        "t": 64.847,
-        "end": 75.394,
+        "t": 66.164,
+        "end": 76.631,
         "text": "6. The Showcase, and what the reviews are worth."
       },
       {
-        "t": 75.395,
-        "end": 81.878,
+        "t": 76.633,
+        "end": 83.555,
         "text": "7. Three days left on the trial, and what it found."
       },
       {
-        "t": 81.879,
-        "end": 88.307,
+        "t": 83.557,
+        "end": 89.991,
         "text": "8. And nine days after it ended."
       }
     ],
@@ -562,7 +562,7 @@ export const RECORDED: RecordedVideo[] = [
   },
   {
     "slug": "the-trial",
-    "duration": 52.7,
+    "duration": 52.73,
     "chapters": [
       {
         "id": "the-trial--01-persona-starter",
@@ -570,7 +570,7 @@ export const RECORDED: RecordedVideo[] = [
         "title": "On a free trial",
         "description": "Google connected, four reviews in, nobody answered. The trial has to earn its keep.",
         "t": 0,
-        "end": 21,
+        "end": 20.95,
         "thumb": "/videos/thumbs/the-trial--01-persona-starter.jpg"
       },
       {
@@ -578,8 +578,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "account",
         "title": "Subscription and pricing",
         "description": "What the trial got you, what stops, and the way up.",
-        "t": 21,
-        "end": 33.05,
+        "t": 20.95,
+        "end": 32.99,
         "thumb": "/videos/thumbs/the-trial--02-account.jpg"
       },
       {
@@ -587,8 +587,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-lapsed",
         "title": "The trial ended",
         "description": "Reviews still arriving, nobody watching. How do we bring them back?",
-        "t": 33.05,
-        "end": 48.82,
+        "t": 32.99,
+        "end": 48.86,
         "thumb": "/videos/thumbs/the-trial--03-persona-lapsed.jpg"
       },
       {
@@ -596,40 +596,40 @@ export const RECORDED: RecordedVideo[] = [
         "card": "end",
         "title": "Insights exploration",
         "description": "What could be possible with contextual AI insights",
-        "t": 48.82,
-        "end": 52.7,
+        "t": 48.86,
+        "end": 52.73,
         "thumb": "/videos/thumbs/the-trial--04-end.jpg"
       }
     ],
     "transcript": [
       {
-        "t": 2.656,
-        "end": 7.268,
+        "t": 2.643,
+        "end": 7.252,
         "text": "Three days left."
       },
       {
-        "t": 7.268,
-        "end": 15.649000000000001,
+        "t": 7.252,
+        "end": 15.582,
         "text": "Four reviews in, none answered."
       },
       {
-        "t": 15.649000000000001,
-        "end": 20.998,
+        "t": 15.582,
+        "end": 20.948,
         "text": "And what auto-reply would have written, on one of their own reviews."
       },
       {
-        "t": 23.401,
-        "end": 33.048,
+        "t": 23.354,
+        "end": 32.992,
         "text": "What the trial got them, and what stops."
       },
       {
-        "t": 38.455,
-        "end": 43.875,
+        "t": 38.458,
+        "end": 43.977,
         "text": "Nine days later. Four more reviews, nobody watching."
       },
       {
-        "t": 43.875,
-        "end": 48.818,
+        "t": 43.977,
+        "end": 48.856,
         "text": "So the win-back says exactly that."
       }
     ],
