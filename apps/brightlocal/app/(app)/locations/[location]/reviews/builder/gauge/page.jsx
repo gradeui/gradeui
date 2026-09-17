@@ -606,21 +606,24 @@ function seedTemplates() {
 // Internal feedback for the insights page. score is a 0 to 10 value; the
 // thumbs and stars campaigns derive their display from the same number, so
 // one dataset serves all three feedback types.
+// NO NAMES (Ali, 17 Sep: "we wouldn't get the user name as we didnt request
+// it"). The feedback form asks for a score, the text and an optional email,
+// so a response is its email or Anonymous, never a first name.
 const FEEDBACK_ITEMS = [
-  { id: 1, name: "Sophie H.", email: "sophie.hart@example.com", visited: true, date: "2026-08-31", score: 10, consent: true, text: "Wonderful day out. The lamb feeding was the highlight for our two." },
-  { id: 2, name: "Dan P.", email: "dan.pryce@example.com", visited: true, date: "2026-08-30", score: 9, consent: true, text: "Really smooth booking and friendly staff at the gate." },
-  { id: 3, name: "Anonymous", email: null, visited: false, date: "2026-08-30", score: 4, consent: false, text: "Cafe queue was far too long at lunch, and nowhere to sit inside when it rained. We waited nearly forty minutes for two sandwiches and a coffee. The food itself was decent, but you need more tills open during school holidays." },
-  { id: 4, name: "Priya N.", email: "priya.n@example.com", visited: false, date: "2026-08-29", score: 8, consent: false, text: "Lovely animals and clean grounds. Parking fills up fast on weekends." },
-  { id: 5, name: "Megan F.", email: "megan.f@example.com", visited: true, date: "2026-08-28", score: 10, consent: true, text: "The owl encounter made my daughter's whole week." },
-  { id: 6, name: "Tom B.", email: "tom.bailey@example.com", visited: false, date: "2026-08-27", score: 7, consent: false, text: "Good value overall, though a couple of attractions were closed on the day." },
-  { id: 7, name: "Rachel W.", email: "rachel.webb@example.com", visited: true, date: "2026-08-26", score: 9, consent: true, text: "Staff could not have been more helpful when our buggy wheel broke. One of the team fetched a toolkit and fixed it while we fed the goats." },
-  { id: 8, name: "Anonymous", email: null, visited: false, date: "2026-08-26", score: 3, consent: false, text: "Advertised tractor ride was not running and no one told us at entry." },
-  { id: 9, name: "Ollie S.", email: "ollie.shaw@example.com", visited: true, date: "2026-08-26", score: 10, consent: true, text: "Best farm park in the area. The maize maze alone is worth the ticket." },
-  { id: 10, name: "Hannah K.", email: "hannah.kerr@example.com", visited: false, date: "2026-08-25", score: 8, consent: false, text: "Picnic areas are great. A bit more shade would make it perfect." },
-  { id: 11, name: "Ben C.", email: "ben.clark@example.com", visited: true, date: "2026-08-24", score: 9, consent: true, text: "Pig racing is very funny. The kids want to come back already." },
-  { id: 12, name: "Laura M.", email: "laura.mills@example.com", visited: false, date: "2026-08-23", score: 6, consent: false, text: "Fine visit but the ice cream kiosk still does not take card." },
-  { id: 13, name: "Jack T.", email: "jack.t@example.com", visited: true, date: "2026-08-22", score: 10, consent: true, text: "Season pass paid for itself in two visits." },
-  { id: 14, name: "Katie R.", email: "katie.reid@example.com", visited: true, date: "2026-08-21", score: 9, consent: false, text: "Really well organised birthday party package, thank you." },
+  { id: 1, email: "sophie.hart@example.com", visited: true, date: "2026-08-31", score: 10, consent: true, text: "Wonderful day out. The lamb feeding was the highlight for our two." },
+  { id: 2, email: "dan.pryce@example.com", visited: true, date: "2026-08-30", score: 9, consent: true, text: "Really smooth booking and friendly staff at the gate." },
+  { id: 3, email: null, visited: false, date: "2026-08-30", score: 4, consent: false, text: "Cafe queue was far too long at lunch, and nowhere to sit inside when it rained. We waited nearly forty minutes for two sandwiches and a coffee. The food itself was decent, but you need more tills open during school holidays." },
+  { id: 4, email: "priya.natarajan-whitworth@riverside-family-holidays.co.uk", visited: false, date: "2026-08-29", score: 8, consent: false, text: "Lovely animals and clean grounds. Parking fills up fast on weekends." },
+  { id: 5, email: "megan.f@example.com", visited: true, date: "2026-08-28", score: 10, consent: true, text: "The owl encounter made my daughter's whole week." },
+  { id: 6, email: "tom.bailey@example.com", visited: false, date: "2026-08-27", score: 7, consent: false, text: "Good value overall, though a couple of attractions were closed on the day." },
+  { id: 7, email: "rachel.webb@example.com", visited: true, date: "2026-08-26", score: 9, consent: true, text: "Staff could not have been more helpful when our buggy wheel broke. One of the team fetched a toolkit and fixed it while we fed the goats." },
+  { id: 8, email: null, visited: false, date: "2026-08-26", score: 3, consent: false, text: "Advertised tractor ride was not running and no one told us at entry." },
+  { id: 9, email: "ollie.shaw@example.com", visited: true, date: "2026-08-26", score: 10, consent: true, text: "Best farm park in the area. The maize maze alone is worth the ticket." },
+  { id: 10, email: "hannah.kerr@example.com", visited: false, date: "2026-08-25", score: 8, consent: false, text: "Picnic areas are great. A bit more shade would make it perfect." },
+  { id: 11, email: "ben.clark@example.com", visited: true, date: "2026-08-24", score: 9, consent: true, text: "Pig racing is very funny. The kids want to come back already." },
+  { id: 12, email: "laura.mills@example.com", visited: false, date: "2026-08-23", score: 6, consent: false, text: "Fine visit but the ice cream kiosk still does not take card." },
+  { id: 13, email: "jack.t@example.com", visited: true, date: "2026-08-22", score: 10, consent: true, text: "Season pass paid for itself in two visits." },
+  { id: 14, email: "katie.reid@example.com", visited: true, date: "2026-08-21", score: 9, consent: false, text: "Really well organised birthday party package, thank you." },
 ];
 
 const CSV_PREVIEW = [
@@ -4470,10 +4473,12 @@ function AllFeedback({ campaign }) {
                   {/* Plain text, not a link: the ROW is the button, and an
                       anchor inside a button is invalid markup. The real
                       mailto link lives in the expanded panel below. */}
-                  <span className="w-52 shrink-0 truncate">
-                    {f.email ? f.email : <span className="text-muted-foreground">Anonymous</span>}
+                  {/* Feedback first (Ali, 17 Sep: "the review text is arguably the
+                      most important"); who wrote it follows, muted and capped. */}
+                  <span className="min-w-0 flex-1 truncate">{f.text}</span>
+                  <span className="text-muted-foreground w-44 shrink-0 truncate" title={f.email ?? undefined}>
+                    {f.email ? f.email : "Anonymous"}
                   </span>
-                  <span className="text-muted-foreground min-w-0 flex-1 truncate">{f.text}</span>
                   {f.consent ? (
                     <Badge dataHook={`feedback-consent-${f.id}`} variant="secondary">
                       Testimonial
@@ -4487,7 +4492,6 @@ function AllFeedback({ campaign }) {
                   <div className="bg-muted/30 flex flex-col gap-2 border-t px-4 py-3 text-sm">
                     <p>{f.text}</p>
                     <div className="text-muted-foreground flex flex-wrap gap-4 text-xs">
-                      <span>{f.name}</span>
                       <span>
                         {f.visited ? "Visited a review site" : "Did not visit a review site"}
                       </span>

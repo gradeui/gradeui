@@ -793,21 +793,24 @@ function seedTemplates() {
 // Internal feedback for the insights page. score is a 0 to 10 value; the
 // thumbs and stars campaigns derive their display from the same number, so
 // one dataset serves all three feedback types.
+// NO NAMES (Ali, 17 Sep: "we wouldn't get the user name as we didnt request
+// it"). The feedback form asks for a score, the text and an optional email,
+// so a response is its email or Anonymous, never a first name.
 const FEEDBACK_ITEMS = [
-  { id: 1, name: "Sophie H.", email: "sophie.hart@example.com", visited: true, date: "2026-08-31", score: 10, consent: true, text: "Wonderful day out. The lamb feeding was the highlight for our two." },
-  { id: 2, name: "Dan P.", email: "dan.pryce@example.com", visited: true, date: "2026-08-30", score: 9, consent: true, text: "Really smooth booking and friendly staff at the gate." },
-  { id: 3, name: "Anonymous", email: null, visited: false, date: "2026-08-30", score: 4, consent: false, text: "Cafe queue was far too long at lunch, and nowhere to sit inside when it rained. We waited nearly forty minutes for two sandwiches and a coffee. The food itself was decent, but you need more tills open during school holidays." },
-  { id: 4, name: "Priya N.", email: "priya.n@example.com", visited: false, date: "2026-08-29", score: 8, consent: false, text: "Lovely animals and clean grounds. Parking fills up fast on weekends." },
-  { id: 5, name: "Megan F.", email: "megan.f@example.com", visited: true, date: "2026-08-28", score: 10, consent: true, text: "The owl encounter made my daughter's whole week." },
-  { id: 6, name: "Tom B.", email: "tom.bailey@example.com", visited: false, date: "2026-08-27", score: 7, consent: false, text: "Good value overall, though a couple of attractions were closed on the day." },
-  { id: 7, name: "Rachel W.", email: "rachel.webb@example.com", visited: true, date: "2026-08-26", score: 9, consent: true, text: "Staff could not have been more helpful when our buggy wheel broke. One of the team fetched a toolkit and fixed it while we fed the goats." },
-  { id: 8, name: "Anonymous", email: null, visited: false, date: "2026-08-26", score: 3, consent: false, text: "Advertised tractor ride was not running and no one told us at entry." },
-  { id: 9, name: "Ollie S.", email: "ollie.shaw@example.com", visited: true, date: "2026-08-26", score: 10, consent: true, text: "Best farm park in the area. The maize maze alone is worth the ticket." },
-  { id: 10, name: "Hannah K.", email: "hannah.kerr@example.com", visited: false, date: "2026-08-25", score: 8, consent: false, text: "Picnic areas are great. A bit more shade would make it perfect." },
-  { id: 11, name: "Ben C.", email: "ben.clark@example.com", visited: true, date: "2026-08-24", score: 9, consent: true, text: "Pig racing is very funny. The kids want to come back already." },
-  { id: 12, name: "Laura M.", email: "laura.mills@example.com", visited: false, date: "2026-08-23", score: 6, consent: false, text: "Fine visit but the ice cream kiosk still does not take card." },
-  { id: 13, name: "Jack T.", email: "jack.t@example.com", visited: true, date: "2026-08-22", score: 10, consent: true, text: "Season pass paid for itself in two visits." },
-  { id: 14, name: "Katie R.", email: "katie.reid@example.com", visited: true, date: "2026-08-21", score: 9, consent: false, text: "Really well organised birthday party package, thank you." },
+  { id: 1, email: "sophie.hart@example.com", visited: true, date: "2026-08-31", score: 10, consent: true, text: "Wonderful day out. The lamb feeding was the highlight for our two." },
+  { id: 2, email: "dan.pryce@example.com", visited: true, date: "2026-08-30", score: 9, consent: true, text: "Really smooth booking and friendly staff at the gate." },
+  { id: 3, email: null, visited: false, date: "2026-08-30", score: 4, consent: false, text: "Cafe queue was far too long at lunch, and nowhere to sit inside when it rained. We waited nearly forty minutes for two sandwiches and a coffee. The food itself was decent, but you need more tills open during school holidays." },
+  { id: 4, email: "priya.natarajan-whitworth@riverside-family-holidays.co.uk", visited: false, date: "2026-08-29", score: 8, consent: false, text: "Lovely animals and clean grounds. Parking fills up fast on weekends." },
+  { id: 5, email: "megan.f@example.com", visited: true, date: "2026-08-28", score: 10, consent: true, text: "The owl encounter made my daughter's whole week." },
+  { id: 6, email: "tom.bailey@example.com", visited: false, date: "2026-08-27", score: 7, consent: false, text: "Good value overall, though a couple of attractions were closed on the day." },
+  { id: 7, email: "rachel.webb@example.com", visited: true, date: "2026-08-26", score: 9, consent: true, text: "Staff could not have been more helpful when our buggy wheel broke. One of the team fetched a toolkit and fixed it while we fed the goats." },
+  { id: 8, email: null, visited: false, date: "2026-08-26", score: 3, consent: false, text: "Advertised tractor ride was not running and no one told us at entry." },
+  { id: 9, email: "ollie.shaw@example.com", visited: true, date: "2026-08-26", score: 10, consent: true, text: "Best farm park in the area. The maize maze alone is worth the ticket." },
+  { id: 10, email: "hannah.kerr@example.com", visited: false, date: "2026-08-25", score: 8, consent: false, text: "Picnic areas are great. A bit more shade would make it perfect." },
+  { id: 11, email: "ben.clark@example.com", visited: true, date: "2026-08-24", score: 9, consent: true, text: "Pig racing is very funny. The kids want to come back already." },
+  { id: 12, email: "laura.mills@example.com", visited: false, date: "2026-08-23", score: 6, consent: false, text: "Fine visit but the ice cream kiosk still does not take card." },
+  { id: 13, email: "jack.t@example.com", visited: true, date: "2026-08-22", score: 10, consent: true, text: "Season pass paid for itself in two visits." },
+  { id: 14, email: "katie.reid@example.com", visited: true, date: "2026-08-21", score: 9, consent: false, text: "Really well organised birthday party package, thank you." },
 ];
 
 const CSV_PREVIEW = [
@@ -5492,21 +5495,21 @@ function AllFeedback({ campaign }) {
       {
         id: "score",
         header: () => "Rating",
+        // FIXED WIDTHS, FEEDBACK FILLS (Ali, 17 Sep: emails "can get long";
+        // the text is "the most important"). With layout="fixed" every column
+        // but Feedback has a set width, so Feedback takes whatever the card
+        // has left and truncates inside it, at any card width, instead of a
+        // max-width that either overflows the card or leaves space unused.
+        meta: { width: "5rem" },
         cell: ({ row }) => <FeedbackScore type={type} score={row.original.score} />,
-      },
-      {
-        id: "customer",
-        header: () => "Customer",
-        cell: ({ row }) =>
-          row.original.email ? (
-            <span className="block max-w-[16rem] truncate">{row.original.email}</span>
-          ) : (
-            <span className="text-muted-foreground">Anonymous</span>
-          ),
       },
       {
         id: "text",
         header: () => "Feedback",
+        // FEEDBACK FIRST, AND WIDEST (Ali, 17 Sep: "the review text is
+        // arguably the most important"). Straight after the rating, in the
+        // foreground colour, with the most room before it truncates; who
+        // wrote it comes after, muted and capped.
         // A REAL BUTTON, and it keeps the `feedback-row-<id>` hook the
         // capture walker asserts on. The row is clickable by delegation, but
         // a div listener is not reachable by keyboard, so the text people
@@ -5515,18 +5518,30 @@ function AllFeedback({ campaign }) {
           <button
             type="button"
             data-hook={`feedback-row-${row.original.id}`}
-            className="block max-w-[28rem] truncate text-left"
+            className="block w-full truncate text-left"
             onClick={() => setOpenId(row.original.id)}
           >
-            <span className="text-muted-foreground" data-bl-link>
+            <span data-bl-link>
               {row.original.text}
             </span>
           </button>
         ),
       },
       {
+        id: "customer",
+        header: () => "Customer",
+        meta: { width: "13rem" },
+        cell: ({ row }) =>
+          row.original.email ? (
+            <span className="text-muted-foreground block truncate" title={row.original.email}>{row.original.email}</span>
+          ) : (
+            <span className="text-muted-foreground">Anonymous</span>
+          ),
+      },
+      {
         id: "consent",
         header: () => "Testimonial",
+        meta: { width: "8rem" },
         cell: ({ row }) =>
           row.original.consent ? (
             <Badge dataHook={`feedback-consent-${row.original.id}`} variant="secondary">
@@ -5539,6 +5554,7 @@ function AllFeedback({ campaign }) {
       {
         id: "date",
         header: () => "Date",
+        meta: { width: "10rem" },
         cell: ({ row }) => (
           <span className="text-muted-foreground whitespace-nowrap">
             {formatDate(row.original.date)}
@@ -5645,6 +5661,7 @@ function AllFeedback({ campaign }) {
             <DataTable
               table={table}
               dataHook="feedback-table"
+              layout="fixed"
               noResultsMessage="No feedback matches"
               className={`${TABLE_LOOK} [&_tbody_tr]:cursor-pointer`}
             />
@@ -5721,33 +5738,31 @@ function AllFeedback({ campaign }) {
               </Button>
             </DrawerClose>
           </DrawerHeader>
+          {/* REVIEW MANAGER'S ORDER (Ali, 17 Sep: "Its back to front? So should be
+              labels and values up top, review text below"). Detail rows with
+              the label in a fixed column, a rule, then who wrote it and what
+              they wrote, in the Manager's own type. */}
           <DrawerBody key={openItem?.id} className="mt-0 flex min-h-0 max-w-none flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
-            <div className="flex items-center gap-3">
-              {openItem ? <FeedbackScore type={type} score={openItem.score} /> : null}
-              <span className="text-heading-subsection">{openItem?.name ?? "Feedback"}</span>
+            <div className="flex flex-col gap-2">
+              {[
+                ["Rating", openItem ? <FeedbackScore type={type} score={openItem.score} /> : null],
+                ["Received", <span className="text-sm">{openItem ? formatDate(openItem.date) : ""}</span>],
+                ["Review site", <span className="text-sm">{openItem?.visited ? "Visited" : "Did not visit"}</span>],
+                ["Testimonial", <span className="text-sm">{openItem?.consent ? "Happy to be quoted" : "Not for use"}</span>],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className="text-muted-foreground w-24 shrink-0 text-sm">{label}</span>
+                  {value}
+                </div>
+              ))}
             </div>
-            <p className="text-body">{openItem?.text}</p>
             <Separator />
-            <dl className="flex flex-col gap-2 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Received</dt>
-                <dd>{openItem ? formatDate(openItem.date) : ""}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Email</dt>
-                <dd className="truncate">
-                  {openItem?.email ?? <span className="text-muted-foreground">Anonymous</span>}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Review site</dt>
-                <dd>{openItem?.visited ? "Visited" : "Did not visit"}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Testimonial</dt>
-                <dd>{openItem?.consent ? "Happy to be quoted" : "Not for use"}</dd>
-              </div>
-            </dl>
+            <div className="flex flex-col gap-1">
+              <p className={`text-sm font-medium break-all ${openItem?.email ? "" : "text-muted-foreground"}`}>
+                {openItem?.email ?? "Anonymous"}
+              </p>
+              <p className="text-sm leading-relaxed">{openItem?.text}</p>
+            </div>
           </DrawerBody>
         </DrawerContent>
       </Drawer>
