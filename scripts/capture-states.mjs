@@ -933,19 +933,10 @@ const STATES = [
     "Report settings. Schedule first, because when the report runs is the setting everything else depends on. Run report now sits in the page header: it acts on the report, not on any one section, and it does not move the schedule."],
   ["settings-02-directories", "settings", async (p) => { await scrollToHook(p, '[data-hook="directories-card"]'); },
     `!!document.querySelector('[data-hook="directories-card"]')
-     && !!document.querySelector('[data-hook="country-select"]')
+     && !document.querySelector('[data-hook="country-select"]')
      && !!document.querySelector('[data-hook="directory-google-matched"]')`,
-    "Monitored directories, scoped by country: Yell and Thomson Local are United Kingdom sites and mean nothing to a US location. Matched / no profile found is a badge per row rather than a separate panel, because a directory you watch but have not matched is the case worth seeing."],
-  ["settings-03-directories-uk", "settings", async (p) => {
-    await scrollToHook(p, '[data-hook="directories-card"]');
-    await press(p, '[data-hook="country-select"]');
-    await wait(600);
-    await pressText(p, "United Kingdom", '[role="option"]');
-    await wait(600);
-  },
-    `!!document.querySelector('[data-hook="directory-yell"]')
-     && !document.querySelector('[data-hook="directory-bbb"]')`,
-    "Switching country switches which directories are even offered, and re-derives the selection. A US report silently monitoring Thomson Local is the kind of thing that makes a settings page untrustworthy."],
+    "Monitored directories, for the location's own country: there is no country dropdown, because the directory list comes from the location. Matched / no profile found is a badge per row rather than a separate panel, because a directory you watch but have not matched is the case worth seeing."],
+  // settings-03-directories-uk is gone with the country dropdown (17 Sep).
   ["settings-04-alerts", "settings", async (p) => { await scrollToHook(p, '[data-hook="alerts-card"]'); },
     `!!document.querySelector('[data-hook="alerts-card"]')
      && !!document.querySelector('[data-hook="cadence-radio-group"]')

@@ -26,7 +26,8 @@
 //   "Report run history table"             -> Run history
 //   "Panel showing which directories a
 //    profile was matched on"               -> the match column on Directories
-//   "Country-scoped directory picker"      -> the country Select scopes the list
+//   "Country-scoped directory picker"      -> the location's country scopes the
+//                                             list; no dropdown (17 Sep)
 //   "public/white-label share link"        -> Sharing (public only; the
 //                                             white-label toggle is out, 17 Sep)
 //
@@ -123,10 +124,14 @@ import {
 
 /* ================================ reference =============================== */
 
-// THE DIRECTORY LIST IS COUNTRY-SCOPED, which is the whole reason the
-// country control sits above it rather than in a global setting: Yell and
-// Thomson Local are United Kingdom directories and mean nothing to a US
-// location, and the legacy picker made you scroll past them anyway.
+// THE DIRECTORY LIST IS COUNTRY-SCOPED: Yell and Thomson Local are United
+// Kingdom directories and mean nothing to a US location, and the legacy
+// picker made you scroll past them anyway. The country is the LOCATION'S,
+// not a choice on this page (Ali, 17 Sep: "Remove this dropdown"). The v2
+// PRD resolves the directory list "from the location (country and business
+// category)", fixed in BI-4854, and the API has no way to pass another
+// country (Margarita's review). Both lists stay so the UK one is ready when
+// a location carries its country.
 //
 // `matched` is the second thing the brief asks for in this area — "panel
 // showing which directories a profile was matched on". It is a column here
@@ -213,11 +218,6 @@ const DIRECTORIES = {
 // Same-looking rows, different verbs: "Find profile" against "Connect".
 // Collapsing them into one button would send somebody to an oAuth screen to
 // solve a missing Yell URL.
-const COUNTRIES = [
-  { id: "USA", label: "United States" },
-  { id: "UK", label: "United Kingdom" },
-];
-
 // Run history. Every row is a real outcome, including the one that partly
 // failed: a history that only ever shows success is not a history, and the
 // brief names reply/fetch failures as the recurring support theme.
@@ -344,9 +344,11 @@ export default function RMReportSettingsPage() {
   const data = useProposalData();
   const locationName = data?.location?.name ?? "this location";
 
-  const [country, setCountry] = useState("USA");
+  // No location in the prototype's data carries a country yet, and the
+  // sample directory rows are a US business's, so the list is the US one.
+  const country = "USA";
   const [monitored, setMonitored] = useState(() =>
-    DIRECTORIES.USA.filter((d) => d.on).map((d) => d.id),
+    DIRECTORIES[country].filter((d) => d.on).map((d) => d.id),
   );
   const [frequency, setFrequency] = useState("weekly");
   const [runDay, setRunDay] = useState("Monday");
@@ -372,15 +374,6 @@ export default function RMReportSettingsPage() {
 
   const toggleDirectory = (id) =>
     setMonitored((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-
-  // Switching country switches which directories are even offered, so the
-  // selection has to be re-derived rather than carried across: a US report
-  // silently monitoring Thomson Local is exactly the kind of thing that
-  // makes a settings page untrustworthy.
-  const switchCountry = (next) => {
-    setCountry(next);
-    setMonitored(DIRECTORIES[next].filter((d) => d.on).map((d) => d.id));
-  };
 
   const copyLink = () => {
     setCopied(true);
@@ -515,25 +508,6 @@ export default function RMReportSettingsPage() {
             // The watched count moved to the page header; this keeps the one
             // fact the header does not carry.
             lede={`${matchedCount} matched to a profile`}
-            action={
-              <Field dataHook="country-field" className="w-full sm:w-56">
-                <FieldLabel htmlFor="country" dataHook="country-label">
-                  Country
-                </FieldLabel>
-                <Select value={country} onValueChange={switchCountry}>
-                  <SelectTrigger id="country" dataHook="country-select">
-                    <SelectValue placeholder="Country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COUNTRIES.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            }
           >
             <div className="flex flex-col">
               {list.map((d, i) => {

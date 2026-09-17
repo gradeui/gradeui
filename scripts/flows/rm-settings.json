@@ -16,18 +16,6 @@
       "dwell": 6200,
       "caption": "Matched or no profile found, per directory. That is the brief's profile-match panel, as a column rather than a separate panel: a directory you watch but have not matched is the case worth seeing."
     },
-    {
-      "click": "[data-hook=\"country-select\"]",
-      "hoverMs": 1100,
-      "section": "Country scopes the list",
-      "caption": "Yell and Thomson Local are United Kingdom sites and mean nothing to a US location, so the country decides which directories are even offered."
-    },
-    { "dwell": 3600 },
-    {
-      "click": "[role=\"option\"]:has-text(\"United Kingdom\")",
-      "hoverMs": 800
-    },
-    { "dwell": 5600 },
     { "scrollBy": 700, "ms": 1100 },
     {
       "section": "Email alerts",
