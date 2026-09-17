@@ -101,7 +101,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@brightlocal/ui-components/command";
-import { Card } from "@brightlocal/ui-components/card";
+import { Card, CardTitle } from "@brightlocal/ui-components/card";
 import { Tabs, TabsList, TabsTrigger } from "@brightlocal/ui-components/tabs";
 import { Separator } from "@brightlocal/ui-components/separator";
 import { TypographySmall } from "@brightlocal/ui-components/typography";
@@ -1825,34 +1825,45 @@ function ReviewsInbox() {
       {/* White (Ali, 10 Sep: "table header area white?"): tabs, filters and
           the order row sit on the card's own surface, divided by borders. */}
       <div ref={bandRef} className="bg-[var(--ds-tailwind-colors-base-white)] sticky z-30 rounded-t-[inherit]" style={{ top: stickyTop }}>
-        {/* ROW 1, TABS: the DS Tabs AS SHIPPED (Ali, 17 Sep: "use the default
-            tabs (not tab with underline)"). The pill strip on bg-muted, with
-            the underline overrides gone. The only classes left are layout:
-            the row's padding and rule, and a strip that scrolls sideways on a
-            phone, where five tabs with counts are wider than the screen. */}
-        <Tabs
-          dataHook="review-tabs"
-          value={tab}
-          onValueChange={(next) => {
-            setTab(next);
-            setActiveId(null);
-          }}
-          className="border-b px-4 py-2"
-        >
-          <TabsList
-            dataHook="review-tabs-list"
-            className="max-w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        {/* ROW 1, TITLE AND TABS (Ali, 17 Sep: the tabs "are almost a filter -
+            can we move them to the right and include a title in the table
+            called Reviews"). "Reviews" on the left, like every other card's
+            title; the status tabs on the right, where the filters live, so
+            the band reads as a title, then ways to narrow the list. py-3: the
+            row holds a 36px strip, and 12px either side gives the title the
+            room a card header has (the old tabs-only row was py-2, 53px).
+            px-4 keeps the title on the table's first-column edge. On a phone
+            the tabs wrap under the title and scroll sideways.
+            The tabs are the DS Tabs AS SHIPPED (Ali, 17 Sep: "use the default
+            tabs"): only layout classes on them. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3">
+          <CardTitle size="small" dataHook="review-inbox-title">
+            Reviews
+          </CardTitle>
+          <Tabs
+            dataHook="review-tabs"
+            value={tab}
+            onValueChange={(next) => {
+              setTab(next);
+              setActiveId(null);
+            }}
+            className="min-w-0 max-w-full"
           >
-            {TABS.map((t) => (
-              <TabsTrigger key={t.id} value={t.id} dataHook={`tab-${t.id}`} className="shrink-0">
-                {t.label}
-                <Badge dataHook={`tab-count-${t.id}`} variant="secondary" data-number="true">
-                  {counts[t.id]}
-                </Badge>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+            <TabsList
+              dataHook="review-tabs-list"
+              className="max-w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {TABS.map((t) => (
+                <TabsTrigger key={t.id} value={t.id} dataHook={`tab-${t.id}`} className="shrink-0">
+                  {t.label}
+                  <Badge dataHook={`tab-count-${t.id}`} variant="secondary" data-number="true">
+                    {counts[t.id]}
+                  </Badge>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* ROW 2 — FILTERS, own surface, always visible. Search leads, per
             the DS's own DataTablePage recipe (Toolbar > ToolbarLeft >
@@ -1861,46 +1872,18 @@ function ReviewsInbox() {
           <DataTableSearch
             table={table}
             dataHook="search-reviews"
+            // size="sm" is the DS's own prop, per its DataTableToolbarLeft recipe,
+            // so the field matches the sm filter buttons beside it.
             size="sm"
             placeholder="Search reviews"
             ariaLabel="Search reviews"
-            // 16px on mobile, 14px from sm up. The 16px is not cosmetic:
-            // iOS Safari zooms the viewport when a focused input is under
-            // 16px. The DS contradicts itself here — InputGroup sets
-            // text-sm on the wrapper while Input sets text-base on the
-            // control, and the control wins — so at size="sm" you get a
-            // 16px field beside 12px buttons on every breakpoint.
-            // rounded-full + px-3: InputGroup is rounded-md (6px) while
-            // Button is rounded-full, so the DS's own "search + sm filter
-            // buttons" toolbar puts a rounded RECTANGLE in a row of PILLS.
-            // Matching the pills is what makes the row read as one control
-            // group rather than two.
-            // No px-* here: DataTableSearch already pads internally (its
-            // icon addon is pl-3 and the input carries px-3), so adding
-            // more just pushes the icon off the left edge.
-            // No radius override: the field keeps DataTableSearch's own shape
-            // now that the facets sit at the DS's field radius rather than
-            // Button's pill. Only the type size is corrected — Input sets
-            // text-base on every control, and 16px beside 14px triggers reads
-            // wrong, but 16px on mobile is what stops iOS zooming on focus.
-            // border-border to match the facet triggers beside it. The DS uses
-            // TWO different border tokens for field-shaped controls —
-            // InputGroup is border-input (216,227,218) and Button outline is
-            // border-border (230,237,232) — so a search field and a filter
-            // button sat next to each other never agree. The focus ring is
-            // untouched: has-[input:focus-visible]:border-ring is a separate
-            // variant and survives the merge.
-            // grow on mobile, fixed from sm up: below sm the facets have
-            // folded into one trigger, so the row has room and a 192px
-            // field beside a 100px button leaves a dead gap. From sm up the
-            // facets are back and the field must not push them around.
-            // basis-0 min-w-0, not just grow: in a flex-wrap row the items
-            // are PLACED at their base width before anything grows, and this
-            // field's intrinsic width plus the Filters button exceeds 293px
-            // at 375, so the button wrapped to a second line and the row was
-            // still two high. A zero basis lets it always fit, then grow
-            // takes what is left of the line (185px).
-            className="min-w-0 grow basis-0 border-border lg:w-48 lg:grow-0 lg:basis-auto [&_input]:text-base sm:[&_input]:text-sm"
+            // THE DS SEARCH AS SHIPPED (Ali, 17 Sep: "make sure our search input
+            // is the default input out of DS"). The border-colour and type-size
+            // overrides are gone; what is left is layout only. Below lg the
+            // field grows into the row (basis-0 min-w-0 so it never pushes the
+            // Filters button onto a second line); from lg it is a fixed 12rem
+            // on the left of the filters.
+            className="min-w-0 grow basis-0 lg:w-48 lg:grow-0 lg:basis-auto"
           />
 
           {/* SEARCH LEFT, FILTERS RIGHT (Ali, 17 Sep). The spacer sits between
