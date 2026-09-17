@@ -81,6 +81,13 @@ const stageUrl = (url, bg, caption, card) => {
 };
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+// A shot that does not ask for the trial recap loads its page with
+// ?recap=off, so the recap never opens on it (video audit, 17 Sep: closing it
+// after it opened still left 0.3s of it over the day-one Tracker shot).
+const shotUrl = (step) => {
+  if (step.recap) return step.go;
+  return `${step.go}${step.go.includes("?") ? "&" : "?"}recap=off`;
+};
 const slugify = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
 
 const browser = await chromium.launch();
@@ -207,7 +214,8 @@ for (const [i, step] of flow.steps.entries()) {
     if (!onStage) {
       // The card is painted server-side on the first frame, so the video
       // opens on the card rather than on an empty canvas.
-      await page.goto(stageUrl(flow.steps.find((x) => x.go)?.go ?? "/locations/minus-one-studios/reviews", bg, undefined, step.card), { waitUntil: "domcontentloaded", timeout: 90000 });
+      const firstShot = flow.steps.find((x) => x.go);
+      await page.goto(stageUrl(firstShot ? shotUrl(firstShot) : "/locations/minus-one-studios/reviews?recap=off", bg, undefined, step.card), { waitUntil: "domcontentloaded", timeout: 90000 });
       onStage = true;
       { const c = await cardChapter(step.card); mark("card", c.title, { slug: c.slug, line: c.line }); }
       await wait(step.ms ?? 2600);
@@ -225,10 +233,10 @@ for (const [i, step] of flow.steps.entries()) {
     if (!onStage) {
       // First shot only: load the stage. Everything after is an in-place
       // swap, so the canvas never unloads and never flashes white.
-      await page.goto(stageUrl(step.go, bg, step.caption), { waitUntil: "networkidle", timeout: 90000 });
+      await page.goto(stageUrl(shotUrl(step), bg, step.caption), { waitUntil: "networkidle", timeout: 90000 });
       onStage = true;
     } else {
-      await page.evaluate((next) => window.__stage?.set(next), { url: step.go, bg, caption: step.caption ?? undefined, card: null });
+      await page.evaluate((next) => window.__stage?.set(next), { url: shotUrl(step), bg, caption: step.caption ?? undefined, card: null });
     }
     mark("caption", step.caption);
     currentUrl = step.go;

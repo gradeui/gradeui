@@ -40,7 +40,11 @@ export function TrialRecapModal() {
   React.useEffect(() => {
     if (lastId.current === persona.id) return;
     lastId.current = persona.id;
-    setOpen(Boolean(persona.trial || persona.lapsed));
+    // ?recap=off keeps it shut, for the video recorder (17 Sep): every shot
+    // loads a fresh page into the stage frame, so the recap opened again on
+    // each one and flashed over a page before it could be closed.
+    const off = new URLSearchParams(window.location.search).get("recap") === "off";
+    setOpen(Boolean(persona.trial || persona.lapsed) && !off);
   }, [persona.id, persona.trial, persona.lapsed]);
   if (!persona.trial && !persona.lapsed) return null;
   if (settings.insights === false) return null;
