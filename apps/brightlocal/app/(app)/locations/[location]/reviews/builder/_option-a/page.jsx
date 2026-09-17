@@ -224,7 +224,7 @@ import { CampaignPerformance } from "@/components/campaign-performance";
 // DataTable for all tables"). Two hand-rolled <Table>s and one DataTable in
 // the same product is two sets of padding, two pagers and two ideas about
 // where a header row sits.
-import { useDataTable, DataTable, DataTablePagination } from "@brightlocal/ui-components/data-table";
+import { useDataTable, DataTable, DataTablePagination, DataTableColumnHeader } from "@brightlocal/ui-components/data-table";
 import {
   Pagination,
   PaginationContent,
@@ -1885,6 +1885,10 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
   const [renameId, setRenameId] = useState(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // SORTABLE HEADERS, LIKE REVIEW MANAGER'S (Ali, 17 Sep: "Lets have them all
+  // as DataTables, easier"). Empty to start, so the rows keep the status-then-
+  // reviews order below until someone presses a header.
+  const [sorting, setSorting] = useState([]);
 
   const rows = useMemo(
     () =>
@@ -1928,7 +1932,8 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
     () => [
       {
         accessorKey: "name",
-        header: () => "Campaign",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Campaign" dataHook="campaigns-col-campaign" />,
+        sortingFn: (a, b) => a.original.name.localeCompare(b.original.name),
         cell: ({ row }) => {
           const c = row.original;
           if (renameId === c.id) {
@@ -1964,7 +1969,11 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
       },
       {
         id: "mode",
-        header: () => "Mode",
+        // An accessor is what makes a column sortable in TanStack; the cell
+        // still reads row.original.
+        accessorFn: (c) => CHANNELS[c.config.channel]?.label ?? "",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Mode" dataHook="campaigns-col-mode" />,
+        sortingFn: (a, b) => a.getValue("mode").localeCompare(b.getValue("mode")),
         cell: ({ row }) => (
           <span className="text-muted-foreground">{CHANNELS[row.original.config.channel]?.label ?? ""}</span>
         ),
@@ -1977,7 +1986,9 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
         // Same askLabel the templates table uses, so a campaign and the
         // template it came from read identically.
         id: "type",
-        header: () => "Type",
+        accessorFn: (c) => askType(c.config).label,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Type" dataHook="campaigns-col-type" />,
+        sortingFn: (a, b) => a.getValue("type").localeCompare(b.getValue("type")),
         cell: ({ row }) => <AskType config={row.original.config} />,
       },
       {
@@ -1987,12 +1998,18 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
         // column headed Date reads as the past unless the status is next to
         // it.
         accessorKey: "status",
-        header: () => "Status",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" dataHook="campaigns-col-status" />,
+        // Live, Scheduled, Draft, Ended: the order the page already uses, not
+        // the alphabet.
+        sortingFn: (a, b) => (STATUS_ORDER[a.original.status] ?? 9) - (STATUS_ORDER[b.original.status] ?? 9),
         cell: ({ row }) => <StatusPill status={row.original.status} hook={`campaign-${row.original.id}-status`} />,
       },
       {
         id: "date",
-        header: () => "Date",
+        accessorFn: (c) => c.lastActivity.date,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" dataHook="campaigns-col-date" />,
+        // The real date, not the formatted string, which sorts as text.
+        sortingFn: (a, b) => Date.parse(a.original.lastActivity.date) - Date.parse(b.original.lastActivity.date),
         cell: ({ row }) => (
           <span
             className="text-muted-foreground whitespace-nowrap"
@@ -2007,9 +2024,16 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
         // other way, so a sign would be decoration. A Draft has nothing to
         // count, and says so with a dash rather than a zero it did not earn.
         id: "reviews",
+        accessorFn: (c) => c.stats?.reviews ?? -1,
         // No long dashes anywhere (Ali's rule): an em dash was the
         // empty-value glyph in this column.
-        header: () => <span className="block text-right">Reviews gained</span>,
+        // Right-aligned to match the numbers, via the DS header's own align.
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Reviews gained" align="right" dataHook="campaigns-col-reviews" />
+        ),
+        // "None yet" counts as below zero, so a Draft sorts under a campaign
+        // that ran and gained nothing.
+        sortingFn: (a, b) => (a.original.stats?.reviews ?? -1) - (b.original.stats?.reviews ?? -1),
         cell: ({ row }) => (
           <span className="block text-right font-semibold tabular-nums">
             {row.original.stats ? (
@@ -2096,6 +2120,8 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
     columns,
     data: rows,
     getRowId: (row) => row.id,
+    sorting,
+    onSortingChange: setSorting,
     enablePagination: true,
     pageSize: PAGE_SIZE,
   });
@@ -2159,24 +2185,13 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
           style={{ gridTemplateRows: "auto", rowGap: 0 }}
         >
           <div className="flex flex-wrap items-center justify-between gap-5">
-            {/* COUNT ON THE LEFT, WITH THE TITLE (Ali, 7 Sep: "changing a
-                filter janks the page/card header"). It used to sit AFTER the
-                two selects, so applying a filter appended text to the end of
-                the row and shoved both selects leftwards. Now it is part of
-                the left-hand group: the controls are pinned right and never
-                move, and the only thing that changes width is the count
-                itself, on the side where nothing follows it.
-                ALWAYS RENDERED, for the same reason. A count that appears and
-                disappears is the jank; one that just changes its wording is
-                not. It says "9 campaigns" unfiltered and "5 of 9" when a
-                filter is on, so it is never lying about the whole either. */}
+            {/* NO COUNT BY THE TITLE (Ali, 17 Sep: "we have pagination"). The
+                pager under the table already says "1 to 9 of 9" and counts
+                the filtered rows, so a second count here said it twice. */}
             <div className="flex items-baseline gap-2">
               <CardTitle size="small" dataHook="campaigns-title">
                 Campaigns
               </CardTitle>
-              <span className="text-muted-foreground text-sm" data-hook="campaigns-count">
-                {filtered ? `${rows.length} of ${campaigns.length}` : campaigns.length} {!filtered && campaigns.length === 1 ? "campaign" : "campaigns"}
-              </span>
             </div>
             <span className="grow" />
             <div className="flex flex-wrap items-center gap-1.5">
@@ -2286,6 +2301,10 @@ function TemplatesPage({ templates, setTemplates, onNew, onEdit }) {
   // campaigns page uses: where the band pins, the ref that measures it, and
   // the resulting offset for the table's own header row.
   const { top, bandRef, headTop } = useStickyTable("get-reviews-page-header");
+  // Sortable headers, same as the campaigns table (Ali, 17 Sep: "Lets have
+  // them all as DataTables, easier"). Empty, so templates keep their order
+  // until a header is pressed.
+  const [sorting, setSorting] = useState([]);
 
   const duplicateTemplate = (t) =>
     setTemplates((ts) => [
@@ -2297,7 +2316,8 @@ function TemplatesPage({ templates, setTemplates, onNew, onEdit }) {
     () => [
       {
         accessorKey: "name",
-        header: () => "Template",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Template" dataHook="templates-col-template" />,
+        sortingFn: (a, b) => a.original.name.localeCompare(b.original.name),
         // THE NAME IS THE WAY IN (Ali, 7 Sep: "you can currently edit a
         // template on the live old version, so we should also allow editing
         // templates"). Same affordance the campaigns table uses, so the two
@@ -2321,7 +2341,11 @@ function TemplatesPage({ templates, setTemplates, onNew, onEdit }) {
         // "ask" and stays that way: capture-states walks campaigns by that
         // step name, and it reads as a verb there rather than a noun.
         id: "type",
-        header: () => "Type",
+        // An accessor is what makes a column sortable in TanStack; the cell
+        // still reads row.original.
+        accessorFn: (t) => askType(t.config).label,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Type" dataHook="templates-col-type" />,
+        sortingFn: (a, b) => a.getValue("type").localeCompare(b.getValue("type")),
         cell: ({ row }) => <AskType config={row.original.config} />,
       },
       // NO SOURCE COLUMN (Ali, 7 Sep). `source` stays on the record: it still
@@ -2332,7 +2356,9 @@ function TemplatesPage({ templates, setTemplates, onNew, onEdit }) {
       // say the word if that should go too.
       {
         accessorKey: "updated",
-        header: () => "Updated",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" dataHook="templates-col-updated" />,
+        // The real date, not the formatted string.
+        sortingFn: (a, b) => Date.parse(a.original.updated) - Date.parse(b.original.updated),
         // THE DATE, NOTHING ELSE (Ali, 6 Sep). This was a DateStamp: the word
         // "Updated" on every row under a column already headed Updated, plus
         // a dotted underline advertising a tooltip for a date written out in
@@ -2398,6 +2424,8 @@ function TemplatesPage({ templates, setTemplates, onNew, onEdit }) {
     columns,
     data: templates,
     getRowId: (row) => row.id,
+    sorting,
+    onSortingChange: setSorting,
     enablePagination: true,
     pageSize: PAGE_SIZE,
   });
@@ -2429,15 +2457,12 @@ function TemplatesPage({ templates, setTemplates, onNew, onEdit }) {
           style={{ gridTemplateRows: "auto", rowGap: 0 }}
         >
           <div className="flex flex-wrap items-center justify-between gap-5">
-            {/* Same shape as the campaigns band: title and count together on
-                the left, so the two tables read as one pattern. */}
+            {/* Same shape as the campaigns band, title alone on the left: the
+                pager counts the rows (Ali, 17 Sep). */}
             <div className="flex items-baseline gap-2">
               <CardTitle size="small" dataHook="templates-title">
                 Templates
               </CardTitle>
-              <span className="text-muted-foreground text-sm" data-hook="templates-count">
-                {templates.length} {templates.length === 1 ? "template" : "templates"}
-              </span>
             </div>
           </div>
         </CardHeader>
@@ -5900,6 +5925,10 @@ function AllFeedback({ campaign }) {
   // underneath it.
   const [openId, setOpenId] = useState(null);
   const { top, bandRef, headTop } = useStickyTable("campaign-page-header");
+  // Sortable headers, as in Review Manager (Ali, 17 Sep: "Lets have them all
+  // as DataTables, easier"). Empty, so the newest-first seed order stands
+  // until a header is pressed.
+  const [sorting, setSorting] = useState([]);
 
   const bandOf = (score) => (score <= 6 ? "low" : score <= 8 ? "mid" : "high");
   const rows = useMemo(
@@ -5917,8 +5946,6 @@ function AllFeedback({ campaign }) {
   // button (it is the bubble target), so the string is what lands in state
   // either way. Normalising here beats parsing at two call sites.
   const openItem = FEEDBACK_ITEMS.find((f) => String(f.id) === String(openId)) ?? null;
-  // Where the open row sits in the FILTERED list, for the drawer's up / down.
-  const openIndex = openItem ? rows.findIndex((f) => String(f.id) === String(openId)) : -1;
   // Below sm the drawer comes up from the bottom, as in Review Manager.
   const [drawerNarrow, setDrawerNarrow] = useState(false);
   useEffect(() => {
@@ -5933,7 +5960,12 @@ function AllFeedback({ campaign }) {
     () => [
       {
         id: "score",
-        header: () => "Rating",
+        // An accessor is what makes a column sortable in TanStack; the cells
+        // below still read row.original.
+        accessorFn: (f) => f.score,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Rating" dataHook="feedback-col-rating" />,
+        // The 0 to 10 score, whichever way this campaign displays it.
+        sortingFn: (a, b) => a.original.score - b.original.score,
         // FIXED WIDTHS, FEEDBACK FILLS (Ali, 17 Sep: emails "can get long";
         // the text is "the most important"). With layout="fixed" every column
         // but Feedback has a set width, so Feedback takes whatever the card
@@ -5946,7 +5978,9 @@ function AllFeedback({ campaign }) {
       },
       {
         id: "text",
-        header: () => "Feedback",
+        accessorFn: (f) => f.text,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Feedback" dataHook="feedback-col-feedback" />,
+        sortingFn: (a, b) => a.original.text.localeCompare(b.original.text),
         // FEEDBACK FIRST, AND WIDEST (Ali, 17 Sep: "the review text is
         // arguably the most important"). Straight after the rating, in the
         // foreground colour, with the most room before it truncates; who
@@ -5970,7 +6004,11 @@ function AllFeedback({ campaign }) {
       },
       {
         id: "customer",
-        header: () => "Customer",
+        accessorFn: (f) => f.email ?? "",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Customer" dataHook="feedback-col-customer" />,
+        // ASSUMPTION: Anonymous has no email to alphabetise, so it sorts as
+        // empty, above every address when ascending.
+        sortingFn: (a, b) => (a.original.email ?? "").localeCompare(b.original.email ?? ""),
         meta: { width: "13rem" },
         cell: ({ row }) =>
           row.original.email ? (
@@ -5981,7 +6019,10 @@ function AllFeedback({ campaign }) {
       },
       {
         id: "consent",
-        header: () => "Testimonial",
+        accessorFn: (f) => (f.consent ? 1 : 0),
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Testimonial" dataHook="feedback-col-testimonial" />,
+        // No before Testimonial when ascending.
+        sortingFn: (a, b) => (a.original.consent ? 1 : 0) - (b.original.consent ? 1 : 0),
         meta: { width: "8rem" },
         cell: ({ row }) =>
           row.original.consent ? (
@@ -5994,7 +6035,10 @@ function AllFeedback({ campaign }) {
       },
       {
         id: "date",
-        header: () => "Date",
+        accessorFn: (f) => f.date,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" dataHook="feedback-col-date" />,
+        // The real date, not the formatted string.
+        sortingFn: (a, b) => Date.parse(a.original.date) - Date.parse(b.original.date),
         meta: { width: "10rem" },
         cell: ({ row }) => (
           <span className="text-muted-foreground whitespace-nowrap">
@@ -6010,9 +6054,17 @@ function AllFeedback({ campaign }) {
     data: rows,
     columns,
     getRowId: (r) => r.id,
+    sorting,
+    onSortingChange: setSorting,
     enablePagination: true,
     initialState: { pagination: { pageIndex: 0, pageSize: PAGE_SIZE } },
   });
+  // Where the open row sits in the FILTERED, SORTED list, for the drawer's up
+  // / down. Read from the table rather than `rows` now that a header can
+  // reorder them, so Next opens the row below it on screen, not the next one
+  // in the seed.
+  const ordered = table.getPrePaginationRowModel().rows.map((r) => r.original);
+  const openIndex = openItem ? ordered.findIndex((f) => String(f.id) === String(openId)) : -1;
 
   const VISITED_OPTIONS = [
     { id: "all", label: "All feedback" },
@@ -6155,7 +6207,7 @@ function AllFeedback({ campaign }) {
                   variant="ghost"
                   iconOnly
                   dataHook="feedback-prev"
-                  onClick={() => setOpenId(String(rows[openIndex - 1].id))}
+                  onClick={() => setOpenId(String(ordered[openIndex - 1].id))}
                   disabled={openIndex <= 0}
                   ariaLabel="Previous feedback"
                 >
@@ -6165,14 +6217,14 @@ function AllFeedback({ campaign }) {
                   variant="ghost"
                   iconOnly
                   dataHook="feedback-next"
-                  onClick={() => setOpenId(String(rows[openIndex + 1].id))}
-                  disabled={openIndex >= rows.length - 1}
+                  onClick={() => setOpenId(String(ordered[openIndex + 1].id))}
+                  disabled={openIndex >= ordered.length - 1}
                   ariaLabel="Next feedback"
                 >
                   <ChevronDown className="size-4" />
                 </Button>
                 <span className="text-muted-foreground ml-1 text-sm tabular-nums">
-                  {openIndex + 1} of {rows.length}
+                  {openIndex + 1} of {ordered.length}
                 </span>
               </div>
             ) : (

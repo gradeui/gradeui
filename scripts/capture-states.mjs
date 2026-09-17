@@ -1062,9 +1062,11 @@ const STATES = [
        const t = document.querySelector('[data-hook="campaign-status-filter"]');
        if (!t || t.textContent.trim() !== "Ended") return false;
        const rows = [...document.querySelectorAll('tbody tr')];
-       return rows.length === 2 && /2 of 9/.test(document.querySelector('[data-hook="campaigns-count"]').textContent);
+       // No count by the title since 17 Sep (Ali: "we have pagination"), so
+       // the two Ended rows are the check.
+       return rows.length === 2;
      })()`,
-    "Filtered to Ended: the trigger reads the chosen status and the card count changes to 2 of 9 campaigns."],
+    "Filtered to Ended: the trigger reads the chosen status and the table and its pager drop to the two Ended campaigns."],
 
   // THE ROW MENU, once per distinct item set. Rename, Re-use as new campaign
   // and Save as template are on every row; the rest depend on mode or status.

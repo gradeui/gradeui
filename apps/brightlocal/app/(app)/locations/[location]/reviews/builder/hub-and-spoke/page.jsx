@@ -102,7 +102,7 @@
 // flex flex-col gap-6, so card-to-card spacing is className="gap-4" on the
 // body, never space-y-*. Charts sit in a wrapper with an explicit height.
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -201,15 +201,15 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { ViewToggle } from "@/components/view-toggle";
 import { SingleSelectMenu } from "@brightlocal/facet-menu";
 import { CampaignPerformance } from "@/components/campaign-performance";
+// ALL THREE TABLES ARE THE DS DataTable (Ali, 17 Sep: "Lets have them all as
+// DataTables, easier"). The same table as Review Manager, sortable headers
+// included, so the hand-rolled Table plus pager that lived here has gone.
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationPrevious,
-  PaginationNext,
-  PaginationEllipsis,
-} from "@brightlocal/ui-components/pagination";
+  useDataTable,
+  DataTable,
+  DataTablePagination,
+  DataTableColumnHeader,
+} from "@brightlocal/ui-components/data-table";
 // THE ONE DIRECT RECHARTS IMPORT (3 Sep). The DS chart module does not
 // re-export Funnel — its Storybook set is Area / Bar / Line / Pie / Radar /
 // Radial — and the Studio sandbox resolves "recharts" to the copy already
@@ -1567,62 +1567,103 @@ function GetReviewsOverview({ campaigns, templates, onCampaigns, onTemplates, on
   );
 }
 
+// The page header is sticky, so a table's own sticky band has to start below
+// it rather than at 0. Measures the band the header sits in, the same way
+// Review Manager does, copied rather than shared because the proposal lib
+// has no home for a hook yet.
+function useStickyHeaderOffset(headerHook) {
+  const [offset, setOffset] = useState(0);
+  useEffect(() => {
+    const el = document.querySelector(`[data-hook="${headerHook}"]`);
+    if (!el) return undefined;
+    let band = el;
+    let node = el;
+    while (node && node !== document.body) {
+      if (window.getComputedStyle(node).position === "sticky") {
+        band = node;
+        break;
+      }
+      node = node.parentElement;
+    }
+    const measure = () => setOffset(Math.round(band.getBoundingClientRect().height));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(band);
+    return () => ro.disconnect();
+  }, [headerHook]);
+  return offset;
+}
+
+// GROUPED SO IT CAN STICK (Ali, 6 Sep: "all table headers and filters to be
+// grouped so that they can be sticky just like in Review Manager"). The
+// filter band sticks under the page header; the table's OWN header row then
+// sticks under the band, which needs the band's measured height rather than
+// a guessed one. Two sticky layers, so the column labels, and the sort
+// buttons in them, stay in reach while the rows scroll past.
+function useStickyTable(headerHook) {
+  const top = useStickyHeaderOffset(headerHook);
+  const bandRef = useRef(null);
+  const [bandHeight, setBandHeight] = useState(0);
+  useEffect(() => {
+    const el = bandRef.current;
+    if (!el) return undefined;
+    const measure = () => setBandHeight(Math.round(el.getBoundingClientRect().height));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return { top, bandRef, headTop: top + bandHeight };
+}
+
+// One look for every DataTable on this screen, the same as _option-a's: no
+// outer border (the Card owns that), a sticky header row, and the first cell
+// inset to 16px so it lines up with the px-4 bands above and below it.
+// overflow-visible IS LOAD-BEARING, twice: DataTable nests an inner
+// `relative overflow-auto` div inside its own `overflow-auto` root, and
+// either of them captures a sticky <th>, which then pins to a box that never
+// scrolls and rides away with the page.
+// FROM sm UP ONLY, for the inner div and the sticky <th>. On a phone the
+// table is wider than its card, so the DS Table's own overflow-x-auto comes
+// back and the rows scroll sideways, keeping the Actions column in reach.
+// The labels stop sticking there: inside that scroller a sticky <th> would
+// sit --th-top down, over the first rows.
+// border-separate IS ALSO LOAD-BEARING. A sticky <th> does nothing inside a
+// collapsed-border table, so separated borders with zero spacing stand in,
+// and the row rules are painted per cell. The last row's cells lose theirs
+// so the pager band's border-t is not drawn twice (Ali, 7 Sep: "weird border
+// issue").
+const TABLE_LOOK =
+  "rounded-none border-0 overflow-visible sm:[&>div]:overflow-visible " +
+  "[&_table]:border-separate [&_table]:border-spacing-0 " +
+  "[&_tbody_td]:border-b [&_thead_th]:border-b " +
+  "sm:[&_thead_th]:sticky [&_thead_th]:top-[var(--th-top,0px)] " +
+  "[&_thead_th]:z-20 [&_thead_th]:bg-card " +
+  "[&_tbody_tr:last-child_td]:border-b-0 [&_thead_th:first-child]:pl-4 [&_tbody_td:first-child]:pl-4 " +
+  "[&_thead_th:last-child]:pr-4 [&_tbody_td:last-child]:pr-4";
+
 // PAGINATION (Ali, 3 Sep: "apparently we might also need pagination"). The
-// DS Pagination, in a muted band at the foot of the card that matches the
-// filter band at its head. Page size is FIVE here so nine campaigns show the
-// control doing something; the real number is a product decision and lives
-// in one constant. Changing a filter goes back to page 1, because page 2 of
-// a filter that now has four rows is nowhere. Hidden when there is only one
-// page — a pager with one page is furniture.
+// DS DataTablePagination, in a muted band at the foot of the card that
+// matches the filter band at its head. Page size is FIVE here so nine
+// campaigns show the control doing something; the real number is a product
+// decision and lives in one constant. Changing a filter goes back to page 1,
+// because page 2 of a filter that now has four rows is nowhere: DataTable
+// resets the page itself when its rows change.
+// ALWAYS SHOWN, even at one page (Ali, 6 Sep: "just leave it there! as
+// filtering might add or remove it"). A bar that flickers in and out as the
+// reader changes a filter is the worse trade.
 const PAGE_SIZE = 5;
 
-// Every page number while there are few; first, last and a window round the
-// current one with ellipses once there are many. The DS ships usePagination
-// for the real thing; this is enough to see the control.
-function pageItems(page, pageCount) {
-  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, i) => i + 1);
-  const items = [1];
-  const lo = Math.max(2, page - 1);
-  const hi = Math.min(pageCount - 1, page + 1);
-  if (lo > 2) items.push("gap-a");
-  for (let p = lo; p <= hi; p += 1) items.push(p);
-  if (hi < pageCount - 1) items.push("gap-b");
-  items.push(pageCount);
-  return items;
-}
-
-function TablePager({ page, pageCount, from, to, total, noun, onPage, hook }) {
-  if (pageCount <= 1) return null;
-  return (
-    <div className="bg-muted/40 flex flex-wrap items-center gap-2 border-t px-4 py-2">
-      <span className="text-muted-foreground text-sm">
-        {from}–{to} of {total} {noun}
-      </span>
-      <span className="grow" />
-      <Pagination dataHook={`${hook}-pagination`} className="mx-0 w-auto">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious disabled={page <= 1} onClick={() => onPage(page - 1)} />
-          </PaginationItem>
-          {pageItems(page, pageCount).map((item) =>
-            typeof item === "number" ? (
-              <PaginationItem key={item}>
-                <PaginationLink page={item} isActive={item === page} onClick={() => onPage(item)} />
-              </PaginationItem>
-            ) : (
-              <PaginationItem key={item}>
-                <PaginationEllipsis />
-              </PaginationItem>
-            ),
-          )}
-          <PaginationItem>
-            <PaginationNext disabled={page >= pageCount} onClick={() => onPage(page + 1)} />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    </div>
-  );
-}
+// SORTABLE HEADERS, LIKE REVIEW MANAGER'S (Ali, 17 Sep: "Lets have them all
+// as DataTables, easier"). Nothing is sorted until someone presses a header,
+// so each table opens in the order it always had. Dates sort by the date
+// itself, never the "31 Aug 2026" a cell prints, and words ignore case.
+// Each column's accessor hands over the value to sort on; these compare it.
+const timeOf = (value) => (value ? new Date(value).getTime() : 0);
+const byText = (a, b, id) =>
+  String(a.getValue(id)).localeCompare(String(b.getValue(id)), undefined, { sensitivity: "base" });
+const byNumber = (a, b, id) => a.getValue(id) - b.getValue(id);
+const byDate = (a, b, id) => timeOf(a.getValue(id)) - timeOf(b.getValue(id));
 
 // DELETE ASKS IN A DIALOG, like every other destructive action in RM (2 Sep).
 // One dialog serves both spokes; the copy changes with the kind, because
@@ -1662,10 +1703,10 @@ const STATUS_ORDER = { Sending: 0, Live: 1, Scheduled: 2, Draft: 3, Finished: 4,
 function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, onStop, onRestart, onPreview }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
-  const [page, setPage] = useState(1);
   const [renameId, setRenameId] = useState(null);
-  const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // Empty until a header is pressed, so the rows keep the order below.
+  const [sorting, setSorting] = useState([]);
 
   const rows = useMemo(
     () =>
@@ -1682,13 +1723,14 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
         ),
     [campaigns, statusFilter, modeFilter],
   );
-  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const pageRows = rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const filtered = statusFilter !== "all" || modeFilter !== "all";
+  const { top, bandRef, headTop } = useStickyTable("get-reviews-page-header");
 
-  const commitRename = () => {
-    setCampaigns((cs) => cs.map((x) => (x.id === renameId ? { ...x, name: renameValue || x.name } : x)));
+  // THE RENAME FIELD KEEPS ITS OWN TEXT. DataTable renders each cell as a
+  // component, so a column list rebuilt on every keystroke would remount the
+  // field under the cursor. It hands its value over on blur instead.
+  const commitRename = (value) => {
+    setCampaigns((cs) => cs.map((x) => (x.id === renameId ? { ...x, name: value || x.name } : x)));
     setRenameId(null);
   };
 
@@ -1706,6 +1748,176 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
       },
       ...ts,
     ]);
+
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "name",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Campaign" dataHook="campaigns-col-campaign" />,
+        sortingFn: byText,
+        cell: ({ row }) => {
+          const c = row.original;
+          if (renameId === c.id) {
+            return (
+              <Input
+                dataHook={`campaign-${c.id}-rename`}
+                defaultValue={c.name}
+                autoFocus
+                onBlur={(e) => commitRename(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
+              />
+            );
+          }
+          return (
+            /* data-bl-link, the shell's link rule (3 Sep): foreground at
+               rest, green-700 + underline on hover. The name is the way in;
+               a Draft opens in the wizard where it left off, everything else
+               opens its page. */
+            <button
+              type="button"
+              data-bl-link=""
+              data-hook={`campaign-${c.id}-open`}
+              onClick={() => onOpen(c)}
+              className="text-left font-medium"
+            >
+              {c.name}
+            </button>
+          );
+        },
+      },
+      {
+        id: "mode",
+        accessorFn: (c) => CHANNELS[c.config.channel]?.label ?? "",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Mode" dataHook="campaigns-col-mode" />,
+        sortingFn: byText,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">{CHANNELS[row.original.config.channel]?.label ?? ""}</span>
+        ),
+      },
+      {
+        // By what is happening, the same STATUS_ORDER the default order uses,
+        // not by the word: alphabetical would put Draft above Live.
+        accessorKey: "status",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" dataHook="campaigns-col-status" />,
+        sortingFn: (a, b) => (STATUS_ORDER[a.original.status] ?? 9) - (STATUS_ORDER[b.original.status] ?? 9),
+        cell: ({ row }) => <StatusPill status={row.original.status} hook={`campaign-${row.original.id}-status`} />,
+      },
+      {
+        // The one number. No plus sign (3 Sep): reviews gained cannot go the
+        // other way, so a sign would be decoration. A campaign with nothing to
+        // count says "None yet" rather than a zero it did not earn, and sorts
+        // below every real count, zero included.
+        id: "reviews",
+        accessorFn: (c) => (c.stats ? c.stats.reviews : -1),
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Reviews gained" align="right" dataHook="campaigns-col-reviews" />
+        ),
+        sortingFn: byNumber,
+        cell: ({ row }) => (
+          <span className="block text-right font-semibold tabular-nums">
+            {row.original.stats ? (
+              row.original.stats.reviews
+            ) : (
+              <span className="text-muted-foreground font-normal">None yet</span>
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "activity",
+        accessorFn: (c) => c.lastActivity.date,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Last activity" dataHook="campaigns-col-activity" />,
+        sortingFn: byDate,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            <DateStamp
+              label={row.original.lastActivity.label}
+              value={row.original.lastActivity.date}
+              dataHook={`campaign-${row.original.id}-activity`}
+            />
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        enableSorting: false,
+        header: () => <span className="sr-only">Actions</span>,
+        meta: { width: "3rem" },
+        cell: ({ row }) => {
+          const c = row.original;
+          return (
+            <div className="flex justify-end">
+              {/* Same trigger pattern as the old card's menu, which is the one
+                  DropdownMenu in this screen that has never blanked the page
+                  (see the header note in App). */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    iconOnly
+                    dataHook={`campaign-${c.id}-menu-button`}
+                    aria-label="Campaign actions"
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {c.config.channel === "kiosk" ? (
+                    <DropdownMenuItem onSelect={() => onPreview(c)}>
+                      <Monitor className="size-4" /> Open kiosk
+                    </DropdownMenuItem>
+                  ) : null}
+                  {c.config.channel === "link" ? (
+                    <DropdownMenuItem onSelect={() => {}}>
+                      <Copy className="size-4" /> Copy link
+                    </DropdownMenuItem>
+                  ) : null}
+                  <DropdownMenuItem onSelect={() => setRenameId(c.id)}>
+                    <Pencil className="size-4" /> Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => onNew(c)}>
+                    <Copy className="size-4" /> Re-use as new campaign
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => saveAsTemplate(c)}>
+                    <FileText className="size-4" /> Save as template
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {stateOf(c.status).canStop ? (
+                    <DropdownMenuItem onSelect={() => onStop(c)}>
+                      <X className="size-4" /> {c.status === "Scheduled" ? "Cancel send" : "Stop campaign"}
+                    </DropdownMenuItem>
+                  ) : null}
+                  {stateOf(c.status).canRestart ? (
+                    <DropdownMenuItem onSelect={() => onRestart(c)}>
+                      <RotateCcw className="size-4" /> Restart campaign
+                    </DropdownMenuItem>
+                  ) : null}
+                  {c.status === "Draft" ? (
+                    <DropdownMenuItem onSelect={() => setDeleteTarget({ kind: "campaign", item: c })}>
+                      <Trash2 className="size-4" /> Delete draft
+                    </DropdownMenuItem>
+                  ) : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      },
+    ],
+    [renameId, onOpen, onNew, onStop, onRestart, onPreview],
+  );
+
+  const table = useDataTable({
+    columns,
+    data: rows,
+    getRowId: (row) => row.id,
+    sorting,
+    onSortingChange: setSorting,
+    enablePagination: true,
+    pageSize: PAGE_SIZE,
+  });
 
   if (campaigns.length === 0) {
     return (
@@ -1727,15 +1939,27 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
 
   return (
     <>
-      <Card dataHook="campaigns-table-card" className="max-w-none overflow-hidden py-0" density="condensed">
+      <Card
+        dataHook="campaigns-table-card"
+        // overflow-clip, not overflow-hidden: hidden makes the card a scroll
+        // container, and nothing inside it could stick to the page. The
+        // --th-top variable sits on the card because DataTable does not
+        // forward `style`, and custom properties inherit down to the <th>.
+        className="max-w-none overflow-clip py-0"
+        density="condensed"
+        style={{ "--th-top": `${headTop}px` }}
+      >
         <CardContent className="flex flex-col gap-0 p-0">
+          {/* THE WRAPPER STICKS, NOT THE BAND INSIDE IT. The band is muted at
+              40%, so the card-coloured wrapper stops rows showing through it,
+              and its measured height is where the column labels pin. */}
+          <div ref={bandRef} className="bg-card sticky z-30" style={{ top }}>
           <div className="bg-muted/40 flex flex-wrap items-center gap-2 border-b px-4 py-2">
             <div className="w-44">
               <Select
                 value={statusFilter}
                 onValueChange={(v) => {
                   setStatusFilter(v);
-                  setPage(1);
                 }}
               >
                 <SelectTrigger dataHook="campaign-status-filter">
@@ -1756,7 +1980,6 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
                 value={modeFilter}
                 onValueChange={(v) => {
                   setModeFilter(v);
-                  setPage(1);
                 }}
               >
                 <SelectTrigger dataHook="campaign-mode-filter">
@@ -1773,153 +1996,29 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
               </Select>
             </div>
             <span className="grow" />
-            {/* The count describes the FILTER, so it only appears when one is
-                on; the pager underneath owns the page range. Two counts that
-                say different things in the same band read as a contradiction. */}
-            {filtered ? (
-              <span className="text-muted-foreground text-sm">
-                {rows.length} of {campaigns.length} campaigns
-              </span>
-            ) : null}
           </div>
-          <Table dataHook="campaigns-table">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Mode</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Reviews gained</TableHead>
-                <TableHead>Last activity</TableHead>
-                <TableHead className="w-12">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageRows.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">
-                    {renameId === c.id ? (
-                      <Input
-                        dataHook={`campaign-${c.id}-rename`}
-                        value={renameValue}
-                        autoFocus
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onBlur={commitRename}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") e.currentTarget.blur();
-                        }}
-                      />
-                    ) : (
-                      /* data-bl-link, the shell's link rule (3 Sep): foreground
-                         at rest, green-700 + underline on hover. The name is
-                         the way in; a Draft opens in the wizard where it left
-                         off, everything else opens its page. */
-                      <button
-                        type="button"
-                        data-bl-link=""
-                        data-hook={`campaign-${c.id}-open`}
-                        onClick={() => onOpen(c)}
-                        className="text-left"
-                      >
-                        {c.name}
-                      </button>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {CHANNELS[c.config.channel]?.label ?? ""}
-                  </TableCell>
-                  <TableCell>
-                    <StatusPill status={c.status} hook={`campaign-${c.id}-status`} />
-                  </TableCell>
-                  {/* The one number. No plus sign (3 Sep): reviews gained cannot
-                      go the other way, so a sign would be decoration. A Draft
-                      has nothing to count, and says so with a dash rather than
-                      a zero it did not earn. */}
-                  <TableCell className="text-right font-semibold tabular-nums">
-                    {c.stats ? c.stats.reviews : <span className="text-muted-foreground font-normal">—</span>}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <DateStamp
-                      label={c.lastActivity.label}
-                      value={c.lastActivity.date}
-                      dataHook={`campaign-${c.id}-activity`}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {/* Same trigger pattern as the old card's menu, which is the
-                        one DropdownMenu in this screen that has never blanked
-                        the page (see the header note in App). */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          iconOnly
-                          dataHook={`campaign-${c.id}-menu-button`}
-                          aria-label="Campaign actions"
-                        >
-                          <MoreHorizontal className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {c.config.channel === "kiosk" ? (
-                          <DropdownMenuItem onSelect={() => onPreview(c)}>
-                            <Monitor className="size-4" /> Open kiosk
-                          </DropdownMenuItem>
-                        ) : null}
-                        {c.config.channel === "link" ? (
-                          <DropdownMenuItem onSelect={() => {}}>
-                            <Copy className="size-4" /> Copy link
-                          </DropdownMenuItem>
-                        ) : null}
-                        <DropdownMenuItem
-                          onSelect={() => {
-                            setRenameId(c.id);
-                            setRenameValue(c.name);
-                          }}
-                        >
-                          <Pencil className="size-4" /> Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => onNew(c)}>
-                          <Copy className="size-4" /> Re-use as new campaign
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => saveAsTemplate(c)}>
-                          <FileText className="size-4" /> Save as template
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {stateOf(c.status).canStop ? (
-                          <DropdownMenuItem onSelect={() => onStop(c)}>
-                            <X className="size-4" />{" "}
-                            {c.status === "Scheduled" ? "Cancel send" : "Stop campaign"}
-                          </DropdownMenuItem>
-                        ) : null}
-                        {stateOf(c.status).canRestart ? (
-                          <DropdownMenuItem onSelect={() => onRestart(c)}>
-                            <RotateCcw className="size-4" /> Restart campaign
-                          </DropdownMenuItem>
-                        ) : null}
-                        {c.status === "Draft" ? (
-                          <DropdownMenuItem onSelect={() => setDeleteTarget({ kind: "campaign", item: c })}>
-                            <Trash2 className="size-4" /> Delete draft
-                          </DropdownMenuItem>
-                        ) : null}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <TablePager
-            page={safePage}
-            pageCount={pageCount}
-            from={(safePage - 1) * PAGE_SIZE + 1}
-            to={Math.min(safePage * PAGE_SIZE, rows.length)}
-            total={rows.length}
-            noun="campaigns"
-            onPage={setPage}
-            hook="campaigns"
+          </div>
+          <DataTable
+            table={table}
+            dataHook="campaigns-table"
+            noResultsMessage="No campaigns match"
+            className={TABLE_LOOK}
           />
+          <div className="bg-card sticky bottom-0 z-10">
+            <div className="bg-muted/40 border-t px-4 py-2">
+              <DataTablePagination
+                table={table}
+                dataHook="campaigns-pagination"
+                className="w-auto"
+                ariaLabel="Campaign pagination"
+                // Same wording as Review Manager. The DS default is "1-9 of 9";
+                // two tables in one product should not count rows differently.
+                renderRowCount={({ startRow, endRow, totalRows }) =>
+                  `${startRow} to ${endRow} of ${totalRows}`
+                }
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -1941,11 +2040,10 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
 // button on the row rather than a menu item, because it is the reason the
 // page exists.
 function TemplatesPage({ templates, setTemplates, onNew }) {
-  const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const pageCount = Math.max(1, Math.ceil(templates.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const pageRows = templates.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  // Empty until a header is pressed, so the templates keep their own order.
+  const [sorting, setSorting] = useState([]);
+  const { top, bandRef, headTop } = useStickyTable("get-reviews-page-header");
 
   const duplicateTemplate = (t) =>
     setTemplates((ts) => [
@@ -1953,94 +2051,149 @@ function TemplatesPage({ templates, setTemplates, onNew }) {
       { ...t, id: `t${Date.now()}`, name: `${t.name} (copy)`, source: "user", updated: "2026-09-03T17:10" },
     ]);
 
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "name",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Template" dataHook="templates-col-template" />,
+        sortingFn: byText,
+        cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+      },
+      {
+        id: "mode",
+        accessorFn: (t) => CHANNELS[t.config.channel]?.label ?? "",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Mode" dataHook="templates-col-mode" />,
+        sortingFn: byText,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">{CHANNELS[row.original.config.channel]?.label ?? ""}</span>
+        ),
+      },
+      {
+        id: "ask",
+        accessorFn: (t) => askLabel(t.config),
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Ask" dataHook="templates-col-ask" />,
+        sortingFn: byText,
+        cell: ({ row }) => <span className="text-muted-foreground">{askLabel(row.original.config)}</span>,
+      },
+      {
+        // By the word on the badge, so BrightLocal's presets and Yours group.
+        id: "source",
+        accessorFn: (t) => (t.source === "brightlocal" ? "BrightLocal" : "Yours"),
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Source" dataHook="templates-col-source" />,
+        sortingFn: byText,
+        cell: ({ row }) => <SourceBadge source={row.original.source} hook={`template-${row.original.id}-source`} />,
+      },
+      {
+        accessorKey: "updated",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" dataHook="templates-col-updated" />,
+        sortingFn: byDate,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            <DateStamp label="Updated" value={row.original.updated} dataHook={`template-${row.original.id}-updated`} />
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        enableSorting: false,
+        header: () => <span className="sr-only">Actions</span>,
+        meta: { width: "13rem" },
+        cell: ({ row }) => {
+          const t = row.original;
+          return (
+            <div className="flex items-center justify-end gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                dataHook={`template-${t.id}-create`}
+                onClick={() => onNew(t, { fromTemplate: true })}
+              >
+                <Plus className="size-4" /> Create campaign
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    iconOnly
+                    dataHook={`template-${t.id}-menu-button`}
+                    aria-label="Template actions"
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => duplicateTemplate(t)}>
+                    <Copy className="size-4" /> Duplicate
+                  </DropdownMenuItem>
+                  {/* Presets cannot be deleted: they are BrightLocal's,
+                      and a user who dislikes one can ignore it. A
+                      duplicate is theirs and can go. */}
+                  {t.source === "user" ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={() => setDeleteTarget({ kind: "template", item: t })}>
+                        <Trash2 className="size-4" /> Delete template
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      },
+    ],
+    [onNew],
+  );
+
+  const table = useDataTable({
+    columns,
+    data: templates,
+    getRowId: (row) => row.id,
+    sorting,
+    onSortingChange: setSorting,
+    enablePagination: true,
+    pageSize: PAGE_SIZE,
+  });
+
   return (
     <>
-      <Card dataHook="templates-table-card" className="max-w-none overflow-hidden py-0" density="condensed">
+      <Card
+        dataHook="templates-table-card"
+        // Same sticky arrangement as the campaigns card: overflow-clip so the
+        // band can stick, and --th-top on the card for the header row.
+        className="max-w-none overflow-clip py-0"
+        density="condensed"
+        style={{ "--th-top": `${headTop}px` }}
+      >
         <CardContent className="flex flex-col gap-0 p-0">
+          <div ref={bandRef} className="bg-card sticky z-30" style={{ top }}>
           <div className="bg-muted/40 flex flex-wrap items-center gap-2 border-b px-4 py-2">
             <span className="text-muted-foreground text-sm">
               BrightLocal's templates, plus any you save from a campaign of your own.
             </span>
           </div>
-          <Table dataHook="templates-table">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Template</TableHead>
-                <TableHead>Mode</TableHead>
-                <TableHead>Ask</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead className="w-52">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageRows.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{CHANNELS[t.config.channel]?.label ?? ""}</TableCell>
-                  <TableCell className="text-muted-foreground">{askLabel(t.config)}</TableCell>
-                  <TableCell>
-                    <SourceBadge source={t.source} hook={`template-${t.id}-source`} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <DateStamp label="Updated" value={t.updated} dataHook={`template-${t.id}-updated`} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        dataHook={`template-${t.id}-create`}
-                        onClick={() => onNew(t, { fromTemplate: true })}
-                      >
-                        <Plus className="size-4" /> Create campaign
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            iconOnly
-                            dataHook={`template-${t.id}-menu-button`}
-                            aria-label="Template actions"
-                          >
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => duplicateTemplate(t)}>
-                            <Copy className="size-4" /> Duplicate
-                          </DropdownMenuItem>
-                          {/* Presets cannot be deleted: they are BrightLocal's,
-                              and a user who dislikes one can ignore it. A
-                              duplicate is theirs and can go. */}
-                          {t.source === "user" ? (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onSelect={() => setDeleteTarget({ kind: "template", item: t })}>
-                                <Trash2 className="size-4" /> Delete template
-                              </DropdownMenuItem>
-                            </>
-                          ) : null}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <TablePager
-            page={safePage}
-            pageCount={pageCount}
-            from={(safePage - 1) * PAGE_SIZE + 1}
-            to={Math.min(safePage * PAGE_SIZE, templates.length)}
-            total={templates.length}
-            noun="templates"
-            onPage={setPage}
-            hook="templates"
+          </div>
+          <DataTable
+            table={table}
+            dataHook="templates-table"
+            noResultsMessage="No templates yet"
+            className={TABLE_LOOK}
           />
+          <div className="bg-card sticky bottom-0 z-10">
+            <div className="bg-muted/40 border-t px-4 py-2">
+              <DataTablePagination
+                table={table}
+                dataHook="templates-pagination"
+                className="w-auto"
+                ariaLabel="Template pagination"
+                // Same wording as Review Manager and the campaigns table.
+                renderRowCount={({ startRow, endRow, totalRows }) =>
+                  `${startRow} to ${endRow} of ${totalRows}`
+                }
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -4541,14 +4694,141 @@ function AllFeedback({ campaign }) {
   const [ratingFilter, setRatingFilter] = useState("all");
   const [visitedFilter, setVisitedFilter] = useState("all");
   const [filterMenu, setFilterMenu] = useState(null);
+  // A DRAWER, NOT AN INLINE EXPANSION (Ali, 7 Sep). The row used to unfold in
+  // place, which pushed every row below it down the page and meant the full
+  // text was only ever readable at the width of the column it sat in. Holding
+  // the id rather than the object keeps the drawer honest if the filters move
+  // underneath it.
   const [openId, setOpenId] = useState(null);
+  // Empty until a header is pressed, so the newest feedback stays on top.
+  const [sorting, setSorting] = useState([]);
 
   const bandOf = (score) => (score <= 6 ? "low" : score <= 8 ? "mid" : "high");
-  const rows = FEEDBACK_ITEMS.filter(
-    (f) =>
-      (ratingFilter === "all" || bandOf(f.score) === ratingFilter) &&
-      (visitedFilter === "all" || (visitedFilter === "yes") === !!f.visited),
+  // Memoised now: DataTable goes back to page 1 whenever its rows change, so
+  // a fresh array on every render would pin it there.
+  const rows = useMemo(
+    () =>
+      FEEDBACK_ITEMS.filter(
+        (f) =>
+          (ratingFilter === "all" || bandOf(f.score) === ratingFilter) &&
+          (visitedFilter === "all" || (visitedFilter === "yes") === !!f.visited),
+      ),
+    [ratingFilter, visitedFilter],
   );
+  // COMPARED AS STRINGS ON PURPOSE. Feedback ids are numbers in the seed, but
+  // the delegated row handler can only read one back out of a data attribute,
+  // where everything is a string. That handler also fires AFTER the cell
+  // button (it is the bubble target), so the string is what lands in state
+  // either way. Normalising here beats parsing at two call sites.
+  const openItem = FEEDBACK_ITEMS.find((f) => String(f.id) === String(openId)) ?? null;
+  // Below sm the drawer comes up from the bottom, as in Review Manager.
+  const [drawerNarrow, setDrawerNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const sync = () => setDrawerNarrow(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "score",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Rating" dataHook="feedback-col-rating" />,
+        // The score itself, whichever way it is drawn: stars and thumbs are
+        // pictures of the same 0 to 10 number.
+        sortingFn: byNumber,
+        // FIXED WIDTHS, FEEDBACK FILLS (Ali, 17 Sep: emails "can get long";
+        // the text is "the most important"). With layout="fixed" every column
+        // but Feedback has a set width, so Feedback takes whatever the card
+        // has left and truncates inside it, at any card width. 7.5rem holds
+        // five DS Rating stars plus the cell padding and the sort arrow.
+        meta: { width: "7.5rem" },
+        cell: ({ row }) => <FeedbackScore type={type} score={row.original.score} />,
+      },
+      {
+        accessorKey: "text",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Feedback" dataHook="feedback-col-feedback" />,
+        sortingFn: byText,
+        // FEEDBACK FIRST, AND WIDEST (Ali, 17 Sep: "the review text is
+        // arguably the most important"). A REAL BUTTON, and it keeps the
+        // `feedback-row-<id>` hook the capture walker asserts on. The row is
+        // clickable by delegation, but a div listener is not reachable by
+        // keyboard, so the text people want to read in full carries focus.
+        cell: ({ row }) => (
+          <button
+            type="button"
+            data-hook={`feedback-row-${row.original.id}`}
+            className="block w-full truncate text-left"
+            onClick={() => setOpenId(row.original.id)}
+          >
+            <span data-bl-link>{row.original.text}</span>
+          </button>
+        ),
+      },
+      {
+        // LONG EMAILS TRUNCATE, with the whole address on hover and in full
+        // in the drawer. Anonymous has no address, so it sorts as the lowest.
+        id: "customer",
+        accessorFn: (f) => f.email ?? "",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Customer" dataHook="feedback-col-customer" />,
+        sortingFn: byText,
+        meta: { width: "13rem" },
+        cell: ({ row }) =>
+          row.original.email ? (
+            <span className="text-muted-foreground block truncate" title={row.original.email}>
+              {row.original.email}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">Anonymous</span>
+          ),
+      },
+      {
+        id: "consent",
+        accessorFn: (f) => (f.consent ? 1 : 0),
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Testimonial" dataHook="feedback-col-testimonial" />,
+        sortingFn: byNumber,
+        meta: { width: "8rem" },
+        cell: ({ row }) =>
+          row.original.consent ? (
+            <Badge dataHook={`feedback-consent-${row.original.id}`} variant="secondary">
+              Testimonial
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground text-xs">No</span>
+          ),
+      },
+      {
+        accessorKey: "date",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" dataHook="feedback-col-date" />,
+        sortingFn: byDate,
+        meta: { width: "10rem" },
+        cell: ({ row }) => (
+          <span className="text-muted-foreground whitespace-nowrap">{formatDate(row.original.date)}</span>
+        ),
+      },
+    ],
+    [type],
+  );
+
+  const table = useDataTable({
+    columns,
+    data: rows,
+    getRowId: (r) => String(r.id),
+    sorting,
+    onSortingChange: setSorting,
+    enablePagination: true,
+    // TWENTY, NOT PAGE_SIZE (Ali, 6 Sep: "pagination will be 10 or 20, not 5
+    // per page"). Every response was on screen before this was a DataTable,
+    // and twenty keeps all fourteen on page 1, the same as Review Manager.
+    pageSize: 20,
+  });
+
+  // Where the open row sits in the table's own order, filters and sort
+  // applied, so the drawer's up and down walk the rows as they are listed.
+  const orderedRows = table.getPrePaginationRowModel().rows.map((r) => r.original);
+  const openIndex = openItem ? orderedRows.findIndex((f) => String(f.id) === String(openId)) : -1;
 
   const VISITED_OPTIONS = [
     { id: "all", label: "All feedback" },
@@ -4620,56 +4900,135 @@ function AllFeedback({ campaign }) {
         </CardHeader>
         <CardContent className="flex flex-col gap-0 p-0">
 
-          <div className="divide-border divide-y">
-            {rows.map((f) => (
-              <div key={f.id}>
-                <button
-                  type="button"
-                  data-hook={`feedback-row-${f.id}`}
-                  onClick={() => setOpenId(openId === f.id ? null : f.id)}
-                  className="hover:bg-muted/40 flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors"
-                >
-                  <span className="w-24 shrink-0">
-                    <FeedbackScore type={type} score={f.score} />
-                  </span>
-                  {/* Plain text, not a link: the ROW is the button, and an
-                      anchor inside a button is invalid markup. The real
-                      mailto link lives in the expanded panel below. */}
-                  {/* Feedback first (Ali, 17 Sep: "the review text is arguably the
-                      most important"); who wrote it follows, muted and capped. */}
-                  <span className="min-w-0 flex-1 truncate">{f.text}</span>
-                  <span className="text-muted-foreground w-44 shrink-0 truncate" title={f.email ?? undefined}>
-                    {f.email ? f.email : "Anonymous"}
-                  </span>
-                  {f.consent ? (
-                    <Badge dataHook={`feedback-consent-${f.id}`} variant="secondary">
-                      Testimonial
-                    </Badge>
-                  ) : null}
-                  <span className="text-muted-foreground hidden w-24 shrink-0 text-right text-xs sm:block">
-                    {formatDate(f.date)}
-                  </span>
-                </button>
-                {openId === f.id ? (
-                  <div className="bg-muted/30 flex flex-col gap-2 border-t px-4 py-3 text-sm">
-                    <p>{f.text}</p>
-                    <div className="text-muted-foreground flex flex-wrap gap-4 text-xs">
-                      <span>
-                        {f.visited ? "Visited a review site" : "Did not visit a review site"}
-                      </span>
-                      <span>
-                        {f.consent
-                          ? "Happy to be used as a testimonial"
-                          : "Not for use as a testimonial"}
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ))}
+          {/* DELEGATED, BECAUSE DataTable HAS NO onRowClick. Its props are
+              table / dataHook / isLoading / noResultsMessage / stickyHeader /
+              className / layout / minWidth / footer and nothing else, so a
+              whole-row target has to be caught on the way up. Reading the
+              row's own data-hook rather than its index means a re-sort or a
+              page change cannot point the drawer at the wrong response.
+              The pointer path is here; the keyboard path is the real
+              <button> in the Feedback cell, whose click bubbles to this same
+              handler. Both open the same drawer. A press on a sort button is
+              in the thead, so it never reaches the tbody lookup. */}
+          <div
+            // The column labels stick under the card's sticky header, not
+            // under the page's: the page header's height plus the band's.
+            style={{ "--th-top": "calc(var(--gds-page-header-height, 0px) + 69px)" }}
+            onClick={(e) => {
+              const tr = e.target.closest?.("tbody tr");
+              const hook = tr?.querySelector("[data-hook^='feedback-row-']");
+              const id = hook?.getAttribute("data-hook")?.replace("feedback-row-", "");
+              if (id) setOpenId(id);
+            }}
+          >
+            <DataTable
+              table={table}
+              dataHook="feedback-table"
+              layout="fixed"
+              noResultsMessage="No feedback matches"
+              className={`${TABLE_LOOK} [&_tbody_tr]:cursor-pointer`}
+            />
+          </div>
+
+          <div className="bg-card sticky bottom-0 z-10 border-t px-4 py-2">
+            <DataTablePagination
+              table={table}
+              dataHook="feedback-pagination"
+              className="w-auto"
+              ariaLabel="Feedback pagination"
+              renderRowCount={({ startRow, endRow, totalRows }) =>
+                `${startRow} to ${endRow} of ${totalRows}`
+              }
+            />
           </div>
         </CardContent>
       </Card>
+
+      {/* THE REVIEW MANAGER'S DRAWER (Ali, 17 Sep: "This should match the
+          drawer in Review Manager"), in place of the row that unfolded in
+          place. Right-hand from sm at the Manager's width clamp, a bottom
+          sheet below sm, and the Manager's header: up and down through the
+          listed rows with a count, and a close button. Everything the
+          unfolded row said is here: the full text, whether they visited a
+          review site, and whether they are happy to be quoted. NO REPLY
+          BUTTON (Ali, 17 Sep: "you cant reply to internal feedback"). */}
+      <Drawer
+        open={!!openItem}
+        onOpenChange={(o) => !o && setOpenId(null)}
+        direction={drawerNarrow ? "bottom" : "right"}
+      >
+        <DrawerContent
+          dataHook="feedback-drawer"
+          className={`flex flex-col ${drawerNarrow ? "" : "h-full"} data-[vaul-drawer-direction=right]:sm:w-[clamp(24rem,65vw,40rem)] data-[vaul-drawer-direction=right]:lg:w-[clamp(24rem,50vw,40rem)] data-[vaul-drawer-direction=right]:sm:max-w-[40rem]`}
+          style={drawerNarrow ? { marginTop: 0, maxHeight: "92svh" } : undefined}
+        >
+          <DrawerHeader className="max-w-none flex-row items-center justify-between gap-2 border-b px-4 py-3 text-left">
+            <span className="sr-only">
+              <DrawerTitle>Feedback</DrawerTitle>
+            </span>
+            {openIndex >= 0 ? (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  iconOnly
+                  dataHook="feedback-prev"
+                  onClick={() => setOpenId(String(orderedRows[openIndex - 1].id))}
+                  disabled={openIndex <= 0}
+                  ariaLabel="Previous feedback"
+                >
+                  <ChevronUp className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  iconOnly
+                  dataHook="feedback-next"
+                  onClick={() => setOpenId(String(orderedRows[openIndex + 1].id))}
+                  disabled={openIndex >= orderedRows.length - 1}
+                  ariaLabel="Next feedback"
+                >
+                  <ChevronDown className="size-4" />
+                </Button>
+                <span className="text-muted-foreground ml-1 text-sm tabular-nums">
+                  {openIndex + 1} of {orderedRows.length}
+                </span>
+              </div>
+            ) : (
+              <span />
+            )}
+            <DrawerClose asChild>
+              <Button variant="ghost" iconOnly size="sm" dataHook="feedback-drawer-close" ariaLabel="Close feedback">
+                <X className="size-4" />
+              </Button>
+            </DrawerClose>
+          </DrawerHeader>
+          {/* REVIEW MANAGER'S ORDER (Ali, 17 Sep: "Its back to front? So should be
+              labels and values up top, review text below"). Detail rows with
+              the label in a fixed column, a rule, then who wrote it and what
+              they wrote. break-all keeps a long email inside the drawer. */}
+          <DrawerBody key={openItem?.id} className="mt-0 flex min-h-0 max-w-none flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+            <div className="flex flex-col gap-2">
+              {[
+                ["Rating", openItem ? <FeedbackScore type={type} score={openItem.score} /> : null],
+                ["Received", <span className="text-sm">{openItem ? formatDate(openItem.date) : ""}</span>],
+                ["Review site", <span className="text-sm">{openItem?.visited ? "Visited a review site" : "Did not visit a review site"}</span>],
+                ["Testimonial", <span className="text-sm">{openItem?.consent ? "Happy to be used as a testimonial" : "Not for use as a testimonial"}</span>],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className="text-muted-foreground w-24 shrink-0 text-sm">{label}</span>
+                  {value}
+                </div>
+              ))}
+            </div>
+            <Separator />
+            <div className="flex flex-col gap-1">
+              <p className={`text-sm font-medium break-all ${openItem?.email ? "" : "text-muted-foreground"}`}>
+                {openItem?.email ?? "Anonymous"}
+              </p>
+              <p className="text-sm leading-relaxed">{openItem?.text}</p>
+            </div>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
