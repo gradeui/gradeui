@@ -494,7 +494,11 @@ export default function RMReportSettingsPage() {
             <p className="text-muted-foreground mt-4 text-sm" data-hook="next-run">
               Next run:{" "}
               <span className="text-foreground font-medium">
-                {frequency === "daily" ? "tomorrow, 06:00" : `${runDay} ${formatDate("2026-09-08")}, 06:00`}
+                {/* NO CLOCK TIME (Ali, 17 Sep: "Can we remove the time").
+                    Margarita's review: the API does not return the next run,
+                    so the day can be worked out from the schedule but 06:00
+                    is a server batch detail nothing on this page can know. */}
+                {frequency === "daily" ? "tomorrow" : `${runDay} ${formatDate("2026-09-08")}`}
               </span>
               . A run can be triggered by hand at any time, and doing so does not move the schedule.
             </p>

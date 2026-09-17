@@ -840,6 +840,11 @@
       "why": "Ali, 17 Sep: the Monitored directories lede is the country, not the match count",
       "find": "            // The watched count moved to the page header; this keeps the one\n            // fact the header does not carry.\n            lede={`${matchedCount} matched to a profile`}",
       "replace": "            // The COUNTRY, not \"3 matched to a profile\" (Ali, 17 Sep: \"we can\n            // just put the country there\"). It is what decides which\n            // directories are listed, it comes from the location, and a match\n            // count had no data behind it (Svitlana: the API sends no status).\n            lede={COUNTRY_NAME[country]}"
+    },
+    {
+      "why": "Ali, 17 Sep: the next run shows the day, not the 06:00 clock time",
+      "find": "                {frequency === \"daily\" ? \"tomorrow, 06:00\" : `${runDay} ${formatDate(\"2026-09-08\")}, 06:00`}",
+      "replace": "                {/* NO CLOCK TIME (Ali, 17 Sep: \"Can we remove the time\").\n                    Margarita's review: the API does not return the next run,\n                    so the day can be worked out from the schedule but 06:00\n                    is a server batch detail nothing on this page can know. */}\n                {frequency === \"daily\" ? \"tomorrow\" : `${runDay} ${formatDate(\"2026-09-08\")}`}"
     }
   ]
 }
