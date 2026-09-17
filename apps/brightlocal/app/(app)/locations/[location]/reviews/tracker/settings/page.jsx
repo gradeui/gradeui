@@ -498,7 +498,10 @@ export default function RMReportSettingsPage() {
                     Margarita's review: the API does not return the next run,
                     so the day can be worked out from the schedule but 06:00
                     is a server batch detail nothing on this page can know. */}
-                {frequency === "daily" ? "tomorrow" : `${runDay} ${formatDate("2026-09-08")}`}
+                {/* No weekday in front of the date either (Ali, 17 Sep): it
+                    doubled the Run day field above, and it was the part that
+                    could disagree with the date. */}
+                {frequency === "daily" ? "tomorrow" : formatDate("2026-09-08")}
               </span>
               . A run can be triggered by hand at any time, and doing so does not move the schedule.
             </p>

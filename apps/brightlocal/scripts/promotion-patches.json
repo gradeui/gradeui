@@ -845,6 +845,11 @@
       "why": "Ali, 17 Sep: the next run shows the day, not the 06:00 clock time",
       "find": "                {frequency === \"daily\" ? \"tomorrow, 06:00\" : `${runDay} ${formatDate(\"2026-09-08\")}, 06:00`}",
       "replace": "                {/* NO CLOCK TIME (Ali, 17 Sep: \"Can we remove the time\").\n                    Margarita's review: the API does not return the next run,\n                    so the day can be worked out from the schedule but 06:00\n                    is a server batch detail nothing on this page can know. */}\n                {frequency === \"daily\" ? \"tomorrow\" : `${runDay} ${formatDate(\"2026-09-08\")}`}"
+    },
+    {
+      "why": "Ali, 17 Sep: the next run is the date alone, no weekday in front",
+      "find": "                {frequency === \"daily\" ? \"tomorrow\" : `${runDay} ${formatDate(\"2026-09-08\")}`}",
+      "replace": "                {/* No weekday in front of the date either (Ali, 17 Sep): it\n                    doubled the Run day field above, and it was the part that\n                    could disagree with the date. */}\n                {frequency === \"daily\" ? \"tomorrow\" : formatDate(\"2026-09-08\")}"
     }
   ]
 }
