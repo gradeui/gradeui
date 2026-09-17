@@ -4612,13 +4612,6 @@ function AllFeedback({ campaign }) {
                 {openId === f.id ? (
                   <div className="bg-muted/30 flex flex-col gap-2 border-t px-4 py-3 text-sm">
                     <p>{f.text}</p>
-                    {f.email ? (
-                      <div>
-                        <Button variant="outline" size="sm" dataHook={`feedback-reply-${f.id}`} asChild>
-                          <a href={`mailto:${f.email}`}>Reply to {f.name}</a>
-                        </Button>
-                      </div>
-                    ) : null}
                     <div className="text-muted-foreground flex flex-wrap gap-4 text-xs">
                       <span>{f.name}</span>
                       <span>
@@ -5138,7 +5131,12 @@ export default function RMGetReviewsHubSpokePage() {
                   preview of the same rows has nothing left to preview. A
                   campaign that asks for no feedback has no card for it. */}
               <CampaignInsights campaign={active} />
-              {active.config.ask === "feedback" ? <AllFeedback campaign={active} /> : null}
+              {/* Only once the campaign has activity: a campaign that has sent
+                  nothing has no responses, and its Results card already says
+                  "No activity yet". */}
+              {active.config.ask === "feedback" && active.stats && active.stats.delivered !== 0 ? (
+                <AllFeedback campaign={active} />
+              ) : null}
             </div>
           ) : null}
 

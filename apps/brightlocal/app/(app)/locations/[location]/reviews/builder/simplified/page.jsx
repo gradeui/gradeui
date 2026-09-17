@@ -5450,6 +5450,17 @@ function AllFeedback({ campaign }) {
   // button (it is the bubble target), so the string is what lands in state
   // either way. Normalising here beats parsing at two call sites.
   const openItem = FEEDBACK_ITEMS.find((f) => String(f.id) === String(openId)) ?? null;
+  // Where the open row sits in the FILTERED list, for the drawer's up / down.
+  const openIndex = openItem ? rows.findIndex((f) => String(f.id) === String(openId)) : -1;
+  // Below sm the drawer comes up from the bottom, as in Review Manager.
+  const [drawerNarrow, setDrawerNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const sync = () => setDrawerNarrow(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const columns = useMemo(
     () => [
@@ -5628,28 +5639,69 @@ function AllFeedback({ campaign }) {
         </CardContent>
       </Card>
 
-      {/* ONE REVIEW, FULL WIDTH (Ali, 7 Sep: "each review should open up in a
-          sheet / drawer"). The table truncates the feedback to keep the rows
-          scannable, so the drawer is where the whole thing is actually
-          readable, along with the two facts the row only hints at: whether
-          they went on to a review site, and whether you may quote them.
-          Same right-hand Drawer as the customer preview, so the campaign page
-          has one idea of what a side panel is. */}
-      <Drawer open={!!openItem} onOpenChange={(o) => !o && setOpenId(null)}>
-        <DrawerContent dataHook="feedback-drawer" className="w-full sm:max-w-md">
-          <DrawerHeader className="flex-row items-center justify-between border-b">
-            <div className="flex items-center gap-3">
-              {openItem ? <FeedbackScore type={type} score={openItem.score} /> : null}
-              <DrawerTitle>{openItem?.name ?? "Feedback"}</DrawerTitle>
-            </div>
+      {/* THE REVIEW MANAGER'S DRAWER (Ali, 17 Sep: "This should match the
+          drawer in Review Manager"). It had no direction, so vaul opened it as
+          a bottom sheet pinned small to the corner. Now: right-hand from sm
+          at the Manager's width clamp, a bottom sheet below sm, and the
+          Manager's header, up and down through the filtered rows with a
+          count, and a close button. The customer and their score head the
+          body. NO REPLY BUTTON (Ali, 17 Sep: "you cant reply to internal
+          feedback"). */}
+      <Drawer
+        open={!!openItem}
+        onOpenChange={(o) => !o && setOpenId(null)}
+        direction={drawerNarrow ? "bottom" : "right"}
+      >
+        <DrawerContent
+          dataHook="feedback-drawer"
+          className={`flex flex-col ${drawerNarrow ? "" : "h-full"} data-[vaul-drawer-direction=right]:sm:w-[clamp(24rem,65vw,40rem)] data-[vaul-drawer-direction=right]:lg:w-[clamp(24rem,50vw,40rem)] data-[vaul-drawer-direction=right]:sm:max-w-[40rem]`}
+          style={drawerNarrow ? { marginTop: 0, maxHeight: "92svh" } : undefined}
+        >
+          <DrawerHeader className="max-w-none flex-row items-center justify-between gap-2 border-b px-4 py-3 text-left">
+            <span className="sr-only">
+              <DrawerTitle>Feedback</DrawerTitle>
+            </span>
+            {openIndex >= 0 ? (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  iconOnly
+                  dataHook="feedback-prev"
+                  onClick={() => setOpenId(String(rows[openIndex - 1].id))}
+                  disabled={openIndex <= 0}
+                  ariaLabel="Previous feedback"
+                >
+                  <ChevronUp className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  iconOnly
+                  dataHook="feedback-next"
+                  onClick={() => setOpenId(String(rows[openIndex + 1].id))}
+                  disabled={openIndex >= rows.length - 1}
+                  ariaLabel="Next feedback"
+                >
+                  <ChevronDown className="size-4" />
+                </Button>
+                <span className="text-muted-foreground ml-1 text-sm tabular-nums">
+                  {openIndex + 1} of {rows.length}
+                </span>
+              </div>
+            ) : (
+              <span />
+            )}
             <DrawerClose asChild>
-              <Button variant="ghost" iconOnly dataHook="feedback-drawer-close" aria-label="Close">
+              <Button variant="ghost" iconOnly size="sm" dataHook="feedback-drawer-close" ariaLabel="Close feedback">
                 <X className="size-4" />
               </Button>
             </DrawerClose>
           </DrawerHeader>
-          <DrawerBody className="flex flex-col gap-4">
-            <p className="text-sm">{openItem?.text}</p>
+          <DrawerBody key={openItem?.id} className="mt-0 flex min-h-0 max-w-none flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+            <div className="flex items-center gap-3">
+              {openItem ? <FeedbackScore type={type} score={openItem.score} /> : null}
+              <span className="text-heading-subsection">{openItem?.name ?? "Feedback"}</span>
+            </div>
+            <p className="text-body">{openItem?.text}</p>
             <Separator />
             <dl className="flex flex-col gap-2 text-sm">
               <div className="flex justify-between gap-4">
@@ -5672,13 +5724,6 @@ function AllFeedback({ campaign }) {
               </div>
             </dl>
           </DrawerBody>
-          {openItem?.email ? (
-            <DrawerFooter>
-              <Button variant="primary" dataHook={`feedback-reply-${openItem.id}`} asChild>
-                <a href={`mailto:${openItem.email}`}>Reply to {openItem.name}</a>
-              </Button>
-            </DrawerFooter>
-          ) : null}
         </DrawerContent>
       </Drawer>
     </div>
@@ -6266,7 +6311,12 @@ export default function RMReviewBuilderSimplifiedPage() {
                   preview of the same rows has nothing left to preview. A
                   campaign that asks for no feedback has no card for it. */}
               <CampaignInsights campaign={active} />
-              {active.config.ask === "feedback" ? <AllFeedback campaign={active} /> : null}
+              {/* Only once the campaign has activity: a campaign that has sent
+                  nothing has no responses, and its Results card already says
+                  "No activity yet". */}
+              {active.config.ask === "feedback" && active.stats && active.stats.delivered !== 0 ? (
+                <AllFeedback campaign={active} />
+              ) : null}
             </div>
           ) : null}
 
