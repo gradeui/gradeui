@@ -820,6 +820,26 @@
       "why": "Ali, 17 Sep: remove the Country dropdown from Monitored directories",
       "find": "            lede={`${matchedCount} matched to a profile`}\n            action={\n              <Field dataHook=\"country-field\" className=\"w-full sm:w-56\">\n                <FieldLabel htmlFor=\"country\" dataHook=\"country-label\">\n                  Country\n                </FieldLabel>\n                <Select value={country} onValueChange={switchCountry}>\n                  <SelectTrigger id=\"country\" dataHook=\"country-select\">\n                    <SelectValue placeholder=\"Country\" />\n                  </SelectTrigger>\n                  <SelectContent>\n                    {COUNTRIES.map((c) => (\n                      <SelectItem key={c.id} value={c.id}>\n                        {c.label}\n                      </SelectItem>\n                    ))}\n                  </SelectContent>\n                </Select>\n              </Field>\n            }\n          >",
       "replace": "            lede={`${matchedCount} matched to a profile`}\n          >"
+    },
+    {
+      "why": "Ali, 17 Sep: no Matched / No profile found badges on the directory rows; Read only stays",
+      "find": "                          {/* MATCHED IS THE STATE THAT MATTERS, so it is a\n                              badge rather than body copy. Read-only sources\n                              are marked here as well: the brief is explicit\n                              that Yelp has no reply affordance, and this is\n                              the one page that says why. */}\n                          {d.matched ? (\n                            <Badge variant=\"secondary\" dataHook={`directory-${d.id}-matched`}>\n                              Matched\n                            </Badge>\n                          ) : (\n                            <Badge variant=\"outline\" dataHook={`directory-${d.id}-unmatched`}>\n                              No profile found\n                            </Badge>\n                          )}\n                          {d.readOnly ? (",
+      "replace": "                          {/* NO MATCH BADGES (Ali, 17 Sep: \"We dont need the\n                              'matched' badges\"). Svitlana's review: the\n                              directory API returns identifier, name and\n                              base_url, and no status labels, so Matched /\n                              No profile found had nothing behind them.\n                              ASSUMPTION: \"No profile found\" goes too, as the\n                              other face of the same badge; the row's\n                              description still says it in words. Read only\n                              stays: it is the reply model (the brief says Yelp\n                              has no reply affordance), not a match state. */}\n                          {d.readOnly ? ("
+    },
+    {
+      "why": "Ali, 17 Sep: the country gets a display name",
+      "find": "  const country = \"USA\";\n",
+      "replace": "  const country = \"USA\";\n  const COUNTRY_NAME = { USA: \"United States\", UK: \"United Kingdom\" };\n"
+    },
+    {
+      "why": "Ali, 17 Sep: matchedCount goes with its lede",
+      "find": "  const matchedCount = list.filter((d) => monitored.includes(d.id) && d.matched).length;\n\n",
+      "replace": ""
+    },
+    {
+      "why": "Ali, 17 Sep: the Monitored directories lede is the country, not the match count",
+      "find": "            // The watched count moved to the page header; this keeps the one\n            // fact the header does not carry.\n            lede={`${matchedCount} matched to a profile`}",
+      "replace": "            // The COUNTRY, not \"3 matched to a profile\" (Ali, 17 Sep: \"we can\n            // just put the country there\"). It is what decides which\n            // directories are listed, it comes from the location, and a match\n            // count had no data behind it (Svitlana: the API sends no status).\n            lede={COUNTRY_NAME[country]}"
     }
   ]
 }

@@ -14,7 +14,7 @@
     {
       "section": "Monitored directories",
       "dwell": 6200,
-      "caption": "Matched or no profile found, per directory. That is the brief's profile-match panel, as a column rather than a separate panel: a directory you watch but have not matched is the case worth seeing."
+      "caption": "Every directory for this location, with a tick for the ones being watched. A row that cannot deliver says why, with Connect or Add URL to fix it."
     },
     { "scrollBy": 700, "ms": 1100 },
     {

@@ -934,8 +934,9 @@ const STATES = [
   ["settings-02-directories", "settings", async (p) => { await scrollToHook(p, '[data-hook="directories-card"]'); },
     `!!document.querySelector('[data-hook="directories-card"]')
      && !document.querySelector('[data-hook="country-select"]')
-     && !!document.querySelector('[data-hook="directory-google-matched"]')`,
-    "Monitored directories, for the location's own country: there is no country dropdown, because the directory list comes from the location. Matched / no profile found is a badge per row rather than a separate panel, because a directory you watch but have not matched is the case worth seeing."],
+     && !!document.querySelector('[data-hook="directory-google-desc"]')
+     && !document.querySelector('[data-hook="directory-google-matched"]')`,
+    "Monitored directories, for the location's own country: there is no country dropdown, because the directory list comes from the location. No match badges either: the directory API sends a name and a URL, not a status. Each row says in words what is being watched, with Connect or Add URL where a row needs one."],
   // settings-03-directories-uk is gone with the country dropdown (17 Sep).
   ["settings-04-alerts", "settings", async (p) => { await scrollToHook(p, '[data-hook="alerts-card"]'); },
     `!!document.querySelector('[data-hook="alerts-card"]')

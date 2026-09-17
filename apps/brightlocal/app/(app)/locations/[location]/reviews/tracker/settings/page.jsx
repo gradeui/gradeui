@@ -347,6 +347,7 @@ export default function RMReportSettingsPage() {
   // No location in the prototype's data carries a country yet, and the
   // sample directory rows are a US business's, so the list is the US one.
   const country = "USA";
+  const COUNTRY_NAME = { USA: "United States", UK: "United Kingdom" };
   const [monitored, setMonitored] = useState(() =>
     DIRECTORIES[country].filter((d) => d.on).map((d) => d.id),
   );
@@ -379,8 +380,6 @@ export default function RMReportSettingsPage() {
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
   };
-
-  const matchedCount = list.filter((d) => monitored.includes(d.id) && d.matched).length;
 
   return (
     <SidebarProvider dataHook="provider" defaultOpen>
@@ -505,9 +504,11 @@ export default function RMReportSettingsPage() {
           <SettingsCard
             dataHook="directories-card"
             title="Monitored directories"
-            // The watched count moved to the page header; this keeps the one
-            // fact the header does not carry.
-            lede={`${matchedCount} matched to a profile`}
+            // The COUNTRY, not "3 matched to a profile" (Ali, 17 Sep: "we can
+            // just put the country there"). It is what decides which
+            // directories are listed, it comes from the location, and a match
+            // count had no data behind it (Svitlana: the API sends no status).
+            lede={COUNTRY_NAME[country]}
           >
             <div className="flex flex-col">
               {list.map((d, i) => {
@@ -528,20 +529,16 @@ export default function RMReportSettingsPage() {
                           <FieldLabel htmlFor={`dir-${d.id}`} dataHook={`directory-${d.id}-label`}>
                             {d.name}
                           </FieldLabel>
-                          {/* MATCHED IS THE STATE THAT MATTERS, so it is a
-                              badge rather than body copy. Read-only sources
-                              are marked here as well: the brief is explicit
-                              that Yelp has no reply affordance, and this is
-                              the one page that says why. */}
-                          {d.matched ? (
-                            <Badge variant="secondary" dataHook={`directory-${d.id}-matched`}>
-                              Matched
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" dataHook={`directory-${d.id}-unmatched`}>
-                              No profile found
-                            </Badge>
-                          )}
+                          {/* NO MATCH BADGES (Ali, 17 Sep: "We dont need the
+                              'matched' badges"). Svitlana's review: the
+                              directory API returns identifier, name and
+                              base_url, and no status labels, so Matched /
+                              No profile found had nothing behind them.
+                              ASSUMPTION: "No profile found" goes too, as the
+                              other face of the same badge; the row's
+                              description still says it in words. Read only
+                              stays: it is the reply model (the brief says Yelp
+                              has no reply affordance), not a match state. */}
                           {d.readOnly ? (
                             <Badge variant="outline" dataHook={`directory-${d.id}-readonly`}>
                               Read only
