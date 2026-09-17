@@ -27,7 +27,8 @@
 //   "Panel showing which directories a
 //    profile was matched on"               -> the match column on Directories
 //   "Country-scoped directory picker"      -> the country Select scopes the list
-//   "public/white-label share link"        -> Sharing
+//   "public/white-label share link"        -> Sharing (public only; the
+//                                             white-label toggle is out, 17 Sep)
 //
 // The alerts section is also the audit's own acknowledged hole. Harry
 // Brignull's audit (11 Aug) says, of his clickthrough prototype: "I have not
@@ -360,7 +361,6 @@ export default function RMReportSettingsPage() {
   const [emails, setEmails] = useState(["alex@farmburger.com", "manager@farmburger.com"]);
 
   const [shared, setShared] = useState(true);
-  const [whiteLabel, setWhiteLabel] = useState(false);
   const [copied, setCopied] = useState(false);
   // Which directory's "find profile" dialog is open, by id. null = none.
   const [findFor, setFindFor] = useState(null);
@@ -802,25 +802,12 @@ export default function RMReportSettingsPage() {
                   </FieldDescription>
                 </Field>
 
-                <Separator dataHook="sharing-rule" />
-
-                <Field orientation="horizontal" dataHook="white-label-field">
-                  <Switch
-                    id="white-label"
-                    dataHook="white-label-switch"
-                    checked={whiteLabel}
-                    onCheckedChange={setWhiteLabel}
-                  />
-                  <FieldContent>
-                    <FieldLabel htmlFor="white-label" dataHook="white-label-label">
-                      Remove BrightLocal branding
-                    </FieldLabel>
-                    <FieldDescription dataHook="white-label-desc">
-                      The shared report carries your own logo instead of ours. Agencies send this to
-                      their clients, so it is off by default rather than on.
-                    </FieldDescription>
-                  </FieldContent>
-                </Field>
+                {/* NO "Remove BrightLocal branding" toggle (Ali, 17 Sep: "remove
+                    this Brightlocal branding toggle"). Margarita's review asked
+                    where "your own logo" would come from: white-label profiles
+                    exist only on the old platform, so a new-platform customer
+                    has no logo and nowhere to upload one. Out until that has
+                    an answer. */}
               </div>
             ) : (
               <p className="text-muted-foreground text-sm" data-hook="sharing-off">

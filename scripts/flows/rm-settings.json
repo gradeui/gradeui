@@ -52,7 +52,7 @@
     {
       "section": "Sharing",
       "dwell": 6200,
-      "caption": "A read-only view anyone can open without signing in, and the white-label switch agencies send to their clients. Off by default rather than on."
+      "caption": "A read-only view anyone can open without signing in, and a link to copy and send."
     },
     { "click": "[data-hook=\"copy-share-link\"]", "hoverMs": 1000 },
     { "dwell": 4200 },

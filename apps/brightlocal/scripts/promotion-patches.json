@@ -774,5 +774,22 @@
       "find": "            dataHook={\"hub-rankings-\" + b.label.replace(/[+ –]/g, \"-\")} />",
       "replace": "            dataHook={\"hub-rankings-\" + b.label.replace(/[+ ]+/g, \"-\")} />"
     }
+  ],
+  "app/(app)/locations/[location]/reviews/tracker/settings/page.jsx": [
+    {
+      "why": "Ali, 17 Sep: drop the whiteLabel state with its toggle",
+      "find": "  const [whiteLabel, setWhiteLabel] = useState(false);\n",
+      "replace": ""
+    },
+    {
+      "why": "Ali, 17 Sep: remove the Remove BrightLocal branding toggle and its rule",
+      "find": "                <Separator dataHook=\"sharing-rule\" />\n\n                <Field orientation=\"horizontal\" dataHook=\"white-label-field\">\n                  <Switch\n                    id=\"white-label\"\n                    dataHook=\"white-label-switch\"\n                    checked={whiteLabel}\n                    onCheckedChange={setWhiteLabel}\n                  />\n                  <FieldContent>\n                    <FieldLabel htmlFor=\"white-label\" dataHook=\"white-label-label\">\n                      Remove BrightLocal branding\n                    </FieldLabel>\n                    <FieldDescription dataHook=\"white-label-desc\">\n                      The shared report carries your own logo instead of ours. Agencies send this to\n                      their clients, so it is off by default rather than on.\n                    </FieldDescription>\n                  </FieldContent>\n                </Field>\n",
+      "replace": "                {/* NO \"Remove BrightLocal branding\" toggle (Ali, 17 Sep: \"remove\n                    this Brightlocal branding toggle\"). Margarita's review asked\n                    where \"your own logo\" would come from: white-label profiles\n                    exist only on the old platform, so a new-platform customer\n                    has no logo and nowhere to upload one. Out until that has\n                    an answer. */}\n"
+    },
+    {
+      "why": "Ali, 17 Sep: the header note no longer promises a white-label link",
+      "find": "//   \"public/white-label share link\"        -> Sharing",
+      "replace": "//   \"public/white-label share link\"        -> Sharing (public only; the\n//                                             white-label toggle is out, 17 Sep)"
+    }
   ]
 }
