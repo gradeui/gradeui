@@ -43,7 +43,8 @@
 // to add to or remove from; this page edits THE report for this location.
 // If a report list ever returns, it belongs on the Reviews hub, not here.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import NextLink from "next/link";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -94,19 +95,11 @@ import {
   DialogClose,
 } from "@brightlocal/ui-components/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@brightlocal/ui-components/table";
-import {
   Menu,
   Play,
   Check,
   Copy,
-  Link2,
+  FileText,
   Globe,
   GoogleOriginal,
   FacebookOriginal,
@@ -119,9 +112,10 @@ import {
   PageHeader,
   DateStamp,
   formatDate,
-  formatDateTime,
   useProposalData,
 } from "@brightlocal/proposal";
+import { useLocationKey } from "@/lib/location";
+import { runNow, useReportRuns, reportsPath } from "@/lib/report-runs";
 
 /* ================================ reference =============================== */
 
@@ -219,25 +213,7 @@ const DIRECTORIES = {
 // Same-looking rows, different verbs: "Find profile" against "Connect".
 // Collapsing them into one button would send somebody to an oAuth screen to
 // solve a missing Yell URL.
-// Run history. Every row is a real outcome, including the one that partly
-// failed: a history that only ever shows success is not a history, and the
-// brief names reply/fetch failures as the recurring support theme.
-// ISO IN, house format OUT. Every date in RM goes through `formatDate` /
-// `formatDateTime` from @brightlocal/proposal — the same functions the page
-// header's Last updated line uses — so a date in this table and a date in a
-// header read identically.
-const RUNS = [
-  { id: "r1", at: "2026-09-02T06:00", trigger: "Scheduled", found: 1247, added: 12, state: "ok" },
-  { id: "r2", at: "2026-08-26T06:00", trigger: "Scheduled", found: 1235, added: 9, state: "ok" },
-  { id: "r3", at: "2026-08-22T14:31", trigger: "Manual", found: 1226, added: 4, state: "ok" },
-  { id: "r4", at: "2026-08-19T06:00", trigger: "Scheduled", found: 1222, added: 7, state: "partial" },
-  { id: "r5", at: "2026-08-12T06:00", trigger: "Scheduled", found: 1215, added: 11, state: "ok" },
-];
-
-const RUN_STATE = {
-  ok: { label: "Complete", variant: "secondary" },
-  partial: { label: "Facebook skipped", variant: "outline" },
-};
+// The runs moved to lib/report-runs (17 Sep), shared with the Reports page.
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -370,39 +346,17 @@ export default function RMReportSettingsPage() {
   const [findFor, setFindFor] = useState(null);
   const [profileUrl, setProfileUrl] = useState("");
   const [connectOpen, setConnectOpen] = useState(false);
+  // Reports' Reconnect lands here with ?connect=facebook and opens the
+  // dialog: the Facebook connection is a setting, so its fix lives here.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("connect") === "facebook") setConnectOpen(true);
+  }, []);
 
-  // RUN REPORT NOW HAS A LIFECYCLE (Ali, 17 Sep: "Can we add three states
-  // in?", from Margarita's review). Per the PRD an ad-hoc run is credit-checked
-  // against the subscription and rejected with "no ad-hoc runs left", and the
-  // API cannot tell us the quota BEFORE the click. So the button is never
-  // disabled up front: a click either queues a run, which reports running
-  // until it is done, or comes back rejected. The same pattern AI Visibility
-  // and Local Search Grid use: a loading button, then a no-credits alert.
-  //   idle      the button
-  //   running   the button spins and says so, the header says Running now
-  //   rejected  a warning above the schedule, with the way to more runs
-  // ASSUMPTION, demo only: one manual run is left, so the first click runs
-  // (and lands in the history when it finishes) and the second is rejected.
-  // The real allowance is the subscription's, and nothing here knows it.
-  const [runState, setRunState] = useState("idle");
-  const [runs, setRuns] = useState(RUNS);
-  const [manualRunsLeft, setManualRunsLeft] = useState(1);
-  const runNow = () => {
-    if (runState === "running") return;
-    if (manualRunsLeft < 1) {
-      setRunState("rejected");
-      return;
-    }
-    setRunState("running");
-    window.setTimeout(() => {
-      setRuns((prev) => [
-        { id: "r0", at: "2026-09-03T10:12", trigger: "Manual", found: 1249, added: 2, state: "ok" },
-        ...prev,
-      ]);
-      setManualRunsLeft((n) => n - 1);
-      setRunState("idle");
-    }, 6000);
-  };
+  // RUN REPORT NOW and the runs live in lib/report-runs (17 Sep), shared with
+  // the Reports page that now holds the run history. The lifecycle (running,
+  // rejected with no manual runs left) and its demo assumption are noted there.
+  const location = useLocationKey();
+  const { runs, runState } = useReportRuns();
 
   const list = DIRECTORIES[country];
   const shareUrl = "https://reports.brightlocal.com/r/8k2p1x";
@@ -444,7 +398,7 @@ export default function RMReportSettingsPage() {
               { label: "Reviews", goto: "screen:dmrotrhbcxk66" },
               { label: "Review Tracker", goto: "screen:dmswb0i9c6oe5" },
             ]}
-            title="Report settings"
+            title="Settings"
             // A NUMBER, NOT A SENTENCE (Ali, 7 Sep: "all the report settings
             // headings are just extra copy"). Same rule as the section pages:
             // the one figure that says what this report is doing.
@@ -470,16 +424,28 @@ export default function RMReportSettingsPage() {
             // says Running, and a second "running" under it only repeated it.
             statusRight={<DateStamp label="Last run" value={runs[0].at} dataHook="last-run" />}
             actions={
-              <Button
-                variant="outline"
-                dataHook="run-now"
-                onClick={runNow}
-                loading={runState === "running"}
-                disabled={runState === "running"}
-              >
-                {runState === "running" ? null : <Play className="size-4" />}
-                {runState === "running" ? "Running…" : "Run report now"}
-              </Button>
+              <>
+                {/* REPORTS holds the run history (Ali, 17 Sep: "a button ...
+                    that says Reports - We can basically add Run History to
+                    that"). Svitlana's review: history is a result, and this
+                    page is settings. */}
+                <Button variant="outline" dataHook="reports" asChild>
+                  <NextLink href={reportsPath(location)}>
+                    <FileText className="size-4" />
+                    Reports
+                  </NextLink>
+                </Button>
+                <Button
+                  variant="outline"
+                  dataHook="run-now"
+                  onClick={runNow}
+                  loading={runState === "running"}
+                  disabled={runState === "running"}
+                >
+                  {runState === "running" ? null : <Play className="size-4" />}
+                  {runState === "running" ? "Running…" : "Run report now"}
+                </Button>
+              </>
             }
           />
         }
@@ -861,68 +827,9 @@ export default function RMReportSettingsPage() {
             )}
           </SettingsCard>
 
-          {/* ── RUN HISTORY ──────────────────────────────────────────── */}
-          <SettingsCard
-            dataHook="history-card"
-            title="Run history"
-            // Five runs here; the full history is its own page (Ali, 7 Sep:
-            // "you'd also want to see all the reports historically, maybe on
-            // another page, but it doesn't need to be live"). So the way
-            // there exists and goes nowhere yet.
-            action={
-              <Button variant="ghost" size="sm" dataHook="history-all">
-                View all runs
-              </Button>
-            }
-          >
-            <Table dataHook="history-table" minWidth="640px" scrollRegionLabel="Report run history">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Run</TableHead>
-                  <TableHead>Trigger</TableHead>
-                  <TableHead align="right">Reviews found</TableHead>
-                  <TableHead align="right">New</TableHead>
-                  <TableHead>Result</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {runs.map((r) => {
-                  const state = RUN_STATE[r.state];
-                  return (
-                    <TableRow key={r.id} data-hook={`run-${r.id}`}>
-                      <TableCell>{formatDateTime(r.at) ?? formatDate(r.at)}</TableCell>
-                      <TableCell>{r.trigger}</TableCell>
-                      {/* tabular-nums so the columns line up down the page.
-                          A count that shifts left and right as the digits
-                          change is unreadable as a trend. */}
-                      <TableCell className="text-right tabular-nums">
-                        {r.found.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">+{r.added}</TableCell>
-                      <TableCell>
-                        <Badge variant={state.variant} dataHook={`run-${r.id}-state`}>
-                          {state.label}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            {/* A PARTIAL RUN NEEDS A ROUTE OUT, not just a badge. The brief
-                names unexplained failures as the recurring support theme, so
-                the one row that did not fully succeed says what to do. */}
-            <AlertInfo
-              dataHook="history-note"
-              description={`Facebook was skipped on ${formatDate("2026-08-19")} because the connection had expired. Reconnect Facebook to include its reviews in future runs.`}
-              action={
-                <Button variant="ghost" size="sm" dataHook="reconnect-facebook" onClick={() => setConnectOpen(true)}>
-                  <Link2 className="size-4" />
-                  Reconnect
-                </Button>
-              }
-            />
-          </SettingsCard>
+          {/* RUN HISTORY LIVES ON REPORTS now (Ali, 17 Sep), reached from the
+              Reports button in the header. Svitlana's review: history is a
+              result, and this page is settings. */}
           {/* ── ADD A PROFILE URL, per directory ──────────────────────
               A dialog rather than an inline field on the row: the row is a
               list item in a list of seven, and growing one of them to hold a

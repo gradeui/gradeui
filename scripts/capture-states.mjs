@@ -933,11 +933,19 @@ const STATES = [
     "Report settings. Schedule first, because when the report runs is the setting everything else depends on. Run report now sits in the page header: it acts on the report, not on any one section, and it does not move the schedule."],
   ["settings-02-directories", "settings", async (p) => { await scrollToHook(p, '[data-hook="directories-card"]'); },
     `!!document.querySelector('[data-hook="directories-card"]')
-     && !document.querySelector('[data-hook="country-select"]')
-     && !!document.querySelector('[data-hook="directory-google-desc"]')
-     && !document.querySelector('[data-hook="directory-google-matched"]')`,
-    "Monitored directories, for the location's own country: there is no country dropdown, because the directory list comes from the location. No match badges either: the directory API sends a name and a URL, not a status. Each row says in words what is being watched, with Connect or Add URL where a row needs one."],
-  // settings-03-directories-uk is gone with the country dropdown (17 Sep).
+     && !!document.querySelector('[data-hook="country-select"]')
+     && !!document.querySelector('[data-hook="directory-google-matched"]')`,
+    "Monitored directories, scoped by country: Yell and Thomson Local are United Kingdom sites and mean nothing to a US location. Matched / no profile found is a badge per row rather than a separate panel, because a directory you watch but have not matched is the case worth seeing."],
+  ["settings-03-directories-uk", "settings", async (p) => {
+    await scrollToHook(p, '[data-hook="directories-card"]');
+    await press(p, '[data-hook="country-select"]');
+    await wait(600);
+    await pressText(p, "United Kingdom", '[role="option"]');
+    await wait(600);
+  },
+    `!!document.querySelector('[data-hook="directory-yell"]')
+     && !document.querySelector('[data-hook="directory-bbb"]')`,
+    "Switching country switches which directories are even offered, and re-derives the selection. A US report silently monitoring Thomson Local is the kind of thing that makes a settings page untrustworthy."],
   ["settings-04-alerts", "settings", async (p) => { await scrollToHook(p, '[data-hook="alerts-card"]'); },
     `!!document.querySelector('[data-hook="alerts-card"]')
      && !!document.querySelector('[data-hook="cadence-radio-group"]')
@@ -954,37 +962,13 @@ const STATES = [
   ["settings-06-sharing", "settings", async (p) => { await scrollToHook(p, '[data-hook="sharing-card"]'); },
     `!!document.querySelector('[data-hook="sharing-card"]')
      && !!document.querySelector('[data-hook="share-url-input"]')
-     && !document.querySelector('[data-hook="white-label-switch"]')`,
-    "The public share link, with Copy. No white-label switch: a new-platform customer has no logo to put on the report."],
+     && !!document.querySelector('[data-hook="white-label-switch"]')`,
+    "The public share link and the white-label switch. Agencies send this to their clients, so removing BrightLocal's branding is off by default rather than on."],
   ["settings-07-history", "settings", async (p) => { await scrollToHook(p, '[data-hook="history-card"]'); },
     `!!document.querySelector('[data-hook="history-table"]')
      && !!document.querySelector('[data-hook="run-r4-state"]')
      && !!document.querySelector('[data-hook="history-note"]')`,
     "Run history, including the run that only partly succeeded. The brief names unexplained failures as the recurring support theme, so the one row that did not finish says what happened and offers the fix."],
-  // Run report now's lifecycle (17 Sep, Margarita's review). The API cannot
-  // tell the quota before the click, so the button runs or comes back
-  // rejected; the demo has one manual run left.
-  ["settings-08-running", "settings", async (p) => {
-    await press(p, '[data-hook="run-now"]');
-    await wait(800);
-  },
-    `document.querySelector('[data-hook="run-now"]')?.getAttribute('aria-busy') === 'true'`,
-    "Run report now, pressed: the button spins and says Running until the run is done. The schedule sentence says manual runs come out of the plan's allowance, with a link to what the plan includes."],
-  ["settings-09-manual-run-done", "settings", async (p) => {
-    await press(p, '[data-hook="run-now"]');
-    await wait(7000);
-    await scrollToHook(p, '[data-hook="history-card"]');
-  },
-    `!!document.querySelector('[data-hook="run-r0"]')`,
-    "The manual run finished: it heads the run history as Manual, and Last run in the header moves to it."],
-  ["settings-10-no-runs-left", "settings", async (p) => {
-    await press(p, '[data-hook="run-now"]');
-    await wait(7000);
-    await press(p, '[data-hook="run-now"]');
-    await wait(800);
-  },
-    `!!document.querySelector('[data-hook="run-rejected"]')`,
-    "Run report now with no manual runs left: the run does not start, the warning says the schedule still stands, and See plans is the way to more runs."],
 
   // ── Review Builder ─────────────────────────────────────────────────────
   // REWRITTEN 7 Sep 2026 for the RAIL version (dmt094j963aye), then widened
