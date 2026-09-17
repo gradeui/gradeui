@@ -42,7 +42,7 @@ const ENTRIES: VideoEntry[] = [
     slug: "insights-overview",
     title: "Contextual Insights and Actions",
     description:
-      "The whole idea in one pass. What the layer says on each page, how a finding opens into the thing that fixes it, and what changes when the account is a trial, a lapsed trial or a brand with three branches.",
+      "The whole idea in one pass. What the layer says on each page, how a finding opens into the thing that fixes it, and what changes when the account is a trial or a lapsed trial.",
     tags: ["Overview", "Insights", "Personas"],
     order: 1,
   },

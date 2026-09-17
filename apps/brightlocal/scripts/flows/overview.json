@@ -99,31 +99,6 @@
       "ms": 900
     },
     {
-      "card": "persona-multi",
-      "ms": 2600
-    },
-    {
-      "persona": "multi"
-    },
-    {
-      "go": "/locations/harbour-co-hove/reviews",
-      "bg": "violet",
-      "caption": "Customers compare Hove with Brighton, and their reviews say so.",
-      "ms": 3400
-    },
-    {
-      "click": "[data-hook=review-summary-strip-open]",
-      "waitFor": "[data-hook=beacon-modal]",
-      "ms": 3800
-    },
-    {
-      "dwell": 3000
-    },
-    {
-      "key": "Escape",
-      "ms": 900
-    },
-    {
       "card": "persona-lapsed",
       "ms": 2600
     },

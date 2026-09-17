@@ -120,7 +120,7 @@ export const RECORDED: RecordedVideo[] = [
   },
   {
     "slug": "insights-overview",
-    "duration": 100.22999999999999,
+    "duration": 82.83,
     "chapters": [
       {
         "id": "insights-overview--01-beacon",
@@ -128,7 +128,7 @@ export const RECORDED: RecordedVideo[] = [
         "title": "Contextual Insights & Actions",
         "description": "Like someone sat next to you, telling you what to do about your reviews.",
         "t": 0,
-        "end": 2.66,
+        "end": 2.64,
         "thumb": "/videos/thumbs/insights-overview--01-beacon.jpg"
       },
       {
@@ -136,8 +136,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-empty",
         "title": "Signed up, looking around",
         "description": "Nothing connected, nothing in. What does the product say to someone with no reviews?",
-        "t": 2.66,
-        "end": 14.61,
+        "t": 2.64,
+        "end": 14.68,
         "thumb": "/videos/thumbs/insights-overview--02-persona-empty.jpg"
       },
       {
@@ -145,8 +145,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-starter",
         "title": "On a free trial",
         "description": "Google connected, four reviews in, nobody answered. The trial has to earn its keep.",
-        "t": 14.61,
-        "end": 45.44,
+        "t": 14.68,
+        "end": 45.24,
         "thumb": "/videos/thumbs/insights-overview--03-persona-starter.jpg"
       },
       {
@@ -154,77 +154,63 @@ export const RECORDED: RecordedVideo[] = [
         "card": "persona-engaged",
         "title": "A single location, engaged",
         "description": "Campaigns running, replies flowing, and a rating that is hard to move.",
-        "t": 45.44,
-        "end": 65.33,
+        "t": 45.24,
+        "end": 65.96,
         "thumb": "/videos/thumbs/insights-overview--04-persona-engaged.jpg"
       },
       {
-        "id": "insights-overview--05-persona-multi",
-        "card": "persona-multi",
-        "title": "A multi-location brand",
-        "description": "Customers compare Hove with Brighton, and their reviews say so.",
-        "t": 65.33,
-        "end": 83.83,
-        "thumb": "/videos/thumbs/insights-overview--05-persona-multi.jpg"
-      },
-      {
-        "id": "insights-overview--06-persona-lapsed",
+        "id": "insights-overview--05-persona-lapsed",
         "card": "persona-lapsed",
         "title": "The trial ended",
         "description": "Reviews still arriving, nobody watching. How do we bring them back?",
-        "t": 83.83,
-        "end": 96.36,
-        "thumb": "/videos/thumbs/insights-overview--06-persona-lapsed.jpg"
+        "t": 65.96,
+        "end": 78.97,
+        "thumb": "/videos/thumbs/insights-overview--05-persona-lapsed.jpg"
       },
       {
-        "id": "insights-overview--07-end",
+        "id": "insights-overview--06-end",
         "card": "end",
         "title": "Insights exploration",
         "description": "What could be possible with contextual AI insights",
-        "t": 96.36,
-        "end": 100.22999999999999,
-        "thumb": "/videos/thumbs/insights-overview--07-end.jpg"
+        "t": 78.97,
+        "end": 82.83,
+        "thumb": "/videos/thumbs/insights-overview--06-end.jpg"
       }
     ],
     "transcript": [
       {
-        "t": 8.064,
-        "end": 14.613,
+        "t": 8.058,
+        "end": 14.679,
         "text": "Day one. Nothing connected, nothing in."
       },
       {
-        "t": 20.042,
-        "end": 24.093,
+        "t": 20.087,
+        "end": 24.087,
         "text": "Three days left on the trial."
       },
       {
-        "t": 24.093,
-        "end": 30.707,
+        "t": 24.087,
+        "end": 30.694,
         "text": "What the trial has found so far."
       },
       {
-        "t": 30.707,
-        "end": 39.092,
+        "t": 30.694,
+        "end": 38.878,
         "text": "The plan for the week."
       },
       {
-        "t": 39.092,
-        "end": 45.442,
+        "t": 38.878,
+        "end": 45.241,
         "text": "And what auto-reply would have written, on one of their own reviews."
       },
       {
-        "t": 50.85,
-        "end": 65.325,
+        "t": 50.674,
+        "end": 65.957,
         "text": "Eight months in. What moved, and why."
       },
       {
-        "t": 70.742,
-        "end": 83.827,
-        "text": "Customers compare Hove with Brighton, and their reviews say so."
-      },
-      {
-        "t": 89.253,
-        "end": 96.365,
+        "t": 71.873,
+        "end": 78.965,
         "text": "Nine days after the trial ended."
       }
     ],
