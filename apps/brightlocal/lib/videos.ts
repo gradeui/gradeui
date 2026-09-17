@@ -33,6 +33,8 @@ export interface VideoEntry {
   order: number;
   /** Per-section overrides, keyed by the section id. Rarely needed. */
   sections?: Record<string, { title?: string; description?: string }>;
+  /** Off the library, its recording kept so it can come back. */
+  hidden?: boolean;
 }
 
 const ENTRIES: VideoEntry[] = [
@@ -67,6 +69,9 @@ const ENTRIES: VideoEntry[] = [
       "A brand with three branches, where the lifetime rating hides what the last thirty days are saying. The plan comes out about one branch, not the brand.",
     tags: ["Multi-location", "Personas"],
     order: 4,
+    // Off the library (Ali, 17 Sep: the multi-location brand is "too far in
+    // the future to care about"). The recording stays in public/videos.
+    hidden: true,
   },
   {
     slug: "insights-walkthrough",
@@ -118,6 +123,7 @@ export function stamp(seconds: number): string {
 /** Every published video, in editorial order. A slug with no recording yet is
  *  left out rather than rendered as a broken card. */
 export const VIDEOS: Video[] = ENTRIES.flatMap((entry) => {
+  if (entry.hidden) return [];
   const rec = RECORDED.find((r) => r.slug === entry.slug);
   if (!rec) return [];
   const sections = rec.chapters.map((c) => {
