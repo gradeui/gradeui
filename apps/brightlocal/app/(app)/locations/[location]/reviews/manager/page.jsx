@@ -1825,18 +1825,11 @@ function ReviewsInbox() {
       {/* White (Ali, 10 Sep: "table header area white?"): tabs, filters and
           the order row sit on the card's own surface, divided by borders. */}
       <div ref={bandRef} className="bg-[var(--ds-tailwind-colors-base-white)] sticky z-30 rounded-t-[inherit]" style={{ top: stickyTop }}>
-        {/* ROW 1 — TABS. Real DS Tabs: role="tablist", roving tabindex and
-            arrow-key navigation, none of which the hand-rolled buttons had.
-            
-            The className overrides exist because BrightLocal Tabs ships ONE
-            look — a pill strip on bg-muted (TabsList is `bg-muted rounded-lg
-            h-9 w-fit`, TabsTrigger goes `data-[state=active]:bg-background
-            + shadow-sm`). This screen needs the underlined strip: full
-            width, flush on the border-b, active marked by border-primary.
-            There is no `variant` prop to ask for that, so every class below
-            is neutralising a baked-in one. THIS IS THE ARGUMENT FOR
-            Tabs variant="underlined" — Grade's own Tabs already has it.
-            Behaviour is the DS's; only the paint is ours. */}
+        {/* ROW 1, TABS: the DS Tabs AS SHIPPED (Ali, 17 Sep: "use the default
+            tabs (not tab with underline)"). The pill strip on bg-muted, with
+            the underline overrides gone. The only classes left are layout:
+            the row's padding and rule, and a strip that scrolls sideways on a
+            phone, where five tabs with counts are wider than the screen. */}
         <Tabs
           dataHook="review-tabs"
           value={tab}
@@ -1844,26 +1837,14 @@ function ReviewsInbox() {
             setTab(next);
             setActiveId(null);
           }}
+          className="border-b px-4 py-2"
         >
           <TabsList
             dataHook="review-tabs-list"
-            // p-0 FIRST, then the padding we actually want — written the other way
-            // round tailwind-merge drops px-4 and the strip loses its inset.
-            // px-2 + the trigger's own px-2 puts the first label on the same
-            // 16px edge as the filter row and the table below it.
-            // overflow-x-auto keeps the strip swipeable on narrow screens, but the
-            // scrollbar itself is chrome we do not want: on mobile it paints a
-            // grey gutter under the tabs and eats vertical space. Hidden, not
-            // disabled — the strip still scrolls.
-            className="h-auto w-full justify-start gap-0.5 overflow-x-auto overflow-y-hidden rounded-none rounded-t-[inherit] border-b bg-transparent p-0 px-3 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="max-w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {TABS.map((t) => (
-              <TabsTrigger
-                key={t.id}
-                value={t.id}
-                dataHook={`tab-${t.id}`}
-                className="text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:border-b-primary -mb-px shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-2 py-2 font-normal whitespace-nowrap data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
-              >
+              <TabsTrigger key={t.id} value={t.id} dataHook={`tab-${t.id}`} className="shrink-0">
                 {t.label}
                 <Badge dataHook={`tab-count-${t.id}`} variant="secondary" data-number="true">
                   {counts[t.id]}
@@ -1922,6 +1903,11 @@ function ReviewsInbox() {
             className="min-w-0 grow basis-0 border-border lg:w-48 lg:grow-0 lg:basis-auto [&_input]:text-base sm:[&_input]:text-sm"
           />
 
+          {/* SEARCH LEFT, FILTERS RIGHT (Ali, 17 Sep). The spacer sits between
+              them from sm up; below sm the search field takes the row and
+              the facets fold into the one Filters button. */}
+          {compactFilters ? null : <div className="grow" />}
+
           {compactFilters ? (
             // ONE trigger for three facets. matchMedia, not a
             // CSS hide: rendering both and hiding one would mount two
@@ -1946,6 +1932,7 @@ function ReviewsInbox() {
           {compactFilters ? null : (
           <FacetedFilterMenu
             dataHook="facet-sources"
+            align="right"
             label={sourceLabel}
             {...menuState("sources")}
             options={sourceOptions}
@@ -1965,6 +1952,7 @@ function ReviewsInbox() {
           {compactFilters ? null : (
           <FacetedFilterMenu
             dataHook="facet-ratings"
+            align="right"
             label={ratingLabel}
             {...menuState("ratings")}
             options={ratingOptions}
@@ -2003,11 +1991,6 @@ function ReviewsInbox() {
             </Button>
           ) : null}
 
-          {/* The spacer pushes desktop's controls left of the free space. On
-              mobile it would SHARE that space with the search field — two
-              grow items split it 50/50, which left the field at 96px — so
-              below sm the field takes the row on its own. */}
-          {compactFilters ? null : <div className="grow" />}
         </div>
 
         {/* ROW 3, ORDER: phones only (Ali, 17 Sep). From sm up the column
