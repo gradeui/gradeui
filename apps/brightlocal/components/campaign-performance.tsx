@@ -27,7 +27,7 @@ import { Progress } from "@brightlocal/ui-components/progress";
 import { Rating } from "@brightlocal/ui-components/rating";
 import { Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell } from "@brightlocal/ui-components/table";
 import { ChartContainer, PieChart, Pie, Cell } from "@brightlocal/ui-components/chart";
-import { Star, ThumbsUp, ThumbsDown } from "@brightlocal/icons";
+import { ThumbsUp, ThumbsDown } from "@brightlocal/icons";
 import { FacetedFilterMenu } from "@brightlocal/facet-menu";
 import { REVIEW_SOURCES, SourceMark } from "@brightlocal/review-sources";
 import { ViewToggle, type ChartView } from "@/components/view-toggle";
@@ -68,12 +68,8 @@ const nameOf = (id: string) => (REVIEW_SOURCES as Record<string, { name: string 
 function glyph(kind: "star" | "up" | "down", id: string) {
   if (kind === "up") return <ThumbsUp className="text-muted-foreground size-3.5" />;
   if (kind === "down") return <ThumbsDown className="text-muted-foreground size-3.5" />;
-  return (
-    <>
-      <span className="text-sm">{id}</span>
-      <Star className="text-muted-foreground size-3.5 fill-current" />
-    </>
-  );
+  // The DS Rating stars, the same as Feedback ratings and the filter menu.
+  return <Rating value={Number(id)} size="sm" dataHook={`rating-row-stars-${id}`} />;
 }
 
 function Total({ value }: { value: number }) {
@@ -229,7 +225,7 @@ export function CampaignPerformance({ reviews, sites, dataHook }: { reviews: num
                         <p className={`text-muted-foreground text-xs font-medium ${i > 0 ? "mt-2" : ""}`}>Facebook recommendations</p>
                       ) : null}
                       <div className="flex items-center gap-3">
-                        <span className="flex w-9 shrink-0 items-center justify-start gap-1">{glyph(b.kind, b.id)}</span>
+                        <span className="flex w-24 shrink-0 items-center justify-start gap-1">{glyph(b.kind, b.id)}</span>
                         {/* The Tracker's bars: the funnel's neutral-500 on neutral-100. */}
                         <Progress
                           dataHook={`${dataHook}-bar-${b.id}`}

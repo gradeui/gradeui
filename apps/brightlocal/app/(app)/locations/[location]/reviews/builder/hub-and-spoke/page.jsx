@@ -4498,9 +4498,11 @@ function CampaignInsights({ campaign }) {
                                 dataHook={`dist-bar-${d.stars}`}
                                 value={d.count}
                                 max={distributionPeak}
-                                color="green"
+                                // Neutral like every other ratings bar (Ali, 17 Sep: this
+                                // "still used the bright green"): a count, not a verdict.
+                                indicatorClassName="bg-[var(--ds-tailwind-colors-neutral-500)]"
                                 ariaLabel={`${d.count} responses at ${d.stars} stars`}
-                                className="h-2 flex-1"
+                                className="h-2 flex-1 bg-[var(--ds-tailwind-colors-neutral-100)]"
                               />
                               <span className="w-10 shrink-0 text-right text-sm tabular-nums">{d.count}</span>
                             </div>

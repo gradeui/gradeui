@@ -665,12 +665,10 @@ function ReviewPerformance() {
   const glyph = (bucket) => {
     if (bucket.kind === "up") return <ThumbsUp className="text-muted-foreground size-3.5" />;
     if (bucket.kind === "down") return <ThumbsDown className="text-muted-foreground size-3.5" />;
-    return (
-      <>
-        <span className="text-sm">{bucket.id}</span>
-        <Star className="text-muted-foreground size-3.5 fill-current" />
-      </>
-    );
+    // THE DS Rating, not a digit and one grey star (Ali, 17 Sep: the stars
+    // here differed from Feedback ratings on a campaign page, which "is
+    // maybe correct"). The same stars the ratings filter menu already shows.
+    return <Rating value={Number(bucket.id)} size="sm" dataHook={`rating-row-stars-${bucket.id}`} />;
   };
 
   return (
@@ -832,7 +830,7 @@ function ReviewPerformance() {
                         "5 ★" in from the card edge; the labels are all one
                         digit or one glyph wide, so nothing needs the column
                         to right-align. Flush with the Ratings heading. */}
-                    <span className="flex w-9 shrink-0 items-center justify-start gap-1">
+                    <span className="flex w-24 shrink-0 items-center justify-start gap-1">
                       {glyph(bucket)}
                     </span>
                     {/* h-2 is the DS default; the h-4 here was an override I
