@@ -1007,7 +1007,7 @@ function ReviewPerformance() {
                             </span>
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent dataHook="sources-other-tooltip" side="left">
+                        <TooltipContent dataHook="sources-other-tooltip" side="bottom" align="start">
                           <span className="flex flex-col gap-1">
                             {grouping.grouped.map((row) => (
                               <span key={row.id} className="flex items-center justify-between gap-4">
@@ -1457,7 +1457,7 @@ function ReviewTimeline() {
                 {series.map((point) => (
                   <TableRow key={point.label}>
                     <TableCell>{point.label}</TableCell>
-                    <TableCell align="right" className="tabular-nums">{point.total}</TableCell>
+                    <TableCell align="right" className="tabular-nums">{Number(point.total ?? 0).toLocaleString("en-GB")}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1548,7 +1548,7 @@ function ReviewTimeline() {
                     <TableCell>{point.label}</TableCell>
                     {activeSources.map((source) => (
                       <TableCell key={source.id} align="right" className="tabular-nums">
-                        {point[source.id]}
+                        {Number(point[source.id] ?? 0).toLocaleString("en-GB")}
                       </TableCell>
                     ))}
                   </TableRow>

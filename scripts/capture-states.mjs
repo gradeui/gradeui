@@ -53,6 +53,35 @@ const arg = (k, d) => {
   return m ? m.slice(k.length + 3) : d;
 };
 const BASE = arg("base", "http://localhost:3000");
+// --app (17 Sep 2026): shoot the BrightLocal APP (apps/brightlocal on
+// localhost:3020) instead of the Studio /e/ embeds. The app is the Studio
+// source plus scripts/promotion-patches.json, and most of the RM work now
+// lands only there, so a Studio run shows stale screens. Same state list,
+// same folder shape; the page is driven directly (no sandbox iframe), on the
+// Engaged persona with insights off, which is what the Studio screens show.
+const APP = process.argv.includes("--app");
+const APP_BASE = arg("app-base", "http://localhost:3020");
+const APP_LOCATION = arg("location", "minus-one-studios");
+const APP_ROUTES = {
+  reviewshub: "/reviews",
+  manager: "/reviews/manager",
+  insights: "/reviews/tracker",
+  templates: "/reviews/manager/templates",
+  widgets: "/reviews/showcase",
+  getreviews: "/reviews/builder",
+  settings: "/reviews/tracker/settings",
+};
+const APP_SETTINGS = {
+  personaId: arg("persona", "engaged"),
+  look: "authored",
+  variants: {},
+  engine: arg("engine", "native-fixed"),
+  upsell: true,
+  fixItForMe: true,
+  beaconTone: "neutral",
+  appearance: "light",
+  insights: false,
+};
 // --only is a comma-separated list of SUBSTRINGS, any of which selects a
 // state. A single name is the common case ("--only=inbox-04"); a list is
 // what you want after a run to re-shoot just the frames that failed.
@@ -108,7 +137,7 @@ const dirFor = (name) => {
 };
 const OUT = arg("out", path.join(process.env.HOME, "Desktop", "brightlocal-screens"));
 const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14).replace(/(\d{8})(\d{6})/, "$1-$2");
-const DIR = path.join(OUT, `states-${stamp}`);
+const DIR = path.join(OUT, `${APP ? "app-states" : "states"}-${stamp}`);
 fs.mkdirSync(DIR, { recursive: true });
 
 // Share tokens for the RM screens plus Reply Templates. widgets and
@@ -161,6 +190,8 @@ const PRESS = `(el) => {
 // Run code inside the SANDBOX document. The embed nests the screen in an
 // iframe, so page-level selectors never see it.
 async function inFrame(page, fn, ...args) {
+  // In --app mode the screen IS the page.
+  if (APP) return page.evaluate(fn, ...args);
   const frame = page.frames().find((f) => f !== page.mainFrame() && f.url().includes("sandbox"))
     || page.frames().find((f) => f !== page.mainFrame());
   if (!frame) throw new Error("sandbox frame not found");
@@ -612,7 +643,7 @@ const STATES = [
   // ── Reply Templates ─────────────────────────────────────────────────
   ["templates-01-list", "templates", async () => {},
     null,
-    "Templates and auto-reply rules on one page, split out of the inbox because the two are intertwined."],
+    "Templates and auto-reply rules on one page, split out of Review Manager because the two are intertwined."],
   ["templates-02-template-drawer", "templates", async (p) => { await press(p, '[data-hook^="edit-tpl-"]'); },
     `!!document.querySelector('[data-hook="template-drawer"][data-state="open"]')`,
     "Editing a template. Rating scope decides which reviews it is offered for, and the tokens insert at the cursor."],
@@ -1467,16 +1498,166 @@ if (process.argv.includes("--dump-states")) {
   process.exit(0);
 }
 
+// ── APP-MODE STATE CHANGES (17 Sep 2026) ─────────────────────────────────
+// The app has moved on from the Studio screens these states were written for.
+// In --app mode a state named here is REPLACED (drive / expect / note / opts),
+// SKIPPED with the reason printed, and APP_EXTRA states are added for surfaces
+// only the app has. Studio mode ignores all of this.
+const scrollToText = (page, text) =>
+  inFrame(page, (t) => {
+    const el = [...document.querySelectorAll("[data-slot=card-title], h2, p")].find((e) => e.textContent.trim() === t);
+    if (!el) return false;
+    el.scrollIntoView({ block: "start" });
+    return true;
+  }, text);
+// Open the first row on page one whose drawer says `needle`. The app's
+// persona data is not the Studio seed, so a row index from the Studio suite
+// points at a different review there.
+async function openRowWith(page, needle) {
+  for (let i = 0; i < 20; i += 1) {
+    await openRow(page, i);
+    await wait(600);
+    const hit = await inFrame(page, (n) => (document.querySelector('[role="dialog"]')?.textContent ?? "").includes(n), needle);
+    if (hit) return true;
+    await escape(page);
+    await wait(400);
+  }
+  return false;
+}
+const APP_OVERRIDES = {
+  "templates-05-rule-activity": {
+    // Expanded, then scrolled so the failed send is in frame: the app's page
+    // is taller than the Studio screen and the Failed row sat half under the
+    // bottom edge (capture sweep, 17 Sep).
+    drive: async (p) => {
+      await press(p, '[data-slot="collapsible-trigger"]');
+      await wait(900);
+      await inFrame(p, () => {
+        const failed = [...document.querySelectorAll('[data-hook^="run-outcome-"]')].find((b) => b.textContent.trim() === "Failed");
+        if (!failed) return false;
+        failed.scrollIntoView({ block: "center" });
+        return true;
+      });
+    },
+  },
+  "manager-07-readonly-source": {
+    drive: async (p) => { await openRowWith(p, "cannot be sent from here"); },
+    note: "A review on a site that cannot be replied to from here (Apple Maps in this data): no composer, no AI, no template picker, and no footer at all.",
+  },
+  "getreviews-43-send-preview-full": {
+    // The tile is a div with an overlay button in the app (Builder audit, 10
+    // Sep: a button cannot contain the page's own buttons), so press the overlay.
+    drive: async (p) => {
+      await newCampaignTo(p, "send");
+      await press(p, '[data-hook="preview-tile-email"] > button');
+      await wait(900);
+    },
+  },
+  "widgets-25-no-reviews-match": { skip: "in the app's Minus 1 Studios data a Facebook-only carousel still matches reviews, so the No reviews match alert cannot be reached this way" },
+  "manager-12-fail-permission-seeded": { skip: "the app's Engaged data seeds no permission failure on page one (the demo is keyed to the Studio seed's row ids)" },
+  "manager-05-order-facet": {
+    opts: { width: 390 },
+    note: "Phones only now: from sm up the column headers sort, so the Order menu shows only where the columns fold into one cell. The menu open: Newest first ticked, the other orders below it.",
+  },
+  "settings-02-directories": {
+    expect: `!!document.querySelector('[data-hook="directories-card"]')
+     && !document.querySelector('[data-hook="country-select"]')
+     && !document.querySelector('[data-hook="directory-google-matched"]')`,
+    note: "Monitored directories for the location's own country (the card's line under the title), with no country dropdown and no Matched badges: the directory API sends a name and a URL, not a status. Read only on Yelp, and Connect or Add URL where a row needs one.",
+  },
+  "settings-03-directories-uk": { skip: "the country dropdown is gone; the list is the location's country" },
+  "settings-06-sharing": {
+    expect: `!!document.querySelector('[data-hook="sharing-card"]')
+     && !!document.querySelector('[data-hook="share-url-input"]')
+     && !document.querySelector('[data-hook="white-label-switch"]')`,
+    note: "The public share link with Copy. No white-label switch: a new-platform customer has no logo to put on the report.",
+  },
+  "settings-07-history": { skip: "run history was cut; Last run stays in the header" },
+  "getreviews-14-page-scheduled": {
+    expect: `(() => {
+       const stop = document.querySelector('[data-hook="insights-stop"]');
+       return !!stop && stop.textContent.trim() === "Cancel send"
+         && !!document.querySelector('[data-hook="insights-empty-state"]')
+         && !document.querySelector('[data-hook="state-banner"]')
+         && !document.querySelector('[data-hook="insights-summary-card"]');
+     })()`,
+    note: "Scheduled: Cancel send in the header and ONE empty state, Nothing has been sent yet, in place of the banner, the zero tiles and a second No activity card.",
+  },
+  "getreviews-16-page-kiosk-stars": {
+    note: "A kiosk campaign asking for stars, scrolled to its score card, Feedback ratings: the star distribution in neutral bars, with the chart/table switch.",
+  },
+  "getreviews-17-page-sms-thumbs": {
+    expect: `!!document.querySelector('[data-hook="insights-feedback-summary"]')
+     && !!document.querySelector('[data-hook="thumbs-up"]')
+     && !!document.querySelector('[data-hook="all-feedback-card"]')`,
+    note: "An SMS campaign asking thumbs up or down: the Thumbs up or down card, with Internal feedback, the table of responses, below it.",
+  },
+};
+const APP_EXTRA = [
+  ["settings-08-running", "settings", async (p) => { await press(p, '[data-hook="run-now"]'); await wait(900); },
+    `document.querySelector('[data-hook="run-now"]')?.getAttribute('aria-busy') === 'true'`,
+    "Run report now, pressed: the button spins and says Running until the run is done. Last run stays under it. The schedule sentence says manual runs come out of the plan's allowance, with a link to what the plan includes."],
+  ["settings-09-no-runs-left", "settings", async (p) => { await press(p, '[data-hook="run-now"]'); await wait(7000); await press(p, '[data-hook="run-now"]'); await wait(900); },
+    `!!document.querySelector('[data-hook="run-rejected"]')`,
+    "Run report now with no manual runs left: the run does not start, the warning says the schedule still stands, and See plans is the way to more runs. Last run moved to the manual run that finished."],
+  ["getreviews-80-review-performance", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-performance"]'); await scrollToHook(p, '[data-hook="insights-performance"]', 300); },
+    `!!document.querySelector('[data-hook="insights-performance-donut"]')`,
+    "Review performance for one campaign, the Tracker's display: ratings in neutral bars with DS stars and the average, Facebook as recommendations, and the sources donut with provider logos. All sources, All ratings and the chart/table switch in its sticky header."],
+  ["getreviews-81-review-performance-table", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-performance"]'); await scrollToHook(p, '[data-hook="insights-performance"]', 300); await press(p, '[data-hook="insights-performance-view-toggle"] [aria-label="Table view"]'); await wait(700); },
+    `!!document.querySelector('[data-hook="insights-performance-ratings-table"]')`,
+    "The same card in table view: Rating and Source tables with totals."],
+  ["getreviews-82-timeline-table", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-timeline"]'); await scrollToHook(p, '[data-hook="insights-timeline"]', 300); await press(p, '[data-hook="timeline-view-toggle"] [aria-label="Table view"]'); await wait(700); },
+    `!!document.querySelector('[data-hook="insights-timeline-table"]')`,
+    "Timeline in table view: each period and its reviews."],
+  ["getreviews-83-nps", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-feedback-summary"]'); await scrollToHook(p, '[data-hook="insights-feedback-summary"]', 300); },
+    `!!document.querySelector('[data-hook="insights-nps-gauge"]')`,
+    "Net Promoter Score: the dial drawn like the donut, 36 with score under it, Good, from 14 responses, and Promoters 9 to 10 / Passives 7 to 8 / Detractors 0 to 6 as shares."],
+  ["getreviews-84-nps-table", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-feedback-summary"]'); await scrollToHook(p, '[data-hook="insights-feedback-summary"]', 300); await press(p, '[data-hook="feedback-view-toggle"] [aria-label="Table view"]'); await wait(700); },
+    `!!document.querySelector('[data-hook="insights-feedback-table"]')`,
+    "Net Promoter Score in table view: each answer with responses and share, the total and the score."],
+  ["getreviews-85-internal-feedback", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="all-feedback-card"]'); await scrollToHook(p, '[data-hook="all-feedback-card"]', 300); },
+    `!!document.querySelector('[data-hook="feedback-table"]')`,
+    "Internal feedback: the responses table on the campaign page, feedback first, the customer's email muted and truncated, the filters in the sticky header and pagination pinned under it."],
+  ["getreviews-86-feedback-drawer", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="all-feedback-card"]'); await scrollToHook(p, '[data-hook="all-feedback-card"]', 300); await press(p, '[data-hook="feedback-row-2"]'); await wait(900); },
+    `!!document.querySelector('[data-hook="feedback-drawer"]')`,
+    "One response in the Review Manager's drawer: up / down and a count, Rating, Received, Review site and Testimonial, then the email and the feedback. No reply: internal feedback cannot be replied to."],
+  // No insights-10 table state: insights-03-table-view already shoots the
+  // Review performance table, and the sweep found the two frames identical.
+  ["manager-20-sorted-by-rating", "manager", async (p) => { await press(p, '[data-hook="col-rating"] button, [data-hook="col-rating"]'); await wait(700); },
+    `[...document.querySelectorAll('[data-hook="reviews-table"] thead th')].some((th) => th.getAttribute('aria-sort') === 'ascending')`,
+    "The column headers are the DS sortable headers: Rating sorted, its arrow showing the direction."],
+];
+
 const browser = await chromium.launch({ headless: true });
 const results = [];
 
-const wanted = STATES.filter(([name]) => {
+const ALL_STATES = APP
+  ? [
+      ...STATES.flatMap((st) => {
+          const o = APP_OVERRIDES[st[0]];
+          if (!o) return [st];
+          if (o.skip) { console.log(`  - ${st[0]} skipped in --app: ${o.skip}`); return []; }
+          return [[st[0], st[1], o.drive ?? st[2], o.expect ?? st[3], o.note ?? st[4], o.opts ?? st[5]]];
+        }),
+      ...APP_EXTRA,
+    ]
+  : STATES;
+const wanted = ALL_STATES.filter(([name]) => {
   if (ONLY.length && !ONLY.some((o) => name.includes(o))) return false;
   if (SECTIONS.length && !SECTIONS.some((sec) => name.startsWith(sec))) return false;
   return true;
 });
 
-const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
+// --app has no motion=off param to lean on, so ask for reduced motion instead:
+// the DS honours it, and entrance animations are not caught mid-flight.
+const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2, ...(APP ? { reducedMotion: "reduce" } : {}) });
+if (APP) {
+  // Seed the demo settings before every navigation, so each state boots on
+  // the same persona, engine and insights setting.
+  await page.addInitScript((s) => {
+    try { localStorage.setItem("grade-bl-demo-v3", JSON.stringify(s)); } catch {}
+  }, APP_SETTINGS);
+}
 
 for (const [name, screen, drive, expect, , opts] of wanted) {
   // An optional sixth element `{ width }` shoots the state NARROW (7 Sep:
@@ -1485,13 +1666,25 @@ for (const [name, screen, drive, expect, , opts] of wanted) {
   const width = (opts && opts.width) || 1280;
   try {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(`${BASE}/e/${SCREENS[screen]}?w=${width}&motion=off`, {
-      waitUntil: "domcontentloaded", timeout: 60000,
-    });
+    const url = APP
+      ? `${APP_BASE}/locations/${APP_LOCATION}${APP_ROUTES[screen]}`
+      : `${BASE}/e/${SCREENS[screen]}?w=${width}&motion=off`;
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
     // The sandbox compiles the screen after boot; a fixed settle is more
     // reliable here than waiting on a selector that differs per screen.
-    await wait(7000);
+    await wait(APP ? 3500 : 7000);
+    if (APP) {
+      // ONE REAL CLICK FIRST, on the page title. PRESS dispatches synthetic
+      // events, and with no trusted pointer input Chrome counts the focus a
+      // menu or drawer moves on open as keyboard focus, so it drew its own
+      // blue ring round the whole panel (capture sweep, 17 Sep: manager-03
+      // to 05, 08 to 11, getreviews-23). A mouse user never sees that ring.
+      const title = page.locator("h1").first();
+      const safe = await title.evaluate((h) => !h.closest("button, a, label, [contenteditable='true']")).catch(() => false);
+      const box = safe ? await title.boundingBox().catch(() => null) : null;
+      if (box) await page.mouse.click(box.x + 4, box.y + box.height / 2);
+    }
     await drive(page);
     const transient = name.endsWith("-sending");
     if (!transient) await wait(1400);
@@ -1567,6 +1760,13 @@ for (const [name, screen, drive, expect, , opts] of wanted) {
     results.push({ name, ok: true });
     console.log(`  ✓ ${name}`);
   } catch (e) {
+    // In --app mode keep what was on screen when a state failed, so the
+    // failure can be read rather than guessed at. Not part of the drop.
+    if (APP) {
+      const failDir = path.join(DIR, "_failed");
+      fs.mkdirSync(failDir, { recursive: true });
+      await page.screenshot({ path: path.join(failDir, `${name}.png`), type: "png" }).catch(() => {});
+    }
     results.push({ name, ok: false, error: String(e).slice(0, 120) });
     console.log(`  ✗ ${name} — ${String(e).slice(0, 120)}`);
   }

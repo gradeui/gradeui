@@ -211,6 +211,7 @@ import {
 } from "@brightlocal/ui-components/chart";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@brightlocal/ui-components/table";
 import { ViewToggle } from "@/components/view-toggle";
+import { SingleSelectMenu } from "@brightlocal/facet-menu";
 import { CampaignPerformance } from "@/components/campaign-performance";
 // THE SAME TABLE AS REVIEW MANAGER (Ali, 6 Sep: "we can switch to the
 // DataTable for all tables"). Two hand-rolled <Table>s and one DataTable in
@@ -4804,6 +4805,7 @@ function CampaignInsights({ campaign }) {
   const fresh = !campaign.stats || campaign.stats.delivered === 0;
   // Days for a campaign that ends, months for one that does not. See GRAINS.
   const [grain, setGrain] = useState(config.channel === "link" ? "month" : "day");
+  const [grainMenuOpen, setGrainMenuOpen] = useState(false);
   // Chart or table on Reviews over time, like Review Tracker (Ali, 17 Sep).
   const [timelineView, setTimelineView] = useState("chart");
   // Every chart is backed by a table (Ali, 17 Sep: "All charts should be backed with tables").
@@ -5136,18 +5138,21 @@ function CampaignInsights({ campaign }) {
                       grain: a select with one option is furniture. */}
                   {GRAINS.length > 1 ? (
                     <>
-                      <Select value={grain} onValueChange={setGrain}>
-                        <SelectTrigger dataHook="timeline-grain" className="w-40">
-                          <SelectValue placeholder="Period" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {GRAINS.map((g) => (
-                            <SelectItem key={g.id} value={g.id}>
-                              {g.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {/* The Tracker's period menu, not a Select: the Select stood
+                          taller and wider than the filter buttons on Review performance
+                          (Ali, 17 Sep). */}
+                      <SingleSelectMenu
+                        dataHook="timeline-grain"
+                        label={GRAINS.find((g) => g.id === grain)?.label ?? GRAINS[0].label}
+                        open={grainMenuOpen}
+                        onOpenChange={setGrainMenuOpen}
+                        options={GRAINS}
+                        value={grain}
+                        onSelect={(id) => {
+                          setGrain(id);
+                          setGrainMenuOpen(false);
+                        }}
+                      />
                       <div className="bg-border mx-1 h-6 w-px" />
                     </>
                   ) : null}
@@ -5454,6 +5459,7 @@ function AllFeedback({ campaign }) {
   const type = campaign.config.feedbackType;
   const [ratingFilter, setRatingFilter] = useState("all");
   const [visitedFilter, setVisitedFilter] = useState("all");
+  const [filterMenu, setFilterMenu] = useState(null);
   // A DRAWER, NOT AN INLINE EXPANSION (Ali, 7 Sep). The row used to unfold in
   // place, which pushed every row below it down the page and meant the full
   // text was only ever readable at the width of the column it sat in. Holding
@@ -5500,7 +5506,9 @@ function AllFeedback({ campaign }) {
         // but Feedback has a set width, so Feedback takes whatever the card
         // has left and truncates inside it, at any card width, instead of a
         // max-width that either overflows the card or leaves space unused.
-        meta: { width: "5rem" },
+        // 7.5rem holds five DS Rating stars plus the cell padding; 5rem
+        // put the fifth star over the feedback text (17 Sep).
+        meta: { width: "7.5rem" },
         cell: ({ row }) => <FeedbackScore type={type} score={row.original.score} />,
       },
       {
@@ -5573,6 +5581,11 @@ function AllFeedback({ campaign }) {
     initialState: { pagination: { pageIndex: 0, pageSize: PAGE_SIZE } },
   });
 
+  const VISITED_OPTIONS = [
+    { id: "all", label: "All feedback" },
+    { id: "yes", label: "Visited a review site" },
+    { id: "no", label: "Did not visit a review site" },
+  ];
   const RATING_OPTIONS =
     type === "nps"
       ? [
@@ -5607,32 +5620,32 @@ function AllFeedback({ campaign }) {
               Internal feedback
             </CardTitle>
             <div className="flex flex-wrap items-center gap-1.5">
-                <div className="w-48">
-                  <Select value={ratingFilter} onValueChange={setRatingFilter}>
-                    <SelectTrigger dataHook="feedback-rating-filter">
-                      <SelectValue placeholder="All ratings" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RATING_OPTIONS.map((o) => (
-                        <SelectItem key={o.id} value={o.id}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="w-56">
-                  <Select value={visitedFilter} onValueChange={setVisitedFilter}>
-                    <SelectTrigger dataHook="feedback-visited-filter">
-                      <SelectValue placeholder="All feedback" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All feedback</SelectItem>
-                      <SelectItem value="yes">Visited a review site</SelectItem>
-                      <SelectItem value="no">Did not visit a review site</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <SingleSelectMenu
+                  dataHook="feedback-rating-filter"
+                  label={RATING_OPTIONS.find((o) => o.id === ratingFilter)?.label ?? RATING_OPTIONS[0].label}
+                  open={filterMenu === "rating"}
+                  onOpenChange={(next) => setFilterMenu(next ? "rating" : null)}
+                  options={RATING_OPTIONS}
+                  value={ratingFilter}
+                  onSelect={(id) => {
+                    setRatingFilter(id);
+                    setFilterMenu(null);
+                  }}
+                  panelWidth="w-56"
+                />
+                <SingleSelectMenu
+                  dataHook="feedback-visited-filter"
+                  label={VISITED_OPTIONS.find((o) => o.id === visitedFilter)?.label ?? VISITED_OPTIONS[0].label}
+                  open={filterMenu === "visited"}
+                  onOpenChange={(next) => setFilterMenu(next ? "visited" : null)}
+                  options={VISITED_OPTIONS}
+                  value={visitedFilter}
+                  onSelect={(id) => {
+                    setVisitedFilter(id);
+                    setFilterMenu(null);
+                  }}
+                  panelWidth="w-56"
+                />
             </div>
           </div>
         </CardHeader>

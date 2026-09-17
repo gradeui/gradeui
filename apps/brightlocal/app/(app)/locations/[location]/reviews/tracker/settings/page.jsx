@@ -324,6 +324,30 @@ export default function RMReportSettingsPage() {
   );
   const [frequency, setFrequency] = useState("weekly");
   const [runDay, setRunDay] = useState("Monday");
+  // THE NEXT RUN FOLLOWS THE FORM. It used to be a fixed date, which put
+  // "Run day: Monday" beside a Tuesday (capture sweep, 17 Sep). Counted on
+  // from the prototype's today, 9 Sep 2026 (TODAY in lib/reviews-data.ts),
+  // so the date is always still to come. Daily is the next day; weekly and
+  // fortnightly the next run day; monthly the first run day of the month
+  // still to come.
+  const nextRun = (() => {
+    const DAY = 86400000;
+    const today = Date.UTC(2026, 8, 9);
+    const iso = (t) => new Date(t).toISOString().slice(0, 10);
+    const mondayFirst = (t) => (new Date(t).getUTCDay() + 6) % 7;
+    const want = DAYS.indexOf(runDay);
+    if (frequency === "daily") return iso(today + DAY);
+    if (frequency === "monthly") {
+      const first = (y, m) => {
+        const start = Date.UTC(y, m, 1);
+        return start + ((want - mondayFirst(start) + 7) % 7) * DAY;
+      };
+      const d = new Date(today);
+      const thisMonth = first(d.getUTCFullYear(), d.getUTCMonth());
+      return iso(thisMonth > today ? thisMonth : first(d.getUTCFullYear(), d.getUTCMonth() + 1));
+    }
+    return iso(today + ((want - mondayFirst(today) + 7) % 7 || 7) * DAY);
+  })();
 
   // ALERTS. The legacy model, kept: on/off, then cadence, then scope, then
   // recipients. Off collapses the rest rather than leaving four disabled
@@ -355,7 +379,7 @@ export default function RMReportSettingsPage() {
   // ASSUMPTION, demo only: one manual run is left, so the first click runs
   // and the second is rejected. The real allowance is the subscription's,
   // and nothing here knows it.
-  const [lastRun, setLastRun] = useState("2026-09-02T06:00");
+  const [lastRun, setLastRun] = useState("2026-09-07T06:00");
   const [runState, setRunState] = useState("idle");
   const [manualRunsLeft, setManualRunsLeft] = useState(1);
   const runNow = () => {
@@ -366,7 +390,7 @@ export default function RMReportSettingsPage() {
     }
     setRunState("running");
     window.setTimeout(() => {
-      setLastRun("2026-09-03T10:12");
+      setLastRun("2026-09-09T10:12");
       setManualRunsLeft((n) => n - 1);
       setRunState("idle");
     }, 6000);
@@ -462,7 +486,7 @@ export default function RMReportSettingsPage() {
             <AlertWarning
               dataHook="run-rejected"
               title="No manual runs left"
-              description={`Your plan's manual runs are used up, so this run did not start. The report still runs on its schedule, next on ${formatDate("2026-09-08")}.`}
+              description={`Your plan's manual runs are used up, so this run did not start. The report still runs on its schedule, next on ${formatDate(nextRun)}.`}
               action={
                 <Button variant="outline" size="sm" dataHook="run-rejected-plans" asChild>
                   <a href="/account/subscription">See plans</a>
@@ -527,8 +551,8 @@ export default function RMReportSettingsPage() {
                     doubled the Run day field above, and it was the part that
                     could disagree with the date. */}
                 {/* Always a date, never "tomorrow" (Ali, 17 Sep: "always
-                    just put the date"). Daily: the day after the last run. */}
-                {frequency === "daily" ? formatDate("2026-09-03") : formatDate("2026-09-08")}
+                    just put the date"). The date is nextRun, above. */}
+                {formatDate(nextRun)}
               </span>
               . A run can be triggered by hand at any time, and doing so does not move the schedule.
               {/* THE ALLOWANCE HINT. No number: the API gives no quota and the

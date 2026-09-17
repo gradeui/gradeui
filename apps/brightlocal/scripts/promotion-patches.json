@@ -499,6 +499,41 @@
       "why": "Ali, 17 Sep: the feedback drawer body follows Review Manager's order",
       "find": "          <DrawerBody key={openItem?.id} className=\"mt-0 flex min-h-0 max-w-none flex-1 flex-col gap-4 overflow-y-auto px-4 py-4\">\n            <div className=\"flex items-center gap-3\">\n              {openItem ? <FeedbackScore type={type} score={openItem.score} /> : null}\n              <span className=\"text-heading-subsection min-w-0 truncate\">{openItem?.email ?? \"Anonymous\"}</span>\n            </div>\n            <p className=\"text-body\">{openItem?.text}</p>\n            <Separator />\n            <dl className=\"flex flex-col gap-2 text-sm\">\n              <div className=\"flex justify-between gap-4\">\n                <dt className=\"text-muted-foreground\">Received</dt>\n                <dd>{openItem ? formatDate(openItem.date) : \"\"}</dd>\n              </div>\n              <div className=\"flex justify-between gap-4\">\n                <dt className=\"text-muted-foreground\">Review site</dt>\n                <dd>{openItem?.visited ? \"Visited\" : \"Did not visit\"}</dd>\n              </div>\n              <div className=\"flex justify-between gap-4\">\n                <dt className=\"text-muted-foreground\">Testimonial</dt>\n                <dd>{openItem?.consent ? \"Happy to be quoted\" : \"Not for use\"}</dd>\n              </div>\n            </dl>\n          </DrawerBody>\n",
       "replace": "          {/* REVIEW MANAGER'S ORDER (Ali, 17 Sep: \"Its back to front? So should be\n              labels and values up top, review text below\"). Detail rows with\n              the label in a fixed column, a rule, then who wrote it and what\n              they wrote, in the Manager's own type. */}\n          <DrawerBody key={openItem?.id} className=\"mt-0 flex min-h-0 max-w-none flex-1 flex-col gap-4 overflow-y-auto px-4 py-4\">\n            <div className=\"flex flex-col gap-2\">\n              {[\n                [\"Rating\", openItem ? <FeedbackScore type={type} score={openItem.score} /> : null],\n                [\"Received\", <span className=\"text-sm\">{openItem ? formatDate(openItem.date) : \"\"}</span>],\n                [\"Review site\", <span className=\"text-sm\">{openItem?.visited ? \"Visited\" : \"Did not visit\"}</span>],\n                [\"Testimonial\", <span className=\"text-sm\">{openItem?.consent ? \"Happy to be quoted\" : \"Not for use\"}</span>],\n              ].map(([label, value]) => (\n                <div key={label} className=\"flex items-center gap-3\">\n                  <span className=\"text-muted-foreground w-24 shrink-0 text-sm\">{label}</span>\n                  {value}\n                </div>\n              ))}\n            </div>\n            <Separator />\n            <div className=\"flex flex-col gap-1\">\n              <p className={`text-sm font-medium break-all ${openItem?.email ? \"\" : \"text-muted-foreground\"}`}>\n                {openItem?.email ?? \"Anonymous\"}\n              </p>\n              <p className=\"text-sm leading-relaxed\">{openItem?.text}</p>\n            </div>\n          </DrawerBody>\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Import.",
+      "find": "import { FacetedFilterMenu } from \"@brightlocal/facet-menu\";",
+      "replace": "import { FacetedFilterMenu, SingleSelectMenu } from \"@brightlocal/facet-menu\";"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Period menu state.",
+      "find": "  const [grain, setGrain] = useState(config.channel === \"link\" ? \"month\" : \"day\");\n",
+      "replace": "  const [grain, setGrain] = useState(config.channel === \"link\" ? \"month\" : \"day\");\n  const [grainMenuOpen, setGrainMenuOpen] = useState(false);\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Filter menu state.",
+      "find": "  const [visitedFilter, setVisitedFilter] = useState(\"all\");\n",
+      "replace": "  const [visitedFilter, setVisitedFilter] = useState(\"all\");\n  const [filterMenu, setFilterMenu] = useState(null);\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Timeline period.",
+      "find": "                      <Select value={grain} onValueChange={setGrain}>\n                        <SelectTrigger dataHook=\"timeline-grain\" className=\"w-40\">\n                          <SelectValue placeholder=\"Period\" />\n                        </SelectTrigger>\n                        <SelectContent>\n                          {GRAINS.map((g) => (\n                            <SelectItem key={g.id} value={g.id}>\n                              {g.label}\n                            </SelectItem>\n                          ))}\n                        </SelectContent>\n                      </Select>\n",
+      "replace": "                      {/* The Tracker's period menu, not a Select: the Select stood\n                          taller and wider than the filter buttons on Review performance\n                          (Ali, 17 Sep). */}\n                      <SingleSelectMenu\n                        dataHook=\"timeline-grain\"\n                        label={GRAINS.find((g) => g.id === grain)?.label ?? GRAINS[0].label}\n                        open={grainMenuOpen}\n                        onOpenChange={setGrainMenuOpen}\n                        options={GRAINS}\n                        value={grain}\n                        onSelect={(id) => {\n                          setGrain(id);\n                          setGrainMenuOpen(false);\n                        }}\n                      />\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Visited options as data.",
+      "find": "  const RATING_OPTIONS =\n",
+      "replace": "  const VISITED_OPTIONS = [\n    { id: \"all\", label: \"All feedback\" },\n    { id: \"yes\", label: \"Visited a review site\" },\n    { id: \"no\", label: \"Did not visit a review site\" },\n  ];\n  const RATING_OPTIONS =\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Internal feedback filters.",
+      "find": "                <div className=\"w-48\">\n                  <Select value={ratingFilter} onValueChange={setRatingFilter}>\n                    <SelectTrigger dataHook=\"feedback-rating-filter\">\n                      <SelectValue placeholder=\"All ratings\" />\n                    </SelectTrigger>\n                    <SelectContent>\n                      {RATING_OPTIONS.map((o) => (\n                        <SelectItem key={o.id} value={o.id}>\n                          {o.label}\n                        </SelectItem>\n                      ))}\n                    </SelectContent>\n                  </Select>\n                </div>\n                <div className=\"w-56\">\n                  <Select value={visitedFilter} onValueChange={setVisitedFilter}>\n                    <SelectTrigger dataHook=\"feedback-visited-filter\">\n                      <SelectValue placeholder=\"All feedback\" />\n                    </SelectTrigger>\n                    <SelectContent>\n                      <SelectItem value=\"all\">All feedback</SelectItem>\n                      <SelectItem value=\"yes\">Visited a review site</SelectItem>\n                      <SelectItem value=\"no\">Did not visit a review site</SelectItem>\n                    </SelectContent>\n                  </Select>\n                </div>\n",
+      "replace": "                <SingleSelectMenu\n                  dataHook=\"feedback-rating-filter\"\n                  label={RATING_OPTIONS.find((o) => o.id === ratingFilter)?.label ?? RATING_OPTIONS[0].label}\n                  open={filterMenu === \"rating\"}\n                  onOpenChange={(next) => setFilterMenu(next ? \"rating\" : null)}\n                  options={RATING_OPTIONS}\n                  value={ratingFilter}\n                  onSelect={(id) => {\n                    setRatingFilter(id);\n                    setFilterMenu(null);\n                  }}\n                  panelWidth=\"w-56\"\n                />\n                <SingleSelectMenu\n                  dataHook=\"feedback-visited-filter\"\n                  label={VISITED_OPTIONS.find((o) => o.id === visitedFilter)?.label ?? VISITED_OPTIONS[0].label}\n                  open={filterMenu === \"visited\"}\n                  onOpenChange={(next) => setFilterMenu(next ? \"visited\" : null)}\n                  options={VISITED_OPTIONS}\n                  value={visitedFilter}\n                  onSelect={(id) => {\n                    setVisitedFilter(id);\n                    setFilterMenu(null);\n                  }}\n                  panelWidth=\"w-56\"\n                />\n"
+    },
+    {
+      "why": "Builder Internal feedback table: the Rating column fits five stars at the DS Rating's own size (capture sweep, 17 Sep: at 5rem the fifth star sat on the first letter of the feedback).",
+      "find": "        meta: { width: \"5rem\" },\n",
+      "replace": "        // 7.5rem holds five DS Rating stars plus the cell padding; 5rem\n        // put the fifth star over the feedback text (17 Sep).\n        meta: { width: \"7.5rem\" },\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -1095,6 +1130,21 @@
       "why": "Ali, 17 Sep: ratings rows: a label column wide enough for five stars",
       "find": "                    <span className=\"flex w-9 shrink-0 items-center justify-start gap-1\">",
       "replace": "                    <span className=\"flex w-24 shrink-0 items-center justify-start gap-1\">"
+    },
+    {
+      "why": "Tracker Review timeline table: counts get their thousands comma like the rest of the page (capture sweep, 17 Sep: 1116 beside 1,116).",
+      "find": "<TableCell align=\"right\" className=\"tabular-nums\">{point.total}</TableCell>",
+      "replace": "<TableCell align=\"right\" className=\"tabular-nums\">{Number(point.total ?? 0).toLocaleString(\"en-GB\")}</TableCell>"
+    },
+    {
+      "why": "Tracker Source timeline table: the same thousands comma.",
+      "find": "                        {point[source.id]}\n",
+      "replace": "                        {Number(point[source.id] ?? 0).toLocaleString(\"en-GB\")}\n"
+    },
+    {
+      "why": "Tracker Sources legend: the Other tooltip opens below its row, over the grouping note it repeats, not left over the donut's total (capture sweep, 17 Sep).",
+      "find": "<TooltipContent dataHook=\"sources-other-tooltip\" side=\"left\">",
+      "replace": "<TooltipContent dataHook=\"sources-other-tooltip\" side=\"bottom\" align=\"start\">"
     }
   ],
   "app/(app)/locations/page.jsx": [
@@ -1521,6 +1571,41 @@
       "why": "Ali, 17 Sep: the feedback drawer body follows Review Manager's order",
       "find": "          <DrawerBody key={openItem?.id} className=\"mt-0 flex min-h-0 max-w-none flex-1 flex-col gap-4 overflow-y-auto px-4 py-4\">\n            <div className=\"flex items-center gap-3\">\n              {openItem ? <FeedbackScore type={type} score={openItem.score} /> : null}\n              <span className=\"text-heading-subsection min-w-0 truncate\">{openItem?.email ?? \"Anonymous\"}</span>\n            </div>\n            <p className=\"text-body\">{openItem?.text}</p>\n            <Separator />\n            <dl className=\"flex flex-col gap-2 text-sm\">\n              <div className=\"flex justify-between gap-4\">\n                <dt className=\"text-muted-foreground\">Received</dt>\n                <dd>{openItem ? formatDate(openItem.date) : \"\"}</dd>\n              </div>\n              <div className=\"flex justify-between gap-4\">\n                <dt className=\"text-muted-foreground\">Review site</dt>\n                <dd>{openItem?.visited ? \"Visited\" : \"Did not visit\"}</dd>\n              </div>\n              <div className=\"flex justify-between gap-4\">\n                <dt className=\"text-muted-foreground\">Testimonial</dt>\n                <dd>{openItem?.consent ? \"Happy to be quoted\" : \"Not for use\"}</dd>\n              </div>\n            </dl>\n          </DrawerBody>\n",
       "replace": "          {/* REVIEW MANAGER'S ORDER (Ali, 17 Sep: \"Its back to front? So should be\n              labels and values up top, review text below\"). Detail rows with\n              the label in a fixed column, a rule, then who wrote it and what\n              they wrote, in the Manager's own type. */}\n          <DrawerBody key={openItem?.id} className=\"mt-0 flex min-h-0 max-w-none flex-1 flex-col gap-4 overflow-y-auto px-4 py-4\">\n            <div className=\"flex flex-col gap-2\">\n              {[\n                [\"Rating\", openItem ? <FeedbackScore type={type} score={openItem.score} /> : null],\n                [\"Received\", <span className=\"text-sm\">{openItem ? formatDate(openItem.date) : \"\"}</span>],\n                [\"Review site\", <span className=\"text-sm\">{openItem?.visited ? \"Visited\" : \"Did not visit\"}</span>],\n                [\"Testimonial\", <span className=\"text-sm\">{openItem?.consent ? \"Happy to be quoted\" : \"Not for use\"}</span>],\n              ].map(([label, value]) => (\n                <div key={label} className=\"flex items-center gap-3\">\n                  <span className=\"text-muted-foreground w-24 shrink-0 text-sm\">{label}</span>\n                  {value}\n                </div>\n              ))}\n            </div>\n            <Separator />\n            <div className=\"flex flex-col gap-1\">\n              <p className={`text-sm font-medium break-all ${openItem?.email ? \"\" : \"text-muted-foreground\"}`}>\n                {openItem?.email ?? \"Anonymous\"}\n              </p>\n              <p className=\"text-sm leading-relaxed\">{openItem?.text}</p>\n            </div>\n          </DrawerBody>\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Import.",
+      "find": "import { ViewToggle } from \"@/components/view-toggle\";\n",
+      "replace": "import { ViewToggle } from \"@/components/view-toggle\";\nimport { SingleSelectMenu } from \"@brightlocal/facet-menu\";\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Period menu state.",
+      "find": "  const [grain, setGrain] = useState(config.channel === \"link\" ? \"month\" : \"day\");\n",
+      "replace": "  const [grain, setGrain] = useState(config.channel === \"link\" ? \"month\" : \"day\");\n  const [grainMenuOpen, setGrainMenuOpen] = useState(false);\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Filter menu state.",
+      "find": "  const [visitedFilter, setVisitedFilter] = useState(\"all\");\n",
+      "replace": "  const [visitedFilter, setVisitedFilter] = useState(\"all\");\n  const [filterMenu, setFilterMenu] = useState(null);\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Timeline period.",
+      "find": "                      <Select value={grain} onValueChange={setGrain}>\n                        <SelectTrigger dataHook=\"timeline-grain\" className=\"w-40\">\n                          <SelectValue placeholder=\"Period\" />\n                        </SelectTrigger>\n                        <SelectContent>\n                          {GRAINS.map((g) => (\n                            <SelectItem key={g.id} value={g.id}>\n                              {g.label}\n                            </SelectItem>\n                          ))}\n                        </SelectContent>\n                      </Select>\n",
+      "replace": "                      {/* The Tracker's period menu, not a Select: the Select stood\n                          taller and wider than the filter buttons on Review performance\n                          (Ali, 17 Sep). */}\n                      <SingleSelectMenu\n                        dataHook=\"timeline-grain\"\n                        label={GRAINS.find((g) => g.id === grain)?.label ?? GRAINS[0].label}\n                        open={grainMenuOpen}\n                        onOpenChange={setGrainMenuOpen}\n                        options={GRAINS}\n                        value={grain}\n                        onSelect={(id) => {\n                          setGrain(id);\n                          setGrainMenuOpen(false);\n                        }}\n                      />\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Visited options as data.",
+      "find": "  const RATING_OPTIONS =\n",
+      "replace": "  const VISITED_OPTIONS = [\n    { id: \"all\", label: \"All feedback\" },\n    { id: \"yes\", label: \"Visited a review site\" },\n    { id: \"no\", label: \"Did not visit a review site\" },\n  ];\n  const RATING_OPTIONS =\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Internal feedback filters.",
+      "find": "                <div className=\"w-48\">\n                  <Select value={ratingFilter} onValueChange={setRatingFilter}>\n                    <SelectTrigger dataHook=\"feedback-rating-filter\">\n                      <SelectValue placeholder=\"All ratings\" />\n                    </SelectTrigger>\n                    <SelectContent>\n                      {RATING_OPTIONS.map((o) => (\n                        <SelectItem key={o.id} value={o.id}>\n                          {o.label}\n                        </SelectItem>\n                      ))}\n                    </SelectContent>\n                  </Select>\n                </div>\n                <div className=\"w-56\">\n                  <Select value={visitedFilter} onValueChange={setVisitedFilter}>\n                    <SelectTrigger dataHook=\"feedback-visited-filter\">\n                      <SelectValue placeholder=\"All feedback\" />\n                    </SelectTrigger>\n                    <SelectContent>\n                      <SelectItem value=\"all\">All feedback</SelectItem>\n                      <SelectItem value=\"yes\">Visited a review site</SelectItem>\n                      <SelectItem value=\"no\">Did not visit a review site</SelectItem>\n                    </SelectContent>\n                  </Select>\n                </div>\n",
+      "replace": "                <SingleSelectMenu\n                  dataHook=\"feedback-rating-filter\"\n                  label={RATING_OPTIONS.find((o) => o.id === ratingFilter)?.label ?? RATING_OPTIONS[0].label}\n                  open={filterMenu === \"rating\"}\n                  onOpenChange={(next) => setFilterMenu(next ? \"rating\" : null)}\n                  options={RATING_OPTIONS}\n                  value={ratingFilter}\n                  onSelect={(id) => {\n                    setRatingFilter(id);\n                    setFilterMenu(null);\n                  }}\n                  panelWidth=\"w-56\"\n                />\n                <SingleSelectMenu\n                  dataHook=\"feedback-visited-filter\"\n                  label={VISITED_OPTIONS.find((o) => o.id === visitedFilter)?.label ?? VISITED_OPTIONS[0].label}\n                  open={filterMenu === \"visited\"}\n                  onOpenChange={(next) => setFilterMenu(next ? \"visited\" : null)}\n                  options={VISITED_OPTIONS}\n                  value={visitedFilter}\n                  onSelect={(id) => {\n                    setVisitedFilter(id);\n                    setFilterMenu(null);\n                  }}\n                  panelWidth=\"w-56\"\n                />\n"
+    },
+    {
+      "why": "Builder Internal feedback table: the Rating column fits five stars at the DS Rating's own size (capture sweep, 17 Sep: at 5rem the fifth star sat on the first letter of the feedback).",
+      "find": "        meta: { width: \"5rem\" },\n",
+      "replace": "        // 7.5rem holds five DS Rating stars plus the cell padding; 5rem\n        // put the fifth star over the feedback text (17 Sep).\n        meta: { width: \"7.5rem\" },\n"
     }
   ],
   "app/(app)/locations/[location]/page.jsx": [
@@ -1680,6 +1765,31 @@
       "why": "Ali, 17 Sep: the Last run note no longer points at a run history",
       "find": "RAN, which is what the run history below is about, so it goes",
       "replace": "RAN, so it goes"
+    },
+    {
+      "why": "Settings: the next run date is worked out from Frequency and Run day, so it always falls on the day the form names (capture sweep, 17 Sep: Run day Monday beside a Tuesday date). The calculation.",
+      "find": "  const [runDay, setRunDay] = useState(\"Monday\");\n",
+      "replace": "  const [runDay, setRunDay] = useState(\"Monday\");\n  // THE NEXT RUN FOLLOWS THE FORM. It used to be a fixed date, which put\n  // \"Run day: Monday\" beside a Tuesday (capture sweep, 17 Sep). Counted on\n  // from the prototype's today, 9 Sep 2026 (TODAY in lib/reviews-data.ts),\n  // so the date is always still to come. Daily is the next day; weekly and\n  // fortnightly the next run day; monthly the first run day of the month\n  // still to come.\n  const nextRun = (() => {\n    const DAY = 86400000;\n    const today = Date.UTC(2026, 8, 9);\n    const iso = (t) => new Date(t).toISOString().slice(0, 10);\n    const mondayFirst = (t) => (new Date(t).getUTCDay() + 6) % 7;\n    const want = DAYS.indexOf(runDay);\n    if (frequency === \"daily\") return iso(today + DAY);\n    if (frequency === \"monthly\") {\n      const first = (y, m) => {\n        const start = Date.UTC(y, m, 1);\n        return start + ((want - mondayFirst(start) + 7) % 7) * DAY;\n      };\n      const d = new Date(today);\n      const thisMonth = first(d.getUTCFullYear(), d.getUTCMonth());\n      return iso(thisMonth > today ? thisMonth : first(d.getUTCFullYear(), d.getUTCMonth() + 1));\n    }\n    return iso(today + ((want - mondayFirst(today) + 7) % 7 || 7) * DAY);\n  })();\n"
+    },
+    {
+      "why": "Settings: the next run date is worked out from Frequency and Run day, so it always falls on the day the form names (capture sweep, 17 Sep: Run day Monday beside a Tuesday date). In the no-runs-left warning.",
+      "find": "next on ${formatDate(\"2026-09-08\")}.`}",
+      "replace": "next on ${formatDate(nextRun)}.`}"
+    },
+    {
+      "why": "Settings: the next run date is worked out from Frequency and Run day, so it always falls on the day the form names (capture sweep, 17 Sep: Run day Monday beside a Tuesday date). In the schedule card.",
+      "find": "just put the date\"). Daily: the day after the last run. */}\n                {frequency === \"daily\" ? formatDate(\"2026-09-03\") : formatDate(\"2026-09-08\")}",
+      "replace": "just put the date\"). The date is nextRun, above. */}\n                {formatDate(nextRun)}"
+    },
+    {
+      "why": "Settings: Last run sits on the schedule and before the prototype's today (9 Sep 2026): the Monday before, and a run by hand lands today (capture sweep, 17 Sep: a September 7 next run read as already past). Scheduled.",
+      "find": "useState(\"2026-09-02T06:00\")",
+      "replace": "useState(\"2026-09-07T06:00\")"
+    },
+    {
+      "why": "Settings: Last run sits on the schedule and before the prototype's today (9 Sep 2026): the Monday before, and a run by hand lands today (capture sweep, 17 Sep: a September 7 next run read as already past). By hand.",
+      "find": "setLastRun(\"2026-09-03T10:12\")",
+      "replace": "setLastRun(\"2026-09-09T10:12\")"
     }
   ],
   "app/(app)/locations/[location]/reviews/builder/gauge/page.jsx": [
@@ -1942,6 +2052,36 @@
       "why": "Ali, 17 Sep: feedback rows lead with the text; the email follows, muted and capped",
       "find": "                  <span className=\"w-52 shrink-0 truncate\" title={f.email ?? undefined}>\n                    {f.email ? f.email : <span className=\"text-muted-foreground\">Anonymous</span>}\n                  </span>\n                  <span className=\"text-muted-foreground min-w-0 flex-1 truncate\">{f.text}</span>\n",
       "replace": "                  {/* Feedback first (Ali, 17 Sep: \"the review text is arguably the\n                      most important\"); who wrote it follows, muted and capped. */}\n                  <span className=\"min-w-0 flex-1 truncate\">{f.text}</span>\n                  <span className=\"text-muted-foreground w-44 shrink-0 truncate\" title={f.email ?? undefined}>\n                    {f.email ? f.email : \"Anonymous\"}\n                  </span>\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Import.",
+      "find": "import { ViewToggle } from \"@/components/view-toggle\";\n",
+      "replace": "import { ViewToggle } from \"@/components/view-toggle\";\nimport { SingleSelectMenu } from \"@brightlocal/facet-menu\";\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Period menu state.",
+      "find": "  const [grain, setGrain] = useState(config.channel === \"link\" ? \"month\" : \"day\");\n",
+      "replace": "  const [grain, setGrain] = useState(config.channel === \"link\" ? \"month\" : \"day\");\n  const [grainMenuOpen, setGrainMenuOpen] = useState(false);\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Filter menu state.",
+      "find": "  const [visitedFilter, setVisitedFilter] = useState(\"all\");\n",
+      "replace": "  const [visitedFilter, setVisitedFilter] = useState(\"all\");\n  const [filterMenu, setFilterMenu] = useState(null);\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Timeline period.",
+      "find": "                      <Select value={grain} onValueChange={setGrain}>\n                        <SelectTrigger dataHook=\"timeline-grain\" className=\"w-40\">\n                          <SelectValue placeholder=\"Period\" />\n                        </SelectTrigger>\n                        <SelectContent>\n                          {GRAINS.map((g) => (\n                            <SelectItem key={g.id} value={g.id}>\n                              {g.label}\n                            </SelectItem>\n                          ))}\n                        </SelectContent>\n                      </Select>\n",
+      "replace": "                      {/* The Tracker's period menu, not a Select: the Select stood\n                          taller and wider than the filter buttons on Review performance\n                          (Ali, 17 Sep). */}\n                      <SingleSelectMenu\n                        dataHook=\"timeline-grain\"\n                        label={GRAINS.find((g) => g.id === grain)?.label ?? GRAINS[0].label}\n                        open={grainMenuOpen}\n                        onOpenChange={setGrainMenuOpen}\n                        options={GRAINS}\n                        value={grain}\n                        onSelect={(id) => {\n                          setGrain(id);\n                          setGrainMenuOpen(false);\n                        }}\n                      />\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Visited options as data.",
+      "find": "  const RATING_OPTIONS =\n",
+      "replace": "  const VISITED_OPTIONS = [\n    { id: \"all\", label: \"All feedback\" },\n    { id: \"yes\", label: \"Visited a review site\" },\n    { id: \"no\", label: \"Did not visit a review site\" },\n  ];\n  const RATING_OPTIONS =\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Internal feedback filters.",
+      "find": "                <div className=\"w-48\">\n                  <Select value={ratingFilter} onValueChange={setRatingFilter}>\n                    <SelectTrigger dataHook=\"feedback-rating-filter\">\n                      <SelectValue placeholder=\"All ratings\" />\n                    </SelectTrigger>\n                    <SelectContent>\n                      {RATING_OPTIONS.map((o) => (\n                        <SelectItem key={o.id} value={o.id}>\n                          {o.label}\n                        </SelectItem>\n                      ))}\n                    </SelectContent>\n                  </Select>\n                </div>\n                <div className=\"w-56\">\n                  <Select value={visitedFilter} onValueChange={setVisitedFilter}>\n                    <SelectTrigger dataHook=\"feedback-visited-filter\">\n                      <SelectValue placeholder=\"All feedback\" />\n                    </SelectTrigger>\n                    <SelectContent>\n                      <SelectItem value=\"all\">All feedback</SelectItem>\n                      <SelectItem value=\"yes\">Visited a review site</SelectItem>\n                      <SelectItem value=\"no\">Did not visit a review site</SelectItem>\n                    </SelectContent>\n                  </Select>\n                </div>\n",
+      "replace": "                <SingleSelectMenu\n                  dataHook=\"feedback-rating-filter\"\n                  label={RATING_OPTIONS.find((o) => o.id === ratingFilter)?.label ?? RATING_OPTIONS[0].label}\n                  open={filterMenu === \"rating\"}\n                  onOpenChange={(next) => setFilterMenu(next ? \"rating\" : null)}\n                  options={RATING_OPTIONS}\n                  value={ratingFilter}\n                  onSelect={(id) => {\n                    setRatingFilter(id);\n                    setFilterMenu(null);\n                  }}\n                  panelWidth=\"w-56\"\n                />\n                <SingleSelectMenu\n                  dataHook=\"feedback-visited-filter\"\n                  label={VISITED_OPTIONS.find((o) => o.id === visitedFilter)?.label ?? VISITED_OPTIONS[0].label}\n                  open={filterMenu === \"visited\"}\n                  onOpenChange={(next) => setFilterMenu(next ? \"visited\" : null)}\n                  options={VISITED_OPTIONS}\n                  value={visitedFilter}\n                  onSelect={(id) => {\n                    setVisitedFilter(id);\n                    setFilterMenu(null);\n                  }}\n                  panelWidth=\"w-56\"\n                />\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/builder/hub-and-spoke/page.jsx": [
@@ -2204,6 +2344,36 @@
       "why": "Ali, 17 Sep: feedback rows lead with the text; the email follows, muted and capped",
       "find": "                  <span className=\"w-52 shrink-0 truncate\" title={f.email ?? undefined}>\n                    {f.email ? f.email : <span className=\"text-muted-foreground\">Anonymous</span>}\n                  </span>\n                  <span className=\"text-muted-foreground min-w-0 flex-1 truncate\">{f.text}</span>\n",
       "replace": "                  {/* Feedback first (Ali, 17 Sep: \"the review text is arguably the\n                      most important\"); who wrote it follows, muted and capped. */}\n                  <span className=\"min-w-0 flex-1 truncate\">{f.text}</span>\n                  <span className=\"text-muted-foreground w-44 shrink-0 truncate\" title={f.email ?? undefined}>\n                    {f.email ? f.email : \"Anonymous\"}\n                  </span>\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Import.",
+      "find": "import { ViewToggle } from \"@/components/view-toggle\";\n",
+      "replace": "import { ViewToggle } from \"@/components/view-toggle\";\nimport { SingleSelectMenu } from \"@brightlocal/facet-menu\";\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Period menu state.",
+      "find": "  const [grain, setGrain] = useState(config.channel === \"link\" ? \"month\" : \"day\");\n",
+      "replace": "  const [grain, setGrain] = useState(config.channel === \"link\" ? \"month\" : \"day\");\n  const [grainMenuOpen, setGrainMenuOpen] = useState(false);\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Filter menu state.",
+      "find": "  const [visitedFilter, setVisitedFilter] = useState(\"all\");\n",
+      "replace": "  const [visitedFilter, setVisitedFilter] = useState(\"all\");\n  const [filterMenu, setFilterMenu] = useState(null);\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Timeline period.",
+      "find": "                      <Select value={grain} onValueChange={setGrain}>\n                        <SelectTrigger dataHook=\"timeline-grain\" className=\"w-40\">\n                          <SelectValue placeholder=\"Period\" />\n                        </SelectTrigger>\n                        <SelectContent>\n                          {GRAINS.map((g) => (\n                            <SelectItem key={g.id} value={g.id}>\n                              {g.label}\n                            </SelectItem>\n                          ))}\n                        </SelectContent>\n                      </Select>\n",
+      "replace": "                      {/* The Tracker's period menu, not a Select: the Select stood\n                          taller and wider than the filter buttons on Review performance\n                          (Ali, 17 Sep). */}\n                      <SingleSelectMenu\n                        dataHook=\"timeline-grain\"\n                        label={GRAINS.find((g) => g.id === grain)?.label ?? GRAINS[0].label}\n                        open={grainMenuOpen}\n                        onOpenChange={setGrainMenuOpen}\n                        options={GRAINS}\n                        value={grain}\n                        onSelect={(id) => {\n                          setGrain(id);\n                          setGrainMenuOpen(false);\n                        }}\n                      />\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Visited options as data.",
+      "find": "  const RATING_OPTIONS =\n",
+      "replace": "  const VISITED_OPTIONS = [\n    { id: \"all\", label: \"All feedback\" },\n    { id: \"yes\", label: \"Visited a review site\" },\n    { id: \"no\", label: \"Did not visit a review site\" },\n  ];\n  const RATING_OPTIONS =\n"
+    },
+    {
+      "why": "Builder campaign view: the Timeline period and the Internal feedback filters are the Tracker's SingleSelectMenu, not DS Selects, so they match the filter buttons on Review performance (Ali, 17 Sep: \"Last 14 days\" is \"too big compared to the All sources, All ratings\"). Internal feedback filters.",
+      "find": "                <div className=\"w-48\">\n                  <Select value={ratingFilter} onValueChange={setRatingFilter}>\n                    <SelectTrigger dataHook=\"feedback-rating-filter\">\n                      <SelectValue placeholder=\"All ratings\" />\n                    </SelectTrigger>\n                    <SelectContent>\n                      {RATING_OPTIONS.map((o) => (\n                        <SelectItem key={o.id} value={o.id}>\n                          {o.label}\n                        </SelectItem>\n                      ))}\n                    </SelectContent>\n                  </Select>\n                </div>\n                <div className=\"w-56\">\n                  <Select value={visitedFilter} onValueChange={setVisitedFilter}>\n                    <SelectTrigger dataHook=\"feedback-visited-filter\">\n                      <SelectValue placeholder=\"All feedback\" />\n                    </SelectTrigger>\n                    <SelectContent>\n                      <SelectItem value=\"all\">All feedback</SelectItem>\n                      <SelectItem value=\"yes\">Visited a review site</SelectItem>\n                      <SelectItem value=\"no\">Did not visit a review site</SelectItem>\n                    </SelectContent>\n                  </Select>\n                </div>\n",
+      "replace": "                <SingleSelectMenu\n                  dataHook=\"feedback-rating-filter\"\n                  label={RATING_OPTIONS.find((o) => o.id === ratingFilter)?.label ?? RATING_OPTIONS[0].label}\n                  open={filterMenu === \"rating\"}\n                  onOpenChange={(next) => setFilterMenu(next ? \"rating\" : null)}\n                  options={RATING_OPTIONS}\n                  value={ratingFilter}\n                  onSelect={(id) => {\n                    setRatingFilter(id);\n                    setFilterMenu(null);\n                  }}\n                  panelWidth=\"w-56\"\n                />\n                <SingleSelectMenu\n                  dataHook=\"feedback-visited-filter\"\n                  label={VISITED_OPTIONS.find((o) => o.id === visitedFilter)?.label ?? VISITED_OPTIONS[0].label}\n                  open={filterMenu === \"visited\"}\n                  onOpenChange={(next) => setFilterMenu(next ? \"visited\" : null)}\n                  options={VISITED_OPTIONS}\n                  value={visitedFilter}\n                  onSelect={(id) => {\n                    setVisitedFilter(id);\n                    setFilterMenu(null);\n                  }}\n                  panelWidth=\"w-56\"\n                />\n"
     }
   ]
 }
