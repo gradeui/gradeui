@@ -210,6 +210,8 @@ import {
   Cell,
 } from "@brightlocal/ui-components/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@brightlocal/ui-components/table";
+import { ViewToggle } from "@/components/view-toggle";
+import { CampaignPerformance } from "@/components/campaign-performance";
 // THE SAME TABLE AS REVIEW MANAGER (Ali, 6 Sep: "we can switch to the
 // DataTable for all tables"). Two hand-rolled <Table>s and one DataTable in
 // the same product is two sets of padding, two pagers and two ideas about
@@ -4794,6 +4796,8 @@ function CampaignInsights({ campaign, onAllFeedback }) {
   const fresh = !campaign.stats || campaign.stats.delivered === 0;
   // Days for a campaign that ends, months for one that does not. See GRAINS.
   const [grain, setGrain] = useState(config.channel === "link" ? "month" : "day");
+  // Chart or table on Reviews over time, like Review Tracker (Ali, 17 Sep).
+  const [timelineView, setTimelineView] = useState("chart");
 
   // AN INFO TOOLTIP ON THE ONES THAT NEED IT (Ali, 3 Sep: "an info with a
   // tooltip is probably also useful on here"). StatCard already has an
@@ -4887,13 +4891,6 @@ function CampaignInsights({ campaign, onAllFeedback }) {
   };
   const series = SERIES[grain] ?? SERIES.day;
 
-  const grainSub = {
-    day: standing
-      ? `Live since ${formatDate("2026-05-03")}, showing the last 14 days.`
-      : `Sent ${formatDate("2026-07-12")}${config.reminder ? `, reminder ${formatDate("2026-07-14")} to people who had not responded` : ""}.`,
-    month: `Live since ${formatDate("2026-05-03")}, by calendar month.`,
-    quarter: `Live since ${formatDate("2026-05-03")}, by calendar quarter.`,
-  };
   const chartConfig = { reviews: { label: "Reviews", color: "var(--chart-1, var(--chart-1-light))" } };
 
   const responded = FEEDBACK_ITEMS.length;
@@ -5038,64 +5035,103 @@ function CampaignInsights({ campaign, onAllFeedback }) {
       ) : (
         <>
 
+          {/* REVIEW PERFORMANCE, the Tracker's display for this campaign's
+              reviews (Ali, 17 Sep: "use the same display from Review
+              Performance - so then we can drop Reviews gained"). Above Reviews
+              over time, in the Tracker's order. */}
+          <CampaignPerformance
+            reviews={Number(stats.reviews ?? 0)}
+            sites={config.sites.map((s) => s.site)}
+            dataHook="insights-performance"
+          />
+
           <Card dataHook="insights-timeline" className="max-w-none">
             <CardHeader>
               <CardTitle size="small" dataHook="insights-timeline-title">
                 Reviews over time
               </CardTitle>
-              <CardDescription dataHook="insights-timeline-sub">
-                {grainSub[grain] ?? grainSub.day}
-              </CardDescription>
-              {/* The control goes in CardAction, the DS's own slot for a
-                  control that acts on the card — same place Review Tracker
-                  puts its period filter, so the two pages agree about where
-                  a chart's period lives. Hidden when there is only one
-                  grain: a select with one option is furniture. */}
-              {GRAINS.length > 1 ? (
-                <CardAction>
-                  <Select value={grain} onValueChange={setGrain}>
-                    <SelectTrigger dataHook="timeline-grain" className="w-40">
-                      <SelectValue placeholder="Period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GRAINS.map((g) => (
-                        <SelectItem key={g.id} value={g.id}>
-                          {g.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </CardAction>
-              ) : null}
+              {/* No description (Ali, 17 Sep: "not needed"). The period is the
+                  select's own label, and the start date is already in the
+                  page header's status slot. */}
+              {/* The controls go in CardAction, the DS's own slot for a
+                  control that acts on the card, the same place Review Tracker
+                  puts its period filter and its chart/table switch. The period
+                  select only shows when there is more than one grain: a select
+                  with one option is furniture. */}
+              <CardAction>
+                <div className="flex items-center gap-2">
+                  {GRAINS.length > 1 ? (
+                    <>
+                      <Select value={grain} onValueChange={setGrain}>
+                        <SelectTrigger dataHook="timeline-grain" className="w-40">
+                          <SelectValue placeholder="Period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GRAINS.map((g) => (
+                            <SelectItem key={g.id} value={g.id}>
+                              {g.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="bg-border mx-1 h-6 w-px" />
+                    </>
+                  ) : null}
+                  <ViewToggle view={timelineView} onChange={setTimelineView} idPrefix="timeline" />
+                </div>
+              </CardAction>
             </CardHeader>
             <CardContent>
-              {/* Fixed-height wrapper per the DS chart rule; aspect-auto
-                  displaces ChartContainer's baked aspect-video. */}
-              <div className="h-56 w-full">
-                <ChartContainer
-                  config={chartConfig}
-                  dataHook="insights-reviews-chart"
-                  width="100%"
-                  height="100%"
-                  className="aspect-auto h-full w-full"
-                >
-                  <AreaChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                    <YAxis width={32} allowDecimals={false} tickLine={false} axisLine={false} tickMargin={8} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      type="monotone"
-                      dataKey="reviews"
-                      stroke="var(--chart-1, var(--chart-1-light))"
-                      fill="var(--chart-1, var(--chart-1-light))"
-                      fillOpacity={0.15}
-                      strokeWidth={2}
-                      isAnimationActive={false}
-                    />
-                  </AreaChart>
-                </ChartContainer>
-              </div>
+              {timelineView === "table" ? (
+                <Table dataHook="insights-timeline-table">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Period</TableHead>
+                      <TableHead align="right">Reviews</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {series.map((point, i) => (
+                      <TableRow key={`${point.label}-${i}`}>
+                        <TableCell>{point.label}</TableCell>
+                        <TableCell align="right" className="tabular-nums">
+                          {point.reviews}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <>
+                  {/* Fixed-height wrapper per the DS chart rule; aspect-auto
+                      displaces ChartContainer's baked aspect-video. */}
+                  <div className="h-56 w-full">
+                    <ChartContainer
+                      config={chartConfig}
+                      dataHook="insights-reviews-chart"
+                      width="100%"
+                      height="100%"
+                      className="aspect-auto h-full w-full"
+                    >
+                      <AreaChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                        <YAxis width={32} allowDecimals={false} tickLine={false} axisLine={false} tickMargin={8} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Area
+                          type="monotone"
+                          dataKey="reviews"
+                          stroke="var(--chart-1, var(--chart-1-light))"
+                          fill="var(--chart-1, var(--chart-1-light))"
+                          fillOpacity={0.15}
+                          strokeWidth={2}
+                          isAnimationActive={false}
+                        />
+                      </AreaChart>
+                    </ChartContainer>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -5249,37 +5285,6 @@ function CampaignInsights({ campaign, onAllFeedback }) {
               </Card>
             </>
           ) : null}
-
-          <Card dataHook="insights-reviews-gained" className="max-w-none">
-            <CardHeader>
-              <CardTitle size="small" dataHook="insights-gained-title">
-                Reviews gained
-              </CardTitle>
-              <CardDescription dataHook="insights-gained-sub">
-                {stats.reviews} new public reviews came from this campaign.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* The last site takes the remainder, so the split always sums
-                  to the headline figure instead of rounding past it. */}
-              <div className="flex flex-wrap gap-4">
-                {(() => {
-                  const total = stats.reviews ?? 0;
-                  const shares = [0.55, 0.25, 0.2].slice(0, config.sites.length);
-                  const counts = shares.map((f) => Math.round(total * f));
-                  counts[counts.length - 1] =
-                    total - counts.slice(0, -1).reduce((a, b) => a + b, 0);
-                  return config.sites.map((site, i) => (
-                    <div key={site.site} className="flex items-center gap-2">
-                      <SiteMark id={site.site} />
-                      <span className="text-sm">{siteById(site.site).label}</span>
-                      <span className="text-sm font-semibold tabular-nums">{counts[i] ?? 0}</span>
-                    </div>
-                  ));
-                })()}
-              </div>
-            </CardContent>
-          </Card>
         </>
       )}
     </div>
