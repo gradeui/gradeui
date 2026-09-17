@@ -51,9 +51,9 @@ const settings = (state: (typeof STATES)[number]) => ({
   fixItForMe: true,
   beaconTone: state.tone ?? "neutral",
   appearance: "light",
-  // A state can strip the contextual insight layer. Undefined leaves the
-  // app's own default alone rather than forcing it on.
-  ...(state.insights === false ? { insights: false } : {}),
+  // Insights are OFF in the app by default (17 Sep), and the catalogue is a
+  // tour of them, so every state shoots with them on unless it says false.
+  insights: state.insights !== false,
 });
 
 // --ratio shoots every frame at one shape, which is what a Figma board wants:
@@ -73,7 +73,7 @@ for (const state of wanted) {
     deviceScaleFactor: 2,
   });
   await ctx.addInitScript((s: unknown) => {
-    try { localStorage.setItem("grade-bl-demo-v2", JSON.stringify(s)); } catch {}
+    try { localStorage.setItem("grade-bl-demo-v3", JSON.stringify(s)); } catch {}
   }, settings(state));
   const page = await ctx.newPage();
   const png = path.join(OUT, `${state.id}.png`);

@@ -44,8 +44,9 @@ export default function StatesPage() {
   const [ratio, setRatio] = React.useState(RATIOS[0]);
   // A GLOBAL SWITCH (Ali, 10 Sep: "an option for all the screens to either
   // show insights or not, this could also be a global setting for these
-  // screens"). null follows whatever each state asks for; true and false
-  // override every one of them.
+  // screens"). null follows whatever each state asks for, and a state that
+  // asks for nothing gets insights ON: the app starts with them off (17 Sep)
+  // but this page is a tour of them. false overrides every state.
   const [insights, setInsights] = React.useState<boolean | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [result, setResult] = React.useState<ReplayResult | null>(null);
@@ -60,7 +61,7 @@ export default function StatesPage() {
     (state: ScreenState) => ({
       personaId: state.persona ?? "engaged",
       tone: state.tone ?? "neutral",
-      insights: insights ?? state.insights,
+      insights: insights ?? state.insights ?? true,
     }),
     [insights],
   );

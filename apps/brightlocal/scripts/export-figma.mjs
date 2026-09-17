@@ -47,7 +47,7 @@ const BANNERS = [
 const WIDTHS = [1440, 1180, 900, 430];
 const TONES = ["neutral", "tinted"];
 
-const settings = (persona, tone) => ({ personaId: persona, look: "authored", variants: {}, engine: "native-fixed", upsell: true, fixItForMe: true, beaconTone: tone, appearance: "light" });
+const settings = (persona, tone) => ({ personaId: persona, look: "authored", variants: {}, engine: "native-fixed", upsell: true, fixItForMe: true, beaconTone: tone, appearance: "light", insights: true });
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await chromium.launch();
@@ -89,7 +89,7 @@ if (!only || only === "banners") {
     for (const b of BANNERS) {
       for (const width of WIDTHS) {
         const ctx = await browser.newContext({ viewport: { width, height: 1000 }, deviceScaleFactor: 2 });
-        await ctx.addInitScript((s) => { try { localStorage.setItem("grade-bl-demo-v2", JSON.stringify(s)); } catch {} }, settings(b.persona, tone));
+        await ctx.addInitScript((s) => { try { localStorage.setItem("grade-bl-demo-v3", JSON.stringify(s)); } catch {} }, settings(b.persona, tone));
         const page = await ctx.newPage();
         const url = b.url ?? `/locations/${b.location}/${b.path}`;
         try {

@@ -69,6 +69,8 @@ const settings = (persona) => ({
   fixItForMe: true,
   beaconTone: flow.tone ?? "neutral",
   appearance: flow.appearance ?? "light",
+  // Off in the app by default (17 Sep); the videos are about them.
+  insights: flow.insights ?? true,
 });
 
 const stageUrl = (url, bg, caption, card) => {
@@ -89,7 +91,7 @@ const ctx = await browser.newContext({
   reducedMotion: "no-preference",
 });
 await ctx.addInitScript((s) => {
-  try { localStorage.setItem("grade-bl-demo-v2", JSON.stringify(s)); } catch {}
+  try { localStorage.setItem("grade-bl-demo-v3", JSON.stringify(s)); } catch {}
 }, settings(flow.persona ?? "engaged"));
 
 // WARM THE ROUTE FIRST. A cold dev server compiling /meta/capture is what
@@ -167,8 +169,8 @@ for (const [i, step] of flow.steps.entries()) {
 
   if (step.persona) {
     persona = step.persona;
-    await ctx.addInitScript((s) => { try { localStorage.setItem("grade-bl-demo-v2", JSON.stringify(s)); } catch {} }, settings(persona));
-    await page.evaluate((s) => { try { localStorage.setItem("grade-bl-demo-v2", JSON.stringify(s)); } catch {} }, settings(persona));
+    await ctx.addInitScript((s) => { try { localStorage.setItem("grade-bl-demo-v3", JSON.stringify(s)); } catch {} }, settings(persona));
+    await page.evaluate((s) => { try { localStorage.setItem("grade-bl-demo-v3", JSON.stringify(s)); } catch {} }, settings(persona));
     if (onStage) {
       await page.evaluate(() => window.__stage?.reloadFrame());
       await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor({ timeout: 40000 }).catch(() => {});

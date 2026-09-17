@@ -90,7 +90,7 @@ export default function SettingsPage() {
       <section className="flex flex-col gap-4">
         <h2 className="text-heading-section">Contextual insights</h2>
         <p className="text-muted-foreground text-sm">
-          Off shows the product on its own, with no strips, chips, nuggets or dialogs. Handy for a screenshot or a reshoot. The same switch is in the Cmd K menu, and <code>?insights=off</code> works from the address bar.
+          Off by default: the product on its own, with no strips, chips, nuggets or dialogs. Turn them on here, in the tweaker (Alt+T), in the Cmd K menu, or with <code>?insights=on</code> in the address bar.
         </p>
         <div className="flex items-start gap-3">
           <Switch dataHook="settings-insights" id="settings-insights" checked={settings.insights !== false} onCheckedChange={(v) => setInsights(Boolean(v))} />

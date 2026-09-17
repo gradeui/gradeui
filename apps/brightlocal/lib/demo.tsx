@@ -9,9 +9,10 @@
  *   persona.look     -> window.__gdsShellLook   (seeds the shell's tweaks)
  *   tweak scope      -> window.__gdsTweakScope  ("app": tweaks follow you)
  *
- * Settings persist in localStorage under grade-bl-demo, and ?persona=<id>
+ * Settings persist in localStorage under grade-bl-demo-v3, and ?persona=<id>
  * on any URL selects one for a link. Cmd/Ctrl+K opens the command menu
  * (components/demo-settings.tsx); Alt+T is the shell's own layout tweaker.
+ * Both carry the contextual insights switch, which starts OFF.
  */
 
 import * as React from "react";
@@ -21,7 +22,14 @@ import { selectSessionDataset, LOOK_PRESETS } from "@brightlocal/proposal-shell"
 
 // v2 (8 Sep): the default look moved to "authored"; a new key so browsers that
 // stored the old seeded default pick the new one up.
-const STORAGE_KEY = "grade-bl-demo-v2";
+// v3 (17 Sep): contextual insights start OFF (Ali: "By default, I'm going to
+// want the insights turned off - they will be turned on with the tweaker").
+// Every save writes the whole settings object, so a v2 browser holds
+// insights: true it never chose. v2 is carried over WITHOUT that one field,
+// so persona, engine and look survive and insights falls to the new default.
+// Anything that seeds settings for a capture writes v3 with insights set.
+const STORAGE_KEY = "grade-bl-demo-v3";
+const LEGACY_KEY = "grade-bl-demo-v2";
 
 export interface DemoSettings {
   personaId: string;
@@ -48,7 +56,8 @@ export interface DemoSettings {
   appearance: "light" | "dark";
   /** Contextual insights on the pages. Off strips every strip, chip,
    *  nugget, dialog and first-run band, so the product can be shot
-   *  without them (Ali, 12 Sep). */
+   *  without them (Ali, 12 Sep). Off by default since 17 Sep: the tweaker
+   *  (Alt+T), Cmd K, /settings or ?insights=on turn them on. */
   insights: boolean;
 }
 
@@ -83,10 +92,16 @@ declare global {
   }
 }
 
-function readStored(): DemoSettings | null {
+function readStored(): Partial<DemoSettings> | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as DemoSettings) : null;
+    if (raw) return JSON.parse(raw) as DemoSettings;
+    const legacy = window.localStorage.getItem(LEGACY_KEY);
+    if (!legacy) return null;
+    const { insights: _dropped, ...rest } = JSON.parse(legacy) as DemoSettings;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(rest));
+    window.localStorage.removeItem(LEGACY_KEY);
+    return rest;
   } catch {
     return null;
   }
@@ -139,7 +154,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     fixItForMe: false,
     beaconTone: "neutral",
     appearance: "light",
-    insights: true,
+    insights: false,
   });
   const [epoch, setEpoch] = React.useState(0);
   const [ready, setReady] = React.useState(false);
@@ -158,7 +173,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       fixItForMe: false,
       beaconTone: "neutral",
       appearance: "light",
-      insights: true,
+      insights: false,
       ...(stored ?? {}),
     };
     if (urlPersona && PERSONAS.some((p) => p.id === urlPersona)) next.personaId = urlPersona;
@@ -244,6 +259,25 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     }),
     [settings, update, menuOpen, notesOpen, epoch, pathname, router],
   );
+
+  // THE TWEAKER'S DEMO GROUP. The shell's Alt+T panel lists any rows the host
+  // puts on window.__gdsHostTweaks, and re-reads them on "gds:host-tweaks".
+  // Insights is the one row: off by default, turned on here (Ali, 17 Sep).
+  React.useEffect(() => {
+    (window as unknown as { __gdsHostTweaks?: unknown }).__gdsHostTweaks = {
+      title: "Demo",
+      rows: [
+        {
+          key: "insights",
+          label: "Contextual insights",
+          values: [true, false],
+          value: settings.insights,
+          onChange: (v: boolean) => update({ insights: v }),
+        },
+      ],
+    };
+    window.dispatchEvent(new Event("gds:host-tweaks"));
+  }, [settings.insights, update]);
 
   // Shells read the seams at mount, so nothing renders until they are set.
   if (!ready) return null;

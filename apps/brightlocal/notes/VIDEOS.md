@@ -49,7 +49,7 @@ same origin.
 - Recorder: a flow runner for the standalone app, not the Studio share
   recorder. Same choreography format as scripts/flows/*.json (goto,
   wait, click, scroll, caption), plus two new steps: `persona` (seeds
-  grade-bl-demo-v2 in localStorage and reloads, which is the cut) and
+  grade-bl-demo-v3 in localStorage and reloads, which is the cut) and
   `title` (a full-frame card: persona name, one line, the DS illustration).
   Base URL is the live site, so custom.css and fonts are the real ones.
 - 2x native, 30 fps, lossless, then the existing join-sections and

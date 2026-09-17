@@ -134,10 +134,10 @@ export function seedLook(look: {
   insights?: boolean;
 }) {
   try {
-    const raw = localStorage.getItem("grade-bl-demo-v2");
+    const raw = localStorage.getItem("grade-bl-demo-v3");
     const current = raw ? JSON.parse(raw) : {};
     localStorage.setItem(
-      "grade-bl-demo-v2",
+      "grade-bl-demo-v3",
       JSON.stringify({
         ...current,
         personaId: look.personaId,

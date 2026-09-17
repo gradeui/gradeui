@@ -838,23 +838,21 @@ function ReviewPerformance() {
                         added and it made a magnitude bar heavier than the
                         number beside it (Ali, 28 Aug: "a bit overkill in
                         their saturation, and also maybe a bit too fat").
-                        indicatorClassName moves the fill off the neon band of
-                        the ramp. green-400 IS --primary (#2ae855) and 300 is
-                        brighter still (#59f77d); 600 (#03a829) is the first
-                        step that stops shouting while keeping a one-review bar
-                        visible, which a pale 200 would not. These bars count
-                        reviews, they do not report good or bad, so
-                        full-strength brand green was claiming a meaning the
-                        data does not carry. A ramp step, not an opacity mix,
-                        per the house rule on colour. */}
+                        The fill is --chart-1 (Ali, 17 Sep: "switch to chart
+                        color 1"): these bars count reviews, they do not report
+                        good or bad, so they take the first chart colour like
+                        any other count, not a brand green that claims a
+                        meaning. Progress has no chart colour of its own, so
+                        the indicator is set here, and the track is sky-100,
+                        the tint of chart-1's own ramp. A ramp step, not an
+                        opacity mix, per the house rule on colour. */}
                     <Progress
                       dataHook={`rating-bar-${bucket.id}`}
                       value={byBucket[bucket.id]}
                       max={peak}
-                      color="green"
-                      indicatorClassName="bg-green-600"
+                      indicatorClassName="bg-chart-1"
                       ariaLabel={`${byBucket[bucket.id]} reviews`}
-                      className="h-2 flex-1"
+                      className="h-2 flex-1 bg-[var(--ds-tailwind-colors-sky-100)]"
                     />
                     <span className="w-10 shrink-0 text-right text-sm tabular-nums">
                       {byBucket[bucket.id]}

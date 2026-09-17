@@ -652,8 +652,44 @@ const PRESET_LABELS = {
   "live-site": "Live Site",
 };
 
-export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
-  const [open, setOpen] = React.useState(false);
+// HOST ROWS (app-side, 17 Sep). A host app can put its own group at the top
+// of the panel: window.__gdsHostTweaks = { title, rows: [{ key, label,
+// values, value, onChange }] }, and fire "gds:host-tweaks" when a value
+// changes. The brightlocal app uses it for the contextual insights switch
+// (Ali: insights "will be turned on with the tweaker"). Studio sets nothing,
+// so the panel there is unchanged. `hostOnly` shows just that group, which is
+// how the DS-as-shipped engines get the switch without the look knobs they
+// ignore.
+function readHostTweaks() {
+  try {
+    const host = window.__gdsHostTweaks;
+    return host && Array.isArray(host.rows) && host.rows.length ? host : null;
+  } catch {
+    return null;
+  }
+}
+// Open state outlives a remount: the host remounts the page when a demo
+// setting changes, and the panel should not shut on the switch just pressed.
+let TWEAKER_OPEN = false;
+
+export function ShellTweakerPanel({ preset, authored = {}, tweaks = {}, setTweaks = () => {}, hostOnly = false }) {
+  const [open, setOpenState] = React.useState(() => TWEAKER_OPEN);
+  const setOpen = React.useCallback(
+    (v) =>
+      setOpenState((o) => {
+        const next = typeof v === "function" ? v(o) : v;
+        TWEAKER_OPEN = next;
+        return next;
+      }),
+    [],
+  );
+  const [host, setHost] = React.useState(readHostTweaks);
+  React.useEffect(() => {
+    const onHost = () => setHost(readHostTweaks());
+    onHost();
+    window.addEventListener("gds:host-tweaks", onHost);
+    return () => window.removeEventListener("gds:host-tweaks", onHost);
+  }, []);
   React.useEffect(() => {
     const onKey = (e) => {
       if (e.altKey && (e.code === "KeyT" || e.key === "t" || e.key === "T")) {
@@ -664,7 +700,7 @@ export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [setOpen]);
   // Knobs GROUPED by the surface they affect (Ali, 22 Jul): everything
   // sidebar-ish together, everything header-ish together, then page +
   // data. `display` renames a stored value for the UI only — the prop
@@ -712,6 +748,8 @@ export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
       rows: [{ key: "dataset", label: "Dataset", values: ["default", ...Object.keys(DATASETS)] }],
     },
   ];
+  const groups = [...(host ? [{ ...host, host: true }] : []), ...(hostOnly ? [] : GROUPS)];
+  if (!groups.length) return null;
   const live = { ...authored, ...tweaks };
   const dirty = Object.keys(tweaks).length > 0;
   const set = (key, v) =>
@@ -727,7 +765,7 @@ export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
         <div className="w-96 rounded-xl border border-[var(--border)] bg-[light-dark(var(--ds-tailwind-colors-base-white),var(--ds-tailwind-colors-neutral-900))] p-3 shadow-lg">
           <div className="mb-2 flex items-center justify-between">
             <span className="flex items-baseline gap-2">
-              <span className="text-sm font-semibold">Shell tweaks</span>
+              <span className="text-sm font-semibold">{hostOnly ? "Tweaks" : "Shell tweaks"}</span>
               {/* Discoverability: the toggle shortcut, right where you
                   learn it (Ali, 22 Jul — it existed but nothing said so). */}
               <kbd className="rounded border border-[var(--border)] px-1 py-px font-mono text-[10px] text-muted-foreground">
@@ -736,7 +774,9 @@ export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
             </span>
             <span className="flex items-center gap-1">
               {/* Preset dropdown — applies a LOOK bundle; the session
-                  dataset survives every preset switch. */}
+                  dataset survives every preset switch. Not in hostOnly:
+                  there are no look knobs for it to set. */}
+              {hostOnly ? null : (
               <select
                 aria-label="Look preset"
                 data-hook="tweaker-preset"
@@ -789,6 +829,7 @@ export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
                   Custom
                 </option>
               </select>
+              )}
               {dirty ? (
                 <button
                   onClick={() => setTweaks({})}
@@ -806,7 +847,7 @@ export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
               </button>
             </span>
           </div>
-          {GROUPS.map((group) => (
+          {groups.map((group) => (
             // Edge-to-edge rule above each GROUP (except the first —
             // the panel title already separates it); -mx-3/px-3 cancel
             // the panel padding (Ali, 22 Jul).
@@ -823,7 +864,7 @@ export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
                     <span className="text-xs font-medium text-[light-dark(var(--ds-tailwind-colors-neutral-800),var(--ds-tailwind-colors-neutral-100))]">
                       {row.label}
                     </span>
-                    {tweaks[row.key] !== undefined ? (
+                    {!group.host && tweaks[row.key] !== undefined ? (
                       <span className="text-muted-foreground text-[11px]">tweaked</span>
                     ) : null}
                   </div>
@@ -831,9 +872,9 @@ export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
                     {row.values.map((v) => (
                       <button
                         key={String(v)}
-                        onClick={() => set(row.key, v)}
+                        onClick={() => (group.host ? row.onChange(v) : set(row.key, v))}
                         className={
-                          live[row.key] === v
+                          (group.host ? row.value : live[row.key]) === v
                             ? "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-50))] px-2 py-0.5 text-[11px] text-[light-dark(white,var(--ds-tailwind-colors-neutral-900))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-700),var(--ds-tailwind-colors-neutral-200))]"
                             : "rounded-full bg-[light-dark(var(--ds-tailwind-colors-neutral-100),var(--ds-tailwind-colors-neutral-800))] px-2 py-0.5 text-[11px] text-[light-dark(var(--ds-tailwind-colors-neutral-600),var(--ds-tailwind-colors-neutral-300))] transition-colors hover:bg-[light-dark(var(--ds-tailwind-colors-neutral-200),var(--ds-tailwind-colors-neutral-600))] hover:text-[light-dark(var(--ds-tailwind-colors-neutral-900),var(--ds-tailwind-colors-neutral-50))]"
                         }
@@ -1586,6 +1627,9 @@ function NativeAppLayoutShell({ sidebar, header, mobileBar, children, dataset, d
         {header}
         {children}
       </GlobalLayoutContent>
+      {/* The host's rows only: the look knobs do nothing on this engine,
+          but the insights switch still has to be reachable (17 Sep). */}
+      <ShellTweakerPanel hostOnly />
     </GlobalLayout>
   );
   const effectiveDataset = urlDataset ?? loadSessionDataset() ?? dataset;
