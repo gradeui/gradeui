@@ -275,6 +275,7 @@ import {
   FeedbackScore,
   formatDate,
   useProposalData,
+  EmptyState,
 } from "@brightlocal/proposal";
 import { WizardShell } from "@brightlocal/wizard-shell";
 
@@ -4918,7 +4919,7 @@ function CampaignInsights({ campaign }) {
           block; now every state that needs to explain itself does, and the
           two that do not (Draft, Live) render nothing rather than an empty
           reassurance. See STATES. */}
-      {stateOf(campaign.status).alert ? (
+      {!fresh && stateOf(campaign.status).alert ? (
         stateOf(campaign.status).alert.tone === "warning" ? (
           <AlertWarning
             dataHook="state-banner"
@@ -4929,150 +4930,172 @@ function CampaignInsights({ campaign }) {
         )
       ) : null}
 
-      {/* THE STAT ROW LIVES INSIDE A CARD (Ali, 2 Sep: "I think these would
-          actually be inside another card, and be smaller cards with a
-          coloured background - no capitalisation of the labels").
-          There IS a DS pattern for exactly this and the tiles were not using
-          it: `StatCard level="nested"` steps the tile down to the neutral
-          tier with a border, "for a stat row at the top of a bigger module
-          card" — its own words. Five white tiles floating on the page
-          background were five cards competing with the cards below them for
-          the same level of attention, when they are a summary OF what is
-          below. Nested, in one card, they read as the module's headline.
-          The uppercase labels and the 30px numbers were fixed in StatCard
-          itself, not here: it is used on five other pages. */}
-      {/* THE CARD NEEDS TO SAY WHAT THE NUMBERS ARE (Ali, 2 Sep: "the main
-          card that these are in needs a title???"). It did not have one,
-          which left five numbers floating in an unlabelled box — the reader
-          has to infer from the tiles what the container is, which is the
-          wrong way round. Every other card on this page names itself.
-          The description dates the numbers rather than repeating the title:
-          "results" is only meaningful with a period attached, and a standing
-          link campaign and a one-shot email campaign date theirs
-          differently. */}
-      <Card dataHook="insights-summary-card" density="condensed" className="max-w-none">
-        {/* THE SAME CARD TITLE AS THE OTHERS (Ali, 17 Sep: the tiles sat "miles
-            away" from their title). The Tracker's header band, a rule under
-            the title and the content close beneath it, instead of the DS
-            default header and the card's gap-8 under it. No subtitle (Ali, 3
-            Sep: the date is already in the page header). */}
-        <CardHeader
-          className="bg-card sticky top-[var(--gds-page-header-height,0px)] z-[5] -mt-3 rounded-t-[inherit] border-b px-6 pt-4 pb-4"
-          style={{ gridTemplateRows: "auto", rowGap: 0 }}
-        >
-          <CardTitle size="small" dataHook="insights-summary-title">
-            Results
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-6 pt-2 pb-6">
-          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
-            {tiles.map((t) => (
-              <StatCard
-                key={t.label}
-                level="nested"
-                label={t.label}
-                value={t.value}
-                info={t.info}
-                tone={fresh ? "neutral" : t.tone}
-                dataHook={`insights-${t.label.toLowerCase().replaceAll(" ", "-")}`}
-              />
-            ))}
-          </div>
-
-          {/* THE FUNNEL JOINS THE RESULTS CARD (Ali, 3 Sep: "'What happened
-              after you sent it' is a truly awful title. In reality it's just
-              more metrics — you could arguably just put that in the card
-              above called Results").
-              It is the same card's worth of information: the tiles are the
-              totals, the bars are the same journey with its drop-off shown.
-              Two cards meant inventing a name for the second one, and the
-              name that got invented was a sentence.
-              "Funnel" as the sub-heading (Ali, 3 Sep: "you could even call
-              it funnel if that is what it is"). I had left it unlabelled on
-              the grounds that the rows label themselves, which was right
-              about the rows and wrong about the group: four bars under a
-              rule need a word saying what the SET is, and funnel is the word
-              — it is a real term for exactly this shape, not a euphemism
-              for one. */}
-          {!standing && !fresh ? (
-            <>
-              <Separator dataHook="insights-results-rule" className="my-5" />
-              {/* JUST THE FUNNEL (Ali, 6 Sep: "we wouldn't have a
-                  conversion donut RAG next to it, just the funnel"). The
-                  gauge that sat here read the funnel's last step over its
-                  first and passed a red/amber/green judgement on it — a
-                  second opinion about a number the funnel already shows,
-                  taking half the row to say it. NPS keeps its own dial in
-                  its own card, which is a different measurement of a
-                  different thing. */}
-              <div>
-                <div className="min-w-0">
-                  {/* All charts are backed by tables (Ali, 17 Sep), so the
-                      funnel gets the chart/table switch beside its heading. */}
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium" data-hook="insights-funnel-title">
-                      Funnel
-                    </p>
-                    <ViewToggle view={funnelView} onChange={setFunnelView} idPrefix="funnel" />
-                  </div>
-                  {/* A REAL FUNNEL (Ali, 3 Sep: "next up need a funnel
-                      chart"), replacing the four Progress bars. Same data,
-                      same greys as ReviewFunnel's ramp — the shape now does what
-                      the word says. The last shape is a rectangle: a point
-                      at the bottom would draw "visited a review site" as if
-                      it tapered to nobody. Labels sit to the right of each
-                      step, name and count together, in the margin reserved
-                      for them. Fixed-height wrapper per the DS chart rule,
-                      capped at max-w-md so four steps do not stretch into
-                      four flat ribbons on a wide card. */}
-                  {/* <ReviewFunnel/>, not a hand-wrapped FunnelChart (6 Sep).
-                      The inline version rendered NOTHING: a FunnelChart will
-                      not take its size from the ResponsiveContainer that
-                      ChartContainer owns. The lib component measures its own
-                      width and hands the chart explicit pixels, which is the
-                      only shape that keeps the DS chart context and stays
-                      responsive. See the ReviewFunnel sidecar. */}
-                  {funnelView === "table" ? (
-                    <Table dataHook="insights-funnel-table">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Step</TableHead>
-                          <TableHead align="right">Recipients</TableHead>
-                          <TableHead align="right">Of those sent</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {funnel.map((step) => (
-                          <TableRow key={step.k}>
-                            <TableCell>{step.k}</TableCell>
-                            <TableCell align="right" className="tabular-nums">
-                              {step.v.toLocaleString("en-GB")}
-                            </TableCell>
-                            <TableCell align="right" className="tabular-nums">
-                              {stats.sent ? Math.round((step.v / stats.sent) * 100) : 0}%
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <>
-                      <ReviewFunnel data={funnel} dataHook="insights-funnel-chart" height={240} showDrop />
-                    </>
-                  )}
-                </div>
+      {/* NO ZERO TILES (Ali, 17 Sep: "We need an empty state, but not zero based
+          cards"). A campaign with no activity shows the empty state below and
+          nothing else. */}
+      {fresh ? null : (
+        <>
+          {/* THE STAT ROW LIVES INSIDE A CARD (Ali, 2 Sep: "I think these would
+              actually be inside another card, and be smaller cards with a
+              coloured background - no capitalisation of the labels").
+              There IS a DS pattern for exactly this and the tiles were not using
+              it: `StatCard level="nested"` steps the tile down to the neutral
+              tier with a border, "for a stat row at the top of a bigger module
+              card" — its own words. Five white tiles floating on the page
+              background were five cards competing with the cards below them for
+              the same level of attention, when they are a summary OF what is
+              below. Nested, in one card, they read as the module's headline.
+              The uppercase labels and the 30px numbers were fixed in StatCard
+              itself, not here: it is used on five other pages. */}
+          {/* THE CARD NEEDS TO SAY WHAT THE NUMBERS ARE (Ali, 2 Sep: "the main
+              card that these are in needs a title???"). It did not have one,
+              which left five numbers floating in an unlabelled box — the reader
+              has to infer from the tiles what the container is, which is the
+              wrong way round. Every other card on this page names itself.
+              The description dates the numbers rather than repeating the title:
+              "results" is only meaningful with a period attached, and a standing
+              link campaign and a one-shot email campaign date theirs
+              differently. */}
+          <Card dataHook="insights-summary-card" density="condensed" className="max-w-none">
+            {/* THE SAME CARD TITLE AS THE OTHERS (Ali, 17 Sep: the tiles sat "miles
+                away" from their title). The Tracker's header band, a rule under
+                the title and the content close beneath it, instead of the DS
+                default header and the card's gap-8 under it. No subtitle (Ali, 3
+                Sep: the date is already in the page header). */}
+            <CardHeader
+              className="bg-card sticky top-[var(--gds-page-header-height,0px)] z-[5] -mt-3 rounded-t-[inherit] border-b px-6 pt-4 pb-4"
+              style={{ gridTemplateRows: "auto", rowGap: 0 }}
+            >
+              <CardTitle size="small" dataHook="insights-summary-title">
+                Results
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-6 pt-2 pb-6">
+              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                {tiles.map((t) => (
+                  <StatCard
+                    key={t.label}
+                    level="nested"
+                    label={t.label}
+                    value={t.value}
+                    info={t.info}
+                    tone={fresh ? "neutral" : t.tone}
+                    dataHook={`insights-${t.label.toLowerCase().replaceAll(" ", "-")}`}
+                  />
+                ))}
               </div>
-            </>
-          ) : null}
-        </CardContent>
-      </Card>
 
+              {/* THE FUNNEL JOINS THE RESULTS CARD (Ali, 3 Sep: "'What happened
+                  after you sent it' is a truly awful title. In reality it's just
+                  more metrics — you could arguably just put that in the card
+                  above called Results").
+                  It is the same card's worth of information: the tiles are the
+                  totals, the bars are the same journey with its drop-off shown.
+                  Two cards meant inventing a name for the second one, and the
+                  name that got invented was a sentence.
+                  "Funnel" as the sub-heading (Ali, 3 Sep: "you could even call
+                  it funnel if that is what it is"). I had left it unlabelled on
+                  the grounds that the rows label themselves, which was right
+                  about the rows and wrong about the group: four bars under a
+                  rule need a word saying what the SET is, and funnel is the word
+                  — it is a real term for exactly this shape, not a euphemism
+                  for one. */}
+              {!standing && !fresh ? (
+                <>
+                  <Separator dataHook="insights-results-rule" className="my-5" />
+                  {/* JUST THE FUNNEL (Ali, 6 Sep: "we wouldn't have a
+                      conversion donut RAG next to it, just the funnel"). The
+                      gauge that sat here read the funnel's last step over its
+                      first and passed a red/amber/green judgement on it — a
+                      second opinion about a number the funnel already shows,
+                      taking half the row to say it. NPS keeps its own dial in
+                      its own card, which is a different measurement of a
+                      different thing. */}
+                  <div>
+                    <div className="min-w-0">
+                      {/* All charts are backed by tables (Ali, 17 Sep), so the
+                          funnel gets the chart/table switch beside its heading. */}
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium" data-hook="insights-funnel-title">
+                          Funnel
+                        </p>
+                        <ViewToggle view={funnelView} onChange={setFunnelView} idPrefix="funnel" />
+                      </div>
+                      {/* A REAL FUNNEL (Ali, 3 Sep: "next up need a funnel
+                          chart"), replacing the four Progress bars. Same data,
+                          same greys as ReviewFunnel's ramp — the shape now does what
+                          the word says. The last shape is a rectangle: a point
+                          at the bottom would draw "visited a review site" as if
+                          it tapered to nobody. Labels sit to the right of each
+                          step, name and count together, in the margin reserved
+                          for them. Fixed-height wrapper per the DS chart rule,
+                          capped at max-w-md so four steps do not stretch into
+                          four flat ribbons on a wide card. */}
+                      {/* <ReviewFunnel/>, not a hand-wrapped FunnelChart (6 Sep).
+                          The inline version rendered NOTHING: a FunnelChart will
+                          not take its size from the ResponsiveContainer that
+                          ChartContainer owns. The lib component measures its own
+                          width and hands the chart explicit pixels, which is the
+                          only shape that keeps the DS chart context and stays
+                          responsive. See the ReviewFunnel sidecar. */}
+                      {funnelView === "table" ? (
+                        <Table dataHook="insights-funnel-table">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Step</TableHead>
+                              <TableHead align="right">Recipients</TableHead>
+                              <TableHead align="right">Of those sent</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {funnel.map((step) => (
+                              <TableRow key={step.k}>
+                                <TableCell>{step.k}</TableCell>
+                                <TableCell align="right" className="tabular-nums">
+                                  {step.v.toLocaleString("en-GB")}
+                                </TableCell>
+                                <TableCell align="right" className="tabular-nums">
+                                  {stats.sent ? Math.round((step.v / stats.sent) * 100) : 0}%
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <>
+                          <ReviewFunnel data={funnel} dataHook="insights-funnel-chart" height={240} showDrop />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* ONE EMPTY STATE (Ali, 17 Sep: "We dont need to have two empty
+          states"; "We need an empty state, but not zero based cards"). The
+          status banner and the Results tiles stand down for a campaign with no
+          activity, and this says what is happening in their place: for a
+          Scheduled campaign the banner's own message, otherwise that numbers
+          arrive once people respond. The DS has no Empty component, so it is
+          a Card with an icon, a subsection heading and a muted line. */}
       {fresh ? (
         <Card dataHook="insights-empty" className="max-w-none">
-          <CardContent className="py-10 text-center">
-            <p className="text-muted-foreground text-sm">
-              No activity yet. Numbers appear here as people click through and respond.
-            </p>
+          <CardContent className="p-0">
+            {/* The shared EmptyState from the proposal lib (Ali, 17 Sep). */}
+            <EmptyState
+              icon={Send}
+              title={campaign.status === "Scheduled" ? "Nothing has been sent yet" : "No activity yet"}
+              description={
+                campaign.status === "Scheduled"
+                  ? "It sends automatically at its scheduled time, and you can still change the messages or cancel it until then."
+                  : "Numbers appear here as people click through and respond."
+              }
+              dataHook="insights-empty-state"
+            />
           </CardContent>
         </Card>
       ) : (

@@ -797,6 +797,45 @@ function ModifiedPageHeader({
   );
 }
 
+// ─── EmptyState ────────────────────────────────────────────────────────
+// ONE EMPTY STATE, SHARED (Ali, 17 Sep: "Can we build empty state as a shared
+// component?"). The DS has no Empty, and pages had been writing their own: a
+// muted sentence in a padded card, an alert standing in for one, a row of
+// zero tiles. This is the one shape: an optional icon in a neutral-100 circle,
+// a heading, an optional muted line and an optional action, centred. It has
+// no card of its own, so it can sit in a Card, a table body or a sheet.
+// Type: the Figma subsection heading and body roles.
+export function EmptyState({
+  icon: IconCmp,
+  title,
+  description,
+  action,
+  dataHook = "empty-state",
+  className = "",
+}) {
+  return (
+    <div
+      data-hook={dataHook}
+      className={`flex flex-col items-center gap-2 px-6 py-12 text-center ${className}`}
+    >
+      {IconCmp ? (
+        <span className="mb-2 flex size-10 items-center justify-center rounded-full bg-[var(--ds-tailwind-colors-neutral-100)]">
+          <IconCmp className="text-muted-foreground size-5" aria-hidden="true" />
+        </span>
+      ) : null}
+      <p className="text-heading-subsection" data-hook={`${dataHook}-title`}>
+        {title}
+      </p>
+      {description ? (
+        <p className="text-body text-muted-foreground max-w-[52ch] text-pretty" data-hook={`${dataHook}-description`}>
+          {description}
+        </p>
+      ) : null}
+      {action ? <div className="mt-3">{action}</div> : null}
+    </div>
+  );
+}
+
 // ─── HubStatCard ──────────────────────────────────────────────────────
 // The canonical arrangement: icon → title → chevron (drill-down) →
 // description → metric (+ delta). `metric` and `delta` accept

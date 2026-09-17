@@ -4,7 +4,7 @@
 //   proposal-data.jsx   the data seam (defaults, datasets, provider/hook)
 //   proposal-shell.jsx  AppLayoutShell + ShellTweakerPanel + presets
 //   proposal-nav.jsx    PROPOSAL_SECTIONS + ProposalSidebar (nav model v2)
-//   proposal-page.jsx   PageHeader + StatCard/HubStatCard/HubHeroCard
+//   proposal-page.jsx   PageHeader + StatCard/HubStatCard/HubHeroCard + EmptyState
 //   proposal-insights.jsx  ModuleScoreCard + AreaInsights/InsightCard
 //   proposal-glossary.jsx  GlossaryText/GlossaryTerm (inline jargon)
 //
