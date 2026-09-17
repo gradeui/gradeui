@@ -134,6 +134,8 @@ import {
   ProposalSidebar,
   PageHeader,
   useProposalData,
+  formatDate,
+  formatDateShort,
 } from "@brightlocal/proposal";
 import { SideSheetHeader } from "@brightlocal/side-sheet-header";
 import {
@@ -215,15 +217,15 @@ const RECOMMENDATION_SOURCE = "facebook";
 const AI_DRAFT_QUOTA = 3;
 const TODAY = DATA_TODAY;
 
-const shortDate = (iso) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-const longDate = (iso) =>
-  new Date(iso).toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+// ONE LONG FORMAT AND ONE SHORT (Ali, 17 Sep: "I want the date format to be
+// consistent in the Review Manager"). The page header already said "August
+// 18, 2026" through the library's formatDate, while the table said "9 Sept"
+// with no year and the review panel "Wednesday 9 September 2026". The table
+// takes the short form, "Aug 18, 2026", and the panel the long one. Both come
+// from the library, and they parse the ISO string rather than going through
+// new Date, which would apply the viewer's timezone and can move the day.
+const shortDate = (iso) => formatDateShort(iso);
+const longDate = (iso) => formatDate(iso);
 const daysAgo = (iso) => Math.round((TODAY - new Date(iso)) / 86400000);
 
 const ratingValue = (r) => (r === "up" ? 5 : r === "down" ? 1 : r);
@@ -1498,7 +1500,20 @@ function ReviewsInbox() {
                   which site this is; the word is the fallback for anyone who
                   does not read logos, so it should sit under the review text
                   rather than level with it. */}
-              <span className="hidden text-xs lg:inline">{SOURCES[row.original.source].name}</span>
+              {/* ONE LINE, WITH A CEILING (Ali, 17 Sep: "is this wrapping on
+                  purpose?", then "the provider would have to have a max width").
+                  It was not on purpose. No width is set on this column, so the
+                  table sized it to about 110px and "Apple Maps" broke onto two
+                  lines at every width. Nowrap alone would let one long site name
+                  push the whole column out, and BrightLocal lists 80-plus sites,
+                  so it stops at 120px and ellipsises past that, with the full
+                  name on hover. Every site currently in the data fits. */}
+              <span
+                className="hidden max-w-[7.5rem] truncate text-xs lg:inline"
+                title={SOURCES[row.original.source].name}
+              >
+                {SOURCES[row.original.source].name}
+              </span>
             </span>
           </div>
         ),

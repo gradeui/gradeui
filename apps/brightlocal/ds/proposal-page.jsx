@@ -123,6 +123,19 @@ export function formatDate(value) {
   return `${month} ${parseInt(m[1], 10)}, ${m[3]}`;
 }
 
+// THE SHORT FORM, for tables and anywhere a column is tight (Ali, 17 Sep:
+// "we maybe also need a short version for using in tables, so that would be
+// Aug 18, 2026"). Built ON formatDate rather than beside it, so the two can
+// never parse a date differently: take the long form and cut the month to
+// three letters. "September 9, 2026" becomes "Sep 9, 2026". Anything
+// formatDate could not read comes back untouched, as it does there.
+export function formatDateShort(value) {
+  const long = formatDate(value);
+  if (typeof long !== "string") return long;
+  const m = long.match(/^([A-Z][a-z]+) (\d{1,2}, \d{4})$/);
+  return m && MONTH_LIST.includes(m[1]) ? `${m[1].slice(0, 3)} ${m[2]}` : long;
+}
+
 // The same date PLUS whatever time the source carried, for the tooltip
 // their header hangs off the underlined date: "August 13, 2026 at 10:20
 // AM UTC". Returns null when the source has NO time — that is the signal

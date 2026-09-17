@@ -490,6 +490,21 @@
     {
       "find": "  persona?.engagement === \"new\" ? STARTER_REVIEWS : inboxRowsFor(location, persona);",
       "replace": "  inboxRowsFor(location, persona); // every persona from the rows: the old STARTER_REVIEWS seed showed TripAdvisor and Facebook with only Google connected (Ali, 10 Sep)"
+    },
+    {
+      "why": "the Manager reads its dates from the library's two formats",
+      "find": "import {\n  AppLayoutShell,\n  ProposalSidebar,\n  PageHeader,\n  useProposalData,\n} from \"@brightlocal/proposal\";",
+      "replace": "import {\n  AppLayoutShell,\n  ProposalSidebar,\n  PageHeader,\n  useProposalData,\n  formatDate,\n  formatDateShort,\n} from \"@brightlocal/proposal\";"
+    },
+    {
+      "why": "one long date format and one short, the same as the page header (Ali, 17 Sep)",
+      "find": "const shortDate = (iso) =>\n  new Date(iso).toLocaleDateString(\"en-GB\", { day: \"numeric\", month: \"short\" });\nconst longDate = (iso) =>\n  new Date(iso).toLocaleDateString(\"en-GB\", {\n    weekday: \"long\",\n    day: \"numeric\",\n    month: \"long\",\n    year: \"numeric\",\n  });",
+      "replace": "// ONE LONG FORMAT AND ONE SHORT (Ali, 17 Sep: \"I want the date format to be\n// consistent in the Review Manager\"). The page header already said \"August\n// 18, 2026\" through the library's formatDate, while the table said \"9 Sept\"\n// with no year and the review panel \"Wednesday 9 September 2026\". The table\n// takes the short form, \"Aug 18, 2026\", and the panel the long one. Both come\n// from the library, and they parse the ISO string rather than going through\n// new Date, which would apply the viewer's timezone and can move the day.\nconst shortDate = (iso) => formatDateShort(iso);\nconst longDate = (iso) => formatDate(iso);"
+    },
+    {
+      "why": "the review site name stays on one line with a 120px ceiling: the unsized column put Apple Maps on two lines at every width",
+      "find": "              <span className=\"hidden text-xs lg:inline\">{SOURCES[row.original.source].name}</span>",
+      "replace": "              {/* ONE LINE, WITH A CEILING (Ali, 17 Sep: \"is this wrapping on\n                  purpose?\", then \"the provider would have to have a max width\").\n                  It was not on purpose. No width is set on this column, so the\n                  table sized it to about 110px and \"Apple Maps\" broke onto two\n                  lines at every width. Nowrap alone would let one long site name\n                  push the whole column out, and BrightLocal lists 80-plus sites,\n                  so it stops at 120px and ellipsises past that, with the full\n                  name on hover. Every site currently in the data fits. */}\n              <span\n                className=\"hidden max-w-[7.5rem] truncate text-xs lg:inline\"\n                title={SOURCES[row.original.source].name}\n              >\n                {SOURCES[row.original.source].name}\n              </span>"
     }
   ],
   "app/(app)/locations/[location]/reviews/tracker/page.jsx": [
