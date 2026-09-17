@@ -169,6 +169,26 @@
       "why": "credit the spike campaign after scaling",
       "find": "  const [campaigns, setCampaigns] = useState(() => {\n    const profile = profileFor(locationKey, persona);\n    return scaleCampaigns(seedCampaigns().slice(0, profile.campaigns), profile);\n  });",
       "replace": "  const [campaigns, setCampaigns] = useState(() => {\n    const profile = profileFor(locationKey, persona);\n    const scaled = scaleCampaigns(seedCampaigns().slice(0, profile.campaigns), profile);\n    return creditSpike(scaled, profile, statsFor(locationKey, persona));\n  });"
+    },
+    {
+      "why": "Figma type rules (Ali, 17 Sep): an in-card heading is a section heading, 20/28; text-lg was 18/28, which is not in the scale",
+      "find": "<p className=\"text-lg font-semibold\">Ask your happy visitors for reviews</p>",
+      "replace": "<p className=\"text-heading-section\">Ask your happy visitors for reviews</p>"
+    },
+    {
+      "why": "Figma type rules (Ali, 17 Sep): the success card heading is a section heading, 20/28 rather than 18/28",
+      "find": "        <p className=\"text-lg font-semibold\">\n          {kiosk ? \"Your kiosk is live\"",
+      "replace": "        <p className=\"text-heading-section\">\n          {kiosk ? \"Your kiosk is live\""
+    },
+    {
+      "why": "Figma type rules (Ali, 17 Sep): the gauge centre is a metric, 24/28 rather than 30/36",
+      "find": "<span className=\"text-3xl font-semibold tabular-nums\">{display}</span>",
+      "replace": "<span className=\"text-metric\">{display}</span>"
+    },
+    {
+      "why": "Figma type rules (Ali, 17 Sep): the thumbs percentage is a metric, 24/28 rather than 30/36",
+      "find": "                        <span className=\"text-3xl font-semibold tabular-nums\">\n                          {Math.round((FEEDBACK_ITEMS.filter((f) => f.score >= 7).length / responded) * 100)}%",
+      "replace": "                        <span className=\"text-metric\">\n                          {Math.round((FEEDBACK_ITEMS.filter((f) => f.score >= 7).length / responded) * 100)}%"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -346,6 +366,11 @@
       "why": "\"last 20 reviews\" on an account that has four",
       "find": "`Last ${h.recent.kind === \"days\" ? \"30 days\" : \"20 reviews\"} average ${h.recent.rating}, against ${h.rating} all time.`",
       "replace": "`Last ${h.recent.kind === \"days\" ? \"30 days\" : `${Math.min(20, h.total)} reviews`} average ${h.recent.rating}, against ${h.rating} all time.`"
+    },
+    {
+      "why": "Figma type rules (Ali, 17 Sep): the hub card number is a metric, Inter 24/28 at 500; text-3xl font-bold was 30/36 at 600, above the web maximum",
+      "find": "<span className=\"text-3xl font-bold tracking-tight tabular-nums\">{card.headline}</span>",
+      "replace": "<span className=\"text-metric\">{card.headline}</span>"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [
@@ -555,6 +580,11 @@
       "why": "profileFor needs the persona, or the empty account charts the location's own star mix",
       "find": "function selectTrackerData(persona, location) {\n  const starter = persona?.engagement === \"new\";\n  const profile = profileFor(location);",
       "replace": "function selectTrackerData(persona, location) {\n  // The persona goes to profileFor too (Builder audit found the same hole on\n  // the Builder, 10 Sep): without it the empty account got the location's own\n  // star mix, so an account with nothing connected charted 1,116 reviews.\n  const starter = persona?.engagement === \"new\";\n  const profile = profileFor(location, persona);"
+    },
+    {
+      "why": "Figma type rules (Ali, 17 Sep): the donut centre is a metric, 24/28 rather than 24/32",
+      "find": "<span className=\"text-2xl font-semibold tabular-nums\">{total.toLocaleString(\"en-GB\")}</span>",
+      "replace": "<span className=\"text-metric\">{total.toLocaleString(\"en-GB\")}</span>"
     }
   ],
   "app/(app)/locations/page.jsx": [

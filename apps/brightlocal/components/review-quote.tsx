@@ -59,7 +59,7 @@ export function ReviewQuoteBand({ kind, goto }: { kind: QuoteKind; goto: string 
         <Art className="size-14 shrink-0" />
         <figcaption className="text-label-sm text-muted-foreground">{label}</figcaption>
       </div>
-      <blockquote className="text-heading-section font-display max-w-[60ch] text-balance">“{review.text}”</blockquote>
+      <blockquote className="text-heading-section max-w-[60ch] text-balance">“{review.text}”</blockquote>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <p className="text-body font-semibold">{review.name}</p>

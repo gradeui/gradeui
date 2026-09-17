@@ -14,6 +14,15 @@ export interface DsChange {
 
 export const DS_CHANGES: DsChange[] = [
   {
+    id: "cardtitle-type-roles",
+    title: "CardTitle does not follow the type roles",
+    finding:
+      "CardTitle ships font-display font-medium, with text-2xl by default and text-base at size small. That is Poppins at the page heading's size, one weight step light. The Figma type rules say only display and page headings take Poppins: a large card takes the section heading (Inter 20/28) and a data card the subsection heading (Inter 16/24), both semibold, which renders 500 on web. Measured on the Builder, a small card title rendered Poppins 16/24 at 400.",
+    workaround:
+      "app/custom.css maps [data-slot=card-title] to Inter at the semibold ramp step, and keys the size off the variant's own class, text-2xl to 20/28 and text-base to 16/24, so a call site that sets its own size on purpose keeps it. The de facto engine is left as shipped.",
+    ask: "Give CardTitle font-sans and font-semibold, with default at the section heading (20/28) and small at the subsection heading (16/24), or expose the text-heading-* utilities so it can use them.",
+  },
+  {
     id: "togglegroupitem-datahook",
     title: "ToggleGroupItem does not forward dataHook",
     finding:

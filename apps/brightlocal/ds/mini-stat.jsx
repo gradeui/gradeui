@@ -39,7 +39,11 @@ export function MiniStat({
       </div>
       <div className="flex items-baseline gap-2">
         {valuePrefix}
-        <span className="text-3xl font-semibold leading-none">{value}</span>
+        {/* The Figma metric role, 24/28 semibold with tabular figures, spelled out
+            in plain classes because this file is also the Studio registry lib,
+            where the app's text-metric utility does not exist. It was
+            text-3xl, 30px, which is not in the type scale. */}
+        <span className="text-2xl leading-7 font-semibold tabular-nums">{value}</span>
         {delta != null ? (
           <span className="flex items-center gap-0.5 text-sm font-semibold text-[var(--ds-tailwind-colors-green-600)]">
             <TrendingUp className="size-4" />

@@ -2099,7 +2099,7 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
       <Card dataHook="get-reviews-empty" className="max-w-none">
         <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
           <Send className="text-muted-foreground size-8" />
-          <p className="text-lg font-semibold">Ask your happy visitors for reviews</p>
+          <p className="text-heading-section">Ask your happy visitors for reviews</p>
           <p className="text-muted-foreground max-w-md text-sm">
             Send review requests by email or text, put a link on a receipt or behind a QR code, or
             run a kiosk on a tablet by the till. Feedback and new reviews land back here.
@@ -4941,7 +4941,7 @@ function SuccessView({ draft, onInsights, onHub, onKiosk }) {
     <Card dataHook="wizard-success" className="max-w-none">
       <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
         <CircleCheck className="text-primary size-10" />
-        <p className="text-lg font-semibold">
+        <p className="text-heading-section">
           {kiosk ? "Your kiosk is live" : standing ? "Your campaign is live" : `Sending to ${sendCount === 1 ? "1 person" : `${sendCount} people`}`}
         </p>
         <p className="text-muted-foreground max-w-md text-sm">
@@ -5087,7 +5087,7 @@ function Gauge({ value, min, max, bands, display, caption, dataHook, legend = tr
         <polygon points={pointer} fill="currentColor" />
       </svg>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-semibold tabular-nums">{display}</span>
+        <span className="text-metric">{display}</span>
       </div>
       {caption ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-1 text-center">
@@ -5605,7 +5605,7 @@ function CampaignInsights({ campaign, onAllFeedback }) {
                   ) : config.feedbackType === "thumbs" ? (
                     <div className="flex items-center gap-6">
                       <div className="flex flex-col">
-                        <span className="text-3xl font-semibold tabular-nums">
+                        <span className="text-metric">
                           {Math.round((FEEDBACK_ITEMS.filter((f) => f.score >= 7).length / responded) * 100)}%
                         </span>
                         <span className="text-muted-foreground text-sm">

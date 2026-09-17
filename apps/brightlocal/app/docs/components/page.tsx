@@ -5,7 +5,7 @@ export default function ComponentsPage() {
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>
+        <h1 className="text-heading-page">
           Proposed components
         </h1>
         <p className="text-muted-foreground max-w-prose">

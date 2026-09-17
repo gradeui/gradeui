@@ -69,7 +69,7 @@ export default function VideoLibraryPage() {
                   </span>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <h2 className="text-heading-subsection font-display text-balance group-hover:underline">{v.title}</h2>
+                  <h2 className="text-heading-subsection text-balance group-hover:underline">{v.title}</h2>
                   <p className="text-body-sm text-muted-foreground line-clamp-3 text-pretty">{v.description}</p>
                   <p className="text-label-sm text-muted-foreground">
                     {v.sections.length} sections

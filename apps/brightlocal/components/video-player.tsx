@@ -348,7 +348,7 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
       {/* ── the section rail ─────────────────────────────────────────── */}
       <section className="flex flex-col gap-3" data-hook="player-sections">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className="text-heading-subsection font-display">Sections</h2>
+          <h2 className="text-heading-subsection">Sections</h2>
           <p className="text-body-sm text-muted-foreground">
             {activeSection ? `Now: ${activeSection.title}` : null}
           </p>
@@ -395,7 +395,7 @@ export function VideoPlayer({ video, prev, next }: { video: Video; prev: Video |
 
       {/* ── the transcript ───────────────────────────────────────────── */}
       <section className="flex flex-col gap-3" data-hook="player-transcript">
-        <h2 className="text-heading-subsection font-display">Transcript</h2>
+        <h2 className="text-heading-subsection">Transcript</h2>
         <ol ref={transcriptRef} className="max-h-[22rem] overflow-y-auto rounded-xl border p-2">
           {video.transcript.map((c, i) => (
             <li key={`${c.t}-${i}`}>

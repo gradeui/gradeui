@@ -78,6 +78,9 @@ function QrCard({ svg, caption, name, link, size }: { svg: string; caption: stri
   return (
     <div className="flex w-[320px] flex-col items-center justify-center gap-4 rounded-2xl border bg-white px-8 py-8 text-center" style={{ minHeight: 320 * ratio }} data-hook="qr-card">
       {size ? <p className="text-label-sm text-muted-foreground">{size.id}</p> : null}
+      {/* POPPINS ON PURPOSE, the one exception to the Figma type rules. This
+          is the customer's printed poster for the till, not product
+          interface, so the product's heading roles do not govern it. */}
       <p className="text-heading-section font-display text-balance">{caption}</p>
       <p className="text-body-sm text-muted-foreground text-pretty">Scan to leave {name} a Google review. It takes a minute and it helps more than you know.</p>
       <div className="size-40" dangerouslySetInnerHTML={{ __html: svg }} />

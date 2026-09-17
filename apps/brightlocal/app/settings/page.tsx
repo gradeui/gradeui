@@ -27,7 +27,7 @@ export default function SettingsPage() {
         <p className="text-muted-foreground text-sm">
           <Link href="/" className="hover:underline">Demo home</Link>
         </p>
-        <h1 className="text-2xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>Demo settings</h1>
+        <h1 className="text-heading-page" style={{ fontFamily: "var(--font-display)" }}>Demo settings</h1>
         <p className="text-muted-foreground">
           These settings stick in this browser. Cmd K opens the same options anywhere, and Alt T on
           any screen opens the layout tweaker for finer control.
@@ -35,7 +35,7 @@ export default function SettingsPage() {
       </header>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Persona</h2>
+        <h2 className="text-heading-section">Persona</h2>
         <RadioGroup dataHook="settings-persona" value={settings.personaId} onValueChange={setPersona}>
           {PERSONAS.map((p) => (
             <div key={p.id} className="flex items-start gap-3">
@@ -50,7 +50,7 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Layout engine</h2>
+        <h2 className="text-heading-section">Layout engine</h2>
         <p className="text-muted-foreground text-sm">
           De facto is the design system's GlobalLayout, sidebar and page header exactly as shipped
           in 2.27.0, nothing overridden. De facto plus proposed fixes is the same layout with the
@@ -76,7 +76,7 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Layout</h2>
+        <h2 className="text-heading-section">Layout</h2>
         <RadioGroup dataHook="settings-look" value={settings.look} onValueChange={setLook}>
           {looks.map((l) => (
             <div key={l} className="flex items-center gap-3">
@@ -88,7 +88,7 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Contextual insights</h2>
+        <h2 className="text-heading-section">Contextual insights</h2>
         <p className="text-muted-foreground text-sm">
           Off shows the product on its own, with no strips, chips, nuggets or dialogs. Handy for a screenshot or a reshoot. The same switch is in the Cmd K menu, and <code>?insights=off</code> works from the address bar.
         </p>
@@ -98,7 +98,7 @@ export default function SettingsPage() {
         </div>
       </section>
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Appearance</h2>
+        <h2 className="text-heading-section">Appearance</h2>
         <p className="text-muted-foreground text-sm">The DS dark mode, its own tokens on the html element. Also in Cmd+K, and ?appearance=dark.</p>
         <RadioGroup dataHook="settings-appearance" value={settings.appearance ?? "light"} onValueChange={(v) => setAppearance(v as "light" | "dark")}>
           {([["light", "Light"], ["dark", "Dark"]] as const).map(([v, label]) => (
@@ -110,7 +110,7 @@ export default function SettingsPage() {
         </RadioGroup>
       </section>
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Insights colour</h2>
+        <h2 className="text-heading-section">Insights colour</h2>
         <p className="text-muted-foreground text-sm">
           Lifts the insight surfaces off the page with the accessible pairings from the DS chart (100 background, 700 and 950 text).
         </p>
@@ -125,7 +125,7 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Insights and Pro</h2>
+        <h2 className="text-heading-section">Insights and Pro</h2>
         <div className="flex items-center justify-between gap-4">
           <Label htmlFor="upsell" className="flex flex-col gap-0.5">
             <span>Show upsells and gated content</span>

@@ -548,7 +548,7 @@ function ChartTabs({ stats, kinds }: { stats: ReviewStats; kinds: Drill[] }) {
         <FactArt keywords={["velocity", "spike"]} />
         <div className="flex flex-col gap-0.5">
           <p className="text-label-sm text-muted-foreground">{locationName}</p>
-          <p className="text-heading-section font-display">The last six months</p>
+          <p className="text-heading-section">The last six months</p>
         </div>
       </div>
       <Tabs value={active} onValueChange={(v) => { setActive(v as Drill); setPaused(true); }} dataHook="review-summary-chart-tabs">

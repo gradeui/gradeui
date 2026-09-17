@@ -6,7 +6,7 @@ export default function DocsIndex() {
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>
+        <h1 className="text-heading-page">
           What this prototype proposes
         </h1>
         <p className="text-muted-foreground max-w-prose">

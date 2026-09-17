@@ -112,7 +112,7 @@ export default function SubscriptionPage() {
               <div className="flex items-center gap-5">
                 <Art keywords={["success", "confirm"]} className="size-16 shrink-0" />
                 <div className="flex flex-col gap-1">
-                  <p className="text-heading-section font-display text-balance">{chosenPlan.name} it is.</p>
+                  <p className="text-heading-section text-balance">{chosenPlan.name} it is.</p>
                   <p className="text-body max-w-[62ch] text-pretty">
                     {trial
                       ? `You move onto ${chosenPlan.name} on ${trialEnds}, when the trial ends. Nothing stops in between, and the ${stats.total} reviews already in stay exactly where they are.`
@@ -131,7 +131,7 @@ export default function SubscriptionPage() {
               <div className="flex items-center gap-5">
                 <Art keywords={state.art} className="size-16 shrink-0" />
                 <div className="flex flex-col gap-1">
-                  <p className="text-heading-section font-display text-balance">{state.title}</p>
+                  <p className="text-heading-section text-balance">{state.title}</p>
                   <p className="text-body max-w-[60ch] text-pretty">{state.body}</p>
                 </div>
               </div>
@@ -147,7 +147,7 @@ export default function SubscriptionPage() {
               path reads as where you land when it ends. */}
           <section className="flex flex-col gap-4" data-hook="upgrade-path">
             <div className="flex flex-col gap-1">
-              <p className="text-heading-section font-display">{chosenPlan ? `${chosenPlan.name}, and what the others add` : trial ? "Where you land when the trial ends" : lapsed ? "Pick up where you left off" : currentPlan ? "Your plan, and what the others add" : "The upgrade path"}</p>
+              <p className="text-heading-section">{chosenPlan ? `${chosenPlan.name}, and what the others add` : trial ? "Where you land when the trial ends" : lapsed ? "Pick up where you left off" : currentPlan ? "Your plan, and what the others add" : "The upgrade path"}</p>
               <p className="text-body-sm text-muted-foreground max-w-[64ch] text-pretty">{trial ? "The trial runs on Grow. Choose the step that fits, and everything below that step stays." : "Each step keeps everything from the one before it."}</p>
             </div>
             <ol className="grid gap-3 lg:grid-cols-3">
@@ -232,7 +232,7 @@ export default function SubscriptionPage() {
           <section className="grid gap-4 rounded-[20px] bg-[var(--ds-tailwind-colors-yellow-100)] px-8 py-7 lg:grid-cols-[1fr_auto] lg:items-center" data-hook="subscription-reviews">
             <div className="flex flex-col gap-2">
               <span className="inline-flex w-fit items-center gap-1.5 rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]"><Lock className="size-3" />Part of Grow</span>
-              <p className="text-heading-section font-display text-balance">What Grow does with the reviews you already have</p>
+              <p className="text-heading-section text-balance">What Grow does with the reviews you already have</p>
               <ul className="flex flex-col gap-1.5 text-body">
                 {/* needReply is every waiting review, not the five-star ones
                     (video audit, 10 Sep). The trial account read "Answers your 4

@@ -61,7 +61,7 @@ export default function MetaIndexPage() {
               className="hover:bg-accent group flex items-start gap-4 rounded-xl border p-5 transition-colors"
             >
               <span className="flex grow flex-col gap-1">
-                <span className="text-heading-subsection font-display group-hover:underline">{s.title}</span>
+                <span className="text-heading-subsection group-hover:underline">{s.title}</span>
                 <span className="text-body-sm text-muted-foreground text-pretty">{s.line}</span>
               </span>
               <span className="text-label-sm text-muted-foreground shrink-0 pt-1">{s.count()}</span>

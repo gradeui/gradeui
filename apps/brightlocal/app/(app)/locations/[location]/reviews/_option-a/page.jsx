@@ -227,7 +227,7 @@ function HubCard({ card }) {
             number on it. Number and label share a baseline so they read as
             one phrase rather than as a label above a value. */}
         <p className="flex items-baseline gap-2" data-hook={`${card.hook}-headline`}>
-          <span className="text-3xl font-bold tracking-tight tabular-nums">{card.headline}</span>
+          <span className="text-metric">{card.headline}</span>
           <span className="text-muted-foreground text-sm">{card.headlineLabel}</span>
         </p>
         {card.beacon ? <BeaconChip text={card.beacon} dataHook={`${card.hook}-beacon`} /> : null}

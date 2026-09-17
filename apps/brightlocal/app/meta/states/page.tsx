@@ -252,7 +252,7 @@ export default function StatesPage() {
       {/* ── every state, by section ─────────────────────────────────── */}
       {STATE_SECTIONS.map((section) => (
         <section key={section} className="flex flex-col gap-3" data-hook={`states-section-${section}`}>
-          <h2 className="text-heading-subsection font-display">{SECTION_LABEL[section]}</h2>
+          <h2 className="text-heading-subsection">{SECTION_LABEL[section]}</h2>
           <ul className="grid gap-x-5 gap-y-7 sm:grid-cols-2 lg:grid-cols-3">
             {statesIn(section).map((s) => {
               const current = s.id === active.id;

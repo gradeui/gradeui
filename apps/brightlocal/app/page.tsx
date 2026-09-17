@@ -14,7 +14,7 @@ export default function Home() {
     <main className="mx-auto flex max-w-3xl flex-col gap-10 px-6 py-16">
       <header className="flex flex-col gap-3">
         <p className="text-muted-foreground text-sm">BrightLocal replatform prototype</p>
-        <h1 className="text-3xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>
+        <h1 className="text-heading-page">
           Reviews
         </h1>
         <p className="text-muted-foreground max-w-prose">
@@ -25,7 +25,7 @@ export default function Home() {
       </header>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Start as</h2>
+        <h2 className="text-heading-section">Start as</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {PERSONAS.map((p) => (
             <Link
@@ -42,7 +42,7 @@ export default function Home() {
 
       <section className="grid gap-8 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">Screens</h2>
+          <h2 className="text-heading-section">Screens</h2>
           <ul className="flex flex-col gap-1">
             {primary.map((s) => (
               <li key={s.path}>
@@ -54,7 +54,7 @@ export default function Home() {
           </ul>
         </div>
         <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">Variations</h2>
+          <h2 className="text-heading-section">Variations</h2>
           <ul className="flex flex-col gap-1">
             {variants.map((s) => (
               <li key={s.path}>

@@ -940,7 +940,7 @@ function ReviewPerformance() {
                     </PieChart>
                   </ChartContainer>
                   <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-semibold tabular-nums">{total.toLocaleString("en-GB")}</span>
+                    <span className="text-metric">{total.toLocaleString("en-GB")}</span>
                     <span className="text-muted-foreground text-xs">reviews</span>
                   </div>
                 </div>

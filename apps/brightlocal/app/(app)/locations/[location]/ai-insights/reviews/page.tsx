@@ -57,7 +57,7 @@ function Stage({ stage, first }: { stage: RoadmapStage; first: boolean }) {
           {/* The month rail: a vertical label down the left of the card,
               the roadmap's coloured column, here in the brand green. */}
           <div className="flex w-12 shrink-0 items-center justify-center bg-[var(--ds-tailwind-colors-green-500)]">
-            <span className="text-heading-subsection font-display -rotate-180 whitespace-nowrap text-[var(--ds-tailwind-colors-green-950)] [writing-mode:vertical-rl]">
+            <span className="text-heading-subsection -rotate-180 whitespace-nowrap text-[var(--ds-tailwind-colors-green-950)] [writing-mode:vertical-rl]">
               {stage.rail}
             </span>
           </div>

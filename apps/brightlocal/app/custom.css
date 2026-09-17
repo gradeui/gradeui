@@ -156,6 +156,16 @@
   line-height: 1.5rem;
   font-weight: var(--ds-font-weight-semibold, 600);
 }
+/* A heading INSIDE a card, where a subsection heading would be too loud.
+   Figma typography/text-heading-compact: Inter 14/20, semibold, which renders
+   500 on web (Ali, 17 Sep, the Figma type rules: "use inside cards where
+   needed"). It was the one heading role the app never defined. */
+@utility text-heading-compact {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: var(--ds-font-weight-semibold, 600);
+}
 /* The default text. Figma typography/text-body: 16/24, medium. */
 @utility text-body {
   font-family: var(--font-sans);
@@ -231,18 +241,34 @@
   font-weight: var(--ds-font-weight-normal, 400);
 }
 
-/* SECTION HEADINGS IN POPPINS, proposed (Ali, 9 Sep: "I'd err on
-   text-heading-section being Poppins"). Figma maps only display and page
-   headings to the display face; card, dialog and sheet titles fall to
-   Inter, so a page carries less of the brand face than before. Under the
-   fixed and modified engines the section heading, and the DS card title
-   that will use it, take the display face. Pure de facto keeps Inter.
-   Ledger: /docs/changes, "Section headings lose the brand face". */
-[data-gds-layout-engine="native-fixed"] .text-heading-section,
-[data-gds-layout-engine="modified"] .text-heading-section,
+/* THE FIGMA TYPE RULES, APPLIED (Ali, 17 Sep). Only display and page
+   headings take Poppins. Section, subsection and compact headings are
+   Inter. This replaces the 9 Sep proposal that put section headings and
+   card titles in Poppins, which the Figma rules do not do.
+
+   CARD TITLES FOLLOW THE HEADING ROLES. The DS CardTitle ships
+   `font-display font-medium`, with `text-2xl` by default and `text-base` at
+   size small: Poppins at the PAGE heading's size, one weight step light. The
+   rules say a large card takes the section heading and a data card the
+   subsection heading, both Inter and both semibold (500 on web). The size
+   selectors key off the class CardTitle's own variant adds, so a call site
+   that sets its own text size on purpose keeps it. The de facto engine keeps
+   the DS as shipped, so the difference stays visible.
+   Ledger: /docs/changes, "CardTitle does not follow the type roles". */
 [data-gds-layout-engine="native-fixed"] [data-slot="card-title"],
 [data-gds-layout-engine="modified"] [data-slot="card-title"] {
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
+  font-weight: var(--ds-font-weight-semibold, 600);
+}
+[data-gds-layout-engine="native-fixed"] [data-slot="card-title"].text-2xl,
+[data-gds-layout-engine="modified"] [data-slot="card-title"].text-2xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+[data-gds-layout-engine="native-fixed"] [data-slot="card-title"].text-base,
+[data-gds-layout-engine="modified"] [data-slot="card-title"].text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
 }
 
 /* Inline code inside a sentence: 0.9em of the surrounding text (Figma:
