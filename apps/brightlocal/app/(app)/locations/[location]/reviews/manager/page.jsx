@@ -80,6 +80,7 @@ import {
   useDataTable,
   DataTable,
   DataTablePagination,
+  DataTableColumnHeader,
   DataTableSearch,
 } from "@brightlocal/ui-components/data-table";
 import {
@@ -1320,6 +1321,19 @@ function FilterDrawer({
 function ReviewsInbox() {
   const business = useBusinessName();
   const stickyTop = useStickyHeaderOffset("reviews-page-header");
+  // The column headers pin UNDER the sticky tabs-and-filters band, so they
+  // need its height, which changes with the filter row's wrapping.
+  const bandRef = useRef(null);
+  const [bandHeight, setBandHeight] = useState(0);
+  useEffect(() => {
+    const el = bandRef.current;
+    if (!el) return undefined;
+    const measure = () => setBandHeight(Math.round(el.getBoundingClientRect().height));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const persona = usePersona();
   const locationKey = useLocationKey();
@@ -1465,33 +1479,39 @@ function ReviewsInbox() {
   // include a sort though on the pagination row." So it is a small ordering
   // control next to pagination, NOT a fourth facet in the filter row.
   // Date is newest-first; Rating is highest-first with date breaking ties.
-  const [order, setOrder] = useState("date-desc");
-  const sortCompare = (a, b) =>
-    // daysAgo counts BACKWARDS from today, so ascending daysAgo is newest
-    // first. Rating ties break by newest, which is the more useful second
-    // key than an arbitrary stable order.
-    order === "rating-desc"
-      ? b.rating - a.rating || a.daysAgo - b.daysAgo
-      : order === "rating-asc"
-        ? a.rating - b.rating || a.daysAgo - b.daysAgo
-        : order === "date-asc"
-          ? b.daysAgo - a.daysAgo
-          : a.daysAgo - b.daysAgo;
+  // SORTING LIVES IN THE TABLE (Ali, 17 Sep: "bring back the table headers
+  // now in Review Manager - its a data table so that automatically includes
+  // sorting"). The DS sortable headers drive it from sm up; the Order menu
+  // stays for phones, where the columns fold into one cell and there is no
+  // header to press, and reads and writes the same sorting state.
+  const [sorting, setSorting] = useState([{ id: "date", desc: true }]);
+  const ORDER_SORTING = {
+    "date-desc": [{ id: "date", desc: true }],
+    "date-asc": [{ id: "date", desc: false }],
+    "rating-desc": [{ id: "rating", desc: true }],
+    "rating-asc": [{ id: "rating", desc: false }],
+  };
+  const order =
+    Object.keys(ORDER_SORTING).find(
+      (id) => ORDER_SORTING[id][0].id === sorting[0]?.id && ORDER_SORTING[id][0].desc === sorting[0]?.desc,
+    ) ?? "date-desc";
+  const setOrder = (id) => setSorting(ORDER_SORTING[id]);
   const data = useMemo(
-    () =>
-      base
-        .filter((r) => matchesSource(r) && matchesRating(r))
-        .slice()
-        .sort(sortCompare),
-    [base, sourceFilter, ratingFilter, order],
+    () => base.filter((r) => matchesSource(r) && matchesRating(r)),
+    [base, sourceFilter, ratingFilter],
   );
+  // ASSUMPTION: a recommendation sorts among the stars, Recommended as 5 and
+  // Not recommended as 1, so Highest rated puts praise first either way.
+  const ratingRank = (rating) => (rating === "up" ? 5 : rating === "down" ? 1 : Number(rating) || 0);
+  const STATUS_RANK = { needs: 0, manual: 1, auto: 2, skipped: 3 };
 
   const columns = useMemo(
     () => [
       {
         accessorKey: "source",
         enableGlobalFilter: false,
-        header: () => <span className="sr-only">Source</span>,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Source" dataHook="col-source" />,
+        sortingFn: (a, b) => SOURCES[a.original.source].name.localeCompare(SOURCES[b.original.source].name),
         cell: ({ row }) => (
           <div onClick={() => setActiveId(row.original.id)}>
             <span className="flex items-center gap-2">
@@ -1521,7 +1541,8 @@ function ReviewsInbox() {
       {
         accessorKey: "rating",
         enableGlobalFilter: false,
-        header: () => <span className="sr-only">Rating</span>,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Rating" dataHook="col-rating" />,
+        sortingFn: (a, b) => ratingRank(a.original.rating) - ratingRank(b.original.rating),
         cell: ({ row }) => (
           <div onClick={() => setActiveId(row.original.id)}>
             <RatingValue rating={row.original.rating} hook={`stars-${row.id}`} />
@@ -1534,7 +1555,8 @@ function ReviewsInbox() {
         // rendered inside another cell, so it has no accessor of its own.
         // The cell reads row.original, so this is invisible to rendering.
         accessorFn: (r) => `${r.name} ${r.text}`,
-        header: () => <span className="sr-only">Review</span>,
+        header: () => "Review",
+        enableSorting: false,
         cell: ({ row }) => (
           // Carries the open-row marker that the select cell used to. This
           // is the only column visible at every width — source/rating/
@@ -1577,7 +1599,8 @@ function ReviewsInbox() {
       {
         accessorKey: "status",
         enableGlobalFilter: false,
-        header: () => <span className="sr-only">Status</span>,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" dataHook="col-status" />,
+        sortingFn: (a, b) => (STATUS_RANK[a.original.status] ?? 9) - (STATUS_RANK[b.original.status] ?? 9),
         cell: ({ row }) => (
           <div onClick={() => setActiveId(row.original.id)}>
             <StatusChip
@@ -1590,7 +1613,9 @@ function ReviewsInbox() {
       {
         accessorKey: "date",
         enableGlobalFilter: false,
-        header: () => <span className="sr-only">Date</span>,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" dataHook="col-date" />,
+        // daysAgo counts back from today, so a smaller number is newer.
+        sortingFn: (a, b) => b.original.daysAgo - a.original.daysAgo,
         cell: ({ row }) => (
           <div onClick={() => setActiveId(row.original.id)}>
             <span className="text-muted-foreground text-sm whitespace-nowrap">
@@ -1608,6 +1633,8 @@ function ReviewsInbox() {
     data,
     getRowId: (row) => row.id,
     enableGlobalFiltering: true,
+    sorting,
+    onSortingChange: setSorting,
     enablePagination: true,
     // TWENTY (Ali, 6 Sep). Twelve was the number that happened to fill the
     // first screen; twenty is a page you scroll once, and it matches the
@@ -1797,7 +1824,7 @@ function ReviewsInbox() {
     <Card dataHook="review-inbox" density="condensed" className="max-w-none gap-0 p-0">
       {/* White (Ali, 10 Sep: "table header area white?"): tabs, filters and
           the order row sit on the card's own surface, divided by borders. */}
-      <div className="bg-[var(--ds-tailwind-colors-base-white)] sticky z-30 rounded-t-[inherit]" style={{ top: stickyTop }}>
+      <div ref={bandRef} className="bg-[var(--ds-tailwind-colors-base-white)] sticky z-30 rounded-t-[inherit]" style={{ top: stickyTop }}>
         {/* ROW 1 — TABS. Real DS Tabs: role="tablist", roving tabindex and
             arrow-key navigation, none of which the hand-rolled buttons had.
             
@@ -1983,8 +2010,10 @@ function ReviewsInbox() {
           {compactFilters ? null : <div className="grow" />}
         </div>
 
-        {/* ROW 3 — ORDER + PAGINATION */}
-        <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+        {/* ROW 3, ORDER: phones only (Ali, 17 Sep). From sm up the column
+            headers sort; below it the columns fold into one cell, so this
+            menu is the way to sort there. Pagination moved under the table. */}
+        <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2 sm:hidden">
           {/* Order takes the slot the "n of N selected" summary had. The
               label is a plain <span>, not a <Label>: there is no form
               control with an id to point at — the trigger is a popover
@@ -2008,6 +2037,7 @@ function ReviewsInbox() {
         </div>
       </div>
 
+      <div style={{ "--th-top": `${stickyTop + bandHeight}px` }}>
       <DataTable
         table={table}
         dataHook="reviews-table"
@@ -2020,8 +2050,16 @@ function ReviewsInbox() {
         // 8px, 8px short of the toolbars above, which are all px-4. Keyed off
         // :first-child rather than the source cell because source/rating/
         // status/date all collapse when narrow and `text` becomes column one.
-        className="rounded-none border-0 [&_thead]:bg-transparent [&_thead_th]:h-0 [&_thead_th]:p-0 [&_tbody_tr]:cursor-pointer [&_tbody_tr:hover]:bg-muted/50 [&_tbody_tr:has([data-open-row])]:bg-accent [&_tbody_tr:last-child]:border-0 [&_tbody_td:first-child]:pl-4"
+        // HEADERS SHOWN AND PINNED (Ali, 17 Sep). The row that was sr-only is
+        // the DS header again, sortable, and sticks under the tabs-and-filters
+        // band at --th-top. Sticky needs the page to be the scroller, so the
+        // DataTable's own overflow wrappers are cleared, and a <th> only
+        // sticks with separated borders, so the row rules move onto the
+        // cells. Below sm the columns fold into one cell and the header row
+        // hides: there is nothing in it to sort.
+        className="rounded-none border-0 overflow-visible [&>div]:overflow-visible [&_table]:border-separate [&_table]:border-spacing-0 [&_thead_th]:sticky [&_thead_th]:top-[var(--th-top,0px)] [&_thead_th]:z-20 [&_thead_th]:border-b [&_tbody_td]:border-b [&_tbody_tr:last-child_td]:border-b-0 max-sm:[&_thead]:hidden [&_thead_th:first-child]:pl-4 [&_tbody_tr]:cursor-pointer [&_tbody_tr:hover]:bg-muted/50 [&_tbody_tr:has([data-open-row])]:bg-accent [&_tbody_tr:last-child]:border-0 [&_tbody_td:first-child]:pl-4"
       />
+      </div>
 
       {/* PAGINATION PINNED TO THE BOTTOM (Ali, 17 Sep: "I want the same on
           Review Manager", the Internal feedback table's bar). position:

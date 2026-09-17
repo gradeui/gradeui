@@ -830,6 +830,71 @@
       "why": "Ali, 17 Sep: pagination in a bar pinned to the bottom of the screen under the table",
       "find": "        className=\"rounded-none border-0 [&_thead]:bg-transparent [&_thead_th]:h-0 [&_thead_th]:p-0 [&_tbody_tr]:cursor-pointer [&_tbody_tr:hover]:bg-muted/50 [&_tbody_tr:has([data-open-row])]:bg-accent [&_tbody_tr:last-child]:border-0 [&_tbody_td:first-child]:pl-4\"\n      />\n    </Card>",
       "replace": "        className=\"rounded-none border-0 [&_thead]:bg-transparent [&_thead_th]:h-0 [&_thead_th]:p-0 [&_tbody_tr]:cursor-pointer [&_tbody_tr:hover]:bg-muted/50 [&_tbody_tr:has([data-open-row])]:bg-accent [&_tbody_tr:last-child]:border-0 [&_tbody_td:first-child]:pl-4\"\n      />\n\n      {/* PAGINATION PINNED TO THE BOTTOM (Ali, 17 Sep: \"I want the same on\n          Review Manager\", the Internal feedback table's bar). position:\n          sticky at bottom 0: while the card's end is below the fold the bar\n          holds the bottom of the screen, and once the end scrolls into view\n          it rests there. White and bordered like the top band, above the\n          rows. It moved out of the Order row, so the count and the pages\n          sit where you finish reading the page of reviews. */}\n      <div className=\"bg-[var(--ds-tailwind-colors-base-white)] sticky bottom-0 z-20 rounded-b-[inherit] border-t px-4 py-2\">\n        <DataTablePagination\n          table={table}\n          dataHook=\"reviews-pagination\"\n          ariaLabel=\"Review pagination\"\n          renderRowCount={({ startRow, endRow, totalRows }) =>\n            `${startRow} to ${endRow} of ${totalRows}`\n          }\n        />\n      </div>\n    </Card>"
+    },
+    {
+      "why": "Ali, 17 Sep: sortable headers: import DataTableColumnHeader",
+      "find": "  DataTablePagination,\n",
+      "replace": "  DataTablePagination,\n  DataTableColumnHeader,\n"
+    },
+    {
+      "why": "Ali, 17 Sep: sortable headers: measure the sticky band so the header row can pin under it",
+      "find": "  const stickyTop = useStickyHeaderOffset(\"reviews-page-header\");\n",
+      "replace": "  const stickyTop = useStickyHeaderOffset(\"reviews-page-header\");\n  // The column headers pin UNDER the sticky tabs-and-filters band, so they\n  // need its height, which changes with the filter row's wrapping.\n  const bandRef = useRef(null);\n  const [bandHeight, setBandHeight] = useState(0);\n  useEffect(() => {\n    const el = bandRef.current;\n    if (!el) return undefined;\n    const measure = () => setBandHeight(Math.round(el.getBoundingClientRect().height));\n    measure();\n    const ro = new ResizeObserver(measure);\n    ro.observe(el);\n    return () => ro.disconnect();\n  }, []);\n"
+    },
+    {
+      "why": "Ali, 17 Sep: sorting lives in the table; Order maps onto it",
+      "find": "  const [order, setOrder] = useState(\"date-desc\");\n  const sortCompare = (a, b) =>\n    // daysAgo counts BACKWARDS from today, so ascending daysAgo is newest\n    // first. Rating ties break by newest, which is the more useful second\n    // key than an arbitrary stable order.\n    order === \"rating-desc\"\n      ? b.rating - a.rating || a.daysAgo - b.daysAgo\n      : order === \"rating-asc\"\n        ? a.rating - b.rating || a.daysAgo - b.daysAgo\n        : order === \"date-asc\"\n          ? b.daysAgo - a.daysAgo\n          : a.daysAgo - b.daysAgo;\n  const data = useMemo(\n    () =>\n      base\n        .filter((r) => matchesSource(r) && matchesRating(r))\n        .slice()\n        .sort(sortCompare),\n    [base, sourceFilter, ratingFilter, order],\n  );\n",
+      "replace": "  // SORTING LIVES IN THE TABLE (Ali, 17 Sep: \"bring back the table headers\n  // now in Review Manager - its a data table so that automatically includes\n  // sorting\"). The DS sortable headers drive it from sm up; the Order menu\n  // stays for phones, where the columns fold into one cell and there is no\n  // header to press, and reads and writes the same sorting state.\n  const [sorting, setSorting] = useState([{ id: \"date\", desc: true }]);\n  const ORDER_SORTING = {\n    \"date-desc\": [{ id: \"date\", desc: true }],\n    \"date-asc\": [{ id: \"date\", desc: false }],\n    \"rating-desc\": [{ id: \"rating\", desc: true }],\n    \"rating-asc\": [{ id: \"rating\", desc: false }],\n  };\n  const order =\n    Object.keys(ORDER_SORTING).find(\n      (id) => ORDER_SORTING[id][0].id === sorting[0]?.id && ORDER_SORTING[id][0].desc === sorting[0]?.desc,\n    ) ?? \"date-desc\";\n  const setOrder = (id) => setSorting(ORDER_SORTING[id]);\n  const data = useMemo(\n    () => base.filter((r) => matchesSource(r) && matchesRating(r)),\n    [base, sourceFilter, ratingFilter],\n  );\n  // ASSUMPTION: a recommendation sorts among the stars, Recommended as 5 and\n  // Not recommended as 1, so Highest rated puts praise first either way.\n  const ratingRank = (rating) => (rating === \"up\" ? 5 : rating === \"down\" ? 1 : Number(rating) || 0);\n  const STATUS_RANK = { needs: 0, manual: 1, auto: 2, skipped: 3 };\n"
+    },
+    {
+      "why": "Ali, 17 Sep: sortable header: Source",
+      "find": "        header: () => <span className=\"sr-only\">Source</span>,",
+      "replace": "        header: ({ column }) => <DataTableColumnHeader column={column} title=\"Source\" dataHook=\"col-source\" />,\n        sortingFn: (a, b) => SOURCES[a.original.source].name.localeCompare(SOURCES[b.original.source].name),"
+    },
+    {
+      "why": "Ali, 17 Sep: sortable header: Rating",
+      "find": "        header: () => <span className=\"sr-only\">Rating</span>,",
+      "replace": "        header: ({ column }) => <DataTableColumnHeader column={column} title=\"Rating\" dataHook=\"col-rating\" />,\n        sortingFn: (a, b) => ratingRank(a.original.rating) - ratingRank(b.original.rating),"
+    },
+    {
+      "why": "Ali, 17 Sep: header: Review, not sortable",
+      "find": "        header: () => <span className=\"sr-only\">Review</span>,",
+      "replace": "        header: () => \"Review\",\n        enableSorting: false,"
+    },
+    {
+      "why": "Ali, 17 Sep: sortable header: Status",
+      "find": "        header: () => <span className=\"sr-only\">Status</span>,",
+      "replace": "        header: ({ column }) => <DataTableColumnHeader column={column} title=\"Status\" dataHook=\"col-status\" />,\n        sortingFn: (a, b) => (STATUS_RANK[a.original.status] ?? 9) - (STATUS_RANK[b.original.status] ?? 9),"
+    },
+    {
+      "why": "Ali, 17 Sep: sortable header: Date",
+      "find": "        header: () => <span className=\"sr-only\">Date</span>,",
+      "replace": "        header: ({ column }) => <DataTableColumnHeader column={column} title=\"Date\" dataHook=\"col-date\" />,\n        // daysAgo counts back from today, so a smaller number is newer.\n        sortingFn: (a, b) => b.original.daysAgo - a.original.daysAgo,"
+    },
+    {
+      "why": "Ali, 17 Sep: the table holds the sorting state",
+      "find": "    getRowId: (row) => row.id,\n    enableGlobalFiltering: true,\n",
+      "replace": "    getRowId: (row) => row.id,\n    enableGlobalFiltering: true,\n    sorting,\n    onSortingChange: setSorting,\n"
+    },
+    {
+      "why": "Ali, 17 Sep: measure the sticky band",
+      "find": "      <div className=\"bg-[var(--ds-tailwind-colors-base-white)] sticky z-30 rounded-t-[inherit]\" style={{ top: stickyTop }}>",
+      "replace": "      <div ref={bandRef} className=\"bg-[var(--ds-tailwind-colors-base-white)] sticky z-30 rounded-t-[inherit]\" style={{ top: stickyTop }}>"
+    },
+    {
+      "why": "Ali, 17 Sep: the Order row is for phones only now",
+      "find": "        {/* ROW 3 — ORDER + PAGINATION */}\n        <div className=\"flex flex-wrap items-center gap-2 border-b px-4 py-2\">",
+      "replace": "        {/* ROW 3, ORDER: phones only (Ali, 17 Sep). From sm up the column\n            headers sort; below it the columns fold into one cell, so this\n            menu is the way to sort there. Pagination moved under the table. */}\n        <div className=\"flex flex-wrap items-center gap-2 border-b px-4 py-2 sm:hidden\">"
+    },
+    {
+      "why": "Ali, 17 Sep: the header row's sticky offset",
+      "find": "      <DataTable\n        table={table}\n        dataHook=\"reviews-table\"",
+      "replace": "      <div style={{ \"--th-top\": `${stickyTop + bandHeight}px` }}>\n      <DataTable\n        table={table}\n        dataHook=\"reviews-table\""
+    },
+    {
+      "why": "Ali, 17 Sep: headers visible, sortable and pinned under the band",
+      "find": "        className=\"rounded-none border-0 [&_thead]:bg-transparent [&_thead_th]:h-0 [&_thead_th]:p-0 [&_tbody_tr]:cursor-pointer [&_tbody_tr:hover]:bg-muted/50 [&_tbody_tr:has([data-open-row])]:bg-accent [&_tbody_tr:last-child]:border-0 [&_tbody_td:first-child]:pl-4\"\n      />\n",
+      "replace": "        // HEADERS SHOWN AND PINNED (Ali, 17 Sep). The row that was sr-only is\n        // the DS header again, sortable, and sticks under the tabs-and-filters\n        // band at --th-top. Sticky needs the page to be the scroller, so the\n        // DataTable's own overflow wrappers are cleared, and a <th> only\n        // sticks with separated borders, so the row rules move onto the\n        // cells. Below sm the columns fold into one cell and the header row\n        // hides: there is nothing in it to sort.\n        className=\"rounded-none border-0 overflow-visible [&>div]:overflow-visible [&_table]:border-separate [&_table]:border-spacing-0 [&_thead_th]:sticky [&_thead_th]:top-[var(--th-top,0px)] [&_thead_th]:z-20 [&_thead_th]:border-b [&_tbody_td]:border-b [&_tbody_tr:last-child_td]:border-b-0 max-sm:[&_thead]:hidden [&_thead_th:first-child]:pl-4 [&_tbody_tr]:cursor-pointer [&_tbody_tr:hover]:bg-muted/50 [&_tbody_tr:has([data-open-row])]:bg-accent [&_tbody_tr:last-child]:border-0 [&_tbody_td:first-child]:pl-4\"\n      />\n      </div>\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/tracker/page.jsx": [
