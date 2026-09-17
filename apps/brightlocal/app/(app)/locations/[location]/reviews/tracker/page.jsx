@@ -169,6 +169,7 @@ import {
   Table,
   TableHeader,
   TableBody,
+  TableFooter,
   TableRow,
   TableHead,
   TableCell,
@@ -873,16 +874,21 @@ function ReviewPerformance() {
                   {activeBuckets.map((bucket) => (
                     <TableRow key={bucket.id}>
                       <TableCell>{bucket.label}</TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell align="right" className="tabular-nums">
                         {byBucket[bucket.id]}
                       </TableCell>
                     </TableRow>
                   ))}
+                </TableBody>
+                {/* The DS way to a total: TableFooter, its own tinted band, and
+                    align="right" rather than a text-right class (Ali, 17 Sep:
+                    "use the Design system table"). */}
+                <TableFooter>
                   <TableRow>
                     <TableCell className="font-medium">Total</TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">{total.toLocaleString("en-GB")}</TableCell>
+                    <TableCell align="right" className="font-medium tabular-nums">{total.toLocaleString("en-GB")}</TableCell>
                   </TableRow>
-                </TableBody>
+                </TableFooter>
               </Table>
             )}
           </div>
@@ -1033,16 +1039,21 @@ function ReviewPerformance() {
                   {activeSources.map((source) => (
                     <TableRow key={source.id}>
                       <TableCell>{source.name}</TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell align="right" className="tabular-nums">
                         {bySource[source.id]}
                       </TableCell>
                     </TableRow>
                   ))}
+                </TableBody>
+                {/* The DS way to a total: TableFooter, its own tinted band, and
+                    align="right" rather than a text-right class (Ali, 17 Sep:
+                    "use the Design system table"). */}
+                <TableFooter>
                   <TableRow>
                     <TableCell className="font-medium">Total</TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">{total.toLocaleString("en-GB")}</TableCell>
+                    <TableCell align="right" className="font-medium tabular-nums">{total.toLocaleString("en-GB")}</TableCell>
                   </TableRow>
-                </TableBody>
+                </TableFooter>
               </Table>
             )}
           </div>
@@ -1437,7 +1448,7 @@ function ReviewTimeline() {
                 {series.map((point) => (
                   <TableRow key={point.label}>
                     <TableCell>{point.label}</TableCell>
-                    <TableCell className="text-right tabular-nums">{point.total}</TableCell>
+                    <TableCell align="right" className="tabular-nums">{point.total}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1527,7 +1538,7 @@ function ReviewTimeline() {
                   <TableRow key={point.label}>
                     <TableCell>{point.label}</TableCell>
                     {activeSources.map((source) => (
-                      <TableCell key={source.id} className="text-right tabular-nums">
+                      <TableCell key={source.id} align="right" className="tabular-nums">
                         {point[source.id]}
                       </TableCell>
                     ))}

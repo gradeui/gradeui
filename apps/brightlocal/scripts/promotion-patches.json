@@ -615,6 +615,31 @@
       "why": "Ali, 17 Sep: the ratings bars take chart colour 1 (sky-600) on a sky-100 track, not green-600",
       "find": "                        indicatorClassName moves the fill off the neon band of\n                        the ramp. green-400 IS --primary (#2ae855) and 300 is\n                        brighter still (#59f77d); 600 (#03a829) is the first\n                        step that stops shouting while keeping a one-review bar\n                        visible, which a pale 200 would not. These bars count\n                        reviews, they do not report good or bad, so\n                        full-strength brand green was claiming a meaning the\n                        data does not carry. A ramp step, not an opacity mix,\n                        per the house rule on colour. */}\n                    <Progress\n                      dataHook={`rating-bar-${bucket.id}`}\n                      value={byBucket[bucket.id]}\n                      max={peak}\n                      color=\"green\"\n                      indicatorClassName=\"bg-green-600\"\n                      ariaLabel={`${byBucket[bucket.id]} reviews`}\n                      className=\"h-2 flex-1\"\n                    />",
       "replace": "                        The fill is --chart-1 (Ali, 17 Sep: \"switch to chart\n                        color 1\"): these bars count reviews, they do not report\n                        good or bad, so they take the first chart colour like\n                        any other count, not a brand green that claims a\n                        meaning. Progress has no chart colour of its own, so\n                        the indicator is set here, and the track is sky-100,\n                        the tint of chart-1's own ramp. A ramp step, not an\n                        opacity mix, per the house rule on colour. */}\n                    <Progress\n                      dataHook={`rating-bar-${bucket.id}`}\n                      value={byBucket[bucket.id]}\n                      max={peak}\n                      indicatorClassName=\"bg-chart-1\"\n                      ariaLabel={`${byBucket[bucket.id]} reviews`}\n                      className=\"h-2 flex-1 bg-[var(--ds-tailwind-colors-sky-100)]\"\n                    />"
+    },
+    {
+      "why": "DS table alignment (Ali, 17 Sep): the tables import TableFooter for their totals",
+      "find": "  Table,\n  TableHeader,\n  TableBody,\n  TableRow,\n  TableHead,\n  TableCell,\n} from \"@brightlocal/ui-components/table\";",
+      "replace": "  Table,\n  TableHeader,\n  TableBody,\n  TableFooter,\n  TableRow,\n  TableHead,\n  TableCell,\n} from \"@brightlocal/ui-components/table\";"
+    },
+    {
+      "why": "DS table alignment (Ali, 17 Sep): Ratings table: TableCell align prop, total in TableFooter",
+      "find": "                      <TableCell className=\"text-right tabular-nums\">\n                        {byBucket[bucket.id]}\n                      </TableCell>\n                    </TableRow>\n                  ))}\n                  <TableRow>\n                    <TableCell className=\"font-medium\">Total</TableCell>\n                    <TableCell className=\"text-right font-medium tabular-nums\">{total.toLocaleString(\"en-GB\")}</TableCell>\n                  </TableRow>\n                </TableBody>",
+      "replace": "                      <TableCell align=\"right\" className=\"tabular-nums\">\n                        {byBucket[bucket.id]}\n                      </TableCell>\n                    </TableRow>\n                  ))}\n                </TableBody>\n                {/* The DS way to a total: TableFooter, its own tinted band, and\n                    align=\"right\" rather than a text-right class (Ali, 17 Sep:\n                    \"use the Design system table\"). */}\n                <TableFooter>\n                  <TableRow>\n                    <TableCell className=\"font-medium\">Total</TableCell>\n                    <TableCell align=\"right\" className=\"font-medium tabular-nums\">{total.toLocaleString(\"en-GB\")}</TableCell>\n                  </TableRow>\n                </TableFooter>"
+    },
+    {
+      "why": "DS table alignment (Ali, 17 Sep): Sources table: TableCell align prop, total in TableFooter",
+      "find": "                      <TableCell className=\"text-right tabular-nums\">\n                        {bySource[source.id]}\n                      </TableCell>\n                    </TableRow>\n                  ))}\n                  <TableRow>\n                    <TableCell className=\"font-medium\">Total</TableCell>\n                    <TableCell className=\"text-right font-medium tabular-nums\">{total.toLocaleString(\"en-GB\")}</TableCell>\n                  </TableRow>\n                </TableBody>",
+      "replace": "                      <TableCell align=\"right\" className=\"tabular-nums\">\n                        {bySource[source.id]}\n                      </TableCell>\n                    </TableRow>\n                  ))}\n                </TableBody>\n                {/* The DS way to a total: TableFooter, its own tinted band, and\n                    align=\"right\" rather than a text-right class (Ali, 17 Sep:\n                    \"use the Design system table\"). */}\n                <TableFooter>\n                  <TableRow>\n                    <TableCell className=\"font-medium\">Total</TableCell>\n                    <TableCell align=\"right\" className=\"font-medium tabular-nums\">{total.toLocaleString(\"en-GB\")}</TableCell>\n                  </TableRow>\n                </TableFooter>"
+    },
+    {
+      "why": "DS table alignment (Ali, 17 Sep): Review timeline table: TableCell align prop",
+      "find": "<TableCell className=\"text-right tabular-nums\">{point.total}</TableCell>",
+      "replace": "<TableCell align=\"right\" className=\"tabular-nums\">{point.total}</TableCell>"
+    },
+    {
+      "why": "DS table alignment (Ali, 17 Sep): Source timeline table: TableCell align prop",
+      "find": "<TableCell key={source.id} className=\"text-right tabular-nums\">",
+      "replace": "<TableCell key={source.id} align=\"right\" className=\"tabular-nums\">"
     }
   ],
   "app/(app)/locations/page.jsx": [
