@@ -127,10 +127,7 @@
       "ms": 900
     },
     {
-      "persona": "starter"
-    },
-    {
-      "go": "/locations/minus-one-studios/reviews",
+      "go": "/locations/minus-one-studios/reviews?persona=starter",
       "bg": "yellow",
       "caption": "7. Three days left on the trial, and what it found.",
       "recap": true,
@@ -140,10 +137,7 @@
       "chapterLine": "Three days left, and what the trial has found so far."
     },
     {
-      "persona": "lapsed"
-    },
-    {
-      "go": "/locations/minus-one-studios/reviews",
+      "go": "/locations/minus-one-studios/reviews?persona=lapsed",
       "bg": "yellow",
       "caption": "8. And nine days after it ended.",
       "recap": true,

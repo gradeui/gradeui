@@ -51,7 +51,7 @@ export const ILLUSTRATIONS: IllustrationMeaning[] = [
   { name: "Star", meaning: "A single star", keywords: ["star"] },
 ];
 
-export function pickIllustration(keywords: string[]): React.ComponentType<{ className?: string }> {
+export function pickIllustration(keywords: string[]): React.ComponentType<{ className?: string; variant?: Art.IllustrationVariant }> {
   const wanted = keywords.map((k) => k.toLowerCase());
   let best = ILLUSTRATIONS[0];
   let bestScore = -1;
@@ -59,5 +59,5 @@ export function pickIllustration(keywords: string[]): React.ComponentType<{ clas
     const score = item.keywords.reduce((n, k) => n + (wanted.some((w) => w.includes(k) || k.includes(w)) ? 1 : 0), 0);
     if (score > bestScore) { best = item; bestScore = score; }
   }
-  return Art[best.name] as React.ComponentType<{ className?: string }>;
+  return Art[best.name] as React.ComponentType<{ className?: string; variant?: Art.IllustrationVariant }>;
 }

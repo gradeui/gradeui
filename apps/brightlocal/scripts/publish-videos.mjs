@@ -76,11 +76,12 @@ function newestPerFlow() {
 }
 
 const clock = (sec) => {
-  const s = Math.max(0, sec);
+  // Whole milliseconds first: 7.9996 used to print as 00:00:07.1000.
+  const s = Math.round(Math.max(0, sec) * 1000) / 1000;
   const h = String(Math.floor(s / 3600)).padStart(2, "0");
   const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
   const ss = String(Math.floor(s % 60)).padStart(2, "0");
-  const ms = String(Math.round((s % 1) * 1000)).padStart(3, "0");
+  const ms = String(Math.round(s * 1000) % 1000).padStart(3, "0");
   return `${h}:${m}:${ss}.${ms}`;
 };
 
@@ -128,7 +129,13 @@ for (const rec of newestPerFlow()) {
   //    it can measure, but a slow first paint can still leave a beat of white
   //    at the front, and it is the first thing anyone sees.
   const blank = headBlank(master);
-  const duration = meta.duration - blank;
+  // Never longer than the master really is. Recordings made before 17 Sep
+  // list their encode time on top of the video's own length (8 to 16s), and
+  // everything below is timed off this number: the last section's end, the
+  // subtitle track and how many scrub tiles there are.
+  const lengthOf = /Duration: (\d+):(\d+):([\d.]+)/.exec(probe(master));
+  const masterSeconds = lengthOf ? Number(lengthOf[1]) * 3600 + Number(lengthOf[2]) * 60 + Number(lengthOf[3]) : meta.duration;
+  const duration = Math.min(meta.duration, masterSeconds) - blank;
   if (blank) console.log(`  trimming ${blank.toFixed(2)}s of blank from the head`);
   // NATIVE 1920, NO RESCALE (Ali, 10 Sep: "the quality is a bit too
   // pixellated"). The player is up to 1100 CSS pixels wide, which is 2200 on
@@ -142,11 +149,10 @@ for (const rec of newestPerFlow()) {
 
   // 2. the subtitle track, shifted by whatever came off the front so it stays
   //    on the frame it describes.
+  //    Held inside the video too, so the last cue ends when the video does.
   const rawVtt = fs.readFileSync(path.join(rec.dir, "captions.vtt"), "utf8");
-  const shifted = blank
-    ? rawVtt.replace(/(\d\d):(\d\d):(\d\d)\.(\d\d\d)/g, (_, h, m2, sec, ms) =>
-        clock(Number(h) * 3600 + Number(m2) * 60 + Number(sec) + Number(ms) / 1000 - blank))
-    : rawVtt;
+  const shifted = rawVtt.replace(/(\d\d):(\d\d):(\d\d)\.(\d\d\d)/g, (_, h, m2, sec, ms) =>
+    clock(Math.min(duration, Number(h) * 3600 + Number(m2) * 60 + Number(sec) + Number(ms) / 1000 - blank)));
   fs.writeFileSync(path.join(OUT, `${slug}.vtt`), shifted);
 
   // 3. the grid poster: the first section's card, a beat in
@@ -161,7 +167,7 @@ for (const rec of newestPerFlow()) {
         path.join(THUMBS, `${c.id}.jpg`)]);
     // The stills come off the untrimmed master, so they use the original
     // times; the published times move with the trim.
-    return { ...c, t: Math.max(0, c.t - blank), end: Math.max(0, c.end - blank), thumb: `/videos/thumbs/${c.id}.jpg` };
+    return { ...c, t: Math.max(0, c.t - blank), end: Math.min(duration, Math.max(0, c.end - blank)), thumb: `/videos/thumbs/${c.id}.jpg` };
   });
 
   // 4b. drop any section still from a previous cut of this video. Re-cutting

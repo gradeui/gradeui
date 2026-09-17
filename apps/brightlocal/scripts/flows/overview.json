@@ -40,6 +40,7 @@
       "go": "/locations/minus-one-studios/reviews",
       "bg": "yellow",
       "caption": "Three days left on the trial.",
+      "recap": true,
       "ms": 3200
     },
     {

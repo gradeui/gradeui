@@ -162,6 +162,23 @@ async function dismissRecap() {
   }
 }
 
+/** Close the recap THE MOMENT IT OPENS, for as long as `watching()` holds.
+ *  Each shot swaps the frame's page, so a trial or lapsed persona's recap
+ *  opens again on every one of them, and dismissRecap only ran after the
+ *  hold: the recap covered the Manager for its whole 2 to 3s shot in the
+ *  overview and trial cuts, and the starter Tracker in day one (video
+ *  audit, 17 Sep). Polled, because it opens after the frame's own load. */
+async function closeRecapOnSight(watching) {
+  const recap = frame().locator("[data-hook=trial-recap]");
+  while (watching()) {
+    if (await recap.count().catch(() => 0)) {
+      await page.keyboard.press("Escape");
+      await wait(300);
+    }
+    await wait(80);
+  }
+}
+
 console.log(`recording ${flow.name} -> ${outDir}`);
 for (const [i, step] of flow.steps.entries()) {
   const label = step.card ? `card ${step.card}` : step.go ? `go ${step.go}` : step.click ? `click ${step.click}` : step.persona ? `persona ${step.persona}` : Object.keys(step)[0];
@@ -215,9 +232,13 @@ for (const [i, step] of flow.steps.entries()) {
     }
     mark("caption", step.caption);
     currentUrl = step.go;
+    let shooting = true;
+    const watcher = step.recap ? null : closeRecapOnSight(() => shooting);
     await page.locator("[data-hook=capture-stage][data-ready=true]").waitFor({ timeout: 40000 }).catch(() => {});
     // The caption trails the frame by ~900ms, so hold at least that long.
     await wait(Math.max(step.ms ?? 1600, 1400));
+    shooting = false;
+    if (watcher) await watcher;
     if (!step.recap) await dismissRecap();
     continue;
   }
@@ -322,6 +343,17 @@ function headTrim(src) {
   return Math.min(3, Math.max(0.7, first.t));
 }
 
+/** A media file's length in seconds, or null. `ffmpeg -i x` with no output
+ *  always exits non-zero and prints what it found to stderr. */
+function mediaSeconds(file) {
+  let out = "";
+  try {
+    out = execFileSync(ffmpeg, ["-i", file], { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+  } catch (e) { out = String(e.stderr ?? ""); }
+  const m = /Duration: (\d+):(\d+):([\d.]+)/.exec(out);
+  return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) : null;
+}
+
 const trim = headTrim(videoPath);
 console.log(`head trim ${trim.toFixed(2)}s`);
 execFileSync(ffmpeg, ["-y", "-ss", String(trim), "-i", videoPath, "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30", mp4], { stdio: "inherit" });
@@ -339,13 +371,19 @@ fs.writeFileSync(path.join(outDir, "flow.json"), JSON.stringify(flow, null, 2));
 const shift = trim - 0.7;
 for (const m of marks) m.t = Math.max(0, m.t - shift);
 HEAD_TRIM = trim;
-const total = at();
+// The length is read off the ENCODED FILE. This used to be `at()` here, which
+// is wall clock, and by this line the clock has also run through the browser
+// closing and the slow encode above: every cut listed 8 to 16s longer than it
+// plays, so its last section ended past the end of the video and the scrub
+// bar had blank tiles (video audit, 17 Sep).
+const total = mediaSeconds(mp4) ?? at();
 const clock = (sec) => {
-  const s = Math.max(0, sec);
+  // Whole milliseconds first: 7.9996 used to print as 00:00:07.1000.
+  const s = Math.round(Math.max(0, sec) * 1000) / 1000;
   const h = String(Math.floor(s / 3600)).padStart(2, "0");
   const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
   const ss = String(Math.floor(s % 60)).padStart(2, "0");
-  const ms = String(Math.round((s % 1) * 1000)).padStart(3, "0");
+  const ms = String(Math.round(s * 1000) % 1000).padStart(3, "0");
   return `${h}:${m}:${ss}.${ms}`;
 };
 const cues = [];

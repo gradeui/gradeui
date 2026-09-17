@@ -23,7 +23,11 @@ export function CutSceneCard({ card }: { card: CardSpec }) {
     >
       <div className="flex w-[min(92vw,1400px)] items-center gap-16">
         <div className="shrink-0" aria-hidden>
-          <Art className="size-[24rem]" />
+          {/* The suite's own dark twin on a black card (Ali, 17 Sep: the
+              illustrations have to be seen on the black interstitials). With
+              no variant it follows the page's dark class, and the stage page
+              is always light, so it drew black line work on black. */}
+          <Art className="size-[24rem]" variant={card.ink === "white" ? "dark" : undefined} />
         </div>
         <div className="flex flex-col gap-6">
           {/* NO EYEBROW (Ali, 10 Sep: "we can lose all the eyebrows next to the
